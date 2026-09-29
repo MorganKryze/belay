@@ -12,6 +12,11 @@ describe("safeReturnTo", () => {
     ["/\\evil.example", "/"],
     ["https://evil.example", "/"],
     ["/%2F%2Fevil.example", "/%2F%2Fevil.example"],
+    // dot segments normalise to "//host": the output is validated, not just the input
+    ["/.//evil.example", "/"],
+    ["/a/..//evil.example", "/"],
+    ["/%2e//evil.example", "/"],
+    ["/.\\\\evil.example", "/"],
   ])("%s → %s", (input, expected) => {
     expect(safeReturnTo(input)).toBe(expected);
   });

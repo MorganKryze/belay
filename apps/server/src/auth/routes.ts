@@ -93,7 +93,8 @@ export function authRoutes(cfg: Config, db: Db, getOidc: OidcProvider) {
     const token = newSessionToken();
     await createSession(db, hashToken(token), userId, cfg.sessionTtlDays);
     setSessionCookie(c, cfg, token);
-    return c.redirect(tx.returnTo);
+    // Re-validated: the login side already did it, but the redirect must never rely on that alone.
+    return c.redirect(safeReturnTo(tx.returnTo));
   });
 
   auth.post("/logout", async (c) => {

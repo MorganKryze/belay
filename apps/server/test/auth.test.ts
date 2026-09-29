@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import { Hono } from "hono";
+import { serializeSigned } from "hono/utils/cookie";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { apiRoutes } from "../src/api/routes";
 import { oidcProvider } from "../src/auth/oidc";
@@ -98,6 +99,23 @@ describe("OIDC login", () => {
     const { authUrl, txCookie } = await startLogin("//evil.example");
     const cb = await idpRedirect(authUrl, { sub: "redirect" });
     const res = await app.request(cb.pathname + cb.search, { headers: { cookie: txCookie } });
+    expect(res.headers.get("location")).toBe("/");
+  });
+
+  it("re-validates returnTo at the callback even when the cookie carries a hostile one", async () => {
+    const { authUrl, txCookie } = await startLogin("/");
+    // A validly signed transaction whose returnTo bypassed the login-side check.
+    const tx = JSON.parse(decodeURIComponent(txCookie.split("=")[1]!).replace(/\.[^.]+$/, ""));
+    const signed = await serializeSigned(
+      "belay_oidc",
+      JSON.stringify({ ...tx, returnTo: "//evil.example" }),
+      "x".repeat(32),
+    );
+    const cb = await idpRedirect(authUrl, { sub: "hostile-return" });
+    const res = await app.request(cb.pathname + cb.search, {
+      headers: { cookie: cookiePair(signed) },
+    });
+    expect(res.status).toBe(302);
     expect(res.headers.get("location")).toBe("/");
   });
 
