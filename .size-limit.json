@@ -3,6 +3,6 @@
     "name": "web: initial JavaScript (gzip)",
     "path": "apps/web/dist/assets/index-*.js",
     "gzip": true,
-    "limit": "157 kB"
+    "limit": "157 KiB"
   }
 ]

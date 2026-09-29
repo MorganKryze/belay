@@ -1,6 +1,9 @@
 # Pinned by digest and read through mirror.gcr.io (same object as Docker Hub,
 # without the anonymous rate limit). Dependabot moves tag and digest together.
-FROM mirror.gcr.io/library/node:24-alpine@sha256:ebfe2f90462722a7a4de65e91990e97fe0d401c70e0e762c5b53302f905ec1c1 AS build
+# The build stage runs on the builder's own architecture: the esbuild bundle and the
+# vite dist are the same for every target, and the final stage has no RUN, so a
+# multi-arch build never emulates the install or the build.
+FROM --platform=$BUILDPLATFORM mirror.gcr.io/library/node:24-alpine@sha256:ebfe2f90462722a7a4de65e91990e97fe0d401c70e0e762c5b53302f905ec1c1 AS build
 WORKDIR /src
 # ponytail: pnpm is fetched without an integrity hash (no +sha512 in packageManager).
 # Node 25+ drops corepack: a base bump to a newer major must switch to a pinned
