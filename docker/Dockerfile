@@ -2,6 +2,9 @@
 # without the anonymous rate limit). Dependabot moves tag and digest together.
 FROM mirror.gcr.io/library/node:24-alpine@sha256:ebfe2f90462722a7a4de65e91990e97fe0d401c70e0e762c5b53302f905ec1c1 AS build
 WORKDIR /src
+# ponytail: pnpm is fetched without an integrity hash (no +sha512 in packageManager).
+# Node 25+ drops corepack: a base bump to a newer major must switch to a pinned
+# `npm i -g pnpm@<version>` here.
 RUN corepack enable
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY packages/shared/package.json packages/shared/

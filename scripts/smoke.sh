@@ -5,8 +5,18 @@
 set -euo pipefail
 image="${1:?usage: scripts/smoke.sh <image>}"
 env_file=$(mktemp)
+# Exported so the trap's `down -v` resolves the same config as `up`.
+export BELAY_IMAGE="$image" BELAY_ENV_FILE="$env_file"
 compose=(docker compose -p belay-smoke -f docker/compose.yaml --env-file "$env_file")
-trap '"${compose[@]}" down -v >/dev/null 2>&1; rm -f "$env_file"' EXIT
+cleanup() {
+  local status=$?
+  if [ "$status" -ne 0 ]; then
+    { "${compose[@]}" logs --no-color | tail -100; } || true
+  fi
+  "${compose[@]}" down -v >/dev/null 2>&1 || true
+  rm -f "$env_file"
+}
+trap cleanup EXIT
 
 cat > "$env_file" <<ENV
 POSTGRES_PASSWORD=smoke
@@ -17,7 +27,7 @@ OIDC_CLIENT_SECRET=smoke
 SESSION_SECRET=$(head -c 48 /dev/urandom | base64 | tr -d '\n')
 ENV
 
-BELAY_IMAGE="$image" BELAY_ENV_FILE="$env_file" "${compose[@]}" up -d --wait
+"${compose[@]}" up -d --wait --wait-timeout 120
 
 curl -fsS http://localhost:3000/healthz | grep -q '"ok":true'
 curl -fsS http://localhost:3000/ | grep -q '<title>Belay</title>'

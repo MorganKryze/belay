@@ -1,15 +1,21 @@
+# A fixed project name: a stray `docker compose down -v` from another folder or
+# project must never resolve to this stack and delete the database volume.
+name: belay
+
 services:
   db:
     image: mirror.gcr.io/library/postgres:18-alpine@sha256:77f585114c32fbca283dc835b0596f4e52b51b4c6662d7810b2f4084f60a1873
     environment:
       POSTGRES_USER: belay
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in the .env next to compose.yaml}
       POSTGRES_DB: belay
     volumes:
       # Put this volume on an encrypted disk: it holds health data (see README, threat model).
       - db:/var/lib/postgresql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U belay -d belay"]
+      # Over TCP on purpose: the init-time temporary server listens on the socket only,
+      # so the check cannot pass before the real server is up.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U belay -d belay"]
       interval: 5s
       retries: 10
     restart: unless-stopped
@@ -19,11 +25,17 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    env_file: ${BELAY_ENV_FILE:-../.env}
+    # The same .env feeds the ${...} substitutions in this file and the app's environment.
+    env_file: ${BELAY_ENV_FILE:-.env}
     environment:
+      # ponytail: the password is spliced in unencoded, so it must be URL-safe
+      # (openssl rand -hex 24). Upgrade path: percent-encode it, or pass PG* variables.
       DATABASE_URL: postgres://belay:${POSTGRES_PASSWORD}@db:5432/belay
     ports:
-      - "3000:3000"
+      # Loopback only: a reverse proxy fronts Belay and terminates TLS. Docker publishes
+      # ports through its own iptables rules and bypasses host firewalls (ufw, firewalld),
+      # so a bare "3000:3000" would expose the app to the network.
+      - "127.0.0.1:${BELAY_PORT:-3000}:3000"
     restart: unless-stopped
 
 volumes:
