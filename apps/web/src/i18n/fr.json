@@ -12,7 +12,7 @@
     "expired": "La connexion a pris trop de temps. Réessaie.",
     "failed": "La connexion n'a pas abouti. Réessaie."
   },
-  "offline": "Tu es hors ligne. Tout ce que tu saisis reste sur cet appareil.",
+  "offline": "Tu es hors ligne.",
   "nav": { "home": "Accueil", "settings": "Réglages" },
   "settings": {
     "title": "Réglages",

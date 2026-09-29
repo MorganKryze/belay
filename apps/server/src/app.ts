@@ -28,7 +28,8 @@ export function createApp({ cfg, db, getOidc }: { cfg: Config; db: Db; getOidc: 
         formAction: ["'self'"],
       },
       referrerPolicy: "same-origin",
-      strictTransportSecurity: cfg.secureCookies ? "max-age=31536000; includeSubDomains" : false,
+      // No includeSubDomains: the app only knows its own origin, not what else lives under the domain.
+      strictTransportSecurity: cfg.secureCookies ? "max-age=31536000" : false,
     }),
   );
   app.use(csrf({ origin: cfg.publicUrl.origin }));

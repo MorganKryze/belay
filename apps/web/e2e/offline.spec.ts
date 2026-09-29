@@ -20,7 +20,8 @@ test("the shell and client routes work offline after the first visit", async ({
   await loadAndGoOffline(page, context);
   await page.reload();
   await expect(page.getByRole("heading", { name: "Belay" })).toBeVisible();
-  await expect(page.getByText("You're offline.", { exact: false })).toBeVisible();
+  // The whole sentence: M0 cannot save anything offline yet, so the banner promises nothing.
+  await expect(page.getByText("You're offline.", { exact: true })).toBeVisible();
 
   await page.goto("/settings");
   await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();

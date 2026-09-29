@@ -122,6 +122,7 @@ describe("app", () => {
     const res = await createApp({ cfg: secure, db, getOidc: oidcProvider(secure.oidc) }).request(
       "/",
     );
-    expect(res.headers.get("strict-transport-security")).toContain("max-age=31536000");
+    // No includeSubDomains: the app only knows its own origin, not what else lives under the domain.
+    expect(res.headers.get("strict-transport-security")).toBe("max-age=31536000");
   });
 });
