@@ -1,0 +1,27 @@
+{
+  "name": "belay",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.6.0",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "lint": "eslint . && prettier --check . --ignore-path .gitignore --ignore-path .prettierignore --ignore-path .git/info/exclude",
+    "format": "prettier --write . --ignore-path .gitignore --ignore-path .prettierignore --ignore-path .git/info/exclude",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "build": "pnpm -r build",
+    "size": "size-limit",
+    "e2e": "pnpm --filter @belay/web e2e"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@size-limit/file": "^14.1.0",
+    "eslint": "^10.11.0",
+    "prettier": "^3.9.9",
+    "size-limit": "^14.1.0",
+    "typescript": "6.0.3",
+    "typescript-eslint": "^8.70.1"
+  }
+}
