@@ -1,12 +1,14 @@
+import { inspect } from "node:util";
 import { sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { serializeSigned } from "hono/utils/cookie";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { apiRoutes } from "../src/api/routes";
 import { oidcProvider } from "../src/auth/oidc";
 import { authRoutes } from "../src/auth/routes";
 import { SESSION_COOKIE } from "../src/auth/session";
-import { loadConfig } from "../src/config";
+import { loadConfig, type Config } from "../src/config";
+import type { Db } from "../src/db/client";
 import { testEnv } from "./config";
 import { testDb } from "./db";
 import { startIdp } from "./idp";
@@ -18,11 +20,15 @@ let app: Hono;
 // the callback, not at /authorize: one persistent listener injects the claims
 // the current test asked for into every token.
 let nextClaims: Record<string, unknown> = {};
+// The last request the server sent to the token endpoint. The mock only checks PKCE when a
+// code_verifier is sent and never checks redirect_uri, so the tests assert on both here.
+let lastTokenRequest: Record<string, unknown> = {};
 
 beforeAll(async () => {
   idp = await startIdp();
-  idp.service.on("beforeTokenSigning", (token) => {
+  idp.service.on("beforeTokenSigning", (token, req) => {
     Object.assign(token.payload, nextClaims);
+    lastTokenRequest = { ...req.body };
   });
   const cfg = loadConfig(testEnv({ OIDC_ISSUER: idp.issuer.url! }));
   app = new Hono()
@@ -30,15 +36,23 @@ beforeAll(async () => {
     .route("/api", apiRoutes(cfg, db));
 });
 afterAll(() => idp.stop());
+afterEach(() => vi.restoreAllMocks());
 
 const cookiePair = (setCookie: string) => setCookie.split(";")[0]!;
 
-async function startLogin(returnTo: string) {
-  const res = await app.request(`/auth/login?returnTo=${encodeURIComponent(returnTo)}`);
+async function startLogin(returnTo: string, target: Hono = app) {
+  const res = await target.request(`/auth/login?returnTo=${encodeURIComponent(returnTo)}`);
   expect(res.status).toBe(302);
   const authUrl = new URL(res.headers.get("location")!);
-  return { authUrl, txCookie: cookiePair(res.headers.get("set-cookie")!) };
+  return { authUrl, res, txCookie: cookiePair(res.headers.get("set-cookie")!) };
 }
+
+// What is printed to the console, as Node would render it (errors expanded with their causes).
+const printed = (spy: { mock: { calls: unknown[][] } }) =>
+  spy.mock.calls
+    .flat()
+    .map((a) => (typeof a === "string" ? a : inspect(a, { depth: null })))
+    .join("\n");
 
 async function idpRedirect(authUrl: URL, claims: Record<string, string>) {
   nextClaims = { ...claims, nonce: authUrl.searchParams.get("nonce") };
@@ -68,6 +82,14 @@ describe("OIDC login", () => {
     expect(res.status).toBe(302);
     expect(res.headers.get("location")).toBe("/settings");
 
+    // PKCE verifier and the PUBLIC_URL-based redirect_uri reach the token endpoint.
+    expect(lastTokenRequest.code_verifier).toEqual(expect.stringMatching(/^[\w-]{43,}$/));
+    expect(lastTokenRequest.redirect_uri).toBe("http://localhost:3000/auth/callback");
+    // The transaction is single-use: the callback clears its cookie.
+    expect(res.headers.getSetCookie()).toContainEqual(
+      expect.stringMatching(/^belay_oidc=;.*Max-Age=0/),
+    );
+
     const session = res.headers.getSetCookie().find((c) => c.startsWith(`${SESSION_COOKIE}=`))!;
     expect(session).toMatch(/HttpOnly/i);
     expect(session).toMatch(/SameSite=Lax/i);
@@ -93,6 +115,47 @@ describe("OIDC login", () => {
     cb.searchParams.set("state", "forged");
     const res = await app.request(cb.pathname + cb.search, { headers: { cookie: txCookie } });
     expect(res.status).toBe(400);
+  });
+
+  it("refuses a transaction cookie that is not signed by the server", async () => {
+    const { authUrl, txCookie } = await startLogin("/");
+    const cb = await idpRedirect(authUrl, { sub: "forged-cookie" });
+    // Well-formed and consistent with the real login, but unsigned or badly signed.
+    const [name, value] = [txCookie.split("=")[0]!, decodeURIComponent(txCookie.split("=")[1]!)];
+    const payload = value.match(/^\{.*\}/)![0]; // the JSON, with or without a signature
+    const unsigned = `${name}=${encodeURIComponent(payload)}`;
+    const badSignature = `${name}=${encodeURIComponent(`${payload}.${"A".repeat(43)}=`)}`;
+    for (const cookie of [unsigned, badSignature]) {
+      const res = await app.request(cb.pathname + cb.search, { headers: { cookie } });
+      expect(res.status).toBe(400);
+      expect(res.headers.getSetCookie().some((c) => c.startsWith(`${SESSION_COOKIE}=`))).toBe(
+        false,
+      );
+      expect(res.headers.getSetCookie()).toContainEqual(
+        expect.stringMatching(/^belay_oidc=;.*Max-Age=0/),
+      );
+    }
+  });
+
+  it("logs a failed callback without the error object, its cause chain or any claim", async () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { authUrl, txCookie } = await startLogin("/");
+    // A wrong nonce makes openid-client throw an error whose cause holds the expected nonce
+    // and every claim of the ID token, e-mail included.
+    nextClaims = { sub: "log-1", email: "leak@example.test", nonce: "wrong" };
+    const idpRes = await fetch(authUrl, { redirect: "manual" });
+    const cb = new URL(idpRes.headers.get("location")!);
+    const res = await app.request(cb.pathname + cb.search, { headers: { cookie: txCookie } });
+    expect(res.status).toBe(400);
+
+    expect(spy).toHaveBeenCalled();
+    for (const arg of spy.mock.calls.flat()) expect(typeof arg).toBe("string");
+    const out = printed(spy);
+    expect(out).toContain("ClientError");
+    expect(out).toContain("OAUTH_JWT_CLAIM_COMPARISON_FAILED");
+    expect(out).not.toContain("leak@example.test");
+    expect(out).not.toContain(authUrl.searchParams.get("nonce")!);
+    expect(out).not.toContain(cb.searchParams.get("code")!);
   });
 
   it("never redirects off-site after login", async () => {
@@ -137,12 +200,86 @@ describe("OIDC login", () => {
   });
 });
 
+describe("logout when the database fails", () => {
+  it("still clears the session cookie", async () => {
+    const cfg = loadConfig(testEnv({ OIDC_ISSUER: idp.issuer.url! }));
+    const brokenDb = new Proxy(
+      {},
+      {
+        get() {
+          throw new Error("db down");
+        },
+      },
+    ) as Db;
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const broken = new Hono().route("/auth", authRoutes(cfg, brokenDb, oidcProvider(cfg.oidc)));
+    const res = await broken.request("/auth/logout", {
+      method: "POST",
+      headers: { cookie: `${SESSION_COOKIE}=some-session-token` },
+    });
+    expect(res.headers.getSetCookie()).toContainEqual(
+      expect.stringMatching(new RegExp(`^${SESSION_COOKIE}=;.*Max-Age=0`)),
+    );
+  });
+});
+
+describe("over https", () => {
+  let cfg: Config;
+  let secure: Hono;
+  beforeAll(() => {
+    cfg = loadConfig(
+      testEnv({ OIDC_ISSUER: idp.issuer.url!, PUBLIC_URL: "https://belay.example" }),
+    );
+    secure = new Hono().route("/auth", authRoutes(cfg, db, oidcProvider(cfg.oidc)));
+  });
+
+  it("binds the login transaction cookie to this origin with the __Host- prefix", async () => {
+    const { res } = await startLogin("/", secure);
+    const header = res.headers.getSetCookie()[0]!;
+    expect(header).toMatch(/^__Host-belay_oidc=/);
+    expect(header).toContain("; Secure");
+    expect(header).toContain("; Path=/");
+    expect(header).toContain("; HttpOnly");
+    expect(header).toContain("; SameSite=Lax");
+    expect(header).toContain("; Max-Age=600");
+    expect(header).not.toMatch(/Domain=/i);
+  });
+
+  it("reads and clears the prefixed cookie at the callback", async () => {
+    const { authUrl, txCookie } = await startLogin("/next", secure);
+    expect(authUrl.searchParams.get("redirect_uri")).toBe("https://belay.example/auth/callback");
+    const cb = await idpRedirect(authUrl, { sub: "https-user", name: "Hattie" });
+    const res = await secure.request(cb.pathname + cb.search, { headers: { cookie: txCookie } });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/next");
+    expect(res.headers.getSetCookie()).toContainEqual(
+      expect.stringMatching(/^__Host-belay_oidc=;.*Max-Age=0.*Secure/),
+    );
+    expect(res.headers.getSetCookie()).toContainEqual(
+      expect.stringMatching(new RegExp(`^__Host-${SESSION_COOKIE}=`)),
+    );
+    expect(lastTokenRequest.redirect_uri).toBe("https://belay.example/auth/callback");
+  });
+
+  it("ignores a plain-named transaction cookie", async () => {
+    const { authUrl, txCookie } = await startLogin("/", secure);
+    const cb = await idpRedirect(authUrl, { sub: "https-plain" });
+    const plain = txCookie.replace(/^__Host-/, "");
+    const res = await secure.request(cb.pathname + cb.search, { headers: { cookie: plain } });
+    expect(res.status).toBe(400);
+  });
+});
+
 describe("identity provider down", () => {
   it("answers 503 with a readable message", async () => {
     const cfg = loadConfig(testEnv({ OIDC_ISSUER: "http://localhost:1" }));
     const down = new Hono().route("/auth", authRoutes(cfg, db, oidcProvider(cfg.oidc)));
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
     const res = await down.request("/auth/login");
     expect(res.status).toBe(503);
     expect(await res.text()).toMatch(/identity provider/i);
+    // Logged as text (name and message), not as an error object with its cause chain.
+    expect(spy).toHaveBeenCalled();
+    for (const arg of spy.mock.calls.flat()) expect(typeof arg).toBe("string");
   });
 });

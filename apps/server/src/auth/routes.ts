@@ -23,18 +23,30 @@ const txSchema = z.object({
   returnTo: z.string(),
 });
 
+// Name, message and code only: openid-client errors carry cause chains that hold the expected
+// nonce, the ID token claims (e-mail included) and the authorization response.
+function describeError(err: unknown): string {
+  if (!(err instanceof Error)) return "unknown error";
+  const code = (err as { code?: unknown }).code;
+  const suffix = typeof code === "string" || typeof code === "number" ? ` (code ${code})` : "";
+  return `${err.name}: ${err.message}${suffix}`;
+}
+
 export function authRoutes(cfg: Config, db: Db, getOidc: OidcProvider) {
   const auth = new Hono();
   const redirectUri = new URL("/auth/callback", cfg.publicUrl).href;
+  // `__Host-` over https (Secure, Path=/, no Domain): a sibling subdomain cannot plant a
+  // transaction cookie of its own, which would allow login CSRF.
   const txCookieOpts = {
     httpOnly: true,
     secure: cfg.secureCookies,
     sameSite: "Lax" as const,
-    path: "/auth",
+    path: "/",
+    ...(cfg.secureCookies ? { prefix: "host" as const } : {}),
   };
 
   auth.onError((err, c) => {
-    console.error("auth error:", err);
+    console.error("auth error:", describeError(err));
     return c.text("Sign-in failed. Please try again.", 400);
   });
 
@@ -43,7 +55,7 @@ export function authRoutes(cfg: Config, db: Db, getOidc: OidcProvider) {
     try {
       oidc = await getOidc();
     } catch (err) {
-      console.error("OIDC discovery failed:", err);
+      console.error("OIDC discovery failed:", describeError(err));
       return c.text("The identity provider is unreachable. Please try again in a moment.", 503);
     }
     const verifier = client.randomPKCECodeVerifier();
@@ -69,7 +81,7 @@ export function authRoutes(cfg: Config, db: Db, getOidc: OidcProvider) {
   });
 
   auth.get("/callback", async (c) => {
-    const raw = await getSignedCookie(c, cfg.sessionSecret, TX_COOKIE);
+    const raw = await getSignedCookie(c, cfg.sessionSecret, TX_COOKIE, txCookieOpts.prefix);
     deleteCookie(c, TX_COOKIE, txCookieOpts);
     if (!raw) return c.text("Your sign-in expired. Please start again.", 400);
     const tx = txSchema.parse(JSON.parse(raw));
@@ -99,8 +111,9 @@ export function authRoutes(cfg: Config, db: Db, getOidc: OidcProvider) {
 
   auth.post("/logout", async (c) => {
     const token = readSessionCookie(c, cfg);
-    if (token) await deleteSession(db, hashToken(token));
+    // Cleared first: if the database fails, the browser is still logged out.
     clearSessionCookie(c, cfg);
+    if (token) await deleteSession(db, hashToken(token));
     let redirectTo = cfg.publicUrl.href;
     try {
       const oidc = await getOidc();

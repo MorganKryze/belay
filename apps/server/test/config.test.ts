@@ -37,4 +37,11 @@ describe("loadConfig", () => {
     expect(() => loadConfig(testEnv({ PUBLIC_URL: "ftp://x" }))).toThrow(/PUBLIC_URL/);
     expect(() => loadConfig(testEnv({ OIDC_ISSUER: "file:///etc/passwd" }))).toThrow(/OIDC_ISSUER/);
   });
+
+  it("refuses the e-mail claim as the display name, whatever its case", () => {
+    for (const claim of ["email", "EMAIL", "Email", " email "]) {
+      expect(() => loadConfig(testEnv({ OIDC_NAME_CLAIM: claim }))).toThrow(/OIDC_NAME_CLAIM/);
+    }
+    expect(loadConfig(testEnv({ OIDC_NAME_CLAIM: "nickname" })).oidc.nameClaim).toBe("nickname");
+  });
 });

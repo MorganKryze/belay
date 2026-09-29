@@ -6,7 +6,13 @@ const schema = z.object({
   OIDC_ISSUER: z.url({ protocol: /^https?$/ }),
   OIDC_CLIENT_ID: z.string().min(1),
   OIDC_CLIENT_SECRET: z.string().min(1),
-  OIDC_NAME_CLAIM: z.string().min(1).default("name"),
+  OIDC_NAME_CLAIM: z
+    .string()
+    .min(1)
+    .refine((claim) => claim.trim().toLowerCase() !== "email", {
+      error: "must not be the e-mail claim: Belay never stores e-mail addresses",
+    })
+    .default("name"),
   SESSION_SECRET: z.string().min(32),
   SESSION_TTL_DAYS: z.coerce.number().int().positive().default(30),
   PORT: z.coerce.number().int().positive().default(3000),
