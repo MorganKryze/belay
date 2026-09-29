@@ -2,8 +2,8 @@ import { z } from "zod";
 
 const schema = z.object({
   DATABASE_URL: z.string().min(1),
-  PUBLIC_URL: z.url(),
-  OIDC_ISSUER: z.url(),
+  PUBLIC_URL: z.url({ protocol: /^https?$/ }),
+  OIDC_ISSUER: z.url({ protocol: /^https?$/ }),
   OIDC_CLIENT_ID: z.string().min(1),
   OIDC_CLIENT_SECRET: z.string().min(1),
   OIDC_NAME_CLAIM: z.string().min(1).default("name"),

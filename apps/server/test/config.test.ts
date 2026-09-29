@@ -29,4 +29,14 @@ describe("loadConfig", () => {
     const cfg = loadConfig(testEnv());
     expect(cfg).toMatchObject({ sessionTtlDays: 30, port: 3000, oidc: { nameClaim: "name" } });
   });
+
+  it("accepts only http(s) URLs for PUBLIC_URL and OIDC_ISSUER", () => {
+    expect(() => loadConfig(testEnv({ PUBLIC_URL: "belay.libresoftware.cloud:3000" }))).toThrow(
+      /PUBLIC_URL/,
+    );
+    expect(() => loadConfig(testEnv({ PUBLIC_URL: "ftp://x" }))).toThrow(/PUBLIC_URL/);
+    expect(() => loadConfig(testEnv({ OIDC_ISSUER: "file:///etc/passwd" }))).toThrow(
+      /OIDC_ISSUER/,
+    );
+  });
 });
