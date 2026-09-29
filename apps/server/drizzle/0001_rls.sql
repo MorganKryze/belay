@@ -24,7 +24,7 @@ CREATE POLICY users_self ON users TO belay_app
 ALTER TABLE sessions ENABLE ROW LEVEL SECURITY;
 --> statement-breakpoint
 CREATE FUNCTION belay_upsert_user(p_id uuid, p_issuer text, p_sub text, p_name text)
-RETURNS uuid LANGUAGE sql SECURITY DEFINER SET search_path = public AS $$
+RETURNS uuid LANGUAGE sql SECURITY DEFINER SET search_path = public, pg_temp AS $$
   INSERT INTO users (id, oidc_issuer, oidc_sub, display_name)
   VALUES (p_id, p_issuer, p_sub, p_name)
   ON CONFLICT (oidc_issuer, oidc_sub)
@@ -34,7 +34,7 @@ $$;
 --> statement-breakpoint
 -- ponytail: expired sessions are purged lazily on each login; a scheduled job if the table grows.
 CREATE FUNCTION belay_create_session(p_token_hash text, p_user_id uuid, p_ttl interval)
-RETURNS void LANGUAGE sql SECURITY DEFINER SET search_path = public AS $$
+RETURNS void LANGUAGE sql SECURITY DEFINER SET search_path = public, pg_temp AS $$
   DELETE FROM sessions WHERE expires_at <= now();
   INSERT INTO sessions (token_hash, user_id, expires_at) VALUES (p_token_hash, p_user_id, now() + p_ttl);
 $$;
@@ -42,14 +42,14 @@ $$;
 -- Sliding expiry: every authenticated request pushes the deadline back.
 -- ponytail: one UPDATE per request; throttle it if the instance ever serves more than a few dozen people.
 CREATE FUNCTION belay_session_user(p_token_hash text, p_ttl interval)
-RETURNS uuid LANGUAGE sql SECURITY DEFINER SET search_path = public AS $$
+RETURNS uuid LANGUAGE sql SECURITY DEFINER SET search_path = public, pg_temp AS $$
   UPDATE sessions SET expires_at = now() + p_ttl
   WHERE token_hash = p_token_hash AND expires_at > now()
   RETURNING user_id;
 $$;
 --> statement-breakpoint
 CREATE FUNCTION belay_delete_session(p_token_hash text)
-RETURNS void LANGUAGE sql SECURITY DEFINER SET search_path = public AS $$
+RETURNS void LANGUAGE sql SECURITY DEFINER SET search_path = public, pg_temp AS $$
   DELETE FROM sessions WHERE token_hash = p_token_hash;
 $$;
 --> statement-breakpoint

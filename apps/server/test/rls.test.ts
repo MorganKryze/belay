@@ -64,6 +64,26 @@ describe("identity functions", () => {
   });
 });
 
+describe("security definer functions", () => {
+  it("ignore a temp table that shadows sessions", async () => {
+    const victim = await upsertUser(db, { issuer, sub: "shadow-victim", displayName: "V" });
+    const resolved = await asApp(db, async (tx) => {
+      await tx.execute(
+        sql`create temp table sessions (token_hash text, user_id uuid, expires_at timestamptz) on commit drop`,
+      );
+      await tx.execute(
+        sql`insert into sessions values ('forged', ${victim}::uuid, now() + interval '1 day')`,
+      );
+      const rows = await tx.execute<{ user_id: string | null }>(
+        sql`select belay_session_user('forged', interval '1 day') as user_id`,
+      );
+      return rows[0]?.user_id ?? null;
+    });
+    expect(resolved).not.toBe(victim);
+    expect(resolved).toBeNull();
+  });
+});
+
 describe("migrations", () => {
   it("are idempotent", async () => {
     await expect(runMigrations(db, "drizzle")).resolves.toBeUndefined();
