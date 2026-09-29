@@ -44,6 +44,30 @@ describe("GET /api/me", () => {
     expect(await res.json()).toEqual({ id: user, displayName: "Alex" });
   });
 
+  it("scopes the answer to the caller when several users exist", async () => {
+    const ada = await signedInCookie("scope-a", "Ada");
+    const bo = await signedInCookie("scope-b", "Bo");
+    for (const who of [bo, ada, bo]) {
+      const res = await app.request("/api/me", { headers: { cookie: who.cookie } });
+      expect(res.status).toBe(200);
+      expect(await res.json()).toEqual({
+        id: who.user,
+        displayName: who === ada ? "Ada" : "Bo",
+      });
+    }
+  });
+
+  it("re-issues the session cookie so its lifetime slides with the session", async () => {
+    const { token, cookie } = await signedInCookie("slide-1", "Kim");
+    const res = await app.request("/api/me", { headers: { cookie } });
+    expect(res.status).toBe(200);
+    const header = res.headers.getSetCookie().find((h) => h.startsWith(`${SESSION_COOKIE}=`));
+    expect(header).toBeDefined();
+    expect(header).toContain(`${SESSION_COOKIE}=${token};`);
+    expect(header).toContain(`Max-Age=${cfg.sessionTtlDays * 86_400}`);
+    expect(header).toContain("HttpOnly");
+  });
+
   it("answers 401 without a cookie", async () => {
     expect((await app.request("/api/me")).status).toBe(401);
   });
