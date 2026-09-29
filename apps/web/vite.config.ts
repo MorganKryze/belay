@@ -35,12 +35,16 @@ export default defineConfig({
         ],
       },
       workbox: {
-        // vite-plugin-pwa only implies these for autoUpdate when injectRegister is "auto", not "script".
-        skipWaiting: true,
+        // ponytail: no skipWaiting, so a new SW waits and an update applies on the next full close
+        // and relaunch, with no in-app "new version" prompt. Claiming a live page would let
+        // cleanupOutdatedCaches delete the old lazy chunks (settings-OLD.js) under it. With
+        // injectRegister "script" nothing reloads the page, so registerType "autoUpdate" is nominal
+        // here. Upgrade path: import virtual:pwa-register, handle onNeedRefresh, show a prompt.
         clientsClaim: true,
         navigateFallback: "/index.html",
-        // /auth and /api must always reach the network: a cached shell there would fake a login.
-        navigateFallbackDenylist: [/^\/auth\//, /^\/api\//],
+        // /auth, /api and /healthz must always reach the network: a cached shell there would fake
+        // a login or a healthy server.
+        navigateFallbackDenylist: [/^\/auth\//, /^\/api\//, /^\/healthz$/],
         globPatterns: ["**/*.{js,css,html,svg,png,ico,woff2}"],
       },
     }),
