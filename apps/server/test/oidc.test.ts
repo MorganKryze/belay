@@ -11,6 +11,14 @@ describe("pickDisplayName", () => {
     expect(pickDisplayName({ name: "  ", preferred_username: "alex" }, "name")).toBe("alex");
     expect(pickDisplayName({}, "name")).toBe("Belay user");
   });
+
+  it("never returns an e-mail address, even as the username", () => {
+    expect(pickDisplayName({ preferred_username: "a@b.c" }, "name")).toBe("Belay user");
+    expect(pickDisplayName({ name: "x@y.z", preferred_username: "alex" }, "name")).toBe("alex");
+    expect(pickDisplayName({ name: "  x@y.z ", preferred_username: " a@b.c" }, "name")).toBe(
+      "Belay user",
+    );
+  });
 });
 
 describe("oidcProvider", () => {

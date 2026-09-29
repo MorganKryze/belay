@@ -24,10 +24,14 @@ export function oidcProvider(oidc: Config["oidc"]): OidcProvider {
   };
 }
 
+// An "@" marks an e-mail address, which Belay never stores: some Keycloak realms use the e-mail
+// as the username, so preferred_username is checked like any other candidate.
 export function pickDisplayName(claims: Record<string, unknown>, nameClaim: string): string {
   for (const key of [nameClaim, "preferred_username"]) {
     const v = claims[key];
-    if (typeof v === "string" && v.trim()) return v.trim();
+    if (typeof v !== "string") continue;
+    const name = v.trim();
+    if (name && !name.includes("@")) return name;
   }
   return "Belay user";
 }
