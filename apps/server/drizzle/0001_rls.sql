@@ -1,6 +1,12 @@
--- The application never queries as the table owner. Each request runs
--- `SET LOCAL ROLE belay_app` inside its transaction, so RLS applies even when
--- the connecting user is a superuser (the official postgres image default).
+-- ponytail: the application never queries as the table owner. Each request runs
+-- `SET LOCAL ROLE belay_app` inside its transaction and RLS keys on app.user_id.
+-- This guards against application-logic bugs (a query that forgets its user
+-- filter). It is NOT a boundary against SQL injection: with arbitrary SQL,
+-- RESET ROLE, set_config('app.user_id', ...) or belay_create_session all escape
+-- it. Injection is prevented only by parameterised queries.
+-- Upgrade path: a dedicated LOGIN role for the app, with the owner URL used for
+-- migrations only, plus HMAC-keyed token hashes so a session cannot be minted
+-- from SQL alone.
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'belay_app') THEN
