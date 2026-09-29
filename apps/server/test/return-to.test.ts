@@ -17,7 +17,17 @@ describe("safeReturnTo", () => {
     ["/a/..//evil.example", "/"],
     ["/%2e//evil.example", "/"],
     ["/.\\\\evil.example", "/"],
+    // the URL parser strips the tab and then chokes on "//[": it must not throw
+    ["/\t/[", "/"],
   ])("%s → %s", (input, expected) => {
     expect(safeReturnTo(input)).toBe(expected);
+  });
+
+  it("caps the length: 2048 characters pass, one more falls back to /", () => {
+    const fits = "/" + "a".repeat(2047);
+    expect(safeReturnTo(fits)).toBe(fits);
+    expect(safeReturnTo(fits + "a")).toBe("/");
+    // 700 spaces are 700 characters going in and 2100 (%20) coming out
+    expect(safeReturnTo("/" + " ".repeat(700))).toBe("/");
   });
 });
