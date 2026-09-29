@@ -7,8 +7,8 @@
     "node": ">=24"
   },
   "scripts": {
-    "lint": "eslint . && prettier --check . --ignore-path .gitignore --ignore-path .prettierignore --ignore-path .git/info/exclude",
-    "format": "prettier --write . --ignore-path .gitignore --ignore-path .prettierignore --ignore-path .git/info/exclude",
+    "lint": "eslint . && git ls-files -z --cached --others --exclude-standard | xargs -0 prettier --check --ignore-unknown",
+    "format": "git ls-files -z --cached --others --exclude-standard | xargs -0 prettier --write --ignore-unknown",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
     "build": "pnpm -r build",
