@@ -27,7 +27,7 @@ describe("safeReturnTo", () => {
     const fits = "/" + "a".repeat(2047);
     expect(safeReturnTo(fits)).toBe(fits);
     expect(safeReturnTo(fits + "a")).toBe("/");
-    // 700 spaces are 700 characters going in and 2100 (%20) coming out
-    expect(safeReturnTo("/" + " ".repeat(700))).toBe("/");
+    // 1501 characters going in, 2501 coming out ("a b" becomes "a%20b")
+    expect(safeReturnTo("/" + "a b".repeat(500))).toBe("/");
   });
 });
