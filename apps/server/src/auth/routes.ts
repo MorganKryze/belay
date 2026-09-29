@@ -15,6 +15,9 @@ import {
   setSessionCookie,
 } from "./session";
 
+// ponytail: one transaction-cookie slot per browser. A second login in another tab overwrites the
+// first, and that tab's callback then redirects with `expired`. Upgrade: key the transaction by
+// state.
 const TX_COOKIE = "belay_oidc";
 const txSchema = z.object({
   verifier: z.string(),

@@ -5,6 +5,9 @@ export type OidcProvider = () => Promise<client.Configuration>;
 
 // Lazy and memoized: the app boots and serves the PWA even while the identity
 // provider is down; a failed discovery is forgotten so the next login retries.
+// ponytail: a successful discovery is cached for the process lifetime, so an IdP that moves an
+// endpoint needs a restart. Upgrade: honour the cache headers, or re-discover on key or endpoint
+// errors.
 export function oidcProvider(oidc: Config["oidc"]): OidcProvider {
   let pending: Promise<client.Configuration> | undefined;
   return () => {

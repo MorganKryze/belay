@@ -55,6 +55,8 @@ export async function start(env: Record<string, string | undefined>) {
   console.log(`Belay listening on :${port}, public URL ${cfg.publicUrl.href}`);
   return {
     port,
+    // ponytail: no shutdown deadline, so a hung request waits for the orchestrator's SIGKILL.
+    // Upgrade: a timer, then server.closeAllConnections().
     close: async () => {
       await new Promise<void>((resolve) => server.close(() => resolve()));
       await client.end({ timeout: 5 });

@@ -75,11 +75,12 @@ terminates TLS on the same host. Belay has no accounts of its own.
 
 - `GET /healthz` reports health: `{"ok":true}`, or 503 when the database is
   unreachable. Migrations run at startup.
-- The app boots and serves the PWA even when your identity provider is down;
-  sign-in answers 503 until it is back.
+- The app boots and serves the PWA even when your identity provider is down:
+  sign-in then shows a message on the home page, and you can try again.
 - To update a release image, run `docker compose -f docker/compose.yaml pull`,
   then `up -d` again. From source, rebuild the image, then `up -d`. An installed
-  app picks up the new version once it is fully closed and reopened.
+  app applies a new version on the launch after the one that downloaded it, once
+  the app has been fully closed.
 - Your data lives in the `belay_db` volume of the `belay` Compose project.
   `down -v` deletes it. See the threat model below.
 
@@ -116,9 +117,10 @@ docker run -d --name belay-dev-db -e POSTGRES_PASSWORD=dev -e POSTGRES_DB=belay 
 cp .env.example .env
 ```
 
-The database takes port 5432: stop a local Postgres first, or change the left
-side of `-p` (and the port in `DATABASE_URL`). Remove it with
-`docker rm -fv belay-dev-db`; `-v` also drops its anonymous volume.
+The database takes port 5432: stop a local Postgres first, or change the host
+port, the middle field of `-p 127.0.0.1:5432:5432` (and the port in
+`DATABASE_URL`). Remove it with `docker rm -fv belay-dev-db`; `-v` also drops its
+anonymous volume.
 
 In development the server reads the **repository-root** `.env`, not
 `docker/.env`. Edit it first:

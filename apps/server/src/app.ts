@@ -48,6 +48,9 @@ export function createApp({ cfg, db, getOidc }: { cfg: Config; db: Db; getOidc: 
   app.all("/auth/*", (c) => c.text("Not found", 404));
   app.all("/api/*", (c) => c.json({ error: "not_found" }, 404));
 
+  // ponytail: no conditional requests (ETag/304), so every revalidation re-sends the whole file.
+  // Upgrade: an ETag layer in front of serveStatic.
+
   // Hashed build output: a missing file is a plain 404, never the app shell cached as immutable.
   app.get(
     "/assets/*",
@@ -58,6 +61,8 @@ export function createApp({ cfg, db, getOidc }: { cfg: Config; db: Db; getOidc: 
     serveStatic({ root: cfg.webDist }),
     (c) => c.text("Not found", 404),
   );
+  // ponytail: the SPA fallback answers every missing non-asset path with the shell (200, HTML).
+  // Upgrade: fall back only for extension-less paths, or when Accept includes text/html.
   app.get(
     "*",
     async (c, next) => {
