@@ -54,6 +54,21 @@ const printed = (spy: { mock: { calls: unknown[][] } }) =>
     .map((a) => (typeof a === "string" ? a : inspect(a, { depth: null })))
     .join("\n");
 
+const setCookies = (res: Response) => res.headers.getSetCookie();
+const startsWithSession = (c: string) => c.startsWith(`${SESSION_COOKIE}=`);
+
+// A failed sign-in never answers an error page: it sends the browser back to the app, which
+// shows a localized message (an installed iOS PWA has no browser chrome to recover from a dead end).
+function expectSigninRedirect(res: Response, reason: string) {
+  expect(res.status).toBe(302);
+  expect(res.headers.get("location")).toBe(`/?signin=${reason}`);
+  expect(setCookies(res).some(startsWithSession)).toBe(false);
+}
+const expectTxCookieCleared = (res: Response, name = "belay_oidc") =>
+  expect(setCookies(res)).toContainEqual(
+    expect.stringMatching(new RegExp(`^${name}=;.*Max-Age=0`)),
+  );
+
 async function idpRedirect(authUrl: URL, claims: Record<string, string>) {
   nextClaims = { ...claims, nonce: authUrl.searchParams.get("nonce") };
   const res = await fetch(authUrl, { redirect: "manual" });
@@ -105,8 +120,8 @@ describe("OIDC login", () => {
     const { authUrl } = await startLogin("/");
     const cb = await idpRedirect(authUrl, { sub: "no-cookie" });
     const res = await app.request(cb.pathname + cb.search);
-    expect(res.status).toBe(400);
-    expect(res.headers.getSetCookie().some((c) => c.startsWith(`${SESSION_COOKIE}=`))).toBe(false);
+    expectSigninRedirect(res, "expired");
+    expectTxCookieCleared(res);
   });
 
   it("refuses a callback whose state was tampered with", async () => {
@@ -114,7 +129,8 @@ describe("OIDC login", () => {
     const cb = await idpRedirect(authUrl, { sub: "tampered" });
     cb.searchParams.set("state", "forged");
     const res = await app.request(cb.pathname + cb.search, { headers: { cookie: txCookie } });
-    expect(res.status).toBe(400);
+    expectSigninRedirect(res, "failed");
+    expectTxCookieCleared(res);
   });
 
   it("refuses a transaction cookie that is not signed by the server", async () => {
@@ -127,14 +143,54 @@ describe("OIDC login", () => {
     const badSignature = `${name}=${encodeURIComponent(`${payload}.${"A".repeat(43)}=`)}`;
     for (const cookie of [unsigned, badSignature]) {
       const res = await app.request(cb.pathname + cb.search, { headers: { cookie } });
-      expect(res.status).toBe(400);
-      expect(res.headers.getSetCookie().some((c) => c.startsWith(`${SESSION_COOKIE}=`))).toBe(
-        false,
-      );
-      expect(res.headers.getSetCookie()).toContainEqual(
-        expect.stringMatching(/^belay_oidc=;.*Max-Age=0/),
-      );
+      expectSigninRedirect(res, "expired");
+      expectTxCookieCleared(res);
     }
+  });
+
+  it("treats a validly signed but unparsable transaction as expired", async () => {
+    const { authUrl } = await startLogin("/");
+    const cb = await idpRedirect(authUrl, { sub: "garbage-tx" });
+    for (const payload of ["not json", "{}", JSON.stringify({ verifier: 1 })]) {
+      const signed = await serializeSigned("belay_oidc", payload, "x".repeat(32));
+      const res = await app.request(cb.pathname + cb.search, {
+        headers: { cookie: cookiePair(signed) },
+      });
+      expectSigninRedirect(res, "expired");
+      expectTxCookieCleared(res);
+    }
+  });
+
+  it("sends an identity provider error (access_denied) back to the app as failed", async () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { authUrl, txCookie } = await startLogin("/");
+    const state = authUrl.searchParams.get("state")!;
+    const res = await app.request(`/auth/callback?error=access_denied&state=${state}`, {
+      headers: { cookie: txCookie },
+    });
+    expectSigninRedirect(res, "failed");
+    expectTxCookieCleared(res);
+    expect(printed(spy)).not.toContain(state);
+  });
+
+  it("sends a failed database write back to the app as failed, without a session", async () => {
+    const cfg = loadConfig(testEnv({ OIDC_ISSUER: idp.issuer.url! }));
+    const brokenDb = new Proxy(
+      {},
+      {
+        get() {
+          throw new Error("db down");
+        },
+      },
+    ) as Db;
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const broken = new Hono().route("/auth", authRoutes(cfg, brokenDb, oidcProvider(cfg.oidc)));
+    const { authUrl, txCookie } = await startLogin("/", broken);
+    const cb = await idpRedirect(authUrl, { sub: "db-down" });
+    const res = await broken.request(cb.pathname + cb.search, { headers: { cookie: txCookie } });
+    expectSigninRedirect(res, "failed");
+    expectTxCookieCleared(res);
+    expect(printed(spy)).toContain("db down");
   });
 
   it("logs a failed callback without the error object, its cause chain or any claim", async () => {
@@ -146,7 +202,7 @@ describe("OIDC login", () => {
     const idpRes = await fetch(authUrl, { redirect: "manual" });
     const cb = new URL(idpRes.headers.get("location")!);
     const res = await app.request(cb.pathname + cb.search, { headers: { cookie: txCookie } });
-    expect(res.status).toBe(400);
+    expectSigninRedirect(res, "failed");
 
     expect(spy).toHaveBeenCalled();
     for (const arg of spy.mock.calls.flat()) expect(typeof arg).toBe("string");
@@ -201,7 +257,7 @@ describe("OIDC login", () => {
 });
 
 describe("logout when the database fails", () => {
-  it("still clears the session cookie", async () => {
+  it("still clears the session cookie and returns the redirect", async () => {
     const cfg = loadConfig(testEnv({ OIDC_ISSUER: idp.issuer.url! }));
     const brokenDb = new Proxy(
       {},
@@ -211,15 +267,36 @@ describe("logout when the database fails", () => {
         },
       },
     ) as Db;
-    vi.spyOn(console, "error").mockImplementation(() => {});
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
     const broken = new Hono().route("/auth", authRoutes(cfg, brokenDb, oidcProvider(cfg.oidc)));
     const res = await broken.request("/auth/logout", {
       method: "POST",
       headers: { cookie: `${SESSION_COOKIE}=some-session-token` },
     });
-    expect(res.headers.getSetCookie()).toContainEqual(
-      expect.stringMatching(new RegExp(`^${SESSION_COOKIE}=;.*Max-Age=0`)),
-    );
+    expect(res.status).toBe(200);
+    const { redirectTo } = (await res.json()) as { redirectTo: string };
+    expect(redirectTo.startsWith(idp.issuer.url!)).toBe(true);
+    expectTxCookieCleared(res, SESSION_COOKIE);
+    // Logged as text (name and message), like every other auth failure.
+    expect(printed(spy)).toContain("db down");
+    for (const arg of spy.mock.calls.flat()) expect(typeof arg).toBe("string");
+  });
+
+  it("answers JSON, not a redirect, when logout fails for any other reason", async () => {
+    let armed = false;
+    const cfg = {
+      ...loadConfig(testEnv({ OIDC_ISSUER: idp.issuer.url! })),
+      get secureCookies(): boolean {
+        if (armed) throw new Error("boom");
+        return false;
+      },
+    } as Config;
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const app = new Hono().route("/auth", authRoutes(cfg, db, oidcProvider(cfg.oidc)));
+    armed = true;
+    const res = await app.request("/auth/logout", { method: "POST" });
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ error: "server_error" });
   });
 });
 
@@ -266,18 +343,19 @@ describe("over https", () => {
     const cb = await idpRedirect(authUrl, { sub: "https-plain" });
     const plain = txCookie.replace(/^__Host-/, "");
     const res = await secure.request(cb.pathname + cb.search, { headers: { cookie: plain } });
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/?signin=expired");
   });
 });
 
 describe("identity provider down", () => {
-  it("answers 503 with a readable message", async () => {
+  it("sends the browser back to the app, which explains it", async () => {
     const cfg = loadConfig(testEnv({ OIDC_ISSUER: "http://localhost:1" }));
     const down = new Hono().route("/auth", authRoutes(cfg, db, oidcProvider(cfg.oidc)));
     const spy = vi.spyOn(console, "error").mockImplementation(() => {});
     const res = await down.request("/auth/login");
-    expect(res.status).toBe(503);
-    expect(await res.text()).toMatch(/identity provider/i);
+    expectSigninRedirect(res, "unavailable");
+    expect(setCookies(res)).toEqual([]); // no transaction was started
     // Logged as text (name and message), not as an error object with its cause chain.
     expect(spy).toHaveBeenCalled();
     for (const arg of spy.mock.calls.flat()) expect(typeof arg).toBe("string");

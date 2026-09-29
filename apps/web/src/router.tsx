@@ -9,7 +9,14 @@ import { Layout } from "./routes/layout";
 
 // ponytail: code-based routes; switch to file-based routing once there are more than ~10 screens.
 const rootRoute = createRootRoute({ component: Layout });
-const homeRoute = createRoute({ getParentRoute: () => rootRoute, path: "/", component: Home });
+const homeRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/",
+  component: Home,
+  // Only the shape: Home decides which reasons it knows and ignores the rest.
+  validateSearch: (search: Record<string, unknown>): { signin?: string } =>
+    typeof search.signin === "string" ? { signin: search.signin } : {},
+});
 const settingsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/settings",

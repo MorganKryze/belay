@@ -1,4 +1,4 @@
-import { Hono } from "hono";
+import { Hono, type Context } from "hono";
 import { deleteCookie, getSignedCookie, setSignedCookie } from "hono/cookie";
 import * as client from "openid-client";
 import { z } from "zod";
@@ -32,6 +32,21 @@ function describeError(err: unknown): string {
   return `${err.name}: ${err.message}${suffix}`;
 }
 
+// Signed, so it is ours, but an older version of the app may have written another shape.
+function parseTransaction(raw: string) {
+  try {
+    return txSchema.parse(JSON.parse(raw));
+  } catch {
+    return undefined;
+  }
+}
+
+// A failed sign-in never answers an error page: it goes back to the app, which shows a localized
+// message and the Sign in link. An installed iOS PWA has no browser chrome to recover from a
+// dead end. Keep the reasons in step with `signin.*` in the web i18n files.
+type SigninFailure = "unavailable" | "expired" | "failed";
+const signinFailure = (c: Context, reason: SigninFailure) => c.redirect(`/?signin=${reason}`);
+
 export function authRoutes(cfg: Config, db: Db, getOidc: OidcProvider) {
   const auth = new Hono();
   const redirectUri = new URL("/auth/callback", cfg.publicUrl).href;
@@ -47,7 +62,9 @@ export function authRoutes(cfg: Config, db: Db, getOidc: OidcProvider) {
 
   auth.onError((err, c) => {
     console.error("auth error:", describeError(err));
-    return c.text("Sign-in failed. Please try again.", 400);
+    // Logout is a fetch() that expects JSON; everything else here is a browser navigation.
+    if (c.req.path === "/auth/logout") return c.json({ error: "server_error" }, 500);
+    return signinFailure(c, "failed");
   });
 
   auth.get("/login", async (c) => {
@@ -56,7 +73,7 @@ export function authRoutes(cfg: Config, db: Db, getOidc: OidcProvider) {
       oidc = await getOidc();
     } catch (err) {
       console.error("OIDC discovery failed:", describeError(err));
-      return c.text("The identity provider is unreachable. Please try again in a moment.", 503);
+      return signinFailure(c, "unavailable");
     }
     const verifier = client.randomPKCECodeVerifier();
     const state = client.randomState();
@@ -83,8 +100,10 @@ export function authRoutes(cfg: Config, db: Db, getOidc: OidcProvider) {
   auth.get("/callback", async (c) => {
     const raw = await getSignedCookie(c, cfg.sessionSecret, TX_COOKIE, txCookieOpts.prefix);
     deleteCookie(c, TX_COOKIE, txCookieOpts);
-    if (!raw) return c.text("Your sign-in expired. Please start again.", 400);
-    const tx = txSchema.parse(JSON.parse(raw));
+    const tx = raw ? parseTransaction(raw) : undefined;
+    if (!tx) return signinFailure(c, "expired");
+    // The provider refused (access_denied, ...): nothing to exchange, and no need to reach it.
+    if (c.req.query("error")) return signinFailure(c, "failed");
 
     // Rebuilt from PUBLIC_URL: behind a reverse proxy the request URL may carry an internal host.
     const incoming = new URL(c.req.url);
@@ -95,7 +114,7 @@ export function authRoutes(cfg: Config, db: Db, getOidc: OidcProvider) {
       expectedNonce: tx.nonce,
     });
     const claims = tokens.claims();
-    if (!claims) return c.text("Sign-in failed: no identity returned.", 400);
+    if (!claims) throw new Error("the token response carries no ID token claims");
 
     const userId = await upsertUser(db, {
       issuer: claims.iss,
@@ -113,7 +132,15 @@ export function authRoutes(cfg: Config, db: Db, getOidc: OidcProvider) {
     const token = readSessionCookie(c, cfg);
     // Cleared first: if the database fails, the browser is still logged out.
     clearSessionCookie(c, cfg);
-    if (token) await deleteSession(db, hashToken(token));
+    if (token) {
+      try {
+        await deleteSession(db, hashToken(token));
+      } catch (err) {
+        // The cookie is already gone: the browser is logged out, and the server-side row
+        // lapses with the session lifetime.
+        console.error("logout: session not deleted:", describeError(err));
+      }
+    }
     let redirectTo = cfg.publicUrl.href;
     try {
       const oidc = await getOidc();

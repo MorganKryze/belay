@@ -7,6 +7,11 @@
     "serverDown": "Le serveur est injoignable pour le moment.",
     "signOutFailed": "Déconnexion impossible pour le moment. Vérifie ta connexion et réessaie."
   },
+  "signin": {
+    "unavailable": "La connexion est indisponible pour le moment. Réessaie dans un instant.",
+    "expired": "La connexion a pris trop de temps. Réessaie.",
+    "failed": "La connexion n'a pas abouti. Réessaie."
+  },
   "offline": "Tu es hors ligne. Tout ce que tu saisis reste sur cet appareil.",
   "nav": { "home": "Accueil", "settings": "Réglages" },
   "settings": {

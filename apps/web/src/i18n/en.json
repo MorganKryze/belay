@@ -7,6 +7,11 @@
     "serverDown": "Can't reach the server right now.",
     "signOutFailed": "Couldn't sign you out. Check your connection and try again."
   },
+  "signin": {
+    "unavailable": "Sign-in is unavailable right now. Try again in a moment.",
+    "expired": "Your sign-in took too long. Please try again.",
+    "failed": "Sign-in didn't work. Please try again."
+  },
   "offline": "You're offline. Everything you log is kept on this device.",
   "nav": { "home": "Home", "settings": "Settings" },
   "settings": {

@@ -35,5 +35,7 @@ curl -fsS http://localhost:3000/settings | grep -q '<title>Belay</title>'
 curl -fsSI http://localhost:3000/ | grep -qi '^content-security-policy:'
 curl -fsS http://localhost:3000/manifest.webmanifest | grep -q '"name":"Belay"'
 test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/api/me)" = 401
-test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/auth/login)" = 503
+# No identity provider: sign-in sends the browser back to the app, never to an error page.
+test "$(curl -s -o /dev/null -w '%{http_code} %{redirect_url}' http://localhost:3000/auth/login)" = \
+  "302 http://localhost:3000/?signin=unavailable"
 echo "smoke: ok"
