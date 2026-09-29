@@ -1,0 +1,30 @@
+{
+  "name": "@belay/server",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch --env-file=../../.env src/main.ts",
+    "build": "esbuild src/main.ts --bundle --platform=node --target=node24 --format=esm --outfile=dist/main.js --banner:js=\"import{createRequire}from'node:module';const require=createRequire(import.meta.url);\"",
+    "typecheck": "tsc -p .",
+    "test": "vitest run",
+    "db:generate": "drizzle-kit generate"
+  },
+  "dependencies": {
+    "@belay/shared": "workspace:*",
+    "@hono/node-server": "^2.1.1",
+    "drizzle-orm": "^0.45.3",
+    "hono": "^4.13.10",
+    "openid-client": "^6.8.8",
+    "postgres": "^3.4.9",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@testcontainers/postgresql": "^12.1.0",
+    "@types/node": "^26.6.3",
+    "drizzle-kit": "^0.31.11",
+    "esbuild": "^0.28.2",
+    "oauth2-mock-server": "^9.2.0",
+    "tsx": "^4.23.15",
+    "vitest": "^5.0.2"
+  }
+}
