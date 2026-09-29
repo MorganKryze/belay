@@ -16,6 +16,9 @@ export function Layout() {
         <Link to="/" className="min-h-11 content-center">
           {t("nav.home")}
         </Link>
+        <Link to="/settings" className="min-h-11 content-center">
+          {t("nav.settings")}
+        </Link>
       </nav>
       <main>
         <Outlet />

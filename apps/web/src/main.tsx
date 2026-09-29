@@ -4,7 +4,12 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./i18n";
 import "./index.css";
+import { applyTheme, readTheme } from "./lib/theme";
 import { router } from "./router";
+
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () =>
+  applyTheme(readTheme()),
+);
 
 const queryClient = new QueryClient();
 
