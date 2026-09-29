@@ -1,0 +1,30 @@
+services:
+  db:
+    image: mirror.gcr.io/library/postgres:18-alpine@sha256:77f585114c32fbca283dc835b0596f4e52b51b4c6662d7810b2f4084f60a1873
+    environment:
+      POSTGRES_USER: belay
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: belay
+    volumes:
+      # Put this volume on an encrypted disk: it holds health data (see README, threat model).
+      - db:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U belay -d belay"]
+      interval: 5s
+      retries: 10
+    restart: unless-stopped
+
+  app:
+    image: ${BELAY_IMAGE:-ghcr.io/morgankryze/belay:latest}
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file: ${BELAY_ENV_FILE:-../.env}
+    environment:
+      DATABASE_URL: postgres://belay:${POSTGRES_PASSWORD}@db:5432/belay
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+
+volumes:
+  db:
