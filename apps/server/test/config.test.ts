@@ -35,8 +35,6 @@ describe("loadConfig", () => {
       /PUBLIC_URL/,
     );
     expect(() => loadConfig(testEnv({ PUBLIC_URL: "ftp://x" }))).toThrow(/PUBLIC_URL/);
-    expect(() => loadConfig(testEnv({ OIDC_ISSUER: "file:///etc/passwd" }))).toThrow(
-      /OIDC_ISSUER/,
-    );
+    expect(() => loadConfig(testEnv({ OIDC_ISSUER: "file:///etc/passwd" }))).toThrow(/OIDC_ISSUER/);
   });
 });
