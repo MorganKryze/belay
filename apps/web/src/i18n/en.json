@@ -1,0 +1,17 @@
+{
+  "app": { "name": "Belay" },
+  "home": {
+    "signIn": "Sign in",
+    "signOut": "Sign out",
+    "greeting": "Hello, {{name}}",
+    "serverDown": "Can't reach the server right now."
+  },
+  "offline": "You're offline. Everything you log is kept on this device.",
+  "nav": { "home": "Home", "settings": "Settings" },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "theme": "Theme",
+    "themes": { "light": "Light", "dark": "Dark", "system": "System" }
+  }
+}

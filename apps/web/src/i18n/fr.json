@@ -1,0 +1,17 @@
+{
+  "app": { "name": "Belay" },
+  "home": {
+    "signIn": "Se connecter",
+    "signOut": "Se déconnecter",
+    "greeting": "Bonjour, {{name}}",
+    "serverDown": "Le serveur est injoignable pour le moment."
+  },
+  "offline": "Tu es hors ligne. Tout ce que tu saisis reste sur cet appareil.",
+  "nav": { "home": "Accueil", "settings": "Réglages" },
+  "settings": {
+    "title": "Réglages",
+    "language": "Langue",
+    "theme": "Thème",
+    "themes": { "light": "Clair", "dark": "Sombre", "system": "Système" }
+  }
+}
