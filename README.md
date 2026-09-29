@@ -52,16 +52,19 @@ terminates TLS on the same host. Belay has no accounts of its own.
    Both secrets are empty in the example on purpose: Compose and the app
    refuse to start until you set them.
 
-3. Start it:
+3. Choose the image, then start it:
+   - **Release image** (the default): `ghcr.io/morgankryze/belay:latest` follows
+     the newest stable version tag; pre-releases (tags with a `-`) never move
+     it. To pin a version, set `BELAY_IMAGE=ghcr.io/morgankryze/belay:1.2.3`
+     (or the version you want) in `docker/.env`.
+   - **From source**: run `docker build -f docker/Dockerfile -t belay:dev .`,
+     then set `BELAY_IMAGE=belay:dev` in `docker/.env` (or in your shell).
+
+   Then start it:
 
    ```bash
    docker compose -f docker/compose.yaml up -d
    ```
-
-   Release images are published to `ghcr.io/morgankryze/belay` when a version is
-   tagged (none yet). To run the current source instead, build it with
-   `docker build -f docker/Dockerfile -t belay:dev .` and add
-   `BELAY_IMAGE=belay:dev` to `docker/.env`.
 
 4. Point your reverse proxy at `127.0.0.1:3000`. Compose publishes Belay on
    loopback only (`BELAY_PORT` in `.env` changes the port), and that is
@@ -74,9 +77,9 @@ terminates TLS on the same host. Belay has no accounts of its own.
   unreachable. Migrations run at startup.
 - The app boots and serves the PWA even when your identity provider is down;
   sign-in answers 503 until it is back.
-- To update, run `docker compose -f docker/compose.yaml pull`, then `up -d`
-  again. An installed app picks up the new version once it is fully closed and
-  reopened.
+- To update a release image, run `docker compose -f docker/compose.yaml pull`,
+  then `up -d` again. From source, rebuild the image, then `up -d`. An installed
+  app picks up the new version once it is fully closed and reopened.
 - Your data lives in the `belay_db` volume of the `belay` Compose project.
   `down -v` deletes it. See the threat model below.
 
@@ -112,6 +115,10 @@ docker run -d --name belay-dev-db -e POSTGRES_PASSWORD=dev -e POSTGRES_DB=belay 
   -p 127.0.0.1:5432:5432 postgres:18-alpine
 cp .env.example .env
 ```
+
+The database takes port 5432: stop a local Postgres first, or change the left
+side of `-p` (and the port in `DATABASE_URL`). Remove it with
+`docker rm -fv belay-dev-db`; `-v` also drops its anonymous volume.
 
 In development the server reads the **repository-root** `.env`, not
 `docker/.env`. Edit it first:
