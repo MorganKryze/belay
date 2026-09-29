@@ -13,10 +13,10 @@ export function Layout() {
         </p>
       )}
       <nav className="flex gap-4 text-sm">
-        <Link to="/" className="min-h-11 content-center">
+        <Link to="/" className="min-h-11 min-w-11 content-center text-center">
           {t("nav.home")}
         </Link>
-        <Link to="/settings" className="min-h-11 content-center">
+        <Link to="/settings" className="min-h-11 min-w-11 content-center text-center">
           {t("nav.settings")}
         </Link>
       </nav>

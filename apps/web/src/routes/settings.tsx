@@ -24,12 +24,12 @@ export function Settings() {
       <div className="flex flex-col gap-2">
         <Label htmlFor="language">{t("settings.language")}</Label>
         <Select value={i18n.language} onValueChange={(v) => setLocale(v as Locale)}>
-          <SelectTrigger id="language" className="min-h-11">
+          <SelectTrigger id="language">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             {LOCALES.map((l) => (
-              <SelectItem key={l} value={l} lang={l} className="min-h-11">
+              <SelectItem key={l} value={l} lang={l}>
                 {LANGUAGE_NAMES[l]}
               </SelectItem>
             ))}
@@ -46,12 +46,12 @@ export function Settings() {
             setThemeState(v as Theme);
           }}
         >
-          <SelectTrigger id="theme" className="min-h-11">
+          <SelectTrigger id="theme">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             {(["light", "dark", "system"] as const).map((th) => (
-              <SelectItem key={th} value={th} className="min-h-11">
+              <SelectItem key={th} value={th}>
                 {t(`settings.themes.${th}`)}
               </SelectItem>
             ))}
