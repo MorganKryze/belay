@@ -1,0 +1,23 @@
+{
+  "app": { "name": "Belay" },
+  "home": {
+    "signIn": "Sign in",
+    "signOut": "Sign out",
+    "greeting": "Hello, {{name}}",
+    "serverDown": "Can't reach the server right now.",
+    "signOutFailed": "Couldn't sign you out. Check your connection and try again."
+  },
+  "signin": {
+    "unavailable": "Sign-in is unavailable right now. Try again in a moment.",
+    "expired": "Your sign-in took too long. Please try again.",
+    "failed": "Sign-in didn't work. Please try again."
+  },
+  "offline": "You're offline.",
+  "nav": { "home": "Home", "settings": "Settings" },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "theme": "Theme",
+    "themes": { "light": "Light", "dark": "Dark", "system": "System" }
+  }
+}

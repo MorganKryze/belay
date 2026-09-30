@@ -1,0 +1,19 @@
+# Allowlist: nothing enters the build context unless it is listed here, so
+# untracked local files (working docs, .git, .env, editor and tool folders)
+# never reach the image, whatever they are called.
+*
+!package.json
+!pnpm-lock.yaml
+!pnpm-workspace.yaml
+!tsconfig.base.json
+!apps
+!packages
+
+# Build output and local artefacts inside the allowed folders.
+**/node_modules
+**/dist
+**/dev-dist
+**/coverage
+**/playwright-report
+**/test-results
+**/.env*
