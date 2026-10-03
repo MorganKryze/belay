@@ -49,4 +49,32 @@ describe("ScienceSheet", () => {
     expect(screen.getByText("Comment c'est calculé")).toBeTruthy();
     expect(screen.getByText("C'est une estimation, pas un test.")).toBeTruthy();
   });
+
+  it("links a source without a DOI to the record that was read", () => {
+    render(<ScienceSheet toolId="energy" />);
+    const links = screen.getAllByRole("link", { name: "Record read" });
+    expect(links.map((l) => l.getAttribute("href"))).toContain(
+      "https://www.fao.org/4/y5686e/y5686e00.htm",
+    );
+    expect(links.every((l) => l.getAttribute("rel") === "noopener noreferrer")).toBe(true);
+  });
+
+  it("discloses a third-party copy, once, on the DoDI only", () => {
+    render(<ScienceSheet toolId="body-fat" />);
+    expect(screen.getAllByText("Read on a third-party copy, not the official host.")).toHaveLength(
+      1,
+    );
+  });
+
+  it("shows no record link on a DOI-only tool", () => {
+    render(<ScienceSheet toolId="one-rep-max" />);
+    expect(screen.queryByRole("link", { name: "Record read" })).toBeNull();
+    expect(screen.queryByText("Read on a third-party copy, not the official host.")).toBeNull();
+  });
+
+  it("speaks French for a regional locale", async () => {
+    await i18n.changeLanguage("fr-FR");
+    render(<ScienceSheet toolId="one-rep-max" />);
+    expect(screen.getByText("C'est une estimation, pas un test.")).toBeTruthy();
+  });
 });

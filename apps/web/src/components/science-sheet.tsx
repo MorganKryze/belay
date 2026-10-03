@@ -44,7 +44,7 @@ function Drawer({
 export function ScienceSheet({ toolId, children }: { toolId: ToolId; children?: ReactNode }) {
   const { t, i18n } = useTranslation();
   const science = TOOL_SCIENCE[toolId];
-  const c = i18n.language === "fr" ? science.content.fr : science.content.en;
+  const c = i18n.language.startsWith("fr") ? science.content.fr : science.content.en;
   const labels =
     science.label === "mixed" ? (["source", "heuristic"] as const) : ([science.label] as const);
   return (
@@ -121,10 +121,23 @@ export function ScienceSheet({ toolId, children }: { toolId: ToolId; children?: 
                           </span>
                         );
                       })}
+                      {!hasDoi(s) && (
+                        <a
+                          href={s.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex min-h-11 items-center font-medium text-primary underline underline-offset-2"
+                        >
+                          {t("science.record")}
+                        </a>
+                      )}
                       <span className={pill}>
                         {t(hasDoi(s) ? "science.doi" : "science.stable")}
                       </span>
                     </span>
+                    {s.readOnThirdPartyCopy && (
+                      <span className="text-muted-foreground">{t("science.thirdParty")}</span>
+                    )}
                   </li>
                 );
               })}

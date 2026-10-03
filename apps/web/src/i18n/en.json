@@ -65,7 +65,9 @@
     "sourceCount_other": "{{count}} references",
     "limits": "The limits in detail",
     "doi": "DOI verified",
-    "stable": "stable identifier · no DOI"
+    "stable": "stable identifier · no DOI",
+    "record": "Record read",
+    "thirdParty": "Read on a third-party copy, not the official host."
   },
   "tools": {
     "title": "Tools",

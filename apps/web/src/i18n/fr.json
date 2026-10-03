@@ -65,7 +65,9 @@
     "sourceCount_other": "{{count}} références",
     "limits": "Les limites en détail",
     "doi": "DOI vérifié",
-    "stable": "identifiant stable · pas de DOI"
+    "stable": "identifiant stable · pas de DOI",
+    "record": "Fiche consultée",
+    "thirdParty": "Consultée sur une copie tierce, pas sur le site officiel."
   },
   "tools": {
     "title": "Outils",

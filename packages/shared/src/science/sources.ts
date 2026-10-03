@@ -13,6 +13,8 @@ export type Source = {
   identifier: readonly Identifier[];
   url: string;
   verifiedOn: string;
+  // True when the record that was read is a third-party copy, not the official host.
+  readOnThirdPartyCopy?: boolean;
 };
 
 const VERIFIED_ON = "2026-09-30";
@@ -354,6 +356,7 @@ export const SOURCES = [
     // The copy that was read: the official host blocked the verification tools.
     url: "https://det027inspectorgeneral.weebly.com/uploads/1/7/0/2/17029076/dodi1308.3_fitnessprogram_2002.pdf",
     verifiedOn: VERIFIED_ON,
+    readOnThirdPartyCopy: true,
   },
   {
     id: "iwf-tcrr-2020",

@@ -55,8 +55,9 @@ function referenceLine(source: Source, authors: string): string {
   const status = hasDoi(source) ? "DOI verified" : "stable identifier, no DOI";
   // Without a DOI the record that was read is the only link; DoDI is a third-party copy.
   const link = hasDoi(source) ? "" : ` [Record read](${source.url}).`;
-  const copy =
-    source.id === "dodi-1308-3" ? " Read on a third-party copy, not the official host." : "";
+  const copy = source.readOnThirdPartyCopy
+    ? " Read on a third-party copy, not the official host."
+    : "";
   return `- ${authors} ${source.year}. ${sentence(source.title)} _${source.venue}._ ${ids}${link} (${status} on ${source.verifiedOn}.${copy})`;
 }
 
