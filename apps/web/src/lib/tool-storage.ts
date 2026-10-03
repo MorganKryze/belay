@@ -111,13 +111,18 @@ export function deriveBodyFatPct(state: ToolState): number | undefined {
 
 // Precedence: a write that changes the formula, the height or the body-fat girths re-derives
 // `bodyFatPct` once every girth is entered (clearing it when the estimate is invalid). Any other
-// write, such as a value typed in the protein tool, or girths still incomplete, leaves it alone.
+// write, such as a value typed in the protein tool, leaves it alone. When the girths become
+// incomplete (say the formula switches to female without hips), a value that was derived is
+// cleared, while one typed by hand (not equal to a derivation) stays.
 function withBodyFat(prev: ToolState, next: ToolState): ToolState {
   const changed =
     prev.formula !== next.formula ||
     prev.heightCm !== next.heightCm ||
     prev.lastInputs["body-fat"] !== next.lastInputs["body-fat"];
-  if (!changed || bodyFatGirths(next) === null) return next;
+  if (!changed) return next;
+  if (bodyFatGirths(next) === null) {
+    return prev.bodyFatPct === deriveBodyFatPct(prev) ? { ...next, bodyFatPct: undefined } : next;
+  }
   return { ...next, bodyFatPct: deriveBodyFatPct(next) };
 }
 

@@ -13,7 +13,7 @@ import { Layout } from "./routes/layout";
 
 // ponytail: code-based routes, 12 screens today (the tools share one lazy `$toolId` route).
 // Switch to file-based routing at ~20 screens, or when this file passes ~150 lines of route
-// declarations (it is 72 lines now).
+// declarations.
 const rootRoute = createRootRoute({ component: Layout });
 const homeRoute = createRoute({
   getParentRoute: () => rootRoute,

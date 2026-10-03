@@ -231,6 +231,42 @@ describe("guards", () => {
     renderRoute("/tools/energy");
     await result("Today's expenditure");
     type("Height", "175");
+    const stored = () => JSON.parse(localStorage.getItem(TOOL_STATE_KEY)!).bodyFatPct;
+    expect(stored()).toBe(21);
+    cleanup();
+    // ...until every girth is entered: then the estimate takes over.
+    renderRoute("/tools/body-fat");
+    await result("Your estimated body fat");
+    type("Neck", "35");
+    type("Waist at the narrowest", "76");
+    expect(stored()).toBe(21);
+    type("Hips", "101");
+    expect(stored()).not.toBe(21);
+    expect(stored()).toBeGreaterThan(0);
+  });
+
+  it("clears a derived body fat when a formula switch leaves the girths incomplete", async () => {
+    save({
+      formula: "male",
+      heightCm: 177.8,
+      bodyFatPct: 17,
+      lastInputs: { "body-fat": { ageYears: 30, neckCm: 39.5, waistCm: 86.5 } },
+    });
+    renderRoute("/tools/body-fat");
+    await result("Your estimated body fat");
+    fireEvent.click(screen.getByRole("radio", { name: "Female" }));
+    expect(JSON.parse(localStorage.getItem(TOOL_STATE_KEY)!).bodyFatPct).toBeUndefined();
+  });
+
+  it("keeps a hand-typed body fat when a body-fat edit leaves the girths incomplete", async () => {
+    save({
+      heightCm: 170,
+      bodyFatPct: 21,
+      lastInputs: { "body-fat": { neckCm: 33, waistCm: 76 } },
+    });
+    renderRoute("/tools/body-fat");
+    await result("Your estimated body fat");
+    type("Age", "40");
     expect(JSON.parse(localStorage.getItem(TOOL_STATE_KEY)!).bodyFatPct).toBe(21);
   });
 
