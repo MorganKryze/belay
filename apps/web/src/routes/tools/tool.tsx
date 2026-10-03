@@ -11,6 +11,8 @@ const PAGES: Partial<Record<ToolId, ComponentType>> = {
   projection: lazy(() => import("./projection").then((m) => ({ default: m.ProjectionTool }))),
   "one-rep-max": lazy(() => import("./one-rep-max").then((m) => ({ default: m.OneRepMaxTool }))),
   plates: lazy(() => import("./plates").then((m) => ({ default: m.PlatesTool }))),
+  bmi: lazy(() => import("./bmi").then((m) => ({ default: m.BmiTool }))),
+  "body-fat": lazy(() => import("./body-fat").then((m) => ({ default: m.BodyFatTool }))),
   warmup: lazy(() => import("./warmup").then((m) => ({ default: m.WarmupTool }))),
 };
 
