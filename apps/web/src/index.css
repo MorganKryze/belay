@@ -24,19 +24,6 @@
 @theme inline {
   --font-heading: var(--font-sans);
   --font-sans: "Inter Variable", sans-serif;
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -55,6 +42,20 @@
   --color-card: var(--card);
   --color-foreground: var(--foreground);
   --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-track: var(--track);
+  --color-primary-soft: var(--primary-soft);
+  --color-primary-ink: var(--primary-ink);
+  --color-reference: var(--reference);
+  --color-reference-ink: var(--reference-ink);
+  --color-plate-red: var(--plate-red);
+  --color-plate-blue: var(--plate-blue);
+  --color-plate-yellow: var(--plate-yellow);
+  --color-plate-green: var(--plate-green);
+  --color-plate-white: var(--plate-white);
+  --color-plate-grey: var(--plate-grey);
+  --color-plate-ink-light: var(--plate-ink-light);
+  --color-plate-ink-dark: var(--plate-ink-dark);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -62,85 +63,92 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+  --radius-chip: 10px;
+  --radius-field: 14px;
+  --radius-card: 18px;
 }
 
+/*
+ * "Chalk & rope" tokens. Components use these names only, never a raw colour. Every text pair is
+ * at least 4.5:1 and every non-text pair at least 3:1 (src/lib/contrast.test.ts reads this file).
+ * No red on body data: orange is for actions and "you", soft green only marks a reference range.
+ */
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
+  color-scheme: light;
+  --background: #fafaf7;
+  --surface: #ffffff;
+  --foreground: #1c1917;
+  --muted-foreground: #57534e;
+  --border: #e7e5e4;
+  --input: #78716c;
+  --track: #edebe8;
+  --primary: #c2410c;
+  --primary-foreground: #ffffff;
+  --primary-soft: #fff4ea;
+  --primary-ink: #9a3412;
+  --reference: #dcebdd;
+  --reference-ink: #24503a;
+  --ring: #c2410c;
+  --card: var(--surface);
+  --card-foreground: var(--foreground);
+  --popover: var(--surface);
+  --popover-foreground: var(--foreground);
+  --muted: var(--track);
+  --secondary: var(--track);
+  --secondary-foreground: var(--foreground);
+  --accent: var(--track);
+  --accent-foreground: var(--foreground);
+  --destructive: var(--primary-ink);
   --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  /* IWF competition colours (rule 3.3.3.6), the same in both themes; grey for any other value. */
+  --plate-red: #b91c1c;
+  --plate-blue: #1d4ed8;
+  --plate-yellow: #eab308;
+  --plate-green: #15803d;
+  --plate-white: #f5f5f4;
+  --plate-grey: #a8a29e;
+  --plate-ink-light: #ffffff;
+  --plate-ink-dark: #1c1917;
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  color-scheme: dark;
+  --background: #151412;
+  --surface: #1d1b19;
+  --foreground: #f5f5f4;
+  --muted-foreground: #a8a29e;
+  --border: #2e2b28;
+  --input: #78716c;
+  --track: #2a2724;
+  --primary: #fb923c;
+  --primary-foreground: #151412;
+  --primary-soft: #2a1e16;
+  --primary-ink: #fdba74;
+  --reference: #1e2e23;
+  --reference-ink: #a7d3b2;
+  --ring: #fb923c;
 }
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border outline-ring;
+  }
+  :focus-visible {
+    @apply outline-2 outline-offset-2;
   }
   body {
     @apply bg-background text-foreground;
   }
   html {
     @apply font-sans;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
   }
 }
