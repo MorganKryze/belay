@@ -29,7 +29,7 @@ export function proteinRange(
   let low: number;
   let high: number;
   let basis: ProteinBasis = "body-weight";
-  let floorApplied = false;
+  let cutWithFloor = false;
   if (goal === "maintain") {
     [low, high] = [1.4 * weightKg, 2.0 * weightKg]; // Jäger 2017
   } else if (goal === "gain") {
@@ -42,14 +42,16 @@ export function proteinRange(
     [low, high] = [2.3 * leanKg, 3.1 * leanKg]; // Helms 2014, per kg of lean mass
     basis = "lean-mass";
     const floor = CUT_FLOOR_G_PER_KG * weightKg;
-    if (low < floor) [low, floorApplied] = [floor, true];
     high = Math.max(high, floor);
+    cutWithFloor = true;
   }
   // The floor rounds up (1e-9 absorbs 1.6 × 100 = 160.00000000000003), so the shown low end is
   // never under 1.6 g/kg.
   const floorG = Math.ceil((CUT_FLOOR_G_PER_KG * weightKg) / 5 - 1e-9) * 5;
-  const lowG = floorApplied ? floorG : roundTo(low, 5);
-  const highG = Math.max(roundTo(high, 5), floorApplied ? floorG : 0);
+  // Checked on the rounded value: a low end just above the floor can round down under it.
+  const lowG = cutWithFloor ? Math.max(roundTo(low, 5), floorG) : roundTo(low, 5);
+  const floorApplied = cutWithFloor && lowG === floorG && roundTo(low, 5) < floorG;
+  const highG = Math.max(roundTo(high, 5), cutWithFloor ? floorG : 0);
   return {
     lowG,
     highG,

@@ -54,6 +54,22 @@ describe("proteinRange", () => {
     expect(r.highG).toBeGreaterThanOrEqual(r.lowG);
   });
 
+  it("keeps the floor when the lean-mass low end rounds down under it", () => {
+    const r = proteinRange(41, "cut", 28.5); // low 65.6 would show 65
+    expect(r.lowG).toBe(70);
+    expect(r.floorApplied).toBe(true);
+  });
+
+  it("never shows a cut low end under 1.6 g/kg, for every weight and body fat", () => {
+    for (let w = 40; w <= 150; w++) {
+      for (let bf = 2; bf <= 75; bf += 0.5) {
+        const r = proteinRange(w, "cut", bf);
+        expect(r.lowG).toBeGreaterThanOrEqual(1.6 * w - 1e-9);
+        expect(r.highG).toBeGreaterThanOrEqual(r.lowG);
+      }
+    }
+  });
+
   it("keeps the per-meal amounts inside the daily range", () => {
     for (const [w, g, bf] of [
       [80, "maintain", undefined],
