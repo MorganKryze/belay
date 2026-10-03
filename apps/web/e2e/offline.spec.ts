@@ -27,6 +27,17 @@ test("the shell and client routes work offline after the first visit", async ({
   await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
 });
 
+const TOOL_PAGES = [
+  ["energy", "Energy expenditure"],
+  ["protein", "Protein"],
+  ["projection", "Projection"],
+  ["one-rep-max", "One-rep max"],
+  ["plates", "Plates"],
+  ["warmup", "Warm-up"],
+  ["bmi", "BMI"],
+  ["body-fat", "Body fat"],
+] as const;
+
 test("every tool works offline after the first visit, without having been opened", async ({
   page,
   context,
@@ -34,8 +45,10 @@ test("every tool works offline after the first visit, without having been opened
   await loadAndGoOffline(page, context);
   await page.goto("/tools");
   await expect(page.getByRole("heading", { name: "Tools", level: 1 })).toBeVisible();
-  await page.goto("/tools/projection");
-  await expect(page.getByRole("region", { name: "Goal reached" })).toContainText("weeks");
+  for (const [path, name] of TOOL_PAGES) {
+    await page.goto(`/tools/${path}`);
+    await expect(page.getByRole("heading", { name, level: 1 })).toBeVisible();
+  }
   await page.goto("/tools/plates/equipment");
   await expect(page.getByRole("heading", { name: "My equipment", level: 1 })).toBeVisible();
 });
