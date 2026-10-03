@@ -258,6 +258,7 @@ The US Navy method estimates your body fat from your height and a few girths tak
 - The “±1%” in the DoDI measures agreement between trained measurers, not accuracy.
 - The paper does not name body-fat ranges: it gives the body fat matching a BMI of 18.5, 25 and 30. Belay presents them that way, without a label.
 - Table 5 was built from people living in Japan.
+- The paper states that these are not definitive ranges, and that the values at low BMIs have wide confidence intervals: they are provisional reference values.
 
 **Sources**
 

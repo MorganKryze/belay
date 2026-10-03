@@ -415,6 +415,7 @@ export const TOOL_SCIENCE: Record<ToolId, ToolScience> = {
           "Le « ±1 % » de la DoDI mesure l'accord entre mesureurs entraînés, pas la justesse.",
           "L'article ne nomme pas de plages de masse grasse : il donne la masse grasse correspondant à un IMC de 18,5, 25 et 30. Belay les présente ainsi, sans étiquette.",
           "Le tableau 5 a été établi sur des personnes vivant au Japon.",
+          "L'article précise que ce ne sont pas des plages définitives, et que les repères aux IMC bas ont de larges intervalles de confiance : ce sont des repères provisoires.",
         ],
       },
       en: {
@@ -440,6 +441,7 @@ export const TOOL_SCIENCE: Record<ToolId, ToolScience> = {
           "The “±1%” in the DoDI measures agreement between trained measurers, not accuracy.",
           "The paper does not name body-fat ranges: it gives the body fat matching a BMI of 18.5, 25 and 30. Belay presents them that way, without a label.",
           "Table 5 was built from people living in Japan.",
+          "The paper states that these are not definitive ranges, and that the values at low BMIs have wide confidence intervals: they are provisional reference values.",
         ],
       },
     },
