@@ -13,7 +13,9 @@
     "test": "pnpm -r test",
     "build": "pnpm -r build",
     "size": "size-limit",
-    "e2e": "pnpm --filter @belay/web e2e"
+    "e2e": "pnpm --filter @belay/web e2e",
+    "science:doc": "tsx scripts/science-doc.ts",
+    "science:check": "tsx scripts/science-doc.ts --check"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -21,6 +23,7 @@
     "eslint": "^10.11.0",
     "prettier": "^3.9.9",
     "size-limit": "^14.1.0",
+    "tsx": "4.23.15",
     "typescript": "6.0.3",
     "typescript-eslint": "^8.70.1"
   }
