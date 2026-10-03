@@ -53,7 +53,8 @@ export default defineConfig({
   // Lazy chunks get their own prefix so the bundle budget's index-*.js glob only ever matches
   // the entry: a shared chunk named after some index.js would otherwise be counted as initial.
   build: { rolldownOptions: { output: { chunkFileNames: "assets/chunk-[name]-[hash].js" } } },
-  server: { proxy: { "/api": backend, "/auth": backend } },
+  // 127.0.0.1, not localhost: on macOS Vite would bind IPv6 only and IPv4 browsers miss it.
+  server: { host: "127.0.0.1", proxy: { "/api": backend, "/auth": backend } },
   test: {
     environment: "jsdom",
     include: ["src/**/*.test.{ts,tsx}"],

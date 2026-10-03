@@ -27,6 +27,19 @@ test("the shell and client routes work offline after the first visit", async ({
   await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
 });
 
+test("every tool works offline after the first visit, without having been opened", async ({
+  page,
+  context,
+}) => {
+  await loadAndGoOffline(page, context);
+  await page.goto("/tools");
+  await expect(page.getByRole("heading", { name: "Tools", level: 1 })).toBeVisible();
+  await page.goto("/tools/projection");
+  await expect(page.getByRole("region", { name: "Goal reached" })).toContainText("weeks");
+  await page.goto("/tools/plates/equipment");
+  await expect(page.getByRole("heading", { name: "My equipment", level: 1 })).toBeVisible();
+});
+
 test("an offline sign-in attempt is not answered with the cached shell", async ({
   page,
   context,
