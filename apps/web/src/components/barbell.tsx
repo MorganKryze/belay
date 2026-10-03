@@ -22,6 +22,7 @@ const INK: Record<IwfColor | "grey", string> = {
 const PLATE_W = 15;
 const GAP = 2;
 const H = 104;
+const MIN_WIDTH = 280;
 // Heavier plates draw taller, capped at the bar's full height.
 const plateHeight = (kg: number) => Math.min(96, 20 + kg * 3.2);
 
@@ -30,10 +31,12 @@ const plateHeight = (kg: number) => Math.min(96, 20 + kg * 3.2);
 export function Barbell({ perSideKg, label }: { perSideKg: readonly number[]; label: string }) {
   const { i18n } = useTranslation();
   const side = perSideKg.length * (PLATE_W + GAP);
-  const sleeve = Math.max(side + 10, 30);
   const shaft = 44;
   const collar = 5;
-  const width = 2 * (sleeve + collar) + shaft;
+  // A fixed drawing width that holds six plates per side, so the SVG fills the card and a
+  // 10-unit label stays at least 10 px on screen; more plates widen the drawing instead.
+  const width = Math.max(MIN_WIDTH, 2 * (side + 10 + collar) + shaft);
+  const sleeve = (width - shaft) / 2 - collar;
   const mid = H / 2;
   const plates = (mirror: boolean) =>
     perSideKg.map((kg, i) => {
@@ -58,7 +61,7 @@ export function Barbell({ perSideKg, label }: { perSideKg: readonly number[]; la
             transform={`rotate(-90 ${x + PLATE_W / 2} ${mid})`}
             textAnchor="middle"
             dominantBaseline="central"
-            className={`${INK[color]} text-[9px] font-bold`}
+            className={`${INK[color]} text-[10px] font-bold`}
           >
             {formatNumber(kg, i18n.language, { digits: 2 })}
           </text>
@@ -70,7 +73,8 @@ export function Barbell({ perSideKg, label }: { perSideKg: readonly number[]; la
       role="img"
       aria-label={label}
       viewBox={`0 0 ${width} ${H}`}
-      className="mx-auto h-[104px] max-w-full"
+      preserveAspectRatio="xMidYMid meet"
+      className="h-auto w-full"
     >
       <rect x={0} y={mid - 5} width={sleeve} height={10} rx={2} className="fill-plate-grey" />
       <rect

@@ -45,6 +45,7 @@ describe("plates", () => {
     const card = await result("On each side");
     expect(within(card).getByRole("img", { name: "20 + 20 kg per side" })).toBeTruthy();
     expect(within(card).getByText("20 kg bar")).toBeTruthy();
+    expect(within(card).getByRole("img").getAttribute("class")).toContain("w-full");
   });
 
   it("offers the loads just below and above an unreachable target", async () => {
@@ -106,6 +107,7 @@ describe("warm-up", () => {
         "Your working load is the bar alone or lighter: there is no warm-up to work out.",
       ),
     ).toBeTruthy();
+    expect(screen.queryByRole("textbox", { name: "Warm-up" })).toBeNull();
   });
 });
 

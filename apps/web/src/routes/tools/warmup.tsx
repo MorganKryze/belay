@@ -25,6 +25,7 @@ export function WarmupTool() {
   const { barKg, platesKg } = resolveEquipment(state.equipment);
   const count = (inputs.count ?? defaultWarmupCount(inputs.workKg)) as WarmupCount;
   const sets = attempt(() => warmupSets(inputs.workKg, count, barKg, platesKg));
+  const light = inputs.workKg <= barKg;
   const n = (v: number) => formatNumber(v, i18n.language, { digits: 2 });
   return (
     <ToolPage title={t("tools.items.warmup.name")} lead={t("warmup.lead")} toolId="warmup">
@@ -39,17 +40,19 @@ export function WarmupTool() {
           buttons={false}
           onChange={(v) => v !== null && setInputs({ workKg: v, count: null })}
         />
-        <NumberStepper
-          label={t("warmup.count")}
-          value={count}
-          min={0}
-          max={3}
-          step={1}
-          onChange={(v) => v !== null && setInputs({ count: Math.round(v) })}
-        />
+        {!light && (
+          <NumberStepper
+            label={t("warmup.count")}
+            value={count}
+            min={0}
+            max={3}
+            step={1}
+            onChange={(v) => v !== null && setInputs({ count: Math.round(v) })}
+          />
+        )}
       </div>
       <ResultCard label={t("warmup.result")} tone="plain">
-        {inputs.workKg <= barKg ? (
+        {light ? (
           <p className="text-sm">{t("warmup.lightWork")}</p>
         ) : (
           sets && (
