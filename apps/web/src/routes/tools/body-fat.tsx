@@ -46,16 +46,27 @@ export function BodyFatTool() {
   const edit = (inputsPatch: Partial<Inputs>, statePatch: Partial<ToolState> = {}) =>
     update((prev) => {
       const next = { ...prev, ...statePatch };
-      const merged = {
-        ...parseInputs(BodyFatInputs, prev.lastInputs["body-fat"]),
+      // Only what the person entered is stored, so a missing key means "not entered yet".
+      const stored = prev.lastInputs["body-fat"];
+      const raw: Record<string, unknown> = {
+        ...(typeof stored === "object" && stored !== null ? stored : {}),
         ...inputsPatch,
       };
-      const est = attempt(() =>
-        navyBodyFat({ formula: next.formula, heightCm: next.heightCm ?? 170, ...merged }),
-      );
+      const needed =
+        next.formula === "female" ? ["neckCm", "waistCm", "hipCm"] : ["neckCm", "waistCm"];
+      const complete = next.heightCm !== undefined && needed.every((k) => k in raw);
+      const est = complete
+        ? attempt(() =>
+            navyBodyFat({
+              formula: next.formula,
+              heightCm: next.heightCm ?? 170,
+              ...parseInputs(BodyFatInputs, raw),
+            }),
+          )
+        : null;
       return {
         ...next,
-        lastInputs: { ...prev.lastInputs, "body-fat": merged },
+        lastInputs: { ...prev.lastInputs, "body-fat": raw },
         bodyFatPct: est?.kind === "ok" ? est.percent : undefined,
       };
     });

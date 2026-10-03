@@ -183,16 +183,33 @@ describe("guards", () => {
     expect(card.textContent).not.toMatch(/NaN|Infinity/);
   });
 
-  it("shares the estimate only from what the person enters", async () => {
-    const stored = () => JSON.parse(localStorage.getItem(TOOL_STATE_KEY) ?? "{}").bodyFatPct;
+  it("toggling the formula on empty storage shares nothing", async () => {
     renderRoute("/tools/body-fat");
     await result("Your estimated body fat");
-    expect(stored()).toBeUndefined();
     fireEvent.click(screen.getByRole("radio", { name: "Male" }));
-    expect(stored()).toBeGreaterThan(0);
+    type("Age", "40");
+    expect(JSON.parse(localStorage.getItem(TOOL_STATE_KEY) ?? "{}").bodyFatPct).toBeUndefined();
+  });
+
+  it("shares the estimate once neck and waist are entered with a stored height", async () => {
+    save({ formula: "male", heightCm: 177.8 });
+    renderRoute("/tools/body-fat");
+    await result("Your estimated body fat");
     type("Neck", "39.5");
+    expect(JSON.parse(localStorage.getItem(TOOL_STATE_KEY)!).bodyFatPct).toBeUndefined();
     type("Waist at the navel", "86.5");
-    expect(stored()).toBeGreaterThan(0);
+    expect(JSON.parse(localStorage.getItem(TOOL_STATE_KEY)!).bodyFatPct).toBe(17);
+  });
+
+  it("female without hips shares nothing", async () => {
+    save({ formula: "female", heightCm: 170 });
+    renderRoute("/tools/body-fat");
+    await result("Your estimated body fat");
+    type("Neck", "35");
+    type("Waist at the narrowest", "76");
+    expect(JSON.parse(localStorage.getItem(TOOL_STATE_KEY)!).bodyFatPct).toBeUndefined();
+    type("Hips", "101");
+    expect(JSON.parse(localStorage.getItem(TOOL_STATE_KEY)!).bodyFatPct).toBeGreaterThan(0);
   });
 
   it("keeps a value typed elsewhere when the page is only opened", async () => {
