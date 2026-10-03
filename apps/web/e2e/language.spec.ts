@@ -12,7 +12,10 @@ test.describe("in a French browser", () => {
     await expect(page.getByRole("link", { name: "Se connecter" })).toBeVisible();
     await expect(page.locator("html")).toHaveAttribute("lang", "fr");
 
-    await page.getByRole("link", { name: "Réglages" }).click();
+    await page
+      .getByRole("navigation", { name: "Principale" })
+      .getByRole("link", { name: "Réglages" })
+      .click();
     await page.getByLabel("Langue").click();
     await page.getByRole("option", { name: "English" }).click();
     await page.reload();
