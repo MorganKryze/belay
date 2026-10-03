@@ -32,6 +32,12 @@ const toolsRoute = createRoute({
   path: "/tools",
   component: lazyRouteComponent(() => import("./routes/tools"), "Tools"),
 });
+// Static segments outrank $toolId, so this is never read as a tool id.
+const equipmentRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/tools/plates/equipment",
+  component: lazyRouteComponent(() => import("./routes/tools/equipment"), "Equipment"),
+});
 const toolRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/tools/$toolId",
@@ -41,7 +47,13 @@ const toolRoute = createRoute({
   component: lazyRouteComponent(() => import("./routes/tools/tool"), "Tool"),
 });
 
-export const routeTree = rootRoute.addChildren([homeRoute, settingsRoute, toolsRoute, toolRoute]);
+export const routeTree = rootRoute.addChildren([
+  homeRoute,
+  settingsRoute,
+  toolsRoute,
+  equipmentRoute,
+  toolRoute,
+]);
 
 // Localized not-found and error screens for every route (tests build their own router here).
 export const createAppRouter = (history?: RouterHistory) =>

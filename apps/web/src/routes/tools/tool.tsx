@@ -1,11 +1,15 @@
 import type { ToolId } from "@belay/shared/tools/catalog";
 import { useParams } from "@tanstack/react-router";
-import { type ComponentType, Suspense } from "react";
+import { type ComponentType, lazy, Suspense } from "react";
 import { NotFound } from "../fallbacks";
 
 // One chunk per tool, loaded on demand and precached by the service worker. Each tool task
 // adds its line; an id without a page yet shows the not-found screen.
-const PAGES: Partial<Record<ToolId, ComponentType>> = {};
+const PAGES: Partial<Record<ToolId, ComponentType>> = {
+  "one-rep-max": lazy(() => import("./one-rep-max").then((m) => ({ default: m.OneRepMaxTool }))),
+  plates: lazy(() => import("./plates").then((m) => ({ default: m.PlatesTool }))),
+  warmup: lazy(() => import("./warmup").then((m) => ({ default: m.WarmupTool }))),
+};
 
 export function Tool() {
   // The route's beforeLoad already turned an unknown id into the not-found screen.
