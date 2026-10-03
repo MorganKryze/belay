@@ -11,7 +11,7 @@ import { Segmented } from "@/components/segmented";
 import { ToolPage } from "@/components/tool-page";
 import { attempt } from "@/lib/attempt";
 import { formatNumber } from "@/lib/format";
-import { parseInputs, type ToolState, useTool } from "@/lib/tool-storage";
+import { type ToolState, useTool } from "@/lib/tool-storage";
 
 // One source for the schema and the fields, so they cannot drift.
 export const BODY_FAT_LIMITS = {
@@ -41,34 +41,17 @@ export function BodyFatTool() {
   const n = (v: number) => formatNumber(v, i18n.language, { digits: 0 });
   const pct = (v: number) => t("range.percent", { value: n(v) });
 
-  // The estimate is offered to the protein tool (this device only) from the person's edits
-  // alone: opening the page never writes it, and an edit that invalidates it clears it.
+  // The estimate is offered to the protein tool by `update` (see tool-storage), from the
+  // person's edits alone: opening the page never writes it.
   const edit = (inputsPatch: Partial<Inputs>, statePatch: Partial<ToolState> = {}) =>
     update((prev) => {
-      const next = { ...prev, ...statePatch };
       // Only what the person entered is stored, so a missing key means "not entered yet".
       const stored = prev.lastInputs["body-fat"];
-      const raw: Record<string, unknown> = {
+      const raw = {
         ...(typeof stored === "object" && stored !== null ? stored : {}),
         ...inputsPatch,
       };
-      const needed =
-        next.formula === "female" ? ["neckCm", "waistCm", "hipCm"] : ["neckCm", "waistCm"];
-      const complete = next.heightCm !== undefined && needed.every((k) => k in raw);
-      const est = complete
-        ? attempt(() =>
-            navyBodyFat({
-              formula: next.formula,
-              heightCm: next.heightCm ?? 170,
-              ...parseInputs(BodyFatInputs, raw),
-            }),
-          )
-        : null;
-      return {
-        ...next,
-        lastInputs: { ...prev.lastInputs, "body-fat": raw },
-        bodyFatPct: est?.kind === "ok" ? est.percent : undefined,
-      };
+      return { ...prev, ...statePatch, lastInputs: { ...prev.lastInputs, "body-fat": raw } };
     });
 
   const girthError =

@@ -2,10 +2,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import {
   DEFAULT_EQUIPMENT,
+  deriveBodyFatPct,
   parseInputs,
   readToolState,
   resolveEquipment,
   TOOL_STATE_KEY,
+  type ToolState,
   ToolStateSchema,
   writeToolState,
 } from "./tool-storage";
@@ -85,5 +87,34 @@ describe("tool storage", () => {
     const s = readToolState();
     expect(s.heightCm).toBeUndefined();
     expect(s.weightKg).toBeUndefined();
+  });
+});
+
+describe("deriveBodyFatPct", () => {
+  const female: ToolState = {
+    ...ToolStateSchema.parse({}),
+    heightCm: 172,
+    lastInputs: { "body-fat": { neckCm: 33, waistCm: 76, hipCm: 101 } },
+  };
+  it("returns the rounded estimate when every measurement is entered", () => {
+    expect(deriveBodyFatPct(female)).toBe(29);
+  });
+  it("follows the shared formula and height", () => {
+    expect(deriveBodyFatPct({ ...female, formula: "male" as const })).toBe(
+      deriveBodyFatPct({ ...female, formula: "male" as const, heightCm: 172 }),
+    );
+    expect(deriveBodyFatPct({ ...female, heightCm: 190 })).not.toBe(29);
+  });
+  it("needs hips only for the female formula", () => {
+    const noHips = { ...female, lastInputs: { "body-fat": { neckCm: 33, waistCm: 76 } } };
+    expect(deriveBodyFatPct(noHips)).toBeUndefined();
+    expect(deriveBodyFatPct({ ...noHips, formula: "male" as const })).toBeGreaterThan(0);
+  });
+  it("is undefined without a height, without girths, or outside 2 to 75 %", () => {
+    expect(deriveBodyFatPct({ ...female, heightCm: undefined })).toBeUndefined();
+    expect(deriveBodyFatPct(ToolStateSchema.parse({ heightCm: 172 }))).toBeUndefined();
+    const huge = { ...female, heightCm: 230, formula: "male" as const };
+    huge.lastInputs = { "body-fat": { neckCm: 80, waistCm: 81 } };
+    expect(deriveBodyFatPct(huge)).toBeUndefined();
   });
 });

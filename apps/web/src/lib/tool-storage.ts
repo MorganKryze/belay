@@ -1,9 +1,10 @@
 import { HEIGHT_RANGE_CM, WEIGHT_RANGE_KG } from "@belay/shared/tools/bounds";
-import { NAVY_RANGE_PCT } from "@belay/shared/tools/body-fat";
+import { NAVY_RANGE_PCT, navyBodyFat } from "@belay/shared/tools/body-fat";
 import type { ToolId } from "@belay/shared/tools/catalog";
 import { PLATE_PRESETS } from "@belay/shared/tools/plates";
 import { useCallback, useMemo, useState } from "react";
 import { z } from "zod";
+import { attempt } from "./attempt";
 
 // Everything the tools remember lives in this one key, on this device only. Nothing is sent.
 export const TOOL_STATE_KEY = "belay.tools.v1";
@@ -83,13 +84,53 @@ export function parseInputs<S extends z.ZodType<Record<string, unknown>>>(
   return parsed.success ? parsed.data : schema.parse({});
 }
 
+function bodyFatGirths(
+  state: ToolState,
+): { neckCm: number; waistCm: number; hipCm?: number } | null {
+  const stored = state.lastInputs["body-fat"];
+  if (typeof stored !== "object" || stored === null) return null;
+  const raw = stored as Record<string, unknown>;
+  const { neckCm, waistCm, hipCm } = raw;
+  // Only what the person entered is stored, so a missing key means "not entered yet".
+  if (typeof neckCm !== "number" || typeof waistCm !== "number") return null;
+  if (state.formula === "male") return { neckCm, waistCm };
+  return typeof hipCm === "number" ? { neckCm, waistCm, hipCm } : null;
+}
+
+// The body fat the protein tool may prefill: the Navy estimate of the body fat page, from
+// the girths the person entered, the shared height and the shared formula. Undefined until
+// every measurement is entered, and when the estimate is not valid. (The formula takes no age.)
+export function deriveBodyFatPct(state: ToolState): number | undefined {
+  const girths = bodyFatGirths(state);
+  if (girths === null || state.heightCm === undefined) return undefined;
+  const r = attempt(() =>
+    navyBodyFat({ formula: state.formula, heightCm: state.heightCm ?? NaN, ...girths }),
+  );
+  return r?.kind === "ok" ? r.percent : undefined;
+}
+
+// Precedence: a write that changes the formula, the height or the body-fat girths re-derives
+// `bodyFatPct` once every girth is entered (clearing it when the estimate is invalid). Any other
+// write, such as a value typed in the protein tool, or girths still incomplete, leaves it alone.
+function withBodyFat(prev: ToolState, next: ToolState): ToolState {
+  const changed =
+    prev.formula !== next.formula ||
+    prev.heightCm !== next.heightCm ||
+    prev.lastInputs["body-fat"] !== next.lastInputs["body-fat"];
+  if (!changed || bodyFatGirths(next) === null) return next;
+  return { ...next, bodyFatPct: deriveBodyFatPct(next) };
+}
+
 // One state per page: every field a page touches goes through the same `update`, so two writes
 // in a row never overwrite each other with a stale copy.
+// ponytail: state is read once per mount and written whole, so two tabs open on the tools
+// overwrite each other's last write. The ceiling is concurrent tabs; the upgrade is to re-read
+// the stored state inside `update`, or to listen to the `storage` event.
 export function useTool<S extends z.ZodType<Record<string, unknown>>>(toolId: ToolId, schema: S) {
   const [state, setState] = useState(readToolState);
   const update = useCallback((change: (prev: ToolState) => ToolState) => {
     setState((prev) => {
-      const next = change(prev);
+      const next = withBodyFat(prev, change(prev));
       writeToolState(next); // idempotent, so StrictMode's double call is harmless
       return next;
     });

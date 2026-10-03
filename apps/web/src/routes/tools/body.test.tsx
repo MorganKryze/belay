@@ -183,12 +183,55 @@ describe("guards", () => {
     expect(card.textContent).not.toMatch(/NaN|Infinity/);
   });
 
-  it("toggling the formula on empty storage shares nothing", async () => {
+  it("toggling the formula with a stored height and untouched girths shares nothing", async () => {
+    save({ heightCm: 172 });
     renderRoute("/tools/body-fat");
     await result("Your estimated body fat");
     fireEvent.click(screen.getByRole("radio", { name: "Male" }));
-    type("Age", "40");
-    expect(JSON.parse(localStorage.getItem(TOOL_STATE_KEY) ?? "{}").bodyFatPct).toBeUndefined();
+    fireEvent.click(screen.getByRole("radio", { name: "Female" }));
+    expect(JSON.parse(localStorage.getItem(TOOL_STATE_KEY)!).bodyFatPct).toBeUndefined();
+  });
+
+  it("keeps the shared body fat in step when energy and BMI change formula and height", async () => {
+    renderRoute("/tools/body-fat");
+    await result("Your estimated body fat");
+    type("Height", "172");
+    type("Neck", "33");
+    type("Waist at the narrowest", "76");
+    type("Hips", "101");
+    const stored = () => JSON.parse(localStorage.getItem(TOOL_STATE_KEY)!).bodyFatPct;
+    expect(stored()).toBe(29);
+    cleanup();
+
+    renderRoute("/tools/energy");
+    await result("Today's expenditure");
+    fireEvent.click(screen.getByRole("radio", { name: "Male" }));
+    type("Height", "190");
+    cleanup();
+    renderRoute("/tools/bmi");
+    await result("Your BMI");
+    type("Height", "188");
+    cleanup();
+
+    renderRoute("/tools/body-fat");
+    const card = await result("Your estimated body fat");
+    const shown = Number(/(\d+)\s?%/.exec(card.textContent ?? "")?.[1]);
+    expect(shown).not.toBe(29);
+    expect(stored()).toBe(shown);
+  });
+
+  it("a body fat typed in the protein tool survives until the girths are all entered", async () => {
+    save({ weightKg: 80, lastInputs: { protein: { goal: "cut" } } });
+    renderRoute("/tools/protein");
+    await result("Per day");
+    type("Body fat (optional)", "21");
+    expect(JSON.parse(localStorage.getItem(TOOL_STATE_KEY)!).bodyFatPct).toBe(21);
+    cleanup();
+    save({ ...JSON.parse(localStorage.getItem(TOOL_STATE_KEY)!), heightCm: 170 });
+    renderRoute("/tools/energy");
+    await result("Today's expenditure");
+    type("Height", "175");
+    expect(JSON.parse(localStorage.getItem(TOOL_STATE_KEY)!).bodyFatPct).toBe(21);
   });
 
   it("shares the estimate once neck and waist are entered with a stored height", async () => {

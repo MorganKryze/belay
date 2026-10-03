@@ -1,3 +1,4 @@
+import { NAVY_RANGE_PCT } from "./body-fat";
 import { roundTo } from "./round";
 
 export type ProteinGoal = "maintain" | "cut" | "gain";
@@ -23,8 +24,11 @@ export function proteinRange(
   if (!(Number.isFinite(weightKg) && weightKg > 0)) {
     throw new RangeError("weight must be a positive number");
   }
-  if (bodyFatPct !== undefined && !(bodyFatPct >= 2 && bodyFatPct <= 75)) {
-    throw new RangeError("body fat must be from 2 to 75 %");
+  if (
+    bodyFatPct !== undefined &&
+    !(bodyFatPct >= NAVY_RANGE_PCT.min && bodyFatPct <= NAVY_RANGE_PCT.max)
+  ) {
+    throw new RangeError(`body fat must be from ${NAVY_RANGE_PCT.min} to ${NAVY_RANGE_PCT.max} %`);
   }
   let low: number;
   let high: number;
