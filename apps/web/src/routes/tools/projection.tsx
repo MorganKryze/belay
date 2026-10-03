@@ -100,7 +100,7 @@ export function ProjectionTool() {
       >
         {inputs.fine ? t("projection.presets") : `${t("projection.fine")} ›`}
       </button>
-      {warning !== "none" && (
+      {p?.kind === "ok" && warning !== "none" && (
         <p className="flex gap-2 rounded-field border border-border bg-card p-3 text-sm">
           <Info aria-hidden className="mt-0.5 size-4 shrink-0" />
           {t(warning === "above-1.5" ? "projection.above15" : "projection.above1")}

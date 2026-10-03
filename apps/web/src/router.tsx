@@ -11,7 +11,9 @@ import { NotFound, RouteError } from "./routes/fallbacks";
 import { Home } from "./routes/home";
 import { Layout } from "./routes/layout";
 
-// ponytail: code-based routes; switch to file-based routing once there are more than ~10 screens.
+// ponytail: code-based routes, 12 screens today (the tools share one lazy `$toolId` route).
+// Switch to file-based routing at ~20 screens, or when this file passes ~150 lines of route
+// declarations (it is 72 lines now).
 const rootRoute = createRootRoute({ component: Layout });
 const homeRoute = createRoute({
   getParentRoute: () => rootRoute,

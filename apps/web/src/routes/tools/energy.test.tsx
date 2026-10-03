@@ -126,6 +126,16 @@ describe("projection", () => {
     ).toBeTruthy();
   });
 
+  it("shows no pace warning when the goal is not below the current weight", async () => {
+    renderRoute("/tools/projection");
+    await result("Goal reached");
+    fireEvent.click(screen.getByRole("button", { name: "Fine-tune ›" }));
+    type("Pace (% per week)", "2");
+    expect(screen.queryByText(/Belay suggests being followed/)).toBeTruthy();
+    type("Goal", "82");
+    expect(screen.queryByText(/Belay suggests being followed/)).toBeNull();
+  });
+
   it("shows the presets with their kg per week at the current weight", async () => {
     save({ weightKg: 82 });
     renderRoute("/tools/projection");
