@@ -183,14 +183,38 @@ describe("guards", () => {
     expect(card.textContent).not.toMatch(/NaN|Infinity/);
   });
 
-  it("writes the estimate back for the protein tool", async () => {
+  it("shares the estimate only from what the person enters", async () => {
+    const stored = () => JSON.parse(localStorage.getItem(TOOL_STATE_KEY) ?? "{}").bodyFatPct;
+    renderRoute("/tools/body-fat");
+    await result("Your estimated body fat");
+    expect(stored()).toBeUndefined();
+    fireEvent.click(screen.getByRole("radio", { name: "Male" }));
+    expect(stored()).toBeGreaterThan(0);
+    type("Neck", "39.5");
+    type("Waist at the navel", "86.5");
+    expect(stored()).toBeGreaterThan(0);
+  });
+
+  it("keeps a value typed elsewhere when the page is only opened", async () => {
+    save({ bodyFatPct: 22 });
+    renderRoute("/tools/body-fat");
+    await result("Your estimated body fat");
+    expect(JSON.parse(localStorage.getItem(TOOL_STATE_KEY)!).bodyFatPct).toBe(22);
+  });
+
+  it("clears the shared value when an edit makes the estimate invalid", async () => {
     save({
       formula: "male",
       heightCm: 177.8,
+      bodyFatPct: 17,
       lastInputs: { "body-fat": { ageYears: 30, neckCm: 39.5, waistCm: 86.5 } },
     });
     renderRoute("/tools/body-fat");
     await result("Your estimated body fat");
+    type("Neck", "39");
     expect(JSON.parse(localStorage.getItem(TOOL_STATE_KEY)!).bodyFatPct).toBe(17);
+    type("Neck", "80");
+    type("Waist at the navel", "40");
+    expect(JSON.parse(localStorage.getItem(TOOL_STATE_KEY)!).bodyFatPct).toBeUndefined();
   });
 });

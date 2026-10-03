@@ -1,6 +1,6 @@
 import { HEIGHT_RANGE_CM } from "@belay/shared/tools/bounds";
 import { bodyFatBand, gallagherThresholds, navyBodyFat } from "@belay/shared/tools/body-fat";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
 import { InlineChoice } from "@/components/inline-choice";
@@ -11,18 +11,28 @@ import { Segmented } from "@/components/segmented";
 import { ToolPage } from "@/components/tool-page";
 import { attempt } from "@/lib/attempt";
 import { formatNumber } from "@/lib/format";
-import { useTool } from "@/lib/tool-storage";
+import { parseInputs, type ToolState, useTool } from "@/lib/tool-storage";
+
+// One source for the schema and the fields, so they cannot drift.
+export const BODY_FAT_LIMITS = {
+  age: { min: 15, max: 100 },
+  neck: { min: 20, max: 80 },
+  waist: { min: 40, max: 200 },
+  hip: { min: 50, max: 200 },
+} as const;
+const L = BODY_FAT_LIMITS;
 
 export const BodyFatInputs = z.object({
-  ageYears: z.number().int().min(15).max(100).catch(30),
-  neckCm: z.number().min(20).max(80).catch(34),
-  waistCm: z.number().min(40).max(200).catch(75),
-  hipCm: z.number().min(50).max(200).catch(100),
+  ageYears: z.number().int().min(L.age.min).max(L.age.max).catch(30),
+  neckCm: z.number().min(L.neck.min).max(L.neck.max).catch(34),
+  waistCm: z.number().min(L.waist.min).max(L.waist.max).catch(75),
+  hipCm: z.number().min(L.hip.min).max(L.hip.max).catch(100),
 });
+type Inputs = z.output<typeof BodyFatInputs>;
 
 export function BodyFatTool() {
   const { t, i18n } = useTranslation();
-  const { state, update, inputs, setInputs } = useTool("body-fat", BodyFatInputs);
+  const { state, update, inputs } = useTool("body-fat", BodyFatInputs);
   const [editHeight, setEditHeight] = useState(state.heightCm === undefined);
   const heightCm = state.heightCm ?? 170;
   const female = state.formula === "female";
@@ -31,13 +41,24 @@ export function BodyFatTool() {
   const n = (v: number) => formatNumber(v, i18n.language, { digits: 0 });
   const pct = (v: number) => t("range.percent", { value: n(v) });
 
-  // Offer the estimate to the protein tool, on this device only.
-  const percent = r?.kind === "ok" ? r.percent : undefined;
-  useEffect(() => {
-    if (percent !== undefined && percent !== state.bodyFatPct) {
-      update((s) => ({ ...s, bodyFatPct: percent }));
-    }
-  }, [percent, state.bodyFatPct, update]);
+  // The estimate is offered to the protein tool (this device only) from the person's edits
+  // alone: opening the page never writes it, and an edit that invalidates it clears it.
+  const edit = (inputsPatch: Partial<Inputs>, statePatch: Partial<ToolState> = {}) =>
+    update((prev) => {
+      const next = { ...prev, ...statePatch };
+      const merged = {
+        ...parseInputs(BodyFatInputs, prev.lastInputs["body-fat"]),
+        ...inputsPatch,
+      };
+      const est = attempt(() =>
+        navyBodyFat({ formula: next.formula, heightCm: next.heightCm ?? 170, ...merged }),
+      );
+      return {
+        ...next,
+        lastInputs: { ...prev.lastInputs, "body-fat": merged },
+        bodyFatPct: est?.kind === "ok" ? est.percent : undefined,
+      };
+    });
 
   const girthError =
     r?.kind === "invalid-girths"
@@ -71,49 +92,49 @@ export function BodyFatTool() {
           { value: "female", label: t("tools.formula.female") },
           { value: "male", label: t("tools.formula.male") },
         ]}
-        onChange={(formula) => update((s) => ({ ...s, formula }))}
+        onChange={(formula) => edit({}, { formula })}
       />
       <div className="grid grid-cols-2 gap-2.5">
         <NumberStepper
           label={t("tools.fields.age")}
           value={inputs.ageYears}
-          min={15}
-          max={100}
+          min={L.age.min}
+          max={L.age.max}
           step={1}
           buttons={false}
-          onChange={(v) => v !== null && setInputs({ ageYears: Math.round(v) })}
+          onChange={(v) => v !== null && edit({ ageYears: Math.round(v) })}
         />
         <NumberStepper
           label={t("bodyFat.neck")}
           unit="cm"
           value={inputs.neckCm}
-          min={20}
-          max={80}
+          min={L.neck.min}
+          max={L.neck.max}
           step={0.5}
           buttons={false}
-          onChange={(v) => v !== null && setInputs({ neckCm: v })}
+          onChange={(v) => v !== null && edit({ neckCm: v })}
         />
         <NumberStepper
           label={t(female ? "bodyFat.waistFemale" : "bodyFat.waistMale")}
           unit="cm"
           value={inputs.waistCm}
-          min={40}
-          max={200}
+          min={L.waist.min}
+          max={L.waist.max}
           step={0.5}
           buttons={false}
           error={girthError}
-          onChange={(v) => v !== null && setInputs({ waistCm: v })}
+          onChange={(v) => v !== null && edit({ waistCm: v })}
         />
         {female && (
           <NumberStepper
             label={t("bodyFat.hip")}
             unit="cm"
             value={inputs.hipCm}
-            min={50}
-            max={200}
+            min={L.hip.min}
+            max={L.hip.max}
             step={0.5}
             buttons={false}
-            onChange={(v) => v !== null && setInputs({ hipCm: v })}
+            onChange={(v) => v !== null && edit({ hipCm: v })}
           />
         )}
       </div>
@@ -125,7 +146,7 @@ export function BodyFatTool() {
           min={HEIGHT_RANGE_CM.min}
           max={HEIGHT_RANGE_CM.max}
           step={1}
-          onChange={(v) => v !== null && update((s) => ({ ...s, heightCm: v }))}
+          onChange={(v) => v !== null && edit({}, { heightCm: v })}
         />
       ) : (
         <p className="text-[13px] text-muted-foreground">

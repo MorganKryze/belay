@@ -276,7 +276,7 @@
     "error": "estimation ±4 points",
     "bias": "Elle surestime souvent les personnes minces et sous-estime les personnes à forte masse grasse.",
     "invalidMale": "Le tour de taille doit dépasser le tour de cou.",
-    "invalidFemale": "Taille et hanches réunies doivent dépasser le tour de cou.",
+    "invalidFemale": "Tour de taille et tour de hanches réunis doivent dépasser le tour de cou.",
     "outOfRange": "Ces mesures sortent de ce que la formule sait calculer. Vérifie-les.",
     "rangesLabel": "Repères",
     "bands": {
