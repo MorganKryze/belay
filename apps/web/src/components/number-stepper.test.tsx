@@ -106,4 +106,14 @@ describe("NumberStepper", () => {
       input().getAttribute("aria-describedby")?.split(" ").at(-1),
     );
   });
+
+  it("focuses the field when the unit or the padding around it is tapped", () => {
+    render(<Harness />);
+    const field = screen.getByRole("textbox", { name: "Load" });
+    fireEvent.pointerDown(screen.getByText("kg"));
+    expect(document.activeElement).toBe(field);
+    (field as HTMLInputElement).blur();
+    fireEvent.pointerDown(field.parentElement!);
+    expect(document.activeElement).toBe(field);
+  });
 });

@@ -1,6 +1,6 @@
 import { roundTo } from "@belay/shared/tools/round";
 import { Minus, Plus } from "lucide-react";
-import { type KeyboardEvent, useId, useState } from "react";
+import { type KeyboardEvent, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { decimalsOf, formatNumber, parseDecimal } from "@/lib/format";
@@ -36,6 +36,7 @@ export function NumberStepper({
 }: NumberStepperProps) {
   const { t, i18n } = useTranslation();
   const id = useId();
+  const inputRef = useRef<HTMLInputElement>(null);
   const show = (v: number | null) =>
     v === null ? "" : formatNumber(v, i18n.language, { digits: decimalsOf(step), grouping: false });
   // What the person is typing; null while the field shows the committed value.
@@ -96,8 +97,17 @@ export function NumberStepper({
             <Minus aria-hidden className="size-5" />
           </button>
         )}
-        <div className="flex min-w-0 flex-1 items-baseline justify-center gap-0.5 px-1">
+        {/* The whole box is the tap target: the input itself is shorter than the 52 px box. */}
+        <div
+          className="flex min-w-0 flex-1 cursor-text items-baseline justify-center gap-0.5 self-stretch px-1 pt-3"
+          onPointerDown={(e) => {
+            if (e.target === inputRef.current) return;
+            e.preventDefault(); // keeps focus from blurring, then lands it in the field
+            inputRef.current?.focus();
+          }}
+        >
           <input
+            ref={inputRef}
             id={id}
             inputMode="decimal"
             autoComplete="off"

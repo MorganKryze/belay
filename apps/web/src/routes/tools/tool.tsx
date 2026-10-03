@@ -1,11 +1,10 @@
 import type { ToolId } from "@belay/shared/tools/catalog";
 import { useParams } from "@tanstack/react-router";
 import { type ComponentType, lazy, Suspense } from "react";
-import { NotFound } from "../fallbacks";
 
-// One chunk per tool, loaded on demand and precached by the service worker. Each tool task
-// adds its line; an id without a page yet shows the not-found screen.
-const PAGES: Partial<Record<ToolId, ComponentType>> = {
+// One chunk per tool, loaded on demand and precached by the service worker. The Record makes
+// the compiler demand a page for every id in the catalog.
+const PAGES: Record<ToolId, ComponentType> = {
   energy: lazy(() => import("./energy").then((m) => ({ default: m.EnergyTool }))),
   protein: lazy(() => import("./protein").then((m) => ({ default: m.ProteinTool }))),
   projection: lazy(() => import("./projection").then((m) => ({ default: m.ProjectionTool }))),
@@ -20,7 +19,6 @@ export function Tool() {
   // The route's beforeLoad already turned an unknown id into the not-found screen.
   const { toolId } = useParams({ from: "/tools/$toolId" });
   const Page = PAGES[toolId as ToolId];
-  if (!Page) return <NotFound />;
   return (
     <Suspense fallback={null}>
       <Page />
