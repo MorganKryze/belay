@@ -82,6 +82,25 @@ describe("loadBar", () => {
   });
 });
 
+describe("loadBar guards", () => {
+  it("rejects a non-finite target or bar", () => {
+    expect(() => loadBar(NaN, 20, gym)).toThrow(RangeError);
+    expect(() => loadBar(Infinity, 20, gym)).toThrow(RangeError);
+    expect(() => loadBar(100, NaN, gym)).toThrow(RangeError);
+    expect(() => loadBar(100, 0, gym)).toThrow(RangeError);
+  });
+
+  it("rejects a target above 1000 kg", () => {
+    expect(() => loadBar(1000.5, 20, gym)).toThrow(RangeError);
+    expect(loadBar(1000, 20, gym).kind).toBe("exact");
+  });
+
+  it("rejects non-finite plates", () => {
+    expect(() => loadBar(60, 20, [20, NaN])).toThrow(RangeError);
+    expect(() => loadBar(60, 20, [20, Infinity])).toThrow(RangeError);
+  });
+});
+
 describe("nearestLoading", () => {
   it("picks the closer of below and above, and the lighter on a tie", () => {
     expect(nearestLoading(104, 20, gym).totalKg).toBe(105);

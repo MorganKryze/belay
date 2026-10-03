@@ -30,12 +30,19 @@ export type BarLoad =
   | { kind: "exact"; loading: Loading }
   | { kind: "unreachable"; below: Loading | null; above: Loading | null };
 
+// Bounds the change-making table: 1000 kg is 50 000 hundredths per side.
+const MAX_TARGET_KG = 1000;
 const toCenti = (kg: number) => Math.round(kg * 100);
 
 // Fewest plates per side for the target. Integers in hundredths of a kilo, so 2.5 + 1.25 never
 // drifts. ponytail: assumes as many plates of each weight as needed; add a per-plate stock if
 // someone's gym runs short.
 export function loadBar(targetKg: number, barKg: number, platesKg: readonly number[]): BarLoad {
+  if (!Number.isFinite(targetKg) || targetKg > MAX_TARGET_KG) {
+    throw new RangeError(`target must be a finite number up to ${MAX_TARGET_KG} kg`);
+  }
+  if (!(Number.isFinite(barKg) && barKg > 0)) throw new RangeError("bar must be a positive weight");
+  if (!platesKg.every(Number.isFinite)) throw new RangeError("plates must be finite numbers");
   const bar = toCenti(barKg);
   const plates = [...new Set(platesKg.map(toCenti))].filter((p) => p > 0).sort((a, b) => b - a);
   const half = (toCenti(targetKg) - bar) / 2;

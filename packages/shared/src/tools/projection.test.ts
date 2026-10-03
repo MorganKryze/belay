@@ -30,6 +30,28 @@ describe("projectLoss", () => {
   });
 });
 
+describe("projectLoss guards", () => {
+  it.each([
+    ["rate 0", 82, 75, 0],
+    ["rate negative", 82, 75, -1],
+    ["rate below 0.25", 82, 75, 0.2],
+    ["rate above 2.5", 82, 75, 2.6],
+    ["rate NaN", 82, 75, NaN],
+    ["target 0", 82, 0, 0.75],
+    ["target negative", 82, -3, 0.75],
+    ["target NaN", 82, NaN, 0.75],
+    ["current 0", 0, -1, 0.75],
+    ["current NaN", NaN, 75, 0.75],
+  ])("rejects %s", (_name, current, target, rate) => {
+    expect(() => projectLoss(current, target, rate, today)).toThrow(RangeError);
+  });
+
+  it("accepts the bounds 0.25 and 2.5", () => {
+    expect(projectLoss(82, 75, 0.25, today).kind).toBe("ok");
+    expect(projectLoss(82, 75, 2.5, today).kind).toBe("ok");
+  });
+});
+
 describe("helpers", () => {
   it("computes ⌈1.3 n⌉ in integers", () => {
     expect(slowWeeks(10)).toBe(13);

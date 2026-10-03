@@ -20,6 +20,12 @@ export function proteinRange(
   goal: ProteinGoal,
   bodyFatPct?: number,
 ): ProteinRange {
+  if (!(Number.isFinite(weightKg) && weightKg > 0)) {
+    throw new RangeError("weight must be a positive number");
+  }
+  if (bodyFatPct !== undefined && !(bodyFatPct >= 2 && bodyFatPct <= 75)) {
+    throw new RangeError("body fat must be from 2 to 75 %");
+  }
   let low: number;
   let high: number;
   let basis: ProteinBasis = "body-weight";
@@ -39,12 +45,25 @@ export function proteinRange(
     if (low < floor) [low, floorApplied] = [floor, true];
     high = Math.max(high, floor);
   }
+  // The floor rounds up (1e-9 absorbs 1.6 × 100 = 160.00000000000003), so the shown low end is
+  // never under 1.6 g/kg.
+  const floorG = Math.ceil((CUT_FLOOR_G_PER_KG * weightKg) / 5 - 1e-9) * 5;
+  const lowG = floorApplied ? floorG : roundTo(low, 5);
+  const highG = Math.max(roundTo(high, 5), floorApplied ? floorG : 0);
   return {
-    lowG: roundTo(low, 5),
-    highG: roundTo(high, 5),
+    lowG,
+    highG,
     basis,
     floorApplied,
-    perMeal3: [roundTo(low / 3, 5), roundTo(high / 3, 5)],
-    perMeal4: [roundTo(low / 4, 5), roundTo(high / 4, 5)],
+    perMeal3: perMeal(lowG, highG, 3),
+    perMeal4: perMeal(lowG, highG, 4),
   };
+}
+
+// Derived from the shown day range: n meals at the low end never add up to less than the day's
+// low end, and n meals at the high end never to more than its high end.
+function perMeal(lowG: number, highG: number, meals: number): readonly [number, number] {
+  const high = Math.floor(highG / meals / 5) * 5;
+  const low = Math.min(Math.ceil(lowG / meals / 5) * 5, high);
+  return [low, high];
 }

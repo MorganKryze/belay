@@ -47,6 +47,35 @@ describe("navyBodyFat", () => {
   });
 });
 
+describe("navyBodyFat range guard on the shown value", () => {
+  it("accepts an exact 1.7 that shows as 2", () => {
+    const r = navyBodyFat({ formula: "male", heightCm: 178, neckCm: 40, waistCm: 71.63 });
+    expect(r).toMatchObject({ kind: "ok", percent: 2 });
+  });
+
+  it("accepts an exact 74.6 that shows as 75", () => {
+    const r = navyBodyFat({ formula: "male", heightCm: 178, neckCm: 40, waistCm: 262.7 });
+    expect(r).toMatchObject({ kind: "ok", percent: 75 });
+  });
+
+  it("refuses non-finite measures", () => {
+    expect(navyBodyFat({ formula: "male", heightCm: NaN, neckCm: 40, waistCm: 90 })).toEqual({
+      kind: "invalid-girths",
+    });
+    expect(navyBodyFat({ formula: "male", heightCm: 178, neckCm: 40, waistCm: Infinity })).toEqual({
+      kind: "invalid-girths",
+    });
+  });
+});
+
+describe("age guards", () => {
+  it("treats a NaN age as outside 20–79", () => {
+    expect(ageGroup(NaN)).toBeNull();
+    expect(gallagherThresholds("male", NaN, "standard")).toBeNull();
+    expect(gallagherThresholds("female", -1, "asian")).toBeNull();
+  });
+});
+
 describe("Gallagher 2000 thresholds", () => {
   it.each([
     ["standard", "female", 30, [21, 33, 39]],

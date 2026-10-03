@@ -26,6 +26,12 @@ describe("one-rep max", () => {
     expect(roundTo(r.brzyckiKg, 0.5)).toBe(112.5);
   });
 
+  it("rejects a NaN, zero or negative weight", () => {
+    expect(() => oneRepMax(NaN, 5)).toThrow(RangeError);
+    expect(() => oneRepMax(-80, 5)).toThrow(RangeError);
+    expect(() => oneRepMax(0, 5)).toThrow(RangeError);
+  });
+
   it("flags 11 and 12 reps as less reliable, and refuses more", () => {
     expect(oneRepMax(80, 10).lessReliable).toBe(false);
     expect(oneRepMax(80, 11).lessReliable).toBe(true);

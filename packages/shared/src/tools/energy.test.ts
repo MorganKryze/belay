@@ -38,3 +38,24 @@ describe("dailyEnergy", () => {
     expect(PAL_LEVELS.map((l) => l.pal)).toEqual([1.4, 1.55, 1.75, 2]);
   });
 });
+
+describe("energy guards", () => {
+  it.each([
+    ["age", { ...man, ageYears: 14 }],
+    ["age", { ...man, ageYears: 101 }],
+    ["age NaN", { ...man, ageYears: NaN }],
+    ["height", { ...man, heightCm: 119 }],
+    ["height", { ...man, heightCm: 231 }],
+    ["weight", { ...man, weightKg: 29 }],
+    ["weight", { ...man, weightKg: 301 }],
+    ["weight NaN", { ...man, weightKg: NaN }],
+  ] as const)("rejects %s out of range", (_name, input) => {
+    expect(() => mifflinStJeor(input)).toThrow(RangeError);
+    expect(() => dailyEnergy(input, 1.55)).toThrow(RangeError);
+  });
+
+  it("rejects a non-positive or non-finite PAL", () => {
+    expect(() => dailyEnergy(man, 0)).toThrow(RangeError);
+    expect(() => dailyEnergy(man, NaN)).toThrow(RangeError);
+  });
+});

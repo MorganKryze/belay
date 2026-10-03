@@ -34,6 +34,15 @@ export function projectLoss(
   pctPerWeek: number,
   today: Date,
 ): Projection {
+  if (
+    !(Number.isFinite(currentKg) && currentKg > 0) ||
+    !(Number.isFinite(targetKg) && targetKg > 0)
+  ) {
+    throw new RangeError("weights must be positive numbers");
+  }
+  if (!(pctPerWeek >= RATE_MIN_PCT && pctPerWeek <= RATE_MAX_PCT)) {
+    throw new RangeError(`rate must be from ${RATE_MIN_PCT} to ${RATE_MAX_PCT} % per week`);
+  }
   if (!(targetKg < currentKg)) return { kind: "target-not-below" };
   // Lose pct of the current weight each week: kg per week shrink as weight falls.
   const raw = Math.log(targetKg / currentKg) / Math.log(1 - pctPerWeek / 100);

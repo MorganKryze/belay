@@ -12,6 +12,9 @@ export const epley = (weightKg: number, reps: number): number =>
 export const brzycki = (weightKg: number, reps: number): number => (weightKg * 36) / (37 - reps);
 
 export function oneRepMax(weightKg: number, reps: number): OneRepMax {
+  if (!(Number.isFinite(weightKg) && weightKg > 0)) {
+    throw new RangeError("weight must be a positive number");
+  }
   if (!Number.isInteger(reps) || reps < 1 || reps > MAX_REPS) {
     throw new RangeError(`reps must be an integer from 1 to ${MAX_REPS}`);
   }

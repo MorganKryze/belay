@@ -11,7 +11,7 @@ describe("proteinRange", () => {
       highG: 160,
       basis: "body-weight",
       floorApplied: false,
-      perMeal3: [35, 55],
+      perMeal3: [40, 50],
       perMeal4: [30, 40],
     });
   });
@@ -44,5 +44,37 @@ describe("proteinRange", () => {
     expect(r.floorApplied).toBe(true);
     // Both ends under the floor: the range closes on it.
     expect(day(proteinRange(100, "cut", 75))).toEqual([160, 160]);
+  });
+
+  it("rounds the floor up so the shown low end is never under 1.6 g/kg", () => {
+    const r = proteinRange(82, "cut", 45); // floor 131.2
+    expect(r.floorApplied).toBe(true);
+    expect(r.lowG).toBe(135);
+    expect(r.lowG).toBeGreaterThanOrEqual(131.2);
+    expect(r.highG).toBeGreaterThanOrEqual(r.lowG);
+  });
+
+  it("keeps the per-meal amounts inside the daily range", () => {
+    for (const [w, g, bf] of [
+      [80, "maintain", undefined],
+      [82, "cut", 45],
+      [100, "cut", 75],
+      [63, "gain", undefined],
+    ] as const) {
+      const r = proteinRange(w, g, bf);
+      expect(r.perMeal3[1] * 3).toBeLessThanOrEqual(r.highG);
+      expect(r.perMeal4[1] * 4).toBeLessThanOrEqual(r.highG);
+      expect(r.perMeal3[0]).toBeLessThanOrEqual(r.perMeal3[1]);
+      expect(r.perMeal4[0]).toBeLessThanOrEqual(r.perMeal4[1]);
+    }
+  });
+
+  it("rejects a bad weight or body fat", () => {
+    expect(() => proteinRange(NaN, "maintain")).toThrow(RangeError);
+    expect(() => proteinRange(-5, "gain")).toThrow(RangeError);
+    expect(() => proteinRange(80, "cut", NaN)).toThrow(RangeError);
+    expect(() => proteinRange(80, "cut", 1.9)).toThrow(RangeError);
+    expect(() => proteinRange(80, "cut", 75.1)).toThrow(RangeError);
+    expect(() => proteinRange(80, "cut", 2)).not.toThrow();
   });
 });

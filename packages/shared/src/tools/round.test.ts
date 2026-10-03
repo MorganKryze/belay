@@ -10,6 +10,8 @@ describe("roundTo", () => {
     [0.1 + 0.2, 0.1, 0.3],
     [0.85000000001, 0.05, 0.85],
     [137.6, 5, 140],
+    [24.95, 0.1, 25],
+    [18.45, 0.1, 18.5],
   ])("roundTo(%d, %d) = %d", (value, step, expected) => {
     expect(roundTo(value, step)).toBe(expected);
   });

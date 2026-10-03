@@ -18,6 +18,9 @@ export const NAVY_RANGE_PCT = { min: 2, max: 75 } as const;
 // DoDI 1308.3 E3.1.3, centimetre form: the inch constants 36.76 and −78.387 become 30.295 and
 // −104.912 under log10(x_in) = log10(x_cm) − log10(2.54). Rounded to an integer (E3.1.2.1).
 export function navyBodyFat({ formula, heightCm, neckCm, waistCm, hipCm }: NavyInput): NavyResult {
+  if (![heightCm, neckCm, waistCm, hipCm ?? 0].every(Number.isFinite)) {
+    return { kind: "invalid-girths" };
+  }
   const girth = formula === "male" ? waistCm - neckCm : waistCm + (hipCm ?? NaN) - neckCm;
   // log10 of zero or less is -Infinity or NaN: refuse before computing.
   if (!(girth > 0) || !(heightCm > 0)) return { kind: "invalid-girths" };
@@ -25,9 +28,12 @@ export function navyBodyFat({ formula, heightCm, neckCm, waistCm, hipCm }: NavyI
     formula === "male"
       ? 86.01 * Math.log10(girth) - 70.041 * Math.log10(heightCm) + 30.295
       : 163.205 * Math.log10(girth) - 97.684 * Math.log10(heightCm) - 104.912;
-  if (exact < NAVY_RANGE_PCT.min || exact > NAVY_RANGE_PCT.max)
+  // The range applies to the value that is shown: 1.7 shows as 2 and is accepted.
+  const percent = Math.round(exact);
+  if (percent < NAVY_RANGE_PCT.min || percent > NAVY_RANGE_PCT.max) {
     return { kind: "out-of-range", exact };
-  return { kind: "ok", percent: Math.round(exact), exact };
+  }
+  return { kind: "ok", percent, exact };
 }
 
 // Gallagher 2000: % body fat at BMI 18.5, 25 and 30. Table 4 (African American and white,
@@ -57,7 +63,7 @@ const GALLAGHER: Record<
 
 // Three bands only: the paper does not support interpolating between them.
 export function ageGroup(ageYears: number): AgeGroup | null {
-  if (ageYears < 20 || ageYears >= 80) return null;
+  if (!(ageYears >= 20 && ageYears < 80)) return null;
   return ageYears < 40 ? "20-39" : ageYears < 60 ? "40-59" : "60-79";
 }
 

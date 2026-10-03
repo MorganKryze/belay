@@ -14,6 +14,23 @@ describe("bmi", () => {
   });
 });
 
+describe("bmi ties and bounds", () => {
+  it("rounds an exact x.x5 up", () => {
+    expect(bmi(99.8, 200)).toBe(25); // 24.95
+    expect(bmiBand(bmi(99.8, 200))).toBe("above");
+    expect(bmi(73.8, 200)).toBe(18.5); // 18.45
+    expect(bmiBand(bmi(73.8, 200))).toBe("reference");
+  });
+
+  it("rejects values outside the spec ranges", () => {
+    expect(() => bmi(NaN, 180)).toThrow(RangeError);
+    expect(() => bmi(29, 180)).toThrow(RangeError);
+    expect(() => bmi(301, 180)).toThrow(RangeError);
+    expect(() => bmi(80, 119)).toThrow(RangeError);
+    expect(() => bmi(80, 231)).toThrow(RangeError);
+  });
+});
+
 describe("bmiBand", () => {
   it.each([
     [18.4, "below"],
