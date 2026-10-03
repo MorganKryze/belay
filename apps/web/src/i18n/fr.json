@@ -199,7 +199,7 @@
     },
     "result": "Dépense du jour",
     "range": "entre {{low}} et {{high}} environ",
-    "bmr": "Métabolisme de base (au repos)",
+    "bmr": "Dépense au repos",
     "note": "Une estimation à ±10 % : environ 1 personne sur 5 est à plus de 10 % de sa mesure réelle. C'est un point de départ, que tes pesées et tes apports affineront plus tard."
   },
   "protein": {
@@ -240,8 +240,8 @@
     "weeks": "Dans {{low}} à {{high}} semaines. La perte ralentit à mesure que tu perds du poids, d'où une fourchette.",
     "strip": "Fenêtre d'arrivée : de {{from}} à {{to}}",
     "notBelow": "La projection calcule une perte de poids ; ton objectif est déjà atteint ou au-dessus.",
-    "above1": "Au-delà de 1 % par semaine, une étude chez des athlètes observe moins de gain de masse maigre. Source dans la fiche.",
-    "above15": "Ce rythme est rarement tenable sans perte de muscle. Si c'est ton plan, fais-toi suivre par un médecin ou un diététicien."
+    "above1": "Chez des athlètes, un rythme d'environ 1 % par semaine s'est accompagné de moins de gain de masse maigre (Garthe 2011). Source dans la fiche.",
+    "above15": "À ce rythme, Belay te conseille de te faire suivre par un médecin ou un diététicien."
   },
   "bmi": {
     "lead": "Ton indice de masse corporelle, placé sur les plages de l'OMS.",

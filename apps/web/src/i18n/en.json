@@ -199,7 +199,7 @@
     },
     "result": "Today's expenditure",
     "range": "between {{low}} and {{high}} or so",
-    "bmr": "Resting metabolism",
+    "bmr": "Resting energy expenditure",
     "note": "An estimate within about ±10%: roughly 1 person in 5 is more than 10% away from their measured value. It's a starting point that your weigh-ins and intake will refine later."
   },
   "protein": {
@@ -240,8 +240,8 @@
     "weeks": "In {{low}} to {{high}} weeks. Loss slows down as you lose weight, hence a range.",
     "strip": "Arrival window: {{from}} to {{to}}",
     "notBelow": "The projection works out a weight loss; your goal is already reached or above your current weight.",
-    "above1": "Beyond 1% per week, one study in athletes observes less lean-mass gain. Source in the sheet.",
-    "above15": "This pace is rarely sustainable without losing muscle. If it's your plan, get support from a doctor or a dietitian."
+    "above1": "In athletes, a pace of about 1% per week came with less lean-mass gain (Garthe 2011). Source in the sheet.",
+    "above15": "At this pace, Belay suggests being followed by a doctor or a dietitian."
   },
   "bmi": {
     "lead": "Your body mass index, placed on the WHO ranges.",
