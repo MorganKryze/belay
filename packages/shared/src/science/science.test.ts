@@ -106,4 +106,11 @@ describe("renderScienceDoc", () => {
     for (const s of SOURCES) expect(doc).toContain(s.title);
     expect(doc.endsWith("\n")).toBe(true);
   });
+
+  it("links the references without a DOI and flags the third-party copy", () => {
+    const doc = renderScienceDoc();
+    for (const id of ["fao-2004", "who-trs-894", "dodi-1308-3", "iwf-tcrr-2020"] as const)
+      expect(doc).toContain(`[Record read](${sourceById(id).url})`);
+    expect(doc).toContain("Read on a third-party copy");
+  });
 });

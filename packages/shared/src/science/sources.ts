@@ -362,7 +362,8 @@ export const SOURCES = [
     title: "Technical and Competition Rules & Regulations 2020",
     venue: "IWF, in effect 1 January 2020",
     identifier: [{ kind: "report", value: "IWF TCRR 2020, rule 3.3.3.6" }],
-    url: "https://iwf.sport/wp-content/uploads/downloads/2020/01/IWF_TCRR_2020.pdf",
+    // The copy that was read: a Wayback snapshot, the IWF host blocked the verification tools.
+    url: "https://web.archive.org/web/20250707232059if_/https://iwf.sport/wp-content/uploads/downloads/2020/01/IWF_TCRR_2020.pdf",
     verifiedOn: VERIFIED_ON,
   },
 ] as const satisfies readonly Source[];

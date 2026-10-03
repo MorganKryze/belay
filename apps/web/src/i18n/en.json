@@ -240,7 +240,7 @@
     "weeks": "In {{low}} to {{high}} weeks. Loss slows down as you lose weight, hence a range.",
     "strip": "Arrival window: {{from}} to {{to}}",
     "notBelow": "The projection works out a weight loss; your goal is already reached or above your current weight.",
-    "above1": "Studies observe more muscle and performance loss at this pace.",
+    "above1": "Beyond 1% per week, one study in athletes observes less lean-mass gain. Source in the sheet.",
     "above15": "This pace is rarely sustainable without losing muscle. If it's your plan, get support from a doctor or a dietitian."
   },
   "bmi": {

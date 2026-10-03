@@ -240,7 +240,7 @@
     "weeks": "Dans {{low}} à {{high}} semaines. La perte ralentit à mesure que tu perds du poids, d'où une fourchette.",
     "strip": "Fenêtre d'arrivée : de {{from}} à {{to}}",
     "notBelow": "La projection calcule une perte de poids ; ton objectif est déjà atteint ou au-dessus.",
-    "above1": "Les études observent plus de perte de muscle et de performance à ce rythme.",
+    "above1": "Au-delà de 1 % par semaine, une étude chez des athlètes observe moins de gain de masse maigre. Source dans la fiche.",
     "above15": "Ce rythme est rarement tenable sans perte de muscle. Si c'est ton plan, fais-toi suivre par un médecin ou un diététicien."
   },
   "bmi": {

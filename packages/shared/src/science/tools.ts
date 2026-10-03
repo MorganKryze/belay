@@ -185,9 +185,9 @@ export const TOOL_SCIENCE: Record<ToolId, ToolScience> = {
         heuristic:
           "Chaque élément a sa source, mais aucune étude ne valide l'association de Mifflin et des niveaux d'activité : cette combinaison est une heuristique Belay.",
         formula: [
-          "Métabolisme de base = 10 × poids (kg) + 6,25 × taille (cm) − 5 × âge (ans) + s",
+          "Dépense au repos = 10 × poids (kg) + 6,25 × taille (cm) − 5 × âge (ans) + s",
           "s = +5 avec la formule homme, −161 avec la formule femme",
-          "Dépense du jour = métabolisme de base × niveau d'activité, arrondie à 10 kcal",
+          "Dépense du jour = dépense au repos × niveau d'activité, arrondie à 10 kcal",
           "Niveaux d'activité (FAO 2004) : 1,40 · 1,55 · 1,75 · 2,00",
           "Fourchette : ±10 %",
         ],
@@ -195,7 +195,7 @@ export const TOOL_SCIENCE: Record<ToolId, ToolScience> = {
           "Frankenfield 2003 (130 adultes) : avec Mifflin, l'écart dépasse 10 % de la mesure chez 22 % des personnes.",
           "L'étude de Mifflin portait sur 498 adultes en bonne santé, de 19 à 78 ans.",
           "La FAO définit ses niveaux d'activité par rapport au métabolisme de base, alors que Mifflin mesure la dépense au repos : c'est proche, mais pas identique.",
-          "Les multiplicateurs courants 1,2 · 1,375 · 1,55 · 1,725 · 1,9 n'ont pas de source traçable, alors Belay ne les utilise pas. Le 1,2 est presque le 1,21 que la FAO réserve aux personnes totalement inactives en situation de crise.",
+          "Aucune source traçable trouvée pour les coefficients 1,2 · 1,375 · 1,55 · 1,725 · 1,9 ; la consultation FAO/OMS a jugé 1,21 trop bas et retient 1,40 comme plancher sédentaire.",
         ],
       },
       en: {
@@ -210,9 +210,9 @@ export const TOOL_SCIENCE: Record<ToolId, ToolScience> = {
         heuristic:
           "Each part has a source, but no study validates pairing Mifflin with the activity levels: that combination is a Belay heuristic.",
         formula: [
-          "Resting metabolism = 10 × weight (kg) + 6.25 × height (cm) − 5 × age (years) + s",
+          "Resting energy expenditure = 10 × weight (kg) + 6.25 × height (cm) − 5 × age (years) + s",
           "s = +5 with the male formula, −161 with the female formula",
-          "Daily expenditure = resting metabolism × activity level, rounded to 10 kcal",
+          "Daily expenditure = resting energy expenditure × activity level, rounded to 10 kcal",
           "Activity levels (FAO 2004): 1.40 · 1.55 · 1.75 · 2.00",
           "Range: ±10%",
         ],
@@ -220,7 +220,7 @@ export const TOOL_SCIENCE: Record<ToolId, ToolScience> = {
           "Frankenfield 2003 (130 adults): with Mifflin, the error exceeds 10% of the measured value for 22% of people.",
           "Mifflin's study covered 498 healthy adults aged 19 to 78.",
           "The FAO defines its activity levels against basal metabolism, while Mifflin measures resting expenditure: close, but not the same.",
-          "The common multipliers 1.2 · 1.375 · 1.55 · 1.725 · 1.9 have no traceable source, so Belay does not use them. The 1.2 is almost the 1.21 that the FAO keeps for totally inactive people in a crisis.",
+          "No traceable source found for the coefficients 1.2 · 1.375 · 1.55 · 1.725 · 1.9; the FAO/WHO consultation judged 1.21 too low and keeps 1.40 as the sedentary floor.",
         ],
       },
     },
@@ -287,7 +287,7 @@ export const TOOL_SCIENCE: Record<ToolId, ToolScience> = {
           "Belay calcule combien de semaines il te faut pour atteindre ton objectif en perdant chaque semaine un pourcentage de ton poids du moment. Le résultat est une fourchette de dates, parce que la perte ralentit à mesure que tu perds du poids.",
         keep: [
           "Les études recommandent un rythme de 0,5 à 1 % du poids par semaine.",
-          "Au-delà de 1 % par semaine, elles observent plus de perte de muscle et de performance.",
+          "Chez des athlètes, un rythme plus rapide (≈ 1 %/semaine) s'est accompagné de moins de gain de masse maigre (Garthe 2011).",
           "Refais le calcul avec ton poids moyen à chaque pesée.",
         ],
         heuristic:
@@ -311,7 +311,7 @@ export const TOOL_SCIENCE: Record<ToolId, ToolScience> = {
           "Belay works out how many weeks you need to reach your goal if you lose a percentage of your current weight each week. The result is a range of dates, because the loss slows down as you lose weight.",
         keep: [
           "Studies recommend a pace of 0.5 to 1% of body weight per week.",
-          "Beyond 1% per week, they observe more muscle and performance loss.",
+          "In athletes, a faster pace (≈ 1%/week) came with less lean-mass gain (Garthe 2011).",
           "Run it again with your average weight at each weigh-in.",
         ],
         heuristic:
@@ -348,6 +348,7 @@ export const TOOL_SCIENCE: Record<ToolId, ToolScience> = {
           "IMC = poids (kg) / taille (m)²",
           "Affiché à 0,1 près ; la plage est choisie sur la valeur affichée.",
           "Plages de l'OMS : moins de 18,5 · 18,5 à 25 · 25 à 30 · 30 et plus. 25,0 appartient à 25 – 30.",
+          "Belay suggère d'en parler à un professionnel de santé sous 18,5 et à partir de 35 (obésité de classe II, OMS TRS 894).",
         ],
         limits: [
           "L'OMS écrit elle-même que l'IMC ne distingue pas le poids lié au muscle du poids lié à la graisse.",
@@ -369,6 +370,7 @@ export const TOOL_SCIENCE: Record<ToolId, ToolScience> = {
           "BMI = weight (kg) / height (m)²",
           "Shown to 0.1; the range is picked from the value shown.",
           "WHO ranges: under 18.5 · 18.5 to 25 · 25 to 30 · 30 and over. 25.0 belongs to 25 – 30.",
+          "Belay suggests talking to a health professional below 18.5 and from 35 (WHO TRS 894 obesity class II).",
         ],
         limits: [
           "The WHO itself writes that BMI does not distinguish weight from muscle and weight from fat.",
@@ -411,7 +413,7 @@ export const TOOL_SCIENCE: Record<ToolId, ToolScience> = {
           "Dans les rapports d'origine (602 hommes, 214 femmes, comparés à la pesée hydrostatique), l'erreur type est d'environ 3,5 à 3,7 points ; des écarts individuels de 8 points ne sont pas rares.",
           "Potter 2022 (Marines américains, comparés au DXA) : les personnes minces sont surestimées, celles à forte masse grasse sous-estimées.",
           "Le « ±1 % » de la DoDI mesure l'accord entre mesureurs entraînés, pas la justesse.",
-          "Gallagher 2000 donne la masse grasse qui correspond à un IMC de 18,5, 25 et 30 ; les auteurs précisent que ce ne sont pas des plages définitives. Les mots « sain » ou « en surpoids » ne sont pas les leurs.",
+          "L'article ne nomme pas de plages de masse grasse : il donne la masse grasse correspondant à un IMC de 18,5, 25 et 30. Belay les présente ainsi, sans étiquette.",
           "Le tableau 5 a été établi sur des personnes vivant au Japon.",
         ],
       },
@@ -436,7 +438,7 @@ export const TOOL_SCIENCE: Record<ToolId, ToolScience> = {
           "In the original reports (602 men, 214 women, checked against underwater weighing), the standard error is about 3.5 to 3.7 points; individual errors of 8 points are not rare.",
           "Potter 2022 (US Marines, checked against DXA): lean people are overestimated and people with more body fat underestimated.",
           "The “±1%” in the DoDI measures agreement between trained measurers, not accuracy.",
-          "Gallagher 2000 gives the body fat that matches a BMI of 18.5, 25 and 30; the authors say these are not definitive ranges. Words such as “healthy” or “overweight” are not theirs.",
+          "The paper does not name body-fat ranges: it gives the body fat matching a BMI of 18.5, 25 and 30. Belay presents them that way, without a label.",
           "Table 5 was built from people living in Japan.",
         ],
       },

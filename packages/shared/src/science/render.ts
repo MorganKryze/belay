@@ -53,7 +53,11 @@ function referenceLine(source: Source, authors: string): string {
     })
     .join(" · ");
   const status = hasDoi(source) ? "DOI verified" : "stable identifier, no DOI";
-  return `- ${authors} ${source.year}. ${sentence(source.title)} _${source.venue}._ ${ids} (${status} on ${source.verifiedOn})`;
+  // Without a DOI the record that was read is the only link; DoDI is a third-party copy.
+  const link = hasDoi(source) ? "" : ` [Record read](${source.url}).`;
+  const copy =
+    source.id === "dodi-1308-3" ? " Read on a third-party copy, not the official host." : "";
+  return `- ${authors} ${source.year}. ${sentence(source.title)} _${source.venue}._ ${ids}${link} (${status} on ${source.verifiedOn}.${copy})`;
 }
 
 const LABELS = {
@@ -69,7 +73,7 @@ export function renderScienceDoc(): string {
     "",
     "Generated from `packages/shared/src/science`. Do not edit by hand: run `pnpm science:doc`.",
     "",
-    'Each tool in Belay shows its formula, its sources and its limits. Every reference below was checked against an authoritative record on the date shown. What has no source is labelled "Belay heuristic".',
+    'Each tool in Belay shows its formula, its sources and its limits. Every reference below was checked on the date shown, against its DOI or a stable identifier on an authoritative record; where a copy rather than the official host was read, the entry says so. What has no source is labelled "Belay heuristic".',
   ];
   for (const id of TOOL_IDS) {
     const { label, sourceIds, content } = TOOL_SCIENCE[id];
