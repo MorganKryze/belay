@@ -2,7 +2,7 @@ import { HEIGHT_RANGE_CM, WEIGHT_RANGE_KG } from "@belay/shared/tools/bounds";
 import { NAVY_RANGE_PCT, navyBodyFat } from "@belay/shared/tools/body-fat";
 import type { ToolId } from "@belay/shared/tools/catalog";
 import { PLATE_PRESETS } from "@belay/shared/tools/plates";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import { attempt } from "./attempt";
 
@@ -128,11 +128,20 @@ function withBodyFat(prev: ToolState, next: ToolState): ToolState {
 
 // One state per page: every field a page touches goes through the same `update`, so two writes
 // in a row never overwrite each other with a stale copy.
-// ponytail: state is read once per mount and written whole, so two tabs open on the tools
-// overwrite each other's last write. The ceiling is concurrent tabs; the upgrade is to re-read
-// the stored state inside `update`, or to listen to the `storage` event.
+// Another tab's write arrives as a `storage` event and replaces this copy (validated again by
+// readToolState), so the next write here starts from it instead of overwriting it.
+// ponytail: last write wins within one instant; two tabs typing in the same keystroke window can
+// still drop a field. The ceiling is simultaneous edits, which one person on one device rarely makes.
 export function useTool<S extends z.ZodType<Record<string, unknown>>>(toolId: ToolId, schema: S) {
   const [state, setState] = useState(readToolState);
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      // A null key means the whole storage was cleared.
+      if (e.key === TOOL_STATE_KEY || e.key === null) setState(readToolState());
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
   const update = useCallback((change: (prev: ToolState) => ToolState) => {
     setState((prev) => {
       const next = withBodyFat(prev, change(prev));
