@@ -17,6 +17,7 @@ export function ResultCard({
     <section
       aria-labelledby={id}
       aria-live="polite"
+      aria-atomic="true"
       className={cn(
         "flex flex-col gap-1 rounded-card p-4",
         tone === "soft" ? "bg-primary-soft" : "border border-border bg-card",
