@@ -1,3 +1,4 @@
+import { TOOL_SCIENCE } from "@belay/shared/science/tools";
 import { describe, expect, it } from "vitest";
 import en from "./en.json";
 import fr from "./fr.json";
@@ -41,6 +42,7 @@ describe("translations", () => {
       Object.values(o).flatMap((v) =>
         typeof v === "object" && v !== null ? strings(v) : [String(v)],
       );
-    expect(strings(fr).filter((s) => /[^\s] [:;?!%»]|« /.test(s))).toEqual([]);
+    const science = Object.values(TOOL_SCIENCE).flatMap((t) => strings(t.content.fr));
+    expect([...strings(fr), ...science].filter((s) => /[^\s] [:;?!%»]|« /.test(s))).toEqual([]);
   });
 });
