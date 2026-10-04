@@ -51,14 +51,18 @@ describe("NumberStepper", () => {
     expect((input() as HTMLInputElement).value).toBe("97.5");
   });
 
-  it("stops at the bounds and disables the button there", () => {
+  it("stops at the bounds and marks the button disabled without dropping its focus", () => {
     const onChange = vi.fn();
     render(<Harness initial={297.5} onChange={onChange} />);
     fireEvent.click(screen.getByRole("button", { name: "Increase Load" }));
     expect(onChange).toHaveBeenLastCalledWith(300);
-    expect(
-      (screen.getByRole("button", { name: "Increase Load" }) as HTMLButtonElement).disabled,
-    ).toBe(true);
+    const up = screen.getByRole("button", { name: "Increase Load" }) as HTMLButtonElement;
+    expect(up.getAttribute("aria-disabled")).toBe("true");
+    expect(up.disabled).toBe(false);
+    up.focus();
+    fireEvent.click(up);
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(document.activeElement).toBe(up);
   });
 
   it("clamps a typed value to the bounds on blur", () => {

@@ -42,6 +42,9 @@ export function NumberStepper({
   // What the person is typing; null while the field shows the committed value.
   const [draft, setDraft] = useState<string | null>(null);
 
+  const atMin = value !== null && value <= min;
+  const atMax = value !== null && value >= max;
+
   const nudge = (direction: 1 | -1) => {
     const next = clamp(roundTo((value ?? min) + direction * step, step), min, max);
     setDraft(null);
@@ -73,8 +76,9 @@ export function NumberStepper({
     }
   };
 
+  // aria-disabled, not disabled: the button keeps keyboard focus when it reaches a bound.
   const button =
-    "grid size-12 shrink-0 place-items-center text-primary disabled:text-muted-foreground disabled:opacity-60";
+    "grid size-12 shrink-0 place-items-center text-primary aria-disabled:text-muted-foreground aria-disabled:opacity-60";
   return (
     <div className="flex min-w-0 flex-col gap-1.5">
       <label htmlFor={id} className="text-[13px] font-semibold">
@@ -91,8 +95,8 @@ export function NumberStepper({
             type="button"
             className={button}
             aria-label={t("stepper.decrease", { label })}
-            disabled={value !== null && value <= min}
-            onClick={() => nudge(-1)}
+            aria-disabled={atMin}
+            onClick={() => !atMin && nudge(-1)}
           >
             <Minus aria-hidden className="size-5" />
           </button>
@@ -138,8 +142,8 @@ export function NumberStepper({
             type="button"
             className={button}
             aria-label={t("stepper.increase", { label })}
-            disabled={value !== null && value >= max}
-            onClick={() => nudge(1)}
+            aria-disabled={atMax}
+            onClick={() => !atMax && nudge(1)}
           >
             <Plus aria-hidden className="size-5" />
           </button>
