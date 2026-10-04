@@ -1,5 +1,7 @@
 {
-  "app": { "name": "Belay" },
+  "app": {
+    "name": "Belay"
+  },
   "home": {
     "signIn": "Se connecter",
     "signOut": "Se déconnecter",
@@ -13,11 +15,286 @@
     "failed": "La connexion n'a pas abouti. Réessaie."
   },
   "offline": "Tu es hors ligne.",
-  "nav": { "home": "Accueil", "settings": "Réglages" },
+  "nav": {
+    "label": "Principale",
+    "home": "Accueil",
+    "tools": "Outils",
+    "settings": "Réglages"
+  },
   "settings": {
     "title": "Réglages",
     "language": "Langue",
     "theme": "Thème",
-    "themes": { "light": "Clair", "dark": "Sombre", "system": "Système" }
+    "themes": {
+      "light": "Clair",
+      "dark": "Sombre",
+      "system": "Système"
+    }
+  },
+  "fallback": {
+    "notFoundTitle": "Page introuvable",
+    "notFoundBody": "Cette adresse ne mène nulle part dans Belay.",
+    "backHome": "Retour à l'accueil",
+    "errorTitle": "Quelque chose a coincé",
+    "errorBody": "Cette page n'a pas pu s'afficher. Si l'app vient d'être mise à jour, la recharger suffit en général.",
+    "reload": "Recharger"
+  },
+  "stepper": {
+    "decrease": "Diminuer {{label}}",
+    "increase": "Augmenter {{label}}"
+  },
+  "range": {
+    "you": "toi",
+    "current": "Ta valeur est dans cette plage : {{range}}, {{label}}.",
+    "under": "< {{value}}",
+    "between": "{{low}} – {{high}}",
+    "andOver": "{{value}} et plus",
+    "percent": "{{value}} %"
+  },
+  "science": {
+    "title": "Comment c'est calculé",
+    "labels": {
+      "source": "Source scientifique",
+      "heuristic": "Heuristique Belay"
+    },
+    "brief": "En bref",
+    "keep": "À garder en tête",
+    "formula": "La formule",
+    "sources": "Les sources",
+    "sourceCount_one": "{{count}} référence",
+    "sourceCount_other": "{{count}} références",
+    "limits": "Les limites en détail",
+    "doi": "DOI vérifié",
+    "stable": "identifiant stable · pas de DOI",
+    "record": "Fiche consultée",
+    "thirdParty": "Consultée sur une copie tierce, pas sur le site officiel."
+  },
+  "tools": {
+    "title": "Outils",
+    "lead": "Tout est calculé sur ton appareil. Rien n'est envoyé.",
+    "back": "Outils",
+    "groups": {
+      "strength": "Force",
+      "energy": "Énergie",
+      "body": "Corps"
+    },
+    "items": {
+      "one-rep-max": {
+        "name": "1RM estimé",
+        "hint": "Ton max à partir d'une série"
+      },
+      "plates": {
+        "name": "Disques",
+        "hint": "Quoi charger sur la barre"
+      },
+      "warmup": {
+        "name": "Montée en charge",
+        "hint": "Tes séries d'échauffement"
+      },
+      "energy": {
+        "name": "Dépense énergétique",
+        "hint": "Métabolisme et dépense du jour"
+      },
+      "protein": {
+        "name": "Protéines",
+        "hint": "Ta fourchette par jour et par repas"
+      },
+      "projection": {
+        "name": "Projection",
+        "hint": "Quand tu peux atteindre ton objectif"
+      },
+      "bmi": {
+        "name": "IMC",
+        "hint": "Où tu te situes sur les plages de l'OMS"
+      },
+      "body-fat": {
+        "name": "Masse grasse",
+        "hint": "Une estimation au mètre ruban"
+      }
+    },
+    "formula": {
+      "label": "Formule",
+      "female": "Femme",
+      "male": "Homme"
+    },
+    "fields": {
+      "weight": "Poids",
+      "height": "Taille",
+      "age": "Âge"
+    }
+  },
+  "oneRepMax": {
+    "lead": "Ton max à partir d'une série menée près de l'échec.",
+    "load": "Charge",
+    "reps": "Répétitions",
+    "result": "Ton 1RM estimé",
+    "oneRep": "Avec 1 répétition, ton 1RM est la charge soulevée.",
+    "lessReliable": "Au-delà de 10 répétitions, l'estimation est moins fiable."
+  },
+  "plates": {
+    "lead": "Quoi mettre de chaque côté de la barre.",
+    "target": "Charge visée",
+    "result": "De chaque côté",
+    "perSide": "{{plates}} kg par côté",
+    "barOnly": "Barre seule",
+    "bar": "Barre de {{bar}} kg",
+    "unreachable": "{{target}} kg n'est pas faisable avec ton matériel.",
+    "below": "Juste en dessous : {{total}} kg ({{detail}})",
+    "above": "Juste au-dessus : {{total}} kg ({{detail}})",
+    "underBar": "La barre seule pèse déjà {{bar}} kg.",
+    "equipment": "Mon matériel"
+  },
+  "equipment": {
+    "title": "Mon matériel",
+    "lead": "Enregistré sur cet appareil.",
+    "start": "Point de départ",
+    "presets": {
+      "competition": "Compétition",
+      "gym": "Salle",
+      "custom": "Sur mesure"
+    },
+    "bar": "Barre",
+    "kg": "{{value}} kg",
+    "otherBar": "Autre",
+    "otherBarLabel": "Poids de la barre",
+    "plates": "Disques",
+    "edit": "Modifier ce matériel",
+    "presetNote": "« Modifier » copie ce préréglage dans « Sur mesure » : les préréglages ne changent jamais.",
+    "copied": "Copié depuis « {{preset}} ». Touche un disque pour l'ajouter ou le retirer.",
+    "customNote": "Touche un disque pour l'ajouter ou le retirer.",
+    "newPlate": "Nouveau disque",
+    "add": "Ajouter"
+  },
+  "warmup": {
+    "lead": "Tes séries d'échauffement, arrondies à ton matériel.",
+    "work": "Charge de travail",
+    "count": "Échauffement",
+    "result": "Ton échauffement",
+    "perSide": "{{plates}} par côté",
+    "barOnly": "barre seule",
+    "reps": "× {{reps}}",
+    "workSets": "séries de travail",
+    "yours": "à toi",
+    "lightWork": "Ta charge de travail est la barre seule ou plus légère : il n'y a pas d'échauffement à calculer.",
+    "note": "Les charges sont arrondies à ton matériel (« {{preset}} »). Aucune étude ne fixe un schéma unique : c'est une progression courante, à ajuster comme tu veux."
+  },
+  "energy": {
+    "lead": "Ton métabolisme au repos et ce que tu dépenses dans la journée.",
+    "activity": "Ton activité",
+    "levels": {
+      "very-sedentary": {
+        "name": "Très sédentaire",
+        "description": "Assis presque toute la journée, peu de marche."
+      },
+      "sedentary": {
+        "name": "Sédentaire / activité légère",
+        "description": "Travail peu physique, sans exercice régulier."
+      },
+      "active": {
+        "name": "Actif",
+        "description": "Comme sédentaire, plus environ une heure d'exercice modéré à soutenu par jour."
+      },
+      "very-active": {
+        "name": "Très actif",
+        "description": "Un mode de vie très actif : travail physique ou exercice intense une bonne partie de la journée."
+      }
+    },
+    "result": "Dépense du jour",
+    "range": "entre {{low}} et {{high}} environ",
+    "bmr": "Dépense au repos",
+    "note": "Une estimation à ±10 % : environ 1 personne sur 5 est à plus de 10 % de sa mesure réelle. C'est un point de départ, que tes pesées et tes apports affineront plus tard."
+  },
+  "protein": {
+    "lead": "Une fourchette par jour et par repas, selon ton objectif.",
+    "goal": "Ton objectif",
+    "goals": {
+      "maintain": "Maintien",
+      "cut": "Sèche",
+      "gain": "Prise"
+    },
+    "bodyFat": "Masse grasse (facultatif)",
+    "result": "Par jour",
+    "range": "{{low}} à {{high}}",
+    "perKg": "soit {{low}} à {{high}} g par kg de poids",
+    "meals3": "Sur 3 repas",
+    "meals4": "Sur 4 repas",
+    "leanMass": "En sèche, la fourchette part de ta masse maigre : 2,3 à 3,1 g par kg de masse maigre.",
+    "noBodyFat": "Sans masse grasse, Belay prend 1,8 à 2,5 g par kg de poids (heuristique Belay). Ajoute ta masse grasse pour une fourchette plus juste.",
+    "floor": "Relevée à 1,6 g par kg de poids, le plancher que Belay garde en sèche (heuristique Belay)."
+  },
+  "projection": {
+    "lead": "Quand tu peux atteindre ton objectif, sous forme de fourchette de dates.",
+    "current": "Poids moyen",
+    "target": "Objectif",
+    "rate": "Ton rythme",
+    "rateHint": "(perte par semaine)",
+    "rates": {
+      "gentle": "Doux",
+      "balanced": "Équilibré",
+      "steady": "Soutenu"
+    },
+    "rateAside": "{{pct}} % · {{kg}} kg",
+    "fine": "Réglage fin",
+    "presets": "Revenir aux rythmes",
+    "fineLabel": "Rythme (% par semaine)",
+    "result": "Objectif atteint",
+    "between": "Entre le {{low}} et le {{high}}",
+    "weeks": "Dans {{low}} à {{high}} semaines. La perte ralentit à mesure que tu perds du poids, d'où une fourchette.",
+    "strip": "Fenêtre d'arrivée : de {{from}} à {{to}}",
+    "notBelow": "La projection calcule une perte de poids ; ton objectif est déjà atteint ou au-dessus.",
+    "above1": "Chez des athlètes, un rythme d'environ 1 % par semaine s'est accompagné de moins de gain de masse maigre (Garthe 2011). Source dans la fiche.",
+    "above15": "À ce rythme, Belay te conseille de te faire suivre par un médecin ou un diététicien."
+  },
+  "bmi": {
+    "lead": "Ton indice de masse corporelle, placé sur les plages de l'OMS.",
+    "result": "Ton IMC",
+    "rangesLabel": "Plages de l'OMS",
+    "bands": {
+      "below": "En dessous",
+      "reference": "Plage de référence de l'OMS",
+      "above": "Au-dessus",
+      "well-above": "Nettement au-dessus"
+    },
+    "sentence": {
+      "below": "En dessous de la plage de référence de l'OMS (moins de {{low}}).",
+      "reference": "Dans la plage de référence de l'OMS ({{low}} à {{high}}).",
+      "above": "Au-dessus de la plage de référence de l'OMS ({{low}} à {{high}}).",
+      "well-above": "Nettement au-dessus de la plage de référence de l'OMS ({{low}} et plus)."
+    },
+    "professional": "Si tu te poses des questions sur ton poids, parles-en à un professionnel de santé.",
+    "note": "L'IMC ne distingue pas le muscle de la graisse : c'est un repère de population, pas un diagnostic."
+  },
+  "bodyFat": {
+    "lead": "Une estimation au mètre ruban, avec des repères publiés.",
+    "neck": "Tour de cou",
+    "waistMale": "Tour de taille au nombril",
+    "waistFemale": "Tour de taille au plus fin",
+    "hip": "Tour de hanches",
+    "heightKnown": "Taille : {{height}} cm (depuis tes saisies)",
+    "editHeight": "modifier",
+    "result": "Ta masse grasse estimée",
+    "error": "estimation ±4 points",
+    "bias": "Elle surestime souvent les personnes minces et sous-estime les personnes à forte masse grasse.",
+    "invalidMale": "Le tour de taille doit dépasser le tour de cou.",
+    "invalidFemale": "Tour de taille et tour de hanches réunis doivent dépasser le tour de cou.",
+    "outOfRange": "Ces mesures sortent de ce que la formule sait calculer. Vérifie-les.",
+    "rangesLabel": "Repères",
+    "bands": {
+      "below": "Correspondant à un IMC < 18,5",
+      "reference": "Correspondant à un IMC de 18,5 à 25",
+      "above": "Correspondant à un IMC de 25 à 30",
+      "well-above": "Correspondant à un IMC de 30 et plus"
+    },
+    "caption": {
+      "standard": "Pour la formule {{formula}}, de {{from}} à {{to}} ans (Gallagher 2000, tableau 4).",
+      "asian": "Pour la formule {{formula}}, de {{from}} à {{to}} ans, personnes d'origine asiatique (Gallagher 2000, tableau 5)."
+    },
+    "noReferences": "Les repères publiés couvrent 20 à 79 ans : pour ton âge, seule l'estimation s'affiche.",
+    "reference": "Jeu de repères",
+    "references": {
+      "standard": "Standard",
+      "asian": "Asiatique"
+    },
+    "referenceNote": "« Asiatique » utilise le tableau 5 de Gallagher, établi sur des personnes vivant au Japon. Ce choix reste sur ton appareil."
   }
 }

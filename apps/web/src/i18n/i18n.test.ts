@@ -26,4 +26,13 @@ describe("translations", () => {
   it("have exactly the same keys in every language", () => {
     expect(keys(fr).sort()).toEqual(keys(en).sort());
   });
+
+  it("never judges a body", () => {
+    const judging = /sain|surpoids|obèse|healthy|overweight|obese/i;
+    const strings = (o: object): string[] =>
+      Object.values(o).flatMap((v) =>
+        typeof v === "object" && v !== null ? strings(v) : [String(v)],
+      );
+    expect([...strings(en), ...strings(fr)].filter((s) => judging.test(s))).toEqual([]);
+  });
 });

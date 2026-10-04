@@ -1,5 +1,7 @@
 {
-  "app": { "name": "Belay" },
+  "app": {
+    "name": "Belay"
+  },
   "home": {
     "signIn": "Sign in",
     "signOut": "Sign out",
@@ -13,11 +15,286 @@
     "failed": "Sign-in didn't work. Please try again."
   },
   "offline": "You're offline.",
-  "nav": { "home": "Home", "settings": "Settings" },
+  "nav": {
+    "label": "Main",
+    "home": "Home",
+    "tools": "Tools",
+    "settings": "Settings"
+  },
   "settings": {
     "title": "Settings",
     "language": "Language",
     "theme": "Theme",
-    "themes": { "light": "Light", "dark": "Dark", "system": "System" }
+    "themes": {
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System"
+    }
+  },
+  "fallback": {
+    "notFoundTitle": "Page not found",
+    "notFoundBody": "This address doesn't lead anywhere in Belay.",
+    "backHome": "Back to home",
+    "errorTitle": "Something went wrong",
+    "errorBody": "This page couldn't be displayed. If the app was just updated, reloading usually fixes it.",
+    "reload": "Reload"
+  },
+  "stepper": {
+    "decrease": "Decrease {{label}}",
+    "increase": "Increase {{label}}"
+  },
+  "range": {
+    "you": "you",
+    "current": "Your value is in this range: {{range}}, {{label}}.",
+    "under": "< {{value}}",
+    "between": "{{low}} – {{high}}",
+    "andOver": "{{value}} and over",
+    "percent": "{{value}}%"
+  },
+  "science": {
+    "title": "How it's calculated",
+    "labels": {
+      "source": "Scientific source",
+      "heuristic": "Belay heuristic"
+    },
+    "brief": "In short",
+    "keep": "Keep in mind",
+    "formula": "The formula",
+    "sources": "The sources",
+    "sourceCount_one": "{{count}} reference",
+    "sourceCount_other": "{{count}} references",
+    "limits": "The limits in detail",
+    "doi": "DOI verified",
+    "stable": "stable identifier · no DOI",
+    "record": "Record read",
+    "thirdParty": "Read on a third-party copy, not the official host."
+  },
+  "tools": {
+    "title": "Tools",
+    "lead": "Everything is calculated on your device. Nothing is sent.",
+    "back": "Tools",
+    "groups": {
+      "strength": "Strength",
+      "energy": "Energy",
+      "body": "Body"
+    },
+    "items": {
+      "one-rep-max": {
+        "name": "One-rep max",
+        "hint": "Your max from one set"
+      },
+      "plates": {
+        "name": "Plates",
+        "hint": "What to load on the bar"
+      },
+      "warmup": {
+        "name": "Warm-up",
+        "hint": "Your warm-up sets"
+      },
+      "energy": {
+        "name": "Energy expenditure",
+        "hint": "Resting and daily energy"
+      },
+      "protein": {
+        "name": "Protein",
+        "hint": "Your range per day and per meal"
+      },
+      "projection": {
+        "name": "Projection",
+        "hint": "When you could reach your goal"
+      },
+      "bmi": {
+        "name": "BMI",
+        "hint": "Where you sit on the WHO ranges"
+      },
+      "body-fat": {
+        "name": "Body fat",
+        "hint": "An estimate from a tape measure"
+      }
+    },
+    "formula": {
+      "label": "Formula",
+      "female": "Female",
+      "male": "Male"
+    },
+    "fields": {
+      "weight": "Weight",
+      "height": "Height",
+      "age": "Age"
+    }
+  },
+  "oneRepMax": {
+    "lead": "Your max from a set taken close to failure.",
+    "load": "Load",
+    "reps": "Reps",
+    "result": "Your estimated 1RM",
+    "oneRep": "With 1 rep, your 1RM is the load you lifted.",
+    "lessReliable": "Beyond 10 reps, the estimate is less reliable."
+  },
+  "plates": {
+    "lead": "What to put on each side of the bar.",
+    "target": "Target load",
+    "result": "On each side",
+    "perSide": "{{plates}} kg per side",
+    "barOnly": "Bar only",
+    "bar": "{{bar}} kg bar",
+    "unreachable": "{{target}} kg can't be loaded with your equipment.",
+    "below": "Just below: {{total}} kg ({{detail}})",
+    "above": "Just above: {{total}} kg ({{detail}})",
+    "underBar": "The bar alone already weighs {{bar}} kg.",
+    "equipment": "My equipment"
+  },
+  "equipment": {
+    "title": "My equipment",
+    "lead": "Saved on this device.",
+    "start": "Starting point",
+    "presets": {
+      "competition": "Competition",
+      "gym": "Gym",
+      "custom": "Custom"
+    },
+    "bar": "Bar",
+    "kg": "{{value}} kg",
+    "otherBar": "Other",
+    "otherBarLabel": "Bar weight",
+    "plates": "Plates",
+    "edit": "Edit this equipment",
+    "presetNote": "“Edit” copies this preset into “Custom”: presets never change.",
+    "copied": "Copied from “{{preset}}”. Tap a plate to add or remove it.",
+    "customNote": "Tap a plate to add or remove it.",
+    "newPlate": "New plate",
+    "add": "Add"
+  },
+  "warmup": {
+    "lead": "Your warm-up sets, rounded to your equipment.",
+    "work": "Working load",
+    "count": "Warm-up",
+    "result": "Your warm-up",
+    "perSide": "{{plates}} per side",
+    "barOnly": "bar only",
+    "reps": "× {{reps}}",
+    "workSets": "working sets",
+    "yours": "your call",
+    "lightWork": "Your working load is the bar alone or lighter: there is no warm-up to work out.",
+    "note": "Loads are rounded to your equipment (“{{preset}}”). No study sets a single scheme: this is a common progression, adjust it as you like."
+  },
+  "energy": {
+    "lead": "Your resting metabolism and what you burn in a day.",
+    "activity": "Your activity",
+    "levels": {
+      "very-sedentary": {
+        "name": "Very sedentary",
+        "description": "Seated most of the day, little walking."
+      },
+      "sedentary": {
+        "name": "Sedentary / light activity",
+        "description": "Light work, no regular exercise."
+      },
+      "active": {
+        "name": "Active",
+        "description": "Like sedentary, plus about one hour of moderate to vigorous exercise a day."
+      },
+      "very-active": {
+        "name": "Very active",
+        "description": "A vigorously active lifestyle: hard physical work or exercise for much of the day."
+      }
+    },
+    "result": "Today's expenditure",
+    "range": "between {{low}} and {{high}} or so",
+    "bmr": "Resting energy expenditure",
+    "note": "An estimate within about ±10%: roughly 1 person in 5 is more than 10% away from their measured value. It's a starting point that your weigh-ins and intake will refine later."
+  },
+  "protein": {
+    "lead": "A range per day and per meal, for your goal.",
+    "goal": "Your goal",
+    "goals": {
+      "maintain": "Maintain",
+      "cut": "Cut",
+      "gain": "Gain"
+    },
+    "bodyFat": "Body fat (optional)",
+    "result": "Per day",
+    "range": "{{low}} to {{high}}",
+    "perKg": "that is {{low}} to {{high}} g per kg of body weight",
+    "meals3": "Over 3 meals",
+    "meals4": "Over 4 meals",
+    "leanMass": "When cutting, the range starts from your lean mass: 2.3 to 3.1 g per kg of lean mass.",
+    "noBodyFat": "Without a body-fat value, Belay uses 1.8 to 2.5 g per kg of body weight (Belay heuristic). Add your body fat for a closer range.",
+    "floor": "Raised to 1.6 g per kg of body weight, the floor Belay keeps when cutting (Belay heuristic)."
+  },
+  "projection": {
+    "lead": "When you could reach your goal, as a range of dates.",
+    "current": "Average weight",
+    "target": "Goal",
+    "rate": "Your pace",
+    "rateHint": "(loss per week)",
+    "rates": {
+      "gentle": "Gentle",
+      "balanced": "Balanced",
+      "steady": "Steady"
+    },
+    "rateAside": "{{pct}}% · {{kg}} kg",
+    "fine": "Fine-tune",
+    "presets": "Back to the paces",
+    "fineLabel": "Pace (% per week)",
+    "result": "Goal reached",
+    "between": "Between {{low}} and {{high}}",
+    "weeks": "In {{low}} to {{high}} weeks. Loss slows down as you lose weight, hence a range.",
+    "strip": "Arrival window: {{from}} to {{to}}",
+    "notBelow": "The projection works out a weight loss; your goal is already reached or above your current weight.",
+    "above1": "In athletes, a pace of about 1% per week came with less lean-mass gain (Garthe 2011). Source in the sheet.",
+    "above15": "At this pace, Belay suggests being followed by a doctor or a dietitian."
+  },
+  "bmi": {
+    "lead": "Your body mass index, placed on the WHO ranges.",
+    "result": "Your BMI",
+    "rangesLabel": "WHO ranges",
+    "bands": {
+      "below": "Below",
+      "reference": "WHO reference range",
+      "above": "Above",
+      "well-above": "Well above"
+    },
+    "sentence": {
+      "below": "Below the WHO reference range (under {{low}}).",
+      "reference": "In the WHO reference range ({{low}} to {{high}}).",
+      "above": "Above the WHO reference range ({{low}} to {{high}}).",
+      "well-above": "Well above the WHO reference range ({{low}} and over)."
+    },
+    "professional": "If you have questions about your weight, talk to a health professional.",
+    "note": "BMI doesn't tell muscle from fat: it's a population marker, not a diagnosis."
+  },
+  "bodyFat": {
+    "lead": "An estimate from a tape measure, with published reference values.",
+    "neck": "Neck",
+    "waistMale": "Waist at the navel",
+    "waistFemale": "Waist at the narrowest",
+    "hip": "Hips",
+    "heightKnown": "Height: {{height}} cm (from your entries)",
+    "editHeight": "change",
+    "result": "Your estimated body fat",
+    "error": "estimate ±4 points",
+    "bias": "It tends to overestimate lean people and underestimate people with more body fat.",
+    "invalidMale": "Your waist must be larger than your neck.",
+    "invalidFemale": "Waist plus hips must be larger than your neck.",
+    "outOfRange": "These measurements fall outside what the formula can handle. Check them.",
+    "rangesLabel": "Reference values",
+    "bands": {
+      "below": "Matches a BMI under 18.5",
+      "reference": "Matches a BMI of 18.5 to 25",
+      "above": "Matches a BMI of 25 to 30",
+      "well-above": "Matches a BMI of 30 and over"
+    },
+    "caption": {
+      "standard": "For the {{formula}} formula, ages {{from}} to {{to}} (Gallagher 2000, table 4).",
+      "asian": "For the {{formula}} formula, ages {{from}} to {{to}}, people of Asian origin (Gallagher 2000, table 5)."
+    },
+    "noReferences": "The published reference values cover ages 20 to 79, so only the estimate is shown for your age.",
+    "reference": "Reference set",
+    "references": {
+      "standard": "Standard",
+      "asian": "Asian"
+    },
+    "referenceNote": "“Asian” uses Gallagher's table 5, built from people living in Japan. This choice stays on your device."
   }
 }

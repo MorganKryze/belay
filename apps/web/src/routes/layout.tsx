@@ -1,28 +1,21 @@
-import { Link, Outlet } from "@tanstack/react-router";
+import { Outlet } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
+import { TabBar } from "@/components/tab-bar";
 import { useOnline } from "@/lib/online";
 
 export function Layout() {
   const { t } = useTranslation();
   const online = useOnline();
   return (
-    <div className="mx-auto flex min-h-dvh max-w-xl flex-col gap-6 p-4">
-      {!online && (
-        <p role="status" className="rounded-md bg-muted p-3 text-sm">
-          {t("offline")}
-        </p>
-      )}
-      <nav className="flex gap-4 text-sm">
-        <Link to="/" className="min-h-11 min-w-11 content-center text-center">
-          {t("nav.home")}
-        </Link>
-        <Link to="/settings" className="min-h-11 min-w-11 content-center text-center">
-          {t("nav.settings")}
-        </Link>
-      </nav>
+    <div className="mx-auto flex min-h-dvh max-w-xl flex-col gap-6 pt-[max(1rem,env(safe-area-inset-top))] pr-[max(1rem,env(safe-area-inset-right))] pb-[calc(5.5rem+env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))]">
+      {/* Mounted for good and filled when offline, so the change is announced. */}
+      <p role="status" className={online ? "sr-only" : "rounded-chip bg-track p-3 text-sm"}>
+        {online ? "" : t("offline")}
+      </p>
       <main>
         <Outlet />
       </main>
+      <TabBar />
     </div>
   );
 }

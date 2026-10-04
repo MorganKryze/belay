@@ -26,6 +26,8 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
+      # docs/science.md is generated from packages/shared/src/science; fail when it was not regenerated.
+      - run: pnpm science:check
       - run: pnpm typecheck
       # Server tests start PostgreSQL through Testcontainers on the runner's Docker.
       - run: pnpm test
