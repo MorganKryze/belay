@@ -45,11 +45,11 @@
   },
   "range": {
     "you": "toi",
-    "current": "Ta valeur est dans cette plage : {{range}}, {{label}}.",
+    "current": "Ta valeur est dans cette plage : {{range}}, {{label}}.",
     "under": "< {{value}}",
     "between": "{{low}} – {{high}}",
     "andOver": "{{value}} et plus",
-    "percent": "{{value}} %"
+    "percent": "{{value}} %"
   },
   "science": {
     "title": "Comment c'est calculé",
@@ -139,8 +139,8 @@
     "barOnly": "Barre seule",
     "bar": "Barre de {{bar}} kg",
     "unreachable": "{{target}} kg n'est pas faisable avec ton matériel.",
-    "below": "Juste en dessous : {{total}} kg ({{detail}})",
-    "above": "Juste au-dessus : {{total}} kg ({{detail}})",
+    "below": "Juste en dessous : {{total}} kg ({{detail}})",
+    "above": "Juste au-dessus : {{total}} kg ({{detail}})",
     "underBar": "La barre seule pèse déjà {{bar}} kg.",
     "equipment": "Mon matériel"
   },
@@ -159,8 +159,8 @@
     "otherBarLabel": "Poids de la barre",
     "plates": "Disques",
     "edit": "Modifier ce matériel",
-    "presetNote": "« Modifier » copie ce préréglage dans « Sur mesure » : les préréglages ne changent jamais.",
-    "copied": "Copié depuis « {{preset}} ». Touche un disque pour l'ajouter ou le retirer.",
+    "presetNote": "« Modifier » copie ce préréglage dans « Sur mesure » : les préréglages ne changent jamais.",
+    "copied": "Copié depuis « {{preset}} ». Touche un disque pour l'ajouter ou le retirer.",
     "customNote": "Touche un disque pour l'ajouter ou le retirer.",
     "newPlate": "Nouveau disque",
     "add": "Ajouter"
@@ -175,8 +175,8 @@
     "reps": "× {{reps}}",
     "workSets": "séries de travail",
     "yours": "à toi",
-    "lightWork": "Ta charge de travail est la barre seule ou plus légère : il n'y a pas d'échauffement à calculer.",
-    "note": "Les charges sont arrondies à ton matériel (« {{preset}} »). Aucune étude ne fixe un schéma unique : c'est une progression courante, à ajuster comme tu veux."
+    "lightWork": "Ta charge de travail est la barre seule ou plus légère : il n'y a pas d'échauffement à calculer.",
+    "note": "Les charges sont arrondies à ton matériel (« {{preset}} »). Aucune étude ne fixe un schéma unique : c'est une progression courante, à ajuster comme tu veux."
   },
   "energy": {
     "lead": "Ton métabolisme au repos et ce que tu dépenses dans la journée.",
@@ -196,13 +196,13 @@
       },
       "very-active": {
         "name": "Très actif",
-        "description": "Un mode de vie très actif : travail physique ou exercice intense une bonne partie de la journée."
+        "description": "Un mode de vie très actif : travail physique ou exercice intense une bonne partie de la journée."
       }
     },
     "result": "Dépense du jour",
     "range": "entre {{low}} et {{high}} environ",
     "bmr": "Dépense au repos",
-    "note": "Une estimation à ±10 % : environ 1 personne sur 5 est à plus de 10 % de sa mesure réelle. C'est un point de départ, que tes pesées et tes apports affineront plus tard."
+    "note": "Une estimation à ±10 % : environ 1 personne sur 5 est à plus de 10 % de sa mesure réelle. C'est un point de départ, que tes pesées et tes apports affineront plus tard."
   },
   "protein": {
     "lead": "Une fourchette par jour et par repas, selon ton objectif.",
@@ -218,7 +218,7 @@
     "perKg": "soit {{low}} à {{high}} g par kg de poids",
     "meals3": "Sur 3 repas",
     "meals4": "Sur 4 repas",
-    "leanMass": "En sèche, la fourchette part de ta masse maigre : 2,3 à 3,1 g par kg de masse maigre.",
+    "leanMass": "En sèche, la fourchette part de ta masse maigre : 2,3 à 3,1 g par kg de masse maigre.",
     "noBodyFat": "Sans masse grasse, Belay prend 1,8 à 2,5 g par kg de poids (heuristique Belay). Ajoute ta masse grasse pour une fourchette plus juste.",
     "floor": "Relevée à 1,6 g par kg de poids, le plancher que Belay garde en sèche (heuristique Belay)."
   },
@@ -233,16 +233,16 @@
       "balanced": "Équilibré",
       "steady": "Soutenu"
     },
-    "rateAside": "{{pct}} % · {{kg}} kg",
+    "rateAside": "{{pct}} % · {{kg}} kg",
     "fine": "Réglage fin",
     "presets": "Revenir aux rythmes",
     "fineLabel": "Rythme (% par semaine)",
     "result": "Objectif atteint",
     "between": "Entre le {{low}} et le {{high}}",
     "weeks": "Dans {{low}} à {{high}} semaines. La perte ralentit à mesure que tu perds du poids, d'où une fourchette.",
-    "strip": "Fenêtre d'arrivée : de {{from}} à {{to}}",
-    "notBelow": "La projection calcule une perte de poids ; ton objectif est déjà atteint ou au-dessus.",
-    "above1": "Chez des athlètes, un rythme d'environ 1 % par semaine s'est accompagné de moins de gain de masse maigre (Garthe 2011). Source dans la fiche.",
+    "strip": "Fenêtre d'arrivée : de {{from}} à {{to}}",
+    "notBelow": "La projection calcule une perte de poids ; ton objectif est déjà atteint ou au-dessus.",
+    "above1": "Chez des athlètes, un rythme d'environ 1 % par semaine s'est accompagné de moins de gain de masse maigre (Garthe 2011). Source dans la fiche.",
     "above15": "À ce rythme, Belay te conseille de te faire suivre par un médecin ou un diététicien."
   },
   "bmi": {
@@ -262,7 +262,7 @@
       "well-above": "Nettement au-dessus de la plage de référence de l'OMS ({{low}} et plus)."
     },
     "professional": "Si tu te poses des questions sur ton poids, parles-en à un professionnel de santé.",
-    "note": "L'IMC ne distingue pas le muscle de la graisse : c'est un repère de population, pas un diagnostic."
+    "note": "L'IMC ne distingue pas le muscle de la graisse : c'est un repère de population, pas un diagnostic."
   },
   "bodyFat": {
     "lead": "Une estimation au mètre ruban, avec des repères publiés.",
@@ -270,7 +270,7 @@
     "waistMale": "Tour de taille au nombril",
     "waistFemale": "Tour de taille au plus fin",
     "hip": "Tour de hanches",
-    "heightKnown": "Taille : {{height}} cm (depuis tes saisies)",
+    "heightKnown": "Taille : {{height}} cm (depuis tes saisies)",
     "editHeight": "modifier",
     "result": "Ta masse grasse estimée",
     "error": "estimation ±4 points",
@@ -289,12 +289,12 @@
       "standard": "Pour la formule {{formula}}, de {{from}} à {{to}} ans (Gallagher 2000, tableau 4).",
       "asian": "Pour la formule {{formula}}, de {{from}} à {{to}} ans, personnes d'origine asiatique (Gallagher 2000, tableau 5)."
     },
-    "noReferences": "Les repères publiés couvrent 20 à 79 ans : pour ton âge, seule l'estimation s'affiche.",
+    "noReferences": "Les repères publiés couvrent 20 à 79 ans : pour ton âge, seule l'estimation s'affiche.",
     "reference": "Jeu de repères",
     "references": {
       "standard": "Standard",
       "asian": "Asiatique"
     },
-    "referenceNote": "« Asiatique » utilise le tableau 5 de Gallagher, établi sur des personnes vivant au Japon. Ce choix reste sur ton appareil."
+    "referenceNote": "« Asiatique » utilise le tableau 5 de Gallagher, établi sur des personnes vivant au Japon. Ce choix reste sur ton appareil."
   }
 }

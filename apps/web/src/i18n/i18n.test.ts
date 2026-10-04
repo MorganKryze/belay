@@ -35,4 +35,12 @@ describe("translations", () => {
       );
     expect([...strings(en), ...strings(fr)].filter((s) => judging.test(s))).toEqual([]);
   });
+
+  it("sets French punctuation after a narrow no-break space, never a plain one", () => {
+    const strings = (o: object): string[] =>
+      Object.values(o).flatMap((v) =>
+        typeof v === "object" && v !== null ? strings(v) : [String(v)],
+      );
+    expect(strings(fr).filter((s) => /[^\s] [:;?!%»]|« /.test(s))).toEqual([]);
+  });
 });
