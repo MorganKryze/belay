@@ -1,3 +1,4 @@
+import { TOOL_SCIENCE } from "@belay/shared/science/tools";
 import { describe, expect, it } from "vitest";
 import en from "./en.json";
 import fr from "./fr.json";
@@ -34,5 +35,14 @@ describe("translations", () => {
         typeof v === "object" && v !== null ? strings(v) : [String(v)],
       );
     expect([...strings(en), ...strings(fr)].filter((s) => judging.test(s))).toEqual([]);
+  });
+
+  it("sets French punctuation after a narrow no-break space, never a plain one", () => {
+    const strings = (o: object): string[] =>
+      Object.values(o).flatMap((v) =>
+        typeof v === "object" && v !== null ? strings(v) : [String(v)],
+      );
+    const science = Object.values(TOOL_SCIENCE).flatMap((t) => strings(t.content.fr));
+    expect([...strings(fr), ...science].filter((s) => /[^\s] [:;?!%»]|« /.test(s))).toEqual([]);
   });
 });

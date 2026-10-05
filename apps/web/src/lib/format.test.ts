@@ -49,4 +49,11 @@ describe("formatDay", () => {
     expect(formatDay(new Date(2027, 0, 23), "fr", today)).toBe("23 janvier 2027");
     expect(formatDay(new Date(2027, 0, 23), "en", today)).toBe("January 23, 2027");
   });
+
+  it("writes the first of the month as 1er in French only", () => {
+    expect(formatDay(new Date(2026, 10, 1), "fr", today)).toBe("1er novembre");
+    expect(formatDay(new Date(2027, 0, 1), "fr", today)).toBe("1er janvier 2027");
+    expect(formatDay(new Date(2026, 10, 11), "fr", today)).toBe("11 novembre");
+    expect(formatDay(new Date(2026, 10, 1), "en", today)).toBe("November 1");
+  });
 });

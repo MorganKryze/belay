@@ -33,16 +33,16 @@ export const TOOL_SCIENCE: Record<ToolId, ToolScience> = {
           "Le lien entre répétitions et maximum change d'un exercice à l'autre.",
         ],
         formula: [
-          "Epley : 1RM = charge × (1 + répétitions / 30)",
-          "Brzycki : 1RM = charge × 36 / (37 − répétitions)",
+          "Epley : 1RM = charge × (1 + répétitions / 30)",
+          "Brzycki : 1RM = charge × 36 / (37 − répétitions)",
           "Avec 1 répétition, le 1RM est la charge soulevée.",
           "Résultat arrondi à 0,5 kg.",
-          "Epley (1985) est cité tel que reproduit dans Reynolds 2006 : l'ouvrage d'origine n'a pas d'identifiant vérifiable.",
+          "Epley (1985) est cité tel que reproduit dans Reynolds 2006 : l'ouvrage d'origine n'a pas d'identifiant vérifiable.",
         ],
         limits: [
-          "Reynolds 2006 conclut qu'il ne faut pas dépasser 10 répétitions dans ces équations ; la meilleure précision vient des séries de 5 répétitions.",
+          "Reynolds 2006 conclut qu'il ne faut pas dépasser 10 répétitions dans ces équations ; la meilleure précision vient des séries de 5 répétitions.",
           "LeSuer 1997 trouve de fortes corrélations, mais toutes les équations testées sous-estiment le soulevé de terre.",
-          "Nuzzo 2024 (269 études) montre qu'on fait plus de répétitions à la presse à cuisses qu'au développé couché pour un même pourcentage du maximum : une formule unique ne convient pas à tous les exercices.",
+          "Nuzzo 2024 (269 études) montre qu'on fait plus de répétitions à la presse à cuisses qu'au développé couché pour un même pourcentage du maximum : une formule unique ne convient pas à tous les exercices.",
         ],
       },
       en: {
@@ -85,12 +85,12 @@ export const TOOL_SCIENCE: Record<ToolId, ToolScience> = {
         formula: [
           "Par côté = (charge visée − barre) / 2",
           "Calcul en centièmes de kilo, sans erreur d'arrondi.",
-          "Parmi les combinaisons possibles, celle qui utilise le moins de disques ; à nombre égal, les disques les plus lourds d'abord.",
+          "Parmi les combinaisons possibles, celle qui utilise le moins de disques ; à nombre égal, les disques les plus lourds d'abord.",
         ],
         limits: [
-          "Couleurs IWF (règle 3.3.3.6) : 25 et 2,5 kg rouge, 20 et 2 kg bleu, 15 et 1,5 kg jaune, 10 et 1 kg vert, 5 et 0,5 kg blanc.",
-          "Les règles IWF ne prévoient ni disque de 1,25 kg ni couleur officielle pour lui : Belay l'affiche en gris neutre, comme toute valeur hors de cette liste.",
-          "Le calcul lui-même est de l'arithmétique : il n'a pas besoin de source.",
+          "Couleurs IWF (règle 3.3.3.6) : 25 et 2,5 kg rouge, 20 et 2 kg bleu, 15 et 1,5 kg jaune, 10 et 1 kg vert, 5 et 0,5 kg blanc.",
+          "Les règles IWF ne prévoient ni disque de 1,25 kg ni couleur officielle pour lui : Belay l'affiche en gris neutre, comme toute valeur hors de cette liste.",
+          "Le calcul lui-même est de l'arithmétique : il n'a pas besoin de source.",
         ],
       },
       en: {
@@ -126,15 +126,15 @@ export const TOOL_SCIENCE: Record<ToolId, ToolScience> = {
         keep: [
           "Aucune étude ne valide un schéma d'échauffement unique.",
           "Ajuste le nombre de séries avec − et +, de 0 à 3.",
-          "Une série qui tomberait sous la barre devient « barre seule ».",
+          "Une série qui tomberait sous la barre devient « barre seule ».",
         ],
         heuristic:
-          "Tout le schéma est une heuristique Belay : une progression courante, qu'aucune étude ne valide.",
+          "Tout le schéma est une heuristique Belay : une progression courante, qu'aucune étude ne valide.",
         formula: [
-          "Nombre par défaut : 1 série sous 60 kg, 2 séries de 60 à moins de 120 kg, 3 séries à partir de 120 kg.",
-          "1 série : 60 % × 5",
-          "2 séries : 50 % × 5, puis 75 % × 3",
-          "3 séries : 40 % × 5, 60 % × 3, puis 80 % × 1",
+          "Nombre par défaut : 1 série sous 60 kg, 2 séries de 60 à moins de 120 kg, 3 séries à partir de 120 kg.",
+          "1 série : 60 % × 5",
+          "2 séries : 50 % × 5, puis 75 % × 3",
+          "3 séries : 40 % × 5, 60 % × 3, puis 80 % × 1",
           "Chaque charge est arrondie à la charge faisable la plus proche avec ton matériel, jamais sous la barre. Deux séries identiques après arrondi n'en font qu'une, et une série qui atteindrait ta charge de travail est retirée.",
         ],
         limits: [
@@ -178,24 +178,24 @@ export const TOOL_SCIENCE: Record<ToolId, ToolScience> = {
         brief:
           "Belay estime d'abord ta dépense au repos avec l'équation de Mifflin-St Jeor, puis la multiplie par un niveau d'activité de la FAO. Le résultat est un point de départ, que tes pesées et tes apports affineront plus tard.",
         keep: [
-          "Environ 1 personne sur 5 est à plus de 10 % de sa mesure réelle.",
-          "La fourchette affichée est de ±10 %.",
+          "Environ 1 personne sur 5 est à plus de 10 % de sa mesure réelle.",
+          "La fourchette affichée est de ±10 %.",
           "Les niveaux d'activité décrivent ton mode de vie, pas un nombre de séances.",
         ],
         heuristic:
-          "Chaque élément a sa source, mais aucune étude ne valide l'association de Mifflin et des niveaux d'activité : cette combinaison est une heuristique Belay.",
+          "Chaque élément a sa source, mais aucune étude ne valide l'association de Mifflin et des niveaux d'activité : cette combinaison est une heuristique Belay.",
         formula: [
           "Dépense au repos = 10 × poids (kg) + 6,25 × taille (cm) − 5 × âge (ans) + s",
           "s = +5 avec la formule homme, −161 avec la formule femme",
           "Dépense du jour = dépense au repos × niveau d'activité, arrondie à 10 kcal",
-          "Niveaux d'activité (FAO 2004) : 1,40 · 1,55 · 1,75 · 2,00",
-          "Fourchette : ±10 %",
+          "Niveaux d'activité (FAO 2004) : 1,40 · 1,55 · 1,75 · 2,00",
+          "Fourchette : ±10 %",
         ],
         limits: [
-          "Frankenfield 2003 (130 adultes) : avec Mifflin, l'écart dépasse 10 % de la mesure chez 22 % des personnes.",
+          "Frankenfield 2003 (130 adultes) : avec Mifflin, l'écart dépasse 10 % de la mesure chez 22 % des personnes.",
           "L'étude de Mifflin portait sur 498 adultes en bonne santé, de 19 à 78 ans.",
-          "La FAO définit ses niveaux d'activité par rapport au métabolisme de base, alors que Mifflin mesure la dépense au repos : c'est proche, mais pas identique.",
-          "Aucune source traçable trouvée pour les coefficients 1,2 · 1,375 · 1,55 · 1,725 · 1,9 ; la consultation FAO/OMS a jugé 1,21 trop bas et retient 1,40 comme plancher sédentaire.",
+          "La FAO définit ses niveaux d'activité par rapport au métabolisme de base, alors que Mifflin mesure la dépense au repos : c'est proche, mais pas identique.",
+          "Aucune source traçable trouvée pour les coefficients 1,2 · 1,375 · 1,55 · 1,725 · 1,9 ; la consultation FAO/OMS a jugé 1,21 trop bas et retient 1,40 comme plancher sédentaire.",
         ],
       },
       en: {
@@ -239,17 +239,17 @@ export const TOOL_SCIENCE: Record<ToolId, ToolScience> = {
           "C'est une fourchette, pas un chiffre exact à atteindre chaque jour.",
         ],
         heuristic:
-          "Les trois fourchettes ont leur source. Deux garde-fous sont des heuristiques Belay : sans masse grasse, la sèche utilise 1,8 à 2,5 g par kg de poids ; et en sèche, la fourchette ne descend jamais sous 1,6 g par kg de poids.",
+          "Les trois fourchettes ont leur source. Deux garde-fous sont des heuristiques Belay : sans masse grasse, la sèche utilise 1,8 à 2,5 g par kg de poids ; et en sèche, la fourchette ne descend jamais sous 1,6 g par kg de poids.",
         formula: [
-          "Maintien : 1,4 à 2,0 g par kg de poids (Jäger 2017)",
-          "Prise : 1,6 à 2,2 g par kg de poids (Morton 2018)",
-          "Sèche : 2,3 à 3,1 g par kg de masse maigre (Helms 2014), avec masse maigre = poids × (1 − masse grasse)",
-          "Arrondi à 5 g (vers le haut pour le plancher de 1,6 g par kg en sèche) ; par repas, calculé depuis la fourchette du jour affichée, divisée par 3 ou par 4 : le bas arrondi vers le haut, le haut vers le bas, à 5 g",
+          "Maintien : 1,4 à 2,0 g par kg de poids (Jäger 2017)",
+          "Prise : 1,6 à 2,2 g par kg de poids (Morton 2018)",
+          "Sèche : 2,3 à 3,1 g par kg de masse maigre (Helms 2014), avec masse maigre = poids × (1 − masse grasse)",
+          "Arrondi à 5 g (vers le haut pour le plancher de 1,6 g par kg en sèche) ; par repas, calculé depuis la fourchette du jour affichée, divisée par 3 ou par 4 : le bas arrondi vers le haut, le haut vers le bas, à 5 g",
         ],
         limits: [
           "Morton 2018 situe le plateau à 1,62 g par kg et par jour (intervalle de confiance 1,03 à 2,20). L'étude portait sur des suppléments pendant l'entraînement, pas sur des périodes de déficit.",
           "Helms 2014 repose sur 6 études chez des athlètes minces et entraînés en force. Il conseille de monter dans la fourchette quand le déficit est plus marqué et la masse grasse plus basse.",
-          "La position de l'ISSN (Jäger 2017) écrit 2,3 à 3,1 g par kg de poids, mais sa source, Helms 2014, l'exprime par kg de masse maigre : Belay suit Helms.",
+          "La position de l'ISSN (Jäger 2017) écrit 2,3 à 3,1 g par kg de poids, mais sa source, Helms 2014, l'exprime par kg de masse maigre : Belay suit Helms.",
         ],
       },
       en: {
@@ -286,22 +286,22 @@ export const TOOL_SCIENCE: Record<ToolId, ToolScience> = {
         brief:
           "Belay calcule combien de semaines il te faut pour atteindre ton objectif en perdant chaque semaine un pourcentage de ton poids du moment. Le résultat est une fourchette de dates, parce que la perte ralentit à mesure que tu perds du poids.",
         keep: [
-          "Les études recommandent un rythme de 0,5 à 1 % du poids par semaine.",
-          "Chez des athlètes, un rythme plus rapide (≈ 1 %/semaine) s'est accompagné de moins de gain de masse maigre (Garthe 2011).",
+          "Les études recommandent un rythme de 0,5 à 1 % du poids par semaine.",
+          "Chez des athlètes, un rythme plus rapide (≈ 1 %/semaine) s'est accompagné de moins de gain de masse maigre (Garthe 2011).",
           "Refais le calcul avec ton poids moyen à chaque pesée.",
         ],
         heuristic:
-          "La marge de 30 % qui donne la date la plus tardive n'a pas de source : toute la fourchette de dates est une heuristique Belay.",
+          "La marge de 30 % qui donne la date la plus tardive n'a pas de source : toute la fourchette de dates est une heuristique Belay.",
         formula: [
           "Semaines (basse) = ⌈ ln(objectif / poids actuel) / ln(1 − rythme) ⌉",
           "Semaines (haute) = ⌈ 1,3 × semaines (basse) ⌉",
           "Dates = aujourd'hui + semaines (basse), et aujourd'hui + semaines (haute)",
-          "Le rythme est un pourcentage de ton poids du moment : les kilos perdus chaque semaine diminuent avec le temps.",
+          "Le rythme est un pourcentage de ton poids du moment : les kilos perdus chaque semaine diminuent avec le temps.",
         ],
         limits: [
-          "Garthe 2011 (24 athlètes de haut niveau) : à 0,7 % par semaine, la masse maigre augmente ; le groupe qui visait 1,4 % a réellement perdu 1,0 % par semaine et n'a pas gagné de masse maigre.",
-          "Helms 2014 recommande 0,5 à 1 % du poids par semaine pour préparer une compétition de culturisme naturel.",
-          "Hall 2011 montre que le poids répond lentement à un changement d'apport, avec une demi-vie d'environ un an : ça explique le ralentissement, mais ça ne chiffre pas la marge.",
+          "Garthe 2011 (24 athlètes de haut niveau) : à 0,7 % par semaine, la masse maigre augmente ; le groupe qui visait 1,4 % a réellement perdu 1,0 % par semaine et n'a pas gagné de masse maigre.",
+          "Helms 2014 recommande 0,5 à 1 % du poids par semaine pour préparer une compétition de culturisme naturel.",
+          "Hall 2011 montre que le poids répond lentement à un changement d'apport, avec une demi-vie d'environ un an : ça explique le ralentissement, mais ça ne chiffre pas la marge.",
           "La projection ne calcule qu'une perte de poids.",
         ],
       },
@@ -346,15 +346,15 @@ export const TOOL_SCIENCE: Record<ToolId, ToolScience> = {
         ],
         formula: [
           "IMC = poids (kg) / taille (m)²",
-          "Affiché à 0,1 près ; la plage est choisie sur la valeur affichée.",
-          "Plages de l'OMS : moins de 18,5 · 18,5 à 25 · 25 à 30 · 30 et plus. 25,0 appartient à 25 – 30.",
+          "Affiché à 0,1 près ; la plage est choisie sur la valeur affichée.",
+          "Plages de l'OMS : moins de 18,5 · 18,5 à 25 · 25 à 30 · 30 et plus. 25,0 appartient à 25 – 30.",
           "Belay suggère d'en parler à un professionnel de santé sous 18,5 et à partir de 35 (obésité de classe II, OMS TRS 894).",
         ],
         limits: [
           "L'OMS écrit elle-même que l'IMC ne distingue pas le poids lié au muscle du poids lié à la graisse.",
-          "Ode 2007 (226 athlètes, 213 non-athlètes) : un IMC de 25 ou plus désigne souvent à tort un excès de graisse chez les athlètes ; les auteurs appellent à la prudence.",
+          "Ode 2007 (226 athlètes, 213 non-athlètes) : un IMC de 25 ou plus désigne souvent à tort un excès de graisse chez les athlètes ; les auteurs appellent à la prudence.",
           "Une même valeur d'IMC ne correspond pas à la même masse grasse dans toutes les populations.",
-          "Les noms des plages dans Belay sont descriptifs ; ils ne reprennent pas les termes de l'OMS.",
+          "Les noms des plages dans Belay sont descriptifs ; ils ne reprennent pas les termes de l'OMS.",
         ],
       },
       en: {
@@ -402,20 +402,20 @@ export const TOOL_SCIENCE: Record<ToolId, ToolScience> = {
           "Mesure toujours au même endroit, ruban à plat, sans serrer.",
         ],
         formula: [
-          "Formule homme : % = 86,010 × log10(taille au nombril − cou) − 70,041 × log10(taille) + 30,295",
-          "Formule femme : % = 163,205 × log10(taille au plus fin + hanches − cou) − 97,684 × log10(taille) − 104,912",
-          "Toutes les mesures en cm ; résultat arrondi à l'entier (DoDI 1308.3).",
+          "Formule homme : % = 86,010 × log10(taille au nombril − cou) − 70,041 × log10(taille) + 30,295",
+          "Formule femme : % = 163,205 × log10(taille au plus fin + hanches − cou) − 97,684 × log10(taille) − 104,912",
+          "Toutes les mesures en cm ; résultat arrondi à l'entier (DoDI 1308.3).",
           "Ces constantes en cm sont la conversion exacte de celles en pouces de la DoDI 1308.3 (36,76 et −78,387).",
-          "Où mesurer : le cou juste sous la pomme d'Adam ; la taille au nombril (formule homme) ou à l'endroit le plus fin (formule femme) ; les hanches à l'endroit le plus large.",
-          "Repères : Gallagher 2000, tableau 4 (standard) ou tableau 5 (personnes d'origine asiatique), pour 20–39, 40–59 et 60–79 ans.",
+          "Où mesurer : le cou juste sous la pomme d'Adam ; la taille au nombril (formule homme) ou à l'endroit le plus fin (formule femme) ; les hanches à l'endroit le plus large.",
+          "Repères : Gallagher 2000, tableau 4 (standard) ou tableau 5 (personnes d'origine asiatique), pour 20–39, 40–59 et 60–79 ans.",
         ],
         limits: [
-          "Dans les rapports d'origine (602 hommes, 214 femmes, comparés à la pesée hydrostatique), l'erreur type est d'environ 3,5 à 3,7 points ; des écarts individuels de 8 points ne sont pas rares.",
-          "Potter 2022 (Marines américains, comparés au DXA) : les personnes minces sont surestimées, celles à forte masse grasse sous-estimées.",
-          "Le « ±1 % » de la DoDI mesure l'accord entre mesureurs entraînés, pas la justesse.",
-          "L'article ne nomme pas de plages de masse grasse : il donne la masse grasse correspondant à un IMC de 18,5, 25 et 30. Belay les présente ainsi, sans étiquette.",
+          "Dans les rapports d'origine (602 hommes, 214 femmes, comparés à la pesée hydrostatique), l'erreur type est d'environ 3,5 à 3,7 points ; des écarts individuels de 8 points ne sont pas rares.",
+          "Potter 2022 (Marines américains, comparés au DXA) : les personnes minces sont surestimées, celles à forte masse grasse sous-estimées.",
+          "Le « ±1 % » de la DoDI mesure l'accord entre mesureurs entraînés, pas la justesse.",
+          "L'article ne nomme pas de plages de masse grasse : il donne la masse grasse correspondant à un IMC de 18,5, 25 et 30. Belay les présente ainsi, sans étiquette.",
           "Le tableau 5 a été établi sur des personnes vivant au Japon.",
-          "L'article précise que ce ne sont pas des plages définitives, et que les repères aux IMC bas ont de larges intervalles de confiance : ce sont des repères provisoires.",
+          "L'article précise que ce ne sont pas des plages définitives, et que les repères aux IMC bas ont de larges intervalles de confiance : ce sont des repères provisoires.",
         ],
       },
       en: {

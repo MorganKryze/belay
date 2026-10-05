@@ -1,3 +1,4 @@
+import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import {
@@ -9,6 +10,7 @@ import {
   TOOL_STATE_KEY,
   type ToolState,
   ToolStateSchema,
+  useTool,
   writeToolState,
 } from "./tool-storage";
 
@@ -116,5 +118,37 @@ describe("deriveBodyFatPct", () => {
     const huge = { ...female, heightCm: 230, formula: "male" as const };
     huge.lastInputs = { "body-fat": { neckCm: 80, waistCm: 81 } };
     expect(deriveBodyFatPct(huge)).toBeUndefined();
+  });
+});
+
+describe("two tabs", () => {
+  const schema = z.object({ kg: z.number().catch(100) });
+
+  it("picks up another tab's write before writing itself", () => {
+    const { result } = renderHook(() => useTool("bmi", schema));
+    // The other tab sets the height, then fires the event this tab receives.
+    const other = { ...readToolState(), heightCm: 178 };
+    localStorage.setItem(TOOL_STATE_KEY, JSON.stringify(other));
+    act(() => {
+      window.dispatchEvent(new StorageEvent("storage", { key: TOOL_STATE_KEY }));
+    });
+    expect(result.current.state.heightCm).toBe(178);
+    act(() => result.current.setInputs({ kg: 80 }));
+    expect(readToolState().heightCm).toBe(178);
+    expect(readToolState().lastInputs.bmi).toEqual({ kg: 80 });
+  });
+
+  it("ignores other keys and validates what it reloads", () => {
+    const { result } = renderHook(() => useTool("bmi", schema));
+    localStorage.setItem(TOOL_STATE_KEY, JSON.stringify({ formula: "robot", heightCm: 178 }));
+    act(() => {
+      window.dispatchEvent(new StorageEvent("storage", { key: "other" }));
+    });
+    expect(result.current.state.heightCm).toBeUndefined();
+    act(() => {
+      window.dispatchEvent(new StorageEvent("storage", { key: TOOL_STATE_KEY }));
+    });
+    expect(result.current.state.heightCm).toBe(178);
+    expect(result.current.state.formula).toBe("female");
   });
 });

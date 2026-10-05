@@ -67,31 +67,33 @@ async function expectNoAxeViolations(page: Page) {
   expect(violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target).join(", ")}`)).toEqual([]);
 }
 
+const SCREENS = [
+  ["/tools", "Tools"],
+  ["/tools/energy", "Energy expenditure"],
+  ["/tools/protein", "Protein"],
+  ["/tools/projection", "Projection"],
+  ["/tools/one-rep-max", "One-rep max"],
+  ["/tools/plates", "Plates"],
+  ["/tools/warmup", "Warm-up"],
+  ["/tools/bmi", "BMI"],
+  ["/tools/body-fat", "Body fat"],
+  ["/tools/plates/equipment", "My equipment"],
+] as const;
+
 test.describe("accessibility", () => {
-  test("the tools list has no axe violation", async ({ page }) => {
-    await page.goto("/tools");
-    await expect(page.getByRole("heading", { name: "Tools", level: 1 })).toBeVisible();
-    await expectNoAxeViolations(page);
-  });
-
-  test("BMI, sheet open, has no axe violation", async ({ page }) => {
-    await page.goto("/tools/bmi");
-    await page.getByText("How it's calculated").click();
-    await page.getByText("The sources").click();
-    await expectNoAxeViolations(page);
-  });
-
-  test("projection has no axe violation", async ({ page }) => {
-    await page.goto("/tools/projection");
-    await expect(page.getByRole("region", { name: "Goal reached" })).toBeVisible();
-    await expectNoAxeViolations(page);
-  });
-
-  test("the dark theme applies to the tools and passes axe", async ({ page }) => {
-    await page.addInitScript(() => localStorage.setItem("belay.theme", "dark"));
-    await page.goto("/tools/body-fat");
-    await expect(page.locator("html")).toHaveClass(/dark/);
-    await expect(page.getByRole("region", { name: "Your estimated body fat" })).toBeVisible();
-    await expectNoAxeViolations(page);
-  });
+  for (const theme of ["light", "dark"] as const) {
+    for (const [path, title] of SCREENS) {
+      test(`${path} has no axe violation, ${theme}, sheets open`, async ({ page }) => {
+        await page.addInitScript((t) => localStorage.setItem("belay.theme", t), theme);
+        await page.goto(path);
+        await expect(page.getByRole("heading", { level: 1 })).toContainText(title);
+        if (theme === "dark") await expect(page.locator("html")).toHaveClass(/dark/);
+        // Every science sheet and its drawers, so the sources and caveats are checked too.
+        await page.locator("details").evaluateAll((all) => {
+          for (const d of all) (d as HTMLDetailsElement).open = true;
+        });
+        await expectNoAxeViolations(page);
+      });
+    }
+  }
 });

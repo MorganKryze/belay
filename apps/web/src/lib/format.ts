@@ -28,11 +28,14 @@ export function parseDecimal(text: string): number | null {
 export const formatPlates = (plates: readonly number[], locale: string): string =>
   plates.map((p) => formatNumber(p, locale, { digits: 2 })).join(" + ");
 
-// "26 décembre", or "23 janvier 2027" when the year is not this year's.
+// "26 décembre", "1er janvier", or "23 janvier 2027" when the year is not this year's.
 export function formatDay(date: Date, locale: string, today: Date): string {
   return new Intl.DateTimeFormat(locale, {
     day: "numeric",
     month: "long",
     ...(date.getFullYear() === today.getFullYear() ? {} : { year: "numeric" }),
-  }).format(date);
+  })
+    .formatToParts(date)
+    .map((p) => (p.type === "day" && p.value === "1" && locale.startsWith("fr") ? "1er" : p.value))
+    .join("");
 }

@@ -1,4 +1,4 @@
-import { cleanup, screen, within } from "@testing-library/react";
+import { act, cleanup, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import i18n from "../i18n";
 import { renderRoute } from "../test/render-route";
@@ -47,5 +47,19 @@ describe("tools", () => {
     await i18n.changeLanguage("fr");
     renderRoute("/nowhere");
     expect(await screen.findByRole("heading", { name: "Page introuvable" })).toBeTruthy();
+  });
+});
+
+describe("navigation", () => {
+  it("leaves focus alone on first load, then moves it to the new h1", async () => {
+    const router = renderRoute("/tools");
+    const first = await screen.findByRole("heading", { name: "Tools", level: 1 });
+    expect(document.activeElement === first).toBe(false);
+    await act(async () => {
+      void router.navigate({ to: "/tools/$toolId", params: { toolId: "bmi" } });
+    });
+    const h1 = await screen.findByRole("heading", { name: "BMI", level: 1 });
+    await waitFor(() => expect(document.activeElement === h1).toBe(true));
+    expect(h1.getAttribute("tabindex")).toBe("-1");
   });
 });
