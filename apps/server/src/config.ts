@@ -51,10 +51,15 @@ export type Config = {
 const LOOPBACK = new Set(["localhost", "127.0.0.1", "[::1]"]);
 
 // The password of APP_DATABASE_URL, read the way postgres.js reads it (percent-decoded), or
-// undefined when the URL is not one for the app role: the app never runs as the owner by mistake.
+// undefined when the URL is not one for the app role. Query parameters that postgres.js would copy
+// into the startup packet to change the user or role are refused too, so a mistake fails here, with
+// a clear message (the startup check on the session role stays the backstop).
 function appRolePassword(url: string): string | undefined {
   const u = URL.parse(url);
   if (!u || (u.protocol !== "postgres:" && u.protocol !== "postgresql:")) return undefined;
+  for (const key of u.searchParams.keys()) {
+    if (["user", "options", "role"].includes(key.toLowerCase())) return undefined;
+  }
   try {
     const password = decodeURIComponent(u.password);
     return decodeURIComponent(u.username) === APP_ROLE && password ? password : undefined;

@@ -76,6 +76,17 @@ describe("loadConfig", () => {
     }
   });
 
+  it("refuses APP_DATABASE_URL query parameters that override the user or role", () => {
+    for (const param of ["user=belay", "options=-c%20role%3Dbelay", "role=belay", "USER=belay"]) {
+      const url = `postgres://belay_app:app@db:5432/belay?application_name=x&${param}`;
+      expect(() => loadConfig(testEnv({ APP_DATABASE_URL: url })), param).toThrow(
+        /APP_DATABASE_URL must be a postgres:\/\/ URL/,
+      );
+    }
+    const ok = "postgres://belay_app:app@db:5432/belay?application_name=x";
+    expect(loadConfig(testEnv({ APP_DATABASE_URL: ok })).appDatabaseUrl).toBe(ok);
+  });
+
   it("reads the app password the way postgres.js does, percent-decoded", () => {
     const password = `p@ss:w/rd?#% "it's"\\`;
     const cfg = loadConfig(

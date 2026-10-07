@@ -35,7 +35,8 @@ export function asUser<T>(db: Db, userId: string, fn: (tx: Tx) => Promise<T>): P
 // migrations, at every start. A utility statement takes no bind parameter: format('%L') quotes the
 // password on the server, so no character of it can end the literal.
 // ponytail: the password travels inside the statement, so it lands in the server log when
-// log_statement is 'ddl' or 'all'. Upgrade: send a SCRAM verifier computed here instead.
+// log_statement is 'ddl' or 'all', and a failing ALTER ROLE is logged with it under the default
+// log_min_error_statement=error. Upgrade: send a SCRAM verifier computed here instead (fixes both).
 // ponytail: belay_app is one role per cluster: two instances sharing a PostgreSQL cluster must share
 // BELAY_APP_PASSWORD, or each start locks the other out. Upgrade: a role name per instance.
 export async function enableAppLogin(owner: Db, password: string): Promise<void> {
