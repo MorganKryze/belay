@@ -61,8 +61,14 @@ export function NumberStepper({
   const type = (text: string) => {
     setDraft(text);
     const parsed = parseDecimal(text);
-    // Live while the number is valid, so the result follows the typing.
-    if (parsed !== null && parsed >= min && parsed <= max) onChange(parsed);
+    if (clampTyped) {
+      // Live while the number is valid, so the result follows the typing.
+      if (parsed !== null && parsed >= min && parsed <= max) onChange(parsed);
+    } else if (parsed !== null) onChange(parsed);
+    // Unclamped: what is shown is the value, in range or not, so the caller never acts on a
+    // stale one (a tap on Save may not blur the field). Text that is no number is NaN, which
+    // the caller refuses; an empty optional field is null.
+    else onChange(text.trim() === "" && optional ? null : Number.NaN);
   };
 
   const commit = () => {
@@ -71,6 +77,7 @@ export function NumberStepper({
     setDraft(null);
     if (draft.trim() === "" && optional) onChange(null);
     else if (parsed !== null) onChange(clampTyped ? clamp(parsed, min, max) : parsed);
+    else if (!clampTyped) onChange(null); // text that is no number: the field is cleared
     // Anything else: the field goes back to the last valid value.
   };
 

@@ -90,7 +90,7 @@
     "edit": "Modifier",
     "delete": "Supprimer cette pesée",
     "close": "Fermer",
-    "outOfRange": "Entre un poids entre 20 et 400 kg.",
+    "outOfRange": "Saisis un poids entre 20 et 400 kg.",
     "toastSaved": "Pesée enregistrée",
     "toastDeleted": "Pesée supprimée",
     "undo": "Annuler"

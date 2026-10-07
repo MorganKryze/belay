@@ -109,7 +109,12 @@ function HomeCards({
         aria-labelledby="weigh-in"
         className="flex flex-col gap-2 rounded-card border border-border bg-card p-4"
       >
-        <h2 id="weigh-in" className="text-[15px] font-semibold text-primary-ink">
+        <h2
+          id="weigh-in"
+          tabIndex={-1}
+          data-focus-fallback
+          className="text-[15px] font-semibold text-primary-ink outline-none"
+        >
           {t("weighIn.title")}
         </h2>
         {done && date === null ? (

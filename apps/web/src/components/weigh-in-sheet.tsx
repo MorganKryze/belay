@@ -49,7 +49,14 @@ export function WeighInSheet({
           }}
           onCloseAutoFocus={(e) => {
             e.preventDefault();
-            opener.current?.focus();
+            // The opener may be gone (Delete removes the card's Edit button) or never have been
+            // focused (Safari does not focus a clicked button): fall back to the page's heading.
+            const o = opener.current;
+            const target =
+              o && o !== document.body && o.isConnected
+                ? o
+                : document.querySelector<HTMLElement>("[data-focus-fallback]");
+            target?.focus();
           }}
           className="fixed inset-x-0 bottom-0 z-40 mx-auto flex max-w-xl flex-col gap-2 rounded-t-[22px] bg-card px-4 pt-2.5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-lg"
         >

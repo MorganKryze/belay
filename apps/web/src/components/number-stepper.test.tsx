@@ -125,7 +125,7 @@ describe("NumberStepper", () => {
     const onChange = vi.fn();
     render(<Harness onChange={onChange} clampTyped={false} />);
     fireEvent.change(input(), { target: { value: "798" } });
-    expect(onChange).not.toHaveBeenCalled(); // not while typing
+    expect(onChange).toHaveBeenLastCalledWith(798); // live: what is shown is the value
     fireEvent.blur(input());
     expect(onChange).toHaveBeenLastCalledWith(798);
     expect((input() as HTMLInputElement).value).toBe("798");

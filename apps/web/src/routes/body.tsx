@@ -66,7 +66,9 @@ function BodyPage({ account }: { account: OpenAccount }) {
   const target = useTarget(account).data;
   return (
     <section className="flex flex-col gap-4">
-      <h1 className={title}>{t("body.title")}</h1>
+      <h1 tabIndex={-1} data-focus-fallback className={`${title} outline-none`}>
+        {t("body.title")}
+      </h1>
       <SyncBanner account={account} />
       {weighings && target && (
         <BodyContent account={account} weighings={weighings} target={target} today={today} />

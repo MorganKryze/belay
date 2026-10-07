@@ -89,6 +89,20 @@ describe("the weigh-in card", () => {
     expect(await days()).toEqual([]);
   });
 
+  it("saves what the field shows even when the tap on Save does not blur it", async () => {
+    fakeApi({ me: ADA });
+    renderRoute("/");
+    const input = await field();
+    fireEvent.change(input, { target: { value: "798" } });
+    expect(await screen.findByText("Enter a weight between 20 and 400 kg.")).toBeTruthy();
+    expect((screen.getByRole("button", { name: "Save" }) as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(await days()).toEqual([]);
+    fireEvent.change(input, { target: { value: "79,8" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" })); // no blur
+    await waitFor(async () => expect(await days()).toEqual([["2026-10-07", 79.8]]));
+  });
+
   it("undoes a first weigh-in of the day back to no weigh-in", async () => {
     fakeApi({ me: ADA });
     renderRoute("/");
@@ -149,6 +163,8 @@ describe("the edit sheet", () => {
     const sheet = await screen.findByRole("dialog");
     fireEvent.click(within(sheet).getByRole("button", { name: "Delete this weigh-in" }));
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    // The Edit button is gone with the weigh-in: focus lands on the card's heading.
+    expect(document.activeElement).toBe(screen.getByRole("heading", { name: "Today's weigh-in" }));
     expect(screen.getByText("Weigh-in deleted")).toBeTruthy();
     await waitFor(async () => expect(await days()).toEqual([]));
     fireEvent.click(screen.getByRole("button", { name: "Undo" }));
