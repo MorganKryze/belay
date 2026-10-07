@@ -1,4 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
+import { ChevronRight } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
@@ -87,6 +89,13 @@ function AccountSettings({ pending }: { pending: number }) {
   return (
     <div className="flex flex-col gap-2">
       <h2 className={sectionTitle}>{t("settings.account")}</h2>
+      <Link
+        to="/settings/profile"
+        className="flex min-h-12 items-center justify-between rounded-field border border-border bg-card px-4 font-medium"
+      >
+        {t("profile.title")}
+        <ChevronRight aria-hidden className="size-5 text-muted-foreground" />
+      </Link>
       {confirming ? (
         <div role="alert" className="flex flex-col gap-3 rounded-field bg-primary-soft p-3 text-sm">
           <p>{t("settings.signOutPending", { count: pending })}</p>

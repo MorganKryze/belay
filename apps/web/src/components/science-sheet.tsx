@@ -1,4 +1,3 @@
-import type { ToolId } from "@belay/shared/tools/catalog";
 import {
   hasDoi,
   identifierHref,
@@ -6,7 +5,7 @@ import {
   shortAuthors,
 } from "@belay/shared/science/render";
 import { sourceById } from "@belay/shared/science/sources";
-import { TOOL_SCIENCE } from "@belay/shared/science/tools";
+import { type ScienceId, TOOL_SCIENCE } from "@belay/shared/science/tools";
 import { ChevronRight } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
@@ -40,8 +39,17 @@ function Drawer({
 
 // "How it's calculated", read in layers: the label, In short, Keep in mind, then drawers.
 // Native <details>: keyboard and screen-reader support with no script. `children` goes at the
-// end of the sheet (the body-fat reference set, D14).
-export function ScienceSheet({ toolId, children }: { toolId: ToolId; children?: ReactNode }) {
+// end of the sheet (the body-fat reference set, D14). `toolId` is a tool or a rule
+// ("target-rate", whose sheet is titled "How it's chosen").
+export function ScienceSheet({
+  toolId,
+  title,
+  children,
+}: {
+  toolId: ScienceId;
+  title?: string;
+  children?: ReactNode;
+}) {
   const { t, i18n } = useTranslation();
   const science = TOOL_SCIENCE[toolId];
   const c = i18n.language.startsWith("fr") ? science.content.fr : science.content.en;
@@ -50,7 +58,7 @@ export function ScienceSheet({ toolId, children }: { toolId: ToolId; children?: 
   return (
     <details className="group/sheet rounded-card border border-border bg-card px-4">
       <summary className={`${drawer} min-h-14 flex-wrap py-2 text-[17px] font-bold`}>
-        <span>{t("science.title")}</span>
+        <span>{title ?? t("science.title")}</span>
         <span className="flex flex-wrap gap-1.5">
           {labels.map((l) => (
             <span key={l} className={pill}>

@@ -119,6 +119,15 @@
     "signOutAnyway": "Sign out anyway",
     "cancel": "Cancel"
   },
+  "profile": {
+    "title": "Profile",
+    "range": "Your loss range",
+    "rangeLead": "Per week, as a % of your average weight. Used to say “in your range” on Body.",
+    "min": "At least",
+    "max": "At most",
+    "rangeNote": "Adjustable from 0.25 to 1%. Published recommendations stop at 1%: the app offers no more.",
+    "howChosen": "How it's chosen"
+  },
   "fallback": {
     "notFoundTitle": "Page not found",
     "notFoundBody": "This address doesn't lead anywhere in Belay.",

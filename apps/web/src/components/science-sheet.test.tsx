@@ -77,4 +77,11 @@ describe("ScienceSheet", () => {
     render(<ScienceSheet toolId="one-rep-max" />);
     expect(screen.getByText("C'est une estimation, pas un test.")).toBeTruthy();
   });
+
+  it("takes another title, for a rule rather than a tool", () => {
+    render(<ScienceSheet toolId="target-rate" title="How it's chosen" />);
+    expect(screen.getByText("How it's chosen")).toBeTruthy();
+    expect(screen.queryByText("How it's calculated")).toBeNull();
+    expect(screen.getByText("2 references")).toBeTruthy();
+  });
 });
