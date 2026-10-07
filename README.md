@@ -84,6 +84,8 @@ terminates TLS on the same host. Belay has no accounts of its own.
   then `up -d` again. From source, rebuild the image, then `up -d`. An installed
   app applies a new version on the launch after the one that downloaded it, once
   the app has been fully closed.
+  This version cannot be rolled back to an earlier image without restoring the
+  database: back up first.
 - Coming from a version without `BELAY_APP_PASSWORD`: add it to `.env` and
   take the new `compose.yaml` before `up -d`, or the app refuses to start
   (it no longer connects as the database owner). That update also signs
