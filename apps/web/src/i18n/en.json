@@ -117,6 +117,7 @@
     "signOutFailed": "Couldn't sign you out. Check your connection and try again.",
     "signOutPending_one": "{{count}} entry not sent yet: it will go at your next sign-in on this device.",
     "signOutPending_other": "{{count}} entries not sent yet: they will go at your next sign-in on this device.",
+    "signOutUnknown": "Some entries may not have been sent yet: they will go at your next sign-in on this device.",
     "signOutAnyway": "Sign out anyway",
     "cancel": "Cancel"
   },

@@ -2,10 +2,17 @@ import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
 import { IDBFactory } from "fake-indexeddb";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import i18n from "../i18n";
+import { pendingCounts } from "../sync/db";
 import { readLastUser } from "../sync/last-user";
 import { fakeApi } from "../test/fake-api";
 import { renderRoute } from "../test/render-route";
 import { ADA, seed, weight } from "../test/seed";
+
+// Passes through, until a test makes the local read fail.
+vi.mock("../sync/db", async (importOriginal) => {
+  const real = await importOriginal<typeof import("../sync/db")>();
+  return { ...real, pendingCounts: vi.fn(real.pendingCounts) };
+});
 
 const assign = vi.fn();
 const idp = "https://idp.example/logout";
@@ -16,6 +23,7 @@ beforeEach(() => {
   vi.stubGlobal("location", { ...window.location, assign });
 });
 afterEach(async () => {
+  vi.mocked(pendingCounts).mockReset(); // back to the real read
   cleanup();
   localStorage.clear();
   vi.unstubAllGlobals();
@@ -99,5 +107,40 @@ describe("Settings sign-out", () => {
     fireEvent.click(await signOutButton());
     fireEvent.click(await screen.findByRole("button", { name: "Sign out anyway" }));
     await waitFor(() => expect(assign).toHaveBeenCalledWith(idp));
+  });
+
+  it("moves focus into the confirmation, and back to Sign out on Cancel", async () => {
+    await seed(ADA.id, [weight("2026-10-07", 79.8)]);
+    signedIn(
+      async () => Response.json({ redirectTo: idp }),
+      async () => new Response(null, { status: 503 }),
+    );
+    fireEvent.click(await signOutButton());
+    const anyway = await screen.findByRole("button", { name: "Sign out anyway" });
+    expect(document.activeElement).toBe(anyway);
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(document.activeElement).toBe(await signOutButton());
+  });
+
+  it("still offers sign-out when the local read fails, always asking first", async () => {
+    vi.mocked(pendingCounts).mockRejectedValue(new DOMException("lost", "InvalidStateError"));
+    const api = signedIn(async () => Response.json({ redirectTo: idp }));
+    fireEvent.click(await signOutButton());
+    expect((await screen.findByRole("alert")).textContent).toContain(
+      "Some entries may not have been sent yet: they will go at your next sign-in on this device.",
+    );
+    expect(logoutCalls(api)).toHaveLength(0);
+    fireEvent.click(screen.getByRole("button", { name: "Sign out anyway" }));
+    await waitFor(() => expect(assign).toHaveBeenCalledWith(idp));
+  });
+
+  it("says it in French, with the narrow space before the colon", async () => {
+    await i18n.changeLanguage("fr");
+    vi.mocked(pendingCounts).mockRejectedValue(new DOMException("lost", "InvalidStateError"));
+    signedIn(async () => Response.json({ redirectTo: idp }));
+    fireEvent.click(await screen.findByRole("button", { name: "Se déconnecter" }));
+    expect((await screen.findByRole("alert")).textContent).toContain(
+      "Des saisies n'ont peut-être pas encore été envoyées\u202f: elles partiront à ta prochaine connexion sur cet appareil.",
+    );
   });
 });

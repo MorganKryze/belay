@@ -1,7 +1,7 @@
 import { useMutation } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -75,17 +75,26 @@ export function Settings() {
 
 // Shown once the device has said what is waiting, so signing out never skips the warning.
 function OpenAccountSettings({ account }: { account: OpenAccount }) {
-  const pending = usePending(account).data;
-  return pending ? <AccountSettings pending={pending.total} /> : null;
+  const { data, isError } = usePending(account);
+  // The read failed: the count is unknown, so sign-out stays available and always asks first.
+  if (isError) return <AccountSettings pending={null} />;
+  return data ? <AccountSettings pending={data.total} /> : null;
 }
 
 // Signing out keeps the entries on the device (D3); with some still waiting, say so first.
-function AccountSettings({ pending }: { pending: number }) {
+function AccountSettings({ pending }: { pending: number | null }) {
   const { t } = useTranslation();
   const [confirming, setConfirming] = useState(false);
   // "always": offline, the request fails at once and we can say so, instead of pausing forever.
   const signOut = useMutation({ mutationFn: logout, networkMode: "always" });
   const busy = signOut.isPending || signOut.isSuccess;
+  // The confirmation replaces the button: focus follows it in, and comes back on Cancel.
+  const signOutButton = useRef<HTMLButtonElement>(null);
+  const wasConfirming = useRef(false);
+  useEffect(() => {
+    if (!confirming && wasConfirming.current) signOutButton.current?.focus();
+    wasConfirming.current = confirming;
+  }, [confirming]);
   return (
     <div className="flex flex-col gap-2">
       <h2 className={sectionTitle}>{t("settings.account")}</h2>
@@ -98,9 +107,18 @@ function AccountSettings({ pending }: { pending: number }) {
       </Link>
       {confirming ? (
         <div role="alert" className="flex flex-col gap-3 rounded-field bg-primary-soft p-3 text-sm">
-          <p>{t("settings.signOutPending", { count: pending })}</p>
+          <p>
+            {pending === null
+              ? t("settings.signOutUnknown")
+              : t("settings.signOutPending", { count: pending })}
+          </p>
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" disabled={busy} onClick={() => signOut.mutate()}>
+            <Button
+              ref={(el) => el?.focus()}
+              variant="outline"
+              disabled={busy}
+              onClick={() => signOut.mutate()}
+            >
               {t("settings.signOutAnyway")}
             </Button>
             <Button variant="ghost" onClick={() => setConfirming(false)}>
@@ -110,10 +128,11 @@ function AccountSettings({ pending }: { pending: number }) {
         </div>
       ) : (
         <Button
+          ref={signOutButton}
           variant="outline"
           className="self-start"
           disabled={busy}
-          onClick={() => (pending > 0 ? setConfirming(true) : signOut.mutate())}
+          onClick={() => (pending !== 0 ? setConfirming(true) : signOut.mutate())}
         >
           {t("settings.signOut")}
         </Button>

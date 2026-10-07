@@ -117,6 +117,7 @@
     "signOutFailed": "Déconnexion impossible pour le moment. Vérifie ta connexion et réessaie.",
     "signOutPending_one": "{{count}} saisie pas encore envoyée : elle partira à ta prochaine connexion sur cet appareil.",
     "signOutPending_other": "{{count}} saisies pas encore envoyées : elles partiront à ta prochaine connexion sur cet appareil.",
+    "signOutUnknown": "Des saisies n'ont peut-être pas encore été envoyées : elles partiront à ta prochaine connexion sur cet appareil.",
     "signOutAnyway": "Se déconnecter quand même",
     "cancel": "Annuler"
   },
