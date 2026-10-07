@@ -49,6 +49,8 @@
   --color-reference: var(--reference);
   --color-reference-ink: var(--reference-ink);
   --color-toast-action: var(--toast-action);
+  --color-chart-dot: var(--chart-dot);
+  --color-chart-line: var(--chart-line);
   --color-plate-red: var(--plate-red);
   --color-plate-blue: var(--plate-blue);
   --color-plate-yellow: var(--plate-yellow);
@@ -91,6 +93,10 @@
   --reference-ink: #24503a;
   /* The toast is the foreground colour; its action reads on it in both themes. */
   --toast-action: #fdba74;
+  /* Body chart: grey daily weigh-ins (the noise), orange 7-day average (the signal). Each at
+     least 3:1 on the card in both themes; the grey is context, not a category colour. */
+  --chart-dot: #8a837e;
+  --chart-line: #c2410c;
   --ring: #c2410c;
   --card: var(--surface);
   --card-foreground: var(--foreground);
@@ -130,6 +136,8 @@
   --reference: #1e2e23;
   --reference-ink: #a7d3b2;
   --toast-action: #9a3412;
+  --chart-dot: #8a837e;
+  --chart-line: #ea580c;
   --ring: #fb923c;
 }
 

@@ -16,7 +16,43 @@
   "offline": "Tu es hors ligne.",
   "body": {
     "title": "Corps",
-    "signedOut": "Le suivi de tes pesées demande un compte. Les outils restent utilisables sans compte."
+    "signedOut": "Le suivi de tes pesées demande un compte. Les outils restent utilisables sans compte.",
+    "period": "Période",
+    "periods": {
+      "month": "1 mois",
+      "quarter": "3 mois",
+      "all": "Tout"
+    },
+    "average": "Moyenne 7 jours",
+    "lossPerWeek": "Perte par semaine",
+    "lossUnit": "%",
+    "gainUnit": "% de prise",
+    "inRange": "dans ta fourchette",
+    "weeks": "Tes semaines",
+    "thisWeek": "Cette semaine",
+    "inProgress_one": "en cours · {{count}} pesée",
+    "inProgress_other": "en cours · {{count}} pesées",
+    "toFollow": "à suivre",
+    "weekAverage": "moyenne",
+    "previousInsufficient": "semaine d'avant insuffisante",
+    "firstWeek": "première semaine",
+    "tooFew_one": "{{count}} pesée, 4 minimum",
+    "tooFew_other": "{{count}} pesées, 4 minimum",
+    "insufficient": "insuffisante",
+    "history": "Historique",
+    "firstDays_one": "Encore {{count}} pesée cette semaine",
+    "firstDays_other": "Encore {{count}} pesées cette semaine",
+    "firstDaysBody": "La moyenne 7 jours apparaît dès 4 pesées sur 7 jours, et la perte par semaine après deux semaines complètes. Le poids d'un jour seul varie trop pour dire quelque chose.",
+    "lossText": "{{value}} %",
+    "gainText": "{{value}} % de prise"
+  },
+  "chart": {
+    "daily": "Pesée du jour",
+    "average": "Moyenne 7 jours",
+    "summary": "Pesées du {{from}} au {{to}}. Moyenne 7 jours : {{average}}. Perte par semaine : {{loss}}.",
+    "hint": "Flèches gauche et droite : jour par jour. Entrée : modifier la pesée.",
+    "weighIn": "Pesée {{value}} kg",
+    "movingAverage": "Moyenne 7 j {{value}} kg"
   },
   "account": {
     "unavailable": "Ce navigateur ne permet pas à Belay d'enregistrer sur l'appareil : le suivi n'est pas disponible ici. Les outils restent utilisables."

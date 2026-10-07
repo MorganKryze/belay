@@ -16,7 +16,43 @@
   "offline": "You're offline.",
   "body": {
     "title": "Body",
-    "signedOut": "Tracking your weigh-ins needs an account. The tools work without one."
+    "signedOut": "Tracking your weigh-ins needs an account. The tools work without one.",
+    "period": "Period",
+    "periods": {
+      "month": "1 month",
+      "quarter": "3 months",
+      "all": "All"
+    },
+    "average": "7-day average",
+    "lossPerWeek": "Loss per week",
+    "lossUnit": "%",
+    "gainUnit": "% gain",
+    "inRange": "in your range",
+    "weeks": "Your weeks",
+    "thisWeek": "This week",
+    "inProgress_one": "in progress · {{count}} weigh-in",
+    "inProgress_other": "in progress · {{count}} weigh-ins",
+    "toFollow": "ongoing",
+    "weekAverage": "average",
+    "previousInsufficient": "week before insufficient",
+    "firstWeek": "first week",
+    "tooFew_one": "{{count}} weigh-in, 4 minimum",
+    "tooFew_other": "{{count}} weigh-ins, 4 minimum",
+    "insufficient": "insufficient",
+    "history": "History",
+    "firstDays_one": "{{count}} more weigh-in this week",
+    "firstDays_other": "{{count}} more weigh-ins this week",
+    "firstDaysBody": "The 7-day average appears from 4 weigh-ins in 7 days, and the loss per week after two complete weeks. A single day's weight varies too much to say anything.",
+    "lossText": "{{value}}%",
+    "gainText": "{{value}}% gain"
+  },
+  "chart": {
+    "daily": "Daily weigh-in",
+    "average": "7-day average",
+    "summary": "Weigh-ins from {{from}} to {{to}}. 7-day average: {{average}}. Loss per week: {{loss}}.",
+    "hint": "Left and right arrows: day by day. Enter: edit the weigh-in.",
+    "weighIn": "Weigh-in {{value}} kg",
+    "movingAverage": "7-day avg {{value}} kg"
   },
   "account": {
     "unavailable": "This browser won't let Belay save on the device, so tracking isn't available here. The tools still work."

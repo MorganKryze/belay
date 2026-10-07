@@ -12,16 +12,19 @@ export function Segmented<T extends string>({
   value,
   options,
   onChange,
+  labelHidden = false,
 }: {
   label: string;
   value: T;
   options: SegmentedOptions<T>;
   onChange: (value: T) => void;
+  // For screen readers only, where the options say it all (the period of the Body chart).
+  labelHidden?: boolean;
 }) {
   const id = useId();
   return (
     <div className="flex flex-col gap-1.5">
-      <span id={id} className="text-[13px] font-semibold">
+      <span id={id} className={labelHidden ? "sr-only" : "text-[13px] font-semibold"}>
         {label}
       </span>
       <RadioGroup.Root

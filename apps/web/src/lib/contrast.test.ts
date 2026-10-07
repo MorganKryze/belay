@@ -34,6 +34,10 @@ const PAIRS = [
   ["ring", "background", 3],
   ["ring", "surface", 3],
   ["primary", "track", 3],
+  ["chart-dot", "surface", 3],
+  ["chart-dot", "background", 3],
+  ["chart-line", "surface", 3],
+  ["chart-line", "background", 3],
 ] as const;
 
 describe("design tokens", () => {
