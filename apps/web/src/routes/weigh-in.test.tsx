@@ -129,6 +129,9 @@ describe("the weigh-in card", () => {
     renderRoute("/");
     const date = (await screen.findByLabelText("Date of the weigh-in")) as HTMLInputElement;
     expect(date.max).toBe("2026-10-07");
+    expect(date.min).toBe("1900-01-01");
+    fireEvent.change(date, { target: { value: "0202-10-05" } });
+    expect(screen.getByText("Today")).toBeTruthy(); // refused: still today
     fireEvent.change(date, { target: { value: "2026-10-08" } });
     expect(screen.getByText("Today")).toBeTruthy(); // refused: still today
     fireEvent.change(date, { target: { value: "2026-10-05" } });

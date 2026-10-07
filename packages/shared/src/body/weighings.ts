@@ -6,6 +6,9 @@ export interface Weighing {
 }
 
 export const WEIGHING_RANGE_KG = { min: 20, max: 400, step: 0.1 } as const;
+// No weigh-in is dated before this: a mistyped year (0202) would make every render walk centuries
+// of days, and year 0000 is refused by Postgres. ISO dates compare as text.
+export const MIN_WEIGH_IN_DATE: ISODate = "1900-01-01";
 // Belay heuristic: a week, or a 7-day window, says something from 4 weigh-ins on.
 export const MIN_WEIGHINGS = 4;
 

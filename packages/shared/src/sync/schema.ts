@@ -2,10 +2,12 @@
 // it at startup, and the full Zod build would take half of the initial-bundle headroom.
 import * as z from "zod/mini";
 import { isTargetRange } from "../body/target";
-import { isWeighingKg } from "../body/weighings";
+import { isWeighingKg, MIN_WEIGH_IN_DATE } from "../body/weighings";
 import { MAX_CHANGES } from "./limits";
 
 const isoDate = z.iso.date();
+// A weigh-in is never older than the floor (see MIN_WEIGH_IN_DATE).
+const weighInDate = z.iso.date().check(z.refine((d) => d >= MIN_WEIGH_IN_DATE));
 // UTC with a Z, as Date#toISOString() writes it.
 const isoDateTime = z.iso.datetime();
 // null deletes the weigh-in of that day (a tombstone the other devices learn from).
@@ -15,7 +17,7 @@ const cursor = z.string().check(z.regex(/^(0|[1-9]\d{0,17})$/));
 
 export const WeightChangeSchema = z.object({
   kind: z.literal("weight"),
-  date: isoDate,
+  date: weighInDate,
   weightKg,
   at: isoDateTime,
 });

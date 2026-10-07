@@ -198,6 +198,19 @@ describe("POST /api/sync", () => {
     expect((await post(cookie, "{not json")).status).toBe(400);
   });
 
+  it("refuses a weigh-in before 1900 with 400, and writes nothing of the batch", async () => {
+    const { user, cookie } = await signIn("sync-floor");
+    for (const date of ["0000-01-01", "1899-12-31"]) {
+      const res = await post(
+        cookie,
+        body(cookie, "0", [weight("2026-10-06", 80), weight(date, 80)]),
+      );
+      expect(res.status, date).toBe(400);
+    }
+    expect(await rowsOf(user)).toEqual([]);
+    expect((await post(cookie, body(cookie, "0", [weight("1900-01-01", 80)]))).status).toBe(200);
+  });
+
   it("answers 413 beyond 500 changes or 256 KB", async () => {
     const { cookie } = await signIn("sync-limits");
     const many = Array.from({ length: 501 }, () => weight("2026-10-07", 80));

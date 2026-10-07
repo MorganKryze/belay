@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { MIN_WEIGH_IN_DATE } from "../body/weighings";
 import { MAX_CHANGES } from "./limits";
 import { clampAt, isNewer, mergeTarget, mergeWeights } from "./merge";
 import {
@@ -43,6 +44,8 @@ describe("SyncRequestSchema", () => {
     ["over 400 kg", weight("2026-10-07", 400.1)],
     ["finer than 0.1 kg", weight("2026-10-07", 79.85)],
     ["an impossible date", weight("2027-02-29", 80)],
+    ["a day before 1900", weight("1899-12-31", 80)],
+    ["year 0000", weight("0000-01-01", 80)],
     ["a time with an offset", weight("2026-10-07", 80, "2026-10-07T08:30:00+02:00")],
     ["a range under 0.25 %", target(0.2, 1)],
     ["a range over 1 %", target(0.5, 1.05)],
@@ -50,6 +53,11 @@ describe("SyncRequestSchema", () => {
     ["an unknown kind", { kind: "waist", date: "2026-10-07", at: AT }],
   ])("refuses %s", (_, change) => {
     expect(request([change]).success).toBe(false);
+  });
+
+  it("accepts the first day of 1900, the floor of a weigh-in date", () => {
+    expect(MIN_WEIGH_IN_DATE).toBe("1900-01-01");
+    expect(request([weight("1900-01-01", 80)]).success).toBe(true);
   });
 
   it("names the account it belongs to", () => {
@@ -130,7 +138,27 @@ describe("isValidChange", () => {
   });
 });
 
+describe("the weigh-in date floor", () => {
+  it("is 1900-01-01 on the phone as on the server", () => {
+    for (const [date, ok] of [
+      ["1899-12-31", false],
+      ["0202-10-07", false],
+      ["0000-01-01", false],
+      ["1900-01-01", true],
+    ] as const) {
+      expect(isValidChange(weight(date, 80)), date).toBe(ok);
+      expect(ChangeSchema.safeParse(weight(date, 80)).success, date).toBe(ok);
+    }
+  });
+});
+
 describe("isRecordableWeight", () => {
+  it("refuses a weigh-in before 1900, on the phone", () => {
+    expect(isRecordableWeight(weight("1899-12-31", 80), "2026-10-07")).toBe(false);
+    expect(isRecordableWeight(weight("0000-01-01", 80), "2026-10-07")).toBe(false);
+    expect(isRecordableWeight(weight("1900-01-01", 80), "2026-10-07")).toBe(true);
+  });
+
   it("refuses a weigh-in dated after today, on the phone", () => {
     expect(isRecordableWeight(weight("2026-10-07", 80), "2026-10-07")).toBe(true);
     expect(isRecordableWeight(weight("2026-10-08", 80), "2026-10-07")).toBe(false);

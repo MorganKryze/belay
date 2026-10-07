@@ -1,5 +1,10 @@
 import { addDays, type ISODate, toISODate } from "@belay/shared/body/dates";
-import { isWeighingKg, WEIGHING_RANGE_KG, type Weighing } from "@belay/shared/body/weighings";
+import {
+  isWeighingKg,
+  MIN_WEIGH_IN_DATE,
+  WEIGHING_RANGE_KG,
+  type Weighing,
+} from "@belay/shared/body/weighings";
 import { isRecordableWeight } from "@belay/shared/sync/valid";
 import { roundTo } from "@belay/shared/tools/round";
 import type { TFunction } from "i18next";
@@ -82,6 +87,7 @@ export function WeighInForm({
             type="date"
             aria-label={t("weighIn.date")}
             value={date}
+            min={MIN_WEIGH_IN_DATE}
             max={today}
             required
             className="absolute inset-0 cursor-pointer opacity-0"
@@ -93,7 +99,8 @@ export function WeighInForm({
               }
             }}
             onChange={(e) => {
-              if (e.target.value && e.target.value <= today) onDate(e.target.value);
+              const v = e.target.value;
+              if (v && v >= MIN_WEIGH_IN_DATE && v <= today) onDate(v);
             }}
           />
         </label>
