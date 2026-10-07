@@ -163,7 +163,7 @@ describe("when the phone refuses the write", () => {
     expect(await days()).toEqual([]);
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(async () => expect(await days()).toEqual([["2026-10-07", 80]]));
-    expect(screen.getByText("Weigh-in saved")).toBeTruthy();
+    expect(await screen.findByText("Weigh-in saved")).toBeTruthy();
     expect(screen.queryByRole("alert")).toBeNull();
   });
 
