@@ -4,6 +4,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./body/*": "./src/body/*.ts",
     "./tools/*": "./src/tools/*.ts",
     "./science/*": "./src/science/*.ts"
   },
