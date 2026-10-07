@@ -32,6 +32,33 @@
     "failed": "An entry couldn't be sent.",
     "retry": "Try again"
   },
+  "trend": {
+    "title": "Your trend",
+    "average": "7-day average",
+    "loss": "loss",
+    "gain": "gain",
+    "perWeek": "{{value}}%/wk",
+    "kg": "{{value}} kg",
+    "link": "Body"
+  },
+  "weighIn": {
+    "title": "Today's weigh-in",
+    "titleFor": "Weigh-in for {{day}}",
+    "weight": "Weight",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "date": "Date of the weigh-in",
+    "prefilled": "prefilled with your last weigh-in",
+    "save": "Save",
+    "saved": "saved",
+    "edit": "Edit",
+    "delete": "Delete this weigh-in",
+    "close": "Close",
+    "outOfRange": "Enter a weight between 20 and 400 kg.",
+    "toastSaved": "Weigh-in saved",
+    "toastDeleted": "Weigh-in deleted",
+    "undo": "Undo"
+  },
   "nav": {
     "label": "Main",
     "home": "Home",

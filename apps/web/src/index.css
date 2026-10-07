@@ -48,6 +48,7 @@
   --color-primary-ink: var(--primary-ink);
   --color-reference: var(--reference);
   --color-reference-ink: var(--reference-ink);
+  --color-toast-action: var(--toast-action);
   --color-plate-red: var(--plate-red);
   --color-plate-blue: var(--plate-blue);
   --color-plate-yellow: var(--plate-yellow);
@@ -88,6 +89,8 @@
   --primary-ink: #9a3412;
   --reference: #dcebdd;
   --reference-ink: #24503a;
+  /* The toast is the foreground colour; its action reads on it in both themes. */
+  --toast-action: #fdba74;
   --ring: #c2410c;
   --card: var(--surface);
   --card-foreground: var(--foreground);
@@ -126,6 +129,7 @@
   --primary-ink: #fdba74;
   --reference: #1e2e23;
   --reference-ink: #a7d3b2;
+  --toast-action: #9a3412;
   --ring: #fb923c;
 }
 

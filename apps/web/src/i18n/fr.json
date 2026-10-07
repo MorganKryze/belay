@@ -32,6 +32,33 @@
     "failed": "Une saisie n'a pas pu être envoyée.",
     "retry": "Réessayer"
   },
+  "trend": {
+    "title": "Ta tendance",
+    "average": "Moyenne 7 jours",
+    "loss": "perte",
+    "gain": "prise",
+    "perWeek": "{{value}} %/sem",
+    "kg": "{{value}} kg",
+    "link": "Corps"
+  },
+  "weighIn": {
+    "title": "Pesée du jour",
+    "titleFor": "Pesée du {{day}}",
+    "weight": "Poids",
+    "today": "Aujourd'hui",
+    "yesterday": "Hier",
+    "date": "Date de la pesée",
+    "prefilled": "pré-rempli avec ta dernière pesée",
+    "save": "Enregistrer",
+    "saved": "enregistrée",
+    "edit": "Modifier",
+    "delete": "Supprimer cette pesée",
+    "close": "Fermer",
+    "outOfRange": "Entre un poids entre 20 et 400 kg.",
+    "toastSaved": "Pesée enregistrée",
+    "toastDeleted": "Pesée supprimée",
+    "undo": "Annuler"
+  },
   "nav": {
     "label": "Principale",
     "home": "Accueil",
