@@ -28,12 +28,18 @@ export const accountDbName = (userId: string) => `belay.${userId}`;
 
 export async function openAccountDb(userId: string): Promise<AccountDb> {
   return openDB<BelaySchema>(accountDbName(userId), 1, {
-    upgrade(db) {
-      db.createObjectStore("weights", { keyPath: "date" });
-      db.createObjectStore("profile");
-      db.createObjectStore("outbox", { keyPath: "id", autoIncrement: true });
-      db.createObjectStore("meta");
+    upgrade(upgradeDb) {
+      upgradeDb.createObjectStore("weights", { keyPath: "date" });
+      upgradeDb.createObjectStore("profile");
+      upgradeDb.createObjectStore("outbox", { keyPath: "id", autoIncrement: true });
+      upgradeDb.createObjectStore("meta");
     },
+    // A future schema bump in another tab must not hang on this connection.
+    blocking(_current, _blocked, event) {
+      (event.target as IDBDatabase).close();
+    },
+    // ponytail: no connection is cached here, so nothing to drop when the browser terminates it;
+    // the caller reopens on the next call. Upgrade: a cached handle needs a reset in terminated().
   });
 }
 
@@ -90,18 +96,35 @@ export async function applyServer(
   response: SyncResponse,
 ): Promise<void> {
   const tx: WriteTx = db.transaction(["weights", "profile", "outbox", "meta"], "readwrite");
-  const weights = tx.objectStore("weights");
-  const profile = tx.objectStore("profile");
-  await Promise.all([
-    ...sentIds.map((id) => tx.objectStore("outbox").delete(id)),
-    ...response.weights.map((row) => weights.put(row)),
-    ...(response.target ? [profile.put(response.target, "target")] : []),
-  ]);
-  for (const { change } of await tx.objectStore("outbox").getAll()) {
-    const current =
-      change.kind === "weight" ? await weights.get(change.date) : await profile.get("target");
-    if (isNewer(change.at, current?.at ?? null)) await applyLocal(tx, change);
+  const done = tx.done;
+  done.catch(() => {}); // the failure below is the one error that propagates
+  try {
+    const weights = tx.objectStore("weights");
+    const profile = tx.objectStore("profile");
+    // Each request is guarded as it is made: a row that throws synchronously must not leave the
+    // earlier ones unhandled when the abort rejects them all.
+    const ops: Promise<unknown>[] = [];
+    const queue = (op: Promise<unknown>) => {
+      op.catch(() => {});
+      ops.push(op);
+    };
+    for (const id of sentIds) queue(tx.objectStore("outbox").delete(id));
+    for (const row of response.weights) queue(weights.put(row));
+    if (response.target) queue(profile.put(response.target, "target"));
+    await Promise.all(ops);
+    for (const { change } of await tx.objectStore("outbox").getAll()) {
+      const current =
+        change.kind === "weight" ? await weights.get(change.date) : await profile.get("target");
+      if (isNewer(change.at, current?.at ?? null)) await applyLocal(tx, change);
+    }
+    await tx.objectStore("meta").put(response.cursor, "cursor");
+  } catch (error) {
+    try {
+      tx.abort(); // nothing of a half-applied answer stays
+    } catch {
+      // already finished or aborted
+    }
+    throw error;
   }
-  await tx.objectStore("meta").put(response.cursor, "cursor");
-  await tx.done;
+  await done;
 }

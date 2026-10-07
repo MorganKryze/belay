@@ -119,3 +119,40 @@ describe("applyServer", () => {
     expect(await readOutbox(db)).toHaveLength(1); // still sent: the server decides
   });
 });
+
+describe("failures", () => {
+  it("rejects once when a server answer cannot be stored, and changes nothing", async () => {
+    await recordChange(db, weight("2026-10-07", 79.8));
+    const [sent] = await readOutbox(db);
+    const unhandled: unknown[] = [];
+    const onUnhandled = (e: unknown) => unhandled.push(e);
+    process.on("unhandledRejection", onUnhandled);
+    const bad = {
+      cursor: "9",
+      weights: [
+        { date: "2026-10-01", weightKg: 81, at: AT },
+        { date: {}, weightKg: 80, at: AT },
+      ],
+      target: null,
+      hasMore: false,
+    } as unknown as Parameters<typeof applyServer>[2];
+    await expect(applyServer(db, [sent!.id], bad)).rejects.toThrow();
+    await new Promise((r) => setTimeout(r, 20));
+    process.off("unhandledRejection", onUnhandled);
+    expect(unhandled).toEqual([]);
+    expect(await readOutbox(db)).toHaveLength(1);
+    expect(await readWeights(db)).toEqual([{ date: "2026-10-07", weightKg: 79.8 }]);
+    expect(await readCursor(db)).toBe("0");
+  });
+
+  it("rejects when IndexedDB is unavailable", async () => {
+    const saved = globalThis.indexedDB;
+    // @ts-expect-error a private window without storage
+    globalThis.indexedDB = undefined;
+    try {
+      await expect(openAccountDb("user-c")).rejects.toThrow();
+    } finally {
+      globalThis.indexedDB = saved;
+    }
+  });
+});
