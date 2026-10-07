@@ -1,6 +1,11 @@
 import { sql } from "drizzle-orm";
-import { describe, expect, it } from "vitest";
-import { sessions } from "../src/db/schema";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
+import { describe, expect, it, inject } from "vitest";
+import { asApp, asUser } from "../src/db/client";
+import { upsertUser } from "../src/db/identity";
+import * as schema from "../src/db/schema";
+import { sessions, users } from "../src/db/schema";
 import { appDb, testDb } from "./db";
 
 const owner = testDb();
@@ -37,5 +42,53 @@ describe("the app connection", () => {
 
   it("cannot read sessions directly", async () => {
     await expect(db.select().from(sessions)).rejects.toMatchObject(permissionDenied);
+  });
+});
+
+describe("app.user_id", () => {
+  it("shows no row when it is empty", async () => {
+    await upsertUser(db, { issuer: "https://idp.test", sub: "uid-empty", displayName: "E" });
+    expect(await asUser(db, "", (tx) => tx.select().from(users))).toEqual([]);
+  });
+
+  it("refuses a value that is not a UUID, with no row", async () => {
+    await upsertUser(db, { issuer: "https://idp.test", sub: "uid-garbage", displayName: "G" });
+    for (const garbage of ["not-a-uuid", "' or true --", " "]) {
+      // The value is a bound parameter, never SQL; the policy's cast refuses it (22P02).
+      await expect(asUser(db, garbage, (tx) => tx.select().from(users))).rejects.toMatchObject({
+        cause: { code: "22P02" },
+      });
+    }
+  });
+});
+
+describe("a pooled connection", () => {
+  it("never carries one transaction's user into the next", async () => {
+    // One connection, so both transactions run on the same backend.
+    const client = postgres(inject("appDatabaseUrl"), { max: 1, onnotice: () => {} });
+    const single = drizzle(client, { schema });
+    try {
+      const user = await upsertUser(single, {
+        issuer: "https://idp.test",
+        sub: "pool-1",
+        displayName: "P",
+      });
+      const pid = sql`select pg_backend_pid() as pid`;
+      const [first] = await asUser(single, user, (tx) => tx.execute<{ pid: number }>(pid));
+      await asUser(single, user, async () => {
+        throw new Error("rolled back");
+      }).catch(() => {});
+      const next = await asApp(single, async (tx) => {
+        const [row] = await tx.execute<{ pid: number; uid: string | null }>(
+          sql`select pg_backend_pid() as pid, current_setting('app.user_id', true) as uid`,
+        );
+        return { ...row!, rows: await tx.select().from(users) };
+      });
+      expect(next.pid).toBe(first!.pid);
+      expect(next.uid ?? "").toBe("");
+      expect(next.rows).toEqual([]);
+    } finally {
+      await client.end();
+    }
   });
 });

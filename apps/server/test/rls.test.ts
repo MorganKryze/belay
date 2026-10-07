@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
-import { describe, expect, it } from "vitest";
-import { asApp, asUser, runMigrations } from "../src/db/client";
+import { describe, expect, it, inject } from "vitest";
+import { asApp, asUser, connect, runMigrations } from "../src/db/client";
 import { createSession, deleteSession, sessionUser, upsertUser } from "../src/db/identity";
 import { sessions, users } from "../src/db/schema";
 import { testDb } from "./db";
@@ -100,6 +100,18 @@ describe("identity functions", () => {
 });
 
 describe("security definer functions", () => {
+  it("all pin search_path to public, pg_temp", async () => {
+    const rows = await db.execute<{ proname: string; proconfig: string[] | null }>(sql`
+      select p.proname, p.proconfig from pg_proc p
+      join pg_namespace n on n.oid = p.pronamespace
+      where n.nspname = 'public' and p.prosecdef
+      order by p.proname`);
+    expect(rows.map((r) => r.proname)).toEqual(
+      expect.arrayContaining(["belay_create_session", "belay_session_user"]),
+    );
+    for (const r of rows) expect(r.proconfig, r.proname).toEqual(["search_path=public, pg_temp"]);
+  });
+
   it("ignore a temp table that shadows sessions", async () => {
     const victim = await upsertUser(db, { issuer, sub: "shadow-victim", displayName: "V" });
     const resolved = await asApp(db, async (tx) => {
@@ -122,5 +134,21 @@ describe("security definer functions", () => {
 describe("migrations", () => {
   it("are idempotent", async () => {
     await expect(runMigrations(db, "drizzle")).resolves.toBeUndefined();
+  });
+
+  it("run into a second database of the same cluster, where belay_app already exists", async () => {
+    await db.execute(sql`drop database if exists belay_second`);
+    await db.execute(sql`create database belay_second`);
+    const url = new URL(inject("databaseUrl"));
+    url.pathname = "/belay_second";
+    const second = connect(url.href);
+    try {
+      await expect(runMigrations(second.db, "drizzle")).resolves.toBeUndefined();
+      // The grants and policies are there too: the app role reads, and sees nobody.
+      await upsertUser(second.db, { issuer, sub: "second", displayName: "Two" });
+      expect(await asApp(second.db, (tx) => tx.select().from(users))).toEqual([]);
+    } finally {
+      await second.client.end();
+    }
   });
 });
