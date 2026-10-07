@@ -185,6 +185,23 @@ describe("merge", () => {
     ]);
   });
 
+  it("keeps the stored value when the clamped time equals the stored time", () => {
+    const tie = weight("2026-10-07", 79.8, "2026-10-07T09:00:00.000Z"); // clamps to now
+    expect(mergeWeights(new Map([["2026-10-07", now.toISOString()]]), [tie], now)).toEqual([]);
+  });
+
+  it("a clock running ahead degrades to last arrival (documented ceiling)", () => {
+    const t1 = "2026-10-07T07:00:00.000Z"; // device B, written at the server's t1
+    const ahead = weight("2026-10-07", 79.8, "2027-01-01T00:00:00.000Z"); // device A, clock ahead
+    const t2 = new Date("2026-10-07T07:05:00.000Z");
+    const t3 = new Date("2026-10-07T07:10:00.000Z");
+    const [first] = mergeWeights(new Map([["2026-10-07", t1]]), [ahead], t2);
+    expect(first!.at).toBe(t2.toISOString()); // overwrites B's later-in-reality edit
+    // the replay after a lost response clamps to t3 and still wins over what t2 stored
+    const [replay] = mergeWeights(new Map([["2026-10-07", t2.toISOString()]]), [ahead], t3);
+    expect(replay!.at).toBe(t3.toISOString());
+  });
+
   it("merges the target range under its single timestamp", () => {
     expect(mergeTarget(null, [target(0.25, 0.75)], now)).toEqual(target(0.25, 0.75));
     expect(mergeTarget("2026-10-07T06:45:00.000Z", [target(0.25, 0.75)], now)).toBeNull();

@@ -8,6 +8,9 @@ export function isNewer(incoming: string, existing: string | null): boolean {
 }
 
 // A phone clock running ahead would otherwise win every later edit made elsewhere.
+// ponytail: clamping makes a clock running ahead degrade to "last arrival": a replay after a lost
+// response clamps to a later `now` and can overwrite an edit made elsewhere in between. Upgrade
+// path: server-issued timestamps on first receipt, or per-device logical clocks.
 export function clampAt(at: string, now: Date): string {
   return Date.parse(at) > now.getTime() ? now.toISOString() : at;
 }
