@@ -50,6 +50,42 @@ describe("loadConfig", () => {
     expect(() => loadConfig(testEnv({ OIDC_ISSUER: "file:///etc/passwd" }))).toThrow(/OIDC_ISSUER/);
   });
 
+  it("refuses to start without APP_DATABASE_URL, never falling back to the owner", () => {
+    const env: Record<string, string> = testEnv();
+    delete env.APP_DATABASE_URL;
+    expect(() => loadConfig(env)).toThrow(/for the belay_app role[\s\S]*at APP_DATABASE_URL/);
+  });
+
+  it("accepts APP_DATABASE_URL only for belay_app, with a password, and never echoes it", () => {
+    for (const url of [
+      "postgres://belay:hunter2owner@db:5432/belay", // the owner
+      "postgres://belay_app@db:5432/belay", // no password
+      "postgres://belay_app:hunter2%zz@db:5432/belay", // broken percent-encoding
+      "mysql://belay_app:hunter2@db/belay",
+      "not a url",
+    ]) {
+      const err = (() => {
+        try {
+          loadConfig(testEnv({ APP_DATABASE_URL: url }));
+        } catch (e) {
+          return e as Error;
+        }
+      })();
+      expect(err?.message, url).toMatch(/APP_DATABASE_URL must be a postgres:\/\/ URL/);
+      expect(err?.message).not.toContain("hunter2");
+    }
+  });
+
+  it("reads the app password the way postgres.js does, percent-decoded", () => {
+    const password = `p@ss:w/rd?#% "it's"\\`;
+    const cfg = loadConfig(
+      testEnv({
+        APP_DATABASE_URL: `postgresql://belay_app:${encodeURIComponent(password)}@db:5432/belay`,
+      }),
+    );
+    expect(cfg.appPassword).toBe(password);
+  });
+
   it("refuses the e-mail claim as the display name, whatever its case", () => {
     for (const claim of ["email", "EMAIL", "Email", " email "]) {
       expect(() => loadConfig(testEnv({ OIDC_NAME_CLAIM: claim }))).toThrow(/OIDC_NAME_CLAIM/);

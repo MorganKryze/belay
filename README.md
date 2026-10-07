@@ -38,6 +38,9 @@ terminates TLS on the same host. Belay has no accounts of its own.
    If you downloaded only `compose.yaml`, put `.env` beside it. Then fill it in:
    - `POSTGRES_PASSWORD`: `openssl rand -hex 24`. It goes into a database URL,
      so keep it URL-safe.
+   - `BELAY_APP_PASSWORD`: `openssl rand -hex 24`, URL-safe too. Belay
+     connects to the database as the `belay_app` role with this password; the
+     owner account of `POSTGRES_PASSWORD` only runs the migrations at startup.
    - `SESSION_SECRET`: `openssl rand -hex 32`.
    - `PUBLIC_URL`: the https address people will use.
    - `OIDC_ISSUER`: the issuer URL your provider publishes at
@@ -49,7 +52,7 @@ terminates TLS on the same host. Belay has no accounts of its own.
      falling back to `preferred_username`). `email` is refused: Belay never
      stores e-mail addresses.
 
-   Both secrets are empty in the example on purpose: Compose and the app
+   The three secrets are empty in the example on purpose: Compose and the app
    refuse to start until you set them.
 
 3. Choose the image, then start it:
@@ -81,6 +84,10 @@ terminates TLS on the same host. Belay has no accounts of its own.
   then `up -d` again. From source, rebuild the image, then `up -d`. An installed
   app applies a new version on the launch after the one that downloaded it, once
   the app has been fully closed.
+- Coming from a version without `BELAY_APP_PASSWORD`: add it to `.env` and
+  take the new `compose.yaml` before `up -d`, or the app refuses to start
+  (it no longer connects as the database owner). That update also signs
+  everyone out once.
 - Your data lives in the `belay_db` volume of the `belay` Compose project.
   `down -v` deletes it. See the threat model below.
 
@@ -94,11 +101,14 @@ Read this before hosting Belay for anyone else.
 - **Encryption at rest is your job.** The `belay_db` volume holds health data:
   put it on an encrypted disk and encrypt your backups. That protects against a
   stolen disk or a leaked backup, not against the administrator.
-- **Inside the app**, queries run under a restricted database role with
-  row-level security. This guards against a bug in the application logic, such
-  as a query that forgets its user filter. It is not a boundary against SQL
-  injection: with arbitrary SQL, an attacker can leave the role. Parameterised
-  queries are what prevent injection.
+- **Inside the app**, Belay connects to the database as `belay_app`, a role
+  that owns no table; the owner account only runs the migrations at startup.
+  Row-level security limits every query to the signed-in person's rows, which
+  guards against a bug in the application logic, such as a query that forgets
+  its user filter. An SQL injection could not change the schema, leave the
+  role or read the sessions table, but it could still claim to be another
+  person and read their data. Parameterised queries are what prevent
+  injection.
 - **Sign-in** goes through your OIDC provider. The browser never sees an
   identity token: the server keeps the session and gives the browser an
   `HttpOnly` cookie. The database stores each session token only as a hash
@@ -131,7 +141,9 @@ In development the server reads the **repository-root** `.env`, not
 `docker/.env`. Edit it first:
 
 - add `DATABASE_URL=postgres://postgres:dev@localhost:5432/belay`, or point it
-  at any Postgres 18 (the Compose `db` service is not published to the host);
+  at any Postgres 18 (the Compose `db` service is not published to the host),
+  and `APP_DATABASE_URL=postgres://belay_app:dev-app@localhost:5432/belay`
+  (any password: the server gives it to the `belay_app` role at startup);
 - set `PUBLIC_URL=http://localhost:5173` so the OIDC redirect goes through the
   Vite proxy, and register `http://localhost:5173/auth/callback` on a dev OIDC
   client;
