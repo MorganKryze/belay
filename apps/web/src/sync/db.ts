@@ -26,7 +26,12 @@ type WriteTx = IDBPTransaction<
 // it is ever sent under another identity. Signing out keeps it.
 export const accountDbName = (userId: string) => `belay.${userId}`;
 
-export async function openAccountDb(userId: string): Promise<AccountDb> {
+// `onLost` fires when this connection is gone for good (closed for another tab's schema upgrade,
+// or terminated by the browser): every call on the handle would throw, so the caller reopens.
+export async function openAccountDb(
+  userId: string,
+  { onLost }: { onLost?: () => void } = {},
+): Promise<AccountDb> {
   return openDB<BelaySchema>(accountDbName(userId), 1, {
     upgrade(upgradeDb) {
       upgradeDb.createObjectStore("weights", { keyPath: "date" });
@@ -37,9 +42,12 @@ export async function openAccountDb(userId: string): Promise<AccountDb> {
     // A future schema bump in another tab must not hang on this connection.
     blocking(_current, _blocked, event) {
       (event.target as IDBDatabase).close();
+      onLost?.();
     },
-    // ponytail: no connection is cached here, so nothing to drop when the browser terminates it;
-    // the caller reopens on the next call. Upgrade: a cached handle needs a reset in terminated().
+    // The browser may terminate the connection (storage cleared, disk pressure).
+    terminated() {
+      onLost?.();
+    },
   });
 }
 

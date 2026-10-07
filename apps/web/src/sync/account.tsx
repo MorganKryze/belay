@@ -46,11 +46,20 @@ export function AccountProvider({ children }: { children: ReactNode }) {
   const userId = user?.id;
 
   const [opened, setOpened] = useState<Opened | null>(null);
+  // Bumped when the browser drops the connection: the effect below reopens it, and stops the
+  // engine bound to the dead one.
+  const [reopen, setReopen] = useState(0);
   useEffect(() => {
     if (!userId) return;
     let cancelled = false;
     let close = () => {};
-    openAccountDb(userId).then(
+    openAccountDb(userId, {
+      onLost: () => {
+        if (cancelled) return;
+        setOpened(null);
+        setReopen((n) => n + 1);
+      },
+    }).then(
       (db) => {
         if (cancelled) return db.close();
         const engine = createSyncEngine({
@@ -75,7 +84,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       cancelled = true;
       close();
     };
-  }, [userId, queryClient]);
+  }, [userId, queryClient, reopen]);
 
   let account: Account;
   if (!user)

@@ -64,7 +64,11 @@ export function createSyncEngine({
         if (!result.response.hasMore && (await readOutbox(db, 1)).length === 0) break;
       }
       set("idle");
-    } catch {
+    } catch (error) {
+      console.error(
+        "sync: local database failed:",
+        error instanceof Error ? error.name : "unknown",
+      );
       set("failed"); // the local database failed; the queue is untouched
     }
   }

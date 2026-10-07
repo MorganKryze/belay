@@ -5,8 +5,24 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { logout } from "@/lib/api";
 import { fakeApi } from "@/test/fake-api";
 import { type OpenAccount, AccountProvider, useAccount, useWeighings } from "./account";
+import * as dbModule from "./db";
 import { openAccountDb, readWeights, recordChange } from "./db";
 import { readLastUser, writeLastUser } from "./last-user";
+
+vi.mock("./db", async (original) => {
+  const actual = await original<typeof import("./db")>();
+  return { ...actual, openAccountDb: vi.fn(actual.openAccountDb) };
+});
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+// The session answer arrives late, so the last account on the device opens (and syncs) first.
+function slowMe(api: ReturnType<typeof fakeApi>) {
+  const real = api.fetchMock.getMockImplementation()!;
+  api.fetchMock.mockImplementation(async (input, init) => {
+    if (String(input) === "/api/me") await sleep(150);
+    return real(input, init);
+  });
+}
 
 const ADA = { id: "user-ada", displayName: "Ada" };
 const BOB = { id: "user-bob", displayName: "Bob" };
@@ -95,11 +111,86 @@ describe("the current account", () => {
     await weighIn(ADA.id);
     writeLastUser(ADA);
     const api = fakeApi({ me: BOB });
+    slowMe(api);
     mount();
+    // Ada's account opens first and tries her queue under Bob's session: refused with a 409.
+    await waitFor(() => expect(api.requests.map((r) => r.account)).toContain(ADA.id));
+    expect(api.requests[0]!.account).toBe(ADA.id);
+    expect(api.requests[0]!.changes).toHaveLength(1);
     expect(await screen.findByText("Bob: 0 weigh-ins")).toBeTruthy();
     expect(readLastUser()).toEqual(BOB);
+    await waitFor(() => expect(api.requests.some((r) => r.account === BOB.id)).toBe(true));
+    expect(
+      api.requests.filter((r) => r.account === BOB.id).every((r) => r.changes.length === 0),
+    ).toBe(true);
+    expect([...api.rows.values()]).toEqual([]); // Ada's change was never accepted
     expect(await readWeights(await openAccountDb(ADA.id))).toHaveLength(1);
-    expect([...api.rows.values()]).toEqual([]); // Ada's queue, tried under Bob's session: refused
+  });
+
+  it("stops the previous account's engine when the account switches", async () => {
+    await weighIn(ADA.id);
+    writeLastUser(ADA);
+    const api = fakeApi({ me: BOB });
+    slowMe(api);
+    mount();
+    expect(await screen.findByText("Bob: 0 weigh-ins")).toBeTruthy();
+    await sleep(30);
+    api.requests.length = 0;
+    window.dispatchEvent(new Event("online"));
+    document.dispatchEvent(new Event("visibilitychange"));
+    await waitFor(() => expect(api.requests.length).toBeGreaterThan(0));
+    await sleep(30);
+    expect(api.requests.map((r) => r.account)).not.toContain(ADA.id);
+  });
+
+  it("stops the engine when the provider unmounts", async () => {
+    const api = fakeApi({ me: ADA });
+    mount();
+    expect(await screen.findByText("Ada: 0 weigh-ins")).toBeTruthy();
+    await waitFor(() => expect(api.requests.length).toBeGreaterThan(0));
+    cleanup();
+    const sent = api.requests.length;
+    window.dispatchEvent(new Event("online"));
+    document.dispatchEvent(new Event("visibilitychange"));
+    await sleep(50);
+    expect(api.requests).toHaveLength(sent);
+  });
+
+  it("reopens the database when the connection is lost, and writes and syncs again", async () => {
+    const api = fakeApi({ me: ADA });
+    let account: OpenAccount | undefined;
+    function Capture() {
+      const a = useAccount();
+      if (a.kind === "open") account = a;
+      return null;
+    }
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <AccountProvider>
+          <Capture />
+        </AccountProvider>
+      </QueryClientProvider>,
+    );
+    await waitFor(() => expect(account).toBeDefined());
+    const first = account!;
+    const open = vi.mocked(dbModule.openAccountDb);
+    const calls = open.mock.calls.length;
+    first.db.close(); // the browser dropped it
+    open.mock.calls[calls - 1]![1]!.onLost!();
+    await waitFor(() => expect(open.mock.calls.length).toBe(calls + 1));
+    await waitFor(() => expect(account!.db).not.toBe(first.db));
+    const change = {
+      kind: "weight" as const,
+      date: "2026-10-07",
+      weightKg: 79.8,
+      at: "2026-10-07T06:30:00.000Z",
+    };
+    await recordChange(account!.db, change);
+    await account!.engine.sync();
+    expect(account!.engine.status()).toBe("idle");
+    expect(api.requests.at(-1)!.changes).toEqual([change]);
+    expect(api.rows.get("2026-10-07")?.weightKg).toBe(79.8);
   });
 
   it("says so when the browser refuses the local database", async () => {
