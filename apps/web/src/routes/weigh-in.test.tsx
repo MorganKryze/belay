@@ -57,6 +57,18 @@ describe("the weigh-in card", () => {
     ]);
   });
 
+  it("puts focus on the card's heading once Save has gone", async () => {
+    await seed(ADA.id, [weight("2026-10-06", 80.2)]);
+    fakeApi({ me: ADA });
+    renderRoute("/");
+    await field();
+    const save = screen.getByRole("button", { name: "Save" });
+    save.focus();
+    fireEvent.click(save);
+    await within(await card()).findByText("saved");
+    expect(document.activeElement).toBe(screen.getByRole("heading", { name: "Today's weigh-in" }));
+  });
+
   it("fills the weight in once the first sync on a new phone brings the history", async () => {
     const api = fakeApi({ me: ADA });
     api.rows.set("2026-10-06", {

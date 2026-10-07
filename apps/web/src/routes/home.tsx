@@ -99,9 +99,10 @@ function HomeCards({
   const [sheetDate, setSheetDate] = useState<ISODate | null>(null);
   const done = weighings.find((w) => w.date === today);
   const save = async (day: ISODate, kg: number | null) => {
-    if (!(await write(day, kg))) return;
+    if (!(await write(day, kg))) return false;
     setDate(null);
     setSheetDate(null);
+    return true;
   };
   return (
     <>
@@ -145,7 +146,12 @@ function HomeCards({
             date={date ?? today}
             onDate={setDate}
             // "Today" is read when Save is tapped: the screen may have been drawn yesterday.
-            onSave={(day, kg) => void save(date ?? toISODate(new Date()), kg)}
+            // Save unmounts with the form: focus goes to the card's heading, not to <body>.
+            onSave={(day, kg) =>
+              void save(date ?? toISODate(new Date()), kg).then(
+                (ok) => ok && document.querySelector<HTMLElement>("[data-focus-fallback]")?.focus(),
+              )
+            }
             error={error}
           />
         )}
