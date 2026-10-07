@@ -12,7 +12,9 @@ function rootCause(err: unknown): string {
   while (cause instanceof Error && cause.cause instanceof Error) cause = cause.cause;
   if (!(cause instanceof Error)) return "unknown error";
   const code = (cause as { code?: unknown }).code;
-  const text = cause.message || (typeof code === "string" ? code : cause.name);
+  // A Drizzle wrapper with nothing under it still carries the statement and its parameters.
+  const wrapper = cause.message.startsWith("Failed query:");
+  const text = (!wrapper && cause.message) || (typeof code === "string" ? code : cause.name);
   return typeof code === "string" && !text.includes(code) ? `${text} (${code})` : text;
 }
 
@@ -39,10 +41,17 @@ export async function start(env: Record<string, string | undefined>) {
   const { db, client } = conn;
   try {
     await runMigrations(owner.db, cfg.migrationsDir);
-    await enableAppLogin(owner.db, cfg.appPassword);
   } catch (err) {
     await Promise.all([owner.client.end({ timeout: 1 }), client.end({ timeout: 1 })]);
     throw new Error(`Database unreachable or migration failed: ${rootCause(err)}`, { cause: err });
+  }
+  try {
+    await enableAppLogin(owner.db, cfg.appPassword);
+  } catch (err) {
+    await Promise.all([owner.client.end({ timeout: 1 }), client.end({ timeout: 1 })]);
+    // No cause: Drizzle's error carries the statement and its parameters, the password included.
+    // eslint-disable-next-line preserve-caught-error
+    throw new Error(`Cannot set the belay_app password: ${rootCause(err)}`);
   }
   // The owner's work is done: from here on, nothing runs as the table owner.
   await owner.client.end({ timeout: 5 });
