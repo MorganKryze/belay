@@ -19,8 +19,8 @@ const schema = z.object({
     })
     .default("name"),
   SESSION_SECRET: z.string().min(32),
-  SESSION_TTL_DAYS: z.coerce.number().int().positive().default(30),
-  SESSION_MAX_DAYS: z.coerce.number().int().positive().default(90),
+  SESSION_TTL_DAYS: z.coerce.number().int().positive().max(400).default(30),
+  SESSION_MAX_DAYS: z.coerce.number().int().positive().max(400).default(90),
   PORT: z.coerce.number().int().positive().default(3000),
   WEB_DIST: z.string().default("../web/dist"),
   MIGRATIONS_DIR: z.string().default("drizzle"),

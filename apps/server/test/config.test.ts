@@ -42,6 +42,14 @@ describe("loadConfig", () => {
     expect(loadConfig(testEnv({ SESSION_MAX_DAYS: "30" })).sessionMaxDays).toBe(30);
   });
 
+  it("bounds the session lifetimes at 400 days", () => {
+    expect(loadConfig(testEnv({ SESSION_TTL_DAYS: "400", SESSION_MAX_DAYS: "400" }))).toMatchObject(
+      { sessionTtlDays: 400, sessionMaxDays: 400 },
+    );
+    expect(() => loadConfig(testEnv({ SESSION_TTL_DAYS: "401" }))).toThrow(/SESSION_TTL_DAYS/);
+    expect(() => loadConfig(testEnv({ SESSION_MAX_DAYS: "401" }))).toThrow(/SESSION_MAX_DAYS/);
+  });
+
   it("accepts only http(s) URLs for PUBLIC_URL and OIDC_ISSUER", () => {
     expect(() => loadConfig(testEnv({ PUBLIC_URL: "belay.libresoftware.cloud:3000" }))).toThrow(
       /PUBLIC_URL/,
