@@ -23,6 +23,12 @@ const homeRoute = createRoute({
   validateSearch: (search: Record<string, unknown>): { signin?: string } =>
     typeof search.signin === "string" ? { signin: search.signin } : {},
 });
+// Body is lazy (its chart and history are not needed to weigh in from Home).
+const bodyRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/body",
+  component: lazyRouteComponent(() => import("./routes/body"), "Body"),
+});
 const settingsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/settings",
@@ -51,6 +57,7 @@ const toolRoute = createRoute({
 
 export const routeTree = rootRoute.addChildren([
   homeRoute,
+  bodyRoute,
   settingsRoute,
   toolsRoute,
   equipmentRoute,

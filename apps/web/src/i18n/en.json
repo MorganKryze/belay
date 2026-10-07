@@ -4,10 +4,9 @@
   },
   "home": {
     "signIn": "Sign in",
-    "signOut": "Sign out",
     "greeting": "Hello, {{name}}",
     "serverDown": "Can't reach the server right now.",
-    "signOutFailed": "Couldn't sign you out. Check your connection and try again."
+    "toolsLink": "Use the tools without an account"
   },
   "signin": {
     "unavailable": "Sign-in is unavailable right now. Try again in a moment.",
@@ -15,11 +14,30 @@
     "failed": "Sign-in didn't work. Please try again."
   },
   "offline": "You're offline.",
+  "body": {
+    "title": "Body",
+    "signedOut": "Tracking your weigh-ins needs an account. The tools work without one."
+  },
+  "account": {
+    "unavailable": "This browser won't let Belay save on the device, so tracking isn't available here. The tools still work."
+  },
+  "sync": {
+    "offlineTitle": "Offline.",
+    "offline_one": "{{count}} weigh-in waiting, sent as soon as the network is back. Everything is kept on this phone.",
+    "offline_other": "{{count}} weigh-ins waiting, sent as soon as the network is back. Everything is kept on this phone.",
+    "expiredTitle": "Your session has expired.",
+    "expired_one": "{{count}} weigh-in is waiting to be sent.",
+    "expired_other": "{{count}} weigh-ins are waiting to be sent.",
+    "reconnect": "Sign in again",
+    "failed": "An entry couldn't be sent.",
+    "retry": "Try again"
+  },
   "nav": {
     "label": "Main",
     "home": "Home",
     "tools": "Tools",
-    "settings": "Settings"
+    "settings": "Settings",
+    "body": "Body"
   },
   "settings": {
     "title": "Settings",
@@ -29,7 +47,14 @@
       "light": "Light",
       "dark": "Dark",
       "system": "System"
-    }
+    },
+    "account": "Account",
+    "signOut": "Sign out",
+    "signOutFailed": "Couldn't sign you out. Check your connection and try again.",
+    "signOutPending_one": "{{count}} entry not sent yet: it will go at your next sign-in on this device.",
+    "signOutPending_other": "{{count}} entries not sent yet: they will go at your next sign-in on this device.",
+    "signOutAnyway": "Sign out anyway",
+    "cancel": "Cancel"
   },
   "fallback": {
     "notFoundTitle": "Page not found",

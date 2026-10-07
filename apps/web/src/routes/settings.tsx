@@ -1,5 +1,7 @@
+import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -9,13 +11,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { LOCALES, setLocale, type Locale } from "@/i18n";
+import { logout } from "@/lib/api";
 import { readTheme, setTheme, type Theme } from "@/lib/theme";
+import { type OpenAccount, useAccount, usePending } from "@/sync/account";
 
 const LANGUAGE_NAMES: Record<Locale, string> = { en: "English", fr: "Français" };
+const sectionTitle = "mx-0.5 text-xs font-semibold tracking-wider text-muted-foreground uppercase";
 
 export function Settings() {
   const { t, i18n } = useTranslation();
   const [theme, setThemeState] = useState<Theme>(readTheme);
+  const account = useAccount();
 
   return (
     <section className="flex flex-col gap-6">
@@ -58,6 +64,52 @@ export function Settings() {
           </SelectContent>
         </Select>
       </div>
+
+      {account.kind === "open" && <OpenAccountSettings account={account} />}
+      {account.kind === "unavailable" && <AccountSettings pending={0} />}
     </section>
+  );
+}
+
+// Shown once the device has said what is waiting, so signing out never skips the warning.
+function OpenAccountSettings({ account }: { account: OpenAccount }) {
+  const pending = usePending(account).data;
+  return pending ? <AccountSettings pending={pending.total} /> : null;
+}
+
+// Signing out keeps the entries on the device (D3); with some still waiting, say so first.
+function AccountSettings({ pending }: { pending: number }) {
+  const { t } = useTranslation();
+  const [confirming, setConfirming] = useState(false);
+  // "always": offline, the request fails at once and we can say so, instead of pausing forever.
+  const signOut = useMutation({ mutationFn: logout, networkMode: "always" });
+  const busy = signOut.isPending || signOut.isSuccess;
+  return (
+    <div className="flex flex-col gap-2">
+      <h2 className={sectionTitle}>{t("settings.account")}</h2>
+      {confirming ? (
+        <div role="alert" className="flex flex-col gap-3 rounded-field bg-primary-soft p-3 text-sm">
+          <p>{t("settings.signOutPending", { count: pending })}</p>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" disabled={busy} onClick={() => signOut.mutate()}>
+              {t("settings.signOutAnyway")}
+            </Button>
+            <Button variant="ghost" onClick={() => setConfirming(false)}>
+              {t("settings.cancel")}
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <Button
+          variant="outline"
+          className="self-start"
+          disabled={busy}
+          onClick={() => (pending > 0 ? setConfirming(true) : signOut.mutate())}
+        >
+          {t("settings.signOut")}
+        </Button>
+      )}
+      {signOut.isError && <p role="alert">{t("settings.signOutFailed")}</p>}
+    </div>
   );
 }
