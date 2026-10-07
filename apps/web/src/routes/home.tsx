@@ -94,12 +94,12 @@ function HomeCards({
   today: ISODate;
 }) {
   const { t, i18n } = useTranslation();
-  const { write, toast, dismiss } = useWeighInWriter(account, weighings);
+  const { write, toast, error, dismiss } = useWeighInWriter(account, weighings);
   const [date, setDate] = useState<ISODate | null>(null); // null: today, whatever the clock says
   const [sheetDate, setSheetDate] = useState<ISODate | null>(null);
   const done = weighings.find((w) => w.date === today);
-  const save = (day: ISODate, kg: number | null) => {
-    if (!write(day, kg)) return;
+  const save = async (day: ISODate, kg: number | null) => {
+    if (!(await write(day, kg))) return;
     setDate(null);
     setSheetDate(null);
   };
@@ -145,7 +145,8 @@ function HomeCards({
             date={date ?? today}
             onDate={setDate}
             // "Today" is read when Save is tapped: the screen may have been drawn yesterday.
-            onSave={(day, kg) => save(date ?? toISODate(new Date()), kg)}
+            onSave={(day, kg) => void save(date ?? toISODate(new Date()), kg)}
+            error={error}
           />
         )}
       </section>
@@ -159,8 +160,9 @@ function HomeCards({
             today={today}
             date={sheetDate}
             onDate={setSheetDate}
-            onSave={(day, kg) => save(day, kg)}
-            onDelete={(day) => save(day, null)}
+            onSave={(day, kg) => void save(day, kg)}
+            onDelete={(day) => void save(day, null)}
+            error={error}
           />
         </Suspense>
       )}

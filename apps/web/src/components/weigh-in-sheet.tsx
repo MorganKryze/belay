@@ -19,6 +19,7 @@ export function WeighInSheet({
   onDate,
   onSave,
   onDelete,
+  error,
 }: {
   open: boolean;
   onClose: () => void;
@@ -28,6 +29,7 @@ export function WeighInSheet({
   onDate: (date: ISODate) => void;
   onSave: (date: ISODate, kg: number) => void;
   onDelete: (date: ISODate) => void;
+  error?: string;
 }) {
   const { t, i18n } = useTranslation();
   // Focus goes back to what opened the sheet: a button, a history row or the chart.
@@ -82,6 +84,7 @@ export function WeighInSheet({
             date={date}
             onDate={onDate}
             onSave={onSave}
+            error={error}
           >
             {weighings.some((w) => w.date === date) && (
               <Button

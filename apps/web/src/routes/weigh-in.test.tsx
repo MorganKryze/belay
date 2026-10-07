@@ -3,11 +3,20 @@ import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/re
 import { IDBFactory } from "fake-indexeddb";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import i18n from "../i18n";
-import { openAccountDb, readOutbox, readWeights } from "../sync/db";
+import { openAccountDb, readOutbox, readWeights, recordChange } from "../sync/db";
 import { writeLastUser } from "../sync/last-user";
 import { fakeApi } from "../test/fake-api";
 import { renderRoute } from "../test/render-route";
 import { ADA, seed, weight } from "../test/seed";
+
+// Passes through, until a test makes the device refuse a write (a lost connection, a full disk).
+vi.mock("../sync/db", async (importOriginal) => {
+  const real = await importOriginal<typeof import("../sync/db")>();
+  return { ...real, recordChange: vi.fn(real.recordChange) };
+});
+const refuseWrite = () =>
+  vi.mocked(recordChange).mockRejectedValueOnce(new DOMException("lost", "InvalidStateError"));
+const SAVE_FAILED = "Couldn't save on this phone. Try again.";
 
 // Wednesday 7 October 2026, 7:30 in the morning, on the phone's clock. Only Date is faked:
 // fake-indexeddb runs on timers.
@@ -138,6 +147,69 @@ describe("the weigh-in card", () => {
     vi.setSystemTime(new Date(2026, 9, 7, 7, 5)); // no visibility event: the screen slept
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(async () => expect(await days()).toEqual([["2026-10-07", 80.1]]));
+  });
+});
+
+describe("when the phone refuses the write", () => {
+  it("keeps the form and says so, with no false toast, then saves on the retry", async () => {
+    fakeApi({ me: ADA });
+    renderRoute("/");
+    fireEvent.change(await field(), { target: { value: "80" } });
+    refuseWrite();
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect((await screen.findByRole("alert")).textContent).toBe(SAVE_FAILED);
+    expect(screen.queryByText("Weigh-in saved")).toBeNull();
+    expect(((await field()) as HTMLInputElement).value).toBe("80");
+    expect(await days()).toEqual([]);
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(async () => expect(await days()).toEqual([["2026-10-07", 80]]));
+    expect(screen.getByText("Weigh-in saved")).toBeTruthy();
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("keeps the sheet open on a failed save and on a failed delete", async () => {
+    await seed(ADA.id, [weight("2026-10-07", 80)]);
+    fakeApi({ me: ADA });
+    renderRoute("/");
+    fireEvent.click(await screen.findByRole("button", { name: "Edit" }));
+    const sheet = await screen.findByRole("dialog");
+    refuseWrite();
+    fireEvent.click(within(sheet).getByRole("button", { name: "Delete this weigh-in" }));
+    expect((await within(sheet).findByRole("alert")).textContent).toBe(SAVE_FAILED);
+    expect(screen.queryByText("Weigh-in deleted")).toBeNull();
+    expect(screen.getByRole("dialog")).toBeTruthy();
+    refuseWrite();
+    fireEvent.click(within(sheet).getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(within(sheet).getByRole("alert").textContent).toBe(SAVE_FAILED));
+    expect(screen.queryByText("Weigh-in saved")).toBeNull();
+    expect(await days()).toEqual([["2026-10-07", 80]]);
+  });
+
+  it("keeps the toast and says so when the undo is refused, then undoes on the retry", async () => {
+    fakeApi({ me: ADA });
+    renderRoute("/");
+    fireEvent.change(await field(), { target: { value: "80" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    refuseWrite();
+    fireEvent.click(await screen.findByRole("button", { name: "Undo" }));
+    expect(await screen.findByText(SAVE_FAILED)).toBeTruthy();
+    expect(await days()).toEqual([["2026-10-07", 80]]);
+    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+    await waitFor(async () => expect(await days()).toEqual([]));
+  });
+
+  it("says so in French", async () => {
+    await i18n.changeLanguage("fr");
+    fakeApi({ me: ADA });
+    renderRoute("/");
+    fireEvent.change(await screen.findByRole("textbox", { name: "Poids" }), {
+      target: { value: "80" },
+    });
+    refuseWrite();
+    fireEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
+    expect((await screen.findByRole("alert")).textContent).toBe(
+      "Pas pu enregistrer sur ce téléphone. Réessaie.",
+    );
   });
 });
 

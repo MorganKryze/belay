@@ -41,6 +41,7 @@ export function WeighInForm({
   date,
   onDate,
   onSave,
+  error,
   children,
 }: {
   weighings: readonly Weighing[];
@@ -48,6 +49,7 @@ export function WeighInForm({
   date: ISODate;
   onDate: (date: ISODate) => void;
   onSave: (date: ISODate, kg: number) => void;
+  error?: string;
   children?: ReactNode;
 }) {
   const { t, i18n } = useTranslation();
@@ -108,12 +110,17 @@ export function WeighInForm({
       >
         {t("weighIn.save")}
       </Button>
+      {error && (
+        <p role="alert" className="text-sm">
+          {error}
+        </p>
+      )}
       {children}
     </div>
   );
 }
 
-export type ToastState = { id: number; text: string; undo: () => void };
+export type ToastState = { id: number; text: string; undo: () => Promise<boolean> };
 
 // Writes a weigh-in (or deletes it with null) and offers to undo it for 5 seconds: the undo is
 // a new entry that puts the previous value of the day back (or its absence).
@@ -121,31 +128,53 @@ export function useWeighInWriter(account: OpenAccount, weighings: readonly Weigh
   const { t } = useTranslation();
   const record = useRecord(account);
   const [toast, setToast] = useState<ToastState | null>(null);
+  const [error, setError] = useState<string | null>(null);
   useEffect(() => {
     if (!toast) return;
     const timer = setTimeout(() => setToast(null), 5000);
     return () => clearTimeout(timer);
   }, [toast]);
 
+  // False, with the reason on screen, when the phone refuses the write (a lost IndexedDB
+  // connection, a full disk) or the entry is not recordable: nothing is announced as saved.
   const write = useCallback(
-    (date: ISODate, weightKg: number | null) => {
+    async (date: ISODate, weightKg: number | null) => {
       // The clock now, not the screen's: the date picker never goes past today, but the day may
       // have changed since the screen was drawn.
       const now = new Date();
       const change = { kind: "weight", date, weightKg, at: now.toISOString() } as const;
-      if (!isRecordableWeight(change, toISODate(now))) return false;
+      const failed = t("weighIn.saveFailed");
+      if (!isRecordableWeight(change, toISODate(now))) {
+        setError(failed);
+        return false;
+      }
       const previous = weighings.find((w) => w.date === date)?.weightKg ?? null;
-      void record(change);
+      try {
+        await record(change);
+      } catch {
+        setError(failed);
+        return false;
+      }
+      setError(null);
+      const undo = async () => {
+        try {
+          await record({ ...change, weightKg: previous, at: new Date().toISOString() });
+          return true;
+        } catch {
+          setToast((current) => current && { ...current, text: failed });
+          return false;
+        }
+      };
       setToast({
         id: now.getTime(),
         text: t(weightKg === null ? "weighIn.toastDeleted" : "weighIn.toastSaved"),
-        undo: () => void record({ ...change, weightKg: previous, at: new Date().toISOString() }),
+        undo,
       });
       return true;
     },
     [record, t, weighings],
   );
-  return { write, toast, dismiss: () => setToast(null) };
+  return { write, toast, error: error ?? undefined, dismiss: () => setToast(null) };
 }
 
 // Above the tab bar; mounted for good so the message is announced.
@@ -163,8 +192,7 @@ export function Toast({ toast, onDone }: { toast: ToastState | null; onDone: () 
             type="button"
             className="min-h-11 rounded-chip px-3 font-bold text-toast-action"
             onClick={() => {
-              toast.undo();
-              onDone();
+              void toast.undo().then((ok) => ok && onDone());
             }}
           >
             {t("weighIn.undo")}

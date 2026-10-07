@@ -2,6 +2,7 @@ import { isTargetRange, TARGET_BOUNDS, type TargetRange } from "@belay/shared/bo
 import { roundTo } from "@belay/shared/tools/round";
 import { Link } from "@tanstack/react-router";
 import { ChevronLeft } from "lucide-react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { NumberStepper } from "@/components/number-stepper";
 import { ScienceSheet } from "@/components/science-sheet";
@@ -47,12 +48,16 @@ function TargetRangeSection({ account }: { account: OpenAccount }) {
   const { t } = useTranslation();
   const target = useTarget(account).data;
   const record = useRecord(account);
+  const [failed, setFailed] = useState(false);
   if (!target) return null;
   const { min, max, step, gap } = TARGET_BOUNDS;
   const set = (next: TargetRange) => {
     const range = { minPct: roundTo(next.minPct, step), maxPct: roundTo(next.maxPct, step) };
     if (isTargetRange(range))
-      void record({ kind: "target", ...range, at: new Date().toISOString() });
+      record({ kind: "target", ...range, at: new Date().toISOString() }).then(
+        () => setFailed(false),
+        () => setFailed(true),
+      );
   };
   return (
     <section aria-labelledby="range" className="flex flex-col gap-2">
@@ -81,6 +86,11 @@ function TargetRangeSection({ account }: { account: OpenAccount }) {
             unit="%"
           />
         </div>
+        {failed && (
+          <p role="alert" className="text-sm">
+            {t("weighIn.saveFailed")}
+          </p>
+        )}
         <p className="text-xs text-muted-foreground">{t("profile.rangeNote")}</p>
       </div>
       <ScienceSheet toolId="target-rate" title={t("profile.howChosen")} />

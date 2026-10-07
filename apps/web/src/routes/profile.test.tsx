@@ -2,11 +2,16 @@ import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/re
 import { IDBFactory } from "fake-indexeddb";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import i18n from "../i18n";
-import { openAccountDb, readOutbox, readTarget } from "../sync/db";
+import { openAccountDb, readOutbox, readTarget, recordChange } from "../sync/db";
 import { writeLastUser } from "../sync/last-user";
 import { fakeApi } from "../test/fake-api";
 import { renderRoute } from "../test/render-route";
 import { ADA } from "../test/seed";
+
+vi.mock("../sync/db", async (importOriginal) => {
+  const real = await importOriginal<typeof import("../sync/db")>();
+  return { ...real, recordChange: vi.fn(real.recordChange) };
+});
 
 beforeEach(() => {
   indexedDB = new IDBFactory();
@@ -57,6 +62,19 @@ describe("Settings › Profile", () => {
     await waitFor(async () => expect(await target()).toEqual({ minPct: 0.55, maxPct: 1 }));
     const [entry] = await readOutbox(await openAccountDb(ADA.id));
     expect(entry!.change).toMatchObject({ kind: "target", minPct: 0.55, maxPct: 1 });
+  });
+
+  it("says so when the phone refuses the write, and clears it on the next one", async () => {
+    await openProfile();
+    vi.mocked(recordChange).mockRejectedValueOnce(new DOMException("lost", "InvalidStateError"));
+    fireEvent.click(button("Increase At least"));
+    expect((await screen.findByRole("alert")).textContent).toBe(
+      "Couldn't save on this phone. Try again.",
+    );
+    expect(await target()).toEqual({ minPct: 0.5, maxPct: 1 });
+    fireEvent.click(button("Increase At least"));
+    await waitFor(async () => expect(await target()).toEqual({ minPct: 0.55, maxPct: 1 }));
+    await waitFor(() => expect(screen.queryByRole("alert")).toBeNull());
   });
 
   it("stops at 1 % and keeps the lower bound 0.1 under the upper one", async () => {

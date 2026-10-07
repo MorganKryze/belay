@@ -91,9 +91,9 @@ function BodyContent({
   const { t, i18n } = useTranslation();
   const [period, setPeriod] = useState<Period>("month");
   const [sheetDate, setSheetDate] = useState<ISODate | null>(null);
-  const { write, toast, dismiss } = useWeighInWriter(account, weighings);
-  const save = (day: ISODate, kg: number | null) => {
-    if (write(day, kg)) setSheetDate(null);
+  const { write, toast, error, dismiss } = useWeighInWriter(account, weighings);
+  const save = async (day: ISODate, kg: number | null) => {
+    if (await write(day, kg)) setSheetDate(null);
   };
 
   const sorted = [...weighings].sort((a, b) => (a.date < b.date ? -1 : 1));
@@ -177,8 +177,9 @@ function BodyContent({
           today={today}
           date={sheetDate}
           onDate={setSheetDate}
-          onSave={save}
-          onDelete={(day) => save(day, null)}
+          onSave={(day, kg) => void save(day, kg)}
+          onDelete={(day) => void save(day, null)}
+          error={error}
         />
       )}
       <Toast toast={toast} onDone={dismiss} />

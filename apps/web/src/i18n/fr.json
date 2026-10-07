@@ -93,6 +93,7 @@
     "outOfRange": "Saisis un poids entre 20 et 400 kg.",
     "toastSaved": "Pesée enregistrée",
     "toastDeleted": "Pesée supprimée",
+    "saveFailed": "Pas pu enregistrer sur ce téléphone. Réessaie.",
     "undo": "Annuler"
   },
   "nav": {
