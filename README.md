@@ -103,7 +103,10 @@ Read this before hosting Belay for anyone else.
   identity token: the server keeps the session and gives the browser an
   `HttpOnly` cookie. The database stores each session token only as a hash
   keyed from `SESSION_SECRET`, so write access to the database alone cannot
-  create a session.
+  create a session. A session lasts `SESSION_TTL_DAYS` (30) after its last
+  use and never more than `SESSION_MAX_DAYS` (90) after sign-in. Disabling
+  someone at your identity provider does not end an active Belay session: it
+  runs until that deadline, at most `SESSION_MAX_DAYS` days.
 - **Minimal data**: from your identity provider, Belay keeps an identifier and a
   display name. Never your e-mail address.
 

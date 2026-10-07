@@ -27,7 +27,19 @@ describe("loadConfig", () => {
 
   it("applies defaults", () => {
     const cfg = loadConfig(testEnv());
-    expect(cfg).toMatchObject({ sessionTtlDays: 30, port: 3000, oidc: { nameClaim: "name" } });
+    expect(cfg).toMatchObject({
+      sessionTtlDays: 30,
+      sessionMaxDays: 90,
+      port: 3000,
+      oidc: { nameClaim: "name" },
+    });
+  });
+
+  it("refuses an absolute session cap shorter than the sliding expiry", () => {
+    expect(() => loadConfig(testEnv({ SESSION_MAX_DAYS: "29" }))).toThrow(
+      /SESSION_MAX_DAYS must be at least SESSION_TTL_DAYS/,
+    );
+    expect(loadConfig(testEnv({ SESSION_MAX_DAYS: "30" })).sessionMaxDays).toBe(30);
   });
 
   it("accepts only http(s) URLs for PUBLIC_URL and OIDC_ISSUER", () => {

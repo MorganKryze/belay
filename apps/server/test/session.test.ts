@@ -82,6 +82,19 @@ describe("GET /api/me", () => {
     expect(header).toContain("HttpOnly");
   });
 
+  it("never lets the cookie outlive the absolute cap", async () => {
+    const { token, cookie } = await signedInCookie("cap-1", "Lou");
+    await db.execute(
+      sql`update sessions set created_at = now() - interval '89 days' where token_hash = ${hashToken(token, cfg.tokenHashKey)}`,
+    );
+    const res = await app.request("/api/me", { headers: { cookie } });
+    expect(res.status).toBe(200);
+    const header = res.headers.getSetCookie().find((h) => h.startsWith(`${SESSION_COOKIE}=`))!;
+    const maxAge = Number(/Max-Age=(\d+)/.exec(header)?.[1]);
+    expect(maxAge).toBeGreaterThan(86_400 - 60);
+    expect(maxAge).toBeLessThanOrEqual(86_400);
+  });
+
   it("answers 401 without a cookie", async () => {
     expect((await app.request("/api/me")).status).toBe(401);
   });

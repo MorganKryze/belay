@@ -16,6 +16,7 @@ const schema = z.object({
     .default("name"),
   SESSION_SECRET: z.string().min(32),
   SESSION_TTL_DAYS: z.coerce.number().int().positive().default(30),
+  SESSION_MAX_DAYS: z.coerce.number().int().positive().default(90),
   PORT: z.coerce.number().int().positive().default(3000),
   WEB_DIST: z.string().default("../web/dist"),
   MIGRATIONS_DIR: z.string().default("drizzle"),
@@ -34,6 +35,7 @@ export type Config = {
   sessionSecret: string;
   tokenHashKey: Buffer;
   sessionTtlDays: number;
+  sessionMaxDays: number;
   secureCookies: boolean;
   port: number;
   webDist: string;
@@ -55,6 +57,9 @@ export function loadConfig(env: Record<string, string | undefined>): Config {
       "Invalid configuration:\nOIDC_ISSUER must use https (http is only accepted on localhost)",
     );
   }
+  if (e.SESSION_MAX_DAYS < e.SESSION_TTL_DAYS) {
+    throw new Error("Invalid configuration:\nSESSION_MAX_DAYS must be at least SESSION_TTL_DAYS");
+  }
   const publicUrl = new URL(e.PUBLIC_URL);
   return {
     databaseUrl: e.DATABASE_URL,
@@ -72,6 +77,7 @@ export function loadConfig(env: Record<string, string | undefined>): Config {
       hkdfSync("sha256", e.SESSION_SECRET, "", "belay/session-token-hash/v1", 32),
     ),
     sessionTtlDays: e.SESSION_TTL_DAYS,
+    sessionMaxDays: e.SESSION_MAX_DAYS,
     secureCookies: publicUrl.protocol === "https:",
     port: e.PORT,
     webDist: e.WEB_DIST,

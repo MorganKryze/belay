@@ -51,16 +51,51 @@ describe("identity functions", () => {
   it("resolves a live session and refuses an expired or deleted one", async () => {
     const user = await upsertUser(db, { issuer, sub: "sess", displayName: "S" });
     await createSession(db, "hash-live", user, 30);
-    expect(await sessionUser(db, "hash-live", 30)).toBe(user);
+    expect((await sessionUser(db, "hash-live", 30, 90))?.userId).toBe(user);
 
     await createSession(db, "hash-old", user, 30);
     await db.execute(
       sql`update sessions set expires_at = now() - interval '1 minute' where token_hash = 'hash-old'`,
     );
-    expect(await sessionUser(db, "hash-old", 30)).toBeNull();
+    expect(await sessionUser(db, "hash-old", 30, 90)).toBeNull();
 
     await deleteSession(db, "hash-live");
-    expect(await sessionUser(db, "hash-live", 30)).toBeNull();
+    expect(await sessionUser(db, "hash-live", 30, 90)).toBeNull();
+  });
+
+  it("slides the expiry back to the full lifetime on every lookup", async () => {
+    const user = await upsertUser(db, { issuer, sub: "slide", displayName: "S" });
+    await createSession(db, "hash-slide", user, 30);
+    await db.execute(
+      sql`update sessions set expires_at = now() + interval '1 hour' where token_hash = 'hash-slide'`,
+    );
+    expect(await sessionUser(db, "hash-slide", 30, 90)).toEqual({
+      userId: user,
+      maxAge: 30 * 86_400,
+    });
+    const [row] = await db.execute<{ full: boolean }>(
+      sql`select (expires_at - now() > interval '29 days') as full from sessions where token_hash = 'hash-slide'`,
+    );
+    expect(row?.full).toBe(true);
+  });
+
+  it("ends a session at the absolute cap, however active", async () => {
+    const user = await upsertUser(db, { issuer, sub: "cap", displayName: "C" });
+    await createSession(db, "hash-cap", user, 30);
+    // Signed in 89 days ago and used every day since: the deadline slides, but only to day 90.
+    await db.execute(
+      sql`update sessions set created_at = now() - interval '89 days' where token_hash = 'hash-cap'`,
+    );
+    const capped = await sessionUser(db, "hash-cap", 30, 90);
+    expect(capped?.userId).toBe(user);
+    expect(capped?.maxAge).toBeGreaterThan(86_400 - 60);
+    expect(capped?.maxAge).toBeLessThanOrEqual(86_400);
+
+    // Past day 90 it is refused, though its sliding deadline is still ahead.
+    await db.execute(
+      sql`update sessions set created_at = now() - interval '91 days', expires_at = now() + interval '20 days' where token_hash = 'hash-cap'`,
+    );
+    expect(await sessionUser(db, "hash-cap", 30, 90)).toBeNull();
   });
 });
 
@@ -75,7 +110,7 @@ describe("security definer functions", () => {
         sql`insert into sessions values ('forged', ${victim}::uuid, now() + interval '1 day')`,
       );
       const rows = await tx.execute<{ user_id: string | null }>(
-        sql`select belay_session_user('forged', interval '1 day') as user_id`,
+        sql`select user_id from belay_session_user('forged', interval '1 day', interval '90 days')`,
       );
       return rows[0]?.user_id ?? null;
     });
