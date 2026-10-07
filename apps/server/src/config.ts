@@ -1,3 +1,4 @@
+import { hkdfSync } from "node:crypto";
 import { z } from "zod";
 
 const schema = z.object({
@@ -31,6 +32,7 @@ export type Config = {
     allowInsecure: boolean;
   };
   sessionSecret: string;
+  tokenHashKey: Buffer;
   sessionTtlDays: number;
   secureCookies: boolean;
   port: number;
@@ -65,6 +67,10 @@ export function loadConfig(env: Record<string, string | undefined>): Config {
       allowInsecure: insecure,
     },
     sessionSecret: e.SESSION_SECRET,
+    // One key per purpose: SESSION_SECRET itself signs the login transaction cookie.
+    tokenHashKey: Buffer.from(
+      hkdfSync("sha256", e.SESSION_SECRET, "", "belay/session-token-hash/v1", 32),
+    ),
     sessionTtlDays: e.SESSION_TTL_DAYS,
     secureCookies: publicUrl.protocol === "https:",
     port: e.PORT,

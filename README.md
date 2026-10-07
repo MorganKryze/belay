@@ -101,7 +101,9 @@ Read this before hosting Belay for anyone else.
   queries are what prevent injection.
 - **Sign-in** goes through your OIDC provider. The browser never sees an
   identity token: the server keeps the session and gives the browser an
-  `HttpOnly` cookie.
+  `HttpOnly` cookie. The database stores each session token only as a hash
+  keyed from `SESSION_SECRET`, so write access to the database alone cannot
+  create a session.
 - **Minimal data**: from your identity provider, Belay keeps an identifier and a
   display name. Never your e-mail address.
 
