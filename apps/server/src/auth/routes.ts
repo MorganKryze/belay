@@ -5,6 +5,7 @@ import { z } from "zod";
 import type { Config } from "../config";
 import type { Db } from "../db/client";
 import { createSession, deleteSession, upsertUser } from "../db/identity";
+import { describeError } from "../log";
 import { pickDisplayName, type OidcProvider } from "./oidc";
 import { safeReturnTo } from "./return-to";
 import {
@@ -25,15 +26,6 @@ const txSchema = z.object({
   nonce: z.string(),
   returnTo: z.string(),
 });
-
-// Name, message and code only: openid-client errors carry cause chains that hold the expected
-// nonce, the ID token claims (e-mail included) and the authorization response.
-function describeError(err: unknown): string {
-  if (!(err instanceof Error)) return "unknown error";
-  const code = (err as { code?: unknown }).code;
-  const suffix = typeof code === "string" || typeof code === "number" ? ` (code ${code})` : "";
-  return `${err.name}: ${err.message}${suffix}`;
-}
 
 // Signed, so it is ours, but an older version of the app may have written another shape.
 function parseTransaction(raw: string) {
@@ -63,6 +55,8 @@ export function authRoutes(cfg: Config, db: Db, getOidc: OidcProvider) {
     ...(cfg.secureCookies ? { prefix: "host" as const } : {}),
   };
 
+  // describeError, not the error: openid-client errors carry cause chains that hold the expected
+  // nonce, the ID token claims (e-mail included) and the authorization response.
   auth.onError((err, c) => {
     console.error("auth error:", describeError(err));
     // Logout is a fetch() that expects JSON; everything else here is a browser navigation.

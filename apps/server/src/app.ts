@@ -1,13 +1,21 @@
 import { serveStatic } from "@hono/node-server/serve-static";
 import { sql } from "drizzle-orm";
-import { Hono } from "hono";
+import { Hono, type MiddlewareHandler } from "hono";
 import { csrf } from "hono/csrf";
+import { HTTPException } from "hono/http-exception";
 import { secureHeaders } from "hono/secure-headers";
 import { apiRoutes } from "./api/routes";
 import type { OidcProvider } from "./auth/oidc";
 import { authRoutes } from "./auth/routes";
 import type { Config } from "./config";
 import type { Db } from "./db/client";
+import { describeError } from "./log";
+
+// Answers that carry a session or a person's data are never kept by a browser or a proxy.
+const noStore: MiddlewareHandler = async (c, next) => {
+  await next();
+  c.header("Cache-Control", "no-store");
+};
 
 export function createApp({ cfg, db, getOidc }: { cfg: Config; db: Db; getOidc: OidcProvider }) {
   const app = new Hono();
@@ -33,6 +41,17 @@ export function createApp({ cfg, db, getOidc }: { cfg: Config; db: Db; getOidc: 
     }),
   );
   app.use(csrf({ origin: cfg.publicUrl.origin }));
+  app.use("/api/*", noStore);
+  app.use("/auth/*", noStore);
+
+  // Printed as text through describeError: a database error's message holds its parameters.
+  app.onError((err, c) => {
+    if (err instanceof HTTPException) return err.getResponse();
+    console.error("server error:", describeError(err));
+    return c.req.path.startsWith("/api/")
+      ? c.json({ error: "server_error" }, 500)
+      : c.text("Internal Server Error", 500);
+  });
 
   app.get("/healthz", async (c) => {
     try {
