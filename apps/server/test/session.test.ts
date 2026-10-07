@@ -28,6 +28,16 @@ async function signedInCookie(sub: string, name: string) {
 }
 
 describe("session tokens", () => {
+  it("hashes a token to a pinned value, so the HKDF info, salt or length cannot drift silently", () => {
+    const pinned = loadConfig(testEnv({ SESSION_SECRET: "known-answer-secret-0123456789abcdef" }));
+    expect(pinned.tokenHashKey.toString("hex")).toBe(
+      "1b295be1648106db32d88ff1c83ca57515128c3c1fb14bb7feb689ee2de82d24",
+    );
+    expect(hashToken("known-answer-token", pinned.tokenHashKey)).toBe(
+      "2c90aee8d16e05ad7b0b2c6b8fbf9dd31552cb3a7f380442e7c6dc340c2bdcf1",
+    );
+  });
+
   it("are long, random, and stored only as a hash keyed by SESSION_SECRET", () => {
     const t = newSessionToken();
     expect(t).toMatch(/^[A-Za-z0-9_-]{43}$/);
