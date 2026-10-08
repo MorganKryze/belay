@@ -130,6 +130,34 @@ describe("Settings › My supplements, duplicates, double taps and focus", () =>
     expect(name.value).toBe("Draft");
   });
 
+  it("refuses a rename to an empty name or to another supplement's, but not to its own", async () => {
+    await openList();
+    fireEvent.click(await screen.findByRole("button", { name: "Iron" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Zinc" }));
+    fireEvent.click(await screen.findByRole("button", { name: "More for Iron" }));
+    fireEvent.click(screen.getByRole("button", { name: "Rename" }));
+    const field = screen.getByRole("textbox", { name: "New name for Iron" });
+    fireEvent.change(field, { target: { value: "   " } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(await screen.findByText("Between 1 and 40 characters, on one line.")).toBeTruthy();
+    expect(field.getAttribute("aria-invalid")).toBe("true");
+    fireEvent.change(field, { target: { value: " zinc " } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(await screen.findByText("This supplement is already on your list.")).toBeTruthy();
+    expect(await stored()).toEqual([
+      ["Iron", "other", false],
+      ["Zinc", "other", false],
+    ]);
+    fireEvent.change(field, { target: { value: "IRON" } }); // its own name, other case
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(async () =>
+      expect(await stored()).toEqual([
+        ["IRON", "other", false],
+        ["Zinc", "other", false],
+      ]),
+    );
+  });
+
   it("returns the focus to the row's menu button after Save and Cancel, and to the title after Remove", async () => {
     await openList();
     fireEvent.click(await screen.findByRole("button", { name: "Iron" }));

@@ -106,7 +106,7 @@ function SupplementList({ account }: { account: OpenAccount }) {
       {active.length > 0 ? (
         <ul className="flex flex-col rounded-card border border-border bg-card px-4">
           {active.map((s) => (
-            <SupplementItem key={s.id} supplement={s} write={write} />
+            <SupplementItem key={s.id} supplement={s} others={active} write={write} />
           ))}
         </ul>
       ) : (
@@ -184,14 +184,18 @@ function SupplementList({ account }: { account: OpenAccount }) {
 // One supplement: its name, the creatine mark, and "⋯" for Rename and Remove.
 function SupplementItem({
   supplement: s,
+  others,
   write,
 }: {
   supplement: SupplementRow;
+  others: SupplementRow[]; // the active list, this one included
   write: ReturnType<typeof useWriter>["write"];
 }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [renaming, setRenaming] = useState<string | null>(null);
+  const [invalid, setInvalid] = useState<"name" | "duplicate" | null>(null);
+  const errorId = useId();
   const menuId = useId();
   const more = useRef<HTMLButtonElement>(null);
   const backToMore = useRef(false);
@@ -202,14 +206,17 @@ function SupplementItem({
     }
   }, [renaming]);
   if (renaming !== null) {
-    const valid = isSupplementName(renaming);
     return (
       <li className="border-t border-border py-3 first:border-t-0">
         <form
           className="flex flex-col gap-2"
           onSubmit={(e) => {
             e.preventDefault();
-            if (!valid) return;
+            if (!isSupplementName(renaming)) return setInvalid("name");
+            // Its own name stays allowed: only another supplement's counts.
+            if (others.some((o) => o.id !== s.id && plain(o.name) === plain(renaming)))
+              return setInvalid("duplicate");
+            setInvalid(null);
             void write(
               [{ kind: "supplement", id: s.id, field: "name", value: renaming.trim() }],
               [{ kind: "supplement", id: s.id, field: "name", value: s.name }],
@@ -227,21 +234,28 @@ function SupplementItem({
               value={renaming}
               maxLength={SUPPLEMENT_NAME_MAX}
               autoComplete="off"
-              aria-invalid={!valid || undefined}
+              aria-invalid={invalid ? true : undefined}
+              aria-describedby={invalid ? errorId : undefined}
               className={`${field} font-normal`}
               onChange={(e) => setRenaming(e.target.value)}
               autoFocus
             />
           </label>
+          {invalid && (
+            <p id={errorId} className="text-[13px] font-medium text-primary-ink">
+              {t(
+                invalid === "duplicate" ? "supplementsPage.duplicate" : "supplementsPage.nameError",
+              )}
+            </p>
+          )}
           <div className="flex flex-wrap gap-2">
-            <Button type="submit" disabled={!valid}>
-              {t("supplementsPage.save")}
-            </Button>
+            <Button type="submit">{t("supplementsPage.save")}</Button>
             <Button
               type="button"
               variant="ghost"
               onClick={() => {
                 backToMore.current = true;
+                setInvalid(null);
                 setRenaming(null);
               }}
             >
@@ -279,6 +293,7 @@ function SupplementItem({
             variant="outline"
             onClick={() => {
               setOpen(false);
+              setInvalid(null);
               setRenaming(s.name);
             }}
           >
