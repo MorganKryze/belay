@@ -6,6 +6,23 @@
       "clear": "Clear the list",
       "weight": "Weigh-in for {{day}}",
       "target": "Loss range",
+      "measure": {
+        "waist": "Waist on {{day}}",
+        "neck": "Neck on {{day}}",
+        "hip": "Hips on {{day}}"
+      },
+      "intake": "Intake for {{day}}",
+      "profile": "Profile: {{field}}",
+      "profileFields": {
+        "formula": "formula",
+        "birthYear": "year of birth",
+        "height": "height"
+      },
+      "supplement": "Supplement: {{name}}",
+      "supplementLog": "{{name}} (ticked on {{day}})",
+      "supplementUnnamed": "Supplement",
+      "annotation": "Annotation for {{day}}",
+      "annotationUndated": "Annotation",
       "reasons": {
         "unknown": "Not found on the server",
         "refused": "Refused by the server"

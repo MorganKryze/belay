@@ -6,6 +6,23 @@
       "clear": "Effacer la liste",
       "weight": "Pesée du {{day}}",
       "target": "Fourchette de perte",
+      "measure": {
+        "waist": "Tour de taille du {{day}}",
+        "neck": "Tour de cou du {{day}}",
+        "hip": "Tour de hanches du {{day}}"
+      },
+      "intake": "Apports du {{day}}",
+      "profile": "Profil : {{field}}",
+      "profileFields": {
+        "formula": "formule",
+        "birthYear": "année de naissance",
+        "height": "taille"
+      },
+      "supplement": "Complément : {{name}}",
+      "supplementLog": "{{name}} (coche du {{day}})",
+      "supplementUnnamed": "Complément",
+      "annotation": "Annotation du {{day}}",
+      "annotationUndated": "Annotation",
       "reasons": {
         "unknown": "Introuvable sur le serveur",
         "refused": "Refusée par le serveur"
