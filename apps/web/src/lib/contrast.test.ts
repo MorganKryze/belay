@@ -38,6 +38,9 @@ const PAIRS = [
   ["chart-dot", "background", 3],
   ["chart-line", "surface", 3],
   ["chart-line", "background", 3],
+  // Inside the creatine band, the dots and the line (its label: primary-ink, above).
+  ["chart-dot", "primary-soft", 3],
+  ["chart-line", "primary-soft", 3],
 ] as const;
 
 describe("design tokens", () => {

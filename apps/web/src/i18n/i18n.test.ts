@@ -40,8 +40,13 @@ describe("translations", () => {
   });
 
   it("keep each key in one file only: a string loaded on demand never replaces another", () => {
-    expect(keys(lazyEn).filter((k) => keys(mainEn).includes(k))).toEqual([]);
-    expect(keys(lazyFr).filter((k) => keys(mainFr).includes(k))).toEqual([]);
+    // Nor turns a string into a group of strings, or the other way round ("body.history").
+    const clash = (a: string, b: string) =>
+      a === b || a.startsWith(`${b}.`) || b.startsWith(`${a}.`);
+    const clashes = (lazy: object, main: object) =>
+      keys(lazy).filter((k) => keys(main).some((m) => clash(k, m)));
+    expect(clashes(lazyEn, mainEn)).toEqual([]);
+    expect(clashes(lazyFr, mainFr)).toEqual([]);
   });
 
   it("never judges a body", () => {

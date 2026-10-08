@@ -90,24 +90,6 @@ export function useWriter(account: OpenAccount) {
   };
 }
 
-// A weigh-in (or its deletion with null), undone back to the day's previous value.
-export function useWeighInWriter(account: OpenAccount, weighings: readonly Weighing[]) {
-  const { t } = useTranslation();
-  const { write, ...rest } = useWriter(account);
-  const writeWeight = useCallback(
-    (date: ISODate, weightKg: number | null) => {
-      const previous = weighings.find((w) => w.date === date)?.weightKg ?? null;
-      return write(
-        [{ kind: "weight", date, weightKg }],
-        [{ kind: "weight", date, weightKg: previous }],
-        t(weightKg === null ? "weighIn.toastDeleted" : "weighIn.toastSaved"),
-      );
-    },
-    [t, weighings, write],
-  );
-  return { write: writeWeight, ...rest };
-}
-
 // Above the tab bar; mounted for good so the message is announced.
 export function Toast({ toast, onDone }: { toast: ToastState | null; onDone: () => void }) {
   const { t } = useTranslation();

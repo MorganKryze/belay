@@ -31,9 +31,14 @@ function yAxis(values: number[]) {
   return { lo, hi, ticks };
 }
 
-// Grey dots for the daily weigh-ins, an orange line for the 7-day average (D12, §8). Pointer,
-// touch or arrow keys move a crosshair over the nearest day; its values are read out politely.
-// The weeks list and the history below are the data table.
+// A mark on the chart: a dashed line on its day, with its name under the curve.
+export type ChartMark = { id: string; date: ISODate; label: string };
+
+// Grey dots for the daily weigh-ins, an orange line for the 7-day average (D12, §8), and, in
+// context only (D5): the first 14 days of each creatine course as a band, the annotations as
+// named dashed lines. Pointer, touch or arrow keys move a crosshair over the nearest day; its
+// values are read out politely. The weeks list and the history below are the data table, and
+// the weeks' pills open the annotations from the keyboard.
 export function WeightChart({
   weighings,
   averages,
@@ -41,6 +46,10 @@ export function WeightChart({
   to,
   summary,
   onSelect,
+  bands = [],
+  bandLabel = "",
+  marks = [],
+  onSelectMark = () => {},
 }: {
   weighings: readonly Weighing[];
   averages: readonly { date: ISODate; averageKg: number }[];
@@ -48,6 +57,10 @@ export function WeightChart({
   to: ISODate;
   summary: string;
   onSelect: (date: ISODate) => void;
+  bands?: readonly { start: ISODate; end: ISODate }[];
+  bandLabel?: string;
+  marks?: readonly ChartMark[];
+  onSelectMark?: (id: string) => void;
 }) {
   const { t, i18n } = useTranslation();
   const hintId = useId();
@@ -74,12 +87,18 @@ export function WeightChart({
     else segments.push([a]);
   }
 
-  // The day under a screen x, as a drawing x, and the nearest day that has something to show.
-  const pointer = (clientX: number) => {
+  // The day under a screen point, as drawing units, and the nearest day that has something to show.
+  const pointer = (clientX: number, clientY = 0) => {
     const box = svg.current!.getBoundingClientRect();
     const scale = box.width > 0 ? W / box.width : 1;
-    return { at: (clientX - box.left) * scale, scale };
+    return { at: (clientX - box.left) * scale, y: (clientY - box.top) * scale, scale };
   };
+  // Inside the drawing, clipped to the period shown.
+  const clip = (d: ISODate) => (d < from ? from : d > to ? to : d);
+  const shownBands = bands.filter((b) => b.end >= from && b.start <= to);
+  const shownMarks = marks.filter((m) => m.date >= from && m.date <= to);
+  // An annotation's name sits in a strip just above the dates; a tap there opens it.
+  const markY = H - PAD.bottom - 4;
   const nearest = (at: number) =>
     days.reduce<ISODate | null>(
       (best, d) => (best === null || Math.abs(x(d) - at) < Math.abs(x(best) - at) ? d : best),
@@ -89,7 +108,9 @@ export function WeightChart({
   const onPointerMove = (e: PointerEvent<SVGSVGElement>) =>
     setActive(nearest(pointer(e.clientX).at));
   const onClick = (e: MouseEvent<SVGSVGElement>) => {
-    const { at, scale } = pointer(e.clientX);
+    const { at, y, scale } = pointer(e.clientX, e.clientY);
+    const mark = shownMarks.find((m) => Math.abs(x(m.date) - at) <= HIT_PX * scale);
+    if (mark && y >= markY - 14 && y <= H - PAD.bottom) return onSelectMark(mark.id);
     const day = nearest(at);
     setActive(day);
     if (day && byDate.has(day) && Math.abs(x(day) - at) <= HIT_PX * scale) onSelect(day);
@@ -131,6 +152,30 @@ export function WeightChart({
         onFocus={() => setActive((a) => a ?? days.at(-1) ?? null)}
         onBlur={() => setActive(null)}
       >
+        {shownBands.map((b) => {
+          const left = x(clip(b.start));
+          // The band covers its last day whole: it ends where the next day starts.
+          const right = Math.min(W - PAD.right, x(clip(b.end)) + (W - PAD.left - PAD.right) / span);
+          return (
+            <g key={b.start}>
+              <rect
+                x={left}
+                y={PAD.top}
+                width={Math.max(0, right - left)}
+                height={H - PAD.top - PAD.bottom}
+                className="fill-primary-soft"
+              />
+              <text
+                x={right - 3}
+                y={PAD.top + 9}
+                textAnchor="end"
+                className="fill-primary-ink text-[10px] font-semibold"
+              >
+                {bandLabel}
+              </text>
+            </g>
+          );
+        })}
         {ticks.map((v) => (
           <g key={v}>
             <line x1={PAD.left} x2={W - 4} y1={y(v)} y2={y(v)} className="stroke-border" />
@@ -154,6 +199,25 @@ export function WeightChart({
           >
             {formatShortDay(d, i18n.language, to)}
           </text>
+        ))}
+        {shownMarks.map((m) => (
+          <g key={m.id}>
+            <line
+              x1={x(m.date)}
+              x2={x(m.date)}
+              y1={PAD.top}
+              y2={H - PAD.bottom}
+              strokeDasharray="2 3"
+              className="stroke-muted-foreground"
+            />
+            <text
+              x={x(m.date) + 3}
+              y={markY}
+              className="fill-muted-foreground text-[10px] font-semibold"
+            >
+              {m.label}
+            </text>
+          </g>
         ))}
         {active && (
           <line

@@ -82,10 +82,10 @@ describe("the Body page", () => {
 
   it("lists the weeks and says in words why one does not count", async () => {
     expect(rows(await open())).toEqual([
-      "This weekin progress · 3 weigh-insongoing",
-      "Sep 28 – Oct 4average 80.2 kg0.7%in your range",
-      "Sep 21 – 27average 80.8 kg—week before insufficient",
-      "Sep 14 – 203 weigh-ins, 4 minimuminsufficient",
+      "This week—ongoingin progress · 3 weigh-insAvg weight—Waist—Intake—",
+      "Sep 28 – Oct 40.7%in your rangeAvg weight80.2\u00a0kgWaist—Intake—",
+      "Sep 21 – 27—week before insufficientAvg weight80.8\u00a0kgWaist—Intake—",
+      "Sep 14 – 20—insufficient3 weigh-ins, 4 minimumAvg weight—Waist—Intake—",
     ]);
   });
 

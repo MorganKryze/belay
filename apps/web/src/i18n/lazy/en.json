@@ -68,5 +68,60 @@
     "since_one": "for {{count}} day",
     "since_other": "for {{count}} days",
     "manage": "Manage my list"
+  },
+  "chart": {
+    "creatine": "Creatine",
+    "creatineBand": "creatine · 14 d"
+  },
+  "measures": {
+    "title": "Measurements",
+    "date": "Date of the measurements",
+    "waist": "Waist",
+    "neck": "Neck (optional)",
+    "hip": "Hips (optional)",
+    "waistHint": "At the navel for the male formula, at the narrowest for the female formula.",
+    "neckHipHint": "Neck and hips are used by the Body fat tool.",
+    "outOfRange": "Enter between {{min}} and {{max}} cm, to the tenth.",
+    "delete": "Delete this day's measurements",
+    "toastSaved": "Measurements saved",
+    "toastDeleted": "Measurements deleted"
+  },
+  "annotation": {
+    "button": "Annotation",
+    "titleNew": "New annotation",
+    "title": "Annotation",
+    "date": "Date of the annotation",
+    "type": "Type of annotation",
+    "kinds": {
+      "deload": "Deload",
+      "diet_break": "Break",
+      "note": "Note"
+    },
+    "legend": "Deload week · diet break · free note",
+    "label": "Text (optional)",
+    "placeholder": "Text (optional), e.g. “trip”",
+    "add": "Add",
+    "delete": "Delete this annotation",
+    "creatineNote": "Creatine needs no annotation: it comes from the supplements you tick.",
+    "toastSaved": "Annotation saved",
+    "toastDeleted": "Annotation deleted"
+  },
+  "body": {
+    "creatineNote": "During the 14 days of creatine, the weight often rises by 1 to 2 kg of water: it isn't fat.",
+    "creatinePill": "creatine",
+    "openAnnotation": "Open the annotation {{name}}",
+    "cells": {
+      "weight": "Avg weight",
+      "waist": "Waist",
+      "intake": "Intake",
+      "intakeDays": "Intake ({{days}} d)"
+    },
+    "cm": "{{value}} cm",
+    "kcal": "{{value}} kcal",
+    "dayParts": {
+      "waist": "waist {{value}} cm",
+      "neck": "neck {{value}} cm",
+      "hip": "hips {{value}} cm"
+    }
   }
 }

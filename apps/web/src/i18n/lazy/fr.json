@@ -68,5 +68,60 @@
     "since_one": "depuis {{count}} jour",
     "since_other": "depuis {{count}} jours",
     "manage": "Gérer ma liste"
+  },
+  "chart": {
+    "creatine": "Créatine",
+    "creatineBand": "créatine · 14 j"
+  },
+  "measures": {
+    "title": "Mensurations",
+    "date": "Date des mensurations",
+    "waist": "Tour de taille",
+    "neck": "Cou (option)",
+    "hip": "Hanches (option)",
+    "waistHint": "Au nombril pour la formule homme, au plus fin pour la formule femme.",
+    "neckHipHint": "Cou et hanches servent à l'outil Masse grasse.",
+    "outOfRange": "Saisis entre {{min}} et {{max}} cm, au dixième près.",
+    "delete": "Supprimer les mensurations de ce jour",
+    "toastSaved": "Mensurations enregistrées",
+    "toastDeleted": "Mensurations supprimées"
+  },
+  "annotation": {
+    "button": "Annotation",
+    "titleNew": "Nouvelle annotation",
+    "title": "Annotation",
+    "date": "Date de l'annotation",
+    "type": "Type d'annotation",
+    "kinds": {
+      "deload": "Allégée",
+      "diet_break": "Pause",
+      "note": "Note"
+    },
+    "legend": "Semaine allégée · pause de régime · note libre",
+    "label": "Texte (option)",
+    "placeholder": "Texte (option), ex. « voyage »",
+    "add": "Ajouter",
+    "delete": "Supprimer cette annotation",
+    "creatineNote": "La créatine n'a pas besoin d'annotation : elle se déduit de tes compléments cochés.",
+    "toastSaved": "Annotation enregistrée",
+    "toastDeleted": "Annotation supprimée"
+  },
+  "body": {
+    "creatineNote": "Pendant les 14 jours de créatine, le poids monte souvent d'1 à 2 kg d'eau : ce n'est pas du gras.",
+    "creatinePill": "créatine",
+    "openAnnotation": "Ouvrir l'annotation {{name}}",
+    "cells": {
+      "weight": "Poids moy.",
+      "waist": "Taille",
+      "intake": "Apports",
+      "intakeDays": "Apports ({{days}} j)"
+    },
+    "cm": "{{value}} cm",
+    "kcal": "{{value}} kcal",
+    "dayParts": {
+      "waist": "taille {{value}} cm",
+      "neck": "cou {{value}} cm",
+      "hip": "hanches {{value}} cm"
+    }
   }
 }
