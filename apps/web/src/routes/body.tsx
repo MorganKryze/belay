@@ -191,6 +191,30 @@ function BodyContent({
     average: average ? t("trend.kg", { value: formatKg(average.averageKg, i18n.language) }) : "—",
     loss: lossPct === null ? "—" : lossText(lossPct),
   });
+  // The band and the lines are drawn in context only; the same context goes to the summary.
+  const inPeriod = (d: ISODate) => d >= from && d <= to;
+  const shownCourses = courses.filter((c) => c.end >= from && c.start <= to);
+  const shownNotes = annotations.filter((a) => inPeriod(a.date));
+  const fullSummary = [
+    summary,
+    ...shownCourses.map((c) =>
+      t("chart.summaryCourse", {
+        from: formatShortDay(c.start < from ? from : c.start, i18n.language, today),
+        to: formatShortDay(c.end > to ? to : c.end, i18n.language, today),
+      }),
+    ),
+    ...shownNotes.map((a) =>
+      t("chart.summaryNote", {
+        name: annotationName(a, t),
+        date: formatShortDay(a.date, i18n.language, today),
+      }),
+    ),
+  ].join(" ");
+  // Annotations whose pill is not on a week shown (no weeks list yet, or the date outside it).
+  const weeksShown = weighings.length < MIN_WEIGHINGS ? [] : weeks.filter((w) => w.end >= from);
+  const orphans = shownNotes.filter(
+    (a) => !weeksShown.some((w) => a.date >= w.start && a.date <= w.end),
+  );
 
   return (
     <>
@@ -231,7 +255,7 @@ function BodyContent({
             averages={movingAverageSeries(weighings, from, to)}
             from={from}
             to={to}
-            summary={summary}
+            summary={fullSummary}
             onSelect={(date) => setOpen({ sheet: "weighIn", date })}
             bands={courses}
             bandLabel={t("chart.creatineBand")}
@@ -240,6 +264,21 @@ function BodyContent({
               setOpen({ sheet: "annotation", annotation: annotations.find((a) => a.id === id)! })
             }
           />
+          {orphans.length > 0 && (
+            <div
+              role="group"
+              aria-label={t("annotation.row")}
+              className="flex flex-wrap gap-x-2 px-1"
+            >
+              {orphans.map((a) => (
+                <AnnotationPill
+                  key={a.id}
+                  annotation={a}
+                  onOpen={() => setOpen({ sheet: "annotation", annotation: a })}
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
       <div className="grid grid-cols-2 gap-2">
@@ -476,17 +515,7 @@ function Weeks({
                 {onCreatine && <span className={neutralPill}>{t("body.creatinePill")}</span>}
                 {notes.map((a) => (
                   // A 44 px target around a pill of the usual size.
-                  <button
-                    key={a.id}
-                    type="button"
-                    className="-my-2.5 inline-flex min-h-11 items-center"
-                    aria-label={t("body.openAnnotation", { name: annotationName(a, t) })}
-                    onClick={() => onAnnotation(a)}
-                  >
-                    <span className={`${neutralPill} underline underline-offset-2`}>
-                      {annotationName(a, t)}
-                    </span>
-                  </button>
+                  <AnnotationPill key={a.id} annotation={a} onOpen={() => onAnnotation(a)} />
                 ))}
                 {status && <span className={sub}>{status}</span>}
               </div>
@@ -532,6 +561,22 @@ function Weeks({
   );
 }
 
+// A 44 px target around a pill of the usual size.
+function AnnotationPill({ annotation, onOpen }: { annotation: AnnotationRow; onOpen: () => void }) {
+  const { t } = useTranslation();
+  const name = annotationName(annotation, t);
+  return (
+    <button
+      type="button"
+      className="-my-2.5 inline-flex min-h-11 items-center"
+      aria-label={t("body.openAnnotation", { name })}
+      onClick={onOpen}
+    >
+      <span className={`${neutralPill} underline underline-offset-2`}>{name}</span>
+    </button>
+  );
+}
+
 function Cell({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex min-w-0 flex-col rounded-[10px] bg-background px-2 py-1.5">
@@ -571,6 +616,10 @@ function History({
       w && t("trend.kg", { value: formatKg(w.weightKg, i18n.language) }),
       l?.kcal != null &&
         t("body.kcal", { value: formatNumber(l.kcal, i18n.language, { digits: 0 }) }),
+      l?.proteinG != null &&
+        t("body.dayParts.protein", {
+          value: formatNumber(l.proteinG, i18n.language, { digits: 0 }),
+        }),
       ...(["waist", "neck", "hip"] as const).map((f) => {
         const cm = m ? measureOf(m, f) : null;
         return cm !== null && t(`body.dayParts.${f}`, { value: number(cm) });

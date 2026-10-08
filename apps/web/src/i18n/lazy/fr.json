@@ -71,7 +71,9 @@
   },
   "chart": {
     "creatine": "Créatine",
-    "creatineBand": "créatine · 14 j"
+    "creatineBand": "créatine · 14 j",
+    "summaryCourse": "Créatine du {{from}} au {{to}}.",
+    "summaryNote": "Annotation {{name}}, le {{date}}."
   },
   "measures": {
     "title": "Mensurations",
@@ -104,7 +106,8 @@
     "delete": "Supprimer cette annotation",
     "creatineNote": "La créatine n'a pas besoin d'annotation : elle se déduit de tes compléments cochés.",
     "toastSaved": "Annotation enregistrée",
-    "toastDeleted": "Annotation supprimée"
+    "toastDeleted": "Annotation supprimée",
+    "row": "Annotations"
   },
   "body": {
     "creatineNote": "Pendant les 14 jours de créatine, le poids monte souvent d'1 à 2 kg d'eau : ce n'est pas du gras.",
@@ -121,7 +124,8 @@
     "dayParts": {
       "waist": "taille {{value}} cm",
       "neck": "cou {{value}} cm",
-      "hip": "hanches {{value}} cm"
+      "hip": "hanches {{value}} cm",
+      "protein": "{{value}} g de protéines"
     }
   },
   "prefill": {

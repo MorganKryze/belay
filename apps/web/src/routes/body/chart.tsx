@@ -14,9 +14,11 @@ import { formatKg, formatShortDay, formatWeekday } from "@/lib/format";
 // Drawing units; the SVG scales to the card's width.
 const W = 320;
 const H = 170;
-const PAD = { left: 28, right: 8, top: 8, bottom: 22 };
+const PAD = { left: 28, right: 8, top: 20, bottom: 22 };
 // A tap this close to a dot (in screen pixels) opens that day's weigh-in.
 const HIT_PX = 22;
+// Rough width of a 10px semibold character, to keep the band's label inside the plot.
+const LABEL_EM = 5.6;
 
 const daysBetween = (a: ISODate, b: ISODate) =>
   Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / 86_400_000);
@@ -165,10 +167,10 @@ export function WeightChart({
                 height={H - PAD.top - PAD.bottom}
                 className="fill-primary-soft"
               />
+              {/* In the strip above the plot, kept inside it: never over the curve. */}
               <text
-                x={right - 3}
-                y={PAD.top + 9}
-                textAnchor="end"
+                x={Math.max(PAD.left, Math.min(left, W - PAD.right - bandLabel.length * LABEL_EM))}
+                y={PAD.top - 6}
                 className="fill-primary-ink text-[10px] font-semibold"
               >
                 {bandLabel}

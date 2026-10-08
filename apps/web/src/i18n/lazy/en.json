@@ -71,7 +71,9 @@
   },
   "chart": {
     "creatine": "Creatine",
-    "creatineBand": "creatine · 14 d"
+    "creatineBand": "creatine · 14 d",
+    "summaryCourse": "Creatine {{from}} to {{to}}.",
+    "summaryNote": "Annotation {{name}}, {{date}}."
   },
   "measures": {
     "title": "Measurements",
@@ -104,7 +106,8 @@
     "delete": "Delete this annotation",
     "creatineNote": "Creatine needs no annotation: it comes from the supplements you tick.",
     "toastSaved": "Annotation saved",
-    "toastDeleted": "Annotation deleted"
+    "toastDeleted": "Annotation deleted",
+    "row": "Annotations"
   },
   "body": {
     "creatineNote": "During the 14 days of creatine, the weight often rises by 1 to 2 kg of water: it isn't fat.",
@@ -121,7 +124,8 @@
     "dayParts": {
       "waist": "waist {{value}} cm",
       "neck": "neck {{value}} cm",
-      "hip": "hips {{value}} cm"
+      "hip": "hips {{value}} cm",
+      "protein": "{{value}} g protein"
     }
   },
   "prefill": {

@@ -26,6 +26,7 @@ const PAIRS = [
   ["primary", "primary-soft", 4.5],
   ["primary-foreground", "primary", 4.5],
   ["primary-ink", "primary-soft", 4.5],
+  ["primary-ink", "surface", 4.5],
   ["reference-ink", "reference", 4.5],
   ["background", "foreground", 4.5], // the toast
   ["toast-action", "foreground", 4.5],

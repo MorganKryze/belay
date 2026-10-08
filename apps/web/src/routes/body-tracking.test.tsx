@@ -123,6 +123,43 @@ describe("Your weeks", () => {
   });
 });
 
+const note = (id: string, date: string, type = "diet_break"): Change =>
+  ({ kind: "annotation", id, field: "fields", date, type, label: null, at: AT }) as Change;
+const chart = () => screen.getByRole("img", { name: /^Weigh-ins from/ });
+
+describe("the chart", () => {
+  it("says the creatine course and the annotations in its summary", async () => {
+    await open([
+      { kind: "supplement", id: CREATINE, field: "name", value: "Créatine", at: AT },
+      {
+        kind: "supplementLog",
+        supplementId: CREATINE,
+        date: "2026-10-01",
+        taken: true,
+        at: AT,
+      },
+      note(NOTE, "2026-09-22"),
+    ]);
+    const label = chart().getAttribute("aria-label")!;
+    expect(label).toContain("Creatine Oct 1 to Oct 7.");
+    expect(label).toContain("Annotation Break, Sep 22.");
+  });
+
+  it("opens an annotation from a tap on its name under the curve", async () => {
+    await open([note(NOTE, "2026-09-22")]);
+    // jsdom has no layout: the drawing is 320 units wide at scale 1, from Sep 8 to Oct 7.
+    fireEvent.click(chart(), { clientX: 28 + (284 * 14) / 29, clientY: 140 });
+    expect(await screen.findByRole("dialog", { name: "Annotation" })).toBeTruthy();
+  });
+
+  it("keeps an annotation reachable under the chart when no week shows its pill", async () => {
+    await open([note(NOTE, "2026-09-10")]); // inside the month, before the first week
+    const row = screen.getByRole("group", { name: "Annotations" });
+    fireEvent.click(within(row).getByRole("button", { name: "Open the annotation Break" }));
+    expect(await screen.findByRole("dialog", { name: "Annotation" })).toBeTruthy();
+  });
+});
+
 describe("the annotation sheet", () => {
   it("adds a named note on a past day, drawn on the chart and pinned to its week", async () => {
     const list = await open([]);
@@ -207,5 +244,14 @@ describe("the history", () => {
     expect(within(history).queryByRole("button", { name: /^Sun, Oct 4/ })).toBeNull();
     fireEvent.click(within(history).getByRole("button", { name: /^Today/ }));
     expect(await screen.findByRole("dialog", { name: "Weigh-in" })).toBeTruthy();
+  });
+
+  it("says the protein of a day with nothing else", async () => {
+    await open([{ kind: "intake", date: "2026-10-03", field: "protein", value: 140, at: AT }]);
+    const history = screen.getByRole("region", { name: "History" });
+    const lines = within(history)
+      .getAllByRole("listitem")
+      .map((li) => li.textContent!.replace(/\s/g, " "));
+    expect(lines).toContain("Sat, Oct 3140 g protein");
   });
 });
