@@ -20,6 +20,7 @@ trap cleanup EXIT
 
 cat > "$env_file" <<ENV
 POSTGRES_PASSWORD=smoke
+BELAY_APP_PASSWORD=smoke-app
 PUBLIC_URL=http://localhost:3000
 OIDC_ISSUER=http://localhost:1
 OIDC_CLIENT_ID=smoke
@@ -38,4 +39,8 @@ test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/api/me)" = 
 # No identity provider: sign-in sends the browser back to the app, never to an error page.
 test "$(curl -s -o /dev/null -w '%{http_code} %{redirect_url}' http://localhost:3000/auth/login)" = \
   "302 http://localhost:3000/?signin=unavailable"
+# Served as belay_app: the owner's connection closed once the migrations were done.
+test "$("${compose[@]}" exec -T db psql -U belay -d belay -tAc \
+  "select string_agg(distinct usename, ',') from pg_stat_activity
+   where datname = 'belay' and backend_type = 'client backend' and pid <> pg_backend_pid()")" = belay_app
 echo "smoke: ok"

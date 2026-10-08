@@ -28,9 +28,12 @@ services:
     # The same .env feeds the ${...} substitutions in this file and the app's environment.
     env_file: ${BELAY_ENV_FILE:-.env}
     environment:
-      # ponytail: the password is spliced in unencoded, so it must be URL-safe
-      # (openssl rand -hex 24). Upgrade path: percent-encode it, or pass PG* variables.
+      # The owner runs the migrations at startup; the app then serves as belay_app,
+      # a role that owns no table (see README, threat model).
+      # ponytail: the passwords are spliced in unencoded, so they must be URL-safe
+      # (openssl rand -hex 24). Upgrade path: percent-encode them.
       DATABASE_URL: postgres://belay:${POSTGRES_PASSWORD}@db:5432/belay
+      APP_DATABASE_URL: postgres://belay_app:${BELAY_APP_PASSWORD:?set BELAY_APP_PASSWORD in the .env next to compose.yaml}@db:5432/belay
     ports:
       # Loopback only: a reverse proxy fronts Belay and terminates TLS. Docker publishes
       # ports through its own iptables rules and bypasses host firewalls (ufw, firewalld),

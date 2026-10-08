@@ -1,8 +1,8 @@
 import { serve } from "@hono/node-server";
 import { createApp } from "./app";
 import { oidcProvider } from "./auth/oidc";
-import { loadConfig } from "./config";
-import { connect, runMigrations } from "./db/client";
+import { APP_ROLE, loadConfig } from "./config";
+import { connect, enableAppLogin, runMigrations, sessionRole } from "./db/client";
 
 // Drizzle wraps driver failures in "Failed query: <sql>": the reason (refused connection, unknown
 // host, bad password, failing migration) sits at the end of the cause chain. Name, message and code
@@ -12,28 +12,55 @@ function rootCause(err: unknown): string {
   while (cause instanceof Error && cause.cause instanceof Error) cause = cause.cause;
   if (!(cause instanceof Error)) return "unknown error";
   const code = (cause as { code?: unknown }).code;
-  const text = cause.message || (typeof code === "string" ? code : cause.name);
+  // A Drizzle wrapper with nothing under it still carries the statement and its parameters.
+  const wrapper = cause.message.startsWith("Failed query:");
+  const text = (!wrapper && cause.message) || (typeof code === "string" ? code : cause.name);
   return typeof code === "string" && !text.includes(code) ? `${text} (${code})` : text;
+}
+
+function open(url: string, name: string) {
+  try {
+    return connect(url);
+  } catch {
+    // The parser's own message ("Invalid URL") is unhelpful, and its error carries the URL, secret
+    // included, so it is deliberately not attached as a cause.
+    throw new Error(`Invalid configuration:\n${name} is not a valid PostgreSQL connection URL`);
+  }
 }
 
 export async function start(env: Record<string, string | undefined>) {
   const cfg = loadConfig(env);
+  const owner = open(cfg.databaseUrl, "DATABASE_URL");
   let conn: ReturnType<typeof connect>;
   try {
-    conn = connect(cfg.databaseUrl);
-  } catch {
-    // The parser's own message ("Invalid URL") is unhelpful, and its error carries the URL, secret
-    // included, so it is deliberately not attached as a cause.
-    throw new Error(
-      "Invalid configuration:\nDATABASE_URL is not a valid PostgreSQL connection URL",
-    );
+    conn = open(cfg.appDatabaseUrl, "APP_DATABASE_URL");
+  } catch (err) {
+    await owner.client.end({ timeout: 1 });
+    throw err;
   }
   const { db, client } = conn;
   try {
-    await runMigrations(db, cfg.migrationsDir);
+    await runMigrations(owner.db, cfg.migrationsDir);
+  } catch (err) {
+    await Promise.all([owner.client.end({ timeout: 1 }), client.end({ timeout: 1 })]);
+    throw new Error(`Database unreachable or migration failed: ${rootCause(err)}`, { cause: err });
+  }
+  try {
+    await enableAppLogin(owner.db, cfg.appPassword);
+  } catch (err) {
+    await Promise.all([owner.client.end({ timeout: 1 }), client.end({ timeout: 1 })]);
+    // No cause: Drizzle's error carries the statement and its parameters, the password included.
+    // eslint-disable-next-line preserve-caught-error
+    throw new Error(`Cannot set the belay_app password: ${rootCause(err)}`);
+  }
+  // The owner's work is done: from here on, nothing runs as the table owner.
+  await owner.client.end({ timeout: 5 });
+  try {
+    const role = await sessionRole(db);
+    if (role !== APP_ROLE) throw new Error(`logged in as ${role}`);
   } catch (err) {
     await client.end({ timeout: 1 });
-    throw new Error(`Database unreachable or migration failed: ${rootCause(err)}`, { cause: err });
+    throw new Error(`Cannot connect as ${APP_ROLE}: ${rootCause(err)}`, { cause: err });
   }
   const app = createApp({ cfg, db, getOidc: oidcProvider(cfg.oidc) });
   let server: ReturnType<typeof serve>;
