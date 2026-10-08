@@ -94,6 +94,22 @@ describe("Your weeks", () => {
       ),
     ).toBeTruthy();
     expect(screen.getByText("creatine · 14 d")).toBeTruthy(); // the band on the chart
+    expect(screen.getByText("Creatine")).toBeTruthy(); // its legend
+  });
+
+  it("leave the creatine out of the legend when no course reaches the period shown", async () => {
+    await open([
+      { kind: "supplement", id: CREATINE, field: "name", value: "Créatine", at: AT },
+      {
+        kind: "supplementLog",
+        supplementId: CREATINE,
+        date: "2026-05-01",
+        taken: true,
+        at: AT,
+      },
+    ]);
+    expect(screen.queryByText("Creatine")).toBeNull();
+    expect(screen.queryByText("creatine · 14 d")).toBeNull();
   });
 
   it("open an annotation from its pill, and delete it with an undo", async () => {

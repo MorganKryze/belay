@@ -243,7 +243,7 @@ function BodyContent({
               <i className="h-[2.5px] w-3.5 bg-chart-line" />
               {t("chart.average")}
             </span>
-            {courses.length > 0 && (
+            {shownCourses.length > 0 && (
               <span className="flex items-center gap-1">
                 <i className="size-2.5 rounded-[3px] border border-primary-ink/40 bg-primary-soft" />
                 {t("chart.creatine")}
