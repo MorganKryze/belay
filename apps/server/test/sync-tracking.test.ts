@@ -1,13 +1,20 @@
 import { newId } from "@belay/shared";
 import type { Change, SyncResponse } from "@belay/shared/sync/schema";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { createApp } from "../src/app";
 import { oidcProvider } from "../src/auth/oidc";
 import { hashToken, newSessionToken, SESSION_COOKIE } from "../src/auth/session";
 import { loadConfig } from "../src/config";
 import { createSession, upsertUser } from "../src/db/identity";
-import { bodyMetrics, intakeLogs, supplements } from "../src/db/schema";
+import {
+  annotations,
+  bodyMetrics,
+  intakeLogs,
+  supplementLogs,
+  supplements,
+  users,
+} from "../src/db/schema";
 import { testEnv } from "./config";
 import { appDb, testDb } from "./db";
 
@@ -417,5 +424,127 @@ describe("a replay and the pages", () => {
     const page2 = await sync(page1.cursor);
     expect(page2.measures).toHaveLength(200);
     expect(page2.hasMore).toBe(false);
+  });
+});
+
+describe("a change the database refuses", () => {
+  it("is dropped alone on every new path, the valid changes of the batch applied", async () => {
+    const { user, sync } = await signIn("tk-refused");
+    const good = newId();
+    await sync("0", [named(good, "Fer")]);
+    // Stand-ins for bounds the schema lets through and the database does not.
+    const checks: [string, string][] = [
+      ["intake_logs", "kcal is distinct from 777"],
+      ["users", "height_cm is distinct from 199"],
+      ["supplements", "name <> 'Bad'"],
+      ["annotations", "label is distinct from 'bad'"],
+      ["supplement_logs", "date <> '2026-01-01'"],
+    ];
+    for (const [t, c] of checks)
+      await owner.execute(sql.raw(`alter table ${t} add constraint test_refused check (${c})`));
+    try {
+      const badSupplement = newId();
+      const badNote = newId();
+      const goodNote = newId();
+      const res = await sync("0", [
+        intake("2026-10-07", "kcal", 777), // 0 refused
+        intake("2026-10-08", "kcal", 2000), // 1
+        { kind: "profile", field: "height", value: 199, at: AT }, // 2 refused
+        { kind: "profile", field: "formula", value: "male", at: AT }, // 3
+        named(badSupplement, "Bad"), // 4 refused
+        removed(badSupplement), // 5 unknown: never created
+        named(newId(), "Zinc"), // 6
+        note(badNote, "2026-09-15", "bad"), // 7 refused
+        note(goodNote, "2026-09-16", "ok"), // 8
+        tick(good, "2026-01-01"), // 9 refused
+        tick(good, "2026-01-02"), // 10
+      ]);
+      expect([...res.rejected].sort((x, y) => x.index - y.index)).toEqual([
+        { index: 0, reason: "refused" },
+        { index: 2, reason: "refused" },
+        { index: 4, reason: "refused" },
+        { index: 5, reason: "unknown" },
+        { index: 7, reason: "refused" },
+        { index: 9, reason: "refused" },
+      ]);
+      expect(res.intake.map((r) => r.date)).toEqual(["2026-10-08"]);
+      expect(res.profile).toMatchObject({ formula: "male", heightCm: null });
+      expect(res.supplements.map((s) => s.name).sort()).toEqual(["Fer", "Zinc"]);
+      expect(res.annotations.map((a) => a.id)).toEqual([goodNote]);
+      expect(res.supplementLogs.map((l) => l.date)).toEqual(["2026-01-02"]);
+      expect(
+        await owner.select().from(supplements).where(eq(supplements.id, badSupplement)),
+      ).toEqual([]);
+      expect(await owner.select().from(annotations).where(eq(annotations.id, badNote))).toEqual([]);
+      expect(
+        await owner.select().from(supplementLogs).where(eq(supplementLogs.userId, user)),
+      ).toHaveLength(1);
+      const [me] = await owner.select().from(users).where(eq(users.id, user));
+      expect(me?.heightCm).toBeNull();
+    } finally {
+      for (const [t] of checks)
+        await owner.execute(sql.raw(`alter table ${t} drop constraint test_refused`));
+    }
+  });
+});
+
+describe("another account's ids", () => {
+  it("are unknown to annotation and supplement changes, and left untouched", async () => {
+    const a = await signIn("tk-foreign-a");
+    const b = await signIn("tk-foreign-b");
+    const noteId = newId();
+    const suppId = newId();
+    await a.sync("0", [note(noteId, "2026-09-15", "voyage"), named(suppId, "Fer")]);
+    const res = await b.sync("0", [
+      note(noteId, "2026-09-20", "pirate", LATEST), // 0
+      { kind: "annotation", id: noteId, field: "removed", value: true, at: LATEST }, // 1
+      removed(suppId, LATEST), // 2
+    ]);
+    expect([...res.rejected].sort((x, y) => x.index - y.index)).toEqual([
+      { index: 0, reason: "unknown" },
+      { index: 1, reason: "unknown" },
+      { index: 2, reason: "unknown" },
+    ]);
+    expect(res.annotations).toEqual([]);
+    expect(res.supplements).toEqual([]);
+    const [n] = await owner.select().from(annotations).where(eq(annotations.id, noteId));
+    expect(n).toMatchObject({
+      label: "voyage",
+      date: "2026-09-15",
+      removed: false,
+      userId: a.user,
+    });
+    const [s] = await owner.select().from(supplements).where(eq(supplements.id, suppId));
+    expect(s).toMatchObject({ name: "Fer", removed: false, userId: a.user });
+  });
+});
+
+describe("paging with interleaved sequences", () => {
+  it("returns every row once across pages when two tables alternate", async () => {
+    const { user, sync } = await signIn("tk-interleave");
+    const start = await sync("0");
+    const day = (i: number) =>
+      new Date(Date.UTC(2020, 0, 1) + i * 86_400_000).toISOString().slice(0, 10);
+    for (let i = 0; i < 600; i++) {
+      await owner
+        .insert(intakeLogs)
+        .values({ userId: user, date: day(i), kcal: 2000, kcalAt: new Date(AT) });
+      await owner
+        .insert(bodyMetrics)
+        .values({ userId: user, date: day(i), waistCm: 82, waistAt: new Date(AT) });
+    }
+    const seen: string[] = [];
+    let cursor = start.cursor;
+    let pages = 0;
+    for (;;) {
+      const page = await sync(cursor);
+      pages++;
+      seen.push(...page.intake.map((r) => `i${r.date}`), ...page.measures.map((r) => `m${r.date}`));
+      cursor = page.cursor;
+      if (!page.hasMore) break;
+    }
+    expect(pages).toBe(2);
+    expect(seen).toHaveLength(1200);
+    expect(new Set(seen).size).toBe(1200);
   });
 });
