@@ -1,7 +1,7 @@
 import { newId } from "@belay/shared";
 import type { Change, SyncResponse } from "@belay/shared/sync/schema";
 import { eq, sql } from "drizzle-orm";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { createApp } from "../src/app";
 import { oidcProvider } from "../src/auth/oidc";
 import { hashToken, newSessionToken, SESSION_COOKIE } from "../src/auth/session";
@@ -484,6 +484,38 @@ describe("a change the database refuses", () => {
     } finally {
       for (const [t] of checks)
         await owner.execute(sql.raw(`alter table ${t} drop constraint test_refused`));
+    }
+  });
+});
+
+describe("a change the database refuses, in the logs", () => {
+  it("leaves its SQLSTATE and its kind, nothing else", async () => {
+    const { user, sync } = await signIn("tk-refused-log");
+    await owner.execute(
+      sql.raw(
+        "alter table intake_logs add constraint test_refused_log check (kcal is distinct from 777)",
+      ),
+    );
+    const spies = (["log", "info", "warn", "error"] as const).map((m) =>
+      vi.spyOn(console, m).mockImplementation(() => {}),
+    );
+    try {
+      const res = await sync("0", [
+        intake("2026-10-07", "kcal", 777),
+        intake("2026-10-08", "kcal", 2000),
+      ]);
+      expect(res.rejected).toEqual([{ index: 0, reason: "refused" }]);
+      const [log, info, warn, error] = spies;
+      expect([log, info, error].map((spy) => spy!.mock.calls.length)).toEqual([0, 0, 0]);
+      expect(warn!.mock.calls).toEqual([
+        ["sync: change refused by the database:", "intake", "23514"],
+      ]);
+      const printed = JSON.stringify(warn!.mock.calls);
+      expect(printed).not.toContain("777");
+      expect(printed).not.toContain(user);
+    } finally {
+      for (const spy of spies) spy.mockRestore();
+      await owner.execute(sql.raw("alter table intake_logs drop constraint test_refused_log"));
     }
   });
 });

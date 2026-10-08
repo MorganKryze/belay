@@ -57,6 +57,7 @@ interface Ctx {
   userId: string;
   now: Date;
   out: Outcome;
+  kinds: Change["kind"][]; // by place in the request
 }
 
 // One sync, in one transaction as the person: write the changes that win, then read back what
@@ -81,7 +82,7 @@ export function runSync(
       annotations: new Set(),
       user: false,
     };
-    const ctx: Ctx = { tx, userId, now, out };
+    const ctx: Ctx = { tx, userId, now, out, kinds: changes.map((c) => c.kind) };
     // A weigh-in is the day's "weight" field, beside the measurements.
     const body: DayChange[] = [
       ...changes.filter(of("weight")).map((c) => ({ ...c, field: "weight", value: c.weightKg })),
@@ -102,8 +103,12 @@ export function runSync(
 // SQLSTATE classes the database answers when it refuses the data itself: 22 (a value it cannot
 // take), 23 (a check or a key) and 42501 (a row-level policy). Anything else is a server error.
 function isRefusal(error: unknown): boolean {
+  const code = sqlstate(error);
+  return code !== null && (/^2[23]/.test(code) || code === "42501");
+}
+function sqlstate(error: unknown): string | null {
   const code = (error as { cause?: { code?: unknown } }).cause?.code;
-  return typeof code === "string" && (/^2[23]/.test(code) || code === "42501");
+  return typeof code === "string" ? code : null;
 }
 
 // Writes the rows in one statement inside a savepoint. When the database refuses it, each row is
@@ -111,7 +116,7 @@ function isRefusal(error: unknown): boolean {
 // ponytail: a refused statement is retried row by row, one savepoint each (500 at most per
 // request). Upgrade: bisect the rows if refusals ever come in long queues.
 async function guarded<R extends { index: number }>(
-  { tx, out }: Ctx,
+  { tx, out, kinds }: Ctx,
   rows: R[],
   write: (tx: Tx, rows: R[]) => Promise<unknown>,
   onRefused: (row: R) => void,
@@ -128,6 +133,8 @@ async function guarded<R extends { index: number }>(
       await tx.transaction((sp) => write(sp, [row]));
     } catch (error) {
       if (!isRefusal(error)) throw error;
+      // The SQLSTATE and the kind only: a value or an id is health data, never logged.
+      console.warn("sync: change refused by the database:", kinds[row.index], sqlstate(error));
       out.rejected.push({ index: row.index, reason: "refused" });
       onRefused(row);
     }
