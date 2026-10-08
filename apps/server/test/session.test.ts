@@ -1,3 +1,4 @@
+import { createHash, createHmac } from "node:crypto";
 import { sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { describe, expect, it } from "vitest";
@@ -22,17 +23,40 @@ const app = new Hono().route("/api", apiRoutes(cfg, db));
 async function signedInCookie(sub: string, name: string) {
   const user = await upsertUser(db, { issuer: "https://idp.test", sub, displayName: name });
   const token = newSessionToken();
-  await createSession(db, hashToken(token), user, 30);
+  await createSession(db, hashToken(token, cfg.tokenHashKey), user, 30);
   return { user, token, cookie: `${SESSION_COOKIE}=${token}` };
 }
 
 describe("session tokens", () => {
-  it("are long, random, and stored only as a hash", () => {
+  it("hashes a token to a pinned value, so the HKDF info, salt or length cannot drift silently", () => {
+    const pinned = loadConfig(testEnv({ SESSION_SECRET: "known-answer-secret-0123456789abcdef" }));
+    expect(pinned.tokenHashKey.toString("hex")).toBe(
+      "1b295be1648106db32d88ff1c83ca57515128c3c1fb14bb7feb689ee2de82d24",
+    );
+    expect(hashToken("known-answer-token", pinned.tokenHashKey)).toBe(
+      "2c90aee8d16e05ad7b0b2c6b8fbf9dd31552cb3a7f380442e7c6dc340c2bdcf1",
+    );
+  });
+
+  it("are long, random, and stored only as a hash keyed by SESSION_SECRET", () => {
     const t = newSessionToken();
     expect(t).toMatch(/^[A-Za-z0-9_-]{43}$/);
     expect(newSessionToken()).not.toBe(t);
-    expect(hashToken(t)).toMatch(/^[0-9a-f]{64}$/);
-    expect(hashToken(t)).not.toContain(t);
+    const hash = hashToken(t, cfg.tokenHashKey);
+    expect(hash).toMatch(/^[0-9a-f]{64}$/);
+    expect(hash).not.toContain(t);
+    // Someone who holds only the database cannot compute it: not the plain SHA-256 of earlier
+    // versions, and another secret gives another hash.
+    expect(hash).not.toBe(createHash("sha256").update(t).digest("hex"));
+    const other = loadConfig(testEnv({ SESSION_SECRET: "y".repeat(32) }));
+    expect(hashToken(t, other.tokenHashKey)).not.toBe(hash);
+  });
+
+  it("are hashed with a key of their own, not the secret that signs the login cookie", () => {
+    const t = newSessionToken();
+    const rawSecret = createHmac("sha256", cfg.sessionSecret).update(t).digest("hex");
+    expect(hashToken(t, cfg.tokenHashKey)).not.toBe(rawSecret);
+    expect(cfg.tokenHashKey).toHaveLength(32);
   });
 });
 
@@ -68,14 +92,41 @@ describe("GET /api/me", () => {
     expect(header).toContain("HttpOnly");
   });
 
+  it("never lets the cookie outlive the absolute cap", async () => {
+    const { token, cookie } = await signedInCookie("cap-1", "Lou");
+    await db.execute(
+      sql`update sessions set created_at = now() - interval '89 days' where token_hash = ${hashToken(token, cfg.tokenHashKey)}`,
+    );
+    const res = await app.request("/api/me", { headers: { cookie } });
+    expect(res.status).toBe(200);
+    const header = res.headers.getSetCookie().find((h) => h.startsWith(`${SESSION_COOKIE}=`))!;
+    const maxAge = Number(/Max-Age=(\d+)/.exec(header)?.[1]);
+    expect(maxAge).toBeGreaterThan(86_400 - 60);
+    expect(maxAge).toBeLessThanOrEqual(86_400);
+  });
+
   it("answers 401 without a cookie", async () => {
     expect((await app.request("/api/me")).status).toBe(401);
+  });
+
+  it("signs out a session stored under the unkeyed hash of earlier versions", async () => {
+    const user = await upsertUser(db, {
+      issuer: "https://idp.test",
+      sub: "pre-hmac",
+      displayName: "Old",
+    });
+    const token = newSessionToken();
+    // What an earlier version stored, and what anyone with write access to the database can mint.
+    await createSession(db, createHash("sha256").update(token).digest("hex"), user, 30);
+    const res = await app.request("/api/me", { headers: { cookie: `${SESSION_COOKIE}=${token}` } });
+    expect(res.status).toBe(401);
+    expect(res.headers.get("set-cookie")).toMatch(new RegExp(`${SESSION_COOKIE}=;.*Max-Age=0`));
   });
 
   it("answers 401 and clears the cookie for an expired session", async () => {
     const { token, cookie } = await signedInCookie("me-2", "Sam");
     await db.execute(
-      sql`update sessions set expires_at = now() - interval '1 second' where token_hash = ${hashToken(token)}`,
+      sql`update sessions set expires_at = now() - interval '1 second' where token_hash = ${hashToken(token, cfg.tokenHashKey)}`,
     );
     const res = await app.request("/api/me", { headers: { cookie } });
     expect(res.status).toBe(401);

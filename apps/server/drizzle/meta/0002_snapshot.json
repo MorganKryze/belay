@@ -1,116 +1,9 @@
 {
-  "id": "3004a9cf-0551-4b4b-9084-adc98c6201c5",
+  "id": "b6ce6135-8b5c-4750-ad28-3ea128786c44",
   "prevId": "c74f93e6-3b6e-4b56-9100-17d31a0ec47f",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
-    "public.body_metrics": {
-      "name": "body_metrics",
-      "schema": "",
-      "columns": {
-        "user_id": {
-          "name": "user_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "date": {
-          "name": "date",
-          "type": "date",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "weight_kg": {
-          "name": "weight_kg",
-          "type": "numeric(4, 1)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "weight_at": {
-          "name": "weight_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "server_seq": {
-          "name": "server_seq",
-          "type": "bigint",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "nextval('belay_sync_seq')"
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "body_metrics_user_seq": {
-          "name": "body_metrics_user_seq",
-          "columns": [
-            {
-              "expression": "user_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "server_seq",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "body_metrics_user_id_users_id_fk": {
-          "name": "body_metrics_user_id_users_id_fk",
-          "tableFrom": "body_metrics",
-          "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "body_metrics_user_id_date_pk": {
-          "name": "body_metrics_user_id_date_pk",
-          "columns": [
-            "user_id",
-            "date"
-          ]
-        }
-      },
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {
-        "body_metrics_weight_range": {
-          "name": "body_metrics_weight_range",
-          "value": "\"body_metrics\".\"weight_kg\" IS NULL OR \"body_metrics\".\"weight_kg\" BETWEEN 20 AND 400"
-        }
-      },
-      "isRLSEnabled": false
-    },
     "public.sessions": {
       "name": "sessions",
       "schema": "",
@@ -146,15 +39,15 @@
         "sessions_user_id_users_id_fk": {
           "name": "sessions_user_id_users_id_fk",
           "tableFrom": "sessions",
-          "tableTo": "users",
           "columnsFrom": [
             "user_id"
           ],
+          "tableTo": "users",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         }
       },
       "compositePrimaryKeys": {},
@@ -210,33 +103,6 @@
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
-        },
-        "target_min_pct": {
-          "name": "target_min_pct",
-          "type": "numeric(3, 2)",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0.5
-        },
-        "target_max_pct": {
-          "name": "target_max_pct",
-          "type": "numeric(3, 2)",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 1
-        },
-        "target_at": {
-          "name": "target_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "server_seq": {
-          "name": "server_seq",
-          "type": "bigint",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "nextval('belay_sync_seq')"
         }
       },
       "indexes": {},
@@ -245,40 +111,24 @@
       "uniqueConstraints": {
         "users_oidc_identity": {
           "name": "users_oidc_identity",
-          "nullsNotDistinct": false,
           "columns": [
             "oidc_issuer",
             "oidc_sub"
-          ]
+          ],
+          "nullsNotDistinct": false
         }
       },
       "policies": {},
-      "checkConstraints": {
-        "users_target_range": {
-          "name": "users_target_range",
-          "value": "\"users\".\"target_min_pct\" >= 0.25 AND \"users\".\"target_max_pct\" <= 1.0 AND \"users\".\"target_min_pct\" <= \"users\".\"target_max_pct\" - 0.1"
-        }
-      },
+      "checkConstraints": {},
       "isRLSEnabled": false
     }
   },
   "enums": {},
   "schemas": {},
-  "sequences": {
-    "public.belay_sync_seq": {
-      "name": "belay_sync_seq",
-      "schema": "public",
-      "increment": "1",
-      "startWith": "1",
-      "minValue": "1",
-      "maxValue": "9223372036854775807",
-      "cache": "1",
-      "cycle": false
-    }
-  },
+  "views": {},
+  "sequences": {},
   "roles": {},
   "policies": {},
-  "views": {},
   "_meta": {
     "columns": {},
     "schemas": {},

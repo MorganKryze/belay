@@ -95,7 +95,7 @@ describe("app", () => {
       displayName: "Ada",
     });
     const token = newSessionToken();
-    await createSession(db, hashToken(token), user, 30);
+    await createSession(db, hashToken(token, cfg.tokenHashKey), user, 30);
     const res = await app.request("/api/nope", {
       headers: { cookie: `${SESSION_COOKIE}=${token}` },
     });

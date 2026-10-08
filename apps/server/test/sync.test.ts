@@ -30,7 +30,7 @@ const accounts = new Map<string, string>();
 async function signIn(sub: string) {
   const user = await upsertUser(db, { issuer: "https://idp.test", sub, displayName: sub });
   const token = newSessionToken();
-  await createSession(db, hashToken(token), user, 30);
+  await createSession(db, hashToken(token, cfg.tokenHashKey), user, 30);
   const cookie = `${SESSION_COOKIE}=${token}`;
   accounts.set(cookie, user);
   return { user, cookie };

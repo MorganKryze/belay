@@ -19,8 +19,15 @@
     {
       "idx": 2,
       "version": "7",
-      "when": 1791380427476,
-      "tag": "0002_sync",
+      "when": 1791393020039,
+      "tag": "0002_security",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1791483115183,
+      "tag": "0003_sync",
       "breakpoints": true
     }
   ]

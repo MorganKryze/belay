@@ -119,7 +119,7 @@ export function authRoutes(cfg: Config, db: Db, getOidc: OidcProvider) {
       displayName: pickDisplayName(claims, cfg.oidc.nameClaim),
     });
     const token = newSessionToken();
-    await createSession(db, hashToken(token), userId, cfg.sessionTtlDays);
+    await createSession(db, hashToken(token, cfg.tokenHashKey), userId, cfg.sessionTtlDays);
     setSessionCookie(c, cfg, token);
     // Re-validated: the login side already did it, but the redirect must never rely on that alone.
     return c.redirect(safeReturnTo(tx.returnTo));
@@ -131,7 +131,7 @@ export function authRoutes(cfg: Config, db: Db, getOidc: OidcProvider) {
     clearSessionCookie(c, cfg);
     if (token) {
       try {
-        await deleteSession(db, hashToken(token));
+        await deleteSession(db, hashToken(token, cfg.tokenHashKey));
       } catch (err) {
         // The cookie is already gone: the browser is logged out, and the server-side row
         // lapses with the session lifetime.
