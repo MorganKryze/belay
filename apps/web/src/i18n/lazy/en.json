@@ -11,5 +11,45 @@
         "refused": "Refused by the server"
       }
     }
+  },
+  "profile": {
+    "lead": "Everything is optional. Each piece of information only serves the tools listed under it.",
+    "body": "Your body",
+    "birthYear": "Year of birth",
+    "height": "Height",
+    "clear": "Clear",
+    "clearField": "Clear {{field}}",
+    "fill": "Fill in",
+    "fillField": "Fill in {{field}}",
+    "uses": "Used by: {{tools}}",
+    "tracking": "Tracking"
+  },
+  "supplementsPage": {
+    "title": "My supplements",
+    "marked": "14 days marked",
+    "more": "More for {{name}}",
+    "rename": "Rename",
+    "remove": "Remove",
+    "save": "Save",
+    "add": "Add",
+    "name": "Supplement name",
+    "nameError": "Between 1 and 40 characters, on one line.",
+    "suggestionsTitle": "Suggestions",
+    "empty": "No supplements on your list yet.",
+    "note": "Belay notes what you take, with no dose advice. Daily reminders will come with notifications.",
+    "toastAdded": "Supplement added",
+    "toastRenamed": "Supplement renamed",
+    "toastRemoved": "Supplement removed",
+    "suggestions": {
+      "creatine": "Creatine",
+      "vitaminD": "Vitamin D",
+      "omega3": "Omega-3",
+      "magnesium": "Magnesium",
+      "iron": "Iron",
+      "zinc": "Zinc",
+      "caffeine": "Caffeine",
+      "melatonin": "Melatonin"
+    },
+    "newName": "New name for {{name}}"
   }
 }

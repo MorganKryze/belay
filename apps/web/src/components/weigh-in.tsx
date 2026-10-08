@@ -5,7 +5,8 @@ import {
   WEIGHING_RANGE_KG,
   type Weighing,
 } from "@belay/shared/body/weighings";
-import { isRecordableWeight } from "@belay/shared/sync/valid";
+import type { Change } from "@belay/shared/sync/schema";
+import { isRecordable } from "@belay/shared/sync/valid";
 import { roundTo } from "@belay/shared/tools/round";
 import type { TFunction } from "i18next";
 import { ChevronRight } from "lucide-react";
@@ -128,10 +129,12 @@ export function WeighInForm({
 }
 
 export type ToastState = { id: number; text: string; undo: () => Promise<boolean> };
+// Changes without their time: the time is taken when they are written.
+export type Entry = Change extends infer C ? (C extends Change ? Omit<C, "at"> : never) : never;
 
-// Writes a weigh-in (or deletes it with null) and offers to undo it for 5 seconds: the undo is
-// a new entry that puts the previous value of the day back (or its absence).
-export function useWeighInWriter(account: OpenAccount, weighings: readonly Weighing[]) {
+// Writes entries and offers to undo them for 5 seconds: the undo writes new entries that put
+// the previous values back (or their absence).
+export function useWriter(account: OpenAccount) {
   const { t } = useTranslation();
   const record = useRecord(account);
   const [toast, setToast] = useState<ToastState | null>(null);
@@ -143,45 +146,58 @@ export function useWeighInWriter(account: OpenAccount, weighings: readonly Weigh
   }, [toast]);
 
   // False, with the reason on screen, when the phone refuses the write (a lost IndexedDB
-  // connection, a full disk) or the entry is not recordable: nothing is announced as saved.
+  // connection, a full disk) or an entry is not recordable: nothing is announced as saved.
   const write = useCallback(
-    async (date: ISODate, weightKg: number | null) => {
-      // The clock now, not the screen's: the date picker never goes past today, but the day may
-      // have changed since the screen was drawn.
+    async (entries: readonly Entry[], previous: readonly Entry[], text: string) => {
+      // The clock now, not the screen's: the day may have changed since it was drawn.
       const now = new Date();
-      const change = { kind: "weight", date, weightKg, at: now.toISOString() } as const;
+      const changes = entries.map((e) => ({ ...e, at: now.toISOString() }) as Change);
       const failed = t("weighIn.saveFailed");
-      if (!isRecordableWeight(change, toISODate(now))) {
+      if (!changes.every((c) => isRecordable(c, toISODate(now)))) {
         setError(failed);
         return false;
       }
-      const previous = weighings.find((w) => w.date === date)?.weightKg ?? null;
       try {
-        await record(change);
+        await record(changes);
       } catch {
         setError(failed);
         return false;
       }
       setError(null);
       const undo = async () => {
+        const at = new Date().toISOString();
         try {
-          await record({ ...change, weightKg: previous, at: new Date().toISOString() });
+          await record(previous.map((e) => ({ ...e, at }) as Change));
           return true;
         } catch {
           setToast((current) => current && { ...current, text: failed });
           return false;
         }
       };
-      setToast({
-        id: now.getTime(),
-        text: t(weightKg === null ? "weighIn.toastDeleted" : "weighIn.toastSaved"),
-        undo,
-      });
+      setToast({ id: now.getTime(), text, undo });
       return true;
     },
-    [record, t, weighings],
+    [record, t],
   );
   return { write, toast, error: error ?? undefined, dismiss: () => setToast(null) };
+}
+
+// A weigh-in (or its deletion with null), undone back to the day's previous value.
+export function useWeighInWriter(account: OpenAccount, weighings: readonly Weighing[]) {
+  const { t } = useTranslation();
+  const { write, ...rest } = useWriter(account);
+  const writeWeight = useCallback(
+    (date: ISODate, weightKg: number | null) => {
+      const previous = weighings.find((w) => w.date === date)?.weightKg ?? null;
+      return write(
+        [{ kind: "weight", date, weightKg }],
+        [{ kind: "weight", date, weightKg: previous }],
+        t(weightKg === null ? "weighIn.toastDeleted" : "weighIn.toastSaved"),
+      );
+    },
+    [t, weighings, write],
+  );
+  return { write: writeWeight, ...rest };
 }
 
 // Above the tab bar; mounted for good so the message is announced.

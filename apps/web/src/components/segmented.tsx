@@ -15,7 +15,7 @@ export function Segmented<T extends string>({
   labelHidden = false,
 }: {
   label: string;
-  value: T;
+  value: T | null; // null: nothing chosen yet
   options: SegmentedOptions<T>;
   onChange: (value: T) => void;
   // For screen readers only, where the options say it all (the period of the Body chart).
@@ -29,7 +29,7 @@ export function Segmented<T extends string>({
       </span>
       <RadioGroup.Root
         aria-labelledby={id}
-        value={value}
+        value={value ?? ""}
         onValueChange={(v) => onChange(v as T)}
         orientation="horizontal"
         className="grid auto-cols-fr grid-flow-col gap-[3px] rounded-[12px] bg-track p-[3px]"

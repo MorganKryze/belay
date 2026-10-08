@@ -2,7 +2,7 @@ import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/re
 import { IDBFactory } from "fake-indexeddb";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import i18n from "../i18n";
-import { openAccountDb, readOutbox, readTarget, recordChanges } from "../sync/db";
+import { openAccountDb, readOutbox, readProfile, readTarget, recordChanges } from "../sync/db";
 import { writeLastUser } from "../sync/last-user";
 import { fakeApi } from "../test/fake-api";
 import { renderRoute } from "../test/render-route";
@@ -122,5 +122,71 @@ describe("Settings › Profile", () => {
         { normalizer: (s) => s },
       ),
     ).toBeTruthy();
+  });
+});
+
+describe("Settings › Profile, your body", () => {
+  const profile = async () => readProfile(await openAccountDb(ADA.id));
+
+  it("fills in each fact, says which tools use it, and clears one", async () => {
+    await openProfile();
+    expect(
+      screen.getByText(
+        "Everything is optional. Each piece of information only serves the tools listed under it.",
+      ),
+    ).toBeTruthy();
+    expect(screen.getByText("Used by: Energy expenditure, Body fat")).toBeTruthy();
+    expect(screen.getByText("Used by: BMI, Body fat, Energy expenditure")).toBeTruthy();
+    fireEvent.click(button("Fill in Formula"));
+    fireEvent.click(await screen.findByRole("radio", { name: "Male" }));
+    await waitFor(async () => expect((await profile()).formula).toBe("male"));
+    fireEvent.click(button("Fill in Height"));
+    fireEvent.change(await screen.findByRole("textbox", { name: "Height" }), {
+      target: { value: "178" },
+    });
+    await waitFor(async () => expect((await profile()).heightCm).toBe(178));
+    fireEvent.click(await screen.findByRole("button", { name: "Clear Formula" }));
+    await waitFor(async () => expect((await profile()).formula).toBeNull());
+    expect(await screen.findByRole("button", { name: "Fill in Formula" })).toBeTruthy();
+    const queued = (await readOutbox(await openAccountDb(ADA.id))).map((e) => e.change);
+    expect(queued.map((c) => (c.kind === "profile" ? [c.field, c.value] : null))).toEqual([
+      ["formula", "male"],
+      ["height", 178],
+      ["formula", null],
+    ]);
+  });
+
+  it("takes a year of birth for ages 15 to 100 only", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(2026, 9, 7, 9));
+    try {
+      await openProfile();
+      fireEvent.click(button("Fill in Year of birth"));
+      const year = await screen.findByRole("textbox", { name: "Year of birth" });
+      fireEvent.change(year, { target: { value: "1925" } }); // 101 this year
+      fireEvent.change(year, { target: { value: "2012" } }); // 14 this year
+      fireEvent.change(year, { target: { value: "1995" } });
+      await waitFor(async () => expect((await profile()).birthYear).toBe(1995));
+      const queued = (await readOutbox(await openAccountDb(ADA.id))).map((e) => e.change);
+      expect(queued).toHaveLength(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("says what each fact serves in French", async () => {
+    await i18n.changeLanguage("fr");
+    writeLastUser(ADA);
+    fakeApi({ me: "down" });
+    renderRoute("/settings/profile");
+    // Testing Library folds every space, the narrow no-break one included, into a plain one.
+    expect(await screen.findByText("Sert à : Dépense énergétique, Masse grasse")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Renseigner Année de naissance" })).toBeTruthy();
+  });
+
+  it("leads to the supplements list, with how many are on it", async () => {
+    await openProfile();
+    const link = await screen.findByRole("link", { name: "My supplements 0" });
+    expect(link.getAttribute("href")).toBe("/settings/supplements");
   });
 });

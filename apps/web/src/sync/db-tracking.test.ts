@@ -112,6 +112,51 @@ describe("the new entries", () => {
     expect(await readOutbox(db)).toEqual([]);
   });
 
+  it("write nothing of a group when the device refuses one write inside the transaction", async () => {
+    const unhandled: unknown[] = [];
+    const onUnhandled = (reason: unknown) => unhandled.push(reason);
+    process.on("unhandledRejection", onUnhandled);
+    // A device that refuses the second queue entry (a full disk), after the first value is written.
+    let adds = 0;
+    const failing = {
+      transaction: (...args: Parameters<AccountDb["transaction"]>) => {
+        const tx = db.transaction(...args);
+        return new Proxy(tx, {
+          get(target, key) {
+            if (key !== "objectStore") {
+              const value = Reflect.get(target, key, target);
+              return typeof value === "function" ? value.bind(target) : value;
+            }
+            return (name: Parameters<typeof tx.objectStore>[0]) => {
+              const store = target.objectStore(name);
+              if (name !== "outbox") return store;
+              return {
+                add: (value: Parameters<typeof store.add>[0]) =>
+                  ++adds === 2
+                    ? Promise.reject(new DOMException("full", "QuotaExceededError"))
+                    : store.add(value),
+              };
+            };
+          },
+        });
+      },
+    } as unknown as AccountDb;
+
+    await expect(
+      recordChanges(failing, [
+        { kind: "intake", date: "2026-10-07", field: "kcal", value: 2100, at: AT },
+        { kind: "intake", date: "2026-10-07", field: "protein", value: 140, at: AT },
+      ]),
+    ).rejects.toMatchObject({ name: "QuotaExceededError" });
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    process.off("unhandledRejection", onUnhandled);
+
+    expect(adds).toBe(2);
+    expect(await readIntake(db)).toEqual([]);
+    expect(await readOutbox(db)).toEqual([]);
+    expect(unhandled).toEqual([]);
+  });
+
   it("keep the profile, field by field, and clear one", async () => {
     expect(await readProfile(db)).toEqual({ formula: null, birthYear: null, heightCm: null });
     await recordChanges(db, [

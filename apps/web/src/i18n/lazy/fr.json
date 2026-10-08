@@ -11,5 +11,45 @@
         "refused": "Refusée par le serveur"
       }
     }
+  },
+  "profile": {
+    "lead": "Tout est facultatif. Chaque information ne sert qu'aux outils indiqués dessous.",
+    "body": "Ton corps",
+    "birthYear": "Année de naissance",
+    "height": "Taille",
+    "clear": "Effacer",
+    "clearField": "Effacer {{field}}",
+    "fill": "Renseigner",
+    "fillField": "Renseigner {{field}}",
+    "uses": "Sert à : {{tools}}",
+    "tracking": "Suivi"
+  },
+  "supplementsPage": {
+    "title": "Mes compléments",
+    "marked": "14 jours marqués",
+    "more": "Plus pour {{name}}",
+    "rename": "Renommer",
+    "remove": "Retirer",
+    "save": "Enregistrer",
+    "add": "Ajouter",
+    "name": "Nom du complément",
+    "nameError": "De 1 à 40 caractères, sur une ligne.",
+    "suggestionsTitle": "Suggestions",
+    "empty": "Aucun complément dans ta liste pour l'instant.",
+    "note": "Belay note ce que tu prends, sans conseil de dose. Les rappels quotidiens arriveront avec les notifications.",
+    "toastAdded": "Complément ajouté",
+    "toastRenamed": "Complément renommé",
+    "toastRemoved": "Complément retiré",
+    "suggestions": {
+      "creatine": "Créatine",
+      "vitaminD": "Vitamine D",
+      "omega3": "Oméga-3",
+      "magnesium": "Magnésium",
+      "iron": "Fer",
+      "zinc": "Zinc",
+      "caffeine": "Caféine",
+      "melatonin": "Mélatonine"
+    },
+    "newName": "Nouveau nom pour {{name}}"
   }
 }
