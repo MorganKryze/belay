@@ -273,7 +273,7 @@ describe("the history", () => {
       "140 g protein ·",
       "waist 82 cm ·",
       "neck 39.5 cm ·",
-      "hip 98 cm",
+      "hips 98 cm",
     ]);
   });
 
