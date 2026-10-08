@@ -1,0 +1,15 @@
+{
+  "settings": {
+    "rejected": {
+      "title": "Refused entries",
+      "note": "The server refused them, so they are no longer waiting. Enter them again if you need to.",
+      "clear": "Clear the list",
+      "weight": "Weigh-in for {{day}}",
+      "target": "Loss range",
+      "reasons": {
+        "unknown": "Not found on the server",
+        "refused": "Refused by the server"
+      }
+    }
+  }
+}

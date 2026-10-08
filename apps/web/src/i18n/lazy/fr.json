@@ -1,0 +1,15 @@
+{
+  "settings": {
+    "rejected": {
+      "title": "Saisies refusées",
+      "note": "Le serveur les a refusées : elles ne sont plus en attente. Saisis-les à nouveau si besoin.",
+      "clear": "Effacer la liste",
+      "weight": "Pesée du {{day}}",
+      "target": "Fourchette de perte",
+      "reasons": {
+        "unknown": "Introuvable sur le serveur",
+        "refused": "Refusée par le serveur"
+      }
+    }
+  }
+}

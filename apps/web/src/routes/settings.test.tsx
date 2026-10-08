@@ -144,3 +144,42 @@ describe("Settings sign-out", () => {
     );
   });
 });
+
+describe("refused entries", () => {
+  it("lists what the server refused, then clears the list", async () => {
+    await seed(ADA.id, [
+      weight("2026-10-05", 80),
+      { kind: "target", minPct: 0.25, maxPct: 0.75, at: "2026-10-05T06:30:00.000Z" },
+    ]);
+    fakeApi({
+      me: ADA,
+      sync: async (r) =>
+        Response.json({
+          cursor: "1",
+          weights: [],
+          target: null,
+          rejected: r.changes.map((_, index) => ({
+            index,
+            reason: index === 0 ? "refused" : "unknown",
+          })),
+          hasMore: false,
+        }),
+    });
+    renderRoute("/settings");
+    const list = await screen.findByRole("region", { name: "Refused entries" });
+    expect(list.textContent).toMatch(/Weigh-in for \w{3}, Oct 5/);
+    expect(list.textContent).toContain("Refused by the server");
+    expect(list.textContent).toContain("Loss range");
+    expect(list.textContent).toContain("Not found on the server");
+    fireEvent.click(screen.getByRole("button", { name: "Clear the list" }));
+    await waitFor(() =>
+      expect(screen.queryByRole("region", { name: "Refused entries" })).toBeNull(),
+    );
+  });
+
+  it("is not shown when the server refused nothing", async () => {
+    signedIn(async () => Response.json({ redirectTo: idp }));
+    await signOutButton();
+    expect(screen.queryByRole("region", { name: "Refused entries" })).toBeNull();
+  });
+});

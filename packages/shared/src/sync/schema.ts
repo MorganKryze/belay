@@ -41,10 +41,20 @@ export const TargetRowSchema = z.object({
   maxPct: z.number(),
   at: z.nullable(isoDateTime), // null: the defaults, never written
 });
+// A change the server could not take although its shape is valid: its place in the request, and
+// why. The phone drops it from its queue and keeps a trace the person can read.
+export const RejectedSchema = z.object({
+  index: z.int().check(z.minimum(0)),
+  reason: z.enum(["unknown", "refused"]), // unknown: it names something the account does not have
+});
+
 export const SyncResponseSchema = z.object({
   cursor,
-  weights: z.array(WeightRowSchema), // rows written since the cursor received
-  target: z.nullable(TargetRowSchema), // only when written since that cursor
+  // Rows written since the cursor received, plus the stored row of every change that lost
+  // against a later write or was refused, so the phone converges whatever its cursor.
+  weights: z.array(WeightRowSchema),
+  target: z.nullable(TargetRowSchema), // when written since that cursor, or sent back as above
+  rejected: z.array(RejectedSchema),
   hasMore: z.boolean(), // more than MAX_ROWS rows were waiting: call again
 });
 
@@ -54,4 +64,5 @@ export type Change = z.infer<typeof ChangeSchema>;
 export type SyncRequest = z.infer<typeof SyncRequestSchema>;
 export type WeightRow = z.infer<typeof WeightRowSchema>;
 export type TargetRow = z.infer<typeof TargetRowSchema>;
+export type Rejected = z.infer<typeof RejectedSchema>;
 export type SyncResponse = z.infer<typeof SyncResponseSchema>;

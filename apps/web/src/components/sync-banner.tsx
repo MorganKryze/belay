@@ -1,9 +1,9 @@
-import { useLocation } from "@tanstack/react-router";
+import { Link, useLocation } from "@tanstack/react-router";
 import { CircleAlert, CircleArrowUp } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { useOnline } from "@/lib/online";
-import { type OpenAccount, usePending, useSyncStatus } from "@/sync/account";
+import { type OpenAccount, usePending, useRejected, useSyncStatus } from "@/sync/account";
 
 const box = "flex items-start gap-2.5 rounded-field p-3 text-sm";
 
@@ -14,6 +14,7 @@ export function SyncBanner({ account }: { account: OpenAccount }) {
   const status = useSyncStatus(account);
   const online = useOnline();
   const pending = usePending(account).data ?? { weighings: 0, total: 0 };
+  const rejected = useRejected(account).data?.length ?? 0;
   const { pathname } = useLocation();
   const count = pending.weighings;
   const kind =
@@ -23,7 +24,9 @@ export function SyncBanner({ account }: { account: OpenAccount }) {
         ? "failed"
         : (status === "offline" || !online) && count > 0
           ? "offline"
-          : null;
+          : rejected > 0
+            ? "rejected"
+            : null;
   return (
     <div role="status">
       {kind === "offline" && (
@@ -47,6 +50,17 @@ export function SyncBanner({ account }: { account: OpenAccount }) {
               </a>
             </Button>
           </div>
+        </div>
+      )}
+      {kind === "rejected" && (
+        <div className={`${box} bg-track`}>
+          <CircleAlert aria-hidden className="mt-px size-5 shrink-0" />
+          <p>
+            {t("sync.rejected")}{" "}
+            <Link to="/settings" className="font-semibold whitespace-nowrap text-primary underline">
+              {t("sync.rejectedLink")}
+            </Link>
+          </p>
         </div>
       )}
       {kind === "failed" && (

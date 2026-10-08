@@ -32,21 +32,44 @@ function fold<C extends { at: string }>(stored: string | null, changes: readonly
   return winner;
 }
 
-// The change to write for each day, clamped, or nothing when what is stored is as recent.
-export function mergeWeights(
+// The change to write for each day, clamped, or nothing when what is stored is as recent. A
+// change keeps its other properties (the server tags each one with its place in the request).
+export function mergeWeights<C extends WeightChange>(
   stored: ReadonlyMap<ISODate, string | null>,
-  changes: readonly WeightChange[],
+  changes: readonly C[],
   now: Date,
-): WeightChange[] {
-  const byDate = new Map<ISODate, WeightChange[]>();
+): C[] {
+  const byDate = new Map<ISODate, C[]>();
   for (const c of changes) byDate.set(c.date, [...(byDate.get(c.date) ?? []), c]);
   return [...byDate].flatMap(([date, list]) => fold(stored.get(date) ?? null, list, now) ?? []);
 }
 
-export function mergeTarget(
+export function mergeTarget<C extends TargetChange>(
   stored: string | null,
-  changes: readonly TargetChange[],
+  changes: readonly C[],
   now: Date,
-): TargetChange | null {
+): C | null {
   return fold(stored, changes, now) ?? null;
+}
+
+// The keys whose stored write is strictly newer than the last change sent for them. The phone
+// that sent it shows an older value: it gets the stored row back, whatever its cursor says.
+export function staleKeys<C extends { at: string }>(
+  stored: ReadonlyMap<string, string | null>,
+  changes: readonly C[],
+  key: (change: C) => string,
+  now: Date,
+): Set<string> {
+  const latest = new Map<string, string>();
+  for (const c of changes) {
+    const at = clampAt(c.at, now);
+    const seen = latest.get(key(c));
+    if (seen === undefined || isNewer(at, seen)) latest.set(key(c), at);
+  }
+  const stale = new Set<string>();
+  for (const [k, at] of latest) {
+    const kept = stored.get(k) ?? null;
+    if (kept !== null && isNewer(kept, at)) stale.add(k);
+  }
+  return stale;
 }

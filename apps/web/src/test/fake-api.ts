@@ -27,6 +27,7 @@ export function fakeApi({
       cursor: String(Math.max(Number(request.cursor), ...since.map((r) => r.seq))),
       weights: since.map((r) => ({ date: r.date, weightKg: r.weightKg, at: r.at })),
       target: null,
+      rejected: [],
       hasMore: false,
     };
   };

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { MIN_WEIGH_IN_DATE } from "../body/weighings";
 import { MAX_CHANGES } from "./limits";
-import { clampAt, isNewer, mergeTarget, mergeWeights } from "./merge";
+import { clampAt, isNewer, mergeTarget, mergeWeights, staleKeys } from "./merge";
 import {
   type Change,
   ChangeSchema,
@@ -92,10 +92,28 @@ describe("SyncResponseSchema", () => {
       cursor: "12",
       weights: [{ date: "2026-10-07", weightKg: null, at: AT }],
       target: { minPct: 0.5, maxPct: 1, at: null },
+      rejected: [{ index: 3, reason: "refused" }],
       hasMore: false,
     });
     expect(parsed.weights[0]!.weightKg).toBeNull();
     expect(parsed.target?.at).toBeNull();
+    expect(parsed.rejected).toEqual([{ index: 3, reason: "refused" }]);
+  });
+
+  it("refuses a refusal that does not point at a change", () => {
+    const answer = (rejected: unknown) =>
+      SyncResponseSchema.safeParse({
+        cursor: "1",
+        weights: [],
+        target: null,
+        rejected,
+        hasMore: false,
+      }).success;
+    expect(answer([{ index: 0, reason: "unknown" }])).toBe(true);
+    expect(answer([{ index: -1, reason: "refused" }])).toBe(false);
+    expect(answer([{ index: 0.5, reason: "refused" }])).toBe(false);
+    expect(answer([{ index: 0, reason: "because" }])).toBe(false);
+    expect(answer(undefined)).toBe(false);
   });
 });
 
@@ -228,6 +246,39 @@ describe("merge", () => {
     // the replay after a lost response clamps to t3 and still wins over what t2 stored
     const [replay] = mergeWeights(new Map([["2026-10-07", t2.toISOString()]]), [ahead], t3);
     expect(replay!.at).toBe(t3.toISOString());
+  });
+
+  it("keeps what the server tags a change with", () => {
+    const tagged = { ...weight("2026-10-07", 79.8), index: 4 };
+    expect(mergeWeights(new Map(), [tagged], now)).toEqual([tagged]);
+    expect(mergeTarget(null, [{ ...target(0.25, 0.75), index: 2 }], now)?.index).toBe(2);
+  });
+
+  it("names the days whose stored write is strictly newer than a change sent for them", () => {
+    const stored = new Map([
+      ["2026-10-07", "2026-10-07T06:45:00.000Z"], // later than AT: the change lost
+      ["2026-10-06", AT], // a tie: the phone already holds this write
+      ["2026-10-05", null], // never written
+    ]);
+    const changes = ["2026-10-07", "2026-10-06", "2026-10-05", "2026-10-04"].map((d) =>
+      weight(d, 80),
+    );
+    expect([...staleKeys(stored, changes, (c) => c.date, now)]).toEqual(["2026-10-07"]);
+  });
+
+  it("judges a day by the last change sent for it, as the phone shows that one", () => {
+    const stored = new Map([["2026-10-07", "2026-10-07T06:31:00.000Z"]]);
+    const replay = [
+      weight("2026-10-07", 80),
+      weight("2026-10-07", 79.8, "2026-10-07T06:31:00.000Z"),
+    ];
+    expect(staleKeys(stored, replay, (c) => c.date, now).size).toBe(0);
+  });
+
+  it("compares a change from a clock running ahead at its clamped time", () => {
+    const stored = new Map([["2026-10-07", "2026-10-07T06:59:00.000Z"]]);
+    const ahead = weight("2026-10-07", 80, "2026-10-08T00:00:00.000Z"); // clamps to now, wins
+    expect(staleKeys(stored, [ahead], (c) => c.date, now).size).toBe(0);
   });
 
   it("merges the target range under its single timestamp", () => {

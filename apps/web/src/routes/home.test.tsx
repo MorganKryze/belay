@@ -148,6 +148,27 @@ describe("the sync banner", () => {
     expect(screen.getByText("An entry couldn't be sent.")).toBeTruthy();
   });
 
+  it("says when the server refused an entry, and where to read about it", async () => {
+    await seed(ADA.id, [weight("2026-10-07", 79.8)]);
+    writeLastUser(ADA);
+    fakeApi({
+      me: ADA,
+      sync: async (r) =>
+        Response.json({
+          cursor: "1",
+          weights: [],
+          target: null,
+          rejected: r.changes.length > 0 ? [{ index: 0, reason: "refused" }] : [],
+          hasMore: false,
+        }),
+    });
+    renderRoute("/");
+    expect(await screen.findByText(/An entry was refused\./)).toBeTruthy();
+    expect(screen.getByRole("link", { name: "See details" }).getAttribute("href")).toBe(
+      "/settings",
+    );
+  });
+
   it("shows nothing once everything is sent", async () => {
     await seed(ADA.id, [weight("2026-10-07", 79.8)]);
     writeLastUser(ADA);

@@ -12,8 +12,10 @@ import {
 import { fetchMe } from "@/lib/api";
 import {
   type AccountDb,
+  clearRejected,
   openAccountDb,
   pendingCounts,
+  readRejected,
   readTarget,
   readWeights,
   recordChange,
@@ -118,6 +120,22 @@ export const usePending = (account: OpenAccount) =>
     queryFn: () => pendingCounts(account.db),
     networkMode: "always",
   });
+
+export const useRejected = (account: OpenAccount) =>
+  useQuery({
+    queryKey: local(account, "rejected"),
+    queryFn: () => readRejected(account.db),
+    networkMode: "always",
+  });
+
+// The person has read the refused entries: the list and the banner go.
+export function useClearRejected({ user, db }: OpenAccount) {
+  const queryClient = useQueryClient();
+  return useCallback(async () => {
+    await clearRejected(db);
+    await queryClient.invalidateQueries({ queryKey: ["local", user.id] });
+  }, [db, queryClient, user.id]);
+}
 
 export const useSyncStatus = ({ engine }: OpenAccount) =>
   useSyncExternalStore(engine.subscribe, engine.status);

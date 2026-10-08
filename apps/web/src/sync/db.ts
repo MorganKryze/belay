@@ -2,11 +2,19 @@ import type { ISODate } from "@belay/shared/body/dates";
 import { DEFAULT_TARGET, type TargetRange } from "@belay/shared/body/target";
 import type { Weighing } from "@belay/shared/body/weighings";
 import { isNewer } from "@belay/shared/sync/merge";
-import type { Change, SyncResponse, TargetRow, WeightRow } from "@belay/shared/sync/schema";
+import type {
+  Change,
+  Rejected,
+  SyncResponse,
+  TargetRow,
+  WeightRow,
+} from "@belay/shared/sync/schema";
 import { isValidChange } from "@belay/shared/sync/valid";
 import { type DBSchema, type IDBPDatabase, type IDBPTransaction, openDB } from "idb";
 
 export type OutboxEntry = { id: number; change: Change };
+// A change the server refused: out of the queue, kept until the person has read about it.
+export type RejectedEntry = { id: number; change: Change; reason: Rejected["reason"] };
 
 interface BelaySchema extends DBSchema {
   weights: { key: ISODate; value: WeightRow }; // a null weight is a deleted day
@@ -14,13 +22,12 @@ interface BelaySchema extends DBSchema {
   // In the order the person entered things; the id is given by the store.
   outbox: { key: number; value: { id?: number; change: Change } };
   meta: { key: "cursor"; value: string };
+  rejected: { key: number; value: { id?: number; change: Change; reason: Rejected["reason"] } };
 }
 export type AccountDb = IDBPDatabase<BelaySchema>;
-type WriteTx = IDBPTransaction<
-  BelaySchema,
-  ("weights" | "profile" | "outbox" | "meta")[],
-  "readwrite"
->;
+type Store = "weights" | "profile" | "outbox" | "meta" | "rejected";
+type WriteTx = IDBPTransaction<BelaySchema, Store[], "readwrite">;
+const ALL: Store[] = ["weights", "profile", "outbox", "meta", "rejected"];
 
 // One database per account (D3): another account on this device never sees it, and nothing in
 // it is ever sent under another identity. Signing out keeps it.
@@ -32,12 +39,18 @@ export async function openAccountDb(
   userId: string,
   { onLost }: { onLost?: () => void } = {},
 ): Promise<AccountDb> {
-  return openDB<BelaySchema>(accountDbName(userId), 1, {
-    upgrade(upgradeDb) {
-      upgradeDb.createObjectStore("weights", { keyPath: "date" });
-      upgradeDb.createObjectStore("profile");
-      upgradeDb.createObjectStore("outbox", { keyPath: "id", autoIncrement: true });
-      upgradeDb.createObjectStore("meta");
+  return openDB<BelaySchema>(accountDbName(userId), 2, {
+    // Each step adds stores and keeps every value and the queue of the earlier versions.
+    upgrade(upgradeDb, oldVersion) {
+      if (oldVersion < 1) {
+        upgradeDb.createObjectStore("weights", { keyPath: "date" });
+        upgradeDb.createObjectStore("profile");
+        upgradeDb.createObjectStore("outbox", { keyPath: "id", autoIncrement: true });
+        upgradeDb.createObjectStore("meta");
+      }
+      if (oldVersion < 2) {
+        upgradeDb.createObjectStore("rejected", { keyPath: "id", autoIncrement: true });
+      }
     },
     // A future schema bump in another tab must not hang on this connection.
     blocking(_current, _blocked, event) {
@@ -65,7 +78,7 @@ function applyLocal(tx: WriteTx, change: Change) {
 // Upgrade: fold the changes of one day before sending, if a queue grows past a few hundred.
 export async function recordChange(db: AccountDb, change: Change): Promise<void> {
   if (!isValidChange(change)) throw new RangeError("invalid change");
-  const tx: WriteTx = db.transaction(["weights", "profile", "outbox", "meta"], "readwrite");
+  const tx: WriteTx = db.transaction(ALL, "readwrite");
   await Promise.all([applyLocal(tx, change), tx.objectStore("outbox").add({ change }), tx.done]);
 }
 
@@ -95,15 +108,37 @@ export async function pendingCounts(db: AccountDb): Promise<{ weighings: number;
   return { weighings: days.size, total: days.size + (target ? 1 : 0) };
 }
 
-// After a 200: drop exactly the changes that were sent, take the server's rows, then put back
-// on top the changes entered while the request was out (unless the server holds a later
-// write), and keep the cursor. One transaction, so a closed app never keeps half of it.
+export async function readRejected(db: AccountDb): Promise<RejectedEntry[]> {
+  return (await db.getAll("rejected")) as RejectedEntry[];
+}
+
+// The person has read about them.
+export async function clearRejected(db: AccountDb): Promise<void> {
+  await db.clear("rejected");
+}
+
+// The value a refused change put on screen goes, unless something later replaced it; the
+// server sends back what it holds for that key, if anything, in the same answer.
+async function revert(tx: WriteTx, change: Change) {
+  if (change.kind === "weight") {
+    const row = await tx.objectStore("weights").get(change.date);
+    if (row?.at === change.at) await tx.objectStore("weights").delete(change.date);
+  } else {
+    const row = await tx.objectStore("profile").get("target");
+    if (row?.at === change.at) await tx.objectStore("profile").delete("target");
+  }
+}
+
+// After a 200: drop exactly the changes that were sent, keep a trace of the refused ones and
+// take back what they showed, take the server's rows, then put back on top the changes entered
+// while the request was out (unless the server holds a later write), and keep the cursor. One
+// transaction, so a closed app never keeps half of it.
 export async function applyServer(
   db: AccountDb,
-  sentIds: readonly number[],
+  sent: readonly OutboxEntry[],
   response: SyncResponse,
 ): Promise<void> {
-  const tx: WriteTx = db.transaction(["weights", "profile", "outbox", "meta"], "readwrite");
+  const tx: WriteTx = db.transaction(ALL, "readwrite");
   const done = tx.done;
   done.catch(() => {}); // the failure below is the one error that propagates
   try {
@@ -116,7 +151,14 @@ export async function applyServer(
       op.catch(() => {});
       ops.push(op);
     };
-    for (const id of sentIds) queue(tx.objectStore("outbox").delete(id));
+    for (const { id } of sent) queue(tx.objectStore("outbox").delete(id));
+    for (const { index, reason } of response.rejected) {
+      const entry = sent[index];
+      if (!entry) continue; // an index this request never had: nothing to drop
+      queue(tx.objectStore("rejected").add({ change: entry.change, reason }));
+      queue(revert(tx, entry.change));
+    }
+    await Promise.all(ops);
     for (const row of response.weights) queue(weights.put(row));
     if (response.target) queue(profile.put(response.target, "target"));
     await Promise.all(ops);
