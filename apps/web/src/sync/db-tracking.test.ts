@@ -324,4 +324,22 @@ describe("a server answer with the new tables", () => {
     expect(await readSupplements(db)).toEqual([]);
     expect(await readMeasures(db)).toEqual([]);
   });
+
+  it("takes back two refused measurements of one day, none left on screen", async () => {
+    await recordChanges(db, [
+      { kind: "measure", date: "2026-10-06", field: "waist", value: 82, at: AT },
+      { kind: "measure", date: "2026-10-06", field: "neck", value: 39, at: AT },
+    ]);
+    await applyServer(
+      db,
+      await readOutbox(db),
+      server({
+        rejected: [
+          { index: 0, reason: "refused" },
+          { index: 1, reason: "refused" },
+        ],
+      }),
+    );
+    expect(await readMeasures(db)).toEqual([]);
+  });
 });

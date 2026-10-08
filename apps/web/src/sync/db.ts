@@ -443,7 +443,8 @@ export async function applyServer(
       const entry = sent[index];
       if (!entry) continue; // an index this request never had: nothing to drop
       queue(tx.objectStore("rejected").add({ change: entry.change, reason }));
-      queue(revert(tx, entry.change));
+      // One after the other: two changes of one row read it, then write it, and must not cross.
+      await revert(tx, entry.change);
     }
     await Promise.all(ops);
     for (const row of response.weights) queue(tx.objectStore("weights").put(row));
