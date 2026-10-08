@@ -4,6 +4,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./body/*": "./src/body/*.ts",
+    "./sync/*": "./src/sync/*.ts",
     "./tools/*": "./src/tools/*.ts",
     "./science/*": "./src/science/*.ts"
   },
@@ -12,7 +14,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "uuid": "^14.0.2"
+    "uuid": "^14.0.2",
+    "zod": "4.6.5"
   },
   "devDependencies": {
     "vitest": "^5.0.2"

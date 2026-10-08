@@ -1,6 +1,5 @@
-import { TOOL_IDS } from "../tools/catalog";
 import { type Identifier, type Source, SOURCES, sourceById } from "./sources";
-import { TOOL_SCIENCE } from "./tools";
+import { SCIENCE_IDS, TOOL_SCIENCE } from "./tools";
 
 // "Reynolds JM" → "Reynolds". Organisations are a single author and stay whole.
 const family = (author: string) => author.split(" ")[0]!;
@@ -74,9 +73,9 @@ export function renderScienceDoc(): string {
     "",
     "Generated from `packages/shared/src/science`. Do not edit by hand: run `pnpm science:doc`.",
     "",
-    'Each tool in Belay shows its formula, its sources and its limits. Every reference below was checked on the date shown, against its DOI or a stable identifier on an authoritative record; where a copy rather than the official host was read, the entry says so. What has no source is labelled "Belay heuristic".',
+    'Each tool in Belay, and each rule it applies to what you track, shows its formula, its sources and its limits. Every reference below was checked on the date shown, against its DOI or a stable identifier on an authoritative record; where a copy rather than the official host was read, the entry says so. What has no source is labelled "Belay heuristic".',
   ];
-  for (const id of TOOL_IDS) {
+  for (const id of SCIENCE_IDS) {
     const { label, sourceIds, content } = TOOL_SCIENCE[id];
     const c = content.en;
     out.push(

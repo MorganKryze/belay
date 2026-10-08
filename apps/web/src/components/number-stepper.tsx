@@ -18,6 +18,11 @@ export type NumberStepperProps = {
   // − / + buttons; off where three fields share a row and typing is the faster path.
   buttons?: boolean;
   error?: string;
+  // The label for screen readers only, where a card title already says what the field is.
+  labelHidden?: boolean;
+  // false: a typed value outside [min, max] is handed over as is when the field is left, for
+  // the caller to refuse, instead of being clamped (a weight typed "798" must not become 400).
+  clampTyped?: boolean;
 };
 
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
@@ -33,6 +38,8 @@ export function NumberStepper({
   optional = false,
   buttons = true,
   error,
+  labelHidden = false,
+  clampTyped = true,
 }: NumberStepperProps) {
   const { t, i18n } = useTranslation();
   const id = useId();
@@ -54,8 +61,14 @@ export function NumberStepper({
   const type = (text: string) => {
     setDraft(text);
     const parsed = parseDecimal(text);
-    // Live while the number is valid, so the result follows the typing.
-    if (parsed !== null && parsed >= min && parsed <= max) onChange(parsed);
+    if (clampTyped) {
+      // Live while the number is valid, so the result follows the typing.
+      if (parsed !== null && parsed >= min && parsed <= max) onChange(parsed);
+    } else if (parsed !== null) onChange(parsed);
+    // Unclamped: what is shown is the value, in range or not, so the caller never acts on a
+    // stale one (a tap on Save may not blur the field). Text that is no number is NaN, which
+    // the caller refuses; an empty optional field is null.
+    else onChange(text.trim() === "" && optional ? null : Number.NaN);
   };
 
   const commit = () => {
@@ -63,7 +76,8 @@ export function NumberStepper({
     const parsed = parseDecimal(draft);
     setDraft(null);
     if (draft.trim() === "" && optional) onChange(null);
-    else if (parsed !== null) onChange(clamp(parsed, min, max));
+    else if (parsed !== null) onChange(clampTyped ? clamp(parsed, min, max) : parsed);
+    else if (!clampTyped) onChange(null); // text that is no number: the field is cleared
     // Anything else: the field goes back to the last valid value.
   };
 
@@ -81,7 +95,7 @@ export function NumberStepper({
     "grid size-12 shrink-0 place-items-center text-primary aria-disabled:text-muted-foreground aria-disabled:opacity-60";
   return (
     <div className="flex min-w-0 flex-col gap-1.5">
-      <label htmlFor={id} className="text-[13px] font-semibold">
+      <label htmlFor={id} className={labelHidden ? "sr-only" : "text-[13px] font-semibold"}>
         {label}
       </label>
       <div

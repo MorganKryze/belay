@@ -11,7 +11,7 @@ import { NotFound, RouteError } from "./routes/fallbacks";
 import { Home } from "./routes/home";
 import { Layout } from "./routes/layout";
 
-// ponytail: code-based routes, 12 screens today (the tools share one lazy `$toolId` route).
+// ponytail: code-based routes, 13 screens today (the tools share one lazy `$toolId` route).
 // Switch to file-based routing at ~20 screens, or when this file passes ~150 lines of route
 // declarations.
 const rootRoute = createRootRoute({ component: Layout });
@@ -23,11 +23,22 @@ const homeRoute = createRoute({
   validateSearch: (search: Record<string, unknown>): { signin?: string } =>
     typeof search.signin === "string" ? { signin: search.signin } : {},
 });
+// Body is lazy (its chart and history are not needed to weigh in from Home).
+const bodyRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/body",
+  component: lazyRouteComponent(() => import("./routes/body"), "Body"),
+});
 const settingsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/settings",
   // Radix Select leaves the initial chunk; Home stays eager because it is the landing screen.
   component: lazyRouteComponent(() => import("./routes/settings"), "Settings"),
+});
+const profileRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/settings/profile",
+  component: lazyRouteComponent(() => import("./routes/profile"), "Profile"),
 });
 const toolsRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -51,7 +62,9 @@ const toolRoute = createRoute({
 
 export const routeTree = rootRoute.addChildren([
   homeRoute,
+  bodyRoute,
   settingsRoute,
+  profileRoute,
   toolsRoute,
   equipmentRoute,
   toolRoute,

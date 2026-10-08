@@ -2,7 +2,7 @@
 
 Generated from `packages/shared/src/science`. Do not edit by hand: run `pnpm science:doc`.
 
-Each tool in Belay shows its formula, its sources and its limits. Every reference below was checked on the date shown, against its DOI or a stable identifier on an authoritative record; where a copy rather than the official host was read, the entry says so. What has no source is labelled "Belay heuristic".
+Each tool in Belay, and each rule it applies to what you track, shows its formula, its sources and its limits. Every reference below was checked on the date shown, against its DOI or a stable identifier on an authoritative record; where a copy rather than the official host was read, the entry says so. What has no source is labelled "Belay heuristic".
 
 ## One-rep max
 
@@ -268,6 +268,34 @@ The US Navy method estimates your body fat from your height and a few girths tak
 - U.S. Department of Defense 2002. DoD Physical Fitness and Body Fat Programs Procedures. _DoD Instruction 1308.3, 5 November 2002._ DoDI 1308.3, Enclosure 3, para E3.1.3 [Record read](https://det027inspectorgeneral.weebly.com/uploads/1/7/0/2/17029076/dodi1308.3_fitnessprogram_2002.pdf). (stable identifier, no DOI on 2026-09-30. Read on a third-party copy, not the official host.)
 - Potter et al. 2022. Circumference-based predictions of body fat revisited: preliminary results from a US Marine Corps body composition survey. _Front Physiol. 2022;13:868627._ [doi:10.3389/fphys.2022.868627](https://doi.org/10.3389/fphys.2022.868627) · [PMID 35432005](https://pubmed.ncbi.nlm.nih.gov/35432005/) (DOI verified on 2026-09-30.)
 - Gallagher et al. 2000. Healthy percentage body fat ranges: an approach for developing guidelines based on body mass index. _Am J Clin Nutr. 2000;72(3):694–701._ [doi:10.1093/ajcn/72.3.694](https://doi.org/10.1093/ajcn/72.3.694) · [PMID 10966886](https://pubmed.ncbi.nlm.nih.gov/10966886/) (DOI verified on 2026-09-30.)
+
+## Loss range
+
+**Label:** Scientific source
+
+Your range says how fast you want to lose, as a percentage of your average weight per week. Belay uses it to write “in your range” next to your loss per week. It runs from 0.5 to 1% by default, as studies recommend.
+
+**Keep in mind**
+
+- Studies recommend a pace of 0.5 to 1% of body weight per week.
+- In athletes, a faster pace (≈ 1%/week) came with less lean-mass gain (Garthe 2011).
+- Belay offers no more than 1% per week.
+
+**Formula**
+
+- Loss per week = (average of the week before − average of the week) / average of the week before × 100
+- “In your range” when that loss, rounded to the tenth, lies between your minimum and your maximum.
+
+**Limits**
+
+- Helms 2014 recommends 0.5 to 1% of body weight per week to prepare a natural bodybuilding contest.
+- Garthe 2011 (24 elite athletes): at 0.7% per week, lean mass went up; the group aiming for 1.4% actually lost 1.0% per week and gained no lean mass.
+- Both sources studied trained athletes.
+
+**Sources**
+
+- Helms et al. 2014. Evidence-based recommendations for natural bodybuilding contest preparation: nutrition and supplementation. _J Int Soc Sports Nutr. 2014;11:20._ [doi:10.1186/1550-2783-11-20](https://doi.org/10.1186/1550-2783-11-20) · [PMID 24864135](https://pubmed.ncbi.nlm.nih.gov/24864135/) (DOI verified on 2026-09-30.)
+- Garthe et al. 2011. Effect of two different weight-loss rates on body composition and strength and power-related performance in elite athletes. _Int J Sport Nutr Exerc Metab. 2011;21(2):97–104._ [doi:10.1123/ijsnem.21.2.97](https://doi.org/10.1123/ijsnem.21.2.97) · [PMID 21558571](https://pubmed.ncbi.nlm.nih.gov/21558571/) (DOI verified on 2026-09-30.)
 
 ## All verified references
 

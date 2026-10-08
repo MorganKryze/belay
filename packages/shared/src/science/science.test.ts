@@ -1,8 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { TOOL_IDS } from "../tools/catalog";
 import { hasDoi, identifierHref, identifierLabel, renderScienceDoc, shortAuthors } from "./render";
 import { SOURCES, sourceById } from "./sources";
-import { TOOL_SCIENCE } from "./tools";
+import { SCIENCE_IDS, TOOL_SCIENCE } from "./tools";
 
 const sentences = (text: string) => text.match(/[.!?](?=\s|$)/g)?.length ?? 0;
 
@@ -50,17 +49,18 @@ describe("sources", () => {
 });
 
 describe("tool science", () => {
-  it("covers every tool", () => {
-    expect(Object.keys(TOOL_SCIENCE).sort()).toEqual([...TOOL_IDS].sort());
+  it("covers every tool and the profile's loss range", () => {
+    expect(Object.keys(TOOL_SCIENCE).sort()).toEqual([...SCIENCE_IDS].sort());
+    expect(SCIENCE_IDS).toContain("target-rate");
   });
 
-  it.each(TOOL_IDS)("%s: cites only known sources", (id) => {
+  it.each(SCIENCE_IDS)("%s: cites only known sources", (id) => {
     const known = new Set<string>(SOURCES.map((s) => s.id));
     for (const s of TOOL_SCIENCE[id].sourceIds) expect(known.has(s), s).toBe(true);
     expect(TOOL_SCIENCE[id].sourceIds.length).toBeGreaterThan(0);
   });
 
-  it.each(TOOL_IDS)("%s: French and English say the same amount", (id) => {
+  it.each(SCIENCE_IDS)("%s: French and English say the same amount", (id) => {
     const { fr, en } = TOOL_SCIENCE[id].content;
     expect(Object.keys(fr).sort()).toEqual(Object.keys(en).sort());
     expect(fr.keep.length).toBe(en.keep.length);
@@ -68,7 +68,7 @@ describe("tool science", () => {
     expect(fr.limits.length).toBe(en.limits.length);
   });
 
-  it.each(TOOL_IDS)("%s: brief of 2–3 sentences, at most 3 bullets, no empty text", (id) => {
+  it.each(SCIENCE_IDS)("%s: brief of 2–3 sentences, at most 3 bullets, no empty text", (id) => {
     for (const c of Object.values(TOOL_SCIENCE[id].content)) {
       expect(sentences(c.brief)).toBeGreaterThanOrEqual(2);
       expect(sentences(c.brief)).toBeLessThanOrEqual(3);
@@ -80,7 +80,7 @@ describe("tool science", () => {
     }
   });
 
-  it.each(TOOL_IDS)("%s: says what is heuristic exactly when the label says so", (id) => {
+  it.each(SCIENCE_IDS)("%s: says what is heuristic exactly when the label says so", (id) => {
     const { label, content } = TOOL_SCIENCE[id];
     for (const c of Object.values(content))
       expect(c.heuristic !== undefined).toBe(label !== "source");
@@ -90,6 +90,15 @@ describe("tool science", () => {
     const { fr, en } = TOOL_SCIENCE["one-rep-max"].content;
     expect(fr.formula.join(" ")).toContain("tel que reproduit dans Reynolds 2006");
     expect(en.formula.join(" ")).toContain("as reproduced in Reynolds 2006");
+  });
+
+  it("sources the loss range on Helms 2014, with Garthe 2011 worded as the source shows", () => {
+    const { label, sourceIds, content } = TOOL_SCIENCE["target-rate"];
+    expect(label).toBe("source");
+    expect(sourceIds).toEqual(["helms-2014-jissn", "garthe-2011"]);
+    // The softened wording ruled in M1: what Garthe measured, not a warning it did not give.
+    expect(content.fr.keep).toContain(TOOL_SCIENCE.projection.content.fr.keep[1]);
+    expect(content.en.keep).toContain(TOOL_SCIENCE.projection.content.en.keep[1]);
   });
 
   it("keeps Helms' cut range per kg of lean mass", () => {
@@ -102,7 +111,7 @@ describe("tool science", () => {
 describe("renderScienceDoc", () => {
   it("lists every tool and every reference", () => {
     const doc = renderScienceDoc();
-    for (const id of TOOL_IDS) expect(doc).toContain(`## ${TOOL_SCIENCE[id].content.en.title}`);
+    for (const id of SCIENCE_IDS) expect(doc).toContain(`## ${TOOL_SCIENCE[id].content.en.title}`);
     for (const s of SOURCES) expect(doc).toContain(s.title);
     expect(doc.endsWith("\n")).toBe(true);
   });

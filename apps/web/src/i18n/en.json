@@ -4,10 +4,9 @@
   },
   "home": {
     "signIn": "Sign in",
-    "signOut": "Sign out",
     "greeting": "Hello, {{name}}",
     "serverDown": "Can't reach the server right now.",
-    "signOutFailed": "Couldn't sign you out. Check your connection and try again."
+    "toolsLink": "Use the tools without an account"
   },
   "signin": {
     "unavailable": "Sign-in is unavailable right now. Try again in a moment.",
@@ -15,11 +14,94 @@
     "failed": "Sign-in didn't work. Please try again."
   },
   "offline": "You're offline.",
+  "body": {
+    "title": "Body",
+    "signedOut": "Tracking your weigh-ins needs an account. The tools work without one.",
+    "period": "Period",
+    "periods": {
+      "month": "1 month",
+      "quarter": "3 months",
+      "all": "All"
+    },
+    "average": "7-day average",
+    "lossPerWeek": "Loss per week",
+    "lossUnit": "%",
+    "gainUnit": "% gain",
+    "inRange": "in your range",
+    "weeks": "Your weeks",
+    "thisWeek": "This week",
+    "inProgress_one": "in progress · {{count}} weigh-in",
+    "inProgress_other": "in progress · {{count}} weigh-ins",
+    "toFollow": "ongoing",
+    "weekAverage": "average",
+    "previousInsufficient": "week before insufficient",
+    "firstWeek": "first week",
+    "tooFew_one": "{{count}} weigh-in, 4 minimum",
+    "tooFew_other": "{{count}} weigh-ins, 4 minimum",
+    "insufficient": "insufficient",
+    "history": "History",
+    "firstDays_one": "{{count}} more weigh-in this week",
+    "firstDays_other": "{{count}} more weigh-ins this week",
+    "firstDaysBody": "The 7-day average appears from 4 weigh-ins in 7 days, and the loss per week after two complete weeks. A single day's weight varies too much to say anything.",
+    "lossText": "{{value}}%",
+    "gainText": "{{value}}% gain"
+  },
+  "chart": {
+    "daily": "Daily weigh-in",
+    "average": "7-day average",
+    "summary": "Weigh-ins from {{from}} to {{to}}. 7-day average: {{average}}. Loss per week: {{loss}}.",
+    "hint": "Left and right arrows: day by day. Enter: edit the weigh-in.",
+    "weighIn": "Weigh-in {{value}} kg",
+    "movingAverage": "7-day avg {{value}} kg"
+  },
+  "account": {
+    "unavailable": "This browser won't let Belay save on the device, so tracking isn't available here. The tools still work."
+  },
+  "sync": {
+    "offlineTitle": "Offline.",
+    "offline_one": "{{count}} weigh-in waiting, sent as soon as the network is back. Everything is kept on this phone.",
+    "offline_other": "{{count}} weigh-ins waiting, sent as soon as the network is back. Everything is kept on this phone.",
+    "expiredTitle": "Your session has expired.",
+    "expired_one": "{{count}} weigh-in is waiting to be sent.",
+    "expired_other": "{{count}} weigh-ins are waiting to be sent.",
+    "reconnect": "Sign in again",
+    "failed": "An entry couldn't be sent.",
+    "retry": "Try again"
+  },
+  "trend": {
+    "title": "Your trend",
+    "average": "7-day average",
+    "loss": "loss",
+    "gain": "gain",
+    "perWeek": "{{value}}%/wk",
+    "kg": "{{value}} kg",
+    "link": "Body"
+  },
+  "weighIn": {
+    "title": "Today's weigh-in",
+    "titleFor": "Weigh-in for {{day}}",
+    "weight": "Weight",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "date": "Date of the weigh-in",
+    "prefilled": "prefilled with your last weigh-in",
+    "save": "Save",
+    "saved": "saved",
+    "edit": "Edit",
+    "delete": "Delete this weigh-in",
+    "close": "Close",
+    "outOfRange": "Enter a weight between 20 and 400 kg.",
+    "toastSaved": "Weigh-in saved",
+    "toastDeleted": "Weigh-in deleted",
+    "saveFailed": "Couldn't save on this phone. Try again.",
+    "undo": "Undo"
+  },
   "nav": {
     "label": "Main",
     "home": "Home",
     "tools": "Tools",
-    "settings": "Settings"
+    "settings": "Settings",
+    "body": "Body"
   },
   "settings": {
     "title": "Settings",
@@ -29,7 +111,24 @@
       "light": "Light",
       "dark": "Dark",
       "system": "System"
-    }
+    },
+    "account": "Account",
+    "signOut": "Sign out",
+    "signOutFailed": "Couldn't sign you out. Check your connection and try again.",
+    "signOutPending_one": "{{count}} entry not sent yet: it will go at your next sign-in on this device.",
+    "signOutPending_other": "{{count}} entries not sent yet: they will go at your next sign-in on this device.",
+    "signOutUnknown": "Some entries may not have been sent yet: they will go at your next sign-in on this device.",
+    "signOutAnyway": "Sign out anyway",
+    "cancel": "Cancel"
+  },
+  "profile": {
+    "title": "Profile",
+    "range": "Your loss range",
+    "rangeLead": "Per week, as a % of your average weight. Used to say “in your range” on Body.",
+    "min": "At least",
+    "max": "At most",
+    "rangeNote": "Adjustable from 0.25 to 1%. Published recommendations stop at 1%: the app offers no more.",
+    "howChosen": "How it's chosen"
   },
   "fallback": {
     "notFoundTitle": "Page not found",

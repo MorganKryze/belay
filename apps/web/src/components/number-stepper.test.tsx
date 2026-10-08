@@ -120,4 +120,20 @@ describe("NumberStepper", () => {
     fireEvent.pointerDown(field.parentElement!);
     expect(document.activeElement).toBe(field);
   });
+
+  it("hands a typed value outside the bounds over unclamped when asked, for the caller to refuse", () => {
+    const onChange = vi.fn();
+    render(<Harness onChange={onChange} clampTyped={false} />);
+    fireEvent.change(input(), { target: { value: "798" } });
+    expect(onChange).toHaveBeenLastCalledWith(798); // live: what is shown is the value
+    fireEvent.blur(input());
+    expect(onChange).toHaveBeenLastCalledWith(798);
+    expect((input() as HTMLInputElement).value).toBe("798");
+  });
+
+  it("keeps the label for screen readers only when asked", () => {
+    render(<Harness labelHidden />);
+    expect(screen.getByText("Load").className).toBe("sr-only");
+    expect(input()).toBeTruthy();
+  });
 });

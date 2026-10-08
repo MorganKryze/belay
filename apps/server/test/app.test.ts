@@ -1,12 +1,13 @@
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
-import { describe, expect, it } from "vitest";
+import { DrizzleQueryError } from "drizzle-orm/errors";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { createApp } from "../src/app";
 import { oidcProvider } from "../src/auth/oidc";
 import { hashToken, newSessionToken, SESSION_COOKIE } from "../src/auth/session";
 import { loadConfig } from "../src/config";
-import { connect } from "../src/db/client";
+import { connect, type Db } from "../src/db/client";
 import { createSession, upsertUser } from "../src/db/identity";
 import { testEnv } from "./config";
 import { testDb } from "./db";
@@ -21,6 +22,7 @@ const cfg = loadConfig(
   testEnv({ OIDC_ISSUER: "http://localhost:1", WEB_DIST: relative(process.cwd(), dist) }),
 );
 const app = createApp({ cfg, db, getOidc: oidcProvider(cfg.oidc) });
+afterEach(() => vi.restoreAllMocks());
 
 describe("app", () => {
   it("reports health when the database answers", async () => {
@@ -124,5 +126,29 @@ describe("app", () => {
     );
     // No includeSubDomains: the app only knows its own origin, not what else lives under the domain.
     expect(res.headers.get("strict-transport-security")).toBe("max-age=31536000");
+  });
+
+  it("never lets a browser or a proxy keep an /api or /auth answer", async () => {
+    expect((await app.request("/api/me")).headers.get("cache-control")).toBe("no-store");
+    expect((await app.request("/auth/nope")).headers.get("cache-control")).toBe("no-store");
+  });
+
+  it("answers a database failure with 500 and logs it without its parameters", async () => {
+    const leak = new DrizzleQueryError(
+      "select belay_session_user($1, $2)",
+      ["hash-of-a-session-token", "30 days"],
+      Object.assign(new Error("terminating connection"), { code: "57P01" }),
+    );
+    const broken = new Proxy({}, { get: () => () => Promise.reject(leak) }) as Db;
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const res = await createApp({ cfg, db: broken, getOidc: oidcProvider(cfg.oidc) }).request(
+      "/api/me",
+      { headers: { cookie: `${SESSION_COOKIE}=whatever` } },
+    );
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ error: "server_error" });
+    const printed = spy.mock.calls.flat().join(" ");
+    expect(printed).toContain("DrizzleQueryError (code 57P01)");
+    expect(printed).not.toContain("hash-of-a-session-token");
   });
 });

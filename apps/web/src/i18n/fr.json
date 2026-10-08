@@ -4,10 +4,9 @@
   },
   "home": {
     "signIn": "Se connecter",
-    "signOut": "Se déconnecter",
-    "greeting": "Bonjour, {{name}}",
+    "greeting": "Bonjour {{name}}",
     "serverDown": "Le serveur est injoignable pour le moment.",
-    "signOutFailed": "Déconnexion impossible pour le moment. Vérifie ta connexion et réessaie."
+    "toolsLink": "Utiliser les outils sans compte"
   },
   "signin": {
     "unavailable": "La connexion est indisponible pour le moment. Réessaie dans un instant.",
@@ -15,11 +14,94 @@
     "failed": "La connexion n'a pas abouti. Réessaie."
   },
   "offline": "Tu es hors ligne.",
+  "body": {
+    "title": "Corps",
+    "signedOut": "Le suivi de tes pesées demande un compte. Les outils restent utilisables sans compte.",
+    "period": "Période",
+    "periods": {
+      "month": "1 mois",
+      "quarter": "3 mois",
+      "all": "Tout"
+    },
+    "average": "Moyenne 7 jours",
+    "lossPerWeek": "Perte par semaine",
+    "lossUnit": "%",
+    "gainUnit": "% de prise",
+    "inRange": "dans ta fourchette",
+    "weeks": "Tes semaines",
+    "thisWeek": "Cette semaine",
+    "inProgress_one": "en cours · {{count}} pesée",
+    "inProgress_other": "en cours · {{count}} pesées",
+    "toFollow": "à suivre",
+    "weekAverage": "moyenne",
+    "previousInsufficient": "semaine d'avant insuffisante",
+    "firstWeek": "première semaine",
+    "tooFew_one": "{{count}} pesée, 4 minimum",
+    "tooFew_other": "{{count}} pesées, 4 minimum",
+    "insufficient": "insuffisante",
+    "history": "Historique",
+    "firstDays_one": "Encore {{count}} pesée cette semaine",
+    "firstDays_other": "Encore {{count}} pesées cette semaine",
+    "firstDaysBody": "La moyenne 7 jours apparaît dès 4 pesées sur 7 jours, et la perte par semaine après deux semaines complètes. Le poids d'un jour seul varie trop pour dire quelque chose.",
+    "lossText": "{{value}} %",
+    "gainText": "{{value}} % de prise"
+  },
+  "chart": {
+    "daily": "Pesée du jour",
+    "average": "Moyenne 7 jours",
+    "summary": "Pesées du {{from}} au {{to}}. Moyenne 7 jours : {{average}}. Perte par semaine : {{loss}}.",
+    "hint": "Flèches gauche et droite : jour par jour. Entrée : modifier la pesée.",
+    "weighIn": "Pesée {{value}} kg",
+    "movingAverage": "Moyenne 7 j {{value}} kg"
+  },
+  "account": {
+    "unavailable": "Ce navigateur ne permet pas à Belay d'enregistrer sur l'appareil : le suivi n'est pas disponible ici. Les outils restent utilisables."
+  },
+  "sync": {
+    "offlineTitle": "Hors ligne.",
+    "offline_one": "{{count}} pesée en attente, envoyée dès le retour du réseau. Tout est gardé sur ce téléphone.",
+    "offline_other": "{{count}} pesées en attente, envoyées dès le retour du réseau. Tout est gardé sur ce téléphone.",
+    "expiredTitle": "Ta session a expiré.",
+    "expired_one": "{{count}} pesée attend d'être envoyée.",
+    "expired_other": "{{count}} pesées attendent d'être envoyées.",
+    "reconnect": "Se reconnecter",
+    "failed": "Une saisie n'a pas pu être envoyée.",
+    "retry": "Réessayer"
+  },
+  "trend": {
+    "title": "Ta tendance",
+    "average": "Moyenne 7 jours",
+    "loss": "perte",
+    "gain": "prise",
+    "perWeek": "{{value}} %/sem",
+    "kg": "{{value}} kg",
+    "link": "Corps"
+  },
+  "weighIn": {
+    "title": "Pesée du jour",
+    "titleFor": "Pesée du {{day}}",
+    "weight": "Poids",
+    "today": "Aujourd'hui",
+    "yesterday": "Hier",
+    "date": "Date de la pesée",
+    "prefilled": "pré-rempli avec ta dernière pesée",
+    "save": "Enregistrer",
+    "saved": "enregistrée",
+    "edit": "Modifier",
+    "delete": "Supprimer cette pesée",
+    "close": "Fermer",
+    "outOfRange": "Saisis un poids entre 20 et 400 kg.",
+    "toastSaved": "Pesée enregistrée",
+    "toastDeleted": "Pesée supprimée",
+    "saveFailed": "Pas pu enregistrer sur ce téléphone. Réessaie.",
+    "undo": "Annuler"
+  },
   "nav": {
     "label": "Principale",
     "home": "Accueil",
     "tools": "Outils",
-    "settings": "Réglages"
+    "settings": "Réglages",
+    "body": "Corps"
   },
   "settings": {
     "title": "Réglages",
@@ -29,7 +111,24 @@
       "light": "Clair",
       "dark": "Sombre",
       "system": "Système"
-    }
+    },
+    "account": "Compte",
+    "signOut": "Se déconnecter",
+    "signOutFailed": "Déconnexion impossible pour le moment. Vérifie ta connexion et réessaie.",
+    "signOutPending_one": "{{count}} saisie pas encore envoyée : elle partira à ta prochaine connexion sur cet appareil.",
+    "signOutPending_other": "{{count}} saisies pas encore envoyées : elles partiront à ta prochaine connexion sur cet appareil.",
+    "signOutUnknown": "Des saisies n'ont peut-être pas encore été envoyées : elles partiront à ta prochaine connexion sur cet appareil.",
+    "signOutAnyway": "Se déconnecter quand même",
+    "cancel": "Annuler"
+  },
+  "profile": {
+    "title": "Profil",
+    "range": "Ta fourchette de perte",
+    "rangeLead": "Par semaine, en % de ton poids moyen. Sert à dire « dans ta fourchette » sur Corps.",
+    "min": "Au moins",
+    "max": "Au plus",
+    "rangeNote": "Réglable de 0,25 à 1 %. Les recommandations publiées s'arrêtent à 1 % : l'app ne propose pas plus.",
+    "howChosen": "Comment c'est choisi"
   },
   "fallback": {
     "notFoundTitle": "Page introuvable",

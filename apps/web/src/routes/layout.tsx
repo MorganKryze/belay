@@ -3,10 +3,23 @@ import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { TabBar } from "@/components/tab-bar";
 import { useOnline } from "@/lib/online";
+import { AccountProvider, useAccount } from "@/sync/account";
 
 export function Layout() {
+  return (
+    <AccountProvider>
+      <Shell />
+    </AccountProvider>
+  );
+}
+
+function Shell() {
   const { t } = useTranslation();
   const online = useOnline();
+  const account = useAccount();
+  // Signed in, the sync banner of Home and Body speaks instead: offline with nothing waiting
+  // needs no banner at all (§4.6).
+  const offline = !online && account.kind !== "open";
   const router = useRouter();
   // A client navigation lands focus on the new page's h1, so screen readers announce it. The
   // first load (no fromLocation) is left alone: the browser starts at the top already. A lazy
@@ -35,8 +48,8 @@ export function Layout() {
   return (
     <div className="mx-auto flex min-h-dvh max-w-xl flex-col gap-6 pt-[max(1rem,env(safe-area-inset-top))] pr-[max(1rem,env(safe-area-inset-right))] pb-[calc(5.5rem+env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))]">
       {/* Mounted for good and filled when offline, so the change is announced. */}
-      <p role="status" className={online ? "sr-only" : "rounded-chip bg-track p-3 text-sm"}>
-        {online ? "" : t("offline")}
+      <p role="status" className={offline ? "rounded-chip bg-track p-3 text-sm" : "sr-only"}>
+        {offline ? t("offline") : ""}
       </p>
       <main>
         <Outlet />

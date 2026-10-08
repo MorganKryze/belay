@@ -27,11 +27,17 @@ const PAIRS = [
   ["primary-foreground", "primary", 4.5],
   ["primary-ink", "primary-soft", 4.5],
   ["reference-ink", "reference", 4.5],
+  ["background", "foreground", 4.5], // the toast
+  ["toast-action", "foreground", 4.5],
   ["input", "surface", 3],
   ["input", "background", 3],
   ["ring", "background", 3],
   ["ring", "surface", 3],
   ["primary", "track", 3],
+  ["chart-dot", "surface", 3],
+  ["chart-dot", "background", 3],
+  ["chart-line", "surface", 3],
+  ["chart-line", "background", 3],
 ] as const;
 
 describe("design tokens", () => {

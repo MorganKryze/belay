@@ -1,4 +1,4 @@
-import type { ToolId } from "../tools/catalog";
+import { TOOL_IDS } from "../tools/catalog";
 import type { SourceId } from "./sources";
 
 // "source": every number shown has a verified source. "heuristic": none does. "mixed": the
@@ -18,7 +18,11 @@ export type ToolScience = {
   content: { fr: ScienceContent; en: ScienceContent };
 };
 
-export const TOOL_SCIENCE: Record<ToolId, ToolScience> = {
+// Every tool, then the rules Belay applies to tracked data (the profile's loss range).
+export const SCIENCE_IDS = [...TOOL_IDS, "target-rate"] as const;
+export type ScienceId = (typeof SCIENCE_IDS)[number];
+
+export const TOOL_SCIENCE: Record<ScienceId, ToolScience> = {
   "one-rep-max": {
     label: "source",
     sourceIds: ["reynolds-2006", "brzycki-1993", "lesuer-1997", "nuzzo-2024"],
@@ -442,6 +446,50 @@ export const TOOL_SCIENCE: Record<ToolId, ToolScience> = {
           "The paper does not name body-fat ranges: it gives the body fat matching a BMI of 18.5, 25 and 30. Belay presents them that way, without a label.",
           "Table 5 was built from people living in Japan.",
           "The paper states that these are not definitive ranges, and that the values at low BMIs have wide confidence intervals: they are provisional reference values.",
+        ],
+      },
+    },
+  },
+  "target-rate": {
+    label: "source",
+    sourceIds: ["helms-2014-jissn", "garthe-2011"],
+    content: {
+      fr: {
+        title: "Fourchette de perte",
+        brief:
+          "Ta fourchette dit à quel rythme tu veux perdre, en pourcentage de ton poids moyen par semaine. Belay s'en sert pour écrire « dans ta fourchette » à côté de ta perte par semaine. Elle va de 0,5 à 1 % par défaut, comme le recommandent les études.",
+        keep: [
+          "Les études recommandent un rythme de 0,5 à 1 % du poids par semaine.",
+          "Chez des athlètes, un rythme plus rapide (≈ 1 %/semaine) s'est accompagné de moins de gain de masse maigre (Garthe 2011).",
+          "Belay ne propose pas plus de 1 % par semaine.",
+        ],
+        formula: [
+          "Perte par semaine = (moyenne de la semaine d'avant − moyenne de la semaine) / moyenne de la semaine d'avant × 100",
+          "« Dans ta fourchette » quand cette perte, arrondie au dixième, est entre ton minimum et ton maximum.",
+        ],
+        limits: [
+          "Helms 2014 recommande 0,5 à 1 % du poids par semaine pour préparer une compétition de culturisme naturel.",
+          "Garthe 2011 (24 athlètes de haut niveau) : à 0,7 % par semaine, la masse maigre augmente ; le groupe qui visait 1,4 % a réellement perdu 1,0 % par semaine et n'a pas gagné de masse maigre.",
+          "Ces deux sources portent sur des athlètes entraînés.",
+        ],
+      },
+      en: {
+        title: "Loss range",
+        brief:
+          "Your range says how fast you want to lose, as a percentage of your average weight per week. Belay uses it to write “in your range” next to your loss per week. It runs from 0.5 to 1% by default, as studies recommend.",
+        keep: [
+          "Studies recommend a pace of 0.5 to 1% of body weight per week.",
+          "In athletes, a faster pace (≈ 1%/week) came with less lean-mass gain (Garthe 2011).",
+          "Belay offers no more than 1% per week.",
+        ],
+        formula: [
+          "Loss per week = (average of the week before − average of the week) / average of the week before × 100",
+          "“In your range” when that loss, rounded to the tenth, lies between your minimum and your maximum.",
+        ],
+        limits: [
+          "Helms 2014 recommends 0.5 to 1% of body weight per week to prepare a natural bodybuilding contest.",
+          "Garthe 2011 (24 elite athletes): at 0.7% per week, lean mass went up; the group aiming for 1.4% actually lost 1.0% per week and gained no lean mass.",
+          "Both sources studied trained athletes.",
         ],
       },
     },

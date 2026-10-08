@@ -1,3 +1,5 @@
+import { clearLastUser } from "@/sync/last-user";
+
 export type Me = { id: string; displayName: string };
 
 export async function fetchMe(): Promise<Me | null> {
@@ -7,7 +9,8 @@ export async function fetchMe(): Promise<Me | null> {
   return (await res.json()) as Me;
 }
 
-// Throws (and never navigates) on any failure, so the caller can tell the user.
+// Throws (and never navigates) on any failure, so the caller can tell the user. Once signed out,
+// the device forgets which account to open; that account's data stays on it (D3).
 export async function logout(): Promise<void> {
   const res = await fetch("/auth/logout", { method: "POST", credentials: "same-origin" });
   if (!res.ok) throw new Error(`POST /auth/logout: ${res.status}`);
@@ -19,5 +22,6 @@ export async function logout(): Promise<void> {
   if (typeof redirectTo !== "string" || redirectTo === "") {
     throw new Error("POST /auth/logout: response has no redirectTo");
   }
+  clearLastUser();
   window.location.assign(redirectTo);
 }
