@@ -1,6 +1,7 @@
 import type { Change } from "@belay/shared/sync/schema";
 import { IDBFactory } from "fake-indexeddb";
 import { beforeEach, describe, expect, it } from "vitest";
+import { answer as server } from "@/test/answer";
 import {
   type AccountDb,
   applyServer,
@@ -80,16 +81,18 @@ describe("applyServer", () => {
     await recordChange(db, weight("2026-10-06", 80.2));
     await recordChange(db, weight("2026-10-07", 79.8));
     const sent = await readOutbox(db, 1);
-    await applyServer(db, [sent[0]!], {
-      cursor: "42",
-      weights: [
-        { date: "2026-10-06", weightKg: 80.2, at: AT },
-        { date: "2026-10-01", weightKg: 81, at: AT },
-      ],
-      target: { minPct: 0.5, maxPct: 1, at: null },
-      rejected: [],
-      hasMore: false,
-    });
+    await applyServer(
+      db,
+      [sent[0]!],
+      server({
+        cursor: "42",
+        weights: [
+          { date: "2026-10-06", weightKg: 80.2, at: AT },
+          { date: "2026-10-01", weightKg: 81, at: AT },
+        ],
+        target: { minPct: 0.5, maxPct: 1, at: null },
+      }),
+    );
     expect((await readOutbox(db)).map((e) => e.change)).toEqual([weight("2026-10-07", 79.8)]);
     expect(await readCursor(db)).toBe("42");
     expect((await readWeights(db)).map((w) => w.date)).toEqual([
@@ -101,44 +104,41 @@ describe("applyServer", () => {
 
   it("puts a change entered during the request back on top of an older server row", async () => {
     await recordChange(db, weight("2026-10-07", 79.6, LATER)); // entered while the request was out
-    await applyServer(db, [], {
-      cursor: "7",
-      weights: [{ date: "2026-10-07", weightKg: 80, at: AT }], // another device, earlier
-      target: null,
-      rejected: [],
-      hasMore: false,
-    });
+    await applyServer(
+      db,
+      [],
+      server({
+        cursor: "7",
+        weights: [{ date: "2026-10-07", weightKg: 80, at: AT }], // another device, earlier
+      }),
+    );
     expect(await readWeights(db)).toEqual([{ date: "2026-10-07", weightKg: 79.6 }]);
   });
 
   it("lets a later write from another device show over an older pending change", async () => {
     await recordChange(db, weight("2026-10-07", 79.6, AT));
-    await applyServer(db, [], {
-      cursor: "8",
-      weights: [{ date: "2026-10-07", weightKg: 80, at: LATER }],
-      target: null,
-      rejected: [],
-      hasMore: false,
-    });
+    await applyServer(
+      db,
+      [],
+      server({
+        cursor: "8",
+        weights: [{ date: "2026-10-07", weightKg: 80, at: LATER }],
+      }),
+    );
     expect(await readWeights(db)).toEqual([{ date: "2026-10-07", weightKg: 80 }]);
     expect(await readOutbox(db)).toHaveLength(1); // still sent: the server decides
   });
 });
 
 describe("a refused change", () => {
-  const answer = (rejected: { index: number; reason: "unknown" | "refused" }[], weights = []) => ({
-    cursor: "3",
-    weights,
-    target: null,
-    rejected,
-    hasMore: false,
-  });
+  const refused = (rejected: { index: number; reason: "unknown" | "refused" }[]) =>
+    server({ cursor: "3", rejected });
 
   it("leaves the queue, keeps a trace, and its value leaves the screen", async () => {
     await recordChange(db, weight("2026-10-06", 80.2));
     await recordChange(db, weight("2026-10-07", 399.9));
     const sent = await readOutbox(db);
-    await applyServer(db, sent, answer([{ index: 1, reason: "refused" }]));
+    await applyServer(db, sent, refused([{ index: 1, reason: "refused" }]));
     expect(await readOutbox(db)).toEqual([]);
     expect(await readWeights(db)).toEqual([{ date: "2026-10-06", weightKg: 80.2 }]);
     expect(await readRejected(db)).toEqual([
@@ -151,10 +151,14 @@ describe("a refused change", () => {
   it("gives way to what the server holds for that day", async () => {
     await recordChange(db, weight("2026-10-07", 399.9, LATER));
     const sent = await readOutbox(db);
-    await applyServer(db, sent, {
-      ...answer([{ index: 0, reason: "refused" }]),
-      weights: [{ date: "2026-10-07", weightKg: 80, at: AT }],
-    });
+    await applyServer(
+      db,
+      sent,
+      server({
+        ...refused([{ index: 0, reason: "refused" }]),
+        weights: [{ date: "2026-10-07", weightKg: 80, at: AT }],
+      }),
+    );
     expect(await readWeights(db)).toEqual([{ date: "2026-10-07", weightKg: 80 }]);
   });
 
@@ -162,7 +166,7 @@ describe("a refused change", () => {
     await recordChange(db, weight("2026-10-07", 399.9));
     const sent = await readOutbox(db);
     await recordChange(db, weight("2026-10-07", 79.9, LATER));
-    await applyServer(db, sent, answer([{ index: 0, reason: "refused" }]));
+    await applyServer(db, sent, refused([{ index: 0, reason: "refused" }]));
     expect(await readWeights(db)).toEqual([{ date: "2026-10-07", weightKg: 79.9 }]);
     expect((await readOutbox(db)).map((e) => e.change)).toEqual([
       weight("2026-10-07", 79.9, LATER),
@@ -171,13 +175,13 @@ describe("a refused change", () => {
 
   it("takes the range back to the defaults when the server refuses it", async () => {
     await recordChange(db, { kind: "target", minPct: 0.25, maxPct: 0.75, at: AT });
-    await applyServer(db, await readOutbox(db), answer([{ index: 0, reason: "refused" }]));
+    await applyServer(db, await readOutbox(db), refused([{ index: 0, reason: "refused" }]));
     expect(await readTarget(db)).toEqual({ minPct: 0.5, maxPct: 1 });
   });
 
   it("ignores an index the request never had", async () => {
     await recordChange(db, weight("2026-10-07", 79.8));
-    await applyServer(db, await readOutbox(db), answer([{ index: 5, reason: "refused" }]));
+    await applyServer(db, await readOutbox(db), refused([{ index: 5, reason: "refused" }]));
     expect(await readRejected(db)).toEqual([]);
     expect(await readWeights(db)).toEqual([{ date: "2026-10-07", weightKg: 79.8 }]);
   });
@@ -196,9 +200,6 @@ describe("failures", () => {
         { date: "2026-10-01", weightKg: 81, at: AT },
         { date: {}, weightKg: 80, at: AT },
       ],
-      target: null,
-      rejected: [],
-      hasMore: false,
     } as unknown as Parameters<typeof applyServer>[2];
     await expect(applyServer(db, [sent!], bad)).rejects.toThrow();
     await new Promise((r) => setTimeout(r, 20));

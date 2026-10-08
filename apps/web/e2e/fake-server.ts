@@ -42,7 +42,13 @@ export async function fakeServer(
       json: {
         cursor: String(Math.max(Number(request.cursor), ...since.map((r) => r.seq))),
         weights: since.map((r) => ({ date: r.date, weightKg: r.weightKg, at: r.at })),
+        measures: [],
+        intake: [],
+        supplements: [],
+        supplementLogs: [],
+        annotations: [],
         target: null,
+        profile: null,
         rejected: [],
         hasMore: false,
       },

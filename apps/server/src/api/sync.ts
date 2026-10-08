@@ -222,7 +222,14 @@ async function readSince(
   return {
     cursor: next.toString(),
     weights: [...weights.values()],
+    // The other tables arrive with their migration (0004) and their merge.
+    measures: [],
+    intake: [],
+    supplements: [],
+    supplementLogs: [],
+    annotations: [],
     target,
+    profile: null,
     rejected: out.rejected,
     hasMore,
   };

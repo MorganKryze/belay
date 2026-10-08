@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import i18n from "../i18n";
 import { pendingCounts } from "../sync/db";
 import { readLastUser } from "../sync/last-user";
+import { answer } from "../test/answer";
 import { fakeApi } from "../test/fake-api";
 import { renderRoute } from "../test/render-route";
 import { ADA, seed, weight } from "../test/seed";
@@ -154,16 +155,14 @@ describe("refused entries", () => {
     fakeApi({
       me: ADA,
       sync: async (r) =>
-        Response.json({
-          cursor: "1",
-          weights: [],
-          target: null,
-          rejected: r.changes.map((_, index) => ({
-            index,
-            reason: index === 0 ? "refused" : "unknown",
-          })),
-          hasMore: false,
-        }),
+        Response.json(
+          answer({
+            rejected: r.changes.map((_, index) => ({
+              index,
+              reason: index === 0 ? "refused" : "unknown",
+            })),
+          }),
+        ),
     });
     renderRoute("/settings");
     const list = await screen.findByRole("region", { name: "Refused entries" });

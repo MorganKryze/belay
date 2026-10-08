@@ -108,7 +108,13 @@ describe("POST /api/sync", () => {
     expect(replay).toEqual({
       cursor: first.cursor,
       weights: [],
+      measures: [],
+      intake: [],
+      supplements: [],
+      supplementLogs: [],
+      annotations: [],
       target: null,
+      profile: null,
       rejected: [],
       hasMore: false,
     });

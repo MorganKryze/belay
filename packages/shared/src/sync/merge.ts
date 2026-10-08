@@ -32,16 +32,26 @@ function fold<C extends { at: string }>(stored: string | null, changes: readonly
   return winner;
 }
 
-// The change to write for each day, clamped, or nothing when what is stored is as recent. A
-// change keeps its other properties (the server tags each one with its place in the request).
+// The change to write for each key (a day, a day's field, an id's field), clamped, or nothing
+// when what is stored under that key is as recent. A change keeps its other properties (the
+// server tags each one with its place in the request).
+export function mergeFields<C extends { at: string }>(
+  stored: ReadonlyMap<string, string | null>,
+  changes: readonly C[],
+  key: (change: C) => string,
+  now: Date,
+): C[] {
+  const byKey = new Map<string, C[]>();
+  for (const c of changes) byKey.set(key(c), [...(byKey.get(key(c)) ?? []), c]);
+  return [...byKey].flatMap(([k, list]) => fold(stored.get(k) ?? null, list, now) ?? []);
+}
+
 export function mergeWeights<C extends WeightChange>(
   stored: ReadonlyMap<ISODate, string | null>,
   changes: readonly C[],
   now: Date,
 ): C[] {
-  const byDate = new Map<ISODate, C[]>();
-  for (const c of changes) byDate.set(c.date, [...(byDate.get(c.date) ?? []), c]);
-  return [...byDate].flatMap(([date, list]) => fold(stored.get(date) ?? null, list, now) ?? []);
+  return mergeFields(stored, changes, (c) => c.date, now);
 }
 
 export function mergeTarget<C extends TargetChange>(

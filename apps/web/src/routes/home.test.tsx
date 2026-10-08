@@ -3,6 +3,7 @@ import { IDBFactory } from "fake-indexeddb";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import i18n from "../i18n";
 import { writeLastUser } from "../sync/last-user";
+import { answer } from "../test/answer";
 import { fakeApi } from "../test/fake-api";
 import { renderRoute } from "../test/render-route";
 import { ADA, seed, weight } from "../test/seed";
@@ -154,13 +155,9 @@ describe("the sync banner", () => {
     fakeApi({
       me: ADA,
       sync: async (r) =>
-        Response.json({
-          cursor: "1",
-          weights: [],
-          target: null,
-          rejected: r.changes.length > 0 ? [{ index: 0, reason: "refused" }] : [],
-          hasMore: false,
-        }),
+        Response.json(
+          answer({ rejected: r.changes.length > 0 ? [{ index: 0, reason: "refused" }] : [] }),
+        ),
     });
     renderRoute("/");
     expect(await screen.findByText(/An entry was refused\./)).toBeTruthy();

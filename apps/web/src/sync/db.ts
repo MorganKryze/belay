@@ -64,12 +64,19 @@ export async function openAccountDb(
   });
 }
 
+// The kinds this device keeps so far; the others get stores of their own.
+const isKept = (change: Change) => change.kind === "weight" || change.kind === "target";
+
 function applyLocal(tx: WriteTx, change: Change) {
-  return change.kind === "weight"
-    ? tx.objectStore("weights").put({ date: change.date, weightKg: change.weightKg, at: change.at })
-    : tx
-        .objectStore("profile")
-        .put({ minPct: change.minPct, maxPct: change.maxPct, at: change.at }, "target");
+  if (change.kind === "weight")
+    return tx
+      .objectStore("weights")
+      .put({ date: change.date, weightKg: change.weightKg, at: change.at });
+  if (change.kind === "target")
+    return tx
+      .objectStore("profile")
+      .put({ minPct: change.minPct, maxPct: change.maxPct, at: change.at }, "target");
+  throw new RangeError("not kept on this device");
 }
 
 // The value and its change in one transaction: what the screen shows is always queued. A change
@@ -77,7 +84,7 @@ function applyLocal(tx: WriteTx, change: Change) {
 // ponytail: no compaction, a weigh-in rewritten three times is three changes, all idempotent.
 // Upgrade: fold the changes of one day before sending, if a queue grows past a few hundred.
 export async function recordChange(db: AccountDb, change: Change): Promise<void> {
-  if (!isValidChange(change)) throw new RangeError("invalid change");
+  if (!isValidChange(change) || !isKept(change)) throw new RangeError("invalid change");
   const tx: WriteTx = db.transaction(ALL, "readwrite");
   await Promise.all([applyLocal(tx, change), tx.objectStore("outbox").add({ change }), tx.done]);
 }
@@ -123,7 +130,7 @@ async function revert(tx: WriteTx, change: Change) {
   if (change.kind === "weight") {
     const row = await tx.objectStore("weights").get(change.date);
     if (row?.at === change.at) await tx.objectStore("weights").delete(change.date);
-  } else {
+  } else if (change.kind === "target") {
     const row = await tx.objectStore("profile").get("target");
     if (row?.at === change.at) await tx.objectStore("profile").delete("target");
   }

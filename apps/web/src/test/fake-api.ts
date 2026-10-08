@@ -2,6 +2,7 @@ import { mergeWeights } from "@belay/shared/sync/merge";
 import type { SyncRequest, SyncResponse, WeightRow } from "@belay/shared/sync/schema";
 import { vi } from "vitest";
 import type { Me } from "@/lib/api";
+import { answer } from "./answer";
 
 // A stand-in for the server behind fetch: /api/me, /auth/logout, and an /api/sync that merges
 // weigh-ins like the real one (last write wins per day), answers 401 without a session and 409
@@ -23,13 +24,10 @@ export function fakeApi({
     for (const c of mergeWeights(stored, weights, new Date()))
       rows.set(c.date, { date: c.date, weightKg: c.weightKg, at: c.at, seq: ++seq });
     const since = [...rows.values()].filter((r) => r.seq > Number(request.cursor));
-    return {
+    return answer({
       cursor: String(Math.max(Number(request.cursor), ...since.map((r) => r.seq))),
       weights: since.map((r) => ({ date: r.date, weightKg: r.weightKg, at: r.at })),
-      target: null,
-      rejected: [],
-      hasMore: false,
-    };
+    });
   };
   const requests: SyncRequest[] = [];
   const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
