@@ -10,7 +10,7 @@ import type { ProfileChange } from "@belay/shared/sync/schema";
 import type { Formula } from "@belay/shared/tools/catalog";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { RotateCcw } from "lucide-react";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { formatWeekday } from "@/lib/format";
 import { useToday } from "@/lib/today";
@@ -77,6 +77,11 @@ export function usePrefill(fields: readonly ToolField[]) {
     },
     // Some field still shows a prefilled value.
     any: fields.some((f) => get(f) !== undefined),
+    // The same, for the fields on screen only (the hip shows for the female formula alone).
+    anyOf: (shown: readonly ToolField[]) => shown.some((f) => get(f) !== undefined),
+    // The line under a prefilled field, or undefined so the field renders as in M1.
+    hint: (field: ToolField): ReactNode =>
+      get(field) ? <SourceLine source={get(field)?.source} /> : undefined,
     restore: () => setDropped("all"),
     // The update to offer under a profile field the person changed, or null.
     proposal(field: ProfileField, current: Formula | number): Proposal | null {

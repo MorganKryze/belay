@@ -143,6 +143,45 @@ describe("a connected tool", () => {
     expect(hintOf(await field("Height"))).toContain("from your profile");
   });
 
+  it("keeps the body-fat height field while it is typed in, with the offer under it", async () => {
+    localStorage.setItem(TOOL_STATE_KEY, JSON.stringify({ heightCm: 165 }));
+    await openTool("body-fat", PROFILE);
+    const height = await field("Height");
+    await waitFor(() => expect(height.value).toBe("178"));
+    height.focus();
+    fireEvent.change(height, { target: { value: "1" } });
+    fireEvent.change(height, { target: { value: "18" } });
+    fireEvent.change(height, { target: { value: "180" } });
+    expect(await field("Height")).toBe(height);
+    expect(height.value).toBe("180");
+    expect(document.activeElement).toBe(height);
+    const offer = await screen.findByRole("group", { name: "Profile update" });
+    expect(offer.textContent).toContain("Update your profile with 180 cm?");
+  });
+
+  it("offers the way back only for what is on screen (no hip for the male formula)", async () => {
+    await openTool("body-fat", [
+      profile("formula", "male"),
+      { kind: "measure", date: "2026-10-06", field: "hip", value: 95, at: AT },
+    ]);
+    const back = await screen.findByRole("button", { name: "Back to my last entries" }); // the formula
+    fireEvent.click(back);
+    expect(screen.queryByRole("button", { name: "Back to my last entries" })).toBeNull();
+  });
+
+  it("renders a signed-out tool as in M1: no hint node, no dangling description", async () => {
+    fakeApi({ me: null });
+    for (const tool of ["energy", "body-fat"]) {
+      renderRoute(`/tools/${tool}`);
+      await field("Height");
+      expect(document.querySelectorAll('[id$="-hint"]')).toHaveLength(0);
+      for (const el of document.querySelectorAll("[aria-describedby]"))
+        for (const id of el.getAttribute("aria-describedby")!.split(" "))
+          expect(document.getElementById(id)).not.toBeNull();
+      cleanup();
+    }
+  });
+
   it("stays as in M1 when signed out, or with an empty profile and no tracking", async () => {
     await openTool("energy", []);
     expect((await field("Age")).value).toBe("30");

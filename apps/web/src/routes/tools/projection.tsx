@@ -16,7 +16,7 @@ import { z } from "zod";
 import { ChoiceList } from "@/components/choice-list";
 import { MonthStrip } from "@/components/month-strip";
 import { NumberStepper } from "@/components/number-stepper";
-import { RestoreButton, SourceLine, usePrefill } from "@/components/prefill";
+import { RestoreButton, usePrefill } from "@/components/prefill";
 import { ResultCard } from "@/components/result-card";
 import { ToolPage } from "@/components/tool-page";
 import { attempt } from "@/lib/attempt";
@@ -59,7 +59,7 @@ export function ProjectionTool() {
             prefill.edit("weightKg");
             update((s) => ({ ...s, weightKg: v }));
           }}
-          hint={<SourceLine source={prefill.get("weightKg")?.source} />}
+          hint={prefill.hint("weightKg")}
         />
         <NumberStepper
           label={t("projection.target")}

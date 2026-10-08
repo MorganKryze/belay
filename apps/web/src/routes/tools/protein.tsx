@@ -5,7 +5,7 @@ import { roundTo } from "@belay/shared/tools/round";
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
 import { NumberStepper } from "@/components/number-stepper";
-import { RestoreButton, SourceLine, usePrefill } from "@/components/prefill";
+import { RestoreButton, usePrefill } from "@/components/prefill";
 import { ResultCard } from "@/components/result-card";
 import { Segmented } from "@/components/segmented";
 import { ToolPage } from "@/components/tool-page";
@@ -51,7 +51,7 @@ export function ProteinTool() {
           prefill.edit("weightKg");
           update((s) => ({ ...s, weightKg: v }));
         }}
-        hint={<SourceLine source={prefill.get("weightKg")?.source} />}
+        hint={prefill.hint("weightKg")}
       />
       {inputs.goal === "cut" && (
         <NumberStepper

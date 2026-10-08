@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { z } from "zod";
 import { InlineChoice } from "@/components/inline-choice";
 import { NumberStepper } from "@/components/number-stepper";
-import { ProfileProposal, RestoreButton, SourceLine, usePrefill } from "@/components/prefill";
+import { ProfileProposal, RestoreButton, usePrefill } from "@/components/prefill";
 import { RangeList } from "@/components/range-list";
 import { ResultCard } from "@/components/result-card";
 import { Segmented } from "@/components/segmented";
@@ -55,7 +55,10 @@ export function BodyFatTool() {
   const edit = (inputsPatch: Partial<Inputs>, statePatch: Partial<ToolState> = {}) => {
     const fields = { ...inputsPatch, ...statePatch };
     if ("formula" in fields) prefill.edit("formula");
-    if ("heightCm" in fields) prefill.edit("heightCm");
+    if ("heightCm" in fields) {
+      prefill.edit("heightCm");
+      setEditHeight(true); // sticky: the field stays under the person's fingers while typing
+    }
     for (const f of ["ageYears", "neckCm", "waistCm", "hipCm"] as const)
       if (f in fields) prefill.edit(f);
     update((prev) => {
@@ -68,9 +71,6 @@ export function BodyFatTool() {
       return { ...prev, ...statePatch, lastInputs: { ...prev.lastInputs, "body-fat": raw } };
     });
   };
-  const source = (field: Parameters<typeof prefill.get>[0]) => (
-    <SourceLine source={prefill.get(field)?.source} />
-  );
 
   const girthError =
     r?.kind === "invalid-girths"
@@ -105,7 +105,7 @@ export function BodyFatTool() {
           { value: "male", label: t("tools.formula.male") },
         ]}
         onChange={(formula) => edit({}, { formula })}
-        hint={source("formula")}
+        hint={prefill.hint("formula")}
       />
       <ProfileProposal
         proposal={prefill.proposal("formula", formula)}
@@ -119,7 +119,7 @@ export function BodyFatTool() {
         max={L.age.max}
         step={1}
         onChange={(v) => v !== null && edit({ ageYears: Math.round(v) })}
-        hint={source("ageYears")}
+        hint={prefill.hint("ageYears")}
       />
       <NumberStepper
         label={t("bodyFat.neck")}
@@ -129,7 +129,7 @@ export function BodyFatTool() {
         max={L.neck.max}
         step={0.5}
         onChange={(v) => v !== null && edit({ neckCm: v })}
-        hint={source("neckCm")}
+        hint={prefill.hint("neckCm")}
       />
       <NumberStepper
         label={t(female ? "bodyFat.waistFemale" : "bodyFat.waistMale")}
@@ -140,7 +140,7 @@ export function BodyFatTool() {
         step={0.5}
         error={girthError}
         onChange={(v) => v !== null && edit({ waistCm: v })}
-        hint={source("waistCm")}
+        hint={prefill.hint("waistCm")}
       />
       {female && (
         <NumberStepper
@@ -151,7 +151,7 @@ export function BodyFatTool() {
           max={L.hip.max}
           step={0.5}
           onChange={(v) => v !== null && edit({ hipCm: v })}
-          hint={source("hipCm")}
+          hint={prefill.hint("hipCm")}
         />
       )}
       {editHeight || prefill.get("heightCm") ? (
@@ -163,7 +163,7 @@ export function BodyFatTool() {
           max={HEIGHT_RANGE_CM.max}
           step={1}
           onChange={(v) => v !== null && edit({}, { heightCm: v })}
-          hint={source("heightCm")}
+          hint={prefill.hint("heightCm")}
         />
       ) : (
         <p className="text-[13px] text-muted-foreground">
@@ -181,7 +181,19 @@ export function BodyFatTool() {
         proposal={prefill.proposal("heightCm", heightCm)}
         show={(cm) => t("prefill.cm", { value: cm })}
       />
-      <RestoreButton prefill={prefill} />
+      <RestoreButton
+        prefill={{
+          any: prefill.anyOf([
+            "formula",
+            "ageYears",
+            "heightCm",
+            "neckCm",
+            "waistCm",
+            ...(female ? (["hipCm"] as const) : []),
+          ]),
+          restore: prefill.restore,
+        }}
+      />
       <ResultCard label={t("bodyFat.result")}>
         {r?.kind === "ok" ? (
           <>

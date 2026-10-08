@@ -3,7 +3,7 @@ import { bmi, bmiBand, bmiSuggestsProfessional, BMI_THRESHOLDS } from "@belay/sh
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
 import { NumberStepper } from "@/components/number-stepper";
-import { ProfileProposal, RestoreButton, SourceLine, usePrefill } from "@/components/prefill";
+import { ProfileProposal, RestoreButton, usePrefill } from "@/components/prefill";
 import { RangeList } from "@/components/range-list";
 import { ResultCard } from "@/components/result-card";
 import { ToolPage } from "@/components/tool-page";
@@ -45,7 +45,7 @@ export function BmiTool() {
             prefill.edit("heightCm");
             update((s) => ({ ...s, heightCm: v }));
           }}
-          hint={<SourceLine source={prefill.get("heightCm")?.source} />}
+          hint={prefill.hint("heightCm")}
         />
         <NumberStepper
           label={t("tools.fields.weight")}
@@ -60,7 +60,7 @@ export function BmiTool() {
             prefill.edit("weightKg");
             update((s) => ({ ...s, weightKg: v }));
           }}
-          hint={<SourceLine source={prefill.get("weightKg")?.source} />}
+          hint={prefill.hint("weightKg")}
         />
       </div>
       <ProfileProposal

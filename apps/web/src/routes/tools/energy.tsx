@@ -5,7 +5,7 @@ import { z } from "zod";
 import { ChoiceList } from "@/components/choice-list";
 import { InlineChoice } from "@/components/inline-choice";
 import { NumberStepper } from "@/components/number-stepper";
-import { ProfileProposal, RestoreButton, SourceLine, usePrefill } from "@/components/prefill";
+import { ProfileProposal, RestoreButton, usePrefill } from "@/components/prefill";
 import { ResultCard } from "@/components/result-card";
 import { ToolPage } from "@/components/tool-page";
 import { attempt } from "@/lib/attempt";
@@ -41,7 +41,7 @@ export function EnergyTool() {
           prefill.edit("formula");
           update((s) => ({ ...s, formula }));
         }}
-        hint={<SourceLine source={prefill.get("formula")?.source} />}
+        hint={prefill.hint("formula")}
       />
       <ProfileProposal
         proposal={prefill.proposal("formula", formula)}
@@ -59,7 +59,7 @@ export function EnergyTool() {
           prefill.edit("ageYears");
           setInputs({ ageYears: Math.round(v) });
         }}
-        hint={<SourceLine source={prefill.get("ageYears")?.source} />}
+        hint={prefill.hint("ageYears")}
       />
       <NumberStepper
         label={t("tools.fields.height")}
@@ -73,7 +73,7 @@ export function EnergyTool() {
           prefill.edit("heightCm");
           update((s) => ({ ...s, heightCm: v }));
         }}
-        hint={<SourceLine source={prefill.get("heightCm")?.source} />}
+        hint={prefill.hint("heightCm")}
       />
       <ProfileProposal
         proposal={prefill.proposal("heightCm", heightCm)}
@@ -91,7 +91,7 @@ export function EnergyTool() {
           prefill.edit("weightKg");
           update((s) => ({ ...s, weightKg: v }));
         }}
-        hint={<SourceLine source={prefill.get("weightKg")?.source} />}
+        hint={prefill.hint("weightKg")}
       />
       <RestoreButton prefill={prefill} />
       <ChoiceList
