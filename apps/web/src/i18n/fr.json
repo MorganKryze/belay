@@ -84,16 +84,12 @@
     "link": "Corps"
   },
   "weighIn": {
-    "title": "Pesée du jour",
-    "titleFor": "Pesée du {{day}}",
     "weight": "Poids",
     "today": "Aujourd'hui",
     "yesterday": "Hier",
     "date": "Date de la pesée",
     "prefilled": "pré-rempli avec ta dernière pesée",
     "save": "Enregistrer",
-    "saved": "enregistrée",
-    "edit": "Modifier",
     "delete": "Supprimer cette pesée",
     "close": "Fermer",
     "outOfRange": "Saisis un poids entre 20 et 400 kg.",
@@ -401,5 +397,18 @@
       "asian": "Asiatique"
     },
     "referenceNote": "« Asiatique » utilise le tableau 5 de Gallagher, établi sur des personnes vivant au Japon. Ce choix reste sur ton appareil."
+  },
+  "today": {
+    "title": "Aujourd'hui",
+    "weighIn": "Pesée",
+    "weighInDone": "{{value}} kg · enregistrée",
+    "weighInEmpty": "pas encore saisie",
+    "intake": "Apports",
+    "intakeEmpty": "pas encore saisis",
+    "intakeSaved": "Apports enregistrés",
+    "intakeDeleted": "Apports supprimés",
+    "supplements": "Compléments",
+    "supplementsDone": "{{taken}} sur {{count}}",
+    "addSupplements": "Ajouter tes compléments"
   }
 }

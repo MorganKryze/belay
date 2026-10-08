@@ -51,5 +51,21 @@
       "melatonin": "Mélatonine"
     },
     "newName": "Nouveau nom pour {{name}}"
+  },
+  "intake": {
+    "date": "Date des apports",
+    "kcal": "Calories",
+    "protein": "Protéines (option)",
+    "kcalOutOfRange": "Saisis un nombre entier entre 0 et 10 000 kcal.",
+    "proteinOutOfRange": "Saisis un nombre entier entre 0 et 500 g.",
+    "note": "Un total par jour, pas aliment par aliment.",
+    "prefilled": "Pré-rempli avec ta dernière saisie.",
+    "delete": "Supprimer les apports de ce jour"
+  },
+  "supplements": {
+    "date": "Jour des compléments",
+    "since_one": "depuis {{count}} jour",
+    "since_other": "depuis {{count}} jours",
+    "manage": "Gérer ma liste"
   }
 }

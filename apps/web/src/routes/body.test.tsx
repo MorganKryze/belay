@@ -139,7 +139,8 @@ describe("the Body page", () => {
     expect(within(history).getAllByRole("button")[0]!.textContent).toBe("Today79.8 kg");
     row.focus();
     fireEvent.click(row);
-    const sheet = await screen.findByRole("dialog", { name: "Weigh-in for Thu, Oct 1" });
+    const sheet = await screen.findByRole("dialog", { name: "Weigh-in" });
+    expect(within(sheet).getByText("Thu, Oct 1")).toBeTruthy(); // the day, in the header
     fireEvent.keyDown(sheet, { key: "Escape" });
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     expect(document.activeElement).toBe(row);
@@ -157,7 +158,8 @@ describe("the Body page", () => {
     fireEvent.keyDown(chart, { key: "ArrowLeft" });
     expect(chart.parentElement!.textContent).toContain("Tue, Oct 6Weigh-in 79.9 kg");
     fireEvent.keyDown(chart, { key: "Enter" });
-    expect(await screen.findByRole("dialog", { name: "Weigh-in for Tue, Oct 6" })).toBeTruthy();
+    const sheet = await screen.findByRole("dialog", { name: "Weigh-in" });
+    expect(within(sheet).getByText("Yesterday")).toBeTruthy(); // Tuesday 6 October
   });
 
   it("widens to every weigh-in with All", async () => {

@@ -1,12 +1,12 @@
-import { type ISODate, toISODate } from "@belay/shared/body/dates";
+import type { ISODate } from "@belay/shared/body/dates";
 import { latestMovingAverage, type Weighing, weeklySummaries } from "@belay/shared/body/weighings";
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
-import { Check, ChevronRight } from "lucide-react";
-import { lazy, Suspense, useEffect, useState } from "react";
+import { ChevronRight } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { SyncBanner } from "@/components/sync-banner";
+import { TodayCard } from "@/components/today-card";
 import { Button } from "@/components/ui/button";
-import { Toast, useWeighInWriter, WeighInForm } from "@/components/weigh-in";
 import { formatKg, formatNumber, lossView } from "@/lib/format";
 import { useToday } from "@/lib/today";
 import { type OpenAccount, useAccount, useWeighings } from "@/sync/account";
@@ -65,12 +65,7 @@ export function Home() {
   );
 }
 
-// Lazy: the dialog code loads the first time someone taps Edit.
-const WeighInSheet = lazy(() =>
-  import("@/components/weigh-in-sheet").then((m) => ({ default: m.WeighInSheet })),
-);
-
-// Home is the gesture of the day (D7): weigh in, see the trend, go to Body for the rest.
+// Home is the gestures of the day (D1): the "Today" card, the trend, then Body for the rest.
 function SignedInHome({ account }: { account: OpenAccount }) {
   const { t } = useTranslation();
   const today = useToday();
@@ -79,101 +74,13 @@ function SignedInHome({ account }: { account: OpenAccount }) {
     <section className="flex flex-col gap-4">
       <h1 className={title}>{t("home.greeting", { name: account.user.displayName })}</h1>
       <SyncBanner account={account} />
-      {weighings && <HomeCards account={account} weighings={weighings} today={today} />}
-    </section>
-  );
-}
-
-function HomeCards({
-  account,
-  weighings,
-  today,
-}: {
-  account: OpenAccount;
-  weighings: Weighing[];
-  today: ISODate;
-}) {
-  const { t, i18n } = useTranslation();
-  const { write, toast, error, dismiss } = useWeighInWriter(account, weighings);
-  const [date, setDate] = useState<ISODate | null>(null); // null: today, whatever the clock says
-  const [sheetDate, setSheetDate] = useState<ISODate | null>(null);
-  const done = weighings.find((w) => w.date === today);
-  const save = async (day: ISODate, kg: number | null) => {
-    if (!(await write(day, kg))) return false;
-    setDate(null);
-    setSheetDate(null);
-    return true;
-  };
-  return (
-    <>
-      <section
-        aria-labelledby="weigh-in"
-        className="flex flex-col gap-2 rounded-card border border-border bg-card p-4"
-      >
-        <h2
-          id="weigh-in"
-          tabIndex={-1}
-          data-focus-fallback
-          className="text-[15px] font-semibold text-primary-ink outline-none"
-        >
-          {t("weighIn.title")}
-        </h2>
-        {done && date === null ? (
-          <>
-            <div className="flex items-center justify-between gap-2">
-              <p className="text-[28px] leading-none font-extrabold tabular-nums">
-                {formatKg(done.weightKg, i18n.language)}
-                <span className="ml-1 text-[13px] font-semibold text-muted-foreground">kg</span>
-              </p>
-              <span className="inline-flex items-center gap-1 rounded-full bg-reference px-2.5 py-1 text-[13px] font-semibold text-reference-ink">
-                <Check aria-hidden className="size-4" />
-                {t("weighIn.saved")}
-              </span>
-            </div>
-            <Button
-              variant="link"
-              className="-ml-3 self-start text-[15px] font-semibold"
-              onClick={() => setSheetDate(today)}
-            >
-              {t("weighIn.edit")}
-            </Button>
-          </>
-        ) : (
-          <WeighInForm
-            key={date ?? today}
-            weighings={weighings}
-            today={today}
-            date={date ?? today}
-            onDate={setDate}
-            // "Today" is read when Save is tapped: the screen may have been drawn yesterday.
-            // Save unmounts with the form: focus goes to the card's heading, not to <body>.
-            onSave={(day, kg) =>
-              void save(date ?? toISODate(new Date()), kg).then(
-                (ok) => ok && document.querySelector<HTMLElement>("[data-focus-fallback]")?.focus(),
-              )
-            }
-            error={error}
-          />
-        )}
-      </section>
-      <TrendCard weighings={weighings} today={today} />
-      {sheetDate && (
-        <Suspense fallback={null}>
-          <WeighInSheet
-            open
-            onClose={() => setSheetDate(null)}
-            weighings={weighings}
-            today={today}
-            date={sheetDate}
-            onDate={setSheetDate}
-            onSave={(day, kg) => void save(day, kg)}
-            onDelete={(day) => void save(day, null)}
-            error={error}
-          />
-        </Suspense>
+      {weighings && (
+        <>
+          <TodayCard account={account} weighings={weighings} today={today} />
+          <TrendCard weighings={weighings} today={today} />
+        </>
       )}
-      <Toast toast={toast} onDone={dismiss} />
-    </>
+    </section>
   );
 }
 

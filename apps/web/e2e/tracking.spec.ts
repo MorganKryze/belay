@@ -9,15 +9,18 @@ test.beforeEach(async ({ page }) => {
 });
 
 const hello = (page: Page) => page.getByRole("heading", { name: "Hello, Ada", level: 1 });
-const card = (page: Page) => page.getByRole("region", { name: "Today's weigh-in" });
+const card = (page: Page) => page.getByRole("region", { name: "Today" });
+const weighInLine = (page: Page) => page.getByRole("button", { name: /^Weigh-in/ });
 
-test("a weigh-in from Home takes less than 5 seconds", async ({ page }) => {
+test("a weigh-in from Home takes less than 5 seconds: its line, then Save", async ({ page }) => {
   await fakeServer(page, { rows: WEEKS });
-  const start = Date.now();
   await page.goto("/");
+  await expect(weighInLine(page)).toContainText("not entered yet");
+  const start = Date.now(); // from the screen the person sees
+  await weighInLine(page).click();
   await expect(page.getByRole("textbox", { name: "Weight" })).toHaveValue("79.9"); // prefilled
   await page.getByRole("button", { name: "Save" }).click();
-  await expect(card(page).getByText("saved")).toBeVisible();
+  await expect(weighInLine(page)).toContainText("79.9 kg · saved");
   expect(Date.now() - start).toBeLessThan(5000);
 });
 
@@ -32,9 +35,10 @@ test("airplane mode: the weigh-in stays on the phone and goes once, when the net
 
   server.offline = true;
   await context.setOffline(true);
+  await weighInLine(page).click();
   await page.getByRole("textbox", { name: "Weight" }).fill("79.8");
   await page.getByRole("button", { name: "Save" }).click();
-  await expect(card(page).getByText("saved")).toBeVisible();
+  await expect(weighInLine(page)).toContainText("79.8 kg · saved");
 
   await page.reload(); // still offline: the shell and the weigh-in come from the phone
   await expect(hello(page)).toBeVisible();
@@ -65,6 +69,7 @@ test("an expired session keeps the entry, and signing in again sends it", async 
   await page.goto("/");
   await expect(hello(page)).toBeVisible();
   server.session = "expired";
+  await weighInLine(page).click();
   await page.getByRole("textbox", { name: "Weight" }).fill("80.4");
   await page.getByRole("button", { name: "Save" }).click();
   await expect(page.getByText("Your session has expired.")).toBeVisible();
@@ -98,7 +103,9 @@ test("Body lists the weeks, says which ones do not count, and reads the chart fr
   await page.keyboard.press("ArrowLeft");
   await expect(tooltip).toContainText("Mon, Oct 5Weigh-in 80.0");
   await page.keyboard.press("Enter");
-  await expect(page.getByRole("dialog", { name: "Weigh-in for Mon, Oct 5" })).toBeVisible();
+  const sheet = page.getByRole("dialog", { name: "Weigh-in" });
+  await expect(sheet).toBeVisible();
+  await expect(sheet.getByText("Mon, Oct 5")).toBeVisible(); // the day, in the header
 });
 
 test("Profile: the range steppers stop at 1 % and keep 0.1 between the bounds", async ({
@@ -137,7 +144,7 @@ test.describe("accessibility", () => {
       if (theme === "dark") await expect(page.locator("html")).toHaveClass(/dark/);
       await expectNoAxeViolations(page);
 
-      await page.getByRole("button", { name: "Edit" }).click();
+      await weighInLine(page).click();
       await expect(page.getByRole("dialog")).toBeVisible();
       await expectNoAxeViolations(page);
       await page.keyboard.press("Escape");
@@ -155,8 +162,12 @@ test.describe("accessibility", () => {
 
       server.session = "expired"; // the banner that asks to sign in again
       await page.goto("/");
-      await page.getByRole("button", { name: "Edit" }).click();
-      await page.getByRole("button", { name: "Save" }).click();
+      await weighInLine(page).click();
+      // The sheet's own Save: a click in the frame the lazy sheet mounts can land nowhere.
+      await page
+        .getByRole("dialog", { name: "Weigh-in" })
+        .getByRole("button", { name: "Save" })
+        .click();
       await expect(page.getByText("Your session has expired.")).toBeVisible();
       await expectNoAxeViolations(page);
     });
@@ -165,6 +176,9 @@ test.describe("accessibility", () => {
       await page.addInitScript((t) => localStorage.setItem("belay.theme", t), theme);
       await fakeServer(page, { rows: [{ date: "2026-10-06", weightKg: 80.2 }] });
       await page.goto("/");
+      await expect(weighInLine(page)).toContainText("not entered yet");
+      await expectNoAxeViolations(page);
+      await weighInLine(page).click();
       await expect(page.getByRole("textbox", { name: "Weight" })).toHaveValue("80.2");
       await expectNoAxeViolations(page);
       await page.goto("/body");

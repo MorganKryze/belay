@@ -131,10 +131,10 @@ describe("the new entries", () => {
               const store = target.objectStore(name);
               if (name !== "outbox") return store;
               return {
-                add: (value: Parameters<typeof store.add>[0]) =>
+                add: (value: Parameters<NonNullable<typeof store.add>>[0]) =>
                   ++adds === 2
                     ? Promise.reject(new DOMException("full", "QuotaExceededError"))
-                    : store.add(value),
+                    : store.add!(value),
               };
             };
           },

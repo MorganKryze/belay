@@ -171,7 +171,6 @@ function BodyContent({
       <History weighings={shown} today={today} onSelect={setSheetDate} />
       {sheetDate && (
         <WeighInSheet
-          open
           onClose={() => setSheetDate(null)}
           weighings={weighings}
           today={today}

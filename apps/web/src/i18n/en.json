@@ -84,16 +84,12 @@
     "link": "Body"
   },
   "weighIn": {
-    "title": "Today's weigh-in",
-    "titleFor": "Weigh-in for {{day}}",
     "weight": "Weight",
     "today": "Today",
     "yesterday": "Yesterday",
     "date": "Date of the weigh-in",
     "prefilled": "prefilled with your last weigh-in",
     "save": "Save",
-    "saved": "saved",
-    "edit": "Edit",
     "delete": "Delete this weigh-in",
     "close": "Close",
     "outOfRange": "Enter a weight between 20 and 400 kg.",
@@ -401,5 +397,18 @@
       "asian": "Asian"
     },
     "referenceNote": "“Asian” uses Gallagher's table 5, built from people living in Japan. This choice stays on your device."
+  },
+  "today": {
+    "title": "Today",
+    "weighIn": "Weigh-in",
+    "weighInDone": "{{value}} kg · saved",
+    "weighInEmpty": "not entered yet",
+    "intake": "Intake",
+    "intakeEmpty": "not entered yet",
+    "intakeSaved": "Intake saved",
+    "intakeDeleted": "Intake deleted",
+    "supplements": "Supplements",
+    "supplementsDone": "{{taken}} of {{count}}",
+    "addSupplements": "Add your supplements"
   }
 }

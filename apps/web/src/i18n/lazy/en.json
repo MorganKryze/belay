@@ -51,5 +51,21 @@
       "melatonin": "Melatonin"
     },
     "newName": "New name for {{name}}"
+  },
+  "intake": {
+    "date": "Date of the intake",
+    "kcal": "Calories",
+    "protein": "Protein (optional)",
+    "kcalOutOfRange": "Enter a whole number between 0 and 10,000 kcal.",
+    "proteinOutOfRange": "Enter a whole number between 0 and 500 g.",
+    "note": "One total per day, not food by food.",
+    "prefilled": "Prefilled with your last entry.",
+    "delete": "Delete this day's intake"
+  },
+  "supplements": {
+    "date": "Day of the supplements",
+    "since_one": "for {{count}} day",
+    "since_other": "for {{count}} days",
+    "manage": "Manage my list"
   }
 }
