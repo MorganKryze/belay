@@ -1,5 +1,5 @@
 import { RadioGroup } from "radix-ui";
-import { useId } from "react";
+import { type ReactNode, useId } from "react";
 import type { SegmentedOptions } from "./segmented";
 
 // A compact Segmented on one line, label on the left (the female/male formula choice).
@@ -8,20 +8,23 @@ export function InlineChoice<T extends string>({
   value,
   options,
   onChange,
+  hint,
 }: {
   label: string;
   value: T;
   options: SegmentedOptions<T>;
   onChange: (value: T) => void;
+  hint?: ReactNode; // a line under the choice that describes it
 }) {
   const id = useId();
-  return (
+  const row = (
     <div className="flex min-h-12 items-center justify-between gap-3 border-b border-border">
       <span id={id} className="text-sm font-semibold">
         {label}
       </span>
       <RadioGroup.Root
         aria-labelledby={id}
+        aria-describedby={hint ? `${id}-hint` : undefined}
         value={value}
         onValueChange={(v) => onChange(v as T)}
         orientation="horizontal"
@@ -37,6 +40,13 @@ export function InlineChoice<T extends string>({
           </RadioGroup.Item>
         ))}
       </RadioGroup.Root>
+    </div>
+  );
+  if (!hint) return row;
+  return (
+    <div className="flex flex-col gap-1">
+      {row}
+      <div id={`${id}-hint`}>{hint}</div>
     </div>
   );
 }

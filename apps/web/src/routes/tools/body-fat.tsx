@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { z } from "zod";
 import { InlineChoice } from "@/components/inline-choice";
 import { NumberStepper } from "@/components/number-stepper";
+import { ProfileProposal, RestoreButton, SourceLine, usePrefill } from "@/components/prefill";
 import { RangeList } from "@/components/range-list";
 import { ResultCard } from "@/components/result-card";
 import { Segmented } from "@/components/segmented";
@@ -32,18 +33,31 @@ type Inputs = z.output<typeof BodyFatInputs>;
 
 export function BodyFatTool() {
   const { t, i18n } = useTranslation();
-  const { state, update, inputs } = useTool("body-fat", BodyFatInputs);
+  const { state, update, inputs: device } = useTool("body-fat", BodyFatInputs);
   const [editHeight, setEditHeight] = useState(state.heightCm === undefined);
-  const heightCm = state.heightCm ?? 170;
-  const female = state.formula === "female";
-  const r = attempt(() => navyBodyFat({ formula: state.formula, heightCm, ...inputs }));
-  const refs = gallagherThresholds(state.formula, inputs.ageYears, state.bodyFatReference);
+  const prefill = usePrefill(["formula", "ageYears", "heightCm", "neckCm", "waistCm", "hipCm"]);
+  const heightCm = prefill.value("heightCm", state.heightCm ?? 170);
+  const formula = prefill.value("formula", state.formula);
+  const inputs = {
+    ageYears: prefill.value("ageYears", device.ageYears),
+    neckCm: prefill.value("neckCm", device.neckCm),
+    waistCm: prefill.value("waistCm", device.waistCm),
+    hipCm: prefill.value("hipCm", device.hipCm),
+  };
+  const female = formula === "female";
+  const r = attempt(() => navyBodyFat({ formula, heightCm, ...inputs }));
+  const refs = gallagherThresholds(formula, inputs.ageYears, state.bodyFatReference);
   const n = (v: number) => formatNumber(v, i18n.language, { digits: 0 });
   const pct = (v: number) => t("range.percent", { value: n(v) });
 
   // The estimate is offered to the protein tool by `update` (see tool-storage), from the
-  // person's edits alone: opening the page never writes it.
-  const edit = (inputsPatch: Partial<Inputs>, statePatch: Partial<ToolState> = {}) =>
+  // person's edits alone: opening the page, prefilled or not, never writes it.
+  const edit = (inputsPatch: Partial<Inputs>, statePatch: Partial<ToolState> = {}) => {
+    const fields = { ...inputsPatch, ...statePatch };
+    if ("formula" in fields) prefill.edit("formula");
+    if ("heightCm" in fields) prefill.edit("heightCm");
+    for (const f of ["ageYears", "neckCm", "waistCm", "hipCm"] as const)
+      if (f in fields) prefill.edit(f);
     update((prev) => {
       // Only what the person entered is stored, so a missing key means "not entered yet".
       const stored = prev.lastInputs["body-fat"];
@@ -53,6 +67,10 @@ export function BodyFatTool() {
       };
       return { ...prev, ...statePatch, lastInputs: { ...prev.lastInputs, "body-fat": raw } };
     });
+  };
+  const source = (field: Parameters<typeof prefill.get>[0]) => (
+    <SourceLine source={prefill.get(field)?.source} />
+  );
 
   const girthError =
     r?.kind === "invalid-girths"
@@ -81,58 +99,62 @@ export function BodyFatTool() {
     >
       <InlineChoice
         label={t("tools.formula.label")}
-        value={state.formula}
+        value={formula}
         options={[
           { value: "female", label: t("tools.formula.female") },
           { value: "male", label: t("tools.formula.male") },
         ]}
         onChange={(formula) => edit({}, { formula })}
+        hint={source("formula")}
       />
-      <div className="grid grid-cols-2 gap-2.5">
+      <ProfileProposal
+        proposal={prefill.proposal("formula", formula)}
+        show={(f) => t(`tools.formula.${f as "female" | "male"}`)}
+      />
+      {/* One field per line (D9): each one may carry where its value comes from. */}
+      <NumberStepper
+        label={t("tools.fields.age")}
+        value={inputs.ageYears}
+        min={L.age.min}
+        max={L.age.max}
+        step={1}
+        onChange={(v) => v !== null && edit({ ageYears: Math.round(v) })}
+        hint={source("ageYears")}
+      />
+      <NumberStepper
+        label={t("bodyFat.neck")}
+        unit="cm"
+        value={inputs.neckCm}
+        min={L.neck.min}
+        max={L.neck.max}
+        step={0.5}
+        onChange={(v) => v !== null && edit({ neckCm: v })}
+        hint={source("neckCm")}
+      />
+      <NumberStepper
+        label={t(female ? "bodyFat.waistFemale" : "bodyFat.waistMale")}
+        unit="cm"
+        value={inputs.waistCm}
+        min={L.waist.min}
+        max={L.waist.max}
+        step={0.5}
+        error={girthError}
+        onChange={(v) => v !== null && edit({ waistCm: v })}
+        hint={source("waistCm")}
+      />
+      {female && (
         <NumberStepper
-          label={t("tools.fields.age")}
-          value={inputs.ageYears}
-          min={L.age.min}
-          max={L.age.max}
-          step={1}
-          buttons={false}
-          onChange={(v) => v !== null && edit({ ageYears: Math.round(v) })}
-        />
-        <NumberStepper
-          label={t("bodyFat.neck")}
+          label={t("bodyFat.hip")}
           unit="cm"
-          value={inputs.neckCm}
-          min={L.neck.min}
-          max={L.neck.max}
+          value={inputs.hipCm}
+          min={L.hip.min}
+          max={L.hip.max}
           step={0.5}
-          buttons={false}
-          onChange={(v) => v !== null && edit({ neckCm: v })}
+          onChange={(v) => v !== null && edit({ hipCm: v })}
+          hint={source("hipCm")}
         />
-        <NumberStepper
-          label={t(female ? "bodyFat.waistFemale" : "bodyFat.waistMale")}
-          unit="cm"
-          value={inputs.waistCm}
-          min={L.waist.min}
-          max={L.waist.max}
-          step={0.5}
-          buttons={false}
-          error={girthError}
-          onChange={(v) => v !== null && edit({ waistCm: v })}
-        />
-        {female && (
-          <NumberStepper
-            label={t("bodyFat.hip")}
-            unit="cm"
-            value={inputs.hipCm}
-            min={L.hip.min}
-            max={L.hip.max}
-            step={0.5}
-            buttons={false}
-            onChange={(v) => v !== null && edit({ hipCm: v })}
-          />
-        )}
-      </div>
-      {editHeight ? (
+      )}
+      {editHeight || prefill.get("heightCm") ? (
         <NumberStepper
           label={t("tools.fields.height")}
           unit="cm"
@@ -141,6 +163,7 @@ export function BodyFatTool() {
           max={HEIGHT_RANGE_CM.max}
           step={1}
           onChange={(v) => v !== null && edit({}, { heightCm: v })}
+          hint={source("heightCm")}
         />
       ) : (
         <p className="text-[13px] text-muted-foreground">
@@ -154,6 +177,11 @@ export function BodyFatTool() {
           </button>
         </p>
       )}
+      <ProfileProposal
+        proposal={prefill.proposal("heightCm", heightCm)}
+        show={(cm) => t("prefill.cm", { value: cm })}
+      />
+      <RestoreButton prefill={prefill} />
       <ResultCard label={t("bodyFat.result")}>
         {r?.kind === "ok" ? (
           <>
@@ -202,7 +230,7 @@ export function BodyFatTool() {
           />
           <p className="text-[13px] text-muted-foreground">
             {t(`bodyFat.caption.${state.bodyFatReference}`, {
-              formula: t(`tools.formula.${state.formula}`).toLowerCase(),
+              formula: t(`tools.formula.${formula}`).toLowerCase(),
               from: refs.group.slice(0, 2),
               to: refs.group.slice(3),
             })}

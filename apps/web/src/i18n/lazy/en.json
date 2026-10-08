@@ -123,5 +123,20 @@
       "neck": "neck {{value}} cm",
       "hip": "hips {{value}} cm"
     }
+  },
+  "prefill": {
+    "from": {
+      "profile": "from your profile",
+      "birthYear": "from your year of birth",
+      "average": "your 7-day average",
+      "weighing": "your last weigh-in",
+      "measures": "measured on {{day}}"
+    },
+    "proposal": "Your profile says <b>{{profile}}</b>. Update your profile with <b>{{value}}</b>?",
+    "proposalLabel": "Profile update",
+    "update": "Update",
+    "justHere": "No, just here",
+    "restore": "Back to my last entries",
+    "cm": "{{value}} cm"
   }
 }

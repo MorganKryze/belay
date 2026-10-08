@@ -1,6 +1,6 @@
 import { roundTo } from "@belay/shared/tools/round";
 import { Minus, Plus } from "lucide-react";
-import { type KeyboardEvent, useId, useRef, useState } from "react";
+import { type KeyboardEvent, type ReactNode, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { decimalsOf, formatNumber, parseDecimal } from "@/lib/format";
@@ -25,6 +25,8 @@ export type NumberStepperProps = {
   clampTyped?: boolean;
   // true: − and + do nothing while the field is empty (no value is invented from a bound).
   inertWhenEmpty?: boolean;
+  // A line under the field that describes it (where a prefilled value comes from).
+  hint?: ReactNode;
 };
 
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
@@ -43,6 +45,7 @@ export function NumberStepper({
   labelHidden = false,
   clampTyped = true,
   inertWhenEmpty = false,
+  hint,
 }: NumberStepperProps) {
   const { t, i18n } = useTranslation();
   const id = useId();
@@ -140,7 +143,9 @@ export function NumberStepper({
             onKeyDown={onKeyDown}
             aria-invalid={error ? true : undefined}
             aria-describedby={
-              [unit && `${id}-unit`, error && `${id}-error`].filter(Boolean).join(" ") || undefined
+              [unit && `${id}-unit`, error && `${id}-error`, hint && `${id}-hint`]
+                .filter(Boolean)
+                .join(" ") || undefined
             }
             className={cn(
               "w-full min-w-0 flex-1 bg-transparent text-xl font-bold tabular-nums outline-none",
@@ -173,6 +178,7 @@ export function NumberStepper({
           {error}
         </p>
       )}
+      {hint && <div id={`${id}-hint`}>{hint}</div>}
     </div>
   );
 }

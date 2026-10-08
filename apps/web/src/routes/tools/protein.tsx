@@ -5,6 +5,7 @@ import { roundTo } from "@belay/shared/tools/round";
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
 import { NumberStepper } from "@/components/number-stepper";
+import { RestoreButton, SourceLine, usePrefill } from "@/components/prefill";
 import { ResultCard } from "@/components/result-card";
 import { Segmented } from "@/components/segmented";
 import { ToolPage } from "@/components/tool-page";
@@ -19,7 +20,9 @@ export const ProteinInputs = z.object({
 export function ProteinTool() {
   const { t, i18n } = useTranslation();
   const { state, update, inputs, setInputs } = useTool("protein", ProteinInputs);
-  const weightKg = state.weightKg ?? 70;
+  // The weight only: the body fat keeps the M1 rule (a recent estimate of the body-fat tool).
+  const prefill = usePrefill(["weightKg"]);
+  const weightKg = prefill.value("weightKg", state.weightKg ?? 70);
   const r = attempt(() => proteinRange(weightKg, inputs.goal, state.bodyFatPct));
   const n = (v: number) => formatNumber(v, i18n.language, { digits: 1 });
   const range = (low: number, high: number) =>
@@ -43,7 +46,12 @@ export function ProteinTool() {
         min={WEIGHT_RANGE_KG.min}
         max={WEIGHT_RANGE_KG.max}
         step={0.5}
-        onChange={(v) => v !== null && update((s) => ({ ...s, weightKg: v }))}
+        onChange={(v) => {
+          if (v === null) return;
+          prefill.edit("weightKg");
+          update((s) => ({ ...s, weightKg: v }));
+        }}
+        hint={<SourceLine source={prefill.get("weightKg")?.source} />}
       />
       {inputs.goal === "cut" && (
         <NumberStepper
@@ -57,6 +65,7 @@ export function ProteinTool() {
           onChange={(v) => update((s) => ({ ...s, bodyFatPct: v ?? undefined }))}
         />
       )}
+      <RestoreButton prefill={prefill} />
       <ResultCard label={t("protein.result")}>
         {r && (
           <>

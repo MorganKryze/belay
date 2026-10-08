@@ -16,6 +16,7 @@ import { z } from "zod";
 import { ChoiceList } from "@/components/choice-list";
 import { MonthStrip } from "@/components/month-strip";
 import { NumberStepper } from "@/components/number-stepper";
+import { RestoreButton, SourceLine, usePrefill } from "@/components/prefill";
 import { ResultCard } from "@/components/result-card";
 import { ToolPage } from "@/components/tool-page";
 import { attempt } from "@/lib/attempt";
@@ -32,7 +33,8 @@ export function ProjectionTool() {
   const { t, i18n } = useTranslation();
   const { state, update, inputs, setInputs } = useTool("projection", ProjectionInputs);
   const [today] = useState(() => new Date());
-  const currentKg = state.weightKg ?? 80;
+  const prefill = usePrefill(["weightKg"]);
+  const currentKg = prefill.value("weightKg", state.weightKg ?? 80);
   const p = attempt(() => projectLoss(currentKg, inputs.targetKg, inputs.pct, today));
   const warning = rateWarning(inputs.pct);
   const n = (v: number, digits = 1) => formatNumber(v, i18n.language, { digits });
@@ -52,7 +54,12 @@ export function ProjectionTool() {
           max={WEIGHT_RANGE_KG.max}
           step={0.5}
           buttons={false}
-          onChange={(v) => v !== null && update((s) => ({ ...s, weightKg: v }))}
+          onChange={(v) => {
+            if (v === null) return;
+            prefill.edit("weightKg");
+            update((s) => ({ ...s, weightKg: v }));
+          }}
+          hint={<SourceLine source={prefill.get("weightKg")?.source} />}
         />
         <NumberStepper
           label={t("projection.target")}
@@ -65,6 +72,7 @@ export function ProjectionTool() {
           onChange={(v) => v !== null && setInputs({ targetKg: v })}
         />
       </div>
+      <RestoreButton prefill={prefill} />
       {inputs.fine ? (
         <NumberStepper
           label={t("projection.fineLabel")}

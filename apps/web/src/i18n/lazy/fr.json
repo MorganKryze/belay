@@ -123,5 +123,20 @@
       "neck": "cou {{value}} cm",
       "hip": "hanches {{value}} cm"
     }
+  },
+  "prefill": {
+    "from": {
+      "profile": "depuis ton profil",
+      "birthYear": "depuis ton année de naissance",
+      "average": "ta moyenne 7 jours",
+      "weighing": "ta dernière pesée",
+      "measures": "mensurations du {{day}}"
+    },
+    "proposal": "Ton profil indique <b>{{profile}}</b>. Mettre à jour ton profil avec <b>{{value}}</b> ?",
+    "proposalLabel": "Mise à jour du profil",
+    "update": "Mettre à jour",
+    "justHere": "Non, juste ici",
+    "restore": "Reprendre mes dernières saisies",
+    "cm": "{{value}} cm"
   }
 }
