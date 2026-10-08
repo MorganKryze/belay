@@ -15,10 +15,16 @@ import {
   clearRejected,
   openAccountDb,
   pendingCounts,
+  readAnnotations,
+  readIntake,
+  readMeasures,
+  readProfile,
   readRejected,
+  readSupplementLogs,
+  readSupplements,
   readTarget,
   readWeights,
-  recordChange,
+  recordChanges,
 } from "./db";
 import { createSyncEngine, type SyncEngine } from "./engine";
 import { type LastUser, readLastUser, writeLastUser } from "./last-user";
@@ -114,6 +120,48 @@ export const useTarget = (account: OpenAccount) =>
     networkMode: "always",
   });
 
+export const useMeasures = (account: OpenAccount) =>
+  useQuery({
+    queryKey: local(account, "measures"),
+    queryFn: () => readMeasures(account.db),
+    networkMode: "always",
+  });
+
+export const useIntake = (account: OpenAccount) =>
+  useQuery({
+    queryKey: local(account, "intake"),
+    queryFn: () => readIntake(account.db),
+    networkMode: "always",
+  });
+
+export const useProfile = (account: OpenAccount) =>
+  useQuery({
+    queryKey: local(account, "profile"),
+    queryFn: () => readProfile(account.db),
+    networkMode: "always",
+  });
+
+export const useSupplements = (account: OpenAccount) =>
+  useQuery({
+    queryKey: local(account, "supplements"),
+    queryFn: () => readSupplements(account.db),
+    networkMode: "always",
+  });
+
+export const useSupplementLogs = (account: OpenAccount) =>
+  useQuery({
+    queryKey: local(account, "supplementLogs"),
+    queryFn: () => readSupplementLogs(account.db),
+    networkMode: "always",
+  });
+
+export const useAnnotations = (account: OpenAccount) =>
+  useQuery({
+    queryKey: local(account, "annotations"),
+    queryFn: () => readAnnotations(account.db),
+    networkMode: "always",
+  });
+
 export const usePending = (account: OpenAccount) =>
   useQuery({
     queryKey: local(account, "pending"),
@@ -140,12 +188,13 @@ export function useClearRejected({ user, db }: OpenAccount) {
 export const useSyncStatus = ({ engine }: OpenAccount) =>
   useSyncExternalStore(engine.subscribe, engine.status);
 
-// Writes on the device first; the screen follows at once, the server when it can.
+// Writes on the device first; the screen follows at once, the server when it can. Several
+// changes are written together, or not at all.
 export function useRecord({ user, db, engine }: OpenAccount) {
   const queryClient = useQueryClient();
   return useCallback(
-    async (change: Change) => {
-      await recordChange(db, change);
+    async (change: Change | readonly Change[]) => {
+      await recordChanges(db, "kind" in change ? [change] : change);
       await queryClient.invalidateQueries({ queryKey: ["local", user.id] });
       engine.schedule();
     },

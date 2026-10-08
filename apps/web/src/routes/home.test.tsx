@@ -126,6 +126,25 @@ describe("the sync banner", () => {
     expect(screen.getByText("Offline.")).toBeTruthy();
   });
 
+  it("counts entries, not weigh-ins, once something else waits too", async () => {
+    await seed(ADA.id, [
+      weight("2026-10-07", 79.8),
+      {
+        kind: "intake",
+        date: "2026-10-07",
+        field: "kcal",
+        value: 2100,
+        at: "2026-10-07T07:00:00.000Z",
+      },
+    ]);
+    writeLastUser(ADA);
+    fakeApi({ me: "down" });
+    renderRoute("/");
+    expect(
+      await screen.findByText(/2 entries waiting, sent as soon as the network is back/),
+    ).toBeTruthy();
+  });
+
   it("asks to sign in again when the session expired with weigh-ins waiting", async () => {
     await seed(ADA.id, [weight("2026-10-07", 79.8)]);
     writeLastUser(ADA);

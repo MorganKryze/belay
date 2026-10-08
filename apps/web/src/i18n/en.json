@@ -68,7 +68,11 @@
     "failed": "An entry couldn't be sent.",
     "retry": "Try again",
     "rejected": "An entry was refused.",
-    "rejectedLink": "See details"
+    "rejectedLink": "See details",
+    "offlineEntries_one": "{{count}} entry waiting, sent as soon as the network is back. Everything is kept on this phone.",
+    "offlineEntries_other": "{{count}} entries waiting, sent as soon as the network is back. Everything is kept on this phone.",
+    "expiredEntries_one": "{{count}} entry is waiting to be sent.",
+    "expiredEntries_other": "{{count}} entries are waiting to be sent."
   },
   "trend": {
     "title": "Your trend",

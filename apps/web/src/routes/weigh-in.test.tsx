@@ -3,7 +3,7 @@ import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/re
 import { IDBFactory } from "fake-indexeddb";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import i18n from "../i18n";
-import { openAccountDb, readOutbox, readWeights, recordChange } from "../sync/db";
+import { openAccountDb, readOutbox, readWeights, recordChanges } from "../sync/db";
 import { writeLastUser } from "../sync/last-user";
 import { fakeApi } from "../test/fake-api";
 import { renderRoute } from "../test/render-route";
@@ -12,10 +12,10 @@ import { ADA, seed, weight } from "../test/seed";
 // Passes through, until a test makes the device refuse a write (a lost connection, a full disk).
 vi.mock("../sync/db", async (importOriginal) => {
   const real = await importOriginal<typeof import("../sync/db")>();
-  return { ...real, recordChange: vi.fn(real.recordChange) };
+  return { ...real, recordChanges: vi.fn(real.recordChanges) };
 });
 const refuseWrite = () =>
-  vi.mocked(recordChange).mockRejectedValueOnce(new DOMException("lost", "InvalidStateError"));
+  vi.mocked(recordChanges).mockRejectedValueOnce(new DOMException("lost", "InvalidStateError"));
 const SAVE_FAILED = "Couldn't save on this phone. Try again.";
 
 // Wednesday 7 October 2026, 7:30 in the morning, on the phone's clock. Only Date is faked:

@@ -68,7 +68,11 @@
     "failed": "Une saisie n'a pas pu être envoyée.",
     "retry": "Réessayer",
     "rejected": "Une saisie a été refusée.",
-    "rejectedLink": "Voir le détail"
+    "rejectedLink": "Voir le détail",
+    "offlineEntries_one": "{{count}} saisie en attente, envoyée dès le retour du réseau. Tout est gardé sur ce téléphone.",
+    "offlineEntries_other": "{{count}} saisies en attente, envoyées dès le retour du réseau. Tout est gardé sur ce téléphone.",
+    "expiredEntries_one": "{{count}} saisie attend d'être envoyée.",
+    "expiredEntries_other": "{{count}} saisies attendent d'être envoyées."
   },
   "trend": {
     "title": "Ta tendance",

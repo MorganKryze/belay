@@ -2,7 +2,7 @@ import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/re
 import { IDBFactory } from "fake-indexeddb";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import i18n from "../i18n";
-import { openAccountDb, readOutbox, readTarget, recordChange } from "../sync/db";
+import { openAccountDb, readOutbox, readTarget, recordChanges } from "../sync/db";
 import { writeLastUser } from "../sync/last-user";
 import { fakeApi } from "../test/fake-api";
 import { renderRoute } from "../test/render-route";
@@ -10,7 +10,7 @@ import { ADA } from "../test/seed";
 
 vi.mock("../sync/db", async (importOriginal) => {
   const real = await importOriginal<typeof import("../sync/db")>();
-  return { ...real, recordChange: vi.fn(real.recordChange) };
+  return { ...real, recordChanges: vi.fn(real.recordChanges) };
 });
 
 beforeEach(() => {
@@ -66,7 +66,7 @@ describe("Settings › Profile", () => {
 
   it("says so when the phone refuses the write, and clears it on the next one", async () => {
     await openProfile();
-    vi.mocked(recordChange).mockRejectedValueOnce(new DOMException("lost", "InvalidStateError"));
+    vi.mocked(recordChanges).mockRejectedValueOnce(new DOMException("lost", "InvalidStateError"));
     fireEvent.click(button("Increase At least"));
     expect((await screen.findByRole("alert")).textContent).toBe(
       "Couldn't save on this phone. Try again.",

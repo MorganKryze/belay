@@ -16,11 +16,13 @@ export function SyncBanner({ account }: { account: OpenAccount }) {
   const pending = usePending(account).data ?? { weighings: 0, total: 0 };
   const rejected = useRejected(account).data?.length ?? 0;
   const { pathname } = useLocation();
-  const count = pending.weighings;
+  const count = pending.total;
+  // Weigh-ins alone are said as weigh-ins; anything else waiting makes them entries.
+  const what = pending.weighings === count ? "" : "Entries";
   const kind =
     status === "expired" && count > 0
       ? "expired"
-      : status === "failed" && pending.total > 0
+      : status === "failed" && count > 0
         ? "failed"
         : (status === "offline" || !online) && count > 0
           ? "offline"
@@ -33,7 +35,7 @@ export function SyncBanner({ account }: { account: OpenAccount }) {
         <div className={`${box} bg-track`}>
           <CircleArrowUp aria-hidden className="mt-px size-5 shrink-0" />
           <p>
-            <b>{t("sync.offlineTitle")}</b> {t("sync.offline", { count })}
+            <b>{t("sync.offlineTitle")}</b> {t(`sync.offline${what}`, { count })}
           </p>
         </div>
       )}
@@ -42,7 +44,7 @@ export function SyncBanner({ account }: { account: OpenAccount }) {
           <CircleAlert aria-hidden className="mt-px size-5 shrink-0" />
           <div className="flex flex-col items-start gap-2">
             <p>
-              <b>{t("sync.expiredTitle")}</b> {t("sync.expired", { count })}
+              <b>{t("sync.expiredTitle")}</b> {t(`sync.expired${what}`, { count })}
             </p>
             <Button asChild>
               <a href={`/auth/login?returnTo=${encodeURIComponent(pathname)}`}>
