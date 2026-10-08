@@ -6,6 +6,7 @@ export default defineConfig(
   {
     ignores: [
       "**/dist/**",
+      "docs/superpowers/**",
       "**/dev-dist/**",
       "**/coverage/**",
       "**/playwright-report/**",
