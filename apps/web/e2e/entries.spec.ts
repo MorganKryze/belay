@@ -131,6 +131,14 @@ const SCREENS: [string, (page: Page) => Promise<void>][] = [
     },
   ],
   [
+    "the weigh-in sheet",
+    async (page) => {
+      await page.goto("/");
+      await page.getByRole("button", { name: /^Weigh-in/ }).click();
+      await expect(sheet(page, "Weigh-in").getByRole("textbox", { name: "Weight" })).toBeVisible();
+    },
+  ],
+  [
     "the intake sheet",
     async (page) => {
       await page.goto("/");
@@ -218,16 +226,63 @@ const SCREENS: [string, (page: Page) => Promise<void>][] = [
   ],
 ];
 
+// Nothing entered yet: the same screens with their empty states, on a server with no data.
+const EMPTY_SCREENS: [string, (page: Page) => Promise<void>][] = [
+  [
+    "empty Home",
+    async (page) => {
+      await page.goto("/");
+      await expect(page.getByRole("heading", { name: "Hello, Ada", level: 1 })).toBeVisible();
+      await expect(line(page, /^Intake/)).toBeVisible();
+    },
+  ],
+  [
+    "empty Profile",
+    async (page) => {
+      await page.goto("/settings/profile");
+      await expect(page.getByRole("button", { name: "Fill in Height" })).toBeVisible();
+    },
+  ],
+];
+
+// A sheet is a fixed dialog: the page can fit while the dialog itself scrolls sideways or sits
+// partly off screen, so the dialog is measured too.
+async function expectFits(page: Page) {
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+  );
+  expect(overflow).toBe(0);
+  const dialog = page.getByRole("dialog");
+  if ((await dialog.count()) === 0) return;
+  const { inside, sideways } = await dialog.first().evaluate((el) => {
+    const box = el.getBoundingClientRect();
+    return {
+      sideways: el.scrollWidth - el.clientWidth,
+      inside:
+        box.left >= 0 &&
+        box.top >= 0 &&
+        box.right <= window.innerWidth &&
+        box.bottom <= window.innerHeight,
+    };
+  });
+  expect(sideways).toBeLessThanOrEqual(0);
+  expect(inside).toBe(true);
+}
+
 test.describe("at 360 px", () => {
   test.use({ viewport: { width: 360, height: 780 } });
   for (const [name, open] of SCREENS) {
     test(`${name} fits without sideways scrolling`, async ({ page }) => {
       await fakeServer(page, { rows: WEEKS, changes: ON_SERVER });
       await open(page);
-      const overflow = await page.evaluate(
-        () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
-      );
-      expect(overflow).toBe(0);
+      await expectFits(page);
+    });
+  }
+  for (const [name, open] of EMPTY_SCREENS) {
+    test(`${name} fits without sideways scrolling`, async ({ page }) => {
+      await fakeServer(page);
+      await open(page);
+      await expectFits(page);
     });
   }
 });
@@ -240,6 +295,15 @@ test.describe("accessibility", () => {
       await page.addInitScript((t) => localStorage.setItem("belay.theme", t), theme);
       await fakeServer(page, { rows: WEEKS, changes: ON_SERVER });
       for (const [name, open] of SCREENS) {
+        await open(page);
+        if (theme === "dark") await expect(page.locator("html")).toHaveClass(/dark/);
+        await test.step(name, () => expectNoAxeViolations(page));
+      }
+    });
+    test(`the empty screens have no axe violation, ${theme}`, async ({ page }) => {
+      await page.addInitScript((t) => localStorage.setItem("belay.theme", t), theme);
+      await fakeServer(page);
+      for (const [name, open] of EMPTY_SCREENS) {
         await open(page);
         if (theme === "dark") await expect(page.locator("html")).toHaveClass(/dark/);
         await test.step(name, () => expectNoAxeViolations(page));
