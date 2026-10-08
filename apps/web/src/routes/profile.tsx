@@ -7,7 +7,7 @@ import type { ToolId } from "@belay/shared/tools/catalog";
 import { roundTo } from "@belay/shared/tools/round";
 import { Link } from "@tanstack/react-router";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { NumberStepper } from "@/components/number-stepper";
 import { ScienceSheet } from "@/components/science-sheet";
@@ -39,7 +39,13 @@ export function Profile() {
           <ChevronLeft aria-hidden className="size-5" />
           {t("settings.title")}
         </Link>
-        <h1 className="text-[26px] leading-tight font-bold tracking-tight">{t("profile.title")}</h1>
+        <h1
+          tabIndex={-1}
+          data-focus-fallback
+          className="text-[26px] leading-tight font-bold tracking-tight outline-none"
+        >
+          {t("profile.title")}
+        </h1>
         {account.kind === "open" && (
           <p className="mt-1 text-sm text-muted-foreground">{t("profile.lead")}</p>
         )}
@@ -170,6 +176,17 @@ function Fact({
   const { t } = useTranslation();
   const [filling, setFilling] = useState(false);
   const shown = set || filling;
+  // Where the keyboard focus goes once the control or the "+ Fill in" button is swapped in.
+  const next = useRef<"control" | "fill" | null>(null);
+  const control = useRef<HTMLDivElement>(null);
+  const fillButton = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (next.current === "control")
+      control.current?.querySelector<HTMLElement>("input, [role=radio]")?.focus();
+    else if (next.current === "fill") fillButton.current?.focus();
+    else return;
+    next.current = null;
+  }, [shown]);
   return (
     <div className="flex flex-col gap-2 border-t border-border py-3 first:border-t-0">
       <div className="flex min-h-11 items-center justify-between gap-2">
@@ -181,6 +198,7 @@ function Fact({
             className="min-h-11 px-1 text-sm font-semibold text-primary"
             onClick={() => {
               setFilling(false);
+              next.current = "fill";
               onClear();
             }}
           >
@@ -189,13 +207,17 @@ function Fact({
         )}
       </div>
       {shown ? (
-        children
+        <div ref={control}>{children}</div>
       ) : (
         <button
+          ref={fillButton}
           type="button"
           aria-label={t("profile.fillField", { field: label })}
           className="flex min-h-12 items-center justify-center gap-1 rounded-field border border-dashed border-input font-semibold text-primary"
-          onClick={() => setFilling(true)}
+          onClick={() => {
+            next.current = "control";
+            setFilling(true);
+          }}
         >
           <Plus aria-hidden className="size-4" />
           {t("profile.fill")}
@@ -206,7 +228,8 @@ function Fact({
   );
 }
 
-// A whole number, written as soon as it is valid; empty until the person types or taps.
+// A whole number, written only when typed whole and in range: "19" is not a year, and a field
+// left half-typed goes back to the stored value. Empty until the person types.
 function FactStepper({
   label,
   unit,
@@ -232,7 +255,11 @@ function FactStepper({
       max={max}
       step={1}
       optional
-      onChange={(v) => v !== null && Number.isInteger(v) && v >= min && v <= max && onChange(v)}
+      clampTyped={false}
+      inertWhenEmpty
+      onChange={(v) =>
+        v !== null && v !== value && Number.isInteger(v) && v >= min && v <= max && onChange(v)
+      }
     />
   );
 }

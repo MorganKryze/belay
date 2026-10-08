@@ -190,3 +190,69 @@ describe("Settings › Profile, your body", () => {
     expect(link.getAttribute("href")).toBe("/settings/supplements");
   });
 });
+
+describe("Settings › Profile, what was entered and the keyboard", () => {
+  const profile = async () => readProfile(await openAccountDb(ADA.id));
+  const queued = async () => (await readOutbox(await openAccountDb(ADA.id))).length;
+
+  it("gives the title the focus fallback", async () => {
+    await openProfile();
+    const h1 = screen.getByRole("heading", { level: 1 });
+    expect(h1.getAttribute("tabindex")).toBe("-1");
+    expect(h1.hasAttribute("data-focus-fallback")).toBe(true);
+  });
+
+  it("moves the focus into the new control, then back to Fill in after Clear", async () => {
+    await openProfile();
+    fireEvent.click(button("Fill in Year of birth"));
+    const year = await screen.findByRole("textbox", { name: "Year of birth" });
+    await waitFor(() => expect(document.activeElement).toBe(year));
+    fireEvent.click(button("Fill in Formula"));
+    const first = await screen.findByRole("radio", { name: "Female" });
+    await waitFor(() => expect(document.activeElement).toBe(first));
+    fireEvent.click(first);
+    await waitFor(async () => expect((await profile()).formula).toBe("female"));
+    fireEvent.click(await screen.findByRole("button", { name: "Clear Formula" }));
+    const fill = await screen.findByRole("button", { name: "Fill in Formula" });
+    await waitFor(() => expect(document.activeElement).toBe(fill));
+  });
+
+  it("writes nothing for a half-typed or out-of-range number, and resets the field on blur", async () => {
+    await openProfile();
+    fireEvent.click(button("Fill in Year of birth"));
+    const year = (await screen.findByRole("textbox", {
+      name: "Year of birth",
+    })) as HTMLInputElement;
+    fireEvent.change(year, { target: { value: "19" } });
+    fireEvent.blur(year);
+    expect(year.value).toBe("");
+    fireEvent.click(button("Fill in Height"));
+    const height = (await screen.findByRole("textbox", { name: "Height" })) as HTMLInputElement;
+    fireEvent.change(height, { target: { value: "5" } });
+    fireEvent.blur(height);
+    expect(height.value).toBe("");
+    expect(await queued()).toBe(0);
+    expect((await profile()).birthYear).toBeNull();
+    expect((await profile()).heightCm).toBeNull();
+  });
+
+  it("keeps an empty field empty, with − and + inactive until a value is typed", async () => {
+    await openProfile();
+    fireEvent.click(button("Fill in Height"));
+    const height = (await screen.findByRole("textbox", { name: "Height" })) as HTMLInputElement;
+    expect(height.value).toBe("");
+    const plus = button("Increase Height");
+    const minus = button("Decrease Height");
+    expect(plus.getAttribute("aria-disabled")).toBe("true");
+    expect(minus.getAttribute("aria-disabled")).toBe("true");
+    fireEvent.click(plus);
+    fireEvent.keyDown(height, { key: "ArrowUp" });
+    expect(height.value).toBe("");
+    expect(await queued()).toBe(0);
+    fireEvent.change(height, { target: { value: "170" } });
+    await waitFor(async () => expect((await profile()).heightCm).toBe(170));
+    await waitFor(() =>
+      expect(button("Increase Height").getAttribute("aria-disabled")).toBe("false"),
+    );
+  });
+});

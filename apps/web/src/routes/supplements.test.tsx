@@ -102,3 +102,56 @@ describe("Settings › My supplements", () => {
     );
   });
 });
+
+describe("Settings › My supplements, duplicates, double taps and focus", () => {
+  it("refuses a name already on the list, accents and case aside", async () => {
+    await openList();
+    const name = await screen.findByRole("textbox", { name: "Supplement name" });
+    fireEvent.change(name, { target: { value: "Cafeine" } });
+    fireEvent.click(screen.getByRole("button", { name: "Add" }));
+    await waitFor(async () => expect(await stored()).toEqual([["Cafeine", "other", false]]));
+    fireEvent.change(name, { target: { value: " CAFÉINE " } });
+    fireEvent.click(screen.getByRole("button", { name: "Add" }));
+    expect(await screen.findByText("This supplement is already on your list.")).toBeTruthy();
+    expect(await stored()).toHaveLength(1);
+  });
+
+  it("adds once on a double tap, and a chip leaves the typed name alone", async () => {
+    await openList();
+    const name = (await screen.findByRole("textbox", {
+      name: "Supplement name",
+    })) as HTMLInputElement;
+    fireEvent.change(name, { target: { value: "Draft" } });
+    const chip = await screen.findByRole("button", { name: "Iron" });
+    fireEvent.click(chip);
+    fireEvent.click(chip);
+    await screen.findByRole("button", { name: "More for Iron" });
+    expect(await stored()).toEqual([["Iron", "other", false]]);
+    expect(name.value).toBe("Draft");
+  });
+
+  it("returns the focus to the row's menu button after Save and Cancel, and to the title after Remove", async () => {
+    await openList();
+    fireEvent.click(await screen.findByRole("button", { name: "Iron" }));
+    fireEvent.click(await screen.findByRole("button", { name: "More for Iron" }));
+    fireEvent.click(screen.getByRole("button", { name: "Rename" }));
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole("button", { name: "More for Iron" })),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "More for Iron" }));
+    fireEvent.click(screen.getByRole("button", { name: "Rename" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "New name for Iron" }), {
+      target: { value: "Iron+" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole("button", { name: "More for Iron+" })),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "More for Iron+" }));
+    fireEvent.click(screen.getByRole("button", { name: "Remove" }));
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole("heading", { level: 1 })),
+    );
+  });
+});

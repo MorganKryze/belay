@@ -34,6 +34,7 @@
     "add": "Ajouter",
     "name": "Nom du complément",
     "nameError": "De 1 à 40 caractères, sur une ligne.",
+    "duplicate": "Ce complément est déjà dans ta liste.",
     "suggestionsTitle": "Suggestions",
     "empty": "Aucun complément dans ta liste pour l'instant.",
     "note": "Belay note ce que tu prends, sans conseil de dose. Les rappels quotidiens arriveront avec les notifications.",

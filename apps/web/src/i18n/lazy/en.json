@@ -34,6 +34,7 @@
     "add": "Add",
     "name": "Supplement name",
     "nameError": "Between 1 and 40 characters, on one line.",
+    "duplicate": "This supplement is already on your list.",
     "suggestionsTitle": "Suggestions",
     "empty": "No supplements on your list yet.",
     "note": "Belay notes what you take, with no dose advice. Daily reminders will come with notifications.",

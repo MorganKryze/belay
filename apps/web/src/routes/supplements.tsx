@@ -9,7 +9,7 @@ import {
 import type { SupplementRow } from "@belay/shared/sync/schema";
 import { Link } from "@tanstack/react-router";
 import { ChevronLeft, Ellipsis, Plus } from "lucide-react";
-import { type FormEvent, useId, useState } from "react";
+import { type FormEvent, useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Toast, useWriter } from "@/components/weigh-in";
@@ -68,23 +68,31 @@ function SupplementList({ account }: { account: OpenAccount }) {
   const all = useSupplements(account).data;
   const { write, toast, error, dismiss } = useWriter(account);
   const [name, setName] = useState("");
-  const [invalid, setInvalid] = useState(false);
+  const [invalid, setInvalid] = useState<"name" | "duplicate" | null>(null);
+  const pending = useRef(new Set<string>());
   const nameId = useId();
   if (!all) return null;
   const active = all.filter((s) => !s.removed);
-  const add = async (value: string) => {
+  // `fromField`: the typed name is cleared once added; a suggestion leaves the field alone.
+  const add = async (value: string, fromField: boolean) => {
     const trimmed = value.trim();
-    if (!isSupplementName(trimmed)) return setInvalid(true);
-    setInvalid(false);
+    const key = plain(trimmed);
+    if (pending.current.has(key)) return; // a second tap while the first is being written
+    if (!isSupplementName(trimmed)) return setInvalid("name");
+    if (active.some((s) => plain(s.name) === plain(trimmed))) return setInvalid("duplicate");
+    setInvalid(null);
     const id = newId();
-    if (
-      await write(
+    pending.current.add(key);
+    try {
+      const ok = await write(
         [{ kind: "supplement", id, field: "name", value: trimmed }],
         [{ kind: "supplement", id, field: "removed", value: true }],
         t("supplementsPage.toastAdded"),
-      )
-    )
-      setName("");
+      );
+      if (ok && fromField) setName("");
+    } finally {
+      pending.current.delete(key);
+    }
   };
   // A suggestion leaves once a supplement of that name is on the list.
   const suggestions = SUPPLEMENT_SUGGESTIONS.filter((key) => {
@@ -117,7 +125,7 @@ function SupplementList({ account }: { account: OpenAccount }) {
           className="flex flex-col gap-2"
           onSubmit={(e: FormEvent) => {
             e.preventDefault();
-            void add(name);
+            void add(name, true);
           }}
         >
           <label htmlFor={nameId} className="sr-only">
@@ -129,14 +137,16 @@ function SupplementList({ account }: { account: OpenAccount }) {
             maxLength={SUPPLEMENT_NAME_MAX}
             placeholder={t("supplementsPage.name")}
             autoComplete="off"
-            aria-invalid={invalid || undefined}
+            aria-invalid={invalid ? true : undefined}
             aria-describedby={invalid ? `${nameId}-error` : undefined}
             className={field}
             onChange={(e) => setName(e.target.value)}
           />
           {invalid && (
             <p id={`${nameId}-error`} className="text-[13px] font-medium text-primary-ink">
-              {t("supplementsPage.nameError")}
+              {t(
+                invalid === "duplicate" ? "supplementsPage.duplicate" : "supplementsPage.nameError",
+              )}
             </p>
           )}
           <Button type="submit" className="h-12 rounded-field text-base font-semibold">
@@ -154,7 +164,7 @@ function SupplementList({ account }: { account: OpenAccount }) {
                   <button
                     type="button"
                     className="inline-flex min-h-11 items-center gap-1 rounded-full border border-dashed border-input px-3 text-sm text-muted-foreground"
-                    onClick={() => void add(t(`supplementsPage.suggestions.${key}`))}
+                    onClick={() => void add(t(`supplementsPage.suggestions.${key}`), false)}
                   >
                     <Plus aria-hidden className="size-4" />
                     {t(`supplementsPage.suggestions.${key}`)}
@@ -183,6 +193,14 @@ function SupplementItem({
   const [open, setOpen] = useState(false);
   const [renaming, setRenaming] = useState<string | null>(null);
   const menuId = useId();
+  const more = useRef<HTMLButtonElement>(null);
+  const backToMore = useRef(false);
+  useEffect(() => {
+    if (renaming === null && backToMore.current) {
+      backToMore.current = false;
+      more.current?.focus();
+    }
+  }, [renaming]);
   if (renaming !== null) {
     const valid = isSupplementName(renaming);
     return (
@@ -196,7 +214,11 @@ function SupplementItem({
               [{ kind: "supplement", id: s.id, field: "name", value: renaming.trim() }],
               [{ kind: "supplement", id: s.id, field: "name", value: s.name }],
               t("supplementsPage.toastRenamed"),
-            ).then((ok) => ok && setRenaming(null));
+            ).then((ok) => {
+              if (!ok) return;
+              backToMore.current = true;
+              setRenaming(null);
+            });
           }}
         >
           <label className="flex flex-col gap-1.5 text-[13px] font-semibold">
@@ -215,7 +237,14 @@ function SupplementItem({
             <Button type="submit" disabled={!valid}>
               {t("supplementsPage.save")}
             </Button>
-            <Button type="button" variant="ghost" onClick={() => setRenaming(null)}>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => {
+                backToMore.current = true;
+                setRenaming(null);
+              }}
+            >
               {t("settings.cancel")}
             </Button>
           </div>
@@ -233,6 +262,7 @@ function SupplementItem({
           </span>
         )}
         <button
+          ref={more}
           type="button"
           aria-label={t("supplementsPage.more", { name: s.name })}
           aria-expanded={open}
@@ -261,7 +291,7 @@ function SupplementItem({
                 [{ kind: "supplement", id: s.id, field: "removed", value: true }],
                 [{ kind: "supplement", id: s.id, field: "removed", value: false }],
                 t("supplementsPage.toastRemoved"),
-              )
+              ).then((ok) => ok && document.querySelector<HTMLElement>("h1")?.focus())
             }
           >
             {t("supplementsPage.remove")}
