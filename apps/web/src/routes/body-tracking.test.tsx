@@ -218,7 +218,9 @@ describe("the measurements sheet", () => {
     expect(queued.filter((k) => k === "measure")).toHaveLength(2); // no hip written
     const history = screen.getByRole("region", { name: "History" });
     // Testing Library folds the no-break spaces into plain ones.
-    expect(await within(history).findByText("79.8 kg · waist 82 cm · neck 39.5 cm")).toBeTruthy();
+    expect(await within(history).findByText("waist 82 cm ·")).toBeTruthy();
+    expect(within(history).getByText("neck 39.5 cm")).toBeTruthy();
+    expect(within(history).getByText("79.8 kg")).toBeTruthy(); // the weight stays with the day
   });
 
   it("refuses a waist outside 40 to 200 cm", async () => {
@@ -239,11 +241,40 @@ describe("the history", () => {
     const lines = within(history)
       .getAllByRole("listitem")
       .map((li) => li.textContent!.replace(/\s/g, " "));
-    expect(lines[0]).toBe("Today79.8 kg · 2,100 kcal");
+    expect(lines[0]).toBe("Today79.8 kg2,100 kcal");
     expect(lines).toContain("Sun, Oct 41,800 kcal"); // not weighed: a line, no button
     expect(within(history).queryByRole("button", { name: /^Sun, Oct 4/ })).toBeNull();
     fireEvent.click(within(history).getByRole("button", { name: /^Today/ }));
     expect(await screen.findByRole("dialog", { name: "Weigh-in" })).toBeTruthy();
+  });
+
+  it("reads a crowded day on two lines, its parts never broken", async () => {
+    await open([
+      intake("2026-10-07", 2100),
+      { kind: "intake", date: "2026-10-07", field: "protein", value: 140, at: AT },
+      { kind: "measure", date: "2026-10-07", field: "waist", value: 82, at: AT },
+      { kind: "measure", date: "2026-10-07", field: "neck", value: 39.5, at: AT },
+      { kind: "measure", date: "2026-10-07", field: "hip", value: 98, at: AT },
+    ]);
+    const history = screen.getByRole("region", { name: "History" });
+    const row = within(history).getByRole("button", { name: /^Today/ });
+    const [first, second] = Array.from(row.children) as HTMLElement[];
+    // Line 1: the day on the left, the weight on the right.
+    expect(first!.children[0]!.textContent).toBe("Today");
+    expect(first!.children[1]!.textContent).toMatch(/^79\.8\skg$/);
+    // Line 2: the other parts, muted, wrapping only between parts.
+    expect(second!.className).toContain("flex-wrap");
+    expect(second!.className).toContain("text-muted-foreground");
+    const parts = Array.from(second!.children) as HTMLElement[];
+    expect(parts).toHaveLength(5);
+    for (const part of parts) expect(part.className).toContain("whitespace-nowrap");
+    expect(parts.map((p) => p.textContent!.replace(/\s/g, " "))).toEqual([
+      "2,100 kcal ·",
+      "140 g protein ·",
+      "waist 82 cm ·",
+      "neck 39.5 cm ·",
+      "hip 98 cm",
+    ]);
   });
 
   it("says the protein of a day with nothing else", async () => {

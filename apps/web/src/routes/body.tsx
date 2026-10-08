@@ -608,12 +608,11 @@ function History({
   );
   if (days.length === 0) return null;
   const number = (v: number) => formatNumber(v, i18n.language, { digits: 1 });
-  const describe = (date: ISODate) => {
-    const w = weighings.find((x) => x.date === date);
+  // The other parts of a day, apart from its weight: one line of their own under the day.
+  const parts = (date: ISODate): string[] => {
     const l = intake.find((x) => x.date === date);
     const m = measures.find((x) => x.date === date);
     return [
-      w && t("trend.kg", { value: formatKg(w.weightKg, i18n.language) }),
       l?.kcal != null &&
         t("body.kcal", { value: formatNumber(l.kcal, i18n.language, { digits: 0 }) }),
       l?.proteinG != null &&
@@ -624,12 +623,9 @@ function History({
         const cm = m ? measureOf(m, f) : null;
         return cm !== null && t(`body.dayParts.${f}`, { value: number(cm) });
       }),
-    ]
-      .filter(Boolean)
-      .join(" · ");
+    ].filter((part): part is string => typeof part === "string");
   };
-  // The summary goes under the day, right-aligned, when the two do not fit on one line.
-  const line = "flex min-h-11 w-full flex-wrap items-center justify-between gap-x-3 py-1 text-left";
+  const line = "flex min-h-11 w-full flex-col justify-center gap-0.5 py-2 text-left";
   return (
     <section aria-labelledby="history" className="flex flex-col gap-1">
       <h2 id="history" className={sectionTitle}>
@@ -637,15 +633,34 @@ function History({
       </h2>
       <ul>
         {days.map((date) => {
+          const w = weighings.find((x) => x.date === date);
+          const rest = parts(date);
           const content = (
             <>
-              <span className="shrink-0">{dayLabel(date, today, t, i18n.language)}</span>
-              <b className="ml-auto text-right tabular-nums">{describe(date)}</b>
+              <span className="flex items-baseline justify-between gap-x-3">
+                <span>{dayLabel(date, today, t, i18n.language)}</span>
+                {w && (
+                  <b className="tabular-nums">
+                    {t("trend.kg", { value: formatKg(w.weightKg, i18n.language) })}
+                  </b>
+                )}
+              </span>
+              {rest.length > 0 && (
+                // A line only breaks between two parts, never inside one.
+                <span className="flex flex-wrap gap-x-1.5 text-sm text-muted-foreground tabular-nums">
+                  {rest.map((part, i) => (
+                    <span key={part} className="whitespace-nowrap">
+                      {part}
+                      {i < rest.length - 1 && " ·"}
+                    </span>
+                  ))}
+                </span>
+              )}
             </>
           );
           return (
             <li key={date} className="border-t border-border first:border-t-0">
-              {weighings.some((w) => w.date === date) ? (
+              {w ? (
                 <button type="button" className={line} onClick={() => onSelect(date)}>
                   {content}
                 </button>
