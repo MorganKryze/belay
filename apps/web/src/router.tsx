@@ -12,7 +12,7 @@ import { Home } from "./routes/home";
 import { Layout } from "./routes/layout";
 import { isWorkoutTab, type WorkoutTab } from "./workouts/tabs";
 
-// ponytail: code-based routes, 16 screens today (the tools share one lazy `$toolId` route).
+// ponytail: code-based routes, 17 screens today (the tools share one lazy `$toolId` route).
 // Switch to file-based routing at ~20 screens, or when this file passes ~150 lines of route
 // declarations.
 const rootRoute = createRootRoute({ component: Layout });
@@ -37,6 +37,11 @@ const workoutsRoute = createRoute({
   component: lazyRouteComponent(() => import("./routes/workouts"), "Workouts"),
   validateSearch: (search: Record<string, unknown>): { tab?: WorkoutTab } =>
     isWorkoutTab(search.tab) ? { tab: search.tab } : {},
+});
+const workoutDetailRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/workouts/$workoutId",
+  component: lazyRouteComponent(() => import("./routes/workout-detail"), "WorkoutDetail"),
 });
 const exerciseRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -82,6 +87,7 @@ const toolRoute = createRoute({
 export const routeTree = rootRoute.addChildren([
   homeRoute,
   workoutsRoute,
+  workoutDetailRoute,
   exerciseRoute,
   bodyRoute,
   settingsRoute,

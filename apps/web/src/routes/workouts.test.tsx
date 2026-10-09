@@ -23,11 +23,11 @@ describe("the Sessions tab", () => {
     );
   });
 
-  it("opens on the program, and remembers the segment chosen", async () => {
+  it("opens on the history, and remembers the segment chosen", async () => {
     renderRoute("/workouts");
     expect(await screen.findByRole("heading", { name: "Sessions", level: 1 })).toBeTruthy();
     expect(
-      (screen.getByRole("radio", { name: "Program" }) as HTMLButtonElement).dataset.state,
+      (screen.getByRole("radio", { name: "History" }) as HTMLButtonElement).dataset.state,
     ).toBe("checked");
     fireEvent.click(screen.getByRole("radio", { name: "Exercises" }));
     expect(await screen.findByRole("searchbox", { name: "Search exercises" })).toBeTruthy();

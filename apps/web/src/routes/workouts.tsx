@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Segmented } from "@/components/segmented";
 import { ExercisesPanel } from "@/exercises/exercises-panel";
+import { HistoryPanel } from "@/workouts/history-panel";
 import { ProgramPanel } from "@/workouts/program-panel";
 import { isWorkoutTab, WORKOUT_TABS, type WorkoutTab } from "@/workouts/tabs";
 
@@ -19,7 +20,7 @@ function readTab(): WorkoutTab {
   }
 }
 
-// The Sessions tab: the program and the exercise library, one segment each.
+// The Sessions tab (§4.5): the history, the program and the exercise library, one segment each.
 export function Workouts() {
   const { t } = useTranslation();
   const search = useSearch({ from: "/workouts" });
@@ -43,11 +44,18 @@ export function Workouts() {
           void navigate({ to: "/workouts", search: { tab: next }, replace: true })
         }
         options={[
+          { value: "history", label: t("workouts.tabs.history") },
           { value: "program", label: t("workouts.tabs.program") },
           { value: "exercises", label: t("workouts.tabs.exercises") },
         ]}
       />
-      {tab === "program" ? <ProgramPanel /> : <ExercisesPanel />}
+      {tab === "history" ? (
+        <HistoryPanel />
+      ) : tab === "program" ? (
+        <ProgramPanel />
+      ) : (
+        <ExercisesPanel />
+      )}
     </section>
   );
 }

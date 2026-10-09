@@ -27,3 +27,14 @@ export function groupKind(plan: readonly Slot[], slotIndex: number): "superset" 
   const size = groupOf(plan, slotIndex).length;
   return size < 2 ? null : size === 2 ? "superset" : "triset";
 }
+
+// "58 min", "1 h 04".
+export function formatDuration(ms: number, t: TFunction): string {
+  const minutes = Math.max(0, Math.round(ms / 60_000));
+  return minutes < 60
+    ? t("workouts.minutes", { m: minutes })
+    : t("workouts.hours", {
+        h: Math.floor(minutes / 60),
+        mm: String(minutes % 60).padStart(2, "0"),
+      });
+}

@@ -49,8 +49,9 @@ describe("translations", () => {
     expect(clashes(lazyFr, mainFr)).toEqual([]);
   });
 
-  it("never judges a body", () => {
-    const judging = /sain|surpoids|obèse|healthy|overweight|obese/i;
+  it("never judges a body, nor a session cut short or deleted", () => {
+    const judging =
+      /sain|surpoids|obèse|healthy|overweight|obese|raté|échou|manqué|paress|dommage|failed|missed|lazy|too bad/i;
     const strings = (o: object): string[] =>
       Object.values(o).flatMap((v) =>
         typeof v === "object" && v !== null ? strings(v) : [String(v)],

@@ -170,6 +170,7 @@
     "title": "Sessions",
     "tabs": {
       "label": "Show",
+      "history": "History",
       "program": "Program",
       "exercises": "Exercises"
     },
@@ -183,7 +184,9 @@
     "rir": "RIR {{range}}",
     "restSec": "{{s}} s",
     "restMin": "{{m}} min",
-    "restMinSec": "{{m}} min {{s}} s"
+    "restMinSec": "{{m}} min {{s}} s",
+    "minutes": "{{m}} min",
+    "hours": "{{h}} h {{mm}}"
   },
   "library": {
     "search": "Search exercises",
@@ -241,5 +244,26 @@
     "howTo": "How to do it",
     "loading": "Loading…",
     "credit": "Text: exercises-dataset (MIT)"
+  },
+  "history": {
+    "signedOut": "Your sessions are kept with an account. The program and the exercises need none.",
+    "previousMonth": "Previous month",
+    "nextMonth": "Next month",
+    "sessionDay": "session",
+    "recent": "Recent",
+    "first": "Your first session will show here.",
+    "none": "No session this month.",
+    "workSets_one": "{{count}} work set",
+    "workSets_other": "{{count}} work sets",
+    "volume": "{{value}} kg",
+    "warmup": "Warm-up",
+    "load": "{{kg}} kg × {{reps}}",
+    "rir": "RIR {{rir}}",
+    "note": "Session note",
+    "remove": "Delete this session",
+    "removeTitle": "Delete this session?",
+    "removeBody": "Its sets will leave the history and the statistics, on all your devices.",
+    "removeConfirm": "Delete",
+    "cancel": "Cancel"
   }
 }

@@ -170,6 +170,7 @@
     "title": "Séances",
     "tabs": {
       "label": "Afficher",
+      "history": "Historique",
       "program": "Programme",
       "exercises": "Exercices"
     },
@@ -183,7 +184,9 @@
     "rir": "RIR {{range}}",
     "restSec": "{{s}} s",
     "restMin": "{{m}} min",
-    "restMinSec": "{{m}} min {{s}}"
+    "restMinSec": "{{m}} min {{s}}",
+    "minutes": "{{m}} min",
+    "hours": "{{h}} h {{mm}}"
   },
   "library": {
     "search": "Rechercher un exercice",
@@ -241,5 +244,26 @@
     "howTo": "Comment faire",
     "loading": "Chargement…",
     "credit": "Texte : exercises-dataset (MIT)"
+  },
+  "history": {
+    "signedOut": "Tes séances s'enregistrent avec un compte. Le programme et les exercices restent consultables sans compte.",
+    "previousMonth": "Mois précédent",
+    "nextMonth": "Mois suivant",
+    "sessionDay": "séance",
+    "recent": "Récentes",
+    "first": "Ta première séance apparaîtra ici.",
+    "none": "Aucune séance ce mois-ci.",
+    "workSets_one": "{{count}} série de travail",
+    "workSets_other": "{{count}} séries de travail",
+    "volume": "{{value}} kg",
+    "warmup": "Montée",
+    "load": "{{kg}} kg × {{reps}}",
+    "rir": "RIR {{rir}}",
+    "note": "Note sur la séance",
+    "remove": "Supprimer cette séance",
+    "removeTitle": "Supprimer cette séance ?",
+    "removeBody": "Ses séries disparaîtront de l'historique et des statistiques, sur tous tes appareils.",
+    "removeConfirm": "Supprimer",
+    "cancel": "Annuler"
   }
 }
