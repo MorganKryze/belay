@@ -1,4 +1,5 @@
 import { isCreatineName } from "@belay/shared/body/supplements";
+import { isKnownExercise } from "@belay/shared/exercises/catalog";
 import { MAX_ROWS } from "@belay/shared/sync/limits";
 import { clampAt, mergeFields, mergeTarget, staleKeys } from "@belay/shared/sync/merge";
 import type {
@@ -10,6 +11,8 @@ import type {
   ProfileChange,
   ProfileRow,
   Rejected,
+  SetChange,
+  SetRow,
   SupplementChange,
   SupplementLogChange,
   SupplementLogRow,
@@ -18,7 +21,10 @@ import type {
   SyncResponse,
   TargetChange,
   WeightRow,
+  WorkoutChange,
+  WorkoutRow,
 } from "@belay/shared/sync/schema";
+import { clampWorkoutTime, MAX_SETS } from "@belay/shared/training/workout";
 import { and, asc, eq, gt, inArray, or, sql } from "drizzle-orm";
 import type { PgColumn } from "drizzle-orm/pg-core";
 import { asUser, type Db, type Tx } from "../db/client";
@@ -29,6 +35,8 @@ import {
   supplementLogs,
   supplements,
   users,
+  workoutSets,
+  workouts,
 } from "../db/schema";
 
 // A change and its place in the request, which a refusal names.
@@ -49,6 +57,8 @@ interface Outcome {
   supplements: Set<string>; // by id
   logs: Set<string>; // `${supplementId}|${date}`
   annotations: Set<string>; // by id
+  workouts: Set<string>; // by id
+  sets: Set<string>; // by id
   user: boolean; // the range and the profile
 }
 
@@ -80,6 +90,8 @@ export function runSync(
       supplements: new Set(),
       logs: new Set(),
       annotations: new Set(),
+      workouts: new Set(),
+      sets: new Set(),
       user: false,
     };
     const ctx: Ctx = { tx, userId, now, out, kinds: changes.map((c) => c.kind) };
@@ -96,6 +108,9 @@ export function runSync(
     await writeSupplements(ctx, changes.filter(of("supplement")));
     await writeSupplementLogs(ctx, changes.filter(of("supplementLog")));
     await writeAnnotations(ctx, changes.filter(of("annotation")));
+    // Sessions before their sets: a set may name a session started in the same batch.
+    await writeWorkouts(ctx, changes.filter(of("workout")));
+    await writeSets(ctx, changes.filter(of("set")));
     return readSince(tx, userId, BigInt(request.cursor), out);
   });
 }
@@ -473,13 +488,215 @@ async function writeAnnotations(ctx: Ctx, changes: Indexed<AnnotationChange>[]) 
   );
 }
 
+// A session's start (code, plan, start time) is its creation and is written once: a replay, or
+// another start of the same id, changes nothing and gets the stored session back. Its other
+// fields merge one by one.
+async function writeWorkouts(ctx: Ctx, changes: Indexed<WorkoutChange>[]) {
+  const { tx, userId, now, out } = ctx;
+  if (changes.length === 0) return;
+  const ids = [...new Set(changes.map((c) => c.id))];
+  const read = () =>
+    tx
+      .select({
+        id: workouts.id,
+        ended: workouts.endedAtAt,
+        note: workouts.noteAt,
+        exerciseNotes: workouts.exerciseNotesAt,
+        removed: workouts.removedAt,
+      })
+      .from(workouts)
+      .where(and(eq(workouts.userId, userId), inArray(workouts.id, ids)));
+  const before = new Set((await read()).map((r) => r.id));
+  const kept = await createMissing(
+    ctx,
+    changes,
+    before,
+    (c) => c.field === "start",
+    (sp, c) =>
+      c.field !== "start"
+        ? Promise.resolve([])
+        : sp
+            .insert(workouts)
+            .values({
+              id: c.id,
+              userId,
+              sessionCode: c.sessionCode,
+              plan: c.plan,
+              startedAt: new Date(clampWorkoutTime(c.startedAt, now)),
+            })
+            .onConflictDoNothing({ target: workouts.id })
+            .returning({ id: workouts.id }),
+  );
+  for (const c of kept) if (c.field === "start" && before.has(c.id)) out.workouts.add(c.id);
+  const fields = kept.filter(
+    (c): c is Indexed<Exclude<WorkoutChange, { field: "start" }>> => c.field !== "start",
+  );
+  const stored = new Map(
+    (await read()).flatMap((r) => [
+      [`${r.id}|ended`, iso(r.ended)],
+      [`${r.id}|note`, iso(r.note)],
+      [`${r.id}|exerciseNotes`, iso(r.exerciseNotes)],
+      [`${r.id}|removed`, iso(r.removed)],
+    ]),
+  );
+  const key = (c: (typeof fields)[number]) => `${c.id}|${c.field}`;
+  for (const k of staleKeys(stored, fields, key, now)) out.workouts.add(k.split("|")[0]!);
+  await guarded(
+    ctx,
+    mergeFields(stored, fields, key, now),
+    async (sp, batch) => {
+      for (const c of batch) {
+        const at = new Date(c.at);
+        await sp
+          .update(workouts)
+          .set({
+            ...(c.field === "ended"
+              ? {
+                  endedAt: c.value === null ? null : new Date(clampWorkoutTime(c.value, now)),
+                  endedAtAt: at,
+                }
+              : c.field === "note"
+                ? { note: c.value, noteAt: at }
+                : c.field === "exerciseNotes"
+                  ? { exerciseNotes: c.value, exerciseNotesAt: at }
+                  : { removed: c.value, removedAt: at }),
+            serverSeq: nextSeq,
+            updatedAt: sql`now()`,
+          })
+          .where(and(eq(workouts.id, c.id), eq(workouts.userId, userId)));
+      }
+    },
+    (c) => out.workouts.add(c.id),
+  );
+}
+
+// A set is created once with all its fields; its load, reps and RIR then change together, and
+// its removal on its own. It must name a session of this account and an exercise of the library,
+// and a session keeps 150 sets at most.
+async function writeSets(ctx: Ctx, changes: Indexed<SetChange>[]) {
+  const { tx, userId, now, out } = ctx;
+  if (changes.length === 0) return;
+  const sessions = [...new Set(changes.map((c) => c.workoutId))];
+  const mine = new Set(
+    (
+      await tx
+        .select({ id: workouts.id })
+        .from(workouts)
+        .where(and(eq(workouts.userId, userId), inArray(workouts.id, sessions)))
+    ).map((r) => r.id),
+  );
+  unknown(
+    out,
+    changes.filter((c) => !mine.has(c.workoutId)),
+  );
+  const refuse = (c: Indexed<SetChange>, reason: Rejected["reason"]) =>
+    out.rejected.push({ index: c.index, reason });
+  const ids = [...new Set(changes.map((c) => c.id))];
+  const read = () =>
+    tx
+      .select({ id: workoutSets.id, values: workoutSets.fieldsAt, removed: workoutSets.removedAt })
+      .from(workoutSets)
+      .where(and(eq(workoutSets.userId, userId), inArray(workoutSets.id, ids)));
+  const known = new Set((await read()).map((r) => r.id));
+  // Each session's sets still in place, then the new ones one by one: past 150, refused, and
+  // so is every other change of that set.
+  const count = new Map(
+    (
+      await tx
+        .select({ workoutId: workoutSets.workoutId, n: sql<number>`count(*)::int` })
+        .from(workoutSets)
+        .where(
+          and(
+            eq(workoutSets.userId, userId),
+            inArray(workoutSets.workoutId, [...mine]),
+            eq(workoutSets.removed, false),
+          ),
+        )
+        .groupBy(workoutSets.workoutId)
+    ).map((r) => [r.workoutId, r.n]),
+  );
+  const refused = new Map<string, Rejected["reason"]>();
+  for (const c of changes) {
+    if (c.field !== "create" || !mine.has(c.workoutId) || known.has(c.id) || refused.has(c.id))
+      continue;
+    if (!isKnownExercise(c.exerciseId)) refused.set(c.id, "unknown_exercise");
+    else if ((count.get(c.workoutId) ?? 0) >= MAX_SETS) refused.set(c.id, "too_many_sets");
+    else count.set(c.workoutId, (count.get(c.workoutId) ?? 0) + 1);
+  }
+  const rest: Indexed<SetChange>[] = [];
+  for (const c of changes) {
+    if (!mine.has(c.workoutId)) continue;
+    const reason = refused.get(c.id);
+    if (reason) refuse(c, reason);
+    else rest.push(c);
+  }
+  const kept = await createMissing(
+    ctx,
+    rest,
+    known,
+    (c) => c.field === "create",
+    (sp, c) =>
+      c.field !== "create"
+        ? Promise.resolve([])
+        : sp
+            .insert(workoutSets)
+            .values({
+              id: c.id,
+              userId,
+              workoutId: c.workoutId,
+              slotIndex: c.slotIndex,
+              position: c.position,
+              exerciseId: c.exerciseId,
+              warmup: c.warmup,
+              weightKg: c.weightKg,
+              reps: c.reps,
+              rir: c.rir,
+              doneAt: new Date(clampWorkoutTime(c.doneAt, now)),
+              fieldsAt: new Date(clampAt(c.at, now)),
+            })
+            .onConflictDoNothing({ target: workoutSets.id })
+            .returning({ id: workoutSets.id }),
+  );
+  const fields = kept.filter(
+    (c): c is Indexed<Exclude<SetChange, { field: "create" }>> => c.field !== "create",
+  );
+  const stored = new Map(
+    (await read()).flatMap((r) => [
+      [`${r.id}|values`, iso(r.values)],
+      [`${r.id}|removed`, iso(r.removed)],
+    ]),
+  );
+  const key = (c: (typeof fields)[number]) => `${c.id}|${c.field}`;
+  for (const k of staleKeys(stored, fields, key, now)) out.sets.add(k.split("|")[0]!);
+  await guarded(
+    ctx,
+    mergeFields(stored, fields, key, now),
+    async (sp, batch) => {
+      for (const c of batch)
+        await sp
+          .update(workoutSets)
+          .set({
+            ...(c.field === "values"
+              ? { weightKg: c.weightKg, reps: c.reps, rir: c.rir, fieldsAt: new Date(c.at) }
+              : { removed: c.value, removedAt: new Date(c.at) }),
+            serverSeq: nextSeq,
+            updatedAt: sql`now()`,
+          })
+          .where(and(eq(workoutSets.id, c.id), eq(workoutSets.userId, userId)));
+    },
+    (c) => out.sets.add(c.id),
+  );
+}
+
 // Every row a phone may receive, tagged with its table and sequence number.
 type Item =
   | { seq: bigint; t: "body"; row: typeof bodyMetrics.$inferSelect }
   | { seq: bigint; t: "intake"; row: typeof intakeLogs.$inferSelect }
   | { seq: bigint; t: "supplement"; row: typeof supplements.$inferSelect }
   | { seq: bigint; t: "log"; row: typeof supplementLogs.$inferSelect }
-  | { seq: bigint; t: "annotation"; row: typeof annotations.$inferSelect };
+  | { seq: bigint; t: "annotation"; row: typeof annotations.$inferSelect }
+  | { seq: bigint; t: "workout"; row: typeof workouts.$inferSelect }
+  | { seq: bigint; t: "set"; row: typeof workoutSets.$inferSelect };
 const tag =
   <T extends Item["t"]>(t: T) =>
   (row: Extract<Item, { t: T }>["row"]) =>
@@ -537,6 +754,22 @@ async function readSince(
         .orderBy(asc(annotations.serverSeq))
         .limit(limit)
     ).map(tag("annotation")),
+    ...(
+      await tx
+        .select()
+        .from(workouts)
+        .where(after(workouts))
+        .orderBy(asc(workouts.serverSeq))
+        .limit(limit)
+    ).map(tag("workout")),
+    ...(
+      await tx
+        .select()
+        .from(workoutSets)
+        .where(after(workoutSets))
+        .orderBy(asc(workoutSets.serverSeq))
+        .limit(limit)
+    ).map(tag("set")),
   ].sort((a, b) => (a.seq < b.seq ? -1 : a.seq > b.seq ? 1 : 0));
   const hasMore = items.length > MAX_ROWS;
   const sent = items.slice(0, MAX_ROWS);
@@ -589,6 +822,20 @@ async function readSince(
           .from(annotations)
           .where(and(mine(annotations), inArray(annotations.id, [...out.annotations])))
     ).map(tag("annotation")),
+    ...(out.workouts.size === 0
+      ? []
+      : await tx
+          .select()
+          .from(workouts)
+          .where(and(mine(workouts), inArray(workouts.id, [...out.workouts])))
+    ).map(tag("workout")),
+    ...(out.sets.size === 0
+      ? []
+      : await tx
+          .select()
+          .from(workoutSets)
+          .where(and(mine(workoutSets), inArray(workoutSets.id, [...out.sets])))
+    ).map(tag("set")),
   ];
 
   const [me] = await tx.select().from(users).where(eq(users.id, userId));
@@ -599,8 +846,6 @@ async function readSince(
     cursor: next.toString(),
     ...rowsOf([...sent, ...back]),
     ...userRows(me && (me.serverSeq > cursor || out.user) ? me : undefined),
-    workouts: [],
-    sets: [],
     rejected: out.rejected,
     hasMore,
   };
@@ -614,7 +859,47 @@ function rowsOf(items: Item[]) {
   const supplementRows = new Map<string, SupplementRow>();
   const logs = new Map<string, SupplementLogRow>();
   const annotationRows = new Map<string, AnnotationRow>();
-  for (const { t, row: r } of items) {
+  const workoutRows = new Map<string, WorkoutRow>();
+  const setRows = new Map<string, SetRow>();
+  for (const item of items) {
+    if (item.t === "workout") {
+      const r = item.row;
+      workoutRows.set(r.id, {
+        id: r.id,
+        sessionCode: r.sessionCode,
+        plan: r.plan,
+        startedAt: r.startedAt.toISOString(),
+        endedAt: iso(r.endedAt),
+        endedAtAt: iso(r.endedAtAt),
+        note: r.note,
+        noteAt: iso(r.noteAt),
+        exerciseNotes: r.exerciseNotes ?? {},
+        exerciseNotesAt: iso(r.exerciseNotesAt),
+        removed: r.removed,
+        removedAt: iso(r.removedAt),
+      });
+      continue;
+    }
+    if (item.t === "set") {
+      const r = item.row;
+      setRows.set(r.id, {
+        id: r.id,
+        workoutId: r.workoutId,
+        slotIndex: r.slotIndex,
+        position: r.position,
+        exerciseId: r.exerciseId,
+        warmup: r.warmup,
+        weightKg: r.weightKg,
+        reps: r.reps,
+        rir: r.rir,
+        doneAt: r.doneAt.toISOString(),
+        fieldsAt: r.fieldsAt.toISOString(),
+        removed: r.removed,
+        removedAt: iso(r.removedAt),
+      });
+      continue;
+    }
+    const { t, row: r } = item;
     if (t === "body") {
       // A day that holds no weight (never weighed, only measured) is not a weigh-in.
       if (r.weightAt)
@@ -672,6 +957,8 @@ function rowsOf(items: Item[]) {
     supplements: [...supplementRows.values()],
     supplementLogs: [...logs.values()],
     annotations: [...annotationRows.values()],
+    workouts: [...workoutRows.values()],
+    sets: [...setRows.values()],
   };
 }
 
