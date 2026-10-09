@@ -2,15 +2,16 @@ import { exerciseById } from "@belay/shared/exercises/catalog";
 import { type SessionTemplate, starterProgram } from "@belay/shared/training/program";
 import { Link } from "@tanstack/react-router";
 import { ChevronDown } from "lucide-react";
-import { useId, useState } from "react";
+import { type ReactNode, useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { sessionTitle } from "@/lib/format";
 import { formatSets, groupKind } from "./format";
 
 const card = "rounded-card border border-border bg-card";
 
-// Program (§4.5): sessions A, B and C, read only on the phone, the first one open.
-export function ProgramPanel() {
+// Program (§4.5): sessions A, B and C, read only on the phone, the first one open. `action`
+// puts a button under each session: Start, or Resume when a session is open.
+export function ProgramPanel({ action }: { action?: (session: SessionTemplate) => ReactNode }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState<string | null>(starterProgram[0]!.code);
   return (
@@ -21,6 +22,7 @@ export function ProgramPanel() {
           session={s}
           open={open === s.code}
           onToggle={() => setOpen(open === s.code ? null : s.code)}
+          action={action?.(s)}
         />
       ))}
       <p className="mx-0.5 text-sm text-muted-foreground">{t("workouts.program.editNote")}</p>
@@ -32,10 +34,12 @@ function Session({
   session,
   open,
   onToggle,
+  action,
 }: {
   session: SessionTemplate;
   open: boolean;
   onToggle: () => void;
+  action?: ReactNode;
 }) {
   const { t } = useTranslation();
   const id = useId();
@@ -61,26 +65,29 @@ function Session({
         </button>
       </h2>
       {open && (
-        <ul className="flex flex-col">
-          {session.slots.map((slot, i) => {
-            const kind = groupKind(session.slots, i);
-            return (
-              <li key={i} className="border-t border-border">
-                <Link
-                  to="/exercises/$exerciseId"
-                  params={{ exerciseId: slot.exerciseId }}
-                  className="flex min-h-14 flex-col justify-center py-2"
-                >
-                  <span className="font-medium">{exerciseById(slot.exerciseId)?.name}</span>
-                  <span className="text-[13px] text-muted-foreground">
-                    {formatSets(slot)}
-                    {kind && ` · ${t(`workouts.program.${kind}`)}`}
-                  </span>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+        <>
+          <ul className="flex flex-col">
+            {session.slots.map((slot, i) => {
+              const kind = groupKind(session.slots, i);
+              return (
+                <li key={i} className="border-t border-border">
+                  <Link
+                    to="/exercises/$exerciseId"
+                    params={{ exerciseId: slot.exerciseId }}
+                    className="flex min-h-14 flex-col justify-center py-2"
+                  >
+                    <span className="font-medium">{exerciseById(slot.exerciseId)?.name}</span>
+                    <span className="text-[13px] text-muted-foreground">
+                      {formatSets(slot)}
+                      {kind && ` · ${t(`workouts.program.${kind}`)}`}
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+          {action && <div className="border-t border-border py-3">{action}</div>}
+        </>
       )}
     </section>
   );

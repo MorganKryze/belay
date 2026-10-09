@@ -179,7 +179,9 @@
       "exercises_other": "{{count}} exercises",
       "superset": "superset",
       "triset": "tri-set",
-      "editNote": "The program is edited on a computer."
+      "editNote": "The program is edited on a computer.",
+      "start": "Start",
+      "resume": "Resume the session in progress"
     },
     "rir": "RIR {{range}}",
     "restSec": "{{s}} s",
@@ -265,5 +267,59 @@
     "removeBody": "Its sets will leave the history and the statistics, on all your devices.",
     "removeConfirm": "Delete",
     "cancel": "Cancel"
+  },
+  "session": {
+    "elapsed": "Elapsed time",
+    "finish": "Finish",
+    "lastTime": "Last time: {{value}}",
+    "set": "Set",
+    "reps": "Reps",
+    "warmup": "Warm-up",
+    "upcoming": "{{target}} · coming up",
+    "doneCount_one": "{{count}} of {{total}} sets",
+    "doneCount_other": "{{count}} of {{total}} sets",
+    "group": "{{kind}} · round {{round}} of {{rounds}}",
+    "superset": "Superset",
+    "triset": "Tri-set",
+    "setField": {
+      "kg": "Load of set {{n}}, kg",
+      "reps": "Reps of set {{n}}",
+      "validate": "Log set {{n}}",
+      "done": "Set {{n}} logged"
+    },
+    "warmupField": {
+      "kg": "Load of warm-up {{n}}, kg",
+      "reps": "Reps of warm-up {{n}}",
+      "validate": "Log warm-up {{n}}",
+      "done": "Warm-up {{n}} logged"
+    },
+    "rirLabel": "RIR, reps in reserve",
+    "note": "Note",
+    "noteLabel": "Note on {{exercise}}",
+    "restNextSet": "Rest · set {{n}} next",
+    "restNextExercise": "Rest · {{exercise}} next",
+    "restLast": "Rest",
+    "plus30": "+30 s",
+    "skip": "Skip",
+    "backToIt": "Back to it",
+    "restOver": "Rest over",
+    "finishTitle": "Finish the session?",
+    "finishLeft_one": "{{count}} set not done will not be saved.",
+    "finishLeft_other": "{{count}} sets not done will not be saved.",
+    "finishEmpty": "No set logged: the session will not be kept.",
+    "keepGoing": "Keep going"
+  },
+  "summary": {
+    "title": "Session done",
+    "close": "Close",
+    "record": "Record: {{exercise}}, {{kg}} kg × {{reps}}",
+    "duration": "Duration",
+    "workSets": "Work sets",
+    "volume": "Volume",
+    "warmups": "Warm-ups left out",
+    "warmupCount_one": "{{count}} set",
+    "warmupCount_other": "{{count}} sets",
+    "note": "Session note (optional)",
+    "save": "Save"
   }
 }

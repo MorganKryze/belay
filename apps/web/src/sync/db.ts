@@ -23,7 +23,7 @@ import type {
   WorkoutRow,
 } from "@belay/shared/sync/schema";
 import { isValidChange } from "@belay/shared/sync/valid";
-import { autoClose, type History } from "@belay/shared/training/rules";
+import { autoClose, type History, openWorkout } from "@belay/shared/training/rules";
 import { type DBSchema, type IDBPDatabase, type IDBPTransaction, openDB } from "idb";
 
 export type OutboxEntry = { id: number; change: Change };
@@ -516,6 +516,35 @@ export async function recordSet(
     recorded = change;
   });
   return recorded!;
+}
+
+// Starts a session, unless one is open already, here or on another device: then this device
+// takes that one up and its id is returned (one open session per account, §9.2; a second tap,
+// or React running an effect twice, never opens two).
+export async function startWorkout(
+  db: AccountDb,
+  start: Extract<Change, { kind: "workout"; field: "start" }>,
+): Promise<string> {
+  let id = start.id;
+  if (!isValidChange(start)) throw new RangeError("invalid change");
+  await write(db, async (tx) => {
+    const open = openWorkout(await tx.objectStore("workouts").getAll());
+    if (open) {
+      id = open.id;
+      const active = await tx.objectStore("activeSession").get("current");
+      if (active?.workoutId !== open.id)
+        await tx
+          .objectStore("activeSession")
+          .put({ workoutId: open.id, slotIndex: 0, restEndsAt: null }, "current");
+      return;
+    }
+    await applyLocal(tx, start);
+    await tx.objectStore("outbox").add({ change: start });
+    await tx
+      .objectStore("activeSession")
+      .put({ workoutId: start.id, slotIndex: 0, restEndsAt: null }, "current");
+  });
+  return id;
 }
 
 // D12, when the app opens: a session left open is ended at its last set, or removed when it has

@@ -172,6 +172,16 @@ export function summary(workout: Workout, sets: readonly WorkoutSet[], history: 
   };
 }
 
+// The session in progress, if any: the latest one neither finished nor removed.
+export function openWorkout<W extends Workout>(workouts: readonly W[]): W | null {
+  return workouts
+    .filter((w) => w.endedAt === null && !w.removed)
+    .reduce<W | null>(
+      (last, w) => (last === null || w.startedAt > last.startedAt ? w : last),
+      null,
+    );
+}
+
 // D12: a session left open is closed at its last set once that set is more than 6 hours old;
 // one without a set is removed after 6 hours.
 export const FORGOTTEN_MS = 6 * 3_600_000;

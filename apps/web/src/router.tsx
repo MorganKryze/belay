@@ -12,7 +12,7 @@ import { Home } from "./routes/home";
 import { Layout } from "./routes/layout";
 import { isWorkoutTab, type WorkoutTab } from "./workouts/tabs";
 
-// ponytail: code-based routes, 17 screens today (the tools share one lazy `$toolId` route).
+// ponytail: code-based routes, 19 screens today (the tools share one lazy `$toolId` route).
 // Switch to file-based routing at ~20 screens, or when this file passes ~150 lines of route
 // declarations.
 const rootRoute = createRootRoute({ component: Layout });
@@ -42,6 +42,19 @@ const workoutDetailRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/workouts/$workoutId",
   component: lazyRouteComponent(() => import("./routes/workout-detail"), "WorkoutDetail"),
+});
+// The session screen, full screen. ?start=B starts session B, or takes up the one open.
+const workoutRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/workout",
+  component: lazyRouteComponent(() => import("./routes/workout"), "WorkoutScreen"),
+  validateSearch: (search: Record<string, unknown>): { start?: string } =>
+    typeof search.start === "string" ? { start: search.start } : {},
+});
+const workoutSummaryRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/workout/summary/$workoutId",
+  component: lazyRouteComponent(() => import("./routes/workout-summary"), "WorkoutSummary"),
 });
 const exerciseRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -88,6 +101,8 @@ export const routeTree = rootRoute.addChildren([
   homeRoute,
   workoutsRoute,
   workoutDetailRoute,
+  workoutRoute,
+  workoutSummaryRoute,
   exerciseRoute,
   bodyRoute,
   settingsRoute,

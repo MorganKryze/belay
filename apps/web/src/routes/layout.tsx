@@ -1,4 +1,4 @@
-import { Outlet, useRouter } from "@tanstack/react-router";
+import { Outlet, useLocation, useRouter } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { TabBar } from "@/components/tab-bar";
@@ -21,6 +21,8 @@ function Shell() {
   // needs no banner at all (§4.6).
   const offline = !online && account.kind !== "open";
   const router = useRouter();
+  // The session and its summary are full screen: no tab bar (§4.2).
+  const fullScreen = /^\/workout(\/|$)/.test(useLocation().pathname);
   // A client navigation lands focus on the new page's h1, so screen readers announce it. The
   // first load (no fromLocation) is left alone: the browser starts at the top already. A lazy
   // route mounts its h1 after the event, so wait for it.
@@ -46,7 +48,13 @@ function Shell() {
     };
   }, [router]);
   return (
-    <div className="mx-auto flex min-h-dvh max-w-xl flex-col gap-6 pt-[max(1rem,env(safe-area-inset-top))] pr-[max(1rem,env(safe-area-inset-right))] pb-[calc(5.5rem+env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))]">
+    <div
+      className={`mx-auto flex min-h-dvh max-w-xl flex-col gap-6 pt-[max(1rem,env(safe-area-inset-top))] pr-[max(1rem,env(safe-area-inset-right))] pl-[max(1rem,env(safe-area-inset-left))] ${
+        fullScreen
+          ? "pb-[max(1rem,env(safe-area-inset-bottom))]"
+          : "pb-[calc(5.5rem+env(safe-area-inset-bottom))]"
+      }`}
+    >
       {/* Mounted for good and filled when offline, so the change is announced. */}
       <p role="status" className={offline ? "rounded-chip bg-track p-3 text-sm" : "sr-only"}>
         {offline ? t("offline") : ""}
@@ -54,7 +62,7 @@ function Shell() {
       <main>
         <Outlet />
       </main>
-      <TabBar />
+      {!fullScreen && <TabBar />}
     </div>
   );
 }

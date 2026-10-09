@@ -1,4 +1,5 @@
 import type { Change } from "@belay/shared/sync/schema";
+import type { Slot } from "@belay/shared/training/workout";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createContext,
@@ -31,6 +32,7 @@ import {
   recordChanges,
   recordSet,
   type SetInput,
+  startWorkout,
 } from "./db";
 import { createSyncEngine, type SyncEngine } from "./engine";
 import { type LastUser, readLastUser, writeLastUser } from "./last-user";
@@ -230,6 +232,29 @@ export function useRecord({ user, db, engine }: OpenAccount) {
       await recordChanges(db, "kind" in change ? [change] : change, options);
       await queryClient.invalidateQueries({ queryKey: ["local", user.id] });
       engine.schedule();
+    },
+    [db, engine, queryClient, user.id],
+  );
+}
+
+// Starts a session of the program now; the session open on this device, if any, wins.
+export function useStartWorkout({ user, db, engine }: OpenAccount) {
+  const queryClient = useQueryClient();
+  return useCallback(
+    async (id: string, sessionCode: string, plan: Slot[]) => {
+      const startedAt = new Date().toISOString();
+      const open = await startWorkout(db, {
+        kind: "workout",
+        id,
+        field: "start",
+        sessionCode,
+        plan,
+        startedAt,
+        at: startedAt,
+      });
+      await queryClient.invalidateQueries({ queryKey: ["local", user.id] });
+      engine.schedule();
+      return open;
     },
     [db, engine, queryClient, user.id],
   );

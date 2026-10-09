@@ -179,7 +179,9 @@
       "exercises_other": "{{count}} exercices",
       "superset": "superset",
       "triset": "tri-set",
-      "editNote": "Le programme se modifie sur ordinateur."
+      "editNote": "Le programme se modifie sur ordinateur.",
+      "start": "Commencer",
+      "resume": "Reprendre la séance en cours"
     },
     "rir": "RIR {{range}}",
     "restSec": "{{s}} s",
@@ -265,5 +267,59 @@
     "removeBody": "Ses séries disparaîtront de l'historique et des statistiques, sur tous tes appareils.",
     "removeConfirm": "Supprimer",
     "cancel": "Annuler"
+  },
+  "session": {
+    "elapsed": "Temps écoulé",
+    "finish": "Terminer",
+    "lastTime": "La dernière fois : {{value}}",
+    "set": "Série",
+    "reps": "Reps",
+    "warmup": "Montée",
+    "upcoming": "{{target}} · à venir",
+    "doneCount_one": "{{count}} série sur {{total}}",
+    "doneCount_other": "{{count}} séries sur {{total}}",
+    "group": "{{kind}} · tour {{round}} sur {{rounds}}",
+    "superset": "Superset",
+    "triset": "Tri-set",
+    "setField": {
+      "kg": "Charge de la série {{n}}, kg",
+      "reps": "Répétitions de la série {{n}}",
+      "validate": "Valider la série {{n}}",
+      "done": "Série {{n}} validée"
+    },
+    "warmupField": {
+      "kg": "Charge de la montée {{n}}, kg",
+      "reps": "Répétitions de la montée {{n}}",
+      "validate": "Valider la montée {{n}}",
+      "done": "Montée {{n}} validée"
+    },
+    "rirLabel": "RIR, répétitions en réserve",
+    "note": "Note",
+    "noteLabel": "Note sur {{exercise}}",
+    "restNextSet": "Repos · série {{n}} ensuite",
+    "restNextExercise": "Repos · {{exercise}} ensuite",
+    "restLast": "Repos",
+    "plus30": "+30 s",
+    "skip": "Passer",
+    "backToIt": "C'est reparti",
+    "restOver": "Repos terminé",
+    "finishTitle": "Terminer la séance ?",
+    "finishLeft_one": "{{count}} série non faite ne sera pas enregistrée.",
+    "finishLeft_other": "{{count}} séries non faites ne seront pas enregistrées.",
+    "finishEmpty": "Aucune série validée : la séance ne sera pas gardée.",
+    "keepGoing": "Continuer la séance"
+  },
+  "summary": {
+    "title": "Séance terminée",
+    "close": "Fermer",
+    "record": "Record : {{exercise}}, {{kg}} kg × {{reps}}",
+    "duration": "Durée",
+    "workSets": "Séries de travail",
+    "volume": "Volume",
+    "warmups": "Montée exclue",
+    "warmupCount_one": "{{count}} série",
+    "warmupCount_other": "{{count}} séries",
+    "note": "Note sur la séance (option)",
+    "save": "Enregistrer"
   }
 }

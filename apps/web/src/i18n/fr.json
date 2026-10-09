@@ -402,6 +402,10 @@
   },
   "today": {
     "title": "Aujourd'hui",
+    "sessionPlanned_one": "{{count}} exercice · environ {{minutes}} min",
+    "sessionPlanned_other": "{{count}} exercices · environ {{minutes}} min",
+    "sessionOpen_one": "en cours · {{count}} série sur {{total}}",
+    "sessionOpen_other": "en cours · {{count}} séries sur {{total}}",
     "weighIn": "Pesée",
     "weighInDone": "{{value}} kg · enregistrée",
     "weighInEmpty": "pas encore saisie",

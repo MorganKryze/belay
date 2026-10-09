@@ -15,6 +15,7 @@ import {
   lastTime,
   liveSets,
   nextTurn,
+  openWorkout,
   prefill,
   restEndsAt,
   summary,
@@ -388,6 +389,20 @@ describe("autoClose (D12)", () => {
   it("ignores a removed set", () => {
     const gone = [set(open, 0, 80, 8, { doneAt: last, removed: true })];
     expect(autoClose(open, gone, at("2026-10-07T23:01:00.000Z"))).toEqual({ kind: "remove" });
+  });
+});
+
+describe("openWorkout", () => {
+  it("is the latest session neither finished nor removed, if any", () => {
+    const older = workout({ startedAt: "2026-10-06T17:00:00.000Z", endedAt: null });
+    const newer = workout({ startedAt: "2026-10-07T17:00:00.000Z", endedAt: null });
+    const removed = workout({
+      startedAt: "2026-10-08T17:00:00.000Z",
+      endedAt: null,
+      removed: true,
+    });
+    expect(openWorkout([older, newer, removed, workout()])).toBe(newer);
+    expect(openWorkout([workout()])).toBeNull();
   });
 });
 
