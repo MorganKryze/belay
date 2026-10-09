@@ -217,7 +217,7 @@ function SessionRow({ account }: { account: OpenAccount }) {
   const { t } = useTranslation();
   const history = useHistory(account).data;
   if (!history) return null;
-  const open = openWorkout(history.workouts);
+  const open = openWorkout(history.workouts, { sets: history.sets, now: new Date() });
   const code = open?.sessionCode ?? nextSession(history.workouts);
   const session = sessionByCode(code);
   if (!open && !session) return null;

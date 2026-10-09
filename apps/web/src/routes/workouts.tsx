@@ -75,7 +75,7 @@ function StartButton({ account, code }: { account: OpenAccount; code: string }) 
   const { t } = useTranslation();
   const history = useHistory(account).data;
   if (!history) return null;
-  const open = openWorkout(history.workouts);
+  const open = openWorkout(history.workouts, { sets: history.sets, now: new Date() });
   return (
     <Button
       asChild

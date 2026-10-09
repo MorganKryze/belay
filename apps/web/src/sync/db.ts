@@ -528,7 +528,10 @@ export async function startWorkout(
   let id = start.id;
   if (!isValidChange(start)) throw new RangeError("invalid change");
   await write(db, async (tx) => {
-    const open = openWorkout(await tx.objectStore("workouts").getAll());
+    const open = openWorkout(await tx.objectStore("workouts").getAll(), {
+      sets: await tx.objectStore("sets").getAll(),
+      now: new Date(),
+    });
     if (open) {
       id = open.id;
       const active = await tx.objectStore("activeSession").get("current");
