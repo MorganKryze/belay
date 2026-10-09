@@ -11,7 +11,8 @@
   "signin": {
     "unavailable": "Sign-in is unavailable right now. Try again in a moment.",
     "expired": "Your sign-in took too long. Please try again.",
-    "failed": "Sign-in didn't work. Please try again."
+    "failed": "Sign-in didn't work. Please try again.",
+    "denied": "Your account doesn't have access to Belay. Ask the person who runs this instance."
   },
   "offline": "You're offline.",
   "body": {

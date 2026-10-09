@@ -11,7 +11,8 @@
   "signin": {
     "unavailable": "La connexion est indisponible pour le moment. Réessaie dans un instant.",
     "expired": "La connexion a pris trop de temps. Réessaie.",
-    "failed": "La connexion n'a pas abouti. Réessaie."
+    "failed": "La connexion n'a pas abouti. Réessaie.",
+    "denied": "Ton compte n'a pas accès à Belay. Demande l'accès à la personne qui gère cette instance."
   },
   "offline": "Tu es hors ligne.",
   "body": {

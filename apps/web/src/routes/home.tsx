@@ -12,7 +12,7 @@ import { useToday } from "@/lib/today";
 import { type OpenAccount, useAccount, useWeighings } from "@/sync/account";
 
 // What the server puts in `/?signin=` when a sign-in fails (apps/server/src/auth/routes.ts).
-const SIGNIN_FAILURES = ["unavailable", "expired", "failed"] as const;
+const SIGNIN_FAILURES = ["unavailable", "expired", "failed", "denied"] as const;
 type SigninFailure = (typeof SIGNIN_FAILURES)[number];
 const isSigninFailure = (v: unknown): v is SigninFailure =>
   (SIGNIN_FAILURES as readonly unknown[]).includes(v);
