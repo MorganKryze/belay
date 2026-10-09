@@ -5,6 +5,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./body/*": "./src/body/*.ts",
+    "./exercises/*": "./src/exercises/*.ts",
     "./sync/*": "./src/sync/*.ts",
     "./tools/*": "./src/tools/*.ts",
     "./science/*": "./src/science/*.ts"
