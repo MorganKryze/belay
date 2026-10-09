@@ -8,6 +8,7 @@
     "./exercises/*": "./src/exercises/*.ts",
     "./sync/*": "./src/sync/*.ts",
     "./tools/*": "./src/tools/*.ts",
+    "./training/*": "./src/training/*.ts",
     "./science/*": "./src/science/*.ts"
   },
   "scripts": {
