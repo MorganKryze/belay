@@ -23,9 +23,15 @@
       "supplementUnnamed": "Supplement",
       "annotation": "Annotation for {{day}}",
       "annotationUndated": "Annotation",
+      "workout": "Session on {{day}}",
+      "workoutUndated": "Session",
+      "set": "Set on {{day}}",
+      "setUndated": "Set",
       "reasons": {
         "unknown": "Not found on the server",
-        "refused": "Refused by the server"
+        "refused": "Refused by the server",
+        "unknown_exercise": "Exercise unknown to the server",
+        "too_many_sets": "More than 150 sets in the session"
       }
     }
   },

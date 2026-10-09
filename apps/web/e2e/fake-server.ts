@@ -169,6 +169,8 @@ export async function fakeServer(
         supplements: table("supplements"),
         supplementLogs: table("supplementLogs"),
         annotations: table("annotations"),
+        workouts: [],
+        sets: [],
         target: null,
         profile: profile ? bare(profile) : null,
         rejected: [],

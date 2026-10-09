@@ -180,6 +180,9 @@ async function localAt(tx: WriteTx, change: Change): Promise<string | null> {
       const row = await tx.objectStore("annotations").get(change.id);
       return (change.field === "fields" ? row?.fieldsAt : row?.removedAt) ?? null;
     }
+    case "workout":
+    case "set":
+      return null; // not kept on this device yet
   }
 }
 
@@ -383,7 +386,7 @@ export async function readCursor(db: AccountDb): Promise<string> {
 }
 
 // The thing an entry is about, as a person counts entries: one weigh-in per day however many
-// corrections, one box per supplement and day, one profile.
+// corrections, one box per supplement and day, one profile, one session.
 function entryOf(change: Change): string {
   switch (change.kind) {
     case "weight":
@@ -398,6 +401,10 @@ function entryOf(change: Change): string {
       return `${change.kind}|${change.id}`;
     case "supplementLog":
       return `${change.kind}|${change.supplementId}|${change.date}`;
+    case "workout":
+      return `workout|${change.id}`;
+    case "set":
+      return `workout|${change.workoutId}`; // a session is one entry, however many sets
   }
 }
 

@@ -599,6 +599,8 @@ async function readSince(
     cursor: next.toString(),
     ...rowsOf([...sent, ...back]),
     ...userRows(me && (me.serverSeq > cursor || out.user) ? me : undefined),
+    workouts: [],
+    sets: [],
     rejected: out.rejected,
     hasMore,
   };

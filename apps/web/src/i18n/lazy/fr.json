@@ -23,9 +23,15 @@
       "supplementUnnamed": "Complément",
       "annotation": "Annotation du {{day}}",
       "annotationUndated": "Annotation",
+      "workout": "Séance du {{day}}",
+      "workoutUndated": "Séance",
+      "set": "Série du {{day}}",
+      "setUndated": "Série",
       "reasons": {
         "unknown": "Introuvable sur le serveur",
-        "refused": "Refusée par le serveur"
+        "refused": "Refusée par le serveur",
+        "unknown_exercise": "Exercice inconnu du serveur",
+        "too_many_sets": "Plus de 150 séries dans la séance"
       }
     }
   },
