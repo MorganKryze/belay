@@ -90,6 +90,12 @@ export function loadConfig(env: Record<string, string | undefined>): Config {
   if (e.SESSION_MAX_DAYS < e.SESSION_TTL_DAYS) {
     throw new Error("Invalid configuration:\nSESSION_MAX_DAYS must be at least SESSION_TTL_DAYS");
   }
+  // Unset or empty means no filter; a blank value is a typo, and must not leave sign-in open.
+  if (e.OIDC_REQUIRED_ROLE && !e.OIDC_REQUIRED_ROLE.trim()) {
+    throw new Error(
+      "Invalid configuration:\nOIDC_REQUIRED_ROLE must not be blank (leave it unset to allow everyone)",
+    );
+  }
   const requiredRole = e.OIDC_REQUIRED_ROLE?.trim() || undefined;
   const rolesClaim = e.OIDC_ROLES_CLAIM ?? "groups";
   if (requiredRole && rolesClaim.split(".").some((segment) => !segment.trim())) {

@@ -118,6 +118,14 @@ describe("loadConfig", () => {
     expect(loadConfig(testEnv({ OIDC_ROLES_CLAIM: "a..b" })).oidc.requiredRole).toBeUndefined();
   });
 
+  it("refuses a blank required role instead of leaving sign-in open", () => {
+    for (const role of [" ", "  ", "\t"]) {
+      expect(() => loadConfig(testEnv({ OIDC_REQUIRED_ROLE: role })), JSON.stringify(role)).toThrow(
+        /OIDC_REQUIRED_ROLE must not be blank/,
+      );
+    }
+  });
+
   it("reads the required role and looks in `groups` unless told otherwise", () => {
     expect(loadConfig(testEnv({ OIDC_REQUIRED_ROLE: "belay" })).oidc).toMatchObject({
       requiredRole: "belay",

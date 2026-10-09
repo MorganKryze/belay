@@ -58,6 +58,12 @@ describe("hasRole", () => {
 
   it("does not walk the prototype chain", () => {
     expect(hasRole({}, "constructor.name", "Object")).toBe(false);
+    expect(hasRole({}, "__proto__.x", "x")).toBe(false);
+    const polluted = Object.create({ groups: ["belay"] }) as Record<string, unknown>;
+    expect(hasRole(polluted, "groups", "belay")).toBe(false);
+    // A real own `__proto__` key (as JSON.parse makes one) is data, and is reached like any other.
+    const own = JSON.parse('{"__proto__":{"x":["x"]}}') as Record<string, unknown>;
+    expect(hasRole(own, "__proto__.x", "x")).toBe(true);
   });
 });
 
