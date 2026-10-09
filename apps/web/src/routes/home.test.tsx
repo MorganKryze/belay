@@ -66,6 +66,7 @@ describe("Home sign-in failure", () => {
     ["unavailable", "Sign-in is unavailable right now. Try again in a moment."],
     ["expired", "Your sign-in took too long. Please try again."],
     ["failed", "Sign-in didn't work. Please try again."],
+    ["denied", "Your account doesn't have access to Belay. Ask the person who runs this instance."],
   ])(
     "?signin=%s shows a localized alert, with the Sign in link still there",
     async (reason, text) => {
@@ -83,6 +84,15 @@ describe("Home sign-in failure", () => {
     renderRoute("/?signin=expired");
     expect((await screen.findByRole("alert")).textContent).toBe(
       "La connexion a pris trop de temps. Réessaie.",
+    );
+  });
+
+  it("tells a refused account in French that it has no access", async () => {
+    await i18n.changeLanguage("fr");
+    fakeApi({ me: null });
+    renderRoute("/?signin=denied");
+    expect((await screen.findByRole("alert")).textContent).toBe(
+      "Ton compte n'a pas accès à Belay. Demande l'accès à la personne qui gère cette instance.",
     );
   });
 

@@ -38,3 +38,14 @@ export function pickDisplayName(claims: Record<string, unknown>, nameClaim: stri
   }
   return "Belay user";
 }
+
+// Whether the claim at `path` (dot notation, own properties only) is `role`, or a list holding it.
+// Exact, case-sensitive match; anything missing or of another type is a no.
+export function hasRole(claims: Record<string, unknown>, path: string, role: string): boolean {
+  let value: unknown = claims;
+  for (const key of path.split(".")) {
+    if (typeof value !== "object" || value === null || !Object.hasOwn(value, key)) return false;
+    value = (value as Record<string, unknown>)[key];
+  }
+  return Array.isArray(value) ? value.includes(role) : value === role;
+}
