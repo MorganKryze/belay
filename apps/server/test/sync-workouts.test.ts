@@ -276,6 +276,49 @@ describe("a session through /api/sync", () => {
     expect(n).toBe(MAX_SETS);
   });
 
+  it("counts a restored set against the 150 ceiling", async () => {
+    const { user, sync } = await signIn("wk-restore");
+    const w = newId();
+    await sync("0", [start(w)]);
+    const row = (removed: boolean) => ({
+      id: newId(),
+      userId: user,
+      workoutId: w,
+      slotIndex: 0,
+      position: 3,
+      exerciseId: "ds:0025",
+      warmup: false,
+      weightKg: 20,
+      reps: 10,
+      doneAt: new Date(LATER),
+      fieldsAt: new Date(LATER),
+      removed,
+    });
+    const live = Array.from({ length: MAX_SETS - 2 }, () => row(false));
+    const gone = Array.from({ length: 4 }, () => row(true));
+    await owner.insert(workoutSets).values([...live, ...gone]);
+    const restore = (id: string): Change => ({
+      kind: "set",
+      id,
+      workoutId: w,
+      field: "removed",
+      value: false,
+      at: LATEST,
+    });
+    const res = await sync(
+      "0",
+      gone.map((g) => restore(g.id)),
+    );
+    expect(res.rejected).toEqual([
+      { index: 2, reason: "too_many_sets" },
+      { index: 3, reason: "too_many_sets" },
+    ]);
+    const [{ n } = { n: 0 }] = await owner.execute<{ n: number }>(
+      sql`select count(*)::int as n from workout_sets where workout_id = ${w} and not removed`,
+    );
+    expect(n).toBe(MAX_SETS);
+  });
+
   it("keeps a removed session's sets, which the shared rules never show", async () => {
     const { sync } = await signIn("wk-removed");
     const w = newId();

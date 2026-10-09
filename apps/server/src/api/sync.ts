@@ -594,10 +594,17 @@ async function writeSets(ctx: Ctx, changes: Indexed<SetChange>[]) {
   const ids = [...new Set(changes.map((c) => c.id))];
   const read = () =>
     tx
-      .select({ id: workoutSets.id, values: workoutSets.fieldsAt, removed: workoutSets.removedAt })
+      .select({
+        id: workoutSets.id,
+        values: workoutSets.fieldsAt,
+        removed: workoutSets.removedAt,
+        gone: workoutSets.removed,
+      })
       .from(workoutSets)
       .where(and(eq(workoutSets.userId, userId), inArray(workoutSets.id, ids)));
-  const known = new Set((await read()).map((r) => r.id));
+  const storedSets = await read();
+  const known = new Set(storedSets.map((r) => r.id));
+  const gone = new Set(storedSets.filter((r) => r.gone).map((r) => r.id));
   // Each session's sets still in place, then the new ones one by one: past 150, refused, and
   // so is every other change of that set.
   const count = new Map(
@@ -617,9 +624,12 @@ async function writeSets(ctx: Ctx, changes: Indexed<SetChange>[]) {
   );
   const refused = new Map<string, Rejected["reason"]>();
   for (const c of changes) {
-    if (c.field !== "create" || !mine.has(c.workoutId) || known.has(c.id) || refused.has(c.id))
-      continue;
-    if (!isKnownExercise(c.exerciseId)) refused.set(c.id, "unknown_exercise");
+    if (!mine.has(c.workoutId) || refused.has(c.id)) continue;
+    // A removed set put back counts as a new live one.
+    const restored = c.field === "removed" && !c.value && gone.has(c.id);
+    if (!restored && (c.field !== "create" || known.has(c.id))) continue;
+    if (c.field === "create" && !isKnownExercise(c.exerciseId))
+      refused.set(c.id, "unknown_exercise");
     else if ((count.get(c.workoutId) ?? 0) >= MAX_SETS) refused.set(c.id, "too_many_sets");
     else count.set(c.workoutId, (count.get(c.workoutId) ?? 0) + 1);
   }
