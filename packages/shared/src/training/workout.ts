@@ -3,7 +3,7 @@
 import { isExerciseId } from "../exercises/library";
 import type { WarmupCount } from "../tools/warmup";
 
-// One exercise of a session template (BRIEF §9). In a group (superset, tri-set: the same
+// One exercise of a session template (the data model). In a group (superset, tri-set: the same
 // groupKey on consecutive slots) the rest of the group's last slot follows each round.
 export interface Slot {
   exerciseId: string;
@@ -28,7 +28,7 @@ export interface Workout {
   removed: boolean;
 }
 
-// One set as it was done. Its exercise is the one really done (BRIEF §9).
+// One set as it was done. Its exercise is the one really done (the data model).
 export interface WorkoutSet {
   id: string;
   workoutId: string;
@@ -53,7 +53,7 @@ export const PLAN_MAX_BYTES = 16 * 1024;
 // Positions 0 to 2 are the warm-ups, so a work set keeps its position whatever their number.
 export const MAX_WARMUPS = 3;
 export const workPosition = (round: number) => MAX_WARMUPS + round;
-// The bounds of a slot of the plan (the spec leaves them to the plan; BRIEF §10 stays inside).
+// The bounds of a slot of the plan (the spec leaves them to the plan).
 export const SLOT_BOUNDS = { sets: 10, reps: 100, restSec: 900, groupKey: 16 } as const;
 // A time is never before 1900; the server takes it up to 5 minutes ahead of its own clock.
 export const MIN_TIME = "1900-01-01T00:00:00.000Z";

@@ -1,4 +1,4 @@
-// The starter program of BRIEF §10, a constant in M3a (D10): M3b stores it and lets it change.
+// The starter program, a constant in M3a (D10): M3b stores it and lets it change.
 import type { WarmupCount } from "../tools/warmup";
 import type { Slot, Workout } from "./workout";
 
@@ -18,7 +18,7 @@ const slot = (
 ): Slot => ({ exerciseId, sets, repRange, rirTarget, restSec, warmupSets, isMain, groupKey });
 const main = { isMain: true };
 
-// Groups keep BRIEF's numbers ("4", "5"); in a group only the last slot rests.
+// Groups keep the program's own numbers ("4", "5"); in a group only the last slot rests.
 export const starterProgram: readonly SessionTemplate[] = [
   {
     code: "A", // Push
