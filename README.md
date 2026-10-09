@@ -51,6 +51,15 @@ terminates TLS on the same host. Belay has no accounts of its own.
    - `OIDC_NAME_CLAIM`: the claim shown as the display name (default `name`,
      falling back to `preferred_username`). `email` is refused: Belay never
      stores e-mail addresses.
+   - `OIDC_REQUIRED_ROLE` (optional): only people whose ID token holds this
+     role may sign in; everyone else sees a "no access" message and nothing
+     is stored. `OIDC_ROLES_CLAIM` is where to look, as a dotted path (default
+     `groups`, as Pocket ID and Authentik send it; `realm_access.roles` or
+     `resource_access.<client-id>.roles` for Keycloak). Keycloak does not put
+     client roles in the ID token by default: add a mapper with "Add to ID
+     token" turned on. The role is checked at each sign-in, so removing it
+     does not end a session already open, which lasts until it expires (at
+     most `SESSION_MAX_DAYS`).
 
    The three secrets are empty in the example on purpose: Compose and the app
    refuse to start until you set them.
