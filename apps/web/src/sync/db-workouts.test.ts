@@ -23,6 +23,7 @@ import {
   recordChanges,
   recordSet,
   type SetInput,
+  startWorkout,
 } from "./db";
 import { createSyncEngine, type Send } from "./engine";
 
@@ -268,15 +269,61 @@ describe("closeForgotten (D12)", () => {
 
   it("removes a session without a set after 6 hours, and leaves a finished one alone", async () => {
     const other = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d93";
-    await recordChanges(db, [
-      start(),
-      start(other, "2026-10-05T17:00:00.000Z"),
-      { kind: "workout", id: other, field: "ended", value: "2026-10-05T18:00:00.000Z", at: AT },
-    ]);
+    await recordChanges(
+      db,
+      [
+        start(),
+        start(other, "2026-10-05T17:00:00.000Z"),
+        { kind: "workout", id: other, field: "ended", value: "2026-10-05T18:00:00.000Z", at: AT },
+      ],
+      { active: active() },
+    );
     expect(await closeForgotten(db, new Date("2026-10-07T23:01:00.000Z"))).toBe(true);
     const workouts = (await readHistory(db)).workouts;
     expect(workouts.find((w) => w.id === W)?.removed).toBe(true);
     expect(workouts.find((w) => w.id === other)?.removed).toBe(false);
+  });
+
+  it("never removes a session this device does not hold: its sets may not have arrived", async () => {
+    await recordChanges(db, [start()]); // pulled from another device: no active session here
+    expect(await closeForgotten(db, new Date("2026-10-08T00:30:00.000Z"))).toBe(false);
+    expect((await readHistory(db)).workouts[0]?.removed).toBe(false);
+  });
+
+  it("still ends another device's session at the last set it knows", async () => {
+    await recordChanges(db, [start()]);
+    await recordSet(db, input(S1), LATER, active());
+    await recordChanges(db, [], { active: null });
+    expect(await closeForgotten(db, new Date("2026-10-08T00:30:00.000Z"))).toBe(true);
+    expect((await readHistory(db)).workouts[0]).toMatchObject({ endedAt: LATER });
+  });
+});
+
+describe("startWorkout leaving a forgotten session", () => {
+  beforeEach(open);
+  const NEW = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d94";
+  const begin = () => start(NEW, "2026-10-09T08:00:00.000Z") as Parameters<typeof startWorkout>[1];
+
+  it("ends it at its last set, in the same go as the new start", async () => {
+    await recordChanges(db, [start()]);
+    await recordSet(db, input(S1), LATER, active());
+    expect(await startWorkout(db, start(NEW, "2026-10-09T08:00:00.000Z") as never)).toBe(NEW);
+    const workouts = (await readHistory(db)).workouts;
+    expect(workouts.find((w) => w.id === W)).toMatchObject({ endedAt: LATER });
+    expect(workouts.find((w) => w.id === NEW)?.endedAt).toBeNull();
+    expect((await readActiveSession(db))?.workoutId).toBe(NEW);
+  });
+
+  it("removes it when it has no set and is this device's own", async () => {
+    await recordChanges(db, [start()], { active: active() });
+    await startWorkout(db, start(NEW, "2026-10-09T08:00:00.000Z") as never);
+    expect((await readHistory(db)).workouts.find((w) => w.id === W)?.removed).toBe(true);
+  });
+
+  it("leaves another device's set-less session alone", async () => {
+    await recordChanges(db, [start()]);
+    await startWorkout(db, start(NEW, "2026-10-09T08:00:00.000Z") as never);
+    expect((await readHistory(db)).workouts.find((w) => w.id === W)?.removed).toBe(false);
   });
 });
 

@@ -528,18 +528,24 @@ export async function startWorkout(
   let id = start.id;
   if (!isValidChange(start)) throw new RangeError("invalid change");
   await write(db, async (tx) => {
-    const open = openWorkout(await tx.objectStore("workouts").getAll(), {
-      sets: await tx.objectStore("sets").getAll(),
-      now: new Date(),
-    });
+    const workouts = await tx.objectStore("workouts").getAll();
+    const sets = await tx.objectStore("sets").getAll();
+    const now = new Date();
+    const active = await tx.objectStore("activeSession").get("current");
+    const open = openWorkout(workouts, { sets, now });
     if (open) {
       id = open.id;
-      const active = await tx.objectStore("activeSession").get("current");
       if (active?.workoutId !== open.id)
         await tx
           .objectStore("activeSession")
           .put({ workoutId: open.id, slotIndex: 0, restEndsAt: null }, "current");
       return;
+    }
+    // The session left behind is closed in the same go (D12), or nobody would.
+    const leaving = forgottenChanges(workouts, sets, now, active);
+    for (const change of leaving) {
+      await applyLocal(tx, change);
+      await tx.objectStore("outbox").add({ change });
     }
     await applyLocal(tx, start);
     await tx.objectStore("outbox").add({ change: start });
@@ -550,22 +556,38 @@ export async function startWorkout(
   return id;
 }
 
-// D12, when the app opens: a session left open is ended at its last set, or removed when it has
-// none; the device forgets it as its open session. Returns whether anything was written.
-export async function closeForgotten(db: AccountDb, now: Date): Promise<boolean> {
-  const open = (await db.getAll("workouts")).filter((w) => w.endedAt === null && !w.removed);
-  const changes: Change[] = [];
+// D12: what closes the sessions left open. One is ended at its last set. A session without a
+// set is removed only when this device holds it: on another device its sets may simply not
+// have arrived yet, and a removal outranks them all.
+function forgottenChanges(
+  workouts: readonly WorkoutRow[],
+  sets: readonly SetRow[],
+  now: Date,
+  active: ActiveSession | undefined | null,
+): Change[] {
   const at = now.toISOString();
-  for (const w of open) {
-    const sets = await db.getAllFromIndex("sets", "workoutId", w.id);
+  return workouts.flatMap((w): Change[] => {
+    if (w.endedAt !== null || w.removed) return [];
     const closing = autoClose(w, sets, now);
     if (closing.kind === "end")
-      changes.push({ kind: "workout", id: w.id, field: "ended", value: closing.endedAt, at });
-    if (closing.kind === "remove")
-      changes.push({ kind: "workout", id: w.id, field: "removed", value: true, at });
-  }
-  if (changes.length === 0) return false;
+      return [{ kind: "workout", id: w.id, field: "ended", value: closing.endedAt, at }];
+    if (closing.kind === "remove" && active?.workoutId === w.id)
+      return [{ kind: "workout", id: w.id, field: "removed", value: true, at }];
+    return [];
+  });
+}
+
+// When the app opens: closes what a session left open is due (see above), and the device
+// forgets it as its open session. Returns whether anything was written.
+export async function closeForgotten(db: AccountDb, now: Date): Promise<boolean> {
   const active = await readActiveSession(db);
+  const changes = forgottenChanges(
+    await db.getAll("workouts"),
+    await db.getAll("sets"),
+    now,
+    active,
+  );
+  if (changes.length === 0) return false;
   const closed = active && changes.some((c) => "id" in c && c.id === active.workoutId);
   await recordChanges(db, changes, closed ? { active: null } : {});
   return true;
