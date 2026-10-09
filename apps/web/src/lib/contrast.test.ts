@@ -42,6 +42,11 @@ const PAIRS = [
   // Inside the creatine band, the dots and the line (its label: primary-ink, above).
   ["chart-dot", "primary-soft", 3],
   ["chart-line", "primary-soft", 3],
+  // The body map's three tints, on the card and on the track behind a thumbnail.
+  ["muscle-primary", "surface", 3],
+  ["muscle-secondary", "surface", 3],
+  ["muscle-rest", "surface", 3],
+  ["muscle-primary", "track", 3],
 ] as const;
 
 describe("design tokens", () => {

@@ -184,7 +184,9 @@ mine; the tests, the CI and the public history keep me honest.
 
 The exercise library comes from
 [exercises-dataset](https://github.com/MorganKryze/exercises-dataset) (MIT, by
-Hasan Emir Yıldırım), its text only. Its notice is in
+Hasan Emir Yıldırım), its text only, and the body map's outlines from
+[react-native-body-highlighter](https://github.com/HichamELBSI/react-native-body-highlighter)
+(MIT, by Hicham Elabbassi). Their notices are in
 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 ## License

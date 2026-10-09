@@ -102,9 +102,10 @@
   "nav": {
     "label": "Main",
     "home": "Home",
+    "workouts": "Sessions",
+    "body": "Body",
     "tools": "Tools",
-    "settings": "Settings",
-    "body": "Body"
+    "settings": "Settings"
   },
   "settings": {
     "title": "Settings",
@@ -411,5 +412,13 @@
     "supplements": "Supplements",
     "supplementsDone": "{{taken}} of {{count}}",
     "addSupplements": "Add your supplements"
+  },
+  "program": {
+    "session": "Session {{code}} · {{name}}",
+    "names": {
+      "A": "Push",
+      "B": "Legs",
+      "C": "Glutes + light pull"
+    }
   }
 }

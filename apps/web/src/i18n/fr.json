@@ -102,9 +102,10 @@
   "nav": {
     "label": "Principale",
     "home": "Accueil",
+    "workouts": "Séances",
+    "body": "Corps",
     "tools": "Outils",
-    "settings": "Réglages",
-    "body": "Corps"
+    "settings": "Réglages"
   },
   "settings": {
     "title": "Réglages",
@@ -411,5 +412,13 @@
     "supplements": "Compléments",
     "supplementsDone": "{{taken}} sur {{count}}",
     "addSupplements": "Ajouter tes compléments"
+  },
+  "program": {
+    "session": "Séance {{code}} · {{name}}",
+    "names": {
+      "A": "Push",
+      "B": "Legs",
+      "C": "Fessiers + tirage léger"
+    }
   }
 }

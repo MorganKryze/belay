@@ -165,5 +165,81 @@
     "justHere": "Non, juste ici",
     "restore": "Reprendre mes dernières saisies",
     "cm": "{{value}} cm"
+  },
+  "workouts": {
+    "title": "Séances",
+    "tabs": {
+      "label": "Afficher",
+      "program": "Programme",
+      "exercises": "Exercices"
+    },
+    "program": {
+      "exercises_one": "{{count}} exercice",
+      "exercises_other": "{{count}} exercices",
+      "superset": "superset",
+      "triset": "tri-set",
+      "editNote": "Le programme se modifie sur ordinateur."
+    },
+    "rir": "RIR {{range}}",
+    "restSec": "{{s}} s",
+    "restMin": "{{m}} min",
+    "restMinSec": "{{m}} min {{s}}"
+  },
+  "library": {
+    "search": "Rechercher un exercice",
+    "muscle": "Muscle",
+    "equipmentLabel": "Matériel",
+    "filtered": "{{label}} : {{value}}",
+    "clearFilter": "Retirer le filtre {{name}}",
+    "all": "Tous",
+    "upper": "Haut du corps",
+    "lower": "Bas du corps",
+    "show_one": "Voir {{value}} exercice",
+    "show_other": "Voir {{value}} exercices",
+    "found_one": "{{value}} exercice",
+    "found_other": "{{value}} exercices",
+    "none": "Aucun exercice ne correspond.",
+    "inProgram": "Dans ton programme",
+    "inSessions": "Séances",
+    "everything": "Tous · {{value}}",
+    "muscles": {
+      "chest": "Pectoraux",
+      "front_delts": "Épaules avant",
+      "side_delts": "Épaules côté",
+      "rear_delts": "Épaules arrière",
+      "biceps": "Biceps",
+      "triceps": "Triceps",
+      "forearms": "Avant-bras",
+      "lats": "Grand dorsal",
+      "upper_back": "Haut du dos",
+      "lower_back": "Bas du dos",
+      "abs": "Abdos",
+      "glutes": "Fessiers",
+      "quads": "Quadriceps",
+      "hamstrings": "Ischios",
+      "adductors": "Adducteurs",
+      "calves": "Mollets"
+    },
+    "equipment": {
+      "barbell": "Barre",
+      "dumbbell": "Haltères",
+      "machine": "Machine",
+      "cable": "Poulie",
+      "bodyweight": "Poids du corps",
+      "other": "Autre"
+    },
+    "back": "Exercices",
+    "increment": "{{equipment}} · incrément {{value}} kg",
+    "primary": "Principal",
+    "secondary": "Secondaires",
+    "figure": "Silhouette : principal {{primary}} ; secondaires {{secondary}}",
+    "figureAlone": "Silhouette : principal {{primary}}",
+    "views": {
+      "front": "Face",
+      "back": "Dos"
+    },
+    "howTo": "Comment faire",
+    "loading": "Chargement…",
+    "credit": "Texte : exercises-dataset (MIT)"
   }
 }

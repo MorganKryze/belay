@@ -1,5 +1,6 @@
 import type { ISODate } from "@belay/shared/body/dates";
 import { decimalsOf, roundTo } from "@belay/shared/tools/round";
+import type { TFunction } from "i18next";
 
 export { decimalsOf };
 
@@ -98,3 +99,7 @@ export function formatWeekRange(
     locale.startsWith("fr") && d.endsWith("-01") ? "1er" : String(Number(d.slice(8)));
   return dayFirst ? `${day(start)} – ${full(end)}` : `${full(start)} – ${day(end)}`;
 }
+
+// "Séance A · Push": a session of the program by its code (M3a's program is a constant).
+export const sessionTitle = (code: string, t: TFunction): string =>
+  t("program.session", { code, name: t(`program.names.${code}`) });

@@ -165,5 +165,81 @@
     "justHere": "No, just here",
     "restore": "Back to my last entries",
     "cm": "{{value}} cm"
+  },
+  "workouts": {
+    "title": "Sessions",
+    "tabs": {
+      "label": "Show",
+      "program": "Program",
+      "exercises": "Exercises"
+    },
+    "program": {
+      "exercises_one": "{{count}} exercise",
+      "exercises_other": "{{count}} exercises",
+      "superset": "superset",
+      "triset": "tri-set",
+      "editNote": "The program is edited on a computer."
+    },
+    "rir": "RIR {{range}}",
+    "restSec": "{{s}} s",
+    "restMin": "{{m}} min",
+    "restMinSec": "{{m}} min {{s}} s"
+  },
+  "library": {
+    "search": "Search exercises",
+    "muscle": "Muscle",
+    "equipmentLabel": "Equipment",
+    "filtered": "{{label}}: {{value}}",
+    "clearFilter": "Remove the {{name}} filter",
+    "all": "All",
+    "upper": "Upper body",
+    "lower": "Lower body",
+    "show_one": "Show {{value}} exercise",
+    "show_other": "Show {{value}} exercises",
+    "found_one": "{{value}} exercise",
+    "found_other": "{{value}} exercises",
+    "none": "No exercise matches.",
+    "inProgram": "In your program",
+    "inSessions": "Sessions",
+    "everything": "All · {{value}}",
+    "muscles": {
+      "chest": "Chest",
+      "front_delts": "Front delts",
+      "side_delts": "Side delts",
+      "rear_delts": "Rear delts",
+      "biceps": "Biceps",
+      "triceps": "Triceps",
+      "forearms": "Forearms",
+      "lats": "Lats",
+      "upper_back": "Upper back",
+      "lower_back": "Lower back",
+      "abs": "Abs",
+      "glutes": "Glutes",
+      "quads": "Quads",
+      "hamstrings": "Hamstrings",
+      "adductors": "Adductors",
+      "calves": "Calves"
+    },
+    "equipment": {
+      "barbell": "Barbell",
+      "dumbbell": "Dumbbell",
+      "machine": "Machine",
+      "cable": "Cable",
+      "bodyweight": "Bodyweight",
+      "other": "Other"
+    },
+    "back": "Exercises",
+    "increment": "{{equipment}} · steps of {{value}} kg",
+    "primary": "Primary",
+    "secondary": "Secondary",
+    "figure": "Body map: primary {{primary}}; secondary {{secondary}}",
+    "figureAlone": "Body map: primary {{primary}}",
+    "views": {
+      "front": "Front",
+      "back": "Back"
+    },
+    "howTo": "How to do it",
+    "loading": "Loading…",
+    "credit": "Text: exercises-dataset (MIT)"
   }
 }
