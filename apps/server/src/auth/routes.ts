@@ -6,7 +6,7 @@ import type { Config } from "../config";
 import type { Db } from "../db/client";
 import { createSession, deleteSession, upsertUser } from "../db/identity";
 import { describeError } from "../log";
-import { pickDisplayName, type OidcProvider } from "./oidc";
+import { hasRole, pickDisplayName, type OidcProvider } from "./oidc";
 import { safeReturnTo } from "./return-to";
 import {
   clearSessionCookie,
@@ -39,7 +39,7 @@ function parseTransaction(raw: string) {
 // A failed sign-in never answers an error page: it goes back to the app, which shows a localized
 // message and the Sign in link. An installed iOS PWA has no browser chrome to recover from a
 // dead end. Keep the reasons in step with `signin.*` in the web i18n files.
-type SigninFailure = "unavailable" | "expired" | "failed";
+type SigninFailure = "unavailable" | "expired" | "failed" | "denied";
 const signinFailure = (c: Context, reason: SigninFailure) => c.redirect(`/?signin=${reason}`);
 
 export function authRoutes(cfg: Config, db: Db, getOidc: OidcProvider) {
@@ -112,6 +112,12 @@ export function authRoutes(cfg: Config, db: Db, getOidc: OidcProvider) {
     });
     const claims = tokens.claims();
     if (!claims) throw new Error("the token response carries no ID token claims");
+
+    // Before anything is written, and nothing about the claims is logged.
+    const { requiredRole, rolesClaim } = cfg.oidc;
+    if (requiredRole && !hasRole(claims, rolesClaim, requiredRole)) {
+      return signinFailure(c, "denied");
+    }
 
     const userId = await upsertUser(db, {
       issuer: claims.iss,

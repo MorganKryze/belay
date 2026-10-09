@@ -18,6 +18,10 @@ const schema = z.object({
       error: "must not be the e-mail claim: Belay never stores e-mail addresses",
     })
     .default("name"),
+  // Optional: when OIDC_REQUIRED_ROLE is set, only people whose ID token lists it may sign in.
+  // OIDC_ROLES_CLAIM is a dotted path to that list (default `groups`).
+  OIDC_REQUIRED_ROLE: z.string().optional(),
+  OIDC_ROLES_CLAIM: z.string().optional(),
   SESSION_SECRET: z.string().min(32),
   SESSION_TTL_DAYS: z.coerce.number().int().positive().max(400).default(30),
   SESSION_MAX_DAYS: z.coerce.number().int().positive().max(400).default(90),
@@ -36,6 +40,8 @@ export type Config = {
     clientId: string;
     clientSecret: string;
     nameClaim: string;
+    requiredRole: string | undefined;
+    rolesClaim: string;
     allowInsecure: boolean;
   };
   sessionSecret: string;
@@ -84,6 +90,13 @@ export function loadConfig(env: Record<string, string | undefined>): Config {
   if (e.SESSION_MAX_DAYS < e.SESSION_TTL_DAYS) {
     throw new Error("Invalid configuration:\nSESSION_MAX_DAYS must be at least SESSION_TTL_DAYS");
   }
+  const requiredRole = e.OIDC_REQUIRED_ROLE?.trim() || undefined;
+  const rolesClaim = e.OIDC_ROLES_CLAIM ?? "groups";
+  if (requiredRole && rolesClaim.split(".").some((segment) => !segment.trim())) {
+    throw new Error(
+      "Invalid configuration:\nOIDC_ROLES_CLAIM must be a claim path such as groups or realm_access.roles, with no empty part",
+    );
+  }
   const appPassword = appRolePassword(e.APP_DATABASE_URL);
   if (appPassword === undefined) {
     throw new Error(`Invalid configuration:\nAPP_DATABASE_URL ${APP_URL_RULE}`);
@@ -99,6 +112,8 @@ export function loadConfig(env: Record<string, string | undefined>): Config {
       clientId: e.OIDC_CLIENT_ID,
       clientSecret: e.OIDC_CLIENT_SECRET,
       nameClaim: e.OIDC_NAME_CLAIM,
+      requiredRole,
+      rolesClaim,
       allowInsecure: insecure,
     },
     sessionSecret: e.SESSION_SECRET,

@@ -111,4 +111,31 @@ describe("loadConfig", () => {
     }
     expect(loadConfig(testEnv({ OIDC_NAME_CLAIM: "nickname" })).oidc.nameClaim).toBe("nickname");
   });
+
+  it("requires no role by default, and ignores the roles claim then", () => {
+    expect(loadConfig(testEnv()).oidc).toMatchObject({ requiredRole: undefined });
+    expect(loadConfig(testEnv({ OIDC_REQUIRED_ROLE: "" })).oidc.requiredRole).toBeUndefined();
+    expect(loadConfig(testEnv({ OIDC_ROLES_CLAIM: "a..b" })).oidc.requiredRole).toBeUndefined();
+  });
+
+  it("reads the required role and looks in `groups` unless told otherwise", () => {
+    expect(loadConfig(testEnv({ OIDC_REQUIRED_ROLE: "belay" })).oidc).toMatchObject({
+      requiredRole: "belay",
+      rolesClaim: "groups",
+    });
+    expect(
+      loadConfig(
+        testEnv({ OIDC_REQUIRED_ROLE: "belay", OIDC_ROLES_CLAIM: "resource_access.belay.roles" }),
+      ).oidc.rolesClaim,
+    ).toBe("resource_access.belay.roles");
+  });
+
+  it("refuses an empty roles claim path, or one with an empty segment, once a role is required", () => {
+    for (const path of ["", " ", ".", "a.", ".a", "a..b"]) {
+      expect(
+        () => loadConfig(testEnv({ OIDC_REQUIRED_ROLE: "belay", OIDC_ROLES_CLAIM: path })),
+        JSON.stringify(path),
+      ).toThrow(/OIDC_ROLES_CLAIM/);
+    }
+  });
 });

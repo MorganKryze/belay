@@ -69,7 +69,7 @@ const expectTxCookieCleared = (res: Response, name = "belay_oidc") =>
     expect.stringMatching(new RegExp(`^${name}=;.*Max-Age=0`)),
   );
 
-async function idpRedirect(authUrl: URL, claims: Record<string, string>) {
+async function idpRedirect(authUrl: URL, claims: Record<string, unknown>) {
   nextClaims = { ...claims, nonce: authUrl.searchParams.get("nonce") };
   const res = await fetch(authUrl, { redirect: "manual" });
   return new URL(res.headers.get("location")!);
@@ -345,6 +345,71 @@ describe("over https", () => {
     const res = await secure.request(cb.pathname + cb.search, { headers: { cookie: plain } });
     expect(res.status).toBe(302);
     expect(res.headers.get("location")).toBe("/?signin=expired");
+  });
+});
+
+describe("required role", () => {
+  const roleApp = (env: Record<string, string>) => {
+    const cfg = loadConfig(testEnv({ OIDC_ISSUER: idp.issuer.url!, ...env }));
+    return new Hono()
+      .route("/auth", authRoutes(cfg, db, oidcProvider(cfg.oidc)))
+      .route("/api", apiRoutes(cfg, db));
+  };
+  const counts = async (sub: string) => {
+    const users = await db.execute(sql`select 1 from users where oidc_sub = ${sub}`);
+    const sessions = await db.execute(
+      sql`select 1 from sessions s join users u on u.id = s.user_id where u.oidc_sub = ${sub}`,
+    );
+    return { users: users.length, sessions: sessions.length };
+  };
+  async function signIn(target: Hono, claims: Record<string, unknown>) {
+    const { authUrl, txCookie } = await startLogin("/", target);
+    const cb = await idpRedirect(authUrl, claims);
+    return target.request(cb.pathname + cb.search, { headers: { cookie: txCookie } });
+  }
+
+  it("signs in someone who has the role, in the configured claim", async () => {
+    const gated = roleApp({
+      OIDC_REQUIRED_ROLE: "belay-user",
+      OIDC_ROLES_CLAIM: "resource_access.belay.roles",
+    });
+    const res = await signIn(gated, {
+      sub: "role-ok",
+      name: "Rita",
+      resource_access: { belay: { roles: ["other", "belay-user"] } },
+    });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/");
+    expect(setCookies(res).some(startsWithSession)).toBe(true);
+    expect(await counts("role-ok")).toEqual({ users: 1, sessions: 1 });
+  });
+
+  it("reads `groups` by default", async () => {
+    const res = await signIn(roleApp({ OIDC_REQUIRED_ROLE: "belay" }), {
+      sub: "role-groups",
+      groups: ["belay"],
+    });
+    expect(res.headers.get("location")).toBe("/");
+  });
+
+  it.each([
+    ["lacks the role", { groups: ["other"] }],
+    ["has no such claim", {}],
+    ["has a claim of the wrong type", { groups: { belay: true } }],
+  ])("denies someone who %s: no user, no session, no cookie", async (_, extra) => {
+    const sub = `role-denied-${Math.random().toString(36).slice(2)}`;
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const res = await signIn(roleApp({ OIDC_REQUIRED_ROLE: "belay" }), { sub, ...extra });
+    expectSigninRedirect(res, "denied");
+    expectTxCookieCleared(res);
+    expect(await counts(sub)).toEqual({ users: 0, sessions: 0 });
+    expect(printed(spy)).not.toContain(sub);
+  });
+
+  it("changes nothing when no role is required", async () => {
+    const res = await signIn(roleApp({}), { sub: "role-unset", groups: [] });
+    expect(res.headers.get("location")).toBe("/");
+    expect(await counts("role-unset")).toEqual({ users: 1, sessions: 1 });
   });
 });
 
