@@ -254,6 +254,10 @@ export const workouts = pgTable(
     check("workouts_session_code", sql`${t.sessionCode} ~ '^[A-Z]$'`),
     check("workouts_plan_size", sql`octet_length(${t.plan}::text) <= 16384`),
     check("workouts_note", sql`${t.note} IS NULL OR char_length(${t.note}) <= 500`),
+    check(
+      "workouts_exercise_notes_size",
+      sql`${t.exerciseNotes} IS NULL OR octet_length(${t.exerciseNotes}::text) <= 32768`,
+    ),
   ],
 );
 

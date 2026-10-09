@@ -1214,6 +1214,10 @@
         "workouts_note": {
           "name": "workouts_note",
           "value": "\"workouts\".\"note\" IS NULL OR char_length(\"workouts\".\"note\") <= 500"
+        },
+        "workouts_exercise_notes_size": {
+          "name": "workouts_exercise_notes_size",
+          "value": "\"workouts\".\"exercise_notes\" IS NULL OR octet_length(\"workouts\".\"exercise_notes\"::text) <= 32768"
         }
       },
       "isRLSEnabled": false

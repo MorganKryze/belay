@@ -18,6 +18,8 @@ const checkViolation = { cause: { code: "23514" } };
 const foreignKey = { cause: { code: "23503" } };
 const AT = new Date("2026-10-07T17:00:00.000Z");
 const PLAN = [...sessionByCode("A")!.slots];
+// The longest value of {"k": "…"} that fits 32 KiB as jsonb text (9 bytes of frame).
+const NOTES_FIT = 32768 - 9;
 
 const setOf = (
   userId: string,
@@ -122,6 +124,11 @@ describe("sessions and sets as belay_app", () => {
           .update(workouts)
           .set({ plan: Array.from({ length: 200 }, () => PLAN[0]!) }) // about 33 KB as text
           .where(eq(workouts.id, workout)),
+      (tx: Tx) =>
+        tx
+          .update(workouts)
+          .set({ exerciseNotes: { k: "x".repeat(NOTES_FIT + 1) } }) // 32 769 bytes as jsonb text
+          .where(eq(workouts.id, workout)),
       (tx: Tx) => tx.update(workoutSets).set({ slotIndex: 30 }).where(one),
       (tx: Tx) => tx.update(workoutSets).set({ position: 50 }).where(one),
       (tx: Tx) => tx.update(workoutSets).set({ exerciseId: "bench" }).where(one),
@@ -139,6 +146,10 @@ describe("sessions and sets as belay_app", () => {
       await tx
         .update(workouts)
         .set({ note: "é".repeat(500) })
+        .where(eq(workouts.id, workout));
+      await tx
+        .update(workouts)
+        .set({ exerciseNotes: { k: "x".repeat(NOTES_FIT) } }) // 32 768 bytes: the bound
         .where(eq(workouts.id, workout));
     });
   });

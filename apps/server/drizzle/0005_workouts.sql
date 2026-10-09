@@ -44,7 +44,8 @@ CREATE TABLE "workouts" (
 	CONSTRAINT "workouts_id_user" UNIQUE("id","user_id"),
 	CONSTRAINT "workouts_session_code" CHECK ("workouts"."session_code" ~ '^[A-Z]$'),
 	CONSTRAINT "workouts_plan_size" CHECK (octet_length("workouts"."plan"::text) <= 16384),
-	CONSTRAINT "workouts_note" CHECK ("workouts"."note" IS NULL OR char_length("workouts"."note") <= 500)
+	CONSTRAINT "workouts_note" CHECK ("workouts"."note" IS NULL OR char_length("workouts"."note") <= 500),
+	CONSTRAINT "workouts_exercise_notes_size" CHECK ("workouts"."exercise_notes" IS NULL OR octet_length("workouts"."exercise_notes"::text) <= 32768)
 );
 --> statement-breakpoint
 ALTER TABLE "workout_sets" ADD CONSTRAINT "workout_sets_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
