@@ -279,3 +279,48 @@ describe("closeForgotten (D12)", () => {
     expect(workouts.find((w) => w.id === other)?.removed).toBe(false);
   });
 });
+
+describe("closeForgotten waits for a sync that landed", () => {
+  beforeEach(open);
+  const NOW = new Date("2026-10-08T00:30:00.000Z"); // 7.5 h after the start
+  const engineWith = (send: Send) =>
+    createSyncEngine({
+      userId: "user-a",
+      db,
+      send,
+      onApplied: () => {},
+      onSynced: async () => void (await closeForgotten(db, NOW)),
+    });
+  const removedAfter = async () => (await readHistory(db)).workouts[0]?.removed;
+
+  it("keeps a session open while offline, then removes it once a sync brings nothing newer", async () => {
+    await recordChanges(db, [start()], { active: active() });
+    let online = false;
+    const engine = engineWith(async () =>
+      online
+        ? { kind: "ok", response: answer({ cursor: "1", workouts: [workoutRow()] }) }
+        : { kind: "offline" },
+    );
+    await engine.sync();
+    expect(await removedAfter()).toBe(false);
+    online = true;
+    await engine.sync();
+    expect(await removedAfter()).toBe(true);
+  });
+
+  it("keeps the session when the sync brings a set done an hour ago on another device", async () => {
+    await recordChanges(db, [start()], { active: active() });
+    const recent = "2026-10-07T23:30:00.000Z";
+    const engine = engineWith(async () => ({
+      kind: "ok",
+      response: answer({
+        cursor: "1",
+        workouts: [workoutRow()],
+        sets: [setRow(S1, { doneAt: recent, fieldsAt: recent })],
+      }),
+    }));
+    await engine.sync();
+    expect(await removedAfter()).toBe(false);
+    expect(await readActiveSession(db)).toEqual(active());
+  });
+});

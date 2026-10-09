@@ -73,33 +73,33 @@ export function AccountProvider({ children }: { children: ReactNode }) {
         setOpened(null);
         setReopen((n) => n + 1);
       },
-    })
-      .then(async (db) => {
-        // D12: a session forgotten open is closed before anything reads it.
-        await closeForgotten(db, new Date()).catch(() => false);
-        return db;
-      })
-      .then(
-        (db) => {
-          if (cancelled) return db.close();
-          const engine = createSyncEngine({
-            userId,
-            db,
-            // The network part loads with the first sync: Zod stays out of the initial bundle.
-            send: (request) => import("./transport").then((m) => m.postSync(request)),
-            onApplied: () => void queryClient.invalidateQueries({ queryKey: ["local", userId] }),
-          });
-          const stop = engine.start();
-          close = () => {
-            stop();
-            db.close();
-          };
-          setOpened({ userId, db, engine });
-        },
-        () => {
-          if (!cancelled) setOpened({ userId });
-        },
-      );
+    }).then(
+      (db) => {
+        if (cancelled) return db.close();
+        const engine = createSyncEngine({
+          userId,
+          db,
+          // The network part loads with the first sync: Zod stays out of the initial bundle.
+          send: (request) => import("./transport").then((m) => m.postSync(request)),
+          onApplied: () => void queryClient.invalidateQueries({ queryKey: ["local", userId] }),
+          // D12 once a sync has landed: judged on stale sets, a session would be wrongly removed.
+          onSynced: async () => {
+            if (!(await closeForgotten(db, new Date()))) return;
+            await queryClient.invalidateQueries({ queryKey: ["local", userId] });
+            engine.schedule();
+          },
+        });
+        const stop = engine.start();
+        close = () => {
+          stop();
+          db.close();
+        };
+        setOpened({ userId, db, engine });
+      },
+      () => {
+        if (!cancelled) setOpened({ userId });
+      },
+    );
     return () => {
       cancelled = true;
       close();
@@ -197,22 +197,9 @@ export const useActiveSession = (account: OpenAccount) =>
   });
 
 // D12 again when Home opens: the app may have stayed open in the background since the start.
-export function useCloseForgotten({ user, db, engine }: OpenAccount) {
-  const queryClient = useQueryClient();
-  useEffect(() => {
-    let cancelled = false;
-    void closeForgotten(db, new Date()).then(
-      async (wrote) => {
-        if (!wrote || cancelled) return;
-        await queryClient.invalidateQueries({ queryKey: ["local", user.id] });
-        engine.schedule();
-      },
-      () => {}, // a failed read leaves the session as it is; the next opening tries again
-    );
-    return () => {
-      cancelled = true;
-    };
-  }, [db, engine, queryClient, user.id]);
+// A sync runs first; the engine closes forgotten sessions once it has landed.
+export function useCloseForgotten({ engine }: OpenAccount) {
+  useEffect(() => void engine.sync(), [engine]);
 }
 
 export const useRejected = (account: OpenAccount) =>

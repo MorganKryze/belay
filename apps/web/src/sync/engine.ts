@@ -24,6 +24,7 @@ export function createSyncEngine({
   db,
   send,
   onApplied,
+  onSynced,
   debounceMs = 1000,
   locks = "locks" in navigator ? navigator.locks : undefined,
 }: {
@@ -31,6 +32,8 @@ export function createSyncEngine({
   db: AccountDb;
   send: Send;
   onApplied: () => void;
+  // After a run that reached the server and applied everything: what is stored now is current.
+  onSynced?: () => Promise<void>;
   debounceMs?: number;
   locks?: Pick<LockManager, "request">;
 }): SyncEngine {
@@ -60,6 +63,7 @@ export function createSyncEngine({
         if (!result.response.hasMore && (await readOutbox(db, 1)).length === 0) break;
       }
       set("idle");
+      await onSynced?.().catch(() => {}); // a failure here leaves the next sync to try again
     } catch (error) {
       console.error(
         "sync: local database failed:",
