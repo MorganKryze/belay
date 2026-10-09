@@ -1,6 +1,6 @@
 import { roundTo } from "@belay/shared/tools/round";
 import { Minus, Plus } from "lucide-react";
-import { type KeyboardEvent, useId, useRef, useState } from "react";
+import { type KeyboardEvent, type ReactNode, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { decimalsOf, formatNumber, parseDecimal } from "@/lib/format";
@@ -23,6 +23,10 @@ export type NumberStepperProps = {
   // false: a typed value outside [min, max] is handed over as is when the field is left, for
   // the caller to refuse, instead of being clamped (a weight typed "798" must not become 400).
   clampTyped?: boolean;
+  // true: − and + do nothing while the field is empty (no value is invented from a bound).
+  inertWhenEmpty?: boolean;
+  // A line under the field that describes it (where a prefilled value comes from).
+  hint?: ReactNode;
 };
 
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
@@ -40,6 +44,8 @@ export function NumberStepper({
   error,
   labelHidden = false,
   clampTyped = true,
+  inertWhenEmpty = false,
+  hint,
 }: NumberStepperProps) {
   const { t, i18n } = useTranslation();
   const id = useId();
@@ -49,10 +55,12 @@ export function NumberStepper({
   // What the person is typing; null while the field shows the committed value.
   const [draft, setDraft] = useState<string | null>(null);
 
-  const atMin = value !== null && value <= min;
-  const atMax = value !== null && value >= max;
+  const inert = inertWhenEmpty && value === null;
+  const atMin = inert || (value !== null && value <= min);
+  const atMax = inert || (value !== null && value >= max);
 
   const nudge = (direction: 1 | -1) => {
+    if (inert) return;
     const next = clamp(roundTo((value ?? min) + direction * step, step), min, max);
     setDraft(null);
     onChange(next);
@@ -135,7 +143,9 @@ export function NumberStepper({
             onKeyDown={onKeyDown}
             aria-invalid={error ? true : undefined}
             aria-describedby={
-              [unit && `${id}-unit`, error && `${id}-error`].filter(Boolean).join(" ") || undefined
+              [unit && `${id}-unit`, error && `${id}-error`, hint && `${id}-hint`]
+                .filter(Boolean)
+                .join(" ") || undefined
             }
             className={cn(
               "w-full min-w-0 flex-1 bg-transparent text-xl font-bold tabular-nums outline-none",
@@ -168,6 +178,7 @@ export function NumberStepper({
           {error}
         </p>
       )}
+      {hint && <div id={`${id}-hint`}>{hint}</div>}
     </div>
   );
 }

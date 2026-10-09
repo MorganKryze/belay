@@ -2,7 +2,7 @@ import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/re
 import { IDBFactory } from "fake-indexeddb";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import i18n from "../i18n";
-import { openAccountDb, readOutbox, readTarget, recordChange } from "../sync/db";
+import { openAccountDb, readOutbox, readProfile, readTarget, recordChanges } from "../sync/db";
 import { writeLastUser } from "../sync/last-user";
 import { fakeApi } from "../test/fake-api";
 import { renderRoute } from "../test/render-route";
@@ -10,7 +10,7 @@ import { ADA } from "../test/seed";
 
 vi.mock("../sync/db", async (importOriginal) => {
   const real = await importOriginal<typeof import("../sync/db")>();
-  return { ...real, recordChange: vi.fn(real.recordChange) };
+  return { ...real, recordChanges: vi.fn(real.recordChanges) };
 });
 
 beforeEach(() => {
@@ -66,7 +66,7 @@ describe("Settings › Profile", () => {
 
   it("says so when the phone refuses the write, and clears it on the next one", async () => {
     await openProfile();
-    vi.mocked(recordChange).mockRejectedValueOnce(new DOMException("lost", "InvalidStateError"));
+    vi.mocked(recordChanges).mockRejectedValueOnce(new DOMException("lost", "InvalidStateError"));
     fireEvent.click(button("Increase At least"));
     expect((await screen.findByRole("alert")).textContent).toBe(
       "Couldn't save on this phone. Try again.",
@@ -122,5 +122,137 @@ describe("Settings › Profile", () => {
         { normalizer: (s) => s },
       ),
     ).toBeTruthy();
+  });
+});
+
+describe("Settings › Profile, your body", () => {
+  const profile = async () => readProfile(await openAccountDb(ADA.id));
+
+  it("fills in each fact, says which tools use it, and clears one", async () => {
+    await openProfile();
+    expect(
+      screen.getByText(
+        "Everything is optional. Each piece of information only serves the tools listed under it.",
+      ),
+    ).toBeTruthy();
+    expect(screen.getByText("Used by: Energy expenditure, Body fat")).toBeTruthy();
+    expect(screen.getByText("Used by: BMI, Body fat, Energy expenditure")).toBeTruthy();
+    fireEvent.click(button("Fill in Formula"));
+    fireEvent.click(await screen.findByRole("radio", { name: "Male" }));
+    await waitFor(async () => expect((await profile()).formula).toBe("male"));
+    fireEvent.click(button("Fill in Height"));
+    fireEvent.change(await screen.findByRole("textbox", { name: "Height" }), {
+      target: { value: "178" },
+    });
+    await waitFor(async () => expect((await profile()).heightCm).toBe(178));
+    fireEvent.click(await screen.findByRole("button", { name: "Clear Formula" }));
+    await waitFor(async () => expect((await profile()).formula).toBeNull());
+    expect(await screen.findByRole("button", { name: "Fill in Formula" })).toBeTruthy();
+    const queued = (await readOutbox(await openAccountDb(ADA.id))).map((e) => e.change);
+    expect(queued.map((c) => (c.kind === "profile" ? [c.field, c.value] : null))).toEqual([
+      ["formula", "male"],
+      ["height", 178],
+      ["formula", null],
+    ]);
+  });
+
+  it("takes a year of birth for ages 15 to 100 only", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(2026, 9, 7, 9));
+    try {
+      await openProfile();
+      fireEvent.click(button("Fill in Year of birth"));
+      const year = await screen.findByRole("textbox", { name: "Year of birth" });
+      fireEvent.change(year, { target: { value: "1925" } }); // 101 this year
+      fireEvent.change(year, { target: { value: "2012" } }); // 14 this year
+      fireEvent.change(year, { target: { value: "1995" } });
+      await waitFor(async () => expect((await profile()).birthYear).toBe(1995));
+      const queued = (await readOutbox(await openAccountDb(ADA.id))).map((e) => e.change);
+      expect(queued).toHaveLength(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("says what each fact serves in French", async () => {
+    await i18n.changeLanguage("fr");
+    writeLastUser(ADA);
+    fakeApi({ me: "down" });
+    renderRoute("/settings/profile");
+    // Testing Library folds every space, the narrow no-break one included, into a plain one.
+    expect(await screen.findByText("Sert à : Dépense énergétique, Masse grasse")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Renseigner Année de naissance" })).toBeTruthy();
+  });
+
+  it("leads to the supplements list, with how many are on it", async () => {
+    await openProfile();
+    const link = await screen.findByRole("link", { name: "My supplements 0" });
+    expect(link.getAttribute("href")).toBe("/settings/supplements");
+  });
+});
+
+describe("Settings › Profile, what was entered and the keyboard", () => {
+  const profile = async () => readProfile(await openAccountDb(ADA.id));
+  const queued = async () => (await readOutbox(await openAccountDb(ADA.id))).length;
+
+  it("gives the title the focus fallback", async () => {
+    await openProfile();
+    const h1 = screen.getByRole("heading", { level: 1 });
+    expect(h1.getAttribute("tabindex")).toBe("-1");
+    expect(h1.hasAttribute("data-focus-fallback")).toBe(true);
+  });
+
+  it("moves the focus into the new control, then back to Fill in after Clear", async () => {
+    await openProfile();
+    fireEvent.click(button("Fill in Year of birth"));
+    const year = await screen.findByRole("textbox", { name: "Year of birth" });
+    await waitFor(() => expect(document.activeElement).toBe(year));
+    fireEvent.click(button("Fill in Formula"));
+    const first = await screen.findByRole("radio", { name: "Female" });
+    await waitFor(() => expect(document.activeElement).toBe(first));
+    fireEvent.click(first);
+    await waitFor(async () => expect((await profile()).formula).toBe("female"));
+    fireEvent.click(await screen.findByRole("button", { name: "Clear Formula" }));
+    const fill = await screen.findByRole("button", { name: "Fill in Formula" });
+    await waitFor(() => expect(document.activeElement).toBe(fill));
+  });
+
+  it("writes nothing for a half-typed or out-of-range number, and resets the field on blur", async () => {
+    await openProfile();
+    fireEvent.click(button("Fill in Year of birth"));
+    const year = (await screen.findByRole("textbox", {
+      name: "Year of birth",
+    })) as HTMLInputElement;
+    fireEvent.change(year, { target: { value: "19" } });
+    fireEvent.blur(year);
+    expect(year.value).toBe("");
+    fireEvent.click(button("Fill in Height"));
+    const height = (await screen.findByRole("textbox", { name: "Height" })) as HTMLInputElement;
+    fireEvent.change(height, { target: { value: "5" } });
+    fireEvent.blur(height);
+    expect(height.value).toBe("");
+    expect(await queued()).toBe(0);
+    expect((await profile()).birthYear).toBeNull();
+    expect((await profile()).heightCm).toBeNull();
+  });
+
+  it("keeps an empty field empty, with − and + inactive until a value is typed", async () => {
+    await openProfile();
+    fireEvent.click(button("Fill in Height"));
+    const height = (await screen.findByRole("textbox", { name: "Height" })) as HTMLInputElement;
+    expect(height.value).toBe("");
+    const plus = button("Increase Height");
+    const minus = button("Decrease Height");
+    expect(plus.getAttribute("aria-disabled")).toBe("true");
+    expect(minus.getAttribute("aria-disabled")).toBe("true");
+    fireEvent.click(plus);
+    fireEvent.keyDown(height, { key: "ArrowUp" });
+    expect(height.value).toBe("");
+    expect(await queued()).toBe(0);
+    fireEvent.change(height, { target: { value: "170" } });
+    await waitFor(async () => expect((await profile()).heightCm).toBe(170));
+    await waitFor(() =>
+      expect(button("Increase Height").getAttribute("aria-disabled")).toBe("false"),
+    );
   });
 });

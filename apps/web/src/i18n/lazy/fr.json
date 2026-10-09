@@ -1,0 +1,163 @@
+{
+  "settings": {
+    "rejected": {
+      "title": "Saisies refusées",
+      "note": "Le serveur les a refusées : elles ne sont plus en attente. Saisis-les à nouveau si besoin.",
+      "clear": "Effacer la liste",
+      "weight": "Pesée du {{day}}",
+      "target": "Fourchette de perte",
+      "measure": {
+        "waist": "Tour de taille du {{day}}",
+        "neck": "Tour de cou du {{day}}",
+        "hip": "Tour de hanches du {{day}}"
+      },
+      "intake": "Apports du {{day}}",
+      "profile": "Profil : {{field}}",
+      "profileFields": {
+        "formula": "formule",
+        "birthYear": "année de naissance",
+        "height": "taille"
+      },
+      "supplement": "Complément : {{name}}",
+      "supplementLog": "{{name}} (coche du {{day}})",
+      "supplementUnnamed": "Complément",
+      "annotation": "Annotation du {{day}}",
+      "annotationUndated": "Annotation",
+      "reasons": {
+        "unknown": "Introuvable sur le serveur",
+        "refused": "Refusée par le serveur"
+      }
+    }
+  },
+  "profile": {
+    "lead": "Tout est facultatif. Chaque information ne sert qu'aux outils indiqués dessous.",
+    "body": "Ton corps",
+    "birthYear": "Année de naissance",
+    "height": "Taille",
+    "clear": "Effacer",
+    "clearField": "Effacer {{field}}",
+    "fill": "Renseigner",
+    "fillField": "Renseigner {{field}}",
+    "uses": "Sert à : {{tools}}",
+    "tracking": "Suivi"
+  },
+  "supplementsPage": {
+    "title": "Mes compléments",
+    "marked": "14 jours marqués",
+    "more": "Plus pour {{name}}",
+    "rename": "Renommer",
+    "remove": "Retirer",
+    "save": "Enregistrer",
+    "add": "Ajouter",
+    "name": "Nom du complément",
+    "nameError": "De 1 à 40 caractères, sur une ligne.",
+    "duplicate": "Ce complément est déjà dans ta liste.",
+    "suggestionsTitle": "Suggestions",
+    "empty": "Aucun complément dans ta liste pour l'instant.",
+    "note": "Belay note ce que tu prends, sans conseil de dose. Les rappels quotidiens arriveront avec les notifications.",
+    "toastAdded": "Complément ajouté",
+    "toastRenamed": "Complément renommé",
+    "toastRemoved": "Complément retiré",
+    "suggestions": {
+      "creatine": "Créatine",
+      "vitaminD": "Vitamine D",
+      "omega3": "Oméga-3",
+      "magnesium": "Magnésium",
+      "iron": "Fer",
+      "zinc": "Zinc",
+      "caffeine": "Caféine",
+      "melatonin": "Mélatonine"
+    },
+    "newName": "Nouveau nom pour {{name}}"
+  },
+  "intake": {
+    "date": "Date des apports",
+    "kcal": "Calories",
+    "protein": "Protéines (option)",
+    "kcalOutOfRange": "Saisis un nombre entier entre 0 et 10 000 kcal.",
+    "proteinOutOfRange": "Saisis un nombre entier entre 0 et 500 g.",
+    "note": "Un total par jour, pas aliment par aliment.",
+    "prefilled": "Pré-rempli avec ta dernière saisie.",
+    "delete": "Supprimer les apports de ce jour"
+  },
+  "supplements": {
+    "date": "Jour des compléments",
+    "since_one": "depuis {{count}} jour",
+    "since_other": "depuis {{count}} jours",
+    "manage": "Gérer ma liste"
+  },
+  "chart": {
+    "creatine": "Créatine",
+    "creatineBand": "créatine · 14 j",
+    "summaryCourse": "Créatine du {{from}} au {{to}}.",
+    "summaryNote": "Annotation {{name}}, le {{date}}."
+  },
+  "measures": {
+    "title": "Mensurations",
+    "date": "Date des mensurations",
+    "waist": "Tour de taille",
+    "neck": "Cou (option)",
+    "hip": "Hanches (option)",
+    "waistHint": "Au nombril pour la formule homme, au plus fin pour la formule femme.",
+    "neckHipHint": "Cou et hanches servent à l'outil Masse grasse.",
+    "outOfRange": "Saisis entre {{min}} et {{max}} cm, au dixième près.",
+    "delete": "Supprimer les mensurations de ce jour",
+    "toastSaved": "Mensurations enregistrées",
+    "toastDeleted": "Mensurations supprimées"
+  },
+  "annotation": {
+    "button": "Annotation",
+    "titleNew": "Nouvelle annotation",
+    "title": "Annotation",
+    "date": "Date de l'annotation",
+    "type": "Type d'annotation",
+    "kinds": {
+      "deload": "Allégée",
+      "diet_break": "Pause",
+      "note": "Note"
+    },
+    "legend": "Semaine allégée · pause de régime · note libre",
+    "label": "Texte (option)",
+    "placeholder": "Texte (option), ex. « voyage »",
+    "add": "Ajouter",
+    "delete": "Supprimer cette annotation",
+    "creatineNote": "La créatine n'a pas besoin d'annotation : elle se déduit de tes compléments cochés.",
+    "toastSaved": "Annotation enregistrée",
+    "toastDeleted": "Annotation supprimée",
+    "row": "Annotations"
+  },
+  "body": {
+    "creatineNote": "Pendant les 14 jours de créatine, le poids monte souvent d'1 à 2 kg d'eau : ce n'est pas du gras.",
+    "creatinePill": "créatine",
+    "openAnnotation": "Ouvrir l'annotation {{name}}",
+    "cells": {
+      "weight": "Poids moy.",
+      "waist": "Taille",
+      "intake": "Apports",
+      "intakeDays": "Apports ({{days}} j)"
+    },
+    "cm": "{{value}} cm",
+    "kcal": "{{value}} kcal",
+    "dayParts": {
+      "waist": "taille {{value}} cm",
+      "neck": "cou {{value}} cm",
+      "hip": "hanches {{value}} cm",
+      "protein": "{{value}} g de protéines"
+    }
+  },
+  "prefill": {
+    "from": {
+      "profile": "depuis ton profil",
+      "birthYear": "depuis ton année de naissance",
+      "average": "ta moyenne 7 jours",
+      "weighing": "ta dernière pesée",
+      "measures": "mensurations du {{day}}"
+    },
+    "proposal": "Ton profil indique <b>{{profile}}</b>. Mettre à jour ton profil avec <b>{{value}}</b> ?",
+    "proposalLabel": "Mise à jour du profil",
+    "update": "Mettre à jour",
+    "justHere": "Non, juste ici",
+    "restore": "Reprendre mes dernières saisies",
+    "cm": "{{value}} cm"
+  }
+}

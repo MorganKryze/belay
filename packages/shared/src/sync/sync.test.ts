@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { MIN_WEIGH_IN_DATE } from "../body/weighings";
 import { MAX_CHANGES } from "./limits";
-import { clampAt, isNewer, mergeTarget, mergeWeights } from "./merge";
+import { clampAt, isNewer, mergeFields, mergeTarget, mergeWeights, staleKeys } from "./merge";
 import {
   type Change,
   ChangeSchema,
@@ -10,7 +10,7 @@ import {
   type TargetChange,
   type WeightChange,
 } from "./schema";
-import { isRecordableWeight, isValidChange } from "./valid";
+import { isRecordable, isRecordableWeight, isValidChange } from "./valid";
 
 const AT = "2026-10-07T06:30:00.000Z";
 const weight = (date: string, weightKg: number | null, at = AT): WeightChange => ({
@@ -26,6 +26,31 @@ const target = (minPct: number, maxPct: number, at = AT): TargetChange => ({
   at,
 });
 const ACCOUNT = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d8e";
+const ID = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d8f"; // a supplement or an annotation
+const year = new Date().getUTCFullYear();
+// One sample of every new kind, as the phone writes them.
+const SAMPLES: Change[] = [
+  { kind: "measure", date: "2026-10-06", field: "waist", value: 82, at: AT },
+  { kind: "measure", date: "2026-10-06", field: "neck", value: null, at: AT },
+  { kind: "intake", date: "2026-10-07", field: "kcal", value: 2130, at: AT },
+  { kind: "intake", date: "2026-10-07", field: "protein", value: 140, at: AT },
+  { kind: "profile", field: "formula", value: "male", at: AT },
+  { kind: "profile", field: "birthYear", value: 1995, at: AT },
+  { kind: "profile", field: "height", value: null, at: AT },
+  { kind: "supplement", id: ID, field: "name", value: "Créatine", at: AT },
+  { kind: "supplement", id: ID, field: "removed", value: true, at: AT },
+  { kind: "supplementLog", supplementId: ID, date: "2026-10-07", taken: true, at: AT },
+  {
+    kind: "annotation",
+    id: ID,
+    field: "fields",
+    date: "2026-09-15",
+    type: "diet_break",
+    label: null,
+    at: AT,
+  },
+  { kind: "annotation", id: ID, field: "removed", value: true, at: AT },
+];
 const request = (changes: unknown[], cursor = "0") =>
   SyncRequestSchema.safeParse({ account: ACCOUNT, cursor, changes });
 
@@ -51,6 +76,37 @@ describe("SyncRequestSchema", () => {
     ["a range over 1 %", target(0.5, 1.05)],
     ["bounds closer than 0.1", target(0.9, 0.95)],
     ["an unknown kind", { kind: "waist", date: "2026-10-07", at: AT }],
+  ])("refuses %s", (_, change) => {
+    expect(request([change]).success).toBe(false);
+  });
+
+  it("accepts every new kind of change", () => {
+    for (const change of SAMPLES)
+      expect(request([change]).success, JSON.stringify(change)).toBe(true);
+  });
+
+  it.each([
+    ["a waist under 40 cm", { ...SAMPLES[0], value: 39.5 }],
+    ["a neck over 80 cm", { ...SAMPLES[1], value: 80.5 }],
+    ["a measurement finer than 0.1 cm", { ...SAMPLES[0], value: 82.25 }],
+    ["an unknown measurement", { ...SAMPLES[0], field: "chest" }],
+    ["fractional calories", { ...SAMPLES[2], value: 2100.5 }],
+    ["over 10 000 kcal", { ...SAMPLES[2], value: 10_050 }],
+    ["over 500 g of protein", { ...SAMPLES[3], value: 505 }],
+    ["an intake dated before 1900", { ...SAMPLES[2], date: "1899-12-31" }],
+    ["an unknown formula", { ...SAMPLES[4], value: "other" }],
+    ["a birth year for an age over 101", { ...SAMPLES[5], value: year - 102 }],
+    ["a birth year for an age under 14", { ...SAMPLES[5], value: year - 13 }],
+    ["a height of 231 cm", { ...SAMPLES[6], value: 231 }],
+    ["a height in half centimetres", { ...SAMPLES[6], value: 178.5 }],
+    ["an empty supplement name", { ...SAMPLES[7], value: "  " }],
+    ["a supplement name of 41 characters", { ...SAMPLES[7], value: "x".repeat(41) }],
+    ["a supplement id that is not a UUID", { ...SAMPLES[7], id: "creatine" }],
+    ["a name sent as a removal", { ...SAMPLES[8], value: "Créatine" }],
+    ["a tick without its day", { ...SAMPLES[9], date: undefined }],
+    ["an annotation text of 81 characters", { ...SAMPLES[10], label: "x".repeat(81) }],
+    ["an unknown annotation type", { ...SAMPLES[10], type: "holiday" }],
+    ["an annotation field that does not exist", { ...SAMPLES[11], field: "label" }],
   ])("refuses %s", (_, change) => {
     expect(request([change]).success).toBe(false);
   });
@@ -91,11 +147,70 @@ describe("SyncResponseSchema", () => {
     const parsed = SyncResponseSchema.parse({
       cursor: "12",
       weights: [{ date: "2026-10-07", weightKg: null, at: AT }],
+      measures: [
+        {
+          date: "2026-10-06",
+          waistCm: 82,
+          waistAt: AT,
+          neckCm: null,
+          neckAt: null,
+          hipCm: null,
+          hipAt: null,
+        },
+      ],
+      intake: [{ date: "2026-10-07", kcal: 2100, kcalAt: AT, proteinG: null, proteinAt: null }],
+      supplements: [
+        { id: ID, name: "Créatine", nameAt: AT, kind: "creatine", removed: false, removedAt: null },
+      ],
+      supplementLogs: [{ supplementId: ID, date: "2026-10-07", taken: true, at: AT }],
+      annotations: [
+        {
+          id: ID,
+          date: "2026-09-15",
+          type: "note",
+          label: "voyage",
+          fieldsAt: AT,
+          removed: false,
+          removedAt: null,
+        },
+      ],
       target: { minPct: 0.5, maxPct: 1, at: null },
+      profile: {
+        formula: null,
+        formulaAt: null,
+        birthYear: 1995,
+        birthYearAt: AT,
+        heightCm: null,
+        heightAt: null,
+      },
+      rejected: [{ index: 3, reason: "refused" }],
       hasMore: false,
     });
     expect(parsed.weights[0]!.weightKg).toBeNull();
     expect(parsed.target?.at).toBeNull();
+    expect(parsed.rejected).toEqual([{ index: 3, reason: "refused" }]);
+  });
+
+  it("refuses a refusal that does not point at a change", () => {
+    const answer = (rejected: unknown) =>
+      SyncResponseSchema.safeParse({
+        cursor: "1",
+        weights: [],
+        measures: [],
+        intake: [],
+        supplements: [],
+        supplementLogs: [],
+        annotations: [],
+        target: null,
+        profile: null,
+        rejected,
+        hasMore: false,
+      }).success;
+    expect(answer([{ index: 0, reason: "unknown" }])).toBe(true);
+    expect(answer([{ index: -1, reason: "refused" }])).toBe(false);
+    expect(answer([{ index: 0.5, reason: "refused" }])).toBe(false);
+    expect(answer([{ index: 0, reason: "because" }])).toBe(false);
+    expect(answer(undefined)).toBe(false);
   });
 });
 
@@ -115,10 +230,54 @@ describe("isValidChange", () => {
     target(0.9, 0.95),
   ];
 
+  // The new kinds, each valid and with one field pushed out of bounds or out of shape.
+  const broken = (c: Change, patch: Record<string, unknown>) => ({ ...c, ...patch }) as Change;
+  const S = SAMPLES;
+  const more: Change[] = [
+    ...S.map((c) => broken(c, { at: "2026-10-07T06:30:00Z" })), // no milliseconds
+    broken(S[0]!, { value: 200.5 }),
+    broken(S[0]!, { date: "2026-02-30" }),
+    broken(S[1]!, { field: "chest" }),
+    broken(S[2]!, { value: 2100.5 }),
+    broken(S[3]!, { value: 505 }),
+    broken(S[4]!, { value: "other" }),
+    broken(S[5]!, { value: 1925 }), // 101 years old in 2026
+    broken(S[6]!, { value: 119 }),
+    broken(S[7]!, { value: " Créatine" }), // the phone trims a name before writing it
+    broken(S[7]!, { id: ID.toUpperCase() }),
+    broken(S[8]!, { value: "yes" }),
+    broken(S[9]!, { supplementId: "x" }),
+    broken(S[9]!, { taken: "yes" }),
+    broken(S[10]!, { label: "a\nb" }),
+    broken(S[10]!, { type: "holiday" }),
+    broken(S[11]!, { field: "label" }),
+  ];
+
   it("accepts nothing the server would refuse", () => {
-    for (const change of samples)
+    for (const change of [...samples, ...SAMPLES, ...more])
       if (isValidChange(change))
-        expect(ChangeSchema.safeParse(change).success, change.at).toBe(true);
+        expect(ChangeSchema.safeParse(change).success, JSON.stringify(change)).toBe(true);
+  });
+
+  it("accepts every new kind as the phone writes it, and refuses each broken one", () => {
+    expect(SAMPLES.every(isValidChange)).toBe(true);
+    expect(more.filter(isValidChange)).toEqual([]);
+  });
+
+  it("checks a birth year against the year of the change, for ages 15 to 100", () => {
+    const born = (value: number, at = "2026-10-07T06:30:00.000Z"): Change => ({
+      kind: "profile",
+      field: "birthYear",
+      value,
+      at,
+    });
+    expect([1926, 2011, 1925, 2012].map((y) => isValidChange(born(y)))).toEqual([
+      true,
+      true,
+      false,
+      false,
+    ]);
+    expect(isValidChange(born(2012, "2027-01-01T00:00:00.000Z"))).toBe(true);
   });
 
   it("accepts what the phone writes and refuses the rest", () => {
@@ -149,6 +308,15 @@ describe("the weigh-in date floor", () => {
       expect(isValidChange(weight(date, 80)), date).toBe(ok);
       expect(ChangeSchema.safeParse(weight(date, 80)).success, date).toBe(ok);
     }
+  });
+});
+
+describe("isRecordable", () => {
+  it("refuses any dated entry after today, and takes an undated one", () => {
+    const tomorrow = { ...SAMPLES[2]!, date: "2026-10-08" } as Change;
+    expect(isRecordable(SAMPLES[2]!, "2026-10-07")).toBe(true);
+    expect(isRecordable(tomorrow, "2026-10-07")).toBe(false);
+    expect(isRecordable(SAMPLES[4]!, "2026-10-07")).toBe(true); // the profile has no day
   });
 });
 
@@ -228,6 +396,50 @@ describe("merge", () => {
     // the replay after a lost response clamps to t3 and still wins over what t2 stored
     const [replay] = mergeWeights(new Map([["2026-10-07", t2.toISOString()]]), [ahead], t3);
     expect(replay!.at).toBe(t3.toISOString());
+  });
+
+  it("keeps what the server tags a change with", () => {
+    const tagged = { ...weight("2026-10-07", 79.8), index: 4 };
+    expect(mergeWeights(new Map(), [tagged], now)).toEqual([tagged]);
+    expect(mergeTarget(null, [{ ...target(0.25, 0.75), index: 2 }], now)?.index).toBe(2);
+  });
+
+  it("names the days whose stored write is strictly newer than a change sent for them", () => {
+    const stored = new Map([
+      ["2026-10-07", "2026-10-07T06:45:00.000Z"], // later than AT: the change lost
+      ["2026-10-06", AT], // a tie: the phone already holds this write
+      ["2026-10-05", null], // never written
+    ]);
+    const changes = ["2026-10-07", "2026-10-06", "2026-10-05", "2026-10-04"].map((d) =>
+      weight(d, 80),
+    );
+    expect([...staleKeys(stored, changes, (c) => c.date, now)]).toEqual(["2026-10-07"]);
+  });
+
+  it("judges a day by the last change sent for it, as the phone shows that one", () => {
+    const stored = new Map([["2026-10-07", "2026-10-07T06:31:00.000Z"]]);
+    const replay = [
+      weight("2026-10-07", 80),
+      weight("2026-10-07", 79.8, "2026-10-07T06:31:00.000Z"),
+    ];
+    expect(staleKeys(stored, replay, (c) => c.date, now).size).toBe(0);
+  });
+
+  it("compares a change from a clock running ahead at its clamped time", () => {
+    const stored = new Map([["2026-10-07", "2026-10-07T06:59:00.000Z"]]);
+    const ahead = weight("2026-10-07", 80, "2026-10-08T00:00:00.000Z"); // clamps to now, wins
+    expect(staleKeys(stored, [ahead], (c) => c.date, now).size).toBe(0);
+  });
+
+  it("merges each field under its own key", () => {
+    const at = (m: number) => `2026-10-07T06:${String(m).padStart(2, "0")}:00.000Z`;
+    const changes = [
+      { key: "a|waist", v: 1, at: at(1) },
+      { key: "a|neck", v: 2, at: at(1) },
+      { key: "a|waist", v: 3, at: at(2) },
+    ];
+    const stored = new Map([["a|neck", at(5)]]);
+    expect(mergeFields(stored, changes, (c) => c.key, now)).toEqual([changes[2]]);
   });
 
   it("merges the target range under its single timestamp", () => {

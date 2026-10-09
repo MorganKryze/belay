@@ -3,6 +3,7 @@ import { IDBFactory } from "fake-indexeddb";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import i18n from "../i18n";
 import { writeLastUser } from "../sync/last-user";
+import { answer } from "../test/answer";
 import { fakeApi } from "../test/fake-api";
 import { renderRoute } from "../test/render-route";
 import { ADA, seed, weight } from "../test/seed";
@@ -125,6 +126,25 @@ describe("the sync banner", () => {
     expect(screen.getByText("Offline.")).toBeTruthy();
   });
 
+  it("counts entries, not weigh-ins, once something else waits too", async () => {
+    await seed(ADA.id, [
+      weight("2026-10-07", 79.8),
+      {
+        kind: "intake",
+        date: "2026-10-07",
+        field: "kcal",
+        value: 2100,
+        at: "2026-10-07T07:00:00.000Z",
+      },
+    ]);
+    writeLastUser(ADA);
+    fakeApi({ me: "down" });
+    renderRoute("/");
+    expect(
+      await screen.findByText(/2 entries waiting, sent as soon as the network is back/),
+    ).toBeTruthy();
+  });
+
   it("asks to sign in again when the session expired with weigh-ins waiting", async () => {
     await seed(ADA.id, [weight("2026-10-07", 79.8)]);
     writeLastUser(ADA);
@@ -146,6 +166,23 @@ describe("the sync banner", () => {
     await waitFor(() => expect(api.requests.length).toBeGreaterThanOrEqual(2));
     expect(api.requests.at(-1)!.changes).toEqual([weight("2026-10-07", 79.8)]);
     expect(screen.getByText("An entry couldn't be sent.")).toBeTruthy();
+  });
+
+  it("says when the server refused an entry, and where to read about it", async () => {
+    await seed(ADA.id, [weight("2026-10-07", 79.8)]);
+    writeLastUser(ADA);
+    fakeApi({
+      me: ADA,
+      sync: async (r) =>
+        Response.json(
+          answer({ rejected: r.changes.length > 0 ? [{ index: 0, reason: "refused" }] : [] }),
+        ),
+    });
+    renderRoute("/");
+    expect(await screen.findByText(/An entry was refused\./)).toBeTruthy();
+    expect(screen.getByRole("link", { name: "See details" }).getAttribute("href")).toBe(
+      "/settings",
+    );
   });
 
   it("shows nothing once everything is sent", async () => {

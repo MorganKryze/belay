@@ -66,7 +66,13 @@
     "expired_other": "{{count}} pesées attendent d'être envoyées.",
     "reconnect": "Se reconnecter",
     "failed": "Une saisie n'a pas pu être envoyée.",
-    "retry": "Réessayer"
+    "retry": "Réessayer",
+    "rejected": "Une saisie a été refusée.",
+    "rejectedLink": "Voir le détail",
+    "offlineEntries_one": "{{count}} saisie en attente, envoyée dès le retour du réseau. Tout est gardé sur ce téléphone.",
+    "offlineEntries_other": "{{count}} saisies en attente, envoyées dès le retour du réseau. Tout est gardé sur ce téléphone.",
+    "expiredEntries_one": "{{count}} saisie attend d'être envoyée.",
+    "expiredEntries_other": "{{count}} saisies attendent d'être envoyées."
   },
   "trend": {
     "title": "Ta tendance",
@@ -78,16 +84,12 @@
     "link": "Corps"
   },
   "weighIn": {
-    "title": "Pesée du jour",
-    "titleFor": "Pesée du {{day}}",
     "weight": "Poids",
     "today": "Aujourd'hui",
     "yesterday": "Hier",
     "date": "Date de la pesée",
     "prefilled": "pré-rempli avec ta dernière pesée",
     "save": "Enregistrer",
-    "saved": "enregistrée",
-    "edit": "Modifier",
     "delete": "Supprimer cette pesée",
     "close": "Fermer",
     "outOfRange": "Saisis un poids entre 20 et 400 kg.",
@@ -395,5 +397,18 @@
       "asian": "Asiatique"
     },
     "referenceNote": "« Asiatique » utilise le tableau 5 de Gallagher, établi sur des personnes vivant au Japon. Ce choix reste sur ton appareil."
+  },
+  "today": {
+    "title": "Aujourd'hui",
+    "weighIn": "Pesée",
+    "weighInDone": "{{value}} kg · enregistrée",
+    "weighInEmpty": "pas encore saisie",
+    "intake": "Apports",
+    "intakeEmpty": "pas encore saisis",
+    "intakeSaved": "Apports enregistrés",
+    "intakeDeleted": "Apports supprimés",
+    "supplements": "Compléments",
+    "supplementsDone": "{{taken}} sur {{count}}",
+    "addSupplements": "Ajouter tes compléments"
   }
 }

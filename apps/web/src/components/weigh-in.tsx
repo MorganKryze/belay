@@ -1,20 +1,12 @@
 import { addDays, type ISODate, toISODate } from "@belay/shared/body/dates";
-import {
-  isWeighingKg,
-  MIN_WEIGH_IN_DATE,
-  WEIGHING_RANGE_KG,
-  type Weighing,
-} from "@belay/shared/body/weighings";
-import { isRecordableWeight } from "@belay/shared/sync/valid";
-import { roundTo } from "@belay/shared/tools/round";
+import type { Weighing } from "@belay/shared/body/weighings";
+import type { Change } from "@belay/shared/sync/schema";
+import { isRecordable } from "@belay/shared/sync/valid";
 import type { TFunction } from "i18next";
-import { ChevronRight } from "lucide-react";
-import { type ReactNode, useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { formatWeekday } from "@/lib/format";
 import { type OpenAccount, useRecord } from "@/sync/account";
-import { NumberStepper } from "./number-stepper";
-import { Button } from "./ui/button";
 
 // "Today", "Yesterday", then "Wed, Sep 30".
 export function dayLabel(date: ISODate, today: ISODate, t: TFunction, locale: string): string {
@@ -37,101 +29,13 @@ export function startingWeight(
   return last ? { kg: last.weightKg, prefilled: true } : { kg: null, prefilled: false };
 }
 
-// The stepper, the day chip (a native date picker, never after today) and Save. Give it a
-// `key` of the date: the value starts again from that day. Until the person edits it, the
-// value follows the data, so the first sync on a new phone still fills it in.
-export function WeighInForm({
-  weighings,
-  today,
-  date,
-  onDate,
-  onSave,
-  error,
-  children,
-}: {
-  weighings: readonly Weighing[];
-  today: ISODate;
-  date: ISODate;
-  onDate: (date: ISODate) => void;
-  onSave: (date: ISODate, kg: number) => void;
-  error?: string;
-  children?: ReactNode;
-}) {
-  const { t, i18n } = useTranslation();
-  const start = startingWeight(weighings, date, today);
-  const [edited, setEdited] = useState<number | null | undefined>(undefined);
-  const value = edited === undefined ? start.kg : edited;
-  const kg = value === null ? null : roundTo(value, WEIGHING_RANGE_KG.step);
-  const invalid = kg !== null && !isWeighingKg(kg);
-  return (
-    <div className="flex flex-col gap-2.5">
-      <NumberStepper
-        label={t("weighIn.weight")}
-        labelHidden
-        value={value}
-        onChange={setEdited}
-        min={WEIGHING_RANGE_KG.min}
-        max={WEIGHING_RANGE_KG.max}
-        step={WEIGHING_RANGE_KG.step}
-        unit="kg"
-        optional
-        clampTyped={false}
-        error={invalid ? t("weighIn.outOfRange") : undefined}
-      />
-      <div className="flex items-center gap-2">
-        <label className="relative inline-flex min-h-11 shrink-0 items-center gap-0.5 rounded-chip border border-input px-3 text-sm font-medium has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-offset-2">
-          {dayLabel(date, today, t, i18n.language)}
-          <ChevronRight aria-hidden className="size-4" />
-          {/* Invisible over the chip: a tap opens the phone's own date picker. */}
-          <input
-            type="date"
-            aria-label={t("weighIn.date")}
-            value={date}
-            min={MIN_WEIGH_IN_DATE}
-            max={today}
-            required
-            className="absolute inset-0 cursor-pointer opacity-0"
-            onClick={(e) => {
-              try {
-                e.currentTarget.showPicker();
-              } catch {
-                // Not allowed here (or not supported): the field itself still works.
-              }
-            }}
-            onChange={(e) => {
-              const v = e.target.value;
-              if (v && v >= MIN_WEIGH_IN_DATE && v <= today) onDate(v);
-            }}
-          />
-        </label>
-        {start.prefilled && edited === undefined && (
-          <span className="text-xs leading-tight text-muted-foreground">
-            {t("weighIn.prefilled")}
-          </span>
-        )}
-      </div>
-      <Button
-        className="h-12 rounded-field text-base font-semibold"
-        disabled={kg === null || invalid}
-        onClick={() => kg !== null && onSave(date, kg)}
-      >
-        {t("weighIn.save")}
-      </Button>
-      {error && (
-        <p role="alert" className="text-sm">
-          {error}
-        </p>
-      )}
-      {children}
-    </div>
-  );
-}
-
 export type ToastState = { id: number; text: string; undo: () => Promise<boolean> };
+// Changes without their time: the time is taken when they are written.
+export type Entry = Change extends infer C ? (C extends Change ? Omit<C, "at"> : never) : never;
 
-// Writes a weigh-in (or deletes it with null) and offers to undo it for 5 seconds: the undo is
-// a new entry that puts the previous value of the day back (or its absence).
-export function useWeighInWriter(account: OpenAccount, weighings: readonly Weighing[]) {
+// Writes entries and offers to undo them for 5 seconds: the undo writes new entries that put
+// the previous values back (or their absence).
+export function useWriter(account: OpenAccount) {
   const { t } = useTranslation();
   const record = useRecord(account);
   const [toast, setToast] = useState<ToastState | null>(null);
@@ -143,45 +47,47 @@ export function useWeighInWriter(account: OpenAccount, weighings: readonly Weigh
   }, [toast]);
 
   // False, with the reason on screen, when the phone refuses the write (a lost IndexedDB
-  // connection, a full disk) or the entry is not recordable: nothing is announced as saved.
+  // connection, a full disk) or an entry is not recordable: nothing is announced as saved.
   const write = useCallback(
-    async (date: ISODate, weightKg: number | null) => {
-      // The clock now, not the screen's: the date picker never goes past today, but the day may
-      // have changed since the screen was drawn.
+    async (entries: readonly Entry[], previous: readonly Entry[], text: string) => {
+      // The clock now, not the screen's: the day may have changed since it was drawn.
       const now = new Date();
-      const change = { kind: "weight", date, weightKg, at: now.toISOString() } as const;
+      const stamp = (e: Entry) => ({ ...e, at: now.toISOString() }) as Change;
+      const changes = entries.map(stamp);
       const failed = t("weighIn.saveFailed");
-      if (!isRecordableWeight(change, toISODate(now))) {
+      if (!changes.every((c) => isRecordable(c, toISODate(now)))) {
         setError(failed);
         return false;
       }
-      const previous = weighings.find((w) => w.date === date)?.weightKg ?? null;
       try {
-        await record(change);
+        await record(changes);
       } catch {
         setError(failed);
         return false;
       }
       setError(null);
       const undo = async () => {
+        const at = new Date().toISOString();
         try {
-          await record({ ...change, weightKg: previous, at: new Date().toISOString() });
+          await record(previous.map((e) => ({ ...e, at }) as Change));
           return true;
         } catch {
           setToast((current) => current && { ...current, text: failed });
           return false;
         }
       };
-      setToast({
-        id: now.getTime(),
-        text: t(weightKg === null ? "weighIn.toastDeleted" : "weighIn.toastSaved"),
-        undo,
-      });
+      setToast({ id: now.getTime(), text, undo });
       return true;
     },
-    [record, t, weighings],
+    [record, t],
   );
-  return { write, toast, error: error ?? undefined, dismiss: () => setToast(null) };
+  return {
+    write,
+    toast,
+    error: error ?? undefined,
+    clearError: () => setError(null),
+    dismiss: () => setToast(null),
+  };
 }
 
 // Above the tab bar; mounted for good so the message is announced.

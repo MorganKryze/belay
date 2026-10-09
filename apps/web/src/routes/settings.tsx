@@ -1,8 +1,11 @@
+import "@/i18n/lazy";
 import { useMutation } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
+import type { Change } from "@belay/shared/sync/schema";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
@@ -15,7 +18,17 @@ import {
 import { LOCALES, setLocale, type Locale } from "@/i18n";
 import { logout } from "@/lib/api";
 import { readTheme, setTheme, type Theme } from "@/lib/theme";
-import { type OpenAccount, useAccount, usePending } from "@/sync/account";
+import { formatWeekday } from "@/lib/format";
+import { useToday } from "@/lib/today";
+import {
+  type OpenAccount,
+  useAccount,
+  useClearRejected,
+  usePending,
+  useRejected,
+  useAnnotations,
+  useSupplements,
+} from "@/sync/account";
 
 const LANGUAGE_NAMES: Record<Locale, string> = { en: "English", fr: "Français" };
 const sectionTitle = "mx-0.5 text-xs font-semibold tracking-wider text-muted-foreground uppercase";
@@ -77,8 +90,97 @@ export function Settings() {
 function OpenAccountSettings({ account }: { account: OpenAccount }) {
   const { data, isError } = usePending(account);
   // The read failed: the count is unknown, so sign-out stays available and always asks first.
-  if (isError) return <AccountSettings pending={null} />;
-  return data ? <AccountSettings pending={data.total} /> : null;
+  const settings = isError ? (
+    <AccountSettings pending={null} />
+  ) : data ? (
+    <AccountSettings pending={data.total} />
+  ) : null;
+  return (
+    <>
+      {settings}
+      <RejectedEntries account={account} />
+    </>
+  );
+}
+
+// What a refused entry was, as the person entered it. A removal or a tick carries no name or day
+// of its own: the device still holds the row it points to.
+type Known = { names: Map<string, string>; days: Map<string, string> };
+function describe(
+  change: Change,
+  t: TFunction,
+  locale: string,
+  today: string,
+  known: Known,
+): string {
+  const day = (date: string) => formatWeekday(date, locale, today, { startOfLine: false });
+  const name = (id: string) => known.names.get(id) ?? t("settings.rejected.supplementUnnamed");
+  switch (change.kind) {
+    case "weight":
+      return t("settings.rejected.weight", { day: day(change.date) });
+    case "target":
+      return t("settings.rejected.target");
+    case "measure":
+      return t(`settings.rejected.measure.${change.field}`, { day: day(change.date) });
+    case "intake":
+      return t("settings.rejected.intake", { day: day(change.date) });
+    case "profile":
+      return t("settings.rejected.profile", {
+        field: t(`settings.rejected.profileFields.${change.field}`),
+      });
+    case "supplement":
+      return t("settings.rejected.supplement", {
+        name: change.field === "name" ? change.value : name(change.id),
+      });
+    case "supplementLog":
+      return t("settings.rejected.supplementLog", {
+        name: name(change.supplementId),
+        day: day(change.date),
+      });
+    case "annotation": {
+      const date = change.field === "fields" ? change.date : known.days.get(change.id);
+      return date
+        ? t("settings.rejected.annotation", { day: day(date) })
+        : t("settings.rejected.annotationUndated");
+    }
+  }
+}
+
+// The entries the server refused (§7.1): out of the queue, listed here until the person clears
+// them, so a refusal is never silent.
+function RejectedEntries({ account }: { account: OpenAccount }) {
+  const { t, i18n } = useTranslation();
+  const today = useToday();
+  const rejected = useRejected(account).data ?? [];
+  const known: Known = {
+    names: new Map((useSupplements(account).data ?? []).map((r) => [r.id, r.name])),
+    days: new Map((useAnnotations(account).data ?? []).map((r) => [r.id, r.date])),
+  };
+  const clear = useClearRejected(account);
+  if (rejected.length === 0) return null;
+  return (
+    <section aria-labelledby="rejected" className="flex flex-col gap-2">
+      <h2 id="rejected" className={sectionTitle}>
+        {t("settings.rejected.title")}
+      </h2>
+      <div className="flex flex-col gap-3 rounded-card border border-border bg-card p-4">
+        <p className="text-sm text-muted-foreground">{t("settings.rejected.note")}</p>
+        <ul className="flex flex-col">
+          {rejected.map((r) => (
+            <li key={r.id} className="border-t border-border py-2 first:border-t-0">
+              <p className="font-medium">{describe(r.change, t, i18n.language, today, known)}</p>
+              <p className="text-sm text-muted-foreground">
+                {t(`settings.rejected.reasons.${r.reason}`)}
+              </p>
+            </li>
+          ))}
+        </ul>
+        <Button variant="outline" className="self-start" onClick={() => void clear()}>
+          {t("settings.rejected.clear")}
+        </Button>
+      </div>
+    </section>
+  );
 }
 
 // Signing out keeps the entries on the device (D3); with some still waiting, say so first.

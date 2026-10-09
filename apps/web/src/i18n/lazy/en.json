@@ -1,0 +1,163 @@
+{
+  "settings": {
+    "rejected": {
+      "title": "Refused entries",
+      "note": "The server refused them, so they are no longer waiting. Enter them again if you need to.",
+      "clear": "Clear the list",
+      "weight": "Weigh-in for {{day}}",
+      "target": "Loss range",
+      "measure": {
+        "waist": "Waist on {{day}}",
+        "neck": "Neck on {{day}}",
+        "hip": "Hips on {{day}}"
+      },
+      "intake": "Intake for {{day}}",
+      "profile": "Profile: {{field}}",
+      "profileFields": {
+        "formula": "formula",
+        "birthYear": "year of birth",
+        "height": "height"
+      },
+      "supplement": "Supplement: {{name}}",
+      "supplementLog": "{{name}} (ticked on {{day}})",
+      "supplementUnnamed": "Supplement",
+      "annotation": "Annotation for {{day}}",
+      "annotationUndated": "Annotation",
+      "reasons": {
+        "unknown": "Not found on the server",
+        "refused": "Refused by the server"
+      }
+    }
+  },
+  "profile": {
+    "lead": "Everything is optional. Each piece of information only serves the tools listed under it.",
+    "body": "Your body",
+    "birthYear": "Year of birth",
+    "height": "Height",
+    "clear": "Clear",
+    "clearField": "Clear {{field}}",
+    "fill": "Fill in",
+    "fillField": "Fill in {{field}}",
+    "uses": "Used by: {{tools}}",
+    "tracking": "Tracking"
+  },
+  "supplementsPage": {
+    "title": "My supplements",
+    "marked": "14 days marked",
+    "more": "More for {{name}}",
+    "rename": "Rename",
+    "remove": "Remove",
+    "save": "Save",
+    "add": "Add",
+    "name": "Supplement name",
+    "nameError": "Between 1 and 40 characters, on one line.",
+    "duplicate": "This supplement is already on your list.",
+    "suggestionsTitle": "Suggestions",
+    "empty": "No supplements on your list yet.",
+    "note": "Belay notes what you take, with no dose advice. Daily reminders will come with notifications.",
+    "toastAdded": "Supplement added",
+    "toastRenamed": "Supplement renamed",
+    "toastRemoved": "Supplement removed",
+    "suggestions": {
+      "creatine": "Creatine",
+      "vitaminD": "Vitamin D",
+      "omega3": "Omega-3",
+      "magnesium": "Magnesium",
+      "iron": "Iron",
+      "zinc": "Zinc",
+      "caffeine": "Caffeine",
+      "melatonin": "Melatonin"
+    },
+    "newName": "New name for {{name}}"
+  },
+  "intake": {
+    "date": "Date of the intake",
+    "kcal": "Calories",
+    "protein": "Protein (optional)",
+    "kcalOutOfRange": "Enter a whole number between 0 and 10,000 kcal.",
+    "proteinOutOfRange": "Enter a whole number between 0 and 500 g.",
+    "note": "One total per day, not food by food.",
+    "prefilled": "Prefilled with your last entry.",
+    "delete": "Delete this day's intake"
+  },
+  "supplements": {
+    "date": "Day of the supplements",
+    "since_one": "for {{count}} day",
+    "since_other": "for {{count}} days",
+    "manage": "Manage my list"
+  },
+  "chart": {
+    "creatine": "Creatine",
+    "creatineBand": "creatine · 14 d",
+    "summaryCourse": "Creatine {{from}} to {{to}}.",
+    "summaryNote": "Annotation {{name}}, {{date}}."
+  },
+  "measures": {
+    "title": "Measurements",
+    "date": "Date of the measurements",
+    "waist": "Waist",
+    "neck": "Neck (optional)",
+    "hip": "Hips (optional)",
+    "waistHint": "At the navel for the male formula, at the narrowest for the female formula.",
+    "neckHipHint": "Neck and hips are used by the Body fat tool.",
+    "outOfRange": "Enter between {{min}} and {{max}} cm, to the tenth.",
+    "delete": "Delete this day's measurements",
+    "toastSaved": "Measurements saved",
+    "toastDeleted": "Measurements deleted"
+  },
+  "annotation": {
+    "button": "Annotation",
+    "titleNew": "New annotation",
+    "title": "Annotation",
+    "date": "Date of the annotation",
+    "type": "Type of annotation",
+    "kinds": {
+      "deload": "Deload",
+      "diet_break": "Break",
+      "note": "Note"
+    },
+    "legend": "Deload week · diet break · free note",
+    "label": "Text (optional)",
+    "placeholder": "Text (optional), e.g. “trip”",
+    "add": "Add",
+    "delete": "Delete this annotation",
+    "creatineNote": "Creatine needs no annotation: it comes from the supplements you tick.",
+    "toastSaved": "Annotation saved",
+    "toastDeleted": "Annotation deleted",
+    "row": "Annotations"
+  },
+  "body": {
+    "creatineNote": "During the 14 days of creatine, the weight often rises by 1 to 2 kg of water: it isn't fat.",
+    "creatinePill": "creatine",
+    "openAnnotation": "Open the annotation {{name}}",
+    "cells": {
+      "weight": "Avg weight",
+      "waist": "Waist",
+      "intake": "Intake",
+      "intakeDays": "Intake ({{days}} d)"
+    },
+    "cm": "{{value}} cm",
+    "kcal": "{{value}} kcal",
+    "dayParts": {
+      "waist": "waist {{value}} cm",
+      "neck": "neck {{value}} cm",
+      "hip": "hips {{value}} cm",
+      "protein": "{{value}} g protein"
+    }
+  },
+  "prefill": {
+    "from": {
+      "profile": "from your profile",
+      "birthYear": "from your year of birth",
+      "average": "your 7-day average",
+      "weighing": "your last weigh-in",
+      "measures": "measured on {{day}}"
+    },
+    "proposal": "Your profile says <b>{{profile}}</b>. Update your profile with <b>{{value}}</b>?",
+    "proposalLabel": "Profile update",
+    "update": "Update",
+    "justHere": "No, just here",
+    "restore": "Back to my last entries",
+    "cm": "{{value}} cm"
+  }
+}

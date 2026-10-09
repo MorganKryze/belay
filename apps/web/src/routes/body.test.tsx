@@ -82,10 +82,10 @@ describe("the Body page", () => {
 
   it("lists the weeks and says in words why one does not count", async () => {
     expect(rows(await open())).toEqual([
-      "This weekin progress · 3 weigh-insongoing",
-      "Sep 28 – Oct 4average 80.2 kg0.7%in your range",
-      "Sep 21 – 27average 80.8 kg—week before insufficient",
-      "Sep 14 – 203 weigh-ins, 4 minimuminsufficient",
+      "This week—ongoingin progress · 3 weigh-insAvg weight—Waist—Intake—",
+      "Sep 28 – Oct 40.7%in your rangeAvg weight80.2\u00a0kgWaist—Intake—",
+      "Sep 21 – 27—week before insufficientAvg weight80.8\u00a0kgWaist—Intake—",
+      "Sep 14 – 20—insufficient3 weigh-ins, 4 minimumAvg weight—Waist—Intake—",
     ]);
   });
 
@@ -139,7 +139,8 @@ describe("the Body page", () => {
     expect(within(history).getAllByRole("button")[0]!.textContent).toBe("Today79.8 kg");
     row.focus();
     fireEvent.click(row);
-    const sheet = await screen.findByRole("dialog", { name: "Weigh-in for Thu, Oct 1" });
+    const sheet = await screen.findByRole("dialog", { name: "Weigh-in" });
+    expect(within(sheet).getByText("Thu, Oct 1")).toBeTruthy(); // the day, in the header
     fireEvent.keyDown(sheet, { key: "Escape" });
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     expect(document.activeElement).toBe(row);
@@ -157,7 +158,8 @@ describe("the Body page", () => {
     fireEvent.keyDown(chart, { key: "ArrowLeft" });
     expect(chart.parentElement!.textContent).toContain("Tue, Oct 6Weigh-in 79.9 kg");
     fireEvent.keyDown(chart, { key: "Enter" });
-    expect(await screen.findByRole("dialog", { name: "Weigh-in for Tue, Oct 6" })).toBeTruthy();
+    const sheet = await screen.findByRole("dialog", { name: "Weigh-in" });
+    expect(within(sheet).getByText("Yesterday")).toBeTruthy(); // Tuesday 6 October
   });
 
   it("widens to every weigh-in with All", async () => {

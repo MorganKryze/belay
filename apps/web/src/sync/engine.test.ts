@@ -2,8 +2,16 @@ import { addDays } from "@belay/shared/body/dates";
 import type { Change, SyncRequest, SyncResponse } from "@belay/shared/sync/schema";
 import { IDBFactory } from "fake-indexeddb";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { answer } from "@/test/answer";
 import { fakeApi } from "@/test/fake-api";
-import { type AccountDb, openAccountDb, readOutbox, readWeights, recordChange } from "./db";
+import {
+  type AccountDb,
+  openAccountDb,
+  readOutbox,
+  readRejected,
+  readWeights,
+  recordChange,
+} from "./db";
 import { createSyncEngine, type Send, type SendResult } from "./engine";
 import { postSync } from "./transport";
 
@@ -14,12 +22,7 @@ const weight = (date: string, weightKg: number | null, at = AT): Change => ({
   weightKg,
   at,
 });
-const empty = (cursor: string): SyncResponse => ({
-  cursor,
-  weights: [],
-  target: null,
-  hasMore: false,
-});
+const empty = (cursor: string): SyncResponse => answer({ cursor });
 const ok = (response: SyncResponse): SendResult => ({ kind: "ok", response });
 
 // One Web Locks queue per name, like the browser's, shared by the engines of one test.
@@ -122,10 +125,29 @@ describe("a long queue or a long history", () => {
       { cursor: "1000", hasMore: true, weights: [{ date: "2026-10-01", weightKg: 81, at: AT }] },
       { cursor: "1500", hasMore: false, weights: [{ date: "2026-10-02", weightKg: 80.8, at: AT }] },
     ];
-    const send = vi.fn<Send>(async () => ok({ target: null, ...pages.shift()! }));
+    const send = vi.fn<Send>(async () => ok(answer(pages.shift())));
     await engineWith(send).sync();
     expect(send.mock.calls.map(([r]) => r.cursor)).toEqual(["0", "1000"]);
     expect((await readWeights(db)).map((w) => w.date)).toEqual(["2026-10-01", "2026-10-02"]);
+  });
+});
+
+describe("a change the server refuses", () => {
+  it("leaves the queue with a trace, and the changes after it still go", async () => {
+    await recordChange(db, weight("2026-10-06", 80.2));
+    await recordChange(db, weight("2026-10-07", 79.8));
+    const send = vi.fn<Send>(async () =>
+      ok({ ...empty("4"), rejected: [{ index: 0, reason: "refused" }] }),
+    );
+    const engine = engineWith(send);
+    await engine.sync();
+    expect(await readOutbox(db)).toEqual([]);
+    expect((await readRejected(db)).map((r) => [r.change, r.reason])).toEqual([
+      [weight("2026-10-06", 80.2), "refused"],
+    ]);
+    expect(engine.status()).toBe("idle");
+    await engine.sync();
+    expect(send).toHaveBeenLastCalledWith({ account: "user-a", cursor: "4", changes: [] });
   });
 });
 

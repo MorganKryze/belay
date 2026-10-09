@@ -9,9 +9,12 @@ import { asUser } from "../src/db/client";
 import { createSession, upsertUser } from "../src/db/identity";
 import { bodyMetrics } from "../src/db/schema";
 import { testEnv } from "./config";
-import { testDb } from "./db";
+import { appDb, testDb } from "./db";
 
-const { db } = testDb();
+// The app serves as belay_app, as in production, so row-level security is part of every request;
+// the owner only arranges rows and the catalogue.
+const { db } = appDb();
+const owner = testDb().db;
 const cfg = loadConfig(testEnv({ OIDC_ISSUER: "http://localhost:1" }));
 const app = createApp({ cfg, db, getOidc: oidcProvider(cfg.oidc) });
 
@@ -70,7 +73,7 @@ describe("POST /api/sync", () => {
     const { cookie } = await signIn("sync-lww");
     const { cursor } = await sync(cookie, "0", [weight("2026-10-07", 80, LATER)]);
     const older = await sync(cookie, cursor, [weight("2026-10-07", 81, AT)]);
-    expect(older.weights).toEqual([]);
+    expect(older.weights).toEqual([{ date: "2026-10-07", weightKg: 80, at: LATER }]);
     const tie = await sync(cookie, cursor, [weight("2026-10-07", 82, LATER)]);
     expect(tie.weights).toEqual([]);
 
@@ -102,14 +105,26 @@ describe("POST /api/sync", () => {
     const first = await sync(cookie, "0", batch);
     const rows = await rowsOf(user);
     const replay = await sync(cookie, first.cursor, batch);
-    expect(replay).toEqual({ cursor: first.cursor, weights: [], target: null, hasMore: false });
+    expect(replay).toEqual({
+      cursor: first.cursor,
+      weights: [],
+      measures: [],
+      intake: [],
+      supplements: [],
+      supplementLogs: [],
+      annotations: [],
+      target: null,
+      profile: null,
+      rejected: [],
+      hasMore: false,
+    });
     expect(await rowsOf(user)).toEqual(rows);
   });
 
   it("sends only what changed after the cursor, then pages beyond 1 000 rows", async () => {
     const { user, cookie } = await signIn("sync-paging");
     const start = await sync(cookie, "0");
-    await db.insert(bodyMetrics).values(
+    await owner.insert(bodyMetrics).values(
       Array.from({ length: 1001 }, (_, i) => ({
         userId: user,
         date: new Date(Date.UTC(2020, 0, 1) + i * 86_400_000).toISOString().slice(0, 10),
@@ -127,6 +142,57 @@ describe("POST /api/sync", () => {
     expect(await sync(cookie, page2.cursor)).toMatchObject({ weights: [], hasMore: false });
   });
 
+  it("skips a day that holds no weight instead of failing the whole answer", async () => {
+    const { user, cookie } = await signIn("sync-no-weight");
+    await sync(cookie, "0", [weight("2026-10-06", 80)]);
+    // A row written without a weight (later milestones add other values to the day).
+    await owner.insert(bodyMetrics).values({ userId: user, date: "2026-10-07" });
+    const res = await sync(cookie, "0");
+    expect(res.weights).toEqual([{ date: "2026-10-06", weightKg: 80, at: AT }]);
+  });
+
+  it("sends back the stored day when a change loses against a later write, past the cursor", async () => {
+    const { cookie } = await signIn("sync-lost");
+    // The laptop weighs in later in the morning; the phone, offline since 6:30, catches up.
+    const laptop = await sync(cookie, "0", [weight("2026-10-07", 79.6, LATER)]);
+    const phone = await sync(cookie, laptop.cursor, [weight("2026-10-07", 80, AT)]);
+    expect(phone.weights).toEqual([{ date: "2026-10-07", weightKg: 79.6, at: LATER }]);
+    expect(phone.cursor).toBe(laptop.cursor);
+  });
+
+  it("drops only the change the database refuses, and sends back the day it holds", async () => {
+    const { user, cookie } = await signIn("sync-refused");
+    await sync(cookie, "0", [weight("2026-10-05", 80)]);
+    // A stand-in for a bound the schema lets through and the database does not.
+    await owner.execute(
+      sql`alter table body_metrics add constraint test_refused check (weight_kg is distinct from 399.9)`,
+    );
+    try {
+      const res = await sync(cookie, "0", [
+        weight("2026-10-04", 81, LATER),
+        weight("2026-10-05", 399.9, LATER),
+        weight("2026-10-06", 399.9, LATER),
+        { kind: "target", minPct: 0.25, maxPct: 0.75, at: LATER },
+      ]);
+      expect(res.rejected).toEqual([
+        { index: 1, reason: "refused" },
+        { index: 2, reason: "refused" },
+      ]);
+      expect(res.weights).toEqual([
+        { date: "2026-10-05", weightKg: 80, at: AT }, // what the server holds, sent back
+        { date: "2026-10-04", weightKg: 81, at: LATER },
+      ]);
+      expect(res.target).toEqual({ minPct: 0.25, maxPct: 0.75, at: LATER });
+      const rows = await rowsOf(user);
+      expect(rows.map((r) => [r.date, r.weightKg]).sort()).toEqual([
+        ["2026-10-04", 81],
+        ["2026-10-05", 80],
+      ]);
+    } finally {
+      await owner.execute(sql`alter table body_metrics drop constraint test_refused`);
+    }
+  });
+
   it("tells a second device about a deletion", async () => {
     const { cookie } = await signIn("sync-delete");
     const phone = await sync(cookie, "0", [weight("2026-10-07", 80)]);
@@ -136,7 +202,7 @@ describe("POST /api/sync", () => {
     expect(update.weights).toEqual([{ date: "2026-10-07", weightKg: null, at: LATER }]);
   });
 
-  it("syncs the target range under its single timestamp", async () => {
+  it("syncs the target range under its single timestamp, and sends it back when one loses", async () => {
     const { cookie } = await signIn("sync-target");
     const first = await sync(cookie, "0", [
       { kind: "target", minPct: 0.25, maxPct: 0.75, at: LATER },
@@ -145,7 +211,7 @@ describe("POST /api/sync", () => {
     const older = await sync(cookie, first.cursor, [
       { kind: "target", minPct: 0.5, maxPct: 1, at: AT },
     ]);
-    expect(older.target).toBeNull();
+    expect(older.target).toEqual({ minPct: 0.25, maxPct: 0.75, at: LATER });
   });
 
   it("never reads or writes another person's weigh-ins or range", async () => {

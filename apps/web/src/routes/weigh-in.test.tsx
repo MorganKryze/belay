@@ -3,7 +3,7 @@ import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/re
 import { IDBFactory } from "fake-indexeddb";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import i18n from "../i18n";
-import { openAccountDb, readOutbox, readWeights, recordChange } from "../sync/db";
+import { openAccountDb, readOutbox, readWeights, recordChanges } from "../sync/db";
 import { writeLastUser } from "../sync/last-user";
 import { fakeApi } from "../test/fake-api";
 import { renderRoute } from "../test/render-route";
@@ -12,10 +12,10 @@ import { ADA, seed, weight } from "../test/seed";
 // Passes through, until a test makes the device refuse a write (a lost connection, a full disk).
 vi.mock("../sync/db", async (importOriginal) => {
   const real = await importOriginal<typeof import("../sync/db")>();
-  return { ...real, recordChange: vi.fn(real.recordChange) };
+  return { ...real, recordChanges: vi.fn(real.recordChanges) };
 });
 const refuseWrite = () =>
-  vi.mocked(recordChange).mockRejectedValueOnce(new DOMException("lost", "InvalidStateError"));
+  vi.mocked(recordChanges).mockRejectedValueOnce(new DOMException("lost", "InvalidStateError"));
 const SAVE_FAILED = "Couldn't save on this phone. Try again.";
 
 // Wednesday 7 October 2026, 7:30 in the morning, on the phone's clock. Only Date is faked:
@@ -34,22 +34,28 @@ afterEach(async () => {
   await i18n.changeLanguage("en");
 });
 
-const card = () => screen.findByRole("region", { name: "Today's weigh-in" });
+const row = () => screen.findByRole("button", { name: /^Weigh-in/ });
+// The weigh-in sheet, opened from its line of the "Today" card.
+async function openSheet() {
+  fireEvent.click(await row());
+  return screen.findByRole("dialog", { name: "Weigh-in" });
+}
 const field = () => screen.findByRole("textbox", { name: "Weight" });
 const days = async () =>
   (await readWeights(await openAccountDb(ADA.id))).map((w) => [w.date, w.weightKg]);
 
-describe("the weigh-in card", () => {
-  it("weighs in with one tap when the weight prefilled from the last weigh-in is right", async () => {
+describe("the weigh-in line and its sheet", () => {
+  it("weighs in with two taps when the weight prefilled from the last weigh-in is right", async () => {
     await seed(ADA.id, [weight("2026-10-06", 80.2)]);
     fakeApi({ me: ADA });
     renderRoute("/");
+    expect((await row()).textContent).toContain("not entered yet");
+    await openSheet();
     expect(((await field()) as HTMLInputElement).value).toBe("80.2");
     expect(screen.getByText("prefilled with your last weigh-in")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
-    const done = await card();
-    await within(done).findByText("saved");
-    expect(done.textContent).toContain("80.2");
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    await waitFor(async () => expect((await row()).textContent).toContain("80.2 kg · saved"));
     expect(screen.getByText("Weigh-in saved")).toBeTruthy();
     expect(await days()).toEqual([
       ["2026-10-06", 80.2],
@@ -57,16 +63,16 @@ describe("the weigh-in card", () => {
     ]);
   });
 
-  it("puts focus on the card's heading once Save has gone", async () => {
+  it("puts focus on the sheet's title, then back on the line once Save has closed it", async () => {
     await seed(ADA.id, [weight("2026-10-06", 80.2)]);
     fakeApi({ me: ADA });
     renderRoute("/");
-    await field();
-    const save = screen.getByRole("button", { name: "Save" });
-    save.focus();
-    fireEvent.click(save);
-    await within(await card()).findByText("saved");
-    expect(document.activeElement).toBe(screen.getByRole("heading", { name: "Today's weigh-in" }));
+    (await row()).focus();
+    await openSheet();
+    expect(document.activeElement).toBe(screen.getByRole("heading", { name: "Weigh-in" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(document.activeElement).toBe(await row());
   });
 
   it("fills the weight in once the first sync on a new phone brings the history", async () => {
@@ -78,12 +84,14 @@ describe("the weigh-in card", () => {
       seq: 1,
     });
     renderRoute("/");
+    await openSheet();
     await waitFor(async () => expect(((await field()) as HTMLInputElement).value).toBe("80.2"));
   });
 
   it("starts empty for a first weigh-in, and Save waits for a value", async () => {
     fakeApi({ me: ADA });
     renderRoute("/");
+    await openSheet();
     expect(((await field()) as HTMLInputElement).value).toBe("");
     expect((screen.getByRole("button", { name: "Save" }) as HTMLButtonElement).disabled).toBe(true);
   });
@@ -92,6 +100,7 @@ describe("the weigh-in card", () => {
     await i18n.changeLanguage("fr");
     fakeApi({ me: ADA });
     renderRoute("/");
+    fireEvent.click(await screen.findByRole("button", { name: /^Pesée/ }));
     const input = await screen.findByRole("textbox", { name: "Poids" });
     fireEvent.change(input, { target: { value: "79,8" } });
     fireEvent.blur(input);
@@ -102,6 +111,7 @@ describe("the weigh-in card", () => {
   it("refuses a weight typed without its decimal, and never saves it as 400 kg", async () => {
     fakeApi({ me: ADA });
     renderRoute("/");
+    await openSheet();
     const input = await field();
     fireEvent.change(input, { target: { value: "798" } });
     fireEvent.blur(input);
@@ -113,10 +123,10 @@ describe("the weigh-in card", () => {
   it("saves what the field shows even when the tap on Save does not blur it", async () => {
     fakeApi({ me: ADA });
     renderRoute("/");
+    await openSheet();
     const input = await field();
     fireEvent.change(input, { target: { value: "798" } });
     expect(await screen.findByText("Enter a weight between 20 and 400 kg.")).toBeTruthy();
-    expect((screen.getByRole("button", { name: "Save" }) as HTMLButtonElement).disabled).toBe(true);
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     expect(await days()).toEqual([]);
     fireEvent.change(input, { target: { value: "79,8" } });
@@ -127,37 +137,41 @@ describe("the weigh-in card", () => {
   it("undoes a first weigh-in of the day back to no weigh-in", async () => {
     fakeApi({ me: ADA });
     renderRoute("/");
+    await openSheet();
     fireEvent.change(await field(), { target: { value: "80" } });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     fireEvent.click(await screen.findByRole("button", { name: "Undo" }));
     await waitFor(async () => expect(await days()).toEqual([]));
-    expect(await field()).toBeTruthy(); // the card asks again
+    await waitFor(async () => expect((await row()).textContent).toContain("not entered yet"));
     const queued = (await readOutbox(await openAccountDb(ADA.id))).map((e) => e.change);
     expect(queued.map((c) => (c.kind === "weight" ? c.weightKg : null))).toEqual([80, null]);
   });
 
-  it("weighs in for a past day from the date chip, never a day after today", async () => {
+  it("weighs in for a past day from the chip in the sheet's header, never a day after today", async () => {
     fakeApi({ me: ADA });
     renderRoute("/");
-    const date = (await screen.findByLabelText("Date of the weigh-in")) as HTMLInputElement;
+    const sheet = await openSheet();
+    const date = within(sheet).getByLabelText("Date of the weigh-in") as HTMLInputElement;
     expect(date.max).toBe("2026-10-07");
     expect(date.min).toBe("1900-01-01");
     fireEvent.change(date, { target: { value: "0202-10-05" } });
-    expect(screen.getByText("Today")).toBeTruthy(); // refused: still today
+    expect(within(sheet).getByText("Today")).toBeTruthy(); // refused: still today
     fireEvent.change(date, { target: { value: "2026-10-08" } });
-    expect(screen.getByText("Today")).toBeTruthy(); // refused: still today
+    expect(within(sheet).getByText("Today")).toBeTruthy(); // refused: still today
     fireEvent.change(date, { target: { value: "2026-10-05" } });
-    expect(await screen.findByText("Mon, Oct 5")).toBeTruthy();
+    expect(await within(sheet).findByText("Mon, Oct 5")).toBeTruthy();
     fireEvent.change(await field(), { target: { value: "80.4" } });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(async () => expect(await days()).toEqual([["2026-10-05", 80.4]]));
-    expect(await screen.findByText("Today")).toBeTruthy(); // the card is back on today
+    // The next sheet opens on today again.
+    expect(within(await openSheet()).getByText("Today")).toBeTruthy();
   });
 
   it("files the morning weigh-in under the new day when the app stayed open overnight", async () => {
     vi.setSystemTime(new Date(2026, 9, 6, 23, 50));
     fakeApi({ me: ADA });
     renderRoute("/");
+    await openSheet();
     fireEvent.change(await field(), { target: { value: "80.1" } });
     vi.setSystemTime(new Date(2026, 9, 7, 7, 5)); // no visibility event: the screen slept
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
@@ -166,9 +180,10 @@ describe("the weigh-in card", () => {
 });
 
 describe("when the phone refuses the write", () => {
-  it("keeps the form and says so, with no false toast, then saves on the retry", async () => {
+  it("keeps the sheet and says so, with no false toast, then saves on the retry", async () => {
     fakeApi({ me: ADA });
     renderRoute("/");
+    await openSheet();
     fireEvent.change(await field(), { target: { value: "80" } });
     refuseWrite();
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
@@ -186,8 +201,7 @@ describe("when the phone refuses the write", () => {
     await seed(ADA.id, [weight("2026-10-07", 80)]);
     fakeApi({ me: ADA });
     renderRoute("/");
-    fireEvent.click(await screen.findByRole("button", { name: "Edit" }));
-    const sheet = await screen.findByRole("dialog");
+    const sheet = await openSheet();
     refuseWrite();
     fireEvent.click(within(sheet).getByRole("button", { name: "Delete this weigh-in" }));
     expect((await within(sheet).findByRole("alert")).textContent).toBe(SAVE_FAILED);
@@ -203,6 +217,7 @@ describe("when the phone refuses the write", () => {
   it("keeps the toast and says so when the undo is refused, then undoes on the retry", async () => {
     fakeApi({ me: ADA });
     renderRoute("/");
+    await openSheet();
     fireEvent.change(await field(), { target: { value: "80" } });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     refuseWrite();
@@ -217,6 +232,7 @@ describe("when the phone refuses the write", () => {
     await i18n.changeLanguage("fr");
     fakeApi({ me: ADA });
     renderRoute("/");
+    fireEvent.click(await screen.findByRole("button", { name: /^Pesée/ }));
     fireEvent.change(await screen.findByRole("textbox", { name: "Poids" }), {
       target: { value: "80" },
     });
@@ -228,34 +244,30 @@ describe("when the phone refuses the write", () => {
   });
 });
 
-describe("the edit sheet", () => {
-  it("opens on Edit and gives focus back to it when closed", async () => {
+describe("deleting from the sheet", () => {
+  it("deletes the day's weigh-in without asking, with an undo, and focus goes back to the line", async () => {
     await seed(ADA.id, [weight("2026-10-07", 80)]);
     fakeApi({ me: ADA });
     renderRoute("/");
-    const edit = await screen.findByRole("button", { name: "Edit" });
-    edit.focus();
-    fireEvent.click(edit);
-    const sheet = await screen.findByRole("dialog", { name: "Today's weigh-in" });
-    fireEvent.click(within(sheet).getByRole("button", { name: "Close" }));
-    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
-    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Edit" }));
-  });
-
-  it("deletes the day's weigh-in without asking, with an undo", async () => {
-    await seed(ADA.id, [weight("2026-10-07", 80)]);
-    fakeApi({ me: ADA });
-    renderRoute("/");
-    fireEvent.click(await screen.findByRole("button", { name: "Edit" }));
-    const sheet = await screen.findByRole("dialog");
+    (await row()).focus();
+    const sheet = await openSheet();
     fireEvent.click(within(sheet).getByRole("button", { name: "Delete this weigh-in" }));
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
-    // The Edit button is gone with the weigh-in: focus lands on the card's heading.
-    expect(document.activeElement).toBe(screen.getByRole("heading", { name: "Today's weigh-in" }));
+    expect(document.activeElement).toBe(await row());
     expect(screen.getByText("Weigh-in deleted")).toBeTruthy();
     await waitFor(async () => expect(await days()).toEqual([]));
     fireEvent.click(screen.getByRole("button", { name: "Undo" }));
     await waitFor(async () => expect(await days()).toEqual([["2026-10-07", 80]]));
+  });
+
+  it("closes on Close, and gives focus back to the line", async () => {
+    fakeApi({ me: ADA });
+    renderRoute("/");
+    (await row()).focus();
+    const sheet = await openSheet();
+    fireEvent.click(within(sheet).getByRole("button", { name: "Close" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(document.activeElement).toBe(await row());
   });
 });
 
@@ -267,7 +279,7 @@ describe("the trend card", () => {
     fakeApi({ me: ADA });
     renderRoute("/");
     const trend = await screen.findByRole("region", { name: "Your trend" });
-    await waitFor(() => expect(trend.textContent).toContain("7-day average 79.8\u00a0kg"));
+    await waitFor(() => expect(trend.textContent).toContain("7-day average 79.8 kg"));
     expect(trend.textContent).toContain("loss 0.6%/wk");
     expect(within(trend).getByRole("link", { name: "Body" }).getAttribute("href")).toBe("/body");
   });
@@ -280,6 +292,6 @@ describe("the trend card", () => {
     fakeApi({ me: ADA });
     renderRoute("/");
     const trend = await screen.findByRole("region", { name: "Ta tendance" });
-    await waitFor(() => expect(trend.textContent).toContain("prise 0,2 %/sem"));
+    await waitFor(() => expect(trend.textContent).toContain("prise 0,2\u202f%/sem"));
   });
 });

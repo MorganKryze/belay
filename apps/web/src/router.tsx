@@ -11,7 +11,7 @@ import { NotFound, RouteError } from "./routes/fallbacks";
 import { Home } from "./routes/home";
 import { Layout } from "./routes/layout";
 
-// ponytail: code-based routes, 13 screens today (the tools share one lazy `$toolId` route).
+// ponytail: code-based routes, 14 screens today (the tools share one lazy `$toolId` route).
 // Switch to file-based routing at ~20 screens, or when this file passes ~150 lines of route
 // declarations.
 const rootRoute = createRootRoute({ component: Layout });
@@ -40,6 +40,11 @@ const profileRoute = createRoute({
   path: "/settings/profile",
   component: lazyRouteComponent(() => import("./routes/profile"), "Profile"),
 });
+const supplementsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/settings/supplements",
+  component: lazyRouteComponent(() => import("./routes/supplements"), "Supplements"),
+});
 const toolsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/tools",
@@ -65,6 +70,7 @@ export const routeTree = rootRoute.addChildren([
   bodyRoute,
   settingsRoute,
   profileRoute,
+  supplementsRoute,
   toolsRoute,
   equipmentRoute,
   toolRoute,

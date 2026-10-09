@@ -3,6 +3,7 @@ import { bmi, bmiBand, bmiSuggestsProfessional, BMI_THRESHOLDS } from "@belay/sh
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
 import { NumberStepper } from "@/components/number-stepper";
+import { ProfileProposal, RestoreButton, usePrefill } from "@/components/prefill";
 import { RangeList } from "@/components/range-list";
 import { ResultCard } from "@/components/result-card";
 import { ToolPage } from "@/components/tool-page";
@@ -15,8 +16,9 @@ export const BmiInputs = z.object({});
 export function BmiTool() {
   const { t, i18n } = useTranslation();
   const { state, update } = useTool("bmi", BmiInputs);
-  const heightCm = state.heightCm ?? 170;
-  const weightKg = state.weightKg ?? 70;
+  const prefill = usePrefill(["heightCm", "weightKg"]);
+  const heightCm = prefill.value("heightCm", state.heightCm ?? 170);
+  const weightKg = prefill.value("weightKg", state.weightKg ?? 70);
   const value = attempt(() => bmi(weightKg, heightCm));
   const band = value === null ? null : bmiBand(value);
   const n = (v: number) => formatNumber(v, i18n.language);
@@ -38,7 +40,12 @@ export function BmiTool() {
           max={HEIGHT_RANGE_CM.max}
           step={1}
           buttons={false}
-          onChange={(v) => v !== null && update((s) => ({ ...s, heightCm: v }))}
+          onChange={(v) => {
+            if (v === null) return;
+            prefill.edit("heightCm");
+            update((s) => ({ ...s, heightCm: v }));
+          }}
+          hint={prefill.hint("heightCm")}
         />
         <NumberStepper
           label={t("tools.fields.weight")}
@@ -48,9 +55,19 @@ export function BmiTool() {
           max={WEIGHT_RANGE_KG.max}
           step={0.5}
           buttons={false}
-          onChange={(v) => v !== null && update((s) => ({ ...s, weightKg: v }))}
+          onChange={(v) => {
+            if (v === null) return;
+            prefill.edit("weightKg");
+            update((s) => ({ ...s, weightKg: v }));
+          }}
+          hint={prefill.hint("weightKg")}
         />
       </div>
+      <ProfileProposal
+        proposal={prefill.proposal("heightCm", heightCm)}
+        show={(cm) => t("prefill.cm", { value: cm })}
+      />
+      <RestoreButton prefill={prefill} />
       <ResultCard label={t("bmi.result")}>
         {value !== null && band !== null && (
           <>

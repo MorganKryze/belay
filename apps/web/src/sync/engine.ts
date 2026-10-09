@@ -55,11 +55,7 @@ export function createSyncEngine({
           changes: batch.map((e) => e.change),
         });
         if (result.kind !== "ok") return set(result.kind);
-        await applyServer(
-          db,
-          batch.map((e) => e.id),
-          result.response,
-        );
+        await applyServer(db, batch, result.response);
         onApplied();
         if (!result.response.hasMore && (await readOutbox(db, 1)).length === 0) break;
       }

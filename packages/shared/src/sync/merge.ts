@@ -32,21 +32,54 @@ function fold<C extends { at: string }>(stored: string | null, changes: readonly
   return winner;
 }
 
-// The change to write for each day, clamped, or nothing when what is stored is as recent.
-export function mergeWeights(
-  stored: ReadonlyMap<ISODate, string | null>,
-  changes: readonly WeightChange[],
+// The change to write for each key (a day, a day's field, an id's field), clamped, or nothing
+// when what is stored under that key is as recent. A change keeps its other properties (the
+// server tags each one with its place in the request).
+export function mergeFields<C extends { at: string }>(
+  stored: ReadonlyMap<string, string | null>,
+  changes: readonly C[],
+  key: (change: C) => string,
   now: Date,
-): WeightChange[] {
-  const byDate = new Map<ISODate, WeightChange[]>();
-  for (const c of changes) byDate.set(c.date, [...(byDate.get(c.date) ?? []), c]);
-  return [...byDate].flatMap(([date, list]) => fold(stored.get(date) ?? null, list, now) ?? []);
+): C[] {
+  const byKey = new Map<string, C[]>();
+  for (const c of changes) byKey.set(key(c), [...(byKey.get(key(c)) ?? []), c]);
+  return [...byKey].flatMap(([k, list]) => fold(stored.get(k) ?? null, list, now) ?? []);
 }
 
-export function mergeTarget(
-  stored: string | null,
-  changes: readonly TargetChange[],
+export function mergeWeights<C extends WeightChange>(
+  stored: ReadonlyMap<ISODate, string | null>,
+  changes: readonly C[],
   now: Date,
-): TargetChange | null {
+): C[] {
+  return mergeFields(stored, changes, (c) => c.date, now);
+}
+
+export function mergeTarget<C extends TargetChange>(
+  stored: string | null,
+  changes: readonly C[],
+  now: Date,
+): C | null {
   return fold(stored, changes, now) ?? null;
+}
+
+// The keys whose stored write is strictly newer than the last change sent for them. The phone
+// that sent it shows an older value: it gets the stored row back, whatever its cursor says.
+export function staleKeys<C extends { at: string }>(
+  stored: ReadonlyMap<string, string | null>,
+  changes: readonly C[],
+  key: (change: C) => string,
+  now: Date,
+): Set<string> {
+  const latest = new Map<string, string>();
+  for (const c of changes) {
+    const at = clampAt(c.at, now);
+    const seen = latest.get(key(c));
+    if (seen === undefined || isNewer(at, seen)) latest.set(key(c), at);
+  }
+  const stale = new Set<string>();
+  for (const [k, at] of latest) {
+    const kept = stored.get(k) ?? null;
+    if (kept !== null && isNewer(kept, at)) stale.add(k);
+  }
+  return stale;
 }
