@@ -130,6 +130,17 @@ describe("a long queue or a long history", () => {
     expect(send.mock.calls.map(([r]) => r.cursor)).toEqual(["0", "1000"]);
     expect((await readWeights(db)).map((w) => w.date)).toEqual(["2026-10-01", "2026-10-02"]);
   });
+
+  it("tells onSynced when it pulled everything, never after the round cap", async () => {
+    const onSynced = vi.fn(async () => {});
+    const more = vi.fn<Send>(async () => ok(answer({ cursor: "9", hasMore: true })));
+    await engineWith(more, { onSynced }).sync();
+    expect(more.mock.calls.length).toBeGreaterThan(1); // it paged until the cap
+    expect(onSynced).not.toHaveBeenCalled();
+    const done = vi.fn<Send>(async () => ok(empty("9")));
+    await engineWith(done, { onSynced }).sync();
+    expect(onSynced).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe("a change the server refuses", () => {

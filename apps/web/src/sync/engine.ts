@@ -50,6 +50,7 @@ export function createSyncEngine({
   async function rounds(): Promise<void> {
     set("syncing");
     try {
+      let complete = false;
       for (let round = 0; round < MAX_ROUNDS; round++) {
         const batch = await readOutbox(db, MAX_CHANGES);
         const result = await send({
@@ -60,10 +61,15 @@ export function createSyncEngine({
         if (result.kind !== "ok") return set(result.kind);
         await applyServer(db, batch, result.response);
         onApplied();
-        if (!result.response.hasMore && (await readOutbox(db, 1)).length === 0) break;
+        if (!result.response.hasMore && (await readOutbox(db, 1)).length === 0) {
+          complete = true;
+          break;
+        }
       }
       set("idle");
-      await onSynced?.().catch(() => {}); // a failure here leaves the next sync to try again
+      // Only a pull that reached the end: rows come in server order, a half-pulled session
+      // would look forgotten.
+      if (complete) await onSynced?.().catch(() => {}); // a failure here leaves the next sync to try again
     } catch (error) {
       console.error(
         "sync: local database failed:",
