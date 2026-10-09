@@ -100,11 +100,12 @@
      least 3:1 on the card in both themes; the grey is context, not a category colour. */
   --chart-dot: #8a837e;
   --chart-line: #c2410c;
-  /* Body map: the primary muscle full, the secondary ones lighter, the rest grey; each at least
-     3:1 on the card in both themes, and every muscle also named in words. */
+  /* Body map: the primary tone at least 3:1 on the card in both themes; the secondary one clearly
+     lighter (light theme) or darker (dark theme) than the primary; every muscle also named in
+     words, so the secondary and rest tones carry no meaning alone. */
   --muscle-primary: #c2410c;
-  --muscle-secondary: #ea580c;
-  --muscle-rest: #948d87;
+  --muscle-secondary: #f4b08a;
+  --muscle-rest: #dedad6;
   --ring: #c2410c;
   --card: var(--surface);
   --card-foreground: var(--foreground);
@@ -147,8 +148,8 @@
   --chart-dot: #8a837e;
   --chart-line: #ea580c;
   --muscle-primary: #fb923c;
-  --muscle-secondary: #d9631e;
-  --muscle-rest: #736d68;
+  --muscle-secondary: #8a4524;
+  --muscle-rest: #36322f;
   --ring: #fb923c;
 }
 

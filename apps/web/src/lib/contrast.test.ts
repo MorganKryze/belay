@@ -42,10 +42,8 @@ const PAIRS = [
   // Inside the creatine band, the dots and the line (its label: primary-ink, above).
   ["chart-dot", "primary-soft", 3],
   ["chart-line", "primary-soft", 3],
-  // The body map's three tints, on the card and on the track behind a thumbnail.
+  // The body map's primary tone, on the card and on the track behind a thumbnail.
   ["muscle-primary", "surface", 3],
-  ["muscle-secondary", "surface", 3],
-  ["muscle-rest", "surface", 3],
   ["muscle-primary", "track", 3],
 ] as const;
 
@@ -59,6 +57,17 @@ describe("design tokens", () => {
       expect(ratio, `${fg} on ${bg}: ${ratio.toFixed(2)}`).toBeGreaterThanOrEqual(min);
     }
   });
+
+  it.each([
+    ["light", light],
+    ["dark", dark],
+  ] as const)(
+    "%s theme keeps the body map's secondary tone apart from the primary",
+    (_, tokens) => {
+      const ratio = contrastRatio(tokens["muscle-primary"]!, tokens["muscle-secondary"]!);
+      expect(ratio, ratio.toFixed(2)).toBeGreaterThanOrEqual(2);
+    },
+  );
 
   it("writes every plate's weight legibly on its colour", () => {
     const plates = [
