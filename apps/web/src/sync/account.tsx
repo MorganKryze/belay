@@ -12,10 +12,14 @@ import {
 import { fetchMe } from "@/lib/api";
 import {
   type AccountDb,
+  type ActiveSession,
   clearRejected,
+  closeForgotten,
   openAccountDb,
   pendingCounts,
+  readActiveSession,
   readAnnotations,
+  readHistory,
   readIntake,
   readMeasures,
   readProfile,
@@ -25,6 +29,8 @@ import {
   readTarget,
   readWeights,
   recordChanges,
+  recordSet,
+  type SetInput,
 } from "./db";
 import { createSyncEngine, type SyncEngine } from "./engine";
 import { type LastUser, readLastUser, writeLastUser } from "./last-user";
@@ -67,27 +73,33 @@ export function AccountProvider({ children }: { children: ReactNode }) {
         setOpened(null);
         setReopen((n) => n + 1);
       },
-    }).then(
-      (db) => {
-        if (cancelled) return db.close();
-        const engine = createSyncEngine({
-          userId,
-          db,
-          // The network part loads with the first sync: Zod stays out of the initial bundle.
-          send: (request) => import("./transport").then((m) => m.postSync(request)),
-          onApplied: () => void queryClient.invalidateQueries({ queryKey: ["local", userId] }),
-        });
-        const stop = engine.start();
-        close = () => {
-          stop();
-          db.close();
-        };
-        setOpened({ userId, db, engine });
-      },
-      () => {
-        if (!cancelled) setOpened({ userId });
-      },
-    );
+    })
+      .then(async (db) => {
+        // D12: a session forgotten open is closed before anything reads it.
+        await closeForgotten(db, new Date()).catch(() => false);
+        return db;
+      })
+      .then(
+        (db) => {
+          if (cancelled) return db.close();
+          const engine = createSyncEngine({
+            userId,
+            db,
+            // The network part loads with the first sync: Zod stays out of the initial bundle.
+            send: (request) => import("./transport").then((m) => m.postSync(request)),
+            onApplied: () => void queryClient.invalidateQueries({ queryKey: ["local", userId] }),
+          });
+          const stop = engine.start();
+          close = () => {
+            stop();
+            db.close();
+          };
+          setOpened({ userId, db, engine });
+        },
+        () => {
+          if (!cancelled) setOpened({ userId });
+        },
+      );
     return () => {
       cancelled = true;
       close();
@@ -169,6 +181,40 @@ export const usePending = (account: OpenAccount) =>
     networkMode: "always",
   });
 
+// Every session and set, for the shared rules (removed ones included: liveSets leaves them out).
+export const useHistory = (account: OpenAccount) =>
+  useQuery({
+    queryKey: local(account, "history"),
+    queryFn: () => readHistory(account.db),
+    networkMode: "always",
+  });
+
+export const useActiveSession = (account: OpenAccount) =>
+  useQuery({
+    queryKey: local(account, "activeSession"),
+    queryFn: () => readActiveSession(account.db),
+    networkMode: "always",
+  });
+
+// D12 again when Home opens: the app may have stayed open in the background since the start.
+export function useCloseForgotten({ user, db, engine }: OpenAccount) {
+  const queryClient = useQueryClient();
+  useEffect(() => {
+    let cancelled = false;
+    void closeForgotten(db, new Date()).then(
+      async (wrote) => {
+        if (!wrote || cancelled) return;
+        await queryClient.invalidateQueries({ queryKey: ["local", user.id] });
+        engine.schedule();
+      },
+      () => {}, // a failed read leaves the session as it is; the next opening tries again
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [db, engine, queryClient, user.id]);
+}
+
 export const useRejected = (account: OpenAccount) =>
   useQuery({
     queryKey: local(account, "rejected"),
@@ -189,12 +235,25 @@ export const useSyncStatus = ({ engine }: OpenAccount) =>
   useSyncExternalStore(engine.subscribe, engine.status);
 
 // Writes on the device first; the screen follows at once, the server when it can. Several
-// changes are written together, or not at all.
+// changes are written together, or not at all; `active` (the open session) with them.
 export function useRecord({ user, db, engine }: OpenAccount) {
   const queryClient = useQueryClient();
   return useCallback(
-    async (change: Change | readonly Change[]) => {
-      await recordChanges(db, "kind" in change ? [change] : change);
+    async (change: Change | readonly Change[], options?: { active?: ActiveSession | null }) => {
+      await recordChanges(db, "kind" in change ? [change] : change, options);
+      await queryClient.invalidateQueries({ queryKey: ["local", user.id] });
+      engine.schedule();
+    },
+    [db, engine, queryClient, user.id],
+  );
+}
+
+// ✓: the set, its queue entry and the open session in one transaction (recordSet).
+export function useRecordSet({ user, db, engine }: OpenAccount) {
+  const queryClient = useQueryClient();
+  return useCallback(
+    async (input: SetInput, active: ActiveSession) => {
+      await recordSet(db, input, new Date().toISOString(), active);
       await queryClient.invalidateQueries({ queryKey: ["local", user.id] });
       engine.schedule();
     },

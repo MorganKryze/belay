@@ -59,7 +59,7 @@ describe("the upgrade from version 1", () => {
 
     const db = await openAccountDb("user-a");
     expect(closedForUpgrade).toBe(true);
-    expect(db.version).toBe(2);
+    expect(db.version).toBe(3); // straight to the current version
     expect((await readWeights(db)).map((w) => w.weightKg)).toEqual([80.2, 79.8]);
     expect(await readTarget(db)).toEqual({ minPct: 0.25, maxPct: 0.75 });
     expect((await readOutbox(db)).map((e) => [e.id, e.change.kind])).toEqual([
