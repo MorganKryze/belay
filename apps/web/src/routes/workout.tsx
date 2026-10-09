@@ -179,7 +179,12 @@ function Screen({
         {
           workoutId: workout.id,
           slotIndex: next?.slotIndex ?? slotIndex,
-          restEndsAt: turn ? restEndsAt(plan, after, turn, doneAt) : active.restEndsAt,
+          restEndsAt: turn
+            ? restEndsAt(plan, after, turn, doneAt)
+            : // A warm-up starts no rest and leaves a running one alone, but not an expired one.
+              active.restEndsAt && Date.parse(active.restEndsAt) > Date.parse(doneAt)
+              ? active.restEndsAt
+              : null,
         },
       ),
     );
