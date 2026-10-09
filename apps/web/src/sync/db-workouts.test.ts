@@ -307,7 +307,7 @@ describe("startWorkout leaving a forgotten session", () => {
   it("ends it at its last set, in the same go as the new start", async () => {
     await recordChanges(db, [start()]);
     await recordSet(db, input(S1), LATER, active());
-    expect(await startWorkout(db, start(NEW, "2026-10-09T08:00:00.000Z") as never)).toBe(NEW);
+    expect(await startWorkout(db, begin())).toBe(NEW);
     const workouts = (await readHistory(db)).workouts;
     expect(workouts.find((w) => w.id === W)).toMatchObject({ endedAt: LATER });
     expect(workouts.find((w) => w.id === NEW)?.endedAt).toBeNull();
@@ -316,13 +316,13 @@ describe("startWorkout leaving a forgotten session", () => {
 
   it("removes it when it has no set and is this device's own", async () => {
     await recordChanges(db, [start()], { active: active() });
-    await startWorkout(db, start(NEW, "2026-10-09T08:00:00.000Z") as never);
+    await startWorkout(db, begin());
     expect((await readHistory(db)).workouts.find((w) => w.id === W)?.removed).toBe(true);
   });
 
   it("leaves another device's set-less session alone", async () => {
     await recordChanges(db, [start()]);
-    await startWorkout(db, start(NEW, "2026-10-09T08:00:00.000Z") as never);
+    await startWorkout(db, begin());
     expect((await readHistory(db)).workouts.find((w) => w.id === W)?.removed).toBe(false);
   });
 });
