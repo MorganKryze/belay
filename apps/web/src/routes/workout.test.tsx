@@ -457,6 +457,6 @@ describe("fix round 1", () => {
     await screen.findByRole("heading", { level: 1, name: /^Session / });
     const { history } = await stored();
     expect(history.workouts).toHaveLength(2);
-    expect(history.workouts.find((w) => w.id === id(2))?.endedAt).toBeNull();
+    expect(history.workouts.find((w) => w.id === id(2))?.endedAt).toBe(at(eleven)); // left at its last set
   });
 });
