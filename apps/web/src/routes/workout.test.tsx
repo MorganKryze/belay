@@ -371,3 +371,92 @@ describe("the session screen (§4.2, §4.3)", () => {
     expect(await screen.findByText("Repos · série 2 ensuite")).toBeTruthy();
   });
 });
+
+describe("fix round 1", () => {
+  it("offers the RIR under the next set after the last one done, and logs none when it was not shown", async () => {
+    await seed(ADA.id, LAST_A);
+    await startSession("A");
+    const bench = card("Barbell bench press");
+    // Warm-ups skipped: nothing was shown under set 1, so no RIR is recorded for it.
+    expect(within(bench).queryByRole("radiogroup")).toBeNull();
+    log(bench, "Log set 1");
+    await waitFor(() => within(bench).getByRole("img", { name: "Set 1 logged" }));
+    expect(within(bench).getByRole("radiogroup", { name: "RIR, reps in reserve" })).toBeTruthy();
+    expect((await stored()).history.sets.find((s) => s.workoutId !== id(1))?.rir).toBeNull();
+  });
+
+  it("shows the RIR row in a card unfolded by a tap", async () => {
+    await startSession("A");
+    fireEvent.click(screen.getByRole("button", { name: /^Dumbbell lateral raise/ }));
+    const lateral = card("Dumbbell lateral raise");
+    expect(within(lateral).getByRole("radiogroup", { name: "RIR, reps in reserve" })).toBeTruthy();
+  });
+
+  it("keeps the RIR row after a reload mid-rest", async () => {
+    await seed(ADA.id, LAST_A);
+    await startSession("A");
+    log(card("Barbell bench press"), "Log set 1");
+    await screen.findByRole("timer");
+    cleanup();
+    renderRoute("/workout");
+    await screen.findByRole("timer");
+    expect(
+      within(card("Barbell bench press")).getByRole("radiogroup", { name: "RIR, reps in reserve" }),
+    ).toBeTruthy();
+  });
+
+  it("does not bring an expired rest back at the next warm-up", async () => {
+    await seed(ADA.id, LAST_A);
+    await startSession("A");
+    const bench = card("Barbell bench press");
+    log(bench, "Log set 1");
+    await screen.findByRole("timer");
+    await later(200);
+    await screen.findByText("Back to it");
+    fireEvent.pointerDown(document.body);
+    log(bench, "Log warm-up 1");
+    await waitFor(() => within(bench).getByRole("img", { name: "Warm-up 1 logged" }));
+    await waitFor(async () => expect((await stored()).active?.restEndsAt).toBeNull());
+    expect(screen.queryByText("Back to it")).toBeNull();
+    expect(screen.queryByRole("timer")).toBeNull();
+  });
+
+  it("starts today's session when the one open was forgotten", async () => {
+    fakeApi({ me: ADA, sync: () => new Response(null, { status: 500 }) });
+    const eleven = new Date(2026, 9, 7, 11, 0);
+    await seed(ADA.id, [
+      {
+        kind: "workout",
+        id: id(2),
+        field: "start",
+        sessionCode: "A",
+        plan: [...sessionByCode("A")!.slots],
+        startedAt: at(eleven),
+        at: at(eleven),
+      },
+      {
+        kind: "set",
+        id: id(20),
+        workoutId: id(2),
+        field: "create",
+        slotIndex: 0,
+        position: 3,
+        exerciseId: "ds:0025",
+        warmup: false,
+        weightKg: 80,
+        reps: 8,
+        rir: null,
+        doneAt: at(eleven),
+        at: at(eleven),
+      },
+    ]);
+    renderRoute("/");
+    const line = await screen.findByRole("link", { name: /^Session [AB] · / });
+    expect(line.textContent).not.toContain("in progress");
+    fireEvent.click(line);
+    await screen.findByRole("heading", { level: 1, name: /^Session / });
+    const { history } = await stored();
+    expect(history.workouts).toHaveLength(2);
+    expect(history.workouts.find((w) => w.id === id(2))?.endedAt).toBeNull();
+  });
+});

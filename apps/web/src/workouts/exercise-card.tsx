@@ -122,7 +122,9 @@ export function ExerciseCard({
   );
   const work = rows.filter((r) => !r.warmup);
   const doneWork = work.filter((r) => r.set).length;
-  const next = rows.find((r) => !r.set);
+  // The next row: the first still to do after the last one done (the first row if none is).
+  const lastDone = rows.findLastIndex((r) => r.set);
+  const next = rows.slice(lastDone + 1).find((r) => !r.set);
   const last = lastTime(history, exercise.id);
 
   const shown = (row: Row, field: "kg" | "reps") => {
@@ -150,13 +152,15 @@ export function ExerciseCard({
   // The RIR offered under the next work set: the low end of the target until the person picks.
   const rirOf = (row: Row) =>
     rirChoice?.position === row.position ? rirChoice.rir : slot.rirTarget[0];
+  // Only a RIR the person saw under the set is logged.
+  const rirShown = (row: Row) => row === next && !row.warmup;
 
   const validate = async (row: Row) => {
     const load = loadOf(row);
     if (!load || busy) return;
     setBusy(true);
     try {
-      await onValidate(row, load, row.warmup ? null : rirOf(row));
+      await onValidate(row, load, rirShown(row) ? rirOf(row) : null);
       clear(row);
       setRirChoice(null);
     } finally {
@@ -282,7 +286,7 @@ export function ExerciseCard({
                     </button>
                   )}
                 </div>
-                {isNext && !row.warmup && (
+                {rirShown(row) && (
                   <RirRow
                     value={rirOf(row)}
                     onChange={(rir) => setRirChoice({ position: row.position, rir })}
