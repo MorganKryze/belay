@@ -16,7 +16,7 @@ import { useTranslation } from "react-i18next";
 import { Sheet } from "@/components/sheet";
 import { Button } from "@/components/ui/button";
 import { formatNumber } from "@/lib/format";
-import { BodySymbols, BodyThumb } from "./body-map";
+import { BodyThumb } from "./body-map";
 
 // Case, accents and word order aside: "press bench" finds "Barbell bench press".
 const fold = (text: string) =>
@@ -64,7 +64,6 @@ export function ExercisesPanel() {
 
   return (
     <div className="flex flex-col gap-3">
-      <BodySymbols />
       <label className="relative flex items-center">
         <Search
           aria-hidden
