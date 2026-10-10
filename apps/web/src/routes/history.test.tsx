@@ -155,7 +155,7 @@ describe("a session's detail", () => {
       },
     ];
     await seed(ADA.id, [...MONTH, ...notes]);
-    fakeApi({ me: ADA });
+    const api = fakeApi({ me: ADA });
     renderRoute("/workouts?tab=history");
     fireEvent.click(await screen.findByRole("link", { name: /Session B · Legs/ }));
     expect(await screen.findByRole("heading", { name: "Session B · Legs", level: 1 })).toBeTruthy();
@@ -174,8 +174,13 @@ describe("a session's detail", () => {
     fireEvent.click(within(sheet).getByRole("button", { name: "Delete" }));
     const calendar = await screen.findByRole("table", { name: "October 2026" });
     await waitFor(() => expect(marked(calendar)).toEqual(["2", "6"]));
+    // Still queued, or already sent: the opening sync, if still going, takes it along.
     const db = await openAccountDb(ADA.id);
-    expect((await readOutbox(db)).at(-1)?.change).toMatchObject({
+    const recorded = [
+      ...api.requests.flatMap((r) => r.changes),
+      ...(await readOutbox(db)).map((e) => e.change),
+    ];
+    expect(recorded.at(-1)).toMatchObject({
       kind: "workout",
       id: id(2),
       field: "removed",
