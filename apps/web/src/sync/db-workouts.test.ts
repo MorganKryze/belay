@@ -19,6 +19,7 @@ import {
   readIntake,
   readOutbox,
   readRejected,
+  readSessionView,
   readWeights,
   recordChanges,
   recordSet,
@@ -156,6 +157,15 @@ describe("a session on the phone", () => {
     expect(await readActiveSession(db)).toEqual(active("2026-10-07T17:07:30.000Z"));
     expect((await readOutbox(db)).map((e) => e.change.kind)).toEqual(["workout", "set"]);
     expect(await pendingCounts(db)).toEqual({ weighings: 0, total: 1 });
+  });
+
+  it("reads the open session with the history it is judged on, as one snapshot", async () => {
+    await recordChanges(db, [start()], { active: active() });
+    await recordSet(db, input(S1), LATER, active("2026-10-07T17:07:30.000Z"));
+    expect(await readSessionView(db)).toEqual({
+      active: active("2026-10-07T17:07:30.000Z"),
+      history: { workouts: [workoutRow()], sets: [setRow(S1)] },
+    });
   });
 
   it("corrects a set already validated at that place (another tab), never doubles it", async () => {

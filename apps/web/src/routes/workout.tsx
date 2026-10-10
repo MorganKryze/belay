@@ -25,10 +25,9 @@ import type { ActiveSession } from "@/sync/db";
 import {
   type OpenAccount,
   useAccount,
-  useActiveSession,
-  useHistory,
   useRecord,
   useRecordSet,
+  useSessionView,
   useStartWorkout,
 } from "@/sync/account";
 import { ExerciseCard, type Row } from "@/workouts/exercise-card";
@@ -50,8 +49,7 @@ function Session({ account }: { account: OpenAccount }) {
   const navigate = useNavigate();
   const startWorkout = useStartWorkout(account);
   const record = useRecord(account);
-  const active = useActiveSession(account);
-  const history = useHistory(account);
+  const view = useSessionView(account).data;
   const started = useRef(false);
   // While the end is written, the screen neither redirects nor shows a session already over.
   const [leaving, setLeaving] = useState(false);
@@ -91,16 +89,17 @@ function Session({ account }: { account: OpenAccount }) {
     }
   };
 
-  if (start || leaving || active.isPending || !history.data) return null;
-  const workout = active.data && history.data.workouts.find((w) => w.id === active.data!.workoutId);
-  if (!active.data || !workout || workout.endedAt !== null || workout.removed)
+  if (start || leaving || !view) return null;
+  const { active, history } = view;
+  const workout = active && history.workouts.find((w) => w.id === active.workoutId);
+  if (!active || !workout || workout.endedAt !== null || workout.removed)
     return <Navigate to="/workouts" search={{ tab: "program" }} />;
   return (
     <Screen
       account={account}
-      active={active.data}
+      active={active}
       workout={workout}
-      history={history.data}
+      history={history}
       failed={failed}
       onFinish={(empty) => void finish(workout, empty)}
     />

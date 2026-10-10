@@ -18,13 +18,13 @@ import {
   closeForgotten,
   openAccountDb,
   pendingCounts,
-  readActiveSession,
   readAnnotations,
   readHistory,
   readIntake,
   readMeasures,
   readProfile,
   readRejected,
+  readSessionView,
   readSupplementLogs,
   readSupplements,
   readTarget,
@@ -191,10 +191,11 @@ export const useHistory = (account: OpenAccount) =>
     networkMode: "always",
   });
 
-export const useActiveSession = (account: OpenAccount) =>
+// The open session with the history it is judged on, which change together (readSessionView).
+export const useSessionView = (account: OpenAccount) =>
   useQuery({
-    queryKey: local(account, "activeSession"),
-    queryFn: () => readActiveSession(account.db),
+    queryKey: local(account, "sessionView"),
+    queryFn: () => readSessionView(account.db),
     networkMode: "always",
   });
 

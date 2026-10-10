@@ -651,6 +651,20 @@ export async function readActiveSession(db: AccountDb): Promise<ActiveSession | 
   return (await db.get("activeSession", "current")) ?? null;
 }
 
+// The session screen's data from one transaction: two reads, settling apart, would show the
+// rest started by a set before that set (and a rest label judged on the history before it).
+export async function readSessionView(
+  db: AccountDb,
+): Promise<{ active: ActiveSession | null; history: History }> {
+  const tx = db.transaction(["activeSession", "workouts", "sets"]);
+  const [active, workouts, sets] = await Promise.all([
+    tx.objectStore("activeSession").get("current"),
+    tx.objectStore("workouts").getAll(),
+    tx.objectStore("sets").getAll(),
+  ]);
+  return { active: active ?? null, history: { workouts, sets } };
+}
+
 export async function readOutbox(db: AccountDb, limit?: number): Promise<OutboxEntry[]> {
   return (await db.getAll("outbox", null, limit)) as OutboxEntry[];
 }
