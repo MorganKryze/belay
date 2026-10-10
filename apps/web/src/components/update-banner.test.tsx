@@ -6,10 +6,13 @@ import { UpdateBanner } from "./update-banner";
 
 const reg = vi.hoisted(() => ({
   updateSW: vi.fn(),
-  options: {} as { onNeedRefresh?: () => void },
+  options: {} as {
+    onNeedRefresh?: () => void;
+    onRegisteredSW?: (url: string, registration?: ServiceWorkerRegistration) => void;
+  },
 }));
 vi.mock("virtual:pwa-register", () => ({
-  registerSW: (options: { onNeedRefresh?: () => void }) => {
+  registerSW: (options: typeof reg.options) => {
     reg.options = options;
     return reg.updateSW;
   },
@@ -17,6 +20,7 @@ vi.mock("virtual:pwa-register", () => ({
 
 beforeEach(() => {
   reg.updateSW.mockReset();
+  // Starting afresh forgets a waiting version, so the tests do not depend on their order.
   startUpdates();
 });
 afterEach(async () => {
