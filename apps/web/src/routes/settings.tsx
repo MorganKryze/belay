@@ -5,6 +5,7 @@ import { ChevronRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
+import { toISODate } from "@belay/shared/body/dates";
 import type { Change } from "@belay/shared/sync/schema";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -143,6 +144,16 @@ function describe(
         ? t("settings.rejected.annotation", { day: day(date) })
         : t("settings.rejected.annotationUndated");
     }
+    case "workout":
+      return change.field === "start"
+        ? t("settings.rejected.workout", {
+            day: day(toISODate(new Date(change.startedAt))),
+          })
+        : t("settings.rejected.workoutUndated");
+    case "set":
+      return change.field === "create"
+        ? t("settings.rejected.set", { day: day(toISODate(new Date(change.doneAt))) })
+        : t("settings.rejected.setUndated");
   }
 }
 

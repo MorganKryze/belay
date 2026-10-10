@@ -130,6 +130,17 @@ describe("a long queue or a long history", () => {
     expect(send.mock.calls.map(([r]) => r.cursor)).toEqual(["0", "1000"]);
     expect((await readWeights(db)).map((w) => w.date)).toEqual(["2026-10-01", "2026-10-02"]);
   });
+
+  it("tells onSynced when it pulled everything, never after the round cap", async () => {
+    const onSynced = vi.fn(async () => {});
+    const more = vi.fn<Send>(async () => ok(answer({ cursor: "9", hasMore: true })));
+    await engineWith(more, { onSynced }).sync();
+    expect(more.mock.calls.length).toBeGreaterThan(1); // it paged until the cap
+    expect(onSynced).not.toHaveBeenCalled();
+    const done = vi.fn<Send>(async () => ok(empty("9")));
+    await engineWith(done, { onSynced }).sync();
+    expect(onSynced).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe("a change the server refuses", () => {
@@ -213,6 +224,48 @@ describe("triggers", () => {
     window.dispatchEvent(new Event("online"));
     await new Promise((r) => setTimeout(r, 10));
     expect(send).toHaveBeenCalledTimes(3);
+  });
+
+  it("refreshes with the sync already running, and only syncs again when none is", async () => {
+    let release = () => {};
+    const send = vi.fn<Send>(async () => ok(empty("1")));
+    send.mockImplementationOnce(
+      () => new Promise((resolve) => (release = () => resolve(ok(empty("1"))))),
+    );
+    const engine = engineWith(send);
+    const running = engine.sync();
+    await vi.waitFor(() => expect(send).toHaveBeenCalledTimes(1));
+    const refreshed = engine.refresh();
+    release();
+    await Promise.all([running, refreshed]);
+    expect(send).toHaveBeenCalledTimes(1);
+    await engine.refresh();
+    expect(send).toHaveBeenCalledTimes(2);
+  });
+
+  it("ends a run under way when stopped: nothing sent or written after, and no failure", async () => {
+    await recordChange(db, weight("2026-10-07", 80));
+    let release = () => {};
+    const send = vi.fn<Send>(async () => ok(answer({ cursor: "2", hasMore: true })));
+    send.mockImplementationOnce(
+      () =>
+        new Promise(
+          (resolve) => (release = () => resolve(ok(answer({ cursor: "1", hasMore: true })))),
+        ),
+    );
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const engine = engineWith(send);
+    const stop = engine.start();
+    await vi.waitFor(() => expect(send).toHaveBeenCalledTimes(1));
+    stop();
+    db.close(); // what the account does right after stop()
+    release();
+    await engine.sync(); // the run under way
+    await engine.sync(); // and a late trigger
+    expect(send).toHaveBeenCalledTimes(1);
+    expect(error).not.toHaveBeenCalled();
+    expect(engine.status()).not.toBe("failed");
+    error.mockRestore();
   });
 
   it("waits one second after the last entry", async () => {

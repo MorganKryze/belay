@@ -15,7 +15,9 @@
     "size": "size-limit",
     "e2e": "pnpm --filter @belay/web e2e",
     "science:doc": "tsx scripts/science-doc.ts",
-    "science:check": "tsx scripts/science-doc.ts --check"
+    "science:check": "tsx scripts/science-doc.ts --check",
+    "exercises:import": "tsx scripts/exercises-import.ts",
+    "exercises:check": "tsx scripts/exercises-import.ts --check"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

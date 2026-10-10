@@ -10,6 +10,7 @@ export type Send = (request: SyncRequest) => Promise<SendResult>;
 
 export interface SyncEngine {
   sync(): Promise<void>; // now; concurrent calls share one run
+  refresh(): Promise<void>; // the run already going if any (its pull is fresh enough), else sync()
   schedule(): void; // after an entry, debounced
   start(): () => void; // syncs at once and on every trigger; returns the stop function
   status(): SyncStatus;
@@ -24,6 +25,7 @@ export function createSyncEngine({
   db,
   send,
   onApplied,
+  onSynced,
   debounceMs = 1000,
   locks = "locks" in navigator ? navigator.locks : undefined,
 }: {
@@ -31,10 +33,14 @@ export function createSyncEngine({
   db: AccountDb;
   send: Send;
   onApplied: () => void;
+  // After a run that reached the server and applied everything: what is stored now is current.
+  onSynced?: () => Promise<void>;
   debounceMs?: number;
   locks?: Pick<LockManager, "request">;
 }): SyncEngine {
   let status: SyncStatus = "idle";
+  // Set by stop(), right before the account closes the database: a run under way ends there.
+  let stopped = false;
   const listeners = new Set<() => void>();
   const set = (next: SyncStatus) => {
     if (next === status) return;
@@ -47,20 +53,27 @@ export function createSyncEngine({
   async function rounds(): Promise<void> {
     set("syncing");
     try {
+      let complete = false;
       for (let round = 0; round < MAX_ROUNDS; round++) {
         const batch = await readOutbox(db, MAX_CHANGES);
-        const result = await send({
-          account: userId,
-          cursor: await readCursor(db),
-          changes: batch.map((e) => e.change),
-        });
+        const cursor = await readCursor(db);
+        if (stopped) return;
+        const result = await send({ account: userId, cursor, changes: batch.map((e) => e.change) });
+        if (stopped) return; // the batch stays queued: the next sync sends it again, a no-op once merged
         if (result.kind !== "ok") return set(result.kind);
         await applyServer(db, batch, result.response);
         onApplied();
-        if (!result.response.hasMore && (await readOutbox(db, 1)).length === 0) break;
+        if (!result.response.hasMore && (await readOutbox(db, 1)).length === 0) {
+          complete = true;
+          break;
+        }
       }
       set("idle");
+      // Only a pull that reached the end: rows come in server order, a half-pulled session
+      // would look forgotten.
+      if (complete) await onSynced?.().catch(() => {}); // a failure here leaves the next sync to try again
     } catch (error) {
+      if (stopped) return; // stop() closed the database under the run: not a failure
       console.error(
         "sync: local database failed:",
         error instanceof Error ? error.name : "unknown",
@@ -92,6 +105,9 @@ export function createSyncEngine({
     return running;
   }
 
+  // Unlike sync(), never queues a second run: Home opening with the app would sync twice.
+  const refresh = () => running ?? sync();
+
   let timer: ReturnType<typeof setTimeout> | undefined;
   function schedule() {
     clearTimeout(timer);
@@ -113,11 +129,13 @@ export function createSyncEngine({
       window.removeEventListener("offline", onOffline);
       document.removeEventListener("visibilitychange", onVisible);
       clearTimeout(timer);
+      stopped = true;
     };
   }
 
   return {
     sync,
+    refresh,
     schedule,
     start,
     status: () => status,

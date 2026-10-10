@@ -51,6 +51,9 @@
   --color-toast-action: var(--toast-action);
   --color-chart-dot: var(--chart-dot);
   --color-chart-line: var(--chart-line);
+  --color-muscle-primary: var(--muscle-primary);
+  --color-muscle-secondary: var(--muscle-secondary);
+  --color-muscle-rest: var(--muscle-rest);
   --color-plate-red: var(--plate-red);
   --color-plate-blue: var(--plate-blue);
   --color-plate-yellow: var(--plate-yellow);
@@ -97,6 +100,12 @@
      least 3:1 on the card in both themes; the grey is context, not a category colour. */
   --chart-dot: #8a837e;
   --chart-line: #c2410c;
+  /* Body map: the primary tone at least 3:1 on the card in both themes; the secondary one clearly
+     lighter (light theme) or darker (dark theme) than the primary; every muscle also named in
+     words, so the secondary and rest tones carry no meaning alone. */
+  --muscle-primary: #c2410c;
+  --muscle-secondary: #f4b08a;
+  --muscle-rest: #dedad6;
   --ring: #c2410c;
   --card: var(--surface);
   --card-foreground: var(--foreground);
@@ -138,6 +147,9 @@
   --toast-action: #9a3412;
   --chart-dot: #8a837e;
   --chart-line: #ea580c;
+  --muscle-primary: #fb923c;
+  --muscle-secondary: #8a4524;
+  --muscle-rest: #36322f;
   --ring: #fb923c;
 }
 

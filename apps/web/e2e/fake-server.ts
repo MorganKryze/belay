@@ -133,6 +133,66 @@ export async function fakeServer(
           write(key, {}, { removed: c.value, removedAt: c.at });
         return;
       }
+      case "workout": {
+        const key = `workouts|${c.id}`;
+        if (c.field === "start") {
+          if (!state.other.has(key))
+            write(
+              key,
+              {
+                id: c.id,
+                endedAt: null,
+                endedAtAt: null,
+                note: null,
+                noteAt: null,
+                exerciseNotes: {},
+                exerciseNotesAt: null,
+                removed: false,
+                removedAt: null,
+              },
+              { sessionCode: c.sessionCode, plan: c.plan, startedAt: c.startedAt },
+            );
+          return;
+        }
+        const [v, a] = {
+          ended: ["endedAt", "endedAtAt"],
+          note: ["note", "noteAt"],
+          exerciseNotes: ["exerciseNotes", "exerciseNotesAt"],
+          removed: ["removed", "removedAt"],
+        }[c.field];
+        if (state.other.has(key) && later(key, a!)) write(key, {}, { [v!]: c.value, [a!]: c.at });
+        return;
+      }
+      case "set": {
+        const key = `sets|${c.id}`;
+        if (c.field === "create") {
+          if (!state.other.has(key))
+            write(
+              key,
+              { removed: false, removedAt: null },
+              {
+                id: c.id,
+                workoutId: c.workoutId,
+                slotIndex: c.slotIndex,
+                position: c.position,
+                exerciseId: c.exerciseId,
+                warmup: c.warmup,
+                weightKg: c.weightKg,
+                reps: c.reps,
+                rir: c.rir,
+                doneAt: c.doneAt,
+                fieldsAt: c.at,
+              },
+            );
+          return;
+        }
+        if (!state.other.has(key)) return;
+        if (c.field === "values" && later(key, "fieldsAt"))
+          write(key, {}, { weightKg: c.weightKg, reps: c.reps, rir: c.rir, fieldsAt: c.at });
+        if (c.field === "removed" && later(key, "removedAt"))
+          write(key, {}, { removed: c.value, removedAt: c.at });
+        return;
+      }
       default:
         return;
     }
@@ -169,6 +229,8 @@ export async function fakeServer(
         supplements: table("supplements"),
         supplementLogs: table("supplementLogs"),
         annotations: table("annotations"),
+        workouts: table("workouts"),
+        sets: table("sets"),
         target: null,
         profile: profile ? bare(profile) : null,
         rejected: [],

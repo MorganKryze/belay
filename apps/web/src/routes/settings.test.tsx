@@ -2,6 +2,7 @@ import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
 import { IDBFactory } from "fake-indexeddb";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Change } from "@belay/shared/sync/schema";
+import { sessionByCode } from "@belay/shared/training/program";
 import i18n from "../i18n";
 import { pendingCounts } from "../sync/db";
 import { readLastUser } from "../sync/last-user";
@@ -181,6 +182,31 @@ describe("refused entries", () => {
   const ANNOTATION = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d02";
   const at = "2026-10-05T06:30:00.000Z";
   const day = "2026-10-05";
+  const WORKOUT = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d03";
+  const start: Change = {
+    kind: "workout",
+    id: WORKOUT,
+    field: "start",
+    sessionCode: "A",
+    plan: [...sessionByCode("A")!.slots],
+    startedAt: at,
+    at,
+  };
+  const create: Change = {
+    kind: "set",
+    id: "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d04",
+    workoutId: WORKOUT,
+    field: "create",
+    slotIndex: 0,
+    position: 3,
+    exerciseId: "ds:0025",
+    warmup: false,
+    weightKg: 80,
+    reps: 8,
+    rir: 1,
+    doneAt: at,
+    at,
+  };
   const cases: [string, Change[], Change["kind"], string, string][] = [
     [
       "waist",
@@ -255,6 +281,8 @@ describe("refused entries", () => {
       "Annotation for",
       "Annotation du",
     ],
+    ["session", [start], "workout", "Session on", "Séance du"],
+    ["set", [start, create], "set", "Set on", "Série du"],
   ];
   it.each(cases)("names a refused %s entry", async (_, changes, kind, en, fr) => {
     await seed(ADA.id, changes);
@@ -305,6 +333,24 @@ describe("refused entries", () => {
     renderRoute("/settings");
     const list = await screen.findByRole("region", { name: "Refused entries" });
     expect(list.textContent).toMatch(/Zinc \(ticked on \w{3}, Oct 5\)/);
+  });
+
+  it("says why a set was refused", async () => {
+    await seed(ADA.id, [start, create]);
+    fakeApi({
+      me: ADA,
+      sync: async (r) =>
+        Response.json(
+          answer({
+            rejected: r.changes.flatMap((c, index) =>
+              c.kind === "set" ? [{ index, reason: "unknown_exercise" as const }] : [],
+            ),
+          }),
+        ),
+    });
+    renderRoute("/settings");
+    const list = await screen.findByRole("region", { name: "Refused entries" });
+    expect(list.textContent).toContain("Exercise unknown to the server");
   });
 
   it("is not shown when the server refused nothing", async () => {
