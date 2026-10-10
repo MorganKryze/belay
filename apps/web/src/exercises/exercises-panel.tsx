@@ -252,15 +252,21 @@ function ChoiceSheet<T extends string>({
 
 const ROW = 72; // px, every row the same height: the list only renders what is on screen
 
-// The rows on screen, plus a few: 1 290 rows would take seconds to lay out on a phone.
+// The rows on screen, plus a few, from the list's top edge: below the fold, only the few.
+export function visibleRange(top: number, viewport: number, count: number) {
+  const overscan = 8;
+  const start = Math.min(count, Math.max(0, Math.floor(-top / ROW) - overscan));
+  const end = Math.min(count, Math.max(0, Math.ceil((viewport - top) / ROW)) + overscan);
+  return { start, end: Math.max(start, end) };
+}
+
+// 1 290 rows would take seconds to lay out on a phone.
 function useVisibleRange(list: RefObject<HTMLElement | null>, count: number) {
   const [range, setRange] = useState({ start: 0, end: Math.min(count, 24) });
   useLayoutEffect(() => {
     const update = () => {
       const top = list.current?.getBoundingClientRect().top ?? 0;
-      const overscan = 8;
-      const start = Math.max(0, Math.floor(-top / ROW) - overscan);
-      const end = Math.min(count, Math.ceil((window.innerHeight - top) / ROW) + overscan);
+      const { start, end } = visibleRange(top, window.innerHeight, count);
       setRange((r) => (r.start === start && r.end === end ? r : { start, end }));
     };
     update();

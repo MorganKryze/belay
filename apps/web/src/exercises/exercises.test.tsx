@@ -5,7 +5,7 @@ import i18n from "../i18n";
 import { renderRoute } from "../test/render-route";
 import { muscleColors, shapesOf, thumbnailOf } from "./body-map";
 import { BACK, FRONT } from "./body-paths";
-import { filterExercises, matches } from "./exercises-panel";
+import { filterExercises, matches, visibleRange } from "./exercises-panel";
 
 afterEach(async () => {
   cleanup();
@@ -68,6 +68,19 @@ describe("the body map", () => {
     expect(thumbnailOf("lats")).toEqual({ view: "back", viewBox: "864 230 440 440" });
     expect(thumbnailOf("glutes")).toEqual({ view: "back", viewBox: "864 480 440 440" });
     expect(thumbnailOf("quads")).toEqual({ view: "front", viewBox: "144 680 440 440" });
+  });
+});
+
+describe("the visible rows", () => {
+  it("keeps a handful when the list starts far below the screen", () => {
+    expect(visibleRange(1800, 840, 1290)).toEqual({ start: 0, end: 8 });
+  });
+
+  it("follows the screen down the list", () => {
+    const { start, end } = visibleRange(-7200, 840, 1290);
+    expect(start).toBe(100 - 8);
+    expect(end).toBe(100 + 12 + 8);
+    expect(visibleRange(-100000, 840, 1290)).toEqual({ start: 1290, end: 1290 });
   });
 });
 
