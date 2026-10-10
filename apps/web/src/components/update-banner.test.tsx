@@ -51,4 +51,13 @@ describe("UpdateBanner", () => {
     expect(screen.getByText("Nouvelle version disponible")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Recharger" })).toBeTruthy();
   });
+
+  it("schedules the update checks once the worker is registered", () => {
+    vi.useFakeTimers();
+    const update = vi.fn(() => Promise.resolve());
+    reg.options.onRegisteredSW?.("/sw.js", { update } as unknown as ServiceWorkerRegistration);
+    vi.advanceTimersByTime(60 * 60 * 1000);
+    vi.useRealTimers();
+    expect(update).toHaveBeenCalledTimes(1);
+  });
 });
