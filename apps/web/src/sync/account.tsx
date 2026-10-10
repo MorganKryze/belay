@@ -199,9 +199,10 @@ export const useActiveSession = (account: OpenAccount) =>
   });
 
 // D12 again when Home opens: the app may have stayed open in the background since the start.
-// A sync runs first; the engine closes forgotten sessions once it has landed.
+// A sync runs first (the one already going, when Home opens with the app); the engine closes
+// forgotten sessions once it has landed.
 export function useCloseForgotten({ engine }: OpenAccount) {
-  useEffect(() => void engine.sync(), [engine]);
+  useEffect(() => void engine.refresh(), [engine]);
 }
 
 export const useRejected = (account: OpenAccount) =>

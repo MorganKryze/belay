@@ -10,6 +10,7 @@ export type Send = (request: SyncRequest) => Promise<SendResult>;
 
 export interface SyncEngine {
   sync(): Promise<void>; // now; concurrent calls share one run
+  refresh(): Promise<void>; // the run already going if any (its pull is fresh enough), else sync()
   schedule(): void; // after an entry, debounced
   start(): () => void; // syncs at once and on every trigger; returns the stop function
   status(): SyncStatus;
@@ -102,6 +103,9 @@ export function createSyncEngine({
     return running;
   }
 
+  // Unlike sync(), never queues a second run: Home opening with the app would sync twice.
+  const refresh = () => running ?? sync();
+
   let timer: ReturnType<typeof setTimeout> | undefined;
   function schedule() {
     clearTimeout(timer);
@@ -128,6 +132,7 @@ export function createSyncEngine({
 
   return {
     sync,
+    refresh,
     schedule,
     start,
     status: () => status,

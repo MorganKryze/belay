@@ -226,6 +226,23 @@ describe("triggers", () => {
     expect(send).toHaveBeenCalledTimes(3);
   });
 
+  it("refreshes with the sync already running, and only syncs again when none is", async () => {
+    let release = () => {};
+    const send = vi.fn<Send>(async () => ok(empty("1")));
+    send.mockImplementationOnce(
+      () => new Promise((resolve) => (release = () => resolve(ok(empty("1"))))),
+    );
+    const engine = engineWith(send);
+    const running = engine.sync();
+    await vi.waitFor(() => expect(send).toHaveBeenCalledTimes(1));
+    const refreshed = engine.refresh();
+    release();
+    await Promise.all([running, refreshed]);
+    expect(send).toHaveBeenCalledTimes(1);
+    await engine.refresh();
+    expect(send).toHaveBeenCalledTimes(2);
+  });
+
   it("waits one second after the last entry", async () => {
     // Only the debounce timer: fake-indexeddb runs on setImmediate.
     vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
