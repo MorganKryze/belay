@@ -2,6 +2,7 @@ import { Outlet, useLocation, useRouter } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { TabBar } from "@/components/tab-bar";
+import { UpdateBanner } from "@/components/update-banner";
 import { useOnline } from "@/lib/online";
 import { AccountProvider, useAccount } from "@/sync/account";
 
@@ -59,6 +60,7 @@ function Shell() {
       <p role="status" className={offline ? "rounded-chip bg-track p-3 text-sm" : "sr-only"}>
         {offline ? t("offline") : ""}
       </p>
+      <UpdateBanner />
       <main>
         <Outlet />
       </main>

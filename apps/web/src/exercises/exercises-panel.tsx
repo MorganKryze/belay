@@ -16,7 +16,7 @@ import { useTranslation } from "react-i18next";
 import { Sheet } from "@/components/sheet";
 import { Button } from "@/components/ui/button";
 import { formatNumber } from "@/lib/format";
-import { BodySymbols, BodyThumb } from "./body-map";
+import { BodyThumb } from "./body-map";
 
 // Case, accents and word order aside: "press bench" finds "Barbell bench press".
 const fold = (text: string) =>
@@ -24,14 +24,16 @@ const fold = (text: string) =>
     .normalize("NFD")
     .replace(/\p{Diacritic}/gu, "")
     .toLowerCase();
-export function matches(name: string, query: string): boolean {
-  const words = fold(query).split(/\s+/).filter(Boolean);
+const wordsOf = (query: string) => fold(query).split(/\s+/).filter(Boolean);
+export const matches = (name: string, query: string) => {
   const target = fold(name);
-  return words.every((w) => target.includes(w));
-}
+  return wordsOf(query).every((w) => target.includes(w));
+};
 
-const byName = (a: Exercise, b: Exercise) => a.name.localeCompare(b.name, "en");
-const ALL = [...EXERCISES].sort(byName);
+// Folded once per exercise, not once per exercise and keystroke.
+const FOLDED = new Map(EXERCISES.map((e) => [e.id, fold(e.name)]));
+const collator = new Intl.Collator("en");
+const ALL = [...EXERCISES].sort((a, b) => collator.compare(a.name, b.name));
 // The sessions of the program each exercise is in: "A", "A · C".
 const SESSIONS = new Map<string, string[]>();
 for (const s of starterProgram)
@@ -42,13 +44,17 @@ for (const s of starterProgram)
 const IN_PROGRAM = [...SESSIONS.keys()].flatMap((id) => EXERCISES.filter((e) => e.id === id));
 
 type Filters = { query: string; muscle: Muscle | null; equipment: Equipment | null };
-export const filterExercises = (list: readonly Exercise[], f: Filters) =>
-  list.filter(
-    (e) =>
-      matches(e.name, f.query) &&
+export const filterExercises = (list: readonly Exercise[], f: Filters) => {
+  const words = wordsOf(f.query);
+  return list.filter((e) => {
+    const name = FOLDED.get(e.id) ?? fold(e.name);
+    return (
+      words.every((w) => name.includes(w)) &&
       (f.muscle === null || e.primary.includes(f.muscle)) &&
-      (f.equipment === null || e.equipment === f.equipment),
-  );
+      (f.equipment === null || e.equipment === f.equipment)
+    );
+  });
+};
 
 const sectionTitle = "mx-0.5 mt-2 text-[15px] font-semibold";
 
@@ -64,7 +70,6 @@ export function ExercisesPanel() {
 
   return (
     <div className="flex flex-col gap-3">
-      <BodySymbols />
       <label className="relative flex items-center">
         <Search
           aria-hidden
@@ -252,15 +257,21 @@ function ChoiceSheet<T extends string>({
 
 const ROW = 72; // px, every row the same height: the list only renders what is on screen
 
-// The rows on screen, plus a few: 1 290 rows would take seconds to lay out on a phone.
+// The rows on screen, plus a few, from the list's top edge: below the fold, only the few.
+export function visibleRange(top: number, viewport: number, count: number) {
+  const overscan = 8;
+  const start = Math.min(count, Math.max(0, Math.floor(-top / ROW) - overscan));
+  const end = Math.min(count, Math.max(0, Math.ceil((viewport - top) / ROW)) + overscan);
+  return { start, end: Math.max(start, end) };
+}
+
+// 1 290 rows would take seconds to lay out on a phone.
 function useVisibleRange(list: RefObject<HTMLElement | null>, count: number) {
   const [range, setRange] = useState({ start: 0, end: Math.min(count, 24) });
   useLayoutEffect(() => {
     const update = () => {
       const top = list.current?.getBoundingClientRect().top ?? 0;
-      const overscan = 8;
-      const start = Math.max(0, Math.floor(-top / ROW) - overscan);
-      const end = Math.min(count, Math.ceil((window.innerHeight - top) / ROW) + overscan);
+      const { start, end } = visibleRange(top, window.innerHeight, count);
       setRange((r) => (r.start === start && r.end === end ? r : { start, end }));
     };
     update();

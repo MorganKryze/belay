@@ -1,5 +1,6 @@
 import type { Muscle } from "@belay/shared/exercises/muscles";
 import type { CSSProperties } from "react";
+import { useSyncExternalStore } from "react";
 import { useTranslation } from "react-i18next";
 import { BACK, type BodyPart, FRONT } from "./body-paths";
 
@@ -142,13 +143,79 @@ export function thumbnailOf(primary: Muscle): { view: View; viewBox: string } {
   return { view, viewBox: `${view === "back" ? 864 : 144} ${y} 440 440` };
 }
 
-export function BodyThumb({ primary, secondary }: { primary: Muscle; secondary: Muscle[] }) {
+type Palette = { primary: string; secondary: string; rest: string };
+
+// The figure as a standalone SVG with the colours written into it: an <img> of it costs the
+// browser one flat picture, where a <use> of the live outlines costs ~200 styled paths a row.
+export function thumbnailSvg(
+  primary: Muscle,
+  secondary: readonly Muscle[],
+  palette: Palette,
+): string {
   const { view, viewBox } = thumbnailOf(primary);
+  const cut = DELTOID_CUT[view];
+  const fillOf = (m: Muscle | null) =>
+    m === primary ? palette.primary : m && secondary.includes(m) ? palette.secondary : palette.rest;
+  const paths = shapesOf(view)
+    .map(
+      (s) =>
+        `<path d="${s.d}" fill="${fillOf(s.muscle)}"${s.clip ? ` clip-path="url(#${s.clip})"` : ""}/>`,
+    )
+    .join("");
   return (
-    <Figure
-      view={view}
-      viewBox={viewBox}
-      colors={muscleColors([primary], secondary)}
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${viewBox}" width="44" height="44">` +
+    `<clipPath id="outer"><rect x="0" y="0" width="${cut.left - GAP}" height="2000"/>` +
+    `<rect x="${cut.right + GAP}" y="0" width="2000" height="2000"/></clipPath>` +
+    `<clipPath id="inner"><rect x="${cut.left + GAP}" y="0" width="${cut.right - cut.left - 2 * GAP}" height="2000"/></clipPath>` +
+    `${paths}</svg>`
+  );
+}
+
+const isDark = () => document.documentElement.classList.contains("dark");
+// One observer for every thumbnail on screen: it exists while at least one of them is mounted.
+const themeListeners = new Set<() => void>();
+let themeWatch: MutationObserver | undefined;
+const onTheme = (notify: () => void) => {
+  themeListeners.add(notify);
+  themeWatch ??= new MutationObserver(() => themeListeners.forEach((l) => l()));
+  if (themeListeners.size === 1)
+    themeWatch.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+  return () => {
+    themeListeners.delete(notify);
+    if (themeListeners.size === 0) themeWatch?.disconnect();
+  };
+};
+
+function paletteOfTheme(): Palette {
+  const css = getComputedStyle(document.documentElement);
+  const token = (name: string, fallback: string) => css.getPropertyValue(name).trim() || fallback;
+  return {
+    primary: token("--muscle-primary", "#c2410c"),
+    secondary: token("--muscle-secondary", "#f4b08a"),
+    rest: token("--muscle-rest", "#dedad6"),
+  };
+}
+
+// One picture per figure and theme, drawn the first time a row asks for it.
+const THUMBS = new Map<string, string>();
+export function thumbnailUrl(primary: Muscle, secondary: readonly Muscle[], dark = isDark()) {
+  const key = `${dark ? "dark" : "light"}|${primary}|${[...secondary].sort().join(",")}`;
+  let url = THUMBS.get(key);
+  if (!url) {
+    url = `data:image/svg+xml,${encodeURIComponent(thumbnailSvg(primary, secondary, paletteOfTheme()))}`;
+    THUMBS.set(key, url);
+  }
+  return url;
+}
+
+export function BodyThumb({ primary, secondary }: { primary: Muscle; secondary: Muscle[] }) {
+  const dark = useSyncExternalStore(onTheme, isDark, () => false);
+  return (
+    <img
+      alt=""
+      width={44}
+      height={44}
+      src={thumbnailUrl(primary, secondary, dark)}
       className="size-11 shrink-0 rounded-[10px] bg-track"
     />
   );

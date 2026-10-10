@@ -58,6 +58,10 @@
   "account": {
     "unavailable": "This browser won't let Belay save on the device, so tracking isn't available here. The tools still work."
   },
+  "update": {
+    "available": "New version available",
+    "reload": "Reload"
+  },
   "sync": {
     "offlineTitle": "Offline.",
     "offline_one": "{{count}} weigh-in waiting, sent as soon as the network is back. Everything is kept on this phone.",

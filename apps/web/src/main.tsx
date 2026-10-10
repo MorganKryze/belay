@@ -5,11 +5,14 @@ import { createRoot } from "react-dom/client";
 import "./i18n";
 import "./index.css";
 import { applyTheme, readTheme } from "./lib/theme";
+import { startUpdates } from "./lib/update";
 import { router } from "./router";
 
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () =>
   applyTheme(readTheme()),
 );
+
+startUpdates();
 
 const queryClient = new QueryClient();
 
