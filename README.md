@@ -182,6 +182,13 @@ Hono and PostgreSQL, and [Claude Code](https://claude.com/claude-code) drafting
 at my side, never on autopilot. The taste, the reviews and the final word stay
 mine; the tests, the CI and the public history keep me honest.
 
+The exercise library comes from
+[exercises-dataset](https://github.com/MorganKryze/exercises-dataset) (MIT, by
+Hasan Emir Yıldırım), its text only, and the body map's outlines from
+[react-native-body-highlighter](https://github.com/HichamELBSI/react-native-body-highlighter)
+(MIT, by Hicham Elabbassi). Their notices are in
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+
 ## License
 
 Free software under [AGPL-3.0](LICENSE): use it, modify it, share it. If you

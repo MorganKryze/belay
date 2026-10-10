@@ -1,3 +1,4 @@
+import type { Slot } from "@belay/shared/training/workout";
 import { sql } from "drizzle-orm";
 import {
   bigint,
@@ -7,6 +8,7 @@ import {
   foreignKey,
   index,
   integer,
+  jsonb,
   numeric,
   pgSequence,
   pgTable,
@@ -217,5 +219,86 @@ export const annotations = pgTable(
     index("annotations_user_seq").on(t.userId, t.serverSeq),
     check("annotations_kind", sql`${t.kind} IN ('deload', 'diet_break', 'note')`),
     check("annotations_label", sql`${t.label} IS NULL OR char_length(${t.label}) <= 80`),
+  ],
+);
+
+// A session as it was done: its code, plan (the day's targets, frozen) and start are written once;
+// its end, note, exercise notes and removal each carry their own timestamp. Removed, never deleted:
+// its sets stay, and no screen shows or counts them.
+export const workouts = pgTable(
+  "workouts",
+  {
+    id: uuid("id").primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    sessionCode: text("session_code").notNull(),
+    plan: jsonb("plan").$type<Slot[]>().notNull(),
+    startedAt: ts("started_at").notNull(),
+    endedAt: ts("ended_at"),
+    endedAtAt: ts("ended_at_at"),
+    note: text("note"),
+    noteAt: ts("note_at"),
+    exerciseNotes: jsonb("exercise_notes").$type<Record<string, string>>(),
+    exerciseNotesAt: ts("exercise_notes_at"),
+    removed: boolean("removed").notNull().default(false),
+    removedAt: ts("removed_at"),
+    serverSeq: serverSeq(),
+    createdAt: ts("created_at").notNull().defaultNow(),
+    updatedAt: ts("updated_at").notNull().defaultNow(),
+  },
+  (t) => [
+    // The target of workout_sets' key: a set belongs to a session of the same person.
+    unique("workouts_id_user").on(t.id, t.userId),
+    index("workouts_user_seq").on(t.userId, t.serverSeq),
+    check("workouts_session_code", sql`${t.sessionCode} ~ '^[A-Z]$'`),
+    check("workouts_plan_size", sql`octet_length(${t.plan}::text) <= 16384`),
+    check("workouts_note", sql`${t.note} IS NULL OR char_length(${t.note}) <= 500`),
+    check(
+      "workouts_exercise_notes_size",
+      sql`${t.exerciseNotes} IS NULL OR octet_length(${t.exerciseNotes}::text) <= 32768`,
+    ),
+  ],
+);
+
+// One set: created once; its load, reps and RIR change together under fields_at.
+export const workoutSets = pgTable(
+  "workout_sets",
+  {
+    id: uuid("id").primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    workoutId: uuid("workout_id").notNull(),
+    slotIndex: smallint("slot_index").notNull(),
+    position: smallint("position").notNull(),
+    exerciseId: text("exercise_id").notNull(),
+    warmup: boolean("warmup").notNull(),
+    weightKg: numeric("weight_kg", { precision: 5, scale: 2, mode: "number" }).notNull(),
+    reps: smallint("reps").notNull(),
+    rir: smallint("rir"),
+    doneAt: ts("done_at").notNull(),
+    fieldsAt: ts("fields_at").notNull(),
+    removed: boolean("removed").notNull().default(false),
+    removedAt: ts("removed_at"),
+    serverSeq: serverSeq(),
+    createdAt: ts("created_at").notNull().defaultNow(),
+    updatedAt: ts("updated_at").notNull().defaultNow(),
+  },
+  (t) => [
+    // Never a session of someone else: the key holds the person too.
+    foreignKey({
+      name: "workout_sets_workout_fk",
+      columns: [t.workoutId, t.userId],
+      foreignColumns: [workouts.id, workouts.userId],
+    }).onDelete("cascade"),
+    index("workout_sets_user_seq").on(t.userId, t.serverSeq),
+    index("workout_sets_workout").on(t.workoutId),
+    check("workout_sets_slot_index", sql`${t.slotIndex} BETWEEN 0 AND 29`),
+    check("workout_sets_position", sql`${t.position} BETWEEN 0 AND 49`),
+    check("workout_sets_exercise", sql`${t.exerciseId} ~ '^(ds|belay):[a-z0-9-]{1,40}$'`),
+    check("workout_sets_weight", sql`${t.weightKg} BETWEEN 0 AND 500`),
+    check("workout_sets_reps", sql`${t.reps} BETWEEN 0 AND 100`),
+    check("workout_sets_rir", sql`${t.rir} IS NULL OR ${t.rir} BETWEEN 0 AND 4`),
   ],
 );

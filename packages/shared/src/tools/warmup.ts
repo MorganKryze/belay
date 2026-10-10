@@ -4,7 +4,10 @@ import { nearestLoading } from "./plates";
 export type WarmupCount = 0 | 1 | 2 | 3;
 export type WarmupSet = { loadKg: number; reps: number; perSideKg: number[] };
 
-const SCHEMES: Record<1 | 2 | 3, readonly (readonly [fraction: number, reps: number])[]> = {
+// The fraction of the working load and the reps of each set, by number of sets.
+export const WARMUP_SCHEMES: Readonly<
+  Record<1 | 2 | 3, readonly (readonly [fraction: number, reps: number])[]>
+> = {
   1: [[0.6, 5]],
   2: [
     [0.5, 5],
@@ -31,7 +34,7 @@ export function warmupSets(
 ): WarmupSet[] {
   if (count === 0 || workKg <= barKg) return [];
   const sets: WarmupSet[] = [];
-  for (const [fraction, reps] of SCHEMES[count]) {
+  for (const [fraction, reps] of WARMUP_SCHEMES[count]) {
     const { totalKg, perSideKg } = nearestLoading(workKg * fraction, barKg, platesKg);
     if (totalKg >= workKg || sets.some((s) => s.loadKg === totalKg)) continue;
     sets.push({ loadKg: totalKg, reps, perSideKg });

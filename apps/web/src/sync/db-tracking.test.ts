@@ -1,4 +1,5 @@
 import type { Change } from "@belay/shared/sync/schema";
+import { sessionByCode } from "@belay/shared/training/program";
 import { IDBFactory } from "fake-indexeddb";
 import { openDB } from "idb";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -58,7 +59,7 @@ describe("the upgrade from version 1", () => {
 
     const db = await openAccountDb("user-a");
     expect(closedForUpgrade).toBe(true);
-    expect(db.version).toBe(2);
+    expect(db.version).toBe(3); // straight to the current version
     expect((await readWeights(db)).map((w) => w.weightKg)).toEqual([80.2, 79.8]);
     expect(await readTarget(db)).toEqual({ minPct: 0.25, maxPct: 0.75 });
     expect((await readOutbox(db)).map((e) => [e.id, e.change.kind])).toEqual([
@@ -218,6 +219,39 @@ describe("the new entries", () => {
       { kind: "supplementLog", supplementId: S, date: "2026-10-07", taken: true, at: AT },
     ]);
     expect(await pendingCounts(db)).toEqual({ weighings: 1, total: 4 });
+  });
+
+  it("count a session once, however many sets it holds", async () => {
+    const W = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d91";
+    const set = (id: string, position: number): Change => ({
+      kind: "set",
+      id,
+      workoutId: W,
+      field: "create",
+      slotIndex: 0,
+      position,
+      exerciseId: "ds:0025",
+      warmup: false,
+      weightKg: 80,
+      reps: 8,
+      rir: 1,
+      doneAt: LATER,
+      at: LATER,
+    });
+    await recordChanges(db, [
+      {
+        kind: "workout",
+        id: W,
+        field: "start",
+        sessionCode: "A",
+        plan: [...sessionByCode("A")!.slots],
+        startedAt: AT,
+        at: AT,
+      },
+      set("0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d92", 3),
+      set("0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d93", 4),
+    ]);
+    expect(await pendingCounts(db)).toEqual({ weighings: 0, total: 1 });
   });
 });
 

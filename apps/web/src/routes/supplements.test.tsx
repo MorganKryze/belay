@@ -134,6 +134,8 @@ describe("Settings › My supplements, duplicates, double taps and focus", () =>
     await openList();
     fireEvent.click(await screen.findByRole("button", { name: "Iron" }));
     fireEvent.click(await screen.findByRole("button", { name: "Zinc" }));
+    // Listed before the rename: the duplicate is judged on the list shown.
+    await screen.findByRole("button", { name: "More for Zinc" });
     fireEvent.click(await screen.findByRole("button", { name: "More for Iron" }));
     fireEvent.click(screen.getByRole("button", { name: "Rename" }));
     const field = screen.getByRole("textbox", { name: "New name for Iron" });

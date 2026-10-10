@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { MIN_WEIGH_IN_DATE } from "../body/weighings";
+import { sessionByCode } from "../training/program";
 import { MAX_CHANGES } from "./limits";
 import { clampAt, isNewer, mergeFields, mergeTarget, mergeWeights, staleKeys } from "./merge";
 import {
@@ -50,6 +51,75 @@ const SAMPLES: Change[] = [
     at: AT,
   },
   { kind: "annotation", id: ID, field: "removed", value: true, at: AT },
+];
+const WORKOUT = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d90";
+const SET = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d91";
+const PLAN = [...sessionByCode("A")!.slots];
+const LATER = "2026-10-07T06:45:00.000Z";
+// A session and its sets, as the phone writes them.
+const SESSION: Change[] = [
+  {
+    kind: "workout",
+    id: WORKOUT,
+    field: "start",
+    sessionCode: "A",
+    plan: PLAN,
+    startedAt: AT,
+    at: AT,
+  },
+  {
+    kind: "set",
+    id: SET,
+    workoutId: WORKOUT,
+    field: "create",
+    slotIndex: 0,
+    position: 3,
+    exerciseId: "ds:0025",
+    warmup: false,
+    weightKg: 82.5,
+    reps: 8,
+    rir: 1,
+    doneAt: LATER,
+    at: LATER,
+  },
+  {
+    kind: "set",
+    id: ID,
+    workoutId: WORKOUT,
+    field: "create",
+    slotIndex: 0,
+    position: 0,
+    exerciseId: "ds:0025",
+    warmup: true,
+    weightKg: 40,
+    reps: 8,
+    rir: null,
+    doneAt: AT,
+    at: AT,
+  },
+  {
+    kind: "set",
+    id: SET,
+    workoutId: WORKOUT,
+    field: "values",
+    weightKg: 85,
+    reps: 6,
+    rir: null,
+    at: LATER,
+  },
+  { kind: "set", id: SET, workoutId: WORKOUT, field: "removed", value: true, at: LATER },
+  { kind: "workout", id: WORKOUT, field: "ended", value: LATER, at: LATER },
+  { kind: "workout", id: WORKOUT, field: "ended", value: null, at: LATER },
+  { kind: "workout", id: WORKOUT, field: "note", value: "Bonne séance", at: LATER },
+  { kind: "workout", id: WORKOUT, field: "note", value: null, at: LATER },
+  {
+    kind: "workout",
+    id: WORKOUT,
+    field: "exerciseNotes",
+    value: { "0": "Prise large" },
+    at: LATER,
+  },
+  { kind: "workout", id: WORKOUT, field: "removed", value: true, at: LATER },
 ];
 const request = (changes: unknown[], cursor = "0") =>
   SyncRequestSchema.safeParse({ account: ACCOUNT, cursor, changes });
@@ -109,6 +179,33 @@ describe("SyncRequestSchema", () => {
     ["an annotation field that does not exist", { ...SAMPLES[11], field: "label" }],
   ])("refuses %s", (_, change) => {
     expect(request([change]).success).toBe(false);
+  });
+
+  it("accepts a session and its sets", () => {
+    expect(request(SESSION).success).toBe(true);
+  });
+
+  it("refuses a session or a set out of bounds", () => {
+    const [start, create, , values] = SESSION as [Change, Change, Change, Change];
+    const refused = [
+      { ...start, sessionCode: "a" },
+      { ...start, plan: [] },
+      { ...start, plan: Array.from({ length: 31 }, () => PLAN[0]) },
+      { ...start, plan: [{ ...PLAN[0], sets: 11 }] },
+      { ...start, startedAt: "1899-12-31T23:00:00.000Z" },
+      { ...create, exerciseId: "bench" },
+      { ...create, slotIndex: 30 },
+      { ...create, position: 50 },
+      { ...create, weightKg: 80.1 },
+      { ...create, weightKg: 500.25 },
+      { ...create, reps: 101 },
+      { ...create, rir: 5 },
+      { ...values, reps: 7.5 },
+      { kind: "workout", id: WORKOUT, field: "note", value: "x".repeat(501), at: AT },
+      { kind: "workout", id: WORKOUT, field: "exerciseNotes", value: { "30": "x" }, at: AT },
+    ];
+    for (const change of refused)
+      expect(request([change]).success, JSON.stringify(change).slice(0, 120)).toBe(false);
   });
 
   it("accepts the first day of 1900, the floor of a weigh-in date", () => {
@@ -174,6 +271,39 @@ describe("SyncResponseSchema", () => {
           removedAt: null,
         },
       ],
+      workouts: [
+        {
+          id: WORKOUT,
+          sessionCode: "A",
+          plan: PLAN,
+          startedAt: AT,
+          endedAt: null,
+          endedAtAt: null,
+          note: null,
+          noteAt: null,
+          exerciseNotes: {},
+          exerciseNotesAt: null,
+          removed: false,
+          removedAt: null,
+        },
+      ],
+      sets: [
+        {
+          id: SET,
+          workoutId: WORKOUT,
+          slotIndex: 0,
+          position: 3,
+          exerciseId: "ds:0025",
+          warmup: false,
+          weightKg: 82.5,
+          reps: 8,
+          rir: 1,
+          doneAt: AT,
+          fieldsAt: AT,
+          removed: false,
+          removedAt: null,
+        },
+      ],
       target: { minPct: 0.5, maxPct: 1, at: null },
       profile: {
         formula: null,
@@ -189,6 +319,8 @@ describe("SyncResponseSchema", () => {
     expect(parsed.weights[0]!.weightKg).toBeNull();
     expect(parsed.target?.at).toBeNull();
     expect(parsed.rejected).toEqual([{ index: 3, reason: "refused" }]);
+    expect(parsed.workouts[0]!.plan).toEqual(PLAN);
+    expect(parsed.sets[0]!.weightKg).toBe(82.5);
   });
 
   it("refuses a refusal that does not point at a change", () => {
@@ -201,12 +333,16 @@ describe("SyncResponseSchema", () => {
         supplements: [],
         supplementLogs: [],
         annotations: [],
+        workouts: [],
+        sets: [],
         target: null,
         profile: null,
         rejected,
         hasMore: false,
       }).success;
     expect(answer([{ index: 0, reason: "unknown" }])).toBe(true);
+    expect(answer([{ index: 0, reason: "unknown_exercise" }])).toBe(true);
+    expect(answer([{ index: 0, reason: "too_many_sets" }])).toBe(true);
     expect(answer([{ index: -1, reason: "refused" }])).toBe(false);
     expect(answer([{ index: 0.5, reason: "refused" }])).toBe(false);
     expect(answer([{ index: 0, reason: "because" }])).toBe(false);
@@ -255,6 +391,35 @@ describe("isValidChange", () => {
 
   it("accepts nothing the server would refuse", () => {
     for (const change of [...samples, ...SAMPLES, ...more])
+      if (isValidChange(change))
+        expect(ChangeSchema.safeParse(change).success, JSON.stringify(change)).toBe(true);
+  });
+
+  // A session's changes, each valid, then pushed out of bounds or out of shape.
+  const [start, create, warmup, values] = SESSION as [Change, Change, Change, Change];
+  const brokenSession: Change[] = [
+    broken(start, { id: "x" }),
+    broken(start, { sessionCode: "AB" }),
+    broken(start, { plan: [{ ...PLAN[0], restSec: 901 }] }),
+    broken(start, { startedAt: "2026-10-07T06:30:00.001Z" }), // after the change's own time
+    broken(create, { workoutId: "x" }),
+    broken(create, { warmup: true }), // position 3 is a work set
+    broken(warmup, { rir: 2 }), // a warm-up has no RIR
+    broken(create, { position: 13 }),
+    broken(create, { exerciseId: "ds:" }),
+    broken(create, { weightKg: 82.6 }),
+    broken(create, { doneAt: "2026-10-07T06:46:00.000Z" }),
+    broken(values, { rir: 4.5 }),
+    broken(SESSION[5]!, { value: "2026-10-07T06:46:00.000Z" }),
+    broken(SESSION[7]!, { value: "  " }), // an empty note is a null one
+    broken(SESSION[9]!, { value: { "0": "" } }),
+    broken(SESSION[10]!, { value: "yes" }),
+  ];
+
+  it("accepts a session's changes as the phone writes them, and refuses each broken one", () => {
+    expect(SESSION.filter((c) => !isValidChange(c))).toEqual([]);
+    expect(brokenSession.filter(isValidChange)).toEqual([]);
+    for (const change of [...SESSION, ...brokenSession])
       if (isValidChange(change))
         expect(ChangeSchema.safeParse(change).success, JSON.stringify(change)).toBe(true);
   });

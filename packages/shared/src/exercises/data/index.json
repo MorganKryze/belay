@@ -1,0 +1,4421 @@
+[
+  ["belay:barbell-hip-thrust", "Barbell hip thrust", ["glutes"], ["hamstrings"], "barbell", 2.5],
+  ["belay:cable-face-pull", "Cable face pull", ["rear_delts"], ["upper_back"], "cable", 2.5],
+  ["ds:0001", "3/4 sit-up", ["abs"], ["lower_back"], "bodyweight", 2.5],
+  ["ds:0002", "45° side bend", ["abs"], [], "bodyweight", 2.5],
+  ["ds:0003", "Air bike", ["abs"], [], "bodyweight", 2.5],
+  ["ds:0006", "Alternate heel touchers", ["abs"], [], "bodyweight", 2.5],
+  ["ds:0007", "Alternate lateral pulldown", ["lats"], ["biceps", "upper_back"], "cable", 2.5],
+  ["ds:0009", "Assisted chest dip (kneeling)", ["chest"], ["triceps", "front_delts"], "machine", 5],
+  ["ds:0010", "Assisted hanging knee raise with throw down", ["abs"], ["lower_back"], "machine", 5],
+  ["ds:0011", "Assisted hanging knee raise", ["abs"], [], "machine", 5],
+  ["ds:0012", "Assisted lying leg raise with lateral throw down", ["abs"], [], "machine", 5],
+  ["ds:0013", "Assisted lying leg raise with throw down", ["abs"], ["quads"], "machine", 5],
+  ["ds:0014", "Assisted motion russian twist", ["abs"], ["lower_back"], "other", 1],
+  [
+    "ds:0015",
+    "Assisted parallel close grip pull-up",
+    ["lats"],
+    ["biceps", "forearms"],
+    "machine",
+    5
+  ],
+  ["ds:0016", "Assisted prone hamstring", ["hamstrings"], ["glutes", "lower_back"], "machine", 5],
+  ["ds:0017", "Assisted pull-up", ["lats"], ["biceps", "forearms"], "machine", 5],
+  [
+    "ds:0018",
+    "Assisted standing triceps extension (with towel)",
+    ["triceps"],
+    ["front_delts"],
+    "machine",
+    5
+  ],
+  [
+    "ds:0019",
+    "Assisted triceps dip (kneeling)",
+    ["triceps"],
+    ["chest", "front_delts"],
+    "machine",
+    5
+  ],
+  ["ds:0020", "Balance board", ["quads"], ["calves", "hamstrings", "glutes"], "bodyweight", 2.5],
+  [
+    "ds:0022",
+    "Barbell pullover to press",
+    ["lats"],
+    ["triceps", "chest", "rear_delts"],
+    "barbell",
+    2.5
+  ],
+  ["ds:0023", "Barbell alternate biceps curl", ["biceps"], ["forearms"], "barbell", 2.5],
+  [
+    "ds:0024",
+    "Barbell bench front squat",
+    ["quads"],
+    ["hamstrings", "glutes", "calves"],
+    "barbell",
+    2.5
+  ],
+  ["ds:0025", "Barbell bench press", ["chest"], ["triceps", "front_delts"], "barbell", 2.5],
+  ["ds:0026", "Barbell bench squat", ["quads"], ["glutes", "hamstrings", "calves"], "barbell", 2.5],
+  ["ds:0027", "Barbell bent over row", ["upper_back"], ["biceps", "forearms"], "barbell", 2.5],
+  [
+    "ds:0028",
+    "Barbell clean and press",
+    ["quads"],
+    ["hamstrings", "glutes", "front_delts", "triceps"],
+    "barbell",
+    2.5
+  ],
+  [
+    "ds:0029",
+    "Barbell clean-grip front squat",
+    ["glutes"],
+    ["quads", "hamstrings", "calves", "abs"],
+    "barbell",
+    2.5
+  ],
+  [
+    "ds:0030",
+    "Barbell close-grip bench press",
+    ["triceps"],
+    ["chest", "front_delts"],
+    "barbell",
+    2.5
+  ],
+  ["ds:0031", "Barbell curl", ["biceps"], ["forearms"], "barbell", 2.5],
+  ["ds:0032", "Barbell deadlift", ["glutes"], ["hamstrings", "lower_back"], "barbell", 2.5],
+  ["ds:0033", "Barbell decline bench press", ["chest"], ["triceps", "front_delts"], "barbell", 2.5],
+  ["ds:0034", "Barbell decline bent arm pullover", ["lats"], ["triceps", "chest"], "barbell", 2.5],
+  [
+    "ds:0035",
+    "Barbell decline close grip to skull press",
+    ["triceps"],
+    ["chest", "front_delts"],
+    "barbell",
+    2.5
+  ],
+  [
+    "ds:0036",
+    "Barbell decline wide-grip press",
+    ["chest"],
+    ["triceps", "front_delts"],
+    "barbell",
+    2.5
+  ],
+  ["ds:0037", "Barbell decline wide-grip pullover", ["lats"], ["triceps", "chest"], "barbell", 2.5],
+  ["ds:0038", "Barbell drag curl", ["biceps"], ["forearms"], "barbell", 2.5],
+  [
+    "ds:0039",
+    "Barbell front chest squat",
+    ["glutes"],
+    ["quads", "hamstrings", "calves", "abs"],
+    "barbell",
+    2.5
+  ],
+  [
+    "ds:0040",
+    "Barbell front raise and pullover",
+    ["chest"],
+    ["front_delts", "triceps"],
+    "barbell",
+    2.5
+  ],
+  ["ds:0041", "Barbell front raise", ["front_delts"], ["biceps", "triceps"], "barbell", 2.5],
+  [
+    "ds:0042",
+    "Barbell front squat",
+    ["glutes"],
+    ["quads", "hamstrings", "calves", "abs"],
+    "barbell",
+    2.5
+  ],
+  ["ds:0043", "Barbell full squat", ["quads"], ["glutes", "adductors"], "barbell", 2.5],
+  ["ds:0044", "Barbell good morning", ["hamstrings"], ["lower_back"], "barbell", 2.5],
+  [
+    "ds:0045",
+    "Barbell guillotine bench press",
+    ["chest"],
+    ["front_delts", "triceps"],
+    "barbell",
+    2.5
+  ],
+  ["ds:0046", "Barbell hack squat", ["glutes"], ["quads", "hamstrings", "calves"], "barbell", 2.5],
+  ["ds:0047", "Barbell incline bench press", ["chest"], ["front_delts", "triceps"], "barbell", 2.5],
+  [
+    "ds:0048",
+    "Barbell incline reverse-grip press",
+    ["triceps"],
+    ["chest", "front_delts"],
+    "barbell",
+    2.5
+  ],
+  ["ds:0049", "Barbell incline row", ["upper_back"], ["biceps", "forearms"], "barbell", 2.5],
+  [
+    "ds:0050",
+    "Barbell incline shoulder raise",
+    ["abs"],
+    ["front_delts", "upper_back"],
+    "barbell",
+    2.5
+  ],
+  [
+    "ds:0051",
+    "Barbell jefferson squat",
+    ["glutes"],
+    ["quads", "hamstrings", "calves"],
+    "barbell",
+    2.5
+  ],
+  ["ds:0052", "Barbell jm bench press", ["triceps"], ["chest", "front_delts"], "barbell", 2.5],
+  ["ds:0053", "Barbell jump squat", ["glutes"], ["quads", "hamstrings", "calves"], "barbell", 2.5],
+  ["ds:0054", "Barbell lunge", ["glutes"], ["quads", "hamstrings", "calves"], "barbell", 2.5],
+  [
+    "ds:0055",
+    "Barbell lying close-grip press",
+    ["triceps"],
+    ["chest", "front_delts"],
+    "barbell",
+    2.5
+  ],
+  [
+    "ds:0056",
+    "Barbell lying close-grip triceps extension",
+    ["triceps"],
+    ["front_delts"],
+    "barbell",
+    2.5
+  ],
+  ["ds:0057", "Barbell lying extension", ["triceps"], ["front_delts"], "barbell", 2.5],
+  [
+    "ds:0058",
+    "Barbell lying lifting (on hip)",
+    ["glutes"],
+    ["hamstrings", "quads"],
+    "barbell",
+    2.5
+  ],
+  ["ds:0059", "Barbell lying preacher curl", ["biceps"], ["forearms"], "barbell", 2.5],
+  [
+    "ds:0060",
+    "Barbell lying triceps extension skull crusher",
+    ["triceps"],
+    ["front_delts"],
+    "barbell",
+    2.5
+  ],
+  ["ds:0061", "Barbell lying triceps extension", ["triceps"], ["front_delts"], "barbell", 2.5],
+  [
+    "ds:0063",
+    "Barbell narrow stance squat",
+    ["glutes"],
+    ["quads", "hamstrings", "calves"],
+    "barbell",
+    2.5
+  ],
+  [
+    "ds:0064",
+    "Barbell one arm bent over row",
+    ["upper_back"],
+    ["biceps", "forearms"],
+    "barbell",
+    2.5
+  ],
+  ["ds:0065", "Barbell one arm floor press", ["triceps"], ["chest", "front_delts"], "barbell", 2.5],
+  [
+    "ds:0066",
+    "Barbell one arm side deadlift",
+    ["glutes"],
+    ["hamstrings", "quads", "lower_back"],
+    "barbell",
+    2.5
+  ],
+  [
+    "ds:0067",
+    "Barbell one arm snatch",
+    ["front_delts"],
+    ["upper_back", "forearms", "abs"],
+    "barbell",
+    2.5
+  ],
+  [
+    "ds:0068",
+    "Barbell one leg squat",
+    ["quads"],
+    ["glutes", "hamstrings", "calves"],
+    "barbell",
+    2.5
+  ],
+  [
+    "ds:0069",
+    "Barbell overhead squat",
+    ["quads"],
+    ["glutes", "hamstrings", "calves", "abs"],
+    "barbell",
+    2.5
+  ],
+  ["ds:0070", "Barbell preacher curl", ["biceps"], ["forearms"], "barbell", 2.5],
+  ["ds:0071", "Barbell press sit-up", ["abs"], ["front_delts", "chest"], "barbell", 2.5],
+  ["ds:0072", "Barbell prone incline curl", ["biceps"], ["forearms"], "barbell", 2.5],
+  ["ds:0073", "Barbell pullover", ["lats"], ["chest", "triceps"], "barbell", 2.5],
+  ["ds:0074", "Barbell rack pull", ["glutes"], ["hamstrings", "lower_back"], "barbell", 2.5],
+  ["ds:0075", "Barbell rear delt raise", ["rear_delts"], ["upper_back"], "barbell", 2.5],
+  ["ds:0076", "Barbell rear delt row", ["rear_delts"], ["upper_back", "biceps"], "barbell", 2.5],
+  [
+    "ds:0077",
+    "Barbell rear lunge v. 2",
+    ["glutes"],
+    ["quads", "hamstrings", "calves"],
+    "barbell",
+    2.5
+  ],
+  ["ds:0078", "Barbell rear lunge", ["glutes"], ["quads", "hamstrings", "calves"], "barbell", 2.5],
+  ["ds:0079", "Barbell revers wrist curl v. 2", ["forearms"], ["biceps"], "barbell", 2.5],
+  ["ds:0080", "Barbell reverse curl", ["biceps"], ["forearms"], "barbell", 2.5],
+  ["ds:0081", "Barbell reverse preacher curl", ["biceps"], ["forearms"], "barbell", 2.5],
+  ["ds:0082", "Barbell reverse wrist curl", ["forearms"], ["biceps"], "barbell", 2.5],
+  ["ds:0083", "Barbell rollerout from bench", ["abs"], ["front_delts", "triceps"], "barbell", 2.5],
+  ["ds:0084", "Barbell rollerout", ["abs"], ["lower_back"], "barbell", 2.5],
+  [
+    "ds:0085",
+    "Barbell romanian deadlift",
+    ["hamstrings"],
+    ["glutes", "lower_back"],
+    "barbell",
+    2.5
+  ],
+  [
+    "ds:0086",
+    "Barbell seated behind head military press",
+    ["front_delts"],
+    ["triceps", "upper_back"],
+    "barbell",
+    2.5
+  ],
+  [
+    "ds:0087",
+    "Barbell seated bradford rocky press",
+    ["front_delts"],
+    ["triceps", "upper_back"],
+    "barbell",
+    2.5
+  ],
+  ["ds:0088", "Barbell seated calf raise", ["calves"], ["hamstrings", "quads"], "barbell", 2.5],
+  [
+    "ds:0089",
+    "Barbell seated close-grip concentration curl",
+    ["biceps"],
+    ["forearms"],
+    "barbell",
+    2.5
+  ],
+  [
+    "ds:0090",
+    "Barbell seated good morning",
+    ["glutes"],
+    ["hamstrings", "lower_back"],
+    "barbell",
+    2.5
+  ],
+  [
+    "ds:0091",
+    "Barbell seated overhead press",
+    ["front_delts"],
+    ["triceps", "upper_back"],
+    "barbell",
+    2.5
+  ],
+  [
+    "ds:0092",
+    "Barbell seated overhead triceps extension",
+    ["triceps"],
+    ["front_delts"],
+    "barbell",
+    2.5
+  ],
+  ["ds:0094", "Barbell seated twist", ["abs"], ["lower_back"], "barbell", 2.5],
+  ["ds:0095", "Barbell shrug", ["upper_back"], ["rear_delts"], "barbell", 2.5],
+  ["ds:0096", "Barbell side bent v. 2", ["abs"], ["lower_back"], "barbell", 2.5],
+  [
+    "ds:0097",
+    "Barbell side split squat v. 2",
+    ["quads"],
+    ["glutes", "hamstrings", "calves"],
+    "barbell",
+    2.5
+  ],
+  [
+    "ds:0098",
+    "Barbell side split squat",
+    ["quads"],
+    ["glutes", "hamstrings", "calves"],
+    "barbell",
+    2.5
+  ],
+  [
+    "ds:0099",
+    "Barbell single leg split squat",
+    ["quads"],
+    ["glutes", "hamstrings", "calves"],
+    "barbell",
+    2.5
+  ],
+  ["ds:0100", "Barbell skier", ["front_delts"], ["triceps", "abs"], "barbell", 2.5],
+  ["ds:0101", "Barbell speed squat", ["glutes"], ["quads", "hamstrings", "calves"], "barbell", 2.5],
+  [
+    "ds:0102",
+    "Barbell squat (on knees)",
+    ["quads"],
+    ["glutes", "hamstrings", "calves"],
+    "barbell",
+    2.5
+  ],
+  [
+    "ds:0103",
+    "Barbell standing ab rollerout",
+    ["abs"],
+    ["front_delts", "lower_back"],
+    "barbell",
+    2.5
+  ],
+  [
+    "ds:0104",
+    "Barbell standing back wrist curl",
+    ["forearms"],
+    ["biceps", "front_delts"],
+    "barbell",
+    2.5
+  ],
+  [
+    "ds:0105",
+    "Barbell standing bradford press",
+    ["front_delts"],
+    ["triceps", "upper_back"],
+    "barbell",
+    2.5
+  ],
+  ["ds:0106", "Barbell standing close grip curl", ["biceps"], ["forearms"], "barbell", 2.5],
+  [
+    "ds:0107",
+    "Barbell standing front raise over head",
+    ["front_delts"],
+    ["triceps", "upper_back"],
+    "barbell",
+    2.5
+  ],
+  [
+    "ds:0108",
+    "Barbell standing leg calf raise",
+    ["calves"],
+    ["hamstrings", "glutes"],
+    "barbell",
+    2.5
+  ],
+  [
+    "ds:0109",
+    "Barbell standing overhead triceps extension",
+    ["triceps"],
+    ["front_delts"],
+    "barbell",
+    2.5
+  ],
+  ["ds:0110", "Barbell standing reverse grip curl", ["biceps"], ["forearms"], "barbell", 2.5],
+  [
+    "ds:0111",
+    "Barbell standing rocking leg calf raise",
+    ["calves"],
+    ["hamstrings", "quads"],
+    "barbell",
+    2.5
+  ],
+  ["ds:0112", "Barbell standing twist", ["abs"], ["lower_back"], "barbell", 2.5],
+  [
+    "ds:0113",
+    "Barbell standing wide-grip curl",
+    ["biceps"],
+    ["forearms", "rear_delts"],
+    "barbell",
+    2.5
+  ],
+  ["ds:0114", "Barbell step-up", ["glutes"], ["quads", "hamstrings", "calves"], "barbell", 2.5],
+  [
+    "ds:0115",
+    "Barbell stiff leg good morning",
+    ["glutes"],
+    ["hamstrings", "lower_back"],
+    "barbell",
+    2.5
+  ],
+  [
+    "ds:0116",
+    "Barbell straight leg deadlift",
+    ["hamstrings"],
+    ["glutes", "lower_back"],
+    "barbell",
+    2.5
+  ],
+  [
+    "ds:0117",
+    "Barbell sumo deadlift",
+    ["glutes"],
+    ["hamstrings", "quads", "lower_back"],
+    "barbell",
+    2.5
+  ],
+  [
+    "ds:0118",
+    "Barbell reverse grip bent over row",
+    ["upper_back"],
+    ["biceps", "forearms"],
+    "barbell",
+    2.5
+  ],
+  ["ds:0119", "Barbell upright row v. 2", ["side_delts"], ["upper_back", "biceps"], "barbell", 2.5],
+  ["ds:0120", "Barbell upright row", ["side_delts"], ["upper_back", "biceps"], "barbell", 2.5],
+  ["ds:0121", "Barbell upright row v. 3", ["side_delts"], ["upper_back", "biceps"], "barbell", 2.5],
+  ["ds:0122", "Barbell wide bench press", ["chest"], ["front_delts", "triceps"], "barbell", 2.5],
+  [
+    "ds:0123",
+    "Barbell wide-grip upright row",
+    ["side_delts"],
+    ["upper_back", "biceps"],
+    "barbell",
+    2.5
+  ],
+  ["ds:0124", "Barbell wide squat", ["quads"], ["glutes", "hamstrings", "calves"], "barbell", 2.5],
+  ["ds:0125", "Barbell wrist curl v. 2", ["forearms"], ["biceps"], "barbell", 2.5],
+  ["ds:0126", "Barbell wrist curl", ["forearms"], ["biceps"], "barbell", 2.5],
+  [
+    "ds:0127",
+    "Barbell zercher squat",
+    ["glutes"],
+    ["quads", "hamstrings", "calves", "abs"],
+    "barbell",
+    2.5
+  ],
+  ["ds:0128", "Battling ropes", ["front_delts"], ["forearms", "abs"], "other", 1],
+  ["ds:0129", "Bench dip (knees bent)", ["triceps"], ["chest", "front_delts"], "bodyweight", 2.5],
+  ["ds:0130", "Bench hip extension", ["glutes"], ["hamstrings"], "bodyweight", 2.5],
+  ["ds:0137", "Body-up", ["triceps"], ["chest", "front_delts"], "bodyweight", 2.5],
+  ["ds:0138", "Bottoms-up", ["abs"], [], "bodyweight", 2.5],
+  ["ds:0139", "Biceps narrow pull-ups", ["biceps"], ["forearms", "rear_delts"], "bodyweight", 2.5],
+  ["ds:0140", "Biceps pull-up", ["biceps"], ["forearms", "rear_delts"], "bodyweight", 2.5],
+  [
+    "ds:0148",
+    "Cable alternate shoulder press",
+    ["front_delts"],
+    ["triceps", "upper_back"],
+    "cable",
+    2.5
+  ],
+  ["ds:0149", "Cable alternate triceps extension", ["triceps"], ["front_delts"], "cable", 2.5],
+  [
+    "ds:0150",
+    "Cable bar lateral pulldown",
+    ["lats"],
+    ["biceps", "upper_back", "rear_delts"],
+    "cable",
+    2.5
+  ],
+  ["ds:0151", "Cable bench press", ["chest"], ["triceps", "front_delts"], "cable", 2.5],
+  ["ds:0152", "Cable concentration extension (on knee)", ["triceps"], ["forearms"], "cable", 2.5],
+  [
+    "ds:0153",
+    "Cable cross-over lateral pulldown",
+    ["lats"],
+    ["biceps", "upper_back", "rear_delts"],
+    "cable",
+    2.5
+  ],
+  ["ds:0154", "Cable cross-over revers fly", ["front_delts"], ["upper_back"], "cable", 2.5],
+  ["ds:0155", "Cable cross-over variation", ["chest"], ["front_delts", "triceps"], "cable", 2.5],
+  ["ds:0157", "Cable deadlift", ["glutes"], ["hamstrings", "quads", "lower_back"], "cable", 2.5],
+  ["ds:0158", "Cable decline fly", ["chest"], ["front_delts", "triceps"], "cable", 2.5],
+  [
+    "ds:0159",
+    "Cable decline seated wide-grip row",
+    ["upper_back"],
+    ["biceps", "forearms"],
+    "cable",
+    2.5
+  ],
+  [
+    "ds:0160",
+    "Cable floor seated wide-grip row",
+    ["upper_back"],
+    ["biceps", "forearms"],
+    "cable",
+    2.5
+  ],
+  ["ds:0161", "Cable forward raise", ["front_delts"], ["triceps", "forearms"], "cable", 2.5],
+  ["ds:0162", "Cable front raise", ["front_delts"], ["triceps", "forearms"], "cable", 2.5],
+  [
+    "ds:0164",
+    "Cable front shoulder raise",
+    ["front_delts"],
+    ["upper_back", "biceps"],
+    "cable",
+    2.5
+  ],
+  ["ds:0165", "Cable hammer curl (with rope)", ["biceps"], ["forearms"], "cable", 2.5],
+  ["ds:0167", "Cable high row (kneeling)", ["upper_back"], ["biceps", "rear_delts"], "cable", 2.5],
+  ["ds:0168", "Cable hip adduction", ["adductors"], ["glutes", "quads"], "cable", 2.5],
+  ["ds:0169", "Cable incline bench press", ["chest"], ["front_delts", "triceps"], "cable", 2.5],
+  [
+    "ds:0170",
+    "Cable incline fly (on stability ball)",
+    ["chest"],
+    ["front_delts", "triceps"],
+    "cable",
+    2.5
+  ],
+  ["ds:0171", "Cable incline fly", ["chest"], ["front_delts", "triceps"], "cable", 2.5],
+  ["ds:0172", "Cable incline pushdown", ["lats"], ["triceps", "rear_delts"], "cable", 2.5],
+  ["ds:0173", "Cable incline triceps extension", ["triceps"], ["front_delts"], "cable", 2.5],
+  ["ds:0174", "Cable judo flip", ["abs"], ["front_delts"], "cable", 2.5],
+  ["ds:0175", "Cable kneeling crunch", ["abs"], [], "cable", 2.5],
+  ["ds:0176", "Cable kneeling triceps extension", ["triceps"], ["front_delts"], "cable", 2.5],
+  [
+    "ds:0177",
+    "Cable lateral pulldown (with rope attachment)",
+    ["lats"],
+    ["biceps", "forearms"],
+    "cable",
+    2.5
+  ],
+  ["ds:0178", "Cable lateral raise", ["side_delts"], ["upper_back", "triceps"], "cable", 2.5],
+  ["ds:0179", "Cable low fly", ["chest"], ["front_delts", "triceps"], "cable", 2.5],
+  ["ds:0180", "Cable low seated row", ["upper_back"], ["biceps", "forearms"], "cable", 2.5],
+  ["ds:0182", "Cable lying close-grip curl", ["biceps"], ["forearms"], "cable", 2.5],
+  [
+    "ds:0184",
+    "Cable lying extension pullover (with rope attachment)",
+    ["lats"],
+    ["triceps", "rear_delts"],
+    "cable",
+    2.5
+  ],
+  ["ds:0185", "Cable lying fly", ["chest"], ["front_delts", "triceps"], "cable", 2.5],
+  ["ds:0186", "Cable lying triceps extension v. 2", ["triceps"], ["front_delts"], "cable", 2.5],
+  ["ds:0188", "Cable middle fly", ["chest"], ["front_delts", "triceps"], "cable", 2.5],
+  ["ds:0189", "Cable one arm bent over row", ["upper_back"], ["biceps", "forearms"], "cable", 2.5],
+  ["ds:0190", "Cable one arm curl", ["biceps"], ["forearms"], "cable", 2.5],
+  [
+    "ds:0191",
+    "Cable one arm lateral bent-over",
+    ["chest"],
+    ["front_delts", "upper_back"],
+    "cable",
+    2.5
+  ],
+  [
+    "ds:0192",
+    "Cable one arm lateral raise",
+    ["side_delts"],
+    ["upper_back", "triceps"],
+    "cable",
+    2.5
+  ],
+  [
+    "ds:0193",
+    "Cable one arm straight back high row (kneeling)",
+    ["upper_back"],
+    ["biceps", "rear_delts"],
+    "cable",
+    2.5
+  ],
+  [
+    "ds:0194",
+    "Cable overhead triceps extension (rope attachment)",
+    ["triceps"],
+    ["front_delts"],
+    "cable",
+    2.5
+  ],
+  ["ds:0195", "Cable preacher curl", ["biceps"], ["forearms"], "cable", 2.5],
+  [
+    "ds:0196",
+    "Cable pull through (with rope)",
+    ["glutes"],
+    ["hamstrings", "lower_back"],
+    "cable",
+    2.5
+  ],
+  ["ds:0197", "Cable pulldown (pro lat bar)", ["lats"], ["biceps", "forearms"], "cable", 2.5],
+  ["ds:0198", "Cable pulldown", ["lats"], ["biceps", "forearms"], "cable", 2.5],
+  [
+    "ds:0199",
+    "Cable pushdown (straight arm) v. 2",
+    ["lats"],
+    ["triceps", "rear_delts"],
+    "cable",
+    2.5
+  ],
+  ["ds:0200", "Cable pushdown (with rope attachment)", ["triceps"], ["forearms"], "cable", 2.5],
+  ["ds:0201", "Cable pushdown", ["triceps"], [], "cable", 2.5],
+  [
+    "ds:0202",
+    "Cable rear delt row (stirrups)",
+    ["rear_delts"],
+    ["upper_back", "biceps"],
+    "cable",
+    2.5
+  ],
+  [
+    "ds:0203",
+    "Cable rear delt row (with rope)",
+    ["rear_delts"],
+    ["upper_back", "biceps"],
+    "cable",
+    2.5
+  ],
+  ["ds:0204", "Cable rear drive", ["triceps"], ["front_delts", "upper_back"], "cable", 2.5],
+  [
+    "ds:0205",
+    "Cable rear pulldown",
+    ["lats"],
+    ["biceps", "upper_back", "rear_delts"],
+    "cable",
+    2.5
+  ],
+  ["ds:0206", "Cable reverse curl", ["biceps"], ["forearms"], "cable", 2.5],
+  ["ds:0207", "Cable reverse-grip pushdown", ["triceps"], ["forearms"], "cable", 2.5],
+  [
+    "ds:0208",
+    "Cable reverse-grip straight back seated high row",
+    ["upper_back"],
+    ["biceps", "forearms"],
+    "cable",
+    2.5
+  ],
+  ["ds:0209", "Cable reverse preacher curl", ["biceps"], ["forearms"], "cable", 2.5],
+  ["ds:0210", "Cable reverse wrist curl", ["forearms"], [], "cable", 2.5],
+  ["ds:0211", "Cable russian twists (on stability ball)", ["abs"], ["lower_back"], "cable", 2.5],
+  ["ds:0212", "Cable seated crunch", ["abs"], [], "cable", 2.5],
+  [
+    "ds:0213",
+    "Cable seated high row (v-bar)",
+    ["lats"],
+    ["biceps", "upper_back", "rear_delts"],
+    "cable",
+    2.5
+  ],
+  [
+    "ds:0214",
+    "Cable seated one arm alternate row",
+    ["upper_back"],
+    ["biceps", "forearms"],
+    "cable",
+    2.5
+  ],
+  ["ds:0215", "Cable seated rear lateral raise", ["rear_delts"], ["upper_back"], "cable", 2.5],
+  [
+    "ds:0216",
+    "Cable seated shoulder internal rotation",
+    ["front_delts"],
+    ["rear_delts", "triceps"],
+    "cable",
+    2.5
+  ],
+  ["ds:0218", "Cable seated wide-grip row", ["upper_back"], ["biceps", "forearms"], "cable", 2.5],
+  ["ds:0219", "Cable shoulder press", ["front_delts"], ["triceps", "upper_back"], "cable", 2.5],
+  ["ds:0220", "Cable shrug", ["upper_back"], ["rear_delts"], "cable", 2.5],
+  ["ds:0221", "Cable side bend crunch (bosu ball)", ["abs"], [], "cable", 2.5],
+  ["ds:0222", "Cable side bend", ["abs"], [], "cable", 2.5],
+  ["ds:0223", "Cable side crunch", ["abs"], [], "cable", 2.5],
+  ["ds:0224", "Cable standing back wrist curl", ["forearms"], ["biceps"], "cable", 2.5],
+  [
+    "ds:0225",
+    "Cable standing cross-over high reverse fly",
+    ["rear_delts"],
+    ["upper_back"],
+    "cable",
+    2.5
+  ],
+  ["ds:0226", "Cable standing crunch", ["abs"], [], "cable", 2.5],
+  ["ds:0227", "Cable standing fly", ["chest"], ["front_delts", "triceps"], "cable", 2.5],
+  ["ds:0228", "Cable standing hip extension", ["glutes"], ["hamstrings", "quads"], "cable", 2.5],
+  ["ds:0229", "Cable standing inner curl", ["biceps"], ["forearms"], "cable", 2.5],
+  ["ds:0230", "Cable standing lift", ["abs"], ["lower_back"], "cable", 2.5],
+  [
+    "ds:0231",
+    "Cable standing one arm triceps extension",
+    ["triceps"],
+    ["front_delts"],
+    "cable",
+    2.5
+  ],
+  [
+    "ds:0232",
+    "Cable standing pulldown (with rope)",
+    ["biceps"],
+    ["forearms", "rear_delts"],
+    "cable",
+    2.5
+  ],
+  [
+    "ds:0233",
+    "Cable standing rear delt row (with rope)",
+    ["rear_delts"],
+    ["upper_back", "biceps"],
+    "cable",
+    2.5
+  ],
+  ["ds:0234", "Cable standing row (v-bar)", ["upper_back"], ["biceps", "rear_delts"], "cable", 2.5],
+  [
+    "ds:0235",
+    "Cable standing shoulder external rotation",
+    ["front_delts"],
+    ["rear_delts", "upper_back"],
+    "cable",
+    2.5
+  ],
+  [
+    "ds:0236",
+    "Cable standing twist row (v-bar)",
+    ["upper_back"],
+    ["biceps", "rear_delts"],
+    "cable",
+    2.5
+  ],
+  [
+    "ds:0237",
+    "Cable straight arm pulldown (with rope)",
+    ["lats"],
+    ["biceps", "forearms"],
+    "cable",
+    2.5
+  ],
+  ["ds:0238", "Cable straight arm pulldown", ["lats"], ["rear_delts", "biceps"], "cable", 2.5],
+  [
+    "ds:0239",
+    "Cable straight back seated row",
+    ["upper_back"],
+    ["biceps", "forearms", "rear_delts"],
+    "cable",
+    2.5
+  ],
+  ["ds:0240", "Cable supine reverse fly", ["rear_delts"], ["upper_back"], "cable", 2.5],
+  ["ds:0241", "Cable triceps pushdown (v-bar)", ["triceps"], ["forearms"], "cable", 2.5],
+  ["ds:0242", "Cable tuck reverse crunch", ["abs"], [], "cable", 2.5],
+  ["ds:0243", "Cable twist", ["abs"], [], "cable", 2.5],
+  ["ds:0244", "Cable twisting pull", ["lats"], ["rear_delts", "biceps"], "cable", 2.5],
+  ["ds:0245", "Cable underhand pulldown", ["lats"], ["biceps", "forearms"], "cable", 2.5],
+  ["ds:0246", "Cable upright row", ["side_delts"], ["upper_back", "biceps"], "cable", 2.5],
+  ["ds:0247", "Cable wrist curl", ["forearms"], ["biceps"], "cable", 2.5],
+  ["ds:0248", "Cambered bar lying row", ["upper_back"], ["biceps", "forearms"], "barbell", 2.5],
+  ["ds:0251", "Chest dip", ["chest"], ["triceps", "front_delts"], "bodyweight", 2.5],
+  [
+    "ds:0253",
+    "Chin-ups (narrow parallel grip)",
+    ["upper_back"],
+    ["biceps", "forearms"],
+    "bodyweight",
+    2.5
+  ],
+  ["ds:0257", "Circles knee stretch", ["calves"], ["hamstrings", "quads"], "bodyweight", 2.5],
+  ["ds:0258", "Clock push-up", ["chest"], ["triceps", "front_delts", "abs"], "bodyweight", 2.5],
+  ["ds:0259", "Close-grip push-up", ["triceps"], ["chest", "front_delts"], "bodyweight", 2.5],
+  ["ds:0260", "Cocoons", ["abs"], ["lower_back"], "bodyweight", 2.5],
+  ["ds:0262", "Cross body crunch", ["abs"], [], "bodyweight", 2.5],
+  ["ds:0267", "Crunch (hands overhead)", ["abs"], [], "bodyweight", 2.5],
+  ["ds:0271", "Crunch (on stability ball)", ["abs"], [], "other", 1],
+  ["ds:0272", "Crunch (on stability ball, arms straight)", ["abs"], [], "other", 1],
+  ["ds:0274", "Crunch floor", ["abs"], [], "bodyweight", 2.5],
+  ["ds:0276", "Dead bug", ["abs"], ["lower_back"], "bodyweight", 2.5],
+  ["ds:0277", "Decline crunch", ["abs"], [], "bodyweight", 2.5],
+  ["ds:0279", "Decline push-up", ["chest"], ["triceps", "front_delts"], "bodyweight", 2.5],
+  ["ds:0282", "Decline sit-up", ["abs"], ["lower_back"], "bodyweight", 2.5],
+  ["ds:0283", "Diamond push-up", ["triceps"], ["chest", "front_delts"], "bodyweight", 2.5],
+  ["ds:0284", "Donkey calf raise", ["calves"], ["hamstrings", "glutes"], "bodyweight", 2.5],
+  ["ds:0285", "Dumbbell alternate biceps curl", ["biceps"], ["forearms"], "dumbbell", 2],
+  ["ds:0286", "Dumbbell alternate side press", ["front_delts"], ["triceps", "abs"], "dumbbell", 2],
+  ["ds:0287", "Dumbbell arnold press v. 2", ["front_delts"], ["triceps", "chest"], "dumbbell", 2],
+  ["ds:0288", "Dumbbell around pullover", ["chest"], ["triceps", "lats"], "dumbbell", 2],
+  ["ds:0289", "Dumbbell bench press", ["chest"], ["triceps", "front_delts"], "dumbbell", 2],
+  ["ds:0290", "Dumbbell bench seated press", ["front_delts"], ["triceps", "chest"], "dumbbell", 2],
+  ["ds:0291", "Dumbbell bench squat", ["glutes"], ["quads", "hamstrings", "calves"], "dumbbell", 2],
+  [
+    "ds:0292",
+    "Dumbbell one arm bent-over row",
+    ["upper_back"],
+    ["biceps", "forearms"],
+    "dumbbell",
+    2
+  ],
+  ["ds:0293", "Dumbbell bent over row", ["upper_back"], ["biceps", "forearms"], "dumbbell", 2],
+  ["ds:0294", "Dumbbell biceps curl", ["biceps"], ["forearms"], "dumbbell", 2],
+  ["ds:0295", "Dumbbell clean", ["glutes"], ["hamstrings", "quads", "calves"], "dumbbell", 2],
+  ["ds:0296", "Dumbbell close-grip press", ["triceps"], ["chest", "front_delts"], "dumbbell", 2],
+  ["ds:0297", "Dumbbell concentration curl", ["biceps"], ["forearms"], "dumbbell", 2],
+  ["ds:0298", "Dumbbell cross body hammer curl", ["biceps"], ["forearms"], "dumbbell", 2],
+  ["ds:0299", "Dumbbell cuban press", ["front_delts"], ["triceps", "upper_back"], "dumbbell", 2],
+  ["ds:0300", "Dumbbell deadlift", ["glutes"], ["hamstrings", "lower_back"], "dumbbell", 2],
+  ["ds:0301", "Dumbbell decline bench press", ["chest"], ["triceps", "front_delts"], "dumbbell", 2],
+  ["ds:0302", "Dumbbell decline fly", ["chest"], ["front_delts"], "dumbbell", 2],
+  [
+    "ds:0303",
+    "Dumbbell decline hammer press",
+    ["chest"],
+    ["triceps", "front_delts"],
+    "dumbbell",
+    2
+  ],
+  ["ds:0304", "Dumbbell decline shrug v. 2", ["upper_back"], ["rear_delts"], "dumbbell", 2],
+  ["ds:0305", "Dumbbell decline shrug", ["upper_back"], ["rear_delts"], "dumbbell", 2],
+  ["ds:0306", "Dumbbell decline triceps extension", ["triceps"], ["front_delts"], "dumbbell", 2],
+  ["ds:0307", "Dumbbell decline twist fly", ["chest"], ["front_delts", "triceps"], "dumbbell", 2],
+  ["ds:0308", "Dumbbell fly", ["chest"], ["front_delts"], "dumbbell", 2],
+  [
+    "ds:0309",
+    "Dumbbell front raise v. 2",
+    ["front_delts"],
+    ["upper_back", "biceps"],
+    "dumbbell",
+    2
+  ],
+  ["ds:0310", "Dumbbell front raise", ["front_delts"], ["biceps", "upper_back"], "dumbbell", 2],
+  [
+    "ds:0311",
+    "Dumbbell full can lateral raise",
+    ["side_delts"],
+    ["upper_back", "rear_delts"],
+    "dumbbell",
+    2
+  ],
+  ["ds:0312", "Dumbbell hammer curl v. 2", ["biceps"], ["forearms"], "dumbbell", 2],
+  ["ds:0313", "Dumbbell hammer curl", ["biceps"], ["forearms"], "dumbbell", 2],
+  ["ds:0314", "Dumbbell incline bench press", ["chest"], ["front_delts", "triceps"], "dumbbell", 2],
+  ["ds:0315", "Dumbbell incline biceps curl", ["biceps"], ["forearms"], "dumbbell", 2],
+  ["ds:0316", "Dumbbell incline breeding", ["chest"], ["front_delts", "triceps"], "dumbbell", 2],
+  ["ds:0317", "Dumbbell incline curl v. 2", ["biceps"], ["forearms"], "dumbbell", 2],
+  ["ds:0318", "Dumbbell incline curl", ["biceps"], ["forearms"], "dumbbell", 2],
+  ["ds:0319", "Dumbbell incline fly", ["chest"], ["front_delts"], "dumbbell", 2],
+  ["ds:0320", "Dumbbell incline hammer curl", ["biceps"], ["forearms"], "dumbbell", 2],
+  [
+    "ds:0321",
+    "Dumbbell incline hammer press",
+    ["chest"],
+    ["front_delts", "triceps"],
+    "dumbbell",
+    2
+  ],
+  ["ds:0322", "Dumbbell incline inner biceps curl", ["biceps"], ["forearms"], "dumbbell", 2],
+  [
+    "ds:0323",
+    "Dumbbell incline one arm lateral raise",
+    ["side_delts"],
+    ["upper_back", "triceps"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:0324",
+    "Dumbbell incline palm-in press",
+    ["chest"],
+    ["front_delts", "triceps"],
+    "dumbbell",
+    2
+  ],
+  ["ds:0325", "Dumbbell incline raise", ["front_delts"], ["upper_back", "triceps"], "dumbbell", 2],
+  ["ds:0326", "Dumbbell incline rear lateral raise", ["rear_delts"], ["upper_back"], "dumbbell", 2],
+  [
+    "ds:0327",
+    "Dumbbell incline row",
+    ["upper_back"],
+    ["lats", "rear_delts", "biceps"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:0328",
+    "Dumbbell incline shoulder raise",
+    ["abs"],
+    ["front_delts", "upper_back"],
+    "dumbbell",
+    2
+  ],
+  ["ds:0329", "Dumbbell incline shrug", ["upper_back"], ["rear_delts"], "dumbbell", 2],
+  ["ds:0330", "Dumbbell incline triceps extension", ["triceps"], ["front_delts"], "dumbbell", 2],
+  [
+    "ds:0331",
+    "Dumbbell incline twisted flyes",
+    ["chest"],
+    ["front_delts", "triceps"],
+    "dumbbell",
+    2
+  ],
+  ["ds:0332", "Dumbbell iron cross", ["front_delts"], ["triceps", "chest"], "dumbbell", 2],
+  ["ds:0333", "Dumbbell kickback", ["triceps"], ["front_delts"], "dumbbell", 2],
+  ["ds:0334", "Dumbbell lateral raise", ["side_delts"], [], "dumbbell", 2],
+  [
+    "ds:0335",
+    "Dumbbell lateral to front raise",
+    ["front_delts"],
+    ["upper_back", "biceps"],
+    "dumbbell",
+    2
+  ],
+  ["ds:0336", "Dumbbell lunge", ["glutes"], ["quads", "hamstrings", "calves"], "dumbbell", 2],
+  [
+    "ds:0337",
+    "Dumbbell lying extension (across face)",
+    ["triceps"],
+    ["front_delts"],
+    "dumbbell",
+    2
+  ],
+  ["ds:0338", "Dumbbell lying elbow press", ["triceps"], ["chest", "front_delts"], "dumbbell", 2],
+  ["ds:0339", "Dumbbell lying femoral", ["hamstrings"], ["glutes"], "dumbbell", 2],
+  ["ds:0340", "Dumbbell lying hammer press", ["chest"], ["triceps", "front_delts"], "dumbbell", 2],
+  ["ds:0341", "Dumbbell lying one arm deltoid rear", ["rear_delts"], ["upper_back"], "dumbbell", 2],
+  [
+    "ds:0342",
+    "Dumbbell lying one arm press v. 2",
+    ["chest"],
+    ["triceps", "front_delts"],
+    "dumbbell",
+    2
+  ],
+  ["ds:0343", "Dumbbell lying one arm press", ["chest"], ["triceps", "front_delts"], "dumbbell", 2],
+  [
+    "ds:0344",
+    "Dumbbell lying one arm pronated triceps extension",
+    ["triceps"],
+    ["front_delts"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:0345",
+    "Dumbbell lying one arm rear lateral raise",
+    ["rear_delts"],
+    ["upper_back"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:0346",
+    "Dumbbell lying one arm supinated triceps extension",
+    ["triceps"],
+    ["forearms"],
+    "dumbbell",
+    2
+  ],
+  ["ds:0347", "Dumbbell lying pronation", ["forearms"], ["biceps", "front_delts"], "dumbbell", 2],
+  ["ds:0348", "Dumbbell lying rear lateral raise", ["rear_delts"], ["upper_back"], "dumbbell", 2],
+  ["ds:0349", "Dumbbell lying supination", ["forearms"], ["biceps", "front_delts"], "dumbbell", 2],
+  ["ds:0350", "Dumbbell lying supine curl", ["biceps"], ["forearms"], "dumbbell", 2],
+  ["ds:0351", "Dumbbell lying triceps extension", ["triceps"], ["front_delts"], "dumbbell", 2],
+  [
+    "ds:0352",
+    "Dumbbell neutral grip bench press",
+    ["triceps"],
+    ["chest", "front_delts"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:0353",
+    "Dumbbell one arm concentration curl (on stability ball)",
+    ["biceps"],
+    ["forearms"],
+    "dumbbell",
+    2
+  ],
+  ["ds:0354", "Dumbbell one arm kickback", ["triceps"], ["front_delts"], "dumbbell", 2],
+  [
+    "ds:0355",
+    "Dumbbell one arm lateral raise",
+    ["side_delts"],
+    ["upper_back", "triceps"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:0356",
+    "Dumbbell one arm lateral raise with support",
+    ["side_delts"],
+    ["upper_back", "rear_delts"],
+    "dumbbell",
+    2
+  ],
+  ["ds:0358", "Dumbbell one arm reverse wrist curl", ["forearms"], [], "dumbbell", 2],
+  [
+    "ds:0359",
+    "Dumbbell one arm reverse fly (with support)",
+    ["rear_delts"],
+    ["upper_back"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:0360",
+    "Dumbbell one arm shoulder press v. 2",
+    ["front_delts"],
+    ["triceps", "upper_back"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:0361",
+    "Dumbbell one arm shoulder press",
+    ["front_delts"],
+    ["triceps", "upper_back"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:0362",
+    "Dumbbell one arm triceps extension (on bench)",
+    ["triceps"],
+    ["front_delts"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:0363",
+    "Dumbbell one arm upright row",
+    ["side_delts"],
+    ["upper_back", "biceps"],
+    "dumbbell",
+    2
+  ],
+  ["ds:0364", "Dumbbell one arm wrist curl", ["forearms"], ["biceps"], "dumbbell", 2],
+  ["ds:0365", "Dumbbell over bench neutral wrist curl", ["biceps"], ["forearms"], "dumbbell", 2],
+  [
+    "ds:0366",
+    "Dumbbell over bench one arm neutral wrist curl",
+    ["biceps"],
+    ["forearms"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:0367",
+    "Dumbbell over bench one arm wrist curl",
+    ["forearms"],
+    ["biceps", "front_delts"],
+    "dumbbell",
+    2
+  ],
+  ["ds:0368", "Dumbbell over bench revers wrist curl", ["forearms"], ["biceps"], "dumbbell", 2],
+  ["ds:0369", "Dumbbell over bench wrist curl", ["forearms"], ["biceps"], "dumbbell", 2],
+  ["ds:0370", "Dumbbell peacher hammer curl", ["biceps"], ["forearms"], "dumbbell", 2],
+  ["ds:0371", "Dumbbell plyo squat", ["glutes"], ["quads", "hamstrings", "calves"], "dumbbell", 2],
+  ["ds:0372", "Dumbbell preacher curl", ["biceps"], ["forearms"], "dumbbell", 2],
+  ["ds:0373", "Dumbbell pronate-grip triceps extension", ["triceps"], ["forearms"], "dumbbell", 2],
+  ["ds:0374", "Dumbbell prone incline curl", ["biceps"], ["forearms"], "dumbbell", 2],
+  ["ds:0375", "Dumbbell pullover", ["chest"], ["lats", "triceps"], "dumbbell", 2],
+  ["ds:0376", "Dumbbell raise", ["front_delts"], ["upper_back"], "dumbbell", 2],
+  ["ds:0377", "Dumbbell rear delt row_shoulder", ["rear_delts"], ["upper_back"], "dumbbell", 2],
+  ["ds:0378", "Dumbbell rear fly", ["rear_delts"], ["upper_back"], "dumbbell", 2],
+  [
+    "ds:0379",
+    "Dumbbell rear lateral raise (support head)",
+    ["rear_delts"],
+    ["upper_back"],
+    "dumbbell",
+    2
+  ],
+  ["ds:0380", "Dumbbell rear lateral raise", ["rear_delts"], ["upper_back"], "dumbbell", 2],
+  ["ds:0381", "Dumbbell rear lunge", ["glutes"], ["quads", "hamstrings", "calves"], "dumbbell", 2],
+  ["ds:0382", "Dumbbell revers grip biceps curl", ["biceps"], ["forearms"], "dumbbell", 2],
+  ["ds:0383", "Dumbbell reverse fly", ["rear_delts"], ["upper_back"], "dumbbell", 2],
+  ["ds:0384", "Dumbbell reverse preacher curl", ["biceps"], ["forearms"], "dumbbell", 2],
+  ["ds:0385", "Dumbbell reverse wrist curl", ["forearms"], [], "dumbbell", 2],
+  ["ds:0386", "Dumbbell rotation reverse fly", ["rear_delts"], ["upper_back"], "dumbbell", 2],
+  [
+    "ds:0387",
+    "Dumbbell seated alternate front raise",
+    ["front_delts"],
+    ["upper_back", "biceps"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:0388",
+    "Dumbbell seated alternate press",
+    ["front_delts"],
+    ["triceps", "chest"],
+    "dumbbell",
+    2
+  ],
+  ["ds:0389", "Dumbbell seated bench extension", ["triceps"], ["front_delts"], "dumbbell", 2],
+  [
+    "ds:0390",
+    "Dumbbell seated biceps curl (on stability ball)",
+    ["biceps"],
+    ["forearms"],
+    "dumbbell",
+    2
+  ],
+  ["ds:0391", "Dumbbell seated curl", ["biceps"], ["forearms"], "dumbbell", 2],
+  [
+    "ds:0392",
+    "Dumbbell seated front raise",
+    ["front_delts"],
+    ["upper_back", "biceps"],
+    "dumbbell",
+    2
+  ],
+  ["ds:0393", "Dumbbell seated inner biceps curl", ["biceps"], ["forearms"], "dumbbell", 2],
+  ["ds:0394", "Dumbbell seated kickback", ["triceps"], ["front_delts"], "dumbbell", 2],
+  [
+    "ds:0395",
+    "Dumbbell seated lateral raise v. 2",
+    ["side_delts"],
+    ["upper_back", "triceps"],
+    "dumbbell",
+    2
+  ],
+  ["ds:0396", "Dumbbell seated lateral raise", ["side_delts"], ["upper_back"], "dumbbell", 2],
+  ["ds:0397", "Dumbbell seated neutral wrist curl", ["biceps"], ["forearms"], "dumbbell", 2],
+  ["ds:0398", "Dumbbell seated one arm kickback", ["triceps"], ["front_delts"], "dumbbell", 2],
+  [
+    "ds:0399",
+    "Dumbbell seated one arm rotate",
+    ["forearms"],
+    ["front_delts", "biceps"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:0400",
+    "Dumbbell seated one leg calf raise",
+    ["calves"],
+    ["hamstrings", "glutes"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:0401",
+    "Dumbbell seated palms up wrist curl",
+    ["forearms"],
+    ["biceps", "front_delts"],
+    "dumbbell",
+    2
+  ],
+  ["ds:0402", "Dumbbell seated preacher curl", ["biceps"], ["forearms"], "dumbbell", 2],
+  [
+    "ds:0403",
+    "Dumbbell seated revers grip concentration curl",
+    ["biceps"],
+    ["forearms"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:0404",
+    "Dumbbell seated shoulder press (parallel grip)",
+    ["front_delts"],
+    ["triceps", "upper_back"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:0405",
+    "Dumbbell seated shoulder press",
+    ["front_delts"],
+    ["side_delts", "triceps"],
+    "dumbbell",
+    2
+  ],
+  ["ds:0406", "Dumbbell shrug", ["upper_back"], ["rear_delts"], "dumbbell", 2],
+  ["ds:0407", "Dumbbell side bend", ["abs"], [], "dumbbell", 2],
+  ["ds:0408", "Dumbbell side lying one hand raise", ["front_delts"], ["upper_back"], "dumbbell", 2],
+  ["ds:0409", "Dumbbell single leg calf raise", ["calves"], [], "dumbbell", 2],
+  ["ds:0410", "Dumbbell single leg split squat", ["quads"], ["glutes"], "dumbbell", 2],
+  [
+    "ds:0411",
+    "Dumbbell single leg squat",
+    ["glutes"],
+    ["quads", "hamstrings", "calves"],
+    "dumbbell",
+    2
+  ],
+  ["ds:0413", "Dumbbell squat", ["glutes"], ["quads", "hamstrings", "calves"], "dumbbell", 2],
+  [
+    "ds:0414",
+    "Dumbbell standing alternate overhead press",
+    ["front_delts"],
+    ["triceps", "abs"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:0415",
+    "Dumbbell standing alternate raise",
+    ["front_delts"],
+    ["upper_back", "forearms"],
+    "dumbbell",
+    2
+  ],
+  ["ds:0416", "Dumbbell standing biceps curl", ["biceps"], ["forearms"], "dumbbell", 2],
+  ["ds:0417", "Dumbbell standing calf raise", ["calves"], [], "dumbbell", 2],
+  ["ds:0418", "Dumbbell standing concentration curl", ["biceps"], ["forearms"], "dumbbell", 2],
+  [
+    "ds:0419",
+    "Dumbbell standing front raise above head",
+    ["front_delts"],
+    ["upper_back", "biceps"],
+    "dumbbell",
+    2
+  ],
+  ["ds:0420", "Dumbbell standing kickback", ["triceps"], ["front_delts"], "dumbbell", 2],
+  [
+    "ds:0421",
+    "Dumbbell standing one arm concentration curl",
+    ["biceps"],
+    ["forearms"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:0422",
+    "Dumbbell standing one arm curl (over incline bench)",
+    ["biceps"],
+    ["forearms"],
+    "dumbbell",
+    2
+  ],
+  ["ds:0423", "Dumbbell standing one arm extension", ["triceps"], ["front_delts"], "dumbbell", 2],
+  [
+    "ds:0424",
+    "Dumbbell standing one arm palm in press",
+    ["front_delts"],
+    ["triceps", "abs"],
+    "dumbbell",
+    2
+  ],
+  ["ds:0425", "Dumbbell standing one arm reverse curl", ["biceps"], ["forearms"], "dumbbell", 2],
+  [
+    "ds:0426",
+    "Dumbbell standing overhead press",
+    ["front_delts"],
+    ["triceps", "upper_back"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:0427",
+    "Dumbbell standing palms in press",
+    ["front_delts"],
+    ["triceps", "chest"],
+    "dumbbell",
+    2
+  ],
+  ["ds:0428", "Dumbbell standing preacher curl", ["biceps"], ["forearms"], "dumbbell", 2],
+  ["ds:0429", "Dumbbell standing reverse curl", ["biceps"], ["forearms"], "dumbbell", 2],
+  ["ds:0430", "Dumbbell standing triceps extension", ["triceps"], ["front_delts"], "dumbbell", 2],
+  ["ds:0431", "Dumbbell step-up", ["glutes"], ["quads", "hamstrings", "calves"], "dumbbell", 2],
+  [
+    "ds:0432",
+    "Dumbbell stiff leg deadlift",
+    ["glutes"],
+    ["hamstrings", "lower_back"],
+    "dumbbell",
+    2
+  ],
+  ["ds:0433", "Dumbbell straight arm pullover", ["chest"], ["lats", "triceps"], "dumbbell", 2],
+  [
+    "ds:0434",
+    "Dumbbell straight leg deadlift",
+    ["glutes"],
+    ["hamstrings", "lower_back"],
+    "dumbbell",
+    2
+  ],
+  ["ds:0436", "Dumbbell tate press", ["triceps"], ["front_delts"], "dumbbell", 2],
+  ["ds:0437", "Dumbbell upright row", ["side_delts"], ["upper_back", "biceps"], "dumbbell", 2],
+  ["ds:0438", "Dumbbell w-press", ["front_delts"], ["triceps", "chest"], "dumbbell", 2],
+  ["ds:0439", "Dumbbell zottman curl", ["biceps"], ["forearms"], "dumbbell", 2],
+  ["ds:0443", "Elbow-to-knee", ["abs"], [], "bodyweight", 2.5],
+  [
+    "ds:0445",
+    "Ez barbell anti gravity press",
+    ["front_delts"],
+    ["triceps", "chest"],
+    "barbell",
+    2.5
+  ],
+  ["ds:0446", "Ez barbell close-grip curl", ["biceps"], ["forearms"], "barbell", 2.5],
+  ["ds:0447", "Ez barbell curl", ["biceps"], ["forearms"], "barbell", 2.5],
+  [
+    "ds:0448",
+    "Ez barbell decline close grip face press",
+    ["triceps"],
+    ["chest", "front_delts"],
+    "barbell",
+    2.5
+  ],
+  ["ds:0449", "Ez barbell incline triceps extension", ["triceps"], ["front_delts"], "barbell", 2.5],
+  ["ds:0450", "Ez barbell jm bench press", ["triceps"], ["chest", "front_delts"], "barbell", 2.5],
+  ["ds:0451", "Ez barbell reverse grip curl", ["biceps"], ["forearms"], "barbell", 2.5],
+  ["ds:0452", "Ez barbell reverse grip preacher curl", ["biceps"], ["forearms"], "barbell", 2.5],
+  ["ds:0453", "Ez barbell seated triceps extension", ["triceps"], ["front_delts"], "barbell", 2.5],
+  ["ds:0454", "Ez barbell spider curl", ["biceps"], ["forearms"], "barbell", 2.5],
+  ["ds:0455", "Finger curls", ["forearms"], [], "barbell", 2.5],
+  ["ds:0456", "Flexion leg sit up (bent knee)", ["abs"], [], "bodyweight", 2.5],
+  ["ds:0457", "Flexion leg sit up (straight arm)", ["abs"], ["quads"], "bodyweight", 2.5],
+  ["ds:0458", "Floor fly (with barbell)", ["chest"], ["front_delts", "triceps"], "barbell", 2.5],
+  ["ds:0459", "Flutter kicks", ["glutes"], ["abs"], "bodyweight", 2.5],
+  ["ds:0464", "Front plank with twist", ["abs"], ["front_delts"], "bodyweight", 2.5],
+  [
+    "ds:0466",
+    "Gironda sternum chin",
+    ["lats"],
+    ["biceps", "upper_back", "rear_delts"],
+    "bodyweight",
+    2.5
+  ],
+  ["ds:0467", "Gorilla chin", ["abs"], ["forearms", "biceps"], "bodyweight", 2.5],
+  ["ds:0469", "Groin crunch", ["abs"], ["adductors"], "bodyweight", 2.5],
+  ["ds:0471", "Handstand push-up", ["triceps"], ["front_delts", "chest", "abs"], "bodyweight", 2.5],
+  ["ds:0472", "Hanging leg raise", ["abs"], [], "bodyweight", 2.5],
+  ["ds:0473", "Hanging pike", ["abs"], ["front_delts"], "bodyweight", 2.5],
+  ["ds:0474", "Hanging straight leg hip raise", ["abs"], [], "bodyweight", 2.5],
+  ["ds:0475", "Hanging straight leg raise", ["abs"], [], "bodyweight", 2.5],
+  ["ds:0476", "Hanging straight twisting leg hip raise", ["abs"], [], "bodyweight", 2.5],
+  ["ds:0484", "Hip raise (bent knee)", ["abs"], ["glutes", "hamstrings"], "bodyweight", 2.5],
+  [
+    "ds:0488",
+    "Hyperextension (on bench)",
+    ["lower_back"],
+    ["glutes", "hamstrings"],
+    "bodyweight",
+    2.5
+  ],
+  ["ds:0489", "Hyperextension", ["lower_back"], ["glutes", "hamstrings"], "bodyweight", 2.5],
+  [
+    "ds:0490",
+    "Incline close-grip push-up",
+    ["triceps"],
+    ["chest", "front_delts"],
+    "bodyweight",
+    2.5
+  ],
+  ["ds:0491", "Incline leg hip raise (leg straight)", ["abs"], [], "bodyweight", 2.5],
+  [
+    "ds:0492",
+    "Incline push up depth jump",
+    ["chest"],
+    ["triceps", "front_delts", "abs"],
+    "bodyweight",
+    2.5
+  ],
+  ["ds:0493", "Incline push-up", ["chest"], ["triceps", "front_delts"], "bodyweight", 2.5],
+  [
+    "ds:0494",
+    "Incline reverse grip push-up",
+    ["chest"],
+    ["triceps", "front_delts"],
+    "bodyweight",
+    2.5
+  ],
+  ["ds:0495", "Incline twisting sit-up", ["abs"], [], "bodyweight", 2.5],
+  [
+    "ds:0496",
+    "Inverse leg curl (bench support)",
+    ["hamstrings"],
+    ["glutes", "calves"],
+    "bodyweight",
+    2.5
+  ],
+  ["ds:0497", "Inverted row v. 2", ["upper_back"], ["biceps", "forearms"], "bodyweight", 2.5],
+  [
+    "ds:0498",
+    "Inverted row with straps",
+    ["upper_back"],
+    ["biceps", "forearms"],
+    "bodyweight",
+    2.5
+  ],
+  ["ds:0499", "Inverted row", ["upper_back"], ["biceps", "forearms"], "bodyweight", 2.5],
+  ["ds:0500", "Isometric wipers", ["chest"], ["front_delts", "triceps", "abs"], "bodyweight", 2.5],
+  ["ds:0507", "Jackknife sit-up", ["abs"], [], "bodyweight", 2.5],
+  ["ds:0508", "Janda sit-up", ["abs"], ["lower_back"], "bodyweight", 2.5],
+  ["ds:0513", "Jump squat v. 2", ["glutes"], ["quads", "hamstrings", "calves"], "bodyweight", 2.5],
+  ["ds:0514", "Jump squat", ["glutes"], ["quads", "hamstrings", "calves"], "bodyweight", 2.5],
+  ["ds:0517", "Kettlebell advanced windmill", ["abs"], ["front_delts"], "other", 1],
+  [
+    "ds:0518",
+    "Kettlebell alternating hang clean",
+    ["forearms"],
+    ["front_delts", "upper_back", "abs"],
+    "other",
+    1
+  ],
+  [
+    "ds:0519",
+    "Kettlebell alternating press on floor",
+    ["chest"],
+    ["front_delts", "triceps"],
+    "other",
+    1
+  ],
+  ["ds:0520", "Kettlebell alternating press", ["front_delts"], ["triceps", "abs"], "other", 1],
+  [
+    "ds:0521",
+    "Kettlebell alternating renegade row",
+    ["upper_back"],
+    ["abs", "rear_delts"],
+    "other",
+    1
+  ],
+  ["ds:0522", "Kettlebell alternating row", ["upper_back"], ["biceps", "forearms"], "other", 1],
+  ["ds:0523", "Kettlebell arnold press", ["front_delts"], ["triceps", "upper_back"], "other", 1],
+  ["ds:0524", "Kettlebell bent press", ["abs"], ["front_delts", "triceps"], "other", 1],
+  [
+    "ds:0525",
+    "Kettlebell bottoms up clean from the hang position",
+    ["biceps"],
+    ["forearms", "rear_delts"],
+    "other",
+    1
+  ],
+  [
+    "ds:0526",
+    "Kettlebell double alternating hang clean",
+    ["biceps"],
+    ["forearms", "rear_delts"],
+    "other",
+    1
+  ],
+  ["ds:0527", "Kettlebell double jerk", ["front_delts"], ["triceps", "abs"], "other", 1],
+  ["ds:0528", "Kettlebell double push press", ["front_delts"], ["triceps", "abs"], "other", 1],
+  [
+    "ds:0529",
+    "Kettlebell double snatch",
+    ["front_delts"],
+    ["upper_back", "forearms", "abs"],
+    "other",
+    1
+  ],
+  ["ds:0530", "Kettlebell double windmill", ["abs"], ["front_delts", "hamstrings"], "other", 1],
+  [
+    "ds:0531",
+    "Kettlebell extended range one arm press on floor",
+    ["chest"],
+    ["triceps", "front_delts"],
+    "other",
+    1
+  ],
+  ["ds:0532", "Kettlebell figure 8", ["abs"], ["front_delts", "forearms"], "other", 1],
+  ["ds:0533", "Kettlebell front squat", ["glutes"], ["quads", "hamstrings", "calves"], "other", 1],
+  ["ds:0534", "Kettlebell goblet squat", ["glutes"], ["quads", "hamstrings", "calves"], "other", 1],
+  ["ds:0535", "Kettlebell hang clean", ["hamstrings"], ["glutes", "quads", "calves"], "other", 1],
+  [
+    "ds:0536",
+    "Kettlebell lunge pass through",
+    ["glutes"],
+    ["quads", "hamstrings", "calves"],
+    "other",
+    1
+  ],
+  ["ds:0537", "Kettlebell one arm clean and jerk", ["front_delts"], ["triceps", "abs"], "other", 1],
+  ["ds:0538", "Kettlebell one arm jerk", ["front_delts"], ["triceps", "abs"], "other", 1],
+  [
+    "ds:0539",
+    "Kettlebell one arm military press to the side",
+    ["front_delts"],
+    ["triceps", "abs"],
+    "other",
+    1
+  ],
+  ["ds:0540", "Kettlebell one arm push press", ["front_delts"], ["triceps", "abs"], "other", 1],
+  ["ds:0541", "Kettlebell one arm row", ["upper_back"], ["biceps", "forearms"], "other", 1],
+  [
+    "ds:0542",
+    "Kettlebell one arm snatch",
+    ["front_delts"],
+    ["upper_back", "forearms", "abs"],
+    "other",
+    1
+  ],
+  [
+    "ds:0543",
+    "Kettlebell pirate supper legs",
+    ["front_delts"],
+    ["triceps", "forearms"],
+    "other",
+    1
+  ],
+  ["ds:0544", "Kettlebell pistol squat", ["glutes"], ["quads", "hamstrings", "calves"], "other", 1],
+  ["ds:0545", "Kettlebell plyo push-up", ["chest"], ["triceps", "front_delts", "abs"], "other", 1],
+  ["ds:0546", "Kettlebell seated press", ["front_delts"], ["triceps", "abs"], "other", 1],
+  ["ds:0547", "Kettlebell seesaw press", ["front_delts"], ["triceps", "abs"], "other", 1],
+  [
+    "ds:0548",
+    "Kettlebell sumo high pull",
+    ["upper_back"],
+    ["rear_delts", "glutes", "hamstrings"],
+    "other",
+    1
+  ],
+  ["ds:0549", "Kettlebell swing", ["glutes"], ["hamstrings", "abs"], "other", 1],
+  ["ds:0550", "Kettlebell thruster", ["front_delts"], ["quads", "glutes", "abs"], "other", 1],
+  [
+    "ds:0551",
+    "Kettlebell turkish get up (squat style)",
+    ["glutes"],
+    ["quads", "hamstrings", "abs"],
+    "other",
+    1
+  ],
+  ["ds:0552", "Kettlebell two arm clean", ["front_delts"], ["upper_back", "forearms"], "other", 1],
+  [
+    "ds:0553",
+    "Kettlebell two arm military press",
+    ["front_delts"],
+    ["triceps", "upper_back"],
+    "other",
+    1
+  ],
+  ["ds:0554", "Kettlebell windmill", ["abs"], ["front_delts"], "other", 1],
+  ["ds:0555", "Kick out sit", ["hamstrings"], ["quads", "glutes"], "bodyweight", 2.5],
+  [
+    "ds:0558",
+    "Kipping muscle up",
+    ["lats"],
+    ["biceps", "triceps", "rear_delts", "abs"],
+    "bodyweight",
+    2.5
+  ],
+  ["ds:0562", "Landmine 180", ["abs"], ["quads"], "barbell", 2.5],
+  ["ds:0570", "Leg pull in flat bench", ["abs"], ["lower_back"], "bodyweight", 2.5],
+  [
+    "ds:0571",
+    "Lever alternating narrow grip seated row",
+    ["upper_back"],
+    ["biceps", "forearms"],
+    "machine",
+    5
+  ],
+  ["ds:0572", "Lever assisted chin-up", ["lats"], ["biceps", "forearms"], "machine", 5],
+  ["ds:0573", "Lever back extension", ["lower_back"], ["glutes", "hamstrings"], "machine", 5],
+  ["ds:0574", "Lever bent over row", ["upper_back"], ["biceps", "forearms"], "barbell", 2.5],
+  ["ds:0575", "Lever bicep curl", ["biceps"], ["forearms"], "machine", 5],
+  ["ds:0576", "Lever chest press", ["chest"], ["triceps", "front_delts"], "machine", 5],
+  ["ds:0577", "Lever chest press", ["chest"], ["triceps", "front_delts"], "machine", 5],
+  ["ds:0578", "Lever deadlift", ["glutes"], ["hamstrings", "quads"], "machine", 5],
+  [
+    "ds:0579",
+    "Lever front pulldown",
+    ["lats"],
+    ["biceps", "upper_back", "rear_delts"],
+    "machine",
+    5
+  ],
+  ["ds:0580", "Lever gripless shrug", ["upper_back"], ["rear_delts", "forearms"], "machine", 5],
+  ["ds:0581", "Lever high row", ["upper_back"], ["biceps", "rear_delts"], "machine", 5],
+  ["ds:0582", "Lever kneeling leg curl", ["hamstrings"], ["glutes"], "machine", 5],
+  ["ds:0583", "Lever kneeling twist", ["abs"], ["lower_back"], "machine", 5],
+  ["ds:0584", "Lever lateral raise", ["side_delts"], ["upper_back"], "machine", 5],
+  ["ds:0585", "Lever leg extension", ["quads"], [], "machine", 5],
+  ["ds:0586", "Lever lying leg curl", ["hamstrings"], [], "machine", 5],
+  ["ds:0587", "Lever military press", ["front_delts"], ["triceps", "chest"], "machine", 5],
+  ["ds:0588", "Lever narrow grip seated row", ["upper_back"], ["biceps", "forearms"], "machine", 5],
+  [
+    "ds:0589",
+    "Lever one arm bent over row",
+    ["upper_back"],
+    ["biceps", "forearms"],
+    "barbell",
+    2.5
+  ],
+  [
+    "ds:0590",
+    "Lever one arm shoulder press",
+    ["front_delts"],
+    ["triceps", "upper_back"],
+    "machine",
+    5
+  ],
+  ["ds:0591", "Lever overhand triceps dip", ["triceps"], ["chest", "front_delts"], "machine", 5],
+  ["ds:0592", "Lever preacher curl", ["biceps"], ["forearms"], "machine", 5],
+  [
+    "ds:0593",
+    "Lever reverse hyperextension",
+    ["glutes"],
+    ["hamstrings", "lower_back"],
+    "machine",
+    5
+  ],
+  ["ds:0594", "Lever seated calf raise", ["calves"], [], "machine", 5],
+  ["ds:0595", "Lever seated crunch (chest pad)", ["abs"], [], "machine", 5],
+  ["ds:0596", "Lever seated fly", ["chest"], ["front_delts", "upper_back"], "machine", 5],
+  ["ds:0597", "Lever seated hip abduction", ["glutes"], ["hamstrings"], "machine", 5],
+  ["ds:0598", "Lever seated hip adduction", ["adductors"], ["hamstrings", "glutes"], "machine", 5],
+  ["ds:0599", "Lever seated leg curl", ["hamstrings"], ["calves"], "machine", 5],
+  ["ds:0600", "Lever seated leg raise crunch", ["abs"], [], "machine", 5],
+  [
+    "ds:0601",
+    "Lever seated reverse fly (parallel grip)",
+    ["rear_delts"],
+    ["upper_back"],
+    "machine",
+    5
+  ],
+  ["ds:0602", "Lever seated reverse fly", ["rear_delts"], ["upper_back"], "machine", 5],
+  ["ds:0603", "Lever shoulder press", ["front_delts"], ["triceps", "chest"], "machine", 5],
+  ["ds:0604", "Lever shrug", ["upper_back"], ["rear_delts"], "machine", 5],
+  ["ds:0605", "Lever standing calf raise", ["calves"], [], "machine", 5],
+  ["ds:0606", "Lever t bar row", ["upper_back"], ["biceps", "forearms"], "machine", 5],
+  ["ds:0607", "Lever triceps extension", ["triceps"], ["front_delts"], "machine", 5],
+  ["ds:0609", "London bridge", ["upper_back"], ["rear_delts", "biceps", "forearms"], "other", 1],
+  ["ds:0613", "Lying (side) quads stretch", ["quads"], ["hamstrings"], "bodyweight", 2.5],
+  ["ds:0620", "Lying leg raise flat bench", ["abs"], [], "bodyweight", 2.5],
+  ["ds:0624", "March sit (wall)", ["glutes"], ["quads", "hamstrings", "calves"], "bodyweight", 2.5],
+  ["ds:0627", "Mixed grip chin-up", ["lats"], ["biceps", "forearms"], "bodyweight", 2.5],
+  ["ds:0628", "Monster walk", ["glutes"], ["hamstrings", "quads"], "bodyweight", 2.5],
+  [
+    "ds:0631",
+    "Muscle up",
+    ["lats"],
+    ["biceps", "triceps", "rear_delts", "chest"],
+    "bodyweight",
+    2.5
+  ],
+  ["ds:0634", "Negative crunch", ["abs"], [], "bodyweight", 2.5],
+  ["ds:0635", "Oblique crunches floor", ["abs"], [], "bodyweight", 2.5],
+  ["ds:0636", "Olympic barbell hammer curl", ["biceps"], ["forearms"], "barbell", 2.5],
+  ["ds:0637", "Olympic barbell triceps extension", ["triceps"], ["front_delts"], "barbell", 2.5],
+  ["ds:0638", "One arm chin-up", ["lats"], ["biceps", "forearms"], "bodyweight", 2.5],
+  ["ds:0639", "One arm dip", ["triceps"], ["chest", "front_delts"], "bodyweight", 2.5],
+  [
+    "ds:0640",
+    "One arm slam (with medicine ball)",
+    ["abs"],
+    ["front_delts", "upper_back"],
+    "other",
+    1
+  ],
+  ["ds:0641", "Otis up", ["abs"], ["lower_back"], "bodyweight", 2.5],
+  [
+    "ds:0642",
+    "Outside leg kick push-up",
+    ["glutes"],
+    ["quads", "hamstrings", "calves"],
+    "bodyweight",
+    2.5
+  ],
+  ["ds:0643", "Overhead triceps stretch", ["triceps"], ["front_delts"], "bodyweight", 2.5],
+  ["ds:0648", "Power clean", ["hamstrings"], ["glutes", "quads", "calves"], "barbell", 2.5],
+  ["ds:0650", "Pull-in (on stability ball)", ["abs"], [], "other", 1],
+  ["ds:0651", "Pull up (neutral grip)", ["lats"], ["biceps", "forearms"], "bodyweight", 2.5],
+  ["ds:0652", "Pull-up", ["lats"], ["biceps", "forearms"], "bodyweight", 2.5],
+  ["ds:0653", "Push-up (bosu ball)", ["chest"], ["triceps", "front_delts", "abs"], "other", 1],
+  [
+    "ds:0655",
+    "Push-up (on stability ball)",
+    ["chest"],
+    ["triceps", "front_delts", "abs"],
+    "other",
+    1
+  ],
+  [
+    "ds:0656",
+    "Push-up (on stability ball)",
+    ["chest"],
+    ["triceps", "front_delts", "abs"],
+    "other",
+    1
+  ],
+  ["ds:0658", "Push-up (wall) v. 2", ["chest"], ["triceps", "front_delts"], "bodyweight", 2.5],
+  ["ds:0659", "Push-up (wall)", ["chest"], ["triceps", "front_delts"], "bodyweight", 2.5],
+  [
+    "ds:0660",
+    "Push-up close-grip off dumbbell",
+    ["triceps"],
+    ["chest", "front_delts"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:0661",
+    "Push-up inside leg kick",
+    ["glutes"],
+    ["quads", "hamstrings", "calves", "abs"],
+    "bodyweight",
+    2.5
+  ],
+  ["ds:0662", "Push-up", ["chest"], ["triceps", "front_delts"], "bodyweight", 2.5],
+  ["ds:0663", "Push-up medicine ball", ["chest"], ["triceps", "front_delts", "abs"], "other", 1],
+  [
+    "ds:0664",
+    "Push-up to side plank",
+    ["abs"],
+    ["front_delts", "chest", "triceps"],
+    "bodyweight",
+    2.5
+  ],
+  [
+    "ds:0666",
+    "Raise single arm push-up",
+    ["chest"],
+    ["triceps", "front_delts", "abs"],
+    "bodyweight",
+    2.5
+  ],
+  ["ds:0668", "Rear decline bridge", ["glutes"], ["hamstrings", "lower_back"], "bodyweight", 2.5],
+  ["ds:0669", "Rear deltoid stretch", ["rear_delts"], ["upper_back"], "bodyweight", 2.5],
+  ["ds:0670", "Rear pull-up", ["lats"], ["biceps", "forearms"], "bodyweight", 2.5],
+  ["ds:0672", "Reverse dip", ["triceps"], ["chest", "front_delts"], "bodyweight", 2.5],
+  ["ds:0673", "Reverse grip machine lat pulldown", ["lats"], ["biceps", "forearms"], "machine", 5],
+  ["ds:0674", "Reverse grip pull-up", ["lats"], ["biceps", "forearms"], "bodyweight", 2.5],
+  [
+    "ds:0675",
+    "Reverse hyper extension (on stability ball)",
+    ["glutes"],
+    ["hamstrings", "lower_back"],
+    "other",
+    1
+  ],
+  ["ds:0677", "Ring dips", ["triceps"], ["chest", "front_delts"], "bodyweight", 2.5],
+  ["ds:0678", "Rocky pull-up pulldown", ["lats"], ["biceps", "forearms"], "bodyweight", 2.5],
+  ["ds:0680", "Rope climb", ["upper_back"], ["forearms", "biceps", "rear_delts"], "other", 1],
+  ["ds:0687", "Russian twist", ["abs"], [], "bodyweight", 2.5],
+  ["ds:0688", "Scapular pull-up", ["upper_back"], ["biceps", "rear_delts"], "bodyweight", 2.5],
+  ["ds:0689", "Seated leg raise", ["abs"], [], "bodyweight", 2.5],
+  ["ds:0690", "Seated lower back stretch", ["lats"], ["glutes", "hamstrings"], "bodyweight", 2.5],
+  ["ds:0691", "Seated side crunch (wall)", ["abs"], [], "bodyweight", 2.5],
+  [
+    "ds:0696",
+    "Self assisted inverse leg curl (on floor)",
+    ["hamstrings"],
+    ["glutes", "calves"],
+    "bodyweight",
+    2.5
+  ],
+  [
+    "ds:0697",
+    "Self assisted inverse leg curl",
+    ["hamstrings"],
+    ["glutes", "calves"],
+    "bodyweight",
+    2.5
+  ],
+  ["ds:0699", "Shoulder tap push-up", ["chest"], ["triceps", "abs"], "bodyweight", 2.5],
+  ["ds:0705", "Side bridge v. 2", ["abs"], ["glutes"], "bodyweight", 2.5],
+  ["ds:0709", "Side hip (on parallel bars)", ["abs"], [], "bodyweight", 2.5],
+  ["ds:0710", "Side hip abduction", ["glutes"], ["quads"], "bodyweight", 2.5],
+  ["ds:0716", "Side push neck stretch", ["upper_back"], [], "bodyweight", 2.5],
+  ["ds:0717", "Side push-up", ["triceps"], ["front_delts", "chest", "abs"], "bodyweight", 2.5],
+  ["ds:0720", "Side-to-side chin", ["lats"], ["biceps", "forearms"], "bodyweight", 2.5],
+  ["ds:0721", "Side wrist pull stretch", ["forearms"], [], "bodyweight", 2.5],
+  [
+    "ds:0725",
+    "Single arm push-up",
+    ["chest"],
+    ["triceps", "front_delts", "abs"],
+    "bodyweight",
+    2.5
+  ],
+  ["ds:0727", "Single leg calf raise (on a dumbbell)", ["calves"], [], "dumbbell", 2],
+  ["ds:0730", "Single leg platform slide", ["hamstrings"], ["glutes", "quads"], "bodyweight", 2.5],
+  ["ds:0735", "Sit-up v. 2", ["abs"], [], "bodyweight", 2.5],
+  ["ds:0738", "Sled 45° calf press", ["calves"], ["hamstrings"], "machine", 5],
+  ["ds:0739", "Sled 45° leg press", ["quads"], ["glutes"], "machine", 5],
+  [
+    "ds:0740",
+    "Sled 45° leg wide press",
+    ["glutes"],
+    ["quads", "hamstrings", "calves"],
+    "machine",
+    5
+  ],
+  [
+    "ds:0741",
+    "Sled closer hack squat",
+    ["glutes"],
+    ["quads", "hamstrings", "calves"],
+    "machine",
+    5
+  ],
+  ["ds:0742", "Sled forward angled calf raise", ["calves"], ["hamstrings", "glutes"], "machine", 5],
+  ["ds:0743", "Sled hack squat", ["glutes"], ["quads", "hamstrings", "calves"], "machine", 5],
+  ["ds:0744", "Sled lying squat", ["glutes"], ["quads", "hamstrings", "calves"], "machine", 5],
+  ["ds:0746", "Smith back shrug", ["upper_back"], ["rear_delts"], "machine", 5],
+  ["ds:0747", "Smith behind neck press", ["front_delts"], ["triceps", "upper_back"], "machine", 5],
+  ["ds:0748", "Smith bench press", ["chest"], ["triceps", "front_delts"], "machine", 5],
+  [
+    "ds:0749",
+    "Smith bent knee good morning",
+    ["glutes"],
+    ["hamstrings", "lower_back"],
+    "machine",
+    5
+  ],
+  ["ds:0750", "Smith chair squat", ["quads"], ["glutes", "hamstrings", "calves"], "machine", 5],
+  ["ds:0751", "Smith close-grip bench press", ["triceps"], ["chest", "front_delts"], "machine", 5],
+  ["ds:0752", "Smith deadlift", ["glutes"], ["hamstrings", "quads", "lower_back"], "machine", 5],
+  ["ds:0753", "Smith decline bench press", ["chest"], ["triceps", "front_delts"], "machine", 5],
+  [
+    "ds:0754",
+    "Smith decline reverse-grip press",
+    ["chest"],
+    ["triceps", "front_delts"],
+    "machine",
+    5
+  ],
+  ["ds:0755", "Smith hack squat", ["glutes"], ["quads", "hamstrings", "calves"], "machine", 5],
+  ["ds:0756", "Smith hip raise", ["abs"], ["glutes", "hamstrings"], "machine", 5],
+  ["ds:0757", "Smith incline bench press", ["chest"], ["front_delts", "triceps"], "machine", 5],
+  [
+    "ds:0758",
+    "Smith incline reverse-grip press",
+    ["chest"],
+    ["triceps", "front_delts"],
+    "machine",
+    5
+  ],
+  [
+    "ds:0759",
+    "Smith incline shoulder raises",
+    ["abs"],
+    ["front_delts", "upper_back"],
+    "machine",
+    5
+  ],
+  ["ds:0760", "Smith leg press", ["glutes"], ["quads", "hamstrings", "calves"], "machine", 5],
+  ["ds:0761", "Smith narrow row", ["upper_back"], ["biceps", "rear_delts"], "machine", 5],
+  ["ds:0762", "Smith rear delt row", ["rear_delts"], ["upper_back", "biceps"], "machine", 5],
+  ["ds:0763", "Smith reverse calf raises", ["calves"], ["hamstrings"], "machine", 5],
+  ["ds:0764", "Smith reverse-grip press", ["chest"], ["triceps", "front_delts"], "machine", 5],
+  [
+    "ds:0765",
+    "Smith seated shoulder press",
+    ["front_delts"],
+    ["triceps", "upper_back"],
+    "machine",
+    5
+  ],
+  ["ds:0766", "Smith shoulder press", ["front_delts"], ["triceps", "upper_back"], "machine", 5],
+  ["ds:0767", "Smith shrug", ["upper_back"], ["rear_delts"], "machine", 5],
+  ["ds:0768", "Smith single leg split squat", ["quads"], ["glutes", "hamstrings"], "machine", 5],
+  ["ds:0769", "Smith sprint lunge", ["glutes"], ["quads", "hamstrings", "calves"], "machine", 5],
+  ["ds:0770", "Smith squat", ["glutes"], ["quads", "hamstrings", "calves"], "machine", 5],
+  ["ds:0771", "Smith standing back wrist curl", ["forearms"], ["biceps", "triceps"], "machine", 5],
+  [
+    "ds:0772",
+    "Smith standing behind head military press",
+    ["front_delts"],
+    ["triceps", "upper_back"],
+    "machine",
+    5
+  ],
+  ["ds:0773", "Smith standing leg calf raise", ["calves"], ["hamstrings", "glutes"], "machine", 5],
+  [
+    "ds:0774",
+    "Smith standing military press",
+    ["front_delts"],
+    ["triceps", "upper_back"],
+    "machine",
+    5
+  ],
+  ["ds:0775", "Smith upright row", ["side_delts"], ["upper_back", "biceps"], "machine", 5],
+  ["ds:0776", "Snatch pull", ["quads"], ["hamstrings", "glutes", "calves"], "barbell", 2.5],
+  ["ds:0777", "Spell caster", ["abs"], ["lower_back"], "dumbbell", 2],
+  [
+    "ds:0778",
+    "Spider crawl push up",
+    ["glutes"],
+    ["abs", "chest", "front_delts"],
+    "bodyweight",
+    2.5
+  ],
+  ["ds:0786", "Squat jerk", ["quads"], ["glutes", "hamstrings", "calves", "abs"], "barbell", 2.5],
+  [
+    "ds:0788",
+    "Standing behind neck press",
+    ["front_delts"],
+    ["triceps", "upper_back"],
+    "barbell",
+    2.5
+  ],
+  ["ds:0794", "Standing lateral stretch", ["lats"], ["rear_delts", "abs"], "bodyweight", 2.5],
+  ["ds:0795", "Standing single leg curl", ["hamstrings"], ["glutes"], "bodyweight", 2.5],
+  ["ds:0796", "Standing wheel rollerout", ["abs"], ["lower_back", "front_delts"], "other", 1],
+  ["ds:0803", "Superman push-up", ["chest"], ["abs", "front_delts"], "bodyweight", 2.5],
+  ["ds:0805", "Suspended abdominal fallout", ["abs"], [], "bodyweight", 2.5],
+  ["ds:0806", "Suspended push-up", ["chest"], ["triceps", "front_delts", "abs"], "bodyweight", 2.5],
+  ["ds:0807", "Suspended reverse crunch", ["abs"], [], "bodyweight", 2.5],
+  ["ds:0808", "Suspended row", ["upper_back"], ["biceps", "rear_delts"], "bodyweight", 2.5],
+  [
+    "ds:0809",
+    "Suspended split squat",
+    ["quads"],
+    ["glutes", "hamstrings", "calves"],
+    "bodyweight",
+    2.5
+  ],
+  [
+    "ds:0811",
+    "Trap bar deadlift",
+    ["glutes"],
+    ["hamstrings", "quads", "lower_back"],
+    "barbell",
+    2.5
+  ],
+  ["ds:0812", "Triceps dip (bench leg)", ["triceps"], ["chest", "front_delts"], "bodyweight", 2.5],
+  [
+    "ds:0813",
+    "Triceps dip (between benches)",
+    ["triceps"],
+    ["chest", "front_delts"],
+    "bodyweight",
+    2.5
+  ],
+  ["ds:0814", "Triceps dip", ["triceps"], ["chest", "front_delts"], "bodyweight", 2.5],
+  ["ds:0815", "Triceps dips floor", ["triceps"], ["chest", "front_delts"], "bodyweight", 2.5],
+  ["ds:0816", "Triceps press", ["triceps"], ["front_delts"], "bodyweight", 2.5],
+  ["ds:0817", "Triceps stretch", ["triceps"], ["front_delts"], "bodyweight", 2.5],
+  [
+    "ds:0818",
+    "Twin handle parallel grip lat pulldown",
+    ["lats"],
+    ["biceps", "upper_back", "rear_delts"],
+    "cable",
+    2.5
+  ],
+  ["ds:0826", "Vertical leg raise (on parallel bars)", ["abs"], [], "bodyweight", 2.5],
+  ["ds:0830", "Weighted bench dip", ["triceps"], ["chest", "front_delts"], "bodyweight", 2.5],
+  ["ds:0832", "Weighted crunch", ["abs"], [], "bodyweight", 2.5],
+  [
+    "ds:0833",
+    "Weighted donkey calf raise",
+    ["calves"],
+    ["hamstrings", "glutes"],
+    "bodyweight",
+    2.5
+  ],
+  ["ds:0834", "Weighted front raise", ["front_delts"], ["biceps", "forearms"], "bodyweight", 2.5],
+  [
+    "ds:0835",
+    "Weighted hyperextension (on stability ball)",
+    ["lower_back"],
+    ["glutes", "hamstrings"],
+    "bodyweight",
+    2.5
+  ],
+  [
+    "ds:0840",
+    "Weighted overhead crunch (on stability ball)",
+    ["abs"],
+    ["lower_back"],
+    "bodyweight",
+    2.5
+  ],
+  ["ds:0841", "Weighted pull-up", ["lats"], ["biceps", "forearms"], "bodyweight", 2.5],
+  ["ds:0844", "Weighted round arm", ["front_delts"], ["triceps", "upper_back"], "bodyweight", 2.5],
+  ["ds:0845", "Weighted russian twist (legs up)", ["abs"], [], "bodyweight", 2.5],
+  ["ds:0846", "Weighted russian twist", ["abs"], ["lower_back"], "bodyweight", 2.5],
+  [
+    "ds:0847",
+    "Weighted seated bicep curl (on stability ball)",
+    ["biceps"],
+    ["forearms"],
+    "other",
+    1
+  ],
+  [
+    "ds:0849",
+    "Weighted seated twist (on stability ball)",
+    ["abs"],
+    ["lower_back"],
+    "bodyweight",
+    2.5
+  ],
+  ["ds:0850", "Weighted side bend (on stability ball)", ["abs"], ["lower_back"], "bodyweight", 2.5],
+  [
+    "ds:0851",
+    "Weighted sissy squat",
+    ["quads"],
+    ["glutes", "hamstrings", "calves"],
+    "bodyweight",
+    2.5
+  ],
+  ["ds:0852", "Weighted squat", ["glutes"], ["quads", "hamstrings", "calves"], "bodyweight", 2.5],
+  ["ds:0853", "Weighted standing curl", ["biceps"], ["forearms"], "bodyweight", 2.5],
+  [
+    "ds:0854",
+    "Weighted standing hand squeeze",
+    ["forearms"],
+    ["biceps", "triceps"],
+    "bodyweight",
+    2.5
+  ],
+  ["ds:0856", "Weighted svend press", ["chest"], ["front_delts", "triceps"], "bodyweight", 2.5],
+  ["ds:0857", "Wheel rollerout", ["abs"], ["lower_back"], "other", 1],
+  ["ds:0858", "Wind sprints", ["abs"], ["quads", "hamstrings", "calves"], "bodyweight", 2.5],
+  ["ds:0859", "Wrist rollerer", ["forearms"], ["biceps", "triceps"], "bodyweight", 2.5],
+  ["ds:0860", "Cable kickback", ["triceps"], ["front_delts"], "cable", 2.5],
+  ["ds:0861", "Cable seated row", ["upper_back"], ["biceps", "forearms"], "cable", 2.5],
+  ["ds:0862", "Cable twist (up-down)", ["abs"], ["lower_back"], "cable", 2.5],
+  [
+    "ds:0863",
+    "Dumbbell lying external shoulder rotation",
+    ["front_delts"],
+    ["rear_delts", "triceps"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:0864",
+    "Dumbbell upright shoulder external rotation",
+    ["front_delts"],
+    ["rear_delts", "upper_back"],
+    "dumbbell",
+    2
+  ],
+  ["ds:0865", "Lying leg-hip raise", ["abs"], [], "bodyweight", 2.5],
+  ["ds:0866", "Weighted hanging leg-hip raise", ["abs"], ["lower_back"], "bodyweight", 2.5],
+  ["ds:0868", "Cable curl", ["biceps"], ["forearms"], "cable", 2.5],
+  ["ds:0869", "Lever shoulder press v. 2", ["front_delts"], ["triceps", "chest"], "machine", 5],
+  ["ds:0870", "Butt-ups", ["abs"], ["lower_back"], "bodyweight", 2.5],
+  ["ds:0871", "Tuck crunch", ["abs"], [], "bodyweight", 2.5],
+  ["ds:0872", "Reverse crunch", ["abs"], [], "bodyweight", 2.5],
+  ["ds:0873", "Cable reverse crunch", ["abs"], [], "cable", 2.5],
+  ["ds:0874", "Cable standing crunch (with rope attachment)", ["abs"], [], "cable", 2.5],
+  ["ds:0968", "Band alternating biceps curl", ["biceps"], ["forearms"], "other", 1],
+  ["ds:0969", "Band alternating v-up", ["abs"], [], "other", 1],
+  ["ds:0970", "Band assisted pull-up", ["lats"], ["biceps", "forearms"], "other", 1],
+  ["ds:0971", "Band assisted wheel rollerout", ["abs"], ["lower_back"], "other", 1],
+  ["ds:0972", "Band bicycle crunch", ["abs"], [], "other", 1],
+  ["ds:0974", "Band close-grip pulldown", ["lats"], ["biceps", "forearms"], "other", 1],
+  ["ds:0975", "Band close-grip push-up", ["triceps"], ["chest", "front_delts"], "other", 1],
+  ["ds:0976", "Band concentration curl", ["biceps"], ["forearms"], "other", 1],
+  ["ds:0977", "Band front lateral raise", ["side_delts"], ["upper_back"], "other", 1],
+  ["ds:0978", "Band front raise", ["front_delts"], ["triceps", "upper_back"], "other", 1],
+  ["ds:0979", "Band horizontal pallof press", ["abs"], ["glutes"], "other", 1],
+  ["ds:0980", "Band bent-over hip extension", ["glutes"], ["hamstrings", "lower_back"], "other", 1],
+  ["ds:0981", "Band jack knife sit-up", ["abs"], [], "other", 1],
+  ["ds:0983", "Band kneeling one arm pulldown", ["lats"], ["biceps", "upper_back"], "other", 1],
+  ["ds:0984", "Band lying hip internal rotation", ["glutes"], ["hamstrings", "quads"], "other", 1],
+  ["ds:0985", "Band kneeling twisting crunch", ["abs"], [], "other", 1],
+  [
+    "ds:0986",
+    "Band one arm overhead biceps curl",
+    ["biceps"],
+    ["forearms", "rear_delts"],
+    "other",
+    1
+  ],
+  [
+    "ds:0987",
+    "Band one arm single leg split squat",
+    ["quads"],
+    ["glutes", "hamstrings"],
+    "other",
+    1
+  ],
+  [
+    "ds:0988",
+    "Band one arm standing low row",
+    ["upper_back"],
+    ["biceps", "rear_delts"],
+    "other",
+    1
+  ],
+  [
+    "ds:0989",
+    "Band one arm twisting chest press",
+    ["chest"],
+    ["front_delts", "triceps"],
+    "other",
+    1
+  ],
+  [
+    "ds:0990",
+    "Band one arm twisting seated row",
+    ["upper_back"],
+    ["biceps", "rear_delts"],
+    "other",
+    1
+  ],
+  ["ds:0991", "Band pull through", ["glutes"], ["hamstrings", "lower_back"], "other", 1],
+  ["ds:0992", "Band push sit-up", ["abs"], ["front_delts", "chest"], "other", 1],
+  ["ds:0993", "Band reverse fly", ["rear_delts"], ["upper_back"], "other", 1],
+  ["ds:0994", "Band reverse wrist curl", ["forearms"], [], "other", 1],
+  ["ds:0996", "Band seated hip internal rotation", ["glutes"], ["hamstrings", "quads"], "other", 1],
+  ["ds:0997", "Band shoulder press", ["front_delts"], ["triceps", "upper_back"], "other", 1],
+  ["ds:0998", "Band side triceps extension", ["triceps"], ["front_delts"], "other", 1],
+  ["ds:0999", "Band single leg calf raise", ["calves"], [], "other", 1],
+  [
+    "ds:1000",
+    "Band single leg reverse calf raise",
+    ["calves"],
+    ["hamstrings", "glutes"],
+    "other",
+    1
+  ],
+  ["ds:1001", "Band single leg split squat", ["quads"], ["glutes", "hamstrings"], "other", 1],
+  ["ds:1002", "Band lying straight leg raise", ["abs"], [], "other", 1],
+  ["ds:1003", "Band squat row", ["glutes"], ["hamstrings", "quads", "upper_back"], "other", 1],
+  ["ds:1004", "Band squat", ["glutes"], ["quads", "hamstrings", "calves"], "other", 1],
+  ["ds:1005", "Band standing crunch", ["abs"], [], "other", 1],
+  ["ds:1007", "Band standing twisting crunch", ["abs"], [], "other", 1],
+  ["ds:1008", "Band step-up", ["glutes"], ["quads", "hamstrings", "calves"], "other", 1],
+  ["ds:1009", "Band stiff leg deadlift", ["glutes"], ["hamstrings", "lower_back"], "other", 1],
+  ["ds:1010", "Band straight leg deadlift", ["lower_back"], ["hamstrings", "glutes"], "other", 1],
+  ["ds:1011", "Band seated twist", ["abs"], [], "other", 1],
+  [
+    "ds:1012",
+    "Band twisting overhead press",
+    ["front_delts"],
+    ["triceps", "upper_back"],
+    "other",
+    1
+  ],
+  ["ds:1013", "Band underhand pulldown", ["lats"], ["biceps", "forearms"], "other", 1],
+  ["ds:1014", "Band v-up", ["abs"], [], "other", 1],
+  ["ds:1015", "Band vertical pallof press", ["abs"], ["glutes"], "other", 1],
+  ["ds:1016", "Band wrist curl", ["forearms"], ["biceps", "triceps"], "other", 1],
+  ["ds:1017", "Band y-raise", ["side_delts"], ["upper_back"], "other", 1],
+  ["ds:1018", "Band shrug", ["upper_back"], ["rear_delts"], "other", 1],
+  ["ds:1022", "Band standing rear delt row", ["rear_delts"], ["upper_back", "biceps"], "other", 1],
+  [
+    "ds:1023",
+    "Band straight back stiff leg deadlift",
+    ["glutes"],
+    ["hamstrings", "lower_back"],
+    "other",
+    1
+  ],
+  [
+    "ds:1167",
+    "Dynamic chest stretch (male)",
+    ["chest"],
+    ["front_delts", "triceps"],
+    "bodyweight",
+    2.5
+  ],
+  ["ds:1253", "Lever donkey calf raise", ["calves"], ["hamstrings", "glutes"], "machine", 5],
+  ["ds:1254", "Band bench press", ["chest"], ["triceps", "front_delts"], "other", 1],
+  ["ds:1255", "Barbell decline pullover", ["chest"], ["triceps", "front_delts"], "barbell", 2.5],
+  [
+    "ds:1256",
+    "Barbell reverse grip decline bench press",
+    ["chest"],
+    ["triceps", "front_delts"],
+    "barbell",
+    2.5
+  ],
+  [
+    "ds:1257",
+    "Barbell reverse grip incline bench press",
+    ["chest"],
+    ["triceps", "front_delts"],
+    "barbell",
+    2.5
+  ],
+  [
+    "ds:1258",
+    "Barbell wide reverse grip bench press",
+    ["chest"],
+    ["triceps", "front_delts"],
+    "barbell",
+    2.5
+  ],
+  ["ds:1259", "Behind head chest stretch", ["chest"], ["front_delts", "triceps"], "machine", 5],
+  ["ds:1260", "Cable decline one arm press", ["chest"], ["triceps", "front_delts"], "cable", 2.5],
+  ["ds:1261", "Cable decline press", ["chest"], ["triceps", "front_delts"], "cable", 2.5],
+  [
+    "ds:1262",
+    "Cable one arm decline chest fly",
+    ["chest"],
+    ["front_delts", "triceps"],
+    "cable",
+    2.5
+  ],
+  [
+    "ds:1263",
+    "Cable one arm fly on exercise ball",
+    ["chest"],
+    ["front_delts", "triceps"],
+    "cable",
+    2.5
+  ],
+  [
+    "ds:1264",
+    "Cable one arm incline fly on exercise ball",
+    ["chest"],
+    ["front_delts", "triceps"],
+    "cable",
+    2.5
+  ],
+  ["ds:1265", "Cable one arm incline press", ["chest"], ["front_delts", "triceps"], "cable", 2.5],
+  [
+    "ds:1266",
+    "Cable one arm incline press on exercise ball",
+    ["chest"],
+    ["front_delts", "triceps"],
+    "cable",
+    2.5
+  ],
+  [
+    "ds:1267",
+    "Cable one arm press on exercise ball",
+    ["chest"],
+    ["front_delts", "triceps"],
+    "cable",
+    2.5
+  ],
+  ["ds:1268", "Cable press on exercise ball", ["chest"], ["front_delts", "triceps"], "cable", 2.5],
+  [
+    "ds:1269",
+    "Cable standing up straight crossovers",
+    ["chest"],
+    ["front_delts", "triceps"],
+    "cable",
+    2.5
+  ],
+  ["ds:1270", "Cable upper chest crossovers", ["chest"], ["front_delts", "triceps"], "cable", 2.5],
+  ["ds:1271", "Chest and front of shoulder stretch", ["chest"], ["front_delts"], "bodyweight", 2.5],
+  [
+    "ds:1272",
+    "Chest stretch with exercise ball",
+    ["chest"],
+    ["front_delts", "triceps"],
+    "other",
+    1
+  ],
+  ["ds:1273", "Clap push up", ["chest"], ["triceps", "front_delts"], "bodyweight", 2.5],
+  ["ds:1274", "Deep push up", ["chest"], ["triceps", "front_delts"], "dumbbell", 2],
+  ["ds:1275", "Drop push up", ["chest"], ["triceps", "front_delts"], "bodyweight", 2.5],
+  ["ds:1276", "Dumbbell decline one arm fly", ["chest"], ["front_delts"], "dumbbell", 2],
+  [
+    "ds:1277",
+    "Dumbbell fly on exercise ball",
+    ["chest"],
+    ["front_delts", "triceps"],
+    "dumbbell",
+    2
+  ],
+  ["ds:1278", "Dumbbell incline fly on exercise ball", ["chest"], ["front_delts"], "dumbbell", 2],
+  ["ds:1279", "Dumbbell incline one arm fly", ["chest"], ["front_delts", "triceps"], "dumbbell", 2],
+  [
+    "ds:1280",
+    "Dumbbell incline one arm fly on exercise ball",
+    ["chest"],
+    ["front_delts"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:1281",
+    "Dumbbell incline one arm press",
+    ["chest"],
+    ["front_delts", "triceps"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:1282",
+    "Dumbbell incline one arm press on exercise ball",
+    ["chest"],
+    ["front_delts", "triceps"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:1283",
+    "Dumbbell incline press on exercise ball",
+    ["chest"],
+    ["front_delts", "triceps"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:1284",
+    "Dumbbell lying pullover on exercise ball",
+    ["chest"],
+    ["triceps", "front_delts", "upper_back"],
+    "dumbbell",
+    2
+  ],
+  ["ds:1285", "Dumbbell one arm bench fly", ["chest"], ["front_delts"], "dumbbell", 2],
+  [
+    "ds:1286",
+    "Dumbbell one arm chest fly on exercise ball",
+    ["chest"],
+    ["front_delts", "triceps"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:1287",
+    "Dumbbell one arm decline chest press",
+    ["chest"],
+    ["triceps", "front_delts"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:1288",
+    "Dumbbell one arm fly on exercise ball",
+    ["chest"],
+    ["front_delts", "triceps"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:1289",
+    "Dumbbell one arm incline chest press",
+    ["chest"],
+    ["front_delts", "triceps"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:1290",
+    "Dumbbell one arm press on exercise ball",
+    ["chest"],
+    ["front_delts", "triceps", "abs"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:1291",
+    "Dumbbell one arm pullover on exercise ball",
+    ["chest"],
+    ["triceps", "lats", "upper_back"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:1292",
+    "Dumbbell one leg fly on exercise ball",
+    ["chest"],
+    ["front_delts", "triceps"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:1293",
+    "Dumbbell press on exercise ball",
+    ["chest"],
+    ["front_delts", "triceps"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:1294",
+    "Dumbbell pullover hip extension on exercise ball",
+    ["chest"],
+    ["triceps", "front_delts", "abs"],
+    "dumbbell",
+    2
+  ],
+  ["ds:1295", "Dumbbell pullover on exercise ball", ["chest"], ["triceps", "lats"], "dumbbell", 2],
+  [
+    "ds:1296",
+    "Exercise ball pike push up",
+    ["chest"],
+    ["front_delts", "triceps", "abs"],
+    "other",
+    1
+  ],
+  ["ds:1297", "Isometric chest squeeze", ["chest"], ["triceps", "front_delts"], "bodyweight", 2.5],
+  ["ds:1298", "Kettlebell one arm floor press", ["chest"], ["triceps", "front_delts"], "other", 1],
+  ["ds:1299", "Lever incline chest press", ["chest"], ["front_delts", "triceps"], "machine", 5],
+  ["ds:1300", "Lever decline chest press", ["chest"], ["triceps", "front_delts"], "machine", 5],
+  ["ds:1301", "Machine inner chest press", ["chest"], ["triceps", "front_delts"], "machine", 5],
+  ["ds:1302", "Medicine ball chest pass", ["chest"], ["front_delts", "triceps"], "other", 1],
+  [
+    "ds:1303",
+    "Medicine ball chest push from 3 point stance",
+    ["chest"],
+    ["front_delts", "triceps"],
+    "other",
+    1
+  ],
+  [
+    "ds:1304",
+    "Medicine ball chest push multiple response",
+    ["chest"],
+    ["triceps", "front_delts"],
+    "other",
+    1
+  ],
+  [
+    "ds:1305",
+    "Medicine ball chest push single response",
+    ["chest"],
+    ["triceps", "front_delts"],
+    "other",
+    1
+  ],
+  ["ds:1306", "Plyo push up", ["chest"], ["triceps", "front_delts", "abs"], "bodyweight", 2.5],
+  ["ds:1307", "Push up on bosu ball", ["chest"], ["triceps", "front_delts", "abs"], "other", 1],
+  ["ds:1308", "Smith wide grip bench press", ["chest"], ["triceps", "front_delts"], "machine", 5],
+  [
+    "ds:1309",
+    "Smith wide grip decline bench press",
+    ["chest"],
+    ["triceps", "front_delts"],
+    "machine",
+    5
+  ],
+  ["ds:1310", "Weighted drop push up", ["chest"], ["triceps", "front_delts"], "bodyweight", 2.5],
+  ["ds:1311", "Wide hand push up", ["chest"], ["triceps", "front_delts"], "bodyweight", 2.5],
+  [
+    "ds:1312",
+    "Medicine ball chest push with run release",
+    ["chest"],
+    ["triceps", "front_delts", "abs"],
+    "other",
+    1
+  ],
+  ["ds:1313", "Lever unilateral row", ["upper_back"], ["biceps", "forearms"], "machine", 5],
+  [
+    "ds:1314",
+    "Back extension on exercise ball",
+    ["lower_back"],
+    ["glutes", "hamstrings"],
+    "other",
+    1
+  ],
+  ["ds:1316", "Barbell bent arm pullover", ["lats"], ["triceps", "chest"], "barbell", 2.5],
+  [
+    "ds:1317",
+    "Barbell reverse grip incline bench row",
+    ["upper_back"],
+    ["biceps", "forearms"],
+    "barbell",
+    2.5
+  ],
+  ["ds:1318", "Cable incline bench row", ["upper_back"], ["biceps", "rear_delts"], "cable", 2.5],
+  ["ds:1319", "Cable palm rotational row", ["upper_back"], ["biceps", "forearms"], "cable", 2.5],
+  [
+    "ds:1320",
+    "Cable rope crossover seated row",
+    ["upper_back"],
+    ["biceps", "forearms"],
+    "cable",
+    2.5
+  ],
+  [
+    "ds:1321",
+    "Cable rope elevated seated row",
+    ["upper_back"],
+    ["biceps", "forearms"],
+    "cable",
+    2.5
+  ],
+  [
+    "ds:1322",
+    "Cable rope extension incline bench row",
+    ["upper_back"],
+    ["biceps", "rear_delts"],
+    "cable",
+    2.5
+  ],
+  ["ds:1323", "Cable rope seated row", ["upper_back"], ["biceps", "forearms"], "cable", 2.5],
+  ["ds:1324", "Cable upper row", ["upper_back"], ["biceps", "rear_delts"], "cable", 2.5],
+  [
+    "ds:1325",
+    "Cable wide grip rear pulldown behind neck",
+    ["lats"],
+    ["biceps", "upper_back", "rear_delts"],
+    "cable",
+    2.5
+  ],
+  ["ds:1326", "Chin-up", ["lats"], ["biceps", "forearms"], "bodyweight", 2.5],
+  ["ds:1327", "Close grip chin-up", ["lats"], ["biceps", "forearms"], "bodyweight", 2.5],
+  [
+    "ds:1328",
+    "Dumbbell lying rear delt row",
+    ["upper_back"],
+    ["rear_delts", "biceps"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:1329",
+    "Dumbbell palm rotational bent over row",
+    ["upper_back"],
+    ["biceps", "forearms"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:1330",
+    "Dumbbell reverse grip incline bench one arm row",
+    ["upper_back"],
+    ["biceps", "rear_delts"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:1331",
+    "Dumbbell reverse grip incline bench two arm row",
+    ["upper_back"],
+    ["biceps", "forearms"],
+    "dumbbell",
+    2
+  ],
+  ["ds:1332", "Exercise ball alternating arm ups", ["lats"], ["rear_delts", "abs"], "other", 1],
+  [
+    "ds:1333",
+    "Exercise ball back extension with arms extended",
+    ["lower_back"],
+    ["glutes", "hamstrings"],
+    "other",
+    1
+  ],
+  [
+    "ds:1334",
+    "Exercise ball back extension with hands behind head",
+    ["lower_back"],
+    ["glutes", "hamstrings"],
+    "other",
+    1
+  ],
+  [
+    "ds:1335",
+    "Exercise ball back extension with knees off ground",
+    ["lower_back"],
+    ["glutes", "hamstrings"],
+    "other",
+    1
+  ],
+  [
+    "ds:1336",
+    "Exercise ball back extension with rotation",
+    ["lower_back"],
+    ["glutes", "hamstrings"],
+    "other",
+    1
+  ],
+  ["ds:1338", "Exercise ball hug", ["lower_back"], ["front_delts", "chest"], "other", 1],
+  ["ds:1339", "Exercise ball lat stretch", ["lats"], ["rear_delts", "triceps"], "other", 1],
+  [
+    "ds:1341",
+    "Exercise ball lower back stretch (pyramid)",
+    ["lats"],
+    ["glutes", "hamstrings"],
+    "other",
+    1
+  ],
+  [
+    "ds:1342",
+    "Exercise ball lying side lat stretch",
+    ["lats"],
+    ["rear_delts", "triceps"],
+    "other",
+    1
+  ],
+  ["ds:1343", "Exercise ball prone leg raise", ["lower_back"], ["abs", "glutes"], "other", 1],
+  [
+    "ds:1344",
+    "Ez bar reverse grip bent over row",
+    ["upper_back"],
+    ["biceps", "forearms"],
+    "barbell",
+    2.5
+  ],
+  ["ds:1345", "Kettlebell two arm row", ["upper_back"], ["biceps", "forearms"], "other", 1],
+  ["ds:1346", "Kneeling lat stretch", ["lats"], ["rear_delts", "triceps"], "bodyweight", 2.5],
+  [
+    "ds:1347",
+    "Lever one arm lateral wide pulldown",
+    ["lats"],
+    ["biceps", "upper_back", "rear_delts"],
+    "machine",
+    5
+  ],
+  [
+    "ds:1348",
+    "Lever reverse grip vertical row",
+    ["upper_back"],
+    ["biceps", "forearms"],
+    "machine",
+    5
+  ],
+  ["ds:1349", "Lever reverse t-bar row", ["upper_back"], ["biceps", "forearms"], "machine", 5],
+  ["ds:1350", "Lever seated row", ["upper_back"], ["biceps", "forearms"], "machine", 5],
+  ["ds:1351", "Lever t-bar reverse grip row", ["upper_back"], ["biceps", "forearms"], "machine", 5],
+  ["ds:1352", "Lower back curl", ["lower_back"], ["glutes", "hamstrings"], "bodyweight", 2.5],
+  [
+    "ds:1353",
+    "Medicine ball catch and overhead throw",
+    ["lats"],
+    ["rear_delts", "abs"],
+    "other",
+    1
+  ],
+  ["ds:1354", "Medicine ball overhead slam", ["upper_back"], ["rear_delts", "abs"], "other", 1],
+  ["ds:1355", "One arm against wall", ["lats"], ["rear_delts", "triceps"], "bodyweight", 2.5],
+  [
+    "ds:1356",
+    "Lever one arm lateral high row",
+    ["upper_back"],
+    ["biceps", "rear_delts"],
+    "machine",
+    5
+  ],
+  ["ds:1358", "Side lying floor stretch", ["lats"], ["abs", "glutes"], "bodyweight", 2.5],
+  ["ds:1359", "Smith bent over row", ["upper_back"], ["biceps", "forearms"], "machine", 5],
+  ["ds:1360", "Smith one arm row", ["upper_back"], ["biceps", "forearms"], "machine", 5],
+  [
+    "ds:1361",
+    "Smith reverse grip bent over row",
+    ["upper_back"],
+    ["biceps", "forearms"],
+    "machine",
+    5
+  ],
+  ["ds:1362", "Sphinx", ["lower_back"], ["glutes", "hamstrings"], "bodyweight", 2.5],
+  ["ds:1363", "Spine stretch", ["lower_back"], ["hamstrings", "glutes"], "bodyweight", 2.5],
+  ["ds:1364", "Standing pelvic tilt", ["lower_back"], ["abs"], "bodyweight", 2.5],
+  ["ds:1365", "Upper back stretch", ["upper_back"], ["rear_delts"], "bodyweight", 2.5],
+  ["ds:1366", "Upward facing dog", ["lower_back"], ["front_delts", "chest"], "bodyweight", 2.5],
+  ["ds:1367", "Wide grip rear pull-up", ["lats"], ["biceps", "forearms"], "bodyweight", 2.5],
+  ["ds:1368", "Ankle circles", ["calves"], [], "bodyweight", 2.5],
+  ["ds:1369", "Band two legs calf raise - (band under both legs) v. 2", ["calves"], [], "other", 1],
+  ["ds:1370", "Barbell floor calf raise", ["calves"], ["hamstrings"], "barbell", 2.5],
+  ["ds:1371", "Barbell seated calf raise", ["calves"], ["hamstrings"], "barbell", 2.5],
+  ["ds:1372", "Barbell standing calf raise", ["calves"], ["hamstrings", "glutes"], "barbell", 2.5],
+  ["ds:1373", "Bodyweight standing calf raise", ["calves"], [], "bodyweight", 2.5],
+  [
+    "ds:1374",
+    "Box jump down with one leg stabilization",
+    ["calves"],
+    ["quads", "hamstrings", "glutes"],
+    "bodyweight",
+    2.5
+  ],
+  ["ds:1375", "Cable standing calf raise", ["calves"], ["hamstrings", "glutes"], "cable", 2.5],
+  ["ds:1376", "Cable standing one leg calf raise", ["calves"], [], "cable", 2.5],
+  [
+    "ds:1377",
+    "Calf stretch with hands against wall",
+    ["calves"],
+    ["hamstrings"],
+    "bodyweight",
+    2.5
+  ],
+  ["ds:1378", "Calf stretch with rope", ["calves"], ["hamstrings"], "other", 1],
+  ["ds:1379", "Dumbbell seated calf raise", ["calves"], ["hamstrings"], "dumbbell", 2],
+  [
+    "ds:1380",
+    "Dumbbell seated one leg calf raise - hammer grip",
+    ["calves"],
+    ["hamstrings", "glutes"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:1381",
+    "Dumbbell seated one leg calf raise - palm up",
+    ["calves"],
+    ["hamstrings", "glutes"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:1382",
+    "Exercise ball on the wall calf raise",
+    ["calves"],
+    ["hamstrings", "quads"],
+    "dumbbell",
+    2
+  ],
+  ["ds:1383", "Hack calf raise", ["calves"], ["hamstrings", "glutes"], "machine", 5],
+  ["ds:1384", "Hack one leg calf raise", ["calves"], ["hamstrings", "glutes"], "machine", 5],
+  [
+    "ds:1385",
+    "Lever seated squat calf raise on leg press machine",
+    ["calves"],
+    ["quads", "hamstrings", "glutes"],
+    "machine",
+    5
+  ],
+  ["ds:1386", "One leg donkey calf raise", ["calves"], ["hamstrings", "glutes"], "bodyweight", 2.5],
+  ["ds:1387", "One leg floor calf raise", ["calves"], [], "bodyweight", 2.5],
+  ["ds:1388", "Peroneals stretch", ["calves"], [], "other", 1],
+  ["ds:1389", "Posterior tibialis stretch", ["calves"], ["hamstrings", "quads"], "other", 1],
+  ["ds:1390", "Seated calf stretch (male)", ["calves"], ["hamstrings"], "bodyweight", 2.5],
+  ["ds:1391", "Sled calf press on leg press", ["calves"], ["hamstrings", "quads"], "machine", 5],
+  [
+    "ds:1392",
+    "Sled one leg calf press on leg press",
+    ["calves"],
+    ["hamstrings", "glutes"],
+    "machine",
+    5
+  ],
+  ["ds:1393", "Smith one leg floor calf raise", ["calves"], ["hamstrings", "glutes"], "machine", 5],
+  ["ds:1394", "Smith reverse calf raises", ["calves"], ["hamstrings"], "machine", 5],
+  ["ds:1395", "Smith seated one leg calf raise", ["calves"], ["hamstrings"], "machine", 5],
+  ["ds:1396", "Smith toe raise", ["calves"], [], "machine", 5],
+  ["ds:1397", "Standing calves", ["calves"], ["hamstrings", "glutes"], "bodyweight", 2.5],
+  [
+    "ds:1398",
+    "Standing calves calf stretch",
+    ["calves"],
+    ["hamstrings", "glutes"],
+    "bodyweight",
+    2.5
+  ],
+  ["ds:1399", "Bench dip on floor", ["triceps"], ["chest", "front_delts"], "bodyweight", 2.5],
+  [
+    "ds:1401",
+    "Muscle-up (on vertical bar)",
+    ["lats"],
+    ["biceps", "triceps", "forearms"],
+    "bodyweight",
+    2.5
+  ],
+  ["ds:1403", "Neck side stretch", ["upper_back"], [], "bodyweight", 2.5],
+  ["ds:1405", "Back pec stretch", ["lats"], ["rear_delts", "chest"], "bodyweight", 2.5],
+  [
+    "ds:1407",
+    "Calf push stretch with hands against wall",
+    ["calves"],
+    ["hamstrings"],
+    "bodyweight",
+    2.5
+  ],
+  ["ds:1408", "Band hip lift", ["glutes"], ["hamstrings", "quads"], "other", 1],
+  ["ds:1409", "Barbell glute bridge", ["glutes"], ["hamstrings", "lower_back"], "barbell", 2.5],
+  [
+    "ds:1410",
+    "Barbell lateral lunge",
+    ["glutes"],
+    ["quads", "hamstrings", "calves"],
+    "barbell",
+    2.5
+  ],
+  [
+    "ds:1411",
+    "Barbell palms down wrist curl over a bench",
+    ["forearms"],
+    ["biceps"],
+    "barbell",
+    2.5
+  ],
+  [
+    "ds:1412",
+    "Barbell palms up wrist curl over a bench",
+    ["forearms"],
+    ["biceps", "front_delts"],
+    "barbell",
+    2.5
+  ],
+  ["ds:1413", "Cable reverse one arm curl", ["biceps"], ["forearms"], "cable", 2.5],
+  ["ds:1414", "Dumbbell one arm reverse preacher curl", ["biceps"], ["forearms"], "dumbbell", 2],
+  [
+    "ds:1415",
+    "Dumbbell one arm seated neutral wrist curl",
+    ["forearms"],
+    ["biceps"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:1416",
+    "Exercise ball one leg prone lower body rotation",
+    ["glutes"],
+    ["hamstrings", "quads", "abs"],
+    "other",
+    1
+  ],
+  [
+    "ds:1417",
+    "Exercise ball one legged diagonal kick hamstring curl",
+    ["glutes"],
+    ["hamstrings", "calves"],
+    "other",
+    1
+  ],
+  ["ds:1418", "Hug keens to chest", ["glutes"], ["hamstrings", "quads"], "bodyweight", 2.5],
+  ["ds:1419", "Iron cross stretch", ["glutes"], ["hamstrings", "quads"], "bodyweight", 2.5],
+  ["ds:1420", "Kneeling jump squat", ["glutes"], ["quads", "hamstrings", "calves"], "barbell", 2.5],
+  [
+    "ds:1421",
+    "Modified push up to lower arms",
+    ["forearms"],
+    ["triceps", "chest", "front_delts"],
+    "bodyweight",
+    2.5
+  ],
+  ["ds:1422", "Pelvic tilt into bridge", ["glutes"], ["hamstrings", "abs"], "bodyweight", 2.5],
+  [
+    "ds:1423",
+    "Reverse hyper on flat bench",
+    ["glutes"],
+    ["hamstrings", "lower_back"],
+    "bodyweight",
+    2.5
+  ],
+  ["ds:1424", "Seated glute stretch", ["glutes"], ["hamstrings"], "bodyweight", 2.5],
+  [
+    "ds:1425",
+    "Sled 45 degrees one leg press",
+    ["glutes"],
+    ["quads", "hamstrings", "calves"],
+    "machine",
+    5
+  ],
+  ["ds:1426", "Smith seated wrist curl", ["forearms"], ["biceps"], "machine", 5],
+  ["ds:1427", "Straight leg outer hip abductor", ["glutes"], ["hamstrings"], "bodyweight", 2.5],
+  ["ds:1428", "Wrist circles", ["forearms"], [], "bodyweight", 2.5],
+  ["ds:1429", "Wide grip pull-up", ["lats"], ["biceps", "forearms"], "bodyweight", 2.5],
+  [
+    "ds:1430",
+    "Chest dip (on dip-pull-up cage)",
+    ["chest"],
+    ["triceps", "front_delts"],
+    "bodyweight",
+    2.5
+  ],
+  ["ds:1431", "Assisted standing chin-up", ["lats"], ["biceps", "forearms"], "machine", 5],
+  ["ds:1432", "Assisted standing pull-up", ["lats"], ["biceps", "forearms"], "machine", 5],
+  [
+    "ds:1433",
+    "Smith front squat (clean grip)",
+    ["glutes"],
+    ["quads", "hamstrings", "calves", "abs"],
+    "machine",
+    5
+  ],
+  ["ds:1434", "Smith low bar squat", ["glutes"], ["quads", "hamstrings", "calves"], "machine", 5],
+  [
+    "ds:1435",
+    "Barbell low bar squat",
+    ["glutes"],
+    ["quads", "hamstrings", "calves"],
+    "barbell",
+    2.5
+  ],
+  [
+    "ds:1436",
+    "Barbell high bar squat",
+    ["glutes"],
+    ["quads", "hamstrings", "calves", "abs"],
+    "barbell",
+    2.5
+  ],
+  ["ds:1437", "Dumbbell finger curls", ["forearms"], [], "dumbbell", 2],
+  [
+    "ds:1438",
+    "Kettlebell seated two arm military press",
+    ["front_delts"],
+    ["triceps", "upper_back"],
+    "other",
+    1
+  ],
+  [
+    "ds:1439",
+    "Lever gripless shrug v. 2",
+    ["upper_back"],
+    ["rear_delts", "forearms"],
+    "machine",
+    5
+  ],
+  [
+    "ds:1441",
+    "Dumbbell over bench one arm reverse wrist curl",
+    ["forearms"],
+    ["biceps"],
+    "dumbbell",
+    2
+  ],
+  ["ds:1451", "Lever seated dip", ["triceps"], ["chest", "front_delts"], "machine", 5],
+  ["ds:1452", "Lever seated crunch", ["abs"], [], "machine", 5],
+  [
+    "ds:1456",
+    "Barbell standing close grip military press",
+    ["front_delts"],
+    ["triceps", "upper_back"],
+    "barbell",
+    2.5
+  ],
+  [
+    "ds:1457",
+    "Barbell standing wide military press",
+    ["front_delts"],
+    ["triceps", "upper_back"],
+    "barbell",
+    2.5
+  ],
+  ["ds:1458", "Ez barbell seated curls", ["biceps"], ["forearms"], "barbell", 2.5],
+  [
+    "ds:1459",
+    "Dumbbell romanian deadlift",
+    ["glutes"],
+    ["hamstrings", "lower_back"],
+    "dumbbell",
+    2
+  ],
+  ["ds:1460", "Walking lunge", ["glutes"], ["quads", "hamstrings", "calves"], "bodyweight", 2.5],
+  ["ds:1466", "Twist hip lift", ["glutes"], ["abs", "hamstrings"], "bodyweight", 2.5],
+  ["ds:1467", "Push-up on lower arms", ["triceps"], ["chest", "front_delts"], "bodyweight", 2.5],
+  ["ds:1468", "Crab twist toe touch", ["abs"], [], "bodyweight", 2.5],
+  ["ds:1471", "Inchworm", ["abs"], ["front_delts", "hamstrings"], "bodyweight", 2.5],
+  ["ds:1472", "Forward jump", ["quads"], ["calves", "hamstrings", "glutes"], "bodyweight", 2.5],
+  ["ds:1473", "Backward jump", ["quads"], ["hamstrings", "glutes", "calves"], "bodyweight", 2.5],
+  ["ds:1476", "One leg squat", ["glutes"], ["quads", "hamstrings", "calves"], "bodyweight", 2.5],
+  [
+    "ds:1479",
+    "Lever incline chest press v. 2",
+    ["chest"],
+    ["triceps", "front_delts"],
+    "machine",
+    5
+  ],
+  ["ds:1489", "Sissy squat", ["quads"], ["calves", "glutes"], "bodyweight", 2.5],
+  ["ds:1490", "Standing calf raise (on a staircase)", ["calves"], [], "bodyweight", 2.5],
+  ["ds:1494", "Butterfly yoga pose", ["adductors"], ["hamstrings"], "bodyweight", 2.5],
+  ["ds:1495", "Oblique crunch v. 2", ["abs"], [], "bodyweight", 2.5],
+  ["ds:1496", "Sledge hammer", ["abs"], ["forearms", "front_delts"], "other", 1],
+  ["ds:1511", "Hamstring stretch", ["hamstrings"], ["glutes"], "bodyweight", 2.5],
+  ["ds:1512", "All fours squad stretch", ["quads"], ["hamstrings", "glutes"], "bodyweight", 2.5],
+  [
+    "ds:1545",
+    "Barbell full zercher squat",
+    ["glutes"],
+    ["quads", "hamstrings", "calves", "abs"],
+    "barbell",
+    2.5
+  ],
+  ["ds:1548", "Chair leg extended stretch", ["quads"], ["hamstrings", "calves"], "bodyweight", 2.5],
+  ["ds:1559", "Exercise ball hip flexor stretch", ["glutes"], ["quads", "hamstrings"], "other", 1],
+  [
+    "ds:1560",
+    "Exercise ball seated hamstring stretch",
+    ["hamstrings"],
+    ["glutes", "lower_back"],
+    "other",
+    1
+  ],
+  [
+    "ds:1564",
+    "Intermediate hip flexor and quad stretch",
+    ["quads"],
+    ["hamstrings", "glutes"],
+    "other",
+    1
+  ],
+  ["ds:1576", "Leg up hamstring stretch", ["hamstrings"], ["glutes"], "bodyweight", 2.5],
+  ["ds:1582", "Reclining big toe pose with rope", ["hamstrings"], ["calves", "glutes"], "other", 1],
+  ["ds:1585", "Runners stretch", ["hamstrings"], ["calves", "quads"], "bodyweight", 2.5],
+  [
+    "ds:1587",
+    "Seated wide angle pose sequence",
+    ["hamstrings"],
+    ["quads", "calves"],
+    "bodyweight",
+    2.5
+  ],
+  [
+    "ds:1599",
+    "Standing hamstring and calf stretch with strap",
+    ["hamstrings"],
+    ["calves"],
+    "other",
+    1
+  ],
+  [
+    "ds:1604",
+    "World greatest stretch",
+    ["hamstrings"],
+    ["glutes", "quads", "calves"],
+    "bodyweight",
+    2.5
+  ],
+  ["ds:1614", "Lever preacher curl v. 2", ["biceps"], ["forearms"], "machine", 5],
+  ["ds:1615", "Lever hammer grip preacher curl", ["biceps"], ["forearms"], "machine", 5],
+  ["ds:1616", "Lever reverse grip preacher curl", ["biceps"], ["forearms"], "machine", 5],
+  [
+    "ds:1617",
+    "Dumbbell decline one arm hammer press",
+    ["triceps"],
+    ["chest", "front_delts"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:1618",
+    "Dumbbell incline hammer press on exercise ball",
+    ["triceps"],
+    ["chest", "front_delts"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:1619",
+    "Dumbbell incline one arm hammer press",
+    ["triceps"],
+    ["front_delts", "chest"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:1620",
+    "Dumbbell incline one arm hammer press on exercise ball",
+    ["triceps"],
+    ["front_delts", "chest"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:1621",
+    "Dumbbell one arm hammer press on exercise ball",
+    ["triceps"],
+    ["front_delts", "chest"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:1622",
+    "Dumbbell one arm reverse grip press",
+    ["chest"],
+    ["triceps", "front_delts"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:1623",
+    "Dumbbell palms in incline bench press",
+    ["triceps"],
+    ["chest", "front_delts"],
+    "dumbbell",
+    2
+  ],
+  ["ds:1624", "Dumbbell reverse bench press", ["chest"], ["triceps", "front_delts"], "dumbbell", 2],
+  [
+    "ds:1625",
+    "Smith machine decline close grip bench press",
+    ["triceps"],
+    ["chest", "front_delts"],
+    "machine",
+    5
+  ],
+  [
+    "ds:1626",
+    "Smith machine reverse decline close grip bench press",
+    ["chest"],
+    ["triceps", "front_delts"],
+    "machine",
+    5
+  ],
+  ["ds:1627", "Ez barbell close grip preacher curl", ["biceps"], ["forearms"], "barbell", 2.5],
+  ["ds:1628", "Ez barbell spider curl", ["biceps"], ["forearms"], "barbell", 2.5],
+  ["ds:1629", "Barbell standing wide grip biceps curl", ["biceps"], ["forearms"], "barbell", 2.5],
+  ["ds:1630", "Cable close grip curl", ["biceps"], ["forearms"], "cable", 2.5],
+  ["ds:1631", "Cable concentration curl", ["biceps"], ["forearms"], "cable", 2.5],
+  ["ds:1632", "Cable drag curl", ["biceps"], ["forearms"], "cable", 2.5],
+  ["ds:1633", "Cable one arm preacher curl", ["biceps"], ["forearms"], "cable", 2.5],
+  ["ds:1634", "Cable lying bicep curl", ["biceps"], ["forearms"], "cable", 2.5],
+  ["ds:1635", "Cable one arm reverse preacher curl", ["biceps"], ["forearms"], "cable", 2.5],
+  ["ds:1636", "Cable overhead curl", ["biceps"], ["forearms", "rear_delts"], "cable", 2.5],
+  [
+    "ds:1637",
+    "Cable overhead curl on exercise ball",
+    ["biceps"],
+    ["forearms", "rear_delts"],
+    "cable",
+    2.5
+  ],
+  ["ds:1638", "Cable pulldown bicep curl", ["biceps"], ["forearms"], "cable", 2.5],
+  ["ds:1639", "Cable rope hammer preacher curl", ["biceps"], ["forearms"], "cable", 2.5],
+  ["ds:1640", "Cable rope one arm hammer preacher curl", ["biceps"], ["forearms"], "cable", 2.5],
+  ["ds:1641", "Cable seated curl", ["biceps"], ["forearms"], "cable", 2.5],
+  ["ds:1642", "Cable seated one arm concentration curl", ["biceps"], ["forearms"], "cable", 2.5],
+  ["ds:1643", "Cable seated overhead curl", ["biceps"], ["forearms", "rear_delts"], "cable", 2.5],
+  ["ds:1644", "Cable squatting curl", ["biceps"], ["forearms"], "cable", 2.5],
+  ["ds:1645", "Cable two arm curl on incline bench", ["biceps"], ["forearms"], "cable", 2.5],
+  ["ds:1646", "Dumbbell alternate hammer preacher curl", ["biceps"], ["forearms"], "dumbbell", 2],
+  ["ds:1647", "Dumbbell alternate preacher curl", ["biceps"], ["forearms"], "dumbbell", 2],
+  ["ds:1648", "Dumbbell alternate seated hammer curl", ["biceps"], ["forearms"], "dumbbell", 2],
+  [
+    "ds:1649",
+    "Dumbbell alternating bicep curl with leg raised on exercise ball",
+    ["biceps"],
+    ["forearms", "rear_delts"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:1650",
+    "Dumbbell alternating seated bicep curl on exercise ball",
+    ["biceps"],
+    ["forearms"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:1651",
+    "Dumbbell bicep curl lunge with bowling motion",
+    ["biceps"],
+    ["forearms", "rear_delts"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:1652",
+    "Dumbbell bicep curl on exercise ball with leg raised",
+    ["biceps"],
+    ["forearms", "rear_delts"],
+    "dumbbell",
+    2
+  ],
+  ["ds:1653", "Dumbbell bicep curl with stork stance", ["biceps"], ["forearms"], "dumbbell", 2],
+  ["ds:1654", "Dumbbell biceps curl reverse", ["biceps"], ["forearms"], "dumbbell", 2],
+  ["ds:1655", "Dumbbell biceps curl squat", ["biceps"], ["forearms"], "dumbbell", 2],
+  [
+    "ds:1656",
+    "Dumbbell biceps curl v sit on bosu ball",
+    ["biceps"],
+    ["forearms", "rear_delts"],
+    "dumbbell",
+    2
+  ],
+  ["ds:1657", "Dumbbell cross body hammer curl v. 2", ["biceps"], ["forearms"], "dumbbell", 2],
+  ["ds:1658", "Dumbbell lunge with bicep curl", ["biceps"], ["quads", "hamstrings"], "dumbbell", 2],
+  ["ds:1659", "Dumbbell hammer curl on exercise ball", ["biceps"], ["forearms"], "dumbbell", 2],
+  [
+    "ds:1660",
+    "Dumbbell kneeling bicep curl exercise ball",
+    ["biceps"],
+    ["forearms"],
+    "dumbbell",
+    2
+  ],
+  ["ds:1661", "Dumbbell lying supine biceps curl", ["biceps"], ["forearms"], "dumbbell", 2],
+  ["ds:1662", "Dumbbell lying wide curl", ["biceps"], ["forearms"], "dumbbell", 2],
+  ["ds:1663", "Dumbbell one arm hammer preacher curl", ["biceps"], ["forearms"], "dumbbell", 2],
+  ["ds:1664", "Dumbbell high curl", ["biceps"], ["forearms"], "dumbbell", 2],
+  ["ds:1665", "Dumbbell one arm prone curl", ["biceps"], ["forearms"], "dumbbell", 2],
+  ["ds:1666", "Dumbbell one arm prone hammer curl", ["biceps"], ["forearms"], "dumbbell", 2],
+  ["ds:1667", "Dumbbell one arm reverse spider curl", ["biceps"], ["forearms"], "dumbbell", 2],
+  [
+    "ds:1668",
+    "Dumbbell one arm seated bicep curl on exercise ball",
+    ["biceps"],
+    ["forearms"],
+    "dumbbell",
+    2
+  ],
+  ["ds:1669", "Dumbbell one arm seated hammer curl", ["biceps"], ["forearms"], "dumbbell", 2],
+  ["ds:1670", "Dumbbell one arm standing curl", ["biceps"], ["forearms"], "dumbbell", 2],
+  ["ds:1671", "Dumbbell one arm standing hammer curl", ["biceps"], ["forearms"], "dumbbell", 2],
+  ["ds:1672", "Dumbbell one arm zottman preacher curl", ["biceps"], ["forearms"], "dumbbell", 2],
+  ["ds:1673", "Dumbbell preacher curl over exercise ball", ["biceps"], ["forearms"], "dumbbell", 2],
+  ["ds:1674", "Dumbbell prone incline hammer curl", ["biceps"], ["forearms"], "dumbbell", 2],
+  ["ds:1675", "Dumbbell reverse spider curl", ["biceps"], ["forearms"], "dumbbell", 2],
+  [
+    "ds:1676",
+    "Dumbbell seated alternate hammer curl on exercise ball",
+    ["biceps"],
+    ["forearms"],
+    "dumbbell",
+    2
+  ],
+  ["ds:1677", "Dumbbell seated bicep curl", ["biceps"], ["forearms"], "dumbbell", 2],
+  ["ds:1678", "Dumbbell seated hammer curl", ["biceps"], ["forearms"], "dumbbell", 2],
+  [
+    "ds:1679",
+    "Dumbbell seated one arm bicep curl on exercise ball with leg raised",
+    ["biceps"],
+    ["forearms", "rear_delts"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:1680",
+    "Dumbbell standing one arm curl over incline bench",
+    ["biceps"],
+    ["forearms"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:1682",
+    "Ez bar seated close grip concentration curl",
+    ["biceps"],
+    ["forearms"],
+    "barbell",
+    2.5
+  ],
+  ["ds:1683", "Smith machine bicep curl", ["biceps"], ["forearms"], "machine", 5],
+  [
+    "ds:1684",
+    "Dumbbell step up single leg balance with bicep curl",
+    ["biceps"],
+    ["quads", "glutes", "hamstrings"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:1685",
+    "Squat to overhead reach",
+    ["quads"],
+    ["glutes", "hamstrings", "abs"],
+    "bodyweight",
+    2.5
+  ],
+  [
+    "ds:1686",
+    "Squat to overhead reach with twist",
+    ["quads"],
+    ["glutes", "hamstrings", "abs"],
+    "bodyweight",
+    2.5
+  ],
+  [
+    "ds:1687",
+    "Posterior step to overhead reach",
+    ["abs"],
+    ["glutes", "hamstrings", "quads", "front_delts"],
+    "bodyweight",
+    2.5
+  ],
+  ["ds:1688", "Lunge with twist", ["abs"], ["quads", "glutes", "hamstrings"], "bodyweight", 2.5],
+  ["ds:1689", "Push and pull bodyweight", ["chest"], ["triceps", "front_delts"], "bodyweight", 2.5],
+  ["ds:1700", "Dumbbell push press", ["front_delts"], ["triceps", "abs"], "dumbbell", 2],
+  [
+    "ds:1701",
+    "Medicine ball close grip push up",
+    ["triceps"],
+    ["chest", "front_delts"],
+    "other",
+    1
+  ],
+  ["ds:1705", "Squat on bosu ball", ["quads"], ["glutes", "hamstrings", "calves"], "other", 1],
+  ["ds:1707", "Prone twist on stability ball", ["abs"], ["lower_back"], "other", 1],
+  ["ds:1708", "Assisted lying calves stretch", ["calves"], ["hamstrings"], "machine", 5],
+  ["ds:1709", "Assisted lying glutes stretch", ["glutes"], ["hamstrings"], "machine", 5],
+  [
+    "ds:1710",
+    "Assisted lying gluteus and piriformis stretch",
+    ["glutes"],
+    ["hamstrings"],
+    "machine",
+    5
+  ],
+  [
+    "ds:1712",
+    "Assisted side lying adductor stretch",
+    ["adductors"],
+    ["hamstrings", "glutes"],
+    "machine",
+    5
+  ],
+  [
+    "ds:1713",
+    "Assisted prone lying quads stretch",
+    ["quads"],
+    ["hamstrings", "glutes"],
+    "machine",
+    5
+  ],
+  ["ds:1714", "Assisted prone rectus femoris stretch", ["abs"], ["quads"], "machine", 5],
+  [
+    "ds:1716",
+    "Assisted seated pectoralis major stretch with stability ball",
+    ["chest"],
+    ["front_delts", "triceps"],
+    "machine",
+    5
+  ],
+  [
+    "ds:1717",
+    "Cable squat row (with rope attachment)",
+    ["lats"],
+    ["biceps", "upper_back", "rear_delts"],
+    "cable",
+    2.5
+  ],
+  [
+    "ds:1718",
+    "Barbell seated close grip behind neck triceps extension",
+    ["triceps"],
+    ["front_delts"],
+    "barbell",
+    2.5
+  ],
+  [
+    "ds:1719",
+    "Barbell incline close grip bench press",
+    ["triceps"],
+    ["chest", "front_delts"],
+    "barbell",
+    2.5
+  ],
+  [
+    "ds:1720",
+    "Barbell lying back of the head tricep extension",
+    ["triceps"],
+    ["front_delts"],
+    "barbell",
+    2.5
+  ],
+  ["ds:1721", "Barbell reverse grip skullcrusher", ["triceps"], ["forearms"], "barbell", 2.5],
+  [
+    "ds:1722",
+    "Cable high pulley overhead tricep extension",
+    ["triceps"],
+    ["front_delts"],
+    "cable",
+    2.5
+  ],
+  ["ds:1723", "Cable one arm tricep pushdown", ["triceps"], ["forearms"], "cable", 2.5],
+  [
+    "ds:1724",
+    "Cable rope high pulley overhead tricep extension",
+    ["triceps"],
+    ["front_delts"],
+    "cable",
+    2.5
+  ],
+  ["ds:1725", "Cable rope incline tricep extension", ["triceps"], ["front_delts"], "cable", 2.5],
+  [
+    "ds:1726",
+    "Cable rope lying on floor tricep extension",
+    ["triceps"],
+    ["front_delts"],
+    "cable",
+    2.5
+  ],
+  [
+    "ds:1727",
+    "Cable standing reverse grip one arm overhead tricep extension",
+    ["triceps"],
+    ["front_delts"],
+    "cable",
+    2.5
+  ],
+  ["ds:1728", "Cable two arm tricep kickback", ["triceps"], ["front_delts"], "cable", 2.5],
+  ["ds:1729", "Dumbbell lying alternate extension", ["triceps"], ["front_delts"], "dumbbell", 2],
+  [
+    "ds:1730",
+    "Dumbbell seated bent over alternate kickback",
+    ["triceps"],
+    ["front_delts", "upper_back"],
+    "dumbbell",
+    2
+  ],
+  ["ds:1731", "Dumbbell close grip press", ["triceps"], ["chest", "front_delts"], "dumbbell", 2],
+  [
+    "ds:1732",
+    "Dumbbell forward lunge triceps extension",
+    ["triceps"],
+    ["front_delts", "abs"],
+    "dumbbell",
+    2
+  ],
+  ["ds:1733", "Dumbbell incline two arm extension", ["triceps"], ["front_delts"], "dumbbell", 2],
+  [
+    "ds:1734",
+    "Dumbbell kickbacks on exercise ball",
+    ["triceps"],
+    ["front_delts", "upper_back"],
+    "dumbbell",
+    2
+  ],
+  ["ds:1735", "Dumbbell lying single extension", ["triceps"], ["front_delts"], "dumbbell", 2],
+  [
+    "ds:1736",
+    "Dumbbell one arm french press on exercise ball",
+    ["triceps"],
+    ["front_delts"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:1737",
+    "Dumbbell seated bent over triceps extension",
+    ["triceps"],
+    ["front_delts", "upper_back"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:1738",
+    "Dumbbell seated reverse grip one arm overhead tricep extension",
+    ["triceps"],
+    ["front_delts"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:1739",
+    "Dumbbell standing alternating tricep kickback",
+    ["triceps"],
+    ["front_delts"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:1740",
+    "Dumbbell standing bent over one arm triceps extension",
+    ["triceps"],
+    ["front_delts", "upper_back"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:1741",
+    "Dumbbell standing bent over two arm triceps extension",
+    ["triceps"],
+    ["front_delts", "upper_back"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:1742",
+    "Dumbbell tricep kickback with stork stance",
+    ["triceps"],
+    ["front_delts"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:1743",
+    "Dumbbell twisting bench press",
+    ["triceps"],
+    ["chest", "front_delts"],
+    "dumbbell",
+    2
+  ],
+  ["ds:1744", "Exercise ball dip", ["triceps"], ["chest", "front_delts"], "other", 1],
+  ["ds:1745", "Exercise ball seated triceps stretch", ["triceps"], ["front_delts"], "other", 1],
+  [
+    "ds:1746",
+    "Exercise ball supine triceps extension",
+    ["triceps"],
+    ["front_delts"],
+    "dumbbell",
+    2
+  ],
+  ["ds:1747", "Ez bar french press on exercise ball", ["triceps"], ["front_delts"], "barbell", 2.5],
+  [
+    "ds:1748",
+    "Ez bar lying close grip triceps extension behind head",
+    ["triceps"],
+    ["front_delts"],
+    "barbell",
+    2.5
+  ],
+  ["ds:1749", "Ez bar standing french press", ["triceps"], ["front_delts"], "barbell", 2.5],
+  [
+    "ds:1750",
+    "Medicine ball supine chest throw",
+    ["triceps"],
+    ["chest", "front_delts"],
+    "other",
+    1
+  ],
+  ["ds:1751", "Barbell pin presses", ["triceps"], ["front_delts"], "barbell", 2.5],
+  ["ds:1752", "Smith machine incline tricep extension", ["triceps"], ["front_delts"], "machine", 5],
+  ["ds:1753", "Three bench dip", ["triceps"], ["chest", "front_delts"], "bodyweight", 2.5],
+  [
+    "ds:1754",
+    "Weighted three bench dips",
+    ["triceps"],
+    ["chest", "front_delts"],
+    "bodyweight",
+    2.5
+  ],
+  ["ds:1755", "Weighted tricep dips", ["triceps"], ["chest", "front_delts"], "bodyweight", 2.5],
+  [
+    "ds:1756",
+    "Barbell single leg deadlift",
+    ["glutes"],
+    ["hamstrings", "lower_back"],
+    "barbell",
+    2.5
+  ],
+  [
+    "ds:1757",
+    "Dumbbell single leg deadlift",
+    ["glutes"],
+    ["hamstrings", "lower_back"],
+    "dumbbell",
+    2
+  ],
+  ["ds:1758", "Assisted sit-up", ["abs"], [], "machine", 5],
+  [
+    "ds:1759",
+    "Single leg squat (pistol) male",
+    ["glutes"],
+    ["quads", "hamstrings", "calves"],
+    "bodyweight",
+    2.5
+  ],
+  [
+    "ds:1760",
+    "Dumbbell goblet squat",
+    ["quads"],
+    ["glutes", "hamstrings", "calves"],
+    "dumbbell",
+    2
+  ],
+  ["ds:1761", "Hanging oblique knee raise", ["abs"], [], "bodyweight", 2.5],
+  ["ds:1763", "Shoulder grip pull-up", ["lats"], ["biceps", "forearms"], "bodyweight", 2.5],
+  ["ds:1764", "Hanging leg hip raise", ["abs"], ["lower_back"], "bodyweight", 2.5],
+  [
+    "ds:1766",
+    "Self assisted inverse leg curl",
+    ["hamstrings"],
+    ["glutes", "calves"],
+    "bodyweight",
+    2.5
+  ],
+  [
+    "ds:1767",
+    "Weighted triceps dip on high parallel bars",
+    ["triceps"],
+    ["chest", "front_delts"],
+    "bodyweight",
+    2.5
+  ],
+  ["ds:1769", "Bodyweight side lying biceps curl", ["biceps"], ["forearms"], "bodyweight", 2.5],
+  ["ds:1770", "Biceps leg concentration curl", ["biceps"], ["forearms"], "bodyweight", 2.5],
+  [
+    "ds:1771",
+    "Bodyweight kneeling triceps extension",
+    ["triceps"],
+    ["front_delts", "chest"],
+    "bodyweight",
+    2.5
+  ],
+  [
+    "ds:1772",
+    "Elbow lift - reverse push-up",
+    ["upper_back"],
+    ["triceps", "rear_delts"],
+    "bodyweight",
+    2.5
+  ],
+  ["ds:1773", "One arm towel row", ["upper_back"], ["biceps", "forearms"], "bodyweight", 2.5],
+  ["ds:1774", "Side bridge hip abduction", ["glutes"], ["abs"], "bodyweight", 2.5],
+  ["ds:1775", "Side plank hip adduction", ["adductors"], ["abs", "glutes"], "bodyweight", 2.5],
+  ["ds:2133", "Farmers walk", ["quads"], ["calves", "forearms", "abs"], "dumbbell", 2],
+  ["ds:2135", "Weighted front plank", ["abs"], ["front_delts", "lower_back"], "bodyweight", 2.5],
+  [
+    "ds:2136",
+    "Dumbbell cuban press v. 2",
+    ["front_delts"],
+    ["triceps", "upper_back"],
+    "dumbbell",
+    2
+  ],
+  ["ds:2137", "Dumbbell arnold press", ["front_delts"], ["triceps", "chest"], "dumbbell", 2],
+  ["ds:2139", "Hands bike", ["chest"], ["triceps", "front_delts"], "machine", 5],
+  ["ds:2142", "Ski ergometer", ["triceps"], ["front_delts", "forearms"], "machine", 5],
+  [
+    "ds:2143",
+    "Dumbbell standing around world",
+    ["front_delts"],
+    ["triceps", "forearms"],
+    "dumbbell",
+    2
+  ],
+  ["ds:2144", "Cable seated chest press", ["chest"], ["front_delts", "triceps"], "cable", 2.5],
+  ["ds:2186", "Ez barbell decline triceps extension", ["triceps"], ["front_delts"], "barbell", 2.5],
+  [
+    "ds:2187",
+    "Barbell reverse close-grip bench press",
+    ["triceps"],
+    ["chest", "front_delts"],
+    "barbell",
+    2.5
+  ],
+  ["ds:2188", "Dumbbell seated triceps extension", ["triceps"], ["front_delts"], "dumbbell", 2],
+  ["ds:2189", "Dumbbells seated triceps extension", ["triceps"], ["front_delts"], "dumbbell", 2],
+  ["ds:2202", "Roller hip stretch", ["glutes"], ["hamstrings", "quads"], "other", 1],
+  [
+    "ds:2203",
+    "Roller seated shoulder flexor depresor retractor",
+    ["chest"],
+    ["front_delts", "triceps"],
+    "other",
+    1
+  ],
+  ["ds:2204", "Roller body saw", ["abs"], ["front_delts", "triceps"], "other", 1],
+  ["ds:2205", "Roller hip lat stretch", ["glutes"], ["hamstrings", "quads"], "other", 1],
+  ["ds:2206", "Roller reverse crunch", ["abs"], [], "other", 1],
+  ["ds:2207", "Roller side lat stretch", ["lats"], ["rear_delts", "triceps"], "other", 1],
+  ["ds:2208", "Roller back stretch", ["lower_back"], ["hamstrings", "glutes"], "other", 1],
+  [
+    "ds:2209",
+    "Roller seated single leg shoulder flexor depresor retractor",
+    ["chest"],
+    ["front_delts", "triceps"],
+    "other",
+    1
+  ],
+  [
+    "ds:2271",
+    "Left hook. boxing",
+    ["front_delts"],
+    ["biceps", "triceps", "forearms"],
+    "bodyweight",
+    2.5
+  ],
+  ["ds:2285", "Lever pullover", ["lats"], ["triceps", "rear_delts"], "machine", 5],
+  ["ds:2286", "Lever hip extension v. 2", ["glutes"], ["hamstrings"], "machine", 5],
+  ["ds:2287", "Lever alternate leg press", ["quads"], ["hamstrings", "glutes"], "machine", 5],
+  ["ds:2288", "Lever gripper hands", ["forearms"], ["biceps", "triceps"], "machine", 5],
+  ["ds:2289", "Lever calf press", ["calves"], ["hamstrings"], "machine", 5],
+  ["ds:2292", "Dumbbell rear delt raise", ["rear_delts"], ["upper_back"], "dumbbell", 2],
+  ["ds:2293", "Dumbbell standing zottman preacher curl", ["biceps"], ["forearms"], "dumbbell", 2],
+  ["ds:2294", "Dumbbell zottman preacher curl", ["biceps"], ["forearms"], "dumbbell", 2],
+  ["ds:2297", "Stability ball crunch (full range hands behind head)", ["abs"], [], "other", 1],
+  ["ds:2298", "Inverted row on bench", ["upper_back"], ["biceps", "forearms"], "bodyweight", 2.5],
+  ["ds:2300", "Inverted row bent knees", ["upper_back"], ["biceps", "forearms"], "bodyweight", 2.5],
+  ["ds:2312", "Lying elbow to knee", ["abs"], ["lower_back"], "bodyweight", 2.5],
+  ["ds:2315", "Lever rotary calf", ["calves"], [], "machine", 5],
+  [
+    "ds:2317",
+    "Dumbbell seated bent arm lateral raise",
+    ["side_delts"],
+    ["upper_back"],
+    "dumbbell",
+    2
+  ],
+  ["ds:2318", "Lever shoulder press v. 3", ["front_delts"], ["triceps", "chest"], "machine", 5],
+  ["ds:2321", "Dumbbell standing inner biceps curl v. 2", ["biceps"], ["forearms"], "dumbbell", 2],
+  [
+    "ds:2327",
+    "Dumbbell reverse grip row (female)",
+    ["upper_back"],
+    ["biceps", "forearms"],
+    "dumbbell",
+    2
+  ],
+  ["ds:2328", "Narrow push-up on exercise ball", ["triceps"], ["chest", "front_delts"], "other", 1],
+  ["ds:2329", "Spine twist", ["abs"], ["lower_back"], "bodyweight", 2.5],
+  [
+    "ds:2330",
+    "Cable lat pulldown full range of motion",
+    ["lats"],
+    ["biceps", "upper_back"],
+    "cable",
+    2.5
+  ],
+  [
+    "ds:2333",
+    "Arm slingers hanging straight legs",
+    ["abs"],
+    ["front_delts", "upper_back"],
+    "bodyweight",
+    2.5
+  ],
+  ["ds:2334", "Sled lying calf press", ["calves"], ["hamstrings", "glutes"], "machine", 5],
+  ["ds:2335", "Lever seated calf press", ["calves"], ["hamstrings"], "machine", 5],
+  [
+    "ds:2355",
+    "Arm slingers hanging bent knee legs",
+    ["abs"],
+    ["front_delts", "upper_back"],
+    "bodyweight",
+    2.5
+  ],
+  [
+    "ds:2363",
+    "Wide-grip chest dip on high parallel bars",
+    ["chest"],
+    ["triceps", "front_delts"],
+    "bodyweight",
+    2.5
+  ],
+  [
+    "ds:2364",
+    "Assisted wide-grip chest dip (kneeling)",
+    ["chest"],
+    ["triceps", "front_delts"],
+    "machine",
+    5
+  ],
+  ["ds:2368", "Split squats", ["quads"], ["glutes", "hamstrings", "calves"], "bodyweight", 2.5],
+  ["ds:2371", "Weighted russian twist v. 2", ["abs"], ["lower_back"], "bodyweight", 2.5],
+  ["ds:2397", "Dumbbell scott press", ["front_delts"], ["triceps", "chest"], "dumbbell", 2],
+  [
+    "ds:2398",
+    "Close-grip push-up (on knees)",
+    ["triceps"],
+    ["chest", "front_delts"],
+    "bodyweight",
+    2.5
+  ],
+  ["ds:2399", "Cable seated twist", ["abs"], [], "cable", 2.5],
+  [
+    "ds:2400",
+    "Inverse leg curl (on pull-up cable machine)",
+    ["hamstrings"],
+    ["glutes", "calves"],
+    "bodyweight",
+    2.5
+  ],
+  ["ds:2401", "Dumbbell biceps curl (with arm blaster)", ["biceps"], ["forearms"], "dumbbell", 2],
+  ["ds:2402", "Dumbbell hammer curls (with arm blaster)", ["biceps"], ["forearms"], "dumbbell", 2],
+  [
+    "ds:2403",
+    "Dumbbell alternate biceps curl (with arm blaster)",
+    ["biceps"],
+    ["forearms"],
+    "dumbbell",
+    2
+  ],
+  ["ds:2404", "Ez-bar biceps curl (with arm blaster)", ["biceps"], ["forearms"], "barbell", 2.5],
+  [
+    "ds:2405",
+    "Cable triceps pushdown (v-bar) (with arm blaster)",
+    ["triceps"],
+    ["forearms"],
+    "cable",
+    2.5
+  ],
+  [
+    "ds:2406",
+    "Cable reverse grip triceps pushdown (sz-bar) (with arm blaster)",
+    ["triceps"],
+    ["forearms"],
+    "cable",
+    2.5
+  ],
+  ["ds:2407", "Barbell biceps curl (with arm blaster)", ["biceps"], ["forearms"], "barbell", 2.5],
+  ["ds:2414", "Barbell standing concentration curl", ["biceps"], ["forearms"], "barbell", 2.5],
+  ["ds:2429", "Frog crunch", ["abs"], [], "bodyweight", 2.5],
+  [
+    "ds:2432",
+    "Ez-bar close-grip bench press",
+    ["triceps"],
+    ["chest", "front_delts"],
+    "barbell",
+    2.5
+  ],
+  ["ds:2459", "Tire flip", ["glutes"], ["hamstrings", "quads", "abs"], "other", 1],
+  [
+    "ds:2462",
+    "Chest dip on straight bar",
+    ["chest"],
+    ["triceps", "front_delts"],
+    "bodyweight",
+    2.5
+  ],
+  [
+    "ds:2464",
+    "Cable thibaudeau kayak row",
+    ["lats"],
+    ["biceps", "upper_back", "rear_delts"],
+    "cable",
+    2.5
+  ],
+  [
+    "ds:2466",
+    "Bridge - mountain climber (cross body)",
+    ["abs"],
+    ["glutes", "quads", "hamstrings", "front_delts", "triceps"],
+    "bodyweight",
+    2.5
+  ],
+  [
+    "ds:2470",
+    "Dumbbell lying on floor rear delt raise",
+    ["rear_delts"],
+    ["upper_back"],
+    "dumbbell",
+    2
+  ],
+  ["ds:2567", "Seated piriformis stretch", ["glutes"], ["hamstrings"], "bodyweight", 2.5],
+  ["ds:2571", "Rocking frog stretch", ["glutes"], ["hamstrings", "quads"], "bodyweight", 2.5],
+  [
+    "ds:2611",
+    "Lever horizontal one leg press",
+    ["glutes"],
+    ["quads", "hamstrings", "calves"],
+    "machine",
+    5
+  ],
+  ["ds:2616", "Cable lateral pulldown with v-bar", ["lats"], ["biceps", "forearms"], "cable", 2.5],
+  [
+    "ds:2705",
+    "Dumbbell lying pronation on floor",
+    ["forearms"],
+    ["biceps", "triceps"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:2706",
+    "Dumbbell lying supination on floor",
+    ["forearms"],
+    ["biceps", "front_delts"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:2736",
+    "Lever reverse grip lateral pulldown",
+    ["lats"],
+    ["biceps", "upper_back", "rear_delts"],
+    "machine",
+    5
+  ],
+  [
+    "ds:2741",
+    "Ez-barbell standing wide grip biceps curl",
+    ["biceps"],
+    ["forearms"],
+    "barbell",
+    2.5
+  ],
+  [
+    "ds:2796",
+    "Dumbbell step-up lunge",
+    ["quads"],
+    ["glutes", "hamstrings", "calves"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:2798",
+    "Barbell squat jump step rear lunge",
+    ["quads"],
+    ["glutes", "hamstrings", "calves"],
+    "barbell",
+    2.5
+  ],
+  ["ds:2799", "Barbell sitted alternate leg raise", ["abs"], [], "barbell", 2.5],
+  ["ds:2802", "Twisted leg raise", ["abs"], [], "bodyweight", 2.5],
+  [
+    "ds:2803",
+    "Dumbbell supported squat",
+    ["quads"],
+    ["glutes", "hamstrings", "calves"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:2805",
+    "Dumbbell single leg deadlift with stepbox support",
+    ["glutes"],
+    ["hamstrings", "lower_back"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:2808",
+    "Dumbbell sumo pull through",
+    ["glutes"],
+    ["hamstrings", "quads", "abs"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:2810",
+    "Barbell split squat v. 2",
+    ["quads"],
+    ["glutes", "hamstrings", "calves"],
+    "barbell",
+    2.5
+  ],
+  [
+    "ds:2812",
+    "Dumbbell step-up split squat",
+    ["quads"],
+    ["glutes", "hamstrings", "calves"],
+    "dumbbell",
+    2
+  ],
+  ["ds:2963", "Captains chair straight leg raise", ["abs"], [], "bodyweight", 2.5],
+  [
+    "ds:2987",
+    "Weighted close grip chin-up on dip cage",
+    ["lats"],
+    ["biceps", "forearms"],
+    "bodyweight",
+    2.5
+  ],
+  ["ds:3006", "Resistance band seated hip abduction", ["glutes"], ["hamstrings"], "other", 1],
+  ["ds:3007", "Resistance band leg extension", ["quads"], ["hamstrings"], "other", 1],
+  ["ds:3010", "Ez bar lying bent arms pullover", ["lats"], ["triceps", "chest"], "barbell", 2.5],
+  ["ds:3011", "Incline scapula push up", ["abs"], ["triceps", "front_delts"], "bodyweight", 2.5],
+  ["ds:3012", "Scapula dips", ["upper_back"], ["rear_delts"], "bodyweight", 2.5],
+  ["ds:3013", "Low glute bridge on floor", ["glutes"], ["hamstrings", "abs"], "bodyweight", 2.5],
+  ["ds:3016", "Curl-up", ["abs"], [], "bodyweight", 2.5],
+  ["ds:3017", "Barbell pendlay row", ["upper_back"], ["biceps", "forearms"], "barbell", 2.5],
+  ["ds:3019", "Bench pull-ups", ["lats"], ["biceps", "forearms"], "bodyweight", 2.5],
+  ["ds:3021", "Scapula push-up", ["abs"], ["triceps", "front_delts"], "bodyweight", 2.5],
+  [
+    "ds:3116",
+    "Band fixed back underhand pulldown",
+    ["lats"],
+    ["biceps", "upper_back", "rear_delts"],
+    "other",
+    1
+  ],
+  ["ds:3117", "Band fixed back close grip pulldown", ["lats"], ["biceps", "forearms"], "other", 1],
+  ["ds:3119", "Potty squat", ["abs"], ["quads", "glutes"], "bodyweight", 2.5],
+  [
+    "ds:3122",
+    "Resistance band seated shoulder press",
+    ["front_delts"],
+    ["triceps", "upper_back"],
+    "other",
+    1
+  ],
+  ["ds:3123", "Resistance band seated biceps curl", ["biceps"], ["forearms"], "other", 1],
+  [
+    "ds:3124",
+    "Resistance band seated chest press",
+    ["chest"],
+    ["front_delts", "triceps"],
+    "other",
+    1
+  ],
+  [
+    "ds:3132",
+    "Potty squat with support",
+    ["glutes"],
+    ["quads", "hamstrings", "calves"],
+    "bodyweight",
+    2.5
+  ],
+  ["ds:3142", "Smith sumo squat", ["glutes"], ["quads", "hamstrings", "calves"], "machine", 5],
+  [
+    "ds:3144",
+    "Resistance band seated straight back row",
+    ["upper_back"],
+    ["biceps", "rear_delts"],
+    "other",
+    1
+  ],
+  ["ds:3145", "Push-up plus", ["chest"], ["triceps", "front_delts"], "bodyweight", 2.5],
+  ["ds:3147", "Pelvic tilt", ["abs"], ["lower_back"], "bodyweight", 2.5],
+  [
+    "ds:3156",
+    "Bodyweight standing close-grip one arm row",
+    ["upper_back"],
+    ["biceps", "forearms"],
+    "bodyweight",
+    2.5
+  ],
+  [
+    "ds:3158",
+    "Bodyweight standing close-grip row",
+    ["upper_back"],
+    ["biceps", "forearms"],
+    "bodyweight",
+    2.5
+  ],
+  [
+    "ds:3161",
+    "Bodyweight standing one arm row (with towel)",
+    ["upper_back"],
+    ["biceps", "forearms"],
+    "bodyweight",
+    2.5
+  ],
+  [
+    "ds:3162",
+    "Bodyweight standing one arm row",
+    ["upper_back"],
+    ["biceps", "forearms"],
+    "bodyweight",
+    2.5
+  ],
+  [
+    "ds:3165",
+    "Bodyweight standing row (with towel)",
+    ["upper_back"],
+    ["biceps", "rear_delts"],
+    "bodyweight",
+    2.5
+  ],
+  [
+    "ds:3166",
+    "Bodyweight standing row",
+    ["upper_back"],
+    ["biceps", "rear_delts"],
+    "bodyweight",
+    2.5
+  ],
+  [
+    "ds:3167",
+    "Bodyweight squatting row (with towel)",
+    ["upper_back"],
+    ["biceps", "rear_delts"],
+    "bodyweight",
+    2.5
+  ],
+  [
+    "ds:3168",
+    "Bodyweight squatting row",
+    ["upper_back"],
+    ["biceps", "rear_delts"],
+    "bodyweight",
+    2.5
+  ],
+  ["ds:3193", "Glute-ham raise", ["hamstrings"], ["glutes", "lower_back"], "bodyweight", 2.5],
+  ["ds:3194", "Frankenstein squat", ["glutes"], ["quads", "hamstrings", "calves"], "barbell", 2.5],
+  ["ds:3195", "Lever lying two-one leg curl", ["hamstrings"], ["glutes"], "machine", 5],
+  [
+    "ds:3200",
+    "Lever bent-over row with v-bar",
+    ["upper_back"],
+    ["biceps", "forearms"],
+    "machine",
+    5
+  ],
+  ["ds:3201", "Quarter sit-up", ["abs"], [], "bodyweight", 2.5],
+  ["ds:3202", "Half sit-up (male)", ["abs"], [], "bodyweight", 2.5],
+  ["ds:3203", "Prisoner half sit-up (male)", ["abs"], [], "bodyweight", 2.5],
+  ["ds:3204", "Arms overhead full sit-up (male)", ["abs"], ["lower_back"], "bodyweight", 2.5],
+  ["ds:3211", "Kneeling push-up (male)", ["chest"], ["triceps", "front_delts"], "bodyweight", 2.5],
+  ["ds:3212", "Basic toe touch (male)", ["glutes"], ["hamstrings", "calves"], "bodyweight", 2.5],
+  ["ds:3213", "Side-to-side toe touch (male)", ["abs"], [], "bodyweight", 2.5],
+  [
+    "ds:3214",
+    "Arms apart circular toe touch (male)",
+    ["glutes"],
+    ["hamstrings", "quads", "calves"],
+    "bodyweight",
+    2.5
+  ],
+  [
+    "ds:3215",
+    "Hands reversed clasped circular toe touch (male)",
+    ["glutes"],
+    ["hamstrings", "quads", "calves"],
+    "bodyweight",
+    2.5
+  ],
+  ["ds:3216", "Chest tap push-up (male)", ["chest"], ["triceps", "front_delts"], "bodyweight", 2.5],
+  [
+    "ds:3217",
+    "Modified hindu push-up (male)",
+    ["chest"],
+    ["triceps", "front_delts", "abs"],
+    "bodyweight",
+    2.5
+  ],
+  [
+    "ds:3218",
+    "Hands clasped circular toe touch (male)",
+    ["glutes"],
+    ["hamstrings", "quads", "calves"],
+    "bodyweight",
+    2.5
+  ],
+  ["ds:3231", "Two toe touch (male)", ["lower_back"], ["hamstrings", "glutes"], "bodyweight", 2.5],
+  ["ds:3234", "Hyght dumbbell fly", ["chest"], ["front_delts"], "dumbbell", 2],
+  [
+    "ds:3235",
+    "Cable assisted inverse leg curl",
+    ["hamstrings"],
+    ["glutes", "calves"],
+    "cable",
+    2.5
+  ],
+  [
+    "ds:3236",
+    "Resistance band hip thrusts on knees (female)",
+    ["glutes"],
+    ["hamstrings", "quads"],
+    "other",
+    1
+  ],
+  ["ds:3237", "Landmine lateral raise", ["side_delts"], ["upper_back"], "barbell", 2.5],
+  [
+    "ds:3239",
+    "Kneeling plank tap shoulder (male)",
+    ["abs"],
+    ["front_delts", "triceps"],
+    "bodyweight",
+    2.5
+  ],
+  [
+    "ds:3240",
+    "Exercise ball on the wall calf raise (tennis ball between knees)",
+    ["calves"],
+    ["quads", "hamstrings"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:3241",
+    "Exercise ball on the wall calf raise (tennis ball between ankles)",
+    ["calves"],
+    ["hamstrings", "quads"],
+    "dumbbell",
+    2
+  ],
+  ["ds:3281", "Smith full squat", ["glutes"], ["quads", "hamstrings", "calves"], "machine", 5],
+  [
+    "ds:3286",
+    "Weighted muscle up",
+    ["lats"],
+    ["biceps", "triceps", "rear_delts", "chest"],
+    "bodyweight",
+    2.5
+  ],
+  ["ds:3287", "Elbow dips", ["triceps"], ["chest", "front_delts"], "bodyweight", 2.5],
+  ["ds:3288", "Korean dips", ["chest"], ["triceps", "front_delts"], "bodyweight", 2.5],
+  ["ds:3289", "Impossible dips", ["triceps"], ["chest", "front_delts"], "bodyweight", 2.5],
+  ["ds:3290", "Weighted one hand pull up", ["lats"], ["biceps", "forearms"], "bodyweight", 2.5],
+  ["ds:3291", "Stalder press", ["triceps"], ["front_delts", "abs"], "bodyweight", 2.5],
+  ["ds:3292", "Elevator", ["upper_back"], ["rear_delts"], "bodyweight", 2.5],
+  ["ds:3293", "Archer pull up", ["lats"], ["biceps", "forearms"], "bodyweight", 2.5],
+  ["ds:3294", "Archer push up", ["chest"], ["triceps", "front_delts", "abs"], "bodyweight", 2.5],
+  ["ds:3295", "Front lever reps", ["upper_back"], ["abs", "rear_delts"], "bodyweight", 2.5],
+  ["ds:3296", "Front lever", ["abs"], ["lats", "front_delts", "forearms"], "bodyweight", 2.5],
+  ["ds:3297", "Back lever", ["upper_back"], ["biceps", "forearms", "abs"], "bodyweight", 2.5],
+  ["ds:3298", "Straddle planche", ["abs"], ["front_delts", "triceps", "chest"], "bodyweight", 2.5],
+  ["ds:3299", "Full planche", ["abs"], ["front_delts", "chest", "triceps"], "bodyweight", 2.5],
+  ["ds:3300", "Lean planche", ["abs"], ["front_delts", "chest", "triceps"], "bodyweight", 2.5],
+  ["ds:3301", "Frog planche", ["abs"], ["front_delts", "chest", "triceps"], "bodyweight", 2.5],
+  ["ds:3302", "Handstand", ["triceps"], ["front_delts", "abs"], "bodyweight", 2.5],
+  ["ds:3303", "Flag", ["abs"], ["front_delts"], "bodyweight", 2.5],
+  ["ds:3304", "Skin the cat", ["upper_back"], ["rear_delts", "abs"], "bodyweight", 2.5],
+  [
+    "ds:3305",
+    "Barbell thruster",
+    ["front_delts"],
+    ["quads", "glutes", "hamstrings", "abs"],
+    "barbell",
+    2.5
+  ],
+  [
+    "ds:3312",
+    "Weighted muscle up (on bar)",
+    ["lats"],
+    ["biceps", "triceps", "rear_delts", "forearms"],
+    "bodyweight",
+    2.5
+  ],
+  [
+    "ds:3313",
+    "Weighted straight bar dip",
+    ["chest"],
+    ["triceps", "front_delts"],
+    "bodyweight",
+    2.5
+  ],
+  ["ds:3314", "Straddle maltese", ["abs"], ["front_delts", "chest"], "bodyweight", 2.5],
+  ["ds:3315", "Full maltese", ["abs"], ["front_delts", "chest"], "bodyweight", 2.5],
+  [
+    "ds:3327",
+    "Full planche push-up",
+    ["chest"],
+    ["front_delts", "triceps", "abs"],
+    "bodyweight",
+    2.5
+  ],
+  ["ds:3418", "L-pull-up", ["lats"], ["biceps", "forearms"], "bodyweight", 2.5],
+  ["ds:3419", "L-sit on floor", ["abs"], [], "bodyweight", 2.5],
+  ["ds:3420", "V-sit on floor", ["abs"], [], "bodyweight", 2.5],
+  [
+    "ds:3433",
+    "Swimmer kicks v. 2 (male)",
+    ["glutes"],
+    ["hamstrings", "quads", "calves"],
+    "bodyweight",
+    2.5
+  ],
+  [
+    "ds:3470",
+    "Forward lunge (male)",
+    ["glutes"],
+    ["quads", "hamstrings", "calves"],
+    "bodyweight",
+    2.5
+  ],
+  [
+    "ds:3523",
+    "Glute bridge two legs on bench (male)",
+    ["glutes"],
+    ["hamstrings", "abs"],
+    "bodyweight",
+    2.5
+  ],
+  ["ds:3533", "Quads", ["quads"], ["hamstrings", "glutes"], "bodyweight", 2.5],
+  ["ds:3541", "Dumbbell incline y-raise", ["upper_back"], ["rear_delts"], "dumbbell", 2],
+  ["ds:3542", "Dumbbell incline t-raise", ["front_delts"], ["upper_back"], "dumbbell", 2],
+  [
+    "ds:3543",
+    "Bodyweight drop jump squat",
+    ["glutes"],
+    ["quads", "hamstrings", "calves"],
+    "bodyweight",
+    2.5
+  ],
+  ["ds:3544", "Bodyweight incline side plank", ["abs"], ["front_delts"], "bodyweight", 2.5],
+  [
+    "ds:3545",
+    "Dumbbell incline alternate press",
+    ["chest"],
+    ["front_delts", "triceps"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:3546",
+    "Dumbbell seated alternate shoulder",
+    ["front_delts"],
+    ["triceps", "upper_back"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:3547",
+    "Dumbbell seated biceps curl to shoulder press",
+    ["biceps"],
+    ["rear_delts"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:3548",
+    "Dumbbell single arm overhead carry",
+    ["front_delts"],
+    ["upper_back", "abs"],
+    "dumbbell",
+    2
+  ],
+  ["ds:3552", "Quick feet v. 2", ["quads"], ["calves", "hamstrings"], "bodyweight", 2.5],
+  [
+    "ds:3560",
+    "Dumbbell standing alternate hammer curl and press",
+    ["biceps"],
+    ["forearms", "rear_delts"],
+    "dumbbell",
+    2
+  ],
+  ["ds:3561", "Glute bridge march", ["glutes"], ["hamstrings", "quads"], "bodyweight", 2.5],
+  [
+    "ds:3562",
+    "Barbell glute bridge two legs on bench (male)",
+    ["glutes"],
+    ["hamstrings", "abs"],
+    "barbell",
+    2.5
+  ],
+  ["ds:3563", "Cable one arm pulldown", ["lats"], ["biceps", "forearms"], "cable", 2.5],
+  ["ds:3582", "Lunge with jump", ["glutes"], ["quads", "hamstrings", "calves"], "bodyweight", 2.5],
+  [
+    "ds:3635",
+    "Dumbbell contralateral forward lunge",
+    ["glutes"],
+    ["quads", "hamstrings", "calves"],
+    "dumbbell",
+    2
+  ],
+  ["ds:3639", "Bent knee lying twist (male)", ["glutes"], ["abs"], "bodyweight", 2.5],
+  ["ds:3640", "Knee touch crunch", ["abs"], [], "bodyweight", 2.5],
+  [
+    "ds:3641",
+    "Weighted kneeling step with swing",
+    ["front_delts"],
+    ["triceps", "abs"],
+    "bodyweight",
+    2.5
+  ],
+  [
+    "ds:3642",
+    "Weighted stretch lunge",
+    ["glutes"],
+    ["quads", "hamstrings", "calves"],
+    "bodyweight",
+    2.5
+  ],
+  [
+    "ds:3643",
+    "Weighted cossack squats (male)",
+    ["glutes"],
+    ["quads", "hamstrings", "calves"],
+    "bodyweight",
+    2.5
+  ],
+  [
+    "ds:3644",
+    "Weighted lunge with swing",
+    ["glutes"],
+    ["quads", "hamstrings", "calves"],
+    "bodyweight",
+    2.5
+  ],
+  [
+    "ds:3645",
+    "Single leg bridge with outstretched leg",
+    ["glutes"],
+    ["hamstrings", "quads"],
+    "bodyweight",
+    2.5
+  ],
+  [
+    "ds:3662",
+    "Pike-to-cobra push-up",
+    ["glutes"],
+    ["abs", "front_delts", "triceps"],
+    "bodyweight",
+    2.5
+  ],
+  [
+    "ds:3663",
+    "Reverse plank with leg lift",
+    ["abs"],
+    ["glutes", "hamstrings", "front_delts"],
+    "bodyweight",
+    2.5
+  ],
+  [
+    "ds:3664",
+    "Dumbbell side plank with rear fly",
+    ["upper_back"],
+    ["rear_delts", "abs"],
+    "dumbbell",
+    2
+  ],
+  [
+    "ds:3665",
+    "Power point plank",
+    ["abs"],
+    ["front_delts", "triceps", "glutes"],
+    "bodyweight",
+    2.5
+  ],
+  [
+    "ds:3667",
+    "Side lying hip adduction (male)",
+    ["adductors"],
+    ["glutes", "hamstrings"],
+    "bodyweight",
+    2.5
+  ],
+  [
+    "ds:3669",
+    "Standing archer",
+    ["upper_back"],
+    ["rear_delts", "biceps", "forearms"],
+    "bodyweight",
+    2.5
+  ],
+  ["ds:3670", "Weighted decline sit-up", ["abs"], ["lower_back"], "bodyweight", 2.5],
+  ["ds:3679", "Sit-up with arms on chest", ["abs"], [], "bodyweight", 2.5],
+  [
+    "ds:3697",
+    "Cable kneeling rear delt row (with rope) (male)",
+    ["rear_delts"],
+    ["upper_back", "biceps"],
+    "cable",
+    2.5
+  ],
+  ["ds:3698", "Inchworm v. 2", ["abs"], ["front_delts", "hamstrings"], "bodyweight", 2.5],
+  ["ds:3699", "Shoulder tap", ["abs"], ["front_delts", "triceps"], "bodyweight", 2.5],
+  ["ds:3758", "Lever standing chest press", ["chest"], ["front_delts", "triceps"], "machine", 5],
+  ["ds:3759", "Lever seated good morning", ["glutes"], ["hamstrings", "lower_back"], "machine", 5],
+  ["ds:3760", "Lever seated crunch v. 2", ["abs"], [], "machine", 5],
+  ["ds:3769", "Curtsey squat", ["glutes"], ["quads", "hamstrings", "calves"], "bodyweight", 2.5],
+  ["ds:3785", "Incline push-up (on box)", ["chest"], ["triceps", "front_delts"], "bodyweight", 2.5],
+  ["ds:3888", "Dumbbell one arm snatch", ["glutes"], ["hamstrings", "quads", "abs"], "dumbbell", 2],
+  ["ds:5201", "Dumbbell waiter biceps curl", ["biceps"], ["forearms", "rear_delts"], "dumbbell", 2]
+]

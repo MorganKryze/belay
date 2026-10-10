@@ -102,9 +102,10 @@
   "nav": {
     "label": "Main",
     "home": "Home",
+    "workouts": "Sessions",
+    "body": "Body",
     "tools": "Tools",
-    "settings": "Settings",
-    "body": "Body"
+    "settings": "Settings"
   },
   "settings": {
     "title": "Settings",
@@ -401,6 +402,10 @@
   },
   "today": {
     "title": "Today",
+    "sessionPlanned_one": "{{count}} exercise · about {{minutes}} min",
+    "sessionPlanned_other": "{{count}} exercises · about {{minutes}} min",
+    "sessionOpen_one": "in progress · {{count}} of {{total}} sets",
+    "sessionOpen_other": "in progress · {{count}} of {{total}} sets",
     "weighIn": "Weigh-in",
     "weighInDone": "{{value}} kg · saved",
     "weighInEmpty": "not entered yet",
@@ -411,5 +416,13 @@
     "supplements": "Supplements",
     "supplementsDone": "{{taken}} of {{count}}",
     "addSupplements": "Add your supplements"
+  },
+  "program": {
+    "session": "Session {{code}} · {{name}}",
+    "names": {
+      "A": "Push",
+      "B": "Legs",
+      "C": "Glutes + light pull"
+    }
   }
 }

@@ -6,6 +6,20 @@ import { isBirthYear, isProfileHeight } from "../body/profile";
 import { isSupplementName } from "../body/supplements";
 import { isTargetRange } from "../body/target";
 import { isWeighingKg, MIN_WEIGH_IN_DATE } from "../body/weighings";
+import { isExerciseId } from "../exercises/library";
+import {
+  isExerciseNotes,
+  isNote,
+  isPlan,
+  isReps,
+  isRir,
+  isSessionCode,
+  isSetKg,
+  MAX_SLOTS,
+  MAX_WARMUPS,
+  MIN_TIME,
+  SLOT_BOUNDS,
+} from "../training/workout";
 import type { Change, WeightChange } from "./schema";
 
 // The phone's own check before a change enters its queue, without Zod: this runs in the initial
@@ -20,6 +34,12 @@ const isISOTime = (s: string) => !Number.isNaN(Date.parse(s)) && new Date(s).toI
 const isId = (s: string) =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(s);
 const isNullOr = <T>(value: T | null, ok: (v: T) => boolean) => value === null || ok(value);
+const isInt = (v: unknown, min: number, max: number) =>
+  typeof v === "number" && Number.isInteger(v) && v >= min && v <= max;
+// A session's time is never before 1900, nor after the time of its change (the phone's clock).
+const isTimeOf = (time: string, at: string) => isISOTime(time) && time >= MIN_TIME && time <= at;
+const isLoad = (c: { weightKg: number; reps: number; rir: number | null }) =>
+  isSetKg(c.weightKg) && isReps(c.reps) && isRir(c.rir);
 
 export function isValidChange(change: Change): boolean {
   if (!isISOTime(change.at)) return false;
@@ -70,6 +90,47 @@ export function isValidChange(change: Change): boolean {
             isAnnotationLabel(change.label)
           : change.field === "removed" && typeof change.value === "boolean")
       );
+    case "workout":
+      if (!isId(change.id)) return false;
+      switch (change.field) {
+        case "start":
+          return (
+            isSessionCode(change.sessionCode) &&
+            isPlan(change.plan) &&
+            isTimeOf(change.startedAt, change.at)
+          );
+        case "ended":
+          return change.value === null || isTimeOf(change.value, change.at);
+        case "note":
+          return change.value === null || (isNote(change.value) && change.value.trim() !== "");
+        case "exerciseNotes":
+          return isExerciseNotes(change.value);
+        case "removed":
+          return typeof change.value === "boolean";
+        default:
+          return false;
+      }
+    case "set":
+      if (!isId(change.id) || !isId(change.workoutId)) return false;
+      switch (change.field) {
+        case "create":
+          // Positions 0 to 2 are the warm-ups (no RIR), the work sets come after them.
+          return (
+            isInt(change.slotIndex, 0, MAX_SLOTS - 1) &&
+            isInt(change.position, 0, MAX_WARMUPS + SLOT_BOUNDS.sets - 1) &&
+            change.warmup === change.position < MAX_WARMUPS &&
+            isExerciseId(change.exerciseId) &&
+            isLoad(change) &&
+            (!change.warmup || change.rir === null) &&
+            isTimeOf(change.doneAt, change.at)
+          );
+        case "values":
+          return isLoad(change);
+        case "removed":
+          return typeof change.value === "boolean";
+        default:
+          return false;
+      }
     default:
       return false;
   }

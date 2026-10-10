@@ -36,6 +36,13 @@
       "when": 1791496767931,
       "tag": "0004_tracking",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791586979851,
+      "tag": "0005_workouts",
+      "breakpoints": true
     }
   ]
 }

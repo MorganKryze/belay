@@ -9,7 +9,7 @@ import { TodayCard } from "@/components/today-card";
 import { Button } from "@/components/ui/button";
 import { formatKg, formatNumber, lossView } from "@/lib/format";
 import { useToday } from "@/lib/today";
-import { type OpenAccount, useAccount, useWeighings } from "@/sync/account";
+import { type OpenAccount, useAccount, useCloseForgotten, useWeighings } from "@/sync/account";
 
 // What the server puts in `/?signin=` when a sign-in fails (apps/server/src/auth/routes.ts).
 const SIGNIN_FAILURES = ["unavailable", "expired", "failed", "denied"] as const;
@@ -70,6 +70,7 @@ function SignedInHome({ account }: { account: OpenAccount }) {
   const { t } = useTranslation();
   const today = useToday();
   const weighings = useWeighings(account).data;
+  useCloseForgotten(account);
   return (
     <section className="flex flex-col gap-4">
       <h1 className={title}>{t("home.greeting", { name: account.user.displayName })}</h1>

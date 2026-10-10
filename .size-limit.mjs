@@ -12,6 +12,6 @@ export default [
     name: "web: initial JavaScript (gzip)",
     path: path.length > 0 ? path : [`${dist}/assets/index-*.js`],
     gzip: true,
-    limit: "157 KiB",
+    limit: "170 KiB",
   },
 ];

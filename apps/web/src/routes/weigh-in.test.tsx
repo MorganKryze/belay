@@ -135,7 +135,7 @@ describe("the weigh-in line and its sheet", () => {
   });
 
   it("undoes a first weigh-in of the day back to no weigh-in", async () => {
-    fakeApi({ me: ADA });
+    const api = fakeApi({ me: ADA });
     renderRoute("/");
     await openSheet();
     fireEvent.change(await field(), { target: { value: "80" } });
@@ -143,8 +143,14 @@ describe("the weigh-in line and its sheet", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Undo" }));
     await waitFor(async () => expect(await days()).toEqual([]));
     await waitFor(async () => expect((await row()).textContent).toContain("not entered yet"));
-    const queued = (await readOutbox(await openAccountDb(ADA.id))).map((e) => e.change);
-    expect(queued.map((c) => (c.kind === "weight" ? c.weightKg : null))).toEqual([80, null]);
+    // Already sent, or still queued: the opening sync, if still going, takes the 80 along.
+    const db = await openAccountDb(ADA.id);
+    const changes = [
+      ...api.requests.flatMap((r) => r.changes),
+      ...(await readOutbox(db)).map((e) => e.change),
+    ];
+    db.close();
+    expect(changes.map((c) => (c.kind === "weight" ? c.weightKg : null))).toEqual([80, null]);
   });
 
   it("weighs in for a past day from the chip in the sheet's header, never a day after today", async () => {

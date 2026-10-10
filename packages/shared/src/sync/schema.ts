@@ -8,6 +8,19 @@ import { isProfileHeight } from "../body/profile";
 import { isSupplementName } from "../body/supplements";
 import { isTargetRange } from "../body/target";
 import { isWeighingKg, MIN_WEIGH_IN_DATE } from "../body/weighings";
+import { EXERCISE_ID } from "../exercises/library";
+import {
+  isExerciseNotes,
+  isNote,
+  isPlan,
+  isReps,
+  isRir,
+  isSessionCode,
+  isSetKg,
+  MAX_SLOTS,
+  MIN_TIME,
+  type Slot,
+} from "../training/workout";
 import { MAX_CHANGES } from "./limits";
 
 const isoDate = z.iso.date();
@@ -131,6 +144,96 @@ export const AnnotationChangeSchema = z.discriminatedUnion("field", [
   }),
 ]);
 
+// A session's times: from 1900 on. One more than 5 minutes ahead of the server's clock is brought
+// back to it when written (apps/server/src/api/sync.ts), never refused: a phone whose clock runs
+// ahead would otherwise lose a whole session.
+const workoutTime = isoDateTime.check(z.refine((t) => t >= MIN_TIME));
+const note = z.string().check(z.refine(isNote));
+// The plan is checked by the same rules as on the phone (bounds of every slot, 16 KiB).
+const plan = z.custom<Slot[]>(isPlan);
+const exerciseNotes = z.custom<Record<string, string>>(isExerciseNotes);
+const setKg = z.number().check(z.refine(isSetKg));
+const reps = z.int().check(z.refine(isReps));
+const rir = z.nullable(z.int().check(z.refine(isRir)));
+
+// A session: its code, plan and start travel together and are written once (a replay, or a
+// second start of the same id, changes nothing); every other field is merged on its own.
+export const WorkoutChangeSchema = z.discriminatedUnion("field", [
+  z.object({
+    kind: z.literal("workout"),
+    id: z.uuid(),
+    field: z.literal("start"),
+    sessionCode: z.string().check(z.refine(isSessionCode)),
+    plan,
+    startedAt: workoutTime,
+    at,
+  }),
+  z.object({
+    kind: z.literal("workout"),
+    id: z.uuid(),
+    field: z.literal("ended"),
+    value: z.nullable(workoutTime),
+    at,
+  }),
+  z.object({
+    kind: z.literal("workout"),
+    id: z.uuid(),
+    field: z.literal("note"),
+    value: z.nullable(note),
+    at,
+  }),
+  z.object({
+    kind: z.literal("workout"),
+    id: z.uuid(),
+    field: z.literal("exerciseNotes"),
+    value: exerciseNotes,
+    at,
+  }),
+  z.object({
+    kind: z.literal("workout"),
+    id: z.uuid(),
+    field: z.literal("removed"),
+    value: z.boolean(),
+    at,
+  }),
+]);
+// A set: created once with everything; then its load, reps and RIR change together, or it goes.
+export const SetChangeSchema = z.discriminatedUnion("field", [
+  z.object({
+    kind: z.literal("set"),
+    id: z.uuid(),
+    workoutId: z.uuid(),
+    field: z.literal("create"),
+    slotIndex: z.int().check(z.minimum(0), z.maximum(MAX_SLOTS - 1)),
+    position: z.int().check(z.minimum(0), z.maximum(49)),
+    exerciseId: z.string().check(z.regex(EXERCISE_ID)),
+    warmup: z.boolean(),
+    weightKg: setKg,
+    reps,
+    rir,
+    doneAt: workoutTime,
+    at,
+  }),
+  z.object({
+    kind: z.literal("set"),
+    id: z.uuid(),
+    workoutId: z.uuid(),
+    field: z.literal("values"),
+    weightKg: setKg,
+    reps,
+    rir,
+    at,
+  }),
+  z.object({
+    kind: z.literal("set"),
+    id: z.uuid(),
+    workoutId: z.uuid(),
+    field: z.literal("removed"),
+    value: z.boolean(),
+    at,
+  }),
+]);
+
 export const ChangeSchema = z.discriminatedUnion("kind", [
   WeightChangeSchema,
   TargetChangeSchema,
@@ -140,6 +243,8 @@ export const ChangeSchema = z.discriminatedUnion("kind", [
   SupplementChangeSchema,
   SupplementLogChangeSchema,
   AnnotationChangeSchema,
+  WorkoutChangeSchema,
+  SetChangeSchema,
 ]);
 
 export const SyncRequestSchema = z.object({
@@ -205,11 +310,44 @@ export const AnnotationRowSchema = z.object({
   removedAt: writtenAt,
 });
 
+// Every field with its own time (null: never written); exerciseNotes is {} when never written.
+export const WorkoutRowSchema = z.object({
+  id: z.uuid(),
+  sessionCode: z.string(),
+  plan: z.custom<Slot[]>((v) => Array.isArray(v)),
+  startedAt: isoDateTime,
+  endedAt: z.nullable(isoDateTime),
+  endedAtAt: writtenAt,
+  note: z.nullable(z.string()),
+  noteAt: writtenAt,
+  exerciseNotes: z.record(z.string(), z.string()),
+  exerciseNotesAt: writtenAt,
+  removed: z.boolean(),
+  removedAt: writtenAt,
+});
+export const SetRowSchema = z.object({
+  id: z.uuid(),
+  workoutId: z.uuid(),
+  slotIndex: z.int(),
+  position: z.int(),
+  exerciseId: z.string(),
+  warmup: z.boolean(),
+  weightKg: z.number(),
+  reps: z.int(),
+  rir: z.nullable(z.int()),
+  doneAt: isoDateTime,
+  fieldsAt: isoDateTime,
+  removed: z.boolean(),
+  removedAt: writtenAt,
+});
+
 // A change the server could not take although its shape is valid: its place in the request, and
 // why. The phone drops it from its queue and keeps a trace the person can read.
 export const RejectedSchema = z.object({
   index: z.int().check(z.minimum(0)),
-  reason: z.enum(["unknown", "refused"]), // unknown: it names something the account does not have
+  // unknown: it names something the account does not have; unknown_exercise: a set of an
+  // exercise the library lacks; too_many_sets: a session past 150 sets.
+  reason: z.enum(["unknown", "refused", "unknown_exercise", "too_many_sets"]),
 });
 
 export const SyncResponseSchema = z.object({
@@ -222,6 +360,8 @@ export const SyncResponseSchema = z.object({
   supplements: z.array(SupplementRowSchema),
   supplementLogs: z.array(SupplementLogRowSchema),
   annotations: z.array(AnnotationRowSchema),
+  workouts: z.array(WorkoutRowSchema),
+  sets: z.array(SetRowSchema),
   target: z.nullable(TargetRowSchema), // when written since that cursor, or sent back as above
   profile: z.nullable(ProfileRowSchema), // likewise
   rejected: z.array(RejectedSchema),
@@ -236,6 +376,8 @@ export type ProfileChange = z.infer<typeof ProfileChangeSchema>;
 export type SupplementChange = z.infer<typeof SupplementChangeSchema>;
 export type SupplementLogChange = z.infer<typeof SupplementLogChangeSchema>;
 export type AnnotationChange = z.infer<typeof AnnotationChangeSchema>;
+export type WorkoutChange = z.infer<typeof WorkoutChangeSchema>;
+export type SetChange = z.infer<typeof SetChangeSchema>;
 export type Change = z.infer<typeof ChangeSchema>;
 export type SyncRequest = z.infer<typeof SyncRequestSchema>;
 export type WeightRow = z.infer<typeof WeightRowSchema>;
@@ -246,5 +388,7 @@ export type ProfileRow = z.infer<typeof ProfileRowSchema>;
 export type SupplementRow = z.infer<typeof SupplementRowSchema>;
 export type SupplementLogRow = z.infer<typeof SupplementLogRowSchema>;
 export type AnnotationRow = z.infer<typeof AnnotationRowSchema>;
+export type WorkoutRow = z.infer<typeof WorkoutRowSchema>;
+export type SetRow = z.infer<typeof SetRowSchema>;
 export type Rejected = z.infer<typeof RejectedSchema>;
 export type SyncResponse = z.infer<typeof SyncResponseSchema>;

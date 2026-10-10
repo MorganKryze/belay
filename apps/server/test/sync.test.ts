@@ -113,6 +113,8 @@ describe("POST /api/sync", () => {
       supplements: [],
       supplementLogs: [],
       annotations: [],
+      workouts: [],
+      sets: [],
       target: null,
       profile: null,
       rejected: [],
