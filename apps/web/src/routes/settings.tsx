@@ -100,10 +100,10 @@ function VersionLine() {
           href={url}
           target="_blank"
           rel="noopener noreferrer"
-          aria-label={t("settings.versionLink", { version: APP_VERSION })}
           className="inline-flex min-h-11 items-center px-3 underline underline-offset-2"
         >
           {t("settings.version", { version: APP_VERSION })}
+          <span className="sr-only">{t("settings.versionLinkHint")}</span>
         </a>
       ) : (
         t("settings.version", { version: APP_VERSION })

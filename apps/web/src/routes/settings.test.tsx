@@ -378,14 +378,14 @@ describe("Settings version", () => {
     fakeApi({ me: null });
     renderRoute("/settings");
     const link = await screen.findByRole("link", {
-      name: "Release notes for 0.3.0-rc.2 (new tab)",
+      name: "Belay 0.3.0-rc.2, release notes (new tab)",
     });
     expect(link.getAttribute("href")).toBe(
       "https://github.com/MorganKryze/belay/releases/tag/v0.3.0-rc.2",
     );
     expect(link.getAttribute("target")).toBe("_blank");
     expect(link.getAttribute("rel")).toBe("noopener noreferrer");
-    expect(link.parentElement?.textContent).toBe("Belay 0.3.0-rc.2");
+    expect(link.textContent).toContain("Belay 0.3.0-rc.2");
   });
 
   it("speaks French", async () => {
@@ -393,7 +393,9 @@ describe("Settings version", () => {
     await i18n.changeLanguage("fr");
     fakeApi({ me: null });
     renderRoute("/settings");
-    await screen.findByRole("link", { name: "Notes de la version 0.3.0-rc.2 (nouvel onglet)" });
+    await screen.findByRole("link", {
+      name: "Belay 0.3.0-rc.2, notes de la version (nouvel onglet)",
+    });
   });
 
   it("is plain text on a dev build", async () => {
