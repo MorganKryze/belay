@@ -11,8 +11,8 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
-      registerType: "autoUpdate",
-      injectRegister: "script", // external registerSW.js: the CSP forbids inline scripts
+      registerType: "prompt",
+      injectRegister: false, // registered from src/lib/update.ts: the CSP forbids an inline script
       includeAssets: ["favicon.ico", "logo.svg", "apple-touch-icon-180x180.png", "theme-init.js"],
       manifest: {
         name: "Belay",
@@ -35,11 +35,10 @@ export default defineConfig({
         ],
       },
       workbox: {
-        // ponytail: no skipWaiting, so a new SW waits and an update applies on the next full close
-        // and relaunch, with no in-app "new version" prompt. Claiming a live page would let
-        // cleanupOutdatedCaches delete the old lazy chunks (settings-OLD.js) under it. With
-        // injectRegister "script" nothing reloads the page, so registerType "autoUpdate" is nominal
-        // here. Upgrade path: import virtual:pwa-register, handle onNeedRefresh, show a prompt.
+        // No skipWaiting: a new service worker waits, and the app offers a "Reload" button
+        // (UpdateBanner) that skips the wait and reloads. Claiming a live page on its own would let
+        // cleanupOutdatedCaches delete the old lazy chunks (settings-OLD.js) under it; claiming
+        // only happens once the tap has activated the new worker, right before the reload.
         clientsClaim: true,
         navigateFallback: "/index.html",
         // /auth, /api and /healthz must always reach the network: a cached shell there would fake

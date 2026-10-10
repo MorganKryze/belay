@@ -58,6 +58,10 @@
   "account": {
     "unavailable": "Ce navigateur ne permet pas à Belay d'enregistrer sur l'appareil : le suivi n'est pas disponible ici. Les outils restent utilisables."
   },
+  "update": {
+    "available": "Nouvelle version disponible",
+    "reload": "Recharger"
+  },
   "sync": {
     "offlineTitle": "Hors ligne.",
     "offline_one": "{{count}} pesée en attente, envoyée dès le retour du réseau. Tout est gardé sur ce téléphone.",
