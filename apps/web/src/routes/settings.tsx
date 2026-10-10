@@ -21,6 +21,7 @@ import { logout } from "@/lib/api";
 import { readTheme, setTheme, type Theme } from "@/lib/theme";
 import { formatWeekday } from "@/lib/format";
 import { useToday } from "@/lib/today";
+import { APP_VERSION, releaseUrl } from "@/lib/version";
 import {
   type OpenAccount,
   useAccount,
@@ -83,7 +84,31 @@ export function Settings() {
 
       {account.kind === "open" && <OpenAccountSettings account={account} />}
       {account.kind === "unavailable" && <AccountSettings pending={0} />}
+
+      <VersionLine />
     </section>
+  );
+}
+
+function VersionLine() {
+  const { t } = useTranslation();
+  const url = releaseUrl(APP_VERSION);
+  return (
+    <p className="text-center text-xs text-muted-foreground">
+      {url ? (
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={t("settings.versionLink", { version: APP_VERSION })}
+          className="inline-flex min-h-11 items-center px-3 underline underline-offset-2"
+        >
+          {t("settings.version", { version: APP_VERSION })}
+        </a>
+      ) : (
+        t("settings.version", { version: APP_VERSION })
+      )}
+    </p>
   );
 }
 

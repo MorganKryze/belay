@@ -121,6 +121,8 @@
       "system": "Système"
     },
     "account": "Compte",
+    "version": "Belay {{version}}",
+    "versionLink": "Notes de la version {{version}} (nouvel onglet)",
     "signOut": "Se déconnecter",
     "signOutFailed": "Déconnexion impossible pour le moment. Vérifie ta connexion et réessaie.",
     "signOutPending_one": "{{count}} saisie pas encore envoyée : elle partira à ta prochaine connexion sur cet appareil.",

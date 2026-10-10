@@ -359,3 +359,48 @@ describe("refused entries", () => {
     expect(screen.queryByRole("region", { name: "Refused entries" })).toBeNull();
   });
 });
+
+// The version is stamped at build time: forced here so the tests never depend on the environment.
+const version = vi.hoisted(() => ({ current: "0.3.0-rc.2" }));
+vi.mock("../lib/version", async (importOriginal) => {
+  const real = await importOriginal<typeof import("../lib/version")>();
+  return {
+    ...real,
+    get APP_VERSION() {
+      return version.current;
+    },
+  };
+});
+
+describe("Settings version", () => {
+  it("links a release version to its notes", async () => {
+    version.current = "0.3.0-rc.2";
+    fakeApi({ me: null });
+    renderRoute("/settings");
+    const link = await screen.findByRole("link", {
+      name: "Release notes for 0.3.0-rc.2 (new tab)",
+    });
+    expect(link.getAttribute("href")).toBe(
+      "https://github.com/MorganKryze/belay/releases/tag/v0.3.0-rc.2",
+    );
+    expect(link.getAttribute("target")).toBe("_blank");
+    expect(link.getAttribute("rel")).toBe("noopener noreferrer");
+    expect(link.parentElement?.textContent).toBe("Belay 0.3.0-rc.2");
+  });
+
+  it("speaks French", async () => {
+    version.current = "0.3.0-rc.2";
+    await i18n.changeLanguage("fr");
+    fakeApi({ me: null });
+    renderRoute("/settings");
+    await screen.findByRole("link", { name: "Notes de la version 0.3.0-rc.2 (nouvel onglet)" });
+  });
+
+  it("is plain text on a dev build", async () => {
+    version.current = "dev";
+    fakeApi({ me: null });
+    renderRoute("/settings");
+    await screen.findByText("Belay dev");
+    expect(screen.queryByRole("link", { name: /Release notes/ })).toBeNull();
+  });
+});
