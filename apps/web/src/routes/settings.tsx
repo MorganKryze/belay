@@ -41,7 +41,7 @@ export function Settings() {
   const account = useAccount();
 
   return (
-    <section className="flex flex-col gap-6">
+    <section className="flex flex-1 flex-col gap-6">
       <h1 className="text-3xl font-semibold">{t("settings.title")}</h1>
 
       <div className="flex flex-col gap-2">
@@ -94,7 +94,7 @@ function VersionLine() {
   const { t } = useTranslation();
   const url = releaseUrl(APP_VERSION);
   return (
-    <p className="text-center text-xs text-muted-foreground">
+    <p className="mt-auto text-center text-xs text-muted-foreground">
       {url ? (
         <a
           href={url}
