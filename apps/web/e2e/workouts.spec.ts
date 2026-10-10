@@ -279,24 +279,19 @@ test.describe("at 360 px", () => {
 });
 
 test.describe("accessibility", () => {
+  // No transition in flight when axe measures a colour.
+  test.use({ reducedMotion: "reduce" });
   for (const theme of ["light", "dark"] as const) {
-    test(`the session screens have no axe violation, ${theme}`, async ({ browser }) => {
-      // Each screen on a fresh device: a session started for one is not open in the next.
-      for (const [name, open] of SCREENS) {
-        const context = await browser.newContext({
-          locale: "en-US",
-          timezoneId: "Europe/Paris",
-          reducedMotion: "reduce",
-        });
-        const page = await context.newPage();
-        await page.clock.setFixedTime(NOW);
+    // One test per screen, each on a fresh device: a session started for one is not open in the
+    // next, and each stays well inside the timeout on a slow runner.
+    for (const [name, open] of SCREENS) {
+      test(`${name} has no axe violation, ${theme}`, async ({ page }) => {
         await page.addInitScript((t) => localStorage.setItem("belay.theme", t), theme);
         await fakeServer(page, { changes: LAST_A });
         await open(page);
         if (theme === "dark") await expect(page.locator("html")).toHaveClass(/dark/);
-        await test.step(name, () => expectNoAxeViolations(page));
-        await context.close();
-      }
-    });
+        await expectNoAxeViolations(page);
+      });
+    }
   }
 });
