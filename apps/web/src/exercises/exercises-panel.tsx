@@ -24,14 +24,16 @@ const fold = (text: string) =>
     .normalize("NFD")
     .replace(/\p{Diacritic}/gu, "")
     .toLowerCase();
-export function matches(name: string, query: string): boolean {
-  const words = fold(query).split(/\s+/).filter(Boolean);
+const wordsOf = (query: string) => fold(query).split(/\s+/).filter(Boolean);
+export const matches = (name: string, query: string) => {
   const target = fold(name);
-  return words.every((w) => target.includes(w));
-}
+  return wordsOf(query).every((w) => target.includes(w));
+};
 
-const byName = (a: Exercise, b: Exercise) => a.name.localeCompare(b.name, "en");
-const ALL = [...EXERCISES].sort(byName);
+// Folded once per exercise, not once per exercise and keystroke.
+const FOLDED = new Map(EXERCISES.map((e) => [e.id, fold(e.name)]));
+const collator = new Intl.Collator("en");
+const ALL = [...EXERCISES].sort((a, b) => collator.compare(a.name, b.name));
 // The sessions of the program each exercise is in: "A", "A · C".
 const SESSIONS = new Map<string, string[]>();
 for (const s of starterProgram)
@@ -42,13 +44,17 @@ for (const s of starterProgram)
 const IN_PROGRAM = [...SESSIONS.keys()].flatMap((id) => EXERCISES.filter((e) => e.id === id));
 
 type Filters = { query: string; muscle: Muscle | null; equipment: Equipment | null };
-export const filterExercises = (list: readonly Exercise[], f: Filters) =>
-  list.filter(
-    (e) =>
-      matches(e.name, f.query) &&
+export const filterExercises = (list: readonly Exercise[], f: Filters) => {
+  const words = wordsOf(f.query);
+  return list.filter((e) => {
+    const name = FOLDED.get(e.id) ?? fold(e.name);
+    return (
+      words.every((w) => name.includes(w)) &&
       (f.muscle === null || e.primary.includes(f.muscle)) &&
-      (f.equipment === null || e.equipment === f.equipment),
-  );
+      (f.equipment === null || e.equipment === f.equipment)
+    );
+  });
+};
 
 const sectionTitle = "mx-0.5 mt-2 text-[15px] font-semibold";
 
