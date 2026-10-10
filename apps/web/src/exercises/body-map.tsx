@@ -172,10 +172,18 @@ export function thumbnailSvg(
 }
 
 const isDark = () => document.documentElement.classList.contains("dark");
+// One observer for every thumbnail on screen: it exists while at least one of them is mounted.
+const themeListeners = new Set<() => void>();
+let themeWatch: MutationObserver | undefined;
 const onTheme = (notify: () => void) => {
-  const watch = new MutationObserver(notify);
-  watch.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
-  return () => watch.disconnect();
+  themeListeners.add(notify);
+  themeWatch ??= new MutationObserver(() => themeListeners.forEach((l) => l()));
+  if (themeListeners.size === 1)
+    themeWatch.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+  return () => {
+    themeListeners.delete(notify);
+    if (themeListeners.size === 0) themeWatch?.disconnect();
+  };
 };
 
 function paletteOfTheme(): Palette {
