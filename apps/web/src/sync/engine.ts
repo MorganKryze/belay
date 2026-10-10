@@ -39,6 +39,8 @@ export function createSyncEngine({
   locks?: Pick<LockManager, "request">;
 }): SyncEngine {
   let status: SyncStatus = "idle";
+  // Set by stop(), right before the account closes the database: a run under way ends there.
+  let stopped = false;
   const listeners = new Set<() => void>();
   const set = (next: SyncStatus) => {
     if (next === status) return;
@@ -54,11 +56,10 @@ export function createSyncEngine({
       let complete = false;
       for (let round = 0; round < MAX_ROUNDS; round++) {
         const batch = await readOutbox(db, MAX_CHANGES);
-        const result = await send({
-          account: userId,
-          cursor: await readCursor(db),
-          changes: batch.map((e) => e.change),
-        });
+        const cursor = await readCursor(db);
+        if (stopped) return;
+        const result = await send({ account: userId, cursor, changes: batch.map((e) => e.change) });
+        if (stopped) return; // the batch stays queued: the next sync sends it again, a no-op once merged
         if (result.kind !== "ok") return set(result.kind);
         await applyServer(db, batch, result.response);
         onApplied();
@@ -72,6 +73,7 @@ export function createSyncEngine({
       // would look forgotten.
       if (complete) await onSynced?.().catch(() => {}); // a failure here leaves the next sync to try again
     } catch (error) {
+      if (stopped) return; // stop() closed the database under the run: not a failure
       console.error(
         "sync: local database failed:",
         error instanceof Error ? error.name : "unknown",
@@ -127,6 +129,7 @@ export function createSyncEngine({
       window.removeEventListener("offline", onOffline);
       document.removeEventListener("visibilitychange", onVisible);
       clearTimeout(timer);
+      stopped = true;
     };
   }
 

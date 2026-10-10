@@ -243,6 +243,31 @@ describe("triggers", () => {
     expect(send).toHaveBeenCalledTimes(2);
   });
 
+  it("ends a run under way when stopped: nothing sent or written after, and no failure", async () => {
+    await recordChange(db, weight("2026-10-07", 80));
+    let release = () => {};
+    const send = vi.fn<Send>(async () => ok(answer({ cursor: "2", hasMore: true })));
+    send.mockImplementationOnce(
+      () =>
+        new Promise(
+          (resolve) => (release = () => resolve(ok(answer({ cursor: "1", hasMore: true })))),
+        ),
+    );
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const engine = engineWith(send);
+    const stop = engine.start();
+    await vi.waitFor(() => expect(send).toHaveBeenCalledTimes(1));
+    stop();
+    db.close(); // what the account does right after stop()
+    release();
+    await engine.sync(); // the run under way
+    await engine.sync(); // and a late trigger
+    expect(send).toHaveBeenCalledTimes(1);
+    expect(error).not.toHaveBeenCalled();
+    expect(engine.status()).not.toBe("failed");
+    error.mockRestore();
+  });
+
   it("waits one second after the last entry", async () => {
     // Only the debounce timer: fake-indexeddb runs on setImmediate.
     vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
