@@ -22,8 +22,8 @@ export function scheduleUpdateChecks(registration: ServiceWorkerRegistration) {
   };
 }
 
-// Registers the service worker. A new version waits until the user taps "Reload": claiming a
-// live page would let cleanupOutdatedCaches delete the lazy chunks it still needs.
+// Registers the service worker. A new version waits until the user taps "Reload": activating it
+// under a live page would let its precache drop the old lazy chunks that page still needs.
 export function startUpdates() {
   ready = false;
   applyUpdate = registerSW({

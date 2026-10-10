@@ -36,9 +36,9 @@ export default defineConfig({
       },
       workbox: {
         // No skipWaiting: a new service worker waits, and the app offers a "Reload" button
-        // (UpdateBanner) that skips the wait and reloads. Claiming a live page on its own would let
-        // cleanupOutdatedCaches delete the old lazy chunks (settings-OLD.js) under it; claiming
-        // only happens once the tap has activated the new worker, right before the reload.
+        // (UpdateBanner) that skips the wait and reloads. Activating it under a live page on its own
+        // would let its precache (stale entries are deleted when a worker activates) drop the
+        // old lazy chunks (settings-OLD.js) under it; the tap activates it right before the reload.
         clientsClaim: true,
         navigateFallback: "/index.html",
         // /auth, /api and /healthz must always reach the network: a cached shell there would fake
