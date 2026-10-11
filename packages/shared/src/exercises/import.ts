@@ -1,6 +1,13 @@
 // The rules that turn exercises-dataset into Belay's library (spec §5.1 to §5.4). Pure: the
 // import script fetches and writes, these functions decide, and the tests read them on samples.
-import { type Exercise, type ExerciseRow, isExerciseId, toExercise, toRow } from "./library";
+import {
+  type Exercise,
+  type ExerciseRow,
+  isExerciseId,
+  type Measure,
+  toExercise,
+  toRow,
+} from "./library";
 import { type Equipment, INCREMENT_KG, isEquipment, isMuscle, type Muscle } from "./muscles";
 
 // MIT, © 2026 Hasan Emir Yıldırım. Pinned: an import never changes unless this commit does.
@@ -157,6 +164,29 @@ const EQUIPMENT_OF: Readonly<Record<string, Equipment>> = {
 };
 export const equipmentOf = (name: string): Equipment => EQUIPMENT_OF[name] ?? "other";
 
+// Spec D12: an exercise held rather than repeated is counted in seconds, as its name says (a
+// plank, a hold, a hang, a wall sit, an isometric or static exercise)…
+const TIMED = /\b(?:plank|hold|hang|wall sit|isometric|static)\b/;
+// …except where the name misleads, checked by hand one by one: these move through a plank or a
+// hang (a twist, a tap, a clean), or hold without saying so (the L-sit).
+export const MEASURES: Readonly<Record<string, Measure>> = {
+  "ds:0464": "reps", // front plank with twist
+  "ds:0500": "reps", // isometric wipers
+  "ds:0518": "reps", // kettlebell alternating hang clean
+  "ds:0525": "reps", // kettlebell bottoms up clean from the hang position
+  "ds:0526": "reps", // kettlebell double alternating hang clean
+  "ds:0535": "reps", // kettlebell hang clean
+  "ds:0664": "reps", // push-up to side plank
+  "ds:1775": "reps", // side plank hip adduction
+  "ds:3239": "reps", // kneeling plank tap shoulder
+  "ds:3663": "reps", // reverse plank with leg lift
+  "ds:3664": "reps", // dumbbell side plank with rear fly
+  "ds:3665": "reps", // power point plank (up and down between the hands and the forearms)
+  "ds:3419": "seconds", // l-sit on floor
+};
+export const measureOf = (id: string, name: string): Measure =>
+  MEASURES[id] ?? (TIMED.test(name.toLowerCase()) ? "seconds" : "reps");
+
 // The dataset's UTF-8 was read once as another encoding: "sled 45в° leg press".
 export const fixEncoding = (text: string) => text.replaceAll("в°", "°");
 export const sentenceCase = (name: string) => name.charAt(0).toUpperCase() + name.slice(1);
@@ -191,7 +221,8 @@ export const OVERRIDES: Readonly<Record<string, { primary: Muscle; secondary: Mu
 
 type Entry = { exercise: Exercise; steps: { en: readonly string[]; fr: readonly string[] } };
 
-// D15: two exercises of the starter program the dataset lacks, with Belay's own text.
+// D15: two exercises of the starter program the dataset lacks, and the dead hang (spec D12),
+// with Belay's own text.
 export const BELAY_EXERCISES: readonly Entry[] = [
   {
     exercise: {
@@ -201,6 +232,7 @@ export const BELAY_EXERCISES: readonly Entry[] = [
       secondary: ["hamstrings"],
       equipment: "barbell",
       incrementKg: INCREMENT_KG.barbell,
+      measure: "reps",
     },
     steps: {
       en: [
@@ -227,6 +259,7 @@ export const BELAY_EXERCISES: readonly Entry[] = [
       secondary: ["upper_back"],
       equipment: "cable",
       incrementKg: INCREMENT_KG.cable,
+      measure: "reps",
     },
     steps: {
       en: [
@@ -242,6 +275,33 @@ export const BELAY_EXERCISES: readonly Entry[] = [
         "Tire la corde vers ton visage, les coudes hauts et vers l'extérieur, en écartant les deux bouts de la corde.",
         "Marque une pause en serrant les omoplates, puis reviens lentement jusqu'à avoir les bras tendus.",
         "Répète le nombre de répétitions souhaité.",
+      ],
+    },
+  },
+  {
+    exercise: {
+      id: "belay:dead-hang",
+      name: "Dead hang",
+      primary: ["forearms"],
+      secondary: ["lats"],
+      equipment: "bodyweight",
+      incrementKg: INCREMENT_KG.bodyweight,
+      measure: "seconds",
+    },
+    steps: {
+      en: [
+        "Grip a pull-up bar with both hands, palms facing away, slightly wider than your shoulders.",
+        "Lift your feet off the floor and hang with your arms straight, your shoulders drawn slightly down.",
+        "Keep your legs together and your body still, without swinging.",
+        "Hold for the time you set, breathing steadily.",
+        "Put your feet back on the floor before letting go of the bar.",
+      ],
+      fr: [
+        "Saisis une barre de traction à deux mains, paumes vers l'avant, un peu plus large que tes épaules.",
+        "Décolle les pieds du sol et reste suspendu bras tendus, les épaules légèrement abaissées.",
+        "Garde les jambes serrées et le corps immobile, sans te balancer.",
+        "Tiens le temps choisi en respirant calmement.",
+        "Repose les pieds au sol avant de lâcher la barre.",
       ],
     },
   },
@@ -288,6 +348,7 @@ export function buildLibrary(raw: readonly unknown[], previous: LibraryFiles | n
           secondary,
           equipment,
           incrementKg: INCREMENT_KG[equipment],
+          measure: measureOf(id, r.name),
         },
         steps: r.steps,
       };
@@ -320,10 +381,10 @@ export function checkLibrary(files: LibraryFiles): string[] {
   if (/gif_url|media_id|gymvisual|\.gif\b/i.test(text)) problems.push("a media field or URL");
   const rows = new Map<string, ExerciseRow>();
   for (const row of files.index) {
-    const [id, name, primary, secondary, equipment, incrementKg] = row;
+    const [id, name, primary, secondary, equipment, incrementKg, measure] = row;
     const where = `index ${JSON.stringify(id)}`;
-    if (row.length !== 6 || typeof id !== "string" || !isExerciseId(id)) {
-      problems.push(`${where}: not a row of six fields with a valid id`);
+    if (row.length !== 7 || typeof id !== "string" || !isExerciseId(id)) {
+      problems.push(`${where}: not a row of seven fields with a valid id`);
       continue;
     }
     if (rows.has(id)) problems.push(`${where}: twice`);
@@ -340,6 +401,8 @@ export function checkLibrary(files: LibraryFiles): string[] {
       problems.push(`${where}: a secondary muscle is not one of the 16, or repeats`);
     if (!isEquipment(equipment) || incrementKg !== INCREMENT_KG[equipment])
       problems.push(`${where}: unknown equipment or wrong increment`);
+    if (measure !== "reps" && measure !== "seconds")
+      problems.push(`${where}: counted neither in reps nor in seconds`);
     for (const lang of ["fr", "en"] as const)
       if (!isStepList(files[lang][id])) problems.push(`${where}: no steps in ${lang}`);
   }
@@ -351,6 +414,8 @@ export function checkLibrary(files: LibraryFiles): string[] {
     if (!row || row[2].join() !== primary || row[3].join() !== secondary.join())
       problems.push(`override ${id}: not applied`);
   }
+  for (const [id, measure] of Object.entries(MEASURES))
+    if (rows.has(id) && rows.get(id)![6] !== measure) problems.push(`measure ${id}: not applied`);
   for (const { exercise } of BELAY_EXERCISES)
     if (!rows.has(exercise.id)) problems.push(`${exercise.id}: missing`);
   for (const id of files.ids) if (!rows.has(id)) problems.push(`${id}: published, then removed`);

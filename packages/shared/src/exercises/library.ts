@@ -12,6 +12,7 @@ export interface Exercise {
   secondary: Muscle[];
   equipment: Equipment;
   incrementKg: number;
+  measure: Measure;
 }
 
 // One line of data/index.json: the same fields, as a tuple to keep the file small.
@@ -22,6 +23,7 @@ export type ExerciseRow = [
   secondary: Muscle[],
   equipment: Equipment,
   incrementKg: number,
+  measure: Measure,
 ];
 
 export const EXERCISE_ID = /^(ds|belay):[a-z0-9-]{1,40}$/;
@@ -34,7 +36,8 @@ export const toExercise = ([
   secondary,
   equipment,
   incrementKg,
-]: ExerciseRow): Exercise => ({ id, name, primary, secondary, equipment, incrementKg });
+  measure,
+]: ExerciseRow): Exercise => ({ id, name, primary, secondary, equipment, incrementKg, measure });
 
 export const toRow = (e: Exercise): ExerciseRow => [
   e.id,
@@ -43,6 +46,7 @@ export const toRow = (e: Exercise): ExerciseRow => [
   e.secondary,
   e.equipment,
   e.incrementKg,
+  e.measure,
 ];
 
 // The steps of "How to do it", by exercise id, in one language.

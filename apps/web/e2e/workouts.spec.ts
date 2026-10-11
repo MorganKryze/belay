@@ -193,7 +193,7 @@ const SCREENS: [string, (page: Page) => Promise<void>][] = [
     "Exercises",
     async (page) => {
       await page.goto("/workouts?tab=exercises");
-      await expect(page.getByRole("heading", { name: "All · 1,290" })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "All · 1,291" })).toBeVisible();
     },
   ],
   [
