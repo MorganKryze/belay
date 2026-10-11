@@ -4,6 +4,7 @@ import en from "./data/en.json";
 import fr from "./data/fr.json";
 import ids from "./data/ids.json";
 import index from "./data/index.json";
+import measures from "./data/measures.json";
 import {
   BELAY_EXERCISES,
   buildLibrary,
@@ -19,7 +20,7 @@ import {
 import type { ExerciseRow } from "./library";
 import { MUSCLES } from "./muscles";
 
-const committed = { index, fr, en, ids } as unknown as LibraryFiles;
+const committed = { index, fr, en, ids, measures } as unknown as LibraryFiles;
 
 // A dataset record as the source holds it, media fields included.
 const raw = (
@@ -217,6 +218,27 @@ describe("checkLibrary", () => {
     expect(own(sample)).toEqual([]);
   });
 
+  it("pins how each published exercise is counted", () => {
+    expect(sample.measures).toMatchObject({ "ds:0025": "reps", "ds:0043": "reps" });
+    const flipped: LibraryFiles = {
+      ...sample,
+      index: sample.index.map((r) =>
+        r[0] === "ds:0025" ? [...r.slice(0, 6), "seconds"] : r,
+      ) as never,
+    };
+    expect(own(flipped)).toEqual(["measure ds:0025: published in reps, now in seconds"]);
+    const { "ds:0043": _gone, ...unpinned } = sample.measures;
+    expect(own({ ...sample, measures: unpinned })).toEqual(["measure ds:0043: not pinned"]);
+    // An import keeps a published exercise's pinned measure, so the check flags the index.
+    const pinnedSeconds = { ...sample.measures, "ds:0025": "seconds" as const };
+    const rebuilt = buildLibrary([raw("0025", "barbell bench press", "pectorals")], {
+      ...sample,
+      measures: pinnedSeconds,
+    });
+    expect(rebuilt.measures["ds:0025"]).toBe("seconds");
+    expect(own(rebuilt)).toContain("measure ds:0025: published in seconds, now in reps");
+  });
+
   it("finds a muscle outside the 16, a published id removed, media, and the bad encoding", () => {
     const broken: LibraryFiles = {
       ...sample,
@@ -279,6 +301,12 @@ describe("the committed library", () => {
     ).toEqual(["belay:dead-hang", "ds:1297", "ds:2135", "ds:3419", "ds:3544"]);
     for (const [id, measure] of Object.entries(MEASURES))
       expect(exerciseById(id)?.measure, id).toBe(measure);
+  });
+
+  it("pins the measure of every published id", () => {
+    expect(Object.keys(measures).sort()).toEqual([...ids].sort());
+    for (const e of EXERCISES)
+      expect(measures[e.id as keyof typeof measures], e.id).toBe(e.measure);
   });
 
   it("never drops an id once published", () => {

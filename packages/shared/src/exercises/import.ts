@@ -307,13 +307,16 @@ export const BELAY_EXERCISES: readonly Entry[] = [
   },
 ];
 
-// The four generated files of src/exercises/data. `ids` lists every id ever published: an id
+// The five generated files of src/exercises/data. `ids` lists every id ever published: an id
 // never leaves the index (the history points to it), even when the dataset drops its exercise.
+// `measures` pins how each published id is counted: the server refuses a plan counting an
+// exercise in another measure, so a published exercise never changes it.
 export interface LibraryFiles {
   index: ExerciseRow[];
   fr: Record<string, string[]>;
   en: Record<string, string[]>;
   ids: string[];
+  measures: Record<string, "reps" | "seconds">;
 }
 
 export function buildLibrary(raw: readonly unknown[], previous: LibraryFiles | null): LibraryFiles {
@@ -362,7 +365,14 @@ export function buildLibrary(raw: readonly unknown[], previous: LibraryFiles | n
         steps: { en: previous!.en[row[0]] ?? [], fr: previous!.fr[row[0]] ?? [] },
       });
   entries.sort((a, b) => (a.exercise.id < b.exercise.id ? -1 : 1));
+  // A published id keeps its pinned measure (the check then flags an index that disagrees).
+  const pinned: Record<string, "reps" | "seconds"> = previous
+    ? (previous.measures ?? Object.fromEntries(previous.index.map((row) => [row[0], row[6]])))
+    : {};
   return {
+    measures: Object.fromEntries(
+      entries.map((e) => [e.exercise.id, pinned[e.exercise.id] ?? e.exercise.measure]),
+    ),
     index: entries.map((e) => toRow(e.exercise)),
     en: Object.fromEntries(entries.map((e) => [e.exercise.id, [...e.steps.en]])),
     fr: Object.fromEntries(entries.map((e) => [e.exercise.id, [...e.steps.fr]])),
@@ -419,6 +429,12 @@ export function checkLibrary(files: LibraryFiles): string[] {
   for (const { exercise } of BELAY_EXERCISES)
     if (!rows.has(exercise.id)) problems.push(`${exercise.id}: missing`);
   for (const id of files.ids) if (!rows.has(id)) problems.push(`${id}: published, then removed`);
+  for (const [id, row] of rows) {
+    const pinned = files.measures?.[id];
+    if (pinned === undefined) problems.push(`measure ${id}: not pinned`);
+    else if (row[6] !== pinned && (row[6] === "reps" || row[6] === "seconds"))
+      problems.push(`measure ${id}: published in ${pinned}, now in ${row[6]}`);
+  }
   for (const id of rows.keys())
     if (!files.ids.includes(id)) problems.push(`${id}: missing from ids.json`);
   return problems;
