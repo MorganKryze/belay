@@ -253,6 +253,30 @@ describe("a session's own plan and start through /api/sync", () => {
     expect(more.workouts[0]!.plan).toHaveLength(longer.length + 1);
   });
 
+  it("keeps a session's plan and start out of another account's reach", async () => {
+    const a = await signIn("pl-owner");
+    const b = await signIn("pl-intruder");
+    const w = newId();
+    await a.sync("0", [start(w)]);
+    const before = await owner.select().from(workouts).where(eq(workouts.id, w));
+    const bad = [...B, { ...B[0]!, exerciseId: "ds:9999" }];
+    const res = await b.sync("0", [
+      planChange(w, appendSlot(B, PLANK), LATEST),
+      { kind: "workout", id: w, field: "startedAt", value: LATEST, at: LATEST },
+      planChange(w, bad, LATEST),
+    ]);
+    expect(res.rejected).toHaveLength(3);
+    expect(res.rejected).toEqual(
+      expect.arrayContaining([
+        { index: 0, reason: "unknown" },
+        { index: 1, reason: "unknown" },
+        { index: 2, reason: "unknown_exercise" },
+      ]),
+    );
+    expect(res.workouts).toEqual([]);
+    expect(await owner.select().from(workouts).where(eq(workouts.id, w))).toEqual(before);
+  });
+
   it("refuses a plan counting an exercise in the wrong measure", async () => {
     const { sync } = await signIn("pl-measure");
     const w = newId();
