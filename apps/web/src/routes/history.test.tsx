@@ -189,6 +189,35 @@ describe("a session's detail", () => {
     db.close();
   });
 
+  it("numbers the work sets from 1 for each exercise, one replaced mid-session included", async () => {
+    const base = session(7, "B", new Date(2026, 9, 5, 18, 0), 58, [[0, 3, 100, 5, 2]]);
+    const replaced: Change[] = [4, 5].map((position, i) => ({
+      kind: "set",
+      id: id(79 + i),
+      workoutId: id(7),
+      field: "create",
+      slotIndex: 0,
+      position,
+      exerciseId: "ds:1760",
+      warmup: false,
+      weightKg: 24,
+      reps: 10,
+      rir: 2,
+      doneAt: "2026-10-05T16:30:00.000Z",
+      at: "2026-10-05T16:30:00.000Z",
+    }));
+    await seed(ADA.id, [...base, ...replaced]);
+    fakeApi({ me: ADA });
+    renderRoute("/workouts?tab=history");
+    fireEvent.click(await screen.findByRole("link", { name: /Session B · Legs/ }));
+    const numbers = async (name: string) =>
+      within(await screen.findByRole("region", { name }))
+        .getAllByRole("listitem")
+        .map((li) => li.firstElementChild!.textContent);
+    expect(await numbers("Barbell full squat")).toEqual(["1"]);
+    expect(await numbers("Dumbbell goblet squat")).toEqual(["1", "2"]);
+  });
+
   it("says it in French", async () => {
     await seed(ADA.id, MONTH);
     await i18n.changeLanguage("fr");
