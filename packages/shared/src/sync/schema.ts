@@ -447,8 +447,16 @@ export const RejectedSchema = z.object({
   index: z.int().check(z.minimum(0)),
   // unknown: it names something the account does not have; unknown_exercise: a set, or a slot
   // of a plan, of an exercise the library lacks; too_many_sets: a session past 150 sets;
-  // wrong_measure: reps for an exercise counted in seconds, or the other way round.
-  reason: z.enum(["unknown", "refused", "unknown_exercise", "too_many_sets", "wrong_measure"]),
+  // wrong_measure: reps for an exercise counted in seconds, or the other way round;
+  // plan_shrank: a plan shorter than the stored one (a slot is never taken out).
+  reason: z.enum([
+    "unknown",
+    "refused",
+    "unknown_exercise",
+    "too_many_sets",
+    "wrong_measure",
+    "plan_shrank",
+  ]),
 });
 
 export const SyncResponseSchema = z.object({

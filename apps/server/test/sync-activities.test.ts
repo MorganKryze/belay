@@ -232,6 +232,27 @@ describe("a session's own plan and start through /api/sync", () => {
     expect(await owner.select().from(workouts).where(eq(workouts.id, other))).toEqual([]);
   });
 
+  it("refuses a plan that would drop a slot, and the stored session comes back", async () => {
+    const { sync } = await signIn("pl-shrank");
+    const w = newId();
+    const longer = appendSlot(B, PLANK);
+    const first = await sync("0", [start(w), planChange(w, longer, LATER)]);
+    // A stale device's shorter plan, even a later one: refused, the stored session echoed.
+    const res = await sync(first.cursor, [planChange(w, B, LATEST)]);
+    expect(res.rejected).toEqual([{ index: 0, reason: "plan_shrank" }]);
+    expect(res.workouts).toEqual([expect.objectContaining({ id: w, plan: longer, planAt: LATER })]);
+    // A plan as long, or longer, is taken as before.
+    const same = replaceSlot(longer, 0, { id: "ds:1760", measure: "reps" });
+    const ok = await sync(res.cursor, [planChange(w, same, LATEST)]);
+    expect(ok.rejected).toEqual([]);
+    expect(ok.workouts[0]).toMatchObject({ plan: same, planAt: LATEST });
+    const more = await sync(ok.cursor, [
+      planChange(w, appendSlot(same, PLANK), "2026-10-07T17:20:00.000Z"),
+    ]);
+    expect(more.rejected).toEqual([]);
+    expect(more.workouts[0]!.plan).toHaveLength(longer.length + 1);
+  });
+
   it("refuses a plan counting an exercise in the wrong measure", async () => {
     const { sync } = await signIn("pl-measure");
     const w = newId();

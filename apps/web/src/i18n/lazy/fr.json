@@ -35,7 +35,8 @@
         "refused": "Refusée par le serveur",
         "unknown_exercise": "Exercice inconnu du serveur",
         "too_many_sets": "Plus de 150 séries dans la séance",
-        "wrong_measure": "Compté en répétitions pour un exercice chronométré, ou l'inverse"
+        "wrong_measure": "Compté en répétitions pour un exercice chronométré, ou l'inverse",
+        "plan_shrank": "Un programme plus court que celui du serveur (un créneau n'est jamais retiré)"
       }
     }
   },

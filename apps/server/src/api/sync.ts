@@ -581,7 +581,8 @@ function planProblem(plan: readonly Slot[]): Rejected["reason"] | null {
 // A session's start (code, plan, start time) is its creation and is written once: a replay, or
 // another start of the same id, changes nothing and gets the stored session back. Its other
 // fields merge one by one: its own copy of the plan and its start time too, each a whole field.
-// A plan naming an exercise the library lacks, or counting one in the wrong measure, is refused.
+// A plan naming an exercise the library lacks, counting one in the wrong measure, or shorter than
+// the stored one, is refused.
 async function writeWorkouts(ctx: Ctx, all: Indexed<WorkoutChange>[]) {
   const { tx, userId, now, out } = ctx;
   const problems = new Map<number, Rejected["reason"]>();
@@ -589,6 +590,21 @@ async function writeWorkouts(ctx: Ctx, all: Indexed<WorkoutChange>[]) {
     const problem =
       c.field === "start" ? planProblem(c.plan) : c.field === "plan" ? planProblem(c.value) : null;
     if (problem) problems.set(c.index, problem);
+  }
+  // A slot is never taken out: a plan shorter than the stored one is refused.
+  const planned = [...new Set(all.filter((c) => c.field === "plan").map((c) => c.id))];
+  if (planned.length > 0) {
+    const lengths = new Map(
+      (
+        await tx
+          .select({ id: workouts.id, plan: workouts.plan })
+          .from(workouts)
+          .where(and(eq(workouts.userId, userId), inArray(workouts.id, planned)))
+      ).map((r) => [r.id, r.plan.length]),
+    );
+    for (const c of all)
+      if (c.field === "plan" && !problems.has(c.index) && c.value.length < (lengths.get(c.id) ?? 0))
+        problems.set(c.index, "plan_shrank");
   }
   for (const [index, reason] of problems) out.rejected.push({ index, reason });
   // A refused plan change: the stored session comes back, whatever the phone's cursor.

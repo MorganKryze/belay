@@ -35,7 +35,8 @@
         "refused": "Refused by the server",
         "unknown_exercise": "Exercise unknown to the server",
         "too_many_sets": "More than 150 sets in the session",
-        "wrong_measure": "Counted in reps for a timed exercise, or the other way round"
+        "wrong_measure": "Counted in reps for a timed exercise, or the other way round",
+        "plan_shrank": "A shorter plan than the one stored (a slot is never removed)"
       }
     }
   },
