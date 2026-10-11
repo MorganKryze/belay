@@ -363,4 +363,23 @@ describe("fix round: extra rows, chrono, replaced warm-ups, leaving out", () => 
       within(card("Barbell bench press")).queryByRole("textbox", { name: "Load of set 6, kg" }),
     ).toBeNull();
   });
+
+  it("a stopped chrono logs the time held, not the typed target", async () => {
+    await startSession("A");
+    fireEvent.click(screen.getByRole("button", { name: "+ Exercise" }));
+    const sheet = await screen.findByRole("dialog", { name: "Add an exercise" });
+    fireEvent.change(within(sheet).getByRole("searchbox"), { target: { value: "dead hang" } });
+    fireEvent.click(within(sheet).getByRole("button", { name: /^Dead hang/ }));
+    const hang = await waitFor(() => card("Dead hang"));
+    fireEvent.change(field(hang, "Seconds of set 1"), { target: { value: "45" } });
+    fireEvent.click(within(hang).getByRole("button", { name: "Timer 0:45" }));
+    await within(hang).findByRole("timer");
+    await later(12);
+    fireEvent.click(within(card("Dead hang")).getByRole("button", { name: "Stop" }));
+    await waitFor(() => expect(field(card("Dead hang"), "Seconds of set 1").value).toBe("12"));
+    log(card("Dead hang"), "Log set 1");
+    await waitFor(async () =>
+      expect((await stored()).history.sets.map((s) => s.seconds)).toEqual([12]),
+    );
+  });
 });

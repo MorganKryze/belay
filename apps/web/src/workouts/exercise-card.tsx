@@ -239,14 +239,17 @@ export function ExerciseCard({
   };
   // The chrono counts down the next row's target (spec §4.3), from an end time.
   const target = next ? (parseCount(shown(next, "count")) ?? slot.repRange[0]) : slot.repRange[0];
-  const startChrono = () =>
-    next &&
+  const startChrono = () => {
+    if (!next) return;
+    // The seconds typed are the target now: the time held replaces them once it stops.
+    setDrafts((d) => ({ ...d, [next.position]: { ...d[next.position], count: undefined } }));
     onChrono({
       slotIndex,
       position: next.position,
       seconds: target,
       endsAt: new Date(now + target * 1000).toISOString(),
     });
+  };
   const stopChrono = () =>
     chrono &&
     onChrono({
