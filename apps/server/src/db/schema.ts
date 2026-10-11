@@ -222,9 +222,90 @@ export const annotations = pgTable(
   ],
 );
 
-// A session as it was done: its code, plan (the day's targets, frozen) and start are written once;
-// its end, note, exercise notes and removal each carry their own timestamp. Removed, never deleted:
-// its sets stay, and no screen shows or counts them.
+// The day's steps, typed by hand: one row per person and day, the value with its own timestamp
+// (null: deleted).
+export const dailySteps = pgTable(
+  "daily_steps",
+  {
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    date: date("date").notNull(),
+    steps: integer("steps"),
+    stepsAt: ts("steps_at"),
+    serverSeq: serverSeq(),
+    createdAt: ts("created_at").notNull().defaultNow(),
+    updatedAt: ts("updated_at").notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.userId, t.date] }),
+    index("daily_steps_user_seq").on(t.userId, t.serverSeq),
+    check("daily_steps_range", sql`${t.steps} IS NULL OR ${t.steps} BETWEEN 0 AND 100000`),
+  ],
+);
+
+// A cardio session or a climb: its day, kind and fields are one block under fields_at, its
+// removal a separate field, as an annotation.
+export const activities = pgTable(
+  "activities",
+  {
+    id: uuid("id").primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    date: date("date").notNull(),
+    kind: text("kind").notNull(),
+    durationMin: smallint("duration_min").notNull(),
+    cardioType: text("cardio_type"),
+    climbStyle: text("climb_style"),
+    climbRuns: smallint("climb_runs"),
+    climbGrade: text("climb_grade"),
+    climbColor: text("climb_color"),
+    fieldsAt: ts("fields_at").notNull(),
+    removed: boolean("removed").notNull().default(false),
+    removedAt: ts("removed_at"),
+    serverSeq: serverSeq(),
+    createdAt: ts("created_at").notNull().defaultNow(),
+    updatedAt: ts("updated_at").notNull().defaultNow(),
+  },
+  (t) => [
+    index("activities_user_seq").on(t.userId, t.serverSeq),
+    check("activities_kind", sql`${t.kind} IN ('cardio', 'climbing')`),
+    check(
+      "activities_duration",
+      sql`${t.durationMin} BETWEEN 5 AND 480 AND ${t.durationMin} % 5 = 0`,
+    ),
+    check(
+      "activities_cardio_type",
+      sql`${t.cardioType} IS NULL OR ${t.cardioType} IN ('run', 'bike', 'row', 'walk', 'swim', 'other')`,
+    ),
+    check(
+      "activities_climb_style",
+      sql`${t.climbStyle} IS NULL OR ${t.climbStyle} IN ('boulder', 'route')`,
+    ),
+    check("activities_climb_runs", sql`${t.climbRuns} IS NULL OR ${t.climbRuns} BETWEEN 0 AND 200`),
+    // 5a to 8c+; the API checks the exact list (the same pattern also takes nothing else).
+    check(
+      "activities_climb_grade",
+      sql`${t.climbGrade} IS NULL OR ${t.climbGrade} ~ '^[5-8][abc]\\+?$'`,
+    ),
+    check(
+      "activities_climb_color",
+      sql`${t.climbColor} IS NULL OR ${t.climbColor} IN ('yellow', 'green', 'blue', 'red', 'black', 'purple', 'white')`,
+    ),
+    check("activities_cardio_only", sql`${t.kind} = 'cardio' OR ${t.cardioType} IS NULL`),
+    check(
+      "activities_climbing_only",
+      sql`${t.kind} = 'climbing' OR (${t.climbStyle} IS NULL AND ${t.climbRuns} IS NULL AND ${t.climbGrade} IS NULL AND ${t.climbColor} IS NULL)`,
+    ),
+    check("activities_grade_or_color", sql`${t.climbGrade} IS NULL OR ${t.climbColor} IS NULL`),
+  ],
+);
+
+// A session as it was done: its code, first plan and start are written with its start; its own
+// copy of the plan and its start time change afterwards (plan_at, started_at_at: null until
+// then), and its end, note, exercise notes and removal each carry their own timestamp. Removed,
+// never deleted: its sets stay, and no screen shows or counts them.
 export const workouts = pgTable(
   "workouts",
   {
@@ -234,7 +315,9 @@ export const workouts = pgTable(
       .references(() => users.id, { onDelete: "cascade" }),
     sessionCode: text("session_code").notNull(),
     plan: jsonb("plan").$type<Slot[]>().notNull(),
+    planAt: ts("plan_at"),
     startedAt: ts("started_at").notNull(),
+    startedAtAt: ts("started_at_at"),
     endedAt: ts("ended_at"),
     endedAtAt: ts("ended_at_at"),
     note: text("note"),
@@ -261,7 +344,8 @@ export const workouts = pgTable(
   ],
 );
 
-// One set: created once; its load, reps and RIR change together under fields_at.
+// One set: created once; its load, count (reps or seconds, never both) and RIR change together
+// under fields_at.
 export const workoutSets = pgTable(
   "workout_sets",
   {
@@ -275,7 +359,8 @@ export const workoutSets = pgTable(
     exerciseId: text("exercise_id").notNull(),
     warmup: boolean("warmup").notNull(),
     weightKg: numeric("weight_kg", { precision: 5, scale: 2, mode: "number" }).notNull(),
-    reps: smallint("reps").notNull(),
+    reps: smallint("reps"),
+    seconds: smallint("seconds"),
     rir: smallint("rir"),
     doneAt: ts("done_at").notNull(),
     fieldsAt: ts("fields_at").notNull(),
@@ -299,6 +384,8 @@ export const workoutSets = pgTable(
     check("workout_sets_exercise", sql`${t.exerciseId} ~ '^(ds|belay):[a-z0-9-]{1,40}$'`),
     check("workout_sets_weight", sql`${t.weightKg} BETWEEN 0 AND 500`),
     check("workout_sets_reps", sql`${t.reps} BETWEEN 0 AND 100`),
+    check("workout_sets_seconds", sql`${t.seconds} BETWEEN 0 AND 3600`),
+    check("workout_sets_one_measure", sql`(${t.reps} IS NULL) <> (${t.seconds} IS NULL)`),
     check("workout_sets_rir", sql`${t.rir} IS NULL OR ${t.rir} BETWEEN 0 AND 4`),
   ],
 );
