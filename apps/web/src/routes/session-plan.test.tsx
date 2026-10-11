@@ -331,6 +331,21 @@ describe("a timed exercise and its chrono (spec D11, §4.3)", () => {
     await waitFor(() => expect(field(card("Dead hang"), "Seconds of set 1").value).toBe("12"));
   });
 
+  it("stopped and logged at once, logs the seconds held, not the target", async () => {
+    const hang = await addHang();
+    fireEvent.click(within(hang).getByRole("button", { name: "Timer 0:30" }));
+    await within(hang).findByRole("timer");
+    await later(5);
+    fireEvent.click(within(card("Dead hang")).getByRole("button", { name: "Stop" }));
+    // The stop is saved and shown, but no clock tick has come since: ✓ right away.
+    await waitFor(async () => expect((await stored()).active?.chrono?.seconds).toBe(5));
+    await act(() => new Promise((done) => setTimeout(done, 100))); // the card has re-rendered
+    log(card("Dead hang"), "Log set 1");
+    await waitFor(async () =>
+      expect((await stored()).history.sets.map((s) => s.seconds)).toEqual([5]),
+    );
+  });
+
   it("says it in French", async () => {
     await i18n.changeLanguage("fr");
     renderRoute("/workout?start=C");
