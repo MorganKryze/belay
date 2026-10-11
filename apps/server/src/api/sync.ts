@@ -1,8 +1,10 @@
 import { isCreatineName } from "@belay/shared/body/supplements";
-import { isKnownExercise } from "@belay/shared/exercises/catalog";
+import { exerciseById, isKnownExercise } from "@belay/shared/exercises/catalog";
 import { MAX_ROWS } from "@belay/shared/sync/limits";
 import { clampAt, mergeFields, mergeTarget, staleKeys } from "@belay/shared/sync/merge";
 import type {
+  ActivityChange,
+  ActivityRow,
   AnnotationChange,
   AnnotationRow,
   Change,
@@ -13,6 +15,7 @@ import type {
   Rejected,
   SetChange,
   SetRow,
+  StepsRow,
   SupplementChange,
   SupplementLogChange,
   SupplementLogRow,
@@ -24,13 +27,15 @@ import type {
   WorkoutChange,
   WorkoutRow,
 } from "@belay/shared/sync/schema";
-import { clampWorkoutTime, MAX_SETS } from "@belay/shared/training/workout";
+import { clampWorkoutTime, MAX_SETS, type Slot } from "@belay/shared/training/workout";
 import { and, asc, eq, gt, inArray, or, sql } from "drizzle-orm";
 import type { PgColumn } from "drizzle-orm/pg-core";
 import { asUser, type Db, type Tx } from "../db/client";
 import {
+  activities,
   annotations,
   bodyMetrics,
+  dailySteps,
   intakeLogs,
   supplementLogs,
   supplements,
@@ -57,6 +62,8 @@ interface Outcome {
   supplements: Set<string>; // by id
   logs: Set<string>; // `${supplementId}|${date}`
   annotations: Set<string>; // by id
+  steps: Set<string>; // by date
+  activities: Set<string>; // by id
   workouts: Set<string>; // by id
   sets: Set<string>; // by id
   user: boolean; // the range and the profile
@@ -90,6 +97,8 @@ export function runSync(
       supplements: new Set(),
       logs: new Set(),
       annotations: new Set(),
+      steps: new Set(),
+      activities: new Set(),
       workouts: new Set(),
       sets: new Set(),
       user: false,
@@ -108,6 +117,9 @@ export function runSync(
     await writeSupplements(ctx, changes.filter(of("supplement")));
     await writeSupplementLogs(ctx, changes.filter(of("supplementLog")));
     await writeAnnotations(ctx, changes.filter(of("annotation")));
+    const steps = changes.filter(of("steps")).map((c) => ({ ...c, field: "steps" }));
+    await writeDayFields(ctx, STEPS, steps, out.steps);
+    await writeActivities(ctx, changes.filter(of("activity")));
     // Sessions before their sets: a set may name a session started in the same batch.
     await writeWorkouts(ctx, changes.filter(of("workout")));
     await writeSets(ctx, changes.filter(of("set")));
@@ -163,7 +175,7 @@ function unknown(out: Outcome, changes: { index: number }[]) {
 
 // A table keyed by person and day whose values each carry their own timestamp.
 type DayTable = {
-  table: typeof bodyMetrics | typeof intakeLogs;
+  table: typeof bodyMetrics | typeof intakeLogs | typeof dailySteps;
   fields: Record<string, readonly [value: PgColumn, at: PgColumn]>;
 };
 const BODY: DayTable = {
@@ -181,6 +193,10 @@ const INTAKE: DayTable = {
     kcal: [intakeLogs.kcal, intakeLogs.kcalAt],
     protein: [intakeLogs.proteinG, intakeLogs.proteinAt],
   },
+};
+const STEPS: DayTable = {
+  table: dailySteps,
+  fields: { steps: [dailySteps.steps, dailySteps.stepsAt] },
 };
 type DayChange = { index: number; date: string; field: string; value: number | null; at: string };
 
@@ -488,17 +504,104 @@ async function writeAnnotations(ctx: Ctx, changes: Indexed<AnnotationChange>[]) 
   );
 }
 
+// An activity, as an annotation: created by its first block of fields, then its block and its
+// removal merge apart.
+async function writeActivities(ctx: Ctx, changes: Indexed<ActivityChange>[]) {
+  const { tx, userId, now, out } = ctx;
+  if (changes.length === 0) return;
+  const ids = [...new Set(changes.map((c) => c.id))];
+  const read = () =>
+    tx
+      .select({ id: activities.id, fields: activities.fieldsAt, removed: activities.removedAt })
+      .from(activities)
+      .where(and(eq(activities.userId, userId), inArray(activities.id, ids)));
+  const block = (c: Extract<ActivityChange, { field: "fields" }>) => ({
+    date: c.date,
+    kind: c.type,
+    durationMin: c.durationMin,
+    cardioType: c.cardioType,
+    climbStyle: c.climbStyle,
+    climbRuns: c.climbRuns,
+    climbGrade: c.climbGrade,
+    climbColor: c.climbColor,
+  });
+  const kept = await createMissing(
+    ctx,
+    changes,
+    new Set((await read()).map((r) => r.id)),
+    (c) => c.field === "fields",
+    (sp, c) =>
+      c.field !== "fields"
+        ? Promise.resolve([])
+        : sp
+            .insert(activities)
+            .values({ id: c.id, userId, ...block(c), fieldsAt: new Date(clampAt(c.at, now)) })
+            .onConflictDoNothing({ target: activities.id })
+            .returning({ id: activities.id }),
+  );
+  const stored = new Map(
+    (await read()).flatMap((r) => [
+      [`${r.id}|fields`, iso(r.fields)],
+      [`${r.id}|removed`, iso(r.removed)],
+    ]),
+  );
+  const key = (c: ActivityChange) => `${c.id}|${c.field}`;
+  for (const k of staleKeys(stored, kept, key, now)) out.activities.add(k.split("|")[0]!);
+  await guarded(
+    ctx,
+    mergeFields(stored, kept, key, now),
+    async (sp, batch) => {
+      for (const c of batch)
+        await sp
+          .update(activities)
+          .set({
+            ...(c.field === "fields"
+              ? { ...block(c), fieldsAt: new Date(c.at) }
+              : { removed: c.value, removedAt: new Date(c.at) }),
+            serverSeq: nextSeq,
+            updatedAt: sql`now()`,
+          })
+          .where(and(eq(activities.id, c.id), eq(activities.userId, userId)));
+    },
+    (c) => out.activities.add(c.id),
+  );
+}
+
+// Why a plan cannot be taken: a slot of an exercise the library lacks, or one counted in another
+// measure than its exercise; null when every slot is right.
+function planProblem(plan: readonly Slot[]): Rejected["reason"] | null {
+  for (const slot of plan) {
+    const exercise = exerciseById(slot.exerciseId);
+    if (!exercise) return "unknown_exercise";
+    if ((slot.measure ?? "reps") !== exercise.measure) return "wrong_measure";
+  }
+  return null;
+}
+
 // A session's start (code, plan, start time) is its creation and is written once: a replay, or
 // another start of the same id, changes nothing and gets the stored session back. Its other
-// fields merge one by one.
-async function writeWorkouts(ctx: Ctx, changes: Indexed<WorkoutChange>[]) {
+// fields merge one by one: its own copy of the plan and its start time too, each a whole field.
+// A plan naming an exercise the library lacks, or counting one in the wrong measure, is refused.
+async function writeWorkouts(ctx: Ctx, all: Indexed<WorkoutChange>[]) {
   const { tx, userId, now, out } = ctx;
+  const problems = new Map<number, Rejected["reason"]>();
+  for (const c of all) {
+    const problem =
+      c.field === "start" ? planProblem(c.plan) : c.field === "plan" ? planProblem(c.value) : null;
+    if (problem) problems.set(c.index, problem);
+  }
+  for (const [index, reason] of problems) out.rejected.push({ index, reason });
+  // A refused plan change: the stored session comes back, whatever the phone's cursor.
+  for (const c of all) if (c.field === "plan" && problems.has(c.index)) out.workouts.add(c.id);
+  const changes = all.filter((c) => !problems.has(c.index));
   if (changes.length === 0) return;
   const ids = [...new Set(changes.map((c) => c.id))];
   const read = () =>
     tx
       .select({
         id: workouts.id,
+        plan: workouts.planAt,
+        startedAt: workouts.startedAtAt,
         ended: workouts.endedAtAt,
         note: workouts.noteAt,
         exerciseNotes: workouts.exerciseNotesAt,
@@ -528,14 +631,13 @@ async function writeWorkouts(ctx: Ctx, changes: Indexed<WorkoutChange>[]) {
             .returning({ id: workouts.id }),
   );
   for (const c of kept) if (c.field === "start" && before.has(c.id)) out.workouts.add(c.id);
-  // ponytail: the plan and the start time change once 0006 stores when (the next commits);
-  // until then such a change is taken and left unwritten, as a new kind was in M3a.
   const fields = kept.filter(
-    (c): c is Indexed<Exclude<WorkoutChange, { field: "start" | "plan" | "startedAt" }>> =>
-      c.field !== "start" && c.field !== "plan" && c.field !== "startedAt",
+    (c): c is Indexed<Exclude<WorkoutChange, { field: "start" }>> => c.field !== "start",
   );
   const stored = new Map(
     (await read()).flatMap((r) => [
+      [`${r.id}|plan`, iso(r.plan)],
+      [`${r.id}|startedAt`, iso(r.startedAt)],
       [`${r.id}|ended`, iso(r.ended)],
       [`${r.id}|note`, iso(r.note)],
       [`${r.id}|exerciseNotes`, iso(r.exerciseNotes)],
@@ -553,16 +655,20 @@ async function writeWorkouts(ctx: Ctx, changes: Indexed<WorkoutChange>[]) {
         await sp
           .update(workouts)
           .set({
-            ...(c.field === "ended"
-              ? {
-                  endedAt: c.value === null ? null : new Date(clampWorkoutTime(c.value, now)),
-                  endedAtAt: at,
-                }
-              : c.field === "note"
-                ? { note: c.value, noteAt: at }
-                : c.field === "exerciseNotes"
-                  ? { exerciseNotes: c.value, exerciseNotesAt: at }
-                  : { removed: c.value, removedAt: at }),
+            ...(c.field === "plan"
+              ? { plan: c.value, planAt: at }
+              : c.field === "startedAt"
+                ? { startedAt: new Date(clampWorkoutTime(c.value, now)), startedAtAt: at }
+                : c.field === "ended"
+                  ? {
+                      endedAt: c.value === null ? null : new Date(clampWorkoutTime(c.value, now)),
+                      endedAtAt: at,
+                    }
+                  : c.field === "note"
+                    ? { note: c.value, noteAt: at }
+                    : c.field === "exerciseNotes"
+                      ? { exerciseNotes: c.value, exerciseNotesAt: at }
+                      : { removed: c.value, removedAt: at }),
             serverSeq: nextSeq,
             updatedAt: sql`now()`,
           })
@@ -573,9 +679,9 @@ async function writeWorkouts(ctx: Ctx, changes: Indexed<WorkoutChange>[]) {
   );
 }
 
-// A set is created once with all its fields; its load, reps and RIR then change together, and
+// A set is created once with all its fields; its load, count and RIR then change together, and
 // its removal on its own. It must name a session of this account and an exercise of the library,
-// and a session keeps 150 sets at most.
+// be counted in that exercise's measure (reps or seconds), and a session keeps 150 sets at most.
 async function writeSets(ctx: Ctx, changes: Indexed<SetChange>[]) {
   const { tx, userId, now, out } = ctx;
   if (changes.length === 0) return;
@@ -599,6 +705,7 @@ async function writeSets(ctx: Ctx, changes: Indexed<SetChange>[]) {
     tx
       .select({
         id: workoutSets.id,
+        exerciseId: workoutSets.exerciseId,
         values: workoutSets.fieldsAt,
         removed: workoutSets.removedAt,
         gone: workoutSets.removed,
@@ -626,10 +733,16 @@ async function writeSets(ctx: Ctx, changes: Indexed<SetChange>[]) {
     ).map((r) => [r.workoutId, r.n]),
   );
   const refused = new Map<string, Rejected["reason"]>();
-  // ponytail: 0006 stores seconds (the next commits); until then a timed set is refused.
+  // The exercise of each set: the stored one, or the one its creation names.
+  const exerciseOf = new Map(storedSets.map((r) => [r.id, r.exerciseId]));
   for (const c of changes)
-    if ((c.field === "create" || c.field === "values") && c.reps === null)
+    if (c.field === "create" && !exerciseOf.has(c.id)) exerciseOf.set(c.id, c.exerciseId);
+  for (const c of changes) {
+    if (c.field !== "create" && c.field !== "values") continue;
+    const measure = exerciseById(exerciseOf.get(c.id) ?? "")?.measure;
+    if (measure && (c.reps === null) !== (measure === "seconds"))
       refused.set(c.id, "wrong_measure");
+  }
   for (const c of changes) {
     if (!mine.has(c.workoutId) || refused.has(c.id)) continue;
     // A removed set put back counts as a new live one.
@@ -666,7 +779,8 @@ async function writeSets(ctx: Ctx, changes: Indexed<SetChange>[]) {
               exerciseId: c.exerciseId,
               warmup: c.warmup,
               weightKg: c.weightKg,
-              reps: c.reps!, // a timed set is refused above
+              reps: c.reps,
+              seconds: c.seconds ?? null,
               rir: c.rir,
               doneAt: new Date(clampWorkoutTime(c.doneAt, now)),
               fieldsAt: new Date(clampAt(c.at, now)),
@@ -694,7 +808,13 @@ async function writeSets(ctx: Ctx, changes: Indexed<SetChange>[]) {
           .update(workoutSets)
           .set({
             ...(c.field === "values"
-              ? { weightKg: c.weightKg, reps: c.reps!, rir: c.rir, fieldsAt: new Date(c.at) }
+              ? {
+                  weightKg: c.weightKg,
+                  reps: c.reps,
+                  seconds: c.seconds ?? null,
+                  rir: c.rir,
+                  fieldsAt: new Date(c.at),
+                }
               : { removed: c.value, removedAt: new Date(c.at) }),
             serverSeq: nextSeq,
             updatedAt: sql`now()`,
@@ -712,6 +832,8 @@ type Item =
   | { seq: bigint; t: "supplement"; row: typeof supplements.$inferSelect }
   | { seq: bigint; t: "log"; row: typeof supplementLogs.$inferSelect }
   | { seq: bigint; t: "annotation"; row: typeof annotations.$inferSelect }
+  | { seq: bigint; t: "steps"; row: typeof dailySteps.$inferSelect }
+  | { seq: bigint; t: "activity"; row: typeof activities.$inferSelect }
   | { seq: bigint; t: "workout"; row: typeof workouts.$inferSelect }
   | { seq: bigint; t: "set"; row: typeof workoutSets.$inferSelect };
 const tag =
@@ -771,6 +893,22 @@ async function readSince(
         .orderBy(asc(annotations.serverSeq))
         .limit(limit)
     ).map(tag("annotation")),
+    ...(
+      await tx
+        .select()
+        .from(dailySteps)
+        .where(after(dailySteps))
+        .orderBy(asc(dailySteps.serverSeq))
+        .limit(limit)
+    ).map(tag("steps")),
+    ...(
+      await tx
+        .select()
+        .from(activities)
+        .where(after(activities))
+        .orderBy(asc(activities.serverSeq))
+        .limit(limit)
+    ).map(tag("activity")),
     ...(
       await tx
         .select()
@@ -839,6 +977,20 @@ async function readSince(
           .from(annotations)
           .where(and(mine(annotations), inArray(annotations.id, [...out.annotations])))
     ).map(tag("annotation")),
+    ...(out.steps.size === 0
+      ? []
+      : await tx
+          .select()
+          .from(dailySteps)
+          .where(and(mine(dailySteps), inArray(dailySteps.date, [...out.steps])))
+    ).map(tag("steps")),
+    ...(out.activities.size === 0
+      ? []
+      : await tx
+          .select()
+          .from(activities)
+          .where(and(mine(activities), inArray(activities.id, [...out.activities])))
+    ).map(tag("activity")),
     ...(out.workouts.size === 0
       ? []
       : await tx
@@ -878,16 +1030,41 @@ function rowsOf(items: Item[]) {
   const annotationRows = new Map<string, AnnotationRow>();
   const workoutRows = new Map<string, WorkoutRow>();
   const setRows = new Map<string, SetRow>();
+  const stepsRows = new Map<string, StepsRow>();
+  const activityRows = new Map<string, ActivityRow>();
   for (const item of items) {
+    if (item.t === "steps") {
+      const r = item.row;
+      stepsRows.set(r.date, { date: r.date, steps: r.steps, stepsAt: iso(r.stepsAt) });
+      continue;
+    }
+    if (item.t === "activity") {
+      const r = item.row;
+      activityRows.set(r.id, {
+        id: r.id,
+        date: r.date,
+        type: r.kind as ActivityRow["type"],
+        durationMin: r.durationMin,
+        cardioType: r.cardioType as ActivityRow["cardioType"],
+        climbStyle: r.climbStyle as ActivityRow["climbStyle"],
+        climbRuns: r.climbRuns,
+        climbGrade: r.climbGrade,
+        climbColor: r.climbColor as ActivityRow["climbColor"],
+        fieldsAt: r.fieldsAt.toISOString(),
+        removed: r.removed,
+        removedAt: iso(r.removedAt),
+      });
+      continue;
+    }
     if (item.t === "workout") {
       const r = item.row;
       workoutRows.set(r.id, {
         id: r.id,
         sessionCode: r.sessionCode,
         plan: r.plan,
-        planAt: null,
+        planAt: iso(r.planAt),
         startedAt: r.startedAt.toISOString(),
-        startedAtAt: null,
+        startedAtAt: iso(r.startedAtAt),
         endedAt: iso(r.endedAt),
         endedAtAt: iso(r.endedAtAt),
         note: r.note,
@@ -910,7 +1087,7 @@ function rowsOf(items: Item[]) {
         warmup: r.warmup,
         weightKg: r.weightKg,
         reps: r.reps,
-        seconds: null,
+        seconds: r.seconds,
         rir: r.rir,
         doneAt: r.doneAt.toISOString(),
         fieldsAt: r.fieldsAt.toISOString(),
@@ -977,8 +1154,8 @@ function rowsOf(items: Item[]) {
     supplements: [...supplementRows.values()],
     supplementLogs: [...logs.values()],
     annotations: [...annotationRows.values()],
-    steps: [], // stored from 0006 on (the next commits)
-    activities: [],
+    steps: [...stepsRows.values()],
+    activities: [...activityRows.values()],
     workouts: [...workoutRows.values()],
     sets: [...setRows.values()],
   };
