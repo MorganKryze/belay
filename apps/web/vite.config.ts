@@ -48,6 +48,8 @@ export default defineConfig({
       },
     }),
   ],
+  // The release tag, stamped by the image build; "dev" everywhere else.
+  define: { __BELAY_VERSION__: JSON.stringify(process.env.BELAY_VERSION || "dev") },
   resolve: { alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) } },
   // Lazy chunks get their own prefix so the bundle budget's index-*.js glob only ever matches
   // the entry: a shared chunk named after some index.js would otherwise be counted as initial.

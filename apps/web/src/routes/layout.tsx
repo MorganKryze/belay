@@ -61,7 +61,8 @@ function Shell() {
         {offline ? t("offline") : ""}
       </p>
       <UpdateBanner />
-      <main>
+      {/* Grows to the tab bar, so a screen can pin a line to its bottom (Settings' version). */}
+      <main className="flex flex-1 flex-col">
         <Outlet />
       </main>
       {!fullScreen && <TabBar />}

@@ -15,7 +15,9 @@ COPY apps/server/package.json apps/server/
 COPY apps/web/package.json apps/web/
 RUN pnpm install --frozen-lockfile
 COPY . .
-RUN pnpm --filter @belay/web build && pnpm --filter @belay/server build
+# The release tag, shown in Settings; "dev" for a build made outside a release.
+ARG BELAY_VERSION=dev
+RUN BELAY_VERSION=$BELAY_VERSION pnpm --filter @belay/web build && pnpm --filter @belay/server build
 
 # The server is one esbuild bundle: no node_modules in the final image.
 FROM mirror.gcr.io/library/node:24-alpine@sha256:ebfe2f90462722a7a4de65e91990e97fe0d401c70e0e762c5b53302f905ec1c1
