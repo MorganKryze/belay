@@ -389,6 +389,8 @@ describe("a replay and the pages", () => {
       supplements: [],
       supplementLogs: [],
       annotations: [],
+      steps: [],
+      activities: [],
       workouts: [],
       sets: [],
       target: null,

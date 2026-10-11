@@ -23,6 +23,9 @@
       "supplementUnnamed": "Complément",
       "annotation": "Annotation du {{day}}",
       "annotationUndated": "Annotation",
+      "steps": "Pas du {{day}}",
+      "activity": "Activité du {{day}}",
+      "activityUndated": "Activité",
       "workout": "Séance du {{day}}",
       "workoutUndated": "Séance",
       "set": "Série du {{day}}",
@@ -31,7 +34,8 @@
         "unknown": "Introuvable sur le serveur",
         "refused": "Refusée par le serveur",
         "unknown_exercise": "Exercice inconnu du serveur",
-        "too_many_sets": "Plus de 150 séries dans la séance"
+        "too_many_sets": "Plus de 150 séries dans la séance",
+        "wrong_measure": "Compté en répétitions pour un exercice chronométré, ou l'inverse"
       }
     }
   },

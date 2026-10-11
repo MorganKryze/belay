@@ -204,11 +204,19 @@ async function localAt(tx: WriteTx, change: Change): Promise<string | null> {
       const row = await tx.objectStore("annotations").get(change.id);
       return (change.field === "fields" ? row?.fieldsAt : row?.removedAt) ?? null;
     }
+    // ponytail: steps and activities are kept from IndexedDB version 4 on (the next commits).
+    case "steps":
+    case "activity":
+      return null;
     case "workout": {
       const row = await tx.objectStore("workouts").get(change.id);
       switch (change.field) {
         case "start":
           return row ? change.at : null; // written once: a start never overwrites a session
+        case "plan":
+          return row?.planAt ?? null;
+        case "startedAt":
+          return row?.startedAtAt ?? null;
         case "ended":
           return row?.endedAtAt ?? null;
         case "note":
@@ -300,6 +308,9 @@ async function applyLocal(tx: WriteTx, change: Change): Promise<void> {
       else if (row) await store.put({ ...row, removed: change.value, removedAt: change.at });
       return;
     }
+    case "steps":
+    case "activity":
+      return;
     case "workout": {
       const store = tx.objectStore("workouts");
       const row = await store.get(change.id);
@@ -309,7 +320,9 @@ async function applyLocal(tx: WriteTx, change: Change): Promise<void> {
             id: change.id,
             sessionCode: change.sessionCode,
             plan: change.plan,
+            planAt: null,
             startedAt: change.startedAt,
+            startedAtAt: null,
             endedAt: null,
             endedAtAt: null,
             note: null,
@@ -323,13 +336,17 @@ async function applyLocal(tx: WriteTx, change: Change): Promise<void> {
       }
       if (!row) return;
       await store.put(
-        change.field === "ended"
-          ? { ...row, endedAt: change.value, endedAtAt: change.at }
-          : change.field === "note"
-            ? { ...row, note: change.value, noteAt: change.at }
-            : change.field === "exerciseNotes"
-              ? { ...row, exerciseNotes: change.value, exerciseNotesAt: change.at }
-              : { ...row, removed: change.value, removedAt: change.at },
+        change.field === "plan"
+          ? { ...row, plan: change.value, planAt: change.at }
+          : change.field === "startedAt"
+            ? { ...row, startedAt: change.value, startedAtAt: change.at }
+            : change.field === "ended"
+              ? { ...row, endedAt: change.value, endedAtAt: change.at }
+              : change.field === "note"
+                ? { ...row, note: change.value, noteAt: change.at }
+                : change.field === "exerciseNotes"
+                  ? { ...row, exerciseNotes: change.value, exerciseNotesAt: change.at }
+                  : { ...row, removed: change.value, removedAt: change.at },
       );
       return;
     }
@@ -352,6 +369,7 @@ async function applySet(tx: WriteTx, change: SetChange): Promise<void> {
         warmup: change.warmup,
         weightKg: change.weightKg,
         reps: change.reps,
+        seconds: change.seconds ?? null, // absent from a change queued before timed sets
         rir: change.rir,
         doneAt: change.doneAt,
         fieldsAt: change.at,
@@ -367,6 +385,7 @@ async function applySet(tx: WriteTx, change: SetChange): Promise<void> {
           ...row,
           weightKg: change.weightKg,
           reps: change.reps,
+          seconds: change.seconds ?? null,
           rir: change.rir,
           fieldsAt: change.at,
         }
@@ -412,21 +431,29 @@ async function revert(tx: WriteTx, change: Change): Promise<void> {
       await tx.objectStore("annotations").put({ ...row, removed: false, removedAt: null });
       return;
     }
+    case "steps":
+    case "activity":
+      return;
     case "workout": {
       // A refused start takes its session away; a refused field goes back to unwritten, and the
-      // server sends what it holds, if anything.
+      // server sends what it holds, if anything (a refused plan or start time keeps the value
+      // shown until the server's row replaces it).
       if (change.field === "start") return tx.objectStore("workouts").delete(change.id);
       const row = (await tx.objectStore("workouts").get(change.id))!;
       await tx
         .objectStore("workouts")
         .put(
-          change.field === "ended"
-            ? { ...row, endedAt: null, endedAtAt: null }
-            : change.field === "note"
-              ? { ...row, note: null, noteAt: null }
-              : change.field === "exerciseNotes"
-                ? { ...row, exerciseNotes: {}, exerciseNotesAt: null }
-                : { ...row, removed: false, removedAt: null },
+          change.field === "plan"
+            ? { ...row, planAt: null }
+            : change.field === "startedAt"
+              ? { ...row, startedAtAt: null }
+              : change.field === "ended"
+                ? { ...row, endedAt: null, endedAtAt: null }
+                : change.field === "note"
+                  ? { ...row, note: null, noteAt: null }
+                  : change.field === "exerciseNotes"
+                    ? { ...row, exerciseNotes: {}, exerciseNotesAt: null }
+                    : { ...row, removed: false, removedAt: null },
         );
       return;
     }
@@ -505,6 +532,7 @@ export async function recordSet(
           field: "values",
           weightKg: input.weightKg,
           reps: input.reps,
+          seconds: input.seconds ?? null,
           rir: input.rir,
           at,
         }
@@ -686,7 +714,10 @@ function entryOf(change: Change): string {
       return change.kind;
     case "supplement":
     case "annotation":
+    case "activity":
       return `${change.kind}|${change.id}`;
+    case "steps":
+      return `steps|${change.date}`;
     case "supplementLog":
       return `${change.kind}|${change.supplementId}|${change.date}`;
     case "workout":

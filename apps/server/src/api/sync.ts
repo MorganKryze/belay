@@ -528,8 +528,11 @@ async function writeWorkouts(ctx: Ctx, changes: Indexed<WorkoutChange>[]) {
             .returning({ id: workouts.id }),
   );
   for (const c of kept) if (c.field === "start" && before.has(c.id)) out.workouts.add(c.id);
+  // ponytail: the plan and the start time change once 0006 stores when (the next commits);
+  // until then such a change is taken and left unwritten, as a new kind was in M3a.
   const fields = kept.filter(
-    (c): c is Indexed<Exclude<WorkoutChange, { field: "start" }>> => c.field !== "start",
+    (c): c is Indexed<Exclude<WorkoutChange, { field: "start" | "plan" | "startedAt" }>> =>
+      c.field !== "start" && c.field !== "plan" && c.field !== "startedAt",
   );
   const stored = new Map(
     (await read()).flatMap((r) => [
@@ -623,6 +626,10 @@ async function writeSets(ctx: Ctx, changes: Indexed<SetChange>[]) {
     ).map((r) => [r.workoutId, r.n]),
   );
   const refused = new Map<string, Rejected["reason"]>();
+  // ponytail: 0006 stores seconds (the next commits); until then a timed set is refused.
+  for (const c of changes)
+    if ((c.field === "create" || c.field === "values") && c.reps === null)
+      refused.set(c.id, "wrong_measure");
   for (const c of changes) {
     if (!mine.has(c.workoutId) || refused.has(c.id)) continue;
     // A removed set put back counts as a new live one.
@@ -659,7 +666,7 @@ async function writeSets(ctx: Ctx, changes: Indexed<SetChange>[]) {
               exerciseId: c.exerciseId,
               warmup: c.warmup,
               weightKg: c.weightKg,
-              reps: c.reps,
+              reps: c.reps!, // a timed set is refused above
               rir: c.rir,
               doneAt: new Date(clampWorkoutTime(c.doneAt, now)),
               fieldsAt: new Date(clampAt(c.at, now)),
@@ -687,7 +694,7 @@ async function writeSets(ctx: Ctx, changes: Indexed<SetChange>[]) {
           .update(workoutSets)
           .set({
             ...(c.field === "values"
-              ? { weightKg: c.weightKg, reps: c.reps, rir: c.rir, fieldsAt: new Date(c.at) }
+              ? { weightKg: c.weightKg, reps: c.reps!, rir: c.rir, fieldsAt: new Date(c.at) }
               : { removed: c.value, removedAt: new Date(c.at) }),
             serverSeq: nextSeq,
             updatedAt: sql`now()`,
@@ -878,7 +885,9 @@ function rowsOf(items: Item[]) {
         id: r.id,
         sessionCode: r.sessionCode,
         plan: r.plan,
+        planAt: null,
         startedAt: r.startedAt.toISOString(),
+        startedAtAt: null,
         endedAt: iso(r.endedAt),
         endedAtAt: iso(r.endedAtAt),
         note: r.note,
@@ -901,6 +910,7 @@ function rowsOf(items: Item[]) {
         warmup: r.warmup,
         weightKg: r.weightKg,
         reps: r.reps,
+        seconds: null,
         rir: r.rir,
         doneAt: r.doneAt.toISOString(),
         fieldsAt: r.fieldsAt.toISOString(),
@@ -967,6 +977,8 @@ function rowsOf(items: Item[]) {
     supplements: [...supplementRows.values()],
     supplementLogs: [...logs.values()],
     annotations: [...annotationRows.values()],
+    steps: [], // stored from 0006 on (the next commits)
+    activities: [],
     workouts: [...workoutRows.values()],
     sets: [...setRows.values()],
   };

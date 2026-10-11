@@ -271,12 +271,31 @@ describe("SyncResponseSchema", () => {
           removedAt: null,
         },
       ],
+      steps: [{ date: "2026-10-07", steps: 8400, stepsAt: AT }],
+      activities: [
+        {
+          id: ID,
+          date: "2026-10-07",
+          type: "climbing",
+          durationMin: 90,
+          cardioType: null,
+          climbStyle: "boulder",
+          climbRuns: 14,
+          climbGrade: "6b+",
+          climbColor: null,
+          fieldsAt: AT,
+          removed: false,
+          removedAt: null,
+        },
+      ],
       workouts: [
         {
           id: WORKOUT,
           sessionCode: "A",
           plan: PLAN,
+          planAt: null,
           startedAt: AT,
+          startedAtAt: null,
           endedAt: null,
           endedAtAt: null,
           note: null,
@@ -297,6 +316,7 @@ describe("SyncResponseSchema", () => {
           warmup: false,
           weightKg: 82.5,
           reps: 8,
+          seconds: null,
           rir: 1,
           doneAt: AT,
           fieldsAt: AT,
@@ -321,6 +341,8 @@ describe("SyncResponseSchema", () => {
     expect(parsed.rejected).toEqual([{ index: 3, reason: "refused" }]);
     expect(parsed.workouts[0]!.plan).toEqual(PLAN);
     expect(parsed.sets[0]!.weightKg).toBe(82.5);
+    expect(parsed.steps[0]!.steps).toBe(8400);
+    expect(parsed.activities[0]!.climbGrade).toBe("6b+");
   });
 
   it("refuses a refusal that does not point at a change", () => {
@@ -333,6 +355,8 @@ describe("SyncResponseSchema", () => {
         supplements: [],
         supplementLogs: [],
         annotations: [],
+        steps: [],
+        activities: [],
         workouts: [],
         sets: [],
         target: null,
@@ -343,6 +367,7 @@ describe("SyncResponseSchema", () => {
     expect(answer([{ index: 0, reason: "unknown" }])).toBe(true);
     expect(answer([{ index: 0, reason: "unknown_exercise" }])).toBe(true);
     expect(answer([{ index: 0, reason: "too_many_sets" }])).toBe(true);
+    expect(answer([{ index: 0, reason: "wrong_measure" }])).toBe(true);
     expect(answer([{ index: -1, reason: "refused" }])).toBe(false);
     expect(answer([{ index: 0.5, reason: "refused" }])).toBe(false);
     expect(answer([{ index: 0, reason: "because" }])).toBe(false);
@@ -405,7 +430,7 @@ describe("isValidChange", () => {
     broken(create, { workoutId: "x" }),
     broken(create, { warmup: true }), // position 3 is a work set
     broken(warmup, { rir: 2 }), // a warm-up has no RIR
-    broken(create, { position: 13 }),
+    broken(create, { position: 50 }),
     broken(create, { exerciseId: "ds:" }),
     broken(create, { weightKg: 82.6 }),
     broken(create, { doneAt: "2026-10-07T06:46:00.000Z" }),
@@ -459,6 +484,123 @@ describe("isValidChange", () => {
       true,
       false,
     ]);
+  });
+});
+
+describe("steps, activities, a session's own plan and start, timed sets (spec §7)", () => {
+  const plan = [...sessionByCode("C")!.slots];
+  const climb: Change = {
+    kind: "activity",
+    id: ID,
+    field: "fields",
+    date: "2026-10-07",
+    type: "climbing",
+    durationMin: 90,
+    cardioType: null,
+    climbStyle: "boulder",
+    climbRuns: 14,
+    climbGrade: "6b+",
+    climbColor: null,
+    at: AT,
+  };
+  const cardio: Change = {
+    ...climb,
+    type: "cardio",
+    durationMin: 45,
+    cardioType: "bike",
+    climbStyle: null,
+    climbRuns: null,
+    climbGrade: null,
+  } as Change;
+  const timed: Change = {
+    kind: "set",
+    id: SET,
+    workoutId: WORKOUT,
+    field: "create",
+    slotIndex: 8,
+    position: 3,
+    exerciseId: "ds:2135",
+    warmup: false,
+    weightKg: 0,
+    reps: null,
+    seconds: 45,
+    rir: null,
+    doneAt: AT,
+    at: AT,
+  };
+  const NEW: Change[] = [
+    { kind: "steps", date: "2026-10-07", value: 8400, at: AT },
+    { kind: "steps", date: "2026-10-07", value: null, at: AT },
+    climb,
+    { ...climb, climbGrade: null, climbColor: "blue" } as Change,
+    cardio,
+    { kind: "activity", id: ID, field: "removed", value: true, at: AT },
+    {
+      kind: "workout",
+      id: WORKOUT,
+      field: "plan",
+      value: [...plan, { ...plan[0]!, skipped: true }],
+      at: LATER,
+    },
+    { kind: "workout", id: WORKOUT, field: "startedAt", value: AT, at: LATER },
+    timed,
+    {
+      kind: "set",
+      id: SET,
+      workoutId: WORKOUT,
+      field: "values",
+      weightKg: 5,
+      reps: null,
+      seconds: 60,
+      rir: null,
+      at: LATER,
+    },
+    { ...(SESSION[1] as Change), position: 49, seconds: null } as Change, // « + Série » up to 50 positions
+  ];
+  const broken = (c: Change, patch: Record<string, unknown>) => ({ ...c, ...patch }) as Change;
+  const BROKEN: Change[] = [
+    broken(NEW[0]!, { value: 100_001 }),
+    broken(NEW[0]!, { value: 10.5 }),
+    broken(climb, { durationMin: 7 }),
+    broken(climb, { durationMin: 485 }),
+    broken(climb, { climbRuns: 201 }),
+    broken(climb, { climbGrade: "9a" }),
+    broken(climb, { climbColor: "blue" }), // a grade and a colour
+    broken(climb, { cardioType: "run" }),
+    broken(cardio, { cardioType: "ski" }),
+    broken(cardio, { climbRuns: 3 }),
+    broken(NEW[6]!, { value: [] }),
+    broken(NEW[6]!, { value: [{ ...plan[0]!, rule: "rain" }] }),
+    broken(NEW[6]!, { value: [{ ...plan[0]!, exerciseId: "bench" }] }),
+    broken(NEW[7]!, { value: "1899-12-31T23:00:00.000Z" }),
+    broken(timed, { reps: 8 }), // reps and seconds
+    broken(timed, { seconds: null }), // neither
+    broken(timed, { seconds: 3601 }),
+    broken(SESSION[1]!, { position: 50 }),
+  ];
+
+  it("crosses the wire, and each broken change is refused", () => {
+    expect(request(NEW).success).toBe(true);
+    for (const change of BROKEN)
+      expect(request([change]).success, JSON.stringify(change).slice(0, 120)).toBe(false);
+  });
+
+  it("is what the phone writes; it refuses each broken change, and the rest crosses", () => {
+    expect(NEW.filter((c) => !isValidChange(c))).toEqual([]);
+    const phone = [
+      ...BROKEN,
+      broken(timed, { rir: 1 }), // a timed set has no RIR
+      broken(NEW[7]!, { value: LATER, at: AT }), // a start after its change's own time
+      broken(timed, { warmup: true, position: 0 }), // a warm-up counts reps
+    ];
+    expect(phone.filter(isValidChange)).toEqual([]);
+  });
+
+  it("still takes a set queued before timed sets, without seconds", () => {
+    const old = SESSION[1]!;
+    expect("seconds" in old).toBe(false);
+    expect(isValidChange(old)).toBe(true);
+    expect(request([old]).success).toBe(true);
   });
 });
 

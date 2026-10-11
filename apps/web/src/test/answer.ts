@@ -9,6 +9,8 @@ export const answer = (patch: Partial<SyncResponse> = {}): SyncResponse => ({
   supplements: [],
   supplementLogs: [],
   annotations: [],
+  steps: [],
+  activities: [],
   workouts: [],
   sets: [],
   target: null,

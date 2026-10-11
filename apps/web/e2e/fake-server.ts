@@ -141,6 +141,8 @@ export async function fakeServer(
               key,
               {
                 id: c.id,
+                planAt: null,
+                startedAtAt: null,
                 endedAt: null,
                 endedAtAt: null,
                 note: null,
@@ -155,6 +157,8 @@ export async function fakeServer(
           return;
         }
         const [v, a] = {
+          plan: ["plan", "planAt"],
+          startedAt: ["startedAt", "startedAtAt"],
           ended: ["endedAt", "endedAtAt"],
           note: ["note", "noteAt"],
           exerciseNotes: ["exerciseNotes", "exerciseNotesAt"],
@@ -179,6 +183,7 @@ export async function fakeServer(
                 warmup: c.warmup,
                 weightKg: c.weightKg,
                 reps: c.reps,
+                seconds: c.seconds ?? null,
                 rir: c.rir,
                 doneAt: c.doneAt,
                 fieldsAt: c.at,
@@ -188,7 +193,17 @@ export async function fakeServer(
         }
         if (!state.other.has(key)) return;
         if (c.field === "values" && later(key, "fieldsAt"))
-          write(key, {}, { weightKg: c.weightKg, reps: c.reps, rir: c.rir, fieldsAt: c.at });
+          write(
+            key,
+            {},
+            {
+              weightKg: c.weightKg,
+              reps: c.reps,
+              seconds: c.seconds ?? null,
+              rir: c.rir,
+              fieldsAt: c.at,
+            },
+          );
         if (c.field === "removed" && later(key, "removedAt"))
           write(key, {}, { removed: c.value, removedAt: c.at });
         return;
@@ -229,6 +244,8 @@ export async function fakeServer(
         supplements: table("supplements"),
         supplementLogs: table("supplementLogs"),
         annotations: table("annotations"),
+        steps: table("steps"),
+        activities: table("activities"),
         workouts: table("workouts"),
         sets: table("sets"),
         target: null,
