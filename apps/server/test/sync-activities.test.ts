@@ -253,6 +253,19 @@ describe("a session's own plan and start through /api/sync", () => {
     expect(more.workouts[0]!.plan).toHaveLength(longer.length + 1);
   });
 
+  it("drops an older shorter plan on time alone, without refusing it", async () => {
+    const { sync } = await signIn("pl-older-shrank");
+    const w = newId();
+    const longer = appendSlot(B, PLANK);
+    const first = await sync("0", [start(w), planChange(w, longer, LATEST)]);
+    // A replay of an earlier, shorter plan loses on time: not refused, the stored one echoed.
+    const res = await sync(first.cursor, [planChange(w, B, LATER)]);
+    expect(res.rejected).toEqual([]);
+    expect(res.workouts).toEqual([expect.objectContaining({ id: w, plan: longer, planAt: LATEST })]);
+    const [row] = await owner.select().from(workouts).where(eq(workouts.id, w));
+    expect(row!.plan).toEqual(longer);
+  });
+
   it("keeps a session's plan and start out of another account's reach", async () => {
     const a = await signIn("pl-owner");
     const b = await signIn("pl-intruder");
