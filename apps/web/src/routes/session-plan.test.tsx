@@ -406,4 +406,24 @@ describe("fix round: extra rows, chrono, replaced warm-ups, leaving out", () => 
     expect(within(goblet).getByRole("img", { name: "Warm-up 1 logged" })).toBeTruthy();
     expect(within(goblet).queryByRole("textbox", { name: "Load of warm-up 1, kg" })).toBeNull();
   });
+
+  it("successive plan edits build on each other", async () => {
+    await startSession("C");
+    const buttons = screen.getAllByRole("button", { name: "Remove" });
+    expect(buttons).toHaveLength(2);
+    fireEvent.click(buttons[0]!);
+    fireEvent.click(buttons[1]!);
+    await waitFor(async () => {
+      const plan = (await session()).plan;
+      expect([plan[8]!.skipped, plan[9]!.skipped]).toEqual([true, true]);
+    });
+    const db = await openAccountDb(ADA.id);
+    const { readOutbox } = await import("../sync/db");
+    const plans = (await readOutbox(db))
+      .map((e) => e.change)
+      .filter((c) => c.kind === "workout" && c.field === "plan");
+    db.close();
+    const last = plans.at(-1) as Extract<Change, { field: "plan" }>;
+    expect([last.value[8]!.skipped, last.value[9]!.skipped]).toEqual([true, true]);
+  });
 });

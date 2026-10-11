@@ -173,22 +173,28 @@ function Screen({
       void save(() => record([], { active: { ...active, ...patch } })),
     [active, record, save],
   );
-  // The session's own copy of the plan (D7): the program never changes.
-  const savePlan = (next: Slot[]) =>
-    save(() =>
-      record({
-        kind: "workout",
-        id: workout.id,
-        field: "plan",
-        value: next,
-        at: new Date().toISOString(),
+  // The session's own copy of the plan (D7): the program never changes. Each edit is built from
+  // the plan stored when its turn comes, edits one after the other, so quick taps compose.
+  const edits = useRef<Promise<void>>(Promise.resolve());
+  const editPlan = (edit: (stored: Slot[]) => Slot[]) => {
+    edits.current = edits.current.then(() =>
+      save(async () => {
+        const stored = await account.db.get("workouts", workout.id);
+        await record({
+          kind: "workout",
+          id: workout.id,
+          field: "plan",
+          value: edit(stored?.plan ?? plan),
+          at: new Date().toISOString(),
+        });
       }),
     );
+  };
   const pick = (exercise: Exercise) => {
     if (picking === null) return;
     const target = picking === "add" ? plan.length : picking.slotIndex;
-    void savePlan(
-      picking === "add" ? appendSlot(plan, exercise) : replaceSlot(plan, target, exercise),
+    editPlan((stored) =>
+      picking === "add" ? appendSlot(stored, exercise) : replaceSlot(stored, target, exercise),
     );
     setPicking(null);
     setToggled((m) => new Map(m).set(target, true));
@@ -358,7 +364,7 @@ function Screen({
             onReplace={() => setPicking({ slotIndex: i })}
             onSkip={
               (slot.rule || slot.added) && own.length === 0
-                ? (skipped) => void savePlan(skipSlot(plan, i, skipped))
+                ? (skipped) => editPlan((stored) => skipSlot(stored, i, skipped))
                 : null
             }
             onChrono={(chrono) => setActive({ chrono })}
