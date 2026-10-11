@@ -325,5 +325,43 @@
     "warmupCount_other": "{{count}} sets",
     "note": "Session note (optional)",
     "save": "Save"
+  },
+  "activitySheet": {
+    "title": "Activity",
+    "date": "Date of the activity",
+    "kind": "Kind of activity",
+    "tabs": {
+      "cardio": "Cardio",
+      "climbing": "Climbing",
+      "steps": "Steps"
+    },
+    "thisDay": "On this day",
+    "another": {
+      "cardio": "Another cardio session",
+      "climbing": "Another climb"
+    },
+    "cardioType": "Type",
+    "duration": "Duration",
+    "runs": "Routes or boulders",
+    "runsOutOfRange": "Enter a whole number between 0 and 200.",
+    "style": "Type",
+    "styles": {
+      "boulder": "Boulder",
+      "route": "Route"
+    },
+    "hardest": "Hardest",
+    "by": {
+      "grade": "Grade",
+      "color": "Color"
+    },
+    "steps": "Steps of the day",
+    "stepsNote": "Copy them from your phone or your watch.",
+    "stepsOutOfRange": "Enter a whole number between 0 and 100,000.",
+    "delete": "Delete this activity",
+    "deleteSteps": "Delete this day's steps",
+    "confirm": "Delete this activity?",
+    "confirmSteps": "Delete this day's steps?",
+    "confirmDelete": "Delete",
+    "cancel": "Cancel"
   }
 }

@@ -325,5 +325,43 @@
     "warmupCount_other": "{{count}} séries",
     "note": "Note sur la séance (option)",
     "save": "Enregistrer"
+  },
+  "activitySheet": {
+    "title": "Activité",
+    "date": "Date de l'activité",
+    "kind": "Type d'activité",
+    "tabs": {
+      "cardio": "Cardio",
+      "climbing": "Escalade",
+      "steps": "Pas"
+    },
+    "thisDay": "Ce jour",
+    "another": {
+      "cardio": "Un autre cardio",
+      "climbing": "Une autre escalade"
+    },
+    "cardioType": "Type",
+    "duration": "Durée",
+    "runs": "Voies ou blocs",
+    "runsOutOfRange": "Saisis un nombre entier entre 0 et 200.",
+    "style": "Type",
+    "styles": {
+      "boulder": "Bloc",
+      "route": "Voie"
+    },
+    "hardest": "Le plus dur",
+    "by": {
+      "grade": "Cotation",
+      "color": "Couleur"
+    },
+    "steps": "Pas du jour",
+    "stepsNote": "À recopier depuis ton téléphone ou ta montre.",
+    "stepsOutOfRange": "Saisis un nombre entier entre 0 et 100 000.",
+    "delete": "Supprimer cette activité",
+    "deleteSteps": "Supprimer les pas de ce jour",
+    "confirm": "Supprimer cette activité ?",
+    "confirmSteps": "Supprimer les pas de ce jour ?",
+    "confirmDelete": "Supprimer",
+    "cancel": "Annuler"
   }
 }

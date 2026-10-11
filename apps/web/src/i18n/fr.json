@@ -412,6 +412,16 @@
     "sessionPlanned_other": "{{count}} exercices · environ {{minutes}} min",
     "sessionOpen_one": "en cours · {{count}} série sur {{total}}",
     "sessionOpen_other": "en cours · {{count}} séries sur {{total}}",
+    "activity": "Activité",
+    "activityEmpty": "pas encore saisie",
+    "activityMany_one": "{{count}} activité",
+    "activityMany_other": "{{count}} activités",
+    "activityToast": {
+      "saved": "Activité enregistrée",
+      "deleted": "Activité supprimée",
+      "stepsSaved": "Pas enregistrés",
+      "stepsDeleted": "Pas supprimés"
+    },
     "weighIn": "Pesée",
     "weighInDone": "{{value}} kg · enregistrée",
     "weighInEmpty": "pas encore saisie",
@@ -430,5 +440,29 @@
       "B": "Legs",
       "C": "Fessiers + tirage léger"
     }
+  },
+  "activities": {
+    "climbing": "Escalade",
+    "cardio": {
+      "run": "Course",
+      "bike": "Vélo",
+      "row": "Rameur",
+      "walk": "Marche",
+      "swim": "Natation",
+      "other": "Autre"
+    },
+    "colors": {
+      "yellow": "jaune",
+      "green": "vert",
+      "blue": "bleu",
+      "red": "rouge",
+      "black": "noir",
+      "purple": "violet",
+      "white": "blanc"
+    },
+    "steps": "{{value}} pas",
+    "minutes": "{{m}} min",
+    "hours": "{{h}} h {{mm}}",
+    "hoursOnly": "{{h}} h"
   }
 }
