@@ -1,4 +1,5 @@
 import { isToolId } from "@belay/shared/tools/catalog";
+import { isSessionCode } from "@belay/shared/training/workout";
 import {
   createRootRoute,
   createRoute,
@@ -12,7 +13,7 @@ import { Home } from "./routes/home";
 import { Layout } from "./routes/layout";
 import { isWorkoutTab, type WorkoutTab } from "./workouts/tabs";
 
-// ponytail: code-based routes, 19 screens today (the tools share one lazy `$toolId` route).
+// ponytail: code-based routes, 20 screens today (the tools share one lazy `$toolId` route).
 // Switch to file-based routing at ~20 screens, or when this file passes ~150 lines of route
 // declarations.
 const rootRoute = createRootRoute({ component: Layout });
@@ -50,6 +51,27 @@ const workoutRoute = createRoute({
   component: lazyRouteComponent(() => import("./routes/workout"), "WorkoutScreen"),
   validateSearch: (search: Record<string, unknown>): { start?: string } =>
     typeof search.start === "string" ? { start: search.start } : {},
+});
+// The editor, full screen: a finished session corrected (?id=), or one logged afterwards
+// (?code=B&date=2026-10-09&minutes=60). Only the shapes here; the editor checks the values.
+type EditorSearch = { id?: string; code?: string; date?: string; minutes?: number };
+const workoutEditorRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/workout/edit",
+  component: lazyRouteComponent(() => import("./routes/workout-editor"), "WorkoutEditor"),
+  validateSearch: (search: Record<string, unknown>): EditorSearch => ({
+    ...(typeof search.id === "string" ? { id: search.id } : {}),
+    ...(typeof search.code === "string" && isSessionCode(search.code) ? { code: search.code } : {}),
+    ...(typeof search.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(search.date)
+      ? { date: search.date }
+      : {}),
+    ...(typeof search.minutes === "number" &&
+    Number.isInteger(search.minutes) &&
+    search.minutes >= 5 &&
+    search.minutes <= 480
+      ? { minutes: search.minutes }
+      : {}),
+  }),
 });
 const workoutSummaryRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -102,6 +124,7 @@ export const routeTree = rootRoute.addChildren([
   workoutsRoute,
   workoutDetailRoute,
   workoutRoute,
+  workoutEditorRoute,
   workoutSummaryRoute,
   exerciseRoute,
   bodyRoute,

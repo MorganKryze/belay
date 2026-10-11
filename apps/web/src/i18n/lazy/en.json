@@ -256,6 +256,8 @@
     "previousMonth": "Previous month",
     "nextMonth": "Next month",
     "sessionDay": "session",
+    "activityDay": "activity",
+    "legend": "● session · ○ activity",
     "recent": "Recent",
     "first": "Your first session will show here.",
     "none": "No session this month.",
@@ -264,13 +266,24 @@
     "volume": "{{value}} kg",
     "warmup": "Warm-up",
     "load": "{{kg}} kg × {{reps}}",
+    "seconds": "{{seconds}} s",
+    "loadSeconds": "{{kg}} kg · {{seconds}} s",
     "rir": "RIR {{rir}}",
     "note": "Session note",
+    "edit": "Edit",
     "remove": "Delete this session",
     "removeTitle": "Delete this session?",
     "removeBody": "Its sets will leave the history and the statistics, on all your devices.",
     "removeConfirm": "Delete",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "log": {
+      "button": "Log a session",
+      "title": "Log a session",
+      "date": "Date of the session",
+      "session": "Session",
+      "duration": "Duration",
+      "open": "Enter the sets"
+    }
   },
   "session": {
     "elapsed": "Elapsed time",
@@ -344,6 +357,8 @@
     "title": "Session done",
     "close": "Close",
     "record": "Record: {{exercise}}, {{kg}} kg × {{reps}}",
+    "recordSeconds": "Record: {{exercise}}, {{seconds}} s",
+    "recordLoadSeconds": "Record: {{exercise}}, {{kg}} kg · {{seconds}} s",
     "duration": "Duration",
     "workSets": "Work sets",
     "volume": "Volume",
@@ -390,5 +405,15 @@
     "confirmSteps": "Delete this day's steps?",
     "confirmDelete": "Delete",
     "cancel": "Cancel"
+  },
+  "editor": {
+    "cancel": "Cancel",
+    "date": "Date of the session",
+    "note": "Correcting changes only what you edit; the records are worked out again.",
+    "save": "Save",
+    "incomplete": "Fill in or remove the sets left incomplete.",
+    "rir": "RIR of set {{n}}",
+    "removeSet": "Delete set {{n}}",
+    "removeWarmup": "Delete warm-up {{n}}"
   }
 }

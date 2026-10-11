@@ -256,6 +256,8 @@
     "previousMonth": "Mois précédent",
     "nextMonth": "Mois suivant",
     "sessionDay": "séance",
+    "activityDay": "activité",
+    "legend": "● séance · ○ activité",
     "recent": "Récentes",
     "first": "Ta première séance apparaîtra ici.",
     "none": "Aucune séance ce mois-ci.",
@@ -264,13 +266,24 @@
     "volume": "{{value}} kg",
     "warmup": "Montée",
     "load": "{{kg}} kg × {{reps}}",
+    "seconds": "{{seconds}} s",
+    "loadSeconds": "{{kg}} kg · {{seconds}} s",
     "rir": "RIR {{rir}}",
     "note": "Note sur la séance",
+    "edit": "Modifier",
     "remove": "Supprimer cette séance",
     "removeTitle": "Supprimer cette séance ?",
     "removeBody": "Ses séries disparaîtront de l'historique et des statistiques, sur tous tes appareils.",
     "removeConfirm": "Supprimer",
-    "cancel": "Annuler"
+    "cancel": "Annuler",
+    "log": {
+      "button": "Saisir une séance",
+      "title": "Saisir une séance",
+      "date": "Date de la séance",
+      "session": "Séance",
+      "duration": "Durée",
+      "open": "Saisir les séries"
+    }
   },
   "session": {
     "elapsed": "Temps écoulé",
@@ -344,6 +357,8 @@
     "title": "Séance terminée",
     "close": "Fermer",
     "record": "Record : {{exercise}}, {{kg}} kg × {{reps}}",
+    "recordSeconds": "Record : {{exercise}}, {{seconds}} s",
+    "recordLoadSeconds": "Record : {{exercise}}, {{kg}} kg · {{seconds}} s",
     "duration": "Durée",
     "workSets": "Séries de travail",
     "volume": "Volume",
@@ -390,5 +405,15 @@
     "confirmSteps": "Supprimer les pas de ce jour ?",
     "confirmDelete": "Supprimer",
     "cancel": "Annuler"
+  },
+  "editor": {
+    "cancel": "Annuler",
+    "date": "Date de la séance",
+    "note": "Corriger ne change que ce que tu modifies ; les records se recalculent.",
+    "save": "Enregistrer",
+    "incomplete": "Complète ou retire les séries incomplètes.",
+    "rir": "RIR de la série {{n}}",
+    "removeSet": "Supprimer la série {{n}}",
+    "removeWarmup": "Supprimer la montée {{n}}"
   }
 }

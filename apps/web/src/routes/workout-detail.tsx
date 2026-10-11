@@ -3,7 +3,7 @@ import { exerciseById } from "@belay/shared/exercises/catalog";
 import { liveSets, summary } from "@belay/shared/training/rules";
 import { MAX_WARMUPS, type Workout, type WorkoutSet } from "@belay/shared/training/workout";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, PartyPopper } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Sheet } from "@/components/sheet";
@@ -11,15 +11,15 @@ import { Button } from "@/components/ui/button";
 import { formatNumber, formatWeekday, sessionTitle } from "@/lib/format";
 import { useToday } from "@/lib/today";
 import { type OpenAccount, useAccount, useHistory, useRecord } from "@/sync/account";
-import { formatDuration } from "@/workouts/format";
+import { formatDuration, recordText } from "@/workouts/format";
 import { dayOf } from "@/workouts/history-panel";
 import { NotFound } from "./fallbacks";
 
 const back = "-ml-1 inline-flex min-h-11 items-center gap-0.5 self-start font-medium text-primary";
 const card = "rounded-card border border-border bg-card";
 
-// A finished session, read only (§4.5): its exercises and sets as they were done, its notes,
-// and the one change it allows: removing it whole (D13).
+// A finished session (§4.4): its exercises and sets as they were done, its records and notes;
+// « Modifier » opens the editor (spec D9), and it can still be removed whole.
 export function WorkoutDetail() {
   const account = useAccount();
   if (account.kind !== "open") return <NotFound />;
@@ -79,6 +79,15 @@ function Detail({ account }: { account: OpenAccount }) {
           })}
         </p>
       </div>
+      {stats.records.map((r) => (
+        <p
+          key={r.exerciseId}
+          className="flex items-start gap-2 rounded-[14px] bg-reference px-3 py-2.5 font-semibold text-reference-ink"
+        >
+          <PartyPopper aria-hidden className="mt-0.5 size-4 shrink-0" />
+          {recordText(r, t, i18n.language)}
+        </p>
+      ))}
       {workout.plan.map((slot, i) => (
         <SlotSets key={i} workout={workout} slotIndex={i} sets={sets} kg={kg} />
       ))}
@@ -90,14 +99,21 @@ function Detail({ account }: { account: OpenAccount }) {
           <p className="mt-1 whitespace-pre-line">{workout.note}</p>
         </section>
       )}
-      <Button
-        variant="destructive"
-        size="lg"
-        className="self-start"
-        onClick={() => setConfirm(true)}
-      >
-        {t("history.remove")}
-      </Button>
+      <div className="flex flex-col gap-2">
+        <Button asChild variant="outline" size="lg" className="w-full font-semibold">
+          <Link to="/workout/edit" search={{ id: workout.id }}>
+            {t("history.edit")}
+          </Link>
+        </Button>
+        <Button
+          variant="destructive"
+          size="lg"
+          className="self-start"
+          onClick={() => setConfirm(true)}
+        >
+          {t("history.remove")}
+        </Button>
+      </div>
       {confirm && (
         <Sheet title={t("history.removeTitle")} onClose={() => setConfirm(false)}>
           <p>{t("history.removeBody")}</p>
@@ -132,16 +148,44 @@ function SlotSets({
   sets: WorkoutSet[];
   kg: (v: number) => string;
 }) {
-  const { t } = useTranslation();
   const own = sets.filter((s) => s.slotIndex === slotIndex).sort((a, b) => a.position - b.position);
   const note = workout.exerciseNotes[String(slotIndex)];
   if (own.length === 0 && !note) return null;
-  const exerciseId = own[0]?.exerciseId ?? workout.plan[slotIndex]!.exerciseId;
+  // A slot replaced during the session holds the sets of each exercise, apart.
+  const exercises = [...new Set(own.map((s) => s.exerciseId))];
+  if (exercises.length === 0) exercises.push(workout.plan[slotIndex]!.exerciseId);
   return (
-    <section aria-label={exerciseById(exerciseId)?.name} className={`${card} px-4 py-3`}>
-      <h2 className="font-semibold">{exerciseById(exerciseId)?.name}</h2>
+    <>
+      {exercises.map((exerciseId, k) => (
+        <ExerciseSets
+          key={exerciseId}
+          name={exerciseById(exerciseId)?.name ?? exerciseId}
+          sets={own.filter((s) => s.exerciseId === exerciseId)}
+          note={k === exercises.length - 1 ? note : undefined}
+          kg={kg}
+        />
+      ))}
+    </>
+  );
+}
+
+function ExerciseSets({
+  name,
+  sets,
+  note,
+  kg,
+}: {
+  name: string;
+  sets: WorkoutSet[];
+  note: string | undefined;
+  kg: (v: number) => string;
+}) {
+  const { t } = useTranslation();
+  return (
+    <section aria-label={name} className={`${card} px-4 py-3`}>
+      <h2 className="font-semibold">{name}</h2>
       <ol className="mt-1 flex flex-col">
-        {own.map((s) => (
+        {sets.map((s) => (
           <li
             key={s.id}
             className="flex min-h-9 items-center gap-3 border-t border-border text-sm first:border-t-0"
@@ -156,7 +200,11 @@ function SlotSets({
               {s.warmup ? t("history.warmup") : s.position - MAX_WARMUPS + 1}
             </span>
             <span className="tabular-nums">
-              {t("history.load", { kg: kg(s.weightKg), reps: s.reps })}
+              {s.seconds != null
+                ? s.weightKg > 0
+                  ? t("history.loadSeconds", { kg: kg(s.weightKg), seconds: s.seconds })
+                  : t("history.seconds", { seconds: s.seconds })
+                : t("history.load", { kg: kg(s.weightKg), reps: s.reps })}
               {s.rir !== null && ` · ${t("history.rir", { rir: s.rir === 4 ? "4+" : s.rir })}`}
             </span>
           </li>

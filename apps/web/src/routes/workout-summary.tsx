@@ -1,5 +1,4 @@
 import "@/i18n/lazy";
-import { exerciseById } from "@belay/shared/exercises/catalog";
 import { liveSets, summary } from "@belay/shared/training/rules";
 import { NOTE_MAX } from "@belay/shared/training/workout";
 import { useNavigate, useParams } from "@tanstack/react-router";
@@ -10,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { formatNumber, formatWeekday, sessionTitle } from "@/lib/format";
 import { useToday } from "@/lib/today";
 import { type OpenAccount, useAccount, useHistory, useRecord } from "@/sync/account";
-import { formatDuration } from "@/workouts/format";
+import { formatDuration, recordText } from "@/workouts/format";
 import { dayOf } from "@/workouts/history-panel";
 import { NotFound } from "./fallbacks";
 
@@ -77,11 +76,7 @@ function Summary({ account }: { account: OpenAccount }) {
           className="flex items-start gap-2 rounded-[14px] bg-reference px-3 py-2.5 font-semibold text-reference-ink"
         >
           <PartyPopper aria-hidden className="mt-0.5 size-4 shrink-0" />
-          {t("summary.record", {
-            exercise: exerciseById(r.exerciseId)?.name,
-            kg: n(r.weightKg, 2),
-            reps: r.reps,
-          })}
+          {recordText(r, t, i18n.language)}
         </p>
       ))}
       <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
