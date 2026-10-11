@@ -7,6 +7,7 @@ import { DEFAULT_TARGET, type TargetRange } from "@belay/shared/body/target";
 import type { Weighing } from "@belay/shared/body/weighings";
 import { isNewer } from "@belay/shared/sync/merge";
 import type {
+  ActivityRow,
   AnnotationRow,
   Change,
   IntakeRow,
@@ -15,6 +16,7 @@ import type {
   Rejected,
   SetChange,
   SetRow,
+  StepsRow,
   SupplementLogRow,
   SupplementRow,
   SyncResponse,
@@ -23,6 +25,7 @@ import type {
   WorkoutRow,
 } from "@belay/shared/sync/schema";
 import { isValidChange } from "@belay/shared/sync/valid";
+import type { Activity, StepsLog } from "@belay/shared/training/activities";
 import { autoClose, type History, openWorkout } from "@belay/shared/training/rules";
 import { type DBSchema, type IDBPDatabase, type IDBPTransaction, openDB } from "idb";
 
@@ -41,6 +44,8 @@ interface BelaySchema extends DBSchema {
   supplements: { key: string; value: SupplementRow }; // removed ones stay, with their ticks
   supplementLogs: { key: [string, ISODate]; value: SupplementLogRow };
   annotations: { key: string; value: AnnotationRow };
+  steps: { key: ISODate; value: StepsRow }; // a null value is a deleted day
+  activities: { key: string; value: ActivityRow }; // removed ones stay, as on the server
   workouts: { key: string; value: WorkoutRow }; // removed ones stay, as on the server
   sets: { key: string; value: SetRow; indexes: { workoutId: string } };
   activeSession: { key: "current"; value: ActiveSession };
@@ -59,6 +64,8 @@ type Store =
   | "supplements"
   | "supplementLogs"
   | "annotations"
+  | "steps"
+  | "activities"
   | "workouts"
   | "sets"
   | "activeSession"
@@ -74,6 +81,8 @@ const ALL: Store[] = [
   "supplements",
   "supplementLogs",
   "annotations",
+  "steps",
+  "activities",
   "workouts",
   "sets",
   "activeSession",
@@ -93,11 +102,11 @@ export async function openAccountDb(
   userId: string,
   { onLost }: { onLost?: () => void } = {},
 ): Promise<AccountDb> {
-  return openDB<BelaySchema>(accountDbName(userId), 3, {
+  return openDB<BelaySchema>(accountDbName(userId), 4, {
     // Each step adds stores and keeps every value and the queue of the earlier versions. A tab
     // still on an earlier version closes its connection when asked (`blocking` below, since M2a),
     // so the upgrade never waits on it.
-    upgrade(upgradeDb, oldVersion) {
+    async upgrade(upgradeDb, oldVersion, _newVersion, tx) {
       if (oldVersion < 1) {
         upgradeDb.createObjectStore("weights", { keyPath: "date" });
         upgradeDb.createObjectStore("profile");
@@ -119,6 +128,20 @@ export async function openAccountDb(
         const sets = upgradeDb.createObjectStore("sets", { keyPath: "id" });
         sets.createIndex("workoutId", "workoutId");
         upgradeDb.createObjectStore("activeSession");
+      }
+      if (oldVersion < 4) {
+        upgradeDb.createObjectStore("steps", { keyPath: "date" });
+        upgradeDb.createObjectStore("activities", { keyPath: "id" });
+        // The sessions and sets kept so far gain their new fields, unwritten: a session's own
+        // plan and start never changed, a set counted reps.
+        if (oldVersion >= 3) {
+          for (const w of await tx.objectStore("workouts").getAll())
+            await tx
+              .objectStore("workouts")
+              .put({ ...w, planAt: w.planAt ?? null, startedAtAt: w.startedAtAt ?? null });
+          for (const set of await tx.objectStore("sets").getAll())
+            await tx.objectStore("sets").put({ ...set, seconds: set.seconds ?? null });
+        }
       }
     },
     // A future schema bump in another tab must not hang on this connection.
@@ -173,6 +196,19 @@ type Fields = Record<string, unknown>;
 const set = <R>(row: R, [value, at]: readonly [string, string], v: unknown, a: string | null) =>
   ({ ...row, [value]: v, [at]: a }) as R;
 
+const emptyActivity = (
+  id: string,
+): Omit<ActivityRow, "date" | "type" | "durationMin" | "fieldsAt"> => ({
+  id,
+  cardioType: null,
+  climbStyle: null,
+  climbRuns: null,
+  climbGrade: null,
+  climbColor: null,
+  removed: false,
+  removedAt: null,
+});
+
 // The time of the field a change writes, as this device holds it; null: never written here.
 async function localAt(tx: WriteTx, change: Change): Promise<string | null> {
   switch (change.kind) {
@@ -204,10 +240,12 @@ async function localAt(tx: WriteTx, change: Change): Promise<string | null> {
       const row = await tx.objectStore("annotations").get(change.id);
       return (change.field === "fields" ? row?.fieldsAt : row?.removedAt) ?? null;
     }
-    // ponytail: steps and activities are kept from IndexedDB version 4 on (the next commits).
     case "steps":
-    case "activity":
-      return null;
+      return (await tx.objectStore("steps").get(change.date))?.stepsAt ?? null;
+    case "activity": {
+      const row = await tx.objectStore("activities").get(change.id);
+      return (change.field === "fields" ? row?.fieldsAt : row?.removedAt) ?? null;
+    }
     case "workout": {
       const row = await tx.objectStore("workouts").get(change.id);
       switch (change.field) {
@@ -309,8 +347,29 @@ async function applyLocal(tx: WriteTx, change: Change): Promise<void> {
       return;
     }
     case "steps":
-    case "activity":
+      await tx
+        .objectStore("steps")
+        .put({ date: change.date, steps: change.value, stepsAt: change.at });
       return;
+    case "activity": {
+      const store = tx.objectStore("activities");
+      const row = await store.get(change.id);
+      if (change.field === "fields")
+        await store.put({
+          ...(row ?? emptyActivity(change.id)),
+          date: change.date,
+          type: change.type,
+          durationMin: change.durationMin,
+          cardioType: change.cardioType,
+          climbStyle: change.climbStyle,
+          climbRuns: change.climbRuns,
+          climbGrade: change.climbGrade,
+          climbColor: change.climbColor,
+          fieldsAt: change.at,
+        });
+      else if (row) await store.put({ ...row, removed: change.value, removedAt: change.at });
+      return;
+    }
     case "workout": {
       const store = tx.objectStore("workouts");
       const row = await store.get(change.id);
@@ -432,8 +491,13 @@ async function revert(tx: WriteTx, change: Change): Promise<void> {
       return;
     }
     case "steps":
-    case "activity":
+      return tx.objectStore("steps").delete(change.date);
+    case "activity": {
+      const row = (await tx.objectStore("activities").get(change.id))!;
+      if (change.field === "fields") return tx.objectStore("activities").delete(change.id);
+      await tx.objectStore("activities").put({ ...row, removed: false, removedAt: null });
       return;
+    }
     case "workout": {
       // A refused start takes its session away; a refused field goes back to unwritten, and the
       // server sends what it holds, if anything (a refused plan or start time keeps the value
@@ -669,6 +733,32 @@ export async function readAnnotations(db: AccountDb): Promise<AnnotationRow[]> {
     .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
 }
 
+// The days with steps.
+export async function readSteps(db: AccountDb): Promise<StepsLog[]> {
+  return (await db.getAll("steps")).flatMap(({ date, steps }) =>
+    steps === null ? [] : [{ date, steps }],
+  );
+}
+
+// The activities still in place, by day, as the shared rules read them.
+export async function readActivities(db: AccountDb): Promise<Activity[]> {
+  return (await db.getAll("activities"))
+    .filter((a) => !a.removed)
+    .map((a): Activity => ({
+      id: a.id,
+      date: a.date,
+      kind: a.type,
+      durationMin: a.durationMin,
+      cardioType: a.cardioType,
+      climbStyle: a.climbStyle,
+      climbRuns: a.climbRuns,
+      climbGrade: a.climbGrade,
+      climbColor: a.climbColor,
+      removed: false,
+    }))
+    .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : a.id < b.id ? -1 : 1));
+}
+
 // Every session and set, removed ones included: the shared rules (liveSets) leave those out.
 export async function readHistory(db: AccountDb): Promise<History> {
   const [workouts, sets] = await Promise.all([db.getAll("workouts"), db.getAll("sets")]);
@@ -779,6 +869,8 @@ export async function applyServer(
     for (const row of response.supplements) queue(tx.objectStore("supplements").put(row));
     for (const row of response.supplementLogs) queue(tx.objectStore("supplementLogs").put(row));
     for (const row of response.annotations) queue(tx.objectStore("annotations").put(row));
+    for (const row of response.steps) queue(tx.objectStore("steps").put(row));
+    for (const row of response.activities) queue(tx.objectStore("activities").put(row));
     for (const row of response.workouts) queue(tx.objectStore("workouts").put(row));
     for (const row of response.sets) queue(tx.objectStore("sets").put(row));
     if (response.target) queue(tx.objectStore("profile").put(response.target, "target"));

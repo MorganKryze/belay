@@ -18,6 +18,7 @@ import {
   closeForgotten,
   openAccountDb,
   pendingCounts,
+  readActivities,
   readAnnotations,
   readHistory,
   readIntake,
@@ -25,6 +26,7 @@ import {
   readProfile,
   readRejected,
   readSessionView,
+  readSteps,
   readSupplementLogs,
   readSupplements,
   readTarget,
@@ -173,6 +175,21 @@ export const useAnnotations = (account: OpenAccount) =>
   useQuery({
     queryKey: local(account, "annotations"),
     queryFn: () => readAnnotations(account.db),
+    networkMode: "always",
+  });
+
+// The day's steps, and the activities still in place (session C's rule reads them too).
+export const useSteps = (account: OpenAccount) =>
+  useQuery({
+    queryKey: local(account, "steps"),
+    queryFn: () => readSteps(account.db),
+    networkMode: "always",
+  });
+
+export const useActivities = (account: OpenAccount) =>
+  useQuery({
+    queryKey: local(account, "activities"),
+    queryFn: () => readActivities(account.db),
     networkMode: "always",
   });
 

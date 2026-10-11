@@ -127,7 +127,7 @@ describe("the upgrade from version 2", () => {
     await v2.put("meta", "12", "cursor");
 
     const db = await openAccountDb("user-a");
-    expect(db.version).toBe(3);
+    expect(db.version).toBe(4);
     expect(await readWeights(db)).toEqual([{ date: "2026-10-07", weightKg: 79.8 }]);
     expect(await readIntake(db)).toEqual([{ date: "2026-10-07", kcal: 2100, proteinG: null }]);
     expect((await readRejected(db)).map((r) => r.reason)).toEqual(["refused"]);
