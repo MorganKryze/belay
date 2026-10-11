@@ -113,7 +113,7 @@ describe("the starter program (§6)", () => {
   it("estimates the duration: every set 45 s plus its rest, to 5 minutes", () => {
     // A: 6 × 195 + 4 × 165 + 5 × 165 + 3 × 45 + 3 × 45 + 3 × 120 = 3 285 s, 54.75 min.
     expect(estimatedMinutes(A)).toBe(55);
-    expect(estimatedMinutes({ code: "X", slots: [A.slots[3]!] })).toBe(5);
+    expect(estimatedMinutes({ slots: [A.slots[3]!] })).toBe(5);
   });
 });
 
@@ -160,29 +160,29 @@ describe("prefill and lastTime", () => {
   };
 
   it("takes the same work set at the last finished session", () => {
-    expect(prefill(history, BENCH, 0)).toEqual({ weightKg: 80, reps: 8 });
-    expect(prefill(history, BENCH, 3)).toEqual({ weightKg: 77.5, reps: 6 });
+    expect(prefill(history, BENCH, 0, "reps")).toEqual({ weightKg: 80, reps: 8, seconds: null });
+    expect(prefill(history, BENCH, 3, "reps")).toEqual({ weightKg: 77.5, reps: 6, seconds: null });
   });
 
   it("takes that session's last work set when it had fewer sets", () => {
-    expect(prefill(history, BENCH, 5)).toEqual({ weightKg: 77.5, reps: 6 });
+    expect(prefill(history, BENCH, 5, "reps")).toEqual({ weightKg: 77.5, reps: 6, seconds: null });
   });
 
   it("gives nothing for an exercise never done, and skips a removed session", () => {
-    expect(prefill(history, "ds:0405", 0)).toBeNull();
+    expect(prefill(history, "ds:0405", 0, "reps")).toBeNull();
     const removed: History = {
       workouts: [old, { ...last, removed: true }],
       sets: history.sets,
     };
-    expect(prefill(removed, BENCH, 0)).toEqual({ weightKg: 77.5, reps: 8 });
+    expect(prefill(removed, BENCH, 0, "reps")).toEqual({ weightKg: 77.5, reps: 8, seconds: null });
   });
 
   it("groups equal loads in a row, warm-ups left out", () => {
-    expect(lastTime(history, BENCH)).toEqual([
-      { weightKg: 80, reps: [8, 8, 7] },
-      { weightKg: 77.5, reps: [6] },
+    expect(lastTime(history, BENCH, "reps")).toEqual([
+      { weightKg: 80, counts: [8, 8, 7] },
+      { weightKg: 77.5, counts: [6] },
     ]);
-    expect(lastTime(history, "ds:0405")).toEqual([]);
+    expect(lastTime(history, "ds:0405", "reps")).toEqual([]);
   });
 
   it("never counts a set of a removed session, nor a removed set", () => {
@@ -204,23 +204,26 @@ describe("warmups (D7)", () => {
 
   it("loads a barbell as the Plates tool would", () => {
     expect(warmups({ warmupSets: 2 }, 82.5, barbell, gym)).toEqual([
-      { weightKg: 40, reps: 5 },
-      { weightKg: 60, reps: 3 },
+      { weightKg: 40, reps: 5, seconds: null },
+      { weightKg: 60, reps: 3, seconds: null },
     ]);
   });
 
   it("rounds dumbbells to their step, with the same fractions and reps", () => {
     // 60 % of 22 = 13.2 → 14; 50 % of 30 = 15 → 16, 75 % → 22.5 → 22.
-    expect(warmups({ warmupSets: 1 }, 22, dumbbell, gym)).toEqual([{ weightKg: 14, reps: 5 }]);
+    expect(warmups({ warmupSets: 1 }, 22, dumbbell, gym)).toEqual([
+      { weightKg: 14, reps: 5, seconds: null },
+    ]);
     expect(warmups({ warmupSets: 2 }, 30, dumbbell, gym)).toEqual([
-      { weightKg: 16, reps: 5 },
-      { weightKg: 22, reps: 3 },
+      { weightKg: 16, reps: 5, seconds: null },
+      { weightKg: 22, reps: 3, seconds: null },
     ]);
   });
 
   it("drops a set that rounds to the working load, to nothing, or twice to one load", () => {
-    expect(warmups({ warmupSets: 1 }, 3, dumbbell, gym)).toEqual([{ weightKg: 2, reps: 5 }]);
-    expect(warmups({ warmupSets: 3 }, 4, dumbbell, gym)).toEqual([{ weightKg: 2, reps: 5 }]);
+    const two = [{ weightKg: 2, reps: 5, seconds: null }];
+    expect(warmups({ warmupSets: 1 }, 3, dumbbell, gym)).toEqual(two);
+    expect(warmups({ warmupSets: 3 }, 4, dumbbell, gym)).toEqual(two);
     expect(warmups({ warmupSets: 1 }, 1, dumbbell, gym)).toEqual([]); // 0.6 → 0
     expect(warmups({ warmupSets: 2 }, 20, barbell, gym)).toEqual([]); // the bar alone
   });
@@ -329,7 +332,7 @@ describe("summary (§4.4, D14)", () => {
     const history = { workouts: [before, today], sets: [...past, ...sets] };
     // 82.5 × 8 → 104.5 beats 80 × 8 → 101.3; 85 × 3 → 93.5 does not. Push-ups: a first time.
     expect(summary(today, sets, history).records).toEqual([
-      { exerciseId: BENCH, weightKg: 82.5, reps: 8 },
+      { exerciseId: BENCH, weightKg: 82.5, reps: 8, seconds: null },
     ]);
     const equal = [set(today, 0, 80, 8)];
     expect(
@@ -346,7 +349,7 @@ describe("summary (§4.4, D14)", () => {
     const better = [set(today, 0, 72.5, 10)];
     expect(
       summary(today, better, { workouts: [before, today], sets: [...past, ...better] }).records,
-    ).toEqual([{ exerciseId: BENCH, weightKg: 72.5, reps: 10 }]);
+    ).toEqual([{ exerciseId: BENCH, weightKg: 72.5, reps: 10, seconds: null }]);
   });
 
   it("counts a session that ends after midnight on its own duration", () => {

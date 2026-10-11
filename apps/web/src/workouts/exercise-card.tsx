@@ -43,7 +43,7 @@ export function rowsOf(
       .filter((s) => !s.warmup && s.position < workPosition(k))
       .sort((a, b) => b.position - a.position)[0];
   const work: Row[] = Array.from({ length: slot.sets }, (_, k) => {
-    const last = prefill(history, exercise.id, k) ?? before(k);
+    const last = prefill(history, exercise.id, k, "reps") ?? before(k);
     return {
       position: workPosition(k),
       warmup: false,
@@ -51,9 +51,9 @@ export function rowsOf(
       set: at(workPosition(k)),
       // Nothing at all yet: a bodyweight exercise starts with no added load.
       planned: last
-        ? { weightKg: last.weightKg, reps: last.reps }
+        ? { weightKg: last.weightKg, reps: last.reps, seconds: null }
         : exercise.equipment === "bodyweight"
-          ? { weightKg: 0, reps: slot.repRange[0] }
+          ? { weightKg: 0, reps: slot.repRange[0], seconds: null }
           : null,
     };
   });
@@ -125,7 +125,7 @@ export function ExerciseCard({
   // The next row: the first still to do after the last one done (the first row if none is).
   const lastDone = rows.findLastIndex((r) => r.set);
   const next = rows.slice(lastDone + 1).find((r) => !r.set);
-  const last = lastTime(history, exercise.id);
+  const last = lastTime(history, exercise.id, "reps");
 
   const shown = (row: Row, field: "kg" | "reps") => {
     const draft = drafts[row.position]?.[field];
@@ -138,7 +138,7 @@ export function ExerciseCard({
     const kg = parseDecimal(shown(row, "kg"));
     const reps = parseReps(shown(row, "reps"));
     return kg !== null && reps !== null && isSetKg(kg) && isReps(reps)
-      ? { weightKg: kg, reps }
+      ? { weightKg: kg, reps, seconds: null }
       : null;
   };
   const edit = (row: Row, field: "kg" | "reps", text: string) =>
@@ -215,7 +215,7 @@ export function ExerciseCard({
             <p className="mb-1 text-[13px] text-muted-foreground">
               {t("session.lastTime", {
                 value: last
-                  .map((g) => `${kgText(g.weightKg)} kg × ${g.reps.join(", ")}`)
+                  .map((g) => `${kgText(g.weightKg)} kg × ${g.counts.join(", ")}`)
                   .join(" · "),
               })}
             </p>

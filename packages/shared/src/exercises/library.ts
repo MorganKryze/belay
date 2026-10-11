@@ -1,5 +1,8 @@
 import type { Equipment, Muscle } from "./muscles";
 
+// How an exercise is counted: in repetitions, or in seconds held (a plank, a hang).
+export type Measure = "reps" | "seconds";
+
 // An exercise of the library. Its id never changes and is never reused: `ds:<dataset id>` for
 // the exercises of exercises-dataset, `belay:<slug>` for the ones Belay adds.
 export interface Exercise {

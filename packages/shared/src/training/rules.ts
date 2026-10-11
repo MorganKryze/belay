@@ -1,8 +1,10 @@
 // What a session computes from the history (spec §7). Pure; the callers pass the clock.
+import type { Measure } from "../exercises/library";
 import type { Equipment } from "../exercises/muscles";
 import { epley, RELIABLE_MAX_REPS } from "../tools/one-rep-max";
 import { roundTo } from "../tools/round";
 import { WARMUP_SCHEMES, warmupSets } from "../tools/warmup";
+import { liveSlots } from "./plan";
 import { groupOf } from "./program";
 import { MAX_WARMUPS, type Slot, type Workout, type WorkoutSet } from "./workout";
 
@@ -10,7 +12,20 @@ export interface History {
   workouts: readonly Workout[];
   sets: readonly WorkoutSet[];
 }
-export type Load = { weightKg: number; reps: number };
+// A set's load and its count: repetitions, or seconds for a timed set (the other one null).
+export type Load = { weightKg: number; reps: number | null; seconds: number | null };
+
+// The measure a set was counted in.
+export const measureOfSet = (set: Pick<WorkoutSet, "seconds">): Measure =>
+  set.seconds == null ? "reps" : "seconds";
+// The set's count in its own measure.
+export const countOf = (set: Pick<WorkoutSet, "reps" | "seconds">): number =>
+  set.seconds ?? set.reps ?? 0;
+const loadOf = (set: WorkoutSet): Load => ({
+  weightKg: set.weightKg,
+  reps: set.reps,
+  seconds: set.seconds ?? null,
+});
 
 // The sets a person sees: neither removed nor in a removed session.
 export function liveSets({ workouts, sets }: History): WorkoutSet[] {
@@ -21,9 +36,12 @@ export function liveSets({ workouts, sets }: History): WorkoutSet[] {
 const bySlot = (a: WorkoutSet, b: WorkoutSet) =>
   a.slotIndex - b.slotIndex || a.position - b.position;
 
-// The work sets of an exercise at the last finished session that has some, in order.
-function lastWorkSets(history: History, exerciseId: string): WorkoutSet[] {
-  const sets = liveSets(history).filter((s) => !s.warmup && s.exerciseId === exerciseId);
+// The work sets of an exercise at the last finished session that has some, in order; only the
+// sets counted in `measure`.
+function lastWorkSets(history: History, exerciseId: string, measure: Measure): WorkoutSet[] {
+  const sets = liveSets(history).filter(
+    (s) => !s.warmup && s.exerciseId === exerciseId && measureOfSet(s) === measure,
+  );
   const finished = history.workouts
     .filter((w) => !w.removed && w.endedAt !== null && sets.some((s) => s.workoutId === w.id))
     .sort((a, b) => (a.startedAt < b.startedAt ? 1 : -1));
@@ -31,23 +49,31 @@ function lastWorkSets(history: History, exerciseId: string): WorkoutSet[] {
   return last ? sets.filter((s) => s.workoutId === last.id).sort(bySlot) : [];
 }
 
-// The same work set last time; else the last work set of that session; else nothing.
-export function prefill(history: History, exerciseId: string, setIndex: number): Load | null {
-  const sets = lastWorkSets(history, exerciseId);
+// The same work set last time; else the last work set of that session; else nothing. The
+// exercise is the one the slot holds now (a replaced one included), in its own measure.
+export function prefill(
+  history: History,
+  exerciseId: string,
+  setIndex: number,
+  measure: Measure,
+): Load | null {
+  const sets = lastWorkSets(history, exerciseId, measure);
   const set = sets[setIndex] ?? sets.at(-1);
-  return set ? { weightKg: set.weightKg, reps: set.reps } : null;
+  return set ? loadOf(set) : null;
 }
 
-// "80 kg × 8, 8, 7, 6": last time's work sets, the reps of equal loads in a row grouped.
+// "80 kg × 8, 8, 7, 6" or "45, 45, 40 s": last time's work sets, the counts of equal loads in a
+// row grouped.
 export function lastTime(
   history: History,
   exerciseId: string,
-): { weightKg: number; reps: number[] }[] {
-  const groups: { weightKg: number; reps: number[] }[] = [];
-  for (const s of lastWorkSets(history, exerciseId)) {
+  measure: Measure,
+): { weightKg: number; counts: number[] }[] {
+  const groups: { weightKg: number; counts: number[] }[] = [];
+  for (const s of lastWorkSets(history, exerciseId, measure)) {
     const last = groups.at(-1);
-    if (last?.weightKg === s.weightKg) last.reps.push(s.reps);
-    else groups.push({ weightKg: s.weightKg, reps: [s.reps] });
+    if (last?.weightKg === s.weightKg) last.counts.push(countOf(s));
+    else groups.push({ weightKg: s.weightKg, counts: [countOf(s)] });
   }
   return groups;
 }
@@ -66,12 +92,13 @@ export function warmups(
     return warmupSets(workKg, slot.warmupSets, bar.barKg, bar.platesKg).map((s) => ({
       weightKg: s.loadKg,
       reps: s.reps,
+      seconds: null,
     }));
   const out: Load[] = [];
   for (const [fraction, reps] of WARMUP_SCHEMES[slot.warmupSets]) {
     const weightKg = roundTo(workKg * fraction, exercise.incrementKg);
     if (weightKg <= 0 || weightKg >= workKg || out.some((s) => s.weightKg === weightKg)) continue;
-    out.push({ weightKg, reps });
+    out.push({ weightKg, reps, seconds: null });
   }
   return out;
 }
@@ -84,16 +111,23 @@ export const turnOf = (set: Pick<WorkoutSet, "slotIndex" | "position">): Turn =>
   round: set.position - MAX_WARMUPS,
 });
 
+// A slot's group without the slots skipped today.
+const liveGroup = (plan: readonly Slot[], slotIndex: number) =>
+  groupOf(plan, slotIndex).filter((g) => !plan[g]!.skipped);
+
 // The order the work sets come in: slot after slot; in a group, round after round across its
-// slots (A1 B1 C1, A2 B2 C2…), a slot with fewer sets dropping out of the later rounds.
+// slots (A1 B1 C1, A2 B2 C2…), a slot with fewer sets dropping out of the later rounds. A slot
+// skipped today has no turn.
 export function workOrder(plan: readonly Slot[]): Turn[] {
   const out: Turn[] = [];
-  for (let i = 0; i < plan.length;) {
-    const group = groupOf(plan, i);
+  const seen = new Set<number>();
+  for (const i of liveSlots(plan)) {
+    if (seen.has(i)) continue;
+    const group = liveGroup(plan, i);
+    for (const g of group) seen.add(g);
     const rounds = Math.max(...group.map((g) => plan[g]!.sets));
     for (let round = 0; round < rounds; round++)
       for (const g of group) if (round < plan[g]!.sets) out.push({ slotIndex: g, round });
-    i = group.at(-1)! + 1;
   }
   return out;
 }
@@ -112,7 +146,7 @@ export function nextTurn(
 
 // The end of the rest after a work set. Inside a group's round, none: the next exercise follows.
 // After the round, or after a slot alone, the rest of the group's last slot (or the slot's own).
-// After the last set of the session, none.
+// A slot skipped today has no turn in the round. After the last set of the session, none.
 export function restEndsAt(
   plan: readonly Slot[],
   done: ReadonlySet<string>,
@@ -121,9 +155,10 @@ export function restEndsAt(
 ): string | null {
   const next = nextTurn(plan, done, after);
   if (next === null) return null;
-  const group = groupOf(plan, after.slotIndex);
+  const group = liveGroup(plan, after.slotIndex);
   if (group.length > 1 && group.includes(next.slotIndex) && next.round === after.round) return null;
-  const restSec = plan[group.at(-1)!]!.restSec;
+  // The group's rest is its last slot's, even when that slot is skipped today.
+  const restSec = plan[groupOf(plan, after.slotIndex).at(-1)!]!.restSec;
   return restSec > 0 ? new Date(Date.parse(doneAt) + restSec * 1000).toISOString() : null;
 }
 
@@ -131,21 +166,32 @@ export interface Summary {
   durationMs: number;
   workSets: number;
   warmupSets: number;
-  volumeKg: number; // Σ kg × reps of the work sets (a bodyweight set counts its added load)
+  // Σ kg × reps of the work sets counted in reps (a bodyweight set counts its added load); a
+  // timed set adds nothing.
+  volumeKg: number;
   records: (Load & { exerciseId: string })[];
 }
 
-const best = (sets: readonly WorkoutSet[]) =>
+// The score a record compares: the Epley estimate of a set of 1 to 10 reps, or a timed set's
+// seconds; null for a set that cannot be a record.
+const scoreOf = (s: WorkoutSet): number | null => {
+  if (s.warmup) return null;
+  if (s.seconds != null) return s.seconds > 0 ? s.seconds : null;
+  return s.reps !== null && s.reps >= 1 && s.reps <= RELIABLE_MAX_REPS
+    ? epley(s.weightKg, s.reps)
+    : null;
+};
+const best = (sets: readonly WorkoutSet[], measure: Measure) =>
   sets
-    .filter((s) => !s.warmup && s.reps >= 1 && s.reps <= RELIABLE_MAX_REPS)
+    .filter((s) => measureOfSet(s) === measure && scoreOf(s) !== null)
     .reduce<WorkoutSet | null>(
-      (top, s) =>
-        top === null || epley(s.weightKg, s.reps) > epley(top.weightKg, top.reps) ? s : top,
+      (top, s) => (top === null || scoreOf(s)! > scoreOf(top)! ? s : top),
       null,
     );
 
-// D14: a record is the best Epley estimate of a work set of 10 reps or fewer, above every
-// earlier finished session's; never on an exercise's first time.
+// D14 and spec D11: a record is the best Epley estimate of a work set of 10 reps or fewer, or
+// the longest timed set, above every earlier finished session's; never on an exercise's first
+// time in that measure.
 export function summary(workout: Workout, sets: readonly WorkoutSet[], history: History): Summary {
   const own = sets.filter((s) => !s.removed && s.workoutId === workout.id).sort(bySlot);
   const work = own.filter((s) => !s.warmup);
@@ -157,17 +203,25 @@ export function summary(workout: Workout, sets: readonly WorkoutSet[], history: 
   );
   const past = liveSets(history).filter((s) => earlier.has(s.workoutId));
   const records: Summary["records"] = [];
-  for (const exerciseId of [...new Set(work.map((s) => s.exerciseId))]) {
-    const now = best(work.filter((s) => s.exerciseId === exerciseId));
-    const before = best(past.filter((s) => s.exerciseId === exerciseId));
-    if (now && before && epley(now.weightKg, now.reps) > epley(before.weightKg, before.reps))
-      records.push({ exerciseId, weightKg: now.weightKg, reps: now.reps });
+  const kinds = [...new Set(work.map((s) => `${s.exerciseId}|${measureOfSet(s)}`))];
+  for (const kind of kinds) {
+    const [exerciseId, measure] = kind.split("|") as [string, Measure];
+    const now = best(
+      work.filter((s) => s.exerciseId === exerciseId),
+      measure,
+    );
+    const before = best(
+      past.filter((s) => s.exerciseId === exerciseId),
+      measure,
+    );
+    if (now && before && scoreOf(now)! > scoreOf(before)!)
+      records.push({ exerciseId, ...loadOf(now) });
   }
   return {
     durationMs: workout.endedAt ? Date.parse(workout.endedAt) - Date.parse(workout.startedAt) : 0,
     workSets: work.length,
     warmupSets: own.length - work.length,
-    volumeKg: work.reduce((v, s) => v + s.weightKg * s.reps, 0),
+    volumeKg: work.reduce((v, s) => v + (s.reps === null ? 0 : s.weightKg * s.reps), 0),
     records,
   };
 }

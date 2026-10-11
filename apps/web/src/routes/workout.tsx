@@ -171,7 +171,7 @@ function Screen({
           exerciseId: plan[slotIndex]!.exerciseId,
           warmup: row.warmup,
           weightKg: load.weightKg,
-          reps: load.reps,
+          reps: load.reps ?? 0, // the card counts reps only, until timed sets reach the contract
           rir,
           doneAt,
         },
@@ -201,7 +201,7 @@ function Screen({
           exerciseId: set.exerciseId,
           warmup: set.warmup,
           weightKg: load.weightKg,
-          reps: load.reps,
+          reps: load.reps ?? 0,
           rir: set.rir,
           doneAt: set.doneAt,
         },
