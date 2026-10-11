@@ -337,9 +337,9 @@ describe("the session screen (§4.2, §4.3)", () => {
     await startSession("A");
     cleanup();
     renderRoute("/workouts?tab=program");
-    fireEvent.click(await screen.findByRole("button", { name: /^Session B · Legs/ }));
-    const resume = await screen.findAllByRole("link", { name: "Resume the session in progress" });
-    fireEvent.click(resume[0]!);
+    // Every card offers to resume the session open, B's too.
+    const b = await screen.findByRole("region", { name: "Session B · Legs" });
+    fireEvent.click(within(b).getByRole("link", { name: "Resume" }));
     expect(await screen.findByRole("heading", { name: "Session A · Push", level: 1 })).toBeTruthy();
     expect((await stored()).history.workouts).toHaveLength(1);
   });

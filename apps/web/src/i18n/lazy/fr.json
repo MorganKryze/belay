@@ -179,13 +179,20 @@
       "exercises": "Exercices"
     },
     "program": {
-      "exercises_one": "{{count}} exercice",
-      "exercises_other": "{{count}} exercices",
       "superset": "superset",
       "triset": "tri-set",
       "editNote": "Le programme se modifie sur ordinateur.",
+      "next": "La prochaine",
+      "never": "Jamais faite",
+      "today": "Faite aujourd'hui",
+      "daysAgo_one": "Il y a {{count}} jour",
+      "daysAgo_other": "Il y a {{count}} jours",
+      "size_one": "{{count}} exercice · ~{{minutes}} min",
+      "size_other": "{{count}} exercices · ~{{minutes}} min",
+      "see": "Voir",
+      "noClimbing": "sans escalade",
       "start": "Commencer",
-      "resume": "Reprendre la séance en cours"
+      "resume": "Reprendre"
     },
     "rir": "RIR {{range}}",
     "restSec": "{{s}} s",

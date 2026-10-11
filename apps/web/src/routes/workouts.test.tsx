@@ -36,20 +36,17 @@ describe("the Sessions tab", () => {
     expect(await screen.findByRole("searchbox", { name: "Search exercises" })).toBeTruthy();
   });
 
-  it("lists the program read only, the first session open and its groups marked", async () => {
+  it("lists the program as cards to see, read only, without an account", async () => {
     renderRoute("/workouts?tab=program");
-    const a = await screen.findByRole("button", { name: /Session A · Push/ });
-    expect(a.getAttribute("aria-expanded")).toBe("true");
-    expect(a.textContent).toContain("6 exercises");
-    const lateral = screen.getByRole("link", { name: /Dumbbell lateral raise/ });
-    expect(lateral.textContent).toContain("3 × 12–20 · tri-set");
+    const a = await screen.findByRole("region", { name: "Session A · Push" });
+    expect(a.textContent).toContain("6 exercises · ~55 min");
+    expect(within(a).queryByRole("link", { name: "Start" })).toBeNull();
+    const see = within(a).getByRole("button", { name: "See" });
+    expect(see.getAttribute("aria-expanded")).toBe("false");
+    fireEvent.click(see);
+    const lateral = within(a).getByRole("link", { name: /Dumbbell lateral raise/ });
+    expect(lateral.textContent).toContain("3\u00a0×\u00a012–20 · tri-set");
     expect(lateral.getAttribute("href")).toBe("/exercises/ds%3A0334");
-    const b = screen.getByRole("button", { name: /Session B · Legs/ });
-    expect(b.getAttribute("aria-expanded")).toBe("false");
-    fireEvent.click(b);
-    expect(screen.getByRole("link", { name: /Lever lying leg curl/ }).textContent).toContain(
-      "superset",
-    );
     expect(screen.getByText("The program is edited on a computer.")).toBeTruthy();
   });
 
@@ -57,7 +54,7 @@ describe("the Sessions tab", () => {
     await i18n.changeLanguage("fr");
     renderRoute("/workouts?tab=program");
     expect(
-      await screen.findByRole("button", { name: /Séance C · Fessiers \+ tirage léger/ }),
+      await screen.findByRole("region", { name: "Séance C · Fessiers + tirage léger" }),
     ).toBeTruthy();
     expect(screen.getByText("Le programme se modifie sur ordinateur.")).toBeTruthy();
   });

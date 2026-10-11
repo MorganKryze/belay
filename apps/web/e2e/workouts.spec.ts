@@ -141,7 +141,11 @@ test("a reload in the middle of a rest comes back to the same set and time left"
 }) => {
   await fakeServer(page, { changes: LAST_A });
   await page.goto("/workouts?tab=program");
-  await page.getByRole("link", { name: "Start" }).first().click();
+  // B is next after Monday's A: A's card is further down, with its own Start.
+  await page
+    .getByRole("region", { name: "Session A · Push" })
+    .getByRole("link", { name: "Start" })
+    .click();
   const bench = card(page, "Barbell bench press");
   await expect(bench.getByRole("textbox", { name: "Load of set 1, kg" })).toHaveValue("80");
   await logWarmups(bench);
