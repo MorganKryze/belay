@@ -1,6 +1,7 @@
 import { type ISODate, toISODate } from "@belay/shared/body/dates";
 import type { Weighing } from "@belay/shared/body/weighings";
-import { activitySummary } from "@belay/shared/training/activities";
+import { type Activity, activitySummary } from "@belay/shared/training/activities";
+import { planFor } from "@belay/shared/training/plan";
 import {
   estimatedMinutes,
   nextSession,
@@ -10,7 +11,7 @@ import {
 import { liveSets, openWorkout } from "@belay/shared/training/rules";
 import { Link } from "@tanstack/react-router";
 import {
-  Activity,
+  Activity as ActivityIcon,
   ChevronRight,
   Dumbbell,
   type LucideIcon,
@@ -114,9 +115,9 @@ export function TodayCard({
         >
           {t("today.title")}
         </h2>
-        <SessionRow account={account} />
+        <SessionRow account={account} activities={activities} today={today} />
         <Row
-          icon={Activity}
+          icon={ActivityIcon}
           title={t("today.activity")}
           status={daySummaryText(activitySummary(activities, steps, today), t, i18n.language)}
           onClick={() => setOpen("activity")}
@@ -254,8 +255,17 @@ export function TodayCard({
   );
 }
 
-// §4.1: the next session of the program, or the one in progress and how far it is.
-function SessionRow({ account }: { account: OpenAccount }) {
+// §4.1: the next session of the program, or the one in progress and how far it is. Session C
+// counts the slots its rule adds in a week with no climbing.
+function SessionRow({
+  account,
+  activities,
+  today,
+}: {
+  account: OpenAccount;
+  activities: readonly Activity[];
+  today: ISODate;
+}) {
   const { t } = useTranslation();
   const history = useHistory(account).data;
   if (!history) return null;
@@ -268,9 +278,10 @@ function SessionRow({ account }: { account: OpenAccount }) {
     const done = liveSets(history).filter((s) => s.workoutId === open.id && !s.warmup).length;
     status = t("today.sessionOpen", { count: done, total: plannedWorkSets(open.plan) });
   } else {
+    const plan = planFor(session!, activities, today);
     status = t("today.sessionPlanned", {
-      count: session!.slots.length,
-      minutes: estimatedMinutes(session!),
+      count: plan.length,
+      minutes: estimatedMinutes({ slots: plan }),
     });
   }
   return (

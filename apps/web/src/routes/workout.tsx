@@ -1,6 +1,9 @@
 import "@/i18n/lazy";
 import { newId } from "@belay/shared";
+import { toISODate } from "@belay/shared/body/dates";
 import { exerciseById } from "@belay/shared/exercises/catalog";
+import type { Exercise } from "@belay/shared/exercises/library";
+import { appendSlot, planFor, replaceSlot, skipSlot } from "@belay/shared/training/plan";
 import { groupOf, plannedWorkSets, sessionByCode } from "@belay/shared/training/program";
 import {
   type History,
@@ -12,7 +15,13 @@ import {
   turnKey,
   turnOf,
 } from "@belay/shared/training/rules";
-import { MAX_WARMUPS, type Workout, type WorkoutSet } from "@belay/shared/training/workout";
+import {
+  MAX_SLOTS,
+  MAX_WARMUPS,
+  type Slot,
+  type Workout,
+  type WorkoutSet,
+} from "@belay/shared/training/workout";
 import { Navigate, useNavigate, useSearch } from "@tanstack/react-router";
 import { Timer } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -21,7 +30,7 @@ import { Sheet } from "@/components/sheet";
 import { Button } from "@/components/ui/button";
 import { sessionTitle } from "@/lib/format";
 import { readToolState, resolveEquipment } from "@/lib/tool-storage";
-import type { ActiveSession } from "@/sync/db";
+import { type ActiveSession, readActivities } from "@/sync/db";
 import {
   type OpenAccount,
   useAccount,
@@ -31,6 +40,7 @@ import {
   useStartWorkout,
 } from "@/sync/account";
 import { ExerciseCard, type Row } from "@/workouts/exercise-card";
+import { ExercisePicker } from "@/workouts/exercise-picker";
 import { groupKind } from "@/workouts/format";
 import { formatClock, useNow, useWakeLock } from "@/workouts/hooks";
 import { RestBar } from "@/workouts/rest-bar";
@@ -57,15 +67,19 @@ function Session({ account }: { account: OpenAccount }) {
   useWakeLock();
 
   // ?start=B: start session B (or take up the one already open), then drop the parameter so a
-  // reload never starts another.
+  // reload never starts another. Session C's rule reads the week's activities now, once (D6).
   useEffect(() => {
     if (!start || started.current) return;
     started.current = true;
     const session = sessionByCode(start);
     const go = () => void navigate({ to: "/workout", search: {}, replace: true });
     if (!session) return go();
-    void startWorkout(newId(), session.code, [...session.slots]).then(go, go);
-  }, [start, navigate, startWorkout]);
+    void readActivities(account.db)
+      .then((activities) =>
+        startWorkout(newId(), session.code, planFor(session, activities, toISODate(new Date()))),
+      )
+      .then(go, go);
+  }, [start, navigate, startWorkout, account.db]);
 
   // A session with no set at all is not kept; otherwise it ends now and its summary opens.
   const finish = async (workout: Workout, empty: boolean) => {
@@ -127,11 +141,17 @@ function Screen({
   const now = useNow();
   const [toggled, setToggled] = useState<ReadonlyMap<number, boolean>>(new Map());
   const [finishing, setFinishing] = useState(false);
+  // The exercise picker: for a slot to replace, or for one added at the end.
+  const [picking, setPicking] = useState<{ slotIndex: number } | "add" | null>(null);
   const [saveError, setError] = useState<string>();
   const error = saveError ?? failed;
   const plan = workout.plan;
   const sets = liveSets(history).filter((s) => s.workoutId === workout.id);
-  const work = sets.filter((s) => !s.warmup && s.position - MAX_WARMUPS < plan[s.slotIndex]!.sets);
+  // The planned work sets done (« + Série » past the plan aside), in the slots done today.
+  const work = sets.filter((s) => {
+    const slot = plan[s.slotIndex];
+    return !s.warmup && slot && !slot.skipped && s.position - MAX_WARMUPS < slot.sets;
+  });
   const done = new Set(work.map((s) => turnKey(turnOf(s))));
   const left = plannedWorkSets(plan) - done.size;
   // The person's own bar and plates, from the Plates tool (D7).
@@ -153,6 +173,26 @@ function Screen({
       void save(() => record([], { active: { ...active, ...patch } })),
     [active, record, save],
   );
+  // The session's own copy of the plan (D7): the program never changes.
+  const savePlan = (next: Slot[]) =>
+    save(() =>
+      record({
+        kind: "workout",
+        id: workout.id,
+        field: "plan",
+        value: next,
+        at: new Date().toISOString(),
+      }),
+    );
+  const pick = (exercise: Exercise) => {
+    if (picking === null) return;
+    const target = picking === "add" ? plan.length : picking.slotIndex;
+    void savePlan(
+      picking === "add" ? appendSlot(plan, exercise) : replaceSlot(plan, target, exercise),
+    );
+    setPicking(null);
+    setToggled((m) => new Map(m).set(target, true));
+  };
 
   // ✓ (§4.2): the set as shown, the rest started, the next exercise opened.
   const validate = (slotIndex: number) => async (row: Row, load: Load, rir: number | null) => {
@@ -161,6 +201,11 @@ function Screen({
     const after = new Set(done);
     if (turn) after.add(turnKey(turn));
     const next = turn ? nextTurn(plan, after, turn) : null;
+    // The chrono of this row is done with once its set is logged.
+    const chrono =
+      active.chrono?.slotIndex === slotIndex && active.chrono.position === row.position
+        ? null
+        : (active.chrono ?? null);
     await save(() =>
       recordSet(
         {
@@ -179,6 +224,7 @@ function Screen({
         {
           workoutId: workout.id,
           slotIndex: next?.slotIndex ?? slotIndex,
+          chrono,
           restEndsAt: turn
             ? restEndsAt(plan, after, turn, doneAt)
             : // A warm-up starts no rest and leaves a running one alone, but not an expired one.
@@ -274,6 +320,11 @@ function Screen({
       <h1 className="text-[22px] leading-tight font-bold tracking-tight">
         {sessionTitle(workout.sessionCode, t)}
       </h1>
+      {plan.some((s) => s.rule === "no_climbing") && (
+        <p className="rounded-[12px] bg-primary-soft px-3 py-2.5 text-sm text-primary-ink">
+          {t("session.noClimbing")}
+        </p>
+      )}
       {error && (
         <p role="alert" className="rounded-chip bg-track p-3 text-sm">
           {error}
@@ -282,27 +333,57 @@ function Screen({
       {plan.map((slot, i) => {
         const exercise = exerciseById(slot.exerciseId);
         if (!exercise) return null;
-        const open = toggled.get(i) ?? i === active.slotIndex;
+        // The card holding a running chrono stays open, after a reload too.
+        const open = toggled.get(i) ?? (i === active.slotIndex || active.chrono?.slotIndex === i);
+        const own = sets.filter((s) => s.slotIndex === i);
         return (
           <ExerciseCard
             key={i}
             slot={slot}
             slotIndex={i}
             exercise={exercise}
-            sets={sets.filter((s) => s.slotIndex === i)}
+            sets={own}
             history={history}
             bar={bar}
             open={open}
             current={i === active.slotIndex}
             group={groupLabel(i)}
             note={workout.exerciseNotes[String(i)] ?? ""}
+            chrono={active.chrono?.slotIndex === i ? active.chrono : null}
+            now={now}
             onToggle={() => setToggled((m) => new Map(m).set(i, !open))}
             onValidate={validate(i)}
             onCorrect={correct}
             onNote={saveNote(i)}
+            onReplace={() => setPicking({ slotIndex: i })}
+            onSkip={
+              (slot.rule || slot.added) && own.length === 0
+                ? (skipped) => void savePlan(skipSlot(plan, i, skipped))
+                : null
+            }
+            onChrono={(chrono) => setActive({ chrono })}
           />
         );
       })}
+      <Button
+        variant="outline"
+        size="lg"
+        className="w-full font-semibold"
+        disabled={plan.length >= MAX_SLOTS}
+        onClick={() => setPicking("add")}
+      >
+        {t("session.addExercise")}
+      </Button>
+      {picking !== null && (
+        <ExercisePicker
+          replacing={
+            picking === "add" ? null : (exerciseById(plan[picking.slotIndex]!.exerciseId) ?? null)
+          }
+          history={history}
+          onPick={pick}
+          onClose={() => setPicking(null)}
+        />
+      )}
       {active.restEndsAt && (
         <RestBar
           endsAt={active.restEndsAt}

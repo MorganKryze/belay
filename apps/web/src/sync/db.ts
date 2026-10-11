@@ -32,9 +32,17 @@ import { type DBSchema, type IDBPDatabase, type IDBPTransaction, openDB } from "
 export type OutboxEntry = { id: number; change: Change };
 // A change the server refused: out of the queue, kept until the person has read about it.
 export type RejectedEntry = { id: number; change: Change; reason: Rejected["reason"] };
-// The session open on this device: which one, the slot it shows, and when its rest ends. Local
-// only, never sent: the sets are what syncs.
-export type ActiveSession = { workoutId: string; slotIndex: number; restEndsAt: string | null };
+// A timed set counting down (spec §4.3): which row, its target, and when it ends; stopped early,
+// `seconds` is what was held and it ends at the stop.
+export type Chrono = { slotIndex: number; position: number; seconds: number; endsAt: string };
+// The session open on this device: which one, the slot it shows, when its rest ends, and the
+// timed set counting down, if any. Local only, never sent: the sets are what syncs.
+export type ActiveSession = {
+  workoutId: string;
+  slotIndex: number;
+  restEndsAt: string | null;
+  chrono?: Chrono | null;
+};
 
 interface BelaySchema extends DBSchema {
   weights: { key: ISODate; value: WeightRow }; // a null weight is a deleted day

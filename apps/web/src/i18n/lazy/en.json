@@ -278,6 +278,7 @@
     "lastTime": "Last time: {{value}}",
     "set": "Set",
     "reps": "Reps",
+    "seconds": "Seconds",
     "warmup": "Warm-up",
     "upcoming": "{{target}} · coming up",
     "doneCount_one": "{{count}} of {{total}} sets",
@@ -288,6 +289,7 @@
     "setField": {
       "kg": "Load of set {{n}}, kg",
       "reps": "Reps of set {{n}}",
+      "seconds": "Seconds of set {{n}}",
       "validate": "Log set {{n}}",
       "done": "Set {{n}} logged"
     },
@@ -311,7 +313,32 @@
     "finishLeft_one": "{{count}} set not done will not be saved.",
     "finishLeft_other": "{{count}} sets not done will not be saved.",
     "finishEmpty": "No set logged: the session will not be kept.",
-    "keepGoing": "Keep going"
+    "keepGoing": "Keep going",
+    "noClimbing": "No climbing this week: vertical pull and curl added at the end of the session.",
+    "addedNoClimbing": "added, no climbing",
+    "added": "added",
+    "leaveOut": "Remove",
+    "leftOut": "left out today",
+    "putBack": "Put back",
+    "replace": "Replace",
+    "addSet": "+ Set",
+    "addExercise": "+ Exercise",
+    "doneWith_one": "{{count}} set done with {{exercise}}",
+    "doneWith_other": "{{count}} sets done with {{exercise}}",
+    "chrono": "Timer {{time}}",
+    "chronoLabel": "Timer",
+    "chronoStop": "Stop",
+    "chronoOver": "Timer done",
+    "picker": {
+      "replaceTitle": "Replace {{exercise}}",
+      "addTitle": "Add an exercise",
+      "planned": "Planned in your program",
+      "orLibrary": "Or from the library",
+      "library": "From the library",
+      "lastTime": "last time {{value}}",
+      "never": "never done",
+      "note": "For this session only: the program does not change."
+    }
   },
   "summary": {
     "title": "Session done",

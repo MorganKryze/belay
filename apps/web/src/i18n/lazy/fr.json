@@ -278,6 +278,7 @@
     "lastTime": "La dernière fois : {{value}}",
     "set": "Série",
     "reps": "Reps",
+    "seconds": "Secondes",
     "warmup": "Montée",
     "upcoming": "{{target}} · à venir",
     "doneCount_one": "{{count}} série sur {{total}}",
@@ -288,6 +289,7 @@
     "setField": {
       "kg": "Charge de la série {{n}}, kg",
       "reps": "Répétitions de la série {{n}}",
+      "seconds": "Secondes de la série {{n}}",
       "validate": "Valider la série {{n}}",
       "done": "Série {{n}} validée"
     },
@@ -311,7 +313,32 @@
     "finishLeft_one": "{{count}} série non faite ne sera pas enregistrée.",
     "finishLeft_other": "{{count}} séries non faites ne seront pas enregistrées.",
     "finishEmpty": "Aucune série validée : la séance ne sera pas gardée.",
-    "keepGoing": "Continuer la séance"
+    "keepGoing": "Continuer la séance",
+    "noClimbing": "Pas d'escalade cette semaine : tirage vertical et curl ajoutés en fin de séance.",
+    "addedNoClimbing": "ajouté, sans escalade",
+    "added": "ajouté",
+    "leaveOut": "Retirer",
+    "leftOut": "retiré pour aujourd'hui",
+    "putBack": "Remettre",
+    "replace": "Remplacer",
+    "addSet": "+ Série",
+    "addExercise": "+ Exercice",
+    "doneWith_one": "{{count}} série faite avec {{exercise}}",
+    "doneWith_other": "{{count}} séries faites avec {{exercise}}",
+    "chrono": "Chrono {{time}}",
+    "chronoLabel": "Chrono",
+    "chronoStop": "Arrêter",
+    "chronoOver": "Chrono terminé",
+    "picker": {
+      "replaceTitle": "Remplacer {{exercise}}",
+      "addTitle": "Ajouter un exercice",
+      "planned": "Prévues dans ton programme",
+      "orLibrary": "Ou dans la bibliothèque",
+      "library": "Dans la bibliothèque",
+      "lastTime": "la dernière fois {{value}}",
+      "never": "jamais fait",
+      "note": "Pour cette séance seulement : le programme ne change pas."
+    }
   },
   "summary": {
     "title": "Séance terminée",

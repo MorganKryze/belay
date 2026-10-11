@@ -6,8 +6,9 @@ import type { TFunction } from "i18next";
 export const formatRange = ([min, max]: readonly [number, number]) =>
   min === max ? String(min) : `${min}–${max}`;
 
-// "4 × 6–8", never broken across two lines.
-export const formatSets = (slot: Slot) => `${slot.sets}\u00a0×\u00a0${formatRange(slot.repRange)}`;
+// "4 × 6–8", "3 × 30–60 s" for a timed exercise, never broken across two lines.
+export const formatSets = (slot: Pick<Slot, "sets" | "repRange" | "measure">) =>
+  `${slot.sets}\u00a0×\u00a0${formatRange(slot.repRange)}${slot.measure === "seconds" ? "\u00a0s" : ""}`;
 
 export const formatRir = (slot: Slot, t: TFunction) =>
   t("workouts.rir", { range: formatRange(slot.rirTarget) });
