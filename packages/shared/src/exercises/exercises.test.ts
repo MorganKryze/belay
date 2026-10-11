@@ -227,7 +227,8 @@ describe("checkLibrary", () => {
       ) as never,
     };
     expect(own(flipped)).toEqual(["measure ds:0025: published in reps, now in seconds"]);
-    const { "ds:0043": _gone, ...unpinned } = sample.measures;
+    const unpinned = { ...sample.measures };
+    delete unpinned["ds:0043"];
     expect(own({ ...sample, measures: unpinned })).toEqual(["measure ds:0043: not pinned"]);
     // An import keeps a published exercise's pinned measure, so the check flags the index.
     const pinnedSeconds = { ...sample.measures, "ds:0025": "seconds" as const };
