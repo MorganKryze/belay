@@ -91,16 +91,33 @@ export function rowsOf(
   const first = work.find((r) => !r.foreign);
   const workKg = firstKg ?? first?.set?.weightKg ?? first?.planned?.weightKg ?? null;
   const computed = measure === "reps" ? warmups(slot, workKg, exercise, bar) : [];
-  const doneWarmups = sets.filter((s) => s.warmup).map((s) => s.position + 1);
-  const warmCount = Math.min(MAX_WARMUPS, Math.max(computed.length, ...doneWarmups, 0));
-  const warm: Row[] = Array.from({ length: warmCount }, (_, j) => ({
-    position: j,
-    warmup: true,
-    n: j + 1,
-    set: at(j),
-    planned: computed[j] ?? null,
-    foreign: false,
-  }));
+  // Warm-ups done with the previous exercise keep their place, read only; this exercise's own
+  // warm-ups fill the places left.
+  const warmSets = sets.filter((s) => s.warmup);
+  const foreignWarm = warmSets.filter((s) => !own(s));
+  const free = Array.from({ length: MAX_WARMUPS }, (_, p) => p).filter(
+    (p) => !foreignWarm.some((s) => s.position === p),
+  );
+  const doneWarmups = warmSets.filter(own).map((s) => free.indexOf(s.position) + 1);
+  const warmCount = Math.min(free.length, Math.max(computed.length, ...doneWarmups, 0));
+  const warm: Row[] = [
+    ...foreignWarm.map((s) => ({
+      position: s.position,
+      warmup: true,
+      n: s.position + 1,
+      set: s,
+      planned: null,
+      foreign: true,
+    })),
+    ...free.slice(0, warmCount).map((position, j) => ({
+      position,
+      warmup: true,
+      n: position + 1,
+      set: at(position),
+      planned: computed[j] ?? null,
+      foreign: false,
+    })),
+  ].sort((x, y) => x.position - y.position);
   return [...warm, ...work];
 }
 

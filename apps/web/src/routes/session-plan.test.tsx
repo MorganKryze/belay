@@ -382,4 +382,28 @@ describe("fix round: extra rows, chrono, replaced warm-ups, leaving out", () => 
       expect((await stored()).history.sets.map((s) => s.seconds)).toEqual([12]),
     );
   });
+
+  it("keeps a replaced exercise's warm-ups read only, the new one's start fresh", async () => {
+    await seed(ADA.id, LAST_B);
+    await startSession("B");
+    const squat = card("Barbell full squat");
+    fireEvent.change(field(squat, "Load of set 1, kg"), { target: { value: "100" } });
+    fireEvent.change(field(squat, "Reps of set 1"), { target: { value: "5" } });
+    log(squat, "Log warm-up 1");
+    await waitFor(() => within(squat).getByRole("img", { name: "Warm-up 1 logged" }));
+    log(card("Barbell full squat"), "Log set 1");
+    await waitFor(() =>
+      within(card("Barbell full squat")).getByRole("img", { name: "Set 1 logged" }),
+    );
+    fireEvent.click(within(card("Barbell full squat")).getByRole("button", { name: "Replace" }));
+    fireEvent.click(
+      within(await screen.findByRole("dialog")).getByRole("button", {
+        name: /^Dumbbell goblet squat/,
+      }),
+    );
+    const goblet = await waitFor(() => card("Dumbbell goblet squat"));
+    expect(within(goblet).getByText("2 sets done with Barbell full squat")).toBeTruthy();
+    expect(within(goblet).getByRole("img", { name: "Warm-up 1 logged" })).toBeTruthy();
+    expect(within(goblet).queryByRole("textbox", { name: "Load of warm-up 1, kg" })).toBeNull();
+  });
 });
