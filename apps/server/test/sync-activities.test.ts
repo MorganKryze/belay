@@ -261,7 +261,9 @@ describe("a session's own plan and start through /api/sync", () => {
     // A replay of an earlier, shorter plan loses on time: not refused, the stored one echoed.
     const res = await sync(first.cursor, [planChange(w, B, LATER)]);
     expect(res.rejected).toEqual([]);
-    expect(res.workouts).toEqual([expect.objectContaining({ id: w, plan: longer, planAt: LATEST })]);
+    expect(res.workouts).toEqual([
+      expect.objectContaining({ id: w, plan: longer, planAt: LATEST }),
+    ]);
     const [row] = await owner.select().from(workouts).where(eq(workouts.id, w));
     expect(row!.plan).toEqual(longer);
   });
