@@ -1,10 +1,12 @@
-// The starter program, a constant in M3a (D10): M3b stores it and lets it change.
+// The starter program, a constant until the program editor stores it.
 import type { WarmupCount } from "../tools/warmup";
 import type { Slot, Workout } from "./workout";
 
 export interface SessionTemplate {
   code: string; // "A", "B", "C": the name comes from the translations (program.sessions.A)
   slots: readonly Slot[];
+  // The slots added at the end of the session in a week with no climbing (its conditional rule).
+  noClimbing?: readonly Slot[];
 }
 
 const slot = (
@@ -44,7 +46,7 @@ export const starterProgram: readonly SessionTemplate[] = [
     ],
   },
   {
-    code: "C", // Glutes + light pull (8 slots: the conditional rule comes with M3b)
+    code: "C", // Glutes + light pull, and a vertical pull and a curl in a week with no climbing
     slots: [
       slot("belay:barbell-hip-thrust", 4, [8, 12], [1, 2], 120, 2, main),
       slot("ds:0327", 3, [8, 12], [1, 2], 90, 1, main), // dumbbell incline row
@@ -55,8 +57,25 @@ export const starterProgram: readonly SessionTemplate[] = [
       slot("ds:0385", 2, [15, 20], [1, 2], 0, 0, { groupKey: "5" }), // dumbbell reverse wrist curl
       slot("ds:0872", 2, [10, 15], [1, 2], 60, 0, { groupKey: "5" }), // reverse crunch
     ],
+    noClimbing: [
+      slot("ds:2330", 3, [8, 12], [1, 2], 90, 1), // cable lat pulldown, full range of motion
+      slot("ds:0294", 2, [10, 15], [0, 1], 60, 0), // dumbbell biceps curl
+    ],
   },
 ];
+
+// What the program offers instead of an exercise (spec D14), by exercise id: the squat, the
+// split squat, the push-up and the Romanian deadlift.
+// ponytail: a constant beside the constant program; the stored program (M3b2) gives each slot
+// its own alternatives.
+export const ALTERNATIVES: Readonly<Record<string, readonly string[]>> = {
+  "ds:0043": ["ds:1760", "ds:0739"], // barbell full squat → dumbbell goblet squat, leg press
+  "ds:0410": ["ds:0431"], // dumbbell single leg split squat → dumbbell step-up
+  "ds:0662": ["ds:0493", "ds:0576"], // push-up → incline push-up, lever chest press
+  "ds:0085": ["ds:1459"], // barbell romanian deadlift → dumbbell romanian deadlift
+};
+export const alternativesOf = (exerciseId: string): readonly string[] =>
+  ALTERNATIVES[exerciseId] ?? [];
 
 export const sessionByCode = (code: string): SessionTemplate | undefined =>
   starterProgram.find((s) => s.code === code);
@@ -87,10 +106,15 @@ export function nextSession(
   return program[(at + 1) % program.length]!.code;
 }
 
-// Every set, warm-ups included, takes 45 s plus its slot's rest; rounded to 5 minutes.
-export function estimatedMinutes(session: SessionTemplate): number {
-  const seconds = session.slots.reduce((s, x) => s + (x.sets + x.warmupSets) * (45 + x.restSec), 0);
+// Every set, warm-ups included, takes 45 s plus its slot's rest; rounded to 5 minutes. A slot
+// skipped for the session counts for nothing.
+export function estimatedMinutes({ slots }: { slots: readonly Slot[] }): number {
+  const seconds = slots
+    .filter((x) => !x.skipped)
+    .reduce((s, x) => s + (x.sets + x.warmupSets) * (45 + x.restSec), 0);
   return Math.max(5, Math.round(seconds / 300) * 5);
 }
 
-export const plannedWorkSets = (plan: readonly Slot[]) => plan.reduce((n, s) => n + s.sets, 0);
+// The work sets the plan asks for, a skipped slot's aside.
+export const plannedWorkSets = (plan: readonly Slot[]) =>
+  plan.reduce((n, s) => n + (s.skipped ? 0 : s.sets), 0);

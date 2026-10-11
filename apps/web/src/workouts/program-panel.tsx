@@ -1,94 +1,187 @@
+import type { ISODate } from "@belay/shared/body/dates";
 import { exerciseById } from "@belay/shared/exercises/catalog";
-import { type SessionTemplate, starterProgram } from "@belay/shared/training/program";
+import type { Activity } from "@belay/shared/training/activities";
+import { planFor } from "@belay/shared/training/plan";
+import {
+  estimatedMinutes,
+  nextSession,
+  type SessionTemplate,
+  starterProgram,
+} from "@belay/shared/training/program";
+import { type History, openWorkout } from "@belay/shared/training/rules";
 import { Link } from "@tanstack/react-router";
-import { ChevronDown } from "lucide-react";
-import { type ReactNode, useId, useState } from "react";
+import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/button";
 import { sessionTitle } from "@/lib/format";
+import { useToday } from "@/lib/today";
+import { type OpenAccount, useActivities, useHistory } from "@/sync/account";
 import { formatSets, groupKind } from "./format";
+import { dayOf } from "./history-panel";
 
 const card = "rounded-card border border-border bg-card";
 
-// Program (§4.5): sessions A, B and C, read only on the phone, the first one open. `action`
-// puts a button under each session: Start, or Resume when a session is open.
-export function ProgramPanel({ action }: { action?: (session: SessionTemplate) => ReactNode }) {
+// Program (spec D13, §4.5): the sessions as cards, the next one first with Start; the others say
+// when each was last done, with See (its slots, read only) and Start. While a session is open,
+// every card offers to resume it instead. Without an account, the program reads the same, with
+// nothing to start.
+export function ProgramPanel({ account }: { account: OpenAccount | null }) {
   const { t } = useTranslation();
-  const [open, setOpen] = useState<string | null>(starterProgram[0]!.code);
   return (
     <div className="flex flex-col gap-3">
-      {starterProgram.map((s) => (
-        <Session
-          key={s.code}
-          session={s}
-          open={open === s.code}
-          onToggle={() => setOpen(open === s.code ? null : s.code)}
-          action={action?.(s)}
-        />
-      ))}
+      {account ? <Cards account={account} /> : <List history={null} activities={[]} />}
       <p className="mx-0.5 text-sm text-muted-foreground">{t("workouts.program.editNote")}</p>
     </div>
   );
 }
 
-function Session({
+function Cards({ account }: { account: OpenAccount }) {
+  const history = useHistory(account).data;
+  const activities = useActivities(account).data;
+  if (!history || !activities) return null;
+  return <List history={history} activities={activities} />;
+}
+
+function List({
+  history,
+  activities,
+}: {
+  history: History | null;
+  activities: readonly Activity[];
+}) {
+  const today = useToday();
+  const next = history ? nextSession(history.workouts) : null;
+  const open = history
+    ? openWorkout(history.workouts, { sets: history.sets, now: new Date() })
+    : null;
+  // The next session first, then the program's order from there.
+  const at = Math.max(
+    0,
+    starterProgram.findIndex((s) => s.code === next),
+  );
+  const ordered = [...starterProgram.slice(at), ...starterProgram.slice(0, at)];
+  return ordered.map((s) => (
+    <SessionCard
+      key={s.code}
+      session={s}
+      next={s.code === next}
+      lastDay={history ? lastDayOf(history, s.code) : undefined}
+      activities={activities}
+      today={today}
+      start={history ? (open?.sessionCode ?? s.code) : null}
+      resume={open !== null}
+    />
+  ));
+}
+
+// The day a session of this code last ended; null: never; undefined: no account.
+function lastDayOf(history: History, code: string): ISODate | null {
+  const last = history.workouts
+    .filter((w) => w.sessionCode === code && w.endedAt !== null && !w.removed)
+    .reduce<string | null>((l, w) => (l === null || w.startedAt > l ? w.startedAt : l), null);
+  return last === null ? null : dayOf({ startedAt: last });
+}
+
+// Whole days between two calendar days (UTC midnights: no daylight-saving shift).
+const daysBetween = (from: ISODate, to: ISODate) =>
+  Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000);
+
+function SessionCard({
   session,
-  open,
-  onToggle,
-  action,
+  next,
+  lastDay,
+  activities,
+  today,
+  start,
+  resume,
 }: {
   session: SessionTemplate;
-  open: boolean;
-  onToggle: () => void;
-  action?: ReactNode;
+  next: boolean;
+  lastDay: ISODate | null | undefined;
+  activities: readonly Activity[];
+  today: ISODate;
+  start: string | null; // the session Start opens; null: nothing to start (no account)
+  resume: boolean;
 }) {
   const { t } = useTranslation();
   const id = useId();
+  const [seeing, setSeeing] = useState(false);
+  const plan = planFor(session, activities, today);
+  const when = next
+    ? t("workouts.program.next")
+    : lastDay === undefined
+      ? null
+      : lastDay === null
+        ? t("workouts.program.never")
+        : lastDay === today
+          ? t("workouts.program.today")
+          : t("workouts.program.daysAgo", { count: daysBetween(lastDay, today) });
+  const size = t("workouts.program.size", {
+    count: plan.length,
+    minutes: estimatedMinutes({ slots: plan }),
+  });
+  const startButton = start !== null && (
+    <Button
+      asChild
+      size="lg"
+      variant={next && !resume ? "default" : "outline"}
+      className="flex-1 font-semibold"
+    >
+      <Link to="/workout" search={{ start }}>
+        {resume ? t("workouts.program.resume") : t("workouts.program.start")}
+      </Link>
+    </Button>
+  );
   return (
-    <section aria-labelledby={id} className={`${card} px-4 py-1`}>
-      <h2 id={id}>
-        <button
-          type="button"
-          aria-expanded={open}
-          onClick={onToggle}
-          className="flex min-h-14 w-full items-center justify-between gap-2 text-left"
-        >
-          <span className="flex flex-col">
-            <span className="font-semibold">{sessionTitle(session.code, t)}</span>
-            <span className="text-[13px] font-normal text-muted-foreground">
-              {t("workouts.program.exercises", { count: session.slots.length })}
-            </span>
-          </span>
-          <ChevronDown
-            aria-hidden
-            className={`size-5 shrink-0 text-muted-foreground ${open ? "rotate-180" : ""}`}
-          />
-        </button>
-      </h2>
-      {open && (
-        <>
-          <ul className="flex flex-col">
-            {session.slots.map((slot, i) => {
-              const kind = groupKind(session.slots, i);
-              return (
-                <li key={i} className="border-t border-border">
-                  <Link
-                    to="/exercises/$exerciseId"
-                    params={{ exerciseId: slot.exerciseId }}
-                    className="flex min-h-14 flex-col justify-center py-2"
-                  >
-                    <span className="font-medium">{exerciseById(slot.exerciseId)?.name}</span>
-                    <span className="text-[13px] text-muted-foreground">
-                      {formatSets(slot)}
-                      {kind && ` · ${t(`workouts.program.${kind}`)}`}
-                    </span>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-          {action && <div className="border-t border-border py-3">{action}</div>}
-        </>
+    <section aria-labelledby={id} className={`${card} flex flex-col gap-3 px-4 py-3`}>
+      <div className="flex flex-col">
+        <h2 id={id} className="text-[17px] font-semibold">
+          {sessionTitle(session.code, t)}
+        </h2>
+        <p className="text-[13px] text-muted-foreground">
+          {when && (
+            <span className={next ? "font-semibold text-primary-ink" : undefined}>{when} · </span>
+          )}
+          {size}
+        </p>
+      </div>
+      {seeing && (
+        <ul className="flex flex-col">
+          {plan.map((slot, i) => {
+            const kind = groupKind(plan, i);
+            return (
+              <li key={i} className="border-t border-border">
+                <Link
+                  to="/exercises/$exerciseId"
+                  params={{ exerciseId: slot.exerciseId }}
+                  className="flex min-h-14 flex-col justify-center py-2"
+                >
+                  <span className="font-medium">{exerciseById(slot.exerciseId)?.name}</span>
+                  <span className="text-[13px] text-muted-foreground">
+                    {formatSets(slot)}
+                    {kind && ` · ${t(`workouts.program.${kind}`)}`}
+                    {slot.rule && ` · ${t("workouts.program.noClimbing")}`}
+                  </span>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
       )}
+      <div className="flex gap-2">
+        {(!next || start === null) && (
+          <Button
+            size="lg"
+            variant="outline"
+            aria-expanded={seeing}
+            className="flex-1 font-semibold"
+            onClick={() => setSeeing(!seeing)}
+          >
+            {t("workouts.program.see")}
+          </Button>
+        )}
+        {startButton}
+      </div>
     </section>
   );
 }

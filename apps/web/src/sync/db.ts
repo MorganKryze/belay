@@ -7,6 +7,7 @@ import { DEFAULT_TARGET, type TargetRange } from "@belay/shared/body/target";
 import type { Weighing } from "@belay/shared/body/weighings";
 import { isNewer } from "@belay/shared/sync/merge";
 import type {
+  ActivityRow,
   AnnotationRow,
   Change,
   IntakeRow,
@@ -15,6 +16,7 @@ import type {
   Rejected,
   SetChange,
   SetRow,
+  StepsRow,
   SupplementLogRow,
   SupplementRow,
   SyncResponse,
@@ -23,15 +25,24 @@ import type {
   WorkoutRow,
 } from "@belay/shared/sync/schema";
 import { isValidChange } from "@belay/shared/sync/valid";
+import type { Activity, StepsLog } from "@belay/shared/training/activities";
 import { autoClose, type History, openWorkout } from "@belay/shared/training/rules";
 import { type DBSchema, type IDBPDatabase, type IDBPTransaction, openDB } from "idb";
 
 export type OutboxEntry = { id: number; change: Change };
 // A change the server refused: out of the queue, kept until the person has read about it.
 export type RejectedEntry = { id: number; change: Change; reason: Rejected["reason"] };
-// The session open on this device: which one, the slot it shows, and when its rest ends. Local
-// only, never sent: the sets are what syncs.
-export type ActiveSession = { workoutId: string; slotIndex: number; restEndsAt: string | null };
+// A timed set counting down (spec §4.3): which row, its target, and when it ends; stopped early,
+// `seconds` is what was held and it ends at the stop.
+export type Chrono = { slotIndex: number; position: number; seconds: number; endsAt: string };
+// The session open on this device: which one, the slot it shows, when its rest ends, and the
+// timed set counting down, if any. Local only, never sent: the sets are what syncs.
+export type ActiveSession = {
+  workoutId: string;
+  slotIndex: number;
+  restEndsAt: string | null;
+  chrono?: Chrono | null;
+};
 
 interface BelaySchema extends DBSchema {
   weights: { key: ISODate; value: WeightRow }; // a null weight is a deleted day
@@ -41,6 +52,8 @@ interface BelaySchema extends DBSchema {
   supplements: { key: string; value: SupplementRow }; // removed ones stay, with their ticks
   supplementLogs: { key: [string, ISODate]; value: SupplementLogRow };
   annotations: { key: string; value: AnnotationRow };
+  steps: { key: ISODate; value: StepsRow }; // a null value is a deleted day
+  activities: { key: string; value: ActivityRow }; // removed ones stay, as on the server
   workouts: { key: string; value: WorkoutRow }; // removed ones stay, as on the server
   sets: { key: string; value: SetRow; indexes: { workoutId: string } };
   activeSession: { key: "current"; value: ActiveSession };
@@ -59,6 +72,8 @@ type Store =
   | "supplements"
   | "supplementLogs"
   | "annotations"
+  | "steps"
+  | "activities"
   | "workouts"
   | "sets"
   | "activeSession"
@@ -74,6 +89,8 @@ const ALL: Store[] = [
   "supplements",
   "supplementLogs",
   "annotations",
+  "steps",
+  "activities",
   "workouts",
   "sets",
   "activeSession",
@@ -93,11 +110,11 @@ export async function openAccountDb(
   userId: string,
   { onLost }: { onLost?: () => void } = {},
 ): Promise<AccountDb> {
-  return openDB<BelaySchema>(accountDbName(userId), 3, {
+  return openDB<BelaySchema>(accountDbName(userId), 4, {
     // Each step adds stores and keeps every value and the queue of the earlier versions. A tab
     // still on an earlier version closes its connection when asked (`blocking` below, since M2a),
     // so the upgrade never waits on it.
-    upgrade(upgradeDb, oldVersion) {
+    async upgrade(upgradeDb, oldVersion, _newVersion, tx) {
       if (oldVersion < 1) {
         upgradeDb.createObjectStore("weights", { keyPath: "date" });
         upgradeDb.createObjectStore("profile");
@@ -119,6 +136,20 @@ export async function openAccountDb(
         const sets = upgradeDb.createObjectStore("sets", { keyPath: "id" });
         sets.createIndex("workoutId", "workoutId");
         upgradeDb.createObjectStore("activeSession");
+      }
+      if (oldVersion < 4) {
+        upgradeDb.createObjectStore("steps", { keyPath: "date" });
+        upgradeDb.createObjectStore("activities", { keyPath: "id" });
+        // The sessions and sets kept so far gain their new fields, unwritten: a session's own
+        // plan and start never changed, a set counted reps.
+        if (oldVersion >= 3) {
+          for (const w of await tx.objectStore("workouts").getAll())
+            await tx
+              .objectStore("workouts")
+              .put({ ...w, planAt: w.planAt ?? null, startedAtAt: w.startedAtAt ?? null });
+          for (const set of await tx.objectStore("sets").getAll())
+            await tx.objectStore("sets").put({ ...set, seconds: set.seconds ?? null });
+        }
       }
     },
     // A future schema bump in another tab must not hang on this connection.
@@ -173,6 +204,19 @@ type Fields = Record<string, unknown>;
 const set = <R>(row: R, [value, at]: readonly [string, string], v: unknown, a: string | null) =>
   ({ ...row, [value]: v, [at]: a }) as R;
 
+const emptyActivity = (
+  id: string,
+): Omit<ActivityRow, "date" | "type" | "durationMin" | "fieldsAt"> => ({
+  id,
+  cardioType: null,
+  climbStyle: null,
+  climbRuns: null,
+  climbGrade: null,
+  climbColor: null,
+  removed: false,
+  removedAt: null,
+});
+
 // The time of the field a change writes, as this device holds it; null: never written here.
 async function localAt(tx: WriteTx, change: Change): Promise<string | null> {
   switch (change.kind) {
@@ -204,11 +248,21 @@ async function localAt(tx: WriteTx, change: Change): Promise<string | null> {
       const row = await tx.objectStore("annotations").get(change.id);
       return (change.field === "fields" ? row?.fieldsAt : row?.removedAt) ?? null;
     }
+    case "steps":
+      return (await tx.objectStore("steps").get(change.date))?.stepsAt ?? null;
+    case "activity": {
+      const row = await tx.objectStore("activities").get(change.id);
+      return (change.field === "fields" ? row?.fieldsAt : row?.removedAt) ?? null;
+    }
     case "workout": {
       const row = await tx.objectStore("workouts").get(change.id);
       switch (change.field) {
         case "start":
           return row ? change.at : null; // written once: a start never overwrites a session
+        case "plan":
+          return row?.planAt ?? null;
+        case "startedAt":
+          return row?.startedAtAt ?? null;
         case "ended":
           return row?.endedAtAt ?? null;
         case "note":
@@ -300,6 +354,30 @@ async function applyLocal(tx: WriteTx, change: Change): Promise<void> {
       else if (row) await store.put({ ...row, removed: change.value, removedAt: change.at });
       return;
     }
+    case "steps":
+      await tx
+        .objectStore("steps")
+        .put({ date: change.date, steps: change.value, stepsAt: change.at });
+      return;
+    case "activity": {
+      const store = tx.objectStore("activities");
+      const row = await store.get(change.id);
+      if (change.field === "fields")
+        await store.put({
+          ...(row ?? emptyActivity(change.id)),
+          date: change.date,
+          type: change.type,
+          durationMin: change.durationMin,
+          cardioType: change.cardioType,
+          climbStyle: change.climbStyle,
+          climbRuns: change.climbRuns,
+          climbGrade: change.climbGrade,
+          climbColor: change.climbColor,
+          fieldsAt: change.at,
+        });
+      else if (row) await store.put({ ...row, removed: change.value, removedAt: change.at });
+      return;
+    }
     case "workout": {
       const store = tx.objectStore("workouts");
       const row = await store.get(change.id);
@@ -309,7 +387,9 @@ async function applyLocal(tx: WriteTx, change: Change): Promise<void> {
             id: change.id,
             sessionCode: change.sessionCode,
             plan: change.plan,
+            planAt: null,
             startedAt: change.startedAt,
+            startedAtAt: null,
             endedAt: null,
             endedAtAt: null,
             note: null,
@@ -323,13 +403,17 @@ async function applyLocal(tx: WriteTx, change: Change): Promise<void> {
       }
       if (!row) return;
       await store.put(
-        change.field === "ended"
-          ? { ...row, endedAt: change.value, endedAtAt: change.at }
-          : change.field === "note"
-            ? { ...row, note: change.value, noteAt: change.at }
-            : change.field === "exerciseNotes"
-              ? { ...row, exerciseNotes: change.value, exerciseNotesAt: change.at }
-              : { ...row, removed: change.value, removedAt: change.at },
+        change.field === "plan"
+          ? { ...row, plan: change.value, planAt: change.at }
+          : change.field === "startedAt"
+            ? { ...row, startedAt: change.value, startedAtAt: change.at }
+            : change.field === "ended"
+              ? { ...row, endedAt: change.value, endedAtAt: change.at }
+              : change.field === "note"
+                ? { ...row, note: change.value, noteAt: change.at }
+                : change.field === "exerciseNotes"
+                  ? { ...row, exerciseNotes: change.value, exerciseNotesAt: change.at }
+                  : { ...row, removed: change.value, removedAt: change.at },
       );
       return;
     }
@@ -352,6 +436,7 @@ async function applySet(tx: WriteTx, change: SetChange): Promise<void> {
         warmup: change.warmup,
         weightKg: change.weightKg,
         reps: change.reps,
+        seconds: change.seconds ?? null, // absent from a change queued before timed sets
         rir: change.rir,
         doneAt: change.doneAt,
         fieldsAt: change.at,
@@ -367,6 +452,7 @@ async function applySet(tx: WriteTx, change: SetChange): Promise<void> {
           ...row,
           weightKg: change.weightKg,
           reps: change.reps,
+          seconds: change.seconds ?? null,
           rir: change.rir,
           fieldsAt: change.at,
         }
@@ -412,21 +498,34 @@ async function revert(tx: WriteTx, change: Change): Promise<void> {
       await tx.objectStore("annotations").put({ ...row, removed: false, removedAt: null });
       return;
     }
+    case "steps":
+      return tx.objectStore("steps").delete(change.date);
+    case "activity": {
+      const row = (await tx.objectStore("activities").get(change.id))!;
+      if (change.field === "fields") return tx.objectStore("activities").delete(change.id);
+      await tx.objectStore("activities").put({ ...row, removed: false, removedAt: null });
+      return;
+    }
     case "workout": {
       // A refused start takes its session away; a refused field goes back to unwritten, and the
-      // server sends what it holds, if anything.
+      // server sends what it holds, if anything (a refused plan or start time keeps the value
+      // shown until the server's row replaces it).
       if (change.field === "start") return tx.objectStore("workouts").delete(change.id);
       const row = (await tx.objectStore("workouts").get(change.id))!;
       await tx
         .objectStore("workouts")
         .put(
-          change.field === "ended"
-            ? { ...row, endedAt: null, endedAtAt: null }
-            : change.field === "note"
-              ? { ...row, note: null, noteAt: null }
-              : change.field === "exerciseNotes"
-                ? { ...row, exerciseNotes: {}, exerciseNotesAt: null }
-                : { ...row, removed: false, removedAt: null },
+          change.field === "plan"
+            ? { ...row, planAt: null }
+            : change.field === "startedAt"
+              ? { ...row, startedAtAt: null }
+              : change.field === "ended"
+                ? { ...row, endedAt: null, endedAtAt: null }
+                : change.field === "note"
+                  ? { ...row, note: null, noteAt: null }
+                  : change.field === "exerciseNotes"
+                    ? { ...row, exerciseNotes: {}, exerciseNotesAt: null }
+                    : { ...row, removed: false, removedAt: null },
         );
       return;
     }
@@ -505,6 +604,7 @@ export async function recordSet(
           field: "values",
           weightKg: input.weightKg,
           reps: input.reps,
+          seconds: input.seconds ?? null,
           rir: input.rir,
           at,
         }
@@ -641,6 +741,32 @@ export async function readAnnotations(db: AccountDb): Promise<AnnotationRow[]> {
     .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
 }
 
+// The days with steps.
+export async function readSteps(db: AccountDb): Promise<StepsLog[]> {
+  return (await db.getAll("steps")).flatMap(({ date, steps }) =>
+    steps === null ? [] : [{ date, steps }],
+  );
+}
+
+// The activities still in place, by day, as the shared rules read them.
+export async function readActivities(db: AccountDb): Promise<Activity[]> {
+  return (await db.getAll("activities"))
+    .filter((a) => !a.removed)
+    .map((a): Activity => ({
+      id: a.id,
+      date: a.date,
+      kind: a.type,
+      durationMin: a.durationMin,
+      cardioType: a.cardioType,
+      climbStyle: a.climbStyle,
+      climbRuns: a.climbRuns,
+      climbGrade: a.climbGrade,
+      climbColor: a.climbColor,
+      removed: false,
+    }))
+    .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : a.id < b.id ? -1 : 1));
+}
+
 // Every session and set, removed ones included: the shared rules (liveSets) leave those out.
 export async function readHistory(db: AccountDb): Promise<History> {
   const [workouts, sets] = await Promise.all([db.getAll("workouts"), db.getAll("sets")]);
@@ -686,7 +812,10 @@ function entryOf(change: Change): string {
       return change.kind;
     case "supplement":
     case "annotation":
+    case "activity":
       return `${change.kind}|${change.id}`;
+    case "steps":
+      return `steps|${change.date}`;
     case "supplementLog":
       return `${change.kind}|${change.supplementId}|${change.date}`;
     case "workout":
@@ -748,6 +877,8 @@ export async function applyServer(
     for (const row of response.supplements) queue(tx.objectStore("supplements").put(row));
     for (const row of response.supplementLogs) queue(tx.objectStore("supplementLogs").put(row));
     for (const row of response.annotations) queue(tx.objectStore("annotations").put(row));
+    for (const row of response.steps) queue(tx.objectStore("steps").put(row));
+    for (const row of response.activities) queue(tx.objectStore("activities").put(row));
     for (const row of response.workouts) queue(tx.objectStore("workouts").put(row));
     for (const row of response.sets) queue(tx.objectStore("sets").put(row));
     if (response.target) queue(tx.objectStore("profile").put(response.target, "target"));

@@ -412,6 +412,16 @@
     "sessionPlanned_other": "{{count}} exercises · about {{minutes}} min",
     "sessionOpen_one": "in progress · {{count}} of {{total}} sets",
     "sessionOpen_other": "in progress · {{count}} of {{total}} sets",
+    "activity": "Activity",
+    "activityEmpty": "not entered yet",
+    "activityMany_one": "{{count}} activity",
+    "activityMany_other": "{{count}} activities",
+    "activityToast": {
+      "saved": "Activity saved",
+      "deleted": "Activity deleted",
+      "stepsSaved": "Steps saved",
+      "stepsDeleted": "Steps deleted"
+    },
     "weighIn": "Weigh-in",
     "weighInDone": "{{value}} kg · saved",
     "weighInEmpty": "not entered yet",
@@ -430,5 +440,29 @@
       "B": "Legs",
       "C": "Glutes + light pull"
     }
+  },
+  "activities": {
+    "climbing": "Climbing",
+    "cardio": {
+      "run": "Run",
+      "bike": "Bike",
+      "row": "Row",
+      "walk": "Walk",
+      "swim": "Swim",
+      "other": "Other"
+    },
+    "colors": {
+      "yellow": "yellow",
+      "green": "green",
+      "blue": "blue",
+      "red": "red",
+      "black": "black",
+      "purple": "purple",
+      "white": "white"
+    },
+    "steps": "{{value}} steps",
+    "minutes": "{{m}} min",
+    "hours": "{{h}} h {{mm}}",
+    "hoursOnly": "{{h}} h"
   }
 }

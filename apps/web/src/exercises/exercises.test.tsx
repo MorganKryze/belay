@@ -136,16 +136,16 @@ describe("the Exercises segment", () => {
     expect(first.textContent).toContain("A");
     const lateral = within(program).getByRole("link", { name: /Dumbbell lateral raise/ });
     expect(lateral.textContent).toContain("A · C");
-    expect(screen.getByRole("heading", { name: "All · 1,290" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "All · 1,291" })).toBeTruthy();
   });
 
-  it("renders only the rows on screen of the 1 290", async () => {
+  it("renders only the rows on screen of the 1 291", async () => {
     await openLibrary();
     const all = screen.getAllByRole("list")[1]!;
     const rows = within(all).getAllByRole("listitem");
     expect(rows.length).toBeGreaterThan(5);
     expect(rows.length).toBeLessThan(50);
-    expect(rows[0]!.getAttribute("aria-setsize")).toBe("1290");
+    expect(rows[0]!.getAttribute("aria-setsize")).toBe("1291");
   });
 
   it("finds an exercise by words in any order", async () => {

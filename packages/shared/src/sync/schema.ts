@@ -10,13 +10,23 @@ import { isTargetRange } from "../body/target";
 import { isWeighingKg, MIN_WEIGH_IN_DATE } from "../body/weighings";
 import { EXERCISE_ID } from "../exercises/library";
 import {
+  ACTIVITY_KINDS,
+  CARDIO_TYPES,
+  CLIMB_COLORS,
+  CLIMB_STYLES,
+  isActivityFields,
+  isSteps,
+} from "../training/activities";
+import {
   isExerciseNotes,
   isNote,
   isPlan,
   isReps,
   isRir,
+  isSeconds,
   isSessionCode,
   isSetKg,
+  MAX_POSITION,
   MAX_SLOTS,
   MIN_TIME,
   type Slot,
@@ -144,6 +154,41 @@ export const AnnotationChangeSchema = z.discriminatedUnion("field", [
   }),
 ]);
 
+// The day's steps; null deletes them.
+export const StepsChangeSchema = z.object({
+  kind: z.literal("steps"),
+  date: weighInDate,
+  value: z.nullable(z.int().check(z.refine(isSteps))),
+  at,
+});
+const activityType = z.enum(ACTIVITY_KINDS);
+// An activity: its day, type and fields travel together (one block), its removal on its own.
+export const ActivityChangeSchema = z.discriminatedUnion("field", [
+  z
+    .object({
+      kind: z.literal("activity"),
+      id: z.uuid(),
+      field: z.literal("fields"),
+      date: weighInDate,
+      type: activityType,
+      durationMin: z.int(),
+      cardioType: z.nullable(z.enum(CARDIO_TYPES)),
+      climbStyle: z.nullable(z.enum(CLIMB_STYLES)),
+      climbRuns: z.nullable(z.int()),
+      climbGrade: z.nullable(z.string()),
+      climbColor: z.nullable(z.enum(CLIMB_COLORS)),
+      at,
+    })
+    .check(z.refine((c) => isActivityFields({ ...c, kind: c.type }))),
+  z.object({
+    kind: z.literal("activity"),
+    id: z.uuid(),
+    field: z.literal("removed"),
+    value: z.boolean(),
+    at,
+  }),
+]);
+
 // A session's times: from 1900 on. One more than 5 minutes ahead of the server's clock is brought
 // back to it when written (apps/server/src/api/sync.ts), never refused: a phone whose clock runs
 // ahead would otherwise lose a whole session.
@@ -153,11 +198,18 @@ const note = z.string().check(z.refine(isNote));
 const plan = z.custom<Slot[]>(isPlan);
 const exerciseNotes = z.custom<Record<string, string>>(isExerciseNotes);
 const setKg = z.number().check(z.refine(isSetKg));
-const reps = z.int().check(z.refine(isReps));
+const reps = z.nullable(z.int().check(z.refine(isReps)));
+// Absent from a set queued before timed sets existed: counted in reps.
+const seconds = z.optional(z.nullable(z.int().check(z.refine(isSeconds))));
 const rir = z.nullable(z.int().check(z.refine(isRir)));
+// A set counts repetitions or seconds, never both, never neither.
+const oneMeasure = (c: { reps: number | null; seconds?: number | null }) =>
+  (c.reps === null) !== ((c.seconds ?? null) === null);
 
 // A session: its code, plan and start travel together and are written once (a replay, or a
-// second start of the same id, changes nothing); every other field is merged on its own.
+// second start of the same id, changes nothing); every other field is merged on its own. The
+// session's copy of the plan (an exercise replaced, a slot skipped or added) and its start time
+// (a session corrected afterwards) change later as whole fields: the last write wins.
 export const WorkoutChangeSchema = z.discriminatedUnion("field", [
   z.object({
     kind: z.literal("workout"),
@@ -166,6 +218,20 @@ export const WorkoutChangeSchema = z.discriminatedUnion("field", [
     sessionCode: z.string().check(z.refine(isSessionCode)),
     plan,
     startedAt: workoutTime,
+    at,
+  }),
+  z.object({
+    kind: z.literal("workout"),
+    id: z.uuid(),
+    field: z.literal("plan"),
+    value: plan,
+    at,
+  }),
+  z.object({
+    kind: z.literal("workout"),
+    id: z.uuid(),
+    field: z.literal("startedAt"),
+    value: workoutTime,
     at,
   }),
   z.object({
@@ -197,33 +263,40 @@ export const WorkoutChangeSchema = z.discriminatedUnion("field", [
     at,
   }),
 ]);
-// A set: created once with everything; then its load, reps and RIR change together, or it goes.
+// A set: created once with everything; then its load, count (reps or seconds) and RIR change
+// together, or it goes.
 export const SetChangeSchema = z.discriminatedUnion("field", [
-  z.object({
-    kind: z.literal("set"),
-    id: z.uuid(),
-    workoutId: z.uuid(),
-    field: z.literal("create"),
-    slotIndex: z.int().check(z.minimum(0), z.maximum(MAX_SLOTS - 1)),
-    position: z.int().check(z.minimum(0), z.maximum(49)),
-    exerciseId: z.string().check(z.regex(EXERCISE_ID)),
-    warmup: z.boolean(),
-    weightKg: setKg,
-    reps,
-    rir,
-    doneAt: workoutTime,
-    at,
-  }),
-  z.object({
-    kind: z.literal("set"),
-    id: z.uuid(),
-    workoutId: z.uuid(),
-    field: z.literal("values"),
-    weightKg: setKg,
-    reps,
-    rir,
-    at,
-  }),
+  z
+    .object({
+      kind: z.literal("set"),
+      id: z.uuid(),
+      workoutId: z.uuid(),
+      field: z.literal("create"),
+      slotIndex: z.int().check(z.minimum(0), z.maximum(MAX_SLOTS - 1)),
+      position: z.int().check(z.minimum(0), z.maximum(MAX_POSITION)),
+      exerciseId: z.string().check(z.regex(EXERCISE_ID)),
+      warmup: z.boolean(),
+      weightKg: setKg,
+      reps,
+      seconds,
+      rir,
+      doneAt: workoutTime,
+      at,
+    })
+    .check(z.refine(oneMeasure)),
+  z
+    .object({
+      kind: z.literal("set"),
+      id: z.uuid(),
+      workoutId: z.uuid(),
+      field: z.literal("values"),
+      weightKg: setKg,
+      reps,
+      seconds,
+      rir,
+      at,
+    })
+    .check(z.refine(oneMeasure)),
   z.object({
     kind: z.literal("set"),
     id: z.uuid(),
@@ -243,6 +316,8 @@ export const ChangeSchema = z.discriminatedUnion("kind", [
   SupplementChangeSchema,
   SupplementLogChangeSchema,
   AnnotationChangeSchema,
+  StepsChangeSchema,
+  ActivityChangeSchema,
   WorkoutChangeSchema,
   SetChangeSchema,
 ]);
@@ -310,12 +385,36 @@ export const AnnotationRowSchema = z.object({
   removedAt: writtenAt,
 });
 
+export const StepsRowSchema = z.object({
+  date: isoDate,
+  steps: z.nullable(z.number()),
+  stepsAt: writtenAt,
+});
+export const ActivityRowSchema = z.object({
+  id: z.uuid(),
+  date: isoDate,
+  type: activityType,
+  durationMin: z.number(),
+  cardioType: z.nullable(z.enum(CARDIO_TYPES)),
+  climbStyle: z.nullable(z.enum(CLIMB_STYLES)),
+  climbRuns: z.nullable(z.number()),
+  climbGrade: z.nullable(z.string()),
+  climbColor: z.nullable(z.enum(CLIMB_COLORS)),
+  fieldsAt: isoDateTime,
+  removed: z.boolean(),
+  removedAt: writtenAt,
+});
+
 // Every field with its own time (null: never written); exerciseNotes is {} when never written.
+// The plan and the start were written with the start, and planAt and startedAtAt stay null
+// until the session changes them.
 export const WorkoutRowSchema = z.object({
   id: z.uuid(),
   sessionCode: z.string(),
   plan: z.custom<Slot[]>((v) => Array.isArray(v)),
+  planAt: writtenAt,
   startedAt: isoDateTime,
+  startedAtAt: writtenAt,
   endedAt: z.nullable(isoDateTime),
   endedAtAt: writtenAt,
   note: z.nullable(z.string()),
@@ -333,7 +432,8 @@ export const SetRowSchema = z.object({
   exerciseId: z.string(),
   warmup: z.boolean(),
   weightKg: z.number(),
-  reps: z.int(),
+  reps: z.nullable(z.int()),
+  seconds: z.nullable(z.int()),
   rir: z.nullable(z.int()),
   doneAt: isoDateTime,
   fieldsAt: isoDateTime,
@@ -345,9 +445,18 @@ export const SetRowSchema = z.object({
 // why. The phone drops it from its queue and keeps a trace the person can read.
 export const RejectedSchema = z.object({
   index: z.int().check(z.minimum(0)),
-  // unknown: it names something the account does not have; unknown_exercise: a set of an
-  // exercise the library lacks; too_many_sets: a session past 150 sets.
-  reason: z.enum(["unknown", "refused", "unknown_exercise", "too_many_sets"]),
+  // unknown: it names something the account does not have; unknown_exercise: a set, or a slot
+  // of a plan, of an exercise the library lacks; too_many_sets: a session past 150 sets;
+  // wrong_measure: reps for an exercise counted in seconds, or the other way round;
+  // plan_shrank: a plan shorter than the stored one (a slot is never taken out).
+  reason: z.enum([
+    "unknown",
+    "refused",
+    "unknown_exercise",
+    "too_many_sets",
+    "wrong_measure",
+    "plan_shrank",
+  ]),
 });
 
 export const SyncResponseSchema = z.object({
@@ -360,6 +469,8 @@ export const SyncResponseSchema = z.object({
   supplements: z.array(SupplementRowSchema),
   supplementLogs: z.array(SupplementLogRowSchema),
   annotations: z.array(AnnotationRowSchema),
+  steps: z.array(StepsRowSchema),
+  activities: z.array(ActivityRowSchema),
   workouts: z.array(WorkoutRowSchema),
   sets: z.array(SetRowSchema),
   target: z.nullable(TargetRowSchema), // when written since that cursor, or sent back as above
@@ -376,6 +487,8 @@ export type ProfileChange = z.infer<typeof ProfileChangeSchema>;
 export type SupplementChange = z.infer<typeof SupplementChangeSchema>;
 export type SupplementLogChange = z.infer<typeof SupplementLogChangeSchema>;
 export type AnnotationChange = z.infer<typeof AnnotationChangeSchema>;
+export type StepsChange = z.infer<typeof StepsChangeSchema>;
+export type ActivityChange = z.infer<typeof ActivityChangeSchema>;
 export type WorkoutChange = z.infer<typeof WorkoutChangeSchema>;
 export type SetChange = z.infer<typeof SetChangeSchema>;
 export type Change = z.infer<typeof ChangeSchema>;
@@ -388,6 +501,8 @@ export type ProfileRow = z.infer<typeof ProfileRowSchema>;
 export type SupplementRow = z.infer<typeof SupplementRowSchema>;
 export type SupplementLogRow = z.infer<typeof SupplementLogRowSchema>;
 export type AnnotationRow = z.infer<typeof AnnotationRowSchema>;
+export type StepsRow = z.infer<typeof StepsRowSchema>;
+export type ActivityRow = z.infer<typeof ActivityRowSchema>;
 export type WorkoutRow = z.infer<typeof WorkoutRowSchema>;
 export type SetRow = z.infer<typeof SetRowSchema>;
 export type Rejected = z.infer<typeof RejectedSchema>;

@@ -20,16 +20,19 @@ export const shiftMonth = (month: string, by: number) => {
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
 };
 
-// The month's calendar, the days with a session marked (a tint, and words for screen readers),
-// the month before and after one tap away; never past the current month.
+// The month's calendar, the days with a session marked (a tint) and the days with an activity
+// circled (a ring), both in words for screen readers; the month before and after one tap away,
+// never past the current month.
 export function MonthCalendar({
   month,
   marked,
+  circled = new Set(),
   current,
   onMonth,
 }: {
   month: string;
   marked: ReadonlySet<ISODate>;
+  circled?: ReadonlySet<ISODate>;
   current: string;
   onMonth: (month: string) => void;
 }) {
@@ -101,15 +104,16 @@ export function MonthCalendar({
                 <td key={i} className="py-0.5">
                   {day && (
                     <span
-                      className={
-                        marked.has(day)
-                          ? "mx-auto grid size-9 place-items-center rounded-full bg-primary-soft font-bold text-primary-ink tabular-nums"
-                          : "mx-auto grid size-9 place-items-center tabular-nums"
-                      }
+                      className={`mx-auto grid size-9 place-items-center rounded-full tabular-nums ${
+                        marked.has(day) ? "bg-primary-soft font-bold text-primary-ink" : ""
+                      } ${circled.has(day) ? "border-2 border-primary" : ""}`}
                     >
                       {Number(day.slice(8))}
                       {marked.has(day) && (
                         <span className="sr-only">, {t("history.sessionDay")}</span>
+                      )}
+                      {circled.has(day) && (
+                        <span className="sr-only">, {t("history.activityDay")}</span>
                       )}
                     </span>
                   )}

@@ -7,18 +7,20 @@ import { isSupplementName } from "../body/supplements";
 import { isTargetRange } from "../body/target";
 import { isWeighingKg, MIN_WEIGH_IN_DATE } from "../body/weighings";
 import { isExerciseId } from "../exercises/library";
+import { isActivityFields, isSteps } from "../training/activities";
 import {
   isExerciseNotes,
   isNote,
   isPlan,
   isReps,
   isRir,
+  isSeconds,
   isSessionCode,
   isSetKg,
+  MAX_POSITION,
   MAX_SLOTS,
   MAX_WARMUPS,
   MIN_TIME,
-  SLOT_BOUNDS,
 } from "../training/workout";
 import type { Change, WeightChange } from "./schema";
 
@@ -38,8 +40,19 @@ const isInt = (v: unknown, min: number, max: number) =>
   typeof v === "number" && Number.isInteger(v) && v >= min && v <= max;
 // A session's time is never before 1900, nor after the time of its change (the phone's clock).
 const isTimeOf = (time: string, at: string) => isISOTime(time) && time >= MIN_TIME && time <= at;
-const isLoad = (c: { weightKg: number; reps: number; rir: number | null }) =>
-  isSetKg(c.weightKg) && isReps(c.reps) && isRir(c.rir);
+// Reps or seconds, never both, and a timed set has no RIR. No seconds at all is a set in reps,
+// as every set was before timed ones.
+const isLoad = (c: {
+  weightKg: number;
+  reps: number | null;
+  seconds?: number | null;
+  rir: number | null;
+}) =>
+  isSetKg(c.weightKg) &&
+  isRir(c.rir) &&
+  (c.seconds == null
+    ? c.reps !== null && isReps(c.reps)
+    : c.reps === null && isSeconds(c.seconds) && c.rir === null);
 
 export function isValidChange(change: Change): boolean {
   if (!isISOTime(change.at)) return false;
@@ -90,6 +103,15 @@ export function isValidChange(change: Change): boolean {
             isAnnotationLabel(change.label)
           : change.field === "removed" && typeof change.value === "boolean")
       );
+    case "steps":
+      return isISODate(change.date) && isNullOr(change.value, isSteps);
+    case "activity":
+      return (
+        isId(change.id) &&
+        (change.field === "fields"
+          ? isISODate(change.date) && isActivityFields({ ...change, kind: change.type })
+          : change.field === "removed" && typeof change.value === "boolean")
+      );
     case "workout":
       if (!isId(change.id)) return false;
       switch (change.field) {
@@ -99,6 +121,10 @@ export function isValidChange(change: Change): boolean {
             isPlan(change.plan) &&
             isTimeOf(change.startedAt, change.at)
           );
+        case "plan":
+          return isPlan(change.value);
+        case "startedAt":
+          return isTimeOf(change.value, change.at);
         case "ended":
           return change.value === null || isTimeOf(change.value, change.at);
         case "note":
@@ -114,14 +140,15 @@ export function isValidChange(change: Change): boolean {
       if (!isId(change.id) || !isId(change.workoutId)) return false;
       switch (change.field) {
         case "create":
-          // Positions 0 to 2 are the warm-ups (no RIR), the work sets come after them.
+          // Positions 0 to 2 are the warm-ups (no RIR, in reps), the work sets come after them,
+          // « + Série » beyond the plan up to position 49.
           return (
             isInt(change.slotIndex, 0, MAX_SLOTS - 1) &&
-            isInt(change.position, 0, MAX_WARMUPS + SLOT_BOUNDS.sets - 1) &&
+            isInt(change.position, 0, MAX_POSITION) &&
             change.warmup === change.position < MAX_WARMUPS &&
             isExerciseId(change.exerciseId) &&
             isLoad(change) &&
-            (!change.warmup || change.rir === null) &&
+            (!change.warmup || (change.rir === null && change.seconds == null)) &&
             isTimeOf(change.doneAt, change.at)
           );
         case "values":

@@ -4,6 +4,7 @@ import en from "./data/en.json";
 import fr from "./data/fr.json";
 import ids from "./data/ids.json";
 import index from "./data/index.json";
+import measures from "./data/measures.json";
 import {
   BELAY_EXERCISES,
   buildLibrary,
@@ -11,13 +12,15 @@ import {
   type DatasetRecord,
   equipmentOf,
   type LibraryFiles,
+  MEASURES,
+  measureOf,
   musclesOf,
   OVERRIDES,
 } from "./import";
 import type { ExerciseRow } from "./library";
 import { MUSCLES } from "./muscles";
 
-const committed = { index, fr, en, ids } as unknown as LibraryFiles;
+const committed = { index, fr, en, ids, measures } as unknown as LibraryFiles;
 
 // A dataset record as the source holds it, media fields included.
 const raw = (
@@ -113,6 +116,24 @@ describe("equipmentOf (§5.4)", () => {
   });
 });
 
+describe("measureOf (spec D12)", () => {
+  it("counts in seconds what the name says is held, in reps everything else", () => {
+    expect(measureOf("ds:2135", "weighted front plank")).toBe("seconds");
+    expect(measureOf("ds:9001", "wall sit")).toBe("seconds");
+    expect(measureOf("ds:9002", "static lunge hold")).toBe("seconds");
+    expect(measureOf("ds:9003", "Isometric chest squeeze")).toBe("seconds");
+    expect(measureOf("ds:0025", "barbell bench press")).toBe("reps");
+    // "hanging" is a leg raise, not a hang.
+    expect(measureOf("ds:0472", "hanging leg raise")).toBe("reps");
+  });
+
+  it("follows the list checked by hand where the name misleads", () => {
+    expect(measureOf("ds:0535", "kettlebell hang clean")).toBe("reps");
+    expect(measureOf("ds:0464", "front plank with twist")).toBe("reps");
+    expect(measureOf("ds:3419", "l-sit on floor")).toBe("seconds");
+  });
+});
+
 describe("buildLibrary", () => {
   const source = [
     raw("0025", "barbell bench press", "pectorals", ["triceps", "shoulders"]),
@@ -130,6 +151,7 @@ describe("buildLibrary", () => {
     expect(built.index.map((r) => r[0])).toEqual([
       "belay:barbell-hip-thrust",
       "belay:cable-face-pull",
+      "belay:dead-hang",
       "ds:0025",
       "ds:0043",
       "ds:0739",
@@ -147,6 +169,7 @@ describe("buildLibrary", () => {
       ["triceps", "front_delts"],
       "barbell",
       2.5,
+      "reps",
     ] satisfies ExerciseRow);
     expect(row("ds:0739")).toEqual([
       "ds:0739",
@@ -155,8 +178,9 @@ describe("buildLibrary", () => {
       ["glutes"],
       "machine",
       5,
+      "reps",
     ]);
-    expect(row("ds:3214")?.slice(4)).toEqual(["bodyweight", 2.5]);
+    expect(row("ds:3214")?.slice(4)).toEqual(["bodyweight", 2.5, "reps"]);
   });
 
   it("writes the steps in French and English only, and never a media field", () => {
@@ -194,13 +218,37 @@ describe("checkLibrary", () => {
     expect(own(sample)).toEqual([]);
   });
 
+  it("pins how each published exercise is counted", () => {
+    expect(sample.measures).toMatchObject({ "ds:0025": "reps", "ds:0043": "reps" });
+    const flipped: LibraryFiles = {
+      ...sample,
+      index: sample.index.map((r) =>
+        r[0] === "ds:0025" ? [...r.slice(0, 6), "seconds"] : r,
+      ) as never,
+    };
+    expect(own(flipped)).toEqual(["measure ds:0025: published in reps, now in seconds"]);
+    const unpinned = { ...sample.measures };
+    delete unpinned["ds:0043"];
+    expect(own({ ...sample, measures: unpinned })).toEqual(["measure ds:0043: not pinned"]);
+    // An import keeps a published exercise's pinned measure, so the check flags the index.
+    const pinnedSeconds = { ...sample.measures, "ds:0025": "seconds" as const };
+    const rebuilt = buildLibrary([raw("0025", "barbell bench press", "pectorals")], {
+      ...sample,
+      measures: pinnedSeconds,
+    });
+    expect(rebuilt.measures["ds:0025"]).toBe("seconds");
+    expect(own(rebuilt)).toContain("measure ds:0025: published in seconds, now in reps");
+  });
+
   it("finds a muscle outside the 16, a published id removed, media, and the bad encoding", () => {
     const broken: LibraryFiles = {
       ...sample,
       index: sample.index
         .filter((r) => r[0] !== "ds:0043")
         .map((r) =>
-          r[0] === "ds:0025" ? [r[0], "Sled 45в°", ["pecs" as never], [], "barbell", 2.5] : r,
+          r[0] === "ds:0025"
+            ? [r[0], "Sled 45в°", ["pecs" as never], [], "barbell", 2.5, "minutes" as never]
+            : r,
         ),
       fr: { ...sample.fr, "ds:0025": ["https://x.example/a.gif"] },
     };
@@ -208,6 +256,7 @@ describe("checkLibrary", () => {
       'a text still holds "в°"',
       "a media field or URL",
       'index "ds:0025": the primary muscle is not one of the 16',
+      'index "ds:0025": counted neither in reps nor in seconds',
       "fr: steps of ds:0043, which the index lacks",
       "en: steps of ds:0043, which the index lacks",
       "ds:0043: published, then removed",
@@ -220,9 +269,10 @@ describe("the committed library", () => {
     expect(checkLibrary(committed)).toEqual([]);
   });
 
-  it("holds about 1 290 exercises, the 22 corrections and Belay's two", () => {
-    expect(EXERCISES).toHaveLength(1290);
+  it("holds about 1 290 exercises, the 22 corrections and Belay's three", () => {
+    expect(EXERCISES).toHaveLength(1291);
     expect(Object.keys(OVERRIDES)).toHaveLength(22);
+    expect(BELAY_EXERCISES).toHaveLength(3);
     for (const { exercise } of BELAY_EXERCISES) expect(exerciseById(exercise.id)).toEqual(exercise);
     expect(exerciseById("ds:0739")).toEqual({
       id: "ds:0739",
@@ -231,9 +281,39 @@ describe("the committed library", () => {
       secondary: ["glutes"],
       equipment: "machine",
       incrementKg: 5,
+      measure: "reps",
     });
     expect(isKnownExercise("ds:0025")).toBe(true);
     expect(isKnownExercise("ds:9999")).toBe(false);
+  });
+
+  it("counts the holds in seconds, the dead hang first, as the hand list says", () => {
+    expect(exerciseById("belay:dead-hang")).toMatchObject({
+      name: "Dead hang",
+      primary: ["forearms"],
+      secondary: ["lats"],
+      equipment: "bodyweight",
+      measure: "seconds",
+    });
+    expect(
+      EXERCISES.filter((e) => e.measure === "seconds")
+        .map((e) => e.id)
+        .sort(),
+    ).toEqual(["belay:dead-hang", "ds:1297", "ds:2135", "ds:3419", "ds:3544"]);
+    for (const [id, measure] of Object.entries(MEASURES))
+      expect(exerciseById(id)?.measure, id).toBe(measure);
+  });
+
+  it("pins the measure of every published id", () => {
+    expect(Object.keys(measures).sort()).toEqual([...ids].sort());
+    for (const e of EXERCISES)
+      expect(measures[e.id as keyof typeof measures], e.id).toBe(e.measure);
+  });
+
+  it("never drops an id once published", () => {
+    const now = new Set(EXERCISES.map((e) => e.id));
+    expect(ids.filter((id) => !now.has(id))).toEqual([]);
+    expect(ids).toContain("belay:dead-hang");
   });
 
   it("uses every one of the 16 muscles as a primary somewhere", () => {

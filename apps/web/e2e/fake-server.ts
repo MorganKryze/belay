@@ -133,6 +133,33 @@ export async function fakeServer(
           write(key, {}, { removed: c.value, removedAt: c.at });
         return;
       }
+      case "steps": {
+        const key = `steps|${c.date}`;
+        if (later(key, "stepsAt")) write(key, {}, { date: c.date, steps: c.value, stepsAt: c.at });
+        return;
+      }
+      case "activity": {
+        const key = `activities|${c.id}`;
+        if (c.field === "fields" && later(key, "fieldsAt"))
+          write(
+            key,
+            { id: c.id, removed: false, removedAt: null },
+            {
+              date: c.date,
+              type: c.type,
+              durationMin: c.durationMin,
+              cardioType: c.cardioType,
+              climbStyle: c.climbStyle,
+              climbRuns: c.climbRuns,
+              climbGrade: c.climbGrade,
+              climbColor: c.climbColor,
+              fieldsAt: c.at,
+            },
+          );
+        if (c.field === "removed" && state.other.has(key) && later(key, "removedAt"))
+          write(key, {}, { removed: c.value, removedAt: c.at });
+        return;
+      }
       case "workout": {
         const key = `workouts|${c.id}`;
         if (c.field === "start") {
@@ -141,6 +168,8 @@ export async function fakeServer(
               key,
               {
                 id: c.id,
+                planAt: null,
+                startedAtAt: null,
                 endedAt: null,
                 endedAtAt: null,
                 note: null,
@@ -155,6 +184,8 @@ export async function fakeServer(
           return;
         }
         const [v, a] = {
+          plan: ["plan", "planAt"],
+          startedAt: ["startedAt", "startedAtAt"],
           ended: ["endedAt", "endedAtAt"],
           note: ["note", "noteAt"],
           exerciseNotes: ["exerciseNotes", "exerciseNotesAt"],
@@ -179,6 +210,7 @@ export async function fakeServer(
                 warmup: c.warmup,
                 weightKg: c.weightKg,
                 reps: c.reps,
+                seconds: c.seconds ?? null,
                 rir: c.rir,
                 doneAt: c.doneAt,
                 fieldsAt: c.at,
@@ -188,7 +220,17 @@ export async function fakeServer(
         }
         if (!state.other.has(key)) return;
         if (c.field === "values" && later(key, "fieldsAt"))
-          write(key, {}, { weightKg: c.weightKg, reps: c.reps, rir: c.rir, fieldsAt: c.at });
+          write(
+            key,
+            {},
+            {
+              weightKg: c.weightKg,
+              reps: c.reps,
+              seconds: c.seconds ?? null,
+              rir: c.rir,
+              fieldsAt: c.at,
+            },
+          );
         if (c.field === "removed" && later(key, "removedAt"))
           write(key, {}, { removed: c.value, removedAt: c.at });
         return;
@@ -229,6 +271,8 @@ export async function fakeServer(
         supplements: table("supplements"),
         supplementLogs: table("supplementLogs"),
         annotations: table("annotations"),
+        steps: table("steps"),
+        activities: table("activities"),
         workouts: table("workouts"),
         sets: table("sets"),
         target: null,

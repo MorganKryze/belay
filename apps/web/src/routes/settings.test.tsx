@@ -281,6 +281,29 @@ describe("refused entries", () => {
       "Annotation for",
       "Annotation du",
     ],
+    ["steps", [{ kind: "steps", date: day, value: 8400, at }], "steps", "Steps for", "Pas du"],
+    [
+      "activity",
+      [
+        {
+          kind: "activity",
+          id: ANNOTATION,
+          field: "fields",
+          date: day,
+          type: "cardio",
+          durationMin: 45,
+          cardioType: "bike",
+          climbStyle: null,
+          climbRuns: null,
+          climbGrade: null,
+          climbColor: null,
+          at,
+        },
+      ],
+      "activity",
+      "Activity on",
+      "Activité du",
+    ],
     ["session", [start], "workout", "Session on", "Séance du"],
     ["set", [start, create], "set", "Set on", "Série du"],
   ];
@@ -351,6 +374,26 @@ describe("refused entries", () => {
     renderRoute("/settings");
     const list = await screen.findByRole("region", { name: "Refused entries" });
     expect(list.textContent).toContain("Exercise unknown to the server");
+  });
+
+  it("says why a set counted in the wrong measure was refused", async () => {
+    await seed(ADA.id, [start, create]);
+    fakeApi({
+      me: ADA,
+      sync: async (r) =>
+        Response.json(
+          answer({
+            rejected: r.changes.flatMap((c, index) =>
+              c.kind === "set" ? [{ index, reason: "wrong_measure" as const }] : [],
+            ),
+          }),
+        ),
+    });
+    renderRoute("/settings");
+    const list = await screen.findByRole("region", { name: "Refused entries" });
+    expect(list.textContent).toContain(
+      "Counted in reps for a timed exercise, or the other way round",
+    );
   });
 
   it("is not shown when the server refused nothing", async () => {

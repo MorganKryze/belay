@@ -1,5 +1,7 @@
 import { type ISODate, toISODate } from "@belay/shared/body/dates";
 import type { Weighing } from "@belay/shared/body/weighings";
+import { type Activity, activitySummary } from "@belay/shared/training/activities";
+import { planFor } from "@belay/shared/training/plan";
 import {
   estimatedMinutes,
   nextSession,
@@ -8,15 +10,26 @@ import {
 } from "@belay/shared/training/program";
 import { liveSets, openWorkout } from "@belay/shared/training/rules";
 import { Link } from "@tanstack/react-router";
-import { ChevronRight, Dumbbell, type LucideIcon, Pill, Scale, Utensils } from "lucide-react";
+import {
+  Activity as ActivityIcon,
+  ChevronRight,
+  Dumbbell,
+  type LucideIcon,
+  Pill,
+  Scale,
+  Utensils,
+} from "lucide-react";
 import { lazy, type ReactNode, Suspense, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { daySummaryText } from "@/lib/activities";
 import { formatKg, formatNumber, sessionTitle } from "@/lib/format";
 import {
   type OpenAccount,
+  useActivities,
   useHistory,
   useIntake,
   useRecord,
+  useSteps,
   useSupplementLogs,
   useSupplements,
 } from "@/sync/account";
@@ -31,7 +44,11 @@ const SupplementsSheet = lazy(() =>
   import("./supplements-sheet").then((m) => ({ default: m.SupplementsSheet })),
 );
 
-type Gesture = "weighIn" | "intake" | "supplements";
+const ActivitySheet = lazy(() =>
+  import("./activity-sheet").then((m) => ({ default: m.ActivitySheet })),
+);
+
+type Gesture = "activity" | "weighIn" | "intake" | "supplements";
 
 // Home's "Today" card (D1): the day's session first, then one line per gesture of the day with
 // where it stands; a tap starts or resumes the session, or opens the gesture's sheet.
@@ -47,6 +64,8 @@ export function TodayCard({
   const { t, i18n } = useTranslation();
   const intake = useIntake(account).data ?? [];
   const supplements = useSupplements(account).data ?? [];
+  const activities = useActivities(account).data ?? [];
+  const steps = useSteps(account).data ?? [];
   const logs = useSupplementLogs(account).data ?? [];
   const { write, toast, error, clearError, dismiss } = useWriter(account);
   const record = useRecord(account);
@@ -96,7 +115,13 @@ export function TodayCard({
         >
           {t("today.title")}
         </h2>
-        <SessionRow account={account} />
+        <SessionRow account={account} activities={activities} today={today} />
+        <Row
+          icon={ActivityIcon}
+          title={t("today.activity")}
+          status={daySummaryText(activitySummary(activities, steps, today), t, i18n.language)}
+          onClick={() => setOpen("activity")}
+        />
         <Row
           icon={Scale}
           title={t("today.weighIn")}
@@ -133,6 +158,24 @@ export function TodayCard({
         )}
       </section>
       <Suspense fallback={null}>
+        {open === "activity" && (
+          <ActivitySheet
+            onClose={close}
+            activities={activities}
+            steps={steps}
+            today={today}
+            date={day}
+            onDate={setDate}
+            onWrite={(entries, previous, toast) =>
+              void save(
+                entries.map((e) => ("date" in e ? { ...e, date: when() } : e) as Entry),
+                previous.map((e) => ("date" in e ? { ...e, date: when() } : e) as Entry),
+                t(`today.activityToast.${toast}`),
+              )
+            }
+            error={error}
+          />
+        )}
         {open === "weighIn" && (
           <WeighInSheet
             onClose={close}
@@ -212,8 +255,17 @@ export function TodayCard({
   );
 }
 
-// §4.1: the next session of the program, or the one in progress and how far it is.
-function SessionRow({ account }: { account: OpenAccount }) {
+// §4.1: the next session of the program, or the one in progress and how far it is. Session C
+// counts the slots its rule adds in a week with no climbing.
+function SessionRow({
+  account,
+  activities,
+  today,
+}: {
+  account: OpenAccount;
+  activities: readonly Activity[];
+  today: ISODate;
+}) {
   const { t } = useTranslation();
   const history = useHistory(account).data;
   if (!history) return null;
@@ -226,9 +278,10 @@ function SessionRow({ account }: { account: OpenAccount }) {
     const done = liveSets(history).filter((s) => s.workoutId === open.id && !s.warmup).length;
     status = t("today.sessionOpen", { count: done, total: plannedWorkSets(open.plan) });
   } else {
+    const plan = planFor(session!, activities, today);
     status = t("today.sessionPlanned", {
-      count: session!.slots.length,
-      minutes: estimatedMinutes(session!),
+      count: plan.length,
+      minutes: estimatedMinutes({ slots: plan }),
     });
   }
   return (

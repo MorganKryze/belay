@@ -23,6 +23,9 @@
       "supplementUnnamed": "Supplement",
       "annotation": "Annotation for {{day}}",
       "annotationUndated": "Annotation",
+      "steps": "Steps for {{day}}",
+      "activity": "Activity on {{day}}",
+      "activityUndated": "Activity",
       "workout": "Session on {{day}}",
       "workoutUndated": "Session",
       "set": "Set on {{day}}",
@@ -31,7 +34,9 @@
         "unknown": "Not found on the server",
         "refused": "Refused by the server",
         "unknown_exercise": "Exercise unknown to the server",
-        "too_many_sets": "More than 150 sets in the session"
+        "too_many_sets": "More than 150 sets in the session",
+        "wrong_measure": "Counted in reps for a timed exercise, or the other way round",
+        "plan_shrank": "A shorter plan than the one stored (a slot is never removed)"
       }
     }
   },
@@ -175,13 +180,20 @@
       "exercises": "Exercises"
     },
     "program": {
-      "exercises_one": "{{count}} exercise",
-      "exercises_other": "{{count}} exercises",
       "superset": "superset",
       "triset": "tri-set",
       "editNote": "The program is edited on a computer.",
+      "next": "Next up",
+      "never": "Never done",
+      "today": "Done today",
+      "daysAgo_one": "{{count}} day ago",
+      "daysAgo_other": "{{count}} days ago",
+      "size_one": "{{count}} exercise · ~{{minutes}} min",
+      "size_other": "{{count}} exercises · ~{{minutes}} min",
+      "see": "See",
+      "noClimbing": "no climbing",
       "start": "Start",
-      "resume": "Resume the session in progress"
+      "resume": "Resume"
     },
     "rir": "RIR {{range}}",
     "restSec": "{{s}} s",
@@ -252,6 +264,8 @@
     "previousMonth": "Previous month",
     "nextMonth": "Next month",
     "sessionDay": "session",
+    "activityDay": "activity",
+    "legend": "● session · ○ activity",
     "recent": "Recent",
     "first": "Your first session will show here.",
     "none": "No session this month.",
@@ -260,13 +274,24 @@
     "volume": "{{value}} kg",
     "warmup": "Warm-up",
     "load": "{{kg}} kg × {{reps}}",
+    "seconds": "{{seconds}} s",
+    "loadSeconds": "{{kg}} kg · {{seconds}} s",
     "rir": "RIR {{rir}}",
     "note": "Session note",
+    "edit": "Edit",
     "remove": "Delete this session",
     "removeTitle": "Delete this session?",
     "removeBody": "Its sets will leave the history and the statistics, on all your devices.",
     "removeConfirm": "Delete",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "log": {
+      "button": "Log a session",
+      "title": "Log a session",
+      "date": "Date of the session",
+      "session": "Session",
+      "duration": "Duration",
+      "open": "Enter the sets"
+    }
   },
   "session": {
     "elapsed": "Elapsed time",
@@ -274,6 +299,7 @@
     "lastTime": "Last time: {{value}}",
     "set": "Set",
     "reps": "Reps",
+    "seconds": "Seconds",
     "warmup": "Warm-up",
     "upcoming": "{{target}} · coming up",
     "doneCount_one": "{{count}} of {{total}} sets",
@@ -284,6 +310,7 @@
     "setField": {
       "kg": "Load of set {{n}}, kg",
       "reps": "Reps of set {{n}}",
+      "seconds": "Seconds of set {{n}}",
       "validate": "Log set {{n}}",
       "done": "Set {{n}} logged"
     },
@@ -307,12 +334,39 @@
     "finishLeft_one": "{{count}} set not done will not be saved.",
     "finishLeft_other": "{{count}} sets not done will not be saved.",
     "finishEmpty": "No set logged: the session will not be kept.",
-    "keepGoing": "Keep going"
+    "keepGoing": "Keep going",
+    "noClimbing": "No climbing this week: vertical pull and curl added at the end of the session.",
+    "addedNoClimbing": "added, no climbing",
+    "added": "added",
+    "leaveOut": "Remove",
+    "leftOut": "left out today",
+    "putBack": "Put back",
+    "replace": "Replace",
+    "addSet": "+ Set",
+    "addExercise": "+ Exercise",
+    "doneWith_one": "{{count}} set done with {{exercise}}",
+    "doneWith_other": "{{count}} sets done with {{exercise}}",
+    "chrono": "Timer {{time}}",
+    "chronoLabel": "Timer",
+    "chronoStop": "Stop",
+    "chronoOver": "Timer done",
+    "picker": {
+      "replaceTitle": "Replace {{exercise}}",
+      "addTitle": "Add an exercise",
+      "planned": "Planned in your program",
+      "orLibrary": "Or from the library",
+      "library": "From the library",
+      "lastTime": "last time {{value}}",
+      "never": "never done",
+      "note": "For this session only: the program does not change."
+    }
   },
   "summary": {
     "title": "Session done",
     "close": "Close",
     "record": "Record: {{exercise}}, {{kg}} kg × {{reps}}",
+    "recordSeconds": "Record: {{exercise}}, {{seconds}} s",
+    "recordLoadSeconds": "Record: {{exercise}}, {{kg}} kg · {{seconds}} s",
     "duration": "Duration",
     "workSets": "Work sets",
     "volume": "Volume",
@@ -321,5 +375,53 @@
     "warmupCount_other": "{{count}} sets",
     "note": "Session note (optional)",
     "save": "Save"
+  },
+  "activitySheet": {
+    "title": "Activity",
+    "date": "Date of the activity",
+    "kind": "Kind of activity",
+    "tabs": {
+      "cardio": "Cardio",
+      "climbing": "Climbing",
+      "steps": "Steps"
+    },
+    "thisDay": "On this day",
+    "another": {
+      "cardio": "Another cardio session",
+      "climbing": "Another climb"
+    },
+    "cardioType": "Type",
+    "duration": "Duration",
+    "runs": "Routes or boulders",
+    "runsOutOfRange": "Enter a whole number between 0 and 200.",
+    "style": "Type",
+    "styles": {
+      "boulder": "Boulder",
+      "route": "Route"
+    },
+    "hardest": "Hardest",
+    "by": {
+      "grade": "Grade",
+      "color": "Color"
+    },
+    "steps": "Steps of the day",
+    "stepsNote": "Copy them from your phone or your watch.",
+    "stepsOutOfRange": "Enter a whole number between 0 and 100,000.",
+    "delete": "Delete this activity",
+    "deleteSteps": "Delete this day's steps",
+    "confirm": "Delete this activity?",
+    "confirmSteps": "Delete this day's steps?",
+    "confirmDelete": "Delete",
+    "cancel": "Cancel"
+  },
+  "editor": {
+    "cancel": "Cancel",
+    "date": "Date of the session",
+    "note": "Correcting changes only what you edit; the records are worked out again.",
+    "save": "Save",
+    "incomplete": "Fill in or remove the sets left incomplete.",
+    "rir": "RIR of set {{n}}",
+    "removeSet": "Delete set {{n}}",
+    "removeWarmup": "Delete warm-up {{n}}"
   }
 }

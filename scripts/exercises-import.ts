@@ -1,5 +1,5 @@
 // Imports the exercise library from exercises-dataset at the commit pinned in
-// packages/shared/src/exercises/import.ts and writes its four files (network, at dev time only).
+// packages/shared/src/exercises/import.ts and writes its five files (network, at dev time only).
 // With --check, validates the committed files offline: CI runs it, nothing is fetched.
 import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -11,7 +11,7 @@ import {
   type LibraryFiles,
 } from "../packages/shared/src/exercises/import";
 
-const NAMES = ["index", "fr", "en", "ids"] as const;
+const NAMES = ["index", "fr", "en", "ids", "measures"] as const;
 const path = (name: string) =>
   fileURLToPath(new URL(`../packages/shared/src/exercises/data/${name}.json`, import.meta.url));
 

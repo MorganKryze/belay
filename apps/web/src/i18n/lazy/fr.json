@@ -23,6 +23,9 @@
       "supplementUnnamed": "Complément",
       "annotation": "Annotation du {{day}}",
       "annotationUndated": "Annotation",
+      "steps": "Pas du {{day}}",
+      "activity": "Activité du {{day}}",
+      "activityUndated": "Activité",
       "workout": "Séance du {{day}}",
       "workoutUndated": "Séance",
       "set": "Série du {{day}}",
@@ -31,7 +34,9 @@
         "unknown": "Introuvable sur le serveur",
         "refused": "Refusée par le serveur",
         "unknown_exercise": "Exercice inconnu du serveur",
-        "too_many_sets": "Plus de 150 séries dans la séance"
+        "too_many_sets": "Plus de 150 séries dans la séance",
+        "wrong_measure": "Compté en répétitions pour un exercice chronométré, ou l'inverse",
+        "plan_shrank": "Un programme plus court que celui du serveur (un créneau n'est jamais retiré)"
       }
     }
   },
@@ -175,13 +180,20 @@
       "exercises": "Exercices"
     },
     "program": {
-      "exercises_one": "{{count}} exercice",
-      "exercises_other": "{{count}} exercices",
       "superset": "superset",
       "triset": "tri-set",
       "editNote": "Le programme se modifie sur ordinateur.",
+      "next": "La prochaine",
+      "never": "Jamais faite",
+      "today": "Faite aujourd'hui",
+      "daysAgo_one": "Il y a {{count}} jour",
+      "daysAgo_other": "Il y a {{count}} jours",
+      "size_one": "{{count}} exercice · ~{{minutes}} min",
+      "size_other": "{{count}} exercices · ~{{minutes}} min",
+      "see": "Voir",
+      "noClimbing": "sans escalade",
       "start": "Commencer",
-      "resume": "Reprendre la séance en cours"
+      "resume": "Reprendre"
     },
     "rir": "RIR {{range}}",
     "restSec": "{{s}} s",
@@ -252,6 +264,8 @@
     "previousMonth": "Mois précédent",
     "nextMonth": "Mois suivant",
     "sessionDay": "séance",
+    "activityDay": "activité",
+    "legend": "● séance · ○ activité",
     "recent": "Récentes",
     "first": "Ta première séance apparaîtra ici.",
     "none": "Aucune séance ce mois-ci.",
@@ -260,13 +274,24 @@
     "volume": "{{value}} kg",
     "warmup": "Montée",
     "load": "{{kg}} kg × {{reps}}",
+    "seconds": "{{seconds}} s",
+    "loadSeconds": "{{kg}} kg · {{seconds}} s",
     "rir": "RIR {{rir}}",
     "note": "Note sur la séance",
+    "edit": "Modifier",
     "remove": "Supprimer cette séance",
     "removeTitle": "Supprimer cette séance ?",
     "removeBody": "Ses séries disparaîtront de l'historique et des statistiques, sur tous tes appareils.",
     "removeConfirm": "Supprimer",
-    "cancel": "Annuler"
+    "cancel": "Annuler",
+    "log": {
+      "button": "Saisir une séance",
+      "title": "Saisir une séance",
+      "date": "Date de la séance",
+      "session": "Séance",
+      "duration": "Durée",
+      "open": "Saisir les séries"
+    }
   },
   "session": {
     "elapsed": "Temps écoulé",
@@ -274,6 +299,7 @@
     "lastTime": "La dernière fois : {{value}}",
     "set": "Série",
     "reps": "Reps",
+    "seconds": "Secondes",
     "warmup": "Montée",
     "upcoming": "{{target}} · à venir",
     "doneCount_one": "{{count}} série sur {{total}}",
@@ -284,6 +310,7 @@
     "setField": {
       "kg": "Charge de la série {{n}}, kg",
       "reps": "Répétitions de la série {{n}}",
+      "seconds": "Secondes de la série {{n}}",
       "validate": "Valider la série {{n}}",
       "done": "Série {{n}} validée"
     },
@@ -307,12 +334,39 @@
     "finishLeft_one": "{{count}} série non faite ne sera pas enregistrée.",
     "finishLeft_other": "{{count}} séries non faites ne seront pas enregistrées.",
     "finishEmpty": "Aucune série validée : la séance ne sera pas gardée.",
-    "keepGoing": "Continuer la séance"
+    "keepGoing": "Continuer la séance",
+    "noClimbing": "Pas d'escalade cette semaine : tirage vertical et curl ajoutés en fin de séance.",
+    "addedNoClimbing": "ajouté, sans escalade",
+    "added": "ajouté",
+    "leaveOut": "Retirer",
+    "leftOut": "retiré pour aujourd'hui",
+    "putBack": "Remettre",
+    "replace": "Remplacer",
+    "addSet": "+ Série",
+    "addExercise": "+ Exercice",
+    "doneWith_one": "{{count}} série faite avec {{exercise}}",
+    "doneWith_other": "{{count}} séries faites avec {{exercise}}",
+    "chrono": "Chrono {{time}}",
+    "chronoLabel": "Chrono",
+    "chronoStop": "Arrêter",
+    "chronoOver": "Chrono terminé",
+    "picker": {
+      "replaceTitle": "Remplacer {{exercise}}",
+      "addTitle": "Ajouter un exercice",
+      "planned": "Prévues dans ton programme",
+      "orLibrary": "Ou dans la bibliothèque",
+      "library": "Dans la bibliothèque",
+      "lastTime": "la dernière fois {{value}}",
+      "never": "jamais fait",
+      "note": "Pour cette séance seulement : le programme ne change pas."
+    }
   },
   "summary": {
     "title": "Séance terminée",
     "close": "Fermer",
     "record": "Record : {{exercise}}, {{kg}} kg × {{reps}}",
+    "recordSeconds": "Record : {{exercise}}, {{seconds}} s",
+    "recordLoadSeconds": "Record : {{exercise}}, {{kg}} kg · {{seconds}} s",
     "duration": "Durée",
     "workSets": "Séries de travail",
     "volume": "Volume",
@@ -321,5 +375,53 @@
     "warmupCount_other": "{{count}} séries",
     "note": "Note sur la séance (option)",
     "save": "Enregistrer"
+  },
+  "activitySheet": {
+    "title": "Activité",
+    "date": "Date de l'activité",
+    "kind": "Type d'activité",
+    "tabs": {
+      "cardio": "Cardio",
+      "climbing": "Escalade",
+      "steps": "Pas"
+    },
+    "thisDay": "Ce jour",
+    "another": {
+      "cardio": "Un autre cardio",
+      "climbing": "Une autre escalade"
+    },
+    "cardioType": "Type",
+    "duration": "Durée",
+    "runs": "Voies ou blocs",
+    "runsOutOfRange": "Saisis un nombre entier entre 0 et 200.",
+    "style": "Type",
+    "styles": {
+      "boulder": "Bloc",
+      "route": "Voie"
+    },
+    "hardest": "Le plus dur",
+    "by": {
+      "grade": "Cotation",
+      "color": "Couleur"
+    },
+    "steps": "Pas du jour",
+    "stepsNote": "À recopier depuis ton téléphone ou ta montre.",
+    "stepsOutOfRange": "Saisis un nombre entier entre 0 et 100 000.",
+    "delete": "Supprimer cette activité",
+    "deleteSteps": "Supprimer les pas de ce jour",
+    "confirm": "Supprimer cette activité ?",
+    "confirmSteps": "Supprimer les pas de ce jour ?",
+    "confirmDelete": "Supprimer",
+    "cancel": "Annuler"
+  },
+  "editor": {
+    "cancel": "Annuler",
+    "date": "Date de la séance",
+    "note": "Corriger ne change que ce que tu modifies ; les records se recalculent.",
+    "save": "Enregistrer",
+    "incomplete": "Complète ou retire les séries incomplètes.",
+    "rir": "RIR de la série {{n}}",
+    "removeSet": "Supprimer la série {{n}}",
+    "removeWarmup": "Supprimer la montée {{n}}"
   }
 }

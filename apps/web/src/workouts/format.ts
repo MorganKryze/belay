@@ -1,13 +1,17 @@
+import { exerciseById } from "@belay/shared/exercises/catalog";
 import { groupOf } from "@belay/shared/training/program";
+import type { Summary } from "@belay/shared/training/rules";
 import type { Slot } from "@belay/shared/training/workout";
 import type { TFunction } from "i18next";
+import { formatNumber } from "@/lib/format";
 
 // "6–8", or "2" when both ends are equal.
 export const formatRange = ([min, max]: readonly [number, number]) =>
   min === max ? String(min) : `${min}–${max}`;
 
-// "4 × 6–8", never broken across two lines.
-export const formatSets = (slot: Slot) => `${slot.sets}\u00a0×\u00a0${formatRange(slot.repRange)}`;
+// "4 × 6–8", "3 × 30–60 s" for a timed exercise, never broken across two lines.
+export const formatSets = (slot: Pick<Slot, "sets" | "repRange" | "measure">) =>
+  `${slot.sets}\u00a0×\u00a0${formatRange(slot.repRange)}${slot.measure === "seconds" ? "\u00a0s" : ""}`;
 
 export const formatRir = (slot: Slot, t: TFunction) =>
   t("workouts.rir", { range: formatRange(slot.rirTarget) });
@@ -37,4 +41,15 @@ export function formatDuration(ms: number, t: TFunction): string {
         h: Math.floor(minutes / 60),
         mm: String(minutes % 60).padStart(2, "0"),
       });
+}
+
+// "Record : Barbell bench press, 82,5 kg × 8", or "Record : Dead hang, 75 s" for a timed one.
+export function recordText(r: Summary["records"][number], t: TFunction, locale: string): string {
+  const exercise = exerciseById(r.exerciseId)?.name;
+  const kg = formatNumber(r.weightKg, locale, { digits: 2 });
+  if (r.seconds !== null)
+    return r.weightKg > 0
+      ? t("summary.recordLoadSeconds", { exercise, kg, seconds: r.seconds })
+      : t("summary.recordSeconds", { exercise, seconds: r.seconds });
+  return t("summary.record", { exercise, kg, reps: r.reps });
 }

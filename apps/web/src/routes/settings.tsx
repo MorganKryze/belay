@@ -169,6 +169,12 @@ function describe(
         ? t("settings.rejected.annotation", { day: day(date) })
         : t("settings.rejected.annotationUndated");
     }
+    case "steps":
+      return t("settings.rejected.steps", { day: day(change.date) });
+    case "activity":
+      return change.field === "fields"
+        ? t("settings.rejected.activity", { day: day(change.date) })
+        : t("settings.rejected.activityUndated");
     case "workout":
       return change.field === "start"
         ? t("settings.rejected.workout", {

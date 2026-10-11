@@ -67,7 +67,9 @@ const workoutRow = (patch: Partial<WorkoutRow> = {}): WorkoutRow => ({
   id: W,
   sessionCode: "A",
   plan: PLAN,
+  planAt: null,
   startedAt: AT,
+  startedAtAt: null,
   endedAt: null,
   endedAtAt: null,
   note: null,
@@ -80,6 +82,7 @@ const workoutRow = (patch: Partial<WorkoutRow> = {}): WorkoutRow => ({
 });
 const setRow = (id: string, patch: Partial<SetRow> = {}): SetRow => ({
   ...input(id),
+  seconds: null,
   fieldsAt: LATER,
   removed: false,
   removedAt: null,
@@ -124,7 +127,7 @@ describe("the upgrade from version 2", () => {
     await v2.put("meta", "12", "cursor");
 
     const db = await openAccountDb("user-a");
-    expect(db.version).toBe(3);
+    expect(db.version).toBe(4);
     expect(await readWeights(db)).toEqual([{ date: "2026-10-07", weightKg: 79.8 }]);
     expect(await readIntake(db)).toEqual([{ date: "2026-10-07", kcal: 2100, proteinG: null }]);
     expect((await readRejected(db)).map((r) => r.reason)).toEqual(["refused"]);
@@ -201,6 +204,36 @@ describe("a session on the phone", () => {
     );
     expect((await readHistory(db)).sets).toEqual([setRow(S1, { reps: 6, fieldsAt: LATEST })]);
     expect(await readCursor(db)).toBe("9");
+  });
+
+  it("changes the session's own plan and start, keeping the later write of each", async () => {
+    const plan = [...PLAN, { ...PLAN[0]!, skipped: true }];
+    const moved = "2026-10-06T17:00:00.000Z";
+    await recordChanges(db, [
+      start(),
+      { kind: "workout", id: W, field: "plan", value: plan, at: LATEST },
+      { kind: "workout", id: W, field: "startedAt", value: moved, at: LATER },
+    ]);
+    expect((await readHistory(db)).workouts).toEqual([
+      workoutRow({ plan, planAt: LATEST, startedAt: moved, startedAtAt: LATER }),
+    ]);
+    // A plan written earlier elsewhere comes back from the server: the later one stays.
+    const sent = await readOutbox(db);
+    await recordChanges(db, [
+      { kind: "workout", id: W, field: "plan", value: [...PLAN, plan[6]!, plan[6]!], at: AT },
+    ]);
+    await applyServer(db, sent, answer({ workouts: [workoutRow({ plan, planAt: LATEST })] }));
+    expect((await readHistory(db)).workouts[0]!.plan).toEqual(plan);
+    expect(await pendingCounts(db)).toEqual({ weighings: 0, total: 1 });
+  });
+
+  it("counts a day's steps and an activity as one entry each", async () => {
+    await recordChanges(db, [
+      { kind: "steps", date: "2026-10-07", value: 8400, at: AT },
+      { kind: "steps", date: "2026-10-07", value: 8500, at: LATER },
+      { kind: "activity", id: S1, field: "removed", value: true, at: AT },
+    ]);
+    expect(await pendingCounts(db)).toEqual({ weighings: 0, total: 2 });
   });
 
   it("lets go of the open session once another device finished or removed it", async () => {
