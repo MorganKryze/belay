@@ -133,6 +133,33 @@ export async function fakeServer(
           write(key, {}, { removed: c.value, removedAt: c.at });
         return;
       }
+      case "steps": {
+        const key = `steps|${c.date}`;
+        if (later(key, "stepsAt")) write(key, {}, { date: c.date, steps: c.value, stepsAt: c.at });
+        return;
+      }
+      case "activity": {
+        const key = `activities|${c.id}`;
+        if (c.field === "fields" && later(key, "fieldsAt"))
+          write(
+            key,
+            { id: c.id, removed: false, removedAt: null },
+            {
+              date: c.date,
+              type: c.type,
+              durationMin: c.durationMin,
+              cardioType: c.cardioType,
+              climbStyle: c.climbStyle,
+              climbRuns: c.climbRuns,
+              climbGrade: c.climbGrade,
+              climbColor: c.climbColor,
+              fieldsAt: c.at,
+            },
+          );
+        if (c.field === "removed" && state.other.has(key) && later(key, "removedAt"))
+          write(key, {}, { removed: c.value, removedAt: c.at });
+        return;
+      }
       case "workout": {
         const key = `workouts|${c.id}`;
         if (c.field === "start") {
