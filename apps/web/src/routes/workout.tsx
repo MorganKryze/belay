@@ -30,7 +30,7 @@ import { Sheet } from "@/components/sheet";
 import { Button } from "@/components/ui/button";
 import { sessionTitle } from "@/lib/format";
 import { readToolState, resolveEquipment } from "@/lib/tool-storage";
-import { type ActiveSession, readActivities } from "@/sync/db";
+import { type ActiveSession, readActiveSession, readActivities } from "@/sync/db";
 import {
   type OpenAccount,
   useAccount,
@@ -176,17 +176,32 @@ function Screen({
   // The session's own copy of the plan (D7): the program never changes. Each edit is built from
   // the plan stored when its turn comes, edits one after the other, so quick taps compose.
   const edits = useRef<Promise<void>>(Promise.resolve());
-  const editPlan = (edit: (stored: Slot[]) => Slot[]) => {
+  // `leaving` is a slot being left out: if it is the one up next, the open session moves on to
+  // the next live turn in the same write.
+  const editPlan = (edit: (stored: Slot[]) => Slot[], leaving?: number) => {
     edits.current = edits.current.then(() =>
       save(async () => {
         const stored = await account.db.get("workouts", workout.id);
-        await record({
-          kind: "workout",
-          id: workout.id,
-          field: "plan",
-          value: edit(stored?.plan ?? plan),
-          at: new Date().toISOString(),
-        });
+        const before = stored?.plan ?? plan;
+        const current = await readActiveSession(account.db);
+        let moved: ActiveSession | undefined;
+        if (leaving !== undefined && current?.slotIndex === leaving) {
+          const gone = new Set(done);
+          for (let round = 0; round < before[leaving]!.sets; round++)
+            gone.add(turnKey({ slotIndex: leaving, round }));
+          const next = nextTurn(before, gone, { slotIndex: leaving, round: 0 });
+          if (next) moved = { ...current, slotIndex: next.slotIndex };
+        }
+        await record(
+          {
+            kind: "workout",
+            id: workout.id,
+            field: "plan",
+            value: edit(before),
+            at: new Date().toISOString(),
+          },
+          moved && { active: moved },
+        );
       }),
     );
   };
@@ -364,7 +379,8 @@ function Screen({
             onReplace={() => setPicking({ slotIndex: i })}
             onSkip={
               (slot.rule || slot.added) && own.length === 0
-                ? (skipped) => editPlan((stored) => skipSlot(stored, i, skipped))
+                ? (skipped) =>
+                    editPlan((stored) => skipSlot(stored, i, skipped), skipped ? i : undefined)
                 : null
             }
             onChrono={(chrono) => setActive({ chrono })}

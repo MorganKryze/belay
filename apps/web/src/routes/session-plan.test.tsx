@@ -426,4 +426,31 @@ describe("fix round: extra rows, chrono, replaced warm-ups, leaving out", () => 
     const last = plans.at(-1) as Extract<Change, { field: "plan" }>;
     expect([last.value[8]!.skipped, last.value[9]!.skipped]).toEqual([true, true]);
   });
+
+  const makeCurrent = async (slotIndex: number) => {
+    await startSession("C");
+    const db = await openAccountDb(ADA.id);
+    const active = (await readActiveSession(db))!;
+    await db.put("activeSession", { ...active, slotIndex }, "current");
+    db.close();
+    cleanup();
+    renderRoute("/workout");
+    await screen.findByRole("heading", { name: /^Session C/, level: 1 });
+  };
+
+  it("leaving out the current exercise moves on to the next", async () => {
+    await makeCurrent(8);
+    fireEvent.click(
+      within(card("Cable lat pulldown full range of motion")).getByRole("button", {
+        name: "Remove",
+      }),
+    );
+    await waitFor(async () => expect((await stored()).active?.slotIndex).toBe(9));
+    const curl = screen
+      .getAllByRole("region")
+      .find(
+        (r) => r.textContent?.includes("added, no climbing") && !r.textContent.includes("left out"),
+      )!;
+    expect(within(curl).getByRole("button", { expanded: true })).toBeTruthy();
+  });
 });
