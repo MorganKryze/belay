@@ -70,7 +70,7 @@ export function rowsOf(
       .filter((s) => !s.warmup && own(s) && s.position < workPosition(k))
       .sort((a, b) => b.position - a.position)[0];
   const done = sets.filter((s) => !s.warmup).map((s) => s.position - MAX_WARMUPS + 1);
-  const count = Math.min(MAX_POSITION - MAX_WARMUPS + 1, Math.max(slot.sets, ...done) + extra);
+  const count = Math.min(MAX_POSITION - MAX_WARMUPS + 1, Math.max(slot.sets + extra, ...done));
   const work: Row[] = Array.from({ length: count }, (_, k) => {
     const last = prefill(history, exercise.id, k, measure) ?? before(k);
     const set = at(workPosition(k));

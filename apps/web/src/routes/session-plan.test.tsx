@@ -347,3 +347,20 @@ describe("a timed exercise and its chrono (spec D11, §4.3)", () => {
     expect(screen.getByRole("button", { name: "+ Exercice" })).toBeTruthy();
   });
 });
+
+describe("fix round: extra rows, chrono, replaced warm-ups, leaving out", () => {
+  it("an extra set is one row, gone once logged", async () => {
+    await startSession("A");
+    const bench = card("Barbell bench press");
+    fireEvent.click(within(bench).getByRole("button", { name: "+ Set" }));
+    fireEvent.change(field(bench, "Load of set 5, kg"), { target: { value: "60" } });
+    fireEvent.change(field(bench, "Reps of set 5"), { target: { value: "12" } });
+    log(bench, "Log set 5");
+    await waitFor(() =>
+      within(card("Barbell bench press")).getByRole("img", { name: "Set 5 logged" }),
+    );
+    expect(
+      within(card("Barbell bench press")).queryByRole("textbox", { name: "Load of set 6, kg" }),
+    ).toBeNull();
+  });
+});
