@@ -67,4 +67,6 @@ test("the manifest makes the app installable", async ({ request }) => {
   const manifest = await res.json();
   expect(manifest).toMatchObject({ name: "Belay", display: "standalone", start_url: "/" });
   expect(manifest.icons.some((i: { purpose?: string }) => i.purpose === "maskable")).toBe(true);
+  expect(manifest).toMatchObject({ background_color: "#FAFAF7", theme_color: "#FAFAF7" });
+  expect(manifest.icons).toHaveLength(4);
 });

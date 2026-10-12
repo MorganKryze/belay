@@ -6,12 +6,62 @@
     <link rel="icon" href="/favicon.ico" sizes="48x48" />
     <link rel="icon" href="/logo.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon-180x180.png" />
-    <meta name="theme-color" content="#0f172a" />
+    <meta name="theme-color" content="#FAFAF7" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#151412" media="(prefers-color-scheme: dark)" />
     <script src="/theme-init.js"></script>
+    <style>
+      .launch {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        background: #fafaf7;
+        color: #1c1917;
+      }
+      .launch > div {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        transform: translateY(-6vh);
+      }
+      .launch svg {
+        width: 112px;
+        height: 112px;
+        color: #c2410c;
+      }
+      .launch span {
+        font:
+          700 24px Inter,
+          system-ui,
+          sans-serif;
+      }
+      html.dark .launch {
+        background: #151412;
+        color: #f5f5f4;
+      }
+      html.dark .launch svg {
+        color: #fb923c;
+      }
+    </style>
     <title>Belay</title>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div class="launch">
+        <div>
+          <svg viewBox="0 0 512 512" fill="currentColor" aria-hidden="true">
+            <path
+              d="M86 160L86 266A120 120 0 0 0 326 266L326 246A20 20 0 0 0 286 246L286 266A80 80 0 0 1 126 266L126 160A20 20 0 0 0 86 160ZM426 352L426 246A120 120 0 0 0 186 246L186 266A20 20 0 0 0 226 266L226 246A80 80 0 0 1 386 246L386 352A20 20 0 0 0 426 352Z"
+            />
+          </svg>
+          <span>Belay</span>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
