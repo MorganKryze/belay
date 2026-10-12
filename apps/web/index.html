@@ -17,7 +17,6 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 12px;
         background: #fafaf7;
         color: #1c1917;
       }
@@ -30,7 +29,6 @@
       }
       .launch svg {
         width: 112px;
-        height: 112px;
         color: #c2410c;
       }
       .launch span {
@@ -46,6 +44,12 @@
       html.dark .launch svg {
         color: #fb923c;
       }
+      /* Charter §8: no launch screen on a computer, the tab favicon is enough. */
+      @media (min-width: 1024px) {
+        .launch {
+          display: none;
+        }
+      }
     </style>
     <title>Belay</title>
   </head>
@@ -53,7 +57,7 @@
     <div id="root">
       <div class="launch">
         <div>
-          <svg viewBox="0 0 512 512" fill="currentColor" aria-hidden="true">
+          <svg viewBox="86 140 340 232" fill="currentColor" aria-hidden="true">
             <path
               d="M86 160L86 266A120 120 0 0 0 326 266L326 246A20 20 0 0 0 286 246L286 266A80 80 0 0 1 126 266L126 160A20 20 0 0 0 86 160ZM426 352L426 246A120 120 0 0 0 186 246L186 266A20 20 0 0 0 226 266L226 246A80 80 0 0 1 386 246L386 352A20 20 0 0 0 426 352Z"
             />
