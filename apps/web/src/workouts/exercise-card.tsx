@@ -194,7 +194,8 @@ export function ExerciseCard({
   const foreign = rows.filter((r) => r.foreign);
   const canAdd = (rows.at(-1)?.position ?? 0) < MAX_POSITION;
   // The timed set counting down, and once over, what it fills in.
-  const running = chrono !== null && Date.parse(chrono.endsAt) > now;
+  // `now` ticks once a second: a chrono stopped since is over, whatever the last tick says.
+  const running = chrono !== null && Date.parse(chrono.endsAt) > Math.max(now, Date.now());
   const timedOut = chrono !== null && !running;
 
   const shown = (row: Row, field: "kg" | "count") => {

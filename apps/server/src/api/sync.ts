@@ -591,20 +591,29 @@ async function writeWorkouts(ctx: Ctx, all: Indexed<WorkoutChange>[]) {
       c.field === "start" ? planProblem(c.plan) : c.field === "plan" ? planProblem(c.value) : null;
     if (problem) problems.set(c.index, problem);
   }
-  // A slot is never taken out: a plan shorter than the stored one is refused.
+  // A slot is never taken out: a plan shorter than the stored one is refused, when it is the
+  // newer one; an older one just loses on time, like any replayed change.
   const planned = [...new Set(all.filter((c) => c.field === "plan").map((c) => c.id))];
   if (planned.length > 0) {
     const lengths = new Map(
       (
         await tx
-          .select({ id: workouts.id, plan: workouts.plan })
+          .select({ id: workouts.id, plan: workouts.plan, planAt: workouts.planAt })
           .from(workouts)
           .where(and(eq(workouts.userId, userId), inArray(workouts.id, planned)))
-      ).map((r) => [r.id, r.plan.length]),
+      ).map((r) => [r.id, { length: r.plan.length, at: r.planAt }]),
     );
-    for (const c of all)
-      if (c.field === "plan" && !problems.has(c.index) && c.value.length < (lengths.get(c.id) ?? 0))
+    for (const c of all) {
+      const stored = c.field === "plan" ? lengths.get(c.id) : undefined;
+      if (
+        c.field === "plan" &&
+        !problems.has(c.index) &&
+        stored &&
+        c.value.length < stored.length &&
+        (!stored.at || Date.parse(clampAt(c.at, now)) > stored.at.getTime())
+      )
         problems.set(c.index, "plan_shrank");
+    }
   }
   for (const [index, reason] of problems) out.rejected.push({ index, reason });
   // A refused plan change: the stored session comes back, whatever the phone's cursor.

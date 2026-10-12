@@ -1,7 +1,7 @@
 import "@/i18n/lazy";
 import { exerciseById } from "@belay/shared/exercises/catalog";
 import { liveSets, summary } from "@belay/shared/training/rules";
-import { MAX_WARMUPS, type Workout, type WorkoutSet } from "@belay/shared/training/workout";
+import { type Workout, type WorkoutSet } from "@belay/shared/training/workout";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import { ChevronLeft, PartyPopper } from "lucide-react";
 import { useState } from "react";
@@ -197,7 +197,7 @@ function ExerciseSets({
                   : "w-14 font-semibold text-muted-foreground"
               }
             >
-              {s.warmup ? t("history.warmup") : s.position - MAX_WARMUPS + 1}
+              {s.warmup ? t("history.warmup") : sets.filter((o) => !o.warmup).indexOf(s) + 1}
             </span>
             <span className="tabular-nums">
               {s.seconds != null

@@ -396,6 +396,33 @@ describe("refused entries", () => {
     );
   });
 
+  it("says plainly why a shorter session plan was refused, in both languages", async () => {
+    await seed(ADA.id, [start]);
+    fakeApi({
+      me: ADA,
+      sync: async (r) =>
+        Response.json(
+          answer({
+            rejected: r.changes.flatMap((c, index) =>
+              c.kind === "workout" ? [{ index, reason: "plan_shrank" as const }] : [],
+            ),
+          }),
+        ),
+    });
+    renderRoute("/settings");
+    const list = await screen.findByRole("region", { name: "Refused entries" });
+    expect(list.textContent).toContain(
+      "Fewer exercises than the stored session (an exercise is never removed)",
+    );
+    cleanup();
+    await i18n.changeLanguage("fr");
+    renderRoute("/settings");
+    const liste = await screen.findByRole("region", { name: "Saisies refusées" });
+    expect(liste.textContent).toContain(
+      "Moins d'exercices que la séance enregistrée (un exercice n'est jamais retiré)",
+    );
+  });
+
   it("is not shown when the server refused nothing", async () => {
     signedIn(async () => Response.json({ redirectTo: idp }));
     await signOutButton();
