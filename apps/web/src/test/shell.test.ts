@@ -12,6 +12,8 @@ describe("app shell identity", () => {
     expect(logo).toContain(MARK);
     expect(logo).toContain('fill="#C2410C"');
     expect(logo).toContain("#FB923C");
+    // Cropped to the mark's 340 px width: it fills a 16 px tab instead of 10.6 px of it.
+    expect(logo).toContain('viewBox="86 86 340 340"');
   });
 
   it("keeps the icon source with a chalk background", () => {
