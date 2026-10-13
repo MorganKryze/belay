@@ -331,7 +331,7 @@ function TrackingSection({ account }: { account: OpenAccount }) {
       </h2>
       <Link
         to="/settings/supplements"
-        className="flex min-h-12 items-center justify-between gap-2 rounded-field border border-border bg-card px-4 font-medium"
+        className="press-tint flex min-h-12 items-center justify-between gap-2 rounded-field border border-border bg-card px-4 font-medium"
       >
         {t("supplementsPage.title")}{" "}
         <span className="flex items-center gap-0.5 text-muted-foreground">

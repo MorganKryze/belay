@@ -152,7 +152,7 @@ export function TodayCard({
           <RowShell icon={Pill}>
             <Link
               to="/settings/supplements"
-              className="flex min-h-14 flex-1 items-center justify-between gap-2 font-semibold text-primary"
+              className="press-tint flex min-h-14 flex-1 items-center justify-between gap-2 font-semibold text-primary"
             >
               {t("today.addSupplements")}
               <ChevronRight aria-hidden className="size-5 shrink-0" />
@@ -296,7 +296,7 @@ function SessionRow({
       <Link
         to="/workout"
         search={{ start: code }}
-        className="flex min-h-14 min-w-0 flex-1 items-center justify-between gap-2 py-2 text-left"
+        className="press-tint flex min-h-14 min-w-0 flex-1 items-center justify-between gap-2 py-2 text-left"
       >
         <span className="flex min-w-0 flex-col">
           <span className="font-semibold">{sessionTitle(code, t)}</span>
@@ -338,7 +338,7 @@ function Row({
     <RowShell icon={icon}>
       <button
         type="button"
-        className="flex min-h-14 min-w-0 flex-1 items-center justify-between gap-2 py-2 text-left"
+        className="press-tint flex min-h-14 min-w-0 flex-1 items-center justify-between gap-2 py-2 text-left"
         onClick={onClick}
       >
         <span className="flex min-w-0 flex-col">

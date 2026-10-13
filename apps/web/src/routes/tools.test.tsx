@@ -31,6 +31,15 @@ describe("tools", () => {
     ]);
   });
 
+  it("tool rows tint on press", async () => {
+    renderRoute("/tools");
+    await screen.findByRole("heading", { name: "Tools", level: 1 });
+    const rows = screen
+      .getAllByRole("link")
+      .filter((a) => a.getAttribute("href")?.startsWith("/tools/"));
+    for (const row of rows) expect(row.className).toContain("press-tint");
+  });
+
   it("marks the Tools tab as current on a tool page", async () => {
     renderRoute("/tools/bmi");
     const nav = await screen.findByRole("navigation", { name: "Main" });

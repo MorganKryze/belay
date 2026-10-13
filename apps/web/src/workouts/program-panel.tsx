@@ -149,7 +149,7 @@ function SessionCard({
                 <Link
                   to="/exercises/$exerciseId"
                   params={{ exerciseId: slot.exerciseId }}
-                  className="flex min-h-14 flex-col justify-center py-2"
+                  className="press-tint flex min-h-14 flex-col justify-center py-2"
                 >
                   <span className="font-medium">{exerciseById(slot.exerciseId)?.name}</span>
                   <span className="text-[13px] text-muted-foreground">

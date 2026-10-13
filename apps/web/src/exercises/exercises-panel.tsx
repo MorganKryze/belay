@@ -320,7 +320,7 @@ function Row({ exercise: e }: { exercise: Exercise }) {
     <Link
       to="/exercises/$exerciseId"
       params={{ exerciseId: e.id }}
-      className="flex h-[72px] items-center gap-3 border-t border-border px-0.5"
+      className="press-tint flex h-[72px] items-center gap-3 border-t border-border px-0.5"
     >
       <BodyThumb primary={e.primary[0]!} secondary={e.secondary} />
       <span className="flex min-w-0 flex-1 flex-col">

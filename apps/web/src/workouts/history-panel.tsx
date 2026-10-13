@@ -84,7 +84,7 @@ function History({ account }: { account: OpenAccount }) {
     year: "numeric",
     timeZone: "UTC",
   }).format(new Date(Date.UTC(y, m - 1, 1)));
-  const line = "flex min-h-15 w-full items-center justify-between gap-3 py-2 text-left";
+  const line = "press-tint flex min-h-15 w-full items-center justify-between gap-3 py-2 text-left";
   return (
     <div className="flex flex-col gap-4">
       <button

@@ -44,7 +44,7 @@ export function Tools() {
                   <Link
                     to="/tools/$toolId"
                     params={{ toolId: id }}
-                    className="flex min-h-15 items-center gap-3 px-3 py-2"
+                    className="press-tint flex min-h-15 items-center gap-3 px-3 py-2"
                   >
                     <span className="grid size-9 shrink-0 place-items-center rounded-chip bg-primary-soft text-primary">
                       <Icon aria-hidden className="size-5" />

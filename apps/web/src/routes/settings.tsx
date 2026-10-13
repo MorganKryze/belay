@@ -244,7 +244,7 @@ function AccountSettings({ pending }: { pending: number | null }) {
       <h2 className={sectionTitle}>{t("settings.account")}</h2>
       <Link
         to="/settings/profile"
-        className="flex min-h-12 items-center justify-between rounded-field border border-border bg-card px-4 font-medium"
+        className="press-tint flex min-h-12 items-center justify-between rounded-field border border-border bg-card px-4 font-medium"
       >
         {t("profile.title")}
         <ChevronRight aria-hidden className="size-5 text-muted-foreground" />

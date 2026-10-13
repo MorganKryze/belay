@@ -78,6 +78,16 @@ describe("the weigh-in line and its sheet", () => {
   });
 });
 
+describe("Home's gesture rows", () => {
+  it("Home's gesture rows tint on press", async () => {
+    fakeApi({ me: ADA });
+    renderRoute("/");
+    for (const name of [/^Weigh-in/, /^Intake/]) {
+      expect((await line(name)).className).toContain("press-tint");
+    }
+  });
+});
+
 describe("the intake line and its sheet", () => {
   it("saves calories alone, then protein, and the line says both", async () => {
     fakeApi({ me: ADA });
