@@ -7,16 +7,15 @@ import {
   SUPPLEMENT_SUGGESTIONS,
 } from "@belay/shared/body/supplements";
 import type { SupplementRow } from "@belay/shared/sync/schema";
-import { Link } from "@tanstack/react-router";
-import { ChevronLeft, Ellipsis, Plus } from "lucide-react";
+import { Ellipsis, Plus } from "lucide-react";
 import { type FormEvent, useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { BackLink, PageHeader } from "@/components/page-header";
 import { FieldError } from "@/components/field-error";
 import { Button } from "@/components/ui/button";
 import { Toast, useWriter } from "@/components/weigh-in";
 import { type OpenAccount, useAccount, useSupplements } from "@/sync/account";
 
-const back = "-ml-1 inline-flex min-h-11 items-center gap-0.5 font-medium text-primary";
 const sectionTitle = "mx-0.5 text-xs font-semibold tracking-wider text-muted-foreground uppercase";
 const field = "field w-full min-w-0 px-4 text-base";
 
@@ -34,19 +33,15 @@ export function Supplements() {
   const account = useAccount();
   return (
     <section className="flex flex-col gap-4">
-      <div>
-        <Link to="/settings" activeOptions={{ exact: true }} className={back}>
-          <ChevronLeft aria-hidden className="size-5" />
-          {t("settings.title")}
-        </Link>
-        <h1
-          tabIndex={-1}
-          data-focus-fallback
-          className="text-[26px] leading-tight font-bold tracking-tight outline-none"
-        >
-          {t("supplementsPage.title")}
-        </h1>
-      </div>
+      <PageHeader
+        title={t("supplementsPage.title")}
+        focusFallback
+        back={
+          <BackLink to="/settings" activeOptions={{ exact: true }}>
+            {t("settings.title")}
+          </BackLink>
+        }
+      />
       {account.kind === "open" && <SupplementList account={account} />}
       {account.kind === "unavailable" && <p>{t("account.unavailable")}</p>}
       {account.kind === "signed-out" && (

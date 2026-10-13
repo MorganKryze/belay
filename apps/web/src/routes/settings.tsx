@@ -7,6 +7,7 @@ import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 import { toISODate } from "@belay/shared/body/dates";
 import type { Change } from "@belay/shared/sync/schema";
+import { BackLink, PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
@@ -42,7 +43,7 @@ export function Settings() {
 
   return (
     <section className="flex flex-1 flex-col gap-6">
-      <h1 className="text-3xl font-semibold">{t("settings.title")}</h1>
+      <PageHeader title={t("settings.title")} back={<BackLink to="/">{t("nav.home")}</BackLink>} />
 
       <div className="flex flex-col gap-2">
         <Label htmlFor="language">{t("settings.language")}</Label>

@@ -3,9 +3,10 @@ import { exerciseById } from "@belay/shared/exercises/catalog";
 import { liveSets, summary } from "@belay/shared/training/rules";
 import { type Workout, type WorkoutSet } from "@belay/shared/training/workout";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
-import { ChevronLeft, PartyPopper } from "lucide-react";
+import { PartyPopper } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { BackLink, PageHeader } from "@/components/page-header";
 import { ActionSheet } from "@/components/action-sheet";
 import { Button } from "@/components/ui/button";
 import { formatNumber, formatWeekday, sessionTitle } from "@/lib/format";
@@ -15,7 +16,6 @@ import { formatDuration, recordText } from "@/workouts/format";
 import { dayOf } from "@/workouts/history-panel";
 import { NotFound } from "./fallbacks";
 
-const back = "-ml-1 inline-flex min-h-11 items-center gap-0.5 self-start font-medium text-primary";
 const card = "rounded-card border border-border bg-card";
 
 // A finished session (§4.4): its exercises and sets as they were done, its records and notes;
@@ -63,14 +63,14 @@ function Detail({ account }: { account: OpenAccount }) {
 
   return (
     <section className="flex flex-col gap-4">
-      <div className="flex flex-col">
-        <Link to="/workouts" search={{ tab: "history" }} className={back}>
-          <ChevronLeft aria-hidden className="size-5" />
-          {t("workouts.title")}
-        </Link>
-        <h1 className="text-[26px] leading-tight font-bold tracking-tight">
-          {sessionTitle(workout.sessionCode, t)}
-        </h1>
+      <PageHeader
+        title={sessionTitle(workout.sessionCode, t)}
+        back={
+          <BackLink to="/workouts" search={{ tab: "history" }}>
+            {t("workouts.title")}
+          </BackLink>
+        }
+      >
         <p className="text-sm text-muted-foreground">
           {formatWeekday(dayOf(workout), i18n.language, today)} ·{" "}
           {formatDuration(stats.durationMs, t)} · {t("history.workSets", { count: stats.workSets })}{" "}
@@ -79,7 +79,7 @@ function Detail({ account }: { account: OpenAccount }) {
             value: formatNumber(stats.volumeKg, i18n.language, { digits: 0 }),
           })}
         </p>
-      </div>
+      </PageHeader>
       {stats.records.map((r) => (
         <p
           key={r.exerciseId}
