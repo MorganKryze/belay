@@ -111,3 +111,25 @@ test("on a tab screen the offline banner keeps its top padding above the header"
   const title = (await page.getByRole("heading", { level: 1 }).boundingBox())!;
   expect(title.y).toBeGreaterThan(box.y + box.height);
 });
+
+// Long English names fill the bar: the compact title must truncate before the back label, centred.
+for (const id of ["ds:0025", "ds:0405", "ds:0410"]) {
+  test(`on ${id} the scrolled compact title stays centred and clear of the back label at 360 px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 360, height: 500 });
+    await page.goto(`/exercises/${id}`);
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    await scrollTo(page, 60);
+    const { back, title } = await page.evaluate(async () => {
+      await document.fonts.ready;
+      const box = (el: Element) => el.getBoundingClientRect().toJSON() as DOMRect;
+      return {
+        back: box(document.querySelector("main a[href^='/workouts']")!),
+        title: box(document.querySelector("[data-compact-title]")!),
+      };
+    });
+    expect(title.left - back.right).toBeGreaterThanOrEqual(8);
+    expect(Math.abs(title.left + title.width / 2 - 180)).toBeLessThanOrEqual(1);
+  });
+}

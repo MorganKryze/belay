@@ -26,11 +26,20 @@ export function PageHeader({
           title sits 2 px under the bar. */}
       <div className="sticky top-0 z-20 -mb-3.5 mr-[calc(-1*max(1rem,env(safe-area-inset-right)))] ml-[calc(-1*max(1rem,env(safe-area-inset-left)))] pt-[env(safe-area-inset-top)]">
         <div aria-hidden className="absolute inset-0 glass border-b border-border fold-in" />
-        <div className="relative grid h-11 grid-cols-[1fr_minmax(0,auto)_1fr] items-center px-1.5">
-          <div className="justify-self-start">{back}</div>
-          <p data-compact-title aria-hidden className="truncate text-title-compact fold-in">
+        {/* An invisible copy of the back link holds the right column at the same width, so the
+            compact title stays centred and truncates before it reaches the back label. */}
+        <div className="relative grid h-11 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-1.5">
+          <div>{back}</div>
+          <p
+            data-compact-title
+            aria-hidden
+            className="truncate text-center text-title-compact fold-in"
+          >
             {title}
           </p>
+          <div aria-hidden inert className="invisible">
+            {back}
+          </div>
         </div>
       </div>
       <div className="flex flex-col">
