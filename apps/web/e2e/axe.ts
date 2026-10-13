@@ -2,12 +2,14 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, type Page } from "@playwright/test";
 
 // Waits for every animation that ends (a sheet rising, a fade) to finish, so a measure reads the
-// page at rest. Looping ones (the loading arc) are left running; a cancelled one counts as done.
+// page at rest. Looping ones (the loading arc) are left running, and so are the ones scroll drives
+// (the header fold), which follow the page and never finish; a cancelled one counts as done.
 export async function settled(page: Page) {
   await page.evaluate(() =>
     Promise.all(
       document
         .getAnimations()
+        .filter((a) => a.timeline instanceof DocumentTimeline)
         .filter((a) => a.effect?.getComputedTiming().endTime !== Infinity)
         .map((a) => a.finished.catch(() => undefined)),
     ),
