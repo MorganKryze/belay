@@ -3,9 +3,11 @@ import type { Weighing } from "@belay/shared/body/weighings";
 import type { Change } from "@belay/shared/sync/schema";
 import { isRecordable } from "@belay/shared/sync/valid";
 import type { TFunction } from "i18next";
+import { CircleAlert } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { formatWeekday } from "@/lib/format";
+import { usePresence } from "@/lib/presence";
 import { type OpenAccount, useRecord } from "@/sync/account";
 
 // "Today", "Yesterday", then "Wed, Sep 30".
@@ -29,7 +31,12 @@ export function startingWeight(
   return last ? { kg: last.weightKg, prefilled: true } : { kg: null, prefilled: false };
 }
 
-export type ToastState = { id: number; text: string; undo: () => Promise<boolean> };
+export type ToastState = {
+  id: number;
+  text: string;
+  undo?: () => Promise<boolean>;
+  error?: boolean;
+};
 // Changes without their time: the time is taken when they are written.
 export type Entry = Change extends infer C ? (C extends Change ? Omit<C, "at"> : never) : never;
 
@@ -72,7 +79,7 @@ export function useWriter(account: OpenAccount) {
           await record(previous.map((e) => ({ ...e, at }) as Change));
           return true;
         } catch {
-          setToast((current) => current && { ...current, text: failed });
+          setToast((current) => current && { id: current.id, text: failed, error: true });
           return false;
         }
       };
@@ -90,26 +97,35 @@ export function useWriter(account: OpenAccount) {
   };
 }
 
-// Above the tab bar; mounted for good so the message is announced.
+// Above the tab bar on a phone, centred near the bottom from 1 024 px; mounted for good so the
+// message is announced. The card stays drawn while it fades out.
 export function Toast({ toast, onDone }: { toast: ToastState | null; onDone: () => void }) {
   const { t } = useTranslation();
+  const { shown, leaving, onAnimationEnd } = usePresence(toast);
   return (
     <div
       role="status"
-      className="pointer-events-none fixed inset-x-0 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-20 mx-auto flex max-w-xl px-4"
+      className="pointer-events-none fixed inset-x-0 bottom-[var(--chrome-bottom,calc(5.5rem+env(safe-area-inset-bottom)))] z-20 mx-auto flex max-w-xl px-4 lg:bottom-6 lg:w-[400px] lg:px-0"
     >
-      {toast && (
-        <div className="pointer-events-auto flex w-full items-center justify-between gap-3 rounded-field bg-foreground py-1 pr-1 pl-4 text-background shadow-lg">
-          <span>{toast.text}</span>
-          <button
-            type="button"
-            className="min-h-11 rounded-chip px-3 font-bold text-toast-action"
-            onClick={() => {
-              void toast.undo().then((ok) => ok && onDone());
-            }}
-          >
-            {t("weighIn.undo")}
-          </button>
+      {shown && (
+        <div
+          key={shown.id}
+          onAnimationEnd={onAnimationEnd}
+          className={`pointer-events-auto flex w-full flex-wrap items-center justify-end gap-x-3 rounded-field bg-foreground py-1 pr-1 pl-4 text-body text-background shadow-float ${leaving ? "animate-fade-out" : "animate-rise-in"}`}
+        >
+          {shown.error && <CircleAlert aria-hidden className="size-5 shrink-0 text-toast-icon" />}
+          <span className="min-w-0 grow py-2.5">{shown.text}</span>
+          {shown.undo && !shown.error && (
+            <button
+              type="button"
+              className="min-h-11 min-w-11 rounded-chip px-3 font-bold text-toast-action"
+              onClick={() => {
+                void shown.undo?.().then((ok) => ok && onDone());
+              }}
+            >
+              {t("weighIn.undo")}
+            </button>
+          )}
         </div>
       )}
     </div>
