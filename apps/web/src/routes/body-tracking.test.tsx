@@ -4,6 +4,7 @@ import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/re
 import { IDBFactory } from "fake-indexeddb";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import i18n from "../i18n";
+import { motion } from "../lib/motion";
 import { openAccountDb, readAnnotations, readMeasures, readOutbox } from "../sync/db";
 import { writeLastUser } from "../sync/last-user";
 import { fakeApi } from "../test/fake-api";
@@ -47,6 +48,7 @@ afterEach(async () => {
   localStorage.clear();
   vi.useRealTimers();
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
   await i18n.changeLanguage("en");
 });
 
@@ -237,6 +239,30 @@ describe("the measurements sheet", () => {
     expect(await within(history).findByText("waist 82 cm ·")).toBeTruthy();
     expect(within(history).getByText("neck 39.5 cm")).toBeTruthy();
     expect(within(history).getByText("79.8 kg")).toBeTruthy(); // the weight stays with the day
+  });
+
+  it("saved measures show on Body before the sheet leaves", async () => {
+    vi.spyOn(motion, "exitWillAnimate").mockReturnValue(true);
+    // Hold the sheet's 400 ms fallback, so the slow test machine cannot end the exit early.
+    const timeout = globalThis.setTimeout;
+    vi.spyOn(globalThis, "setTimeout").mockImplementation(((
+      fn: () => void,
+      ms?: number,
+      ...args: unknown[]
+    ) => (ms === 400 ? 0 : timeout(fn, ms, ...args))) as typeof setTimeout);
+    await open([]);
+    fireEvent.click(screen.getByRole("button", { name: "Measurements" }));
+    const sheet = await screen.findByRole("dialog", { name: "Measurements" });
+    fireEvent.change(within(sheet).getByRole("textbox", { name: "Waist" }), {
+      target: { value: "82" },
+    });
+    fireEvent.click(within(sheet).getByRole("button", { name: "Save" }));
+    // Only the history writes this line; a text query sees it under the open dialog.
+    expect(await screen.findByText("waist 82 cm")).toBeTruthy();
+    const leaving = screen.getByRole("dialog", { hidden: true });
+    expect(leaving.getAttribute("data-state")).toBe("closed");
+    fireEvent.animationEnd(leaving);
+    expect(screen.queryByRole("dialog", { hidden: true })).toBeNull();
   });
 
   it("refuses a waist outside 40 to 200 cm", async () => {

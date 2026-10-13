@@ -4,6 +4,7 @@ import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/re
 import { IDBFactory } from "fake-indexeddb";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import i18n from "../i18n";
+import { motion } from "../lib/motion";
 import { openAccountDb, readIntake, readOutbox, readSupplementLogs } from "../sync/db";
 import { writeLastUser } from "../sync/last-user";
 import { fakeApi } from "../test/fake-api";
@@ -22,6 +23,7 @@ afterEach(async () => {
   localStorage.clear();
   vi.useRealTimers();
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
   await i18n.changeLanguage("en");
 });
 
@@ -45,6 +47,36 @@ const tick = (supplementId: string, date: string): Change => ({
 });
 const db = () => openAccountDb(ADA.id);
 const line = (name: RegExp) => screen.findByRole("button", { name });
+
+describe("the weigh-in line and its sheet", () => {
+  it("a saved weigh-in shows on Home before its sheet starts leaving", async () => {
+    vi.spyOn(motion, "exitWillAnimate").mockReturnValue(true);
+    // Hold the sheet's 400 ms fallback, so the slow test machine cannot end the exit early.
+    const timeout = globalThis.setTimeout;
+    vi.spyOn(globalThis, "setTimeout").mockImplementation(((
+      fn: () => void,
+      ms?: number,
+      ...args: unknown[]
+    ) => (ms === 400 ? 0 : timeout(fn, ms, ...args))) as typeof setTimeout);
+    fakeApi({ me: ADA });
+    renderRoute("/");
+    fireEvent.click(await line(/^Weigh-in/));
+    const sheet = await screen.findByRole("dialog", { name: "Weigh-in" });
+    fireEvent.change(within(sheet).getByRole("textbox", { name: "Weight" }), {
+      target: { value: "80.5" },
+    });
+    fireEvent.click(within(sheet).getByRole("button", { name: "Save" }));
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /^Weigh-in/, hidden: true }).textContent).toContain(
+        "80.5 kg · saved",
+      ),
+    );
+    const leaving = screen.getByRole("dialog", { hidden: true });
+    expect(leaving.getAttribute("data-state")).toBe("closed");
+    fireEvent.animationEnd(leaving);
+    expect(screen.queryByRole("dialog", { hidden: true })).toBeNull();
+  });
+});
 
 describe("the intake line and its sheet", () => {
   it("saves calories alone, then protein, and the line says both", async () => {

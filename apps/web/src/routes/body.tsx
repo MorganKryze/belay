@@ -134,13 +134,16 @@ function BodyContent({
   const { weighings, target, measures, intake, supplements, logs, annotations } = data;
   const [period, setPeriod] = useState<Period>("month");
   const [open, setOpen] = useState<Open | null>(null);
+  // A saved sheet plays its exit over the screen that already shows the record.
+  const [leaving, setLeaving] = useState(false);
   const { write, toast, error, clearError, dismiss } = useWriter(account);
   const close = () => {
     setOpen(null);
+    setLeaving(false);
     clearError();
   };
   const save = async (entries: Entry[], previous: Entry[], text: string) => {
-    if (await write(entries, previous, text)) setOpen(null);
+    if (await write(entries, previous, text)) setLeaving(true);
   };
   const weightEntry = (date: ISODate, weightKg: number | null): Entry => ({
     kind: "weight",
@@ -332,6 +335,7 @@ function BodyContent({
       {open?.sheet === "weighIn" && (
         <WeighInSheet
           onClose={close}
+          open={!leaving}
           weighings={weighings}
           today={today}
           date={open.date}
@@ -344,6 +348,7 @@ function BodyContent({
       {open?.sheet === "measures" && (
         <MeasuresSheet
           onClose={close}
+          open={!leaving}
           measures={measures}
           today={today}
           date={open.date}
@@ -363,6 +368,7 @@ function BodyContent({
           // A new key per annotation, so the form starts again from it.
           key={open.annotation?.id ?? "new"}
           onClose={close}
+          open={!leaving}
           annotation={open.annotation}
           today={today}
           onWrite={(entries, previous, deleted) =>

@@ -14,6 +14,7 @@ import { startingWeight } from "./weigh-in";
 // Lazy: its code (and the stepper's) loads the first time a sheet opens.
 export function WeighInSheet({
   onClose,
+  open,
   weighings,
   today,
   date,
@@ -23,6 +24,7 @@ export function WeighInSheet({
   error,
 }: {
   onClose: () => void;
+  open?: boolean;
   weighings: readonly Weighing[];
   today: ISODate;
   date: ISODate;
@@ -36,6 +38,7 @@ export function WeighInSheet({
     <Sheet
       title={t("today.weighIn")}
       onClose={onClose}
+      open={open}
       chip={<DayChip date={date} today={today} onChange={onDate} label={t("weighIn.date")} />}
     >
       <WeighInForm

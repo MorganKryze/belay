@@ -58,6 +58,8 @@ function History({ account }: { account: OpenAccount }) {
   const { write, toast, error, clearError, dismiss } = useWriter(account);
   const [logging, setLogging] = useState(false);
   const [opened, setOpened] = useState<ISODate | null>(null); // the day of the activity sheet
+  // A saved sheet plays its exit over the screen that already shows the record.
+  const [leaving, setLeaving] = useState(false);
   if (!history || !activities) return null;
   const finished = history.workouts
     .filter((w) => !w.removed && w.endedAt !== null)
@@ -73,6 +75,7 @@ function History({ account }: { account: OpenAccount }) {
     .sort((a, b) => (a.day === b.day ? 0 : a.day < b.day ? 1 : -1));
   const close = () => {
     setOpened(null);
+    setLeaving(false);
     clearError();
   };
   const [y, m] = month.split("-").map(Number) as [number, number];
@@ -169,6 +172,7 @@ function History({ account }: { account: OpenAccount }) {
         {opened && (
           <ActivitySheet
             onClose={close}
+            open={!leaving}
             activities={activities}
             steps={steps}
             today={today}
@@ -176,7 +180,7 @@ function History({ account }: { account: OpenAccount }) {
             onDate={setOpened}
             onWrite={(entries: Entry[], previous: Entry[], kind) =>
               void write(entries, previous, t(`today.activityToast.${kind}`)).then(
-                (ok) => ok && close(),
+                (ok) => ok && setLeaving(true),
               )
             }
             error={error}

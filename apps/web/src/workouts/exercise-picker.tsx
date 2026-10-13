@@ -23,11 +23,13 @@ export function ExercisePicker({
   history,
   onPick,
   onClose,
+  open,
 }: {
   replacing: Exercise | null; // null: an exercise added at the end
   history: History;
   onPick: (exercise: Exercise) => void;
   onClose: () => void;
+  open?: boolean;
 }) {
   const { t, i18n } = useTranslation();
   const [query, setQuery] = useState("");
@@ -59,6 +61,7 @@ export function ExercisePicker({
           : t("session.picker.addTitle")
       }
       onClose={onClose}
+      open={open}
     >
       {alternatives.length > 0 && (
         <section aria-labelledby="planned" className="flex flex-col">

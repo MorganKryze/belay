@@ -57,6 +57,7 @@ export type ActivityToast = "saved" | "deleted" | "stepsSaved" | "stepsDeleted";
 // that day reopens here, with Delete; several of them are listed to pick from.
 export function ActivitySheet({
   onClose,
+  open,
   activities,
   steps,
   today,
@@ -66,6 +67,7 @@ export function ActivitySheet({
   error,
 }: {
   onClose: () => void;
+  open?: boolean;
   activities: readonly Activity[];
   steps: readonly StepsLog[];
   today: ISODate;
@@ -81,6 +83,7 @@ export function ActivitySheet({
     <Sheet
       title={t("activitySheet.title")}
       onClose={onClose}
+      open={open}
       chip={<DayChip date={date} today={today} onChange={onDate} label={t("activitySheet.date")} />}
     >
       <Segmented

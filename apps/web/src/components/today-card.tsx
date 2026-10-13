@@ -72,17 +72,20 @@ export function TodayCard({
   const [open, setOpen] = useState<Gesture | null>(null);
   const [date, setDate] = useState<ISODate | null>(null); // null: today, whatever the clock says
   const [tickError, setTickError] = useState<string>();
+  // A saved sheet plays its exit over the screen that already shows the record.
+  const [leaving, setLeaving] = useState(false);
   const day = date ?? today;
   // "Today" is read when the person saves: the sheet may have been opened yesterday evening.
   const when = () => date ?? toISODate(new Date());
   const close = () => {
     setOpen(null);
+    setLeaving(false);
     setDate(null);
     clearError();
     setTickError(undefined);
   };
   const save = async (entries: Entry[], previous: Entry[], text: string) => {
-    if (await write(entries, previous, text)) close();
+    if (await write(entries, previous, text)) setLeaving(true);
   };
 
   const weighed = weighings.find((w) => w.date === today);
@@ -161,6 +164,7 @@ export function TodayCard({
         {open === "activity" && (
           <ActivitySheet
             onClose={close}
+            open={!leaving}
             activities={activities}
             steps={steps}
             today={today}
@@ -179,6 +183,7 @@ export function TodayCard({
         {open === "weighIn" && (
           <WeighInSheet
             onClose={close}
+            open={!leaving}
             weighings={weighings}
             today={today}
             date={day}
@@ -206,6 +211,7 @@ export function TodayCard({
         {open === "intake" && (
           <IntakeSheet
             onClose={close}
+            open={!leaving}
             logs={intake}
             today={today}
             date={day}
@@ -223,6 +229,7 @@ export function TodayCard({
         {open === "supplements" && (
           <SupplementsSheet
             onClose={close}
+            open={!leaving}
             supplements={supplements}
             logs={logs}
             today={today}

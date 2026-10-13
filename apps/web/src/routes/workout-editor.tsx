@@ -93,6 +93,8 @@ function Editor({
     () => new Set(rows.map((r) => r.slotIndex)),
   );
   const [picking, setPicking] = useState(false);
+  // A picked exercise is in the plan behind while the picker plays its exit.
+  const [leaving, setLeaving] = useState(false);
   const [error, setError] = useState<string>();
   const sessionCode = workout?.sessionCode ?? start!.code;
   const changes = editChanges({
@@ -122,9 +124,10 @@ function Editor({
     if (row) setRows((rs) => [...rs, row]);
   };
   const pick = (exercise: Exercise) => {
+    if (leaving) return;
     setPlan(appendSlot(plan, exercise));
     setOpened((o) => new Set(o).add(plan.length));
-    setPicking(false);
+    setLeaving(true);
   };
   const save = async () => {
     // The clock now: Save may come long after the screen was drawn.
@@ -206,7 +209,11 @@ function Editor({
           replacing={null}
           history={history}
           onPick={pick}
-          onClose={() => setPicking(false)}
+          open={!leaving}
+          onClose={() => {
+            setPicking(false);
+            setLeaving(false);
+          }}
         />
       )}
     </section>

@@ -143,6 +143,8 @@ function Screen({
   const [finishing, setFinishing] = useState(false);
   // The exercise picker: for a slot to replace, or for one added at the end.
   const [picking, setPicking] = useState<{ slotIndex: number } | "add" | null>(null);
+  // A picked exercise is in the plan behind while the picker plays its exit.
+  const [leaving, setLeaving] = useState(false);
   const [saveError, setError] = useState<string>();
   const error = saveError ?? failed;
   const plan = workout.plan;
@@ -206,12 +208,12 @@ function Screen({
     );
   };
   const pick = (exercise: Exercise) => {
-    if (picking === null) return;
+    if (picking === null || leaving) return;
     const target = picking === "add" ? plan.length : picking.slotIndex;
     editPlan((stored) =>
       picking === "add" ? appendSlot(stored, exercise) : replaceSlot(stored, target, exercise),
     );
-    setPicking(null);
+    setLeaving(true);
     setToggled((m) => new Map(m).set(target, true));
   };
 
@@ -402,7 +404,11 @@ function Screen({
           }
           history={history}
           onPick={pick}
-          onClose={() => setPicking(null)}
+          open={!leaving}
+          onClose={() => {
+            setPicking(null);
+            setLeaving(false);
+          }}
         />
       )}
       {active.restEndsAt && (

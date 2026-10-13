@@ -27,12 +27,14 @@ export function LogSessionSheet({
   workouts,
   activities,
   onClose,
+  open,
   onOpen,
 }: {
   today: ISODate;
   workouts: readonly Workout[];
   activities: readonly Activity[];
   onClose: () => void;
+  open?: boolean;
   onOpen: (code: string, date: ISODate, minutes: number) => void;
 }) {
   const { t } = useTranslation();
@@ -45,6 +47,7 @@ export function LogSessionSheet({
     <Sheet
       title={t("history.log.title")}
       onClose={onClose}
+      open={open}
       chip={<DayChip date={date} today={today} onChange={setDate} label={t("history.log.date")} />}
     >
       <div className="flex flex-col gap-1.5">

@@ -28,6 +28,7 @@ export function creatineDay(
 // once, with no button. Belay notes, it never advises (D2).
 export function SupplementsSheet({
   onClose,
+  open,
   supplements,
   logs,
   today,
@@ -37,6 +38,7 @@ export function SupplementsSheet({
   error,
 }: {
   onClose: () => void;
+  open?: boolean;
   supplements: readonly SupplementRow[];
   logs: readonly SupplementLogRow[];
   today: ISODate;
@@ -70,6 +72,7 @@ export function SupplementsSheet({
     <Sheet
       title={t("today.supplements")}
       onClose={onClose}
+      open={open}
       chip={<DayChip date={date} today={today} onChange={onDate} label={t("supplements.date")} />}
     >
       <ul className="flex flex-col">
