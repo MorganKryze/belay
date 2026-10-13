@@ -23,8 +23,10 @@ export function TopBar({ name }: { name?: string }) {
   return (
     <header className="sticky top-0 z-30 hidden h-(--top-bar) [view-transition-name:top-bar] items-center border-b border-border bg-surface px-6 lg:flex">
       <div className="mx-auto flex w-full max-w-5xl items-center gap-6">
+        {/* The brand and the sections change section like the dock does: no page transition. */}
         <Link
           to="/"
+          viewTransition={false}
           className="flex min-h-11 items-center gap-2 text-title-compact text-foreground"
         >
           <svg aria-hidden="true" viewBox="86 86 340 340" className="size-7 shrink-0 text-primary">
@@ -42,6 +44,7 @@ export function TopBar({ name }: { name?: string }) {
                 {/* As in the dock, aria-current comes from tabIndexOf alone. */}
                 <Link
                   to={to}
+                  viewTransition={false}
                   activeOptions={{ exact: true, includeSearch: false }}
                   aria-current={i === active ? "page" : undefined}
                   className={

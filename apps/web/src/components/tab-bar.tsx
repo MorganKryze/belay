@@ -57,9 +57,11 @@ export function TabBar({ above }: { above?: ReactNode }) {
           {TABS.map(({ to, label, Icon }, i) => (
             <li key={to}>
               {/* Exact matching keeps the router from marking a tab on its own: on deeper pages
-                  aria-current comes from tabIndexOf alone. */}
+                  aria-current comes from tabIndexOf alone. A tab change is never a step back,
+                  even from a deeper page, so it runs no page transition. */}
               <Link
                 to={to}
+                viewTransition={false}
                 activeOptions={{ exact: true, includeSearch: false }}
                 aria-current={i === active ? "page" : undefined}
                 className={i === active ? `${tab} font-bold text-primary-ink` : tab}

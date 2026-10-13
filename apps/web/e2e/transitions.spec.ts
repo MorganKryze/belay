@@ -108,6 +108,33 @@ test("a tab switch runs no page animation", async ({ page }) => {
   expect(await played(page)).toEqual([]);
 });
 
+// Two frames: a transition the click started has resolved `ready` by then and been recorded.
+const frames = (page: Page) =>
+  page.evaluate(
+    () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => r(null)))),
+  );
+
+test("a tab switch from a pushed page runs no page animation", async ({ page }) => {
+  await recordTransitions(page);
+  await openPlates(page);
+  await expect.poll(async () => (await played(page)).length).toBe(1);
+  await page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Body" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Body" })).toBeVisible();
+  await frames(page);
+  expect((await played(page)).map((p) => p.types)).toEqual([["push"]]);
+});
+
+test("a top bar section from Réglages runs no page animation", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await recordTransitions(page);
+  await page.goto("/settings");
+  await expect(page.getByRole("heading", { level: 1, name: "Settings" })).toBeVisible();
+  await page.getByRole("banner").getByRole("link", { name: "Sessions" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Sessions" })).toBeVisible();
+  await frames(page);
+  expect(await played(page)).toEqual([]);
+});
+
 test("the session rises as a cover in 450 ms and leaves in 260 ms", async ({ page }) => {
   await page.unroute("**/api/me");
   await fakeServer(page);
