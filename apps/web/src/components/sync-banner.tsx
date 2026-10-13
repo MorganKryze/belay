@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useOnline } from "@/lib/online";
 import { type OpenAccount, usePending, useRejected, useSyncStatus } from "@/sync/account";
 
-const box = "flex items-start gap-2.5 rounded-field p-3 text-sm";
+const box = "flex animate-drop-in items-start gap-2.5 rounded-field p-3 text-sm";
 
 // Nothing when everything is sent, or offline with nothing waiting (§4.6). Mounted for good, so
 // a screen reader hears it appear.

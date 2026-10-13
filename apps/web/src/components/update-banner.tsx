@@ -12,7 +12,7 @@ export function UpdateBanner() {
   return (
     <div role="status" className={ready ? undefined : "sr-only"}>
       {ready && (
-        <div className="flex items-center gap-2.5 rounded-field bg-track p-3 text-sm">
+        <div className="flex animate-drop-in items-center gap-2.5 rounded-field bg-track p-3 text-sm">
           <CircleArrowUp aria-hidden className="size-5 shrink-0" />
           <p className="flex-1 font-semibold">{t("update.available")}</p>
           <Button variant="secondary" onClick={reloadToUpdate}>

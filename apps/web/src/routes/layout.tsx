@@ -57,7 +57,10 @@ function Shell() {
       }`}
     >
       {/* Mounted for good and filled when offline, so the change is announced. */}
-      <p role="status" className={offline ? "rounded-chip bg-track p-3 text-sm" : "sr-only"}>
+      <p
+        role="status"
+        className={offline ? "animate-drop-in rounded-chip bg-track p-3 text-sm" : "sr-only"}
+      >
         {offline ? t("offline") : ""}
       </p>
       <UpdateBanner />
