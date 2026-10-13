@@ -31,7 +31,7 @@ function Drawer({
           {aside}
           <ChevronRight
             aria-hidden
-            className="size-4 transition-transform duration-(--dur-fast) ease-out group-open:rotate-90"
+            className="size-4 transition-transform duration-(--tint-duration) ease-out group-open:rotate-90"
           />
         </span>
       </summary>

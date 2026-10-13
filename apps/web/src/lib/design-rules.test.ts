@@ -126,6 +126,19 @@ describe("design rules", () => {
     expect(reduced.get("--tint-duration")).toBe("0s");
   });
 
+  it("every transition duration a component names goes to 0s with reduced motion, unless it only fades", () => {
+    const reduced = declarations(block(CSS, "@media (prefers-reduced-motion: reduce)"));
+    const found = sourceFiles().flatMap((file) =>
+      (readFileSync(file, "utf8").match(/"[^"\n]*"|`[^`]*`/g) ?? []).flatMap((list) => {
+        const fadesOnly = /(?<![\w-])transition-opacity(?![\w-])/.test(list);
+        return [...list.matchAll(/\bduration-\((--[\w-]+)\)/g)]
+          .filter((m) => !fadesOnly && reduced.get(m[1]!) !== "0s")
+          .map((m) => `${file}: ${m[0]}`);
+      }),
+    );
+    expect(found).toEqual([]);
+  });
+
   it("press scales by the press and release tokens on the nav curve; rows only tint", () => {
     const press = block(CSS, "@utility press {");
     expect(press).toMatch(/transition:\s*transform var\(--dur-release\) var\(--ease-nav\)/);
