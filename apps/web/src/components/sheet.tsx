@@ -99,6 +99,9 @@ export function Sheet({
           <Dialog.Content
             ref={exit.contentRef}
             onAnimationEnd={exit.onAnimationEnd}
+            // A leaving card takes no tap nor key: a second Save during the exit would write
+            // again and leave Undo with the first save as its "before".
+            inert={!exit.dialogOpen}
             aria-describedby={undefined}
             onOpenAutoFocus={(e) => {
               opener.current = document.activeElement as HTMLElement | null;

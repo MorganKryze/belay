@@ -105,6 +105,16 @@ describe("Sheet", () => {
     expect(screen.queryByRole("dialog", { hidden: true })).toBeNull();
   });
 
+  it("takes no more input while it leaves", () => {
+    vi.spyOn(motion, "exitWillAnimate").mockReturnValue(true);
+    openSheet({ onClose: vi.fn() });
+    const dialog = screen.getByRole("dialog");
+    expect(dialog.hasAttribute("inert")).toBe(false);
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+    // A second tap or Enter on Save during the exit would write again over the first save.
+    expect(screen.getByRole("dialog", { hidden: true }).hasAttribute("inert")).toBe(true);
+  });
+
   it("closes within 400 ms when the exit never ends", () => {
     vi.useFakeTimers();
     vi.spyOn(motion, "exitWillAnimate").mockReturnValue(true);

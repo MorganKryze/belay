@@ -89,6 +89,42 @@ test("closing runs 260 ms down and a 200 ms overlay before the sheet leaves", as
   await expect(page.getByRole("button", { name: /^Intake/ })).toBeFocused();
 });
 
+test("a second tap on Save while the sheet leaves writes nothing, and Undo brings back the first value", async ({
+  page,
+}) => {
+  await fakeServer(page, { rows: [...WEEKS, { date: "2026-10-07", weightKg: 81.2 }] });
+  await page.goto("/");
+  const line = page.getByRole("button", { name: /^Weigh-in/ });
+  await expect(line).toContainText("81.2 kg");
+  await line.click();
+  const sheet = page.getByRole("dialog", { name: "Weigh-in" });
+  await sheet.getByRole("textbox", { name: "Weight" }).fill("80.5");
+  // Saves, then taps the same spot as soon as the card turns closed, through the page's own hit
+  // test, the way a finger lands during the exit.
+  const hitSave = await page.evaluate(async () => {
+    const dialog = document.querySelector<HTMLElement>("[role=dialog]")!;
+    const save = [...dialog.querySelectorAll("button")].find((b) => b.textContent === "Save")!;
+    const box = save.getBoundingClientRect();
+    const turned = new Promise<void>((resolve) =>
+      new MutationObserver((_, observer) => {
+        observer.disconnect();
+        resolve();
+      }).observe(dialog, { attributeFilter: ["data-state"] }),
+    );
+    save.click();
+    await turned;
+    const hit = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2);
+    const button = hit?.closest("button");
+    button?.click();
+    return button === save;
+  });
+  expect(hitSave).toBe(false);
+  await expect(sheet).toBeHidden();
+  await expect(line).toContainText("80.5 kg");
+  await page.getByRole("button", { name: "Undo" }).click();
+  await expect(line).toContainText("81.2 kg");
+});
+
 test.describe("on a computer", () => {
   test.use({ viewport: { width: 1280, height: 800 } });
 
