@@ -12,7 +12,10 @@ describe("FieldError", () => {
     expect(alert.id).toBe("waist-error");
     expect(alert.textContent).toBe("Your waist must be larger than your neck.");
     expect(alert.className).toContain("text-foreground");
-    expect(alert.className).toContain("text-secondary");
+    // `text-secondary` resolves to the track colour, since the colour token wins the name.
+    expect(alert.className).toMatch(/\btext-\(length:--text-secondary\)/);
+    expect(alert.className).toMatch(/\bleading-\(--text-secondary--line-height\)/);
+    expect(alert.className.split(/\s+/)).not.toContain("text-secondary");
     const icon = alert.querySelector("svg")!;
     expect(icon.getAttribute("aria-hidden")).toBe("true");
     expect(icon.getAttribute("class")).toContain("size-4");
