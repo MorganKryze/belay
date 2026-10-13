@@ -63,6 +63,17 @@ describe("ActionSheet", () => {
       expect(classesOf(c)).toEqual(expect.arrayContaining(["bg-surface", "rounded-group"]));
   });
 
+  it("a busy Supprimer stays readable, without opacity", () => {
+    renderSheet({ busy: true });
+    const confirm = screen.getByRole("button", { name: "Delete" });
+    expect((confirm as HTMLButtonElement).disabled).toBe(true);
+    const classes = classesOf(confirm);
+    expect(classes.filter((c) => c.includes("opacity"))).toEqual([]);
+    expect(classes).toEqual(
+      expect.arrayContaining(["disabled:bg-track", "disabled:text-muted-foreground"]),
+    );
+  });
+
   it("draws the focus ring inside each row, where the rounded card cannot clip it", () => {
     renderSheet();
     for (const name of ["Delete", "Cancel"]) {

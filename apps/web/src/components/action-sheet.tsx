@@ -73,10 +73,12 @@ export function ActionSheet({
                   {body}
                 </Dialog.Description>
               </div>
+              {/* While the removal is written the row reads as the charter's disabled control, track
+                  fill and muted text, so the word stays legible. */}
               <button
                 type="button"
                 disabled={busy}
-                className={`${row} text-destructive disabled:opacity-50`}
+                className={`${row} text-destructive disabled:bg-track disabled:text-muted-foreground`}
                 onClick={() => {
                   onConfirm();
                   exit.request();
