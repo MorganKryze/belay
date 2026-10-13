@@ -7,8 +7,10 @@ test.beforeEach(async ({ page }) => {
 // Short enough that the tools list scrolls well past 60 px.
 const scrollsFar = (page: Page) => page.setViewportSize({ width: 390, height: 500 });
 
+// Measured once the fonts are in, so a late font never reads as the title changing size.
 const state = (page: Page) =>
-  page.evaluate(() => {
+  page.evaluate(async () => {
+    await document.fonts.ready;
     const h1 = document.querySelector("main h1")!;
     const compact = document.querySelector("[data-compact-title]")!;
     const box = (el: Element) => {
@@ -23,8 +25,12 @@ const state = (page: Page) =>
     };
   });
 
+// Measured once the fonts are in, as they change the page's height.
 const scrollRange = (page: Page) =>
-  page.evaluate(() => document.documentElement.scrollHeight - window.innerHeight);
+  page.evaluate(async () => {
+    await document.fonts.ready;
+    return document.documentElement.scrollHeight - window.innerHeight;
+  });
 
 const scrollTo = async (page: Page, y: number) => {
   await page.evaluate((top) => window.scrollTo(0, top), y);
@@ -82,7 +88,9 @@ test("a page that scrolls less than 44 px still folds all the way at its bottom"
   expect(range).toBeLessThan(44);
   const top = await state(page);
   expect([top.large, top.compact, top.fill]).toEqual([1, 0, 0]);
-  await scrollTo(page, range);
+  // Past the end: the browser stops at the bottom, wherever late content puts it.
+  await scrollTo(page, 1000);
+  expect(await page.evaluate(() => window.scrollY)).toBeLessThan(44);
   const bottom = await state(page);
   expect([bottom.large, bottom.compact, bottom.fill]).toEqual([0, 1, 1]);
 });
