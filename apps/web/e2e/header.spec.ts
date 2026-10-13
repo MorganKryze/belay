@@ -94,3 +94,20 @@ test("a page that scrolls less than 44 px still folds all the way at its bottom"
   const bottom = await state(page);
   expect([bottom.large, bottom.compact, bottom.fill]).toEqual([0, 1, 1]);
 });
+
+test("on a tab screen the offline banner keeps its top padding above the header", async ({
+  page,
+  context,
+}) => {
+  await page.goto("/");
+  await expect(page.getByRole("heading", { level: 1, name: "Belay" })).toBeVisible();
+  await context.setOffline(true);
+  const banner = page.getByText("You're offline.", { exact: true });
+  await expect(banner).toBeVisible();
+  // Measured where the banner settles, after it drops in.
+  await banner.evaluate((el) => Promise.all(el.getAnimations().map((a) => a.finished)));
+  const box = (await banner.boundingBox())!;
+  expect(box.y).toBeGreaterThanOrEqual(16);
+  const title = (await page.getByRole("heading", { level: 1 }).boundingBox())!;
+  expect(title.y).toBeGreaterThan(box.y + box.height);
+});

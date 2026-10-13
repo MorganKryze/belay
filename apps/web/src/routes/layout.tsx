@@ -28,6 +28,7 @@ function Shell() {
   const { pathname } = useLocation();
   const fullScreen = /^\/workout(\/|$)/.test(pathname);
   // The tab screens' frosted header pads itself below the notch; other screens keep the padding.
+  // A banner sits above that header, so on a tab screen the padding comes back while one shows.
   const tabRoot = TAB_ROOTS.includes(pathname);
   // A client navigation lands focus on the new page's h1, so screen readers announce it. The
   // first load (no fromLocation) is left alone: the browser starts at the top already. A lazy
@@ -56,7 +57,9 @@ function Shell() {
   return (
     <div
       className={`mx-auto flex min-h-dvh max-w-xl flex-col gap-6 ${
-        tabRoot ? "" : "pt-[max(1rem,env(safe-area-inset-top))]"
+        tabRoot
+          ? "has-[>[role=status]:not(.sr-only)]:pt-[max(1rem,env(safe-area-inset-top))]"
+          : "pt-[max(1rem,env(safe-area-inset-top))]"
       } pr-[max(1rem,env(safe-area-inset-right))] pl-[max(1rem,env(safe-area-inset-left))] ${
         fullScreen
           ? "pb-[max(1rem,env(safe-area-inset-bottom))]"
