@@ -74,7 +74,10 @@ describe("Segmented", () => {
   it("rings the whole group on keyboard focus", () => {
     render(<Harness initial="w" />);
     const group = screen.getByRole("radiogroup").className;
-    expect(group).toMatch(/has-\[:focus-visible\]:outline-2/);
+    // Marked important, as the group's inline `outline: none` would win otherwise; the rendered
+    // ring is checked end to end.
+    expect(group).toMatch(/has-\[:focus-visible\]:outline-2!/);
+    expect(group).toMatch(/has-\[:focus-visible\]:outline-ring!/);
     for (const radio of screen.getAllByRole("radio"))
       expect(radio.className).toMatch(/\bfocus-visible:outline-none\b/);
   });

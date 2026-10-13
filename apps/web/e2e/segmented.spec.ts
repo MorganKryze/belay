@@ -26,3 +26,18 @@ for (const theme of ["light", "dark"] as const) {
     expect(violations.flatMap((v) => v.nodes.map((n) => n.target))).toEqual([]);
   });
 }
+
+test("the segmented group shows a focus ring while the keyboard moves the choice", async ({
+  page,
+}) => {
+  await page.goto("/tools/protein");
+  const group = page.getByRole("radiogroup", { name: "Your goal" });
+  await group.getByRole("radio", { checked: true }).focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(group.getByRole("radio", { name: "Cut" })).toBeFocused();
+  const ring = await group.evaluate((el) => {
+    const s = getComputedStyle(el);
+    return `${s.outlineStyle} ${s.outlineWidth}`;
+  });
+  expect(ring).toBe("solid 2px");
+});

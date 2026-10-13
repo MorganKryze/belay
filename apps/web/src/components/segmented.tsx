@@ -30,12 +30,14 @@ export function Segmented<T extends string>({
       <span id={id} className={labelHidden ? "sr-only" : `${type} font-semibold`}>
         {label}
       </span>
+      {/* The ring is marked important: the group sets an inline `outline: none` that would
+          otherwise hide it, and the items drop their own so the whole groove rings once. */}
       <RadioGroup.Root
         aria-labelledby={id}
         value={value ?? ""}
         onValueChange={(v) => onChange(v as T)}
         orientation="horizontal"
-        className="relative grid auto-cols-fr grid-flow-col gap-[3px] rounded-control bg-track p-[3px] has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ring"
+        className="relative grid auto-cols-fr grid-flow-col gap-[3px] rounded-control bg-track p-[3px] has-[:focus-visible]:outline-2! has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ring!"
       >
         {index >= 0 && (
           // One thumb slides between options; its width is one column of the groove (3 px padding
