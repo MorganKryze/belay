@@ -190,3 +190,20 @@ test("a pushed page opens at its top and Back restores the scroll", async ({ pag
   await expect(page.getByRole("heading", { level: 1, name: "Tools" })).toBeVisible();
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(scrolled);
 });
+
+test("the back chevron brings the list back where it was", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 500 });
+  await page.goto("/tools");
+  const bmi = page.getByRole("link", { name: /^BMI/ });
+  await bmi.scrollIntoViewIfNeeded();
+  const scrolled = await page.evaluate(() => window.scrollY);
+  expect(scrolled).toBeGreaterThan(100);
+  await bmi.click();
+  await expect(page.getByRole("heading", { level: 1, name: "BMI" })).toBeVisible();
+  const entries = await page.evaluate(() => history.length);
+  await page.locator("main").getByRole("link", { name: "Tools", exact: true }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Tools" })).toBeVisible();
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(scrolled);
+  // It went back: no entry stacked on top of the page.
+  expect(await page.evaluate(() => history.length)).toBe(entries);
+});

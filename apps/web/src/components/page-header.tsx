@@ -1,6 +1,7 @@
-import { createLink } from "@tanstack/react-router";
+import { createLink, useRouter } from "@tanstack/react-router";
 import { ChevronLeft } from "lucide-react";
 import { type ComponentProps, forwardRef, type ReactNode } from "react";
+import { previousHref } from "@/lib/back";
 import { cn } from "@/lib/utils";
 
 // The screen's title: a large h1 that fades as the page scrolls under a frosted bar, whose compact
@@ -58,14 +59,27 @@ export function PageHeader({
   );
 }
 
+// When the page before is the one the chevron names, it goes back: the router then finds that
+// page where it was left, and no entry piles up. Opened from a link or another page, it opens the
+// page it names as a new entry. A modified click keeps the browser's own meaning.
 const BackAnchor = forwardRef<HTMLAnchorElement, ComponentProps<"a">>(function BackAnchor(
-  { children, className, ...rest },
+  { children, className, onClick, ...rest },
   ref,
 ) {
+  const { history } = useRouter();
   return (
     <a
       ref={ref}
       {...rest}
+      onClick={(e) => {
+        const plain = e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey;
+        if (plain && rest.href !== undefined && rest.href === previousHref(history)) {
+          e.preventDefault();
+          history.back();
+          return;
+        }
+        onClick?.(e);
+      }}
       className={cn(
         "inline-flex min-h-11 min-w-11 items-center font-medium text-primary",
         className,

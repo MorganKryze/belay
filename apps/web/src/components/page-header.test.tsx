@@ -9,10 +9,11 @@ import {
   Outlet,
   RouterProvider,
 } from "@tanstack/react-router";
-import { cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { IDBFactory } from "fake-indexeddb";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import i18n from "../i18n";
+import { trackEntries } from "../lib/back";
 import { writeLastUser } from "../sync/last-user";
 import { expectTokensOnly } from "../test/design-rules";
 import { fakeApi } from "../test/fake-api";
@@ -64,6 +65,58 @@ describe("PageHeader", () => {
     expect(classes(back.querySelector("svg"))).toContain("size-6");
     const h1 = screen.getByRole("heading", { level: 1 });
     expect(back.compareDocumentPosition(h1) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  describe("the back chevron", () => {
+    function bmiRouter(entries: string[]) {
+      const root = createRootRoute({ component: Outlet });
+      const routes = ["/", "/tools", "/tools/bmi"].map((path) =>
+        createRoute({
+          getParentRoute: () => root,
+          path,
+          component: () =>
+            path === "/tools/bmi" ? (
+              <PageHeader title="BMI" back={<BackLink to="/tools">Tools</BackLink>} />
+            ) : (
+              <h1>{path}</h1>
+            ),
+        }),
+      );
+      const router = createRouter({
+        routeTree: root.addChildren(routes),
+        history: createMemoryHistory({ initialEntries: entries }),
+      });
+      trackEntries(router.history);
+      render(<RouterProvider router={router} />);
+      return router;
+    }
+    const index = (router: { history: { location: { state: { __TSR_index: number } } } }) =>
+      router.history.location.state.__TSR_index;
+
+    it("goes back when the page before is the one it names", async () => {
+      const router = bmiRouter(["/tools"]);
+      await screen.findByRole("heading", { name: "/tools" });
+      act(() => router.history.push("/tools/bmi"));
+      fireEvent.click(await screen.findByRole("link", { name: "Tools" }));
+      await screen.findByRole("heading", { name: "/tools" });
+      expect(index(router)).toBe(0);
+    });
+
+    it("opened from a link, it opens the page it names as a new entry", async () => {
+      const router = bmiRouter(["/tools/bmi"]);
+      fireEvent.click(await screen.findByRole("link", { name: "Tools" }));
+      await screen.findByRole("heading", { name: "/tools" });
+      expect(index(router)).toBe(1);
+    });
+
+    it("reached from another page, it opens the page it names as a new entry", async () => {
+      const router = bmiRouter(["/"]);
+      await screen.findByRole("heading", { name: "/" });
+      act(() => router.history.push("/tools/bmi"));
+      fireEvent.click(await screen.findByRole("link", { name: "Tools" }));
+      await screen.findByRole("heading", { name: "/tools" });
+      expect(index(router)).toBe(2);
+    });
   });
 
   it("keeps the trailing action on the right", () => {
