@@ -81,6 +81,11 @@ describe("SessionBar", () => {
       expect.arrayContaining(["hidden", "min-[390px]:block"]),
     );
     expect(short.className.split(/\s+/)).toContain("min-[390px]:hidden");
+    // The 13 px step, not the colour token that shares its name.
+    for (const line of [long, short]) {
+      expect(line.className.split(/\s+/)).toContain("text-(length:--text-secondary)");
+      expect(line.className.split(/\s+/)).not.toContain("text-secondary");
+    }
     expect(screen.getByText("Barbell hip thrust")).toBeTruthy();
     expect(link.getAttribute("href")).toBe("/workout?start=C");
     expect(link.className.split(/\s+/)).toContain("lg:hidden");

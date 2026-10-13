@@ -222,6 +222,22 @@ test("the running session sits above the tabs and reopens in one tap", async ({ 
   await expect(sessionBar(page)).toBeHidden();
 });
 
+test("the session bar's status line fits whole at 390 px, in the secondary size", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await fakeServer(page, { changes: RUNNING_C });
+  await page.goto("/tools");
+  const line = sessionBar(page).getByText("In progress · set 3 of 4 · Session C");
+  await expect(line).toBeVisible();
+  const { size, cut } = await line.evaluate((el) => ({
+    size: getComputedStyle(el).fontSize,
+    cut: el.scrollWidth > el.clientWidth,
+  }));
+  expect(size).toBe("13px");
+  expect(cut).toBe(false);
+});
+
 // Each new screen, as a person reaches it, for axe and for the 360 px check.
 const SCREENS: [string, (page: Page) => Promise<void>][] = [
   [

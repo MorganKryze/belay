@@ -28,6 +28,10 @@ export function SessionBar({
   const slot = next && workout.plan[next.slotIndex];
   const running = t("sessionBar.running");
   const letter = t("sessionBar.session", { code });
+  // The 13 px step: a bare `text-secondary` is the colour token of the same name. Muted through
+  // opacity, since no muted colour token reads on the foreground-coloured backing.
+  const status =
+    "truncate text-(length:--text-secondary) leading-(--text-secondary--line-height) opacity-80";
   return (
     <Link
       to="/workout"
@@ -42,14 +46,14 @@ export function SessionBar({
             <span className="truncate font-semibold">
               {exerciseById(slot.exerciseId)?.name ?? slot.exerciseId}
             </span>
-            <span className="hidden truncate text-secondary opacity-80 min-[390px]:block">
+            <span className={`hidden ${status} min-[390px]:block`}>
               {[
                 running,
                 t("sessionBar.setOf", { n: next.round + 1, total: slot.sets }),
                 letter,
               ].join(" · ")}
             </span>
-            <span className="truncate text-secondary opacity-80 min-[390px]:hidden">
+            <span className={`${status} min-[390px]:hidden`}>
               {[running, t("sessionBar.setShort", { n: next.round + 1, total: slot.sets })].join(
                 " · ",
               )}
@@ -58,7 +62,7 @@ export function SessionBar({
         ) : (
           <>
             <span className="truncate font-semibold">{letter}</span>
-            <span className="truncate text-secondary opacity-80">{running}</span>
+            <span className={status}>{running}</span>
           </>
         )}
       </span>
