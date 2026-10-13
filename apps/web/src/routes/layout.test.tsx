@@ -1,3 +1,5 @@
+import type { Change } from "@belay/shared/sync/schema";
+import { sessionByCode } from "@belay/shared/training/program";
 import { cleanup, fireEvent, screen, within } from "@testing-library/react";
 import { IDBFactory } from "fake-indexeddb";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -5,7 +7,7 @@ import i18n from "../i18n";
 import { writeLastUser } from "../sync/last-user";
 import { fakeApi } from "../test/fake-api";
 import { renderRoute } from "../test/render-route";
-import { ADA } from "../test/seed";
+import { ADA, seed } from "../test/seed";
 
 beforeEach(() => {
   indexedDB = new IDBFactory();
@@ -21,6 +23,23 @@ afterEach(async () => {
 const classes = (el: Element | null) => (el?.getAttribute("class") ?? "").split(/\s+/);
 const avatar = () => within(screen.getByRole("main")).getByRole("link", { name: "Settings" });
 const shell = () => screen.getByRole("main").parentElement!;
+const sessionBar = () => screen.queryByRole("link", { name: /In progress/ });
+
+// A session started a few minutes ago and still open.
+const OPEN = (): Change[] => {
+  const startedAt = new Date(Date.now() - 5 * 60_000).toISOString();
+  return [
+    {
+      kind: "workout",
+      id: "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d02",
+      field: "start",
+      sessionCode: "C",
+      plan: [...sessionByCode("C")!.slots],
+      startedAt,
+      at: startedAt,
+    },
+  ];
+};
 
 describe("the shell", () => {
   it("no tab bar on Réglages, Profil, Compléments and the session cover", async () => {
@@ -124,5 +143,52 @@ describe("the shell", () => {
     renderRoute("/settings");
     await screen.findByRole("heading", { level: 1, name: "Settings" });
     expect(classes(shell())).toContain("pb-[max(1rem,env(safe-area-inset-bottom))]");
+  });
+  it("shows the bar on a phone outside the cover while a session is open, never on the cover or without one", async () => {
+    writeLastUser(ADA);
+    fakeApi({ me: ADA });
+    renderRoute("/tools");
+    await screen.findByRole("heading", { level: 1, name: "Tools" });
+    await screen.findByRole("navigation", { name: "Main" });
+    expect(sessionBar()).toBeNull();
+    cleanup();
+
+    await seed(ADA.id, OPEN());
+    renderRoute("/tools");
+    const bar = await screen.findByRole("link", { name: /In progress/ });
+    expect(bar.getAttribute("href")).toBe("/workout?start=C");
+    expect(bar.closest("[data-dock]")).toBeTruthy();
+    expect(classes(bar)).toContain("lg:hidden");
+    cleanup();
+
+    renderRoute("/workout?start=C");
+    await screen.findByRole("heading", { level: 1, name: /Session C/ });
+    expect(sessionBar()).toBeNull();
+    cleanup();
+
+    renderRoute("/settings");
+    await screen.findByRole("heading", { level: 1, name: "Settings" });
+    expect(sessionBar()).toBeNull();
+  });
+
+  it("pads the page for the dock and the bar", async () => {
+    writeLastUser(ADA);
+    fakeApi({ me: ADA });
+    await seed(ADA.id, OPEN());
+    renderRoute("/tools");
+    await screen.findByRole("link", { name: /In progress/ });
+    expect(classes(shell())).toEqual(
+      expect.arrayContaining([
+        "[--chrome-bottom:calc(8.875rem+max(0.75rem,env(safe-area-inset-bottom)))]",
+        "pb-[calc(var(--chrome-bottom)+0.5rem)]",
+      ]),
+    );
+    expect(classes(document.querySelector("[data-dock]"))).toEqual(
+      expect.arrayContaining([
+        "bottom-0",
+        "glass",
+        "pb-[max(0.75rem,env(safe-area-inset-bottom))]",
+      ]),
+    );
   });
 });

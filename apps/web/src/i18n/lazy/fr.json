@@ -424,5 +424,11 @@
     "rir": "RIR de la série {{n}}",
     "removeSet": "Supprimer la série {{n}}",
     "removeWarmup": "Supprimer la montée {{n}}"
+  },
+  "sessionBar": {
+    "running": "En cours",
+    "setOf": "série {{n}} sur {{total}}",
+    "setShort": "série {{n}}/{{total}}",
+    "session": "Séance {{code}}"
   }
 }

@@ -424,5 +424,11 @@
     "rir": "RIR of set {{n}}",
     "removeSet": "Delete set {{n}}",
     "removeWarmup": "Delete warm-up {{n}}"
+  },
+  "sessionBar": {
+    "running": "In progress",
+    "setOf": "set {{n}} of {{total}}",
+    "setShort": "set {{n}}/{{total}}",
+    "session": "Session {{code}}"
   }
 }

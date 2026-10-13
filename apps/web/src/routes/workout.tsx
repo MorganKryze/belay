@@ -4,16 +4,16 @@ import { toISODate } from "@belay/shared/body/dates";
 import { exerciseById } from "@belay/shared/exercises/catalog";
 import type { Exercise } from "@belay/shared/exercises/library";
 import { appendSlot, planFor, replaceSlot, skipSlot } from "@belay/shared/training/plan";
-import { groupOf, plannedWorkSets, sessionByCode } from "@belay/shared/training/program";
+import { groupOf, sessionByCode } from "@belay/shared/training/program";
 import {
   type History,
   liveSets,
   type Load,
   nextTurn,
   restEndsAt,
+  sessionProgress,
   type Turn,
   turnKey,
-  turnOf,
 } from "@belay/shared/training/rules";
 import {
   MAX_SLOTS,
@@ -149,13 +149,8 @@ function Screen({
   const error = saveError ?? failed;
   const plan = workout.plan;
   const sets = liveSets(history).filter((s) => s.workoutId === workout.id);
-  // The planned work sets done (« + Série » past the plan aside), in the slots done today.
-  const work = sets.filter((s) => {
-    const slot = plan[s.slotIndex];
-    return !s.warmup && slot && !slot.skipped && s.position - MAX_WARMUPS < slot.sets;
-  });
-  const done = new Set(work.map((s) => turnKey(turnOf(s))));
-  const left = plannedWorkSets(plan) - done.size;
+  // The planned work sets done (« + Série » past the plan aside), and what comes next.
+  const { done, left, last: lastTurn, next } = sessionProgress(plan, sets);
   // The person's own bar and plates, from the Plates tool (D7).
   const bar = resolveEquipment(readToolState().equipment);
 
@@ -298,10 +293,6 @@ function Screen({
   };
 
   // The rest bar names what comes next: the next set of this exercise, or the next exercise.
-  const lastTurn = work.length
-    ? turnOf([...work].sort((a, b) => (a.doneAt < b.doneAt ? -1 : 1)).at(-1)!)
-    : undefined;
-  const next = nextTurn(plan, done, lastTurn);
   const restLabel =
     next === null
       ? t("session.restLast")

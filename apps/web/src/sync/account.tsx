@@ -201,10 +201,12 @@ export const usePending = (account: OpenAccount) =>
   });
 
 // Every session and set, for the shared rules (removed ones included: liveSets leaves them out).
-export const useHistory = (account: OpenAccount) =>
+// The shell asks in every account state: without an open account it waits, with no data.
+export const useHistory = (account: OpenAccount | null) =>
   useQuery({
-    queryKey: local(account, "history"),
-    queryFn: () => readHistory(account.db),
+    queryKey: account ? local(account, "history") : ["local", null, "history"],
+    queryFn: () => readHistory(account!.db),
+    enabled: account !== null,
     networkMode: "always",
   });
 

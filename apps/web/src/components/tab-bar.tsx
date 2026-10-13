@@ -1,6 +1,6 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import { Calculator, Dumbbell, House, PersonStanding } from "lucide-react";
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 const TABS = [
@@ -23,18 +23,25 @@ export function tabIndexOf(pathname: string): 0 | 1 | 2 | 3 | null {
 const tab =
   "flex min-h-12.5 flex-col items-center justify-center gap-0.5 rounded-card text-tab text-muted-foreground";
 
-export function TabBar() {
+// Floating on its own, or with the session bar above it: then one frosted backing runs from the
+// bar's top to the bottom edge, so no row of the page shows between the two.
+const floating =
+  "fixed right-[max(0.75rem,env(safe-area-inset-right))] bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-[max(0.75rem,env(safe-area-inset-left))] z-10 mx-auto max-w-xl";
+const backed =
+  "fixed inset-x-0 bottom-0 z-10 border-t border-border glass pt-2.5 pr-[max(0.75rem,env(safe-area-inset-right))] pb-[max(0.75rem,env(safe-area-inset-bottom))] pl-[max(0.75rem,env(safe-area-inset-left))]";
+
+export function TabBar({ above }: { above?: ReactNode }) {
   const { t } = useTranslation();
   const active = tabIndexOf(useLocation().pathname);
   return (
     // The wrapper is what fades under an open dialog (index.css).
-    <div
-      data-dock
-      className="fixed right-[max(0.75rem,env(safe-area-inset-right))] bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-[max(0.75rem,env(safe-area-inset-left))] z-10 mx-auto max-w-xl"
-    >
+    <div data-dock className={above ? backed : floating}>
+      {above && <div className="mx-auto mb-2 max-w-xl">{above}</div>}
       <nav
         aria-label={t("nav.label")}
-        className="relative rounded-bar border border-border glass p-1.5 shadow-float"
+        className={`relative mx-auto max-w-xl rounded-bar border border-border p-1.5 ${
+          above ? "bg-surface" : "glass shadow-float"
+        }`}
         style={{ "--tab-i": active ?? 0 } as CSSProperties}
       >
         {/* One pill for the bar, slid to the active column; its edge keeps the cue at 3:1 where

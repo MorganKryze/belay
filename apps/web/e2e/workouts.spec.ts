@@ -176,6 +176,52 @@ test("a session deleted from the history leaves it, here and on the server", asy
     .toBe(true);
 });
 
+// Session C started ten minutes ago, two sets of the hip thrust done: the third is up next.
+const RUNNING = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7f01";
+const TEN_AGO = new Date(NOW.getTime() - 10 * 60_000).toISOString();
+const RUNNING_C: Change[] = [
+  {
+    kind: "workout",
+    id: RUNNING,
+    field: "start",
+    sessionCode: "C",
+    plan: [...sessionByCode("C")!.slots],
+    startedAt: TEN_AGO,
+    at: TEN_AGO,
+  },
+  ...[0, 1].map((k): Change => ({
+    kind: "set",
+    id: `0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7f1${k}`,
+    workoutId: RUNNING,
+    field: "create",
+    slotIndex: 0,
+    position: 3 + k,
+    exerciseId: "belay:barbell-hip-thrust",
+    warmup: false,
+    weightKg: 80,
+    reps: 10,
+    rir: 1,
+    doneAt: TEN_AGO,
+    at: TEN_AGO,
+  })),
+];
+const sessionBar = (page: Page) =>
+  page.getByRole("link", { name: /^Barbell hip thrust In progress · set 3 of 4 · Session C/ });
+
+test("the running session sits above the tabs and reopens in one tap", async ({ page }) => {
+  await fakeServer(page, { changes: RUNNING_C });
+  await page.goto("/tools");
+  const bar = sessionBar(page);
+  await expect(bar).toBeVisible();
+  await expect(bar).toContainText("10:00");
+  const tabs = await page.getByRole("navigation", { name: "Main" }).boundingBox();
+  const box = await bar.boundingBox();
+  expect(box!.y + box!.height).toBeLessThanOrEqual(tabs!.y);
+  await bar.click();
+  await expect(page.getByRole("heading", { level: 1, name: /^Session C · / })).toBeVisible();
+  await expect(sessionBar(page)).toBeHidden();
+});
+
 // Each new screen, as a person reaches it, for axe and for the 360 px check.
 const SCREENS: [string, (page: Page) => Promise<void>][] = [
   [
@@ -333,6 +379,14 @@ test.describe("accessibility", () => {
         await expectNoAxeViolations(page);
       });
     }
+    test(`the session bar has no axe violation, ${theme}`, async ({ page }) => {
+      await page.addInitScript((t) => localStorage.setItem("belay.theme", t), theme);
+      await fakeServer(page, { changes: RUNNING_C });
+      await page.goto("/tools");
+      await expect(sessionBar(page)).toBeVisible();
+      if (theme === "dark") await expect(page.locator("html")).toHaveClass(/dark/);
+      await expectNoAxeViolations(page);
+    });
     test(`the remove-session action sheet has no axe violation, ${theme}`, async ({ page }) => {
       await page.addInitScript((t) => localStorage.setItem("belay.theme", t), theme);
       await fakeServer(page, { changes: LAST_A });
