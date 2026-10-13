@@ -207,6 +207,10 @@
     }
   }
   @keyframes sheet-out {
+    /* A sheet pulled down leaves from where the finger let it go. */
+    from {
+      transform: translateY(var(--swipe-y, 0));
+    }
     to {
       transform: translateY(100%);
     }
@@ -400,6 +404,9 @@
   --fold-out: fold-out linear both;
   /* The compact header's opacity when no timeline drives it: hidden until the page scrolls. */
   --fold-rest: 0;
+  /* A sheet let go short of closing slides back up from where it was left. */
+  --swipe-snap-transition: transform var(--dur-release) var(--ease-out);
+  --swipe-snap-from: 1;
 }
 
 /* On a computer the top bar holds the top of the screen, so the compact header pins under it. */
@@ -445,6 +452,8 @@
     --slide-duration: 0s;
     --tint-duration: 0s;
     --fade-duration: var(--dur-reduced);
+    --swipe-snap-transition: opacity var(--dur-reduced) var(--ease-out);
+    --swipe-snap-from: 0;
   }
 }
 

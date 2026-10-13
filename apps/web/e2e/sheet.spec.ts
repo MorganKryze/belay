@@ -186,3 +186,112 @@ test.describe("in French on a 360 px phone", () => {
     expect(overflow).toBe(0);
   });
 });
+
+// A finger on the card: down near its top, a move every 50 ms (slow enough to never be a flick),
+// then up. Real touches, so the card's touch-action decides what the browser keeps for itself.
+async function swipeDown(page: Page, dy: number, from = 24) {
+  const box = (await page.getByRole("dialog").boundingBox())!;
+  const x = box.x + box.width / 2;
+  const y = box.y + from;
+  const cdp = await page.context().newCDPSession(page);
+  const touch = (type: "touchStart" | "touchMove" | "touchEnd", at?: number) =>
+    cdp.send("Input.dispatchTouchEvent", {
+      type,
+      touchPoints: at === undefined ? [] : [{ x, y: at }],
+    });
+  await touch("touchStart", y);
+  for (let i = 1; i <= 8; i++) {
+    await touch("touchMove", y + (dy * i) / 8);
+    await page.waitForTimeout(50);
+  }
+  await touch("touchEnd");
+  await cdp.detach();
+}
+
+const settled = (page: Page) =>
+  page.getByRole("dialog").evaluate((el) => Promise.all(el.getAnimations().map((a) => a.finished)));
+
+// Records the card's running exit as soon as it turns closed.
+const watchExit = (page: Page) =>
+  page.evaluate(() => {
+    const w = window as unknown as { exit: Promise<{ name: string; from: string }[]> };
+    const dialog = document.querySelector<HTMLElement>("[role=dialog]")!;
+    w.exit = new Promise((resolve) =>
+      new MutationObserver((_, observer) => {
+        observer.disconnect();
+        resolve(
+          dialog
+            .getAnimations()
+            .filter((a): a is CSSAnimation => a instanceof CSSAnimation)
+            .map((a) => ({
+              name: a.animationName,
+              from: String((a.effect as KeyframeEffect).getKeyframes()[0]?.transform ?? ""),
+            })),
+        );
+      }).observe(dialog, { attributeFilter: ["data-state"] }),
+    );
+  });
+const exitOf = (page: Page) =>
+  page.evaluate(
+    () => (window as unknown as { exit: Promise<{ name: string; from: string }[]> }).exit,
+  );
+
+test("a swipe past 90 px closes the sheet, a short one snaps back", async ({ page }) => {
+  const sheet = await openIntake(page);
+  await settled(page);
+  await swipeDown(page, 40);
+  await expect(sheet).toBeVisible();
+  await settled(page);
+  await expect
+    .poll(() => sheet.evaluate((el) => getComputedStyle(el).transform))
+    .toMatch(/^(none|matrix\(1, 0, 0, 1, 0, 0\))$/);
+  await watchExit(page);
+  await swipeDown(page, 120);
+  expect(await exitOf(page)).toEqual([{ name: "sheet-out", from: "translateY(120px)" }]);
+  await expect(sheet).toBeHidden();
+  await expect(page.getByRole("button", { name: /^Intake/ })).toBeFocused();
+});
+
+test.describe("on a short phone", () => {
+  test.use({ viewport: { width: 390, height: 240 } });
+
+  test("a swipe on a scrolled sheet scrolls it", async ({ page }) => {
+    const sheet = await openIntake(page);
+    await settled(page);
+    const bottom = await sheet.evaluate((el) => {
+      el.scrollTop = el.scrollHeight;
+      return el.scrollTop;
+    });
+    expect(bottom).toBeGreaterThan(100);
+    await swipeDown(page, 150);
+    await expect(sheet).toBeVisible();
+    expect(await sheet.evaluate((el) => el.scrollTop)).toBeLessThan(bottom);
+    expect(await sheet.evaluate((el) => el.style.transform)).toBe("");
+  });
+});
+
+test.describe("with reduced motion", () => {
+  test.use({ reducedMotion: "reduce" });
+
+  test("with reduced motion a swipe still closes it, by a fade", async ({ page }) => {
+    const sheet = await openIntake(page);
+    await settled(page);
+    await watchExit(page);
+    await swipeDown(page, 120);
+    expect(await exitOf(page)).toEqual([{ name: "fade-out", from: "" }]);
+    await expect(sheet).toBeHidden();
+  });
+});
+
+test.describe("on a wide screen", () => {
+  test.use({ viewport: { width: 1280, height: 800 } });
+
+  test("the desktop dialog has no swipe", async ({ page }) => {
+    const sheet = await openIntake(page);
+    await settled(page);
+    await swipeDown(page, 150);
+    await page.waitForTimeout(500);
+    await expect(sheet).toBeVisible();
+    expect(await sheet.evaluate((el) => el.style.transform)).toBe("");
+  });
+});

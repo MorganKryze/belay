@@ -10,6 +10,7 @@ import {
 } from "react";
 import { useTranslation } from "react-i18next";
 import { motion } from "@/lib/motion";
+import { useSwipeToClose } from "./sheet-swipe";
 
 // The longest a close may take when the exit animation never reports its end: the 260 ms exit
 // plus room for a busy frame.
@@ -74,7 +75,7 @@ export function focusBack(opener: HTMLElement | null) {
 // The sheet of every entry (§4.2): on a phone a card rising from the bottom, on a computer a
 // centred dialog. The title sits on the left, the day chip on the right of the same line, then
 // the fields and the main button right under them. Focus lands on the title when it opens and
-// goes back to what opened it once the exit has played.
+// goes back to what opened it once the exit has played. On a phone it also closes by a swipe down.
 export function Sheet({
   title,
   chip,
@@ -98,6 +99,7 @@ export function Sheet({
     setGone(true);
     onClose();
   });
+  useSwipeToClose(exit.contentRef, exit.request, exit.dialogOpen);
   return (
     <Dialog.Root open={exit.dialogOpen} onOpenChange={(o) => !o && exit.request()}>
       {!gone && (
@@ -122,7 +124,7 @@ export function Sheet({
               e.preventDefault();
               focusBack(opener.current);
             }}
-            className="fixed inset-x-2 bottom-2 z-40 mx-auto flex max-h-[calc(100dvh-1rem)] max-w-xl flex-col gap-3 overflow-y-auto rounded-sheet bg-surface px-4.5 pt-2 pb-[max(1.375rem,env(safe-area-inset-bottom))] shadow-sheet data-[state=closed]:animate-sheet-out data-[state=open]:animate-sheet-in lg:inset-0 lg:m-auto lg:h-fit lg:max-h-[85dvh] lg:w-[480px] lg:max-w-none lg:rounded-bar lg:pt-4.5 lg:data-[state=closed]:animate-fade-out lg:data-[state=open]:animate-dialog-in dark:border dark:border-border"
+            className="fixed inset-x-2 bottom-2 z-40 mx-auto flex max-h-[calc(100dvh-1rem)] max-w-xl flex-col gap-3 touch-pan-x touch-pan-down touch-pinch-zoom overflow-y-auto rounded-sheet bg-surface px-4.5 pt-2 pb-[max(1.375rem,env(safe-area-inset-bottom))] shadow-sheet data-[state=closed]:animate-sheet-out data-[state=open]:animate-sheet-in lg:inset-0 lg:m-auto lg:h-fit lg:max-h-[85dvh] lg:w-[480px] lg:max-w-none lg:touch-auto lg:rounded-bar lg:pt-4.5 lg:data-[state=closed]:animate-fade-out lg:data-[state=open]:animate-dialog-in dark:border dark:border-border"
           >
             <div
               aria-hidden
