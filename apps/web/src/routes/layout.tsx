@@ -77,6 +77,7 @@ function Shell() {
   // The tab screens' frosted header pads itself below the notch; other screens keep the padding.
   // A banner sits above that header, so on a tab screen the padding comes back while one shows.
   const tabRoot = TAB_ROOTS.includes(pathname);
+  const topBar = !/^\/workout(?:\/|$)/.test(pathname);
   const session = useOpenSession(account);
   const bar = usePresence(docked ? session : null);
   // A client navigation lands focus on the new page's h1, so screen readers announce it. The
@@ -112,9 +113,13 @@ function Shell() {
       {/* From 1 024 px the top bar stands in for the dock; an open session resumes from Accueil's
         Today card or Séances, so the session bar stays on the phone. The session cover keeps the
         whole screen. */}
-      {!/^\/workout(?:\/|$)/.test(pathname) && <TopBar name={name} />}
+      {topBar && <TopBar name={name} />}
+      {/* Under the top bar the column fills only the rest of the screen, so a short page does not
+          scroll by the bar's height. */}
       <div
         className={`mx-auto flex min-h-dvh max-w-xl flex-col gap-6 ${
+          topBar ? "lg:min-h-[calc(100dvh-var(--top-bar))]" : ""
+        } ${
           tabRoot
             ? "has-[>[role=status]:not(.sr-only)]:pt-[max(1rem,env(safe-area-inset-top))]"
             : "pt-[max(1rem,env(safe-area-inset-top))]"

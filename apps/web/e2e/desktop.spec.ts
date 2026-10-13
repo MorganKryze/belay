@@ -79,6 +79,23 @@ test("nothing scrolls sideways", async ({ page }) => {
   }
 });
 
+test("a short page does not scroll under the top bar", async ({ page }) => {
+  await fakeServer(page, { rows: WEEKS });
+  for (const path of ["/tools", "/settings"]) {
+    await page.goto(path);
+    await expect(page.locator("main h1")).toBeVisible();
+    const extra = await page.evaluate(
+      () => document.documentElement.scrollHeight - document.documentElement.clientHeight,
+    );
+    expect(extra, path).toBe(0);
+  }
+  // Réglages pins its version line to the bottom of the page: it must sit above the fold.
+  const version = page.locator("main p.mt-auto");
+  await expect(version).toContainText(/^Belay /);
+  const box = (await version.boundingBox())!;
+  expect(box.y + box.height).toBeLessThanOrEqual(800);
+});
+
 test.describe("accessibility", () => {
   test.use({ reducedMotion: "reduce" });
   for (const theme of ["light", "dark"] as const) {
