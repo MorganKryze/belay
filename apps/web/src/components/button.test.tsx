@@ -66,35 +66,87 @@ describe("Button", () => {
     );
     const button = screen.getByRole("button", { name: "Save" });
     expect(button.getAttribute("aria-busy")).toBe("true");
-    // The icon keeps its room in the row, unseen, so the width does not move.
-    expect(button.className).toContain("aria-busy:[&_svg]:invisible");
-    expect(button.className).not.toMatch(/_svg\]:hidden/);
-    expect(screen.getByTestId("icon").parentElement?.textContent).toBe("Save");
-    const arc = button.querySelector("span.animate-spin-arc");
-    expect(arc).not.toBeNull();
-    expect(arc?.getAttribute("aria-hidden")).toBe("true");
-    expect(classes(arc as HTMLElement)).toEqual(
+    expect(button.textContent).toBe("Save");
+    // The arc leads the row, in the flow, and the icon right after it gives up its room.
+    const arc = button.firstElementChild as HTMLElement;
+    expect(arc.matches("span.animate-spin-arc[data-slot=busy-arc]")).toBe(true);
+    expect(arc.getAttribute("aria-hidden")).toBe("true");
+    expect(arc.nextElementSibling).toBe(screen.getByTestId("icon"));
+    expect(classes(button)).toContain("[&>[data-slot=busy-arc]+svg]:hidden");
+    expect(button.className).not.toMatch(/_svg\]:(?:hidden|invisible)/);
+    expect(classes(arc)).toEqual(
       expect.arrayContaining([
         "size-4.5",
         "border-current",
         "border-t-transparent",
         "rounded-round",
-        // Out of the flow, drawn over the leading icon's slot.
-        "absolute",
-        "group-has-[>svg:first-child]/busy:-left-px",
+        "shrink-0",
+        // 18 px drawn in the 16 px of the icon it replaces, so the width does not move.
+        "-mx-px",
       ]),
     );
+    expect(classes(arc)).not.toContain("absolute");
   });
 
-  it("a busy button without an icon keeps its width: the arc adds nothing to the row", () => {
-    render(<Button busy>Save</Button>);
-    const button = screen.getByRole("button", { name: "Save" });
-    const arc = button.querySelector("span.animate-spin-arc") as HTMLElement;
-    expect(arc).not.toBeNull();
-    // Absolute and beside the label, in the gap before it, like the board's busy button.
-    expect(classes(arc)).toEqual(expect.arrayContaining(["absolute", "right-full", "mr-1.5"]));
-    expect(classes(arc)).not.toContain("shrink-0");
-    expect(button.textContent).toBe("Save");
+  it("a busy button with a trailing icon draws the arc before the label, in the icon's room", () => {
+    render(
+      <Button busy>
+        Next
+        <Plus data-testid="icon" />
+      </Button>,
+    );
+    const button = screen.getByRole("button", { name: "Next" });
+    const arc = button.firstElementChild as HTMLElement;
+    expect(arc.dataset.slot).toBe("busy-arc");
+    // The sibling selector skips the label's text node: this icon is the one hidden.
+    expect(arc.nextElementSibling).toBe(screen.getByTestId("icon"));
+  });
+
+  it("a busy button without an icon keeps its width and draws the arc inside, in its padding", () => {
+    render(
+      <>
+        <Button busy>Save</Button>
+        <Button variant="secondary" busy>
+          Cancel
+        </Button>
+        <Button variant="text" busy>
+          Retry
+        </Button>
+        <Button variant="destructive" busy>
+          Delete
+        </Button>
+      </>,
+    );
+    for (const name of ["Save", "Cancel", "Retry", "Delete"]) {
+      const button = screen.getByRole("button", { name });
+      expect(button.textContent).toBe(name);
+      const arc = button.firstElementChild as HTMLElement;
+      expect(arc.dataset.slot).toBe("busy-arc");
+      expect(classes(arc)).not.toContain("absolute");
+    }
+    // The arc (16 px in the flow) and its gap take 22 px: 11 px out of each side's padding.
+    const room = "aria-busy:not-has-[>[data-slot=busy-arc]+svg]:";
+    expect(classes(screen.getByRole("button", { name: "Save" }))).toContain(`${room}px-1.25`);
+    for (const name of ["Cancel", "Retry", "Delete"]) {
+      expect(classes(screen.getByRole("button", { name }))).toContain(`${room}px-px`);
+    }
+  });
+
+  it("styles a link as a button, busy or not, without wrapping it", () => {
+    render(
+      <>
+        <Button asChild>
+          <a href="/body">Body</a>
+        </Button>
+        <Button asChild busy>
+          <a href="/save">Save</a>
+        </Button>
+      </>,
+    );
+    expect(screen.getByRole("link", { name: "Body" }).dataset.slot).toBe("button");
+    const busy = screen.getByRole("link", { name: "Save" });
+    expect(busy.getAttribute("aria-busy")).toBe("true");
+    expect(busy.querySelector("[data-slot=busy-arc]")).toBeNull();
   });
 
   it("a busy button ignores a second tap", () => {

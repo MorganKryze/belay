@@ -4,22 +4,24 @@ import { cn } from "cn"
 import { Slot } from "radix-ui"
 
 // Belay: four variants from the charter. Every target is at least 44 px; a disabled button reads
-// as track fill and muted text instead of fading, so its label stays legible. A busy button draws
-// the loading arc over its leading icon (aria-busy) and keeps its label and width.
+// as track fill and muted text instead of fading, so its label stays legible. A busy button leads
+// with the loading arc (aria-busy) and keeps its label and width: the arc takes the room of the
+// icon after it (sized for the default 16 px icon), or 11 px of each side's padding when there is
+// none, so it stays inside the button even when the button is only as wide as its label.
 const buttonBox = cva(
-  "group/button inline-flex shrink-0 items-center justify-center gap-1.5 border border-transparent bg-clip-padding whitespace-nowrap press outline-none select-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:pointer-events-none disabled:text-muted-foreground aria-busy:[&_svg]:invisible [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "group/button inline-flex shrink-0 items-center justify-center gap-1.5 border border-transparent bg-clip-padding whitespace-nowrap press outline-none select-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:pointer-events-none disabled:text-muted-foreground [&>[data-slot=busy-arc]+svg]:hidden [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
         // Belay: hover on the ink shade, not primary/80: white on a faded orange fell to 3.8:1.
         primary:
-          "h-12.5 rounded-field bg-primary px-4 text-primary-foreground hover:bg-primary-ink disabled:bg-track",
+          "h-12.5 rounded-field bg-primary px-4 text-primary-foreground hover:bg-primary-ink disabled:bg-track aria-busy:not-has-[>[data-slot=busy-arc]+svg]:px-1.25",
         secondary:
-          "h-11 rounded-control bg-track px-3 text-foreground disabled:bg-track",
+          "h-11 rounded-control bg-track px-3 text-foreground disabled:bg-track aria-busy:not-has-[>[data-slot=busy-arc]+svg]:px-px",
         // The pressed tint is instant: only transform animates, through the shared press.
-        text: "h-11 rounded-control px-3 text-primary active:bg-press-tint active:text-primary-ink disabled:bg-transparent dark:text-primary-ink",
+        text: "h-11 rounded-control px-3 text-primary active:bg-press-tint active:text-primary-ink disabled:bg-transparent dark:text-primary-ink aria-busy:not-has-[>[data-slot=busy-arc]+svg]:px-px",
         destructive:
-          "h-11 rounded-control px-3 text-destructive active:bg-press-tint disabled:bg-transparent",
+          "h-11 rounded-control px-3 text-destructive active:bg-press-tint disabled:bg-transparent aria-busy:not-has-[>[data-slot=busy-arc]+svg]:px-px",
       },
       size: {
         default: "",
@@ -84,16 +86,14 @@ function Button({
       {...props}
     >
       {busy && !asChild ? (
-        // The arc stays out of the flow so the width never moves: over the leading icon, which
-        // keeps its room unseen, or in the gap before the label when there is no icon. The row
-        // repeats the button's gap so the label sits where it did.
-        <span className="group/busy relative inline-flex items-center gap-1.5">
-          {children}
+        <>
           <span
             aria-hidden="true"
-            className="absolute inset-y-0 right-full mr-1.5 my-auto size-4.5 animate-spin-arc rounded-round border-2 border-current border-t-transparent group-has-[>svg:first-child]/busy:right-auto group-has-[>svg:first-child]/busy:mr-0 group-has-[>svg:first-child]/busy:-left-px"
+            data-slot="busy-arc"
+            className="-mx-px size-4.5 shrink-0 animate-spin-arc rounded-round border-2 border-current border-t-transparent"
           />
-        </span>
+          {children}
+        </>
       ) : (
         children
       )}
