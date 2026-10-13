@@ -24,9 +24,10 @@ function Shell() {
   // needs no banner at all (§4.6).
   const offline = !online && account.kind !== "open";
   const router = useRouter();
-  // The session and its summary are full screen: no tab bar (§4.2).
   const { pathname } = useLocation();
-  const fullScreen = /^\/workout(\/|$)/.test(pathname);
+  // The session and its summary are full screen covers, and Réglages with its pages is pushed
+  // from the avatar, outside every tab: no dock on either (§4.2).
+  const docked = !/^\/(?:workout|settings)(?:\/|$)/.test(pathname);
   // The tab screens' frosted header pads itself below the notch; other screens keep the padding.
   // A banner sits above that header, so on a tab screen the padding comes back while one shows.
   const tabRoot = TAB_ROOTS.includes(pathname);
@@ -61,9 +62,11 @@ function Shell() {
           ? "has-[>[role=status]:not(.sr-only)]:pt-[max(1rem,env(safe-area-inset-top))]"
           : "pt-[max(1rem,env(safe-area-inset-top))]"
       } pr-[max(1rem,env(safe-area-inset-right))] pl-[max(1rem,env(safe-area-inset-left))] ${
-        fullScreen
-          ? "pb-[max(1rem,env(safe-area-inset-bottom))]"
-          : "pb-[calc(5.5rem+env(safe-area-inset-bottom))]"
+        docked
+          ? // The dock's height, its offset from the bottom edge and a gap above it; the toast
+            // sits on the same line.
+            "[--chrome-bottom:calc(4.5rem+max(0.75rem,env(safe-area-inset-bottom)))] pb-[calc(var(--chrome-bottom)+0.5rem)]"
+          : "pb-[max(1rem,env(safe-area-inset-bottom))]"
       }`}
     >
       {/* Mounted for good and filled when offline, so the change is announced. */}
@@ -78,7 +81,7 @@ function Shell() {
       <main className="flex flex-1 flex-col">
         <Outlet />
       </main>
-      {!fullScreen && <TabBar />}
+      {docked && <TabBar />}
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { AvatarLink } from "@/components/avatar";
 import { PageHeader } from "@/components/page-header";
 import { SyncBanner } from "@/components/sync-banner";
 import { TodayCard } from "@/components/today-card";
@@ -42,6 +43,11 @@ export function Home() {
             ? t("home.greeting", { name: account.user.displayName })
             : t("app.name")
         }
+        trailing={
+          <AvatarLink
+            name={account.kind === "unavailable" ? account.user.displayName : undefined}
+          />
+        }
       />
       {failure && account.kind === "signed-out" && <p role="alert">{t(`signin.${failure}`)}</p>}
       {account.kind === "signed-out" && account.unreachable && (
@@ -74,7 +80,10 @@ function SignedInHome({ account }: { account: OpenAccount }) {
   useCloseForgotten(account);
   return (
     <section className="flex flex-col gap-4">
-      <PageHeader title={t("home.greeting", { name: account.user.displayName })} />
+      <PageHeader
+        title={t("home.greeting", { name: account.user.displayName })}
+        trailing={<AvatarLink name={account.user.displayName} />}
+      />
       <SyncBanner account={account} />
       {weighings && (
         <>

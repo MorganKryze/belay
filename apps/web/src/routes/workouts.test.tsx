@@ -17,7 +17,7 @@ describe("the Sessions tab", () => {
       within(nav)
         .getAllByRole("link")
         .map((a) => a.textContent),
-    ).toEqual(["Home", "Sessions", "Body", "Tools", "Settings"]);
+    ).toEqual(["Home", "Sessions", "Body", "Tools"]);
     expect(within(nav).getByRole("link", { name: "Sessions" }).getAttribute("aria-current")).toBe(
       "page",
     );

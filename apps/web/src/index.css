@@ -360,6 +360,8 @@
   --press-scale: 0.97;
   --slide-duration: var(--dur-base);
   --tint-duration: var(--dur-fast);
+  /* Fades that stay fades with reduced motion, only shorter. */
+  --fade-duration: var(--dur-fast);
   /* The large title folding into the compact header; driven by scroll, so no duration. */
   --fold-in: fold-in linear both;
   --fold-out: fold-out linear both;
@@ -390,6 +392,7 @@
     --press-scale: 1;
     --slide-duration: 0s;
     --tint-duration: 0s;
+    --fade-duration: var(--dur-reduced);
   }
 }
 
@@ -481,6 +484,17 @@
   @supports not (backdrop-filter: blur(1px)) {
     background-color: var(--glass-fallback);
   }
+}
+
+/*
+ * The dock steps back under any open sheet or dialog: the overlay covers it anyway, and a bar
+ * showing through the scrim would look usable while it is not. It comes back as the sheet leaves.
+ */
+[data-dock] {
+  transition: opacity var(--fade-duration) var(--ease-out);
+}
+html:has([role="dialog"][data-state="open"]) [data-dock] {
+  opacity: 0;
 }
 
 @layer base {

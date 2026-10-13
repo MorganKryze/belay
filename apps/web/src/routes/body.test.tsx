@@ -19,7 +19,7 @@ afterEach(async () => {
 });
 
 describe("the Body tab", () => {
-  it("sits third in the bar: Home, Sessions, Body, Tools, Settings", async () => {
+  it("sits third in the bar: Home, Sessions, Body, Tools", async () => {
     fakeApi({ me: null });
     renderRoute("/body");
     const nav = await screen.findByRole("navigation", { name: "Main" });
@@ -27,7 +27,7 @@ describe("the Body tab", () => {
       within(nav)
         .getAllByRole("link")
         .map((a) => a.textContent),
-    ).toEqual(["Home", "Sessions", "Body", "Tools", "Settings"]);
+    ).toEqual(["Home", "Sessions", "Body", "Tools"]);
     expect(within(nav).getByRole("link", { name: "Body" }).getAttribute("aria-current")).toBe(
       "page",
     );

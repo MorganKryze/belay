@@ -1,53 +1,69 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { Calculator, Dumbbell, House, PersonStanding, Settings } from "lucide-react";
+import { Calculator, Dumbbell, House, PersonStanding } from "lucide-react";
+import type { CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
 
-// Link sets data-status="active" and aria-current="page" on the current tab. "/tools" stays
-// active on every tool page; "/" only on the home page.
+const TABS = [
+  { to: "/", label: "nav.home", Icon: House },
+  { to: "/workouts", label: "nav.workouts", Icon: Dumbbell },
+  { to: "/body", label: "nav.body", Icon: PersonStanding },
+  { to: "/tools", label: "nav.tools", Icon: Calculator },
+] as const;
+
+// The one place that says which tab a page belongs to. An exercise belongs to Séances, whose
+// library opens it; every tool page to Outils. The session cover ("/workout") is in no tab.
+export function tabIndexOf(pathname: string): 0 | 1 | 2 | 3 | null {
+  if (pathname === "/") return 0;
+  if (/^\/(?:workouts(?:\/|$)|exercises\/)/.test(pathname)) return 1;
+  if (/^\/body(?:\/|$)/.test(pathname)) return 2;
+  if (/^\/tools(?:\/|$)/.test(pathname)) return 3;
+  return null;
+}
+
 const tab =
-  "flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-chip text-xs font-medium text-muted-foreground data-[status=active]:font-bold data-[status=active]:text-primary";
+  "flex min-h-12.5 flex-col items-center justify-center gap-0.5 rounded-card text-tab text-muted-foreground";
 
 export function TabBar() {
   const { t } = useTranslation();
-  // An exercise's sheet belongs to the Sessions tab, whose library opened it.
-  const inLibrary = useLocation().pathname.startsWith("/exercises/");
+  const active = tabIndexOf(useLocation().pathname);
   return (
-    <nav
-      aria-label={t("nav.label")}
-      className="fixed inset-x-0 bottom-0 z-10 border-t border-border bg-card pb-[env(safe-area-inset-bottom)]"
+    // The wrapper is what fades under an open dialog (index.css).
+    <div
+      data-dock
+      className="fixed right-[max(0.75rem,env(safe-area-inset-right))] bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-[max(0.75rem,env(safe-area-inset-left))] z-10 mx-auto max-w-xl"
     >
-      <ul className="mx-auto grid max-w-xl grid-cols-5 px-[max(0.5rem,env(safe-area-inset-left))] pt-1.5 pb-2">
-        <li>
-          <Link to="/" activeOptions={{ exact: true }} className={tab}>
-            <House aria-hidden className="size-[22px]" />
-            {t("nav.home")}
-          </Link>
-        </li>
-        <li>
-          <Link to="/workouts" className={inLibrary ? `${tab} font-bold text-primary` : tab}>
-            <Dumbbell aria-hidden className="size-[22px]" />
-            {t("nav.workouts")}
-          </Link>
-        </li>
-        <li>
-          <Link to="/body" className={tab}>
-            <PersonStanding aria-hidden className="size-[22px]" />
-            {t("nav.body")}
-          </Link>
-        </li>
-        <li>
-          <Link to="/tools" className={tab}>
-            <Calculator aria-hidden className="size-[22px]" />
-            {t("nav.tools")}
-          </Link>
-        </li>
-        <li>
-          <Link to="/settings" className={tab}>
-            <Settings aria-hidden className="size-[22px]" />
-            {t("nav.settings")}
-          </Link>
-        </li>
-      </ul>
-    </nav>
+      <nav
+        aria-label={t("nav.label")}
+        className="relative rounded-bar border border-border glass p-1.5 shadow-float"
+        style={{ "--tab-i": active ?? 0 } as CSSProperties}
+      >
+        {/* One pill for the bar, slid to the active column; its edge keeps the cue at 3:1 where
+            the fill alone would not. */}
+        {active !== null && (
+          <span
+            aria-hidden
+            data-pill
+            className="absolute inset-y-1.5 left-1.5 w-[calc((100%-0.75rem)/4)] translate-x-[calc(var(--tab-i)*100%)] rounded-card bg-tab-pill ring-[1.5px] ring-primary-ink ring-inset transition-transform duration-(--slide-duration) ease-nav"
+          />
+        )}
+        <ul className="relative grid grid-cols-4">
+          {TABS.map(({ to, label, Icon }, i) => (
+            <li key={to}>
+              {/* Exact matching keeps the router from marking a tab on its own: on deeper pages
+                  aria-current comes from tabIndexOf alone. */}
+              <Link
+                to={to}
+                activeOptions={{ exact: true, includeSearch: false }}
+                aria-current={i === active ? "page" : undefined}
+                className={i === active ? `${tab} font-bold text-primary-ink` : tab}
+              >
+                <Icon aria-hidden className="size-6" />
+                {t(label)}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </nav>
+    </div>
   );
 }
