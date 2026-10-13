@@ -100,6 +100,18 @@ describe("MonthCalendar", () => {
     ).toEqual(["séance", "activité", "aujourd'hui"]);
   });
 
+  it("sizes the grid and the legend with the secondary type step, never the secondary colour", () => {
+    show();
+    // `text-secondary` resolves to the track colour, since the colour token wins the name.
+    const legend = screen.getByRole("list", { name: "Legend" });
+    for (const el of [screen.getByRole("table"), legend]) {
+      expect(el.className).toMatch(/\btext-\(length:--text-secondary\)/);
+      expect(el.className).toMatch(/\bleading-\(--text-secondary--line-height\)/);
+      expect(el.className.split(/\s+/)).not.toContain("text-secondary");
+    }
+    expect(legend.className).toMatch(/\btext-muted-foreground\b/);
+  });
+
   it("cells are 44 × 44", () => {
     show({ marked: ["2026-10-05"] });
     for (const n of [1, 5, 7, 31]) expect(day(n).className).toMatch(/\bsize-11\b/);

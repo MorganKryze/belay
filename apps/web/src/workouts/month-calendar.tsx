@@ -58,6 +58,8 @@ export function MonthCalendar({
   const weeks = Array.from({ length: Math.ceil(cells.length / 7) }, (_, w) =>
     cells.slice(w * 7, w * 7 + 7),
   );
+  // The type step by its length: plain `text-secondary` names the secondary colour token first.
+  const type = "text-(length:--text-secondary) leading-(--text-secondary--line-height)";
   const nav =
     "grid size-11 place-items-center rounded-chip text-foreground disabled:text-muted-foreground disabled:opacity-40";
   return (
@@ -84,7 +86,7 @@ export function MonthCalendar({
           <ChevronRight aria-hidden className="size-5" />
         </button>
       </div>
-      <table className="w-full table-fixed text-center text-secondary">
+      <table className={`w-full table-fixed text-center ${type}`}>
         <caption className="sr-only">{title}</caption>
         <thead>
           <tr>
@@ -121,7 +123,7 @@ export function MonthCalendar({
       </table>
       <ul
         aria-label={t("history.legendLabel")}
-        className="mx-0.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-secondary text-muted-foreground"
+        className={`mx-0.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-muted-foreground ${type}`}
       >
         <li className="flex items-center gap-1.5">
           <span aria-hidden className="size-3 rounded-full bg-primary" />
