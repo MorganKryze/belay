@@ -6,7 +6,7 @@ import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import { ChevronLeft, PartyPopper } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Sheet } from "@/components/sheet";
+import { ActionSheet } from "@/components/action-sheet";
 import { Button } from "@/components/ui/button";
 import { formatNumber, formatWeekday, sessionTitle } from "@/lib/format";
 import { useToday } from "@/lib/today";
@@ -44,6 +44,7 @@ function Detail({ account }: { account: OpenAccount }) {
   const kg = (v: number) => formatNumber(v, i18n.language, { digits: 2 });
 
   const remove = async () => {
+    setError(undefined);
     setLeaving(true); // the session goes before the page does: no "not found" in between
     try {
       await record({
@@ -109,19 +110,16 @@ function Detail({ account }: { account: OpenAccount }) {
           {t("history.remove")}
         </Button>
       </div>
+      {error && <p role="alert">{error}</p>}
       {confirm && (
-        <Sheet title={t("history.removeTitle")} onClose={() => setConfirm(false)}>
-          <p>{t("history.removeBody")}</p>
-          {error && <p role="alert">{error}</p>}
-          <div className="flex flex-col gap-2">
-            <Button className="w-full" onClick={() => void remove()}>
-              {t("history.removeConfirm")}
-            </Button>
-            <Button variant="secondary" className="w-full" onClick={() => setConfirm(false)}>
-              {t("history.cancel")}
-            </Button>
-          </div>
-        </Sheet>
+        <ActionSheet
+          title={t("history.removeTitle")}
+          body={t("history.removeBody")}
+          confirm={t("history.removeConfirm")}
+          busy={leaving}
+          onConfirm={() => void remove()}
+          onClose={() => setConfirm(false)}
+        />
       )}
     </section>
   );

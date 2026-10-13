@@ -297,5 +297,15 @@ test.describe("accessibility", () => {
         await expectNoAxeViolations(page);
       });
     }
+    test(`the remove-session action sheet has no axe violation, ${theme}`, async ({ page }) => {
+      await page.addInitScript((t) => localStorage.setItem("belay.theme", t), theme);
+      await fakeServer(page, { changes: LAST_A });
+      await page.goto("/workouts?tab=history");
+      await page.getByRole("link", { name: /Session A · Push/ }).click();
+      await page.getByRole("button", { name: "Delete this session" }).click();
+      await expect(page.getByRole("dialog", { name: "Delete this session?" })).toBeVisible();
+      if (theme === "dark") await expect(page.locator("html")).toHaveClass(/dark/);
+      await expectNoAxeViolations(page);
+    });
   }
 });

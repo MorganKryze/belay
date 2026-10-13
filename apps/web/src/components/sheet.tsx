@@ -61,6 +61,16 @@ export function useSheetExit(open: boolean, onClose: () => void) {
   return { dialogOpen, request, contentRef, onAnimationEnd };
 }
 
+// The opener may be gone (Delete removes what opened it) or never have been focused (Safari does
+// not focus a clicked button): focus then falls back to the page's heading.
+export function focusBack(opener: HTMLElement | null) {
+  const target =
+    opener && opener !== document.body && opener.isConnected
+      ? opener
+      : document.querySelector<HTMLElement>("[data-focus-fallback]");
+  target?.focus();
+}
+
 // The sheet of every entry (§4.2): on a phone a card rising from the bottom, on a computer a
 // centred dialog. The title sits on the left, the day chip on the right of the same line, then
 // the fields and the main button right under them. Focus lands on the title when it opens and
@@ -110,14 +120,7 @@ export function Sheet({
             }}
             onCloseAutoFocus={(e) => {
               e.preventDefault();
-              // The opener may be gone (Delete removes what opened it) or never have been focused
-              // (Safari does not focus a clicked button): fall back to the page's heading.
-              const o = opener.current;
-              const target =
-                o && o !== document.body && o.isConnected
-                  ? o
-                  : document.querySelector<HTMLElement>("[data-focus-fallback]");
-              target?.focus();
+              focusBack(opener.current);
             }}
             className="fixed inset-x-2 bottom-2 z-40 mx-auto flex max-h-[calc(100dvh-1rem)] max-w-xl flex-col gap-3 overflow-y-auto rounded-sheet bg-surface px-4.5 pt-2 pb-[max(1.375rem,env(safe-area-inset-bottom))] shadow-sheet data-[state=closed]:animate-sheet-out data-[state=open]:animate-sheet-in lg:inset-0 lg:m-auto lg:h-fit lg:max-h-[85dvh] lg:w-[480px] lg:max-w-none lg:rounded-bar lg:pt-4.5 lg:data-[state=closed]:animate-fade-out lg:data-[state=open]:animate-dialog-in dark:border dark:border-border"
           >
