@@ -17,6 +17,7 @@ import type { TFunction } from "i18next";
 import { Plus } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { PageHeader } from "@/components/page-header";
 import { AnnotationSheet } from "@/components/annotation-sheet";
 import { MeasuresSheet } from "@/components/measures-sheet";
 import { Segmented } from "@/components/segmented";
@@ -40,7 +41,6 @@ import {
 } from "@/sync/account";
 import { type ChartMark, WeightChart } from "./body/chart";
 
-const title = "text-[26px] leading-tight font-bold tracking-tight";
 const card = "rounded-card border border-border bg-card";
 const sectionTitle = "text-[15px] font-bold";
 const pill = "rounded-full px-2 py-0.5 text-xs font-semibold whitespace-nowrap";
@@ -63,7 +63,7 @@ function NoAccount({ account }: { account: Exclude<Account, OpenAccount> }) {
   const { t } = useTranslation();
   return (
     <section className="flex flex-col gap-4">
-      <h1 className={title}>{t("body.title")}</h1>
+      <PageHeader title={t("body.title")} />
       {account.kind === "unavailable" && <p>{t("account.unavailable")}</p>}
       {account.kind === "signed-out" && (
         <>
@@ -90,9 +90,7 @@ function BodyPage({ account }: { account: OpenAccount }) {
   const ready = weighings && target && measures && intake && supplements && logs && annotations;
   return (
     <section className="flex flex-col gap-4">
-      <h1 tabIndex={-1} data-focus-fallback className={`${title} outline-none`}>
-        {t("body.title")}
-      </h1>
+      <PageHeader title={t("body.title")} focusFallback />
       <SyncBanner account={account} />
       {ready && (
         <BodyContent

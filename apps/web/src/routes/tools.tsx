@@ -13,6 +13,7 @@ import {
   Zap,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { PageHeader } from "@/components/page-header";
 
 const ICONS: Record<ToolId, LucideIcon> = {
   "one-rep-max": Dumbbell,
@@ -28,12 +29,13 @@ const ICONS: Record<ToolId, LucideIcon> = {
 export function Tools() {
   const { t } = useTranslation();
   return (
-    <section className="flex flex-col">
-      <h1 className="text-[26px] leading-tight font-bold tracking-tight">{t("tools.title")}</h1>
-      <p className="mt-1 mb-1 text-sm text-muted-foreground">{t("tools.lead")}</p>
+    <section className="flex flex-col gap-4">
+      <PageHeader title={t("tools.title")}>
+        <p className="mt-1 text-sm text-muted-foreground">{t("tools.lead")}</p>
+      </PageHeader>
       {TOOL_GROUPS.map((group) => (
         <div key={group.id}>
-          <h2 className="mx-0.5 mt-3.5 mb-1.5 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+          <h2 className="mx-0.5 mb-1.5 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
             {t(`tools.groups.${group.id}`)}
           </h2>
           <ul className="overflow-hidden rounded-2xl border border-border bg-card">

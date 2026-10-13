@@ -1,0 +1,55 @@
+import { expect, type Page, test } from "@playwright/test";
+
+test.beforeEach(async ({ page }) => {
+  await page.route("**/api/me", (r) => r.fulfill({ status: 401 }));
+  // Short enough that the tools list scrolls well past 60 px.
+  await page.setViewportSize({ width: 390, height: 500 });
+});
+
+const state = (page: Page) =>
+  page.evaluate(() => {
+    const h1 = document.querySelector("main h1")!;
+    const compact = document.querySelector("[data-compact-title]")!;
+    const box = (el: Element) => {
+      const r = el.getBoundingClientRect();
+      return { width: r.width, height: r.height };
+    };
+    return {
+      large: Number(getComputedStyle(h1).opacity),
+      compact: Number(getComputedStyle(compact).opacity),
+      fill: Number(getComputedStyle(compact.parentElement!.previousElementSibling!).opacity),
+      boxes: [box(h1), box(compact)],
+    };
+  });
+
+const scrollTo = async (page: Page, y: number) => {
+  await page.evaluate((top) => window.scrollTo(0, top), y);
+  await page.evaluate(() => new Promise(requestAnimationFrame));
+  await page.evaluate(() => new Promise(requestAnimationFrame));
+};
+
+test("the large title folds into the frosted compact header over 44 px of scroll without changing size", async ({
+  page,
+}) => {
+  await page.goto("/tools");
+  await expect(page.getByRole("heading", { level: 1, name: "Tools" })).toBeVisible();
+  const top = await state(page);
+  expect([top.large, top.compact, top.fill]).toEqual([1, 0, 0]);
+  await scrollTo(page, 60);
+  const folded = await state(page);
+  expect([folded.large, folded.compact, folded.fill]).toEqual([0, 1, 1]);
+  expect(folded.boxes).toEqual(top.boxes);
+});
+
+test("with reduced motion the compact header shows from the start and the large title scrolls without fading", async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/tools");
+  await expect(page.getByRole("heading", { level: 1, name: "Tools" })).toBeVisible();
+  const top = await state(page);
+  expect([top.large, top.compact, top.fill]).toEqual([1, 1, 1]);
+  await scrollTo(page, 60);
+  const scrolled = await state(page);
+  expect([scrolled.large, scrolled.compact, scrolled.fill]).toEqual([1, 1, 1]);
+});

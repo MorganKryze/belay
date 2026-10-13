@@ -6,6 +6,8 @@ import { UpdateBanner } from "@/components/update-banner";
 import { useOnline } from "@/lib/online";
 import { AccountProvider, useAccount } from "@/sync/account";
 
+const TAB_ROOTS = ["/", "/workouts", "/body", "/tools"];
+
 export function Layout() {
   return (
     <AccountProvider>
@@ -23,7 +25,10 @@ function Shell() {
   const offline = !online && account.kind !== "open";
   const router = useRouter();
   // The session and its summary are full screen: no tab bar (§4.2).
-  const fullScreen = /^\/workout(\/|$)/.test(useLocation().pathname);
+  const { pathname } = useLocation();
+  const fullScreen = /^\/workout(\/|$)/.test(pathname);
+  // The tab screens' frosted header pads itself below the notch; other screens keep the padding.
+  const tabRoot = TAB_ROOTS.includes(pathname);
   // A client navigation lands focus on the new page's h1, so screen readers announce it. The
   // first load (no fromLocation) is left alone: the browser starts at the top already. A lazy
   // route mounts its h1 after the event, so wait for it.
@@ -50,7 +55,9 @@ function Shell() {
   }, [router]);
   return (
     <div
-      className={`mx-auto flex min-h-dvh max-w-xl flex-col gap-6 pt-[max(1rem,env(safe-area-inset-top))] pr-[max(1rem,env(safe-area-inset-right))] pl-[max(1rem,env(safe-area-inset-left))] ${
+      className={`mx-auto flex min-h-dvh max-w-xl flex-col gap-6 ${
+        tabRoot ? "" : "pt-[max(1rem,env(safe-area-inset-top))]"
+      } pr-[max(1rem,env(safe-area-inset-right))] pl-[max(1rem,env(safe-area-inset-left))] ${
         fullScreen
           ? "pb-[max(1rem,env(safe-area-inset-bottom))]"
           : "pb-[calc(5.5rem+env(safe-area-inset-bottom))]"
