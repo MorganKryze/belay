@@ -79,6 +79,16 @@ describe("Segmented", () => {
       expect(radio.className).toMatch(/\bfocus-visible:outline-none\b/);
   });
 
+  it("sizes its text with the secondary type step, never the secondary colour", () => {
+    render(<Harness initial="w" />);
+    // `text-secondary` resolves to the track colour, since the colour token wins the name.
+    const label = screen.getByText("Period").className;
+    for (const cls of [label, ...screen.getAllByRole("radio").map((r) => r.className)]) {
+      expect(cls).toMatch(/\btext-\(length:--text-secondary\)/);
+      expect(cls.split(/\s+/)).not.toContain("text-secondary");
+    }
+  });
+
   it("uses tokens only", () => {
     expectTokensOnly("components/segmented.tsx");
   });

@@ -23,9 +23,11 @@ export function Segmented<T extends string>({
 }) {
   const id = useId();
   const index = options.findIndex((o) => o.value === value);
+  // The type step by its length: plain `text-secondary` names the secondary colour token first.
+  const type = "text-(length:--text-secondary) leading-(--text-secondary--line-height)";
   return (
     <div className="flex flex-col gap-1.5">
-      <span id={id} className={labelHidden ? "sr-only" : "text-secondary font-semibold"}>
+      <span id={id} className={labelHidden ? "sr-only" : `${type} font-semibold`}>
         {label}
       </span>
       <RadioGroup.Root
@@ -49,7 +51,7 @@ export function Segmented<T extends string>({
           <RadioGroup.Item
             key={o.value}
             value={o.value}
-            className={`relative min-h-11 px-1 text-secondary whitespace-nowrap focus-visible:outline-none ${
+            className={`relative min-h-11 px-1 ${type} whitespace-nowrap focus-visible:outline-none ${
               o.value === value
                 ? "font-bold text-foreground"
                 : "font-semibold text-muted-foreground"
