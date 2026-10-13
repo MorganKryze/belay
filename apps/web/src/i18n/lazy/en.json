@@ -265,6 +265,8 @@
     "nextMonth": "Next month",
     "sessionDay": "session",
     "activityDay": "activity",
+    "today": "today",
+    "legendLabel": "Legend",
     "legend": "● session · ○ activity",
     "recent": "Recent",
     "first": "Your first session will show here.",
