@@ -1,6 +1,6 @@
 import type { Change } from "@belay/shared/sync/schema";
 import { sessionByCode } from "@belay/shared/training/program";
-import { cleanup, fireEvent, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, screen, within } from "@testing-library/react";
 import { IDBFactory } from "fake-indexeddb";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import i18n from "../i18n";
@@ -17,6 +17,7 @@ afterEach(async () => {
   localStorage.clear();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
+  vi.useRealTimers();
   await i18n.changeLanguage("en");
 });
 
@@ -168,6 +169,43 @@ describe("the shell", () => {
 
     renderRoute("/settings");
     await screen.findByRole("heading", { level: 1, name: "Settings" });
+    expect(sessionBar()).toBeNull();
+  });
+
+  it("drops the bar once the session passes the forgotten mark, with no new data", async () => {
+    vi.useFakeTimers({
+      shouldAdvanceTime: true,
+      toFake: ["setTimeout", "clearTimeout", "setInterval", "clearInterval", "Date"],
+    });
+    writeLastUser(ADA);
+    fakeApi({ me: ADA });
+    // Its last set 30 s short of the 6 hours after which the session counts as forgotten.
+    const [start] = OPEN();
+    const at = new Date(Date.now() - 6 * 3_600_000 + 30_000).toISOString();
+    await seed(ADA.id, [
+      { ...start!, startedAt: at, at } as Change,
+      {
+        kind: "set",
+        id: "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d03",
+        workoutId: "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d02",
+        field: "create",
+        slotIndex: 0,
+        position: 3,
+        exerciseId: sessionByCode("C")!.slots[0]!.exerciseId,
+        warmup: false,
+        weightKg: 80,
+        reps: 10,
+        rir: 1,
+        doneAt: at,
+        at,
+      },
+    ]);
+    renderRoute("/tools");
+    await screen.findByRole("link", { name: /In progress/ });
+    // A minute on, with no new data, and past its exit: tapping it now would start a new
+    // session instead of reopening this one.
+    await act(() => vi.advanceTimersByTimeAsync(60_000));
+    await act(() => vi.advanceTimersByTimeAsync(500));
     expect(sessionBar()).toBeNull();
   });
 

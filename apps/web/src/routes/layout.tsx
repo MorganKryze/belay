@@ -1,6 +1,6 @@
 import { Outlet, useLocation, useRouter } from "@tanstack/react-router";
-import { liveSets, openWorkout } from "@belay/shared/training/rules";
-import { lazy, Suspense, useEffect, useMemo } from "react";
+import { FORGOTTEN_MS, liveSets, openWorkout } from "@belay/shared/training/rules";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { TabBar } from "@/components/tab-bar";
 import { UpdateBanner } from "@/components/update-banner";
@@ -26,12 +26,34 @@ export function Layout() {
 // The open session and its sets, for the bar above the tabs; null when nothing is open.
 function useOpenSession(account: Account) {
   const history = useHistory(account.kind === "open" ? account : null).data;
-  return useMemo(() => {
+  // The shell stays mounted across tabs and a refetch of the same data keeps `history` as it
+  // was, so the verdict is also taken again when the session reaches the forgotten mark: past
+  // it, the bar's ?start would begin a new session instead of reopening this one.
+  const [tick, setTick] = useState(0);
+  const open = useMemo(() => {
     if (account.kind !== "open" || !history) return null;
     const workout = openWorkout(history.workouts, { sets: history.sets, now: new Date() });
     if (!workout) return null;
     return { workout, sets: liveSets(history).filter((s) => s.workoutId === workout.id) };
-  }, [account.kind, history]);
+    // `tick` only asks for a fresh verdict at the current time.
+  }, [account.kind, history, tick]);
+  useEffect(() => {
+    if (!open) return;
+    const last =
+      open.sets
+        .map((s) => s.doneAt)
+        .sort()
+        .at(-1) ?? open.workout.startedAt;
+    const again = () => setTick((n) => n + 1);
+    // A hidden tab holds timers back: coming back takes the verdict again too.
+    const timer = setTimeout(again, Date.parse(last) + FORGOTTEN_MS + 1 - Date.now());
+    document.addEventListener("visibilitychange", again);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener("visibilitychange", again);
+    };
+  }, [open]);
+  return open;
 }
 
 function Shell() {
