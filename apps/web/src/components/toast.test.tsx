@@ -75,7 +75,21 @@ describe("Toast", () => {
   it("a long text takes the full width and puts the action below it on the right", () => {
     render(<Toast toast={ok} onDone={() => {}} />);
     expect(classes(card())).toEqual(expect.arrayContaining(["flex", "flex-wrap", "justify-end"]));
-    expect(classes(screen.getByText("Saved"))).toEqual(expect.arrayContaining(["grow"]));
+    const group = screen.getByText("Saved").parentElement;
+    expect(group?.parentElement).toBe(card());
+    expect(classes(group)).toEqual(expect.arrayContaining(["flex", "min-w-0", "grow"]));
+  });
+
+  it("keeps the alert icon beside a long error, only the action wraps", () => {
+    const text = "Couldn't save on this phone, the storage is full. Try again.";
+    render(<Toast toast={{ id: 3, text, error: true }} onDone={() => {}} />);
+    const sentence = screen.getByText(text);
+    const icon = card()!.querySelector("svg");
+    expect(icon?.parentElement).toBe(sentence.parentElement);
+    expect(sentence.parentElement?.parentElement).toBe(card());
+    expect(classes(sentence.parentElement)).toEqual(
+      expect.arrayContaining(["flex", "min-w-0", "grow", "items-start"]),
+    );
   });
 
   it("rises in, then fades out while it leaves", () => {

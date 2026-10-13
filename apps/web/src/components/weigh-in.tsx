@@ -113,8 +113,13 @@ export function Toast({ toast, onDone }: { toast: ToastState | null; onDone: () 
           onAnimationEnd={onAnimationEnd}
           className={`pointer-events-auto flex w-full flex-wrap items-center justify-end gap-x-3 rounded-field bg-foreground py-1 pr-1 pl-4 text-body text-background shadow-float ${leaving ? "animate-fade-out" : "animate-rise-in"}`}
         >
-          {shown.error && <CircleAlert aria-hidden className="size-5 shrink-0 text-toast-icon" />}
-          <span className="min-w-0 grow py-2.5">{shown.text}</span>
+          {/* The icon and the sentence wrap as one item, so only the action drops below. */}
+          <div className="flex min-w-0 grow items-start gap-3">
+            {shown.error && (
+              <CircleAlert aria-hidden className="mt-2.5 size-5 shrink-0 text-toast-icon" />
+            )}
+            <span className="min-w-0 grow py-2.5">{shown.text}</span>
+          </div>
           {shown.undo && !shown.error && (
             <button
               type="button"
