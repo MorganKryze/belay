@@ -369,6 +369,17 @@
   --fold-rest: 0;
 }
 
+/* On a computer the top bar holds the top of the screen, so the compact header pins under it. */
+:root {
+  --top-bar: 3.75rem;
+  --header-top: 0px;
+}
+@media (width >= 64rem) {
+  :root {
+    --header-top: var(--top-bar);
+  }
+}
+
 /*
  * Calm by default: with reduced motion, nothing slides or scales; enters and leaves become short
  * fades, the tick and the loading arc stand still. Components never write their own media query.

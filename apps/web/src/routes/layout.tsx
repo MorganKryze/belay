@@ -3,6 +3,7 @@ import { FORGOTTEN_MS, liveSets, openWorkout } from "@belay/shared/training/rule
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { TabBar } from "@/components/tab-bar";
+import { TopBar } from "@/components/top-bar";
 import { UpdateBanner } from "@/components/update-banner";
 import { useOnline } from "@/lib/online";
 import { usePresence } from "@/lib/presence";
@@ -97,53 +98,66 @@ function Shell() {
       watch?.disconnect();
     };
   }, [router]);
+  const name =
+    account.kind === "open" || account.kind === "unavailable"
+      ? account.user.displayName
+      : undefined;
   return (
-    <div
-      className={`mx-auto flex min-h-dvh max-w-xl flex-col gap-6 ${
-        tabRoot
-          ? "has-[>[role=status]:not(.sr-only)]:pt-[max(1rem,env(safe-area-inset-top))]"
-          : "pt-[max(1rem,env(safe-area-inset-top))]"
-      } pr-[max(1rem,env(safe-area-inset-right))] pl-[max(1rem,env(safe-area-inset-left))] ${
-        docked
-          ? // The dock's height, its offset from the bottom edge and a gap above it; the toast
-            // sits on the same line.
-            `${
-              bar.shown
-                ? // The session bar, the gap to the tabs and the backing's top padding on top.
-                  "[--chrome-bottom:calc(8.875rem+max(0.75rem,env(safe-area-inset-bottom)))]"
-                : "[--chrome-bottom:calc(4.5rem+max(0.75rem,env(safe-area-inset-bottom)))]"
-            } pb-[calc(var(--chrome-bottom)+0.5rem)]`
-          : "pb-[max(1rem,env(safe-area-inset-bottom))]"
-      }`}
-    >
-      {/* Mounted for good and filled when offline, so the change is announced. */}
-      <p
-        role="status"
-        className={offline ? "animate-drop-in rounded-chip bg-track p-3 text-sm" : "sr-only"}
+    <>
+      {/* From 1 024 px the top bar stands in for the dock; an open session resumes from Accueil's
+        Today card or Séances, so the session bar stays on the phone. The session cover keeps the
+        whole screen. */}
+      {!/^\/workout(?:\/|$)/.test(pathname) && <TopBar name={name} />}
+      <div
+        className={`mx-auto flex min-h-dvh max-w-xl flex-col gap-6 ${
+          tabRoot
+            ? "has-[>[role=status]:not(.sr-only)]:pt-[max(1rem,env(safe-area-inset-top))]"
+            : "pt-[max(1rem,env(safe-area-inset-top))]"
+        } pr-[max(1rem,env(safe-area-inset-right))] pl-[max(1rem,env(safe-area-inset-left))] ${
+          docked
+            ? // The dock's height, its offset from the bottom edge and a gap above it; the toast
+              // sits on the same line.
+              `${
+                bar.shown
+                  ? // The session bar, the gap to the tabs and the backing's top padding on top.
+                    "[--chrome-bottom:calc(8.875rem+max(0.75rem,env(safe-area-inset-bottom)))]"
+                  : "[--chrome-bottom:calc(4.5rem+max(0.75rem,env(safe-area-inset-bottom)))]"
+              } pb-[calc(var(--chrome-bottom)+0.5rem)] lg:[--chrome-bottom:0px]`
+            : "pb-[max(1rem,env(safe-area-inset-bottom))]"
+        }`}
       >
-        {offline ? t("offline") : ""}
-      </p>
-      <UpdateBanner />
-      {/* Grows to the tab bar, so a screen can pin a line to its bottom (Settings' version). */}
-      <main className="flex flex-1 flex-col">
-        <Outlet />
-      </main>
-      {docked && (
-        <TabBar
-          above={
-            bar.shown && (
-              <Suspense fallback={null}>
-                <SessionBar
-                  workout={bar.shown.workout}
-                  sets={bar.shown.sets}
-                  leaving={bar.leaving}
-                  onAnimationEnd={bar.onAnimationEnd}
-                />
-              </Suspense>
-            )
-          }
-        />
-      )}
-    </div>
+        {/* Mounted for good and filled when offline, so the change is announced. */}
+        <p
+          role="status"
+          className={offline ? "animate-drop-in rounded-chip bg-track p-3 text-sm" : "sr-only"}
+        >
+          {offline ? t("offline") : ""}
+        </p>
+        <UpdateBanner />
+        {/* Grows to the tab bar, so a screen can pin a line to its bottom (Settings' version). */}
+        <main className="flex flex-1 flex-col">
+          <Outlet />
+        </main>
+        {docked && (
+          // No box of its own, so the column's gap never counts it.
+          <div className="contents lg:hidden">
+            <TabBar
+              above={
+                bar.shown && (
+                  <Suspense fallback={null}>
+                    <SessionBar
+                      workout={bar.shown.workout}
+                      sets={bar.shown.sets}
+                      leaving={bar.leaving}
+                      onAnimationEnd={bar.onAnimationEnd}
+                    />
+                  </Suspense>
+                )
+              }
+            />
+          </div>
+        )}
+      </div>
+    </>
   );
 }

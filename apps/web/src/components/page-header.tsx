@@ -24,7 +24,7 @@ export function PageHeader({
       {/* Bleeds over the layout's side padding so the glass spans the screen; the negative bottom
           margin takes back most of the 16 px gap the screens put between blocks, so the large
           title sits 2 px under the bar. */}
-      <div className="sticky top-0 z-20 -mb-3.5 mr-[calc(-1*max(1rem,env(safe-area-inset-right)))] ml-[calc(-1*max(1rem,env(safe-area-inset-left)))] pt-[env(safe-area-inset-top)]">
+      <div className="sticky top-(--header-top) z-20 -mb-3.5 mr-[calc(-1*max(1rem,env(safe-area-inset-right)))] ml-[calc(-1*max(1rem,env(safe-area-inset-left)))] pt-[env(safe-area-inset-top)]">
         <div aria-hidden className="absolute inset-0 glass border-b border-border fold-in" />
         {/* An invisible copy of the back link holds the right column at the same width, so the
             compact title stays centred and truncates before it reaches the back label. */}

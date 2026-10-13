@@ -135,7 +135,7 @@ describe("the Exercises segment", () => {
 
   it("puts the program's exercises first with their sessions, then all of them", async () => {
     await openLibrary();
-    const program = screen.getAllByRole("list")[0]!;
+    const program = within(screen.getByRole("main")).getAllByRole("list")[0]!;
     const first = within(program).getAllByRole("link")[0]!;
     expect(first.textContent).toContain("Barbell bench press");
     expect(first.textContent).toContain("Chest · Barbell");
@@ -147,7 +147,7 @@ describe("the Exercises segment", () => {
 
   it("renders only the rows on screen of the 1 291", async () => {
     await openLibrary();
-    const all = screen.getAllByRole("list")[1]!;
+    const all = within(screen.getByRole("main")).getAllByRole("list")[1]!;
     const rows = within(all).getAllByRole("listitem");
     expect(rows.length).toBeGreaterThan(5);
     expect(rows.length).toBeLessThan(50);
