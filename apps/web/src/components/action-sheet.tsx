@@ -5,7 +5,10 @@ import { useTranslation } from "react-i18next";
 import { focusBack, useSheetExit } from "@/components/sheet";
 
 const card = "flex flex-col divide-y divide-border overflow-hidden rounded-group bg-surface";
-const row = "min-h-14 w-full px-4 text-button";
+// The card clips its overflow to keep its corners, so the focus ring is drawn inside the row and
+// rounded like the card where the row meets its edge.
+const row =
+  "min-h-14 w-full px-4 text-button first:rounded-t-group last:rounded-b-group focus-visible:outline-2 focus-visible:-outline-offset-2";
 
 // A question before something that cannot be taken back: a card with the question, what goes and
 // the action in red, and a separate Cancel. It rises and leaves like a sheet and keeps its close

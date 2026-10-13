@@ -63,6 +63,21 @@ describe("ActionSheet", () => {
       expect(classesOf(c)).toEqual(expect.arrayContaining(["bg-surface", "rounded-group"]));
   });
 
+  it("draws the focus ring inside each row, where the rounded card cannot clip it", () => {
+    renderSheet();
+    for (const name of ["Delete", "Cancel"]) {
+      const button = screen.getByRole("button", { name });
+      expect(classesOf(button)).toEqual(
+        expect.arrayContaining([
+          "focus-visible:outline-2",
+          "focus-visible:-outline-offset-2",
+          "first:rounded-t-group",
+          "last:rounded-b-group",
+        ]),
+      );
+    }
+  });
+
   it("Supprimer writes the removal before the sheet leaves", () => {
     vi.spyOn(motion, "exitWillAnimate").mockReturnValue(true);
     const states: (string | null)[] = [];

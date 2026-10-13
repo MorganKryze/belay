@@ -282,6 +282,42 @@ test.describe("at 360 px", () => {
   }
 });
 
+// Each row sits in a rounded card that clips its overflow: a ring drawn outside the row would vanish.
+test("the remove-session action sheet shows the keyboard focus ring inside each row", async ({
+  page,
+}) => {
+  await fakeServer(page, { changes: LAST_A });
+  await page.goto("/workouts?tab=history");
+  await page.getByRole("link", { name: /Session A · Push/ }).click();
+  const remove = page.getByRole("button", { name: "Delete this session" });
+  await remove.focus();
+  await page.keyboard.press("Enter");
+  const dialog = page.getByRole("dialog", { name: "Delete this session?" });
+  await expect(dialog).toBeVisible();
+  const cancel = dialog.getByRole("button", { name: "Cancel" });
+  await expect(cancel).toBeFocused();
+  await page.keyboard.press("Shift+Tab");
+  const confirm = dialog.getByRole("button", { name: "Delete" });
+  await expect(confirm).toBeFocused();
+  for (const button of [confirm, cancel]) {
+    await button.focus();
+    const ring = await button.evaluate((el) => {
+      const s = getComputedStyle(el);
+      return {
+        focusVisible: el.matches(":focus-visible"),
+        style: s.outlineStyle,
+        width: parseFloat(s.outlineWidth),
+        reach: parseFloat(s.outlineWidth) + parseFloat(s.outlineOffset),
+      };
+    });
+    expect(ring.focusVisible).toBe(true);
+    expect(ring.style).toBe("solid");
+    expect(ring.width).toBeGreaterThan(0);
+    // The ring's outer edge stays on or inside the row's border box, so the card does not clip it.
+    expect(ring.reach).toBeLessThanOrEqual(0);
+  }
+});
+
 test.describe("accessibility", () => {
   // No transition in flight when axe measures a colour.
   test.use({ reducedMotion: "reduce" });
