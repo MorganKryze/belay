@@ -101,7 +101,8 @@
     "toastSaved": "Pesée enregistrée",
     "toastDeleted": "Pesée supprimée",
     "saveFailed": "Pas pu enregistrer sur ce téléphone. Réessaie.",
-    "undo": "Annuler"
+    "undo": "Annuler",
+    "retry": "Réessayer"
   },
   "nav": {
     "label": "Principale",

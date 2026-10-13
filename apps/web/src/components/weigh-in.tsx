@@ -79,7 +79,8 @@ export function useWriter(account: OpenAccount) {
           await record(previous.map((e) => ({ ...e, at }) as Change));
           return true;
         } catch {
-          setToast((current) => current && { id: current.id, text: failed, error: true });
+          // The undo stays on the toast so the error can offer to try again.
+          setToast((current) => current && { ...current, text: failed, error: true });
           return false;
         }
       };
@@ -120,7 +121,7 @@ export function Toast({ toast, onDone }: { toast: ToastState | null; onDone: () 
             )}
             <span className="min-w-0 grow py-2.5">{shown.text}</span>
           </div>
-          {shown.undo && !shown.error && (
+          {shown.undo && (
             <button
               type="button"
               className="min-h-11 min-w-11 rounded-chip px-3 font-bold text-toast-action"
@@ -128,7 +129,7 @@ export function Toast({ toast, onDone }: { toast: ToastState | null; onDone: () 
                 void shown.undo?.().then((ok) => ok && onDone());
               }}
             >
-              {t("weighIn.undo")}
+              {t(shown.error ? "weighIn.retry" : "weighIn.undo")}
             </button>
           )}
         </div>

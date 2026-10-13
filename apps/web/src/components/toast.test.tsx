@@ -40,17 +40,27 @@ describe("Toast", () => {
     );
   });
 
-  it("an error shows the alert icon and its sentence, no action, no red", () => {
-    render(<Toast toast={{ id: 2, text: "Could not save", error: true }} onDone={() => {}} />);
+  it("an error shows the alert icon, its sentence and a retry action, no red", () => {
+    const retry = vi.fn(() => Promise.resolve(true));
+    const onDone = vi.fn();
+    render(
+      <Toast toast={{ id: 2, text: "Could not save", undo: retry, error: true }} onDone={onDone} />,
+    );
     expect(screen.getByRole("status").textContent).toContain("Could not save");
-    expect(screen.queryByRole("button")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Undo" })).toBeNull();
+    const action = screen.getByRole("button", { name: "Try again" });
+    expect(classes(action)).toEqual(
+      expect.arrayContaining(["min-h-11", "min-w-11", "font-bold", "text-toast-action"]),
+    );
+    act(() => action.click());
+    expect(retry).toHaveBeenCalledOnce();
     const icon = card()!.querySelector("svg");
     expect(classes(icon)).toContain("text-toast-icon");
     expect(icon?.getAttribute("aria-hidden")).toBe("true");
     expect(card()!.outerHTML).not.toMatch(/destructive|red-/);
   });
 
-  it("a failed undo turns the toast into the error state", async () => {
+  it("a failed undo turns the toast into the error state and keeps the undo to retry", async () => {
     const { result } = renderHook(() => useWriter({} as OpenAccount));
     await act(() => result.current.write([], [], "Saved"));
     record.mockRejectedValueOnce(new Error("lost"));
@@ -58,7 +68,9 @@ describe("Toast", () => {
       expect(await result.current.toast!.undo!()).toBe(false);
     });
     expect(result.current.toast?.error).toBe(true);
-    expect(result.current.toast?.undo).toBeUndefined();
+    await act(async () => {
+      expect(await result.current.toast!.undo!()).toBe(true);
+    });
   });
 
   it("goes after 5 s", async () => {
