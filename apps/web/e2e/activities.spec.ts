@@ -300,7 +300,7 @@ const SCREENS: [string, Change[], (page: Page) => Promise<void>][] = [
     [...TWO_B, CLIMB],
     async (page) => {
       await page.goto("/workouts?tab=history");
-      await expect(page.getByText("● session · ○ activity")).toBeVisible();
+      await expect(page.getByRole("list", { name: "Legend" })).toBeVisible();
       await expect(page.getByRole("button", { name: /Climbing · 1 h 30/ })).toBeVisible();
     },
   ],

@@ -92,18 +92,13 @@ function History({ account }: { account: OpenAccount }) {
         <Plus aria-hidden className="size-4" />
         {t("history.log.button")}
       </button>
-      <div className="flex flex-col gap-1">
-        <MonthCalendar
-          month={month}
-          current={current}
-          marked={new Set(finished.map(dayOf))}
-          circled={new Set(activities.map((a) => a.date))}
-          onMonth={setMonth}
-        />
-        <p aria-hidden className="mx-0.5 text-[13px] text-muted-foreground">
-          {t("history.legend")}
-        </p>
-      </div>
+      <MonthCalendar
+        month={month}
+        current={current}
+        marked={new Set(finished.map(dayOf))}
+        circled={new Set(activities.map((a) => a.date))}
+        onMonth={setMonth}
+      />
       <section aria-labelledby="sessions" className="flex flex-col">
         <h2 id="sessions" className="mx-0.5 text-[15px] font-semibold first-letter:uppercase">
           {month === current ? t("history.recent") : monthName}

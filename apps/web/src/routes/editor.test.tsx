@@ -99,14 +99,17 @@ const cell = (scope: HTMLElement, name: string) =>
   within(scope).getByRole("textbox", { name }) as HTMLInputElement;
 
 describe("History with activities (spec §4.4)", () => {
-  it("circles the days with an activity, lists it with the sessions, and reopens it", async () => {
+  it("marks the days with an activity, lists it with the sessions, and reopens it", async () => {
     await seed(ADA.id, [...PAST, climb]);
     fakeApi({ me: ADA });
     renderRoute("/workouts?tab=history");
     const calendar = await screen.findByRole("table", { name: "October 2026" });
     await waitFor(() => expect(within(calendar).getAllByText(", activity")).toHaveLength(1));
     expect(within(calendar).getByText(", activity").parentElement!.textContent).toBe("3, activity");
-    expect(screen.getByText("● session · ○ activity")).toBeTruthy();
+    // One legend only, the calendar's, where an activity is a dot and never a ring.
+    expect(screen.queryByText("● session · ○ activity")).toBeNull();
+    const legend = screen.getByRole("list", { name: "Legend" });
+    expect(within(legend).getByText("activity")).toBeTruthy();
     const list = screen.getByRole("region", { name: "Recent" });
     expect(
       within(list)
