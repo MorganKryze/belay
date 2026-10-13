@@ -287,6 +287,29 @@ describe("the session screen (§4.2, §4.3)", () => {
     );
   });
 
+  it("a checked set is recorded at the tap, turns soft green at once and pops only its tick", async () => {
+    await seed(ADA.id, LAST_A);
+    await startSession("A");
+    const bench = card("Barbell bench press");
+    log(bench, "Log set 1");
+    const square = await within(bench).findByRole("img", { name: "Set 1 logged" });
+    const { history } = await stored();
+    expect(history.sets.filter((s) => s.workoutId !== id(1))).toEqual([
+      expect.objectContaining({ position: 3, warmup: false, weightKg: 80 }),
+    ]);
+    const row = square.parentElement!;
+    expect(row.className).toContain("bg-reference");
+    expect(row.className).toContain("transition-colors");
+    expect(row.className).toContain("duration-(--tint-duration)");
+    expect(square.className).toContain("bg-reference-ink");
+    expect(square.className).not.toContain("bg-primary");
+    expect(square.className).not.toContain("animate-pop-in");
+    expect(square.querySelector("svg")!.getAttribute("class")).toContain("animate-pop-in");
+    fireEvent.click(screen.getByRole("button", { name: "Finish" }));
+    const sheet = await screen.findByRole("dialog", { name: "Finish the session?" });
+    expect(within(sheet).getByText("18 sets not done will not be saved.")).toBeTruthy();
+  });
+
   it("asks before finishing with sets left, then shows the summary with the record", async () => {
     await seed(ADA.id, LAST_A);
     await startSession("A");
