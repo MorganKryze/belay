@@ -217,7 +217,7 @@ function RejectedEntries({ account }: { account: OpenAccount }) {
             </li>
           ))}
         </ul>
-        <Button variant="outline" className="self-start" onClick={() => void clear()}>
+        <Button variant="secondary" className="self-start" onClick={() => void clear()}>
           {t("settings.rejected.clear")}
         </Button>
       </div>
@@ -259,13 +259,13 @@ function AccountSettings({ pending }: { pending: number | null }) {
           <div className="flex flex-wrap gap-2">
             <Button
               ref={(el) => el?.focus()}
-              variant="outline"
+              variant="secondary"
               disabled={busy}
               onClick={() => signOut.mutate()}
             >
               {t("settings.signOutAnyway")}
             </Button>
-            <Button variant="ghost" onClick={() => setConfirming(false)}>
+            <Button variant="text" onClick={() => setConfirming(false)}>
               {t("settings.cancel")}
             </Button>
           </div>
@@ -273,7 +273,7 @@ function AccountSettings({ pending }: { pending: number | null }) {
       ) : (
         <Button
           ref={signOutButton}
-          variant="outline"
+          variant="secondary"
           className="self-start"
           disabled={busy}
           onClick={() => (pending !== 0 ? setConfirming(true) : signOut.mutate())}

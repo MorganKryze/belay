@@ -69,12 +69,7 @@ export function LogSessionSheet({
         max={MINUTES.max}
         step={MINUTES.step}
       />
-      <Button
-        className="h-12 rounded-field text-base font-semibold"
-        onClick={() => onOpen(code, date, shown)}
-      >
-        {t("history.log.open")}
-      </Button>
+      <Button onClick={() => onOpen(code, date, shown)}>{t("history.log.open")}</Button>
     </Sheet>
   );
 }

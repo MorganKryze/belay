@@ -80,8 +80,7 @@ export function IntakeSheet({
       />
       {own && (
         <Button
-          variant="outline"
-          className="h-12 rounded-field text-base font-semibold"
+          variant="secondary"
           onClick={() => {
             const fields = (["kcal", "protein"] as const).filter((f) =>
               f === "kcal" ? own.kcal !== null : own.proteinG !== null,
@@ -149,7 +148,6 @@ function IntakeForm({
         error={badProtein ? t("intake.proteinOutOfRange") : undefined}
       />
       <Button
-        className="h-12 rounded-field text-base font-semibold"
         disabled={k === null || badKcal || badProtein}
         onClick={() => k !== null && onSave(k, p)}
       >

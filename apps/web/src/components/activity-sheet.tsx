@@ -297,11 +297,7 @@ function Fields({
           )}
         </>
       )}
-      <Button
-        className="h-12 rounded-field text-base font-semibold"
-        disabled={badRuns}
-        onClick={save}
-      >
+      <Button disabled={badRuns} onClick={save}>
         {t("weighIn.save")}
       </Button>
       {error && (
@@ -346,7 +342,6 @@ function StepsForm({
         hint={<p className="text-[13px] text-muted-foreground">{t("activitySheet.stepsNote")}</p>}
       />
       <Button
-        className="h-12 rounded-field text-base font-semibold"
         // Emptied, it deletes the day's steps; never entered, there is nothing to save.
         disabled={bad || (value === null && own === null)}
         onClick={() =>
@@ -386,10 +381,9 @@ function Delete({
 }) {
   const { t } = useTranslation();
   const id = useId();
-  const button = "h-12 rounded-field text-base font-semibold";
   if (!confirming)
     return (
-      <Button variant="outline" className={button} onClick={() => onAsk(true)}>
+      <Button variant="secondary" onClick={() => onAsk(true)}>
         {t(steps ? "activitySheet.deleteSteps" : "activitySheet.delete")}
       </Button>
     );
@@ -399,10 +393,10 @@ function Delete({
         {t(steps ? "activitySheet.confirmSteps" : "activitySheet.confirm")}
       </p>
       <div className="grid grid-cols-2 gap-2">
-        <Button variant="outline" className={button} onClick={() => onAsk(false)}>
+        <Button variant="secondary" onClick={() => onAsk(false)}>
           {t("activitySheet.cancel")}
         </Button>
-        <Button variant="destructive" className={button} onClick={onDelete}>
+        <Button variant="destructive" onClick={onDelete}>
           {t("activitySheet.confirmDelete")}
         </Button>
       </div>

@@ -70,7 +70,7 @@ export function SyncBanner({ account }: { account: OpenAccount }) {
           <CircleAlert aria-hidden className="mt-px size-5 shrink-0" />
           <div className="flex flex-col items-start gap-2">
             <p>{t("sync.failed")}</p>
-            <Button variant="outline" onClick={() => void account.engine.sync()}>
+            <Button variant="secondary" onClick={() => void account.engine.sync()}>
               {t("sync.retry")}
             </Button>
           </div>

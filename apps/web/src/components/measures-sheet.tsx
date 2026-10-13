@@ -67,8 +67,7 @@ export function MeasuresSheet({
       />
       {own && (
         <Button
-          variant="outline"
-          className="h-12 rounded-field text-base font-semibold"
+          variant="secondary"
           onClick={() => {
             const fields = (["waist", "neck", "hip"] as const).filter((f) => held(f) !== null);
             onWrite(
@@ -130,7 +129,6 @@ function MeasuresForm({
       </div>
       <p className="-mt-1 text-[13px] text-muted-foreground">{t("measures.neckHipHint")}</p>
       <Button
-        className="h-12 rounded-field text-base font-semibold"
         disabled={values.waist === null || bad("waist") || bad("neck") || bad("hip")}
         onClick={() => onSave(values)}
       >

@@ -47,11 +47,7 @@ export function WeighInSheet({
         error={error}
       />
       {weighings.some((w) => w.date === date) && (
-        <Button
-          variant="outline"
-          className="h-12 rounded-field text-base font-semibold"
-          onClick={() => onDelete(date)}
-        >
+        <Button variant="secondary" onClick={() => onDelete(date)}>
           {t("weighIn.delete")}
         </Button>
       )}
@@ -98,11 +94,7 @@ function WeighInForm({
       {start.prefilled && edited === undefined && (
         <p className="text-[13px] text-muted-foreground">{t("weighIn.prefilled")}</p>
       )}
-      <Button
-        className="h-12 rounded-field text-base font-semibold"
-        disabled={kg === null || invalid}
-        onClick={() => kg !== null && onSave(date, kg)}
-      >
+      <Button disabled={kg === null || invalid} onClick={() => kg !== null && onSave(date, kg)}>
         {t("weighIn.save")}
       </Button>
       {error && (

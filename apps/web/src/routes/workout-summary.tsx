@@ -59,7 +59,7 @@ function Summary({ account }: { account: OpenAccount }) {
   return (
     <section className="flex flex-col gap-4">
       <div className="flex justify-end">
-        <Button variant="outline" onClick={home}>
+        <Button variant="secondary" onClick={home}>
           {t("summary.close")}
         </Button>
       </div>
@@ -113,7 +113,7 @@ function Summary({ account }: { account: OpenAccount }) {
         />
       </label>
       {error && <p role="alert">{error}</p>}
-      <Button size="lg" className="w-full font-semibold" onClick={() => void save()}>
+      <Button className="w-full" onClick={() => void save()}>
         {t("summary.save")}
       </Button>
     </section>

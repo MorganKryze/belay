@@ -150,7 +150,7 @@ export function ProfileProposal({
       </p>
       <div className="flex flex-wrap gap-2">
         <Button onClick={proposal.accept}>{t("prefill.update")}</Button>
-        <Button variant="outline" onClick={proposal.decline}>
+        <Button variant="secondary" onClick={proposal.decline}>
           {t("prefill.justHere")}
         </Button>
       </div>

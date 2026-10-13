@@ -71,7 +71,6 @@ export function AnnotationSheet({
         onChange={(e) => setLabel(e.target.value.replace(/[\r\n]/g, " "))}
       />
       <Button
-        className="h-12 rounded-field text-base font-semibold"
         onClick={() =>
           onWrite(
             [block({ date, type, label: label.trim() === "" ? null : label.trim() })],
@@ -91,8 +90,7 @@ export function AnnotationSheet({
       )}
       {annotation ? (
         <Button
-          variant="outline"
-          className="h-12 rounded-field text-base font-semibold"
+          variant="secondary"
           onClick={() =>
             onWrite(
               [{ kind: "annotation", id, field: "removed", value: true }],

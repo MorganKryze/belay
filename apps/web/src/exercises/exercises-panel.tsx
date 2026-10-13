@@ -248,7 +248,7 @@ function ChoiceSheet<T extends string>({
           </div>
         ))}
       </RadioGroup.Root>
-      <Button size="lg" className="mt-1 w-full font-semibold" onClick={() => onApply(chosen)}>
+      <Button className="mt-1 w-full" onClick={() => onApply(chosen)}>
         {t("library.show", { count: n, value: formatNumber(n, i18n.language, { digits: 0 }) })}
       </Button>
     </Sheet>

@@ -283,16 +283,16 @@ function BodyContent({
       )}
       <div className="grid grid-cols-2 gap-2">
         <Button
-          variant="outline"
-          className="h-12 rounded-field px-2 text-[15px] font-semibold text-primary"
+          variant="secondary"
+          className="px-2"
           onClick={() => setOpen({ sheet: "measures", date: today })}
         >
           <Plus aria-hidden className="size-4" />
           {t("measures.title")}
         </Button>
         <Button
-          variant="outline"
-          className="h-12 rounded-field px-2 text-[15px] font-semibold text-primary"
+          variant="secondary"
+          className="px-2"
           onClick={() => setOpen({ sheet: "annotation", annotation: null })}
         >
           <Plus aria-hidden className="size-4" />

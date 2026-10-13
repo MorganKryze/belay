@@ -149,9 +149,7 @@ function SupplementList({ account }: { account: OpenAccount }) {
               )}
             </p>
           )}
-          <Button type="submit" className="h-12 rounded-field text-base font-semibold">
-            {t("supplementsPage.add")}
-          </Button>
+          <Button type="submit">{t("supplementsPage.add")}</Button>
         </form>
         {suggestions.length > 0 && (
           <>
@@ -252,7 +250,7 @@ function SupplementItem({
             <Button type="submit">{t("supplementsPage.save")}</Button>
             <Button
               type="button"
-              variant="ghost"
+              variant="text"
               onClick={() => {
                 backToMore.current = true;
                 setInvalid(null);
@@ -290,7 +288,7 @@ function SupplementItem({
       {open && (
         <div id={menuId} className="flex flex-wrap gap-2 pb-3">
           <Button
-            variant="outline"
+            variant="secondary"
             onClick={() => {
               setOpen(false);
               setInvalid(null);
@@ -300,7 +298,7 @@ function SupplementItem({
             {t("supplementsPage.rename")}
           </Button>
           <Button
-            variant="outline"
+            variant="secondary"
             onClick={() =>
               void write(
                 [{ kind: "supplement", id: s.id, field: "removed", value: true }],

@@ -100,17 +100,12 @@ function Detail({ account }: { account: OpenAccount }) {
         </section>
       )}
       <div className="flex flex-col gap-2">
-        <Button asChild variant="outline" size="lg" className="w-full font-semibold">
+        <Button asChild variant="secondary" className="w-full">
           <Link to="/workout/edit" search={{ id: workout.id }}>
             {t("history.edit")}
           </Link>
         </Button>
-        <Button
-          variant="destructive"
-          size="lg"
-          className="self-start"
-          onClick={() => setConfirm(true)}
-        >
+        <Button variant="destructive" className="self-start" onClick={() => setConfirm(true)}>
           {t("history.remove")}
         </Button>
       </div>
@@ -119,15 +114,10 @@ function Detail({ account }: { account: OpenAccount }) {
           <p>{t("history.removeBody")}</p>
           {error && <p role="alert">{error}</p>}
           <div className="flex flex-col gap-2">
-            <Button size="lg" className="w-full font-semibold" onClick={() => void remove()}>
+            <Button className="w-full" onClick={() => void remove()}>
               {t("history.removeConfirm")}
             </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              className="w-full"
-              onClick={() => setConfirm(false)}
-            >
+            <Button variant="secondary" className="w-full" onClick={() => setConfirm(false)}>
               {t("history.cancel")}
             </Button>
           </div>

@@ -1,69 +1,102 @@
-import * as React from "react"
-import { cva, type VariantProps } from "class-variance-authority"
-import { cn } from "cn"
-import { Slot } from "radix-ui"
+import * as React from "react";
+import { cva, type VariantProps } from "class-variance-authority";
+import { cn } from "cn";
+import { Slot } from "radix-ui";
 
-// Belay: default, lg and icon are 44 px (h-11 / size-11) so every touch target meets the 44 px
-// spec. xs, sm, icon-xs and icon-sm stay compact on purpose: never use them for a primary action.
-const buttonVariants = cva(
-  "group/button inline-flex shrink-0 items-center justify-center rounded-md border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap press outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+// Belay: four variants from the charter. Every target is at least 44 px; a disabled button reads
+// as track fill and muted text instead of fading, so its label stays legible. A busy button hides
+// its leading icon behind the loading arc (aria-busy) and keeps its label and width.
+const buttonBox = cva(
+  "group/button inline-flex shrink-0 items-center justify-center gap-1.5 border border-transparent bg-clip-padding whitespace-nowrap press outline-none select-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:pointer-events-none disabled:text-muted-foreground aria-busy:[&_svg]:hidden [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
         // Belay: hover on the ink shade, not primary/80: white on a faded orange fell to 3.8:1.
-        default: "bg-primary text-primary-foreground hover:bg-primary-ink",
-        outline:
-          "border-border bg-background shadow-xs hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
-        secondary:
-          "bg-secondary text-secondary-foreground hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_5%)] aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
-        ghost:
-          "hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50",
+        primary:
+          "h-12.5 rounded-field bg-primary px-4 text-primary-foreground hover:bg-primary-ink disabled:bg-track",
+        secondary: "h-11 rounded-control bg-track px-3 text-foreground disabled:bg-track",
+        // The pressed tint is instant: only transform animates, through the shared press.
+        text: "h-11 rounded-control px-3 text-primary active:bg-press-tint active:text-primary-ink disabled:bg-transparent dark:text-primary-ink",
         destructive:
-          "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
-        link: "text-primary underline-offset-4 hover:underline",
+          "h-11 rounded-control px-3 text-destructive active:bg-press-tint disabled:bg-transparent",
       },
       size: {
-        default:
-          "h-11 gap-1.5 px-3 in-data-[slot=button-group]:rounded-md has-data-[icon=inline-end]:pr-2.5 has-data-[icon=inline-start]:pl-2.5",
-        xs: "h-6 gap-1 rounded-[min(var(--radius-md),8px)] px-2 text-xs in-data-[slot=button-group]:rounded-md has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3",
-        sm: "h-8 gap-1 rounded-[min(var(--radius-md),10px)] px-2.5 in-data-[slot=button-group]:rounded-md has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5",
-        lg: "h-11 gap-1.5 px-4 has-data-[icon=inline-end]:pr-3 has-data-[icon=inline-start]:pl-3",
-        icon: "size-11",
-        "icon-xs":
-          "size-6 rounded-[min(var(--radius-md),8px)] in-data-[slot=button-group]:rounded-md [&_svg:not([class*='size-'])]:size-3",
-        "icon-sm":
-          "size-8 rounded-[min(var(--radius-md),10px)] in-data-[slot=button-group]:rounded-md",
-        "icon-lg": "size-11",
+        default: "",
+        icon: "size-11 px-0",
       },
     },
     defaultVariants: {
-      variant: "default",
+      variant: "primary",
       size: "default",
     },
-  }
-)
+  },
+);
+
+// The charter's type steps, kept out of the class merge: it reads text-button or text-body as a
+// colour and would drop it against the variant's text colour.
+const TYPE = {
+  primary: "text-button",
+  secondary: "text-body font-semibold",
+  text: "text-body font-semibold",
+  destructive: "text-body font-semibold",
+} as const;
+
+function buttonVariants({
+  variant,
+  size,
+  className,
+}: VariantProps<typeof buttonBox> & { className?: string } = {}) {
+  return `${cn(buttonBox({ variant, size, className }))} ${TYPE[variant ?? "primary"]}`;
+}
 
 function Button({
   className,
-  variant = "default",
+  variant = "primary",
   size = "default",
   asChild = false,
+  busy = false,
+  onClick,
+  children,
   ...props
 }: React.ComponentProps<"button"> &
-  VariantProps<typeof buttonVariants> & {
-    asChild?: boolean
+  VariantProps<typeof buttonBox> & {
+    asChild?: boolean;
+    busy?: boolean;
   }) {
-  const Comp = asChild ? Slot.Root : "button"
+  const Comp = asChild ? Slot.Root : "button";
 
   return (
     <Comp
       data-slot="button"
       data-variant={variant}
       data-size={size}
-      className={cn(buttonVariants({ variant, size, className }))}
+      aria-busy={busy || undefined}
+      className={buttonVariants({ variant, size, className })}
+      onClick={(event: React.MouseEvent<HTMLButtonElement>) => {
+        // Ruling 10: a second tap while the first is still saving does nothing.
+        if (busy) {
+          event.preventDefault();
+          return;
+        }
+        onClick?.(event);
+      }}
       {...props}
-    />
-  )
+    >
+      {asChild ? (
+        children
+      ) : (
+        <>
+          {busy && (
+            <span
+              aria-hidden="true"
+              className="size-4.5 shrink-0 animate-spin-arc rounded-round border-2 border-current border-t-transparent"
+            />
+          )}
+          {children}
+        </>
+      )}
+    </Comp>
+  );
 }
 
-export { Button, buttonVariants }
+export { Button, buttonVariants };

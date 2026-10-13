@@ -117,7 +117,7 @@ describe("design tokens", () => {
     ["dark", dark],
   ] as const)("%s theme reads the primary button's label on its hover fill", (_, tokens) => {
     const hover = /(?:^|\s)hover:bg-([a-z-]+)(?:\/(\d+))?(?:\s|$)/.exec(
-      buttonVariants({ variant: "default" }),
+      buttonVariants({ variant: "primary" }),
     );
     expect(hover, "the primary button has a hover fill").not.toBeNull();
     const [, token, percent] = hover!;

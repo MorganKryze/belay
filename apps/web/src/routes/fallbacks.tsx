@@ -8,7 +8,7 @@ export function NotFound() {
     <section className="flex flex-col gap-4">
       <h1 className="text-[26px] leading-tight font-bold">{t("fallback.notFoundTitle")}</h1>
       <p>{t("fallback.notFoundBody")}</p>
-      <Button asChild variant="outline" className="self-start">
+      <Button asChild variant="secondary" className="self-start">
         <Link to="/">{t("fallback.backHome")}</Link>
       </Button>
     </section>

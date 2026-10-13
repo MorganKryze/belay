@@ -332,7 +332,7 @@ function Screen({
           {formatClock(now - Date.parse(workout.startedAt), Math.floor)}
         </span>
         <Button
-          variant="outline"
+          variant="secondary"
           onClick={() => (left > 0 ? setFinishing(true) : onFinish(sets.length === 0))}
         >
           {t("session.finish")}
@@ -388,9 +388,8 @@ function Screen({
         );
       })}
       <Button
-        variant="outline"
-        size="lg"
-        className="w-full font-semibold"
+        variant="secondary"
+        className="w-full"
         disabled={plan.length >= MAX_SLOTS}
         onClick={() => setPicking("add")}
       >
@@ -421,19 +420,10 @@ function Screen({
               : t("session.finishLeft", { count: left })}
           </p>
           <div className="flex flex-col gap-2">
-            <Button
-              size="lg"
-              className="w-full font-semibold"
-              onClick={() => onFinish(sets.length === 0)}
-            >
+            <Button className="w-full" onClick={() => onFinish(sets.length === 0)}>
               {t("session.finish")}
             </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              className="w-full"
-              onClick={() => setFinishing(false)}
-            >
+            <Button variant="secondary" className="w-full" onClick={() => setFinishing(false)}>
               {t("session.keepGoing")}
             </Button>
           </div>
