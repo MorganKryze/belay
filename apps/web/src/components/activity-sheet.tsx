@@ -454,13 +454,13 @@ function Chips<T extends string>({
 // The circuit colours: a dot each, with its name for screen readers and, once chosen, under the
 // dots for everyone (a colour never carries the meaning alone).
 const DOT: Readonly<Record<ClimbColor, string>> = {
-  yellow: "#facc15",
-  green: "#22c55e",
-  blue: "#2563eb",
-  red: "#dc2626",
-  black: "#111827",
-  purple: "#a855f7",
-  white: "#f8fafc",
+  yellow: "var(--hold-yellow)",
+  green: "var(--hold-green)",
+  blue: "var(--hold-blue)",
+  red: "var(--hold-red)",
+  black: "var(--hold-black)",
+  purple: "var(--hold-purple)",
+  white: "var(--hold-white)",
 };
 function Colors({
   value,

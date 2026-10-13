@@ -84,17 +84,23 @@ describe("the thumbnails", () => {
   });
 
   it("draws one picture per figure and theme, from the same URL each time", () => {
-    const a = thumbnailUrl("chest", ["triceps", "abs"], false);
-    expect(thumbnailUrl("chest", ["abs", "triceps"], false)).toBe(a);
+    // jsdom loads no stylesheet: give the muscles their tokens, as the light theme does.
     const root = document.documentElement;
-    root.style.setProperty("--muscle-rest", "#010203"); // the dark theme's own colours
+    root.style.setProperty("--muscle-primary", palette.primary);
+    root.style.setProperty("--muscle-secondary", palette.secondary);
+    root.style.setProperty("--muscle-rest", palette.rest);
     try {
+      const a = thumbnailUrl("chest", ["triceps", "abs"], false);
+      expect(thumbnailUrl("chest", ["abs", "triceps"], false)).toBe(a);
+      root.style.setProperty("--muscle-rest", "#010203"); // the dark theme's own colours
       expect(thumbnailUrl("chest", ["triceps", "abs"], true)).not.toBe(a);
+      root.style.setProperty("--muscle-rest", palette.rest);
+      expect(thumbnailUrl("chest", ["triceps"], false)).not.toBe(a);
+      expect(thumbnailUrl("biceps", ["triceps", "abs"], false)).not.toBe(a);
     } finally {
-      root.style.removeProperty("--muscle-rest");
+      for (const name of ["--muscle-primary", "--muscle-secondary", "--muscle-rest"])
+        root.style.removeProperty(name);
     }
-    expect(thumbnailUrl("chest", ["triceps"], false)).not.toBe(a);
-    expect(thumbnailUrl("biceps", ["triceps", "abs"], false)).not.toBe(a);
   });
 
   it("reads the colours of the theme in force", () => {

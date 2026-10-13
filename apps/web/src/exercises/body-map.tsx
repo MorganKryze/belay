@@ -188,11 +188,12 @@ const onTheme = (notify: () => void) => {
 
 function paletteOfTheme(): Palette {
   const css = getComputedStyle(document.documentElement);
-  const token = (name: string, fallback: string) => css.getPropertyValue(name).trim() || fallback;
+  // The fallback is reached only without the stylesheet (some tests); the tokens are the colours.
+  const token = (name: string) => css.getPropertyValue(name).trim() || "currentColor";
   return {
-    primary: token("--muscle-primary", "#c2410c"),
-    secondary: token("--muscle-secondary", "#f4b08a"),
-    rest: token("--muscle-rest", "#dedad6"),
+    primary: token("--muscle-primary"),
+    secondary: token("--muscle-secondary"),
+    rest: token("--muscle-rest"),
   };
 }
 
