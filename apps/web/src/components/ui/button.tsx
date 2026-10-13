@@ -4,10 +4,10 @@ import { cn } from "cn"
 import { Slot } from "radix-ui"
 
 // Belay: four variants from the charter. Every target is at least 44 px; a disabled button reads
-// as track fill and muted text instead of fading, so its label stays legible. A busy button hides
-// its leading icon behind the loading arc (aria-busy) and keeps its label and width.
+// as track fill and muted text instead of fading, so its label stays legible. A busy button draws
+// the loading arc over its leading icon (aria-busy) and keeps its label and width.
 const buttonBox = cva(
-  "group/button inline-flex shrink-0 items-center justify-center gap-1.5 border border-transparent bg-clip-padding whitespace-nowrap press outline-none select-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:pointer-events-none disabled:text-muted-foreground aria-busy:[&_svg]:hidden [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "group/button inline-flex shrink-0 items-center justify-center gap-1.5 border border-transparent bg-clip-padding whitespace-nowrap press outline-none select-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:pointer-events-none disabled:text-muted-foreground aria-busy:[&_svg]:invisible [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
@@ -83,18 +83,19 @@ function Button({
       }}
       {...props}
     >
-      {asChild ? (
-        children
-      ) : (
-        <>
-          {busy && (
-            <span
-              aria-hidden="true"
-              className="size-4.5 shrink-0 animate-spin-arc rounded-round border-2 border-current border-t-transparent"
-            />
-          )}
+      {busy && !asChild ? (
+        // The arc stays out of the flow so the width never moves: over the leading icon, which
+        // keeps its room unseen, or in the gap before the label when there is no icon. The row
+        // repeats the button's gap so the label sits where it did.
+        <span className="group/busy relative inline-flex items-center gap-1.5">
           {children}
-        </>
+          <span
+            aria-hidden="true"
+            className="absolute inset-y-0 right-full mr-1.5 my-auto size-4.5 animate-spin-arc rounded-round border-2 border-current border-t-transparent group-has-[>svg:first-child]/busy:right-auto group-has-[>svg:first-child]/busy:mr-0 group-has-[>svg:first-child]/busy:-left-px"
+          />
+        </span>
+      ) : (
+        children
       )}
     </Comp>
   )
