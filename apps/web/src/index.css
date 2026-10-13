@@ -147,6 +147,78 @@
 }
 
 /*
+ * The shared motion. Static so every variable lands on :root, where the reduced-motion block below
+ * can swap it. Keyframes move only transform and opacity.
+ */
+@theme static {
+  --animate-fade-in: fade-in var(--dur-base) var(--ease-out) both;
+  --animate-fade-out: fade-out var(--dur-fast) var(--ease-exit) both;
+  /* Toast, session bar. */
+  --animate-rise-in: rise-in var(--dur-base) var(--ease-out) both;
+  /* Banners. */
+  --animate-drop-in: drop-in var(--dur-base) var(--ease-out) both;
+  --animate-sheet-in: sheet-in var(--dur-sheet-in) var(--ease-sheet) both;
+  --animate-sheet-out: sheet-out var(--dur-sheet-out) var(--ease-exit) both;
+  --animate-overlay-in: fade-in var(--dur-overlay-in) var(--ease-out) both;
+  --animate-overlay-out: fade-out var(--dur-release) var(--ease-exit) both;
+  /* Desktop dialog, menu. */
+  --animate-dialog-in: dialog-in var(--dur-base) var(--ease-out) both;
+  /* The tick glyph only. */
+  --animate-pop-in: pop-in var(--dur-check) var(--spring-pop-in) both;
+  /* The loading arc. */
+  --animate-spin-arc: spin-arc var(--dur-pulse) linear infinite;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes fade-out {
+    to {
+      opacity: 0;
+    }
+  }
+  @keyframes rise-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+  }
+  @keyframes drop-in {
+    from {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+  }
+  @keyframes sheet-in {
+    from {
+      transform: translateY(100%);
+    }
+  }
+  @keyframes sheet-out {
+    to {
+      transform: translateY(100%);
+    }
+  }
+  @keyframes dialog-in {
+    from {
+      opacity: 0;
+      transform: scale(0.96);
+    }
+  }
+  @keyframes pop-in {
+    from {
+      transform: scale(0.6);
+    }
+  }
+  @keyframes spin-arc {
+    to {
+      transform: rotate(1turn);
+    }
+  }
+}
+
+/*
  * "Chalk & rope" tokens. Components use these names only, never a raw colour. Every text pair is
  * at least 4.5:1 and every non-text pair at least 3:1 (src/lib/contrast.test.ts reads this file).
  * No red on body data: orange is for actions and "you", soft green only marks a reference range.
@@ -284,6 +356,61 @@
   --shadow-sheet: none;
 }
 
+:root {
+  --press-scale: 0.97;
+  --slide-duration: var(--dur-base);
+  --tint-duration: var(--dur-fast);
+}
+
+/*
+ * Calm by default: with reduced motion, nothing slides or scales; enters and leaves become short
+ * fades, the tick and the loading arc stand still. Components never write their own media query.
+ */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --animate-fade-in: fade-in var(--dur-reduced) var(--ease-out) both;
+    --animate-fade-out: fade-out var(--dur-reduced) var(--ease-exit) both;
+    --animate-rise-in: fade-in var(--dur-reduced) var(--ease-out) both;
+    --animate-drop-in: fade-in var(--dur-reduced) var(--ease-out) both;
+    --animate-sheet-in: fade-in var(--dur-reduced) var(--ease-out) both;
+    --animate-sheet-out: fade-out var(--dur-reduced) var(--ease-exit) both;
+    --animate-overlay-in: fade-in var(--dur-reduced) var(--ease-out) both;
+    --animate-overlay-out: fade-out var(--dur-reduced) var(--ease-exit) both;
+    --animate-dialog-in: fade-in var(--dur-reduced) var(--ease-out) both;
+    --animate-pop-in: none;
+    --animate-spin-arc: none;
+    --press-scale: 1;
+    --slide-duration: 0s;
+    --tint-duration: 0s;
+  }
+}
+
+/* A pressed control shrinks a little and springs back on the nav curve. */
+@utility press {
+  transition: transform var(--dur-release) var(--ease-nav);
+  &:active {
+    transform: scale(var(--press-scale));
+    transition-duration: var(--dur-press);
+  }
+}
+
+/* A pressed row only tints. */
+@utility press-tint {
+  transition: background-color var(--tint-duration) var(--ease-out);
+  &:active {
+    background-color: var(--press-tint);
+  }
+}
+
+/* The frosted bars; an opaque background where backdrop-filter is missing. */
+@utility glass {
+  background-color: var(--glass);
+  backdrop-filter: saturate(180%) blur(10px);
+  @supports not (backdrop-filter: blur(1px)) {
+    background-color: var(--glass-fallback);
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring;
@@ -296,14 +423,7 @@
   }
   html {
     @apply font-sans;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *,
-  ::before,
-  ::after {
-    animation-duration: 0.01ms !important;
-    transition-duration: 0.01ms !important;
+    /* Pressed controls answer with their own scale or tint, not the browser's grey flash. */
+    -webkit-tap-highlight-color: transparent;
   }
 }
