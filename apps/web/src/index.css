@@ -188,8 +188,9 @@
   --secondary-foreground: var(--foreground);
   --accent: var(--track);
   --accent-foreground: var(--foreground);
-  /* Red only for destroying something (the activity delete), never on body data. */
-  --destructive: #b91c1c;
+  /* Red only for destroying something (the activity delete), never on body data. Dark enough
+     here (light enough in .dark) for its label to keep 4.5:1 on the button's own red tint. */
+  --destructive: #991b1b;
   --radius: 0.625rem;
   /* The active tab's pill, the frosted bars (and their fallback without backdrop-filter), the
      overlay under a sheet and the tint of a pressed row. */
@@ -273,7 +274,7 @@
   --muscle-secondary: #8a4524;
   --muscle-rest: #36322f;
   --ring: #fb923c;
-  --destructive: #f87171;
+  --destructive: #fca5a5;
   --tab-pill: #3d2818;
   --glass: rgba(29, 27, 25, 0.84);
   --toast-icon: #c2410c;

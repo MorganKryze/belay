@@ -88,6 +88,27 @@ describe("design tokens", () => {
     }
   });
 
+  // The destructive button tints itself with its own red: 10 % at rest and 20 % on hover in the
+  // light theme, 20 % and 30 % in the dark one. Its 14 px label needs 4.5:1 on every tint, on the
+  // page and on a card.
+  it.each([
+    ["light", light],
+    ["dark", dark],
+  ] as const)("%s theme reads the destructive label on its own tint", (_, tokens) => {
+    const red = tokens.destructive!;
+    const channels = [1, 3, 5].map((i) => parseInt(red.slice(i, i + 2), 16)).join(", ");
+    for (const under of ["background", "surface"] as const) {
+      for (const alpha of [0.1, 0.2, 0.3]) {
+        const tint = flatten(`rgba(${channels}, ${alpha})`, tokens[under]!);
+        const ratio = contrastRatio(red, tint);
+        expect(
+          ratio,
+          `destructive on ${alpha} of itself over ${under}: ${ratio.toFixed(2)}`,
+        ).toBeGreaterThanOrEqual(4.5);
+      }
+    }
+  });
+
   it("lays an rgba colour on an opaque one", () => {
     expect(flatten("rgba(0, 0, 0, 0.5)", "#ffffff")).toBe("#808080");
     expect(flatten("rgba(255, 255, 255, 1)", "#000000")).toBe("#ffffff");
