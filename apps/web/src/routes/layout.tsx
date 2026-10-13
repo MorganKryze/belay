@@ -145,9 +145,7 @@ function Shell() {
         </p>
         <UpdateBanner />
         {/* Grows to the tab bar, so a screen can pin a line to its bottom (Settings' version). */}
-        {/* Named so a page change moves the page alone; opaque so a sliding page hides the one
-            under it. */}
-        <main className="flex flex-1 flex-col bg-background [view-transition-name:main]">
+        <main className="flex flex-1 flex-col">
           <Outlet />
         </main>
         {docked && (

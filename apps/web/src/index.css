@@ -560,43 +560,42 @@ html:has([role="dialog"][data-state="open"]) [data-dock] {
 
 /*
  * Page changes. The router only starts a transition, typed push, pop, cover or uncover, where the
- * browser supports transition types; tab switches get none and change in the same frame. Only
- * the page (main) moves: no group morphs its size, the rest of the screen (root) swaps at once,
- * and the dock and top bar hold still on a push or a pop.
+ * browser supports transition types; tab switches get none and change in the same frame. The page
+ * moves as the root snapshot: it is the size of the screen and taken at each page's own scroll, so
+ * the leaving page starts exactly where it was on screen and the arriving one where it will rest.
+ * No group morphs its size, and the dock and top bar, named apart, hold still on a push or a pop.
  */
 ::view-transition-group(*) {
   animation: none;
 }
 ::view-transition-old(root),
-::view-transition-new(root),
-::view-transition-old(main),
-::view-transition-new(main) {
+::view-transition-new(root) {
   animation: none;
   mix-blend-mode: normal;
 }
-html:active-view-transition-type(push)::view-transition-new(main) {
+html:active-view-transition-type(push)::view-transition-new(root) {
   animation: var(--animate-page-push-in);
 }
-html:active-view-transition-type(push)::view-transition-old(main) {
+html:active-view-transition-type(push)::view-transition-old(root) {
   animation: var(--animate-page-push-out);
 }
-html:active-view-transition-type(pop)::view-transition-new(main) {
+html:active-view-transition-type(pop)::view-transition-new(root) {
   animation: var(--animate-page-back-in);
 }
-html:active-view-transition-type(pop)::view-transition-old(main) {
+html:active-view-transition-type(pop)::view-transition-old(root) {
   z-index: 1;
   animation: var(--animate-page-back-out);
 }
-html:active-view-transition-type(cover)::view-transition-new(main) {
+html:active-view-transition-type(cover)::view-transition-new(root) {
   animation: var(--animate-page-cover-in);
 }
-html:active-view-transition-type(cover)::view-transition-old(main) {
+html:active-view-transition-type(cover)::view-transition-old(root) {
   animation: var(--animate-page-under-out);
 }
-html:active-view-transition-type(uncover)::view-transition-new(main) {
+html:active-view-transition-type(uncover)::view-transition-new(root) {
   animation: var(--animate-page-under-in);
 }
-html:active-view-transition-type(uncover)::view-transition-old(main) {
+html:active-view-transition-type(uncover)::view-transition-old(root) {
   z-index: 1;
   animation: var(--animate-page-uncover-out);
 }

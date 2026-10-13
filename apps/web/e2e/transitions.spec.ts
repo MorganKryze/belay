@@ -6,6 +6,9 @@ test.use({ locale: "en-US" });
 type Played = {
   types: string[];
   animations: { target: string; duration: number; easing: string; keyframes: Keyframe[] }[];
+  // Where the leaving page's top was on screen just before the change, how far the page was
+  // scrolled, and where its moving snapshot draws that top once the transition is ready.
+  page: { scrollY: number; top: number; drawn: number };
 };
 
 // Records every page transition the router starts: its types and the animations of its
@@ -17,9 +20,34 @@ async function recordTransitions(page: Page) {
     const start = document.startViewTransition?.bind(document);
     if (!start) return;
     document.startViewTransition = ((arg: StartViewTransitionOptions) => {
+      const scrollY = window.scrollY;
+      const main = document.querySelector("main")!;
+      const top = main.getBoundingClientRect().top;
+      // The snapshot that carries the page: the nearest named box around main, else the root,
+      // whose snapshot is the viewport. Its on-screen top as it is captured.
+      let name = "root";
+      let origin = 0;
+      for (
+        let el: Element | null = main;
+        el && el !== document.documentElement;
+        el = el.parentElement
+      ) {
+        const named = getComputedStyle(el).viewTransitionName;
+        if (named !== "none") {
+          name = named;
+          origin = el.getBoundingClientRect().top;
+          break;
+        }
+      }
       const transition = start(arg);
       void transition.ready.then(() => {
+        const at = getComputedStyle(
+          document.documentElement,
+          `::view-transition-group(${name})`,
+        ).transform;
+        const drawn = (at === "none" ? 0 : new DOMMatrix(at).f) + (top - origin);
         w.played.push({
+          page: { scrollY, top, drawn },
           types: [...transition.types],
           animations: document
             .getAnimations()
@@ -68,16 +96,16 @@ test("a pushed page slides in from the right in 420 ms on the nav curve while th
   await expect.poll(async () => (await played(page)).length).toBe(1);
   const [push] = await played(page);
   expect(push!.types).toEqual(["push"]);
-  const enter = animation(push!, "::view-transition-new(main)");
+  const enter = animation(push!, "::view-transition-new(root)");
   expect(enter).toMatchObject({ duration: 420, easing: NAV });
   expect(enter!.keyframes[0]!.transform).toBe("translate(100%)");
-  const leave = animation(push!, "::view-transition-old(main)");
+  const leave = animation(push!, "::view-transition-old(root)");
   expect(leave).toMatchObject({ duration: 420, easing: NAV });
   expect(leave!.keyframes.at(-1)).toMatchObject({ transform: "translate(-25%)", opacity: "0.94" });
-  // Only the page moves: no group morphs, the root does not slide.
+  // Only the page moves, as the root snapshot: no group morphs, the dock and top bar hold still.
   expect(push!.animations.map((a) => a.target).sort()).toEqual([
-    "::view-transition-new(main)",
-    "::view-transition-old(main)",
+    "::view-transition-new(root)",
+    "::view-transition-old(root)",
   ]);
 });
 
@@ -89,10 +117,10 @@ test("Back plays the reverse in 340 ms", async ({ page }) => {
   await expect.poll(async () => (await played(page)).length).toBe(2);
   const pop = (await played(page))[1]!;
   expect(pop.types).toEqual(["pop"]);
-  const enter = animation(pop, "::view-transition-new(main)");
+  const enter = animation(pop, "::view-transition-new(root)");
   expect(enter).toMatchObject({ duration: 340, easing: NAV });
   expect(enter!.keyframes[0]).toMatchObject({ transform: "translate(-25%)", opacity: "0.94" });
-  const leave = animation(pop, "::view-transition-old(main)");
+  const leave = animation(pop, "::view-transition-old(root)");
   expect(leave).toMatchObject({ duration: 340, easing: NAV });
   expect(leave!.keyframes.at(-1)!.transform).toBe("translate(100%)");
 });
@@ -145,7 +173,7 @@ test("the session rises as a cover in 450 ms and leaves in 260 ms", async ({ pag
   await expect.poll(async () => (await played(page)).length).toBe(1);
   const cover = (await played(page))[0]!;
   expect(cover.types).toEqual(["cover"]);
-  const rise = animation(cover, "::view-transition-new(main)");
+  const rise = animation(cover, "::view-transition-new(root)");
   expect(rise).toMatchObject({ duration: 450, easing: SHEET });
   expect(rise!.keyframes[0]!.transform).toBe("translateY(100%)");
   // The dock fades out as the cover takes the screen, and comes back as it leaves.
@@ -156,7 +184,7 @@ test("the session rises as a cover in 450 ms and leaves in 260 ms", async ({ pag
   await expect.poll(async () => (await played(page)).length).toBe(2);
   const uncover = (await played(page))[1]!;
   expect(uncover.types).toEqual(["uncover"]);
-  const sink = animation(uncover, "::view-transition-old(main)");
+  const sink = animation(uncover, "::view-transition-old(root)");
   expect(sink).toMatchObject({ duration: 260, easing: EXIT });
   expect(sink!.keyframes.at(-1)!.transform).toBe("translateY(100%)");
   expect(animation(uncover, "::view-transition-new(dock)")!.keyframes[0]!.opacity).toBe("0");
@@ -206,4 +234,47 @@ test("the back chevron brings the list back where it was", async ({ page }) => {
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(scrolled);
   // It went back: no entry stacked on top of the page.
   expect(await page.evaluate(() => history.length)).toBe(entries);
+});
+
+test("the leaving page moves from where it was on screen, for push, pop, cover and uncover", async ({
+  page,
+}) => {
+  await page.unroute("**/api/me");
+  await fakeServer(page);
+  await page.setViewportSize({ width: 390, height: 500 });
+  await recordTransitions(page);
+  // Push and pop from the tools list scrolled past its first tools.
+  await page.goto("/tools");
+  const bmi = page.getByRole("link", { name: /^BMI/ });
+  await bmi.scrollIntoViewIfNeeded();
+  await bmi.click();
+  await expect(page.getByRole("heading", { level: 1, name: "BMI" })).toBeVisible();
+  await page.goBack();
+  await expect(page.getByRole("heading", { level: 1, name: "Tools" })).toBeVisible();
+  // Cover from a scrolled Home, uncover from a scrolled session.
+  await page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Home" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Hello, Ada" })).toBeVisible();
+  // Shorter, so Home scrolls while its session card stays in view.
+  await page.setViewportSize({ width: 390, height: 400 });
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        window.scrollTo(0, 100);
+        return [window.scrollY, document.documentElement.scrollHeight];
+      }),
+    )
+    .toEqual([100, expect.any(Number)]);
+  await page.getByRole("link", { name: /^Session [ABC] · / }).click();
+  await expect(page.getByRole("heading", { level: 1, name: /^Session [ABC] · / })).toBeVisible();
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+  await page.goBack();
+  await expect(page.getByRole("heading", { level: 1, name: "Hello, Ada" })).toBeVisible();
+  await expect.poll(async () => (await played(page)).length).toBe(4);
+  const all = await played(page);
+  expect(all.map((p) => p.types)).toEqual([["push"], ["pop"], ["cover"], ["uncover"]]);
+  for (const p of all) {
+    // From the scrolled tools list, Home and session (the BMI page is short and opens at its top).
+    if (p.types[0] !== "pop") expect.soft(p.page.scrollY, p.types[0]).toBeGreaterThan(50);
+    expect.soft(Math.round(p.page.drawn), p.types[0]).toBe(Math.round(p.page.top));
+  }
 });
