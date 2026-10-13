@@ -363,6 +363,8 @@
   /* The large title folding into the compact header; driven by scroll, so no duration. */
   --fold-in: fold-in linear both;
   --fold-out: fold-out linear both;
+  /* The compact header's opacity when no timeline drives it: hidden until the page scrolls. */
+  --fold-rest: 0;
 }
 
 /*
@@ -384,6 +386,7 @@
     --animate-spin-arc: none;
     --fold-in: none;
     --fold-out: none;
+    --fold-rest: 1;
     --press-scale: 1;
     --slide-duration: 0s;
     --tint-duration: 0s;
@@ -433,10 +436,15 @@
  * The large title fades out and the compact header (title, glass, hairline) fades in over the
  * first 44 px of scroll; only opacity moves. Without scroll timelines the compact header shows
  * from the start. Under reduced motion the fold variables are none: the same compact start.
+ * A page that does not scroll has no active timeline, so the compact header rests hidden on its
+ * own; a page that scrolls less than 44 px folds over the scroll it has, never stopping halfway.
  */
 @keyframes fold-in {
   from {
     opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }
 @keyframes fold-out {
@@ -446,16 +454,17 @@
 }
 @utility fold-in {
   @supports (animation-timeline: scroll()) {
+    opacity: var(--fold-rest);
     animation: var(--fold-in);
     animation-timeline: scroll(root);
-    animation-range: 0 44px;
+    animation-range: 0 min(44px, 100%);
   }
 }
 @utility fold-out {
   @supports (animation-timeline: scroll()) {
     animation: var(--fold-out);
     animation-timeline: scroll(root);
-    animation-range: 0 44px;
+    animation-range: 0 min(44px, 100%);
   }
 }
 @supports not (animation-timeline: scroll()) {

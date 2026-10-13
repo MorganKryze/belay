@@ -115,14 +115,21 @@ describe("PageHeader", () => {
   it("the header folds over the first 44 px of scroll, shows compact from the start without scroll timelines and under reduced motion", () => {
     const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../index.css"), "utf8");
     expect(css).toMatch(/animation-timeline:\s*scroll\(root\)/);
-    expect(css).toMatch(/animation-range:\s*0\s+44px/);
-    expect(css).toMatch(/@keyframes fold-in\s*\{\s*from\s*\{\s*opacity:\s*0;?\s*\}\s*\}/);
+    // Ends at the bottom of a page that scrolls less than 44 px, so the fold never stops halfway.
+    expect(css).toMatch(/animation-range:\s*0\s+min\(44px,\s*100%\)/);
+    expect(css).toMatch(
+      /@keyframes fold-in\s*\{\s*from\s*\{\s*opacity:\s*0;?\s*\}\s*to\s*\{\s*opacity:\s*1;?\s*\}\s*\}/,
+    );
+    // A page that does not scroll has no active timeline: the compact header rests hidden.
+    expect(css).toMatch(/:root\s*\{[^}]*--fold-rest:\s*0;/);
+    expect(css).toMatch(/opacity:\s*var\(--fold-rest\)/);
     expect(css).toMatch(/@keyframes fold-out\s*\{\s*to\s*\{\s*opacity:\s*0;?\s*\}\s*\}/);
     const fallback = css.match(/@supports not \(animation-timeline: scroll\(\)\)\s*\{([^}]*\}){2}/);
     expect(fallback?.[0]).toMatch(/animation:\s*none/);
     const reduced = css.match(/@media \(prefers-reduced-motion: reduce\)\s*\{\s*:root\s*\{[^}]*\}/);
     expect(reduced?.[0]).toMatch(/--fold-in:\s*none/);
     expect(reduced?.[0]).toMatch(/--fold-out:\s*none/);
+    expect(reduced?.[0]).toMatch(/--fold-rest:\s*1/);
     expectTokensOnly("components/page-header.tsx");
   });
 });

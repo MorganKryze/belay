@@ -2,9 +2,10 @@ import { expect, type Page, test } from "@playwright/test";
 
 test.beforeEach(async ({ page }) => {
   await page.route("**/api/me", (r) => r.fulfill({ status: 401 }));
-  // Short enough that the tools list scrolls well past 60 px.
-  await page.setViewportSize({ width: 390, height: 500 });
 });
+
+// Short enough that the tools list scrolls well past 60 px.
+const scrollsFar = (page: Page) => page.setViewportSize({ width: 390, height: 500 });
 
 const state = (page: Page) =>
   page.evaluate(() => {
@@ -22,6 +23,9 @@ const state = (page: Page) =>
     };
   });
 
+const scrollRange = (page: Page) =>
+  page.evaluate(() => document.documentElement.scrollHeight - window.innerHeight);
+
 const scrollTo = async (page: Page, y: number) => {
   await page.evaluate((top) => window.scrollTo(0, top), y);
   await page.evaluate(() => new Promise(requestAnimationFrame));
@@ -31,6 +35,7 @@ const scrollTo = async (page: Page, y: number) => {
 test("the large title folds into the frosted compact header over 44 px of scroll without changing size", async ({
   page,
 }) => {
+  await scrollsFar(page);
   await page.goto("/tools");
   await expect(page.getByRole("heading", { level: 1, name: "Tools" })).toBeVisible();
   const top = await state(page);
@@ -44,6 +49,7 @@ test("the large title folds into the frosted compact header over 44 px of scroll
 test("with reduced motion the compact header shows from the start and the large title scrolls without fading", async ({
   page,
 }) => {
+  await scrollsFar(page);
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/tools");
   await expect(page.getByRole("heading", { level: 1, name: "Tools" })).toBeVisible();
@@ -52,4 +58,31 @@ test("with reduced motion the compact header shows from the start and the large 
   await scrollTo(page, 60);
   const scrolled = await state(page);
   expect([scrolled.large, scrolled.compact, scrolled.fill]).toEqual([1, 1, 1]);
+});
+
+test("a page that does not scroll shows only the large title under a clear bar", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await expect(page.getByRole("heading", { level: 1, name: "Belay" })).toBeVisible();
+  expect(await scrollRange(page)).toBe(0);
+  const top = await state(page);
+  expect([top.large, top.compact, top.fill]).toEqual([1, 0, 0]);
+});
+
+test("a page that scrolls less than 44 px still folds all the way at its bottom", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 780 });
+  await page.goto("/tools");
+  await expect(page.getByRole("heading", { level: 1, name: "Tools" })).toBeVisible();
+  const range = await scrollRange(page);
+  expect(range).toBeGreaterThan(0);
+  expect(range).toBeLessThan(44);
+  const top = await state(page);
+  expect([top.large, top.compact, top.fill]).toEqual([1, 0, 0]);
+  await scrollTo(page, range);
+  const bottom = await state(page);
+  expect([bottom.large, bottom.compact, bottom.fill]).toEqual([0, 1, 1]);
 });
