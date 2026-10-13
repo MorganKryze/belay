@@ -18,6 +18,7 @@ import {
   openWorkout,
   prefill,
   restEndsAt,
+  sessionProgress,
   summary,
   turnKey,
   warmups,
@@ -296,6 +297,53 @@ describe("the order of work sets and the rest (§4.3)", () => {
       slotIndex: 0,
       round: 1,
     });
+  });
+});
+
+describe("sessionProgress", () => {
+  const open = () => workout({ endedAt: null });
+
+  it("sessionProgress: nothing done puts the first turn up next", () => {
+    const p = sessionProgress(A.slots, []);
+    expect(p.done.size).toBe(0);
+    expect(p.left).toBe(plannedWorkSets(A.slots));
+    expect(p.last).toBeUndefined();
+    expect(p.next).toEqual({ slotIndex: 0, round: 0 });
+  });
+
+  it("after a set, the next turn in the order comes up and is the last done", () => {
+    const w = open();
+    const sets = [
+      set(w, 0, 60, 8, { doneAt: "2026-10-05T17:05:00.000Z" }),
+      set(w, 1, 60, 8, { doneAt: "2026-10-05T17:08:00.000Z" }),
+      warm(w, 0, 20, 10),
+    ];
+    const p = sessionProgress(A.slots, sets);
+    expect([...p.done]).toEqual(["0|0", "0|1"]);
+    expect(p.left).toBe(plannedWorkSets(A.slots) - 2);
+    expect(p.last).toEqual({ slotIndex: 0, round: 1 });
+    expect(p.next).toEqual({ slotIndex: 0, round: 2 });
+  });
+
+  it("skipped slots and sets past the plan do not count", () => {
+    const w = open();
+    const plan = A.slots.map((s, i) => (i === 1 ? { ...s, skipped: true } : s));
+    const sets = [
+      set(w, 0, 60, 8, { slotIndex: 1 }),
+      set(w, A.slots[0]!.sets, 60, 8, { slotIndex: 0 }),
+    ];
+    const p = sessionProgress(plan, sets);
+    expect(p.done.size).toBe(0);
+    expect(p.left).toBe(plannedWorkSets(plan));
+    expect(p.last).toBeUndefined();
+  });
+
+  it("every set done leaves nothing up next", () => {
+    const w = open();
+    const sets = workOrder(A.slots).map((t) => set(w, t.round, 60, 8, { slotIndex: t.slotIndex }));
+    const p = sessionProgress(A.slots, sets);
+    expect(p.left).toBe(0);
+    expect(p.next).toBeNull();
   });
 });
 
