@@ -8,6 +8,9 @@ import {
   notFound,
   type RouterHistory,
 } from "@tanstack/react-router";
+// Loaded before the router is created: its capture listener sees a back swipe before the router
+// handles that popstate.
+import { viewTransition } from "./lib/transitions";
 import { NotFound, RouteError } from "./routes/fallbacks";
 import { Home } from "./routes/home";
 import { Layout } from "./routes/layout";
@@ -143,6 +146,10 @@ export const createAppRouter = (history?: RouterHistory) =>
     history,
     defaultNotFoundComponent: NotFound,
     defaultErrorComponent: RouteError,
+    defaultViewTransition: viewTransition,
+    // A pushed page opens at its top, Back finds the page where it was left, and a tab opened
+    // from the bar is a new entry, so it starts at its top too.
+    scrollRestoration: true,
   });
 export const router = createAppRouter();
 

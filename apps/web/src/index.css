@@ -167,6 +167,17 @@
   --animate-pop-in: pop-in var(--dur-check) var(--spring-pop-in) both;
   /* The loading arc. */
   --animate-spin-arc: spin-arc var(--dur-pulse) linear infinite;
+  /* Page changes: a push slides the new page in and the old one 25 % left under a 6 % dim, Back
+     plays it in reverse, the session rises as a cover over a page that stays put. */
+  --animate-page-push-in: page-push-in var(--dur-push) var(--ease-nav) both;
+  --animate-page-push-out: page-push-out var(--dur-push) var(--ease-nav) both;
+  --animate-page-back-in: page-back-in var(--dur-pop) var(--ease-nav) both;
+  --animate-page-back-out: page-back-out var(--dur-pop) var(--ease-nav) both;
+  --animate-page-cover-in: sheet-in var(--dur-sheet-in) var(--ease-sheet) both;
+  --animate-page-uncover-out: sheet-out var(--dur-sheet-out) var(--ease-exit) both;
+  /* The page under a cover holds still; with reduced motion it crossfades like the rest. */
+  --animate-page-under-in: none;
+  --animate-page-under-out: none;
 
   @keyframes fade-in {
     from {
@@ -198,6 +209,28 @@
   @keyframes sheet-out {
     to {
       transform: translateY(100%);
+    }
+  }
+  @keyframes page-push-in {
+    from {
+      transform: translateX(100%);
+    }
+  }
+  @keyframes page-push-out {
+    to {
+      opacity: 0.94;
+      transform: translateX(-25%);
+    }
+  }
+  @keyframes page-back-in {
+    from {
+      opacity: 0.94;
+      transform: translateX(-25%);
+    }
+  }
+  @keyframes page-back-out {
+    to {
+      transform: translateX(100%);
     }
   }
   @keyframes dialog-in {
@@ -397,6 +430,14 @@
     --animate-dialog-in: fade-in var(--dur-reduced) var(--ease-out) both;
     --animate-pop-in: none;
     --animate-spin-arc: none;
+    --animate-page-push-in: fade-in var(--dur-reduced) var(--ease-out) both;
+    --animate-page-push-out: fade-out var(--dur-reduced) var(--ease-exit) both;
+    --animate-page-back-in: fade-in var(--dur-reduced) var(--ease-out) both;
+    --animate-page-back-out: fade-out var(--dur-reduced) var(--ease-exit) both;
+    --animate-page-cover-in: fade-in var(--dur-reduced) var(--ease-out) both;
+    --animate-page-uncover-out: fade-out var(--dur-reduced) var(--ease-exit) both;
+    --animate-page-under-in: fade-in var(--dur-reduced) var(--ease-out) both;
+    --animate-page-under-out: fade-out var(--dur-reduced) var(--ease-exit) both;
     --fold-in: none;
     --fold-out: none;
     --fold-rest: 1;
@@ -506,6 +547,67 @@
 }
 html:has([role="dialog"][data-state="open"]) [data-dock] {
   opacity: 0;
+}
+
+/*
+ * Page changes. The router only starts a transition, typed push, pop, cover or uncover, where the
+ * browser supports transition types; tab switches get none and change in the same frame. Only
+ * the page (main) moves: no group morphs its size, the rest of the screen (root) swaps at once,
+ * and the dock and top bar hold still on a push or a pop.
+ */
+::view-transition-group(*) {
+  animation: none;
+}
+::view-transition-old(root),
+::view-transition-new(root),
+::view-transition-old(main),
+::view-transition-new(main) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+html:active-view-transition-type(push)::view-transition-new(main) {
+  animation: var(--animate-page-push-in);
+}
+html:active-view-transition-type(push)::view-transition-old(main) {
+  animation: var(--animate-page-push-out);
+}
+html:active-view-transition-type(pop)::view-transition-new(main) {
+  animation: var(--animate-page-back-in);
+}
+html:active-view-transition-type(pop)::view-transition-old(main) {
+  z-index: 1;
+  animation: var(--animate-page-back-out);
+}
+html:active-view-transition-type(cover)::view-transition-new(main) {
+  animation: var(--animate-page-cover-in);
+}
+html:active-view-transition-type(cover)::view-transition-old(main) {
+  animation: var(--animate-page-under-out);
+}
+html:active-view-transition-type(uncover)::view-transition-new(main) {
+  animation: var(--animate-page-under-in);
+}
+html:active-view-transition-type(uncover)::view-transition-old(main) {
+  z-index: 1;
+  animation: var(--animate-page-uncover-out);
+}
+html:active-view-transition-type(push, pop)::view-transition-old(dock),
+html:active-view-transition-type(push, pop)::view-transition-old(top-bar) {
+  animation: none;
+  opacity: 0;
+}
+html:active-view-transition-type(push, pop)::view-transition-new(dock),
+html:active-view-transition-type(push, pop)::view-transition-new(top-bar) {
+  animation: none;
+}
+/* The session cover takes the whole screen: the dock and the top bar fade as it rises. */
+html:active-view-transition-type(cover, uncover)::view-transition-old(dock),
+html:active-view-transition-type(cover, uncover)::view-transition-old(top-bar) {
+  animation: var(--animate-fade-out);
+}
+html:active-view-transition-type(cover, uncover)::view-transition-new(dock),
+html:active-view-transition-type(cover, uncover)::view-transition-new(top-bar) {
+  animation: var(--animate-fade-in);
 }
 
 @layer base {

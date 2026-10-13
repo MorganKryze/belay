@@ -1,4 +1,4 @@
-import { Outlet, useLocation, useRouter } from "@tanstack/react-router";
+import { Outlet, useRouter, useRouterState } from "@tanstack/react-router";
 import { FORGOTTEN_MS, liveSets, openWorkout } from "@belay/shared/training/rules";
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -65,7 +65,12 @@ function Shell() {
   // needs no banner at all (§4.6).
   const offline = !online && account.kind !== "open";
   const router = useRouter();
-  const { pathname } = useLocation();
+  // The page on screen, not the one loading: the router announces a navigation before it starts
+  // the page transition, and the chrome must still show the old page's dock and bars when the
+  // transition takes its picture of it.
+  const pathname = useRouterState({
+    select: (s) => (s.resolvedLocation ?? s.location).pathname,
+  });
   // The session and its summary are full screen covers, and Réglages with its pages is pushed
   // from the avatar, outside every tab: no dock on either (§4.2).
   const docked = !/^\/(?:workout|settings)(?:\/|$)/.test(pathname);
@@ -135,12 +140,14 @@ function Shell() {
         </p>
         <UpdateBanner />
         {/* Grows to the tab bar, so a screen can pin a line to its bottom (Settings' version). */}
-        <main className="flex flex-1 flex-col">
+        {/* Named so a page change moves the page alone; opaque so a sliding page hides the one
+            under it. */}
+        <main className="flex flex-1 flex-col bg-background [view-transition-name:main]">
           <Outlet />
         </main>
         {docked && (
           // No box of its own, so the column's gap never counts it.
-          <div className="contents lg:hidden">
+          <div className="contents lg:hidden *:[view-transition-name:dock]">
             <TabBar
               above={
                 bar.shown && (
