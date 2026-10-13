@@ -11,14 +11,14 @@ import { Link } from "@tanstack/react-router";
 import { ChevronLeft, Ellipsis, Plus } from "lucide-react";
 import { type FormEvent, useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { FieldError } from "@/components/field-error";
 import { Button } from "@/components/ui/button";
 import { Toast, useWriter } from "@/components/weigh-in";
 import { type OpenAccount, useAccount, useSupplements } from "@/sync/account";
 
 const back = "-ml-1 inline-flex min-h-11 items-center gap-0.5 font-medium text-primary";
 const sectionTitle = "mx-0.5 text-xs font-semibold tracking-wider text-muted-foreground uppercase";
-const field =
-  "min-h-12 w-full min-w-0 rounded-field border border-input bg-card px-4 text-base outline-offset-2";
+const field = "field w-full min-w-0 px-4 text-base";
 
 // Case and accents aside: "Oméga-3" is "omega-3".
 const plain = (name: string) =>
@@ -143,11 +143,11 @@ function SupplementList({ account }: { account: OpenAccount }) {
             onChange={(e) => setName(e.target.value)}
           />
           {invalid && (
-            <p id={`${nameId}-error`} className="text-[13px] font-medium text-primary-ink">
+            <FieldError id={`${nameId}-error`}>
               {t(
                 invalid === "duplicate" ? "supplementsPage.duplicate" : "supplementsPage.nameError",
               )}
-            </p>
+            </FieldError>
           )}
           <Button type="submit">{t("supplementsPage.add")}</Button>
         </form>
@@ -240,11 +240,11 @@ function SupplementItem({
             />
           </label>
           {invalid && (
-            <p id={errorId} className="text-[13px] font-medium text-primary-ink">
+            <FieldError id={errorId}>
               {t(
                 invalid === "duplicate" ? "supplementsPage.duplicate" : "supplementsPage.nameError",
               )}
-            </p>
+            </FieldError>
           )}
           <div className="flex flex-wrap gap-2">
             <Button type="submit">{t("supplementsPage.save")}</Button>

@@ -67,7 +67,7 @@ export function AnnotationSheet({
         maxLength={ANNOTATION_LABEL_MAX}
         placeholder={t("annotation.placeholder")}
         autoComplete="off"
-        className="min-h-12 w-full min-w-0 rounded-field border border-input bg-card px-4 text-base outline-offset-2"
+        className="field w-full min-w-0 px-4 text-base"
         onChange={(e) => setLabel(e.target.value.replace(/[\r\n]/g, " "))}
       />
       <Button

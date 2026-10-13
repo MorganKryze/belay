@@ -111,6 +111,19 @@ describe("NumberStepper", () => {
     );
   });
 
+  it("a stepper in error gets the inner edge, the icon and the sentence, linked by aria-describedby", () => {
+    render(<Harness error="Too heavy." />);
+    expect(input().getAttribute("aria-invalid")).toBe("true");
+    const alert = screen.getByRole("alert");
+    expect(alert.textContent).toBe("Too heavy.");
+    expect(alert.querySelector("svg")).toBeTruthy();
+    expect(input().getAttribute("aria-describedby")?.split(" ")).toContain(alert.id);
+    // The box is the field surface; its inner edge comes from the input's aria-invalid.
+    const box = input().closest(".field")!;
+    expect(box).toBeTruthy();
+    expect(box.className).not.toMatch(/border/);
+  });
+
   it("focuses the field when the unit or the padding around it is tapped", () => {
     render(<Harness />);
     const field = screen.getByRole("textbox", { name: "Load" });

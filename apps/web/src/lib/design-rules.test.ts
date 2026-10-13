@@ -162,4 +162,35 @@ describe("design rules", () => {
   it("the old 0.01 ms blanket rule is gone", () => {
     expect(CSS).not.toMatch(/0\.01ms/);
   });
+
+  it("every text field uses the field surface", () => {
+    const sites = [
+      "components/number-stepper.tsx",
+      "components/duration-stepper.tsx",
+      "components/annotation-sheet.tsx",
+      "routes/supplements.tsx",
+      "workouts/exercise-picker.tsx",
+      "exercises/exercises-panel.tsx",
+      "routes/workout-summary.tsx",
+      "workouts/exercise-card.tsx",
+    ];
+    for (const site of sites) {
+      const source = readFileSync(join(__dirname, "..", site), "utf8");
+      const classLists = [...source.matchAll(/"[^"\n]*"/g)].map((m) => m[0]);
+      expect(
+        classLists.some((c) => /(?:^"|\s)field(?:\s|"$)/.test(c)),
+        `${site} field`,
+      ).toBe(true);
+      // The set cells of the exercise card keep their own outline; only field surfaces are checked.
+      const fields = classLists.filter((c) => /(?:^"|\s)(?:field|rounded-field)(?:\s|"$)/.test(c));
+      expect(
+        fields.filter((c) => c.includes("border-input")),
+        site,
+      ).toEqual([]);
+    }
+    const field = block(CSS, "@utility field");
+    expect(field).toContain("var(--track)");
+    expect(field).toContain("aria-invalid");
+    expect(field).toContain("var(--primary-ink)");
+  });
 });

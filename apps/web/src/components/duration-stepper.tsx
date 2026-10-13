@@ -37,7 +37,7 @@ export function DurationStepper({
       <span id={id} className="text-[13px] font-semibold">
         {label}
       </span>
-      <div className="flex h-[52px] items-center rounded-field border border-input bg-card has-[[role=spinbutton]:focus-visible]:outline-2 has-[[role=spinbutton]:focus-visible]:outline-offset-2">
+      <div className="field flex h-12.5 items-center">
         <button
           type="button"
           className={button}

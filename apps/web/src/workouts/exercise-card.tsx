@@ -639,7 +639,7 @@ function NoteField({
         rows={2}
         onChange={(e) => setText(e.target.value)}
         onBlur={() => text.trim() !== note && onSave(text.trim())}
-        className="rounded-field border border-input bg-card px-3 py-2 text-base font-normal"
+        className="field px-3 py-2 text-base font-normal"
       />
     </label>
   );

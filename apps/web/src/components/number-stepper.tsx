@@ -3,6 +3,7 @@ import { Minus, Plus } from "lucide-react";
 import { type KeyboardEvent, type ReactNode, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
+import { FieldError } from "./field-error";
 import { decimalsOf, formatNumber, parseDecimal } from "@/lib/format";
 
 export type NumberStepperProps = {
@@ -106,12 +107,7 @@ export function NumberStepper({
       <label htmlFor={id} className={labelHidden ? "sr-only" : "text-[13px] font-semibold"}>
         {label}
       </label>
-      <div
-        className={cn(
-          "flex h-[52px] items-center rounded-field border border-input bg-card has-[input:focus]:outline-2 has-[input:focus]:outline-offset-2",
-          error && "border-2 border-primary",
-        )}
-      >
+      <div className="field flex h-12.5 items-center">
         {buttons && (
           <button
             type="button"
@@ -173,11 +169,7 @@ export function NumberStepper({
           </button>
         )}
       </div>
-      {error && (
-        <p id={`${id}-error`} className="text-[13px] font-medium text-primary-ink">
-          {error}
-        </p>
-      )}
+      {error && <FieldError id={`${id}-error`}>{error}</FieldError>}
       {hint && <div id={`${id}-hint`}>{hint}</div>}
     </div>
   );

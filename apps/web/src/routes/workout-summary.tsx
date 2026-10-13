@@ -109,7 +109,7 @@ function Summary({ account }: { account: OpenAccount }) {
           maxLength={NOTE_MAX}
           rows={3}
           onChange={(e) => setNote(e.target.value)}
-          className="rounded-field border border-input bg-card px-3 py-2 text-base font-normal"
+          className="field px-3 py-2 text-base font-normal"
         />
       </label>
       {error && <p role="alert">{error}</p>}

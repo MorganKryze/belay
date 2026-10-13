@@ -394,6 +394,28 @@
   }
 }
 
+/*
+ * A text field: filled with the track, no border. Focus draws the outer ring; an error draws an
+ * inner 2 px edge in the primary ink, never red, and both show at once. Compound fields (a stepper,
+ * a chip over a native input) take the state of the input they hold.
+ */
+@utility field {
+  background-color: var(--track);
+  border: 0;
+  border-radius: var(--radius-field);
+  min-height: calc(var(--spacing) * 12.5);
+  &:focus-visible,
+  &:has(input:focus-visible),
+  &:has([role="spinbutton"]:focus-visible) {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+  &[aria-invalid="true"],
+  &:has([aria-invalid="true"]) {
+    box-shadow: inset 0 0 0 2px var(--primary-ink);
+  }
+}
+
 /* A pressed row only tints. */
 @utility press-tint {
   transition: background-color var(--tint-duration) var(--ease-out);
