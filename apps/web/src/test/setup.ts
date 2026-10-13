@@ -1,3 +1,5 @@
+// Before Testing Library, which loads React.
+import "./animation-event";
 import { configure } from "@testing-library/react";
 // IndexedDB for jsdom, which has none: every test file gets an in-memory one.
 import "fake-indexeddb/auto";
