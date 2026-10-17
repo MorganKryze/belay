@@ -31,7 +31,7 @@ export type BarLoad =
   | { kind: "unreachable"; below: Loading | null; above: Loading | null };
 
 // Bounds the change-making table: 1000 kg is 50 000 hundredths per side.
-const MAX_TARGET_KG = 1000;
+export const MAX_TARGET_KG = 1000;
 const toCenti = (kg: number) => Math.round(kg * 100);
 
 // Fewest plates per side for the target. Integers in hundredths of a kilo, so 2.5 + 1.25 never

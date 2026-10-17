@@ -233,6 +233,12 @@ describe("warmups (D7)", () => {
     expect(warmups({ warmupSets: 2 }, null, barbell, gym)).toEqual([]);
     expect(warmups({ warmupSets: 0 }, 100, barbell, gym)).toEqual([]);
   });
+
+  it("is empty for a load the plate table cannot reach, instead of throwing", () => {
+    expect(warmups({ warmupSets: 2 }, 8000, barbell, gym)).toEqual([]);
+    expect(warmups({ warmupSets: 2 }, Number.POSITIVE_INFINITY, barbell, gym)).toEqual([]);
+    expect(warmups({ warmupSets: 2 }, Number.NaN, barbell, gym)).toEqual([]);
+  });
 });
 
 describe("the order of work sets and the rest (§4.3)", () => {

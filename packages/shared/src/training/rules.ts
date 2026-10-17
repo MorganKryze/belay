@@ -2,6 +2,7 @@
 import type { Measure } from "../exercises/library";
 import type { Equipment } from "../exercises/muscles";
 import { epley, RELIABLE_MAX_REPS } from "../tools/one-rep-max";
+import { MAX_TARGET_KG } from "../tools/plates";
 import { roundTo } from "../tools/round";
 import { WARMUP_SCHEMES, warmupSets } from "../tools/warmup";
 import { liveSlots } from "./plan";
@@ -80,7 +81,8 @@ export function lastTime(
 
 // The warm-up sets of a slot (D7). A barbell is loaded as the Plates tool says (the person's bar
 // and plates); anything else takes the same fractions and reps, rounded to the exercise's step,
-// never 0 or less, never the working load or more. No working load yet: no warm-up.
+// never 0 or less, never the working load or more. No working load yet, or one past what the
+// plate table handles (a typo like 8000): no warm-up, so the set stays as typed.
 export function warmups(
   slot: Pick<Slot, "warmupSets">,
   workKg: number | null,
@@ -88,6 +90,7 @@ export function warmups(
   bar: { barKg: number; platesKg: readonly number[] },
 ): Load[] {
   if (workKg === null || slot.warmupSets === 0) return [];
+  if (!Number.isFinite(workKg) || workKg > MAX_TARGET_KG) return [];
   if (exercise.equipment === "barbell")
     return warmupSets(workKg, slot.warmupSets, bar.barKg, bar.platesKg).map((s) => ({
       weightKg: s.loadKg,
