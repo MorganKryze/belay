@@ -9,7 +9,7 @@ import {
   sessionByCode,
 } from "@belay/shared/training/program";
 import { liveSets, openWorkout } from "@belay/shared/training/rules";
-import { Link } from "@tanstack/react-router";
+import { type AsyncRouteComponent, Link, lazyRouteComponent } from "@tanstack/react-router";
 import {
   Activity as ActivityIcon,
   ChevronRight,
@@ -19,9 +19,10 @@ import {
   Scale,
   Utensils,
 } from "lucide-react";
-import { lazy, type ReactNode, Suspense, useState } from "react";
+import { type ReactNode, Suspense, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { daySummaryText } from "@/lib/activities";
+import { preloadWhenIdle } from "@/lib/idle";
 import { formatKg, formatNumber, sessionTitle } from "@/lib/format";
 import {
   type OpenAccount,
@@ -35,18 +36,16 @@ import {
 } from "@/sync/account";
 import { type Entry, Toast, useWriter } from "./weigh-in";
 
-// Lazy: the sheets, their steppers and their strings load the first time one opens.
-const WeighInSheet = lazy(() =>
-  import("./weigh-in-sheet").then((m) => ({ default: m.WeighInSheet })),
+// Lazy: the sheets, their steppers and their strings stay out of the first load. They are fetched
+// once Home has settled, or as soon as a finger lands on their row, so a sheet never waits on code.
+const ActivitySheet = lazyRouteComponent(() => import("./activity-sheet"), "ActivitySheet");
+const WeighInSheet = lazyRouteComponent(() => import("./weigh-in-sheet"), "WeighInSheet");
+const IntakeSheet = lazyRouteComponent(() => import("./intake-sheet"), "IntakeSheet");
+const SupplementsSheet = lazyRouteComponent(
+  () => import("./supplements-sheet"),
+  "SupplementsSheet",
 );
-const IntakeSheet = lazy(() => import("./intake-sheet").then((m) => ({ default: m.IntakeSheet })));
-const SupplementsSheet = lazy(() =>
-  import("./supplements-sheet").then((m) => ({ default: m.SupplementsSheet })),
-);
-
-const ActivitySheet = lazy(() =>
-  import("./activity-sheet").then((m) => ({ default: m.ActivitySheet })),
-);
+const SHEETS = [ActivitySheet, WeighInSheet, IntakeSheet, SupplementsSheet];
 
 type Gesture = "activity" | "weighIn" | "intake" | "supplements";
 
@@ -70,6 +69,7 @@ export function TodayCard({
   const { write, toast, error, clearError, dismiss } = useWriter(account);
   const record = useRecord(account);
   const [open, setOpen] = useState<Gesture | null>(null);
+  useEffect(() => preloadWhenIdle(SHEETS), []);
   const [date, setDate] = useState<ISODate | null>(null); // null: today, whatever the clock says
   const [tickError, setTickError] = useState<string>();
   // A saved sheet plays its exit over the screen that already shows the record.
@@ -124,6 +124,7 @@ export function TodayCard({
           title={t("today.activity")}
           status={daySummaryText(activitySummary(activities, steps, today), t, i18n.language)}
           onClick={() => setOpen("activity")}
+          sheet={ActivitySheet}
         />
         <Row
           icon={Scale}
@@ -134,12 +135,14 @@ export function TodayCard({
               : t("today.weighInEmpty")
           }
           onClick={() => setOpen("weighIn")}
+          sheet={WeighInSheet}
         />
         <Row
           icon={Utensils}
           title={t("today.intake")}
           status={intakeText}
           onClick={() => setOpen("intake")}
+          sheet={IntakeSheet}
         />
         {active.length > 0 ? (
           <Row
@@ -147,6 +150,7 @@ export function TodayCard({
             title={t("today.supplements")}
             status={t("today.supplementsDone", { taken: ticked.length, count: active.length })}
             onClick={() => setOpen("supplements")}
+            sheet={SupplementsSheet}
           />
         ) : (
           <RowShell>
@@ -327,15 +331,23 @@ function Row({
   title,
   status,
   onClick,
+  sheet,
 }: {
   icon: LucideIcon;
   title: string;
   status: string;
   onClick: () => void;
+  sheet: AsyncRouteComponent<never>;
 }) {
   return (
     <RowShell>
-      <button type="button" className={rowLine} onClick={onClick}>
+      <button
+        type="button"
+        className={rowLine}
+        onClick={onClick}
+        onPointerDown={sheet.preload}
+        onFocus={sheet.preload}
+      >
         <RowIcon icon={icon} />
         <span className="flex min-w-0 flex-1 flex-col">
           <span className="font-semibold">{title}</span>

@@ -1,6 +1,6 @@
-import { Outlet, useRouter, useRouterState } from "@tanstack/react-router";
+import { lazyRouteComponent, Outlet, useRouter, useRouterState } from "@tanstack/react-router";
 import { FORGOTTEN_MS, liveSets, openWorkout } from "@belay/shared/training/rules";
-import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { TabBar } from "@/components/tab-bar";
 import { TopBar } from "@/components/top-bar";
@@ -10,9 +10,7 @@ import { usePresence } from "@/lib/presence";
 import { type Account, AccountProvider, useAccount, useHistory } from "@/sync/account";
 
 // The bar names exercises: it loads on demand, so the catalogue stays out of the shell.
-const SessionBar = lazy(() =>
-  import("@/components/session-bar").then((m) => ({ default: m.SessionBar })),
-);
+const SessionBar = lazyRouteComponent(() => import("@/components/session-bar"), "SessionBar");
 
 const TAB_ROOTS = ["/", "/workouts", "/body", "/tools"];
 

@@ -6,7 +6,8 @@ import "./i18n";
 import "./index.css";
 import { applyTheme, readTheme } from "./lib/theme";
 import { startUpdates } from "./lib/update";
-import { router } from "./router";
+import { preloadWhenIdle } from "./lib/idle";
+import { router, TAB_PAGES } from "./router";
 
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () =>
   applyTheme(readTheme()),
@@ -23,3 +24,7 @@ createRoot(document.getElementById("root")!).render(
     </QueryClientProvider>
   </StrictMode>,
 );
+
+// Once the first screen has settled, the tabs' pages load ahead of their first tap: on a slow
+// network a tab then opens at once instead of holding the previous page.
+preloadWhenIdle(TAB_PAGES);
