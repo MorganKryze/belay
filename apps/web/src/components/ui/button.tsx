@@ -1,7 +1,7 @@
-import * as React from "react";
-import { cva, type VariantProps } from "class-variance-authority";
-import { cn } from "cn";
-import { Slot } from "radix-ui";
+import * as React from "react"
+import { cva, type VariantProps } from "class-variance-authority"
+import { cn } from "cn"
+import { Slot } from "radix-ui"
 
 // Belay: four variants from the charter. Every target is at least 44 px; a disabled button reads
 // as track fill and muted text instead of fading, so its label stays legible. A busy button leads
@@ -32,8 +32,8 @@ const buttonBox = cva(
       variant: "primary",
       size: "default",
     },
-  },
-);
+  }
+)
 
 // The charter's type steps, kept out of the class merge: it reads text-button or text-body as a
 // colour and would drop it against the variant's text colour.
@@ -42,14 +42,14 @@ const TYPE = {
   secondary: "text-body font-semibold",
   text: "text-body font-semibold",
   destructive: "text-body font-semibold",
-} as const;
+} as const
 
 function buttonVariants({
   variant,
   size,
   className,
 }: VariantProps<typeof buttonBox> & { className?: string } = {}) {
-  return `${cn(buttonBox({ variant, size, className }))} ${TYPE[variant ?? "primary"]}`;
+  return `${cn(buttonBox({ variant, size, className }))} ${TYPE[variant ?? "primary"]}`
 }
 
 function Button({
@@ -63,10 +63,10 @@ function Button({
   ...props
 }: React.ComponentProps<"button"> &
   VariantProps<typeof buttonBox> & {
-    asChild?: boolean;
-    busy?: boolean;
+    asChild?: boolean
+    busy?: boolean
   }) {
-  const Comp = asChild ? Slot.Root : "button";
+  const Comp = asChild ? Slot.Root : "button"
 
   return (
     <Comp
@@ -78,10 +78,10 @@ function Button({
       onClick={(event: React.MouseEvent<HTMLButtonElement>) => {
         // Ruling 10: a second tap while the first is still saving does nothing.
         if (busy) {
-          event.preventDefault();
-          return;
+          event.preventDefault()
+          return
         }
-        onClick?.(event);
+        onClick?.(event)
       }}
       {...props}
     >
@@ -98,7 +98,7 @@ function Button({
         children
       )}
     </Comp>
-  );
+  )
 }
 
-export { Button, buttonVariants };
+export { Button, buttonVariants }
