@@ -309,10 +309,13 @@ const SCREENS: [string, (page: Page) => Promise<void>][] = [
     "the summary",
     async (page) => {
       await page.goto("/workout?start=A");
-      await card(page, "Barbell bench press")
-        .getByRole("textbox", { name: "Load of set 1, kg" })
-        .fill("82.5");
-      await card(page, "Barbell bench press").getByRole("button", { name: "Log set 1" }).click();
+      const bench = card(page, "Barbell bench press");
+      const load = bench.getByRole("textbox", { name: "Load of set 1, kg" });
+      // Monday's 80 kg reaches the empty field with the first sync: typed before, it would land
+      // after the caret and read 8082.5.
+      await expect(load).toHaveValue("80");
+      await load.fill("82.5");
+      await bench.getByRole("button", { name: "Log set 1" }).click();
       await page.getByRole("button", { name: "Finish" }).click();
       await page.getByRole("dialog").getByRole("button", { name: "Finish" }).click();
       await expect(page.getByText("Record: Barbell bench press, 82.5 kg × 8")).toBeVisible();
