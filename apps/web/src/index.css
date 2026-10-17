@@ -625,6 +625,11 @@ html:active-view-transition-type(cover, uncover)::view-transition-new(top-bar) {
   :focus-visible {
     @apply outline-2 outline-offset-2;
   }
+  /* Elements focused only by script, like the page title after a navigation, keep the focus for
+     screen readers but draw no ring: WebKit counts that focus as visible. */
+  [tabindex="-1"]:focus {
+    @apply outline-none;
+  }
   body {
     @apply bg-background text-foreground;
   }
