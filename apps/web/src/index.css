@@ -404,6 +404,8 @@
   --fold-out: fold-out linear both;
   /* The compact header's opacity when no timeline drives it: hidden until the page scrolls. */
   --fold-rest: 0;
+  /* Without scroll timelines, the compact header fades in once the large title has gone. */
+  --fold-fade: var(--dur-release);
   /* A sheet let go short of closing slides back up from where it was left. */
   --swipe-snap-transition: transform var(--dur-release) var(--ease-out);
   --swipe-snap-from: 1;
@@ -445,9 +447,7 @@
     --animate-page-uncover-out: fade-out var(--dur-reduced) var(--ease-exit) both;
     --animate-page-under-in: fade-in var(--dur-reduced) var(--ease-out) both;
     --animate-page-under-out: fade-out var(--dur-reduced) var(--ease-exit) both;
-    --fold-in: none;
-    --fold-out: none;
-    --fold-rest: 1;
+    --fold-fade: 0s;
     --press-scale: 1;
     --slide-duration: 0s;
     --tint-duration: 0s;
@@ -498,10 +498,11 @@
 
 /*
  * The large title fades out and the compact header (title, glass, hairline) fades in over the
- * first 44 px of scroll; only opacity moves. Without scroll timelines the compact header shows
- * from the start. Under reduced motion the fold variables are none: the same compact start.
- * A page that does not scroll has no active timeline, so the compact header rests hidden on its
- * own; a page that scrolls less than 44 px folds over the scroll it has, never stopping halfway.
+ * first 44 px of scroll; only opacity moves, following the user's own scroll, so reduced motion
+ * keeps it. A page that does not scroll has no active timeline, so the compact header rests
+ * hidden on its own; a page that scrolls less than 44 px folds over the scroll it has, never
+ * stopping halfway. Without scroll timelines the compact header stays hidden until the large title
+ * has gone under the bar, which PageHeader marks with data-folded, then fades in.
  */
 @keyframes fold-in {
   from {
@@ -532,9 +533,12 @@
   }
 }
 @supports not (animation-timeline: scroll()) {
-  .fold-in,
-  .fold-out {
-    animation: none;
+  .fold-in {
+    opacity: 0;
+    transition: opacity var(--fold-fade) var(--ease-out);
+  }
+  [data-folded] .fold-in {
+    opacity: 1;
   }
 }
 

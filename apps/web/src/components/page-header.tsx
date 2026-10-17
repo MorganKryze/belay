@@ -1,6 +1,6 @@
 import { createLink, useRouter } from "@tanstack/react-router";
 import { ChevronLeft } from "lucide-react";
-import { type ComponentProps, forwardRef, type ReactNode } from "react";
+import { type ComponentProps, forwardRef, type ReactNode, useEffect, useRef } from "react";
 import { previousHref } from "@/lib/back";
 import { cn } from "@/lib/utils";
 
@@ -20,12 +20,30 @@ export function PageHeader({
   focusFallback?: boolean;
   children?: ReactNode;
 }) {
+  const bar = useRef<HTMLDivElement>(null);
+  const large = useRef<HTMLHeadingElement>(null);
+  // Without scroll timelines, the bar is marked folded once the large title has gone under it.
+  useEffect(() => {
+    if (typeof IntersectionObserver === "undefined" || CSS.supports("animation-timeline: scroll()"))
+      return;
+    const header = bar.current!;
+    const under = parseFloat(getComputedStyle(header).top) + header.offsetHeight;
+    const observer = new IntersectionObserver(
+      ([entry]) => header.toggleAttribute("data-folded", !entry!.isIntersecting),
+      { rootMargin: `-${under}px 0px 0px` },
+    );
+    observer.observe(large.current!);
+    return () => observer.disconnect();
+  }, []);
   return (
     <>
       {/* Bleeds over the layout's side padding so the glass spans the screen; the negative bottom
           margin takes back most of the 16 px gap the screens put between blocks, so the large
           title sits 2 px under the bar. */}
-      <div className="sticky top-(--header-top) z-20 -mb-3.5 mr-[calc(-1*max(1rem,env(safe-area-inset-right)))] ml-[calc(-1*max(1rem,env(safe-area-inset-left)))] pt-[env(safe-area-inset-top)]">
+      <div
+        ref={bar}
+        className="sticky top-(--header-top) z-20 -mb-3.5 mr-[calc(-1*max(1rem,env(safe-area-inset-right)))] ml-[calc(-1*max(1rem,env(safe-area-inset-left)))] pt-[env(safe-area-inset-top)]"
+      >
         <div aria-hidden className="absolute inset-0 glass border-b border-border fold-in" />
         {/* An invisible copy of the back link holds the right column at the same width, so the
             compact title stays centred and truncates before it reaches the back label. */}
@@ -46,6 +64,7 @@ export function PageHeader({
       <div className="flex flex-col">
         <div className="flex items-center justify-between gap-3">
           <h1
+            ref={large}
             {...(focusFallback && { tabIndex: -1, "data-focus-fallback": true })}
             className={cn("text-title-lg fold-out", focusFallback && "outline-none")}
           >
