@@ -14,6 +14,7 @@ import { startingWeight } from "./weigh-in";
 // Lazy: its code (and the stepper's) loads the first time a sheet opens.
 export function WeighInSheet({
   onClose,
+  open,
   weighings,
   today,
   date,
@@ -23,6 +24,7 @@ export function WeighInSheet({
   error,
 }: {
   onClose: () => void;
+  open?: boolean;
   weighings: readonly Weighing[];
   today: ISODate;
   date: ISODate;
@@ -36,6 +38,7 @@ export function WeighInSheet({
     <Sheet
       title={t("today.weighIn")}
       onClose={onClose}
+      open={open}
       chip={<DayChip date={date} today={today} onChange={onDate} label={t("weighIn.date")} />}
     >
       <WeighInForm
@@ -47,11 +50,7 @@ export function WeighInSheet({
         error={error}
       />
       {weighings.some((w) => w.date === date) && (
-        <Button
-          variant="outline"
-          className="h-12 rounded-field text-base font-semibold"
-          onClick={() => onDelete(date)}
-        >
+        <Button variant="secondary" onClick={() => onDelete(date)}>
           {t("weighIn.delete")}
         </Button>
       )}
@@ -98,11 +97,7 @@ function WeighInForm({
       {start.prefilled && edited === undefined && (
         <p className="text-[13px] text-muted-foreground">{t("weighIn.prefilled")}</p>
       )}
-      <Button
-        className="h-12 rounded-field text-base font-semibold"
-        disabled={kg === null || invalid}
-        onClick={() => kg !== null && onSave(date, kg)}
-      >
+      <Button disabled={kg === null || invalid} onClick={() => kg !== null && onSave(date, kg)}>
         {t("weighIn.save")}
       </Button>
       {error && (

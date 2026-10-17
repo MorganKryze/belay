@@ -6,9 +6,9 @@ export function NotFound() {
   const { t } = useTranslation();
   return (
     <section className="flex flex-col gap-4">
-      <h1 className="text-[26px] leading-tight font-bold">{t("fallback.notFoundTitle")}</h1>
+      <h1 className="text-title-lg">{t("fallback.notFoundTitle")}</h1>
       <p>{t("fallback.notFoundBody")}</p>
-      <Button asChild variant="outline" className="self-start">
+      <Button asChild variant="secondary" className="self-start">
         <Link to="/">{t("fallback.backHome")}</Link>
       </Button>
     </section>
@@ -21,7 +21,7 @@ export function RouteError() {
   const { t } = useTranslation();
   return (
     <section role="alert" className="flex flex-col gap-4">
-      <h1 className="text-[26px] leading-tight font-bold">{t("fallback.errorTitle")}</h1>
+      <h1 className="text-title-lg">{t("fallback.errorTitle")}</h1>
       <p>{t("fallback.errorBody")}</p>
       <Button className="self-start" onClick={() => window.location.reload()}>
         {t("fallback.reload")}

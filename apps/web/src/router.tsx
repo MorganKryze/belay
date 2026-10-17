@@ -8,6 +8,10 @@ import {
   notFound,
   type RouterHistory,
 } from "@tanstack/react-router";
+// Loaded before the router is created: its capture listener sees a back swipe before the router
+// handles that popstate.
+import { viewTransition } from "./lib/transitions";
+import { trackEntries } from "./lib/back";
 import { NotFound, RouteError } from "./routes/fallbacks";
 import { Home } from "./routes/home";
 import { Layout } from "./routes/layout";
@@ -137,13 +141,21 @@ export const routeTree = rootRoute.addChildren([
 ]);
 
 // Localized not-found and error screens for every route (tests build their own router here).
-export const createAppRouter = (history?: RouterHistory) =>
-  createRouter({
+export const createAppRouter = (history?: RouterHistory) => {
+  const router = createRouter({
     routeTree,
     history,
     defaultNotFoundComponent: NotFound,
     defaultErrorComponent: RouteError,
+    defaultViewTransition: viewTransition,
+    // A pushed page opens at its top, Back finds the page where it was left, and a tab opened
+    // from the bar is a new entry, so it starts at its top too.
+    scrollRestoration: true,
   });
+  // The back chevrons read it to go back rather than stack the page they name.
+  trackEntries(router.history);
+  return router;
+};
 export const router = createAppRouter();
 
 declare module "@tanstack/react-router" {

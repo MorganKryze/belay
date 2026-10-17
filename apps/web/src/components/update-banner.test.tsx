@@ -44,6 +44,13 @@ describe("UpdateBanner", () => {
     expect(reg.updateSW).toHaveBeenCalledExactlyOnceWith(true);
   });
 
+  it("the update banner eases down into place", () => {
+    render(<UpdateBanner />);
+    act(() => reg.options.onNeedRefresh?.());
+    const card = screen.getByText("New version available").parentElement!;
+    expect(card.classList).toContain("animate-drop-in");
+  });
+
   it("speaks French", async () => {
     await i18n.changeLanguage("fr");
     render(<UpdateBanner />);

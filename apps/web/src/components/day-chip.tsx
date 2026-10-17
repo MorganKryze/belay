@@ -19,7 +19,7 @@ export function DayChip({
 }) {
   const { t, i18n } = useTranslation();
   return (
-    <label className="relative inline-flex min-h-11 shrink-0 items-center gap-0.5 rounded-chip border border-input px-3 text-sm font-medium whitespace-nowrap has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-offset-2">
+    <label className="relative inline-flex min-h-11 shrink-0 items-center gap-0.5 rounded-control bg-track px-3 text-sm font-medium whitespace-nowrap has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-offset-2">
       {dayLabel(date, today, t, i18n.language)}
       <ChevronRight aria-hidden className="size-4" />
       {/* Invisible over the chip: a tap opens the phone's own date picker. */}

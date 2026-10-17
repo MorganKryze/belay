@@ -265,7 +265,8 @@
     "nextMonth": "Next month",
     "sessionDay": "session",
     "activityDay": "activity",
-    "legend": "● session · ○ activity",
+    "today": "today",
+    "legendLabel": "Legend",
     "recent": "Recent",
     "first": "Your first session will show here.",
     "none": "No session this month.",
@@ -423,5 +424,11 @@
     "rir": "RIR of set {{n}}",
     "removeSet": "Delete set {{n}}",
     "removeWarmup": "Delete warm-up {{n}}"
+  },
+  "sessionBar": {
+    "running": "In progress",
+    "setOf": "set {{n}} of {{total}}",
+    "setShort": "set {{n}}/{{total}}",
+    "session": "Session {{code}}"
   }
 }

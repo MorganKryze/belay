@@ -23,11 +23,13 @@ export function ExercisePicker({
   history,
   onPick,
   onClose,
+  open,
 }: {
   replacing: Exercise | null; // null: an exercise added at the end
   history: History;
   onPick: (exercise: Exercise) => void;
   onClose: () => void;
+  open?: boolean;
 }) {
   const { t, i18n } = useTranslation();
   const [query, setQuery] = useState("");
@@ -59,6 +61,7 @@ export function ExercisePicker({
           : t("session.picker.addTitle")
       }
       onClose={onClose}
+      open={open}
     >
       {alternatives.length > 0 && (
         <section aria-labelledby="planned" className="flex flex-col">
@@ -93,7 +96,7 @@ export function ExercisePicker({
             onChange={(e) => setQuery(e.target.value)}
             placeholder={t("library.search")}
             aria-label={t("library.search")}
-            className="min-h-12 w-full min-w-0 rounded-field border border-input bg-card pr-4 pl-11 text-base outline-offset-2"
+            className="field w-full min-w-0 pr-4 pl-11 text-base"
           />
         </label>
         {query.trim() !== "" && (

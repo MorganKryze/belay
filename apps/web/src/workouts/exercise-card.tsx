@@ -397,8 +397,8 @@ export function ExerciseCard({
             return (
               <div key={row.position}>
                 <div
-                  className={`grid min-h-12 grid-cols-[3rem_1fr_1fr_2.75rem] items-center gap-2 border-t border-border ${
-                    isNext ? "-mx-3 bg-primary-soft px-3" : ""
+                  className={`grid min-h-12 grid-cols-[3rem_1fr_1fr_2.75rem] items-center gap-2 border-t border-border transition-colors duration-(--tint-duration) ease-out ${
+                    row.set ? "-mx-3 bg-reference px-3" : isNext ? "-mx-3 bg-primary-soft px-3" : ""
                   }`}
                 >
                   <span
@@ -434,11 +434,11 @@ export function ExerciseCard({
                   )}
                   {row.set ? (
                     <span
-                      className="grid size-11 place-items-center rounded-[12px] bg-primary text-primary-foreground"
+                      className="grid size-11 place-items-center rounded-[12px] bg-reference-ink text-reference"
                       role="img"
                       aria-label={label("done")}
                     >
-                      <Check aria-hidden className="size-5" strokeWidth={3} />
+                      <Check aria-hidden className="size-5 animate-pop-in" strokeWidth={3} />
                     </span>
                   ) : (
                     <button
@@ -639,7 +639,7 @@ function NoteField({
         rows={2}
         onChange={(e) => setText(e.target.value)}
         onBlur={() => text.trim() !== note && onSave(text.trim())}
-        className="rounded-field border border-input bg-card px-3 py-2 text-base font-normal"
+        className="field px-3 py-2 text-base font-normal"
       />
     </label>
   );

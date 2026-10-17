@@ -72,17 +72,20 @@ export function TodayCard({
   const [open, setOpen] = useState<Gesture | null>(null);
   const [date, setDate] = useState<ISODate | null>(null); // null: today, whatever the clock says
   const [tickError, setTickError] = useState<string>();
+  // A saved sheet plays its exit over the screen that already shows the record.
+  const [leaving, setLeaving] = useState(false);
   const day = date ?? today;
   // "Today" is read when the person saves: the sheet may have been opened yesterday evening.
   const when = () => date ?? toISODate(new Date());
   const close = () => {
     setOpen(null);
+    setLeaving(false);
     setDate(null);
     clearError();
     setTickError(undefined);
   };
   const save = async (entries: Entry[], previous: Entry[], text: string) => {
-    if (await write(entries, previous, text)) close();
+    if (await write(entries, previous, text)) setLeaving(true);
   };
 
   const weighed = weighings.find((w) => w.date === today);
@@ -149,7 +152,7 @@ export function TodayCard({
           <RowShell icon={Pill}>
             <Link
               to="/settings/supplements"
-              className="flex min-h-14 flex-1 items-center justify-between gap-2 font-semibold text-primary"
+              className="press-tint flex min-h-14 flex-1 items-center justify-between gap-2 font-semibold text-primary"
             >
               {t("today.addSupplements")}
               <ChevronRight aria-hidden className="size-5 shrink-0" />
@@ -161,6 +164,7 @@ export function TodayCard({
         {open === "activity" && (
           <ActivitySheet
             onClose={close}
+            open={!leaving}
             activities={activities}
             steps={steps}
             today={today}
@@ -179,6 +183,7 @@ export function TodayCard({
         {open === "weighIn" && (
           <WeighInSheet
             onClose={close}
+            open={!leaving}
             weighings={weighings}
             today={today}
             date={day}
@@ -206,6 +211,7 @@ export function TodayCard({
         {open === "intake" && (
           <IntakeSheet
             onClose={close}
+            open={!leaving}
             logs={intake}
             today={today}
             date={day}
@@ -223,6 +229,7 @@ export function TodayCard({
         {open === "supplements" && (
           <SupplementsSheet
             onClose={close}
+            open={!leaving}
             supplements={supplements}
             logs={logs}
             today={today}
@@ -289,7 +296,7 @@ function SessionRow({
       <Link
         to="/workout"
         search={{ start: code }}
-        className="flex min-h-14 min-w-0 flex-1 items-center justify-between gap-2 py-2 text-left"
+        className="press-tint flex min-h-14 min-w-0 flex-1 items-center justify-between gap-2 py-2 text-left"
       >
         <span className="flex min-w-0 flex-col">
           <span className="font-semibold">{sessionTitle(code, t)}</span>
@@ -331,7 +338,7 @@ function Row({
     <RowShell icon={icon}>
       <button
         type="button"
-        className="flex min-h-14 min-w-0 flex-1 items-center justify-between gap-2 py-2 text-left"
+        className="press-tint flex min-h-14 min-w-0 flex-1 items-center justify-between gap-2 py-2 text-left"
         onClick={onClick}
       >
         <span className="flex min-w-0 flex-col">

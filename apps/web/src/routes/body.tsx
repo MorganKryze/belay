@@ -17,6 +17,7 @@ import type { TFunction } from "i18next";
 import { Plus } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { PageHeader } from "@/components/page-header";
 import { AnnotationSheet } from "@/components/annotation-sheet";
 import { MeasuresSheet } from "@/components/measures-sheet";
 import { Segmented } from "@/components/segmented";
@@ -40,7 +41,6 @@ import {
 } from "@/sync/account";
 import { type ChartMark, WeightChart } from "./body/chart";
 
-const title = "text-[26px] leading-tight font-bold tracking-tight";
 const card = "rounded-card border border-border bg-card";
 const sectionTitle = "text-[15px] font-bold";
 const pill = "rounded-full px-2 py-0.5 text-xs font-semibold whitespace-nowrap";
@@ -63,7 +63,7 @@ function NoAccount({ account }: { account: Exclude<Account, OpenAccount> }) {
   const { t } = useTranslation();
   return (
     <section className="flex flex-col gap-4">
-      <h1 className={title}>{t("body.title")}</h1>
+      <PageHeader title={t("body.title")} />
       {account.kind === "unavailable" && <p>{t("account.unavailable")}</p>}
       {account.kind === "signed-out" && (
         <>
@@ -90,9 +90,7 @@ function BodyPage({ account }: { account: OpenAccount }) {
   const ready = weighings && target && measures && intake && supplements && logs && annotations;
   return (
     <section className="flex flex-col gap-4">
-      <h1 tabIndex={-1} data-focus-fallback className={`${title} outline-none`}>
-        {t("body.title")}
-      </h1>
+      <PageHeader title={t("body.title")} focusFallback />
       <SyncBanner account={account} />
       {ready && (
         <BodyContent
@@ -134,13 +132,16 @@ function BodyContent({
   const { weighings, target, measures, intake, supplements, logs, annotations } = data;
   const [period, setPeriod] = useState<Period>("month");
   const [open, setOpen] = useState<Open | null>(null);
+  // A saved sheet plays its exit over the screen that already shows the record.
+  const [leaving, setLeaving] = useState(false);
   const { write, toast, error, clearError, dismiss } = useWriter(account);
   const close = () => {
     setOpen(null);
+    setLeaving(false);
     clearError();
   };
   const save = async (entries: Entry[], previous: Entry[], text: string) => {
-    if (await write(entries, previous, text)) setOpen(null);
+    if (await write(entries, previous, text)) setLeaving(true);
   };
   const weightEntry = (date: ISODate, weightKg: number | null): Entry => ({
     kind: "weight",
@@ -283,16 +284,16 @@ function BodyContent({
       )}
       <div className="grid grid-cols-2 gap-2">
         <Button
-          variant="outline"
-          className="h-12 rounded-field px-2 text-[15px] font-semibold text-primary"
+          variant="secondary"
+          className="px-2"
           onClick={() => setOpen({ sheet: "measures", date: today })}
         >
           <Plus aria-hidden className="size-4" />
           {t("measures.title")}
         </Button>
         <Button
-          variant="outline"
-          className="h-12 rounded-field px-2 text-[15px] font-semibold text-primary"
+          variant="secondary"
+          className="px-2"
           onClick={() => setOpen({ sheet: "annotation", annotation: null })}
         >
           <Plus aria-hidden className="size-4" />
@@ -332,6 +333,7 @@ function BodyContent({
       {open?.sheet === "weighIn" && (
         <WeighInSheet
           onClose={close}
+          open={!leaving}
           weighings={weighings}
           today={today}
           date={open.date}
@@ -344,6 +346,7 @@ function BodyContent({
       {open?.sheet === "measures" && (
         <MeasuresSheet
           onClose={close}
+          open={!leaving}
           measures={measures}
           today={today}
           date={open.date}
@@ -363,6 +366,7 @@ function BodyContent({
           // A new key per annotation, so the form starts again from it.
           key={open.annotation?.id ?? "new"}
           onClose={close}
+          open={!leaving}
           annotation={open.annotation}
           today={today}
           onWrite={(entries, previous, deleted) =>

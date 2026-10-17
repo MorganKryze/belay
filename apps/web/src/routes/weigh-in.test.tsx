@@ -220,7 +220,7 @@ describe("when the phone refuses the write", () => {
     expect(await days()).toEqual([["2026-10-07", 80]]);
   });
 
-  it("keeps the toast and says so when the undo is refused, then undoes on the retry", async () => {
+  it("turns the toast into an error when the undo is refused, then undoes on the retry", async () => {
     fakeApi({ me: ADA });
     renderRoute("/");
     await openSheet();
@@ -230,7 +230,8 @@ describe("when the phone refuses the write", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Undo" }));
     expect(await screen.findByText(SAVE_FAILED)).toBeTruthy();
     expect(await days()).toEqual([["2026-10-07", 80]]);
-    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+    expect(screen.queryByRole("button", { name: "Undo" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
     await waitFor(async () => expect(await days()).toEqual([]));
   });
 

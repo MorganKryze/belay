@@ -28,6 +28,7 @@ export function startingIntake(
 // The intake sheet (§4.2): one total of calories, protein if the person wants, for one day.
 export function IntakeSheet({
   onClose,
+  open,
   logs,
   today,
   date,
@@ -36,6 +37,7 @@ export function IntakeSheet({
   error,
 }: {
   onClose: () => void;
+  open?: boolean;
   logs: readonly IntakeLog[];
   today: ISODate;
   date: ISODate;
@@ -59,6 +61,7 @@ export function IntakeSheet({
     <Sheet
       title={t("today.intake")}
       onClose={onClose}
+      open={open}
       chip={<DayChip date={date} today={today} onChange={onDate} label={t("intake.date")} />}
     >
       <IntakeForm
@@ -80,8 +83,7 @@ export function IntakeSheet({
       />
       {own && (
         <Button
-          variant="outline"
-          className="h-12 rounded-field text-base font-semibold"
+          variant="secondary"
           onClick={() => {
             const fields = (["kcal", "protein"] as const).filter((f) =>
               f === "kcal" ? own.kcal !== null : own.proteinG !== null,
@@ -149,7 +151,6 @@ function IntakeForm({
         error={badProtein ? t("intake.proteinOutOfRange") : undefined}
       />
       <Button
-        className="h-12 rounded-field text-base font-semibold"
         disabled={k === null || badKcal || badProtein}
         onClick={() => k !== null && onSave(k, p)}
       >

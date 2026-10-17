@@ -12,12 +12,33 @@ export function contrastRatio(a: string, b: string): number {
   return (hi + 0.05) / (lo + 0.05);
 }
 
-// The `--name: #rrggbb;` declarations of one CSS block, e.g. ":root" or ".dark".
+// The `--name: #rrggbb;` and rgba declarations of one CSS block, e.g. ":root" or ".dark".
 export function readTokens(css: string, selector: string): Record<string, string> {
   const start = css.indexOf(`\n${selector} {`);
   if (start === -1) throw new Error(`no ${selector} block`);
   const body = css.slice(start, css.indexOf("\n}", start));
   return Object.fromEntries(
-    [...body.matchAll(/--([\w-]+):\s*(#[0-9a-f]{6});/gi)].map((m) => [m[1]!, m[2]!.toLowerCase()]),
+    [...body.matchAll(/--([\w-]+):\s*(#[0-9a-f]{6}|rgba\([^)]*\));/gi)].map((m) => [
+      m[1]!,
+      m[2]!.toLowerCase(),
+    ]),
+  );
+}
+
+// A translucent rgba colour laid on an opaque #rrggbb, as the #rrggbb the eye sees.
+export function flatten(color: string, under: string): string {
+  const parts = /rgba\(([^)]*)\)/.exec(color)?.[1]?.split(",").map(Number);
+  if (parts?.length !== 4) throw new Error(`not an rgba colour: ${color}`);
+  const [r, g, b, a] = parts as [number, number, number, number];
+  return (
+    "#" +
+    [r, g, b]
+      .map((top, i) => {
+        const base = parseInt(under.slice(1 + 2 * i, 3 + 2 * i), 16);
+        return Math.round(top * a + base * (1 - a))
+          .toString(16)
+          .padStart(2, "0");
+      })
+      .join("")
   );
 }

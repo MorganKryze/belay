@@ -81,7 +81,7 @@ export function ExercisesPanel() {
           onChange={(e) => setFilters({ ...filters, query: e.target.value })}
           placeholder={t("library.search")}
           aria-label={t("library.search")}
-          className="min-h-12 w-full min-w-0 rounded-field border border-input bg-card pr-4 pl-11 text-base outline-offset-2"
+          className="field w-full min-w-0 pr-4 pl-11 text-base"
         />
       </label>
       <div className="flex flex-wrap gap-2">
@@ -248,7 +248,7 @@ function ChoiceSheet<T extends string>({
           </div>
         ))}
       </RadioGroup.Root>
-      <Button size="lg" className="mt-1 w-full font-semibold" onClick={() => onApply(chosen)}>
+      <Button className="mt-1 w-full" onClick={() => onApply(chosen)}>
         {t("library.show", { count: n, value: formatNumber(n, i18n.language, { digits: 0 }) })}
       </Button>
     </Sheet>
@@ -320,7 +320,7 @@ function Row({ exercise: e }: { exercise: Exercise }) {
     <Link
       to="/exercises/$exerciseId"
       params={{ exerciseId: e.id }}
-      className="flex h-[72px] items-center gap-3 border-t border-border px-0.5"
+      className="press-tint flex h-[72px] items-center gap-3 border-t border-border px-0.5"
     >
       <BodyThumb primary={e.primary[0]!} secondary={e.secondary} />
       <span className="flex min-w-0 flex-1 flex-col">

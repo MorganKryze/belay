@@ -221,4 +221,21 @@ describe("the sync banner", () => {
     renderRoute("/");
     expect(await screen.findByText("You're offline.")).toBeTruthy();
   });
+
+  it("the offline line eases down into place", async () => {
+    fakeApi({ me: "down" });
+    vi.spyOn(navigator, "onLine", "get").mockReturnValue(false);
+    renderRoute("/");
+    const line = await screen.findByText("You're offline.");
+    expect(line.classList).toContain("animate-drop-in");
+  });
+
+  it("the sync banner eases down into place", async () => {
+    await seed(ADA.id, [weight("2026-10-07", 79.8)]);
+    writeLastUser(ADA);
+    fakeApi({ me: "down" });
+    renderRoute("/");
+    const title = await screen.findByText("Offline.");
+    expect(title.closest(".rounded-field")!.classList).toContain("animate-drop-in");
+  });
 });

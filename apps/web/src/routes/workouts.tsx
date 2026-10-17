@@ -2,6 +2,7 @@ import "@/i18n/lazy";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { PageHeader } from "@/components/page-header";
 import { Segmented } from "@/components/segmented";
 import { ExercisesPanel } from "@/exercises/exercises-panel";
 import { HistoryPanel } from "@/workouts/history-panel";
@@ -37,7 +38,7 @@ export function Workouts() {
   }, [tab]);
   return (
     <section className="flex flex-col gap-4">
-      <h1 className="text-[26px] leading-tight font-bold tracking-tight">{t("workouts.title")}</h1>
+      <PageHeader title={t("workouts.title")} />
       <Segmented
         label={t("workouts.tabs.label")}
         labelHidden

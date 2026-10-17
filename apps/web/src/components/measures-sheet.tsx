@@ -19,6 +19,7 @@ import type { Entry } from "./weigh-in";
 // person wants them, for one day. Each saved field is its own entry, as on the server.
 export function MeasuresSheet({
   onClose,
+  open,
   measures,
   today,
   date,
@@ -27,6 +28,7 @@ export function MeasuresSheet({
   error,
 }: {
   onClose: () => void;
+  open?: boolean;
   measures: readonly Measure[];
   today: ISODate;
   date: ISODate;
@@ -47,6 +49,7 @@ export function MeasuresSheet({
     <Sheet
       title={t("measures.title")}
       onClose={onClose}
+      open={open}
       chip={<DayChip date={date} today={today} onChange={onDate} label={t("measures.date")} />}
     >
       <MeasuresForm
@@ -67,8 +70,7 @@ export function MeasuresSheet({
       />
       {own && (
         <Button
-          variant="outline"
-          className="h-12 rounded-field text-base font-semibold"
+          variant="secondary"
           onClick={() => {
             const fields = (["waist", "neck", "hip"] as const).filter((f) => held(f) !== null);
             onWrite(
@@ -130,7 +132,6 @@ function MeasuresForm({
       </div>
       <p className="-mt-1 text-[13px] text-muted-foreground">{t("measures.neckHipHint")}</p>
       <Button
-        className="h-12 rounded-field text-base font-semibold"
         disabled={values.waist === null || bad("waist") || bad("neck") || bad("hip")}
         onClick={() => onSave(values)}
       >

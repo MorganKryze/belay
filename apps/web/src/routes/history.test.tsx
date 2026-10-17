@@ -112,6 +112,17 @@ describe("the History segment", () => {
     ]);
   });
 
+  it("recent sessions tint on press", async () => {
+    await seed(ADA.id, MONTH);
+    fakeApi({ me: ADA });
+    renderRoute("/workouts?tab=history");
+    const list = await screen.findByRole("region", { name: "Recent" });
+    await waitFor(() => expect(within(list).getAllByRole("link")).toHaveLength(3));
+    for (const row of within(list).getAllByRole("link")) {
+      expect(row.className).toContain("press-tint");
+    }
+  });
+
   it("goes back a month, never past the current one", async () => {
     await seed(ADA.id, [...MONTH, ...session(6, "C", new Date(2026, 8, 28, 18, 0), 45)]);
     fakeApi({ me: ADA });

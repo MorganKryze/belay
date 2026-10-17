@@ -15,12 +15,14 @@ import type { Entry } from "./weigh-in";
 // optional text. An existing annotation reopens here, with Delete.
 export function AnnotationSheet({
   onClose,
+  open,
   annotation,
   today,
   onWrite,
   error,
 }: {
   onClose: () => void;
+  open?: boolean;
   annotation: AnnotationRow | null; // null: a new one
   today: ISODate;
   onWrite: (entries: Entry[], previous: Entry[], deleted: boolean) => void;
@@ -42,6 +44,7 @@ export function AnnotationSheet({
     <Sheet
       title={t(annotation ? "annotation.title" : "annotation.titleNew")}
       onClose={onClose}
+      open={open}
       chip={<DayChip date={date} today={today} onChange={setDate} label={t("annotation.date")} />}
     >
       <div className="flex flex-col gap-1.5">
@@ -67,11 +70,10 @@ export function AnnotationSheet({
         maxLength={ANNOTATION_LABEL_MAX}
         placeholder={t("annotation.placeholder")}
         autoComplete="off"
-        className="min-h-12 w-full min-w-0 rounded-field border border-input bg-card px-4 text-base outline-offset-2"
+        className="field w-full min-w-0 px-4 text-base"
         onChange={(e) => setLabel(e.target.value.replace(/[\r\n]/g, " "))}
       />
       <Button
-        className="h-12 rounded-field text-base font-semibold"
         onClick={() =>
           onWrite(
             [block({ date, type, label: label.trim() === "" ? null : label.trim() })],
@@ -91,8 +93,7 @@ export function AnnotationSheet({
       )}
       {annotation ? (
         <Button
-          variant="outline"
-          className="h-12 rounded-field text-base font-semibold"
+          variant="secondary"
           onClick={() =>
             onWrite(
               [{ kind: "annotation", id, field: "removed", value: true }],

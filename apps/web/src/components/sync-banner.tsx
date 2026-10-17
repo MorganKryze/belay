@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useOnline } from "@/lib/online";
 import { type OpenAccount, usePending, useRejected, useSyncStatus } from "@/sync/account";
 
-const box = "flex items-start gap-2.5 rounded-field p-3 text-sm";
+const box = "flex animate-drop-in items-start gap-2.5 rounded-field p-3 text-sm";
 
 // Nothing when everything is sent, or offline with nothing waiting (§4.6). Mounted for good, so
 // a screen reader hears it appear.
@@ -70,7 +70,7 @@ export function SyncBanner({ account }: { account: OpenAccount }) {
           <CircleAlert aria-hidden className="mt-px size-5 shrink-0" />
           <div className="flex flex-col items-start gap-2">
             <p>{t("sync.failed")}</p>
-            <Button variant="outline" onClick={() => void account.engine.sync()}>
+            <Button variant="secondary" onClick={() => void account.engine.sync()}>
               {t("sync.retry")}
             </Button>
           </div>

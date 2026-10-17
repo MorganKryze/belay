@@ -153,8 +153,7 @@ export function Equipment() {
             />
           </div>
           <Button
-            variant="outline"
-            className="h-[52px]"
+            variant="secondary"
             disabled={newPlate === null}
             onClick={() => {
               if (newPlate !== null && !eq.plates.includes(newPlate)) togglePlate(newPlate);
@@ -167,8 +166,8 @@ export function Equipment() {
       ) : (
         <>
           <Button
-            variant="outline"
-            className="w-full font-semibold text-primary"
+            variant="secondary"
+            className="w-full"
             onClick={() => {
               const preset = eq.preset as PlatePreset;
               setCopiedFrom(preset);

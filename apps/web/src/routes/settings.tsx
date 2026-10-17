@@ -7,6 +7,7 @@ import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 import { toISODate } from "@belay/shared/body/dates";
 import type { Change } from "@belay/shared/sync/schema";
+import { BackLink, PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
@@ -42,7 +43,7 @@ export function Settings() {
 
   return (
     <section className="flex flex-1 flex-col gap-6">
-      <h1 className="text-3xl font-semibold">{t("settings.title")}</h1>
+      <PageHeader title={t("settings.title")} back={<BackLink to="/">{t("nav.home")}</BackLink>} />
 
       <div className="flex flex-col gap-2">
         <Label htmlFor="language">{t("settings.language")}</Label>
@@ -217,7 +218,7 @@ function RejectedEntries({ account }: { account: OpenAccount }) {
             </li>
           ))}
         </ul>
-        <Button variant="outline" className="self-start" onClick={() => void clear()}>
+        <Button variant="secondary" className="self-start" onClick={() => void clear()}>
           {t("settings.rejected.clear")}
         </Button>
       </div>
@@ -244,7 +245,7 @@ function AccountSettings({ pending }: { pending: number | null }) {
       <h2 className={sectionTitle}>{t("settings.account")}</h2>
       <Link
         to="/settings/profile"
-        className="flex min-h-12 items-center justify-between rounded-field border border-border bg-card px-4 font-medium"
+        className="press-tint flex min-h-12 items-center justify-between rounded-field border border-border bg-card px-4 font-medium"
       >
         {t("profile.title")}
         <ChevronRight aria-hidden className="size-5 text-muted-foreground" />
@@ -259,13 +260,13 @@ function AccountSettings({ pending }: { pending: number | null }) {
           <div className="flex flex-wrap gap-2">
             <Button
               ref={(el) => el?.focus()}
-              variant="outline"
+              variant="secondary"
               disabled={busy}
               onClick={() => signOut.mutate()}
             >
               {t("settings.signOutAnyway")}
             </Button>
-            <Button variant="ghost" onClick={() => setConfirming(false)}>
+            <Button variant="text" onClick={() => setConfirming(false)}>
               {t("settings.cancel")}
             </Button>
           </div>
@@ -273,7 +274,7 @@ function AccountSettings({ pending }: { pending: number | null }) {
       ) : (
         <Button
           ref={signOutButton}
-          variant="outline"
+          variant="secondary"
           className="self-start"
           disabled={busy}
           onClick={() => (pending !== 0 ? setConfirming(true) : signOut.mutate())}

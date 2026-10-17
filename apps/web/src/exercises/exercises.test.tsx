@@ -84,17 +84,23 @@ describe("the thumbnails", () => {
   });
 
   it("draws one picture per figure and theme, from the same URL each time", () => {
-    const a = thumbnailUrl("chest", ["triceps", "abs"], false);
-    expect(thumbnailUrl("chest", ["abs", "triceps"], false)).toBe(a);
+    // jsdom loads no stylesheet: give the muscles their tokens, as the light theme does.
     const root = document.documentElement;
-    root.style.setProperty("--muscle-rest", "#010203"); // the dark theme's own colours
+    root.style.setProperty("--muscle-primary", palette.primary);
+    root.style.setProperty("--muscle-secondary", palette.secondary);
+    root.style.setProperty("--muscle-rest", palette.rest);
     try {
+      const a = thumbnailUrl("chest", ["triceps", "abs"], false);
+      expect(thumbnailUrl("chest", ["abs", "triceps"], false)).toBe(a);
+      root.style.setProperty("--muscle-rest", "#010203"); // the dark theme's own colours
       expect(thumbnailUrl("chest", ["triceps", "abs"], true)).not.toBe(a);
+      root.style.setProperty("--muscle-rest", palette.rest);
+      expect(thumbnailUrl("chest", ["triceps"], false)).not.toBe(a);
+      expect(thumbnailUrl("biceps", ["triceps", "abs"], false)).not.toBe(a);
     } finally {
-      root.style.removeProperty("--muscle-rest");
+      for (const name of ["--muscle-primary", "--muscle-secondary", "--muscle-rest"])
+        root.style.removeProperty(name);
     }
-    expect(thumbnailUrl("chest", ["triceps"], false)).not.toBe(a);
-    expect(thumbnailUrl("biceps", ["triceps", "abs"], false)).not.toBe(a);
   });
 
   it("reads the colours of the theme in force", () => {
@@ -129,7 +135,7 @@ describe("the Exercises segment", () => {
 
   it("puts the program's exercises first with their sessions, then all of them", async () => {
     await openLibrary();
-    const program = screen.getAllByRole("list")[0]!;
+    const program = within(screen.getByRole("main")).getAllByRole("list")[0]!;
     const first = within(program).getAllByRole("link")[0]!;
     expect(first.textContent).toContain("Barbell bench press");
     expect(first.textContent).toContain("Chest · Barbell");
@@ -141,7 +147,7 @@ describe("the Exercises segment", () => {
 
   it("renders only the rows on screen of the 1 291", async () => {
     await openLibrary();
-    const all = screen.getAllByRole("list")[1]!;
+    const all = within(screen.getByRole("main")).getAllByRole("list")[1]!;
     const rows = within(all).getAllByRole("listitem");
     expect(rows.length).toBeGreaterThan(5);
     expect(rows.length).toBeLessThan(50);

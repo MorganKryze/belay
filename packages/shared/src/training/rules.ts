@@ -5,7 +5,7 @@ import { epley, RELIABLE_MAX_REPS } from "../tools/one-rep-max";
 import { roundTo } from "../tools/round";
 import { WARMUP_SCHEMES, warmupSets } from "../tools/warmup";
 import { liveSlots } from "./plan";
-import { groupOf } from "./program";
+import { groupOf, plannedWorkSets } from "./program";
 import { MAX_WARMUPS, type Slot, type Workout, type WorkoutSet } from "./workout";
 
 export interface History {
@@ -142,6 +142,30 @@ export function nextTurn(
   const start = from ? order.findIndex((t) => turnKey(t) === turnKey(from)) + 1 : 0;
   const open = (t: Turn) => !done.has(turnKey(t));
   return order.slice(start).find(open) ?? order.slice(0, start).find(open) ?? null;
+}
+
+// Where an open session stands: the planned work sets done, how many are left, the last one done
+// and the one up next. Warm-ups, skipped slots and « + Série » past the plan are aside.
+export interface SessionProgress {
+  done: ReadonlySet<string>;
+  left: number;
+  last: Turn | undefined;
+  next: Turn | null;
+}
+
+export function sessionProgress(
+  plan: readonly Slot[],
+  sets: readonly WorkoutSet[],
+): SessionProgress {
+  const work = sets.filter((s) => {
+    const slot = plan[s.slotIndex];
+    return !s.warmup && slot && !slot.skipped && s.position - MAX_WARMUPS < slot.sets;
+  });
+  const done = new Set(work.map((s) => turnKey(turnOf(s))));
+  const last = work.length
+    ? turnOf([...work].sort((a, b) => (a.doneAt < b.doneAt ? -1 : 1)).at(-1)!)
+    : undefined;
+  return { done, left: plannedWorkSets(plan) - done.size, last, next: nextTurn(plan, done, last) };
 }
 
 // The end of the rest after a work set. Inside a group's round, none: the next exercise follows.

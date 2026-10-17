@@ -4,16 +4,16 @@ import { toISODate } from "@belay/shared/body/dates";
 import { exerciseById } from "@belay/shared/exercises/catalog";
 import type { Exercise } from "@belay/shared/exercises/library";
 import { appendSlot, planFor, replaceSlot, skipSlot } from "@belay/shared/training/plan";
-import { groupOf, plannedWorkSets, sessionByCode } from "@belay/shared/training/program";
+import { groupOf, sessionByCode } from "@belay/shared/training/program";
 import {
   type History,
   liveSets,
   type Load,
   nextTurn,
   restEndsAt,
+  sessionProgress,
   type Turn,
   turnKey,
-  turnOf,
 } from "@belay/shared/training/rules";
 import {
   MAX_SLOTS,
@@ -143,17 +143,14 @@ function Screen({
   const [finishing, setFinishing] = useState(false);
   // The exercise picker: for a slot to replace, or for one added at the end.
   const [picking, setPicking] = useState<{ slotIndex: number } | "add" | null>(null);
+  // A picked exercise is in the plan behind while the picker plays its exit.
+  const [leaving, setLeaving] = useState(false);
   const [saveError, setError] = useState<string>();
   const error = saveError ?? failed;
   const plan = workout.plan;
   const sets = liveSets(history).filter((s) => s.workoutId === workout.id);
-  // The planned work sets done (« + Série » past the plan aside), in the slots done today.
-  const work = sets.filter((s) => {
-    const slot = plan[s.slotIndex];
-    return !s.warmup && slot && !slot.skipped && s.position - MAX_WARMUPS < slot.sets;
-  });
-  const done = new Set(work.map((s) => turnKey(turnOf(s))));
-  const left = plannedWorkSets(plan) - done.size;
+  // The planned work sets done (« + Série » past the plan aside), and what comes next.
+  const { done, left, last: lastTurn, next } = sessionProgress(plan, sets);
   // The person's own bar and plates, from the Plates tool (D7).
   const bar = resolveEquipment(readToolState().equipment);
 
@@ -206,12 +203,12 @@ function Screen({
     );
   };
   const pick = (exercise: Exercise) => {
-    if (picking === null) return;
+    if (picking === null || leaving) return;
     const target = picking === "add" ? plan.length : picking.slotIndex;
     editPlan((stored) =>
       picking === "add" ? appendSlot(stored, exercise) : replaceSlot(stored, target, exercise),
     );
-    setPicking(null);
+    setLeaving(true);
     setToggled((m) => new Map(m).set(target, true));
   };
 
@@ -296,10 +293,6 @@ function Screen({
   };
 
   // The rest bar names what comes next: the next set of this exercise, or the next exercise.
-  const lastTurn = work.length
-    ? turnOf([...work].sort((a, b) => (a.doneAt < b.doneAt ? -1 : 1)).at(-1)!)
-    : undefined;
-  const next = nextTurn(plan, done, lastTurn);
   const restLabel =
     next === null
       ? t("session.restLast")
@@ -332,7 +325,7 @@ function Screen({
           {formatClock(now - Date.parse(workout.startedAt), Math.floor)}
         </span>
         <Button
-          variant="outline"
+          variant="secondary"
           onClick={() => (left > 0 ? setFinishing(true) : onFinish(sets.length === 0))}
         >
           {t("session.finish")}
@@ -388,9 +381,8 @@ function Screen({
         );
       })}
       <Button
-        variant="outline"
-        size="lg"
-        className="w-full font-semibold"
+        variant="secondary"
+        className="w-full"
         disabled={plan.length >= MAX_SLOTS}
         onClick={() => setPicking("add")}
       >
@@ -403,7 +395,11 @@ function Screen({
           }
           history={history}
           onPick={pick}
-          onClose={() => setPicking(null)}
+          open={!leaving}
+          onClose={() => {
+            setPicking(null);
+            setLeaving(false);
+          }}
         />
       )}
       {active.restEndsAt && (
@@ -421,19 +417,10 @@ function Screen({
               : t("session.finishLeft", { count: left })}
           </p>
           <div className="flex flex-col gap-2">
-            <Button
-              size="lg"
-              className="w-full font-semibold"
-              onClick={() => onFinish(sets.length === 0)}
-            >
+            <Button className="w-full" onClick={() => onFinish(sets.length === 0)}>
               {t("session.finish")}
             </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              className="w-full"
-              onClick={() => setFinishing(false)}
-            >
+            <Button variant="secondary" className="w-full" onClick={() => setFinishing(false)}>
               {t("session.keepGoing")}
             </Button>
           </div>

@@ -121,12 +121,7 @@ function SessionCard({
     minutes: estimatedMinutes({ slots: plan }),
   });
   const startButton = start !== null && (
-    <Button
-      asChild
-      size="lg"
-      variant={next && !resume ? "default" : "outline"}
-      className="flex-1 font-semibold"
-    >
+    <Button asChild variant={next && !resume ? "primary" : "secondary"} className="flex-1">
       <Link to="/workout" search={{ start }}>
         {resume ? t("workouts.program.resume") : t("workouts.program.start")}
       </Link>
@@ -154,7 +149,7 @@ function SessionCard({
                 <Link
                   to="/exercises/$exerciseId"
                   params={{ exerciseId: slot.exerciseId }}
-                  className="flex min-h-14 flex-col justify-center py-2"
+                  className="press-tint flex min-h-14 flex-col justify-center py-2"
                 >
                   <span className="font-medium">{exerciseById(slot.exerciseId)?.name}</span>
                   <span className="text-[13px] text-muted-foreground">
@@ -171,10 +166,9 @@ function SessionCard({
       <div className="flex gap-2">
         {(!next || start === null) && (
           <Button
-            size="lg"
-            variant="outline"
+            variant="secondary"
             aria-expanded={seeing}
-            className="flex-1 font-semibold"
+            className="flex-1"
             onClick={() => setSeeing(!seeing)}
           >
             {t("workouts.program.see")}

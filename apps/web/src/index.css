@@ -69,9 +69,190 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+  --color-tab-pill: var(--tab-pill);
+  --color-glass: var(--glass);
+  --color-glass-fallback: var(--glass-fallback);
+  --color-toast-icon: var(--toast-icon);
+  --color-scrim: var(--scrim);
+  --color-press-tint: var(--press-tint);
+  --color-hold-yellow: var(--hold-yellow);
+  --color-hold-green: var(--hold-green);
+  --color-hold-blue: var(--hold-blue);
+  --color-hold-red: var(--hold-red);
+  --color-hold-black: var(--hold-black);
+  --color-hold-purple: var(--hold-purple);
+  --color-hold-white: var(--hold-white);
+  --shadow-card: var(--shadow-card);
+  --shadow-float: var(--shadow-float);
+  --shadow-sheet: var(--shadow-sheet);
+}
+
+/*
+ * The charter's scales: components pick a step, never a raw size. Plain @theme so Tailwind emits
+ * the ease-*, text-* and rounded-* utilities with these exact values.
+ */
+@theme {
+  --spacing: 0.25rem;
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-nav: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-sheet: cubic-bezier(0.4, 0.2, 0, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  --text-figure: 50px;
+  --text-figure--line-height: 1;
+  --text-figure--letter-spacing: -0.035em;
+  --text-figure--font-weight: 700;
+  --text-figure-md: 34px;
+  --text-figure-md--line-height: 1;
+  --text-figure-md--letter-spacing: -0.03em;
+  --text-figure-md--font-weight: 700;
+  --text-title-lg: 30px;
+  --text-title-lg--line-height: 1.15;
+  --text-title-lg--letter-spacing: -0.02em;
+  --text-title-lg--font-weight: 700;
+  --text-title-session: 22px;
+  --text-title-session--line-height: 1.25;
+  --text-title-session--letter-spacing: -0.015em;
+  --text-title-session--font-weight: 700;
+  --text-title-card: 19px;
+  --text-title-card--line-height: 1.3;
+  --text-title-card--letter-spacing: -0.01em;
+  --text-title-card--font-weight: 650;
+  --text-title-compact: 17px;
+  --text-title-compact--line-height: 1.3;
+  --text-title-compact--font-weight: 650;
+  --text-button: 16px;
+  --text-button--line-height: 1.25;
+  --text-button--font-weight: 650;
+  --text-body: 15px;
+  --text-body--line-height: 1.45;
+  --text-body--font-weight: 400;
+  --text-secondary: 13px;
+  --text-secondary--line-height: 1.35;
+  --text-secondary--font-weight: 400;
+  --text-section: 13px;
+  --text-section--line-height: 1.35;
+  --text-section--font-weight: 600;
+  --text-tab: 11.5px;
+  --text-tab--line-height: 1.2;
+  --text-tab--font-weight: 600;
+  --radius-icon: 8px;
   --radius-chip: 10px;
+  --radius-control: 12px;
   --radius-field: 14px;
+  --radius-group: 16px;
   --radius-card: 18px;
+  --radius-bar: 24px;
+  --radius-sheet: 30px;
+  --radius-round: 9999px;
+}
+
+/*
+ * The shared motion. Static so every variable lands on :root, where the reduced-motion block below
+ * can swap it. Keyframes move only transform and opacity.
+ */
+@theme static {
+  --animate-fade-in: fade-in var(--dur-base) var(--ease-out) both;
+  --animate-fade-out: fade-out var(--dur-fast) var(--ease-exit) both;
+  /* Toast, session bar. */
+  --animate-rise-in: rise-in var(--dur-base) var(--ease-out) both;
+  /* Banners. */
+  --animate-drop-in: drop-in var(--dur-base) var(--ease-out) both;
+  --animate-sheet-in: sheet-in var(--dur-sheet-in) var(--ease-sheet) both;
+  --animate-sheet-out: sheet-out var(--dur-sheet-out) var(--ease-exit) both;
+  --animate-overlay-in: fade-in var(--dur-overlay-in) var(--ease-out) both;
+  --animate-overlay-out: fade-out var(--dur-release) var(--ease-exit) both;
+  /* Desktop dialog, menu. */
+  --animate-dialog-in: dialog-in var(--dur-base) var(--ease-out) both;
+  /* The tick glyph only. */
+  --animate-pop-in: pop-in var(--dur-check) var(--spring-pop-in) both;
+  /* The loading arc. */
+  --animate-spin-arc: spin-arc var(--dur-pulse) linear infinite;
+  /* Page changes: a push slides the new page in and the old one 25 % left under a 6 % dim, Back
+     plays it in reverse, the session rises as a cover over a page that stays put. */
+  --animate-page-push-in: page-push-in var(--dur-push) var(--ease-nav) both;
+  --animate-page-push-out: page-push-out var(--dur-push) var(--ease-nav) both;
+  --animate-page-back-in: page-back-in var(--dur-pop) var(--ease-nav) both;
+  --animate-page-back-out: page-back-out var(--dur-pop) var(--ease-nav) both;
+  --animate-page-cover-in: sheet-in var(--dur-sheet-in) var(--ease-sheet) both;
+  --animate-page-uncover-out: sheet-out var(--dur-sheet-out) var(--ease-exit) both;
+  /* The page under a cover holds still; with reduced motion it crossfades like the rest. */
+  --animate-page-under-in: none;
+  --animate-page-under-out: none;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes fade-out {
+    to {
+      opacity: 0;
+    }
+  }
+  @keyframes rise-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+  }
+  @keyframes drop-in {
+    from {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+  }
+  @keyframes sheet-in {
+    from {
+      transform: translateY(100%);
+    }
+  }
+  @keyframes sheet-out {
+    /* A sheet pulled down leaves from where the finger let it go. */
+    from {
+      transform: translateY(var(--swipe-y, 0));
+    }
+    to {
+      transform: translateY(100%);
+    }
+  }
+  @keyframes page-push-in {
+    from {
+      transform: translateX(100%);
+    }
+  }
+  @keyframes page-push-out {
+    to {
+      opacity: 0.94;
+      transform: translateX(-25%);
+    }
+  }
+  @keyframes page-back-in {
+    from {
+      opacity: 0.94;
+      transform: translateX(-25%);
+    }
+  }
+  @keyframes page-back-out {
+    to {
+      transform: translateX(100%);
+    }
+  }
+  @keyframes dialog-in {
+    from {
+      opacity: 0;
+      transform: scale(0.96);
+    }
+  }
+  @keyframes pop-in {
+    from {
+      transform: scale(0.6);
+    }
+  }
+  @keyframes spin-arc {
+    to {
+      transform: rotate(1turn);
+    }
+  }
 }
 
 /*
@@ -116,8 +297,59 @@
   --secondary-foreground: var(--foreground);
   --accent: var(--track);
   --accent-foreground: var(--foreground);
-  --destructive: var(--primary-ink);
+  /* Red only for destroying something (the activity delete), never on body data. Dark enough
+     here (light enough in .dark) for its label to keep 4.5:1 on the button's own red tint. */
+  --destructive: #991b1b;
   --radius: 0.625rem;
+  /* The active tab's pill, the frosted bars (and their fallback without backdrop-filter), the
+     overlay under a sheet and the tint of a pressed row. */
+  --tab-pill: #fce3ce;
+  --glass: rgba(255, 255, 255, 0.82);
+  --glass-fallback: color-mix(in srgb, var(--background) 96%, transparent);
+  /* On the foreground-coloured session bar and toast: the timer and the error icon. */
+  --toast-icon: #fb923c;
+  --scrim: rgba(28, 25, 23, 0.35);
+  --press-tint: color-mix(in srgb, var(--foreground) 6%, transparent);
+  --shadow-card: 0 1px 2px rgba(28, 25, 23, 0.05), 0 0 0 1px rgba(28, 25, 23, 0.035);
+  --shadow-float: 0 6px 20px rgba(28, 25, 23, 0.08);
+  --shadow-sheet: 0 -4px 24px rgba(28, 25, 23, 0.12);
+  /* Climbing hold colours, the same in both themes; always named in words beside the dot. */
+  --hold-yellow: #facc15;
+  --hold-green: #22c55e;
+  --hold-blue: #2563eb;
+  --hold-red: #dc2626;
+  --hold-black: #111827;
+  --hold-purple: #a855f7;
+  --hold-white: #f8fafc;
+  /* Motion: the charter's durations; a reduced-motion user gets --dur-reduced fades. */
+  --dur-press: 90ms;
+  --dur-fast: 140ms;
+  --dur-check: 180ms;
+  --dur-release: 200ms;
+  --dur-base: 220ms;
+  --dur-sheet-out: 260ms;
+  --dur-overlay-in: 300ms;
+  --dur-pop: 340ms;
+  --dur-push: 420ms;
+  --dur-sheet-in: 450ms;
+  --dur-pulse: 600ms;
+  --dur-reduced: 120ms;
+  /* Springs sampled as linear() easings, for page pushes and pop-ins. */
+  --spring-nav: linear(
+    0,
+    0.151 8.3%,
+    0.435 16.7%,
+    0.646 25%,
+    0.788 33.3%,
+    0.876 41.7%,
+    0.93 50%,
+    0.959 58.3%,
+    0.977 66.7%,
+    0.986 75%,
+    0.993 83.3%,
+    1
+  );
+  --spring-pop-in: linear(0, 0.5 18%, 0.9 35%, 1.06 52%, 1.02 70%, 1);
   /* IWF competition colours (rule 3.3.3.6), the same in both themes; grey for any other value. */
   --plate-red: #b91c1c;
   --plate-blue: #1d4ed8;
@@ -151,6 +383,239 @@
   --muscle-secondary: #8a4524;
   --muscle-rest: #36322f;
   --ring: #fb923c;
+  --destructive: #fca5a5;
+  --tab-pill: #3d2818;
+  --glass: rgba(29, 27, 25, 0.84);
+  --toast-icon: #c2410c;
+  --scrim: rgba(0, 0, 0, 0.55);
+  --shadow-card: none;
+  --shadow-float: 0 6px 20px rgba(0, 0, 0, 0.35);
+  --shadow-sheet: none;
+}
+
+:root {
+  --press-scale: 0.97;
+  --slide-duration: var(--dur-base);
+  --tint-duration: var(--dur-fast);
+  /* Fades that stay fades with reduced motion, only shorter. */
+  --fade-duration: var(--dur-fast);
+  /* The large title folding into the compact header; driven by scroll, so no duration. */
+  --fold-in: fold-in linear both;
+  --fold-out: fold-out linear both;
+  /* The compact header's opacity when no timeline drives it: hidden until the page scrolls. */
+  --fold-rest: 0;
+  /* A sheet let go short of closing slides back up from where it was left. */
+  --swipe-snap-transition: transform var(--dur-release) var(--ease-out);
+  --swipe-snap-from: 1;
+}
+
+/* On a computer the top bar holds the top of the screen, so the compact header pins under it. */
+:root {
+  --top-bar: 3.75rem;
+  --header-top: 0px;
+}
+@media (width >= 64rem) {
+  :root {
+    --header-top: var(--top-bar);
+  }
+}
+
+/*
+ * Calm by default: with reduced motion, nothing slides or scales; enters and leaves become short
+ * fades, the tick and the loading arc stand still. Components never write their own media query.
+ */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --animate-fade-in: fade-in var(--dur-reduced) var(--ease-out) both;
+    --animate-fade-out: fade-out var(--dur-reduced) var(--ease-exit) both;
+    --animate-rise-in: fade-in var(--dur-reduced) var(--ease-out) both;
+    --animate-drop-in: fade-in var(--dur-reduced) var(--ease-out) both;
+    --animate-sheet-in: fade-in var(--dur-reduced) var(--ease-out) both;
+    --animate-sheet-out: fade-out var(--dur-reduced) var(--ease-exit) both;
+    --animate-overlay-in: fade-in var(--dur-reduced) var(--ease-out) both;
+    --animate-overlay-out: fade-out var(--dur-reduced) var(--ease-exit) both;
+    --animate-dialog-in: fade-in var(--dur-reduced) var(--ease-out) both;
+    --animate-pop-in: none;
+    --animate-spin-arc: none;
+    --animate-page-push-in: fade-in var(--dur-reduced) var(--ease-out) both;
+    --animate-page-push-out: fade-out var(--dur-reduced) var(--ease-exit) both;
+    --animate-page-back-in: fade-in var(--dur-reduced) var(--ease-out) both;
+    --animate-page-back-out: fade-out var(--dur-reduced) var(--ease-exit) both;
+    --animate-page-cover-in: fade-in var(--dur-reduced) var(--ease-out) both;
+    --animate-page-uncover-out: fade-out var(--dur-reduced) var(--ease-exit) both;
+    --animate-page-under-in: fade-in var(--dur-reduced) var(--ease-out) both;
+    --animate-page-under-out: fade-out var(--dur-reduced) var(--ease-exit) both;
+    --fold-in: none;
+    --fold-out: none;
+    --fold-rest: 1;
+    --press-scale: 1;
+    --slide-duration: 0s;
+    --tint-duration: 0s;
+    --fade-duration: var(--dur-reduced);
+    --swipe-snap-transition: opacity var(--dur-reduced) var(--ease-out);
+    --swipe-snap-from: 0;
+  }
+}
+
+/* A pressed control shrinks a little and springs back on the nav curve. */
+@utility press {
+  transition: transform var(--dur-release) var(--ease-nav);
+  &:active {
+    transform: scale(var(--press-scale));
+    transition-duration: var(--dur-press);
+  }
+}
+
+/*
+ * A text field: filled with the track, no border. Focus draws the outer ring; an error draws an
+ * inner 2 px edge in the primary ink, never red, and both show at once. Compound fields (a stepper,
+ * a chip over a native input) take the state of the input they hold.
+ */
+@utility field {
+  background-color: var(--track);
+  border: 0;
+  border-radius: var(--radius-field);
+  min-height: calc(var(--spacing) * 12.5);
+  &:focus-visible,
+  &:has(input:focus-visible),
+  &:has([role="spinbutton"]:focus-visible) {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+  &[aria-invalid="true"],
+  &:has([aria-invalid="true"]) {
+    box-shadow: inset 0 0 0 2px var(--primary-ink);
+  }
+}
+
+/* A pressed row only tints. */
+@utility press-tint {
+  transition: background-color var(--tint-duration) var(--ease-out);
+  &:active {
+    background-color: var(--press-tint);
+  }
+}
+
+/*
+ * The large title fades out and the compact header (title, glass, hairline) fades in over the
+ * first 44 px of scroll; only opacity moves. Without scroll timelines the compact header shows
+ * from the start. Under reduced motion the fold variables are none: the same compact start.
+ * A page that does not scroll has no active timeline, so the compact header rests hidden on its
+ * own; a page that scrolls less than 44 px folds over the scroll it has, never stopping halfway.
+ */
+@keyframes fold-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes fold-out {
+  to {
+    opacity: 0;
+  }
+}
+@utility fold-in {
+  @supports (animation-timeline: scroll()) {
+    opacity: var(--fold-rest);
+    animation: var(--fold-in);
+    animation-timeline: scroll(root);
+    animation-range: 0 min(44px, 100%);
+  }
+}
+@utility fold-out {
+  @supports (animation-timeline: scroll()) {
+    animation: var(--fold-out);
+    animation-timeline: scroll(root);
+    animation-range: 0 min(44px, 100%);
+  }
+}
+@supports not (animation-timeline: scroll()) {
+  .fold-in,
+  .fold-out {
+    animation: none;
+  }
+}
+
+/* The frosted bars; an opaque background where backdrop-filter is missing. */
+@utility glass {
+  background-color: var(--glass);
+  backdrop-filter: saturate(180%) blur(10px);
+  @supports not (backdrop-filter: blur(1px)) {
+    background-color: var(--glass-fallback);
+  }
+}
+
+/*
+ * The dock steps back under any open sheet or dialog: the overlay covers it anyway, and a bar
+ * showing through the scrim would look usable while it is not. It comes back as the sheet leaves.
+ */
+[data-dock] {
+  transition: opacity var(--fade-duration) var(--ease-out);
+}
+html:has([role="dialog"][data-state="open"]) [data-dock] {
+  opacity: 0;
+}
+
+/*
+ * Page changes. The router only starts a transition, typed push, pop, cover or uncover, where the
+ * browser supports transition types; tab switches get none and change in the same frame. The page
+ * moves as the root snapshot: it is the size of the screen and taken at each page's own scroll, so
+ * the leaving page starts exactly where it was on screen and the arriving one where it will rest.
+ * No group morphs its size, and the dock and top bar, named apart, hold still on a push or a pop.
+ */
+::view-transition-group(*) {
+  animation: none;
+}
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+html:active-view-transition-type(push)::view-transition-new(root) {
+  animation: var(--animate-page-push-in);
+}
+html:active-view-transition-type(push)::view-transition-old(root) {
+  animation: var(--animate-page-push-out);
+}
+html:active-view-transition-type(pop)::view-transition-new(root) {
+  animation: var(--animate-page-back-in);
+}
+html:active-view-transition-type(pop)::view-transition-old(root) {
+  z-index: 1;
+  animation: var(--animate-page-back-out);
+}
+html:active-view-transition-type(cover)::view-transition-new(root) {
+  animation: var(--animate-page-cover-in);
+}
+html:active-view-transition-type(cover)::view-transition-old(root) {
+  animation: var(--animate-page-under-out);
+}
+html:active-view-transition-type(uncover)::view-transition-new(root) {
+  animation: var(--animate-page-under-in);
+}
+html:active-view-transition-type(uncover)::view-transition-old(root) {
+  z-index: 1;
+  animation: var(--animate-page-uncover-out);
+}
+html:active-view-transition-type(push, pop)::view-transition-old(dock),
+html:active-view-transition-type(push, pop)::view-transition-old(top-bar) {
+  animation: none;
+  opacity: 0;
+}
+html:active-view-transition-type(push, pop)::view-transition-new(dock),
+html:active-view-transition-type(push, pop)::view-transition-new(top-bar) {
+  animation: none;
+}
+/* The session cover takes the whole screen: the dock and the top bar fade as it rises. */
+html:active-view-transition-type(cover, uncover)::view-transition-old(dock),
+html:active-view-transition-type(cover, uncover)::view-transition-old(top-bar) {
+  animation: var(--animate-fade-out);
+}
+html:active-view-transition-type(cover, uncover)::view-transition-new(dock),
+html:active-view-transition-type(cover, uncover)::view-transition-new(top-bar) {
+  animation: var(--animate-fade-in);
 }
 
 @layer base {
@@ -165,14 +630,7 @@
   }
   html {
     @apply font-sans;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *,
-  ::before,
-  ::after {
-    animation-duration: 0.01ms !important;
-    transition-duration: 0.01ms !important;
+    /* Pressed controls answer with their own scale or tint, not the browser's grey flash. */
+    -webkit-tap-highlight-color: transparent;
   }
 }

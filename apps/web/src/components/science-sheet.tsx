@@ -29,7 +29,10 @@ function Drawer({
         {title}
         <span className="flex items-center gap-1 text-sm font-normal text-muted-foreground">
           {aside}
-          <ChevronRight aria-hidden className="size-4 transition-transform group-open:rotate-90" />
+          <ChevronRight
+            aria-hidden
+            className="size-4 transition-transform duration-(--tint-duration) ease-out group-open:rotate-90"
+          />
         </span>
       </summary>
       <div className="pb-3 text-sm">{children}</div>

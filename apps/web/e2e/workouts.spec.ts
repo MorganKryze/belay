@@ -176,6 +176,68 @@ test("a session deleted from the history leaves it, here and on the server", asy
     .toBe(true);
 });
 
+// Session C started ten minutes ago, two sets of the hip thrust done: the third is up next.
+const RUNNING = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7f01";
+const TEN_AGO = new Date(NOW.getTime() - 10 * 60_000).toISOString();
+const RUNNING_C: Change[] = [
+  {
+    kind: "workout",
+    id: RUNNING,
+    field: "start",
+    sessionCode: "C",
+    plan: [...sessionByCode("C")!.slots],
+    startedAt: TEN_AGO,
+    at: TEN_AGO,
+  },
+  ...[0, 1].map((k): Change => ({
+    kind: "set",
+    id: `0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7f1${k}`,
+    workoutId: RUNNING,
+    field: "create",
+    slotIndex: 0,
+    position: 3 + k,
+    exerciseId: "belay:barbell-hip-thrust",
+    warmup: false,
+    weightKg: 80,
+    reps: 10,
+    rir: 1,
+    doneAt: TEN_AGO,
+    at: TEN_AGO,
+  })),
+];
+const sessionBar = (page: Page) =>
+  page.getByRole("link", { name: /^Barbell hip thrust In progress · set 3 of 4 · Session C/ });
+
+test("the running session sits above the tabs and reopens in one tap", async ({ page }) => {
+  await fakeServer(page, { changes: RUNNING_C });
+  await page.goto("/tools");
+  const bar = sessionBar(page);
+  await expect(bar).toBeVisible();
+  await expect(bar).toContainText("10:00");
+  const tabs = await page.getByRole("navigation", { name: "Main" }).boundingBox();
+  const box = await bar.boundingBox();
+  expect(box!.y + box!.height).toBeLessThanOrEqual(tabs!.y);
+  await bar.click();
+  await expect(page.getByRole("heading", { level: 1, name: /^Session C · / })).toBeVisible();
+  await expect(sessionBar(page)).toBeHidden();
+});
+
+test("the session bar's status line fits whole at 390 px, in the secondary size", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await fakeServer(page, { changes: RUNNING_C });
+  await page.goto("/tools");
+  const line = sessionBar(page).getByText("In progress · set 3 of 4 · Session C");
+  await expect(line).toBeVisible();
+  const { size, cut } = await line.evaluate((el) => ({
+    size: getComputedStyle(el).fontSize,
+    cut: el.scrollWidth > el.clientWidth,
+  }));
+  expect(size).toBe("13px");
+  expect(cut).toBe(false);
+});
+
 // Each new screen, as a person reaches it, for axe and for the 360 px check.
 const SCREENS: [string, (page: Page) => Promise<void>][] = [
   [
@@ -282,6 +344,42 @@ test.describe("at 360 px", () => {
   }
 });
 
+// Each row sits in a rounded card that clips its overflow: a ring drawn outside the row would vanish.
+test("the remove-session action sheet shows the keyboard focus ring inside each row", async ({
+  page,
+}) => {
+  await fakeServer(page, { changes: LAST_A });
+  await page.goto("/workouts?tab=history");
+  await page.getByRole("link", { name: /Session A · Push/ }).click();
+  const remove = page.getByRole("button", { name: "Delete this session" });
+  await remove.focus();
+  await page.keyboard.press("Enter");
+  const dialog = page.getByRole("dialog", { name: "Delete this session?" });
+  await expect(dialog).toBeVisible();
+  const cancel = dialog.getByRole("button", { name: "Cancel" });
+  await expect(cancel).toBeFocused();
+  await page.keyboard.press("Shift+Tab");
+  const confirm = dialog.getByRole("button", { name: "Delete" });
+  await expect(confirm).toBeFocused();
+  for (const button of [confirm, cancel]) {
+    await button.focus();
+    const ring = await button.evaluate((el) => {
+      const s = getComputedStyle(el);
+      return {
+        focusVisible: el.matches(":focus-visible"),
+        style: s.outlineStyle,
+        width: parseFloat(s.outlineWidth),
+        reach: parseFloat(s.outlineWidth) + parseFloat(s.outlineOffset),
+      };
+    });
+    expect(ring.focusVisible).toBe(true);
+    expect(ring.style).toBe("solid");
+    expect(ring.width).toBeGreaterThan(0);
+    // The ring's outer edge stays on or inside the row's border box, so the card does not clip it.
+    expect(ring.reach).toBeLessThanOrEqual(0);
+  }
+});
+
 test.describe("accessibility", () => {
   // No transition in flight when axe measures a colour.
   test.use({ reducedMotion: "reduce" });
@@ -297,5 +395,23 @@ test.describe("accessibility", () => {
         await expectNoAxeViolations(page);
       });
     }
+    test(`the session bar has no axe violation, ${theme}`, async ({ page }) => {
+      await page.addInitScript((t) => localStorage.setItem("belay.theme", t), theme);
+      await fakeServer(page, { changes: RUNNING_C });
+      await page.goto("/tools");
+      await expect(sessionBar(page)).toBeVisible();
+      if (theme === "dark") await expect(page.locator("html")).toHaveClass(/dark/);
+      await expectNoAxeViolations(page);
+    });
+    test(`the remove-session action sheet has no axe violation, ${theme}`, async ({ page }) => {
+      await page.addInitScript((t) => localStorage.setItem("belay.theme", t), theme);
+      await fakeServer(page, { changes: LAST_A });
+      await page.goto("/workouts?tab=history");
+      await page.getByRole("link", { name: /Session A · Push/ }).click();
+      await page.getByRole("button", { name: "Delete this session" }).click();
+      await expect(page.getByRole("dialog", { name: "Delete this session?" })).toBeVisible();
+      if (theme === "dark") await expect(page.locator("html")).toHaveClass(/dark/);
+      await expectNoAxeViolations(page);
+    });
   }
 });

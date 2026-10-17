@@ -58,6 +58,8 @@ function History({ account }: { account: OpenAccount }) {
   const { write, toast, error, clearError, dismiss } = useWriter(account);
   const [logging, setLogging] = useState(false);
   const [opened, setOpened] = useState<ISODate | null>(null); // the day of the activity sheet
+  // A saved sheet plays its exit over the screen that already shows the record.
+  const [leaving, setLeaving] = useState(false);
   if (!history || !activities) return null;
   const finished = history.workouts
     .filter((w) => !w.removed && w.endedAt !== null)
@@ -73,6 +75,7 @@ function History({ account }: { account: OpenAccount }) {
     .sort((a, b) => (a.day === b.day ? 0 : a.day < b.day ? 1 : -1));
   const close = () => {
     setOpened(null);
+    setLeaving(false);
     clearError();
   };
   const [y, m] = month.split("-").map(Number) as [number, number];
@@ -81,7 +84,7 @@ function History({ account }: { account: OpenAccount }) {
     year: "numeric",
     timeZone: "UTC",
   }).format(new Date(Date.UTC(y, m - 1, 1)));
-  const line = "flex min-h-15 w-full items-center justify-between gap-3 py-2 text-left";
+  const line = "press-tint flex min-h-15 w-full items-center justify-between gap-3 py-2 text-left";
   return (
     <div className="flex flex-col gap-4">
       <button
@@ -92,18 +95,13 @@ function History({ account }: { account: OpenAccount }) {
         <Plus aria-hidden className="size-4" />
         {t("history.log.button")}
       </button>
-      <div className="flex flex-col gap-1">
-        <MonthCalendar
-          month={month}
-          current={current}
-          marked={new Set(finished.map(dayOf))}
-          circled={new Set(activities.map((a) => a.date))}
-          onMonth={setMonth}
-        />
-        <p aria-hidden className="mx-0.5 text-[13px] text-muted-foreground">
-          {t("history.legend")}
-        </p>
-      </div>
+      <MonthCalendar
+        month={month}
+        current={current}
+        marked={new Set(finished.map(dayOf))}
+        circled={new Set(activities.map((a) => a.date))}
+        onMonth={setMonth}
+      />
       <section aria-labelledby="sessions" className="flex flex-col">
         <h2 id="sessions" className="mx-0.5 text-[15px] font-semibold first-letter:uppercase">
           {month === current ? t("history.recent") : monthName}
@@ -174,6 +172,7 @@ function History({ account }: { account: OpenAccount }) {
         {opened && (
           <ActivitySheet
             onClose={close}
+            open={!leaving}
             activities={activities}
             steps={steps}
             today={today}
@@ -181,7 +180,7 @@ function History({ account }: { account: OpenAccount }) {
             onDate={setOpened}
             onWrite={(entries: Entry[], previous: Entry[], kind) =>
               void write(entries, previous, t(`today.activityToast.${kind}`)).then(
-                (ok) => ok && close(),
+                (ok) => ok && setLeaving(true),
               )
             }
             error={error}

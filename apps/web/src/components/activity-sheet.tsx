@@ -57,6 +57,7 @@ export type ActivityToast = "saved" | "deleted" | "stepsSaved" | "stepsDeleted";
 // that day reopens here, with Delete; several of them are listed to pick from.
 export function ActivitySheet({
   onClose,
+  open,
   activities,
   steps,
   today,
@@ -66,6 +67,7 @@ export function ActivitySheet({
   error,
 }: {
   onClose: () => void;
+  open?: boolean;
   activities: readonly Activity[];
   steps: readonly StepsLog[];
   today: ISODate;
@@ -81,6 +83,7 @@ export function ActivitySheet({
     <Sheet
       title={t("activitySheet.title")}
       onClose={onClose}
+      open={open}
       chip={<DayChip date={date} today={today} onChange={onDate} label={t("activitySheet.date")} />}
     >
       <Segmented
@@ -297,11 +300,7 @@ function Fields({
           )}
         </>
       )}
-      <Button
-        className="h-12 rounded-field text-base font-semibold"
-        disabled={badRuns}
-        onClick={save}
-      >
+      <Button disabled={badRuns} onClick={save}>
         {t("weighIn.save")}
       </Button>
       {error && (
@@ -346,7 +345,6 @@ function StepsForm({
         hint={<p className="text-[13px] text-muted-foreground">{t("activitySheet.stepsNote")}</p>}
       />
       <Button
-        className="h-12 rounded-field text-base font-semibold"
         // Emptied, it deletes the day's steps; never entered, there is nothing to save.
         disabled={bad || (value === null && own === null)}
         onClick={() =>
@@ -386,10 +384,9 @@ function Delete({
 }) {
   const { t } = useTranslation();
   const id = useId();
-  const button = "h-12 rounded-field text-base font-semibold";
   if (!confirming)
     return (
-      <Button variant="outline" className={button} onClick={() => onAsk(true)}>
+      <Button variant="secondary" onClick={() => onAsk(true)}>
         {t(steps ? "activitySheet.deleteSteps" : "activitySheet.delete")}
       </Button>
     );
@@ -399,10 +396,10 @@ function Delete({
         {t(steps ? "activitySheet.confirmSteps" : "activitySheet.confirm")}
       </p>
       <div className="grid grid-cols-2 gap-2">
-        <Button variant="outline" className={button} onClick={() => onAsk(false)}>
+        <Button variant="secondary" onClick={() => onAsk(false)}>
           {t("activitySheet.cancel")}
         </Button>
-        <Button variant="destructive" className={button} onClick={onDelete}>
+        <Button variant="destructive" onClick={onDelete}>
           {t("activitySheet.confirmDelete")}
         </Button>
       </div>
@@ -454,13 +451,13 @@ function Chips<T extends string>({
 // The circuit colours: a dot each, with its name for screen readers and, once chosen, under the
 // dots for everyone (a colour never carries the meaning alone).
 const DOT: Readonly<Record<ClimbColor, string>> = {
-  yellow: "#facc15",
-  green: "#22c55e",
-  blue: "#2563eb",
-  red: "#dc2626",
-  black: "#111827",
-  purple: "#a855f7",
-  white: "#f8fafc",
+  yellow: "var(--hold-yellow)",
+  green: "var(--hold-green)",
+  blue: "var(--hold-blue)",
+  red: "var(--hold-red)",
+  black: "var(--hold-black)",
+  purple: "var(--hold-purple)",
+  white: "var(--hold-white)",
 };
 function Colors({
   value,

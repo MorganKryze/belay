@@ -1,6 +1,6 @@
 import type { Change } from "@belay/shared/sync/schema";
 import { expect, type Page, test } from "@playwright/test";
-import { expectNoAxeViolations } from "./axe";
+import { expectNoAxeViolations, settled } from "./axe";
 import { ADA, fakeServer, WEEKS } from "./fake-server";
 
 // Wednesday 7 October 2026, 8 a.m. in Paris; timers still run, only the date is fixed.
@@ -248,6 +248,8 @@ const EMPTY_SCREENS: [string, (page: Page) => Promise<void>][] = [
 // A sheet is a fixed dialog: the page can fit while the dialog itself scrolls sideways or sits
 // partly off screen, so the dialog is measured too.
 async function expectFits(page: Page) {
+  // Measured once it has risen, not on its way up from below the screen.
+  await settled(page);
   const overflow = await page.evaluate(
     () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
   );

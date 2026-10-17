@@ -7,18 +7,17 @@ import {
   SUPPLEMENT_SUGGESTIONS,
 } from "@belay/shared/body/supplements";
 import type { SupplementRow } from "@belay/shared/sync/schema";
-import { Link } from "@tanstack/react-router";
-import { ChevronLeft, Ellipsis, Plus } from "lucide-react";
+import { Ellipsis, Plus } from "lucide-react";
 import { type FormEvent, useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { BackLink, PageHeader } from "@/components/page-header";
+import { FieldError } from "@/components/field-error";
 import { Button } from "@/components/ui/button";
 import { Toast, useWriter } from "@/components/weigh-in";
 import { type OpenAccount, useAccount, useSupplements } from "@/sync/account";
 
-const back = "-ml-1 inline-flex min-h-11 items-center gap-0.5 font-medium text-primary";
 const sectionTitle = "mx-0.5 text-xs font-semibold tracking-wider text-muted-foreground uppercase";
-const field =
-  "min-h-12 w-full min-w-0 rounded-field border border-input bg-card px-4 text-base outline-offset-2";
+const field = "field w-full min-w-0 px-4 text-base";
 
 // Case and accents aside: "Oméga-3" is "omega-3".
 const plain = (name: string) =>
@@ -34,19 +33,15 @@ export function Supplements() {
   const account = useAccount();
   return (
     <section className="flex flex-col gap-4">
-      <div>
-        <Link to="/settings" activeOptions={{ exact: true }} className={back}>
-          <ChevronLeft aria-hidden className="size-5" />
-          {t("settings.title")}
-        </Link>
-        <h1
-          tabIndex={-1}
-          data-focus-fallback
-          className="text-[26px] leading-tight font-bold tracking-tight outline-none"
-        >
-          {t("supplementsPage.title")}
-        </h1>
-      </div>
+      <PageHeader
+        title={t("supplementsPage.title")}
+        focusFallback
+        back={
+          <BackLink to="/settings" activeOptions={{ exact: true }}>
+            {t("settings.title")}
+          </BackLink>
+        }
+      />
       {account.kind === "open" && <SupplementList account={account} />}
       {account.kind === "unavailable" && <p>{t("account.unavailable")}</p>}
       {account.kind === "signed-out" && (
@@ -143,15 +138,13 @@ function SupplementList({ account }: { account: OpenAccount }) {
             onChange={(e) => setName(e.target.value)}
           />
           {invalid && (
-            <p id={`${nameId}-error`} className="text-[13px] font-medium text-primary-ink">
+            <FieldError id={`${nameId}-error`}>
               {t(
                 invalid === "duplicate" ? "supplementsPage.duplicate" : "supplementsPage.nameError",
               )}
-            </p>
+            </FieldError>
           )}
-          <Button type="submit" className="h-12 rounded-field text-base font-semibold">
-            {t("supplementsPage.add")}
-          </Button>
+          <Button type="submit">{t("supplementsPage.add")}</Button>
         </form>
         {suggestions.length > 0 && (
           <>
@@ -242,17 +235,17 @@ function SupplementItem({
             />
           </label>
           {invalid && (
-            <p id={errorId} className="text-[13px] font-medium text-primary-ink">
+            <FieldError id={errorId}>
               {t(
                 invalid === "duplicate" ? "supplementsPage.duplicate" : "supplementsPage.nameError",
               )}
-            </p>
+            </FieldError>
           )}
           <div className="flex flex-wrap gap-2">
             <Button type="submit">{t("supplementsPage.save")}</Button>
             <Button
               type="button"
-              variant="ghost"
+              variant="text"
               onClick={() => {
                 backToMore.current = true;
                 setInvalid(null);
@@ -290,7 +283,7 @@ function SupplementItem({
       {open && (
         <div id={menuId} className="flex flex-wrap gap-2 pb-3">
           <Button
-            variant="outline"
+            variant="secondary"
             onClick={() => {
               setOpen(false);
               setInvalid(null);
@@ -300,7 +293,7 @@ function SupplementItem({
             {t("supplementsPage.rename")}
           </Button>
           <Button
-            variant="outline"
+            variant="secondary"
             onClick={() =>
               void write(
                 [{ kind: "supplement", id: s.id, field: "removed", value: true }],

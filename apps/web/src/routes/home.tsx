@@ -4,6 +4,8 @@ import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { AvatarLink } from "@/components/avatar";
+import { PageHeader } from "@/components/page-header";
 import { SyncBanner } from "@/components/sync-banner";
 import { TodayCard } from "@/components/today-card";
 import { Button } from "@/components/ui/button";
@@ -16,8 +18,6 @@ const SIGNIN_FAILURES = ["unavailable", "expired", "failed", "denied"] as const;
 type SigninFailure = (typeof SIGNIN_FAILURES)[number];
 const isSigninFailure = (v: unknown): v is SigninFailure =>
   (SIGNIN_FAILURES as readonly unknown[]).includes(v);
-
-const title = "text-[26px] leading-tight font-bold tracking-tight";
 
 export function Home() {
   const { t } = useTranslation();
@@ -37,11 +37,18 @@ export function Home() {
   if (account.kind === "open") return <SignedInHome account={account} />;
   return (
     <section className="flex flex-col gap-4">
-      {account.kind === "unavailable" ? (
-        <h1 className={title}>{t("home.greeting", { name: account.user.displayName })}</h1>
-      ) : (
-        <h1 className="text-3xl font-semibold">{t("app.name")}</h1>
-      )}
+      <PageHeader
+        title={
+          account.kind === "unavailable"
+            ? t("home.greeting", { name: account.user.displayName })
+            : t("app.name")
+        }
+        trailing={
+          <AvatarLink
+            name={account.kind === "unavailable" ? account.user.displayName : undefined}
+          />
+        }
+      />
       {failure && account.kind === "signed-out" && <p role="alert">{t(`signin.${failure}`)}</p>}
       {account.kind === "signed-out" && account.unreachable && (
         <p role="status">{t("home.serverDown")}</p>
@@ -73,7 +80,10 @@ function SignedInHome({ account }: { account: OpenAccount }) {
   useCloseForgotten(account);
   return (
     <section className="flex flex-col gap-4">
-      <h1 className={title}>{t("home.greeting", { name: account.user.displayName })}</h1>
+      <PageHeader
+        title={t("home.greeting", { name: account.user.displayName })}
+        trailing={<AvatarLink name={account.user.displayName} />}
+      />
       <SyncBanner account={account} />
       {weighings && (
         <>

@@ -6,9 +6,10 @@ import { HEIGHT_RANGE_CM } from "@belay/shared/tools/bounds";
 import type { ToolId } from "@belay/shared/tools/catalog";
 import { roundTo } from "@belay/shared/tools/round";
 import { Link } from "@tanstack/react-router";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { ChevronRight, Plus } from "lucide-react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { BackLink, PageHeader } from "@/components/page-header";
 import { NumberStepper } from "@/components/number-stepper";
 import { ScienceSheet } from "@/components/science-sheet";
 import { Segmented } from "@/components/segmented";
@@ -23,7 +24,6 @@ import {
   useTarget,
 } from "@/sync/account";
 
-const back = "-ml-1 inline-flex min-h-11 items-center gap-0.5 font-medium text-primary";
 const sectionTitle = "mx-0.5 text-xs font-semibold tracking-wider text-muted-foreground uppercase";
 const card = "flex flex-col rounded-card border border-border bg-card";
 
@@ -34,22 +34,19 @@ export function Profile() {
   const account = useAccount();
   return (
     <section className="flex flex-col gap-4">
-      <div>
-        <Link to="/settings" activeOptions={{ exact: true }} className={back}>
-          <ChevronLeft aria-hidden className="size-5" />
-          {t("settings.title")}
-        </Link>
-        <h1
-          tabIndex={-1}
-          data-focus-fallback
-          className="text-[26px] leading-tight font-bold tracking-tight outline-none"
-        >
-          {t("profile.title")}
-        </h1>
+      <PageHeader
+        title={t("profile.title")}
+        focusFallback
+        back={
+          <BackLink to="/settings" activeOptions={{ exact: true }}>
+            {t("settings.title")}
+          </BackLink>
+        }
+      >
         {account.kind === "open" && (
           <p className="mt-1 text-sm text-muted-foreground">{t("profile.lead")}</p>
         )}
-      </div>
+      </PageHeader>
       {account.kind === "open" && (
         <>
           <BodySection account={account} />
@@ -331,7 +328,7 @@ function TrackingSection({ account }: { account: OpenAccount }) {
       </h2>
       <Link
         to="/settings/supplements"
-        className="flex min-h-12 items-center justify-between gap-2 rounded-field border border-border bg-card px-4 font-medium"
+        className="press-tint flex min-h-12 items-center justify-between gap-2 rounded-field border border-border bg-card px-4 font-medium"
       >
         {t("supplementsPage.title")}{" "}
         <span className="flex items-center gap-0.5 text-muted-foreground">
