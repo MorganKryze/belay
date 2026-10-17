@@ -397,6 +397,8 @@
   --press-scale: 0.97;
   --slide-duration: var(--dur-base);
   --tint-duration: var(--dur-fast);
+  /* A press shows at once and fades over the release, so a page leaving still shows it. */
+  --press-release: var(--dur-release);
   /* Fades that stay fades with reduced motion, only shorter. */
   --fade-duration: var(--dur-fast);
   /* The large title folding into the compact header; driven by scroll, so no duration. */
@@ -451,18 +453,19 @@
     --press-scale: 1;
     --slide-duration: 0s;
     --tint-duration: 0s;
+    --press-release: 0s;
     --fade-duration: var(--dur-reduced);
     --swipe-snap-transition: opacity var(--dur-reduced) var(--ease-out);
     --swipe-snap-from: 0;
   }
 }
 
-/* A pressed control shrinks a little and springs back on the nav curve. */
+/* A pressed control shrinks at once and springs back on the nav curve. */
 @utility press {
-  transition: transform var(--dur-release) var(--ease-nav);
+  transition: transform var(--press-release) var(--ease-nav);
   &:active {
     transform: scale(var(--press-scale));
-    transition-duration: var(--dur-press);
+    transition-duration: 0s;
   }
 }
 
@@ -488,11 +491,12 @@
   }
 }
 
-/* A pressed row only tints. */
+/* A pressed row only tints: at once on the press, fading out on the release. */
 @utility press-tint {
-  transition: background-color var(--tint-duration) var(--ease-out);
+  transition: background-color var(--press-release) var(--ease-out);
   &:active {
     background-color: var(--press-tint);
+    transition-duration: 0s;
   }
 }
 

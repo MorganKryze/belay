@@ -149,12 +149,10 @@ export function TodayCard({
             onClick={() => setOpen("supplements")}
           />
         ) : (
-          <RowShell icon={Pill}>
-            <Link
-              to="/settings/supplements"
-              className="press-tint flex min-h-14 flex-1 items-center justify-between gap-2 font-semibold text-primary"
-            >
-              {t("today.addSupplements")}
+          <RowShell>
+            <Link to="/settings/supplements" className={`${rowLine} font-semibold text-primary`}>
+              <RowIcon icon={Pill} />
+              <span className="min-w-0 flex-1">{t("today.addSupplements")}</span>
               <ChevronRight aria-hidden className="size-5 shrink-0" />
             </Link>
           </RowShell>
@@ -292,13 +290,10 @@ function SessionRow({
     });
   }
   return (
-    <RowShell icon={Dumbbell}>
-      <Link
-        to="/workout"
-        search={{ start: code }}
-        className="press-tint flex min-h-14 min-w-0 flex-1 items-center justify-between gap-2 py-2 text-left"
-      >
-        <span className="flex min-w-0 flex-col">
+    <RowShell>
+      <Link to="/workout" search={{ start: code }} className={rowLine}>
+        <RowIcon icon={Dumbbell} />
+        <span className="flex min-w-0 flex-1 flex-col">
           <span className="font-semibold">{sessionTitle(code, t)}</span>
           <span className="text-[13px] text-muted-foreground">{status}</span>
         </span>
@@ -308,17 +303,21 @@ function SessionRow({
   );
 }
 
-function RowShell({ icon: Icon, children }: { icon: LucideIcon; children: ReactNode }) {
+// The icon tile sits inside the row's button or link, so a press tints the whole line.
+const rowLine = "press-tint flex min-h-14 w-full min-w-0 items-center gap-3 py-2 text-left";
+
+function RowShell({ children }: { children: ReactNode }) {
+  return <div className="flex border-t border-border first-of-type:border-t-0">{children}</div>;
+}
+
+function RowIcon({ icon: Icon }: { icon: LucideIcon }) {
   return (
-    <div className="flex items-center gap-3 border-t border-border first-of-type:border-t-0">
-      <span
-        aria-hidden
-        className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-primary-soft text-primary-ink"
-      >
-        <Icon className="size-5" />
-      </span>
-      {children}
-    </div>
+    <span
+      aria-hidden
+      className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-primary-soft text-primary-ink"
+    >
+      <Icon className="size-5" />
+    </span>
   );
 }
 
@@ -335,13 +334,10 @@ function Row({
   onClick: () => void;
 }) {
   return (
-    <RowShell icon={icon}>
-      <button
-        type="button"
-        className="press-tint flex min-h-14 min-w-0 flex-1 items-center justify-between gap-2 py-2 text-left"
-        onClick={onClick}
-      >
-        <span className="flex min-w-0 flex-col">
+    <RowShell>
+      <button type="button" className={rowLine} onClick={onClick}>
+        <RowIcon icon={icon} />
+        <span className="flex min-w-0 flex-1 flex-col">
           <span className="font-semibold">{title}</span>
           <span className="text-[13px] text-muted-foreground">{status}</span>
         </span>

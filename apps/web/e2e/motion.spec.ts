@@ -54,22 +54,46 @@ async function saveWeighIn(page: Page) {
 }
 
 test.describe("normal motion", () => {
-  test("a pressed button scales to 0.97", async ({ page }) => {
+  test("a pressed button scales to 0.97 at once and springs back in 200 ms", async ({ page }) => {
     await openHome(page);
     // The avatar shares the press of every button.
     const button = page.getByRole("link", { name: "Settings" });
     await button.hover();
     await since(page);
     await page.mouse.down();
-    await expect
-      .poll(() => button.evaluate((el) => getComputedStyle(el).transform))
-      .toBe("matrix(0.97, 0, 0, 0.97, 0, 0)");
+    // Read once, with no wait: the press shows on the frame the finger lands.
+    expect(await button.evaluate((el) => getComputedStyle(el).transform)).toBe(
+      "matrix(0.97, 0, 0, 0.97, 0, 0)",
+    );
     // Released away from it, so Home stays.
     await page.mouse.move(0, 0);
     await page.mouse.up();
-    expect(await readMotion(page)).toContainEqual(
-      expect.objectContaining({ kind: "transition", duration: 90, easing: NAV, transforms: true }),
-    );
+    await expect
+      .poll(() => readMotion(page))
+      .toContainEqual(
+        expect.objectContaining({
+          kind: "transition",
+          duration: 200,
+          easing: NAV,
+          transforms: true,
+        }),
+      );
+  });
+
+  test("a pressed row tints across its whole width before the finger lifts", async ({ page }) => {
+    await openHome(page);
+    const row = page.getByRole("button", { name: /^Intake/ });
+    await row.hover();
+    await page.mouse.down();
+    const pressed = await row.evaluate((el) => ({
+      tint: getComputedStyle(el).backgroundColor,
+      width: el.getBoundingClientRect().width,
+      line: el.parentElement!.getBoundingClientRect().width,
+    }));
+    expect(pressed.tint).not.toBe("rgba(0, 0, 0, 0)");
+    expect(pressed.width).toBe(pressed.line);
+    await page.mouse.move(0, 0);
+    await page.mouse.up();
   });
 
   test("a tab switch slides only the pill, in 220 ms on the nav curve", async ({ page }) => {

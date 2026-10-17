@@ -86,6 +86,16 @@ describe("Home's gesture rows", () => {
       expect((await line(name)).className).toContain("press-tint");
     }
   });
+
+  it("each row's icon tile sits inside its button, so the press covers the whole row", async () => {
+    fakeApi({ me: ADA });
+    renderRoute("/");
+    for (const name of [/^Weigh-in/, /^Intake/]) {
+      const row = await line(name);
+      expect(row.querySelector("span[aria-hidden] > svg"), String(name)).not.toBeNull();
+      expect(row.parentElement?.children).toHaveLength(1);
+    }
+  });
 });
 
 describe("the intake line and its sheet", () => {
