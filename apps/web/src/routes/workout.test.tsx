@@ -1043,6 +1043,36 @@ describe("finish", () => {
     expect((await stored()).active).not.toBeNull();
   });
 
+  it("a failed removal keeps the session and says the save failed", async () => {
+    const { requests } = fakeApi({ me: ADA });
+    const router = await openWith([4, 3, 3, 1]);
+    vi.mocked(recordChanges).mockRejectedValueOnce(new DOMException("lost", "InvalidStateError"));
+    const sheet = await finish();
+    fireEvent.click(within(sheet).getByRole("button", { name: "Delete the session…" }));
+    const confirm = await screen.findByRole("dialog", { name: "Delete the session?" });
+    fireEvent.click(within(confirm).getByRole("button", { name: "Delete the session" }));
+    expect((await screen.findByRole("alert")).textContent).toBe(
+      "Couldn't save on this phone. Try again.",
+    );
+    expect(screen.getByRole("heading", { name: "Session A · Push", level: 1 })).toBeTruthy();
+    expect(router.state.location.pathname).toBe("/workout");
+    expect((await open()).removed).toBe(false);
+    expect((await stored()).active).not.toBeNull();
+    expect(await removals(requests)).toEqual([]);
+    // Leaving an empty session fails the same way.
+    cleanup();
+    indexedDB = new IDBFactory();
+    await openWith([]);
+    vi.mocked(recordChanges).mockRejectedValueOnce(new DOMException("lost", "InvalidStateError"));
+    const empty = await finish("Nothing logged yet");
+    fireEvent.click(within(empty).getByRole("button", { name: "Leave without saving" }));
+    expect((await screen.findByRole("alert")).textContent).toBe(
+      "Couldn't save on this phone. Try again.",
+    );
+    expect((await open()).removed).toBe(false);
+    expect((await stored()).active).not.toBeNull();
+  });
+
   it("an end saved but a page change that fails says nothing failed and leaves the session", async () => {
     const router = await openWith([4, 3, 3, 1]);
     vi.spyOn(router, "navigate").mockRejectedValueOnce(new Error("navigation aborted"));
