@@ -65,24 +65,45 @@ const closeAndRead = (page: Page) =>
     };
   });
 
-test("a sheet rises in 450 ms on the sheet curve over a 300 ms overlay", async ({ page }) => {
+const SPRING_NAV =
+  "linear(0 0%, 0.151 8.3%, 0.435 16.7%, 0.646 25%, 0.788 33.3%, 0.876 41.7%, 0.93 50%, 0.959 58.3%, 0.977 66.7%, 0.986 75%, 0.993 83.3%, 1 100%)";
+
+// When the card's and the overlay's animations started, on the document timeline.
+const starts = (page: Page) =>
+  page.evaluate(() => {
+    const at: Record<string, number> = {};
+    for (const a of document.getAnimations()) {
+      const target = (a.effect as KeyframeEffect).target;
+      if (target?.matches("[role=dialog]")) at.card = Number(a.startTime);
+      if (target?.matches("[data-sheet-overlay]")) at.overlay = Number(a.startTime);
+    }
+    return at;
+  });
+
+test("a sheet rises in 500 ms on the nav spring, its veil fading in 350 ms from the same frame", async ({
+  page,
+}) => {
   await openIntake(page);
   expect(await played(page)).toEqual(
     expect.arrayContaining([
-      { on: "card", name: "sheet-in", duration: 450, easing: "cubic-bezier(0.4, 0.2, 0, 1)" },
-      { on: "overlay", name: "fade-in", duration: 300, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" },
+      { on: "card", name: "sheet-in", duration: 500, easing: SPRING_NAV },
+      { on: "overlay", name: "fade-in", duration: 350, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" },
     ]),
   );
+  const { card, overlay } = await starts(page);
+  expect(Math.abs(card! - overlay!)).toBeLessThanOrEqual(17);
 });
 
-test("closing runs 260 ms down and a 200 ms overlay before the sheet leaves", async ({ page }) => {
+test("closing runs 300 ms down on the nav curve and a 300 ms linear veil before the sheet leaves", async ({
+  page,
+}) => {
   const sheet = await openIntake(page);
   const { attached, animations } = await closeAndRead(page);
   expect(attached).toBe("closed");
   expect(animations).toEqual(
     expect.arrayContaining([
-      { name: "sheet-out", duration: 260, easing: "cubic-bezier(0.4, 0, 1, 1)", card: true },
-      { name: "fade-out", duration: 200, easing: "cubic-bezier(0.4, 0, 1, 1)", card: false },
+      { name: "sheet-out", duration: 300, easing: "cubic-bezier(0.32, 0.72, 0, 1)", card: true },
+      { name: "fade-out", duration: 300, easing: "linear", card: false },
     ]),
   );
   await expect(sheet).toBeHidden();
@@ -252,6 +273,38 @@ test("a swipe past 90 px closes the sheet, a short one snaps back", async ({ pag
   await expect(page.getByRole("button", { name: /^Intake/ })).toBeFocused();
 });
 
+test("pulling the card down lightens the veil", async ({ page }) => {
+  const sheet = await openIntake(page);
+  await settled(page);
+  const box = (await sheet.boundingBox())!;
+  const veil = page.locator("[data-sheet-overlay]");
+  const opacity = () => veil.evaluate((el) => Number(getComputedStyle(el).opacity));
+  const x = box.x + box.width / 2;
+  const y = box.y + 24;
+  const cdp = await page.context().newCDPSession(page);
+  const touch = (type: "touchStart" | "touchMove" | "touchEnd", at?: number) =>
+    cdp.send("Input.dispatchTouchEvent", {
+      type,
+      touchPoints: at === undefined ? [] : [{ x, y: at }],
+    });
+  await touch("touchStart", y);
+  for (let i = 1; i <= 5; i++) {
+    await touch("touchMove", y + 20 * i);
+    await page.waitForTimeout(50);
+  }
+  expect(Math.abs((await opacity()) - (1 - 100 / box.height))).toBeLessThanOrEqual(0.03);
+  // Back up short of the threshold, then a slow release: the card and the veil come back.
+  for (let i = 1; i <= 3; i++) {
+    await touch("touchMove", y + 100 - 20 * i);
+    await page.waitForTimeout(50);
+  }
+  await page.waitForTimeout(150);
+  await touch("touchEnd");
+  await cdp.detach();
+  await expect(sheet).toBeVisible();
+  await expect.poll(opacity).toBe(1);
+});
+
 test.describe("on a short phone", () => {
   test.use({ viewport: { width: 390, height: 240 } });
 
@@ -273,12 +326,14 @@ test.describe("on a short phone", () => {
 test.describe("with reduced motion", () => {
   test.use({ reducedMotion: "reduce" });
 
-  test("with reduced motion a swipe still closes it, by a fade", async ({ page }) => {
+  test("with reduced motion a swipe still closes it, sliding down from the finger", async ({
+    page,
+  }) => {
     const sheet = await openIntake(page);
     await settled(page);
     await watchExit(page);
     await swipeDown(page, 120);
-    expect(await exitOf(page)).toEqual([{ name: "fade-out", from: "" }]);
+    expect(await exitOf(page)).toEqual([{ name: "sheet-out", from: "translateY(120px)" }]);
     await expect(sheet).toBeHidden();
   });
 });

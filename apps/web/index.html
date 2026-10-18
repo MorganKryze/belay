@@ -39,6 +39,15 @@
           system-ui,
           sans-serif;
       }
+      /* A wait past 600 ms gets the loading mark's breathing, the second hook half a beat behind.
+         Until then the hooks stand at full strength, as the launch images paint them. */
+      .launch [data-hook] {
+        animation: var(--animate-breathe);
+        animation-delay: var(--delay-launch-loader);
+      }
+      .launch [data-hook="b"] {
+        animation-delay: calc(var(--delay-launch-loader) + var(--dur-breathe) / 2);
+      }
       /* Once the account is known: a short fade, then out of reach; at once under reduced motion. */
       .launched .launch {
         opacity: 0;
@@ -46,8 +55,13 @@
         /* Taps reach the app at once, while the splash is still fading. */
         pointer-events: none;
         transition:
-          opacity var(--dur-base) var(--ease-exit),
-          visibility 0s var(--dur-base);
+          opacity var(--dur-launch-out) var(--ease-out),
+          visibility 0s var(--dur-launch-out);
+      }
+      /* Hidden, the screen stays in the page: its breathing stops where it is rather than run
+         behind the app for good. */
+      .launched .launch [data-hook] {
+        animation-play-state: paused;
       }
       @media (prefers-reduced-motion: reduce) {
         .launched .launch {
@@ -76,7 +90,12 @@
       <div>
         <svg viewBox="86 140 340 232" fill="currentColor" aria-hidden="true">
           <path
-            d="M86 160L86 266A120 120 0 0 0 326 266L326 246A20 20 0 0 0 286 246L286 266A80 80 0 0 1 126 266L126 160A20 20 0 0 0 86 160ZM426 352L426 246A120 120 0 0 0 186 246L186 266A20 20 0 0 0 226 266L226 246A80 80 0 0 1 386 246L386 352A20 20 0 0 0 426 352Z"
+            data-hook="a"
+            d="M86 160L86 266A120 120 0 0 0 326 266L326 246A20 20 0 0 0 286 246L286 266A80 80 0 0 1 126 266L126 160A20 20 0 0 0 86 160Z"
+          />
+          <path
+            data-hook="b"
+            d="M426 352L426 246A120 120 0 0 0 186 246L186 266A20 20 0 0 0 226 266L226 246A80 80 0 0 1 386 246L386 352A20 20 0 0 0 426 352Z"
           />
         </svg>
         <span>Belay</span>

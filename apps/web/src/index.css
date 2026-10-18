@@ -97,6 +97,10 @@
   --ease-nav: cubic-bezier(0.32, 0.72, 0, 1);
   --ease-sheet: cubic-bezier(0.4, 0.2, 0, 1);
   --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  /* The tab pill passes its column by a hair and settles back. */
+  --ease-pill: linear(0, 0.2 10%, 0.6 25%, 0.9 40%, 1.03 55%, 1.01 70%, 1);
+  /* The loading mark's hooks fade out and back as evenly as they came. */
+  --ease-breathe: cubic-bezier(0.42, 0, 0.58, 1);
   --text-figure: 50px;
   --text-figure--line-height: 1;
   --text-figure--letter-spacing: -0.035em;
@@ -157,25 +161,30 @@
   --animate-rise-in: rise-in var(--dur-base) var(--ease-out) both;
   /* Banners. */
   --animate-drop-in: drop-in var(--dur-base) var(--ease-out) both;
-  --animate-sheet-in: sheet-in var(--dur-sheet-in) var(--ease-sheet) both;
-  --animate-sheet-out: sheet-out var(--dur-sheet-out) var(--ease-exit) both;
+  /* A sheet rises on the nav spring, which leaves at full speed, and glides down on the nav curve;
+     its veil fades in with it and out on a straight line. */
+  --animate-sheet-in: sheet-in var(--dur-sheet-in) var(--spring-nav) both;
+  --animate-sheet-out: sheet-out var(--dur-sheet-out) var(--ease-nav) both;
   --animate-overlay-in: fade-in var(--dur-overlay-in) var(--ease-out) both;
-  --animate-overlay-out: fade-out var(--dur-release) var(--ease-exit) both;
+  --animate-overlay-out: fade-out var(--dur-overlay-out) linear both;
   /* Desktop dialog, menu. */
   --animate-dialog-in: dialog-in var(--dur-base) var(--ease-out) both;
   /* The tick glyph only. */
   --animate-pop-in: pop-in var(--dur-check) var(--spring-pop-in) both;
   /* The loading arc. */
   --animate-spin-arc: spin-arc var(--dur-pulse) linear infinite;
-  /* Page changes: a push slides the new page in and the old one 25 % left under a 6 % dim, Back
-     plays it in reverse, the session rises as a cover over a page that stays put. */
+  /* The loading mark brightens as it shows, then its two hooks breathe in turn. */
+  --animate-loader-in: loader-in var(--dur-release) var(--ease-out) both;
+  --animate-breathe: breathe var(--dur-breathe) var(--ease-breathe) infinite;
+  /* Page changes: a push slides the new page in and the old one 25 % left as it dims, Back plays
+     it in reverse at the same pace, the session rises as a cover over a page that stays put. */
   --animate-page-push-in: page-push-in var(--dur-push) var(--ease-nav) both;
   --animate-page-push-out: page-push-out var(--dur-push) var(--ease-nav) both;
   --animate-page-back-in: page-back-in var(--dur-pop) var(--ease-nav) both;
   --animate-page-back-out: page-back-out var(--dur-pop) var(--ease-nav) both;
-  --animate-page-cover-in: sheet-in var(--dur-sheet-in) var(--ease-sheet) both;
-  --animate-page-uncover-out: sheet-out var(--dur-sheet-out) var(--ease-exit) both;
-  /* The page under a cover holds still; with reduced motion it crossfades like the rest. */
+  --animate-page-cover-in: sheet-in var(--dur-cover-in) var(--ease-sheet) both;
+  --animate-page-uncover-out: sheet-out var(--dur-cover-out) var(--ease-exit) both;
+  /* The page under a cover holds still. */
   --animate-page-under-in: none;
   --animate-page-under-out: none;
 
@@ -222,13 +231,13 @@
   }
   @keyframes page-push-out {
     to {
-      opacity: 0.94;
+      opacity: var(--push-dim);
       transform: translateX(-25%);
     }
   }
   @keyframes page-back-in {
     from {
-      opacity: 0.94;
+      opacity: var(--push-dim);
       transform: translateX(-25%);
     }
   }
@@ -251,6 +260,19 @@
   @keyframes spin-arc {
     to {
       transform: rotate(1turn);
+    }
+  }
+  @keyframes loader-in {
+    from {
+      opacity: 0.08;
+    }
+    to {
+      opacity: 0.8;
+    }
+  }
+  @keyframes breathe {
+    50% {
+      opacity: 0.35;
     }
   }
 }
@@ -321,19 +343,34 @@
   --hold-black: #111827;
   --hold-purple: #a855f7;
   --hold-white: #f8fafc;
-  /* Motion: the charter's durations; a reduced-motion user gets --dur-reduced fades. */
+  /* Motion: the charter's durations; a reduced-motion user gets --dur-reduced fades, except a
+     sheet, a pushed page and the session cover, which still slide. */
   --dur-press: 90ms;
   --dur-fast: 140ms;
   --dur-check: 180ms;
   --dur-release: 200ms;
   --dur-base: 220ms;
-  --dur-sheet-out: 260ms;
-  --dur-overlay-in: 300ms;
-  --dur-pop: 340ms;
+  --dur-sheet-out: 300ms;
+  --dur-pill: 300ms;
+  --dur-overlay-in: 350ms;
+  --dur-overlay-out: 300ms;
+  /* The session cover keeps its own pace. */
+  --dur-cover-in: 450ms;
+  --dur-cover-out: 260ms;
+  /* Back keeps the push's pace; the row left behind clears its tint on the way back. */
+  --dur-untint: 250ms;
+  --dur-pop: 380ms;
   --dur-push: 420ms;
-  --dur-sheet-in: 450ms;
+  --dur-sheet-in: 500ms;
   --dur-pulse: 600ms;
   --dur-reduced: 120ms;
+  --dur-slide-reduced: 300ms;
+  --dur-veil-reduced: 200ms;
+  --dur-breathe: 1200ms;
+  /* The launch screen fades out on the out curve, and its mark waits before breathing so a quick
+     start never sees it move. */
+  --dur-launch-out: 240ms;
+  --delay-launch-loader: 600ms;
   /* Springs sampled as linear() easings, for page pushes and pop-ins. */
   --spring-nav: linear(
     0,
@@ -350,6 +387,12 @@
     1
   );
   --spring-pop-in: linear(0, 0.5 18%, 0.9 35%, 1.06 52%, 1.02 70%, 1);
+  /* The mark's two hooks, as masks held in the stylesheet: the loader shows exactly when the
+     network is slow, so it must not wait on a file of its own. */
+  --hook-a: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='86 126 340 260'%3E%3Cpath d='M86 160L86 266A120 120 0 0 0 326 266L326 246A20 20 0 0 0 286 246L286 266A80 80 0 0 1 126 266L126 160A20 20 0 0 0 86 160Z'/%3E%3C/svg%3E");
+  --hook-b: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='86 126 340 260'%3E%3Cpath d='M426 352L426 246A120 120 0 0 0 186 246L186 266A20 20 0 0 0 226 266L226 246A80 80 0 0 1 386 246L386 352A20 20 0 0 0 426 352Z'/%3E%3C/svg%3E");
+  /* How far the page left behind dims under a push: more in dark, where 90 % barely shows. */
+  --push-dim: 0.9;
   /* IWF competition colours (rule 3.3.3.6), the same in both themes; grey for any other value. */
   --plate-red: #b91c1c;
   --plate-blue: #1d4ed8;
@@ -388,6 +431,8 @@
   --glass: rgba(29, 27, 25, 0.84);
   --toast-icon: #c2410c;
   --scrim: rgba(0, 0, 0, 0.55);
+  --press-tint: color-mix(in srgb, var(--foreground) 7%, transparent);
+  --push-dim: 0.8;
   --shadow-card: none;
   --shadow-float: 0 6px 20px rgba(0, 0, 0, 0.35);
   --shadow-sheet: none;
@@ -396,11 +441,14 @@
 :root {
   --press-scale: 0.97;
   --slide-duration: var(--dur-base);
+  --pill-duration: var(--dur-pill);
+  --press-scale-tab: 0.92;
   --tint-duration: var(--dur-fast);
   /* A press shows at once and fades over the release, so a page leaving still shows it. */
   --press-release: var(--dur-release);
-  /* Fades that stay fades with reduced motion, only shorter. */
-  --fade-duration: var(--dur-fast);
+  --untint-duration: var(--dur-untint);
+  /* The dock fades with the veil of a sheet. */
+  --dock-fade: var(--dur-overlay-in);
   /* The large title folding into the compact header; driven by scroll, so no duration. */
   --fold-in: fold-in linear both;
   --fold-out: fold-out linear both;
@@ -408,9 +456,8 @@
   --fold-rest: 0;
   /* Without scroll timelines, the compact header fades in once the large title has gone. */
   --fold-fade: var(--dur-release);
-  /* A sheet let go short of closing slides back up from where it was left. */
+  /* A sheet let go short of closing slides back up from where it was left, reduced motion too. */
   --swipe-snap-transition: transform var(--dur-release) var(--ease-out);
-  --swipe-snap-from: 1;
 }
 
 /* On a computer the top bar holds the top of the screen, so the compact header pins under it. */
@@ -425,8 +472,10 @@
 }
 
 /*
- * Calm by default: with reduced motion, nothing slides or scales; enters and leaves become short
- * fades, the tick and the loading arc stand still. Components never write their own media query.
+ * Calm by default: with reduced motion, nothing scales or bounces; a sheet, a pushed page and the
+ * session cover still slide, without the spring, over a page or a veil that holds still or fades,
+ * other enters and leaves become short fades, the tick, the loading arc and the loading mark's
+ * hooks stand still. Components never write their own media query.
  */
 @media (prefers-reduced-motion: reduce) {
   :root {
@@ -434,29 +483,31 @@
     --animate-fade-out: fade-out var(--dur-reduced) var(--ease-exit) both;
     --animate-rise-in: fade-in var(--dur-reduced) var(--ease-out) both;
     --animate-drop-in: fade-in var(--dur-reduced) var(--ease-out) both;
-    --animate-sheet-in: fade-in var(--dur-reduced) var(--ease-out) both;
-    --animate-sheet-out: fade-out var(--dur-reduced) var(--ease-exit) both;
-    --animate-overlay-in: fade-in var(--dur-reduced) var(--ease-out) both;
-    --animate-overlay-out: fade-out var(--dur-reduced) var(--ease-exit) both;
+    --animate-sheet-in: sheet-in var(--dur-slide-reduced) var(--ease-out) both;
+    --animate-sheet-out: sheet-out var(--dur-slide-reduced) var(--ease-out) both;
+    --animate-overlay-in: fade-in var(--dur-veil-reduced) var(--ease-out) both;
+    --animate-overlay-out: fade-out var(--dur-veil-reduced) var(--ease-out) both;
     --animate-dialog-in: fade-in var(--dur-reduced) var(--ease-out) both;
     --animate-pop-in: none;
     --animate-spin-arc: none;
-    --animate-page-push-in: fade-in var(--dur-reduced) var(--ease-out) both;
-    --animate-page-push-out: fade-out var(--dur-reduced) var(--ease-exit) both;
-    --animate-page-back-in: fade-in var(--dur-reduced) var(--ease-out) both;
-    --animate-page-back-out: fade-out var(--dur-reduced) var(--ease-exit) both;
-    --animate-page-cover-in: fade-in var(--dur-reduced) var(--ease-out) both;
-    --animate-page-uncover-out: fade-out var(--dur-reduced) var(--ease-exit) both;
-    --animate-page-under-in: fade-in var(--dur-reduced) var(--ease-out) both;
-    --animate-page-under-out: fade-out var(--dur-reduced) var(--ease-exit) both;
+    --animate-breathe: none;
+    --animate-page-push-in: page-push-in var(--dur-slide-reduced) var(--ease-out) both;
+    --animate-page-push-out: none;
+    --animate-page-back-in: none;
+    --animate-page-back-out: page-back-out var(--dur-slide-reduced) var(--ease-out) both;
+    --animate-page-cover-in: sheet-in var(--dur-slide-reduced) var(--ease-out) both;
+    --animate-page-uncover-out: sheet-out var(--dur-slide-reduced) var(--ease-out) both;
+    --animate-page-under-in: none;
+    --animate-page-under-out: none;
     --fold-fade: 0s;
     --press-scale: 1;
     --slide-duration: 0s;
+    --pill-duration: 0s;
+    --press-scale-tab: 1;
     --tint-duration: 0s;
     --press-release: 0s;
-    --fade-duration: var(--dur-reduced);
-    --swipe-snap-transition: opacity var(--dur-reduced) var(--ease-out);
-    --swipe-snap-from: 0;
+    --untint-duration: 0s;
+    --dock-fade: var(--dur-veil-reduced);
   }
 }
 
@@ -467,6 +518,45 @@
   &[data-pressed] {
     transform: scale(var(--press-scale));
     transition-duration: 0s;
+  }
+}
+
+/* A pressed tab keeps its tint while its icon dips, then springs back on the nav curve. */
+@utility press-icon {
+  /* At rest as at scale 1, so a reduced-motion press changes nothing and runs no transition. */
+  & > svg {
+    transform: scale(1);
+    transition: transform var(--press-release) var(--ease-nav);
+  }
+  &:active > svg,
+  &[data-pressed] > svg {
+    transform: scale(var(--press-scale-tab));
+    transition-duration: var(--dur-press);
+  }
+}
+
+/*
+ * The loading mark: 56 px wide at the mark's own proportions, centred, its top at 44 % of the
+ * page's height. It brightens as it shows, then each hook breathes, the second half a beat behind.
+ */
+@utility loader-mark {
+  position: absolute;
+  top: 44%;
+  inset-inline: 0;
+  margin-inline: auto;
+  width: 56px;
+  aspect-ratio: 340 / 260;
+  animation: var(--animate-loader-in);
+  & > [data-hook] {
+    position: absolute;
+    inset: 0;
+    background-color: var(--primary);
+    mask: var(--hook-a) center / contain no-repeat;
+    animation: var(--animate-breathe);
+  }
+  & > [data-hook="b"] {
+    mask-image: var(--hook-b);
+    animation-delay: calc(var(--dur-breathe) / 2);
   }
 }
 
@@ -494,10 +584,15 @@
 
 /*
  * A pressed row only tints: at once on the press, fading out on the release. data-pressed stands in
- * for :active under a finger, which Chromium applies late (lib/press.ts).
+ * for :active under a finger, which Chromium applies late (lib/press.ts). data-untint marks the row
+ * a person comes back to, which clears its tint at its own pace; it sits before the pressed state so
+ * that the tint still shows at once.
  */
 @utility press-tint {
   transition: background-color var(--press-release) var(--ease-out);
+  &[data-untint] {
+    transition: background-color var(--untint-duration) var(--ease-out);
+  }
   &:active,
   &[data-pressed] {
     background-color: var(--press-tint);
@@ -565,7 +660,7 @@
  * showing through the scrim would look usable while it is not. It comes back as the sheet leaves.
  */
 [data-dock] {
-  transition: opacity var(--fade-duration) var(--ease-out);
+  transition: opacity var(--dock-fade) var(--ease-out);
 }
 html:has([role="dialog"][data-state="open"]) [data-dock] {
   opacity: 0;

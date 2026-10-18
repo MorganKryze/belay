@@ -145,6 +145,7 @@
     "notFoundTitle": "Page introuvable",
     "notFoundBody": "Cette adresse ne mène nulle part dans Belay.",
     "backHome": "Retour à l'accueil",
+    "loading": "Chargement…",
     "errorTitle": "Quelque chose a coincé",
     "errorBody": "Cette page n'a pas pu s'afficher. Si l'app vient d'être mise à jour, la recharger suffit en général.",
     "reload": "Recharger"

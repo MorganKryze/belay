@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { formatKg, formatNumber, lossView } from "@/lib/format";
 import { useToday } from "@/lib/today";
 import { type OpenAccount, useAccount, useCloseForgotten, useWeighings } from "@/sync/account";
+import { Pending } from "./fallbacks";
 
 // What the server puts in `/?signin=` when a sign-in fails (apps/server/src/auth/routes.ts).
 const SIGNIN_FAILURES = ["unavailable", "expired", "failed", "denied"] as const;
@@ -35,9 +36,9 @@ export function Home() {
   const account = useAccount();
 
   if (account.kind === "open") return <SignedInHome account={account} />;
-  // The launch screen covers this wait: a header now would name the app and a blank avatar, then
-  // change to the greeting a moment later.
-  if (account.kind === "loading") return null;
+  // The launch screen covers this wait; past it, the loader. A header now would name the app and a
+  // blank avatar, then change to the greeting a moment later.
+  if (account.kind === "loading") return <Pending title={false} />;
   return (
     <section className="flex flex-col gap-4">
       <PageHeader

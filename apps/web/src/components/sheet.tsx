@@ -12,7 +12,7 @@ import { useTranslation } from "react-i18next";
 import { motion } from "@/lib/motion";
 import { useSwipeToClose } from "./sheet-swipe";
 
-// The longest a close may take when the exit animation never reports its end: the 260 ms exit
+// The longest a close may take when the exit animation never reports its end: the 300 ms exit
 // plus room for a busy frame.
 const EXIT_LIMIT_MS = 400;
 
@@ -92,6 +92,7 @@ export function Sheet({
   const { t } = useTranslation();
   const opener = useRef<HTMLElement | null>(null);
   const heading = useRef<HTMLHeadingElement>(null);
+  const veil = useRef<HTMLDivElement>(null);
   // The sheet stays mounted through its exit and leaves the page when the owner is told, even
   // if the owner keeps rendering it closed.
   const [gone, setGone] = useState(false);
@@ -99,12 +100,13 @@ export function Sheet({
     setGone(true);
     onClose();
   });
-  useSwipeToClose(exit.contentRef, exit.request, exit.dialogOpen);
+  useSwipeToClose(exit.contentRef, exit.request, exit.dialogOpen, veil);
   return (
     <Dialog.Root open={exit.dialogOpen} onOpenChange={(o) => !o && exit.request()}>
       {!gone && (
         <Dialog.Portal forceMount>
           <Dialog.Overlay
+            ref={veil}
             data-sheet-overlay
             className="fixed inset-0 z-30 bg-scrim data-[state=closed]:animate-overlay-out data-[state=open]:animate-overlay-in"
           />

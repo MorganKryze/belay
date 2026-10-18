@@ -21,7 +21,7 @@ export function tabIndexOf(pathname: string): 0 | 1 | 2 | 3 | null {
 }
 
 const tab =
-  "press-tint flex min-h-12.5 flex-col items-center justify-center gap-0.5 rounded-card text-tab text-muted-foreground";
+  "press-tint press-icon flex min-h-12.5 flex-col items-center justify-center gap-0.5 rounded-card text-tab text-muted-foreground";
 
 // Floating on its own, or with the session bar above it: then one frosted backing runs from the
 // bar's top to the bottom edge, so no row of the page shows between the two.
@@ -50,7 +50,7 @@ export function TabBar({ above }: { above?: ReactNode }) {
           <span
             aria-hidden
             data-pill
-            className="absolute inset-y-1.5 left-1.5 w-[calc((100%-0.75rem)/4)] translate-x-[calc(var(--tab-i)*100%)] rounded-card bg-tab-pill ring-[1.5px] ring-primary-ink ring-inset transition-transform duration-(--slide-duration) ease-nav"
+            className="absolute inset-y-1.5 left-1.5 w-[calc((100%-0.75rem)/4)] translate-x-[calc(var(--tab-i)*100%)] rounded-card bg-tab-pill ring-[1.5px] ring-primary-ink ring-inset transition-transform duration-(--pill-duration) ease-pill"
           />
         )}
         <ul className="relative grid grid-cols-4">

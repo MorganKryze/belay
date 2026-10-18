@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, renderHook } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { axisOf, releaseOf, useSwipeToClose } from "./sheet-swipe";
+import { axisOf, releaseOf, useSwipeToClose, veilOpacity } from "./sheet-swipe";
 
 afterEach(() => {
   cleanup();
@@ -33,12 +33,23 @@ describe("releaseOf", () => {
   });
 });
 
-// A card in the page, a hook watching it, and a finger moving on it.
+describe("veilOpacity", () => {
+  it("the veil lightens with the distance pulled and never goes below 0", () => {
+    expect(veilOpacity(0, 400)).toBe(1);
+    expect(veilOpacity(100, 400)).toBe(0.75);
+    expect(veilOpacity(500, 400)).toBe(0);
+    expect(veilOpacity(10, 0)).toBe(1);
+  });
+});
+
+// A 400 px card in the page with its veil, a hook watching it, and a finger moving on it.
 function setup(enabled = true) {
   const card = document.createElement("div");
-  document.body.append(card);
+  Object.defineProperty(card, "offsetHeight", { value: 400 });
+  const veil = document.createElement("div");
+  document.body.append(veil, card);
   const request = vi.fn();
-  renderHook(() => useSwipeToClose({ current: card }, request, enabled));
+  renderHook(() => useSwipeToClose({ current: card }, request, enabled, { current: veil }));
   let t = 0;
   const at = (y: number) => ({ pointerId: 1, isPrimary: true, clientX: 100, clientY: y });
   const swipe = (to: number, steps = 6) => {
@@ -50,7 +61,7 @@ function setup(enabled = true) {
     }
     fireEvent.pointerUp(card, at(100 + to));
   };
-  return { card, request, swipe };
+  return { card, veil, request, swipe };
 }
 
 describe("useSwipeToClose", () => {
@@ -64,19 +75,32 @@ describe("useSwipeToClose", () => {
     expect(card.style.getPropertyValue("--swipe-y")).toBe("120px");
   });
 
+  it("lightens the veil as the card goes down, and the exit fades it from there", () => {
+    vi.useFakeTimers({ now: 0 });
+    const { veil, request, swipe } = setup();
+    swipe(120);
+    expect(request).toHaveBeenCalledTimes(1);
+    expect(veil.style.opacity).toBe("0.7");
+  });
+
   it("follows the finger and snaps back on a short slow swipe", () => {
     vi.useFakeTimers({ now: 0 });
-    const { card, request } = setup();
+    const { card, veil, request } = setup();
     fireEvent.pointerDown(card, { pointerId: 1, isPrimary: true, clientX: 0, clientY: 100 });
     vi.setSystemTime(300);
     fireEvent.pointerMove(card, { pointerId: 1, isPrimary: true, clientX: 0, clientY: 140 });
     expect(card.style.transform).toBe("translateY(40px)");
     expect(card.style.transition).toBe("none");
+    expect(veil.style.opacity).toBe("0.9");
+    expect(veil.style.transition).toBe("none");
     vi.setSystemTime(600);
     fireEvent.pointerUp(card, { pointerId: 1, isPrimary: true, clientX: 0, clientY: 140 });
     expect(request).not.toHaveBeenCalled();
     expect(card.style.transform).toBe("");
     expect(card.style.transition).toBe("var(--swipe-snap-transition)");
+    expect(card.style.opacity).toBe("");
+    expect(veil.style.opacity).toBe("");
+    expect(veil.style.transition).toBe("opacity var(--dur-release) var(--ease-out)");
   });
 
   it("closes on a flick short of 90 px", () => {
