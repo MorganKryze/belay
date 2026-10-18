@@ -8,7 +8,7 @@ import { ExercisesPanel } from "@/exercises/exercises-panel";
 import { HistoryPanel } from "@/workouts/history-panel";
 import { useAccount } from "@/sync/account";
 import { ProgramPanel } from "@/workouts/program-panel";
-import { isWorkoutTab, toggleSee, WORKOUT_TABS, type WorkoutTab } from "@/workouts/tabs";
+import { isWorkoutTab, WORKOUT_TABS, type WorkoutTab } from "@/workouts/tabs";
 
 // The segment last chosen, on this device (§4.5).
 const KEY = "belay.workouts.tab";
@@ -57,20 +57,7 @@ export function Workouts() {
       ) : tab === "program" ? (
         // While the account opens, nothing: the cards come with what was last done.
         account.kind !== "loading" && (
-          <ProgramPanel
-            account={account.kind === "open" ? account : null}
-            see={search.see}
-            // In place: the same entry, the scroll where it is, no page transition.
-            onSee={(code, open) =>
-              void navigate({
-                to: "/workouts",
-                search: { tab: "program", see: toggleSee(search.see, code, open) },
-                replace: true,
-                resetScroll: false,
-                viewTransition: false,
-              })
-            }
-          />
+          <ProgramPanel account={account.kind === "open" ? account : null} />
         )
       ) : (
         <ExercisesPanel />

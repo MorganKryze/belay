@@ -1,5 +1,4 @@
 import type { ISODate } from "@belay/shared/body/dates";
-import { exerciseById } from "@belay/shared/exercises/catalog";
 import type { Activity } from "@belay/shared/training/activities";
 import { planFor } from "@belay/shared/training/plan";
 import {
@@ -16,58 +15,38 @@ import { Button } from "@/components/ui/button";
 import { sessionTitle } from "@/lib/format";
 import { useToday } from "@/lib/today";
 import { type OpenAccount, useActivities, useHistory } from "@/sync/account";
-import { formatSets, groupKind } from "./format";
 import { dayOf } from "./history-panel";
-import { seeList } from "./tabs";
 
-const card = "rounded-card border border-border bg-card";
+const card = "rounded-card border border-border bg-card px-4 py-3";
 
-// Program (spec D13, §4.5): the sessions as cards, the next one first with Start; the others say
-// when each was last done, with See (its slots, read only) and Start. While a session is open,
-// every card offers to resume it instead. Without an account, the program reads the same, with
-// nothing to start.
-// The sessions opened with See live in the URL (`see`), so Back from an exercise finds them open.
-export function ProgramPanel({
-  account,
-  see,
-  onSee,
-}: {
-  account: OpenAccount | null;
-  see: string | undefined;
-  onSee: (code: string, open: boolean) => void;
-}) {
+// Program (spec D13, §4.5): the sessions as cards, the next one first with « See the session »;
+// every other card opens its session's preview on a tap anywhere. While a session is open, its
+// card resumes it and the others open their preview, which says what is open. Without an
+// account nothing is next, so every card opens its preview.
+export function ProgramPanel({ account }: { account: OpenAccount | null }) {
   const { t } = useTranslation();
-  const opened = { see, onSee };
   return (
     <div className="flex flex-col gap-3">
-      {account ? (
-        <Cards account={account} {...opened} />
-      ) : (
-        <List history={null} activities={[]} {...opened} />
-      )}
+      {account ? <Cards account={account} /> : <List history={null} activities={[]} />}
       <p className="mx-0.5 text-sm text-muted-foreground">{t("workouts.program.editNote")}</p>
     </div>
   );
 }
 
-type Opened = { see: string | undefined; onSee: (code: string, open: boolean) => void };
-
-function Cards({ account, ...opened }: { account: OpenAccount } & Opened) {
+function Cards({ account }: { account: OpenAccount }) {
   const history = useHistory(account).data;
   const activities = useActivities(account).data;
   if (!history || !activities) return null;
-  return <List history={history} activities={activities} {...opened} />;
+  return <List history={history} activities={activities} />;
 }
 
 function List({
   history,
   activities,
-  see,
-  onSee,
 }: {
   history: History | null;
   activities: readonly Activity[];
-} & Opened) {
+}) {
   const today = useToday();
   const next = history ? nextSession(history.workouts) : null;
   const open = history
@@ -87,11 +66,9 @@ function List({
       lastDay={history ? lastDayOf(history, s.code) : undefined}
       activities={activities}
       today={today}
-      start={history ? (open?.sessionCode ?? s.code) : null}
-      resume={open !== null}
-      see={see}
-      seeing={seeList(see).includes(s.code)}
-      onSee={(seeing) => onSee(s.code, seeing)}
+      action={
+        open ? (open.sessionCode === s.code ? "resume" : null) : s.code === next ? "see" : null
+      }
     />
   ));
 }
@@ -108,31 +85,26 @@ function lastDayOf(history: History, code: string): ISODate | null {
 const daysBetween = (from: ISODate, to: ISODate) =>
   Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000);
 
+// "see": the next card's button to the preview; "resume": the open session's card; null: the
+// whole card is a link to the preview.
 function SessionCard({
   session,
   next,
   lastDay,
   activities,
   today,
-  start,
-  resume,
-  see,
-  seeing,
-  onSee,
+  action,
 }: {
   session: SessionTemplate;
   next: boolean;
   lastDay: ISODate | null | undefined;
   activities: readonly Activity[];
   today: ISODate;
-  start: string | null; // the session Start opens; null: nothing to start (no account)
-  resume: boolean;
-  see: string | undefined;
-  seeing: boolean;
-  onSee: (open: boolean) => void;
+  action: "see" | "resume" | null;
 }) {
   const { t } = useTranslation();
   const id = useId();
+  const { code } = session;
   const plan = planFor(session, activities, today);
   const when = next
     ? t("workouts.program.next")
@@ -147,63 +119,45 @@ function SessionCard({
     count: plan.length,
     minutes: estimatedMinutes({ slots: plan }),
   });
-  const startButton = start !== null && (
-    <Button asChild variant={next && !resume ? "primary" : "secondary"} className="flex-1">
-      <Link to="/workout" search={{ start }}>
-        {resume ? t("workouts.program.resume") : t("workouts.program.start")}
-      </Link>
-    </Button>
-  );
-  return (
-    <section aria-labelledby={id} className={`${card} flex flex-col gap-3 px-4 py-3`}>
-      <div className="flex flex-col">
-        <h2 id={id} className="text-[17px] font-semibold">
-          {sessionTitle(session.code, t)}
-        </h2>
-        <p className="text-[13px] text-muted-foreground">
-          {when && (
-            <span className={next ? "font-semibold text-primary-ink" : undefined}>{when} · </span>
-          )}
-          {size}
-        </p>
-      </div>
-      {seeing && (
-        <ul className="flex flex-col">
-          {plan.map((slot, i) => {
-            const kind = groupKind(plan, i);
-            return (
-              <li key={i} className="border-t border-border">
-                <Link
-                  to="/exercises/$exerciseId"
-                  params={{ exerciseId: slot.exerciseId }}
-                  search={{ from: "program", see }}
-                  className="press-tint flex min-h-14 flex-col justify-center py-2"
-                >
-                  <span className="font-medium">{exerciseById(slot.exerciseId)?.name}</span>
-                  <span className="text-[13px] text-muted-foreground">
-                    {formatSets(slot)}
-                    {kind && ` · ${t(`workouts.program.${kind}`)}`}
-                    {slot.rule && ` · ${t("workouts.program.noClimbing")}`}
-                  </span>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-      <div className="flex gap-2">
-        {(!next || start === null) && (
-          <Button
-            variant="secondary"
-            aria-expanded={seeing}
-            className="flex-1"
-            onClick={() => onSee(!seeing)}
-          >
-            {t(seeing ? "workouts.program.hide" : "workouts.program.see")}
-          </Button>
+  const heading = (
+    <div className="flex flex-col">
+      <h2 id={id} className="text-[17px] font-semibold">
+        {sessionTitle(code, t)}
+      </h2>
+      {/* The space keeps the title and this line apart in the link's name. */}{" "}
+      <p className="text-[13px] text-muted-foreground">
+        {when && (
+          <span className={next ? "font-semibold text-primary-ink" : undefined}>{when} · </span>
         )}
-        {startButton}
-      </div>
+        {size}
+      </p>
+    </div>
+  );
+  if (action === null) {
+    return (
+      <Link
+        to="/workouts/session/$code"
+        params={{ code }}
+        className={`${card} press-tint block outline-ring focus-visible:outline-2`}
+      >
+        {heading}
+      </Link>
+    );
+  }
+  return (
+    <section aria-labelledby={id} className={`${card} flex flex-col gap-3`}>
+      {heading}
+      <Button asChild variant="primary">
+        {action === "resume" ? (
+          <Link to="/workout" search={{ start: code }}>
+            {t("workouts.program.resume")}
+          </Link>
+        ) : (
+          <Link to="/workouts/session/$code" params={{ code }}>
+            {t("workouts.program.seeSession")}
+          </Link>
+        )}
+      </Button>
     </section>
   );
 }
