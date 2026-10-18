@@ -5,30 +5,22 @@ import type { ProfileChange } from "@belay/shared/sync/schema";
 import { HEIGHT_RANGE_CM } from "@belay/shared/tools/bounds";
 import type { ToolId } from "@belay/shared/tools/catalog";
 import { roundTo } from "@belay/shared/tools/round";
-import { Link } from "@tanstack/react-router";
-import { ChevronRight, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { groupCard, sectionLabel } from "@/components/grouped-list";
 import { BackLink, PageHeader } from "@/components/page-header";
 import { NumberStepper } from "@/components/number-stepper";
 import { ScienceSheet } from "@/components/science-sheet";
 import { Segmented } from "@/components/segmented";
 import { Button } from "@/components/ui/button";
 import { useToday } from "@/lib/today";
-import {
-  type OpenAccount,
-  useAccount,
-  useProfile,
-  useRecord,
-  useSupplements,
-  useTarget,
-} from "@/sync/account";
+import { type OpenAccount, useAccount, useProfile, useRecord, useTarget } from "@/sync/account";
 
-const sectionTitle = "mx-0.5 text-xs font-semibold tracking-wider text-muted-foreground uppercase";
-const card = "flex flex-col rounded-card border border-border bg-card";
+const card = `${groupCard} flex flex-col`;
 
 // Settings › Profile: the facts the tools start from (D8), each optional and cleared in one tap,
-// the loss range, and the way to the supplements list.
+// and the loss range.
 export function Profile() {
   const { t } = useTranslation();
   const account = useAccount();
@@ -51,7 +43,6 @@ export function Profile() {
         <>
           <BodySection account={account} />
           <TargetRangeSection account={account} />
-          <TrackingSection account={account} />
         </>
       )}
       {account.kind === "unavailable" && <p>{t("account.unavailable")}</p>}
@@ -94,7 +85,7 @@ function BodySection({ account }: { account: OpenAccount }) {
   const years = birthYearRange(today);
   return (
     <section aria-labelledby="body-facts" className="flex flex-col gap-2">
-      <h2 id="body-facts" className={sectionTitle}>
+      <h2 id="body-facts" className={sectionLabel}>
         {t("profile.body")}
       </h2>
       <div className={`${card} px-4 py-1`}>
@@ -185,14 +176,13 @@ function Fact({
     next.current = null;
   }, [shown]);
   return (
-    <div className="flex flex-col gap-2 border-t border-border py-3 first:border-t-0">
+    <div className="flex flex-col gap-2 py-3">
       <div className="flex min-h-11 items-center justify-between gap-2">
         <h3 className="text-[15px] font-semibold">{label}</h3>
         {set && (
-          <button
-            type="button"
+          <Button
+            variant="text"
             aria-label={t("profile.clearField", { field: label })}
-            className="min-h-11 px-1 text-sm font-semibold text-primary"
             onClick={() => {
               setFilling(false);
               next.current = "fill";
@@ -200,17 +190,17 @@ function Fact({
             }}
           >
             {t("profile.clear")}
-          </button>
+          </Button>
         )}
       </div>
       {shown ? (
         <div ref={control}>{children}</div>
       ) : (
-        <button
+        <Button
           ref={fillButton}
-          type="button"
+          variant="secondary"
+          className="w-full"
           aria-label={t("profile.fillField", { field: label })}
-          className="flex min-h-12 items-center justify-center gap-1 rounded-field border border-dashed border-input font-semibold text-primary"
           onClick={() => {
             next.current = "control";
             setFilling(true);
@@ -218,7 +208,7 @@ function Fact({
         >
           <Plus aria-hidden className="size-4" />
           {t("profile.fill")}
-        </button>
+        </Button>
       )}
       <p className="text-[13px] text-muted-foreground">{uses}</p>
     </div>
@@ -280,7 +270,7 @@ function TargetRangeSection({ account }: { account: OpenAccount }) {
   };
   return (
     <section aria-labelledby="range" className="flex flex-col gap-2">
-      <h2 id="range" className={sectionTitle}>
+      <h2 id="range" className={sectionLabel}>
         {t("profile.range")}
       </h2>
       <div className={`${card} gap-3 p-4`}>
@@ -313,29 +303,6 @@ function TargetRangeSection({ account }: { account: OpenAccount }) {
         <p className="text-xs text-muted-foreground">{t("profile.rangeNote")}</p>
       </div>
       <ScienceSheet toolId="target-rate" title={t("profile.howChosen")} />
-    </section>
-  );
-}
-
-// The way to the supplements list, with how many are on it.
-function TrackingSection({ account }: { account: OpenAccount }) {
-  const { t } = useTranslation();
-  const count = (useSupplements(account).data ?? []).filter((s) => !s.removed).length;
-  return (
-    <section aria-labelledby="tracking" className="flex flex-col gap-2">
-      <h2 id="tracking" className={sectionTitle}>
-        {t("profile.tracking")}
-      </h2>
-      <Link
-        to="/settings/supplements"
-        className="press-tint flex min-h-12 items-center justify-between gap-2 rounded-field border border-border bg-card px-4 font-medium"
-      >
-        {t("supplementsPage.title")}{" "}
-        <span className="flex items-center gap-0.5 text-muted-foreground">
-          {count}
-          <ChevronRight aria-hidden className="size-5" />
-        </span>
-      </Link>
     </section>
   );
 }

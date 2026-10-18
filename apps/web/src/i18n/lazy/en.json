@@ -58,8 +58,7 @@
     "clearField": "Clear {{field}}",
     "fill": "Fill in",
     "fillField": "Fill in {{field}}",
-    "uses": "Used by: {{tools}}",
-    "tracking": "Tracking"
+    "uses": "Used by: {{tools}}"
   },
   "supplementsPage": {
     "title": "My supplements",

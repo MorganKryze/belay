@@ -58,8 +58,7 @@
     "clearField": "Effacer {{field}}",
     "fill": "Renseigner",
     "fillField": "Renseigner {{field}}",
-    "uses": "Sert à : {{tools}}",
-    "tracking": "Suivi"
+    "uses": "Sert à : {{tools}}"
   },
   "supplementsPage": {
     "title": "Mes compléments",

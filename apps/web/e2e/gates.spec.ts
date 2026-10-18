@@ -155,6 +155,24 @@ const SCREENS: [string, (page: Page) => Promise<void>][] = [
     },
   ],
   [
+    "Profile",
+    async (page) => {
+      await fakeServer(page, {
+        changes: [{ kind: "profile", field: "height", value: 178, at: MONDAY }],
+      });
+      await page.goto("/settings/profile");
+      await expect(page.getByRole("button", { name: "Clear Height" })).toBeVisible();
+    },
+  ],
+  [
+    "empty Profile",
+    async (page) => {
+      await fakeServer(page);
+      await page.goto("/settings/profile");
+      await expect(page.getByRole("button", { name: "Fill in Height" })).toBeVisible();
+    },
+  ],
+  [
     "the weigh-in sheet",
     async (page) => {
       await fakeServer(page, { rows: WEEKS });
