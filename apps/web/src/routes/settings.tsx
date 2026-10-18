@@ -72,7 +72,8 @@ export function Settings() {
       {account.kind === "unavailable" && (
         <>
           <TrackingGroup account={null} />
-          <SignOutGroup pending={0} />
+          {/* The local database never opened, so what is still waiting is unknown. */}
+          <SignOutGroup pending={null} />
         </>
       )}
 

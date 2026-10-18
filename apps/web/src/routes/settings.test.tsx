@@ -314,6 +314,18 @@ describe("Settings sign-out", () => {
     await waitFor(() => expect(assign).toHaveBeenCalledWith(idp));
   });
 
+  it("never says nothing is waiting when the local database cannot open", async () => {
+    vi.spyOn(indexedDB, "open").mockImplementation(() => {
+      throw new DOMException("The user denied permission", "SecurityError");
+    });
+    signedIn(async () => Response.json({ redirectTo: idp }));
+    const { sheet } = await openSheet();
+    expect(sheet.textContent).toContain(
+      "Some entries may not have been sent yet: they will go at your next sign-in on this device.",
+    );
+    expect(within(sheet).getByRole("button", { name: "Sign out anyway" })).toBeTruthy();
+  });
+
   it("says it in French, with the narrow space before the colon", async () => {
     await i18n.changeLanguage("fr");
     vi.mocked(pendingCounts).mockRejectedValue(new DOMException("lost", "InvalidStateError"));
