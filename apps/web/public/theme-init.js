@@ -5,8 +5,15 @@
   try {
     t = localStorage.getItem("belay.theme");
   } catch {}
+  const dark = (prefers) => t === "dark" || (t !== "light" && prefers);
   document.documentElement.classList.toggle(
     "dark",
-    t === "dark" || (t !== "light" && matchMedia("(prefers-color-scheme: dark)").matches),
+    dark(matchMedia("(prefers-color-scheme: dark)").matches),
   );
+  // The browser bar follows a chosen theme from the first paint, whatever the phone's scheme.
+  for (const meta of document.querySelectorAll('meta[name="theme-color"]'))
+    meta.setAttribute(
+      "content",
+      dark((meta.getAttribute("media") || "").includes("dark")) ? "#151412" : "#FAFAF7",
+    );
 }

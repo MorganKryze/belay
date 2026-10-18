@@ -1,14 +1,41 @@
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { fileURLToPath } from "node:url";
+import type { Plugin } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
 import { defineConfig } from "vitest/config";
+import { SCREENS, startupFile, startupMedia } from "./startup-images";
 
 const backend = "http://localhost:3000";
+
+// iOS ignores the manifest's splash: it wants one link per exact screen and scheme, and only
+// uses them once the page declares itself web-app capable.
+const startupImages: Plugin = {
+  name: "startup-images",
+  transformIndexHtml: () => [
+    {
+      tag: "meta",
+      attrs: { name: "apple-mobile-web-app-capable", content: "yes" },
+      injectTo: "head",
+    },
+    ...SCREENS.flatMap((screen) =>
+      (["light", "dark"] as const).map((theme) => ({
+        tag: "link",
+        attrs: {
+          rel: "apple-touch-startup-image",
+          href: `/${startupFile(theme, screen)}`,
+          media: startupMedia(theme, screen),
+        },
+        injectTo: "head" as const,
+      })),
+    ),
+  ],
+};
 
 export default defineConfig({
   plugins: [
     react(),
+    startupImages,
     tailwindcss(),
     VitePWA({
       registerType: "prompt",
@@ -45,6 +72,8 @@ export default defineConfig({
         // a login or a healthy server.
         navigateFallbackDenylist: [/^\/auth\//, /^\/api\//, /^\/healthz$/],
         globPatterns: ["**/*.{js,css,html,svg,png,ico,woff2}"],
+        // 22 full-screen PNGs, one of which a phone ever reads, and only at install.
+        globIgnores: ["startup/**"],
       },
     }),
   ],

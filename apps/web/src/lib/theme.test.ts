@@ -30,4 +30,20 @@ describe("theme", () => {
     applyTheme("light");
     expect(document.documentElement.classList.contains("dark")).toBe(false);
   });
+
+  it("a chosen theme colours the browser bar in both schemes, and system gives each scheme its own colour", () => {
+    document.head.innerHTML =
+      '<meta name="theme-color" content="#FAFAF7" media="(prefers-color-scheme: light)" />' +
+      '<meta name="theme-color" content="#151412" media="(prefers-color-scheme: dark)" />';
+    const colours = () =>
+      [...document.querySelectorAll('meta[name="theme-color"]')].map((m) =>
+        m.getAttribute("content"),
+      );
+    applyTheme("dark");
+    expect(colours()).toEqual(["#151412", "#151412"]);
+    applyTheme("light");
+    expect(colours()).toEqual(["#FAFAF7", "#FAFAF7"]);
+    applyTheme("system");
+    expect(colours()).toEqual(["#FAFAF7", "#151412"]);
+  });
 });
