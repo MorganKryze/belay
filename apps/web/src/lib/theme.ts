@@ -1,8 +1,8 @@
-import { LAUNCH_BACKGROUND } from "../../startup-images";
-
 export type Theme = "light" | "dark" | "system";
 const KEY = "belay.theme";
 const THEMES: readonly string[] = ["light", "dark", "system"];
+// The page background per scheme, also the browser bar's and the iOS launch images'.
+export const LAUNCH_BACKGROUND = { light: "#FAFAF7", dark: "#151412" } as const;
 
 export const isDark = (theme: Theme, prefersDark: boolean) =>
   theme === "dark" || (theme === "system" && prefersDark);

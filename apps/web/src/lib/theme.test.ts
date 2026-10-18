@@ -1,5 +1,7 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { applyTheme, isDark, readTheme, setTheme } from "./theme";
+import { applyTheme, isDark, LAUNCH_BACKGROUND, readTheme, setTheme } from "./theme";
 
 beforeEach(() => {
   localStorage.clear();
@@ -45,5 +47,22 @@ describe("theme", () => {
     expect(colours()).toEqual(["#FAFAF7", "#FAFAF7"]);
     applyTheme("system");
     expect(colours()).toEqual(["#FAFAF7", "#151412"]);
+  });
+
+  // The script that runs before the bundle repeats the colours; it must paint the same ones.
+  it("the first-paint script colours the browser bar as the app does", () => {
+    const script = readFileSync(resolve(__dirname, "../../public/theme-init.js"), "utf8");
+    const colours = (theme: "light" | "dark") => {
+      localStorage.setItem("belay.theme", theme);
+      document.head.innerHTML =
+        '<meta name="theme-color" media="(prefers-color-scheme: light)" />' +
+        '<meta name="theme-color" media="(prefers-color-scheme: dark)" />';
+      new Function(script)();
+      return [...document.querySelectorAll('meta[name="theme-color"]')].map((m) =>
+        m.getAttribute("content"),
+      );
+    };
+    expect(colours("light")).toEqual([LAUNCH_BACKGROUND.light, LAUNCH_BACKGROUND.light]);
+    expect(colours("dark")).toEqual([LAUNCH_BACKGROUND.dark, LAUNCH_BACKGROUND.dark]);
   });
 });

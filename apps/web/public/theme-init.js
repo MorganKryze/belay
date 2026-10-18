@@ -1,5 +1,6 @@
-// Repeats isDark() from src/lib/theme.ts: it runs before the bundle. Ceiling: the copies can
-// drift. Upgrade: generate it from theme.ts at build time.
+// Repeats isDark() and the colours from src/lib/theme.ts: it runs before the bundle. Ceiling: the
+// copies can drift, though theme.test.ts fails if the colours do. Upgrade: generate it from
+// theme.ts at build time.
 {
   let t;
   try {

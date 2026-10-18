@@ -1,3 +1,5 @@
+import type { LAUNCH_BACKGROUND } from "./src/lib/theme";
+
 // The iPhones that run current iOS, portrait only. iOS shows a launch image only when its media
 // query matches the device exactly, so an unlisted phone gets a plain screen before the HTML
 // launch screen. Ceiling: iPads and landscape are left out; adding one is a row here and a rerun
@@ -17,8 +19,6 @@ export const SCREENS: readonly Screen[] = [
   { width: 440, height: 956, ratio: 3 },
   { width: 420, height: 912, ratio: 3 },
 ];
-
-export const LAUNCH_BACKGROUND = { light: "#FAFAF7", dark: "#151412" } as const;
 
 type Scheme = keyof typeof LAUNCH_BACKGROUND;
 
