@@ -77,6 +77,38 @@ test("the launch screen stays at least a second after its first paint when the a
   expect(launchedAt - fcp).toBeLessThan(1600);
 });
 
+test("the launch screen stays a second after its first paint when the account is known before it", async ({
+  page,
+}) => {
+  await recordLaunch(page);
+  await fakeServer(page);
+  // A slow device: a render-blocking stylesheet holds the first paint 700 ms while the scripts
+  // run and the account answers.
+  await page.route("**/held.css", async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 700));
+    await route.fulfill({ contentType: "text/css", body: "" });
+  });
+  await page.addInitScript(() => {
+    const hold = () => {
+      if (!document.head) return false;
+      const link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.href = "/held.css";
+      link.setAttribute("blocking", "render");
+      document.head.append(link);
+      return true;
+    };
+    if (hold()) return;
+    const watch = new MutationObserver(() => hold() && watch.disconnect());
+    watch.observe(document, { childList: true, subtree: true });
+  });
+  await page.goto("/");
+  await expect(page.getByRole("heading", { level: 1, name: "Hello, Ada" })).toBeVisible();
+  const { fcp, launchedAt } = await readLaunch(page);
+  expect(fcp).toBeGreaterThan(700);
+  expect(launchedAt - fcp).toBeGreaterThanOrEqual(1000);
+});
+
 test("with the account known after 1.5 s the launch screen leaves right after the answer", async ({
   page,
 }) => {
