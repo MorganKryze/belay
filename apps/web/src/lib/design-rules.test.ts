@@ -193,6 +193,8 @@ describe("design rules", () => {
     expect(reduced.get("--tint-duration")).toBe("0s");
     expect(reduced.get("--press-release")).toBe("0s");
     expect(reduced.get("--untint-duration")).toBe("0s");
+    // The launch screen still fades out, in the reduced duration.
+    expect(reduced.get("--dur-launch-out")).toBe("var(--dur-reduced)");
     // A card let go short of closing slides back as in normal motion.
     expect([...reduced.keys()].filter((k) => k.startsWith("--swipe-"))).toEqual([]);
   });
