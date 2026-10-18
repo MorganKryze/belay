@@ -39,8 +39,9 @@ describe("app shell identity", () => {
     expect(html).toContain(
       '<meta name="theme-color" content="#151412" media="(prefers-color-scheme: dark)" />',
     );
-    const root = html.slice(html.indexOf('<div id="root">'), html.indexOf("</body>"));
-    expect(root).toContain(MARK);
-    expect(root).toContain("Belay");
+    // Outside #root: React's first render would take it away before the account is known.
+    const launch = html.slice(html.indexOf("<body>"), html.indexOf('<div id="root">'));
+    expect(launch).toContain(MARK);
+    expect(launch).toContain("Belay");
   });
 });

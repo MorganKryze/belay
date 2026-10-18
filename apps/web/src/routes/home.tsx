@@ -35,6 +35,9 @@ export function Home() {
   const account = useAccount();
 
   if (account.kind === "open") return <SignedInHome account={account} />;
+  // The launch screen covers this wait: a header now would name the app and a blank avatar, then
+  // change to the greeting a moment later.
+  if (account.kind === "loading") return null;
   return (
     <section className="flex flex-col gap-4">
       <PageHeader
@@ -59,15 +62,13 @@ export function Home() {
           <a href={`/auth/login?returnTo=${encodeURIComponent("/")}`}>{t("home.signIn")}</a>
         </Button>
       )}
-      {account.kind !== "loading" && (
-        <Link
-          to="/tools"
-          className="-ml-1 inline-flex min-h-11 items-center gap-0.5 self-start font-medium text-primary"
-        >
-          {t("home.toolsLink")}
-          <ChevronRight aria-hidden className="size-5" />
-        </Link>
-      )}
+      <Link
+        to="/tools"
+        className="-ml-1 inline-flex min-h-11 items-center gap-0.5 self-start font-medium text-primary"
+      >
+        {t("home.toolsLink")}
+        <ChevronRight aria-hidden className="size-5" />
+      </Link>
     </section>
   );
 }
