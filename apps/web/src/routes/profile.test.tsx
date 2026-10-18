@@ -38,7 +38,7 @@ describe("Settings › Profile", () => {
     writeLastUser(ADA);
     fakeApi({ me: ADA });
     renderRoute("/settings");
-    const link = await screen.findByRole("link", { name: "Profile" });
+    const link = await screen.findByRole("link", { name: /^Ada Profile/ });
     expect(link.getAttribute("href")).toBe("/settings/profile");
   });
 

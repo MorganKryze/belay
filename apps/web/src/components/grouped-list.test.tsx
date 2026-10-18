@@ -132,10 +132,42 @@ describe("GroupedList", () => {
     );
   });
 
-  it("a destructive row is red text alone", () => {
+  it("a prominent row is 72 px with its own leading picture and a second line", () => {
+    render(
+      <RowButton
+        prominent
+        icon={Settings}
+        leading={
+          <span aria-hidden="true" data-testid="avatar">
+            A
+          </span>
+        }
+        label="Ada"
+        sub="Profile · height, age, loss range"
+        trailing="push"
+      />,
+    );
+    const row = screen.getByRole("button", { name: "Ada Profile · height, age, loss range" });
+    expect(classes(row)).toContain("min-h-18");
+    expect(row.querySelector("[data-testid=avatar]")).toBeTruthy();
+    // The leading picture takes the icon square's place.
+    expect(row.querySelector("[data-slot=row-icon]")).toBeNull();
+    expect(classes(screen.getByText("Ada"))).toEqual(
+      expect.arrayContaining(["text-title-compact"]),
+    );
+    expect(classes(screen.getByText("Profile · height, age, loss range"))).toEqual(
+      expect.arrayContaining(["truncate", "text-muted-foreground"]),
+    );
+    expect(row.querySelector("[data-slot=row-chevron]")).toBeTruthy();
+  });
+
+  it("a destructive row is red text alone, centred", () => {
     render(<RowButton label="Sign out" destructive trailing="push" icon={Settings} />);
     const row = screen.getByRole("button", { name: "Sign out" });
-    expect(classes(screen.getByText("Sign out"))).toContain("text-destructive");
+    expect(classes(screen.getByText("Sign out"))).toEqual(
+      expect.arrayContaining(["text-destructive", "text-center"]),
+    );
+    expect(classes(row)).toContain("justify-center");
     expect(row.querySelector("[data-slot=row-icon]")).toBeNull();
     expect(row.querySelector("[data-slot=row-chevron]")).toBeNull();
     expect(row.className).not.toMatch(/bg-destructive/);

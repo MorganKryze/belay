@@ -3,6 +3,12 @@
     "preferences": "Préférences",
     "versionNotes": "Belay {{version}} · notes de version",
     "newTab": "(nouvel onglet)",
+    "tracking": "Suivi",
+    "supplements": "Compléments",
+    "supplementsCount": "{{count}} dans ta liste",
+    "profileSub": "Profil · taille, âge, fourchette de perte",
+    "signOutTitle": "Se déconnecter ?",
+    "signOutNothing": "Rien n'attend d'être envoyé.",
     "rejected": {
       "title": "Saisies refusées",
       "note": "Le serveur les a refusées : elles ne sont plus en attente. Saisis-les à nouveau si besoin.",

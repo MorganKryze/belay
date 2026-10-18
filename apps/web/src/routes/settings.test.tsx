@@ -108,52 +108,161 @@ describe("Settings preferences", () => {
   });
 });
 
+describe("Settings account rows", () => {
+  const SUPPLEMENT_A = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7e01";
+  const SUPPLEMENT_B = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7e02";
+  const at = "2026-10-05T06:30:00.000Z";
+
+  it("shows its groups in order", async () => {
+    version.current = "0.5.0";
+    signedIn(async () => Response.json({ redirectTo: idp }));
+    const signOut = await signOutButton();
+    const order = [
+      screen.getByRole("link", { name: /^Ada/ }),
+      screen.getByRole("list", { name: "Preferences" }),
+      screen.getByRole("list", { name: "Tracking" }),
+      signOut,
+      screen.getByRole("link", { name: /^Belay 0\.5\.0/ }),
+    ];
+    order
+      .slice(1)
+      .forEach((after, i) =>
+        expect(order[i]!.compareDocumentPosition(after) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
+          Node.DOCUMENT_POSITION_FOLLOWING,
+        ),
+      );
+  });
+
+  it("opens Profil from a row that shows the name and what Profil holds", async () => {
+    fakeApi({ me: ADA });
+    renderRoute("/settings");
+    const link = await screen.findByRole("link", { name: "Ada Profile · height, age, loss range" });
+    expect(link.getAttribute("href")).toBe("/settings/profile");
+    fireEvent.click(link);
+    expect(await screen.findByRole("heading", { level: 1, name: "Profile" })).toBeTruthy();
+  });
+
+  it("falls back to « Profile » and a person icon without a name", async () => {
+    fakeApi({ me: { ...ADA, displayName: "" } });
+    renderRoute("/settings");
+    const link = await screen.findByRole("link", {
+      name: "Profile Profile · height, age, loss range",
+    });
+    expect(link.querySelector("svg.lucide-user-round")).toBeTruthy();
+  });
+
+  it("counts the supplements on the list in the Compléments row and opens the list", async () => {
+    await seed(ADA.id, [
+      { kind: "supplement", id: SUPPLEMENT_A, field: "name", value: "Zinc", at },
+      { kind: "supplement", id: SUPPLEMENT_B, field: "name", value: "Iron", at },
+      { kind: "supplement", id: SUPPLEMENT_B, field: "removed", value: true, at },
+    ]);
+    fakeApi({ me: ADA });
+    renderRoute("/settings");
+    const list = await screen.findByRole("list", { name: "Tracking" });
+    const link = await within(list).findByRole("link", { name: "Supplements 1 on your list" });
+    expect(link.getAttribute("href")).toBe("/settings/supplements");
+    fireEvent.click(link);
+    expect(await screen.findByRole("heading", { level: 1, name: "My supplements" })).toBeTruthy();
+  });
+
+  it("offers exactly today's account rows", async () => {
+    signedIn(async () => Response.json({ redirectTo: idp }));
+    await signOutButton();
+    const main = screen.getByRole("main");
+    const hrefs = within(main)
+      .getAllByRole("link")
+      .map((a) => a.getAttribute("href"))
+      .filter((h) => h?.startsWith("/settings/"));
+    expect(hrefs).toEqual(["/settings/profile", "/settings/supplements"]);
+    expect(
+      within(main)
+        .getAllByRole("button")
+        .map((b) => b.textContent),
+    ).toEqual(["Sign out"]);
+  });
+});
+
 describe("Settings sign-out", () => {
+  // The sheet hands the focus back to what opened it; a browser focuses a tapped button.
+  async function openSheet(name = "Sign out", title = "Sign out?") {
+    const row = await screen.findByRole("button", { name });
+    act(() => row.focus());
+    fireEvent.click(row);
+    return { row, sheet: await screen.findByRole("dialog", { name: title }) };
+  }
+
   it("is not offered to someone signed out", async () => {
     fakeApi({ me: null });
     renderRoute("/settings");
     await screen.findByRole("heading", { name: "Settings" });
-    expect(screen.queryByRole("heading", { name: "Account" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Sign out" })).toBeNull();
   });
 
   it("navigates to the redirectTo the server returns, and forgets the account", async () => {
     const api = signedIn(async () => Response.json({ redirectTo: idp }));
-    fireEvent.click(await signOutButton());
+    const { sheet } = await openSheet();
+    fireEvent.click(within(sheet).getByRole("button", { name: "Sign out" }));
     await waitFor(() => expect(assign).toHaveBeenCalledWith(idp));
     expect(logoutCalls(api)).toHaveLength(1);
     expect(readLastUser()).toBeNull();
   });
 
-  it("shows an alert and stays put when the server answers with a non-JSON error", async () => {
-    signedIn(async () => new Response("Bad Gateway", { status: 502 }));
-    fireEvent.click(await signOutButton());
-    expect(await screen.findByText(/Couldn't sign you out/)).toBeTruthy();
-    expect(assign).not.toHaveBeenCalled();
+  it("with nothing waiting, still asks first and says nothing is waiting", async () => {
+    const api = signedIn(async () => Response.json({ redirectTo: idp }));
+    const { sheet } = await openSheet();
+    expect(sheet.textContent).toContain("Nothing is waiting to be sent.");
+    expect(logoutCalls(api)).toHaveLength(0);
+    const action = within(sheet).getByRole("button", { name: "Sign out" });
+    expect(action.className).toContain("text-destructive");
+    fireEvent.click(action);
+    await waitFor(() => expect(assign).toHaveBeenCalledWith(idp));
   });
 
-  it("shows an alert when the request itself fails (offline)", async () => {
-    signedIn(async () => {
-      throw new TypeError("Failed to fetch");
-    });
-    fireEvent.click(await signOutButton());
-    expect(await screen.findByRole("alert")).toBeTruthy();
-    expect(assign).not.toHaveBeenCalled();
-  });
+  it.each([
+    [
+      "the server answers with a non-JSON error",
+      async () => new Response("Bad Gateway", { status: 502 }),
+    ],
+    [
+      "the request itself fails (offline)",
+      async (): Promise<Response> => {
+        throw new TypeError("Failed to fetch");
+      },
+    ],
+  ])(
+    "when %s, closes the sheet, says why under the row and gives it the focus",
+    async (_, logout) => {
+      signedIn(logout);
+      const { row, sheet } = await openSheet();
+      fireEvent.click(within(sheet).getByRole("button", { name: "Sign out" }));
+      const alert = await screen.findByRole("alert");
+      expect(alert.textContent).toBe("Couldn't sign you out. Check your connection and try again.");
+      expect(screen.queryByRole("dialog")).toBeNull();
+      expect(row.compareDocumentPosition(alert) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      await waitFor(() => expect(document.activeElement).toBe(row));
+      expect(assign).not.toHaveBeenCalled();
+    },
+  );
 
   it("never navigates to undefined when redirectTo is missing", async () => {
     signedIn(async () => Response.json({}));
-    fireEvent.click(await signOutButton());
+    const { sheet } = await openSheet();
+    fireEvent.click(within(sheet).getByRole("button", { name: "Sign out" }));
     expect(await screen.findByRole("alert")).toBeTruthy();
     expect(assign).not.toHaveBeenCalled();
   });
 
-  it("sends a single POST when the button is clicked twice", async () => {
+  it("sends a single POST when the sheet's red action is clicked twice", async () => {
     let finish!: (r: Response) => void;
     const api = signedIn(() => new Promise<Response>((resolve) => (finish = resolve)));
-    fireEvent.click(await signOutButton());
-    const button = screen.getByRole("button", { name: "Sign out" });
-    await waitFor(() => expect((button as HTMLButtonElement).disabled).toBe(true));
-    fireEvent.click(button);
+    const { row, sheet } = await openSheet();
+    const action = within(sheet).getByRole("button", { name: "Sign out" });
+    fireEvent.click(action);
+    fireEvent.click(action);
+    await waitFor(() => expect((row as HTMLButtonElement).disabled).toBe(true));
+    fireEvent.click(row);
+    expect(screen.queryByRole("dialog")).toBeNull();
     expect(logoutCalls(api)).toHaveLength(1);
     finish(Response.json({ redirectTo: idp }));
     await waitFor(() => expect(assign).toHaveBeenCalledTimes(1));
@@ -166,39 +275,42 @@ describe("Settings sign-out", () => {
       async () => Response.json({ redirectTo: idp }),
       async () => new Response(null, { status: 503 }),
     );
-    fireEvent.click(await signOutButton());
-    expect((await screen.findByRole("alert")).textContent).toContain(
+    const first = await openSheet();
+    expect(first.sheet.textContent).toContain(
       "2 entries not sent yet: they will go at your next sign-in on this device.",
     );
     expect(logoutCalls(api)).toHaveLength(0);
-    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
-    fireEvent.click(await signOutButton());
-    fireEvent.click(await screen.findByRole("button", { name: "Sign out anyway" }));
+    fireEvent.click(within(first.sheet).getByRole("button", { name: "Cancel" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(logoutCalls(api)).toHaveLength(0);
+    const { sheet } = await openSheet();
+    fireEvent.click(within(sheet).getByRole("button", { name: "Sign out anyway" }));
     await waitFor(() => expect(assign).toHaveBeenCalledWith(idp));
   });
 
-  it("moves focus into the confirmation, and back to Sign out on Cancel", async () => {
+  it("starts on Cancel, and Cancel gives the focus back to Sign out", async () => {
     await seed(ADA.id, [weight("2026-10-07", 79.8)]);
     signedIn(
       async () => Response.json({ redirectTo: idp }),
       async () => new Response(null, { status: 503 }),
     );
-    fireEvent.click(await signOutButton());
-    const anyway = await screen.findByRole("button", { name: "Sign out anyway" });
-    expect(document.activeElement).toBe(anyway);
-    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
-    expect(document.activeElement).toBe(await signOutButton());
+    const { row, sheet } = await openSheet();
+    const cancel = within(sheet).getByRole("button", { name: "Cancel" });
+    await waitFor(() => expect(document.activeElement).toBe(cancel));
+    fireEvent.click(cancel);
+    await waitFor(() => expect(document.activeElement).toBe(row));
+    expect(screen.queryByRole("dialog")).toBeNull();
   });
 
   it("still offers sign-out when the local read fails, always asking first", async () => {
     vi.mocked(pendingCounts).mockRejectedValue(new DOMException("lost", "InvalidStateError"));
     const api = signedIn(async () => Response.json({ redirectTo: idp }));
-    fireEvent.click(await signOutButton());
-    expect((await screen.findByRole("alert")).textContent).toContain(
+    const { sheet } = await openSheet();
+    expect(sheet.textContent).toContain(
       "Some entries may not have been sent yet: they will go at your next sign-in on this device.",
     );
     expect(logoutCalls(api)).toHaveLength(0);
-    fireEvent.click(screen.getByRole("button", { name: "Sign out anyway" }));
+    fireEvent.click(within(sheet).getByRole("button", { name: "Sign out anyway" }));
     await waitFor(() => expect(assign).toHaveBeenCalledWith(idp));
   });
 
@@ -206,10 +318,11 @@ describe("Settings sign-out", () => {
     await i18n.changeLanguage("fr");
     vi.mocked(pendingCounts).mockRejectedValue(new DOMException("lost", "InvalidStateError"));
     signedIn(async () => Response.json({ redirectTo: idp }));
-    fireEvent.click(await screen.findByRole("button", { name: "Se déconnecter" }));
-    expect((await screen.findByRole("alert")).textContent).toContain(
+    const { sheet } = await openSheet("Se déconnecter", "Se déconnecter\u202f?");
+    expect(sheet.textContent).toContain(
       "Des saisies n'ont peut-être pas encore été envoyées\u202f: elles partiront à ta prochaine connexion sur cet appareil.",
     );
+    expect(within(sheet).getByRole("button", { name: "Se déconnecter quand même" })).toBeTruthy();
   });
 });
 

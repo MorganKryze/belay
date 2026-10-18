@@ -146,6 +146,15 @@ const SCREENS: [string, (page: Page) => Promise<void>][] = [
     },
   ],
   [
+    "Settings with the sign-out sheet open",
+    async (page) => {
+      await fakeServer(page);
+      await page.goto("/settings");
+      await page.getByRole("button", { name: "Sign out" }).click();
+      await expect(page.getByRole("dialog", { name: "Sign out?" })).toBeVisible();
+    },
+  ],
+  [
     "the weigh-in sheet",
     async (page) => {
       await fakeServer(page, { rows: WEEKS });
@@ -194,10 +203,12 @@ async function avatarToSupplements(page: Page, around: "main" | "banner") {
   await page.goto("/");
   await page.getByRole(around).getByRole("link", { name: "Settings" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Settings" })).toBeVisible();
-  await page.getByRole("link", { name: "Profile" }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Profile" })).toBeVisible();
-  await page.getByRole("link", { name: /^My supplements/ }).click();
+  await page.getByRole("link", { name: /^Supplements/ }).click();
   await expect(page.getByRole("heading", { level: 1, name: "My supplements" })).toBeVisible();
+  await page.getByRole("main").getByRole("link", { name: "Settings" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Settings" })).toBeVisible();
+  await page.getByRole("link", { name: /^Ada Profile/ }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Profile" })).toBeVisible();
 }
 
 // The server refuses whatever the phone sends; with nothing sent, the fake answers as usual.
@@ -262,7 +273,7 @@ async function eachTab(page: Page, bar: ReturnType<Page["getByRole"]>) {
 
 test.describe("every action stays reachable on a phone", () => {
   test.use({ viewport: PHONE });
-  test("avatar, Settings, Profile, supplements", ({ page }) => avatarToSupplements(page, "main"));
+  test("avatar, Settings, supplements, Profile", ({ page }) => avatarToSupplements(page, "main"));
   test("the sync banner's link to Settings", ({ page }) => bannerToSettings(page));
   test("the session bar resumes the running session", async ({ page }) => {
     await fakeServer(page, { changes: RUNNING_C });
@@ -276,7 +287,7 @@ test.describe("every action stays reachable on a phone", () => {
 
 test.describe("every action stays reachable on a computer", () => {
   test.use({ viewport: DESKTOP });
-  test("avatar, Settings, Profile, supplements", ({ page }) => avatarToSupplements(page, "banner"));
+  test("avatar, Settings, supplements, Profile", ({ page }) => avatarToSupplements(page, "banner"));
   test("the sync banner's link to Settings", ({ page }) => bannerToSettings(page));
   test("Home's Today card resumes the running session", async ({ page }) => {
     await fakeServer(page, { changes: RUNNING_C });

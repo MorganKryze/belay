@@ -8,6 +8,8 @@ test.use({ locale: "en-US", timezoneId: "Europe/Paris" });
 const row = (page: Page, name: "Language" | "Theme") =>
   page.getByRole("combobox", { name: new RegExp(`^${name}`) });
 
+const signOut = (page: Page) => page.getByRole("button", { name: "Sign out" });
+
 async function openSettings(page: Page, theme?: "light" | "dark") {
   if (theme) await page.addInitScript((t) => localStorage.setItem("belay.theme", t), theme);
   await fakeServer(page);
@@ -30,6 +32,95 @@ test.describe("accessibility", () => {
       });
     }
   }
+});
+
+test.describe("accessibility of the account rows", () => {
+  test.use({ reducedMotion: "reduce" });
+  for (const theme of ["light", "dark"] as const) {
+    test(`Réglages signed in has no axe violation, ${theme}`, async ({ page }) => {
+      await openSettings(page, theme);
+      if (theme === "dark") await expect(page.locator("html")).toHaveClass(/dark/);
+      await expect(signOut(page)).toBeVisible();
+      await expectNoAxeViolations(page);
+    });
+
+    test(`the sign-out action sheet has no axe violation, ${theme}`, async ({ page }) => {
+      await openSettings(page, theme);
+      if (theme === "dark") await expect(page.locator("html")).toHaveClass(/dark/);
+      await signOut(page).click();
+      await expect(page.getByRole("dialog", { name: "Sign out?" })).toBeVisible();
+      await expectNoAxeViolations(page);
+    });
+  }
+});
+
+// The destructive token as the browser resolves it in the current theme.
+const destructive = (page: Page) =>
+  page.evaluate(() => {
+    const probe = document.createElement("div");
+    probe.style.color = "var(--destructive)";
+    document.body.append(probe);
+    const color = getComputedStyle(probe).color;
+    probe.remove();
+    return color;
+  });
+
+// Every element painted in that colour, as text or as fill, by its text.
+const paintedIn = (page: Page, color: string) =>
+  page.evaluate(
+    (red) =>
+      [...document.querySelectorAll<HTMLElement>("body *")]
+        .filter((el) => {
+          const style = getComputedStyle(el);
+          return style.color === red || style.backgroundColor === red;
+        })
+        .map((el) => el.textContent.trim()),
+    color,
+  );
+
+test("the profile row is 72 px with a 48 px avatar", async ({ page }) => {
+  await openSettings(page);
+  await settled(page);
+  const profile = page.getByRole("link", { name: /^Ada Profile/ });
+  const box = (await profile.boundingBox())!;
+  expect(box.height).toBeGreaterThanOrEqual(72);
+  const avatar = (await profile.locator("[data-slot=row-leading]").boundingBox())!;
+  expect([avatar.width, avatar.height]).toEqual([48, 48]);
+  await expect(profile.locator("[data-slot=row-leading]")).toHaveText("A");
+  await expect(profile.locator("[data-slot=row-leading] > *")).toHaveCSS(
+    "border-radius",
+    /9999px|50%/,
+  );
+  await expect(profile.getByText("Ada", { exact: true })).toHaveCSS("font-size", "17px");
+});
+
+test("the sign-out label sits centred alone in its group", async ({ page }) => {
+  await openSettings(page);
+  await settled(page);
+  const row = signOut(page);
+  const label = row.getByText("Sign out");
+  const rowBox = (await row.boundingBox())!;
+  const labelBox = (await label.boundingBox())!;
+  expect(
+    Math.abs(labelBox.x + labelBox.width / 2 - (rowBox.x + rowBox.width / 2)),
+  ).toBeLessThanOrEqual(1);
+  await expect(page.getByRole("list").filter({ has: row }).getByRole("listitem")).toHaveCount(1);
+  await expect(label).toHaveCSS("color", await destructive(page));
+  await expect(row.locator("svg")).toHaveCount(0);
+});
+
+test("red marks only the sign-out row and its action", async ({ page }) => {
+  await openSettings(page);
+  await settled(page);
+  await expect(signOut(page)).toBeVisible();
+  const red = await destructive(page);
+  expect(await paintedIn(page, red)).toEqual(["Sign out"]);
+  await signOut(page).click();
+  const sheet = page.getByRole("dialog", { name: "Sign out?" });
+  await expect(sheet).toBeVisible();
+  await settled(page);
+  expect(await paintedIn(page, red)).toEqual(["Sign out", "Sign out"]);
+  await expect(sheet.getByRole("button", { name: "Sign out" })).toHaveCSS("color", red);
 });
 
 test("a menu opens from the keyboard and gives the focus back to its row", async ({ page }) => {

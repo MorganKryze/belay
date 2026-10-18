@@ -121,7 +121,6 @@
       "dark": "Sombre",
       "system": "Système"
     },
-    "account": "Compte",
     "version": "Belay {{version}}",
     "signOut": "Se déconnecter",
     "signOutFailed": "Déconnexion impossible pour le moment. Vérifie ta connexion et réessaie.",

@@ -5,9 +5,15 @@ import { cn } from "@/lib/utils";
 
 export type RowProps = {
   icon?: LucideIcon;
+  // Drawn in place of the icon square, as the profile row's avatar.
+  leading?: ReactNode;
   label: string;
+  // A muted second line under the label, cut to one line.
+  sub?: string;
   value?: ReactNode;
   trailing?: "push" | "menu" | "none";
+  // The 17 px label of a row that heads the page, at least 72 px high.
+  prominent?: boolean;
   destructive?: boolean;
 };
 
@@ -21,11 +27,22 @@ const row =
 // The label keeps its own width (basis-auto) so a value that no longer fits wraps under it
 // instead of squeezing it; only a label wider than the row ends in an ellipsis. A value with no
 // break opportunity breaks inside its words rather than pushing the row wider than the screen.
-function RowContent({ icon: Icon, label, value, trailing = "none", destructive }: RowProps) {
-  // A destructive row is red text alone: no icon, no value, no chevron to dress it up.
+// The whitespace between the label and what follows it takes no room in the flex row, but keeps
+// the words apart in the row's accessible name.
+function RowContent({
+  icon: Icon,
+  leading,
+  label,
+  sub,
+  value,
+  trailing = "none",
+  prominent,
+  destructive,
+}: RowProps) {
+  // A destructive row is red text alone, centred: no icon, no value, no chevron to dress it up.
   if (destructive) {
     return (
-      <span className="min-w-0 flex-1 truncate text-body font-semibold text-destructive">
+      <span className="min-w-0 truncate text-center text-body font-semibold text-destructive">
         {label}
       </span>
     );
@@ -33,18 +50,36 @@ function RowContent({ icon: Icon, label, value, trailing = "none", destructive }
   const Chevron = trailing === "push" ? ChevronRight : trailing === "menu" ? ChevronDown : null;
   return (
     <>
-      {Icon && (
-        <span
-          data-slot="row-icon"
-          className="flex size-7 shrink-0 items-center justify-center rounded-icon bg-primary-soft"
-        >
-          <Icon aria-hidden="true" className="size-5 text-primary-ink" />
+      {leading != null ? (
+        <span data-slot="row-leading" className="flex shrink-0">
+          {leading}
         </span>
+      ) : (
+        Icon && (
+          <span
+            data-slot="row-icon"
+            className="flex size-7 shrink-0 items-center justify-center rounded-icon bg-primary-soft"
+          >
+            <Icon aria-hidden="true" className="size-5 text-primary-ink" />
+          </span>
+        )
       )}
       <span className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-x-3">
-        <span className="min-w-0 flex-1 basis-auto truncate text-body font-semibold">{label}</span>
+        {sub ? (
+          <span className="flex min-w-0 flex-1 basis-auto flex-col">
+            <span className={labelClass(prominent)}>{label}</span>{" "}
+            <span className="truncate text-(length:--text-secondary) leading-(--text-secondary--line-height) text-muted-foreground">
+              {sub}
+            </span>
+          </span>
+        ) : (
+          <span className={cn("flex-1 basis-auto", labelClass(prominent))}>{label}</span>
+        )}
         {value != null && (
-          <span className="min-w-0 text-body break-words text-muted-foreground">{value}</span>
+          <>
+            {" "}
+            <span className="min-w-0 text-body break-words text-muted-foreground">{value}</span>
+          </>
         )}
       </span>
       {Chevron && (
@@ -58,15 +93,23 @@ function RowContent({ icon: Icon, label, value, trailing = "none", destructive }
   );
 }
 
+const labelClass = (prominent?: boolean) =>
+  cn("min-w-0 truncate", prominent ? "text-title-compact" : "text-body font-semibold");
+
+// A destructive label sits alone in the middle of its row; a prominent row is taller.
+const rowClass = ({ prominent, destructive }: RowProps, className?: string) =>
+  cn(row, prominent && "min-h-18", destructive && "justify-center", className);
+
 type AnchorRowProps = RowProps & Omit<ComponentProps<"a">, keyof RowProps>;
 
 const RowAnchor = forwardRef<HTMLAnchorElement, AnchorRowProps>(function RowAnchor(
-  { icon, label, value, trailing, destructive, className, ...rest },
+  { icon, leading, label, sub, value, trailing, prominent, destructive, className, ...rest },
   ref,
 ) {
+  const props = { icon, leading, label, sub, value, trailing, prominent, destructive };
   return (
-    <a ref={ref} {...rest} className={cn(row, className)}>
-      <RowContent {...{ icon, label, value, trailing, destructive }} />
+    <a ref={ref} {...rest} className={rowClass(props, className)}>
+      <RowContent {...props} />
     </a>
   );
 });
@@ -75,17 +118,21 @@ export const RowLink = createLink(RowAnchor);
 
 export function RowButton({
   icon,
+  leading,
   label,
+  sub,
   value,
   trailing,
+  prominent,
   destructive,
   className,
   type = "button",
   ...rest
 }: RowProps & Omit<ComponentProps<"button">, keyof RowProps>) {
+  const props = { icon, leading, label, sub, value, trailing, prominent, destructive };
   return (
-    <button type={type} {...rest} className={cn(row, className)}>
-      <RowContent {...{ icon, label, value, trailing, destructive }} />
+    <button type={type} {...rest} className={rowClass(props, className)}>
+      <RowContent {...props} />
     </button>
   );
 }
