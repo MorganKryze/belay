@@ -10,7 +10,7 @@ import {
 } from "@belay/shared/training/program";
 import { type History, openWorkout } from "@belay/shared/training/rules";
 import { Link } from "@tanstack/react-router";
-import { useId, useState } from "react";
+import { useId } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { sessionTitle } from "@/lib/format";
@@ -18,6 +18,7 @@ import { useToday } from "@/lib/today";
 import { type OpenAccount, useActivities, useHistory } from "@/sync/account";
 import { formatSets, groupKind } from "./format";
 import { dayOf } from "./history-panel";
+import { seeList } from "./tabs";
 
 const card = "rounded-card border border-border bg-card";
 
@@ -25,30 +26,48 @@ const card = "rounded-card border border-border bg-card";
 // when each was last done, with See (its slots, read only) and Start. While a session is open,
 // every card offers to resume it instead. Without an account, the program reads the same, with
 // nothing to start.
-export function ProgramPanel({ account }: { account: OpenAccount | null }) {
+// The sessions opened with See live in the URL (`see`), so Back from an exercise finds them open.
+export function ProgramPanel({
+  account,
+  see,
+  onSee,
+}: {
+  account: OpenAccount | null;
+  see: string | undefined;
+  onSee: (code: string, open: boolean) => void;
+}) {
   const { t } = useTranslation();
+  const opened = { see, onSee };
   return (
     <div className="flex flex-col gap-3">
-      {account ? <Cards account={account} /> : <List history={null} activities={[]} />}
+      {account ? (
+        <Cards account={account} {...opened} />
+      ) : (
+        <List history={null} activities={[]} {...opened} />
+      )}
       <p className="mx-0.5 text-sm text-muted-foreground">{t("workouts.program.editNote")}</p>
     </div>
   );
 }
 
-function Cards({ account }: { account: OpenAccount }) {
+type Opened = { see: string | undefined; onSee: (code: string, open: boolean) => void };
+
+function Cards({ account, ...opened }: { account: OpenAccount } & Opened) {
   const history = useHistory(account).data;
   const activities = useActivities(account).data;
   if (!history || !activities) return null;
-  return <List history={history} activities={activities} />;
+  return <List history={history} activities={activities} {...opened} />;
 }
 
 function List({
   history,
   activities,
+  see,
+  onSee,
 }: {
   history: History | null;
   activities: readonly Activity[];
-}) {
+} & Opened) {
   const today = useToday();
   const next = history ? nextSession(history.workouts) : null;
   const open = history
@@ -70,6 +89,9 @@ function List({
       today={today}
       start={history ? (open?.sessionCode ?? s.code) : null}
       resume={open !== null}
+      see={see}
+      seeing={seeList(see).includes(s.code)}
+      onSee={(seeing) => onSee(s.code, seeing)}
     />
   ));
 }
@@ -94,6 +116,9 @@ function SessionCard({
   today,
   start,
   resume,
+  see,
+  seeing,
+  onSee,
 }: {
   session: SessionTemplate;
   next: boolean;
@@ -102,10 +127,12 @@ function SessionCard({
   today: ISODate;
   start: string | null; // the session Start opens; null: nothing to start (no account)
   resume: boolean;
+  see: string | undefined;
+  seeing: boolean;
+  onSee: (open: boolean) => void;
 }) {
   const { t } = useTranslation();
   const id = useId();
-  const [seeing, setSeeing] = useState(false);
   const plan = planFor(session, activities, today);
   const when = next
     ? t("workouts.program.next")
@@ -149,6 +176,7 @@ function SessionCard({
                 <Link
                   to="/exercises/$exerciseId"
                   params={{ exerciseId: slot.exerciseId }}
+                  search={{ from: "program", see }}
                   className="press-tint flex min-h-14 flex-col justify-center py-2"
                 >
                   <span className="font-medium">{exerciseById(slot.exerciseId)?.name}</span>
@@ -169,7 +197,7 @@ function SessionCard({
             variant="secondary"
             aria-expanded={seeing}
             className="flex-1"
-            onClick={() => setSeeing(!seeing)}
+            onClick={() => onSee(!seeing)}
           >
             {t("workouts.program.see")}
           </Button>

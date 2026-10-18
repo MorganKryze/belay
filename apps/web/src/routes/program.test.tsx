@@ -1,6 +1,6 @@
 import type { Change } from "@belay/shared/sync/schema";
 import { sessionByCode } from "@belay/shared/training/program";
-import { cleanup, fireEvent, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { IDBFactory } from "fake-indexeddb";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import i18n from "../i18n";
@@ -70,7 +70,7 @@ describe("the program as cards (spec D13, §4.5)", () => {
       "3 days ago",
     );
     fireEvent.click(within(a).getByRole("button", { name: "See" }));
-    expect(within(a).getAllByRole("link", { name: /Barbell bench press/ })).toHaveLength(1);
+    expect(await within(a).findAllByRole("link", { name: /Barbell bench press/ })).toHaveLength(1);
   });
 
   it("says never done, done today, and counts C without its rule once climbed", async () => {
@@ -109,6 +109,33 @@ describe("the program as cards (spec D13, §4.5)", () => {
     const a = await screen.findByRole("region", { name: "Session A · Push" });
     fireEvent.click(within(a).getByRole("link", { name: "Start" }));
     expect(await screen.findByRole("heading", { name: "Session A · Push", level: 1 })).toBeTruthy();
+  });
+
+  it("Voir puts the session in the address and a reload keeps it open", async () => {
+    const router = renderRoute("/workouts?tab=program&see=B");
+    const b = await screen.findByRole("region", { name: "Session B · Legs" });
+    const see = within(b).getByRole("button", { name: "See" });
+    expect(see.getAttribute("aria-expanded")).toBe("true");
+    expect(within(b).getByRole("list")).toBeTruthy();
+    fireEvent.click(see);
+    await waitFor(() => expect(router.state.location.search).toEqual({ tab: "program" }));
+    expect(see.getAttribute("aria-expanded")).toBe("false");
+    expect(within(b).queryByRole("list")).toBeNull();
+    const a = screen.getByRole("region", { name: "Session A · Push" });
+    expect(within(a).queryByRole("button", { name: "See" })).toBeNull();
+    const c = screen.getByRole("region", { name: "Session C · Glutes + light pull" });
+    fireEvent.click(within(c).getByRole("button", { name: "See" }));
+    await waitFor(() => expect(router.state.location.search).toEqual({ tab: "program", see: "C" }));
+  });
+
+  it("an exercise link from an open session says where it comes from", async () => {
+    renderRoute("/workouts?tab=program&see=B");
+    const b = await screen.findByRole("region", { name: "Session B · Legs" });
+    const href = within(b).getAllByRole("link")[0]!.getAttribute("href")!;
+    const search = new URLSearchParams(href.split("?")[1]);
+    expect(href.startsWith("/exercises/")).toBe(true);
+    expect(search.get("from")).toBe("program");
+    expect(search.get("see")).toBe("B");
   });
 
   it("says it in French", async () => {

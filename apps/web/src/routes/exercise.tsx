@@ -3,7 +3,7 @@ import { exerciseById } from "@belay/shared/exercises/catalog";
 import { loadSteps } from "@belay/shared/exercises/steps";
 import { starterProgram } from "@belay/shared/training/program";
 import { useQuery } from "@tanstack/react-query";
-import { Link, useParams } from "@tanstack/react-router";
+import { Link, useParams, useSearch } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { BackLink, PageHeader } from "@/components/page-header";
@@ -19,6 +19,8 @@ const card = "rounded-card border border-border bg-card";
 export function ExercisePage() {
   const { t, i18n } = useTranslation();
   const { exerciseId } = useParams({ from: "/exercises/$exerciseId" });
+  // Opened from the Programme, Back leads there with the same sessions open.
+  const { from, see } = useSearch({ from: "/exercises/$exerciseId" });
   const exercise = exerciseById(exerciseId);
   const steps = useQuery({
     queryKey: ["steps", i18n.language.startsWith("fr") ? "fr" : "en"],
@@ -38,9 +40,15 @@ export function ExercisePage() {
       <PageHeader
         title={exercise.name}
         back={
-          <BackLink to="/workouts" search={{ tab: "exercises" }}>
-            {t("library.back")}
-          </BackLink>
+          from === "program" ? (
+            <BackLink to="/workouts" search={{ tab: "program", see }}>
+              {t("workouts.tabs.program")}
+            </BackLink>
+          ) : (
+            <BackLink to="/workouts" search={{ tab: "exercises" }}>
+              {t("library.back")}
+            </BackLink>
+          )
         }
       >
         <p className="text-sm text-muted-foreground">
