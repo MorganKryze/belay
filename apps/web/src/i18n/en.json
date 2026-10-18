@@ -408,10 +408,6 @@
   },
   "today": {
     "title": "Today",
-    "sessionPlanned_one": "{{count}} exercise · about {{minutes}} min",
-    "sessionPlanned_other": "{{count}} exercises · about {{minutes}} min",
-    "sessionOpen_one": "in progress · {{count}} of {{total}} sets",
-    "sessionOpen_other": "in progress · {{count}} of {{total}} sets",
     "activity": "Activity",
     "activityEmpty": "not entered yet",
     "activityMany_one": "{{count}} activity",
@@ -432,6 +428,20 @@
     "supplements": "Supplements",
     "supplementsDone": "{{taken}} of {{count}}",
     "addSupplements": "Add your supplements"
+  },
+  "sessionCard": {
+    "next": "Next up",
+    "inProgress": "In progress",
+    "size_one": "{{count}} exercise · about {{minutes}} min",
+    "size_other": "{{count}} exercises · about {{minutes}} min",
+    "sets_one": "{{count}} of {{total}} sets",
+    "sets_other": "{{count}} of {{total}} sets",
+    "see": "See the session",
+    "resume": "Resume",
+    "doneToday": "Done today",
+    "doneLine_one": "{{duration}} · {{count}} set",
+    "doneLine_other": "{{duration}} · {{count}} sets",
+    "nextLink": "Next up:"
   },
   "program": {
     "session": "Session {{code}} · {{name}}",

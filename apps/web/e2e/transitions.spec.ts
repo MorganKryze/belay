@@ -82,9 +82,15 @@ test.beforeEach(async ({ page }) => {
   await page.route("**/api/me", (r) => r.fulfill({ status: 401 }));
 });
 
-// Accueil's session row opens the preview, whose Start raises the session.
+// Accueil's session card, then its link to the preview.
+const seeSession = (page: Page) =>
+  page
+    .getByRole("region", { name: /^Session [ABC] · / })
+    .getByRole("link", { name: "See the session" });
+
+// Accueil's session card opens the preview, whose Start raises the session.
 async function startFromHome(page: Page) {
-  await page.getByRole("link", { name: /^Session [ABC] · / }).click();
+  await seeSession(page).click();
   await page.getByRole("link", { name: "Start the session" }).click();
   await expect(page.getByRole("button", { name: "Finish" })).toBeVisible();
 }
@@ -327,7 +333,7 @@ test("the leaving page moves from where it was on screen, for push, pop, cover a
       }),
     )
     .toEqual([100, expect.any(Number)]);
-  await page.getByRole("link", { name: /^Session [ABC] · / }).click();
+  await seeSession(page).click();
   // The preview, scrolled before its Start raises the session.
   const start = page.getByRole("link", { name: "Start the session" });
   await expect(start).toBeVisible();

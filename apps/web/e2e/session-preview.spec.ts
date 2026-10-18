@@ -13,7 +13,11 @@ const NEW = "::view-transition-new(root)";
 const OLD = "::view-transition-old(root)";
 
 const PREVIEW = /\/workouts\/session\/A\?from=home$/;
-const row = (page: Page) => page.getByRole("link", { name: /^Session A · Push/ });
+// Accueil's card for session A, then its link to the preview.
+const row = (page: Page) =>
+  page
+    .getByRole("region", { name: /^Session A · Push/ })
+    .getByRole("link", { name: "See the session" });
 const start = (page: Page) => page.getByRole("link", { name: "Start the session" });
 
 async function openHome(page: Page) {
@@ -32,7 +36,7 @@ async function openPreview(page: Page) {
 const motionOf = async (page: Page, target: string) =>
   (await readMotion(page)).filter((m) => m.target === target);
 
-test("Accueil's session row pushes the preview and starts nothing", async ({ page }) => {
+test("Accueil's session card pushes the preview and starts nothing", async ({ page }) => {
   const server = await fakeServer(page);
   await recordMotion(page);
   await openPreview(page);
@@ -65,7 +69,9 @@ test("Start the session raises the cover from 0:00 and lowering it later lands o
   expect(await page.evaluate(() => (history.state as { __TSR_index: number }).__TSR_index)).toBe(1);
   await page.goBack();
   await expect(page).toHaveURL(/\/$/);
-  await expect(row(page)).toBeVisible();
+  await expect(page.getByRole("region", { name: /^Session A · Push/ })).toContainText(
+    "In progress",
+  );
 });
 
 test("back from an exercise opened in the preview returns to the preview where it was left", async ({

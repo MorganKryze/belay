@@ -105,8 +105,8 @@ describe("session C's rule (spec D6, §4.3)", () => {
   it("adds the pulldown and the curl in a week with no climb, each one to leave out", async () => {
     await seed(ADA.id, LAST_B); // the last session was B: C comes next
     renderRoute("/");
-    expect((await screen.findByRole("link", { name: /^Session C/ })).textContent).toContain(
-      "10 exercises · about 60 min",
+    expect((await screen.findByRole("region", { name: /^Session C/ })).textContent).toContain(
+      "Next up · 10 exercises · about 60 min",
     );
     cleanup();
     await startSession("C");

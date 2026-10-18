@@ -13,6 +13,7 @@ beforeEach(() => {
 });
 afterEach(async () => {
   cleanup();
+  vi.useRealTimers();
   localStorage.clear();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
@@ -54,6 +55,31 @@ describe("Home", () => {
     fakeApi({ me: ADA });
     renderRoute("/");
     expect(await screen.findByRole("heading", { name: "Bonjour Ada", level: 1 })).toBeTruthy();
+  });
+
+  it("greets with the day's date above the title", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(2026, 9, 7, 7, 30));
+    fakeApi({ me: ADA });
+    renderRoute("/");
+    const h1 = await screen.findByRole("heading", { name: "Hello, Ada", level: 1 });
+    const date = screen.getByText("Wednesday, October 7");
+    expect(date.compareDocumentPosition(h1) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    cleanup();
+    await i18n.changeLanguage("fr");
+    renderRoute("/");
+    const titre = await screen.findByRole("heading", { name: "Bonjour Ada", level: 1 });
+    const jour = screen.getByText("Mercredi 7 octobre");
+    expect(jour.compareDocumentPosition(titre) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("shows no date to someone signed out", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(2026, 9, 7, 7, 30));
+    fakeApi({ me: null });
+    renderRoute("/");
+    await screen.findByRole("link", { name: "Sign in" });
+    expect(screen.queryByText("Wednesday, October 7")).toBeNull();
   });
 
   it("says the server is unreachable instead of crashing", async () => {

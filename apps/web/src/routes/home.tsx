@@ -8,8 +8,9 @@ import { AvatarLink } from "@/components/avatar";
 import { PageHeader } from "@/components/page-header";
 import { SyncBanner } from "@/components/sync-banner";
 import { TodayCard } from "@/components/today-card";
+import { TodaySession } from "@/components/today-session";
 import { Button } from "@/components/ui/button";
-import { formatKg, formatNumber, lossView } from "@/lib/format";
+import { formatKg, formatNumber, formatWeekday, lossView } from "@/lib/format";
 import { useToday } from "@/lib/today";
 import { type OpenAccount, useAccount, useCloseForgotten, useWeighings } from "@/sync/account";
 import { Pending } from "./fallbacks";
@@ -77,9 +78,10 @@ export function Home() {
   );
 }
 
-// Home is the gestures of the day (D1): the "Today" card, the trend, then Body for the rest.
+// Home opens on the day's date and its session, then the gestures of the day (D1) and the trend;
+// Body holds the rest.
 function SignedInHome({ account }: { account: OpenAccount }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const today = useToday();
   const weighings = useWeighings(account).data;
   useCloseForgotten(account);
@@ -87,6 +89,7 @@ function SignedInHome({ account }: { account: OpenAccount }) {
     <section className="flex flex-col gap-4">
       <PageHeader
         title={t("home.greeting", { name: account.user.displayName })}
+        eyebrow={formatWeekday(today, i18n.language, today, { long: true })}
         trailing={
           <div className="lg:hidden">
             <AvatarLink name={account.user.displayName} />
@@ -94,6 +97,7 @@ function SignedInHome({ account }: { account: OpenAccount }) {
         }
       />
       <SyncBanner account={account} />
+      <TodaySession account={account} today={today} />
       {weighings && (
         <>
           <TodayCard account={account} weighings={weighings} today={today} />

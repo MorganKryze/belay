@@ -99,9 +99,9 @@ test("session C adds the pulldown and the curl in a week with no climb, and not 
 }) => {
   await fakeServer(page, { changes: A_THEN_B });
   await page.goto("/");
-  const line = page.getByRole("link", { name: /^Session C/ });
+  const line = page.getByRole("region", { name: /^Session C/ });
   await expect(line).toContainText("10 exercises");
-  await line.click();
+  await line.getByRole("link", { name: "See the session" }).click();
   await page.getByRole("link", { name: "Start the session" }).click();
   await expect(
     page.getByText(
@@ -119,8 +119,9 @@ test("session C adds the pulldown and the curl in a week with no climb, and not 
   await second.clock.setFixedTime(NOW);
   await fakeServer(second, { changes: [...A_THEN_B, CLIMB] });
   await second.goto("/");
-  await expect(second.getByRole("link", { name: /^Session C/ })).toContainText("8 exercises");
-  await second.getByRole("link", { name: /^Session C/ }).click();
+  const secondCard = second.getByRole("region", { name: /^Session C/ });
+  await expect(secondCard).toContainText("8 exercises");
+  await secondCard.getByRole("link", { name: "See the session" }).click();
   await second.getByRole("link", { name: "Start the session" }).click();
   await expect(card(second, "Barbell hip thrust")).toBeVisible();
   await expect(second.getByText(/No climbing this week/)).toBeHidden();
@@ -132,7 +133,11 @@ test("an exercise replaced during the session keeps the sets done, after a reloa
 }) => {
   const server = await fakeServer(page, { changes: finished(1, "A", "2026-10-05") });
   await page.goto("/");
-  await page.getByRole("link", { name: /^Session B/ }).click();
+  await expect(page.locator(".launch")).toBeHidden();
+  await page
+    .getByRole("region", { name: /^Session B/ })
+    .getByRole("link", { name: "See the session" })
+    .click();
   await page.getByRole("link", { name: "Start the session" }).click();
   const squat = card(page, "Barbell full squat");
   await squat.getByRole("textbox", { name: "Load of set 1, kg" }).fill("100");
