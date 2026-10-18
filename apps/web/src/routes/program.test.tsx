@@ -1,6 +1,6 @@
 import type { Change } from "@belay/shared/sync/schema";
 import { sessionByCode } from "@belay/shared/training/program";
-import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, fireEvent, screen, within } from "@testing-library/react";
 import { IDBFactory } from "fake-indexeddb";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import i18n from "../i18n";
@@ -43,10 +43,12 @@ const done = (n: number, code: string, d: number): Change[] => {
     { kind: "workout", id: id(n), field: "ended", value: end, at: end },
   ];
 };
+// The cards in their order, by title: the next one as a region, the others as links.
 const cards = async () =>
-  (await screen.findAllByRole("region", { name: /^Session / })).map(
-    (r) => r.querySelector("h2")!.textContent!,
+  (await screen.findAllByRole("heading", { level: 2, name: /^(Session|Séance) / })).map(
+    (h) => h.textContent!,
   );
+const cardLink = (title: string) => screen.getByRole("link", { name: new RegExp(`^${title}`) });
 
 describe("the program as cards (spec D13, §4.5)", () => {
   it("puts the next session first, then when each other one was last done", async () => {
@@ -59,18 +61,72 @@ describe("the program as cards (spec D13, §4.5)", () => {
     ]);
     const c = screen.getByRole("region", { name: "Session C · Glutes + light pull" });
     // No climb this week: the rule's two slots count.
-    expect(c.textContent).toContain("Next up · 10 exercises · ~60 min");
-    expect(within(c).queryByRole("button", { name: "See" })).toBeNull();
-    expect(within(c).getByRole("link", { name: "Start" }).getAttribute("href")).toBe(
-      "/workout?start=C",
+    expect(c.textContent).toContain("Next up · 10 exercises · about 60 min");
+    const a = cardLink("Session A · Push");
+    expect(a.textContent).toContain("4 days ago · 6 exercises · about 55 min");
+    expect(cardLink("Session B · Legs").textContent).toContain("3 days ago");
+  });
+
+  it("the next card's button is See the session and pushes its preview", async () => {
+    await seed(ADA.id, done(1, "C", 3));
+    const router = renderRoute("/workouts?tab=program");
+    const a = await screen.findByRole("region", { name: "Session A · Push" });
+    const see = within(a).getByRole("link", { name: "See the session" });
+    expect(see.getAttribute("href")).toBe("/workouts/session/A");
+    fireEvent.click(see);
+    expect(await screen.findByRole("heading", { name: "Session A · Push", level: 1 })).toBeTruthy();
+    expect(router.state.location.pathname).toBe("/workouts/session/A");
+  });
+
+  it("another card opens its preview on a tap anywhere", async () => {
+    await seed(ADA.id, done(1, "C", 3));
+    const router = renderRoute("/workouts?tab=program");
+    await cards();
+    const b = cardLink("Session B · Legs");
+    expect(b.getAttribute("href")).toBe("/workouts/session/B");
+    // The whole card is the one link: its title and its line sit inside it, with no button.
+    expect(within(b).getByRole("heading", { level: 2, name: "Session B · Legs" })).toBeTruthy();
+    expect(b.textContent).toContain("Never done · 7 exercises");
+    expect(within(b).queryByRole("button")).toBeNull();
+    fireEvent.click(within(b).getByText(/Never done/));
+    expect(await screen.findByRole("heading", { name: "Session B · Legs", level: 1 })).toBeTruthy();
+    expect(router.state.location.pathname).toBe("/workouts/session/B");
+  });
+
+  it("no card shows Start or a See list", async () => {
+    await seed(ADA.id, done(1, "A", 3));
+    renderRoute("/workouts?tab=program");
+    await cards();
+    expect(screen.queryByRole("link", { name: "Start" })).toBeNull();
+    expect(screen.queryByRole("button", { name: /^(See|Hide)$/ })).toBeNull();
+    expect(within(screen.getByRole("main")).queryByRole("list")).toBeNull();
+    expect(screen.queryByRole("link", { name: /Barbell bench press/ })).toBeNull();
+  });
+
+  it("with A open, A's card resumes it and B's card opens B's preview", async () => {
+    const begun = new Date(2026, 9, 7, 17, 30).toISOString();
+    await seed(ADA.id, [
+      {
+        kind: "workout",
+        id: id(1),
+        field: "start",
+        sessionCode: "A",
+        plan: [...sessionByCode("A")!.slots],
+        startedAt: begun,
+        at: begun,
+      },
+    ]);
+    renderRoute("/workouts?tab=program");
+    const a = await screen.findByRole("region", { name: "Session A · Push" });
+    expect(within(a).getByRole("link", { name: "Resume" }).getAttribute("href")).toBe(
+      "/workout?start=A",
     );
-    const a = screen.getByRole("region", { name: "Session A · Push" });
-    expect(a.textContent).toContain("4 days ago · 6 exercises · ~55 min");
-    expect(screen.getByRole("region", { name: "Session B · Legs" }).textContent).toContain(
-      "3 days ago",
+    expect(within(a).queryByRole("link", { name: "See the session" })).toBeNull();
+    expect(cardLink("Session B · Legs").getAttribute("href")).toBe("/workouts/session/B");
+    expect(cardLink("Session C · Glutes \\+ light pull").getAttribute("href")).toBe(
+      "/workouts/session/C",
     );
-    fireEvent.click(within(a).getByRole("button", { name: "See" }));
-    expect(await within(a).findAllByRole("link", { name: /Barbell bench press/ })).toHaveLength(1);
+    expect(screen.getAllByRole("link", { name: "Resume" })).toHaveLength(1);
   });
 
   it("says never done, done today, and counts C without its rule once climbed", async () => {
@@ -96,47 +152,8 @@ describe("the program as cards (spec D13, §4.5)", () => {
     expect(
       screen.getByRole("region", { name: "Session C · Glutes + light pull" }).textContent,
     ).toContain("Next up · 8 exercises");
-    expect(screen.getByRole("region", { name: "Session A · Push" }).textContent).toContain(
-      "Never done",
-    );
-    expect(screen.getByRole("region", { name: "Session B · Legs" }).textContent).toContain(
-      "Done today",
-    );
-  });
-
-  it("starts the next session from its card", async () => {
-    renderRoute("/workouts?tab=program");
-    const a = await screen.findByRole("region", { name: "Session A · Push" });
-    fireEvent.click(within(a).getByRole("link", { name: "Start" }));
-    expect(await screen.findByRole("heading", { name: "Session A · Push", level: 1 })).toBeTruthy();
-  });
-
-  it("Voir puts the session in the address and a reload keeps it open", async () => {
-    const router = renderRoute("/workouts?tab=program&see=B");
-    const b = await screen.findByRole("region", { name: "Session B · Legs" });
-    const see = within(b).getByRole("button", { name: "Hide" });
-    expect(see.getAttribute("aria-expanded")).toBe("true");
-    expect(within(b).getByRole("list")).toBeTruthy();
-    fireEvent.click(see);
-    await waitFor(() => expect(router.state.location.search).toEqual({ tab: "program" }));
-    expect(see.getAttribute("aria-expanded")).toBe("false");
-    expect(see.textContent).toBe("See");
-    expect(within(b).queryByRole("list")).toBeNull();
-    const a = screen.getByRole("region", { name: "Session A · Push" });
-    expect(within(a).queryByRole("button", { name: "See" })).toBeNull();
-    const c = screen.getByRole("region", { name: "Session C · Glutes + light pull" });
-    fireEvent.click(within(c).getByRole("button", { name: "See" }));
-    await waitFor(() => expect(router.state.location.search).toEqual({ tab: "program", see: "C" }));
-  });
-
-  it("an exercise link from an open session says where it comes from", async () => {
-    renderRoute("/workouts?tab=program&see=B");
-    const b = await screen.findByRole("region", { name: "Session B · Legs" });
-    const href = within(b).getAllByRole("link")[0]!.getAttribute("href")!;
-    const search = new URLSearchParams(href.split("?")[1]);
-    expect(href.startsWith("/exercises/")).toBe(true);
-    expect(search.get("from")).toBe("program");
-    expect(search.get("see")).toBe("B");
+    expect(cardLink("Session A · Push").textContent).toContain("Never done");
+    expect(cardLink("Session B · Legs").textContent).toContain("Done today");
   });
 
   it("says it in French", async () => {
@@ -144,13 +161,8 @@ describe("the program as cards (spec D13, §4.5)", () => {
     await i18n.changeLanguage("fr");
     renderRoute("/workouts?tab=program");
     const b = await screen.findByRole("region", { name: "Séance B · Legs" });
-    expect(b.textContent).toContain("La prochaine · 7 exercices · ~60 min");
-    const a = screen.getByRole("region", { name: "Séance A · Push" });
-    expect(a.textContent).toContain("Il y a 4 jours");
-    fireEvent.click(within(a).getByRole("button", { name: "Voir" }));
-    expect(
-      (await within(a).findByRole("button", { name: "Masquer" })).getAttribute("aria-expanded"),
-    ).toBe("true");
-    expect(within(a).getByRole("link", { name: "Commencer" })).toBeTruthy();
+    expect(b.textContent).toContain("La prochaine · 7 exercices · environ 60 min");
+    expect(within(b).getByRole("link", { name: "Voir la séance" })).toBeTruthy();
+    expect(cardLink("Séance A · Push").textContent).toContain("Il y a 4 jours");
   });
 });

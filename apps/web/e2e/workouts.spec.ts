@@ -143,11 +143,10 @@ test("a reload in the middle of a rest comes back to the same set and time left"
 }) => {
   await fakeServer(page, { changes: LAST_A });
   await page.goto("/workouts?tab=program");
-  // B is next after Monday's A: A's card is further down, with its own Start.
-  await page
-    .getByRole("region", { name: "Session A · Push" })
-    .getByRole("link", { name: "Start" })
-    .click();
+  // B is next after Monday's A: A's card is further down and opens its preview.
+  await expect(page.locator(".launch")).toBeHidden();
+  await page.getByRole("link", { name: /^Session A · Push/ }).click();
+  await page.getByRole("link", { name: "Start the session" }).click();
   const bench = card(page, "Barbell bench press");
   await expect(bench.getByRole("textbox", { name: "Load of set 1, kg" })).toHaveValue("80");
   await logWarmups(bench);
@@ -288,7 +287,7 @@ const SCREENS: [string, (page: Page) => Promise<void>][] = [
     "Program",
     async (page) => {
       await page.goto("/workouts?tab=program");
-      await expect(page.getByRole("link", { name: "Start" }).first()).toBeVisible();
+      await expect(page.getByRole("link", { name: "See the session" })).toBeVisible();
     },
   ],
   [

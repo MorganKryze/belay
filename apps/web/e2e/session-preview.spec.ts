@@ -111,6 +111,79 @@ test("back from an exercise opened in the preview returns to the preview where i
     .toBeLessThanOrEqual(2);
 });
 
+async function openProgram(page: Page) {
+  await page.goto("/workouts?tab=program");
+  await expect(page.locator(".launch")).toBeHidden();
+  await expect(page.getByRole("region", { name: "Session A · Push" })).toBeVisible();
+}
+
+test("the Programme's next card pushes the preview, and back says Programme", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 460 });
+  await fakeServer(page);
+  await recordMotion(page);
+  await openProgram(page);
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        window.scrollTo(0, 80);
+        return window.scrollY;
+      }),
+    )
+    .toBe(80);
+  const see = page
+    .getByRole("region", { name: "Session A · Push" })
+    .getByRole("link", { name: "See the session" });
+  await see.click();
+  await expect(page).toHaveURL(/\/workouts\/session\/A$/);
+  await expect(page.getByRole("heading", { level: 1, name: "Session A · Push" })).toBeVisible();
+  await expect
+    .poll(() => motionOf(page, NEW))
+    .toContainEqual(expect.objectContaining({ duration: 420, easing: NAV, transforms: true }));
+  await expect
+    .poll(() => motionOf(page, OLD))
+    .toContainEqual(expect.objectContaining({ duration: 420, easing: NAV, transforms: true }));
+  const back = page.getByRole("main").getByRole("link", { name: "Program", exact: true });
+  await expect(back).toHaveAttribute("href", "/workouts?tab=program");
+  await back.click();
+  await expect(page).toHaveURL(/\/workouts\?tab=program$/);
+  await expect
+    .poll(() => motionOf(page, NEW))
+    .toContainEqual(expect.objectContaining({ duration: 380, easing: NAV, transforms: true }));
+  await expect
+    .poll(() => motionOf(page, OLD))
+    .toContainEqual(expect.objectContaining({ duration: 380, easing: NAV, transforms: true }));
+  await expect(page.getByRole("radio", { name: "Program" })).toHaveAttribute(
+    "data-state",
+    "checked",
+  );
+  await expect(page.getByRole("region", { name: "Session A · Push" })).toBeVisible();
+  await expect
+    .poll(() => page.evaluate(() => Math.abs(window.scrollY - 80)))
+    .toBeLessThanOrEqual(2);
+  await expect(
+    page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Sessions" }),
+  ).toHaveAttribute("aria-current", "page");
+});
+
+test("a tap on another card opens its preview", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("belay.theme", "light"));
+  await fakeServer(page);
+  await recordMotion(page);
+  await openProgram(page);
+  await expect(page.locator("html")).not.toHaveClass(/dark/);
+  const b = page.getByRole("link", { name: /^Session B · Legs/ });
+  await expect(b).toHaveAttribute("href", "/workouts/session/B");
+  await b.getByText(/Never done/).click();
+  await expect(page).toHaveURL(/\/workouts\/session\/B$/);
+  await expect(page.getByRole("heading", { level: 1, name: "Session B · Legs" })).toBeVisible();
+  await expect
+    .poll(() => motionOf(page, NEW))
+    .toContainEqual(expect.objectContaining({ duration: 420, easing: NAV, transforms: true }));
+  await expect(
+    page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Sessions" }),
+  ).toHaveAttribute("aria-current", "page");
+});
+
 test.describe("reduced motion", () => {
   test.use({ reducedMotion: "reduce" });
 

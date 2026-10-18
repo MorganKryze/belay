@@ -36,17 +36,15 @@ describe("the Sessions tab", () => {
     expect(await screen.findByRole("searchbox", { name: "Search exercises" })).toBeTruthy();
   });
 
-  it("lists the program as cards to see, read only, without an account", async () => {
+  it("lists the program as cards that open their preview, without an account", async () => {
     renderRoute("/workouts?tab=program");
-    const a = await screen.findByRole("region", { name: "Session A · Push" });
-    expect(a.textContent).toContain("6 exercises · ~55 min");
-    expect(within(a).queryByRole("link", { name: "Start" })).toBeNull();
-    const see = within(a).getByRole("button", { name: "See" });
-    expect(see.getAttribute("aria-expanded")).toBe("false");
-    fireEvent.click(see);
-    const lateral = await within(a).findByRole("link", { name: /Dumbbell lateral raise/ });
-    expect(lateral.textContent).toContain("3\u00a0×\u00a012–20 · tri-set");
-    expect(lateral.getAttribute("href")).toBe("/exercises/ds%3A0334?from=program&see=A");
+    // Nothing is next without an account: every card is a link to its preview, none starts.
+    const a = await screen.findByRole("link", { name: /^Session A · Push/ });
+    expect(a.getAttribute("href")).toBe("/workouts/session/A");
+    expect(a.textContent).toContain("6 exercises · about 55 min");
+    expect(screen.getAllByRole("link", { name: /^Session [ABC] · / })).toHaveLength(3);
+    expect(screen.queryByRole("link", { name: /^(Start|See the session|Resume)$/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /^(See|Hide)$/ })).toBeNull();
     expect(screen.getByText("The program is edited on a computer.")).toBeTruthy();
   });
 
@@ -54,7 +52,7 @@ describe("the Sessions tab", () => {
     await i18n.changeLanguage("fr");
     renderRoute("/workouts?tab=program");
     expect(
-      await screen.findByRole("region", { name: "Séance C · Fessiers + tirage léger" }),
+      await screen.findByRole("link", { name: /^Séance C · Fessiers \+ tirage léger/ }),
     ).toBeTruthy();
     expect(screen.getByText("Le programme se modifie sur ordinateur.")).toBeTruthy();
   });
