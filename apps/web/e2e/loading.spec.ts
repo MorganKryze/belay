@@ -128,6 +128,48 @@ test.describe("normal motion", () => {
     expect(unmount! - mount!).toBeGreaterThanOrEqual(390);
   });
 
+  // A finger, not a pointer, and the code held from the tap, so neither a hover nor an earlier
+  // fetch can hide the wait. The service worker is kept out: once it controls the page it serves
+  // the chunk from its cache, where no route can hold it.
+  test.describe("tapped", () => {
+    test.use({ serviceWorkers: "block" });
+
+    test("a tab tapped while its code is held shows the pending page at 150 ms for 400 ms, and not once warm", async ({
+      page,
+    }) => {
+      let tapped = 0;
+      await page.route(chunk("workouts"), async (route) => {
+        while (!tapped) await new Promise((r) => setTimeout(r, 10));
+        const response = await route.fetch();
+        await new Promise((r) => setTimeout(r, Math.max(0, tapped + 1600 - Date.now())));
+        await route.fulfill({ response });
+      });
+      await openHome(page);
+      tapped = Date.now();
+      await tab(page, "Sessions").tap();
+      const pending = page.locator("[data-pending]");
+      await expect(pending.getByText("Sessions", { exact: true })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Sessions", level: 1 })).toBeVisible({
+        timeout: 5000,
+      });
+      await expect(pending).toHaveCount(0);
+      const { tap: at, mount, unmount } = await stamps(page);
+      expect(mount! - at!).toBeGreaterThanOrEqual(140);
+      expect(mount! - at!).toBeLessThan(600);
+      expect(unmount! - mount!).toBeGreaterThanOrEqual(390);
+
+      await tab(page, "Home").tap();
+      await expect(page.getByRole("button", { name: /^Intake/ })).toBeVisible();
+      await page.evaluate(() => {
+        (window as unknown as { stamps: Stamps }).stamps = {};
+      });
+      await tab(page, "Sessions").tap();
+      await expect(page.getByRole("heading", { name: "Sessions", level: 1 })).toBeVisible();
+      await page.waitForTimeout(300);
+      expect((await stamps(page)).mount).toBeUndefined();
+    });
+  });
+
   // Passes before the pending page exists too: it guards against a pending page that would show
   // on every navigation.
   test("a tab whose code is ready never mounts the pending page", async ({ page }) => {
