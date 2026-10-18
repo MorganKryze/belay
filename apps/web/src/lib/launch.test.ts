@@ -14,3 +14,7 @@ describe("launchHoldLeft", () => {
     expect(launchHoldLeft(900, undefined)).toBe(1000);
   });
 });
+
+it("rounds the time left up, so a timer firing a fraction early still holds a full second", () => {
+  expect(launchHoldLeft(1000.4, 100)).toBe(100);
+});
