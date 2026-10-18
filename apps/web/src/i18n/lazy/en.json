@@ -312,7 +312,6 @@
     "paused": "Paused",
     "pausedTitle": "Session paused",
     "pausedBody": "The timer starts again as soon as you log a set.",
-    "lastTime": "Last time: {{value}}",
     "set": "Set",
     "reps": "Reps",
     "seconds": "Seconds",

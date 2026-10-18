@@ -1,6 +1,6 @@
 import "@/i18n/lazy";
 import { exerciseById } from "@belay/shared/exercises/catalog";
-import { type Load, liveSets, loggedByExercise, summary } from "@belay/shared/training/rules";
+import { liveSets, loggedByExercise, summary } from "@belay/shared/training/rules";
 import { NOTE_MAX } from "@belay/shared/training/workout";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { PartyPopper } from "lucide-react";
@@ -12,7 +12,7 @@ import { formatNumber, formatWeekday, sessionTitle } from "@/lib/format";
 import { useToday } from "@/lib/today";
 import { cn } from "@/lib/utils";
 import { type OpenAccount, useAccount, useHistory, useRecord } from "@/sync/account";
-import { durationParts, recordText } from "@/workouts/format";
+import { durationParts, formatLoad, recordText } from "@/workouts/format";
 import { dayOf } from "@/workouts/history-panel";
 import { NotFound } from "./fallbacks";
 
@@ -56,13 +56,6 @@ function Summary({ account }: { account: OpenAccount }) {
       setError(t("weighIn.saveFailed"));
     }
   };
-  const kg = (value: number) => formatNumber(value, i18n.language, { digits: 2, grouping: false });
-  const loadText = (load: Load) =>
-    load.seconds !== null
-      ? load.weightKg > 0
-        ? t("history.loadSeconds", { kg: kg(load.weightKg), seconds: load.seconds })
-        : t("history.seconds", { seconds: load.seconds })
-      : t("history.load", { kg: kg(load.weightKg), reps: load.reps });
   const logged = loggedByExercise(workout, history.sets);
   const duration = durationParts(stats.durationMs, t);
 
@@ -123,7 +116,10 @@ function Summary({ account }: { account: OpenAccount }) {
                   {exerciseById(e.exerciseId)?.name ?? e.exerciseId}
                 </span>{" "}
                 <span className="text-(length:--text-secondary) leading-(--text-secondary--line-height) break-words text-muted-foreground">
-                  {t("summary.loggedSets", { count: e.workSets, set: loadText(e.top) })}
+                  {t("summary.loggedSets", {
+                    count: e.workSets,
+                    set: formatLoad(e.top, t, i18n.language),
+                  })}
                 </span>
               </span>
             </div>

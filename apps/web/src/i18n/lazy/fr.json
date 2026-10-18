@@ -312,7 +312,6 @@
     "paused": "En pause",
     "pausedTitle": "Séance en pause",
     "pausedBody": "Le chrono repart dès que tu notes une série.",
-    "lastTime": "La dernière fois : {{value}}",
     "set": "Série",
     "reps": "Reps",
     "seconds": "Secondes",

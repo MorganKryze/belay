@@ -5,7 +5,7 @@ import type { Measure } from "@belay/shared/exercises/library";
 import type { Activity } from "@belay/shared/training/activities";
 import { planFor } from "@belay/shared/training/plan";
 import { estimatedMinutes, plannedWorkSets, sessionByCode } from "@belay/shared/training/program";
-import { type History, type Load, lastTopSet, openWorkout } from "@belay/shared/training/rules";
+import { type History, lastTopSet, openWorkout } from "@belay/shared/training/rules";
 import { Link, useParams, useSearch } from "@tanstack/react-router";
 import { Play } from "lucide-react";
 import { useId } from "react";
@@ -13,10 +13,10 @@ import { useTranslation } from "react-i18next";
 import { groupCard, RowLink } from "@/components/grouped-list";
 import { BackLink, PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
-import { formatNumber, formatWeekday, sessionTitle } from "@/lib/format";
+import { formatWeekday, sessionTitle } from "@/lib/format";
 import { useToday } from "@/lib/today";
 import { type OpenAccount, useAccount, useActivities, useHistory } from "@/sync/account";
-import { formatDuration, formatRir, formatSets } from "@/workouts/format";
+import { formatDuration, formatLoad, formatRir, formatSets } from "@/workouts/format";
 
 // A session of the program before it starts: what it holds today, how long it
 // takes, how it went last time, and the one action that starts it. Without an account it reads
@@ -56,13 +56,6 @@ function Preview({
   const open = history && openWorkout(history.workouts, { sets: history.sets, now: new Date() });
   const top = (exerciseId: string, measure: Measure) =>
     history && lastTopSet(history, exerciseId, measure);
-  const kg = (value: number) => formatNumber(value, i18n.language, { digits: 2, grouping: false });
-  const loadText = (load: Load) =>
-    load.seconds !== null
-      ? load.weightKg > 0
-        ? t("history.loadSeconds", { kg: kg(load.weightKg), seconds: load.seconds })
-        : t("history.seconds", { seconds: load.seconds })
-      : t("history.load", { kg: kg(load.weightKg), reps: load.reps });
   // Replaced, so lowering the session lands where the preview was opened from.
   const startLink = (start: string, label: string) => (
     <Button asChild className="w-full">
@@ -140,7 +133,7 @@ function Preview({
                   sub={[
                     formatSets(slot),
                     formatRir(slot, t),
-                    ...(best ? [loadText(best)] : []),
+                    ...(best ? [formatLoad(best, t, i18n.language)] : []),
                   ].join(" · ")}
                 />
               </li>
