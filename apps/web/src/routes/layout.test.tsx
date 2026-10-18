@@ -62,18 +62,20 @@ describe("the shell", () => {
     expect(screen.queryByRole("navigation", { name: "Main" })).toBeNull();
   });
 
-  it("Accueil shows the avatar in every account state, named Réglages, and it opens Réglages", async () => {
-    // Loading: the account question never gets an answer.
+  it("Accueil shows nothing while the account is loading, under the launch screen", async () => {
+    // The account question never gets an answer.
     vi.stubGlobal(
       "fetch",
       vi.fn(() => new Promise<Response>(() => {})),
     );
     renderRoute("/");
-    await screen.findByRole("heading", { level: 1, name: "Belay" });
-    expect(avatar().getAttribute("href")).toBe("/settings");
-    cleanup();
+    const main = await screen.findByRole("main");
+    expect(within(main).queryByRole("heading")).toBeNull();
+    expect(within(main).queryByRole("link", { name: "Settings" })).toBeNull();
     vi.unstubAllGlobals();
+  });
 
+  it("Accueil shows the avatar in every known account state, named Réglages, and it opens Réglages", async () => {
     fakeApi({ me: null });
     renderRoute("/");
     await screen.findByRole("link", { name: "Sign in" });

@@ -165,7 +165,7 @@ describe("PageHeader", () => {
     expect(classes(h1)).toContain("text-title-lg");
   });
 
-  it("the header folds over the first 44 px of scroll, shows compact from the start without scroll timelines and under reduced motion", () => {
+  it("the header folds over the first 44 px of scroll, under reduced motion too, and without scroll timelines fades in once the large title has gone", () => {
     const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../index.css"), "utf8");
     expect(css).toMatch(/animation-timeline:\s*scroll\(root\)/);
     // Ends at the bottom of a page that scrolls less than 44 px, so the fold never stops halfway.
@@ -178,11 +178,14 @@ describe("PageHeader", () => {
     expect(css).toMatch(/opacity:\s*var\(--fold-rest\)/);
     expect(css).toMatch(/@keyframes fold-out\s*\{\s*to\s*\{\s*opacity:\s*0;?\s*\}\s*\}/);
     const fallback = css.match(/@supports not \(animation-timeline: scroll\(\)\)\s*\{([^}]*\}){2}/);
-    expect(fallback?.[0]).toMatch(/animation:\s*none/);
+    expect(fallback?.[0]).toMatch(
+      /\.fold-in\s*\{[^}]*opacity:\s*0;[^}]*transition:\s*opacity var\(--fold-fade\)/,
+    );
+    expect(fallback?.[0]).toMatch(/\[data-folded\] \.fold-in\s*\{\s*opacity:\s*1;?\s*\}/);
+    expect(css).toMatch(/:root\s*\{[^}]*--fold-fade:\s*var\(--dur-release\);/);
     const reduced = css.match(/@media \(prefers-reduced-motion: reduce\)\s*\{\s*:root\s*\{[^}]*\}/);
-    expect(reduced?.[0]).toMatch(/--fold-in:\s*none/);
-    expect(reduced?.[0]).toMatch(/--fold-out:\s*none/);
-    expect(reduced?.[0]).toMatch(/--fold-rest:\s*1/);
+    expect(reduced?.[0]).not.toMatch(/--fold-(in|out|rest):/);
+    expect(reduced?.[0]).toMatch(/--fold-fade:\s*0s/);
     expectTokensOnly("components/page-header.tsx");
   });
 });

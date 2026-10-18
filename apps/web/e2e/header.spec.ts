@@ -52,19 +52,76 @@ test("the large title folds into the frosted compact header over 44 px of scroll
   expect(folded.boxes).toEqual(top.boxes);
 });
 
-test("with reduced motion the compact header shows from the start and the large title scrolls without fading", async ({
-  page,
-}) => {
+test("with reduced motion the header still folds with the user's own scroll", async ({ page }) => {
   await scrollsFar(page);
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/tools");
   await expect(page.getByRole("heading", { level: 1, name: "Tools" })).toBeVisible();
   const top = await state(page);
-  expect([top.large, top.compact, top.fill]).toEqual([1, 1, 1]);
+  expect([top.large, top.compact, top.fill]).toEqual([1, 0, 0]);
   await scrollTo(page, 60);
-  const scrolled = await state(page);
-  expect([scrolled.large, scrolled.compact, scrolled.fill]).toEqual([1, 1, 1]);
+  const folded = await state(page);
+  expect([folded.large, folded.compact, folded.fill]).toEqual([0, 1, 1]);
 });
+
+// A browser without scroll timelines: the stylesheet's support checks name a value no browser
+// knows, and the script's check answers no.
+const withoutScrollTimelines = async (page: Page) => {
+  await page.route("**/assets/*.css", async (route) => {
+    const response = await route.fetch();
+    const css = (await response.text()).replaceAll(
+      /animation-timeline:\s*scroll\(\)/g,
+      "animation-timeline: unknown()",
+    );
+    await route.fulfill({ response, body: css });
+  });
+  await page.addInitScript(() => {
+    const supports = CSS.supports.bind(CSS) as (...args: string[]) => boolean;
+    CSS.supports = (...args: string[]) =>
+      args.join(":").includes("animation-timeline") ? false : supports(...args);
+  });
+};
+
+const compactFade = (page: Page) =>
+  page.evaluate(() => {
+    const compact = document.querySelector("[data-compact-title]")!;
+    return [compact, compact.parentElement!.previousElementSibling!].map(
+      (el) => getComputedStyle(el).transitionDuration,
+    );
+  });
+
+for (const reduced of [false, true]) {
+  test(`without scroll timelines${reduced ? " and with reduced motion" : ""} the compact header hides at rest and shows once the large title has scrolled away`, async ({
+    page,
+  }) => {
+    await withoutScrollTimelines(page);
+    await scrollsFar(page);
+    if (reduced) await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto("/tools");
+    await expect(page.getByRole("heading", { level: 1, name: "Tools" })).toBeVisible();
+    expect(await page.evaluate(() => CSS.supports("animation-timeline: scroll()"))).toBe(false);
+    const top = await state(page);
+    expect([top.large, top.compact, top.fill]).toEqual([1, 0, 0]);
+    expect(await compactFade(page)).toEqual(reduced ? ["0s", "0s"] : ["0.2s", "0.2s"]);
+    // Short of the title's height, part of it still shows under the bar.
+    await scrollTo(page, 10);
+    expect((await state(page)).compact).toBe(0);
+    await scrollTo(page, 200);
+    await expect
+      .poll(async () => {
+        const s = await state(page);
+        return [s.compact, s.fill];
+      })
+      .toEqual([1, 1]);
+    await scrollTo(page, 0);
+    await expect
+      .poll(async () => {
+        const s = await state(page);
+        return [s.compact, s.fill];
+      })
+      .toEqual([0, 0]);
+  });
+}
 
 test("a page that does not scroll shows only the large title under a clear bar", async ({
   page,

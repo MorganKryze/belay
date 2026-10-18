@@ -124,6 +124,7 @@ describe("design rules", () => {
     expect(reduced.get("--press-scale")).toBe("1");
     expect(reduced.get("--slide-duration")).toBe("0s");
     expect(reduced.get("--tint-duration")).toBe("0s");
+    expect(reduced.get("--press-release")).toBe("0s");
   });
 
   it("every transition duration a component names goes to 0s with reduced motion, unless it only fades", () => {
@@ -139,14 +140,18 @@ describe("design rules", () => {
     expect(found).toEqual([]);
   });
 
-  it("press scales by the press and release tokens on the nav curve; rows only tint", () => {
+  it("press scales at once, under a mouse or a finger, and springs back on the nav curve; rows only tint", () => {
     const press = block(CSS, "@utility press {");
-    expect(press).toMatch(/transition:\s*transform var\(--dur-release\) var\(--ease-nav\)/);
-    expect(press).toMatch(/&:active\s*\{[^}]*transform:\s*scale\(var\(--press-scale\)\)/);
-    expect(press).toMatch(/transition-duration:\s*var\(--dur-press\)/);
+    expect(press).toMatch(/transition:\s*transform var\(--press-release\) var\(--ease-nav\)/);
+    expect(press).toMatch(
+      /&:active,\s*&\[data-pressed\]\s*\{[^}]*transform:\s*scale\(var\(--press-scale\)\)/,
+    );
+    expect(press).toMatch(/&:active,\s*&\[data-pressed\]\s*\{[^}]*transition-duration:\s*0s/);
     const tint = block(CSS, "@utility press-tint {");
-    expect(tint).toMatch(/transition:\s*background-color var\(--tint-duration\) var\(--ease-out\)/);
-    expect(tint).toMatch(/background-color:\s*var\(--press-tint\)/);
+    expect(tint).toMatch(/transition:\s*background-color var\(--press-release\) var\(--ease-out\)/);
+    expect(tint).toMatch(
+      /&:active,\s*&\[data-pressed\]\s*\{[^}]*background-color:\s*var\(--press-tint\);[^}]*transition-duration:\s*0s/,
+    );
     expect(tint).not.toMatch(/transform/);
   });
 

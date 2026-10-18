@@ -54,22 +54,62 @@ async function saveWeighIn(page: Page) {
 }
 
 test.describe("normal motion", () => {
-  test("a pressed button scales to 0.97", async ({ page }) => {
+  test("a pressed button scales to 0.97 at once and springs back in 200 ms", async ({ page }) => {
     await openHome(page);
     // The avatar shares the press of every button.
     const button = page.getByRole("link", { name: "Settings" });
     await button.hover();
     await since(page);
     await page.mouse.down();
-    await expect
-      .poll(() => button.evaluate((el) => getComputedStyle(el).transform))
-      .toBe("matrix(0.97, 0, 0, 0.97, 0, 0)");
+    // Read once, with no wait: the press shows on the frame the finger lands.
+    expect(await button.evaluate((el) => getComputedStyle(el).transform)).toBe(
+      "matrix(0.97, 0, 0, 0.97, 0, 0)",
+    );
     // Released away from it, so Home stays.
     await page.mouse.move(0, 0);
     await page.mouse.up();
-    expect(await readMotion(page)).toContainEqual(
-      expect.objectContaining({ kind: "transition", duration: 90, easing: NAV, transforms: true }),
-    );
+    await expect
+      .poll(() => readMotion(page))
+      .toContainEqual(
+        expect.objectContaining({
+          kind: "transition",
+          duration: 200,
+          easing: NAV,
+          transforms: true,
+        }),
+      );
+  });
+
+  test("a pressed row tints across its whole width before the finger lifts", async ({ page }) => {
+    await openHome(page);
+    const row = page.getByRole("button", { name: /^Intake/ });
+    await row.hover();
+    await page.mouse.down();
+    const pressed = await row.evaluate((el) => ({
+      tint: getComputedStyle(el).backgroundColor,
+      width: el.getBoundingClientRect().width,
+      line: el.parentElement!.getBoundingClientRect().width,
+    }));
+    expect(pressed.tint).not.toBe("rgba(0, 0, 0, 0)");
+    expect(pressed.width).toBe(pressed.line);
+    await page.mouse.move(0, 0);
+    await page.mouse.up();
+  });
+
+  test("a row held under a finger tints while the finger stays down", async ({ page }) => {
+    await openHome(page);
+    const row = page.getByRole("button", { name: /^Intake/ });
+    const box = (await row.boundingBox())!;
+    const point = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+    // A real touch, not a mouse: the browser may hold back the press state to tell a tap from a
+    // scroll, and only a touch goes through that.
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [point] });
+    // Polled while the finger stays down: a slow runner may take a few frames to deliver the press.
+    await expect
+      .poll(() => row.evaluate((el) => getComputedStyle(el).backgroundColor), { timeout: 2000 })
+      .not.toBe("rgba(0, 0, 0, 0)");
+    await cdp.send("Input.dispatchTouchEvent", { type: "touchCancel", touchPoints: [] });
   });
 
   test("a tab switch slides only the pill, in 220 ms on the nav curve", async ({ page }) => {

@@ -10,3 +10,9 @@ configure({ asyncUtilTimeout: 5000 });
 
 // jsdom implements no scrolling; the router's scroll restoration calls this on every navigation.
 window.scrollTo = () => {};
+
+// jsdom has no IntersectionObserver; one that never reports leaves the observed element as it is.
+window.IntersectionObserver = class {
+  observe() {}
+  disconnect() {}
+} as unknown as typeof IntersectionObserver;

@@ -78,6 +78,13 @@ describe("the tab bar", () => {
     expect(nav.queryByRole("link", { name: "Settings" })).toBeNull();
   });
 
+  it("tints a tab while it is pressed", async () => {
+    fakeApi({ me: null });
+    renderRoute("/tools");
+    const nav = await dock();
+    for (const link of nav.getAllByRole("link")) expect(classes(link)).toContain("press-tint");
+  });
+
   it("marks the active tab with aria-current, the pill and a 700 label", async () => {
     fakeApi({ me: null });
     renderRoute("/body");

@@ -21,7 +21,7 @@ export function tabIndexOf(pathname: string): 0 | 1 | 2 | 3 | null {
 }
 
 const tab =
-  "flex min-h-12.5 flex-col items-center justify-center gap-0.5 rounded-card text-tab text-muted-foreground";
+  "press-tint flex min-h-12.5 flex-col items-center justify-center gap-0.5 rounded-card text-tab text-muted-foreground";
 
 // Floating on its own, or with the session bar above it: then one frosted backing runs from the
 // bar's top to the bottom edge, so no row of the page shows between the two.

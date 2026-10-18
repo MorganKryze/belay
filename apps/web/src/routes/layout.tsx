@@ -1,6 +1,6 @@
-import { Outlet, useRouter, useRouterState } from "@tanstack/react-router";
+import { lazyRouteComponent, Outlet, useRouter, useRouterState } from "@tanstack/react-router";
 import { FORGOTTEN_MS, liveSets, openWorkout } from "@belay/shared/training/rules";
-import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { TabBar } from "@/components/tab-bar";
 import { TopBar } from "@/components/top-bar";
@@ -10,9 +10,7 @@ import { usePresence } from "@/lib/presence";
 import { type Account, AccountProvider, useAccount, useHistory } from "@/sync/account";
 
 // The bar names exercises: it loads on demand, so the catalogue stays out of the shell.
-const SessionBar = lazy(() =>
-  import("@/components/session-bar").then((m) => ({ default: m.SessionBar })),
-);
+const SessionBar = lazyRouteComponent(() => import("@/components/session-bar"), "SessionBar");
 
 const TAB_ROOTS = ["/", "/workouts", "/body", "/tools"];
 
@@ -79,6 +77,16 @@ function Shell() {
   const tabRoot = TAB_ROOTS.includes(pathname);
   const topBar = !/^\/workout(?:\/|$)/.test(pathname);
   const session = useOpenSession(account);
+  // The launch screen of index.html sits outside the root and covers the wait for the account,
+  // so the first screen shows the right one; the class fades it out. An answer that never comes
+  // (a hung request, storage that never opens) must not keep it up: after 4 s it goes anyway.
+  const known = account.kind !== "loading";
+  useEffect(() => {
+    const launched = () => document.body.classList.add("launched");
+    if (known) return launched();
+    const hold = setTimeout(launched, 4000);
+    return () => clearTimeout(hold);
+  }, [known]);
   const bar = usePresence(docked ? session : null);
   // A client navigation lands focus on the new page's h1, so screen readers announce it. The
   // first load (no fromLocation) is left alone: the browser starts at the top already. A lazy

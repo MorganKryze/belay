@@ -397,6 +397,8 @@
   --press-scale: 0.97;
   --slide-duration: var(--dur-base);
   --tint-duration: var(--dur-fast);
+  /* A press shows at once and fades over the release, so a page leaving still shows it. */
+  --press-release: var(--dur-release);
   /* Fades that stay fades with reduced motion, only shorter. */
   --fade-duration: var(--dur-fast);
   /* The large title folding into the compact header; driven by scroll, so no duration. */
@@ -404,6 +406,8 @@
   --fold-out: fold-out linear both;
   /* The compact header's opacity when no timeline drives it: hidden until the page scrolls. */
   --fold-rest: 0;
+  /* Without scroll timelines, the compact header fades in once the large title has gone. */
+  --fold-fade: var(--dur-release);
   /* A sheet let go short of closing slides back up from where it was left. */
   --swipe-snap-transition: transform var(--dur-release) var(--ease-out);
   --swipe-snap-from: 1;
@@ -445,24 +449,24 @@
     --animate-page-uncover-out: fade-out var(--dur-reduced) var(--ease-exit) both;
     --animate-page-under-in: fade-in var(--dur-reduced) var(--ease-out) both;
     --animate-page-under-out: fade-out var(--dur-reduced) var(--ease-exit) both;
-    --fold-in: none;
-    --fold-out: none;
-    --fold-rest: 1;
+    --fold-fade: 0s;
     --press-scale: 1;
     --slide-duration: 0s;
     --tint-duration: 0s;
+    --press-release: 0s;
     --fade-duration: var(--dur-reduced);
     --swipe-snap-transition: opacity var(--dur-reduced) var(--ease-out);
     --swipe-snap-from: 0;
   }
 }
 
-/* A pressed control shrinks a little and springs back on the nav curve. */
+/* A pressed control shrinks at once and springs back on the nav curve. */
 @utility press {
-  transition: transform var(--dur-release) var(--ease-nav);
-  &:active {
+  transition: transform var(--press-release) var(--ease-nav);
+  &:active,
+  &[data-pressed] {
     transform: scale(var(--press-scale));
-    transition-duration: var(--dur-press);
+    transition-duration: 0s;
   }
 }
 
@@ -488,20 +492,26 @@
   }
 }
 
-/* A pressed row only tints. */
+/*
+ * A pressed row only tints: at once on the press, fading out on the release. data-pressed stands in
+ * for :active under a finger, which Chromium applies late (lib/press.ts).
+ */
 @utility press-tint {
-  transition: background-color var(--tint-duration) var(--ease-out);
-  &:active {
+  transition: background-color var(--press-release) var(--ease-out);
+  &:active,
+  &[data-pressed] {
     background-color: var(--press-tint);
+    transition-duration: 0s;
   }
 }
 
 /*
  * The large title fades out and the compact header (title, glass, hairline) fades in over the
- * first 44 px of scroll; only opacity moves. Without scroll timelines the compact header shows
- * from the start. Under reduced motion the fold variables are none: the same compact start.
- * A page that does not scroll has no active timeline, so the compact header rests hidden on its
- * own; a page that scrolls less than 44 px folds over the scroll it has, never stopping halfway.
+ * first 44 px of scroll; only opacity moves, following the user's own scroll, so reduced motion
+ * keeps it. A page that does not scroll has no active timeline, so the compact header rests
+ * hidden on its own; a page that scrolls less than 44 px folds over the scroll it has, never
+ * stopping halfway. Without scroll timelines the compact header stays hidden until the large title
+ * has gone under the bar, which PageHeader marks with data-folded, then fades in.
  */
 @keyframes fold-in {
   from {
@@ -532,9 +542,12 @@
   }
 }
 @supports not (animation-timeline: scroll()) {
-  .fold-in,
-  .fold-out {
-    animation: none;
+  .fold-in {
+    opacity: 0;
+    transition: opacity var(--fold-fade) var(--ease-out);
+  }
+  [data-folded] .fold-in {
+    opacity: 1;
   }
 }
 
@@ -624,6 +637,11 @@ html:active-view-transition-type(cover, uncover)::view-transition-new(top-bar) {
   }
   :focus-visible {
     @apply outline-2 outline-offset-2;
+  }
+  /* Elements focused only by script, like the page title after a navigation, keep the focus for
+     screen readers but draw no ring: WebKit counts that focus as visible. */
+  [tabindex="-1"]:focus {
+    @apply outline-none;
   }
   body {
     @apply bg-background text-foreground;

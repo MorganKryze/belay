@@ -1,4 +1,4 @@
-import { isToolId } from "@belay/shared/tools/catalog";
+import { isToolId, type ToolId } from "@belay/shared/tools/catalog";
 import { isSessionCode } from "@belay/shared/training/workout";
 import {
   createRootRoute,
@@ -29,17 +29,22 @@ const homeRoute = createRoute({
   validateSearch: (search: Record<string, unknown>): { signin?: string } =>
     typeof search.signin === "string" ? { signin: search.signin } : {},
 });
+// The tabs' pages, lazy, and fetched ahead once the first screen has settled (main.tsx).
+const workoutsPage = lazyRouteComponent(() => import("./routes/workouts"), "Workouts");
+const bodyPage = lazyRouteComponent(() => import("./routes/body"), "Body");
+const toolsPage = lazyRouteComponent(() => import("./routes/tools"), "Tools");
+export const TAB_PAGES = [workoutsPage, bodyPage, toolsPage];
 // Body is lazy (its chart and history are not needed to weigh in from Home).
 const bodyRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/body",
-  component: lazyRouteComponent(() => import("./routes/body"), "Body"),
+  component: bodyPage,
 });
 // The Sessions tab: its segment travels in the URL, so a link can open one (?tab=program).
 const workoutsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/workouts",
-  component: lazyRouteComponent(() => import("./routes/workouts"), "Workouts"),
+  component: workoutsPage,
   validateSearch: (search: Record<string, unknown>): { tab?: WorkoutTab } =>
     isWorkoutTab(search.tab) ? { tab: search.tab } : {},
 });
@@ -106,7 +111,7 @@ const supplementsRoute = createRoute({
 const toolsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/tools",
-  component: lazyRouteComponent(() => import("./routes/tools"), "Tools"),
+  component: toolsPage,
 });
 // Static segments outrank $toolId, so this is never read as a tool id.
 const equipmentRoute = createRoute({
@@ -114,13 +119,15 @@ const equipmentRoute = createRoute({
   path: "/tools/plates/equipment",
   component: lazyRouteComponent(() => import("./routes/tools/equipment"), "Equipment"),
 });
+const toolChunk = () => import("./routes/tools/tool");
 const toolRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/tools/$toolId",
   beforeLoad: ({ params }) => {
     if (!isToolId(params.toolId)) throw notFound();
   },
-  component: lazyRouteComponent(() => import("./routes/tools/tool"), "Tool"),
+  loader: ({ params }) => toolChunk().then((m) => m.loadToolPage(params.toolId as ToolId)),
+  component: lazyRouteComponent(toolChunk, "Tool"),
 });
 
 export const routeTree = rootRoute.addChildren([
@@ -151,6 +158,9 @@ export const createAppRouter = (history?: RouterHistory) => {
     // A pushed page opens at its top, Back finds the page where it was left, and a tab opened
     // from the bar is a new entry, so it starts at its top too.
     scrollRestoration: true,
+    // A link starts loading its page when a finger lands on it or a pointer hovers it, so the
+    // tap rarely waits on the network.
+    defaultPreload: "intent",
   });
   // The back chevrons read it to go back rather than stack the page they name.
   trackEntries(router.history);
