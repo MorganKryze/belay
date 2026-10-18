@@ -1,5 +1,14 @@
 {
   "settings": {
+    "preferences": "Preferences",
+    "versionNotes": "Belay {{version}} · release notes",
+    "newTab": "(new tab)",
+    "tracking": "Tracking",
+    "supplements": "Supplements",
+    "supplementsCount": "{{count}} on your list",
+    "profileSub": "Profile · height, age, loss range",
+    "signOutTitle": "Sign out?",
+    "signOutNothing": "Nothing is waiting to be sent.",
     "rejected": {
       "title": "Refused entries",
       "note": "The server refused them, so they are no longer waiting. Enter them again if you need to.",
@@ -49,8 +58,7 @@
     "clearField": "Clear {{field}}",
     "fill": "Fill in",
     "fillField": "Fill in {{field}}",
-    "uses": "Used by: {{tools}}",
-    "tracking": "Tracking"
+    "uses": "Used by: {{tools}}"
   },
   "supplementsPage": {
     "title": "My supplements",
@@ -61,6 +69,8 @@
     "save": "Save",
     "add": "Add",
     "name": "Supplement name",
+    "placeholder": "Creatine, magnesium…",
+    "addFirst": "Add a supplement",
     "nameError": "Between 1 and 40 characters, on one line.",
     "duplicate": "This supplement is already on your list.",
     "suggestionsTitle": "Suggestions",

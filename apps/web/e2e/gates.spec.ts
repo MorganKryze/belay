@@ -1,8 +1,8 @@
-import type { Change, SyncRequest } from "@belay/shared/sync/schema";
+import type { Change } from "@belay/shared/sync/schema";
 import { sessionByCode } from "@belay/shared/training/program";
 import { expect, type Page, test } from "@playwright/test";
 import { settled } from "./axe";
-import { fakeServer, WEEKS } from "./fake-server";
+import { fakeServer, refuseChanges, WEEKS } from "./fake-server";
 
 // Wednesday 7 October 2026, 6 p.m. in Paris; the clock stands still.
 const NOW = new Date("2026-10-07T18:00:00+02:00");
@@ -18,6 +18,7 @@ const DESKTOP = { width: 1280, height: 800 };
 // Session A on Monday, ended, as another device sent it: the history and its detail have a row.
 const LAST = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7e01";
 const MONDAY = "2026-10-05T16:00:00.000Z";
+const IRON = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7e09";
 const LAST_A: Change[] = [
   {
     kind: "workout",
@@ -141,8 +142,54 @@ const SCREENS: [string, (page: Page) => Promise<void>][] = [
     async (page) => {
       await fakeServer(page);
       await page.goto("/settings");
-      await page.getByLabel("Language").click();
+      await page.getByRole("combobox", { name: /^Language/ }).click();
       await expect(page.getByRole("listbox")).toBeVisible();
+    },
+  ],
+  [
+    "Settings with the sign-out sheet open",
+    async (page) => {
+      await fakeServer(page);
+      await page.goto("/settings");
+      await page.getByRole("button", { name: "Sign out" }).click();
+      await expect(page.getByRole("dialog", { name: "Sign out?" })).toBeVisible();
+    },
+  ],
+  [
+    "Profile",
+    async (page) => {
+      await fakeServer(page, {
+        changes: [{ kind: "profile", field: "height", value: 178, at: MONDAY }],
+      });
+      await page.goto("/settings/profile");
+      await expect(page.getByRole("button", { name: "Clear Height" })).toBeVisible();
+    },
+  ],
+  [
+    "empty Profile",
+    async (page) => {
+      await fakeServer(page);
+      await page.goto("/settings/profile");
+      await expect(page.getByRole("button", { name: "Fill in Height" })).toBeVisible();
+    },
+  ],
+  [
+    "My supplements",
+    async (page) => {
+      await fakeServer(page, {
+        changes: [{ kind: "supplement", id: IRON, field: "name", value: "Iron", at: MONDAY }],
+      });
+      await page.goto("/settings/supplements");
+      await page.getByRole("button", { name: "More for Iron" }).click();
+      await expect(page.getByRole("button", { name: "Rename" })).toBeVisible();
+    },
+  ],
+  [
+    "empty My supplements",
+    async (page) => {
+      await fakeServer(page);
+      await page.goto("/settings/supplements");
+      await expect(page.getByRole("button", { name: "Add a supplement" })).toBeVisible();
     },
   ],
   [
@@ -194,42 +241,17 @@ async function avatarToSupplements(page: Page, around: "main" | "banner") {
   await page.goto("/");
   await page.getByRole(around).getByRole("link", { name: "Settings" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Settings" })).toBeVisible();
-  await page.getByRole("link", { name: "Profile" }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Profile" })).toBeVisible();
-  await page.getByRole("link", { name: /^My supplements/ }).click();
+  await page.getByRole("link", { name: /^Supplements/ }).click();
   await expect(page.getByRole("heading", { level: 1, name: "My supplements" })).toBeVisible();
-}
-
-// The server refuses whatever the phone sends; with nothing sent, the fake answers as usual.
-async function refuseEntries(page: Page) {
-  await page.route("**/api/sync", (route) => {
-    const request = route.request().postDataJSON() as SyncRequest;
-    if (request.changes.length === 0) return route.fallback();
-    return route.fulfill({
-      json: {
-        cursor: request.cursor,
-        weights: [],
-        measures: [],
-        intake: [],
-        supplements: [],
-        supplementLogs: [],
-        annotations: [],
-        steps: [],
-        activities: [],
-        workouts: [],
-        sets: [],
-        target: null,
-        profile: null,
-        rejected: request.changes.map((_, index) => ({ index, reason: "refused" })),
-        hasMore: false,
-      },
-    });
-  });
+  await page.getByRole("main").getByRole("link", { name: "Settings" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Settings" })).toBeVisible();
+  await page.getByRole("link", { name: /^Ada Profile/ }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Profile" })).toBeVisible();
 }
 
 async function bannerToSettings(page: Page) {
   await fakeServer(page, { rows: WEEKS });
-  await refuseEntries(page);
+  await refuseChanges(page);
   await page.goto("/");
   await page.getByRole("button", { name: /^Weigh-in/ }).click();
   const sheet = page.getByRole("dialog", { name: "Weigh-in" });
@@ -262,7 +284,7 @@ async function eachTab(page: Page, bar: ReturnType<Page["getByRole"]>) {
 
 test.describe("every action stays reachable on a phone", () => {
   test.use({ viewport: PHONE });
-  test("avatar, Settings, Profile, supplements", ({ page }) => avatarToSupplements(page, "main"));
+  test("avatar, Settings, supplements, Profile", ({ page }) => avatarToSupplements(page, "main"));
   test("the sync banner's link to Settings", ({ page }) => bannerToSettings(page));
   test("the session bar resumes the running session", async ({ page }) => {
     await fakeServer(page, { changes: RUNNING_C });
@@ -276,7 +298,7 @@ test.describe("every action stays reachable on a phone", () => {
 
 test.describe("every action stays reachable on a computer", () => {
   test.use({ viewport: DESKTOP });
-  test("avatar, Settings, Profile, supplements", ({ page }) => avatarToSupplements(page, "banner"));
+  test("avatar, Settings, supplements, Profile", ({ page }) => avatarToSupplements(page, "banner"));
   test("the sync banner's link to Settings", ({ page }) => bannerToSettings(page));
   test("Home's Today card resumes the running session", async ({ page }) => {
     await fakeServer(page, { changes: RUNNING_C });

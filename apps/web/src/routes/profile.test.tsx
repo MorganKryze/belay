@@ -1,6 +1,7 @@
 import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { IDBFactory } from "fake-indexeddb";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { groupCard, groupSurface, sectionLabel } from "../components/grouped-list";
 import i18n from "../i18n";
 import { openAccountDb, readOutbox, readProfile, readTarget, recordChanges } from "../sync/db";
 import { writeLastUser } from "../sync/last-user";
@@ -38,7 +39,7 @@ describe("Settings › Profile", () => {
     writeLastUser(ADA);
     fakeApi({ me: ADA });
     renderRoute("/settings");
-    const link = await screen.findByRole("link", { name: "Profile" });
+    const link = await screen.findByRole("link", { name: /^Ada Profile/ });
     expect(link.getAttribute("href")).toBe("/settings/profile");
   });
 
@@ -184,10 +185,26 @@ describe("Settings › Profile, your body", () => {
     expect(screen.getByRole("button", { name: "Renseigner Année de naissance" })).toBeTruthy();
   });
 
-  it("leads to the supplements list, with how many are on it", async () => {
+  it("no longer links to the supplements list", async () => {
     await openProfile();
-    const link = await screen.findByRole("link", { name: "My supplements 0" });
-    expect(link.getAttribute("href")).toBe("/settings/supplements");
+    await screen.findByRole("heading", { level: 2, name: "Your loss range" });
+    expect(screen.queryByRole("link", { name: /supplements/i })).toBeNull();
+  });
+
+  it("draws its sections as grouped cards under sentence-case labels", async () => {
+    await openProfile();
+    await screen.findByRole("heading", { level: 2, name: "Your loss range" });
+    const labels = screen.getAllByRole("heading", { level: 2 });
+    expect(labels).toHaveLength(2);
+    for (const label of labels) {
+      expect(label.className).toContain(sectionLabel);
+      expect(label.className).not.toContain("uppercase");
+      expect(label.nextElementSibling!.className).toContain(groupSurface);
+    }
+    // Rows of facts take hairlines; the range card's lead and steppers do not.
+    const [facts, range] = labels.map((label) => label.nextElementSibling!.className);
+    expect(facts).toContain(groupCard);
+    expect(range).not.toContain("divide-y");
   });
 });
 

@@ -247,6 +247,13 @@ const EMPTY_SCREENS: [string, (page: Page) => Promise<void>][] = [
       await expect(page.getByRole("button", { name: "Fill in Height" })).toBeVisible();
     },
   ],
+  [
+    "empty My supplements",
+    async (page) => {
+      await page.goto("/settings/supplements");
+      await expect(page.getByRole("button", { name: "Add a supplement" })).toBeVisible();
+    },
+  ],
 ];
 
 // A sheet is a fixed dialog: the page can fit while the dialog itself scrolls sideways or sits

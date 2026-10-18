@@ -129,6 +129,45 @@ test("Profile: the range steppers stop at 1 % and keep 0.1 between the bounds", 
   );
 });
 
+test("Profile cards follow the kit", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await fakeServer(page);
+  await page.goto("/settings/profile");
+  const labels = page.locator("main h2");
+  await expect(labels).toHaveCount(2);
+  for (const label of await labels.all()) {
+    await expect(label).toHaveCSS("font-size", "13px");
+    await expect(label).toHaveCSS("text-transform", "none");
+    // The card sits right under its label, with the kit's 16 px corners.
+    await expect(label.locator("xpath=following-sibling::*[1]")).toHaveCSS("border-radius", "16px");
+  }
+  const fills = page.getByRole("button", { name: /^Fill in / });
+  await expect(fills).toHaveCount(3);
+  for (const fill of await fills.all()) {
+    const box = (await fill.boundingBox())!;
+    expect(box.height).toBeGreaterThanOrEqual(44);
+    // As wide as the card's content: the card less its 16 px side padding.
+    const card = (await fill
+      .locator("xpath=ancestor::div[contains(@class,'rounded-group')]")
+      .boundingBox())!;
+    expect(Math.abs(box.width - (card.width - 32))).toBeLessThanOrEqual(1);
+  }
+  const destructive = await page.evaluate(() => {
+    const probe = document.createElement("span");
+    probe.style.color = "var(--destructive)";
+    document.body.append(probe);
+    const red = getComputedStyle(probe).color;
+    probe.remove();
+    return [...document.querySelectorAll<HTMLElement>("main *")]
+      .filter((el) => {
+        const s = getComputedStyle(el);
+        return s.color === red || s.backgroundColor === red || s.borderTopColor === red;
+      })
+      .map((el) => el.tagName);
+  });
+  expect(destructive).toEqual([]);
+});
+
 test.describe("accessibility", () => {
   // No transition in flight when axe measures a colour (Save fades in once the field is filled).
   test.use({ reducedMotion: "reduce" });

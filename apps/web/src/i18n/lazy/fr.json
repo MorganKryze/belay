@@ -1,5 +1,14 @@
 {
   "settings": {
+    "preferences": "Préférences",
+    "versionNotes": "Belay {{version}} · notes de version",
+    "newTab": "(nouvel onglet)",
+    "tracking": "Suivi",
+    "supplements": "Compléments",
+    "supplementsCount": "{{count}} dans ta liste",
+    "profileSub": "Profil · taille, âge, fourchette de perte",
+    "signOutTitle": "Se déconnecter ?",
+    "signOutNothing": "Rien n'attend d'être envoyé.",
     "rejected": {
       "title": "Saisies refusées",
       "note": "Le serveur les a refusées : elles ne sont plus en attente. Saisis-les à nouveau si besoin.",
@@ -49,8 +58,7 @@
     "clearField": "Effacer {{field}}",
     "fill": "Renseigner",
     "fillField": "Renseigner {{field}}",
-    "uses": "Sert à : {{tools}}",
-    "tracking": "Suivi"
+    "uses": "Sert à : {{tools}}"
   },
   "supplementsPage": {
     "title": "Mes compléments",
@@ -61,6 +69,8 @@
     "save": "Enregistrer",
     "add": "Ajouter",
     "name": "Nom du complément",
+    "placeholder": "Créatine, magnésium…",
+    "addFirst": "Ajouter un complément",
     "nameError": "De 1 à 40 caractères, sur une ligne.",
     "duplicate": "Ce complément est déjà dans ta liste.",
     "suggestionsTitle": "Suggestions",

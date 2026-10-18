@@ -1,28 +1,23 @@
 import "@/i18n/lazy";
 import { useMutation } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
-import { ChevronRight } from "lucide-react";
+import { Languages, Pill, SunMoon, UserRound } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 import { toISODate } from "@belay/shared/body/dates";
 import type { Change } from "@belay/shared/sync/schema";
 import { BackLink, PageHeader } from "@/components/page-header";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { initialOf } from "@/components/avatar";
+import { ActionSheet } from "@/components/action-sheet";
+import { GroupedList, RowButton, RowLink, RowText } from "@/components/grouped-list";
+import { MenuRow } from "@/components/menu-row";
 import { LOCALES, setLocale, type Locale } from "@/i18n";
 import { logout } from "@/lib/api";
 import { readTheme, setTheme, type Theme } from "@/lib/theme";
 import { formatWeekday } from "@/lib/format";
 import { useToday } from "@/lib/today";
 import { APP_VERSION, releaseUrl } from "@/lib/version";
+import type { LastUser } from "@/sync/last-user";
 import {
   type OpenAccount,
   useAccount,
@@ -34,7 +29,7 @@ import {
 } from "@/sync/account";
 
 const LANGUAGE_NAMES: Record<Locale, string> = { en: "English", fr: "Français" };
-const sectionTitle = "mx-0.5 text-xs font-semibold tracking-wider text-muted-foreground uppercase";
+const THEMES = ["light", "dark", "system"] as const satisfies readonly Theme[];
 
 export function Settings() {
   const { t, i18n } = useTranslation();
@@ -42,52 +37,101 @@ export function Settings() {
   const account = useAccount();
 
   return (
-    <section className="flex flex-1 flex-col gap-6">
+    <section className="flex flex-1 flex-col gap-4">
       <PageHeader title={t("settings.title")} back={<BackLink to="/">{t("nav.home")}</BackLink>} />
 
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="language">{t("settings.language")}</Label>
-        <Select value={i18n.language} onValueChange={(v) => setLocale(v as Locale)}>
-          <SelectTrigger id="language">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {LOCALES.map((l) => (
-              <SelectItem key={l} value={l} lang={l}>
-                {LANGUAGE_NAMES[l]}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      {"user" in account && <ProfileRow user={account.user} />}
+      {account.kind === "open" && <RejectedEntries account={account} />}
 
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="theme">{t("settings.theme")}</Label>
-        <Select
+      <GroupedList label={t("settings.preferences")}>
+        <MenuRow
+          icon={Languages}
+          label={t("settings.language")}
+          value={i18n.language as Locale}
+          options={LOCALES.map((l) => ({ value: l, label: LANGUAGE_NAMES[l], lang: l }))}
+          onChange={setLocale}
+        />
+        <MenuRow
+          icon={SunMoon}
+          label={t("settings.theme")}
           value={theme}
-          onValueChange={(v) => {
-            setTheme(v as Theme);
-            setThemeState(v as Theme);
+          options={THEMES.map((th) => ({ value: th, label: t(`settings.themes.${th}`) }))}
+          onChange={(th) => {
+            setTheme(th);
+            setThemeState(th);
           }}
-        >
-          <SelectTrigger id="theme">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {(["light", "dark", "system"] as const).map((th) => (
-              <SelectItem key={th} value={th}>
-                {t(`settings.themes.${th}`)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+        />
+      </GroupedList>
 
-      {account.kind === "open" && <OpenAccountSettings account={account} />}
-      {account.kind === "unavailable" && <AccountSettings pending={0} />}
+      {account.kind === "open" && (
+        <>
+          <TrackingGroup account={account} />
+          <OpenAccountSettings account={account} />
+        </>
+      )}
+      {account.kind === "unavailable" && (
+        <>
+          <TrackingGroup account={null} />
+          {/* The local database never opened, so what is still waiting is unknown. */}
+          <SignOutGroup pending={null} />
+        </>
+      )}
 
       <VersionLine />
     </section>
+  );
+}
+
+// The person at the top of the page: a tap opens Profil, which the second line sums up.
+function ProfileRow({ user }: { user: LastUser }) {
+  const { t } = useTranslation();
+  const initial = initialOf(user.displayName);
+  return (
+    <GroupedList>
+      <RowLink
+        to="/settings/profile"
+        prominent
+        leading={
+          <span
+            aria-hidden="true"
+            className="grid size-12 shrink-0 place-items-center rounded-round bg-track text-title-compact text-foreground"
+          >
+            {initial ?? <UserRound className="size-6" />}
+          </span>
+        }
+        label={user.displayName.trim() || t("profile.title")}
+        sub={t("settings.profileSub")}
+        trailing="push"
+      />
+    </GroupedList>
+  );
+}
+
+// Compléments, with how many are on the list once the device has read it.
+function TrackingGroup({ account }: { account: OpenAccount | null }) {
+  const { t } = useTranslation();
+  return (
+    <GroupedList label={t("settings.tracking")}>
+      {account ? <CountedSupplementsRow account={account} /> : <SupplementsRow />}
+    </GroupedList>
+  );
+}
+
+function CountedSupplementsRow({ account }: { account: OpenAccount }) {
+  const list = useSupplements(account).data;
+  return <SupplementsRow count={list?.filter((s) => !s.removed).length} />;
+}
+
+function SupplementsRow({ count }: { count?: number }) {
+  const { t } = useTranslation();
+  return (
+    <RowLink
+      to="/settings/supplements"
+      icon={Pill}
+      label={t("settings.supplements")}
+      value={count === undefined ? undefined : t("settings.supplementsCount", { count })}
+      trailing="push"
+    />
   );
 }
 
@@ -95,7 +139,7 @@ function VersionLine() {
   const { t } = useTranslation();
   const url = releaseUrl(APP_VERSION);
   return (
-    <p className="mt-auto text-center text-xs text-muted-foreground">
+    <p className="text-center text-xs text-muted-foreground">
       {url ? (
         <a
           href={url}
@@ -103,8 +147,9 @@ function VersionLine() {
           rel="noopener noreferrer"
           className="inline-flex min-h-11 items-center px-3 underline underline-offset-2"
         >
-          {t("settings.version", { version: APP_VERSION })}
-          <span className="sr-only">{t("settings.versionLinkHint")}</span>
+          {/* The space sits outside the hidden hint: some name computations trim its edges. */}
+          {t("settings.versionNotes", { version: APP_VERSION })}{" "}
+          <span className="sr-only">{t("settings.newTab")}</span>
         </a>
       ) : (
         t("settings.version", { version: APP_VERSION })
@@ -118,16 +163,11 @@ function OpenAccountSettings({ account }: { account: OpenAccount }) {
   const { data, isError } = usePending(account);
   // The read failed: the count is unknown, so sign-out stays available and always asks first.
   const settings = isError ? (
-    <AccountSettings pending={null} />
+    <SignOutGroup pending={null} />
   ) : data ? (
-    <AccountSettings pending={data.total} />
+    <SignOutGroup pending={data.total} />
   ) : null;
-  return (
-    <>
-      {settings}
-      <RejectedEntries account={account} />
-    </>
-  );
+  return settings;
 }
 
 // What a refused entry was, as the person entered it. A removal or a tick carries no name or day
@@ -202,87 +242,66 @@ function RejectedEntries({ account }: { account: OpenAccount }) {
   const clear = useClearRejected(account);
   if (rejected.length === 0) return null;
   return (
-    <section aria-labelledby="rejected" className="flex flex-col gap-2">
-      <h2 id="rejected" className={sectionTitle}>
-        {t("settings.rejected.title")}
-      </h2>
-      <div className="flex flex-col gap-3 rounded-card border border-border bg-card p-4">
-        <p className="text-sm text-muted-foreground">{t("settings.rejected.note")}</p>
-        <ul className="flex flex-col">
-          {rejected.map((r) => (
-            <li key={r.id} className="border-t border-border py-2 first:border-t-0">
-              <p className="font-medium">{describe(r.change, t, i18n.language, today, known)}</p>
-              <p className="text-sm text-muted-foreground">
-                {t(`settings.rejected.reasons.${r.reason}`)}
-              </p>
-            </li>
-          ))}
-        </ul>
-        <Button variant="secondary" className="self-start" onClick={() => void clear()}>
-          {t("settings.rejected.clear")}
-        </Button>
-      </div>
-    </section>
+    <GroupedList label={t("settings.rejected.title")} footer={t("settings.rejected.note")}>
+      {rejected.map((r) => (
+        <RowText
+          key={r.id}
+          label={describe(r.change, t, i18n.language, today, known)}
+          detail={t(`settings.rejected.reasons.${r.reason}`)}
+        />
+      ))}
+      <RowButton label={t("settings.rejected.clear")} onClick={() => void clear()} />
+    </GroupedList>
   );
 }
 
-// Signing out keeps the entries on the device (D3); with some still waiting, say so first.
-function AccountSettings({ pending }: { pending: number | null }) {
+// Signing out keeps the entries on the device (D3), and always asks first, saying what is still
+// waiting. The sheet closes as soon as its action is chosen; the row stays disabled while the
+// request runs, so a second tap cannot send it twice, and takes the focus back if it fails.
+function SignOutGroup({ pending }: { pending: number | null }) {
   const { t } = useTranslation();
   const [confirming, setConfirming] = useState(false);
   // "always": offline, the request fails at once and we can say so, instead of pausing forever.
   const signOut = useMutation({ mutationFn: logout, networkMode: "always" });
   const busy = signOut.isPending || signOut.isSuccess;
-  // The confirmation replaces the button: focus follows it in, and comes back on Cancel.
-  const signOutButton = useRef<HTMLButtonElement>(null);
-  const wasConfirming = useRef(false);
+  const rowRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
-    if (!confirming && wasConfirming.current) signOutButton.current?.focus();
-    wasConfirming.current = confirming;
-  }, [confirming]);
+    if (signOut.isError) rowRef.current?.focus();
+  }, [signOut.isError]);
+  // The extra room above sets the destructive group apart, and lets the open Thème menu end in
+  // the row's top padding instead of across its label.
   return (
-    <div className="flex flex-col gap-2">
-      <h2 className={sectionTitle}>{t("settings.account")}</h2>
-      <Link
-        to="/settings/profile"
-        className="press-tint flex min-h-12 items-center justify-between rounded-field border border-border bg-card px-4 font-medium"
-      >
-        {t("profile.title")}
-        <ChevronRight aria-hidden className="size-5 text-muted-foreground" />
-      </Link>
-      {confirming ? (
-        <div role="alert" className="flex flex-col gap-3 rounded-field bg-primary-soft p-3 text-sm">
-          <p>
-            {pending === null
-              ? t("settings.signOutUnknown")
-              : t("settings.signOutPending", { count: pending })}
-          </p>
-          <div className="flex flex-wrap gap-2">
-            <Button
-              ref={(el) => el?.focus()}
-              variant="secondary"
-              disabled={busy}
-              onClick={() => signOut.mutate()}
-            >
-              {t("settings.signOutAnyway")}
-            </Button>
-            <Button variant="text" onClick={() => setConfirming(false)}>
-              {t("settings.cancel")}
-            </Button>
-          </div>
-        </div>
-      ) : (
-        <Button
-          ref={signOutButton}
-          variant="secondary"
-          className="self-start"
+    <div className="mt-6 flex flex-col gap-2">
+      <GroupedList>
+        <RowButton
+          ref={rowRef}
+          destructive
+          label={t("settings.signOut")}
           disabled={busy}
-          onClick={() => (pending !== 0 ? setConfirming(true) : signOut.mutate())}
-        >
-          {t("settings.signOut")}
-        </Button>
+          onClick={() => setConfirming(true)}
+        />
+      </GroupedList>
+      {signOut.isError && (
+        <p role="alert" className="px-4 text-body">
+          {t("settings.signOutFailed")}
+        </p>
       )}
-      {signOut.isError && <p role="alert">{t("settings.signOutFailed")}</p>}
+      {confirming && (
+        <ActionSheet
+          title={t("settings.signOutTitle")}
+          body={
+            pending === null
+              ? t("settings.signOutUnknown")
+              : pending > 0
+                ? t("settings.signOutPending", { count: pending })
+                : t("settings.signOutNothing")
+          }
+          confirm={pending === 0 ? t("settings.signOut") : t("settings.signOutAnyway")}
+          busy={busy}
+          onConfirm={() => signOut.mutate()}
+          onClose={() => setConfirming(false)}
+        />
+      )}
     </div>
   );
 }
