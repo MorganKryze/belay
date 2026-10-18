@@ -61,7 +61,7 @@ async function choose(row: RegExp, option: string) {
 describe("Settings preferences", () => {
   afterEach(() => document.documentElement.classList.remove("dark"));
 
-  it("groups Langue, Thème and Pendant une pause under Préférences, each showing its value", async () => {
+  it("groups Langue, Thème and En pause under Préférences, each showing its value", async () => {
     fakeApi({ me: ADA });
     renderRoute("/settings");
     const list = await screen.findByRole("region", { name: "Preferences" });
@@ -69,20 +69,18 @@ describe("Settings preferences", () => {
     expect(rows).toHaveLength(3);
     expect(within(list).getByRole("combobox", { name: "Language English" })).toBe(rows[0]);
     expect(within(list).getByRole("combobox", { name: "Theme System" })).toBe(rows[1]);
-    expect(within(list).getByRole("combobox", { name: "During a pause Everything stops" })).toBe(
-      rows[2],
-    );
+    expect(within(list).getByRole("combobox", { name: "Paused Everything stops" })).toBe(rows[2]);
   });
 
   it("keeps on this device whether a pause also stops the rest", async () => {
     fakeApi({ me: ADA });
     renderRoute("/settings");
-    await choose(/^During a pause/, "The rest keeps running");
+    await choose(/^Paused/, "The rest keeps running");
     expect(localStorage.getItem("belay.pauseStops")).toBe("session");
     expect(
-      await screen.findByRole("combobox", { name: "During a pause The rest keeps running" }),
+      await screen.findByRole("combobox", { name: "Paused The rest keeps running" }),
     ).toBeTruthy();
-    await choose(/^During a pause/, "Everything stops");
+    await choose(/^Paused/, "Everything stops");
     expect(localStorage.getItem("belay.pauseStops")).toBe("all");
   });
 
@@ -90,11 +88,11 @@ describe("Settings preferences", () => {
     await i18n.changeLanguage("fr");
     fakeApi({ me: ADA });
     renderRoute("/settings");
-    await choose(/^Pendant une pause/, "Le repos continue");
+    await choose(/^En pause/, "Le repos continue");
     expect(
-      await screen.findByRole("combobox", { name: "Pendant une pause Le repos continue" }),
+      await screen.findByRole("combobox", { name: "En pause Le repos continue" }),
     ).toBeTruthy();
-    await choose(/^Pendant une pause/, "Tout s'arrête");
+    await choose(/^En pause/, "Tout s'arrête");
     expect(localStorage.getItem("belay.pauseStops")).toBe("all");
   });
 

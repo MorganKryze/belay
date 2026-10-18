@@ -1,7 +1,7 @@
 {
   "settings": {
     "preferences": "Preferences",
-    "pauseStops": "During a pause",
+    "pauseStops": "Paused",
     "pauseStopsOptions": {
       "all": "Everything stops",
       "session": "The rest keeps running"
