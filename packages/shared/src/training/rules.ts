@@ -79,6 +79,26 @@ export function lastTime(
   return groups;
 }
 
+// The best of some work sets, as the preview and the summary name it: the heaviest load, then the
+// most repetitions; timed sets, the longest hold, then the heaviest. null when there is none.
+export function topSet(sets: readonly WorkoutSet[]): Load | null {
+  const rank = (s: WorkoutSet): [number, number] =>
+    s.seconds == null ? [s.weightKg, s.reps ?? 0] : [s.seconds, s.weightKg];
+  const top = sets
+    .filter((s) => !s.warmup)
+    .reduce<WorkoutSet | null>((best, s) => {
+      if (best === null) return s;
+      const [first, then] = rank(s);
+      const [bestFirst, bestThen] = rank(best);
+      return first > bestFirst || (first === bestFirst && then > bestThen) ? s : best;
+    }, null);
+  return top && loadOf(top);
+}
+
+// The top set of the last finished session that did this exercise in this measure.
+export const lastTopSet = (history: History, exerciseId: string, measure: Measure): Load | null =>
+  topSet(lastWorkSets(history, exerciseId, measure));
+
 // The warm-up sets of a slot (D7). A barbell is loaded as the Plates tool says (the person's bar
 // and plates); anything else takes the same fractions and reps, rounded to the exercise's step,
 // never 0 or less, never the working load or more. No working load yet, or one past what the

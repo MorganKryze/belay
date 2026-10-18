@@ -20,6 +20,8 @@ import {
   restEndsAt,
   sessionProgress,
   summary,
+  topSet,
+  lastTopSet,
   turnKey,
   warmups,
   workOrder,
@@ -195,6 +197,50 @@ describe("prefill and lastTime", () => {
         sets: [set(w, 0, 80, 8), set(kept, 0, 80, 8, { removed: true }), set(kept, 1, 82.5, 8)],
       }).map((s) => s.weightKg),
     ).toEqual([82.5]);
+  });
+});
+
+describe("topSet", () => {
+  const w = workout();
+  it("the heaviest load wins, then the most reps", () => {
+    expect(topSet([set(w, 0, 80, 7), set(w, 1, 80, 8), set(w, 2, 77.5, 10)])).toEqual({
+      weightKg: 80,
+      reps: 8,
+      seconds: null,
+    });
+  });
+
+  it("a timed set: the longest hold, then the heaviest", () => {
+    const hold = (round: number, weightKg: number, seconds: number) =>
+      set(w, round, weightKg, 0, { reps: null, seconds });
+    expect(topSet([hold(0, 10, 40), hold(1, 0, 45), hold(2, 5, 45)])).toEqual({
+      weightKg: 5,
+      reps: null,
+      seconds: 45,
+    });
+  });
+
+  it("none gives null, and a warm-up is never the top set", () => {
+    expect(topSet([])).toBeNull();
+    expect(topSet([set(w, 0, 100, 5, { warmup: true, position: 0 })])).toBeNull();
+  });
+
+  it("lastTopSet reads the last finished session that did the exercise", () => {
+    const older = workout({ startedAt: "2026-09-30T17:00:00.000Z" });
+    const newer = workout({ startedAt: "2026-10-05T17:00:00.000Z" });
+    const open = workout({ startedAt: "2026-10-07T17:00:00.000Z", endedAt: null });
+    const history: History = {
+      workouts: [older, newer, open],
+      sets: [
+        set(older, 0, 90, 6),
+        set(newer, 0, 80, 7),
+        set(newer, 1, 80, 8),
+        set(open, 0, 100, 5),
+      ],
+    };
+    expect(lastTopSet(history, BENCH, "reps")).toEqual({ weightKg: 80, reps: 8, seconds: null });
+    expect(lastTopSet(history, BENCH, "seconds")).toBeNull();
+    expect(lastTopSet(history, "ds:0405", "reps")).toBeNull();
   });
 });
 
