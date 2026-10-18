@@ -86,7 +86,7 @@
     "gain": "gain",
     "perWeek": "{{value}}%/wk",
     "kg": "{{value}} kg",
-    "link": "Body"
+    "lastWeek": "last week"
   },
   "weighIn": {
     "weight": "Weight",
