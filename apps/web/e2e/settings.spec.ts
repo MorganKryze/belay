@@ -258,6 +258,21 @@ test.describe("Compléments", () => {
         /^(left|start)$/,
       );
     });
+
+    test("the add field, its label and the suggestions share one left edge", async ({ page }) => {
+      await openSupplements(page);
+      await settled(page);
+      const edges = await Promise.all(
+        [
+          page.getByText("Supplement name", { exact: true }),
+          page.getByRole("textbox", { name: "Supplement name" }),
+          page.getByRole("heading", { name: "Suggestions" }),
+          page.getByRole("list").last().getByRole("button").first(),
+        ].map(async (el) => (await el.boundingBox())!.x),
+      );
+      for (const x of edges) expect(Math.abs(x - edges[1]!)).toBeLessThanOrEqual(1);
+      await expect(page.getByRole("heading", { name: "Add" })).toHaveCount(0);
+    });
   });
 
   test.describe("at 360 px", () => {

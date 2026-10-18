@@ -116,6 +116,8 @@ describe("Settings › My supplements", () => {
     const label = screen.getByText("Supplement name", { selector: "label" });
     expect(label.className).not.toContain("sr-only");
     expect(name.getAttribute("placeholder")).toBe("Creatine, magnesium…");
+    // One label over the field: no « Add » heading above it saying the same thing again.
+    expect(screen.queryByRole("heading", { name: "Add" })).toBeNull();
   });
 
   it("says the empty state and the placeholder in French", async () => {

@@ -12,7 +12,7 @@ import { type FormEvent, useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { BackLink, PageHeader } from "@/components/page-header";
 import { FieldError } from "@/components/field-error";
-import { EmptyState, groupCard, sectionLabel } from "@/components/grouped-list";
+import { EmptyState, groupCard } from "@/components/grouped-list";
 import { Button } from "@/components/ui/button";
 import { Toast, useWriter } from "@/components/weigh-in";
 import { type OpenAccount, useAccount, useSupplements } from "@/sync/account";
@@ -124,10 +124,8 @@ function SupplementList({ account }: { account: OpenAccount }) {
           {error}
         </p>
       )}
-      <section aria-labelledby="add-supplement" className="flex flex-col gap-2">
-        <h2 id="add-supplement" className={sectionLabel}>
-          {t("supplementsPage.add")}
-        </h2>
+      {/* The field's own label heads this part: a heading over it would only say it twice. */}
+      <div className="flex flex-col gap-2">
         <form
           className="flex flex-col gap-2"
           onSubmit={(e: FormEvent) => {
@@ -161,9 +159,9 @@ function SupplementList({ account }: { account: OpenAccount }) {
         </form>
         {suggestions.length > 0 && (
           <>
-            <h3 className="mt-2 text-[13px] text-muted-foreground">
+            <h2 className="mt-2 text-[13px] text-muted-foreground">
               {t("supplementsPage.suggestionsTitle")}
-            </h3>
+            </h2>
             <ul className="flex flex-wrap gap-2">
               {suggestions.map((key) => (
                 <li key={key}>
@@ -184,7 +182,7 @@ function SupplementList({ account }: { account: OpenAccount }) {
         {active.length > 0 && (
           <p className="mt-2 text-[13px] text-muted-foreground">{t("supplementsPage.note")}</p>
         )}
-      </section>
+      </div>
       <Toast toast={toast} onDone={dismiss} />
     </>
   );
