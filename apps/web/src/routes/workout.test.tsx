@@ -397,6 +397,52 @@ describe("the session screen (§4.2, §4.3)", () => {
   });
 });
 
+describe("lowering the session", () => {
+  it("the header holds Minimize, the time and Finish, each 44 px", async () => {
+    await startSession("A");
+    const minimize = screen.getByRole("button", { name: "Minimize the session" });
+    const finish = screen.getByRole("button", { name: "Finish" });
+    const time = screen.getByText("Elapsed time").parentElement!;
+    const header = minimize.parentElement!;
+    // In order, in one sticky row above the title; the e2e measures the boxes.
+    expect([...header.children]).toEqual(expect.arrayContaining([minimize, time, finish]));
+    expect([...header.children].indexOf(minimize)).toBeLessThan([...header.children].indexOf(time));
+    expect([...header.children].indexOf(time)).toBeLessThan([...header.children].indexOf(finish));
+    expect(header.className.split(/\s+/)).toEqual(
+      expect.arrayContaining(["sticky", "h-12.75", "border-b", "bg-background"]),
+    );
+    expect(minimize.className.split(/\s+/)).toContain("size-11");
+    expect(time.className.split(/\s+/)).toContain("min-h-11");
+    expect(finish.className.split(/\s+/)).toContain("h-11");
+    const title = screen.getByRole("heading", { name: "Session A · Push", level: 1 });
+    expect(header.compareDocumentPosition(title) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("Minimize goes back to the page the session was raised over", async () => {
+    const router = renderRoute("/tools/plates");
+    await screen.findByRole("heading", { name: "Plates", level: 1 });
+    await act(() => router.navigate({ to: "/workout", search: { start: "A" } }));
+    await screen.findByRole("heading", { name: "Session A · Push", level: 1 });
+    fireEvent.click(screen.getByRole("button", { name: "Minimize the session" }));
+    await screen.findByRole("heading", { name: "Plates", level: 1 });
+    expect(router.state.location.pathname).toBe("/tools/plates");
+    expect(router.history.location.state.__TSR_index).toBe(0);
+    // Lowered, not finished: the session is still the open one.
+    expect((await stored()).active).not.toBeNull();
+  });
+
+  it("with no page before, Minimize lands on Accueil, replacing the session's entry", async () => {
+    const router = renderRoute("/workout?start=A");
+    await screen.findByRole("heading", { name: "Session A · Push", level: 1 });
+    fireEvent.click(screen.getByRole("button", { name: "Minimize the session" }));
+    await screen.findByRole("heading", { name: "Hello, Ada", level: 1 });
+    expect(router.state.location.pathname).toBe("/");
+    expect(router.history.location.state.__TSR_index).toBe(0);
+    expect(router.history.length).toBe(1);
+    expect((await stored()).active).not.toBeNull();
+  });
+});
+
 describe("fix round 1", () => {
   it("offers the RIR under the next set after the last one done, and logs none when it was not shown", async () => {
     await seed(ADA.id, LAST_A);

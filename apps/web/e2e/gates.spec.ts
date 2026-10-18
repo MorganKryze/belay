@@ -98,6 +98,15 @@ async function expectFits(page: Page) {
 
 const heading = (page: Page) => expect(page.locator("main h1").first()).toBeVisible();
 
+// Session C taken up on this device, then lowered: Accueil with the session bar on a phone.
+async function lowerSession(page: Page) {
+  await fakeServer(page, { changes: RUNNING_C });
+  await page.goto("/workout?start=C");
+  await expect(page.locator(".launch")).toBeHidden();
+  await page.getByRole("button", { name: "Minimize the session" }).click();
+  await expect(page.getByRole("link", { name: /^Session C · .*in progress/ })).toBeVisible();
+}
+
 // Each screen, opened as a person reaches it, with its dialog up when it has one.
 const SCREENS: [string, (page: Page) => Promise<void>][] = [
   [
@@ -142,6 +151,14 @@ const SCREENS: [string, (page: Page) => Promise<void>][] = [
     async (page) => {
       await fakeServer(page);
       await page.goto("/tools");
+      await heading(page);
+    },
+  ],
+  [
+    "the lowered session on Outils",
+    async (page) => {
+      await lowerSession(page);
+      await page.locator("a[href='/tools']:visible").click();
       await heading(page);
     },
   ],
@@ -297,6 +314,19 @@ test.describe("every action stays reachable on a phone", () => {
   test("the session bar resumes the running session", async ({ page }) => {
     await fakeServer(page, { changes: RUNNING_C });
     await page.goto("/tools");
+    await page.getByRole("link", { name: /In progress · set \d+ of \d+ · Session C/ }).click();
+    await expect(page.getByRole("heading", { level: 1, name: /^Session C · / })).toBeVisible();
+  });
+  test("a tool stays reachable while a session is lowered, and the bar raises it", async ({
+    page,
+  }) => {
+    await lowerSession(page);
+    await page
+      .getByRole("navigation", { name: "Main" })
+      .getByRole("link", { name: "Tools" })
+      .click();
+    await page.getByRole("link", { name: /^Plates/ }).click();
+    await expect(page.getByRole("heading", { level: 1, name: "Plates" })).toBeVisible();
     await page.getByRole("link", { name: /In progress · set \d+ of \d+ · Session C/ }).click();
     await expect(page.getByRole("heading", { level: 1, name: /^Session C · / })).toBeVisible();
   });

@@ -22,14 +22,16 @@ import {
   type Workout,
   type WorkoutSet,
 } from "@belay/shared/training/workout";
-import { Navigate, useNavigate, useSearch } from "@tanstack/react-router";
-import { Timer } from "lucide-react";
+import { Navigate, useNavigate, useRouter, useSearch } from "@tanstack/react-router";
+import { ChevronDown, Timer } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Sheet } from "@/components/sheet";
 import { Button } from "@/components/ui/button";
+import { previousHref } from "@/lib/back";
 import { sessionTitle } from "@/lib/format";
 import { readToolState, resolveEquipment } from "@/lib/tool-storage";
+import { levelOf } from "@/lib/transitions";
 import { type ActiveSession, readActiveSession, readActivities } from "@/sync/db";
 import {
   type OpenAccount,
@@ -136,6 +138,8 @@ function Screen({
   onFinish: (empty: boolean) => void;
 }) {
   const { t } = useTranslation();
+  const router = useRouter();
+  const navigate = useNavigate();
   const record = useRecord(account);
   const recordSet = useRecordSet(account);
   const now = useNow();
@@ -292,6 +296,16 @@ function Screen({
     );
   };
 
+  // Lowering keeps the session open and shows the page it was raised over, the same entry as
+  // before; with none seen in this visit (a reload, a link) or a cover under it, Accueil takes
+  // the session's place.
+  const lower = () => {
+    const before = previousHref(router.history);
+    if (before !== undefined && levelOf(new URL(before, location.origin).pathname) !== "cover")
+      router.history.back();
+    else void navigate({ to: "/", replace: true });
+  };
+
   // The rest bar names what comes next: the next set of this exercise, or the next exercise.
   const restLabel =
     next === null
@@ -318,12 +332,23 @@ function Screen({
 
   return (
     <section className="flex flex-col gap-3 pb-28">
-      <div className="flex items-center justify-between">
-        <span className="flex items-center gap-1.5 font-bold tabular-nums">
-          <Timer aria-hidden className="size-4" />
+      {/* Pinned to the top while the cards scroll, edge to edge over the column's padding and
+          under the notch, so the way out and the time stay in reach. */}
+      <div className="sticky top-0 z-10 -mt-[max(1rem,env(safe-area-inset-top))] -mr-[max(1rem,env(safe-area-inset-right))] -ml-[max(1rem,env(safe-area-inset-left))] box-content flex h-12.75 items-center gap-1 border-b border-border bg-background pt-[env(safe-area-inset-top)] pr-[max(0.625rem,env(safe-area-inset-right))] pl-[max(0.375rem,env(safe-area-inset-left))]">
+        <button
+          type="button"
+          aria-label={t("session.lower")}
+          onClick={lower}
+          className="press grid size-11 place-items-center rounded-control"
+        >
+          <ChevronDown aria-hidden className="size-6" />
+        </button>
+        <span className="ml-0.5 flex min-h-11 items-center gap-1.5 font-bold tabular-nums">
+          <Timer aria-hidden className="size-4.5 text-muted-foreground" />
           <span className="sr-only">{t("session.elapsed")}</span>
           {formatClock(now - Date.parse(workout.startedAt), Math.floor)}
         </span>
+        <span className="flex-1" />
         <Button
           variant="secondary"
           onClick={() => (left > 0 ? setFinishing(true) : onFinish(sets.length === 0))}

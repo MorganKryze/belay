@@ -308,6 +308,7 @@
   "session": {
     "elapsed": "Elapsed time",
     "finish": "Finish",
+    "lower": "Minimize the session",
     "lastTime": "Last time: {{value}}",
     "set": "Set",
     "reps": "Reps",
@@ -449,6 +450,7 @@
     "removeWarmup": "Delete warm-up {{n}}"
   },
   "sessionBar": {
+    "rest": "Rest",
     "running": "In progress",
     "setOf": "set {{n}} of {{total}}",
     "setShort": "set {{n}}/{{total}}",

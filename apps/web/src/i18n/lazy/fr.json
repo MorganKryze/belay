@@ -308,6 +308,7 @@
   "session": {
     "elapsed": "Temps écoulé",
     "finish": "Terminer",
+    "lower": "Réduire la séance",
     "lastTime": "La dernière fois : {{value}}",
     "set": "Série",
     "reps": "Reps",
@@ -449,6 +450,7 @@
     "removeWarmup": "Supprimer la montée {{n}}"
   },
   "sessionBar": {
+    "rest": "Repos",
     "running": "En cours",
     "setOf": "série {{n}} sur {{total}}",
     "setShort": "série {{n}}/{{total}}",

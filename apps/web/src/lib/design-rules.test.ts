@@ -133,7 +133,7 @@ describe("design rules", () => {
     ]);
   });
 
-  it("reduced motion keeps every enter and leave a fade of 120 ms at most, except the listed slides and veils", () => {
+  it("reduced motion keeps every enter and leave a fade of 120 ms at most, except the listed slides, veils and the session bar", () => {
     // Sheets still slide and their veil fades a little longer, the way iOS does it.
     const ALLOWED: Record<string, string> = {
       "--animate-sheet-in": "sheet-in var(--dur-slide-reduced) var(--ease-out) both",
@@ -150,6 +150,8 @@ describe("design rules", () => {
       "--animate-page-uncover-out": "sheet-out var(--dur-slide-reduced) var(--ease-out) both",
       "--animate-page-under-in": "none",
       "--animate-page-under-out": "none",
+      // The session bar fades in at the veil's pace as the session lowers onto the page.
+      "--animate-session-bar-in": "fade-in var(--dur-veil-reduced) var(--ease-out) both",
     };
     const theme = declarations(block(CSS, "@theme static {"));
     const media = block(CSS, "@media (prefers-reduced-motion: reduce)");
