@@ -6,7 +6,8 @@ import type { NavKind } from "./transitions";
 //
 // A row link released on itself keeps its mark until its navigation resolves, so the page leaving
 // still shows which row opened the next one; 600 ms caps it if no navigation follows. Its href is
-// kept so that, on the way back, the same row can clear its tint where the person left it.
+// kept so that, on the way back, the same row can clear its tint where the person left it. A tab
+// is not held: its icon springs back as the finger lifts, whatever the page takes to show.
 let pressed: Element | null = null;
 let hold: ReturnType<typeof setTimeout> | undefined;
 let leftFrom: string | null = null;
@@ -25,7 +26,10 @@ export function markPresses(): void {
     pressed?.setAttribute("data-pressed", "");
   });
   addEventListener("pointerup", (event) => {
-    if (pressed?.matches("a.press-tint[href]") && pressed.contains(event.target as Node)) {
+    if (
+      pressed?.matches("a.press-tint[href]:not(.press-icon)") &&
+      pressed.contains(event.target as Node)
+    ) {
       leftFrom = pressed.getAttribute("href");
       hold = setTimeout(release, 600);
     } else release();

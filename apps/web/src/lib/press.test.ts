@@ -41,8 +41,9 @@ describe("markPresses", () => {
     expect(button.hasAttribute("data-pressed")).toBe(true);
   });
 
+  // A tab tints like a row but is not held: its icon springs back as the finger lifts.
   it("a pressed tab is marked, and released on lift", () => {
-    document.body.innerHTML = `<a class="press-icon" href="/tools"><svg></svg><span>Tools</span></a>`;
+    document.body.innerHTML = `<a class="press-tint press-icon" href="/tools"><svg></svg><span>Tools</span></a>`;
     const tab = document.querySelector("a")!;
     fireEvent.pointerDown(tab.querySelector("span")!);
     expect(tab.hasAttribute("data-pressed")).toBe(true);
