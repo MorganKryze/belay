@@ -1043,6 +1043,18 @@ describe("finish", () => {
     expect((await stored()).active).not.toBeNull();
   });
 
+  it("an end saved but a page change that fails says nothing failed and leaves the session", async () => {
+    const router = await openWith([4, 3, 3, 1]);
+    vi.spyOn(router, "navigate").mockRejectedValueOnce(new Error("navigation aborted"));
+    const sheet = await finish();
+    fireEvent.click(within(sheet).getByRole("button", { name: "Finish and save" }));
+    // The screen follows what is stored: a session over leaves for Program.
+    await waitFor(() => expect(router.state.location.pathname).toBe("/workouts"));
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect((await open()).endedAt).toEqual(expect.any(String));
+    expect((await stored()).active).toBeNull();
+  });
+
   it("finish while paused writes the moved start and the end together", async () => {
     const { requests } = fakeApi({ me: ADA });
     await openWith([4]);

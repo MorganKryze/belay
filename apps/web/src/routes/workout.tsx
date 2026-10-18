@@ -97,15 +97,18 @@ function Session({ account }: { account: OpenAccount }) {
     setLeaving(view);
     try {
       await record(changes, { active: null });
-      await navigate(
-        kept
-          ? { to: "/workout/summary/$workoutId", params: { workoutId: workout.id }, replace: true }
-          : { to: "/", replace: true },
-      );
     } catch {
       setLeaving(undefined);
       setFailed(t("weighIn.saveFailed"));
+      return;
     }
+    // Saved: a page change that fails lets go of the session as it was, and the screen follows
+    // what is stored, a session over, out to Program.
+    await navigate(
+      kept
+        ? { to: "/workout/summary/$workoutId", params: { workoutId: workout.id }, replace: true }
+        : { to: "/", replace: true },
+    ).catch(() => setLeaving(undefined));
   };
 
   const shown = leaving ?? view;
