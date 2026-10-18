@@ -28,7 +28,8 @@ const scrollY = (page: Page) => page.evaluate(() => window.scrollY);
 const entry = (page: Page) =>
   page.evaluate(() => (history.state as { __TSR_index: number }).__TSR_index);
 const card = (page: Page, name: string) => page.getByRole("region", { name });
-const see = (page: Page, name: string) => card(page, name).getByRole("button", { name: "Voir" });
+const see = (page: Page, name: string) =>
+  card(page, name).getByRole("button", { name: /^(Voir|Masquer)$/ });
 const back = (page: Page) =>
   page.locator("main").getByRole("link", { name: /^(Programme|Exercices)$/ });
 

@@ -114,12 +114,13 @@ describe("the program as cards (spec D13, §4.5)", () => {
   it("Voir puts the session in the address and a reload keeps it open", async () => {
     const router = renderRoute("/workouts?tab=program&see=B");
     const b = await screen.findByRole("region", { name: "Session B · Legs" });
-    const see = within(b).getByRole("button", { name: "See" });
+    const see = within(b).getByRole("button", { name: "Hide" });
     expect(see.getAttribute("aria-expanded")).toBe("true");
     expect(within(b).getByRole("list")).toBeTruthy();
     fireEvent.click(see);
     await waitFor(() => expect(router.state.location.search).toEqual({ tab: "program" }));
     expect(see.getAttribute("aria-expanded")).toBe("false");
+    expect(see.textContent).toBe("See");
     expect(within(b).queryByRole("list")).toBeNull();
     const a = screen.getByRole("region", { name: "Session A · Push" });
     expect(within(a).queryByRole("button", { name: "See" })).toBeNull();
@@ -146,7 +147,10 @@ describe("the program as cards (spec D13, §4.5)", () => {
     expect(b.textContent).toContain("La prochaine · 7 exercices · ~60 min");
     const a = screen.getByRole("region", { name: "Séance A · Push" });
     expect(a.textContent).toContain("Il y a 4 jours");
-    expect(within(a).getByRole("button", { name: "Voir" })).toBeTruthy();
+    fireEvent.click(within(a).getByRole("button", { name: "Voir" }));
+    expect(
+      (await within(a).findByRole("button", { name: "Masquer" })).getAttribute("aria-expanded"),
+    ).toBe("true");
     expect(within(a).getByRole("link", { name: "Commencer" })).toBeTruthy();
   });
 });

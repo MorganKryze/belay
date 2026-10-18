@@ -199,7 +199,7 @@ function SessionCard({
             className="flex-1"
             onClick={() => onSee(!seeing)}
           >
-            {t("workouts.program.see")}
+            {t(seeing ? "workouts.program.hide" : "workouts.program.see")}
           </Button>
         )}
         {startButton}
