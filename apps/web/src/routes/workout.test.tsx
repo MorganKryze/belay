@@ -134,7 +134,7 @@ describe("the session screen (§4.2, §4.3)", () => {
     await seed(ADA.id, LAST_A);
     await startSession("A");
     const bench = card("Barbell bench press");
-    expect(within(bench).getByText("Last time: 80 kg × 8, 8, 7, 6")).toBeTruthy();
+    expect(within(bench).getByText(/ · last time 80 kg × 8$/)).toBeTruthy();
     // Warm-ups from the working load, on the Plates tool's default gym bar and plates.
     expect(field(bench, "Load of warm-up 1, kg").value).toBe("40");
     expect(field(bench, "Reps of warm-up 1").value).toBe("5");
@@ -389,7 +389,7 @@ describe("the session screen (§4.2, §4.3)", () => {
     await seed(ADA.id, LAST_A);
     renderRoute("/workout?start=A");
     const bench = await waitFor(() => card("Barbell bench press"));
-    expect(within(bench).getByText("La dernière fois : 80 kg × 8, 8, 7, 6")).toBeTruthy();
+    expect(within(bench).getByText(/ · la dernière fois 80 kg × 8$/)).toBeTruthy();
     expect(within(bench).getAllByText("Montée")).toHaveLength(2);
     expect(field(bench, "Charge de la série 1, kg").value).toBe("80");
     fireEvent.click(within(bench).getByRole("button", { name: "Valider la série 1" }));

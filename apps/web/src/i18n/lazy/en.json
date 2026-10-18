@@ -314,6 +314,8 @@
     "upcoming": "{{target}} · coming up",
     "doneCount_one": "{{count}} of {{total}} sets",
     "doneCount_other": "{{count}} of {{total}} sets",
+    "doneAll_one": "{{count}} set logged",
+    "doneAll_other": "{{count}} sets logged",
     "group": "{{kind}} · round {{round}} of {{rounds}}",
     "superset": "Superset",
     "triset": "Tri-set",

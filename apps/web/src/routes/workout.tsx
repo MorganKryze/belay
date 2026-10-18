@@ -306,6 +306,11 @@ function Screen({
     else void navigate({ to: "/", replace: true });
   };
 
+  // The rest starts from a work set, never a warm-up: the line runs from the last one logged.
+  const workDone = sets.filter((s) => !s.warmup).map((s) => Date.parse(s.doneAt));
+  const restFrom = workDone.length
+    ? new Date(Math.max(...workDone)).toISOString()
+    : workout.startedAt;
   // The rest bar names what comes next: the next set of this exercise, or the next exercise.
   const restLabel =
     next === null
@@ -430,6 +435,7 @@ function Screen({
       {active.restEndsAt && (
         <RestBar
           endsAt={active.restEndsAt}
+          startedAt={restFrom}
           next={restLabel}
           onChange={(restEndsAt) => setActive({ restEndsAt })}
         />

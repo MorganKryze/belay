@@ -3,7 +3,7 @@ import type { Exercise, Measure } from "@belay/shared/exercises/library";
 import {
   countOf,
   type History,
-  lastTime,
+  lastTopSet,
   type Load,
   measureOfSet,
   prefill,
@@ -19,13 +19,13 @@ import {
   type WorkoutSet,
   workPosition,
 } from "@belay/shared/training/workout";
-import { ArrowLeftRight, Check, ChevronDown, Play } from "lucide-react";
+import { ArrowLeftRight, Check, ChevronDown, Play, Plus } from "lucide-react";
 import { RadioGroup } from "radix-ui";
 import { useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { formatNumber, parseDecimal } from "@/lib/format";
 import type { Chrono } from "@/sync/db";
-import { formatRir, formatSets } from "./format";
+import { formatLoad, formatRir, formatSets } from "./format";
 import { formatClock } from "./hooks";
 
 // One line of the table: a warm-up (positions 0 to 2) or a work set, done or still to do.
@@ -170,6 +170,10 @@ export function ExerciseCard({
   const [noteOpen, setNoteOpen] = useState(note !== "");
   const [busy, setBusy] = useState(false);
   const [extra, setExtra] = useState(0);
+  // The positions ticked by a tap while this card is open: only their tick pops, so a set logged
+  // earlier stays still when the card unfolds, mounts again or the page reloads.
+  const [fresh, setFresh] = useState<ReadonlySet<number>>(new Set());
+  if (!open && fresh.size > 0) setFresh(new Set());
   const kgText = (kg: number) => formatNumber(kg, i18n.language, { digits: 2, grouping: false });
   const measure: Measure = slot.measure ?? "reps";
   const timed = measure === "seconds";
@@ -190,7 +194,7 @@ export function ExerciseCard({
   // The next row: the first still to do after the last one done (the first row if none is).
   const lastDone = rows.findLastIndex((r) => r.set);
   const next = rows.slice(lastDone + 1).find((r) => !r.set);
-  const last = lastTime(history, exercise.id, measure);
+  const last = lastTopSet(history, exercise.id, measure);
   const foreign = rows.filter((r) => r.foreign);
   const canAdd = (rows.at(-1)?.position ?? 0) < MAX_POSITION;
   // The timed set counting down, and once over, what it fills in.
@@ -235,6 +239,7 @@ export function ExerciseCard({
     const load = loadOf(row);
     if (!load || busy) return;
     setBusy(true);
+    setFresh((f) => new Set(f).add(row.position));
     try {
       await onValidate(row, load, rirShown(row) ? rirOf(row) : null);
       clear(row);
@@ -280,7 +285,11 @@ export function ExerciseCard({
     });
 
   const tag = slot.rule ? t("session.addedNoClimbing") : slot.added ? t("session.added") : null;
-  const targets = [formatSets(slot), ...(timed ? [] : [formatRir(slot, t)])];
+  const targets = [
+    formatSets(slot),
+    ...(timed ? [] : [formatRir(slot, t)]),
+    ...(last ? [t("session.picker.lastTime", { value: formatLoad(last, t, i18n.language) })] : []),
+  ];
 
   if (slot.skipped)
     return (
@@ -306,14 +315,18 @@ export function ExerciseCard({
       </section>
     );
 
-  // Folded: what is done ("2 sets of 4"), or the target of an exercise not begun.
+  // Folded: every planned set done ("4 sets logged"), what is done ("2 of 4 sets"), or the target
+  // of an exercise not begun.
+  const allDone = work.slice(0, slot.sets).every((r) => r.set);
   const status = open
     ? null
     : doneWork === 0
       ? [t("session.upcoming", { target: formatSets(slot) }), ...(tag ? [tag] : [])].join(" · ")
-      : t("session.doneCount", { count: doneWork, total: work.length });
+      : allDone
+        ? t("session.doneAll", { count: doneWork })
+        : t("session.doneCount", { count: doneWork, total: work.length });
   const action =
-    "flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-[10px] border border-input bg-card px-2 text-[13px] font-semibold";
+    "press flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-[12px] bg-track px-3 text-sm font-semibold";
 
   return (
     <section
@@ -327,9 +340,17 @@ export function ExerciseCard({
             type="button"
             aria-expanded={open}
             onClick={onToggle}
-            className="flex min-h-12 w-full items-center justify-between gap-2 text-left"
+            className="flex min-h-12 w-full items-center justify-between gap-3 text-left"
           >
-            <span className="flex min-w-0 flex-col">
+            {!open && allDone && (
+              <span
+                aria-hidden
+                className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-reference"
+              >
+                <Check className="size-5 text-reference-ink" strokeWidth={3} />
+              </span>
+            )}
+            <span className="flex min-w-0 flex-1 flex-col">
               <span className="font-semibold">{exercise.name}</span>
               <span className="text-[13px] font-normal text-muted-foreground">
                 {status ??
@@ -354,19 +375,6 @@ export function ExerciseCard({
       </div>
       {open && (
         <div className="flex flex-col pb-1">
-          {last.length > 0 && (
-            <p className="mb-1 text-[13px] text-muted-foreground">
-              {t("session.lastTime", {
-                value: last
-                  .map((g) =>
-                    timed
-                      ? `${g.weightKg > 0 ? `${kgText(g.weightKg)} kg × ` : ""}${g.counts.join(", ")}\u00a0s`
-                      : `${kgText(g.weightKg)} kg × ${g.counts.join(", ")}`,
-                  )
-                  .join(" · "),
-              })}
-            </p>
-          )}
           {foreign.length > 0 && (
             <p className="mb-1 text-[13px] text-muted-foreground">
               {t("session.doneWith", {
@@ -383,11 +391,12 @@ export function ExerciseCard({
             <span className="text-center">kg</span>
             <span className="text-center">{t(timed ? "session.seconds" : "session.reps")}</span>
           </div>
-          {rows.map((row) => {
+          {rows.map((row, i) => {
             const isNext = current && row === next;
             const touched = drafts[row.position] !== undefined;
+            // A done set reads as values, not boxes, in the reference ink.
             const cell = row.set
-              ? "border-transparent bg-background font-bold"
+              ? "border-0 bg-transparent font-bold text-reference-ink"
               : touched
                 ? "border-input font-bold"
                 : "border-dashed border-input font-medium text-muted-foreground";
@@ -397,15 +406,20 @@ export function ExerciseCard({
             return (
               <div key={row.position}>
                 <div
-                  className={`grid min-h-12 grid-cols-[3rem_1fr_1fr_2.75rem] items-center gap-2 border-t border-border transition-colors duration-(--tint-duration) ease-out ${
-                    row.set ? "-mx-3 bg-reference px-3" : isNext ? "-mx-3 bg-primary-soft px-3" : ""
+                  className={`grid min-h-13 grid-cols-[3rem_1fr_1fr_2.75rem] items-center gap-2 border-t transition-colors duration-(--tint-duration) ease-out ${
+                    row.set
+                      ? // Two done rows in a row are split by a hairline of their own ink.
+                        `-mx-3 bg-reference px-3 ${rows[i - 1]?.set ? "border-reference-ink/12" : "border-transparent"}`
+                      : isNext
+                        ? "-mx-3 border-border bg-primary-soft px-3"
+                        : "border-border"
                   }`}
                 >
                   <span
                     className={
                       row.warmup
                         ? "text-[11px] leading-tight font-semibold text-primary-ink"
-                        : "text-center text-[13px] font-bold text-muted-foreground"
+                        : `text-center text-[13px] font-bold ${row.set ? "text-reference-ink" : "text-muted-foreground"}`
                     }
                   >
                     {row.warmup ? t("session.warmup") : row.n}
@@ -428,7 +442,7 @@ export function ExerciseCard({
                         value={shown(row, field)}
                         onChange={(e) => edit(row, field, e.target.value)}
                         onBlur={() => row.set && void correct(row)}
-                        className={`h-10 w-full min-w-0 rounded-[10px] border text-center text-[15px] tabular-nums ${cell}`}
+                        className={`h-11 w-full min-w-0 rounded-[11px] border text-center text-[15px] tabular-nums ${cell}`}
                       />
                     ))
                   )}
@@ -438,7 +452,11 @@ export function ExerciseCard({
                       role="img"
                       aria-label={label("done")}
                     >
-                      <Check aria-hidden className="size-5 animate-pop-in" strokeWidth={3} />
+                      <Check
+                        aria-hidden
+                        className={`size-5 ${fresh.has(row.position) ? "animate-pop-in" : ""}`}
+                        strokeWidth={3}
+                      />
                     </span>
                   ) : (
                     <button
@@ -481,9 +499,12 @@ export function ExerciseCard({
               type="button"
               disabled={!canAdd}
               onClick={() => setExtra((n) => n + 1)}
+              // The icon draws the « + » the label starts with; the name keeps the whole label.
+              aria-label={t("session.addSet")}
               className={`${action} disabled:opacity-40`}
             >
-              {t("session.addSet")}
+              <Plus aria-hidden className="size-4" />
+              {t("session.addSet").replace(/^\+\s*/, "")}
             </button>
           </div>
           <NoteField
@@ -621,7 +642,7 @@ function NoteField({
       <button
         type="button"
         onClick={onOpen}
-        className="-ml-1 min-h-11 self-start px-1 text-sm font-semibold text-primary"
+        className="-ml-1 min-h-11 min-w-11 self-start px-1 text-sm font-semibold text-primary"
       >
         {t("session.note")}
       </button>

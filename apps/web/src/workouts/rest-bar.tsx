@@ -5,19 +5,26 @@ import { formatClock, useNow } from "./hooks";
 // §4.3: the rest, counted down from its end time (right even after the app slept), +30 s and
 // Skip. At zero: a short vibration where the phone can, "Back to it", a polite announcement,
 // and the bar goes at the next tap anywhere. The countdown is a timer never read out each second.
+// The line along the bottom is the rest left, from the set just logged to the end: data set on
+// each tick, never an animation.
 export function RestBar({
   endsAt,
+  startedAt,
   next,
   onChange,
 }: {
   endsAt: string;
+  startedAt: string; // the last work set's doneAt: where the line starts
   next: string; // "Rest · set 3 next"
   onChange: (endsAt: string | null) => void;
 }) {
   const { t } = useTranslation();
   const now = useNow(250);
-  const left = Date.parse(endsAt) - now;
+  const end = Date.parse(endsAt);
+  const left = end - now;
   const over = left <= 0;
+  const span = end - Date.parse(startedAt);
+  const fraction = span > 0 ? Math.min(1, Math.max(0, left / span)) : over ? 0 : 1;
   const [announced, setAnnounced] = useState(false);
   const wasRunning = useRef(!over);
   useEffect(() => {
@@ -37,21 +44,23 @@ export function RestBar({
     return () => document.removeEventListener("pointerdown", away);
   }, [over, onChange]);
 
+  const action =
+    "press grid min-h-11 place-items-center rounded-[12px] bg-background/15 px-3.5 text-sm font-semibold whitespace-nowrap";
   return (
     <div className="fixed inset-x-0 bottom-0 z-20 mx-auto max-w-xl px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
       <p role="status" className="sr-only">
         {announced ? t("session.restOver") : ""}
       </p>
-      <div className="flex items-center justify-between gap-3 rounded-[18px] bg-foreground px-4 py-3 text-background">
+      <div className="relative flex min-h-17 animate-rise-in items-center justify-between gap-2 overflow-hidden rounded-[22px] bg-foreground py-3 pr-3 pl-4 text-background">
         {over ? (
           <span className="text-lg font-bold">{t("session.backToIt")}</span>
         ) : (
           <div className="flex min-w-0 flex-col">
-            <span className="text-xs opacity-80">{next}</span>
+            <span className="truncate text-xs opacity-80">{next}</span>
             <span
               role="timer"
               aria-live="off"
-              className="text-[26px] leading-tight font-extrabold tabular-nums"
+              className="text-[30px] leading-tight font-bold tracking-tight tabular-nums"
             >
               {formatClock(left)}
             </span>
@@ -61,20 +70,21 @@ export function RestBar({
           <div className="flex shrink-0 gap-2">
             <button
               type="button"
-              onClick={() => onChange(new Date(Date.parse(endsAt) + 30_000).toISOString())}
-              className="min-h-11 rounded-[10px] border border-background/40 px-3 font-semibold"
+              onClick={() => onChange(new Date(end + 30_000).toISOString())}
+              className={action}
             >
               {t("session.plus30")}
             </button>
-            <button
-              type="button"
-              onClick={() => onChange(null)}
-              className="min-h-11 rounded-[10px] border border-background/40 px-3 font-semibold"
-            >
+            <button type="button" onClick={() => onChange(null)} className={action}>
               {t("session.skip")}
             </button>
           </div>
         )}
+        <span
+          aria-hidden
+          className="absolute inset-x-0 bottom-0 h-1 origin-left bg-toast-icon"
+          style={{ transform: `scaleX(${fraction})` }}
+        />
       </div>
     </div>
   );
