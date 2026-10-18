@@ -290,3 +290,26 @@ test.describe("Compléments", () => {
     expect(await paintedIn(page, await destructive(page))).toEqual([]);
   });
 });
+
+test.describe("Profil", () => {
+  // The bottom border each direct child of a card draws, in px.
+  const hairlines = (card: ReturnType<Page["locator"]>) =>
+    card.evaluate((el) =>
+      [...el.children].map((child) => parseFloat(getComputedStyle(child).borderBottomWidth)),
+    );
+
+  test("the range card draws no hairline, the facts card keeps one between its rows", async ({
+    page,
+  }) => {
+    await fakeServer(page);
+    await page.goto("/settings/profile");
+    const range = page.getByRole("region", { name: "Your loss range" });
+    await expect(range.getByText("At least")).toBeVisible();
+    const card = (section: typeof range) =>
+      section.locator("xpath=./*[contains(@class, 'rounded-group')]");
+    const widths = await hairlines(card(range));
+    expect(widths).toEqual(widths.map(() => 0));
+    const facts = await hairlines(card(page.getByRole("region", { name: "Your body" })));
+    expect(facts.slice(0, -1).every((width) => width > 0)).toBe(true);
+  });
+});

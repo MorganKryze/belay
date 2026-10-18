@@ -17,8 +17,10 @@ export type RowProps = {
   destructive?: boolean;
 };
 
-export const groupCard =
-  "divide-y divide-border overflow-hidden rounded-group bg-surface shadow-card dark:border dark:border-border";
+// The card alone, for content that is not a list of rows and so takes no hairlines.
+export const groupSurface =
+  "overflow-hidden rounded-group bg-surface shadow-card dark:border dark:border-border";
+export const groupCard = `divide-y divide-border ${groupSurface}`;
 export const sectionLabel = "px-4 text-section text-muted-foreground";
 
 const row =

@@ -8,7 +8,7 @@ import { roundTo } from "@belay/shared/tools/round";
 import { Plus } from "lucide-react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { groupCard, sectionLabel } from "@/components/grouped-list";
+import { groupCard, groupSurface, sectionLabel } from "@/components/grouped-list";
 import { BackLink, PageHeader } from "@/components/page-header";
 import { NumberStepper } from "@/components/number-stepper";
 import { ScienceSheet } from "@/components/science-sheet";
@@ -273,7 +273,7 @@ function TargetRangeSection({ account }: { account: OpenAccount }) {
       <h2 id="range" className={sectionLabel}>
         {t("profile.range")}
       </h2>
-      <div className={`${card} gap-3 p-4`}>
+      <div className={`${groupSurface} flex flex-col gap-3 p-4`}>
         <p className="text-sm text-muted-foreground">{t("profile.rangeLead")}</p>
         <div className="grid grid-cols-1 gap-2 min-[400px]:grid-cols-2">
           <NumberStepper

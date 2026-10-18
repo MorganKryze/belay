@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { IDBFactory } from "fake-indexeddb";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { groupCard, sectionLabel } from "../components/grouped-list";
+import { groupCard, groupSurface, sectionLabel } from "../components/grouped-list";
 import i18n from "../i18n";
 import { openAccountDb, readOutbox, readProfile, readTarget, recordChanges } from "../sync/db";
 import { writeLastUser } from "../sync/last-user";
@@ -199,8 +199,12 @@ describe("Settings › Profile, your body", () => {
     for (const label of labels) {
       expect(label.className).toContain(sectionLabel);
       expect(label.className).not.toContain("uppercase");
-      expect(label.nextElementSibling!.className).toContain(groupCard);
+      expect(label.nextElementSibling!.className).toContain(groupSurface);
     }
+    // Rows of facts take hairlines; the range card's lead and steppers do not.
+    const [facts, range] = labels.map((label) => label.nextElementSibling!.className);
+    expect(facts).toContain(groupCard);
+    expect(range).not.toContain("divide-y");
   });
 });
 
