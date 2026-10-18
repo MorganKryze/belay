@@ -187,6 +187,30 @@ test("a menu opens from the keyboard and gives the focus back to its row", async
   await expect(theme).toBeFocused();
 });
 
+// The menu gives the focus back to its row as it closes. Safari on a phone counts that focus as
+// visible even after a tap, which Chromium does not: the test asks for visible focus as Safari
+// gives it. The ring belongs to the keyboard only.
+test("a choice tapped in a menu leaves its row without a ring, a key press brings rings back", async ({
+  page,
+}) => {
+  await openSettings(page, "light");
+  const paused = page.getByRole("combobox", { name: /^Paused/ });
+  await paused.tap();
+  await page.getByRole("option", { name: "The rest keeps running" }).tap();
+  await expect(page.getByRole("listbox")).toBeHidden();
+  await expect(paused).toHaveAccessibleName("Paused The rest keeps running");
+  await expect(paused).toBeFocused();
+  await paused.evaluate((el: HTMLElement) => {
+    el.blur();
+    el.focus({ focusVisible: true } as FocusOptions);
+  });
+  expect(await paused.evaluate((el) => el.matches(":focus-visible"))).toBe(true);
+  await expect(paused).toHaveCSS("outline-style", "none");
+
+  await page.keyboard.press("Tab");
+  await expect(page.locator(":focus-visible")).toHaveCSS("outline-style", "solid");
+});
+
 test.describe("at 390 px", () => {
   test.use({ viewport: { width: 390, height: 844 }, reducedMotion: "reduce" });
 
@@ -383,6 +407,15 @@ test.describe("Compléments", () => {
       );
       for (const x of edges) expect(Math.abs(x - edges[1]!)).toBeLessThanOrEqual(1);
       await expect(page.getByRole("heading", { name: "Add" })).toHaveCount(0);
+    });
+
+    // Rings go away after a tap, but a text field keeps its own: it shows where the typing goes.
+    test("a tapped text field keeps its focus ring", async ({ page }) => {
+      await openSupplements(page);
+      const field = page.getByRole("textbox", { name: "Supplement name" });
+      await field.tap();
+      await expect(field).toBeFocused();
+      await expect(field).toHaveCSS("outline-style", "solid");
     });
   });
 
