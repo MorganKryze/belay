@@ -177,17 +177,17 @@ describe("the tab bar", () => {
     );
   });
 
-  it("fades out under an open dialog, quicker and without motion when reduced", () => {
+  it("fades out under an open dialog with its veil, quicker when reduced", () => {
     const css = readFileSync(join(__dirname, "..", "index.css"), "utf8");
     expect(css).toMatch(
       /html:has\(\[role="dialog"\]\[data-state="open"\]\) \[data-dock\] \{\s*opacity: 0;/,
     );
     expect(css).toMatch(
-      /\[data-dock\] \{\s*transition: opacity var\(--fade-duration\) var\(--ease-out\);/,
+      /\[data-dock\] \{\s*transition: opacity var\(--dock-fade\) var\(--ease-out\);/,
     );
-    expect(css).toMatch(/:root \{[^}]*--fade-duration: var\(--dur-fast\);/);
+    expect(css).toMatch(/:root \{[^}]*--dock-fade: var\(--dur-overlay-in\);/);
     expect(css).toMatch(
-      /@media \(prefers-reduced-motion: reduce\) \{\s*:root \{[^}]*--fade-duration: var\(--dur-reduced\);/,
+      /@media \(prefers-reduced-motion: reduce\) \{\s*:root \{[^}]*--dock-fade: var\(--dur-veil-reduced\);/,
     );
   });
 

@@ -157,10 +157,12 @@
   --animate-rise-in: rise-in var(--dur-base) var(--ease-out) both;
   /* Banners. */
   --animate-drop-in: drop-in var(--dur-base) var(--ease-out) both;
-  --animate-sheet-in: sheet-in var(--dur-sheet-in) var(--ease-sheet) both;
-  --animate-sheet-out: sheet-out var(--dur-sheet-out) var(--ease-exit) both;
+  /* A sheet rises on the nav spring, which leaves at full speed, and glides down on the nav curve;
+     its veil fades in with it and out on a straight line. */
+  --animate-sheet-in: sheet-in var(--dur-sheet-in) var(--spring-nav) both;
+  --animate-sheet-out: sheet-out var(--dur-sheet-out) var(--ease-nav) both;
   --animate-overlay-in: fade-in var(--dur-overlay-in) var(--ease-out) both;
-  --animate-overlay-out: fade-out var(--dur-release) var(--ease-exit) both;
+  --animate-overlay-out: fade-out var(--dur-overlay-out) linear both;
   /* Desktop dialog, menu. */
   --animate-dialog-in: dialog-in var(--dur-base) var(--ease-out) both;
   /* The tick glyph only. */
@@ -173,8 +175,8 @@
   --animate-page-push-out: page-push-out var(--dur-push) var(--ease-nav) both;
   --animate-page-back-in: page-back-in var(--dur-pop) var(--ease-nav) both;
   --animate-page-back-out: page-back-out var(--dur-pop) var(--ease-nav) both;
-  --animate-page-cover-in: sheet-in var(--dur-sheet-in) var(--ease-sheet) both;
-  --animate-page-uncover-out: sheet-out var(--dur-sheet-out) var(--ease-exit) both;
+  --animate-page-cover-in: sheet-in var(--dur-cover-in) var(--ease-sheet) both;
+  --animate-page-uncover-out: sheet-out var(--dur-cover-out) var(--ease-exit) both;
   /* The page under a cover holds still; with reduced motion it crossfades like the rest. */
   --animate-page-under-in: none;
   --animate-page-under-out: none;
@@ -321,19 +323,26 @@
   --hold-black: #111827;
   --hold-purple: #a855f7;
   --hold-white: #f8fafc;
-  /* Motion: the charter's durations; a reduced-motion user gets --dur-reduced fades. */
+  /* Motion: the charter's durations; a reduced-motion user gets --dur-reduced fades, except a
+     sheet, which still slides over a slightly longer veil. */
   --dur-press: 90ms;
   --dur-fast: 140ms;
   --dur-check: 180ms;
   --dur-release: 200ms;
   --dur-base: 220ms;
-  --dur-sheet-out: 260ms;
-  --dur-overlay-in: 300ms;
+  --dur-sheet-out: 300ms;
+  --dur-overlay-in: 350ms;
+  --dur-overlay-out: 300ms;
+  /* The session cover keeps its own pace. */
+  --dur-cover-in: 450ms;
+  --dur-cover-out: 260ms;
   --dur-pop: 340ms;
   --dur-push: 420ms;
-  --dur-sheet-in: 450ms;
+  --dur-sheet-in: 500ms;
   --dur-pulse: 600ms;
   --dur-reduced: 120ms;
+  --dur-slide-reduced: 300ms;
+  --dur-veil-reduced: 200ms;
   /* Springs sampled as linear() easings, for page pushes and pop-ins. */
   --spring-nav: linear(
     0,
@@ -388,6 +397,7 @@
   --glass: rgba(29, 27, 25, 0.84);
   --toast-icon: #c2410c;
   --scrim: rgba(0, 0, 0, 0.55);
+  --press-tint: color-mix(in srgb, var(--foreground) 7%, transparent);
   --shadow-card: none;
   --shadow-float: 0 6px 20px rgba(0, 0, 0, 0.35);
   --shadow-sheet: none;
@@ -399,8 +409,8 @@
   --tint-duration: var(--dur-fast);
   /* A press shows at once and fades over the release, so a page leaving still shows it. */
   --press-release: var(--dur-release);
-  /* Fades that stay fades with reduced motion, only shorter. */
-  --fade-duration: var(--dur-fast);
+  /* The dock fades with the veil of a sheet. */
+  --dock-fade: var(--dur-overlay-in);
   /* The large title folding into the compact header; driven by scroll, so no duration. */
   --fold-in: fold-in linear both;
   --fold-out: fold-out linear both;
@@ -408,9 +418,8 @@
   --fold-rest: 0;
   /* Without scroll timelines, the compact header fades in once the large title has gone. */
   --fold-fade: var(--dur-release);
-  /* A sheet let go short of closing slides back up from where it was left. */
+  /* A sheet let go short of closing slides back up from where it was left, reduced motion too. */
   --swipe-snap-transition: transform var(--dur-release) var(--ease-out);
-  --swipe-snap-from: 1;
 }
 
 /* On a computer the top bar holds the top of the screen, so the compact header pins under it. */
@@ -425,8 +434,9 @@
 }
 
 /*
- * Calm by default: with reduced motion, nothing slides or scales; enters and leaves become short
- * fades, the tick and the loading arc stand still. Components never write their own media query.
+ * Calm by default: with reduced motion, nothing scales or bounces; a sheet still slides, without
+ * the spring, over a veil that fades, other enters and leaves become short fades, the tick and the
+ * loading arc stand still. Components never write their own media query.
  */
 @media (prefers-reduced-motion: reduce) {
   :root {
@@ -434,10 +444,10 @@
     --animate-fade-out: fade-out var(--dur-reduced) var(--ease-exit) both;
     --animate-rise-in: fade-in var(--dur-reduced) var(--ease-out) both;
     --animate-drop-in: fade-in var(--dur-reduced) var(--ease-out) both;
-    --animate-sheet-in: fade-in var(--dur-reduced) var(--ease-out) both;
-    --animate-sheet-out: fade-out var(--dur-reduced) var(--ease-exit) both;
-    --animate-overlay-in: fade-in var(--dur-reduced) var(--ease-out) both;
-    --animate-overlay-out: fade-out var(--dur-reduced) var(--ease-exit) both;
+    --animate-sheet-in: sheet-in var(--dur-slide-reduced) var(--ease-out) both;
+    --animate-sheet-out: sheet-out var(--dur-slide-reduced) var(--ease-out) both;
+    --animate-overlay-in: fade-in var(--dur-veil-reduced) var(--ease-out) both;
+    --animate-overlay-out: fade-out var(--dur-veil-reduced) var(--ease-out) both;
     --animate-dialog-in: fade-in var(--dur-reduced) var(--ease-out) both;
     --animate-pop-in: none;
     --animate-spin-arc: none;
@@ -454,9 +464,7 @@
     --slide-duration: 0s;
     --tint-duration: 0s;
     --press-release: 0s;
-    --fade-duration: var(--dur-reduced);
-    --swipe-snap-transition: opacity var(--dur-reduced) var(--ease-out);
-    --swipe-snap-from: 0;
+    --dock-fade: var(--dur-veil-reduced);
   }
 }
 
@@ -565,7 +573,7 @@
  * showing through the scrim would look usable while it is not. It comes back as the sheet leaves.
  */
 [data-dock] {
-  transition: opacity var(--fade-duration) var(--ease-out);
+  transition: opacity var(--dock-fade) var(--ease-out);
 }
 html:has([role="dialog"][data-state="open"]) [data-dock] {
   opacity: 0;

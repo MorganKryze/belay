@@ -105,15 +105,25 @@ describe("design rules", () => {
     ]);
   });
 
-  it("reduced motion swaps every enter for a 120 ms fade, every leave for a 120 ms fade, and stills the tick pop and the loading arc", () => {
+  it("reduced motion keeps every enter and leave a fade of 120 ms at most, except the listed slides and veils", () => {
+    // Sheets still slide and their veil fades a little longer, the way iOS does it.
+    const ALLOWED: Record<string, string> = {
+      "--animate-sheet-in": "sheet-in var(--dur-slide-reduced) var(--ease-out) both",
+      "--animate-sheet-out": "sheet-out var(--dur-slide-reduced) var(--ease-out) both",
+      "--animate-overlay-in": "fade-in var(--dur-veil-reduced) var(--ease-out) both",
+      "--animate-overlay-out": "fade-out var(--dur-veil-reduced) var(--ease-out) both",
+    };
     const theme = declarations(block(CSS, "@theme static {"));
     const media = block(CSS, "@media (prefers-reduced-motion: reduce)");
     const reduced = declarations(media);
     const names = [...theme.keys()].filter((k) => k.startsWith("--animate-"));
     expect(names.length).toBeGreaterThanOrEqual(11);
+    for (const name of Object.keys(ALLOWED)) expect(names, name).toContain(name);
     for (const name of names) {
       const value = reduced.get(name);
-      if (name === "--animate-pop-in" || name === "--animate-spin-arc") {
+      if (name in ALLOWED) {
+        expect(value, name).toBe(ALLOWED[name]);
+      } else if (name === "--animate-pop-in" || name === "--animate-spin-arc") {
         expect(value, name).toBe("none");
       } else if (name.endsWith("-in")) {
         expect(value, name).toBe("fade-in var(--dur-reduced) var(--ease-out) both");
@@ -121,10 +131,22 @@ describe("design rules", () => {
         expect(value, name).toBe("fade-out var(--dur-reduced) var(--ease-exit) both");
       }
     }
+    expect(reduced.get("--dock-fade")).toBe("var(--dur-veil-reduced)");
     expect(reduced.get("--press-scale")).toBe("1");
     expect(reduced.get("--slide-duration")).toBe("0s");
     expect(reduced.get("--tint-duration")).toBe("0s");
     expect(reduced.get("--press-release")).toBe("0s");
+    // A card let go short of closing slides back as in normal motion.
+    expect([...reduced.keys()].filter((k) => k.startsWith("--swipe-"))).toEqual([]);
+  });
+
+  it("the dark row tint is 7 % of the foreground, light 6 %", () => {
+    expect(declarations(block(CSS, ":root {")).get("--press-tint")).toBe(
+      "color-mix(in srgb, var(--foreground) 6%, transparent)",
+    );
+    expect(declarations(block(CSS, ".dark {")).get("--press-tint")).toBe(
+      "color-mix(in srgb, var(--foreground) 7%, transparent)",
+    );
   });
 
   it("every transition duration a component names goes to 0s with reduced motion, unless it only fades", () => {

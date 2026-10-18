@@ -15,18 +15,23 @@ function declared(pattern: RegExp): Record<string, string> {
 }
 
 describe("design scales", () => {
-  it("defines exactly the charter's twelve durations", () => {
+  it("defines exactly the charter's durations", () => {
     expect(declared(/--(dur-[\w-]+):\s*([^;]+);/g)).toEqual({
       "dur-press": "90ms",
       "dur-fast": "140ms",
       "dur-check": "180ms",
       "dur-release": "200ms",
       "dur-base": "220ms",
-      "dur-sheet-out": "260ms",
-      "dur-overlay-in": "300ms",
+      "dur-sheet-out": "300ms",
+      "dur-overlay-in": "350ms",
+      "dur-overlay-out": "300ms",
+      "dur-cover-in": "450ms",
+      "dur-cover-out": "260ms",
+      "dur-slide-reduced": "300ms",
+      "dur-veil-reduced": "200ms",
       "dur-pop": "340ms",
       "dur-push": "420ms",
-      "dur-sheet-in": "450ms",
+      "dur-sheet-in": "500ms",
       "dur-pulse": "600ms",
       "dur-reduced": "120ms",
     });
