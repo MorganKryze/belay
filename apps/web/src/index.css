@@ -169,15 +169,15 @@
   --animate-pop-in: pop-in var(--dur-check) var(--spring-pop-in) both;
   /* The loading arc. */
   --animate-spin-arc: spin-arc var(--dur-pulse) linear infinite;
-  /* Page changes: a push slides the new page in and the old one 25 % left under a 6 % dim, Back
-     plays it in reverse, the session rises as a cover over a page that stays put. */
+  /* Page changes: a push slides the new page in and the old one 25 % left as it dims, Back plays
+     it in reverse at the same pace, the session rises as a cover over a page that stays put. */
   --animate-page-push-in: page-push-in var(--dur-push) var(--ease-nav) both;
   --animate-page-push-out: page-push-out var(--dur-push) var(--ease-nav) both;
   --animate-page-back-in: page-back-in var(--dur-pop) var(--ease-nav) both;
   --animate-page-back-out: page-back-out var(--dur-pop) var(--ease-nav) both;
   --animate-page-cover-in: sheet-in var(--dur-cover-in) var(--ease-sheet) both;
   --animate-page-uncover-out: sheet-out var(--dur-cover-out) var(--ease-exit) both;
-  /* The page under a cover holds still; with reduced motion it crossfades like the rest. */
+  /* The page under a cover holds still. */
   --animate-page-under-in: none;
   --animate-page-under-out: none;
 
@@ -224,13 +224,13 @@
   }
   @keyframes page-push-out {
     to {
-      opacity: 0.94;
+      opacity: var(--push-dim);
       transform: translateX(-25%);
     }
   }
   @keyframes page-back-in {
     from {
-      opacity: 0.94;
+      opacity: var(--push-dim);
       transform: translateX(-25%);
     }
   }
@@ -324,7 +324,7 @@
   --hold-purple: #a855f7;
   --hold-white: #f8fafc;
   /* Motion: the charter's durations; a reduced-motion user gets --dur-reduced fades, except a
-     sheet, which still slides over a slightly longer veil. */
+     sheet, a pushed page and the session cover, which still slide. */
   --dur-press: 90ms;
   --dur-fast: 140ms;
   --dur-check: 180ms;
@@ -336,7 +336,9 @@
   /* The session cover keeps its own pace. */
   --dur-cover-in: 450ms;
   --dur-cover-out: 260ms;
-  --dur-pop: 340ms;
+  /* Back keeps the push's pace; the row left behind clears its tint on the way back. */
+  --dur-untint: 250ms;
+  --dur-pop: 380ms;
   --dur-push: 420ms;
   --dur-sheet-in: 500ms;
   --dur-pulse: 600ms;
@@ -359,6 +361,8 @@
     1
   );
   --spring-pop-in: linear(0, 0.5 18%, 0.9 35%, 1.06 52%, 1.02 70%, 1);
+  /* How far the page left behind dims under a push: more in dark, where 90 % barely shows. */
+  --push-dim: 0.9;
   /* IWF competition colours (rule 3.3.3.6), the same in both themes; grey for any other value. */
   --plate-red: #b91c1c;
   --plate-blue: #1d4ed8;
@@ -398,6 +402,7 @@
   --toast-icon: #c2410c;
   --scrim: rgba(0, 0, 0, 0.55);
   --press-tint: color-mix(in srgb, var(--foreground) 7%, transparent);
+  --push-dim: 0.8;
   --shadow-card: none;
   --shadow-float: 0 6px 20px rgba(0, 0, 0, 0.35);
   --shadow-sheet: none;
@@ -409,6 +414,7 @@
   --tint-duration: var(--dur-fast);
   /* A press shows at once and fades over the release, so a page leaving still shows it. */
   --press-release: var(--dur-release);
+  --untint-duration: var(--dur-untint);
   /* The dock fades with the veil of a sheet. */
   --dock-fade: var(--dur-overlay-in);
   /* The large title folding into the compact header; driven by scroll, so no duration. */
@@ -434,9 +440,10 @@
 }
 
 /*
- * Calm by default: with reduced motion, nothing scales or bounces; a sheet still slides, without
- * the spring, over a veil that fades, other enters and leaves become short fades, the tick and the
- * loading arc stand still. Components never write their own media query.
+ * Calm by default: with reduced motion, nothing scales or bounces; a sheet, a pushed page and the
+ * session cover still slide, without the spring, over a page or a veil that holds still or fades,
+ * other enters and leaves become short fades, the tick and the loading arc stand still. Components
+ * never write their own media query.
  */
 @media (prefers-reduced-motion: reduce) {
   :root {
@@ -451,19 +458,20 @@
     --animate-dialog-in: fade-in var(--dur-reduced) var(--ease-out) both;
     --animate-pop-in: none;
     --animate-spin-arc: none;
-    --animate-page-push-in: fade-in var(--dur-reduced) var(--ease-out) both;
-    --animate-page-push-out: fade-out var(--dur-reduced) var(--ease-exit) both;
-    --animate-page-back-in: fade-in var(--dur-reduced) var(--ease-out) both;
-    --animate-page-back-out: fade-out var(--dur-reduced) var(--ease-exit) both;
-    --animate-page-cover-in: fade-in var(--dur-reduced) var(--ease-out) both;
-    --animate-page-uncover-out: fade-out var(--dur-reduced) var(--ease-exit) both;
-    --animate-page-under-in: fade-in var(--dur-reduced) var(--ease-out) both;
-    --animate-page-under-out: fade-out var(--dur-reduced) var(--ease-exit) both;
+    --animate-page-push-in: page-push-in var(--dur-slide-reduced) var(--ease-out) both;
+    --animate-page-push-out: none;
+    --animate-page-back-in: none;
+    --animate-page-back-out: page-back-out var(--dur-slide-reduced) var(--ease-out) both;
+    --animate-page-cover-in: sheet-in var(--dur-slide-reduced) var(--ease-out) both;
+    --animate-page-uncover-out: sheet-out var(--dur-slide-reduced) var(--ease-out) both;
+    --animate-page-under-in: none;
+    --animate-page-under-out: none;
     --fold-fade: 0s;
     --press-scale: 1;
     --slide-duration: 0s;
     --tint-duration: 0s;
     --press-release: 0s;
+    --untint-duration: 0s;
     --dock-fade: var(--dur-veil-reduced);
   }
 }
@@ -502,10 +510,15 @@
 
 /*
  * A pressed row only tints: at once on the press, fading out on the release. data-pressed stands in
- * for :active under a finger, which Chromium applies late (lib/press.ts).
+ * for :active under a finger, which Chromium applies late (lib/press.ts). data-untint marks the row
+ * a person comes back to, which clears its tint at its own pace; it sits before the pressed state so
+ * that the tint still shows at once.
  */
 @utility press-tint {
   transition: background-color var(--press-release) var(--ease-out);
+  &[data-untint] {
+    transition: background-color var(--untint-duration) var(--ease-out);
+  }
   &:active,
   &[data-pressed] {
     background-color: var(--press-tint);

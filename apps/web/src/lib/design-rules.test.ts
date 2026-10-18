@@ -112,6 +112,16 @@ describe("design rules", () => {
       "--animate-sheet-out": "sheet-out var(--dur-slide-reduced) var(--ease-out) both",
       "--animate-overlay-in": "fade-in var(--dur-veil-reduced) var(--ease-out) both",
       "--animate-overlay-out": "fade-out var(--dur-veil-reduced) var(--ease-out) both",
+      // A pushed page slides in over a still page and Back slides it out the same way; the session
+      // cover rises and sinks like a sheet.
+      "--animate-page-push-in": "page-push-in var(--dur-slide-reduced) var(--ease-out) both",
+      "--animate-page-push-out": "none",
+      "--animate-page-back-in": "none",
+      "--animate-page-back-out": "page-back-out var(--dur-slide-reduced) var(--ease-out) both",
+      "--animate-page-cover-in": "sheet-in var(--dur-slide-reduced) var(--ease-out) both",
+      "--animate-page-uncover-out": "sheet-out var(--dur-slide-reduced) var(--ease-out) both",
+      "--animate-page-under-in": "none",
+      "--animate-page-under-out": "none",
     };
     const theme = declarations(block(CSS, "@theme static {"));
     const media = block(CSS, "@media (prefers-reduced-motion: reduce)");
@@ -136,6 +146,7 @@ describe("design rules", () => {
     expect(reduced.get("--slide-duration")).toBe("0s");
     expect(reduced.get("--tint-duration")).toBe("0s");
     expect(reduced.get("--press-release")).toBe("0s");
+    expect(reduced.get("--untint-duration")).toBe("0s");
     // A card let go short of closing slides back as in normal motion.
     expect([...reduced.keys()].filter((k) => k.startsWith("--swipe-"))).toEqual([]);
   });
@@ -175,6 +186,11 @@ describe("design rules", () => {
       /&:active,\s*&\[data-pressed\]\s*\{[^}]*background-color:\s*var\(--press-tint\);[^}]*transition-duration:\s*0s/,
     );
     expect(tint).not.toMatch(/transform/);
+    // The row left for a deeper page clears its tint on the way back over its own duration.
+    expect(tint).toMatch(
+      /&\[data-untint\]\s*\{\s*transition:\s*background-color var\(--untint-duration\) var\(--ease-out\)/,
+    );
+    expect(CSS).toMatch(/--untint-duration:\s*var\(--dur-untint\);/);
   });
 
   it("the frosted surface falls back to an opaque background without backdrop-filter", () => {

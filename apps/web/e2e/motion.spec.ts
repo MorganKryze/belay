@@ -221,6 +221,42 @@ test.describe("normal motion", () => {
       );
   });
 
+  test("a row keeps its tint through the push and clears it in 250 ms on Back", async ({
+    page,
+  }) => {
+    // The row still marked pressed when the page change starts, so the leaving page shows it.
+    await page.addInitScript(() => {
+      const w = window as unknown as { held: (string | null)[] };
+      w.held = [];
+      const start = document.startViewTransition?.bind(document);
+      if (!start) return;
+      document.startViewTransition = ((arg: StartViewTransitionOptions) => {
+        w.held.push(document.querySelector("a[data-pressed]")?.getAttribute("href") ?? null);
+        return start(arg);
+      }) as typeof document.startViewTransition;
+    });
+    const held = () => page.evaluate(() => (window as unknown as { held: string[] }).held);
+    await page.route("**/api/me", (r) => r.fulfill({ status: 401 }));
+    await page.goto("/tools");
+    await page.getByRole("link", { name: /^Plates/ }).click();
+    await expect(page.getByRole("heading", { level: 1, name: "Plates" })).toBeVisible();
+    await expect.poll(held).toEqual(["/tools/plates"]);
+    await since(page);
+    await page.goBack();
+    await expect(page.getByRole("heading", { level: 1, name: "Tools" })).toBeVisible();
+    await expect
+      .poll(() => readMotion(page))
+      .toContainEqual(
+        expect.objectContaining({
+          target: expect.stringMatching(/^a\[.*data-untint\]/),
+          duration: 250,
+          easing: OUT,
+          transforms: false,
+          kind: "transition",
+        }),
+      );
+  });
+
   test("the session bar rises in 220 ms", async ({ page }) => {
     await fakeServer(page, { rows: WEEKS, changes: RUNNING_C });
     await page.goto("/");
@@ -271,7 +307,7 @@ test.describe("reduced motion", () => {
     );
   });
 
-  test("opening and closing a sheet, pushing and popping a page, switching tab, checking off a set and showing a toast scale nothing, slide only the sheet and fade in 200 ms at most", async ({
+  test("opening and closing a sheet, pushing and popping a page, switching tab, checking off a set and showing a toast scale nothing, slide only the sheet and the page, and fade in 200 ms at most", async ({
     page,
   }) => {
     const ran: Motion[] = [];
@@ -313,10 +349,15 @@ test.describe("reduced motion", () => {
     expect(ran.filter((m) => m.scales)).toEqual([]);
     expect(ran.filter((m) => m.duration > 300)).toEqual([]);
     expect(ran.filter((m) => m.transforms)).not.toEqual([]);
+    expect(ran.filter((m) => m.transforms && m.target.startsWith("::view-transition"))).not.toEqual(
+      [],
+    );
+    // Only the sheet card and the page snapshots slide.
+    const sliding = /^(div\[role=dialog\]\[data-state\]|::view-transition-(new|old)\(root\))$/;
     for (const moving of ran.filter((m) => m.transforms)) {
       expect(moving).toEqual(
         expect.objectContaining({
-          target: "div[role=dialog][data-state]",
+          target: expect.stringMatching(sliding),
           duration: 300,
           easing: OUT,
         }),
