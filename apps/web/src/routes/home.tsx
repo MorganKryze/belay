@@ -48,9 +48,12 @@ export function Home() {
             : t("app.name")
         }
         trailing={
-          <AvatarLink
-            name={account.kind === "unavailable" ? account.user.displayName : undefined}
-          />
+          // From 1 024 px the top bar carries the avatar to Réglages: one is enough.
+          <div className="lg:hidden">
+            <AvatarLink
+              name={account.kind === "unavailable" ? account.user.displayName : undefined}
+            />
+          </div>
         }
       />
       {failure && account.kind === "signed-out" && <p role="alert">{t(`signin.${failure}`)}</p>}
@@ -84,7 +87,11 @@ function SignedInHome({ account }: { account: OpenAccount }) {
     <section className="flex flex-col gap-4">
       <PageHeader
         title={t("home.greeting", { name: account.user.displayName })}
-        trailing={<AvatarLink name={account.user.displayName} />}
+        trailing={
+          <div className="lg:hidden">
+            <AvatarLink name={account.user.displayName} />
+          </div>
+        }
       />
       <SyncBanner account={account} />
       {weighings && (
