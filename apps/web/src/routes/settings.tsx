@@ -63,21 +63,17 @@ export function Settings() {
         />
       </GroupedList>
 
-      {account.kind === "open" && (
-        <>
-          <TrackingGroup account={account} />
-          <OpenAccountSettings account={account} />
-        </>
-      )}
-      {account.kind === "unavailable" && (
-        <>
-          <TrackingGroup account={null} />
-          {/* The local database never opened, so what is still waiting is unknown. */}
-          <SignOutGroup pending={null} />
-        </>
-      )}
+      {account.kind === "open" && <TrackingGroup account={account} />}
+      {account.kind === "unavailable" && <TrackingGroup account={null} />}
 
-      <VersionLine />
+      {/* The page's end: sign-out and the version sit at the bottom of a page that fits, and
+          follow the last group, 24 px under it at least, on a page that scrolls. */}
+      <div className="mt-auto flex flex-col gap-4">
+        {account.kind === "open" && <OpenAccountSettings account={account} />}
+        {/* The local database never opened, so what is still waiting is unknown. */}
+        {account.kind === "unavailable" && <SignOutGroup pending={null} />}
+        <VersionLine />
+      </div>
     </section>
   );
 }

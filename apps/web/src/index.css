@@ -152,7 +152,7 @@
 
 /*
  * The shared motion. Static so every variable lands on :root, where the reduced-motion block below
- * can swap it. Keyframes move only transform and opacity.
+ * can swap it. Keyframes move only transform and opacity, except the sheet veil's colour.
  */
 @theme static {
   --animate-fade-in: fade-in var(--dur-base) var(--ease-out) both;
@@ -162,11 +162,13 @@
   /* Banners. */
   --animate-drop-in: drop-in var(--dur-base) var(--ease-out) both;
   /* A sheet rises on the nav spring, which leaves at full speed, and glides down on the nav curve;
-     its veil fades in with it and out on a straight line. */
+     its veil darkens with it and clears on a straight line. */
   --animate-sheet-in: sheet-in var(--dur-sheet-in) var(--spring-nav) both;
   --animate-sheet-out: sheet-out var(--dur-sheet-out) var(--ease-nav) both;
-  --animate-overlay-in: fade-in var(--dur-overlay-in) var(--ease-out) both;
-  --animate-overlay-out: fade-out var(--dur-overlay-out) linear both;
+  /* The veil fades by its colour, its opacity held at 1: iOS paints the band behind the clock
+     from the colour it reads at the top of the page and ignores a fading opacity. */
+  --animate-overlay-in: veil-in var(--dur-overlay-in) var(--ease-out) both;
+  --animate-overlay-out: veil-out var(--dur-overlay-out) linear both;
   /* Desktop dialog, menu. */
   --animate-dialog-in: dialog-in var(--dur-base) var(--ease-out) both;
   /* The tick glyph only. */
@@ -196,6 +198,16 @@
   @keyframes fade-out {
     to {
       opacity: 0;
+    }
+  }
+  @keyframes veil-in {
+    from {
+      background-color: transparent;
+    }
+  }
+  @keyframes veil-out {
+    to {
+      background-color: transparent;
     }
   }
   @keyframes rise-in {
@@ -367,10 +379,8 @@
   --dur-slide-reduced: 300ms;
   --dur-veil-reduced: 200ms;
   --dur-breathe: 1200ms;
-  /* The launch screen fades out on the out curve, and its mark waits before breathing so a quick
-     start never sees it move. */
+  /* The launch screen fades out on the out curve. */
   --dur-launch-out: 240ms;
-  --delay-launch-loader: 600ms;
   /* Springs sampled as linear() easings, for page pushes and pop-ins. */
   --spring-nav: linear(
     0,
@@ -485,8 +495,8 @@
     --animate-drop-in: fade-in var(--dur-reduced) var(--ease-out) both;
     --animate-sheet-in: sheet-in var(--dur-slide-reduced) var(--ease-out) both;
     --animate-sheet-out: sheet-out var(--dur-slide-reduced) var(--ease-out) both;
-    --animate-overlay-in: fade-in var(--dur-veil-reduced) var(--ease-out) both;
-    --animate-overlay-out: fade-out var(--dur-veil-reduced) var(--ease-out) both;
+    --animate-overlay-in: veil-in var(--dur-veil-reduced) var(--ease-out) both;
+    --animate-overlay-out: veil-out var(--dur-veil-reduced) var(--ease-out) both;
     --animate-dialog-in: fade-in var(--dur-reduced) var(--ease-out) both;
     --animate-pop-in: none;
     --animate-spin-arc: none;

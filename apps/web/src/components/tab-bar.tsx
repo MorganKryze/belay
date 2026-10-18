@@ -24,11 +24,11 @@ const tab =
   "press-tint press-icon flex min-h-12.5 flex-col items-center justify-center gap-0.5 rounded-card text-tab text-muted-foreground";
 
 // Floating on its own, or with the session bar above it: then one frosted backing runs from the
-// bar's top to the bottom edge, so no row of the page shows between the two.
+// bar's top to the bottom edge, so no row of the page shows between the two, and no line on top.
 const floating =
   "fixed right-[max(0.75rem,env(safe-area-inset-right))] bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-[max(0.75rem,env(safe-area-inset-left))] z-10 mx-auto max-w-xl";
 const backed =
-  "fixed inset-x-0 bottom-0 z-10 border-t border-border glass pt-2.5 pr-[max(0.75rem,env(safe-area-inset-right))] pb-[max(0.75rem,env(safe-area-inset-bottom))] pl-[max(0.75rem,env(safe-area-inset-left))]";
+  "fixed inset-x-0 bottom-0 z-10 glass pt-2.5 pr-[max(0.75rem,env(safe-area-inset-right))] pb-[max(0.75rem,env(safe-area-inset-bottom))] pl-[max(0.75rem,env(safe-area-inset-left))]";
 
 export function TabBar({ above }: { above?: ReactNode }) {
   const { t } = useTranslation();

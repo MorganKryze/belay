@@ -78,12 +78,19 @@ export function motionViolations(source: string): string[] {
 
 // Properties a keyframe may move: only the compositor-friendly ones.
 const KEYFRAME_OK = new Set(["transform", "translate", "scale", "rotate", "opacity"]);
+// The one exception: the sheet veil fades by its colour, its opacity held at 1, because iOS
+// paints the band behind the clock from the colour at the top of the page.
+const KEYFRAME_EXCEPTIONS: Record<string, string[]> = {
+  "veil-in": ["background-color"],
+  "veil-out": ["background-color"],
+};
 
 export function keyframeViolations(css: string): string[] {
   const found: string[] = [];
   for (const m of css.matchAll(/@keyframes\s+([\w-]+)\s*\{((?:[^{}]*\{[^{}]*\})*)\s*\}/g)) {
     for (const d of m[2]!.matchAll(/([\w-]+)\s*:/g)) {
-      if (!KEYFRAME_OK.has(d[1]!)) found.push(`${m[1]}: ${d[1]}`);
+      if (!KEYFRAME_OK.has(d[1]!) && !KEYFRAME_EXCEPTIONS[m[1]!]?.includes(d[1]!))
+        found.push(`${m[1]}: ${d[1]}`);
     }
   }
   return found;

@@ -24,6 +24,12 @@ export function veilOpacity(dy: number, height: number): number {
   return Math.min(1, Math.max(0, 1 - dy / height));
 }
 
+// The veil's colour at a fraction of its full shade. Its opacity stays at 1: iOS paints the band
+// behind the clock from the colour at the top of the page and ignores a fading opacity.
+export function veilColor(fraction: number): string {
+  return `color-mix(in srgb, var(--scrim) ${Math.round(fraction * 100)}%, transparent)`;
+}
+
 // On a computer the sheet is a centred dialog: nothing to pull down.
 const wide = () => typeof matchMedia === "function" && matchMedia("(width >= 64rem)").matches;
 
@@ -91,8 +97,8 @@ export function useSwipeToClose(
       el.style.transform = "";
       const shade = veil?.current;
       if (shade) {
-        shade.style.transition = "opacity var(--dur-release) var(--ease-out)";
-        shade.style.opacity = "";
+        shade.style.transition = "background-color var(--dur-release) var(--ease-out)";
+        shade.style.backgroundColor = "";
       }
     };
 
@@ -127,7 +133,7 @@ export function useSwipeToClose(
       const shade = veil?.current;
       if (shade) {
         shade.style.transition = "none";
-        shade.style.opacity = String(veilOpacity(dy, height));
+        shade.style.backgroundColor = veilColor(veilOpacity(dy, height));
       }
     };
 

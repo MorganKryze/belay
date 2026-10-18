@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, renderHook } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { axisOf, releaseOf, useSwipeToClose, veilOpacity } from "./sheet-swipe";
+import { axisOf, releaseOf, useSwipeToClose, veilColor, veilOpacity } from "./sheet-swipe";
 
 afterEach(() => {
   cleanup();
@@ -42,6 +42,14 @@ describe("veilOpacity", () => {
   });
 });
 
+describe("veilColor", () => {
+  it("the veil's colour follows the distance pulled", () => {
+    expect(veilColor(0.75)).toBe("color-mix(in srgb, var(--scrim) 75%, transparent)");
+    expect(veilColor(0.704)).toBe("color-mix(in srgb, var(--scrim) 70%, transparent)");
+    expect(veilColor(0)).toBe("color-mix(in srgb, var(--scrim) 0%, transparent)");
+  });
+});
+
 // A 400 px card in the page with its veil, a hook watching it, and a finger moving on it.
 function setup(enabled = true) {
   const card = document.createElement("div");
@@ -80,7 +88,15 @@ describe("useSwipeToClose", () => {
     const { veil, request, swipe } = setup();
     swipe(120);
     expect(request).toHaveBeenCalledTimes(1);
-    expect(veil.style.opacity).toBe("0.7");
+    expect(veil.style.backgroundColor).toBe("color-mix(in srgb, var(--scrim) 70%, transparent)");
+  });
+
+  it("the drag never sets the veil's opacity", () => {
+    vi.useFakeTimers({ now: 0 });
+    const { veil, swipe } = setup();
+    swipe(60);
+    expect(veil.style.opacity).toBe("");
+    expect(veil.getAttribute("style")).not.toMatch(/opacity/);
   });
 
   it("follows the finger and snaps back on a short slow swipe", () => {
@@ -91,7 +107,8 @@ describe("useSwipeToClose", () => {
     fireEvent.pointerMove(card, { pointerId: 1, isPrimary: true, clientX: 0, clientY: 140 });
     expect(card.style.transform).toBe("translateY(40px)");
     expect(card.style.transition).toBe("none");
-    expect(veil.style.opacity).toBe("0.9");
+    expect(veil.style.backgroundColor).toBe("color-mix(in srgb, var(--scrim) 90%, transparent)");
+    expect(veil.style.opacity).toBe("");
     expect(veil.style.transition).toBe("none");
     vi.setSystemTime(600);
     fireEvent.pointerUp(card, { pointerId: 1, isPrimary: true, clientX: 0, clientY: 140 });
@@ -99,8 +116,9 @@ describe("useSwipeToClose", () => {
     expect(card.style.transform).toBe("");
     expect(card.style.transition).toBe("var(--swipe-snap-transition)");
     expect(card.style.opacity).toBe("");
+    expect(veil.style.backgroundColor).toBe("");
     expect(veil.style.opacity).toBe("");
-    expect(veil.style.transition).toBe("opacity var(--dur-release) var(--ease-out)");
+    expect(veil.style.transition).toBe("background-color var(--dur-release) var(--ease-out)");
   });
 
   it("closes on a flick short of 90 px", () => {

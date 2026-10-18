@@ -22,6 +22,7 @@ import {
 import { type ReactNode, Suspense, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { daySummaryText } from "@/lib/activities";
+import { useFirstPull } from "@/lib/first-pull";
 import { preloadWhenIdle } from "@/lib/idle";
 import { formatKg, formatNumber, sessionTitle } from "@/lib/format";
 import {
@@ -33,6 +34,7 @@ import {
   useSteps,
   useSupplementLogs,
   useSupplements,
+  useWeighings,
 } from "@/sync/account";
 import { type Entry, Toast, useWriter } from "./weigh-in";
 
@@ -61,11 +63,29 @@ export function TodayCard({
   today: ISODate;
 }) {
   const { t, i18n } = useTranslation();
-  const intake = useIntake(account).data ?? [];
-  const supplements = useSupplements(account).data ?? [];
-  const activities = useActivities(account).data ?? [];
-  const steps = useSteps(account).data ?? [];
-  const logs = useSupplementLogs(account).data ?? [];
+  const intakeQuery = useIntake(account);
+  const supplementsQuery = useSupplements(account);
+  const activitiesQuery = useActivities(account);
+  const stepsQuery = useSteps(account);
+  const logsQuery = useSupplementLogs(account);
+  const intake = intakeQuery.data ?? [];
+  const supplements = supplementsQuery.data ?? [];
+  const activities = activitiesQuery.data ?? [];
+  const steps = stepsQuery.data ?? [];
+  const logs = logsQuery.data ?? [];
+  // Read here, not from the prop: when the first pull lands, Home may render the new weigh-ins a
+  // moment after this card has stopped waiting, and the row would flash « pas encore saisie ».
+  const latestWeighings = useWeighings(account).data ?? weighings;
+  // A row says « pas encore saisi » only once it knows: its own reads are done, and a device
+  // that never received the account's data has its first sync behind it.
+  const firstPull = useFirstPull(account);
+  const unknown = {
+    activity: firstPull || activitiesQuery.isPending || stepsQuery.isPending,
+    weighIn: firstPull,
+    intake: firstPull || intakeQuery.isPending,
+    supplements: firstPull || supplementsQuery.isPending || logsQuery.isPending,
+  };
+  const anyUnknown = Object.values(unknown).some(Boolean);
   const { write, toast, error, clearError, dismiss } = useWriter(account);
   const record = useRecord(account);
   const [open, setOpen] = useState<Gesture | null>(null);
@@ -88,7 +108,7 @@ export function TodayCard({
     if (await write(entries, previous, text)) setLeaving(true);
   };
 
-  const weighed = weighings.find((w) => w.date === today);
+  const weighed = latestWeighings.find((w) => w.date === today);
   const own = intake.find((l) => l.date === today);
   const active = supplements.filter((s) => !s.removed);
   const ticked = logs.filter(
@@ -108,6 +128,7 @@ export function TodayCard({
     <>
       <section
         aria-labelledby="today"
+        aria-busy={anyUnknown || undefined}
         className="flex flex-col rounded-card border border-border bg-card px-4 pt-3 pb-1"
       >
         <h2
@@ -122,7 +143,11 @@ export function TodayCard({
         <Row
           icon={ActivityIcon}
           title={t("today.activity")}
-          status={daySummaryText(activitySummary(activities, steps, today), t, i18n.language)}
+          status={
+            unknown.activity
+              ? null
+              : daySummaryText(activitySummary(activities, steps, today), t, i18n.language)
+          }
           onClick={() => setOpen("activity")}
           sheet={ActivitySheet}
         />
@@ -130,9 +155,11 @@ export function TodayCard({
           icon={Scale}
           title={t("today.weighIn")}
           status={
-            weighed
-              ? t("today.weighInDone", { value: formatKg(weighed.weightKg, i18n.language) })
-              : t("today.weighInEmpty")
+            unknown.weighIn
+              ? null
+              : weighed
+                ? t("today.weighInDone", { value: formatKg(weighed.weightKg, i18n.language) })
+                : t("today.weighInEmpty")
           }
           onClick={() => setOpen("weighIn")}
           sheet={WeighInSheet}
@@ -140,15 +167,19 @@ export function TodayCard({
         <Row
           icon={Utensils}
           title={t("today.intake")}
-          status={intakeText}
+          status={unknown.intake ? null : intakeText}
           onClick={() => setOpen("intake")}
           sheet={IntakeSheet}
         />
-        {active.length > 0 ? (
+        {unknown.supplements || active.length > 0 ? (
           <Row
             icon={Pill}
             title={t("today.supplements")}
-            status={t("today.supplementsDone", { taken: ticked.length, count: active.length })}
+            status={
+              unknown.supplements
+                ? null
+                : t("today.supplementsDone", { taken: ticked.length, count: active.length })
+            }
             onClick={() => setOpen("supplements")}
             sheet={SupplementsSheet}
           />
@@ -326,6 +357,8 @@ function RowIcon({ icon: Icon }: { icon: LucideIcon }) {
 }
 
 // One gesture: its name, where it stands today, and a chevron; the whole line opens the sheet.
+// A status still unknown (null) is a blank line of the same height, so nothing moves when it
+// comes; the no-break space keeps the line from collapsing.
 function Row({
   icon,
   title,
@@ -335,7 +368,7 @@ function Row({
 }: {
   icon: LucideIcon;
   title: string;
-  status: string;
+  status: string | null;
   onClick: () => void;
   sheet: AsyncRouteComponent<never>;
 }) {
@@ -351,7 +384,13 @@ function Row({
         <RowIcon icon={icon} />
         <span className="flex min-w-0 flex-1 flex-col">
           <span className="font-semibold">{title}</span>
-          <span className="text-[13px] text-muted-foreground">{status}</span>
+          {status === null ? (
+            <span aria-hidden className="text-[13px] text-muted-foreground">
+              {"\u00a0"}
+            </span>
+          ) : (
+            <span className="text-[13px] text-muted-foreground">{status}</span>
+          )}
         </span>
         <ChevronRight aria-hidden className="size-5 shrink-0 text-muted-foreground" />
       </button>

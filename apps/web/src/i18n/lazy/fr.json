@@ -201,6 +201,7 @@
       "size_one": "{{count}} exercice · ~{{minutes}} min",
       "size_other": "{{count}} exercices · ~{{minutes}} min",
       "see": "Voir",
+      "hide": "Masquer",
       "noClimbing": "sans escalade",
       "start": "Commencer",
       "resume": "Reprendre"

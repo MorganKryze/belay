@@ -51,6 +51,26 @@ test("the avatar opens Réglages", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1, name: "Settings" })).toBeVisible();
 });
 
+test("one avatar link on desktop Accueil", async ({ page }) => {
+  await fakeServer(page, { rows: WEEKS });
+  await page.goto("/");
+  await expect(page.locator("main h1")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Settings" })).toHaveCount(1);
+  await expect(topBar(page).getByRole("link", { name: "Settings" })).toBeVisible();
+});
+
+test.describe("on a phone", () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+  test("the title's avatar stays the way to Réglages on a phone", async ({ page }) => {
+    await fakeServer(page, { rows: WEEKS });
+    await page.goto("/");
+    const title = page.locator("main h1");
+    await expect(title).toBeVisible();
+    await expect(page.getByRole("link", { name: "Settings" })).toHaveCount(1);
+    await expect(title.locator("..").getByRole("link", { name: "Settings" })).toBeVisible();
+  });
+});
+
 test("a toast sits centred, 400 px wide, 24 px from the bottom", async ({ page }) => {
   await fakeServer(page, { rows: WEEKS });
   await page.goto("/");

@@ -1,5 +1,5 @@
 import { addDays } from "@belay/shared/body/dates";
-import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { IDBFactory } from "fake-indexeddb";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import i18n from "../i18n";
@@ -37,7 +37,9 @@ afterEach(async () => {
 const row = () => screen.findByRole("button", { name: /^Weigh-in/ });
 // The weigh-in sheet, opened from its line of the "Today" card.
 async function openSheet() {
-  fireEvent.click(await row());
+  // Awaited: the sheet's code may still be loading, and its render resumes inside this act.
+  const line = await row();
+  await act(async () => fireEvent.click(line));
   return screen.findByRole("dialog", { name: "Weigh-in" });
 }
 const field = () => screen.findByRole("textbox", { name: "Weight" });
@@ -49,7 +51,7 @@ describe("the weigh-in line and its sheet", () => {
     await seed(ADA.id, [weight("2026-10-06", 80.2)]);
     fakeApi({ me: ADA });
     renderRoute("/");
-    expect((await row()).textContent).toContain("not entered yet");
+    await waitFor(async () => expect((await row()).textContent).toContain("not entered yet"));
     await openSheet();
     expect(((await field()) as HTMLInputElement).value).toBe("80.2");
     expect(screen.getByText("prefilled with your last weigh-in")).toBeTruthy();

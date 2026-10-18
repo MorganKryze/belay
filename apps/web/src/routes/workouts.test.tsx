@@ -44,9 +44,9 @@ describe("the Sessions tab", () => {
     const see = within(a).getByRole("button", { name: "See" });
     expect(see.getAttribute("aria-expanded")).toBe("false");
     fireEvent.click(see);
-    const lateral = within(a).getByRole("link", { name: /Dumbbell lateral raise/ });
+    const lateral = await within(a).findByRole("link", { name: /Dumbbell lateral raise/ });
     expect(lateral.textContent).toContain("3\u00a0×\u00a012–20 · tri-set");
-    expect(lateral.getAttribute("href")).toBe("/exercises/ds%3A0334");
+    expect(lateral.getAttribute("href")).toBe("/exercises/ds%3A0334?from=program&see=A");
     expect(screen.getByText("The program is edited on a computer.")).toBeTruthy();
   });
 

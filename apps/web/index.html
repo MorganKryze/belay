@@ -39,14 +39,13 @@
           system-ui,
           sans-serif;
       }
-      /* A wait past 600 ms gets the loading mark's breathing, the second hook half a beat behind.
-         Until then the hooks stand at full strength, as the launch images paint them. */
+      /* The mark breathes from its first frame, the second hook half a beat behind. Each breath
+         starts at full strength, as the launch images paint the mark. */
       .launch [data-hook] {
         animation: var(--animate-breathe);
-        animation-delay: var(--delay-launch-loader);
       }
       .launch [data-hook="b"] {
-        animation-delay: calc(var(--delay-launch-loader) + var(--dur-breathe) / 2);
+        animation-delay: calc(var(--dur-breathe) / 2);
       }
       /* Once the account is known: a short fade, then out of reach; at once under reduced motion. */
       .launched .launch {

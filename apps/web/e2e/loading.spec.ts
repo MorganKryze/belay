@@ -4,8 +4,9 @@ import { fakeServer, WEEKS } from "./fake-server";
 import { readMotion, recordMotion } from "./motion";
 
 // No fake clock here: the router times its pending page with Date.now(), and a clock that stands
-// still would keep that page from ever showing.
-test.use({ locale: "en-US", timezoneId: "Europe/Paris" });
+// still would keep that page from ever showing. The service worker is kept out: once it controls
+// the page it serves the chunks from its cache, where no route can hold them.
+test.use({ locale: "en-US", timezoneId: "Europe/Paris", serviceWorkers: "block" });
 
 const OUT = "cubic-bezier(0.2, 0.8, 0.2, 1)";
 const BREATHE = "cubic-bezier(0.42, 0, 0.58, 1)";
@@ -65,6 +66,8 @@ async function openHome(page: Page) {
   await fakeServer(page, { rows: WEEKS });
   await page.goto("/");
   await expect(page.getByRole("button", { name: /^Intake/ })).toBeVisible();
+  // The launch screen holds its second over Home: a tap before it goes would not reach the tab.
+  await expect(page.locator(".launch")).toBeHidden();
 }
 
 const tab = (page: Page, name: string) =>
@@ -129,11 +132,8 @@ test.describe("normal motion", () => {
   });
 
   // A finger, not a pointer, and the code held from the tap, so neither a hover nor an earlier
-  // fetch can hide the wait. The service worker is kept out: once it controls the page it serves
-  // the chunk from its cache, where no route can hold it.
+  // fetch can hide the wait.
   test.describe("tapped", () => {
-    test.use({ serviceWorkers: "block" });
-
     test("a tab tapped while its code is held shows the pending page at 150 ms for 400 ms, and not once warm", async ({
       page,
     }) => {

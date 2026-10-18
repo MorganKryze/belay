@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { IDBFactory } from "fake-indexeddb";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import i18n from "../i18n";
@@ -71,6 +71,36 @@ describe("Home", () => {
     expect(await screen.findByText(/won't let Belay save on the device/)).toBeTruthy();
     expect(screen.getByRole("link", { name: "Use the tools without an account" })).toBeTruthy();
   });
+});
+
+describe("the title's avatar", () => {
+  // The top bar carries its own avatar from 1 024 px (checked on a real screen in e2e).
+  const titleAvatar = async (title: string) => {
+    const heading = await screen.findByRole("heading", { name: title, level: 1 });
+    return within(heading.parentElement!).getByRole("link", { name: "Settings" });
+  };
+
+  it.each([
+    ["signed in", "Hello, Ada", () => fakeApi({ me: ADA })],
+    ["signed out", "Belay", () => fakeApi({ me: null })],
+    [
+      "unavailable",
+      "Hello, Ada",
+      () => {
+        fakeApi({ me: ADA });
+        vi.spyOn(indexedDB, "open").mockImplementation(() => {
+          throw new DOMException("denied", "SecurityError");
+        });
+      },
+    ],
+  ])(
+    "the title's avatar is hidden from 1 024 px in every account state: %s",
+    async (_, title, api) => {
+      api();
+      renderRoute("/");
+      expect((await titleAvatar(title)).parentElement!.className).toBe("lg:hidden");
+    },
+  );
 });
 
 describe("Home sign-in failure", () => {

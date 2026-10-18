@@ -108,7 +108,7 @@ export function Sheet({
           <Dialog.Overlay
             ref={veil}
             data-sheet-overlay
-            className="fixed inset-0 z-30 bg-scrim data-[state=closed]:animate-overlay-out data-[state=open]:animate-overlay-in"
+            className="fixed inset-0 z-[35] bg-scrim data-[state=closed]:animate-overlay-out data-[state=open]:animate-overlay-in"
           />
           <Dialog.Content
             ref={exit.contentRef}

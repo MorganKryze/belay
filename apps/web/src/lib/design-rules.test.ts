@@ -108,11 +108,28 @@ describe("design rules", () => {
     ).toEqual([]);
   });
 
-  it("keyframes move only transform and opacity", () => {
+  it("keyframes move only transform and opacity, the veil aside", () => {
     expect(CSS).toMatch(/@keyframes/);
     expect(keyframeViolations(CSS)).toEqual([]);
     expect(keyframeViolations("@keyframes grow { from { height: 0; opacity: 0 } }")).toEqual([
       "grow: height",
+    ]);
+  });
+
+  it("only the veil animates a colour in its keyframes", () => {
+    expect(CSS).toMatch(/@keyframes veil-in\s*\{\s*from\s*\{\s*background-color:\s*transparent;/);
+    expect(CSS).toMatch(/@keyframes veil-out\s*\{\s*to\s*\{\s*background-color:\s*transparent;/);
+    expect(
+      keyframeViolations(
+        "@keyframes veil-in { from { background-color: transparent; } } @keyframes veil-out { to { background-color: transparent; } }",
+      ),
+    ).toEqual([]);
+    expect(
+      keyframeViolations("@keyframes tint { from { background-color: transparent; } }"),
+    ).toEqual(["tint: background-color"]);
+    expect(keyframeViolations("@keyframes veil-in { from { color: red; height: 0; } }")).toEqual([
+      "veil-in: color",
+      "veil-in: height",
     ]);
   });
 
@@ -121,8 +138,8 @@ describe("design rules", () => {
     const ALLOWED: Record<string, string> = {
       "--animate-sheet-in": "sheet-in var(--dur-slide-reduced) var(--ease-out) both",
       "--animate-sheet-out": "sheet-out var(--dur-slide-reduced) var(--ease-out) both",
-      "--animate-overlay-in": "fade-in var(--dur-veil-reduced) var(--ease-out) both",
-      "--animate-overlay-out": "fade-out var(--dur-veil-reduced) var(--ease-out) both",
+      "--animate-overlay-in": "veil-in var(--dur-veil-reduced) var(--ease-out) both",
+      "--animate-overlay-out": "veil-out var(--dur-veil-reduced) var(--ease-out) both",
       // A pushed page slides in over a still page and Back slides it out the same way; the session
       // cover rises and sinks like a sheet.
       "--animate-page-push-in": "page-push-in var(--dur-slide-reduced) var(--ease-out) both",

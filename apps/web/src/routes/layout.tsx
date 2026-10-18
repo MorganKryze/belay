@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { TabBar } from "@/components/tab-bar";
 import { TopBar } from "@/components/top-bar";
 import { UpdateBanner } from "@/components/update-banner";
+import { holdLaunch } from "@/lib/launch";
 import { useOnline } from "@/lib/online";
 import { usePresence } from "@/lib/presence";
 import { type Account, AccountProvider, useAccount, useHistory } from "@/sync/account";
@@ -78,15 +79,15 @@ function Shell() {
   const topBar = !/^\/workout(?:\/|$)/.test(pathname);
   const session = useOpenSession(account);
   // The launch screen of index.html sits outside the root and covers the wait for the account,
-  // so the first screen shows the right one; the class fades it out. An answer that never comes
-  // (a hung request, storage that never opens) must not keep it up: after 4 s it goes anyway.
+  // so the first screen shows the right one; the class fades it out once the account is known
+  // and the mark has held its second since it was painted. An answer that never comes (a hung
+  // request, storage that never opens) must not keep it up: past the safety delay it goes anyway.
   const known = account.kind !== "loading";
-  useEffect(() => {
-    const launched = () => document.body.classList.add("launched");
-    if (known) return launched();
-    const hold = setTimeout(launched, 4000);
-    return () => clearTimeout(hold);
-  }, [known]);
+  const [start] = useState(() => performance.now());
+  useEffect(
+    () => holdLaunch(known, () => document.body.classList.add("launched"), start),
+    [known, start],
+  );
   const bar = usePresence(docked ? session : null);
   // A client navigation lands focus on the new page's h1, so screen readers announce it. The
   // first load (no fromLocation) is left alone: the browser starts at the top already. A lazy
