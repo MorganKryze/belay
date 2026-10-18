@@ -16,7 +16,7 @@ export const SCREENS: readonly Screen[] = [
   { width: 375, height: 667, ratio: 2, top: 20 },
   { width: 375, height: 812, ratio: 3, top: 44 },
   { width: 414, height: 896, ratio: 2, top: 48 },
-  { width: 414, height: 896, ratio: 3, top: 48 },
+  { width: 414, height: 896, ratio: 3, top: 44 },
   { width: 390, height: 844, ratio: 3, top: 47 },
   { width: 428, height: 926, ratio: 3, top: 47 },
   { width: 393, height: 852, ratio: 3, top: 59 },
