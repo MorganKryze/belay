@@ -44,7 +44,7 @@ export function ActionSheet({
         <Dialog.Portal forceMount>
           <Dialog.Overlay
             data-sheet-overlay
-            className="fixed inset-0 z-30 bg-scrim data-[state=closed]:animate-overlay-out data-[state=open]:animate-overlay-in"
+            className="fixed inset-0 z-[35] bg-scrim data-[state=closed]:animate-overlay-out data-[state=open]:animate-overlay-in"
           />
           <Dialog.Content
             ref={exit.contentRef}

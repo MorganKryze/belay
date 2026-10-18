@@ -8,6 +8,8 @@ export type Motion = {
   transforms: boolean;
   // A scale() or a matrix that stretches an axis, or a scale property other than none or 1.
   scales: boolean;
+  // The CSS properties the keyframes animate, hyphenated and sorted.
+  properties: string[];
   kind: "animation" | "transition";
 };
 
@@ -45,6 +47,16 @@ export async function recordMotion(page: Page): Promise<void> {
       const [a, d] = matrix[1] ? [n[0], n[5]] : [n[0], n[3]];
       return a !== 1 || d !== 1;
     };
+    const properties = (keyframes: Keyframe[]) =>
+      [
+        ...new Set(
+          keyframes.flatMap((k) =>
+            Object.keys(k)
+              .filter((p) => !["offset", "computedOffset", "easing", "composite"].includes(p))
+              .map((p) => p.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)),
+          ),
+        ),
+      ].sort();
     const tick = () => {
       for (const a of document.getAnimations()) {
         if (seen.has(a)) continue;
@@ -61,6 +73,7 @@ export async function recordMotion(page: Page): Promise<void> {
           easing: transition ? effect.getTiming().easing! : String(keyframes[0]?.easing),
           transforms: keyframes.some(moves),
           scales: keyframes.some(stretches),
+          properties: properties(keyframes),
           kind: transition ? "transition" : "animation",
         });
       }
