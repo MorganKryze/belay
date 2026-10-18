@@ -162,9 +162,11 @@ function Shell() {
           <div className="contents lg:hidden *:[view-transition-name:dock]">
             <TabBar
               above={
-                bar.shown && (
+                bar.shown &&
+                account.kind === "open" && (
                   <Suspense fallback={null}>
                     <SessionBar
+                      account={account}
                       workout={bar.shown.workout}
                       sets={bar.shown.sets}
                       leaving={bar.leaving}

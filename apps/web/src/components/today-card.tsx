@@ -52,7 +52,8 @@ const SHEETS = [ActivitySheet, WeighInSheet, IntakeSheet, SupplementsSheet];
 type Gesture = "activity" | "weighIn" | "intake" | "supplements";
 
 // Home's "Today" card (D1): the day's session first, then one line per gesture of the day with
-// where it stands; a tap starts or resumes the session, or opens the gesture's sheet.
+// where it stands; a tap opens the session's preview or resumes the open one, or opens the
+// gesture's sheet.
 export function TodayCard({
   account,
   weighings,
@@ -324,16 +325,32 @@ function SessionRow({
       minutes: estimatedMinutes({ slots: plan }),
     });
   }
+  const line = (
+    <>
+      <RowIcon icon={Dumbbell} />
+      <span className="flex min-w-0 flex-1 flex-col">
+        <span className="font-semibold">{sessionTitle(code, t)}</span>
+        <span className="text-[13px] text-muted-foreground">{status}</span>
+      </span>
+      <ChevronRight aria-hidden className="size-5 shrink-0 text-muted-foreground" />
+    </>
+  );
   return (
     <RowShell>
-      <Link to="/workout" search={{ start: code }} className={rowLine}>
-        <RowIcon icon={Dumbbell} />
-        <span className="flex min-w-0 flex-1 flex-col">
-          <span className="font-semibold">{sessionTitle(code, t)}</span>
-          <span className="text-[13px] text-muted-foreground">{status}</span>
-        </span>
-        <ChevronRight aria-hidden className="size-5 shrink-0 text-muted-foreground" />
-      </Link>
+      {open ? (
+        <Link to="/workout" search={{ start: code }} className={rowLine}>
+          {line}
+        </Link>
+      ) : (
+        <Link
+          to="/workouts/session/$code"
+          params={{ code }}
+          search={{ from: "home" }}
+          className={rowLine}
+        >
+          {line}
+        </Link>
+      )}
     </RowShell>
   );
 }

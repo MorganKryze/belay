@@ -136,7 +136,7 @@ function Choice({
     <button
       type="button"
       onClick={() => onPick(e)}
-      className="flex min-h-16 w-full items-center gap-3 border-t border-border py-2 text-left"
+      className="press-tint flex min-h-16 w-full items-center gap-3 border-t border-border py-2 text-left"
     >
       <BodyThumb primary={e.primary[0]!} secondary={e.secondary} />
       <span className="flex min-w-0 flex-1 flex-col">

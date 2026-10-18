@@ -54,11 +54,18 @@ export function lossView(lossPct: number): { kind: "loss" | "gain"; value: numbe
 }
 
 // A calendar day of the person ("YYYY-MM-DD"), written in UTC so no timezone shifts it.
-function dayText(date: ISODate, locale: string, today: ISODate, weekday: boolean): string {
+function dayText(
+  date: ISODate,
+  locale: string,
+  today: ISODate,
+  weekday: boolean,
+  long = false,
+): string {
+  const length = long ? "long" : "short";
   return new Intl.DateTimeFormat(locale, {
-    ...(weekday ? { weekday: "short" } : {}),
+    ...(weekday ? { weekday: length } : {}),
     day: "numeric",
-    month: "short",
+    month: length,
     ...(date.slice(0, 4) === today.slice(0, 4) ? {} : { year: "numeric" }),
     timeZone: "UTC",
   })
@@ -72,14 +79,14 @@ export const formatShortDay = (date: ISODate, locale: string, today: ISODate): s
   dayText(date, locale, today, false);
 
 // "Mer. 30 sept.", "Wed, Sep 30": the day of a weigh-in, starting a line; inside a sentence
-// ("Pesée du mer. 30 sept."), as the language writes it.
+// ("Pesée du mer. 30 sept."), as the language writes it. In full ("mardi 14 octobre") with `long`.
 export function formatWeekday(
   date: ISODate,
   locale: string,
   today: ISODate,
-  { startOfLine = true } = {},
+  { startOfLine = true, long = false } = {},
 ): string {
-  const text = dayText(date, locale, today, true);
+  const text = dayText(date, locale, today, true, long);
   return startOfLine ? text.charAt(0).toUpperCase() + text.slice(1) : text;
 }
 

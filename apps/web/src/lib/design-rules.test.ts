@@ -133,7 +133,7 @@ describe("design rules", () => {
     ]);
   });
 
-  it("reduced motion keeps every enter and leave a fade of 120 ms at most, except the listed slides and veils", () => {
+  it("reduced motion keeps every enter and leave a fade of 120 ms at most, except the listed slides, veils, the session bar and the tabs", () => {
     // Sheets still slide and their veil fades a little longer, the way iOS does it.
     const ALLOWED: Record<string, string> = {
       "--animate-sheet-in": "sheet-in var(--dur-slide-reduced) var(--ease-out) both",
@@ -150,6 +150,10 @@ describe("design rules", () => {
       "--animate-page-uncover-out": "sheet-out var(--dur-slide-reduced) var(--ease-out) both",
       "--animate-page-under-in": "none",
       "--animate-page-under-out": "none",
+      // The session bar fades in at the veil's pace as the session lowers onto the page.
+      "--animate-session-bar-in": "fade-in var(--dur-veil-reduced) var(--ease-out) both",
+      // The tabs come back at the same pace when the session cover rises or sinks.
+      "--animate-dock-in": "fade-in var(--dur-veil-reduced) var(--ease-out) both",
     };
     const theme = declarations(block(CSS, "@theme static {"));
     const media = block(CSS, "@media (prefers-reduced-motion: reduce)");
@@ -180,6 +184,10 @@ describe("design rules", () => {
       }
     }
     expect(reduced.get("--dock-fade")).toBe("var(--dur-veil-reduced)");
+    expect(theme.get("--animate-dock-in")).toBe(theme.get("--animate-fade-in"));
+    expect(CSS).toMatch(
+      /html:active-view-transition-type\(cover, uncover\)::view-transition-new\(dock\)\s*\{\s*animation: var\(--animate-dock-in\);/,
+    );
     expect(reduced.get("--press-scale")).toBe("1");
     expect(reduced.get("--slide-duration")).toBe("0s");
     expect(reduced.get("--tint-duration")).toBe("0s");

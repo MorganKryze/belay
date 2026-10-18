@@ -96,6 +96,13 @@ describe("body formats", () => {
     expect(formatWeekday("2026-09-30", "en", today)).toBe("Wed, Sep 30");
   });
 
+  it("writes the weekday and the month in full inside a sentence when asked", () => {
+    const long = { startOfLine: false, long: true };
+    expect(formatWeekday("2026-10-13", "fr", today, long)).toBe("mardi 13 octobre");
+    expect(formatWeekday("2026-10-01", "fr", today, long)).toBe("jeudi 1er octobre");
+    expect(formatWeekday("2026-10-13", "en", today, long)).toBe("Tuesday, October 13");
+  });
+
   it("writes a week with its month once when it shares it", () => {
     expect(formatWeekRange("2026-09-22", "2026-09-28", "fr", today)).toBe("22 – 28 sept.");
     expect(formatWeekRange("2026-09-29", "2026-10-05", "fr", today)).toBe("29 sept. – 5 oct.");

@@ -1,6 +1,6 @@
 import { exerciseById } from "@belay/shared/exercises/catalog";
 import { groupOf } from "@belay/shared/training/program";
-import type { Summary } from "@belay/shared/training/rules";
+import type { Load, Summary } from "@belay/shared/training/rules";
 import type { Slot } from "@belay/shared/training/workout";
 import type { TFunction } from "i18next";
 import { formatNumber } from "@/lib/format";
@@ -15,6 +15,15 @@ export const formatSets = (slot: Pick<Slot, "sets" | "repRange" | "measure">) =>
 
 export const formatRir = (slot: Slot, t: TFunction) =>
   t("workouts.rir", { range: formatRange(slot.rirTarget) });
+
+// "80 kg × 8", "10 kg · 45 s" or "45 s": one set, as the history writes it.
+export function formatLoad(load: Load, t: TFunction, locale: string): string {
+  const kg = formatNumber(load.weightKg, locale, { digits: 2, grouping: false });
+  if (load.seconds === null) return t("history.load", { kg, reps: load.reps });
+  return load.weightKg > 0
+    ? t("history.loadSeconds", { kg, seconds: load.seconds })
+    : t("history.seconds", { seconds: load.seconds });
+}
 
 // "45 s", "2 min", "2 min 30".
 export function formatRest(seconds: number, t: TFunction): string {
@@ -41,6 +50,16 @@ export function formatDuration(ms: number, t: TFunction): string {
         h: Math.floor(minutes / 60),
         mm: String(minutes % 60).padStart(2, "0"),
       });
+}
+
+// The duration as a figure card draws it: "48 min" → { value: "48", unit: "min" }; an hour or
+// more stays whole, "1 h 04" → { value: "1 h 04" }.
+export function durationParts(ms: number, t: TFunction): { value: string; unit?: string } {
+  const text = formatDuration(ms, t);
+  const minutes = Math.max(0, Math.round(ms / 60_000));
+  if (minutes >= 60) return { value: text };
+  const value = String(minutes);
+  return { value, unit: text.slice(text.indexOf(value) + value.length).trim() };
 }
 
 // "Record : Barbell bench press, 82,5 kg × 8", or "Record : Dead hang, 75 s" for a timed one.

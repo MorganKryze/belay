@@ -10,6 +10,7 @@ const LEVELS = [
   ["/tools", "/tools", 0],
   ["/settings", "/settings", 1],
   ["/workouts/$workoutId", "/workouts/0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7e01", 1],
+  ["/workouts/session/$code", "/workouts/session/A", 1],
   ["/exercises/$exerciseId", "/exercises/ds:0025", 1],
   ["/tools/$toolId", "/tools/plates", 1],
   ["/settings/profile", "/settings/profile", 2],
@@ -69,12 +70,14 @@ describe("navKind", () => {
     expect(navKind(undefined, "/settings", false)).toBe(false);
   });
 
-  it("into the session is a cover, out of it an uncover, session to summary instant", () => {
+  it("into the session is a cover, out of it an uncover, its summary a cover over it", () => {
     expect(navKind("/", "/workout", false)).toBe("cover");
     expect(navKind("/workouts/x", "/workout/edit", false)).toBe("cover");
     expect(navKind("/workout", "/", false)).toBe("uncover");
     expect(navKind("/workout/summary/x", "/workouts", false)).toBe("uncover");
-    expect(navKind("/workout", "/workout/summary/x", false)).toBe(false);
+    expect(navKind("/workout", "/workout/summary/x", false)).toBe("cover");
+    expect(navKind("/workout/summary/x", "/workout", false)).toBe(false);
+    expect(navKind("/workout/edit", "/workout", false)).toBe(false);
   });
 
   it("a browser back swipe is instant", () => {

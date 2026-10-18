@@ -19,8 +19,8 @@ const card = "rounded-card border border-border bg-card";
 export function ExercisePage() {
   const { t, i18n } = useTranslation();
   const { exerciseId } = useParams({ from: "/exercises/$exerciseId" });
-  // Opened from the Programme, Back leads there with the same sessions open.
-  const { from, see } = useSearch({ from: "/exercises/$exerciseId" });
+  // Opened from a session's preview, Back leads to that preview, as it was opened.
+  const { from, session } = useSearch({ from: "/exercises/$exerciseId" });
   const exercise = exerciseById(exerciseId);
   const steps = useQuery({
     queryKey: ["steps", i18n.language.startsWith("fr") ? "fr" : "en"],
@@ -40,9 +40,13 @@ export function ExercisePage() {
       <PageHeader
         title={exercise.name}
         back={
-          from === "program" ? (
-            <BackLink to="/workouts" search={{ tab: "program", see }}>
-              {t("workouts.tabs.program")}
+          session ? (
+            <BackLink
+              to="/workouts/session/$code"
+              params={{ code: session }}
+              search={from === "home" ? { from } : {}}
+            >
+              {t("sessionBar.session", { code: session })}
             </BackLink>
           ) : (
             <BackLink to="/workouts" search={{ tab: "exercises" }}>

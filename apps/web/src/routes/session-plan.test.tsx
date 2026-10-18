@@ -131,7 +131,11 @@ describe("session C's rule (spec D6, §4.3)", () => {
     log(thrust, "Log set 1");
     await waitFor(() => within(thrust).getByRole("img", { name: "Set 1 logged" }));
     fireEvent.click(screen.getByRole("button", { name: "Finish" }));
-    expect(await screen.findByText("22 sets not done will not be saved.")).toBeTruthy();
+    expect(
+      await screen.findByText(
+        "1 set logged out of 23. The 22 unticked sets won't be saved; your program doesn't change.",
+      ),
+    ).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Keep going" }));
     fireEvent.click(
       within(card("Cable lat pulldown full range of motion")).getByRole("button", {
@@ -246,9 +250,15 @@ describe("« + Série » and « + Exercice » (spec D7, D8)", () => {
       expect((await stored()).history.sets.map((s) => s.position)).toEqual([7]),
     );
     expect((await session()).plan[0]!.sets).toBe(4);
-    // Every planned set is still to do.
+    // Every planned set is still to do. Shown as logged first: with nothing logged on screen,
+    // Finish opens the other sheet.
+    await waitFor(() => within(bench).getByRole("img", { name: "Set 5 logged" }));
     fireEvent.click(screen.getByRole("button", { name: "Finish" }));
-    expect(await screen.findByText("19 sets not done will not be saved.")).toBeTruthy();
+    expect(
+      await screen.findByText(
+        "0 sets logged out of 19. The 19 unticked sets won't be saved; your program doesn't change.",
+      ),
+    ).toBeTruthy();
   });
 
   it("adds an exercise at the end from the library, and leaves it out again", async () => {

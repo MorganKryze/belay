@@ -1,4 +1,5 @@
 import { isToolId, type ToolId } from "@belay/shared/tools/catalog";
+import { sessionByCode } from "@belay/shared/training/program";
 import { isSessionCode } from "@belay/shared/training/workout";
 import {
   createRootRoute,
@@ -15,7 +16,7 @@ import { trackEntries } from "./lib/back";
 import { NotFound, Pending, RouteError } from "./routes/fallbacks";
 import { Home } from "./routes/home";
 import { Layout } from "./routes/layout";
-import { isWorkoutTab, parseSee, type WorkoutTab } from "./workouts/tabs";
+import { isWorkoutTab, type WorkoutTab } from "./workouts/tabs";
 
 // ponytail: code-based routes, 20 screens today (the tools share one lazy `$toolId` route).
 // Switch to file-based routing at ~20 screens, or when this file passes ~150 lines of route
@@ -40,16 +41,25 @@ const bodyRoute = createRoute({
   path: "/body",
   component: bodyPage,
 });
-// The Sessions tab: its segment travels in the URL, so a link can open one (?tab=program), and so
-// do the Programme's open sessions (?see=B,C).
+// The Sessions tab: its segment travels in the URL, so a link can open one (?tab=program).
 const workoutsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/workouts",
   component: workoutsPage,
-  validateSearch: (search: Record<string, unknown>): { tab?: WorkoutTab; see?: string } => {
-    const see = parseSee(search.see);
-    return { ...(isWorkoutTab(search.tab) && { tab: search.tab }), ...(see && { see }) };
+  validateSearch: (search: Record<string, unknown>): { tab?: WorkoutTab } =>
+    isWorkoutTab(search.tab) ? { tab: search.tab } : {},
+});
+// A session of the program before it starts. Opened from Accueil it says so (?from=home), so
+// its back chevron and the lit tab stay Accueil's, after a reload too.
+const sessionPreviewRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/workouts/session/$code",
+  beforeLoad: ({ params }) => {
+    if (!sessionByCode(params.code)) throw notFound();
   },
+  component: lazyRouteComponent(() => import("./routes/session-preview"), "SessionPreview"),
+  validateSearch: (search: Record<string, unknown>): { from?: "home" } =>
+    search.from === "home" ? { from: "home" } : {},
 });
 const workoutDetailRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -94,10 +104,14 @@ const exerciseRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/exercises/$exerciseId",
   component: lazyRouteComponent(() => import("./routes/exercise"), "ExercisePage"),
-  // Opened from the Programme, it leads back there with the same sessions open.
-  validateSearch: (search: Record<string, unknown>): { from?: "program"; see?: string } => {
-    const see = parseSee(search.see);
-    return { ...(search.from === "program" && { from: "program" as const }), ...(see && { see }) };
+  // Opened from a session's preview (?session=A, and from=home when that preview came from
+  // Accueil), it leads back there.
+  validateSearch: (search: Record<string, unknown>): { session?: string; from?: "home" } => {
+    const session =
+      typeof search.session === "string" && sessionByCode(search.session)
+        ? search.session
+        : undefined;
+    return { ...(session && { session }), ...(search.from === "home" && { from: "home" }) };
   },
 });
 const settingsRoute = createRoute({
@@ -141,6 +155,7 @@ const toolRoute = createRoute({
 export const routeTree = rootRoute.addChildren([
   homeRoute,
   workoutsRoute,
+  sessionPreviewRoute,
   workoutDetailRoute,
   workoutRoute,
   workoutEditorRoute,

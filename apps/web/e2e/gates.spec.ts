@@ -98,6 +98,28 @@ async function expectFits(page: Page) {
 
 const heading = (page: Page) => expect(page.locator("main h1").first()).toBeVisible();
 
+// Session C taken up on this device, then lowered: Accueil with the session bar on a phone.
+async function lowerSession(page: Page) {
+  await fakeServer(page, { changes: RUNNING_C });
+  await page.goto("/workout?start=C");
+  await expect(page.locator(".launch")).toBeHidden();
+  await page.getByRole("button", { name: "Minimize the session" }).click();
+  await expect(page.getByRole("link", { name: /^Session C · .*in progress/ })).toBeVisible();
+}
+
+// Session A started on this device, one set logged, then Finish tapped.
+async function finishWithOneSet(page: Page) {
+  await fakeServer(page, { changes: LAST_A });
+  await page.goto("/workout?start=A");
+  await expect(page.locator(".launch")).toBeHidden();
+  const bench = page.getByRole("region", { name: /^Barbell bench press/ });
+  await bench.getByRole("textbox", { name: "Load of set 1, kg" }).fill("60");
+  await bench.getByRole("textbox", { name: "Reps of set 1" }).fill("8");
+  await bench.getByRole("button", { name: "Log set 1" }).click();
+  await expect(bench.getByRole("img", { name: "Set 1 logged" })).toBeVisible();
+  await page.getByRole("button", { name: "Finish", exact: true }).click();
+}
+
 // Each screen, opened as a person reaches it, with its dialog up when it has one.
 const SCREENS: [string, (page: Page) => Promise<void>][] = [
   [
@@ -122,6 +144,14 @@ const SCREENS: [string, (page: Page) => Promise<void>][] = [
     ],
   ),
   [
+    "the session preview",
+    async (page) => {
+      await fakeServer(page, { changes: LAST_A });
+      await page.goto("/workouts/session/A?from=home");
+      await expect(page.getByRole("link", { name: "Start the session" })).toBeVisible();
+    },
+  ],
+  [
     "Body",
     async (page) => {
       await fakeServer(page, { rows: WEEKS });
@@ -134,6 +164,14 @@ const SCREENS: [string, (page: Page) => Promise<void>][] = [
     async (page) => {
       await fakeServer(page);
       await page.goto("/tools");
+      await heading(page);
+    },
+  ],
+  [
+    "the lowered session on Outils",
+    async (page) => {
+      await lowerSession(page);
+      await page.locator("a[href='/tools']:visible").click();
       await heading(page);
     },
   ],
@@ -202,6 +240,55 @@ const SCREENS: [string, (page: Page) => Promise<void>][] = [
     },
   ],
   [
+    "the session screen, a set logged and a rest running",
+    async (page) => {
+      await fakeServer(page, { changes: LAST_A });
+      await page.goto("/workout?start=A");
+      await expect(page.locator(".launch")).toBeHidden();
+      const bench = page.getByRole("region", { name: /^Barbell bench press/ });
+      await bench.getByRole("textbox", { name: "Load of set 1, kg" }).fill("60");
+      await bench.getByRole("textbox", { name: "Reps of set 1" }).fill("8");
+      await bench.getByRole("button", { name: "Log set 1" }).click();
+      await expect(bench.getByRole("img", { name: "Set 1 logged" })).toBeVisible();
+      await expect(page.getByRole("timer")).toBeVisible();
+    },
+  ],
+  [
+    "the paused session",
+    async (page) => {
+      await fakeServer(page, { changes: LAST_A });
+      await page.goto("/workout?start=A");
+      await expect(page.locator(".launch")).toBeHidden();
+      await page.getByRole("button", { name: "Pause the session" }).click();
+      await expect(page.getByRole("button", { name: "Resume", exact: true })).toBeVisible();
+    },
+  ],
+  [
+    "the finish sheet",
+    async (page) => {
+      await finishWithOneSet(page);
+      await expect(page.getByRole("dialog", { name: "Finish the session?" })).toBeVisible();
+    },
+  ],
+  [
+    "the delete-session confirmation",
+    async (page) => {
+      await finishWithOneSet(page);
+      await page.getByRole("button", { name: "Delete the session…" }).click();
+      await expect(page.getByRole("dialog", { name: "Delete the session?" })).toBeVisible();
+    },
+  ],
+  [
+    "the nothing-logged sheet",
+    async (page) => {
+      await fakeServer(page, { changes: LAST_A });
+      await page.goto("/workout?start=A");
+      await expect(page.locator(".launch")).toBeHidden();
+      await page.getByRole("button", { name: "Finish", exact: true }).click();
+      await expect(page.getByRole("dialog", { name: "Nothing logged yet" })).toBeVisible();
+    },
+  ],
+  [
     "the remove-session action sheet",
     async (page) => {
       await fakeServer(page, { changes: LAST_A });
@@ -209,6 +296,14 @@ const SCREENS: [string, (page: Page) => Promise<void>][] = [
       await page.getByRole("link", { name: /Session A · Push/ }).click();
       await page.getByRole("button", { name: "Delete this session" }).click();
       await expect(page.getByRole("dialog", { name: "Delete this session?" })).toBeVisible();
+    },
+  ],
+  [
+    "the summary",
+    async (page) => {
+      await fakeServer(page, { changes: LAST_A });
+      await page.goto(`/workout/summary/${LAST}`);
+      await expect(page.getByRole("heading", { level: 1, name: "Session A · Push" })).toBeVisible();
     },
   ],
 ];
@@ -289,6 +384,19 @@ test.describe("every action stays reachable on a phone", () => {
   test("the session bar resumes the running session", async ({ page }) => {
     await fakeServer(page, { changes: RUNNING_C });
     await page.goto("/tools");
+    await page.getByRole("link", { name: /In progress · set \d+ of \d+ · Session C/ }).click();
+    await expect(page.getByRole("heading", { level: 1, name: /^Session C · / })).toBeVisible();
+  });
+  test("a tool stays reachable while a session is lowered, and the bar raises it", async ({
+    page,
+  }) => {
+    await lowerSession(page);
+    await page
+      .getByRole("navigation", { name: "Main" })
+      .getByRole("link", { name: "Tools" })
+      .click();
+    await page.getByRole("link", { name: /^Plates/ }).click();
+    await expect(page.getByRole("heading", { level: 1, name: "Plates" })).toBeVisible();
     await page.getByRole("link", { name: /In progress · set \d+ of \d+ · Session C/ }).click();
     await expect(page.getByRole("heading", { level: 1, name: /^Session C · / })).toBeVisible();
   });

@@ -12,14 +12,18 @@ import {
 import {
   autoClose,
   type History,
+  lastFinished,
   lastTime,
   liveSets,
+  loggedByExercise,
   nextTurn,
   openWorkout,
   prefill,
   restEndsAt,
   sessionProgress,
   summary,
+  topSet,
+  lastTopSet,
   turnKey,
   warmups,
   workOrder,
@@ -195,6 +199,106 @@ describe("prefill and lastTime", () => {
         sets: [set(w, 0, 80, 8), set(kept, 0, 80, 8, { removed: true }), set(kept, 1, 82.5, 8)],
       }).map((s) => s.weightKg),
     ).toEqual([82.5]);
+  });
+});
+
+describe("loggedByExercise", () => {
+  const w = workout();
+  it("lists the exercises in plan order, each with its work sets and its top set", () => {
+    const sets = [
+      set(w, 0, 10, 15, { slotIndex: 4, exerciseId: "ds:0334" }),
+      set(w, 0, 80, 8),
+      set(w, 1, 80, 7),
+    ];
+    expect(loggedByExercise(w, sets)).toEqual([
+      {
+        slotIndex: 0,
+        exerciseId: BENCH,
+        workSets: 2,
+        top: { weightKg: 80, reps: 8, seconds: null },
+      },
+      {
+        slotIndex: 4,
+        exerciseId: "ds:0334",
+        workSets: 1,
+        top: { weightKg: 10, reps: 15, seconds: null },
+      },
+    ]);
+  });
+
+  it("leaves out warm-ups, removed sets and a slot with no work set", () => {
+    const sets = [
+      warm(w, 0, 40, 8),
+      set(w, 0, 60, 8, { removed: true }),
+      set(w, 0, 70, 6, { slotIndex: 1 }),
+      warm(w, 1, 50, 5),
+      { ...warm(w, 0, 30, 5), slotIndex: 2 },
+    ];
+    expect(loggedByExercise(w, sets)).toEqual([
+      {
+        slotIndex: 1,
+        exerciseId: BENCH,
+        workSets: 1,
+        top: { weightKg: 70, reps: 6, seconds: null },
+      },
+    ]);
+  });
+
+  it("lists a replaced exercise under the exercise really done, and only this session's sets", () => {
+    const other = workout();
+    const sets = [set(w, 0, 30, 10, { exerciseId: "ds:0405" }), set(other, 0, 90, 5)];
+    expect(loggedByExercise(w, sets)).toEqual([
+      {
+        slotIndex: 0,
+        exerciseId: "ds:0405",
+        workSets: 1,
+        top: { weightKg: 30, reps: 10, seconds: null },
+      },
+    ]);
+  });
+});
+
+describe("topSet", () => {
+  const w = workout();
+  it("the heaviest load wins, then the most reps", () => {
+    expect(topSet([set(w, 0, 80, 7), set(w, 1, 80, 8), set(w, 2, 77.5, 10)])).toEqual({
+      weightKg: 80,
+      reps: 8,
+      seconds: null,
+    });
+  });
+
+  it("a timed set: the longest hold, then the heaviest", () => {
+    const hold = (round: number, weightKg: number, seconds: number) =>
+      set(w, round, weightKg, 0, { reps: null, seconds });
+    expect(topSet([hold(0, 10, 40), hold(1, 0, 45), hold(2, 5, 45)])).toEqual({
+      weightKg: 5,
+      reps: null,
+      seconds: 45,
+    });
+  });
+
+  it("none gives null, and a warm-up is never the top set", () => {
+    expect(topSet([])).toBeNull();
+    expect(topSet([set(w, 0, 100, 5, { warmup: true, position: 0 })])).toBeNull();
+  });
+
+  it("lastTopSet reads the last finished session that did the exercise", () => {
+    const older = workout({ startedAt: "2026-09-30T17:00:00.000Z" });
+    const newer = workout({ startedAt: "2026-10-05T17:00:00.000Z" });
+    const open = workout({ startedAt: "2026-10-07T17:00:00.000Z", endedAt: null });
+    const history: History = {
+      workouts: [older, newer, open],
+      sets: [
+        set(older, 0, 90, 6),
+        set(newer, 0, 80, 7),
+        set(newer, 1, 80, 8),
+        set(open, 0, 100, 5),
+      ],
+    };
+    expect(lastTopSet(history, BENCH, "reps")).toEqual({ weightKg: 80, reps: 8, seconds: null });
+    expect(lastTopSet(history, BENCH, "seconds")).toBeNull();
+    expect(lastTopSet(history, "ds:0405", "reps")).toBeNull();
   });
 });
 
@@ -446,6 +550,61 @@ describe("autoClose (D12)", () => {
   it("ignores a removed set", () => {
     const gone = [set(open, 0, 80, 8, { doneAt: last, removed: true })];
     expect(autoClose(open, gone, at("2026-10-07T23:01:00.000Z"))).toEqual({ kind: "remove" });
+  });
+
+  // Paused at 18:05 after the last set, resumed at 18:35 with no set after it: the start moved
+  // from 17:00 to 17:30, written at 18:35.
+  const resumed = { ...open, startedAt: "2026-10-07T17:30:00.000Z" };
+  const resumeAt = "2026-10-07T18:35:00.000Z";
+
+  it("ends a session resumed after its last set at the resume, 6 hours after it", () => {
+    const w = { ...resumed, startedAtAt: resumeAt };
+    expect(autoClose(w, sets, at("2026-10-08T00:01:00.000Z"))).toEqual({ kind: "keep" });
+    const closing = autoClose(w, sets, at("2026-10-08T00:36:00.000Z"));
+    expect(closing).toEqual({ kind: "end", endedAt: resumeAt });
+    // The time it records is the time the session's clock showed at the resume.
+    const ended = { ...w, endedAt: resumeAt };
+    expect(summary(ended, sets, { workouts: [ended], sets }).durationMs).toBe(65 * 60_000);
+  });
+
+  it("never ends a resumed session before its moved start, however long the pause", () => {
+    // Paused at 18:05, resumed at 20:00: the start moved to 18:55, after the last set.
+    const late = "2026-10-07T20:00:00.000Z";
+    const w = { ...open, startedAt: "2026-10-07T18:55:00.000Z", startedAtAt: late };
+    expect(autoClose(w, sets, at("2026-10-08T02:01:00.000Z"))).toEqual({
+      kind: "end",
+      endedAt: late,
+    });
+  });
+
+  it("still ends at the last set when the start moved before it", () => {
+    const w = { ...resumed, startedAtAt: "2026-10-07T17:45:00.000Z" };
+    expect(autoClose(w, sets, at("2026-10-08T00:01:00.000Z"))).toEqual({
+      kind: "end",
+      endedAt: last,
+    });
+  });
+});
+
+describe("lastFinished", () => {
+  it("is the latest ended session of the code, the open, removed and other ones left out", () => {
+    const early = workout({ startedAt: "2026-10-01T17:00:00.000Z" });
+    const late = workout({ startedAt: "2026-10-05T17:00:00.000Z" });
+    const workouts = [
+      late,
+      early,
+      workout({ startedAt: "2026-10-06T17:00:00.000Z", endedAt: null }),
+      workout({ startedAt: "2026-10-07T17:00:00.000Z", removed: true }),
+      workout({ startedAt: "2026-10-08T17:00:00.000Z", sessionCode: "B" }),
+    ];
+    expect(lastFinished(workouts, "A")).toBe(late);
+    expect(lastFinished([early, late], "A")).toBe(late);
+  });
+
+  it("is null when no session of the code ended", () => {
+    expect(lastFinished([], "A")).toBeNull();
+    expect(lastFinished([workout({ endedAt: null }), workout({ removed: true })], "A")).toBeNull();
+    expect(lastFinished([workout()], "B")).toBeNull();
   });
 });
 

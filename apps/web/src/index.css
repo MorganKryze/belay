@@ -157,8 +157,13 @@
 @theme static {
   --animate-fade-in: fade-in var(--dur-base) var(--ease-out) both;
   --animate-fade-out: fade-out var(--dur-fast) var(--ease-exit) both;
-  /* Toast, session bar. */
+  /* Toast. */
   --animate-rise-in: rise-in var(--dur-base) var(--ease-out) both;
+  /* The session bar: the toast's rise, with its own longer fade under reduced motion. */
+  --animate-session-bar-in: rise-in var(--dur-base) var(--ease-out) both;
+  /* The tabs coming back as the session cover rises or sinks: a plain fade, with its own longer
+     fade under reduced motion. */
+  --animate-dock-in: fade-in var(--dur-base) var(--ease-out) both;
   /* Banners. */
   --animate-drop-in: drop-in var(--dur-base) var(--ease-out) both;
   /* A sheet rises on the nav spring, which leaves at full speed, and glides down on the nav curve;
@@ -492,6 +497,8 @@
     --animate-fade-in: fade-in var(--dur-reduced) var(--ease-out) both;
     --animate-fade-out: fade-out var(--dur-reduced) var(--ease-exit) both;
     --animate-rise-in: fade-in var(--dur-reduced) var(--ease-out) both;
+    --animate-session-bar-in: fade-in var(--dur-veil-reduced) var(--ease-out) both;
+    --animate-dock-in: fade-in var(--dur-veil-reduced) var(--ease-out) both;
     --animate-drop-in: fade-in var(--dur-reduced) var(--ease-out) both;
     --animate-sheet-in: sheet-in var(--dur-slide-reduced) var(--ease-out) both;
     --animate-sheet-out: sheet-out var(--dur-slide-reduced) var(--ease-out) both;
@@ -731,7 +738,9 @@ html:active-view-transition-type(cover, uncover)::view-transition-old(dock),
 html:active-view-transition-type(cover, uncover)::view-transition-old(top-bar) {
   animation: var(--animate-fade-out);
 }
-html:active-view-transition-type(cover, uncover)::view-transition-new(dock),
+html:active-view-transition-type(cover, uncover)::view-transition-new(dock) {
+  animation: var(--animate-dock-in);
+}
 html:active-view-transition-type(cover, uncover)::view-transition-new(top-bar) {
   animation: var(--animate-fade-in);
 }

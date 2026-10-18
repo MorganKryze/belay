@@ -14,12 +14,17 @@ beforeEach(() => {
   indexedDB = new IDBFactory();
   vi.useFakeTimers({ toFake: ["Date"] });
   vi.setSystemTime(new Date(2026, 9, 7, 19, 30));
+  // The app starts with each test: the first sync's 4 s cap counts from here, not from the worker's.
+  const now = performance.now.bind(performance);
+  const start = now();
+  vi.spyOn(performance, "now").mockImplementation(() => now() - start);
   writeLastUser(ADA);
 });
 afterEach(async () => {
   cleanup();
   localStorage.clear();
   vi.useRealTimers();
+  vi.restoreAllMocks();
   vi.unstubAllGlobals();
   await i18n.changeLanguage("en");
 });
@@ -173,7 +178,8 @@ describe("Home's activity line (§4.1)", () => {
     fireEvent.change(date, { target: { value: "2026-10-05" } });
     fireEvent.click(within(s).getByRole("button", { name: "Save" }));
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
-    expect((await line()).textContent).toContain("not entered yet");
+    // Today stays blank until the opening sync has run: it may still be going.
+    await waitFor(async () => expect((await line()).textContent).toContain("not entered yet"));
     expect((await readActivities(await db())).map((a) => a.date)).toEqual(["2026-10-05"]);
   });
 
