@@ -295,7 +295,7 @@ function EditorSlot({
             const label = (key: string) =>
               t(`session.${row.warmup ? "warmupField" : "setField"}.${key}`, { n });
             const input =
-              "h-11 w-full min-w-0 rounded-[10px] border border-input bg-card text-center text-[15px] font-semibold tabular-nums";
+              "h-11 w-full min-w-0 rounded-[10px] border border-input bg-card text-center text-base font-semibold tabular-nums";
             return (
               <div
                 key={row.id}

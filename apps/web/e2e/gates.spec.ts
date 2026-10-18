@@ -330,6 +330,92 @@ for (const viewport of [SMALL, PHONE, DESKTOP]) {
   });
 }
 
+// Every field a person can type in whose text is under 16 px: iOS Safari zooms the page onto such a
+// field on focus and leaves it zoomed after. An invisible field over a chip still takes the focus,
+// so it counts too; only boxes, radios and what an open dialog hides are left out.
+const smallFields = (page: Page) =>
+  page.evaluate(() =>
+    [...document.querySelectorAll<HTMLElement>("input, textarea, select")]
+      .filter((el) => {
+        if (el.closest("[aria-hidden=true], [inert]")) return false;
+        if (["checkbox", "radio", "range", "hidden"].includes(el.getAttribute("type") ?? "")) {
+          return false;
+        }
+        const box = el.getBoundingClientRect();
+        if (box.width <= 1 || box.height <= 1) return false;
+        return parseFloat(getComputedStyle(el).fontSize) < 16;
+      })
+      .map((el) => {
+        const name = el.getAttribute("aria-label") ?? el.id;
+        return `${el.tagName.toLowerCase()} "${name}" ${getComputedStyle(el).fontSize}`;
+      }),
+  );
+
+// The screens above, and those whose fields only show after a tap: a tool, the editor, the
+// exercise picker, the annotation sheet, an exercise's note.
+const FIELD_SCREENS: [string, (page: Page) => Promise<void>][] = [
+  ...SCREENS,
+  [
+    "a tool",
+    async (page) => {
+      await fakeServer(page);
+      await page.goto("/tools/bmi");
+      await expect(page.getByRole("textbox", { name: "Weight" })).toBeVisible();
+    },
+  ],
+  [
+    "the editor",
+    async (page) => {
+      await fakeServer(page, { changes: LAST_A });
+      await page.goto(`/workout/edit?id=${LAST}`);
+      await page.getByRole("button", { name: /^Barbell bench press/ }).click();
+      await page.getByRole("button", { name: "+ Set" }).click();
+      await expect(page.getByRole("textbox", { name: /^Load of set 1/ })).toBeVisible();
+    },
+  ],
+  [
+    "the exercise picker",
+    async (page) => {
+      await fakeServer(page, { changes: LAST_A });
+      await page.goto("/workout?start=A");
+      await expect(page.locator(".launch")).toBeHidden();
+      const bench = page.getByRole("region", { name: /^Barbell bench press/ });
+      await bench.getByRole("button", { name: "Replace" }).click();
+      await expect(page.getByRole("dialog").getByRole("searchbox")).toBeVisible();
+    },
+  ],
+  [
+    "the annotation sheet",
+    async (page) => {
+      await fakeServer(page, { rows: WEEKS });
+      await page.goto("/body");
+      await page.getByRole("button", { name: "Annotation", exact: true }).click();
+      await expect(page.getByRole("dialog", { name: "New annotation" })).toBeVisible();
+    },
+  ],
+  [
+    "an exercise's note",
+    async (page) => {
+      await fakeServer(page, { changes: LAST_A });
+      await page.goto("/workout?start=A");
+      await expect(page.locator(".launch")).toBeHidden();
+      const bench = page.getByRole("region", { name: /^Barbell bench press/ });
+      await bench.getByRole("button", { name: "Note", exact: true }).click();
+      await expect(bench.getByRole("textbox", { name: /^Note on/ })).toBeVisible();
+    },
+  ],
+];
+
+test.describe(`at ${PHONE.width} px`, () => {
+  test.use({ viewport: PHONE });
+  for (const [name, open] of FIELD_SCREENS)
+    test(`every field keeps 16 px text on ${name}`, async ({ page }) => {
+      await open(page);
+      await settled(page);
+      expect(await smallFields(page)).toEqual([]);
+    });
+});
+
 // The way to the settings and the pages under them, from the avatar.
 async function avatarToSupplements(page: Page, around: "main" | "banner") {
   await fakeServer(page, { rows: WEEKS });
