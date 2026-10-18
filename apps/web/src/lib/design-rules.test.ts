@@ -8,6 +8,7 @@ import {
   rawColours,
   sourceFiles,
 } from "@/test/design-rules";
+import { LAUNCH_BACKGROUND } from "@/lib/theme";
 
 const CSS = readFileSync(join(__dirname, "..", "index.css"), "utf8");
 
@@ -30,10 +31,20 @@ describe("design rules", () => {
   it("no component code carries a raw colour", () => {
     const files = sourceFiles();
     expect(files.length).toBeGreaterThan(20);
+    // The browser bar's colours live outside CSS; the next test holds them to the tokens.
+    const launch = Object.values(LAUNCH_BACKGROUND).map(
+      (colour) => `${join(__dirname, "theme.ts")}: ${colour}`,
+    );
     const found = files.flatMap((file) =>
       rawColours(readFileSync(file, "utf8")).map((colour) => `${file}: ${colour}`),
     );
-    expect(found).toEqual([]);
+    expect(found.filter((entry) => !launch.includes(entry))).toEqual([]);
+  });
+
+  it("the launch colours are the page's background tokens", () => {
+    const token = (selector: string) =>
+      declarations(block(CSS, selector)).get("--background")?.toUpperCase();
+    expect(LAUNCH_BACKGROUND).toEqual({ light: token(":root {"), dark: token(".dark {") });
   });
 
   it("finds hex, functional and palette colours", () => {
