@@ -18,6 +18,34 @@ async function holdAccount(page: Page) {
   return answer;
 }
 
+type Launch = { fcp?: number; launchedAt?: number };
+
+// On the real clock: the first paint's start, and the moment body gets its launched class.
+async function recordLaunch(page: Page) {
+  await page.addInitScript(() => {
+    const launch: Launch = {};
+    (window as unknown as { launch: Launch }).launch = launch;
+    new PerformanceObserver((list) => {
+      for (const e of list.getEntriesByName("first-contentful-paint")) launch.fcp ??= e.startTime;
+    }).observe({ type: "paint", buffered: true });
+    new MutationObserver(() => {
+      if (launch.launchedAt === undefined && document.body?.classList.contains("launched"))
+        launch.launchedAt = performance.now();
+    }).observe(document, { attributes: true, attributeFilter: ["class"], subtree: true });
+  });
+}
+
+async function readLaunch(page: Page) {
+  const read = () => page.evaluate(() => (window as unknown as { launch: Launch }).launch);
+  await expect
+    .poll(async () => {
+      const { fcp, launchedAt } = await read();
+      return fcp !== undefined && launchedAt !== undefined;
+    })
+    .toBe(true);
+  return (await read()) as Required<Launch>;
+}
+
 test("a signed-in launch never shows the signed-out header", async ({ page }) => {
   await fakeServer(page);
   // Every heading the page has held, taken at each DOM change from the first byte on: a frame
@@ -35,6 +63,41 @@ test("a signed-in launch never shows the signed-out header", async ({ page }) =>
     ...(window as unknown as { seenHeadings: Set<string> }).seenHeadings,
   ]);
   expect(seen).not.toContain("Belay");
+});
+
+test("the launch screen stays at least a second after its first paint when the account answers at once", async ({
+  page,
+}) => {
+  await recordLaunch(page);
+  await fakeServer(page);
+  await page.goto("/");
+  await expect(page.getByRole("heading", { level: 1, name: "Hello, Ada" })).toBeVisible();
+  const { fcp, launchedAt } = await readLaunch(page);
+  expect(launchedAt - fcp).toBeGreaterThanOrEqual(1000);
+  expect(launchedAt - fcp).toBeLessThan(1600);
+});
+
+test("with the account known after 1.5 s the launch screen leaves right after the answer", async ({
+  page,
+}) => {
+  await recordLaunch(page);
+  await fakeServer(page);
+  let answer = () => {};
+  const held = new Promise<void>((resolve) => (answer = resolve));
+  let answeredAt = 0;
+  await page.route("**/api/me", async (route) => {
+    await held;
+    answeredAt = await page.evaluate(() => performance.now());
+    await route.fallback();
+  });
+  await page.goto("/");
+  await page.waitForTimeout(1_500);
+  answer();
+  await expect(page.getByRole("heading", { level: 1, name: "Hello, Ada" })).toBeVisible();
+  const { launchedAt } = await readLaunch(page);
+  expect(answeredAt).toBeGreaterThan(0);
+  expect(launchedAt).toBeGreaterThanOrEqual(answeredAt);
+  expect(launchedAt - answeredAt).toBeLessThan(300);
 });
 
 test("the launch screen stays until the account is known, then leaves", async ({ page }) => {
@@ -56,6 +119,7 @@ test("the launch screen stays until the account is known, then leaves", async ({
 test("with reduced motion the launch screen leaves at once, without a fade", async ({ page }) => {
   await fakeServer(page);
   await page.emulateMedia({ reducedMotion: "reduce" });
+  await recordLaunch(page);
   // The screen's visibility the moment it is told to leave: a fade would keep it visible.
   await page.addInitScript(() => {
     const at: string[] = [];
@@ -68,6 +132,8 @@ test("with reduced motion the launch screen leaves at once, without a fade", asy
   });
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1, name: "Hello, Ada" })).toBeVisible();
+  const { fcp, launchedAt } = await readLaunch(page);
+  expect(launchedAt - fcp).toBeGreaterThanOrEqual(1000);
   expect(await page.evaluate(() => (window as unknown as { leaving: string[] }).leaving)).toEqual([
     "hidden",
   ]);
@@ -89,7 +155,7 @@ test("an account question that never gets an answer lets the launch screen go af
   await expect(page.locator("h1")).toHaveCount(0);
 });
 
-test("while the account is unknown the launch mark's hooks breathe in turn from 600 ms", async ({
+test("while the account is unknown the launch mark's hooks breathe in turn from the first frame", async ({
   page,
 }) => {
   await recordMotion(page);
@@ -101,7 +167,7 @@ test("while the account is unknown the launch mark's hooks breathe in turn from 
     .poll(async () => (await readMotion(page)).filter((m) => m.target === "path[data-hook]"))
     .toHaveLength(2);
   const hooks = (await readMotion(page)).filter((m) => m.target === "path[data-hook]");
-  for (const delay of [600, 1200]) {
+  for (const delay of [0, 600]) {
     expect(hooks).toContainEqual(
       expect.objectContaining({
         kind: "animation",
@@ -145,7 +211,7 @@ test("with reduced motion the launch hooks stand still", async ({ page }) => {
   const answer = await holdAccount(page);
   await page.goto("/");
   await expect(page.locator(".launch")).toBeVisible();
-  // Past the 600 ms the hooks would wait before breathing, and a full breath on.
+  // Past a full breath and the second hook's half-beat start.
   await page.waitForTimeout(1_500);
   expect((await readMotion(page)).filter((m) => m.target === "path[data-hook]")).toEqual([]);
   answer();

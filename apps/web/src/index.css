@@ -367,10 +367,8 @@
   --dur-slide-reduced: 300ms;
   --dur-veil-reduced: 200ms;
   --dur-breathe: 1200ms;
-  /* The launch screen fades out on the out curve, and its mark waits before breathing so a quick
-     start never sees it move. */
+  /* The launch screen fades out on the out curve. */
   --dur-launch-out: 240ms;
-  --delay-launch-loader: 600ms;
   /* Springs sampled as linear() easings, for page pushes and pop-ins. */
   --spring-nav: linear(
     0,

@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { TabBar } from "@/components/tab-bar";
 import { TopBar } from "@/components/top-bar";
 import { UpdateBanner } from "@/components/update-banner";
+import { LAUNCH_SAFETY_MS, launchHoldLeft, paintedAt } from "@/lib/launch";
 import { useOnline } from "@/lib/online";
 import { usePresence } from "@/lib/presence";
 import { type Account, AccountProvider, useAccount, useHistory } from "@/sync/account";
@@ -78,13 +79,19 @@ function Shell() {
   const topBar = !/^\/workout(?:\/|$)/.test(pathname);
   const session = useOpenSession(account);
   // The launch screen of index.html sits outside the root and covers the wait for the account,
-  // so the first screen shows the right one; the class fades it out. An answer that never comes
-  // (a hung request, storage that never opens) must not keep it up: after 4 s it goes anyway.
+  // so the first screen shows the right one; the class fades it out once the account is known
+  // and the mark has held its second. An answer that never comes (a hung request, storage that
+  // never opens) must not keep it up: past the safety delay it goes anyway.
   const known = account.kind !== "loading";
   useEffect(() => {
     const launched = () => document.body.classList.add("launched");
-    if (known) return launched();
-    const hold = setTimeout(launched, 4000);
+    if (!known) {
+      const hold = setTimeout(launched, LAUNCH_SAFETY_MS);
+      return () => clearTimeout(hold);
+    }
+    const left = launchHoldLeft(performance.now(), paintedAt());
+    if (left === 0) return launched();
+    const hold = setTimeout(launched, left);
     return () => clearTimeout(hold);
   }, [known]);
   const bar = usePresence(docked ? session : null);

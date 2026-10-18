@@ -43,6 +43,8 @@ async function openHome(page: Page) {
   await fakeServer(page, { rows: WEEKS });
   await page.goto("/");
   await expect(page.getByRole("button", { name: /^Intake/ })).toBeVisible();
+  // The launch screen holds its second over Home: a touch before it goes lands on it.
+  await expect(page.locator(".launch")).toBeHidden();
 }
 
 async function saveWeighIn(page: Page) {

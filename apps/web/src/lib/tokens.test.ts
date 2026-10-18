@@ -41,8 +41,8 @@ describe("design scales", () => {
     });
   });
 
-  it("holds the launch mark still for 600 ms before it breathes", () => {
-    expect(declared(/--(delay-[\w-]+):\s*([^;]+);/g)).toEqual({ "delay-launch-loader": "600ms" });
+  it("declares no delay token: the launch mark breathes from its first frame", () => {
+    expect(declared(/--(delay-[\w-]+):\s*([^;]+);/g)).toEqual({});
   });
 
   it("defines the eight curves with the charter's values", () => {

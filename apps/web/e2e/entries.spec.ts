@@ -172,6 +172,8 @@ const SCREENS: [string, (page: Page) => Promise<void>][] = [
     "the measurements sheet",
     async (page) => {
       await page.goto("/body");
+      // A click under the launch screen would scroll the page while it waits, folding the title.
+      await expect(page.locator(".launch")).toBeHidden();
       await page.getByRole("button", { name: "Measurements" }).click();
       await expect(
         sheet(page, "Measurements").getByRole("textbox", { name: "Waist" }),
