@@ -890,6 +890,66 @@ describe("finish", () => {
     );
   });
 
+  // A work set of the bench press in the open session, logged on another device.
+  const BENCH = {
+    id: id(30),
+    workoutId: OPEN,
+    slotIndex: 0,
+    position: 3,
+    exerciseId: sessionByCode("A")!.slots[0]!.exerciseId,
+    warmup: false,
+    weightKg: 60,
+    reps: 8,
+    rir: 1,
+  };
+  const benchSet = (doneAt: string): Change => ({
+    kind: "set",
+    field: "create",
+    ...BENCH,
+    doneAt,
+    at: doneAt,
+  });
+  const ONE_LOGGED =
+    "1 set logged out of 19. The 18 unticked sets won't be saved; your program doesn't change.";
+
+  it("a set synced while Nothing logged yet is open turns it into the finish question", async () => {
+    let remote: string | null = null;
+    const { requests } = fakeApi({
+      me: ADA,
+      sync: () => {
+        if (!remote) return Response.json(answer());
+        const row = { ...BENCH, seconds: null, doneAt: remote, fieldsAt: remote };
+        return Response.json(
+          answer({ cursor: "2", sets: [{ ...row, removed: false, removedAt: null }] }),
+        );
+      },
+    });
+    await openWith([]);
+    await finish("Nothing logged yet");
+    remote = new Date().toISOString();
+    window.dispatchEvent(new Event("online"));
+    const sheet = await screen.findByRole("dialog", { name: "Finish the session?" });
+    expect(description(sheet)).toBe(ONE_LOGGED);
+    expect(screen.queryByRole("button", { name: "Leave without saving" })).toBeNull();
+    expect(within(sheet).getByRole("button", { name: "Delete the session…" })).toBeTruthy();
+    expect(await removals(requests)).toEqual([]);
+    expect((await open()).removed).toBe(false);
+  });
+
+  it("Leave without saving looks again: a set stored since gets the finish question, never a removal", async () => {
+    const { requests } = fakeApi({ me: ADA });
+    await openWith([]);
+    const sheet = await finish("Nothing logged yet");
+    // Stored on the device as another tab would, the screen not told yet.
+    await seed(ADA.id, [benchSet(new Date().toISOString())]);
+    fireEvent.click(within(sheet).getByRole("button", { name: "Leave without saving" }));
+    const asked = await screen.findByRole("dialog", { name: "Finish the session?" });
+    expect(description(asked)).toBe(ONE_LOGGED);
+    expect(await removals(requests)).toEqual([]);
+    expect((await open()).removed).toBe(false);
+    expect((await stored()).active).not.toBeNull();
+  });
+
   it("the nothing-logged sheet says it in French", async () => {
     await i18n.changeLanguage("fr");
     await openWith([]);

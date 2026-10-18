@@ -24,6 +24,7 @@ import {
   type Workout,
   type WorkoutSet,
 } from "@belay/shared/training/workout";
+import { useQueryClient } from "@tanstack/react-query";
 import { Navigate, useNavigate, useRouter, useSearch } from "@tanstack/react-router";
 import { ChevronDown, Pause, Play, Timer } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -34,7 +35,7 @@ import { previousHref } from "@/lib/back";
 import { sessionTitle } from "@/lib/format";
 import { readToolState, resolveEquipment } from "@/lib/tool-storage";
 import { levelOf } from "@/lib/transitions";
-import { type ActiveSession, readActiveSession, readActivities } from "@/sync/db";
+import { type ActiveSession, readActiveSession, readActivities, readHistory } from "@/sync/db";
 import {
   type OpenAccount,
   useAccount,
@@ -143,6 +144,7 @@ function Screen({
   const { t } = useTranslation();
   const router = useRouter();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const record = useRecord(account);
   const recordSet = useRecordSet(account);
   const now = useNow();
@@ -158,6 +160,9 @@ function Screen({
   const error = saveError ?? failed;
   const plan = workout.plan;
   const sets = liveSets(history).filter((s) => s.workoutId === workout.id);
+  // The question is chosen at the tap on « Terminer »; a set synced since then (another device,
+  // another tab) turns the one for an empty session into the finish question.
+  if (sheet === "empty" && sets.length > 0) setSheet("finish");
   // The planned work sets done (« + Série » past the plan aside), and what comes next.
   const { done, left, last: lastTurn, next } = sessionProgress(plan, sets);
   // The person's own bar and plates, from the Plates tool (D7).
@@ -237,6 +242,14 @@ function Screen({
       ],
       false,
     );
+  // A set may be stored and not on screen yet: the device is read again at this tap, and a
+  // session holding a set gets the finish question, never a removal in one tap.
+  const leaveEmpty = async () => {
+    if (!liveSets(await readHistory(account.db)).some((s) => s.workoutId === workout.id))
+      return remove();
+    await queryClient.invalidateQueries({ queryKey: ["local", account.user.id] });
+    setSheet("finish");
+  };
   const closeSheet = () => {
     setSheet(then.current);
     then.current = null;
@@ -586,7 +599,7 @@ function Screen({
           title={t("session.emptyTitle")}
           body={t("session.emptyBody")}
           confirm={t("session.leave")}
-          onConfirm={remove}
+          onConfirm={() => void save(leaveEmpty)}
           cancel={t("session.keepGoing")}
           onClose={closeSheet}
         />
