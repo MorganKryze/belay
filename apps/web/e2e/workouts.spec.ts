@@ -52,7 +52,8 @@ async function logWarmups(bench: Locator) {
     await expect(bench.getByRole("img", { name: `Warm-up ${n} logged` })).toBeVisible();
   }
 }
-const sessionLine = (page: Page) => page.getByRole("link", { name: /^Session [ABC] · / });
+// Accueil's card for the day's session, named by its title.
+const sessionCard = (page: Page) => page.getByRole("region", { name: /^Session [ABC] · / });
 
 // Logs one work set: types the load and reps when nothing is prefilled, then ✓, then skips
 // the rest so the fixed bar never covers the next card.
@@ -89,11 +90,12 @@ test("a whole session offline: summary, history, and a second device sees it", a
   const server = await fakeServer(page);
   await page.goto("/");
   await page.waitForFunction(() => navigator.serviceWorker.controller !== null);
-  await expect(sessionLine(page)).toContainText("6 exercises · about 55 min");
+  await expect(sessionCard(page)).toContainText("Session A · Push");
+  await expect(sessionCard(page)).toContainText("Next up · 6 exercises · about 55 min");
 
   server.offline = true;
   await page.context().setOffline(true);
-  await sessionLine(page).click();
+  await sessionCard(page).getByRole("link", { name: "See the session" }).click();
   await page.getByRole("link", { name: "Start the session" }).click();
   await expect(page.getByRole("button", { name: "Finish" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Session A · Push", level: 1 })).toBeVisible();
@@ -114,7 +116,7 @@ test("a whole session offline: summary, history, and a second device sees it", a
   await expect(stats).toContainText("Sets19");
   await page.getByRole("textbox", { name: "Session note (optional)" }).fill("Bonne séance");
   await page.getByRole("button", { name: "Save" }).click();
-  await expect(sessionLine(page)).toContainText("Session B · Legs");
+  await expect(sessionCard(page)).toContainText("Session B · Legs");
 
   await page.getByRole("link", { name: "Sessions" }).click();
   await page.getByRole("radio", { name: "History" }).click();

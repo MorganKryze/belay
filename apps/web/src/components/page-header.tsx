@@ -6,15 +6,18 @@ import { cn } from "@/lib/utils";
 
 // The screen's title: a large h1 that fades as the page scrolls under a frosted bar, whose compact
 // copy of the title fades in over the same 44 px (the fold rules live in index.css). Only opacity
-// moves, so nothing on the page shifts.
+// moves, so nothing on the page shifts. An eyebrow, such as Accueil's date, sits above the large
+// title and fades with it; the compact title stays the title alone.
 export function PageHeader({
   title,
+  eyebrow,
   back,
   trailing,
   focusFallback,
   children,
 }: {
   title: string;
+  eyebrow?: string;
   back?: ReactNode;
   trailing?: ReactNode;
   focusFallback?: boolean;
@@ -62,6 +65,11 @@ export function PageHeader({
         </div>
       </div>
       <div className="flex flex-col">
+        {eyebrow && (
+          <p className="fold-out text-(length:--text-secondary) leading-(--text-secondary--line-height) font-medium text-muted-foreground">
+            {eyebrow}
+          </p>
+        )}
         <div className="flex items-center justify-between gap-3">
           <h1
             ref={large}

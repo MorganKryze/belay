@@ -408,10 +408,6 @@
   },
   "today": {
     "title": "Aujourd'hui",
-    "sessionPlanned_one": "{{count}} exercice · environ {{minutes}} min",
-    "sessionPlanned_other": "{{count}} exercices · environ {{minutes}} min",
-    "sessionOpen_one": "en cours · {{count}} série sur {{total}}",
-    "sessionOpen_other": "en cours · {{count}} séries sur {{total}}",
     "activity": "Activité",
     "activityEmpty": "pas encore saisie",
     "activityMany_one": "{{count}} activité",
@@ -432,6 +428,20 @@
     "supplements": "Compléments",
     "supplementsDone": "{{taken}} sur {{count}}",
     "addSupplements": "Ajouter tes compléments"
+  },
+  "sessionCard": {
+    "next": "La prochaine",
+    "inProgress": "En cours",
+    "size_one": "{{count}} exercice · environ {{minutes}} min",
+    "size_other": "{{count}} exercices · environ {{minutes}} min",
+    "sets_one": "{{count}} série sur {{total}}",
+    "sets_other": "{{count}} séries sur {{total}}",
+    "see": "Voir la séance",
+    "resume": "Reprendre",
+    "doneToday": "Faite aujourd'hui",
+    "doneLine_one": "{{duration}} · {{count}} série",
+    "doneLine_other": "{{duration}} · {{count}} séries",
+    "nextLink": "La prochaine :"
   },
   "program": {
     "session": "Séance {{code}} · {{name}}",

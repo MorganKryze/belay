@@ -1,19 +1,10 @@
 import { type ISODate, toISODate } from "@belay/shared/body/dates";
 import type { Weighing } from "@belay/shared/body/weighings";
-import { type Activity, activitySummary } from "@belay/shared/training/activities";
-import { planFor } from "@belay/shared/training/plan";
-import {
-  estimatedMinutes,
-  nextSession,
-  plannedWorkSets,
-  sessionByCode,
-} from "@belay/shared/training/program";
-import { liveSets, openWorkout } from "@belay/shared/training/rules";
+import { activitySummary } from "@belay/shared/training/activities";
 import { type AsyncRouteComponent, Link, lazyRouteComponent } from "@tanstack/react-router";
 import {
   Activity as ActivityIcon,
   ChevronRight,
-  Dumbbell,
   type LucideIcon,
   Pill,
   Scale,
@@ -24,11 +15,10 @@ import { useTranslation } from "react-i18next";
 import { daySummaryText } from "@/lib/activities";
 import { useFirstPull } from "@/lib/first-pull";
 import { preloadWhenIdle } from "@/lib/idle";
-import { formatKg, formatNumber, sessionTitle } from "@/lib/format";
+import { formatKg, formatNumber } from "@/lib/format";
 import {
   type OpenAccount,
   useActivities,
-  useHistory,
   useIntake,
   useRecord,
   useSteps,
@@ -51,8 +41,7 @@ const SHEETS = [ActivitySheet, WeighInSheet, IntakeSheet, SupplementsSheet];
 
 type Gesture = "activity" | "weighIn" | "intake" | "supplements";
 
-// Home's "Today" card (D1): the day's session first, then one line per gesture of the day with
-// where it stands; a tap opens the session's preview or resumes the open one, or opens the
+// Home's "Today" card (D1): one line per gesture of the day with where it stands; a tap opens the
 // gesture's sheet.
 export function TodayCard({
   account,
@@ -140,7 +129,6 @@ export function TodayCard({
         >
           {t("today.title")}
         </h2>
-        <SessionRow account={account} activities={activities} today={today} />
         <Row
           icon={ActivityIcon}
           title={t("today.activity")}
@@ -293,65 +281,6 @@ export function TodayCard({
       </Suspense>
       <Toast toast={toast} onDone={dismiss} />
     </>
-  );
-}
-
-// §4.1: the next session of the program, or the one in progress and how far it is. Session C
-// counts the slots its rule adds in a week with no climbing.
-function SessionRow({
-  account,
-  activities,
-  today,
-}: {
-  account: OpenAccount;
-  activities: readonly Activity[];
-  today: ISODate;
-}) {
-  const { t } = useTranslation();
-  const history = useHistory(account).data;
-  if (!history) return null;
-  const open = openWorkout(history.workouts, { sets: history.sets, now: new Date() });
-  const code = open?.sessionCode ?? nextSession(history.workouts);
-  const session = sessionByCode(code);
-  if (!open && !session) return null;
-  let status: string;
-  if (open) {
-    const done = liveSets(history).filter((s) => s.workoutId === open.id && !s.warmup).length;
-    status = t("today.sessionOpen", { count: done, total: plannedWorkSets(open.plan) });
-  } else {
-    const plan = planFor(session!, activities, today);
-    status = t("today.sessionPlanned", {
-      count: plan.length,
-      minutes: estimatedMinutes({ slots: plan }),
-    });
-  }
-  const line = (
-    <>
-      <RowIcon icon={Dumbbell} />
-      <span className="flex min-w-0 flex-1 flex-col">
-        <span className="font-semibold">{sessionTitle(code, t)}</span>
-        <span className="text-[13px] text-muted-foreground">{status}</span>
-      </span>
-      <ChevronRight aria-hidden className="size-5 shrink-0 text-muted-foreground" />
-    </>
-  );
-  return (
-    <RowShell>
-      {open ? (
-        <Link to="/workout" search={{ start: code }} className={rowLine}>
-          {line}
-        </Link>
-      ) : (
-        <Link
-          to="/workouts/session/$code"
-          params={{ code }}
-          search={{ from: "home" }}
-          className={rowLine}
-        >
-          {line}
-        </Link>
-      )}
-    </RowShell>
   );
 }
 

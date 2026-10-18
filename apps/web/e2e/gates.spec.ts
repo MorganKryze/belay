@@ -104,7 +104,7 @@ async function lowerSession(page: Page) {
   await page.goto("/workout?start=C");
   await expect(page.locator(".launch")).toBeHidden();
   await page.getByRole("button", { name: "Minimize the session" }).click();
-  await expect(page.getByRole("link", { name: /^Session C · .*in progress/ })).toBeVisible();
+  await expect(page.getByRole("region", { name: /^Session C · / })).toContainText("In progress");
 }
 
 // Session A started on this device, one set logged, then Finish tapped.
@@ -128,6 +128,16 @@ const SCREENS: [string, (page: Page) => Promise<void>][] = [
       await fakeServer(page, { rows: WEEKS });
       await page.goto("/");
       await expect(page.getByRole("button", { name: /^Weigh-in/ })).toBeVisible();
+    },
+  ],
+  [
+    "Home, a session open",
+    async (page) => {
+      await fakeServer(page, { changes: RUNNING_C });
+      await page.goto("/");
+      await expect(page.getByRole("region", { name: /^Session C · / })).toContainText(
+        "In progress",
+      );
     },
   ],
   ...(["program", "history", "exercises"] as const).map(
@@ -494,10 +504,12 @@ test.describe("every action stays reachable on a computer", () => {
   test.use({ viewport: DESKTOP });
   test("avatar, Settings, supplements, Profile", ({ page }) => avatarToSupplements(page, "banner"));
   test("the sync banner's link to Settings", ({ page }) => bannerToSettings(page));
-  test("Home's Today card resumes the running session", async ({ page }) => {
+  test("Home's session card resumes the running session", async ({ page }) => {
     await fakeServer(page, { changes: RUNNING_C });
     await page.goto("/");
-    await page.getByRole("link", { name: /^Session C · .*in progress/ }).click();
+    const card = page.getByRole("region", { name: /^Session C · / });
+    await expect(card).toContainText("In progress");
+    await card.getByRole("link", { name: "Resume" }).click();
     await expect(page.getByRole("heading", { level: 1, name: /^Session C · / })).toBeVisible();
   });
   test("each tab from the top bar", ({ page }) => eachTab(page, page.getByRole("banner")));
