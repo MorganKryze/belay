@@ -206,7 +206,7 @@ test("on a computer Minimize returns to the page under the session and no bar sh
 test.describe("reduced motion", () => {
   test.use({ reducedMotion: "reduce" });
 
-  test("with reduced motion the cover slides in 300 ms, the bar fades in 200 ms and nothing scales", async ({
+  test("with reduced motion the cover slides in 300 ms, the bar and the tabs fade in 200 ms and nothing scales", async ({
     page,
   }) => {
     await recordMotion(page);
@@ -230,6 +230,11 @@ test.describe("reduced motion", () => {
     await expect
       .poll(() => motion(page, (t) => t === "::view-transition-new(root)"))
       .toContainEqual(expect.objectContaining({ duration: 300, easing: OUT, transforms: true }));
+    await expect
+      .poll(() => motion(page, (t) => t === "::view-transition-new(dock)"))
+      .toContainEqual(
+        expect.objectContaining({ duration: 200, easing: OUT, properties: ["opacity"] }),
+      );
     expect((await readMotion(page)).filter((m) => m.scales)).toEqual([]);
   });
 });
