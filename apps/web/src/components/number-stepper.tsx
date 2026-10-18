@@ -119,9 +119,10 @@ export function NumberStepper({
             <Minus aria-hidden className="size-5" />
           </button>
         )}
-        {/* The whole box is the tap target: the input itself is shorter than the 52 px box. */}
+        {/* The whole box is the tap target; the input fills its height, a 48 px target of its own.
+            The 2 px top padding keeps the value and its unit where they sat when it was 28 px. */}
         <div
-          className="flex min-w-0 flex-1 cursor-text items-baseline justify-center gap-0.5 self-stretch px-1 pt-3"
+          className="flex min-w-0 flex-1 cursor-text items-baseline justify-center gap-0.5 self-stretch px-1 pt-0.5"
           onPointerDown={(e) => {
             if (e.target === inputRef.current) return;
             e.preventDefault(); // keeps focus from blurring, then lands it in the field
@@ -144,7 +145,7 @@ export function NumberStepper({
                 .join(" ") || undefined
             }
             className={cn(
-              "w-full min-w-0 flex-1 bg-transparent text-xl font-bold tabular-nums outline-none",
+              "h-full w-full min-w-0 flex-1 bg-transparent text-xl font-bold tabular-nums outline-none",
               unit ? "text-right" : "text-center",
             )}
           />

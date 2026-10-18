@@ -144,6 +144,14 @@ describe("NumberStepper", () => {
     expect((input() as HTMLInputElement).value).toBe("798");
   });
 
+  it("the field keeps one input per stepper and the unit stays described", () => {
+    render(<Harness />);
+    const box = input().closest(".field")!;
+    expect(box.querySelectorAll("input")).toHaveLength(1);
+    const unit = screen.getByText("kg");
+    expect(input().getAttribute("aria-describedby")?.split(" ")).toContain(unit.id);
+  });
+
   it("keeps the label for screen readers only when asked", () => {
     render(<Harness labelHidden />);
     expect(screen.getByText("Load").className).toBe("sr-only");
