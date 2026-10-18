@@ -1,5 +1,8 @@
 {
   "settings": {
+    "preferences": "Preferences",
+    "versionNotes": "Belay {{version}} · release notes",
+    "newTab": "(new tab)",
     "rejected": {
       "title": "Refused entries",
       "note": "The server refused them, so they are no longer waiting. Enter them again if you need to.",

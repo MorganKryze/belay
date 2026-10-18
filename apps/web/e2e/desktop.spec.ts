@@ -89,8 +89,8 @@ test("a short page does not scroll under the top bar", async ({ page }) => {
     );
     expect(extra, path).toBe(0);
   }
-  // Réglages pins its version line to the bottom of the page: it must sit above the fold.
-  const version = page.locator("main p.mt-auto");
+  // Réglages' version line closes the page: it must sit above the fold.
+  const version = page.locator("main p").filter({ hasText: /^Belay / });
   await expect(version).toContainText(/^Belay /);
   const box = (await version.boundingBox())!;
   expect(box.y + box.height).toBeLessThanOrEqual(800);

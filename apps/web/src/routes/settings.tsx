@@ -1,22 +1,16 @@
 import "@/i18n/lazy";
 import { useMutation } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Languages, SunMoon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 import { toISODate } from "@belay/shared/body/dates";
 import type { Change } from "@belay/shared/sync/schema";
 import { BackLink, PageHeader } from "@/components/page-header";
+import { GroupedList } from "@/components/grouped-list";
+import { MenuRow } from "@/components/menu-row";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { LOCALES, setLocale, type Locale } from "@/i18n";
 import { logout } from "@/lib/api";
 import { readTheme, setTheme, type Theme } from "@/lib/theme";
@@ -34,6 +28,7 @@ import {
 } from "@/sync/account";
 
 const LANGUAGE_NAMES: Record<Locale, string> = { en: "English", fr: "Français" };
+const THEMES = ["light", "dark", "system"] as const satisfies readonly Theme[];
 const sectionTitle = "mx-0.5 text-xs font-semibold tracking-wider text-muted-foreground uppercase";
 
 export function Settings() {
@@ -42,46 +37,28 @@ export function Settings() {
   const account = useAccount();
 
   return (
-    <section className="flex flex-1 flex-col gap-6">
+    <section className="flex flex-1 flex-col gap-4">
       <PageHeader title={t("settings.title")} back={<BackLink to="/">{t("nav.home")}</BackLink>} />
 
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="language">{t("settings.language")}</Label>
-        <Select value={i18n.language} onValueChange={(v) => setLocale(v as Locale)}>
-          <SelectTrigger id="language">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {LOCALES.map((l) => (
-              <SelectItem key={l} value={l} lang={l}>
-                {LANGUAGE_NAMES[l]}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="theme">{t("settings.theme")}</Label>
-        <Select
+      <GroupedList label={t("settings.preferences")}>
+        <MenuRow
+          icon={Languages}
+          label={t("settings.language")}
+          value={i18n.language as Locale}
+          options={LOCALES.map((l) => ({ value: l, label: LANGUAGE_NAMES[l], lang: l }))}
+          onChange={setLocale}
+        />
+        <MenuRow
+          icon={SunMoon}
+          label={t("settings.theme")}
           value={theme}
-          onValueChange={(v) => {
-            setTheme(v as Theme);
-            setThemeState(v as Theme);
+          options={THEMES.map((th) => ({ value: th, label: t(`settings.themes.${th}`) }))}
+          onChange={(th) => {
+            setTheme(th);
+            setThemeState(th);
           }}
-        >
-          <SelectTrigger id="theme">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {(["light", "dark", "system"] as const).map((th) => (
-              <SelectItem key={th} value={th}>
-                {t(`settings.themes.${th}`)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+        />
+      </GroupedList>
 
       {account.kind === "open" && <OpenAccountSettings account={account} />}
       {account.kind === "unavailable" && <AccountSettings pending={0} />}
@@ -95,7 +72,7 @@ function VersionLine() {
   const { t } = useTranslation();
   const url = releaseUrl(APP_VERSION);
   return (
-    <p className="mt-auto text-center text-xs text-muted-foreground">
+    <p className="text-center text-xs text-muted-foreground">
       {url ? (
         <a
           href={url}
@@ -103,8 +80,9 @@ function VersionLine() {
           rel="noopener noreferrer"
           className="inline-flex min-h-11 items-center px-3 underline underline-offset-2"
         >
-          {t("settings.version", { version: APP_VERSION })}
-          <span className="sr-only">{t("settings.versionLinkHint")}</span>
+          {/* The space sits outside the hidden hint: some name computations trim its edges. */}
+          {t("settings.versionNotes", { version: APP_VERSION })}{" "}
+          <span className="sr-only">{t("settings.newTab")}</span>
         </a>
       ) : (
         t("settings.version", { version: APP_VERSION })

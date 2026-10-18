@@ -123,7 +123,6 @@
     },
     "account": "Account",
     "version": "Belay {{version}}",
-    "versionLinkHint": ", release notes (new tab)",
     "signOut": "Sign out",
     "signOutFailed": "Couldn't sign you out. Check your connection and try again.",
     "signOutPending_one": "{{count}} entry not sent yet: it will go at your next sign-in on this device.",

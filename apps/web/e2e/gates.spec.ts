@@ -141,7 +141,7 @@ const SCREENS: [string, (page: Page) => Promise<void>][] = [
     async (page) => {
       await fakeServer(page);
       await page.goto("/settings");
-      await page.getByLabel("Language").click();
+      await page.getByRole("combobox", { name: /^Language/ }).click();
       await expect(page.getByRole("listbox")).toBeVisible();
     },
   ],

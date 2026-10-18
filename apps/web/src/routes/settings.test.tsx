@@ -1,6 +1,6 @@
-import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
 import { IDBFactory } from "fake-indexeddb";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { act, cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Change } from "@belay/shared/sync/schema";
 import { sessionByCode } from "@belay/shared/training/program";
 import i18n from "../i18n";
@@ -15,6 +15,13 @@ import { ADA, seed, weight } from "../test/seed";
 vi.mock("../sync/db", async (importOriginal) => {
   const real = await importOriginal<typeof import("../sync/db")>();
   return { ...real, pendingCounts: vi.fn(real.pendingCounts) };
+});
+
+// Radix Select calls pointer-capture and scrolling APIs jsdom does not implement.
+beforeAll(() => {
+  Element.prototype.hasPointerCapture ??= () => false;
+  Element.prototype.releasePointerCapture ??= () => {};
+  Element.prototype.scrollIntoView ??= () => {};
 });
 
 const assign = vi.fn();
@@ -42,6 +49,64 @@ function signedIn(logout: () => Promise<Response>, sync?: () => Promise<Response
 const logoutCalls = (api: ReturnType<typeof fakeApi>) =>
   api.fetchMock.mock.calls.filter(([url]) => url === "/auth/logout");
 const signOutButton = () => screen.findByRole("button", { name: "Sign out" });
+
+// Opens a preference row's menu from the keyboard and picks an option.
+async function choose(row: RegExp, option: string) {
+  const trigger = await screen.findByRole("combobox", { name: row });
+  act(() => trigger.focus());
+  fireEvent.keyDown(trigger, { key: "Enter" });
+  fireEvent.click(await screen.findByRole("option", { name: option }));
+}
+
+describe("Settings preferences", () => {
+  afterEach(() => document.documentElement.classList.remove("dark"));
+
+  it("groups Langue and Thème under Préférences, each showing its value", async () => {
+    fakeApi({ me: ADA });
+    renderRoute("/settings");
+    const list = await screen.findByRole("list", { name: "Preferences" });
+    const rows = within(list).getAllByRole("combobox");
+    expect(rows).toHaveLength(2);
+    expect(within(list).getByRole("combobox", { name: "Language English" })).toBe(rows[0]);
+    expect(within(list).getByRole("combobox", { name: "Theme System" })).toBe(rows[1]);
+  });
+
+  it("switches the language from its menu", async () => {
+    fakeApi({ me: ADA });
+    renderRoute("/settings");
+    await choose(/^Language/, "Français");
+    expect(i18n.language).toBe("fr");
+    expect(await screen.findByRole("combobox", { name: "Langue Français" })).toBeTruthy();
+  });
+
+  it("applies and keeps the theme from its menu", async () => {
+    vi.stubGlobal("matchMedia", () => ({ matches: false }));
+    fakeApi({ me: ADA });
+    renderRoute("/settings");
+    await choose(/^Theme/, "Dark");
+    expect(document.documentElement.classList.contains("dark")).toBe(true);
+    expect(localStorage.getItem("belay.theme")).toBe("dark");
+    expect(screen.getByRole("combobox", { name: "Theme Dark" })).toBeTruthy();
+  });
+
+  it("offers exactly today's preferences", async () => {
+    fakeApi({ me: ADA });
+    renderRoute("/settings");
+    await screen.findByRole("list", { name: "Preferences" });
+    for (const role of ["combobox", "button", "link"] as const)
+      expect(screen.queryByRole(role, { name: /Units|Unités|Sources/ })).toBeNull();
+  });
+
+  it("signed out: preferences and version only", async () => {
+    version.current = "0.5.0";
+    fakeApi({ me: null });
+    renderRoute("/settings");
+    await screen.findByRole("list", { name: "Preferences" });
+    await screen.findByRole("link", { name: /^Belay 0\.5\.0/ });
+    expect(screen.queryByRole("link", { name: /Profile/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Sign out" })).toBeNull();
+  });
+});
 
 describe("Settings sign-out", () => {
   it("is not offered to someone signed out", async () => {
@@ -444,27 +509,27 @@ vi.mock("../lib/version", async (importOriginal) => {
 
 describe("Settings version", () => {
   it("links a release version to its notes", async () => {
-    version.current = "0.3.0-rc.2";
+    version.current = "0.5.0";
     fakeApi({ me: null });
     renderRoute("/settings");
     const link = await screen.findByRole("link", {
-      name: "Belay 0.3.0-rc.2, release notes (new tab)",
+      name: "Belay 0.5.0 · release notes (new tab)",
     });
     expect(link.getAttribute("href")).toBe(
-      "https://github.com/MorganKryze/belay/releases/tag/v0.3.0-rc.2",
+      "https://github.com/MorganKryze/belay/releases/tag/v0.5.0",
     );
     expect(link.getAttribute("target")).toBe("_blank");
     expect(link.getAttribute("rel")).toBe("noopener noreferrer");
-    expect(link.textContent).toContain("Belay 0.3.0-rc.2");
+    expect(link.textContent).toContain("Belay 0.5.0");
   });
 
   it("speaks French", async () => {
-    version.current = "0.3.0-rc.2";
+    version.current = "0.5.0";
     await i18n.changeLanguage("fr");
     fakeApi({ me: null });
     renderRoute("/settings");
     await screen.findByRole("link", {
-      name: "Belay 0.3.0-rc.2, notes de la version (nouvel onglet)",
+      name: "Belay 0.5.0 · notes de version (nouvel onglet)",
     });
   });
 

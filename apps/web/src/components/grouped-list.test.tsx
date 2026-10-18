@@ -10,7 +10,15 @@ import { act, cleanup, fireEvent, render, screen } from "@testing-library/react"
 import { Settings } from "lucide-react";
 import { afterEach, describe, expect, it } from "vitest";
 import { expectTokensOnly } from "@/test/design-rules";
-import { EmptyState, GroupedList, RowButton, RowLink, SkeletonRows } from "./grouped-list";
+import {
+  EmptyState,
+  groupCard,
+  GroupedList,
+  RowButton,
+  RowLink,
+  sectionLabel,
+  SkeletonRows,
+} from "./grouped-list";
 
 afterEach(cleanup);
 
@@ -67,6 +75,13 @@ describe("GroupedList", () => {
     expect(row.textContent).toContain("Follow the system");
   });
 
+  it("a very long value wraps instead of overflowing", () => {
+    render(<RowButton label="Language" value={"Unbreakablewordwithoutanyspace".repeat(4)} />);
+    const value = screen.getByText(/Unbreakableword/);
+    expect(classes(value)).toEqual(expect.arrayContaining(["min-w-0", "break-words"]));
+    expect(classes(screen.getByText("Language"))).toContain("basis-auto");
+  });
+
   it("an empty list shows a sentence, a precision and one action, no image", () => {
     const { container } = render(
       <EmptyState
@@ -88,10 +103,33 @@ describe("GroupedList", () => {
     const rows = container.querySelectorAll("[data-slot=skeleton-row]");
     expect(rows).toHaveLength(3);
     for (const row of rows) {
-      expect(row.querySelectorAll(".bg-track")).toHaveLength(2);
+      expect(row.querySelectorAll(".h-3.bg-track")).toHaveLength(2);
     }
     expect(container.innerHTML).not.toMatch(/animate-/);
     expect(container.firstElementChild!.getAttribute("aria-hidden")).toBe("true");
+  });
+
+  it("skeleton rows start with a 28 px square", () => {
+    const { container } = render(<SkeletonRows count={2} />);
+    for (const row of container.querySelectorAll("[data-slot=skeleton-row]")) {
+      expect(classes(row.firstElementChild)).toEqual(
+        expect.arrayContaining(["size-7", "shrink-0", "rounded-icon", "bg-track"]),
+      );
+    }
+  });
+
+  it("the group card and section label are the shared classes", () => {
+    render(
+      <GroupedList label="Display">
+        <RowButton label="A" />
+      </GroupedList>,
+    );
+    expect(classes(screen.getByRole("list", { name: "Display" }))).toEqual(
+      expect.arrayContaining(groupCard.split(" ")),
+    );
+    expect(classes(screen.getByRole("heading", { name: "Display" }))).toEqual(
+      expect.arrayContaining(sectionLabel.split(" ")),
+    );
   });
 
   it("a destructive row is red text alone", () => {

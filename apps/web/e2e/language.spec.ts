@@ -13,7 +13,7 @@ test.describe("in a French browser", () => {
     await expect(page.locator("html")).toHaveAttribute("lang", "fr");
 
     await page.getByRole("main").getByRole("link", { name: "Réglages" }).click();
-    await page.getByLabel("Langue").click();
+    await page.getByRole("combobox", { name: /^Langue/ }).click();
     await page.getByRole("option", { name: "English" }).click();
     await page.reload();
     await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
@@ -31,7 +31,7 @@ test.describe("in a German browser", () => {
 
 test("the dark theme applies before the app renders and persists", async ({ page }) => {
   await page.goto("/settings");
-  await page.getByLabel("Theme").click();
+  await page.getByRole("combobox", { name: /^Theme/ }).click();
   await page.getByRole("option", { name: "Dark" }).click();
   await page.reload();
   await expect(page.locator("html")).toHaveClass(/dark/);
