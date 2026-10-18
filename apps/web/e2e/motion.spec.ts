@@ -15,6 +15,7 @@ test.beforeEach(async ({ page }) => {
 const OUT = "cubic-bezier(0.2, 0.8, 0.2, 1)";
 const NAV = "cubic-bezier(0.32, 0.72, 0, 1)";
 const EXIT = "cubic-bezier(0.4, 0, 1, 1)";
+const PILL = "linear(0 0%, 0.2 10%, 0.6 25%, 0.9 40%, 1.03 55%, 1.01 70%, 1 100%)";
 const POP = "linear(0 0%, 0.5 18%, 0.9 35%, 1.06 52%, 1.02 70%, 1 100%)";
 
 // Session C started ten minutes ago, still open.
@@ -113,7 +114,9 @@ test.describe("normal motion", () => {
     await cdp.send("Input.dispatchTouchEvent", { type: "touchCancel", touchPoints: [] });
   });
 
-  test("a tab switch slides only the pill, in 220 ms on the nav curve", async ({ page }) => {
+  test("a tab switch slides only the pill, in 300 ms on its overshooting curve", async ({
+    page,
+  }) => {
     await openHome(page);
     await since(page);
     await page
@@ -126,13 +129,37 @@ test.describe("normal motion", () => {
     expect(moving).toEqual([
       expect.objectContaining({
         target: "span[data-pill]",
-        duration: 220,
-        easing: NAV,
+        duration: 300,
+        easing: PILL,
         transforms: true,
         scales: false,
         kind: "transition",
       }),
     ]);
+  });
+
+  test("a pressed tab's icon scales to 0.92 in 90 ms and back in 200 ms on the nav curve", async ({
+    page,
+  }) => {
+    await openHome(page);
+    const icon = page
+      .getByRole("navigation", { name: "Main" })
+      .getByRole("link", { name: "Tools" })
+      .locator("svg");
+    await icon.hover();
+    await since(page);
+    await page.mouse.down();
+    await expect
+      .poll(() => icon.evaluate((el) => getComputedStyle(el).transform))
+      .toBe("matrix(0.92, 0, 0, 0.92, 0, 0)");
+    const dip = { target: "svg", kind: "transition", transforms: true, scales: true } as const;
+    expect(await since(page)).toContainEqual(expect.objectContaining({ ...dip, duration: 90 }));
+    // Released away from it, so Home stays.
+    await page.mouse.move(0, 0);
+    await page.mouse.up();
+    await expect
+      .poll(() => readMotion(page))
+      .toContainEqual(expect.objectContaining({ ...dip, duration: 200, easing: NAV }));
   });
 
   test("the segmented thumb slides in 220 ms", async ({ page }) => {
@@ -321,12 +348,21 @@ test.describe("reduced motion", () => {
     await saveWeighIn(page);
     await page.getByRole("button", { name: "Undo" }).click();
     await expect(page.getByRole("button", { name: "Undo" })).toBeHidden();
-    // A tab switch, a push and a pop.
-    await page
+    // A tab switch, pressed down on the tab: neither the pill nor the icon moves.
+    const tools = page
       .getByRole("navigation", { name: "Main" })
-      .getByRole("link", { name: "Tools" })
-      .click();
+      .getByRole("link", { name: "Tools" });
+    await tools.hover();
+    await page.mouse.down();
+    expect(await tools.locator("svg").evaluate((el) => getComputedStyle(el).transform)).toMatch(
+      /^(none|matrix\(1, 0, 0, 1, 0, 0\))$/,
+    );
+    await page.mouse.up();
     await expect(page.getByRole("heading", { level: 1, name: "Tools" })).toBeVisible();
+    const tabbed = await readMotion(page);
+    expect(tabbed.filter((m) => m.target === "span[data-pill]")).toEqual([]);
+    expect(tabbed.filter((m) => m.target === "svg" && m.transforms)).toEqual([]);
+    // A push and a pop.
     await page.getByRole("link", { name: /^Plates/ }).click();
     await expect(page.getByRole("heading", { level: 1, name: "Plates" })).toBeVisible();
     await page.goBack();

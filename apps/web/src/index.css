@@ -97,6 +97,8 @@
   --ease-nav: cubic-bezier(0.32, 0.72, 0, 1);
   --ease-sheet: cubic-bezier(0.4, 0.2, 0, 1);
   --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  /* The tab pill passes its column by a hair and settles back. */
+  --ease-pill: linear(0, 0.2 10%, 0.6 25%, 0.9 40%, 1.03 55%, 1.01 70%, 1);
   --text-figure: 50px;
   --text-figure--line-height: 1;
   --text-figure--letter-spacing: -0.035em;
@@ -331,6 +333,7 @@
   --dur-release: 200ms;
   --dur-base: 220ms;
   --dur-sheet-out: 300ms;
+  --dur-pill: 300ms;
   --dur-overlay-in: 350ms;
   --dur-overlay-out: 300ms;
   /* The session cover keeps its own pace. */
@@ -411,6 +414,8 @@
 :root {
   --press-scale: 0.97;
   --slide-duration: var(--dur-base);
+  --pill-duration: var(--dur-pill);
+  --press-scale-tab: 0.92;
   --tint-duration: var(--dur-fast);
   /* A press shows at once and fades over the release, so a page leaving still shows it. */
   --press-release: var(--dur-release);
@@ -469,6 +474,8 @@
     --fold-fade: 0s;
     --press-scale: 1;
     --slide-duration: 0s;
+    --pill-duration: 0s;
+    --press-scale-tab: 1;
     --tint-duration: 0s;
     --press-release: 0s;
     --untint-duration: 0s;
@@ -483,6 +490,20 @@
   &[data-pressed] {
     transform: scale(var(--press-scale));
     transition-duration: 0s;
+  }
+}
+
+/* A pressed tab keeps its tint while its icon dips, then springs back on the nav curve. */
+@utility press-icon {
+  /* At rest as at scale 1, so a reduced-motion press changes nothing and runs no transition. */
+  & > svg {
+    transform: scale(1);
+    transition: transform var(--press-release) var(--ease-nav);
+  }
+  &:active > svg,
+  &[data-pressed] > svg {
+    transform: scale(var(--press-scale-tab));
+    transition-duration: var(--dur-press);
   }
 }
 

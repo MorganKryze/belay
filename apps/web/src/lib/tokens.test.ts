@@ -23,6 +23,7 @@ describe("design scales", () => {
       "dur-release": "200ms",
       "dur-base": "220ms",
       "dur-sheet-out": "300ms",
+      "dur-pill": "300ms",
       "dur-overlay-in": "350ms",
       "dur-overlay-out": "300ms",
       "dur-cover-in": "450ms",
@@ -38,12 +39,13 @@ describe("design scales", () => {
     });
   });
 
-  it("defines the six curves with the charter's values", () => {
+  it("defines the seven curves with the charter's values", () => {
     expect(declared(/--((?:ease|spring)-[\w-]+):\s*([^;]+);/g)).toEqual({
       "ease-out": "cubic-bezier(0.2, 0.8, 0.2, 1)",
       "ease-nav": "cubic-bezier(0.32, 0.72, 0, 1)",
       "ease-sheet": "cubic-bezier(0.4, 0.2, 0, 1)",
       "ease-exit": "cubic-bezier(0.4, 0, 1, 1)",
+      "ease-pill": "linear(0, 0.2 10%, 0.6 25%, 0.9 40%, 1.03 55%, 1.01 70%, 1)",
       "spring-nav":
         "linear(0, 0.151 8.3%, 0.435 16.7%, 0.646 25%, 0.788 33.3%, 0.876 41.7%, 0.93 50%, 0.959 58.3%, 0.977 66.7%, 0.986 75%, 0.993 83.3%, 1)",
       "spring-pop-in": "linear(0, 0.5 18%, 0.9 35%, 1.06 52%, 1.02 70%, 1)",

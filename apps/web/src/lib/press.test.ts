@@ -41,6 +41,15 @@ describe("markPresses", () => {
     expect(button.hasAttribute("data-pressed")).toBe(true);
   });
 
+  it("a pressed tab is marked, and released on lift", () => {
+    document.body.innerHTML = `<a class="press-icon" href="/tools"><svg></svg><span>Tools</span></a>`;
+    const tab = document.querySelector("a")!;
+    fireEvent.pointerDown(tab.querySelector("span")!);
+    expect(tab.hasAttribute("data-pressed")).toBe(true);
+    fireEvent.pointerUp(tab.querySelector("span")!);
+    expect(tab.hasAttribute("data-pressed")).toBe(false);
+  });
+
   it("clears the mark when the pointer lifts, wherever it lifts", () => {
     const button = row("press-tint");
     fireEvent.pointerDown(button);

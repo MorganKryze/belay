@@ -21,7 +21,7 @@ function release() {
 export function markPresses(): void {
   addEventListener("pointerdown", (event) => {
     release();
-    pressed = (event.target as Element).closest(".press,.press-tint");
+    pressed = (event.target as Element).closest(".press,.press-tint,.press-icon");
     pressed?.setAttribute("data-pressed", "");
   });
   addEventListener("pointerup", (event) => {
