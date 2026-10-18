@@ -18,6 +18,8 @@ export async function settled(page: Page) {
 
 // WCAG 2.1 A and AA, the whole page as it stands (open sheets and drawers included).
 export async function expectNoAxeViolations(page: Page) {
+  // The launch screen starts fading only once the account is known, so no animation holds it yet.
+  await expect(page.locator(".launch")).toBeHidden();
   await settled(page);
   const { violations } = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])

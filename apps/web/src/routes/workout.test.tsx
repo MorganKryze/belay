@@ -625,6 +625,80 @@ describe("pause", () => {
     expect(active?.restEndsAt).toEqual(expect.any(String));
   });
 
+  // The rest's countdown in whole seconds.
+  const restLeft = () => {
+    const [m, s] = screen.getByRole("timer").textContent!.split(":").map(Number);
+    return m! * 60 + s!;
+  };
+  // A work set logged, its rest running.
+  const rest = async () => {
+    await seed(ADA.id, LAST_A);
+    await startSession("A");
+    const bench = card("Barbell bench press");
+    log(bench, "Log set 1");
+    await waitFor(() => within(bench).getByRole("img", { name: "Set 1 logged" }));
+    await screen.findByRole("timer");
+    return (await stored()).active!.restEndsAt!;
+  };
+
+  it("by default the rest stands still while paused and goes on from there on resume", async () => {
+    const { requests } = fakeApi({ me: ADA });
+    const endsAt = await rest();
+    const pausedAt = await pause();
+    const frozen = restLeft();
+    await wait(1100);
+    expect(restLeft()).toBe(frozen);
+    fireEvent.click(screen.getByRole("button", { name: "Resume the session" }));
+    await waitFor(async () => expect(await moves(requests)).toHaveLength(1));
+    const [move] = await moves(requests);
+    // The same write moved the rest's end later by the time paused.
+    const { active } = await stored();
+    expect(active?.pausedAt).toBeNull();
+    expect(active?.restEndsAt).toBe(
+      new Date(Date.parse(endsAt) + Date.parse(move!.at) - Date.parse(pausedAt)).toISOString(),
+    );
+    expect(restLeft()).toBeGreaterThanOrEqual(frozen - 1);
+    await wait(1100);
+    expect(restLeft()).toBeLessThan(frozen);
+  });
+
+  it("a reload during the pause shows the same frozen rest", async () => {
+    await rest();
+    await pause();
+    const frozen = restLeft();
+    cleanup();
+    await wait(1100);
+    renderRoute("/workout");
+    await screen.findByRole("button", { name: "Resume the session" });
+    expect(restLeft()).toBe(frozen);
+  });
+
+  it("a warm-up checked while paused keeps the rest moved past the pause", async () => {
+    const endsAt = await rest();
+    const pausedAt = await pause();
+    await wait(60);
+    const bench = card("Barbell bench press");
+    log(bench, "Log warm-up 1");
+    await waitFor(() => within(bench).getByRole("img", { name: "Warm-up 1 logged" }));
+    const warmUp = (await stored()).history.sets.find((s) => s.warmup && s.workoutId !== id(1))!;
+    expect((await stored()).active?.restEndsAt).toBe(
+      new Date(Date.parse(endsAt) + Date.parse(warmUp.doneAt) - Date.parse(pausedAt)).toISOString(),
+    );
+  });
+
+  it("with The rest keeps running, the rest counts down through the pause and keeps its end", async () => {
+    localStorage.setItem("belay.pauseStops", "session");
+    fakeApi({ me: ADA });
+    const endsAt = await rest();
+    await pause();
+    const first = restLeft();
+    await wait(1100);
+    expect(restLeft()).toBeLessThan(first);
+    fireEvent.click(screen.getByRole("button", { name: "Resume the session" }));
+    await waitFor(async () => expect((await stored()).active?.pausedAt).toBeNull());
+    expect((await stored()).active?.restEndsAt).toBe(endsAt);
+  });
+
   // A server that, once `log(at)` is called, answers every sync with a set of the open session
   // logged at that time on another device.
   const anotherDevice = () => {

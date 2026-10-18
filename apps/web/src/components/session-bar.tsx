@@ -1,12 +1,13 @@
 import "@/i18n/lazy";
 import { exerciseById } from "@belay/shared/exercises/catalog";
-import { sessionElapsed } from "@belay/shared/training/pause";
+import { restClock, sessionElapsed } from "@belay/shared/training/pause";
 import { sessionProgress } from "@belay/shared/training/rules";
 import type { Workout, WorkoutSet } from "@belay/shared/training/workout";
 import { Link } from "@tanstack/react-router";
 import { ChevronRight, Timer } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { readPauseStops } from "@/lib/pause-stops";
 import { type OpenAccount, useSessionView } from "@/sync/account";
 import { formatClock, useNow } from "@/workouts/hooks";
 
@@ -36,13 +37,21 @@ export function SessionBar({
   const active = view?.workoutId === workout.id ? view : null;
   const end = active?.restEndsAt ? Date.parse(active.restEndsAt) : null;
   const paused = active?.pausedAt ?? null;
-  const resting = end !== null && end > now;
+  // A pause that stops everything holds the rest left where it stood.
+  const stops = readPauseStops();
+  const restNow = restClock(paused, now, stops);
+  const resting = end !== null && end > restNow;
   const announced = useRestOver(end, resting);
   const { next } = sessionProgress(workout.plan, sets);
   const code = workout.sessionCode;
   const slot = next && workout.plan[next.slotIndex];
+  // Paused over a frozen rest says Paused; a rest that runs on through the pause says Rest.
   const running = t(
-    resting ? "sessionBar.rest" : paused ? "sessionBar.paused" : "sessionBar.running",
+    paused && (stops === "all" || !resting)
+      ? "sessionBar.paused"
+      : resting
+        ? "sessionBar.rest"
+        : "sessionBar.running",
   );
   const letter = t("sessionBar.session", { code });
   // The 13 px step: a bare `text-secondary` is the colour token of the same name. Muted through
@@ -93,7 +102,7 @@ export function SessionBar({
           {resting ? (
             // A timer never read out each second.
             <span role="timer" aria-live="off">
-              {formatClock(end - now)}
+              {formatClock(end - restNow)}
             </span>
           ) : (
             formatClock(sessionElapsed(workout.startedAt, paused, now), Math.floor)

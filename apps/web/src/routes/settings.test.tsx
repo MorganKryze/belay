@@ -61,14 +61,39 @@ async function choose(row: RegExp, option: string) {
 describe("Settings preferences", () => {
   afterEach(() => document.documentElement.classList.remove("dark"));
 
-  it("groups Langue and Thème under Préférences, each showing its value", async () => {
+  it("groups Langue, Thème and En pause under Préférences, each showing its value", async () => {
     fakeApi({ me: ADA });
     renderRoute("/settings");
     const list = await screen.findByRole("region", { name: "Preferences" });
     const rows = within(list).getAllByRole("combobox");
-    expect(rows).toHaveLength(2);
+    expect(rows).toHaveLength(3);
     expect(within(list).getByRole("combobox", { name: "Language English" })).toBe(rows[0]);
     expect(within(list).getByRole("combobox", { name: "Theme System" })).toBe(rows[1]);
+    expect(within(list).getByRole("combobox", { name: "Paused Everything stops" })).toBe(rows[2]);
+  });
+
+  it("keeps on this device whether a pause also stops the rest", async () => {
+    fakeApi({ me: ADA });
+    renderRoute("/settings");
+    await choose(/^Paused/, "The rest keeps running");
+    expect(localStorage.getItem("belay.pauseStops")).toBe("session");
+    expect(
+      await screen.findByRole("combobox", { name: "Paused The rest keeps running" }),
+    ).toBeTruthy();
+    await choose(/^Paused/, "Everything stops");
+    expect(localStorage.getItem("belay.pauseStops")).toBe("all");
+  });
+
+  it("says the pause row in French", async () => {
+    await i18n.changeLanguage("fr");
+    fakeApi({ me: ADA });
+    renderRoute("/settings");
+    await choose(/^En pause/, "Le repos continue");
+    expect(
+      await screen.findByRole("combobox", { name: "En pause Le repos continue" }),
+    ).toBeTruthy();
+    await choose(/^En pause/, "Tout s'arrête");
+    expect(localStorage.getItem("belay.pauseStops")).toBe("all");
   });
 
   it("switches the language from its menu", async () => {

@@ -30,7 +30,7 @@ export function DayChip({
         min={MIN_WEIGH_IN_DATE}
         max={today}
         required
-        className="absolute inset-0 cursor-pointer opacity-0"
+        className="absolute inset-0 cursor-pointer text-base opacity-0"
         onClick={(e) => {
           try {
             e.currentTarget.showPicker();

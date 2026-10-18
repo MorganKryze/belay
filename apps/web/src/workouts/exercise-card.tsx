@@ -442,7 +442,7 @@ export function ExerciseCard({
                         value={shown(row, field)}
                         onChange={(e) => edit(row, field, e.target.value)}
                         onBlur={() => row.set && void correct(row)}
-                        className={`h-11 w-full min-w-0 rounded-[11px] border text-center text-[15px] tabular-nums ${cell}`}
+                        className={`h-11 w-full min-w-0 rounded-[11px] border text-center text-base tabular-nums ${cell}`}
                       />
                     ))
                   )}

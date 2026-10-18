@@ -1,6 +1,11 @@
 {
   "settings": {
     "preferences": "Preferences",
+    "pauseStops": "Paused",
+    "pauseStopsOptions": {
+      "all": "Everything stops",
+      "session": "The rest keeps running"
+    },
     "versionNotes": "Belay {{version}} · release notes",
     "newTab": "(new tab)",
     "tracking": "Tracking",
