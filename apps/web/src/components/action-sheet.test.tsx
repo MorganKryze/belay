@@ -1,4 +1,4 @@
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import i18n from "@/i18n";
 import { motion } from "@/lib/motion";
@@ -30,7 +30,7 @@ function renderSheet(props: Partial<Parameters<typeof ActionSheet>[0]> = {}) {
 }
 
 describe("ActionSheet", () => {
-  it("asks the question as title and says what goes in two lines at most", () => {
+  it("asks the question as title and says what goes", () => {
     renderSheet();
     const dialog = screen.getByRole("dialog", { name: "Delete this session?" });
     expect(dialog.getAttribute("aria-describedby")).toBeTruthy();
@@ -43,7 +43,6 @@ describe("ActionSheet", () => {
         "text-(length:--text-secondary)",
         "leading-(--text-secondary--line-height)",
         "text-muted-foreground",
-        "line-clamp-2",
       ]),
     );
     expectTokensOnly("components/action-sheet.tsx");
@@ -116,5 +115,56 @@ describe("ActionSheet", () => {
       expect(screen.queryByRole("dialog")).toBeNull();
       cleanup();
     }
+  });
+
+  it("a primary row sits above the red one and runs its action", () => {
+    vi.spyOn(motion, "exitWillAnimate").mockReturnValue(false);
+    const onSelect = vi.fn();
+    const { onConfirm, onClose } = renderSheet({
+      primary: { label: "Finish and save", onSelect },
+      confirm: "Delete the session…",
+    });
+    const primary = screen.getByRole("button", { name: "Finish and save" });
+    const red = screen.getByRole("button", { name: "Delete the session…" });
+    expect(primary.closest("[data-action-card]")).toBe(red.closest("[data-action-card]"));
+    expect(primary.compareDocumentPosition(red) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(classesOf(primary)).toEqual(
+      expect.arrayContaining(["text-primary", "font-bold", "min-h-14", "focus-visible:outline-2"]),
+    );
+    expect(classesOf(primary)).not.toContain("text-destructive");
+    fireEvent.click(primary);
+    expect(onSelect).toHaveBeenCalledTimes(1);
+    expect(onConfirm).not.toHaveBeenCalled();
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("the separate row takes the given label", async () => {
+    renderSheet({ cancel: "Keep going" });
+    await act(() => new Promise((r) => setTimeout(r, 0)));
+    const keep = screen.getByRole("button", { name: "Keep going" });
+    expect(screen.queryByRole("button", { name: "Cancel" })).toBeNull();
+    // Still the first focus: Enter right after opening keeps the session.
+    expect(document.activeElement).toBe(keep);
+    expect(keep.closest("[data-action-card]")!.contains(screen.getByRole("heading"))).toBe(false);
+  });
+
+  it("a three-line body is not cut", () => {
+    renderSheet({
+      body: "11 sets logged out of 19. The 8 unticked sets won't be saved; your program doesn't change.",
+    });
+    const body = screen.getByText(/^11 sets logged out of 19\./);
+    expect(classesOf(body).filter((c) => c.startsWith("line-clamp"))).toEqual([]);
+  });
+
+  it("the sign-out and remove-session sheets read as before", () => {
+    renderSheet();
+    const card = screen.getByRole("heading").closest("[data-action-card]")!;
+    // Title, body, then the one red row: no primary row unless asked for.
+    expect(
+      within(card as HTMLElement)
+        .getAllByRole("button")
+        .map((b) => b.textContent),
+    ).toEqual(["Delete"]);
+    expect(screen.getByRole("button", { name: "Cancel" })).toBeTruthy();
   });
 });

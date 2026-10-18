@@ -3,6 +3,7 @@ import { newId } from "@belay/shared";
 import { toISODate } from "@belay/shared/body/dates";
 import { exerciseById } from "@belay/shared/exercises/catalog";
 import type { Exercise } from "@belay/shared/exercises/library";
+import type { Change } from "@belay/shared/sync/schema";
 import { pauseEndedBy, resumedStart, sessionElapsed } from "@belay/shared/training/pause";
 import { appendSlot, planFor, replaceSlot, skipSlot } from "@belay/shared/training/plan";
 import { groupOf, sessionByCode } from "@belay/shared/training/program";
@@ -27,7 +28,7 @@ import { Navigate, useNavigate, useRouter, useSearch } from "@tanstack/react-rou
 import { ChevronDown, Pause, Play, Timer } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Sheet } from "@/components/sheet";
+import { ActionSheet } from "@/components/action-sheet";
 import { Button } from "@/components/ui/button";
 import { previousHref } from "@/lib/back";
 import { sessionTitle } from "@/lib/format";
@@ -48,6 +49,10 @@ import { groupKind } from "@/workouts/format";
 import { formatClock, useNow, useWakeLock } from "@/workouts/hooks";
 import { RestBar } from "@/workouts/rest-bar";
 
+// What « Terminer » has open: the finish question, the one for a session with nothing logged,
+// or the delete question that follows « Supprimer la séance… ».
+type FinishSheet = null | "finish" | "empty" | "delete";
+
 // The session screen (§4.2): full screen, no tab bar, the screen kept on.
 export function WorkoutScreen() {
   const account = useAccount();
@@ -64,8 +69,9 @@ function Session({ account }: { account: OpenAccount }) {
   const record = useRecord(account);
   const view = useSessionView(account).data;
   const started = useRef(false);
-  // While the end is written, the screen neither redirects nor shows a session already over.
-  const [leaving, setLeaving] = useState(false);
+  // While the end is written, the screen holds the session as it was: it neither redirects nor
+  // shows a session already over, and the page that leaves is the one the person saw.
+  const [leaving, setLeaving] = useState<typeof view>();
   const [failed, setFailed] = useState<string>();
   useWakeLock();
 
@@ -84,30 +90,26 @@ function Session({ account }: { account: OpenAccount }) {
       .then(go, go);
   }, [start, navigate, startWorkout, account.db]);
 
-  // A session with no set at all is not kept; otherwise it ends now and its summary opens.
-  const finish = async (workout: Workout, empty: boolean) => {
-    const at = new Date().toISOString();
-    setLeaving(true);
+  // Ended, the session gives its place to its summary; removed, to Accueil. Either way the
+  // session's entry is replaced, so Back never comes to a session that is over.
+  const leave = async (workout: Workout, changes: Change[], kept: boolean) => {
+    setLeaving(view);
     try {
-      await record(
-        empty
-          ? { kind: "workout", id: workout.id, field: "removed", value: true, at }
-          : { kind: "workout", id: workout.id, field: "ended", value: at, at },
-        { active: null },
-      );
+      await record(changes, { active: null });
       await navigate(
-        empty
-          ? { to: "/" }
-          : { to: "/workout/summary/$workoutId", params: { workoutId: workout.id }, replace: true },
+        kept
+          ? { to: "/workout/summary/$workoutId", params: { workoutId: workout.id }, replace: true }
+          : { to: "/", replace: true },
       );
     } catch {
-      setLeaving(false);
+      setLeaving(undefined);
       setFailed(t("weighIn.saveFailed"));
     }
   };
 
-  if (start || leaving || !view) return null;
-  const { active, history } = view;
+  const shown = leaving ?? view;
+  if (start || !shown) return null;
+  const { active, history } = shown;
   const workout = active && history.workouts.find((w) => w.id === active.workoutId);
   if (!active || !workout || workout.endedAt !== null || workout.removed)
     return <Navigate to="/workouts" search={{ tab: "program" }} />;
@@ -118,7 +120,7 @@ function Session({ account }: { account: OpenAccount }) {
       workout={workout}
       history={history}
       failed={failed}
-      onFinish={(empty) => void finish(workout, empty)}
+      onLeave={(changes, kept) => void leave(workout, changes, kept)}
     />
   );
 }
@@ -129,14 +131,14 @@ function Screen({
   workout,
   history,
   failed,
-  onFinish,
+  onLeave,
 }: {
   account: OpenAccount;
   active: ActiveSession;
   workout: Workout;
   history: History;
   failed: string | undefined;
-  onFinish: (empty: boolean) => void;
+  onLeave: (changes: Change[], kept: boolean) => void;
 }) {
   const { t } = useTranslation();
   const router = useRouter();
@@ -145,7 +147,9 @@ function Screen({
   const recordSet = useRecordSet(account);
   const now = useNow();
   const [toggled, setToggled] = useState<ReadonlyMap<number, boolean>>(new Map());
-  const [finishing, setFinishing] = useState(false);
+  const [sheet, setSheet] = useState<FinishSheet>(null);
+  // The sheet that rises once this one has left: the delete question after « Supprimer… ».
+  const then = useRef<FinishSheet>(null);
   // The exercise picker: for a slot to replace, or for one added at the end.
   const [picking, setPicking] = useState<{ slotIndex: number } | "add" | null>(null);
   // A picked exercise is in the plan behind while the picker plays its exit.
@@ -203,6 +207,51 @@ function Screen({
     [active, paused, record, workout.id, workout.startedAt],
   );
   const resume = useCallback((at: string) => save(() => resumeAt(at)), [resumeAt, save]);
+  // Ended now; finished while paused, the start moves past the pause in the same write, so the
+  // duration leaves it out as a resume would.
+  const end = () => {
+    const at = new Date().toISOString();
+    const moved: Change[] = paused
+      ? [
+          {
+            kind: "workout",
+            id: workout.id,
+            field: "startedAt",
+            value: resumedStart(workout.startedAt, paused, at),
+            at,
+          },
+        ]
+      : [];
+    onLeave([...moved, { kind: "workout", id: workout.id, field: "ended", value: at, at }], true);
+  };
+  const remove = () =>
+    onLeave(
+      [
+        {
+          kind: "workout",
+          id: workout.id,
+          field: "removed",
+          value: true,
+          at: new Date().toISOString(),
+        },
+      ],
+      false,
+    );
+  const closeSheet = () => {
+    setSheet(then.current);
+    then.current = null;
+  };
+  // What « Terminer » keeps: the planned work sets done over those planned, the ones left
+  // unticked, and that the program stays as it is.
+  const total = done.size + left;
+  const finishBody =
+    left > 0
+      ? [
+          t("session.finishCount", { count: done.size, total }),
+          t("session.finishLeft", { count: left }),
+          t("session.finishProgram"),
+        ].join(" ")
+      : t("session.finishAll", { count: done.size, total });
   // A set logged on another device after the pause began ends it at that set's time, once.
   const doneAts = sets.map((s) => s.doneAt);
   const endedBy = paused && pauseEndedBy(paused, doneAts);
@@ -412,9 +461,11 @@ function Screen({
           </span>
         )}
         <span className="flex-1" />
+        {/* Always a question: ending cannot be undone from here, and a stray tap next to the
+            pause control must never end a session. */}
         <Button
           variant="secondary"
-          onClick={() => (left > 0 ? setFinishing(true) : onFinish(sets.length === 0))}
+          onClick={() => setSheet(sets.length === 0 ? "empty" : "finish")}
         >
           {t("session.finish")}
         </Button>
@@ -506,22 +557,39 @@ function Screen({
           onChange={(restEndsAt) => setActive({ restEndsAt })}
         />
       )}
-      {finishing && (
-        <Sheet title={t("session.finishTitle")} onClose={() => setFinishing(false)}>
-          <p>
-            {sets.length === 0
-              ? t("session.finishEmpty")
-              : t("session.finishLeft", { count: left })}
-          </p>
-          <div className="flex flex-col gap-2">
-            <Button className="w-full" onClick={() => onFinish(sets.length === 0)}>
-              {t("session.finish")}
-            </Button>
-            <Button variant="secondary" className="w-full" onClick={() => setFinishing(false)}>
-              {t("session.keepGoing")}
-            </Button>
-          </div>
-        </Sheet>
+      {sheet === "finish" && (
+        <ActionSheet
+          key="finish"
+          title={t("session.finishTitle")}
+          body={finishBody}
+          primary={{ label: t("session.finishSave"), onSelect: end }}
+          confirm={t("session.deleteAsk")}
+          onConfirm={() => (then.current = "delete")}
+          cancel={t("session.keepGoing")}
+          onClose={closeSheet}
+        />
+      )}
+      {/* Every logged set goes with the session, warm-ups included. */}
+      {sheet === "delete" && (
+        <ActionSheet
+          key="delete"
+          title={t("session.deleteTitle")}
+          body={t("session.deleteBody", { count: sets.length })}
+          confirm={t("session.delete")}
+          onConfirm={remove}
+          onClose={closeSheet}
+        />
+      )}
+      {sheet === "empty" && (
+        <ActionSheet
+          key="empty"
+          title={t("session.emptyTitle")}
+          body={t("session.emptyBody")}
+          confirm={t("session.leave")}
+          onConfirm={remove}
+          cancel={t("session.keepGoing")}
+          onClose={closeSheet}
+        />
       )}
     </section>
   );

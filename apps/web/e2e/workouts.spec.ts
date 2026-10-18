@@ -102,9 +102,12 @@ test("a whole session offline: summary, history, and a second device sees it", a
     for (let n = 1; n <= sets; n++) await logSet(page, exercise, n, kg, reps);
   for (let n = 1; n <= 3; n++)
     for (const [exercise, kg, reps] of TRISET) await logSet(page, exercise, n, kg, reps);
-  // Every work set done: Finish asks nothing.
+  // Every work set done: Finish still asks, and says nothing is left.
   await page.clock.setFixedTime(new Date(NOW.getTime() + 62 * 60_000));
   await page.getByRole("button", { name: "Finish" }).click();
+  const sheet = page.getByRole("dialog", { name: "Finish the session?" });
+  await expect(sheet).toContainText("19 sets logged out of 19; your program doesn't change.");
+  await sheet.getByRole("button", { name: "Finish and save" }).click();
   await expect(page.getByText(/^Session done · /)).toBeVisible();
   const stats = page.locator("dl");
   await expect(stats).toContainText("Duration1 h 02");
@@ -335,7 +338,11 @@ const SCREENS: [string, (page: Page) => Promise<void>][] = [
     "the finish question",
     async (page) => {
       await page.goto("/workout?start=A");
-      await card(page, "Barbell bench press").getByRole("button", { name: "Log set 1" }).click();
+      const bench = card(page, "Barbell bench press");
+      await expect(bench.getByRole("textbox", { name: "Reps of set 1" })).toHaveValue("8");
+      await bench.getByRole("button", { name: "Log set 1" }).click();
+      // Logged before Finish: with nothing logged the other sheet opens.
+      await expect(bench.getByRole("img", { name: "Set 1 logged" })).toBeVisible();
       await page.getByRole("button", { name: "Finish" }).click();
       await expect(page.getByRole("dialog", { name: "Finish the session?" })).toBeVisible();
     },
@@ -351,8 +358,9 @@ const SCREENS: [string, (page: Page) => Promise<void>][] = [
       await expect(load).toHaveValue("80");
       await load.fill("82.5");
       await bench.getByRole("button", { name: "Log set 1" }).click();
+      await expect(bench.getByRole("img", { name: "Set 1 logged" })).toBeVisible();
       await page.getByRole("button", { name: "Finish" }).click();
-      await page.getByRole("dialog").getByRole("button", { name: "Finish" }).click();
+      await page.getByRole("dialog").getByRole("button", { name: "Finish and save" }).click();
       await expect(page.getByText("Record: Barbell bench press, 82.5 kg × 8")).toBeVisible();
     },
   ],

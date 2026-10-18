@@ -11,14 +11,17 @@ const row =
   "min-h-14 w-full px-4 text-button first:rounded-t-group last:rounded-b-group focus-visible:outline-2 focus-visible:-outline-offset-2";
 
 // A question before something that cannot be taken back: a card with the question, what goes and
-// the action in red, and a separate Cancel. It rises and leaves like a sheet and keeps its close
-// contract; the action is written before the exit starts.
+// the action in red, and a separate Cancel. A primary action, when there is one, sits in accent
+// above the red one. It rises and leaves like a sheet and keeps its close contract; the action is
+// written before the exit starts.
 export function ActionSheet({
   title,
   body,
   confirm,
   onConfirm,
   onClose,
+  primary,
+  cancel,
   open = true,
   busy = false,
 }: {
@@ -27,12 +30,14 @@ export function ActionSheet({
   confirm: string;
   onConfirm: () => void;
   onClose: () => void;
+  primary?: { label: string; onSelect: () => void };
+  cancel?: string;
   open?: boolean;
   busy?: boolean;
 }) {
   const { t } = useTranslation();
   const opener = useRef<HTMLElement | null>(null);
-  const cancel = useRef<HTMLButtonElement>(null);
+  const cancelRow = useRef<HTMLButtonElement>(null);
   const [gone, setGone] = useState(false);
   const exit = useSheetExit(open, () => {
     setGone(true);
@@ -52,9 +57,9 @@ export function ActionSheet({
             inert={!exit.dialogOpen}
             onOpenAutoFocus={(e) => {
               opener.current = document.activeElement as HTMLElement | null;
-              // Cancel first: Enter right after opening must not remove anything.
+              // The separate row first: Enter right after opening must not remove anything.
               e.preventDefault();
-              cancel.current?.focus();
+              cancelRow.current?.focus();
             }}
             onCloseAutoFocus={(e) => {
               e.preventDefault();
@@ -68,11 +73,24 @@ export function ActionSheet({
                   {title}
                 </Dialog.Title>
                 <Dialog.Description // The 13 px step by its length: a bare text-secondary would also paint the secondary color.
-                  className="line-clamp-2 text-(length:--text-secondary) leading-(--text-secondary--line-height) text-muted-foreground"
+                  className="text-(length:--text-secondary) leading-(--text-secondary--line-height) text-muted-foreground"
                 >
                   {body}
                 </Dialog.Description>
               </div>
+              {primary && (
+                <button
+                  type="button"
+                  disabled={busy}
+                  className={`${row} font-bold text-primary disabled:bg-track disabled:text-muted-foreground`}
+                  onClick={() => {
+                    primary.onSelect();
+                    exit.request();
+                  }}
+                >
+                  {primary.label}
+                </button>
+              )}
               {/* While the removal is written the row reads as the charter's disabled control, track
                   fill and muted text, so the word stays legible. */}
               <button
@@ -89,8 +107,12 @@ export function ActionSheet({
             </div>
             <div data-action-card className={`${card} shadow-sheet dark:border dark:border-border`}>
               <Dialog.Close asChild>
-                <button ref={cancel} type="button" className={`${row} font-bold text-foreground`}>
-                  {t("history.cancel")}
+                <button
+                  ref={cancelRow}
+                  type="button"
+                  className={`${row} font-bold text-foreground`}
+                >
+                  {cancel ?? t("history.cancel")}
                 </button>
               </Dialog.Close>
             </div>

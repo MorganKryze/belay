@@ -5,6 +5,7 @@ export type NavKind = "push" | "pop" | "cover" | "uncover";
 
 const TABS = new Set(["/", "/workouts", "/body", "/tools"]);
 const COVER = /^\/workout(?:\/edit|\/summary\/[^/]+)?$/;
+const SUMMARY = /^\/workout\/summary\/[^/]+\/?$/;
 const DEEP = new Set(["/settings/profile", "/settings/supplements", "/tools/plates/equipment"]);
 
 // The depth of a page, from the route table. Anything not listed (a detail page, a tool, an
@@ -26,7 +27,9 @@ export function navKind(
   if (from === undefined || from === to || swipedBack) return false;
   const a = levelOf(from);
   const b = levelOf(to);
-  if (a === "cover") return b === "cover" ? false : "uncover";
+  // A session's summary rises over it as a cover of its own; other covers swap in place.
+  if (a === "cover")
+    return b !== "cover" ? "uncover" : SUMMARY.test(to) && !SUMMARY.test(from) ? "cover" : false;
   if (b === "cover") return "cover";
   if (b > a) return "push";
   if (b < a) return "pop";
