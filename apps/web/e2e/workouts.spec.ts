@@ -238,6 +238,40 @@ test("the session bar's status line fits whole at 390 px, in the secondary size"
   expect(cut).toBe(false);
 });
 
+for (const theme of ["light", "dark"] as const) {
+  test(`the session bar and the tabs share a backing with no separator line, ${theme}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.addInitScript((t) => localStorage.setItem("belay.theme", t), theme);
+    await fakeServer(page, { changes: RUNNING_C });
+    await page.goto("/tools");
+    await expect(sessionBar(page)).toBeVisible();
+    if (theme === "dark") await expect(page.locator("html")).toHaveClass(/dark/);
+    const lines = await page.evaluate(() => {
+      const dock = document.querySelector("[data-dock]")!;
+      const bar = dock.querySelector('a[href^="/workout"]')!;
+      const drawn = (el: Element, pseudo?: string) => {
+        const s = getComputedStyle(el, pseudo);
+        const sides = ["Top", "Right", "Bottom", "Left"] as const;
+        const border = sides.some(
+          (side) =>
+            s.getPropertyValue(`border-${side.toLowerCase()}-style`) !== "none" &&
+            parseFloat(s.getPropertyValue(`border-${side.toLowerCase()}-width`)) > 0,
+        );
+        const content = pseudo ? s.content !== "none" && s.content !== "normal" : false;
+        return border || content;
+      };
+      return [dock, bar, bar.parentElement!].flatMap((el) => [
+        drawn(el),
+        drawn(el, "::before"),
+        drawn(el, "::after"),
+      ]);
+    });
+    expect(lines).toEqual(Array(9).fill(false));
+  });
+}
+
 // Each new screen, as a person reaches it, for axe and for the 360 px check.
 const SCREENS: [string, (page: Page) => Promise<void>][] = [
   [
