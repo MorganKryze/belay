@@ -362,11 +362,17 @@ test.describe("reduced motion", () => {
     const tabbed = await readMotion(page);
     expect(tabbed.filter((m) => m.target === "span[data-pill]")).toEqual([]);
     expect(tabbed.filter((m) => m.target === "svg" && m.transforms)).toEqual([]);
-    // A push and a pop.
+    // A push and a pop. The new heading shows before the page snapshots start to slide, and a
+    // Back taken in that gap cuts the push short, so each one waits for its slide to be seen.
+    const slides = async () =>
+      (await readMotion(page)).filter((m) => m.target.startsWith("::view-transition")).length;
     await page.getByRole("link", { name: /^Plates/ }).click();
     await expect(page.getByRole("heading", { level: 1, name: "Plates" })).toBeVisible();
+    await expect.poll(slides).toBeGreaterThan(0);
+    const pushed = await slides();
     await page.goBack();
     await expect(page.getByRole("heading", { level: 1, name: "Tools" })).toBeVisible();
+    await expect.poll(slides).toBeGreaterThan(pushed);
     ran.push(...(await readMotion(page)));
     // A set checked off.
     await page.goto("/workout?start=A");
