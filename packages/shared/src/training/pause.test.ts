@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { pauseEndedBy, resumedStart, sessionElapsed } from "./pause";
+import { pauseEndedBy, restClock, resumedRestEnd, resumedStart, sessionElapsed } from "./pause";
 
 const START = "2026-10-07T17:00:00.000Z";
 const at = (minutes: number, seconds = 0) =>
@@ -52,5 +52,41 @@ describe("pauseEndedBy", () => {
   it("is null while no set came after the pause", () => {
     expect(pauseEndedBy(at(20), [at(3), at(19), at(20)])).toBeNull();
     expect(pauseEndedBy(at(20), [])).toBeNull();
+  });
+});
+
+describe("restClock", () => {
+  it("stands at the pause's beginning while everything stops", () => {
+    expect(restClock(at(20), Date.parse(at(25)), "all")).toBe(Date.parse(at(20)));
+  });
+
+  it("is now while the rest keeps running, or while nothing is paused", () => {
+    expect(restClock(at(20), Date.parse(at(25)), "session")).toBe(Date.parse(at(25)));
+    expect(restClock(null, Date.parse(at(25)), "all")).toBe(Date.parse(at(25)));
+    expect(restClock(undefined, Date.parse(at(25)), "all")).toBe(Date.parse(at(25)));
+  });
+
+  it("never reads later than now, with the clock put back during the pause", () => {
+    expect(restClock(at(20), Date.parse(at(15)), "all")).toBe(Date.parse(at(15)));
+  });
+});
+
+describe("resumedRestEnd", () => {
+  it("moves a rest running at the pause later by the time paused, when everything stops", () => {
+    expect(resumedRestEnd(at(22), at(20), at(27), "all")).toBe(at(29));
+  });
+
+  it("leaves the rest's end alone while the rest keeps running", () => {
+    expect(resumedRestEnd(at(22), at(20), at(27), "session")).toBe(at(22));
+  });
+
+  it("leaves a rest over before the pause, or no rest, alone", () => {
+    expect(resumedRestEnd(at(19), at(20), at(27), "all")).toBe(at(19));
+    expect(resumedRestEnd(at(20), at(20), at(27), "all")).toBe(at(20));
+    expect(resumedRestEnd(null, at(20), at(27), "all")).toBeNull();
+  });
+
+  it("never moves the end earlier, with the clock put back during the pause", () => {
+    expect(resumedRestEnd(at(22), at(20), at(18), "all")).toBe(at(22));
   });
 });

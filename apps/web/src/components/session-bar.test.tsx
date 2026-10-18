@@ -32,6 +32,7 @@ afterEach(async () => {
   db.close();
   vi.useRealTimers();
   Reflect.deleteProperty(navigator, "vibrate");
+  localStorage.clear();
   await i18n.changeLanguage("en");
 });
 
@@ -203,6 +204,25 @@ describe("SessionBar", () => {
     expect(time()).toBe("9:59");
     await new Promise((r) => setTimeout(r, 1100));
     expect(time()).toBe("9:59");
+  });
+
+  it("while paused the rest stands still, unless the rest keeps running", async () => {
+    const pausedAt = new Date(Date.now() - 1000).toISOString();
+    await recordChanges(db, [], {
+      active: {
+        workoutId: workout.id,
+        slotIndex: 0,
+        restEndsAt: new Date(Date.parse(pausedAt) + 90_000).toISOString(),
+        pausedAt,
+      },
+    });
+    await show({ workout: tenMinutes(), sets: [set(0, 0, 3)] });
+    const timer = await screen.findByRole("timer");
+    expect(timer.textContent).toBe("1:30");
+    await new Promise((r) => setTimeout(r, 1100));
+    expect(timer.textContent).toBe("1:30");
+    localStorage.setItem("belay.pauseStops", "session");
+    await waitFor(() => expect(screen.getByRole("timer").textContent).toMatch(/^1:2\d$/));
   });
 
   it("the bar says the rest is over, once, and vibrates once", async () => {

@@ -4,7 +4,12 @@ import { toISODate } from "@belay/shared/body/dates";
 import { exerciseById } from "@belay/shared/exercises/catalog";
 import type { Exercise } from "@belay/shared/exercises/library";
 import type { Change } from "@belay/shared/sync/schema";
-import { pauseEndedBy, resumedStart, sessionElapsed } from "@belay/shared/training/pause";
+import {
+  pauseEndedBy,
+  resumedRestEnd,
+  resumedStart,
+  sessionElapsed,
+} from "@belay/shared/training/pause";
 import { appendSlot, planFor, replaceSlot, skipSlot } from "@belay/shared/training/plan";
 import { groupOf, sessionByCode } from "@belay/shared/training/program";
 import {
@@ -32,6 +37,7 @@ import { useTranslation } from "react-i18next";
 import { ActionSheet } from "@/components/action-sheet";
 import { Button } from "@/components/ui/button";
 import { previousHref } from "@/lib/back";
+import { readPauseStops } from "@/lib/pause-stops";
 import { sessionTitle } from "@/lib/format";
 import { readToolState, resolveEquipment } from "@/lib/tool-storage";
 import { levelOf } from "@/lib/transitions";
@@ -187,15 +193,17 @@ function Screen({
       void save(() => record([], { active: { ...active, ...patch } })),
     [active, record, save],
   );
-  // The pause stays on this device; the session time stands still from it.
+  // The pause stays on this device; the session time stands still from it, and the rest too
+  // unless this device keeps the rest running.
   const paused = active.pausedAt ?? null;
+  const stops = readPauseStops();
   // A resume counts from its own moment: the clock's last tick may be up to a second older,
   // and the time would step back.
   const [resumed, setResumed] = useState(0);
   const elapsed = sessionElapsed(workout.startedAt, paused, Math.max(now, resumed));
   const pause = () => setActive({ pausedAt: new Date().toISOString() });
   // One write: the start moved later by the time paused and the pause cleared, so the recorded
-  // duration leaves the pause out on every device.
+  // duration leaves the pause out on every device; a rest the pause stopped goes on from there.
   const resumeAt = useCallback(
     (at: string) => {
       setResumed((t) => Math.max(t, Date.parse(at)));
@@ -209,10 +217,16 @@ function Screen({
             at,
           },
         ],
-        { active: { ...active, pausedAt: null } },
+        {
+          active: {
+            ...active,
+            pausedAt: null,
+            restEndsAt: resumedRestEnd(active.restEndsAt, paused!, at, stops),
+          },
+        },
       );
     },
-    [active, paused, record, workout.id, workout.startedAt],
+    [active, paused, record, stops, workout.id, workout.startedAt],
   );
   const resume = useCallback((at: string) => save(() => resumeAt(at)), [resumeAt, save]);
   // A set logged on another device after the pause began ends it at that set's time.
@@ -333,6 +347,10 @@ function Screen({
       active.chrono?.slotIndex === slotIndex && active.chrono.position === row.position
         ? null
         : (active.chrono ?? null);
+    // The rest as the resume written first leaves it.
+    const restEnd = paused
+      ? resumedRestEnd(active.restEndsAt, paused, doneAt, stops)
+      : active.restEndsAt;
     await save(async () => {
       // Checked while paused: the session resumes at this tap, written before the set.
       if (paused) await resumeAt(doneAt);
@@ -357,8 +375,8 @@ function Screen({
           restEndsAt: turn
             ? restEndsAt(plan, after, turn, doneAt)
             : // A warm-up starts no rest and leaves a running one alone, but not an expired one.
-              active.restEndsAt && Date.parse(active.restEndsAt) > Date.parse(doneAt)
-              ? active.restEndsAt
+              restEnd && Date.parse(restEnd) > Date.parse(doneAt)
+              ? restEnd
               : null,
           pausedAt: null,
         },
@@ -572,6 +590,8 @@ function Screen({
           endsAt={active.restEndsAt}
           startedAt={restFrom}
           next={restLabel}
+          pausedAt={paused}
+          stops={stops}
           onChange={(restEndsAt) => setActive({ restEndsAt })}
         />
       )}

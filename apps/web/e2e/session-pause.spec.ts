@@ -143,16 +143,36 @@ test("pause freezes the time and a checked set resumes it from where it stood", 
   expect(await elapsed(page)).toBeGreaterThan(resumed);
 });
 
-test("the rest keeps counting down during a pause", async ({ page }) => {
+test("a pause stops the rest by default, and lets it run once Réglages says so", async ({
+  page,
+}) => {
   await start(page);
   await log(page, 1);
   const timer = page.getByRole("timer");
   await expect(timer).toBeVisible();
-  await pause(page);
   const seconds = async () => {
     const [m, s] = (await timer.textContent())!.split(":").map(Number);
     return m! * 60 + s!;
   };
+  await pause(page);
+  const frozen = await seconds();
+  await page.waitForTimeout(3000);
+  expect(await seconds()).toBe(frozen);
+  await page.getByRole("button", { name: "Resume", exact: true }).click();
+  await expect(tag(page)).toHaveCount(0);
+  await expect.poll(seconds).toBeLessThan(frozen);
+  // The rest keeps running: a pause leaves the countdown going.
+  await page.goto("/settings");
+  await expect(page.locator(".launch")).toBeHidden();
+  await page.getByRole("combobox", { name: "During a pause Everything stops" }).click();
+  await page.getByRole("option", { name: "The rest keeps running" }).click();
+  await expect(
+    page.getByRole("combobox", { name: "During a pause The rest keeps running" }),
+  ).toBeVisible();
+  await page.goto("/workout");
+  await expect(page.locator(".launch")).toBeHidden();
+  await expect(timer).toBeVisible();
+  await pause(page);
   const first = await seconds();
   await page.waitForTimeout(1500);
   expect(await seconds()).toBeLessThan(first);

@@ -1,12 +1,13 @@
 import "@/i18n/lazy";
 import { exerciseById } from "@belay/shared/exercises/catalog";
-import { sessionElapsed } from "@belay/shared/training/pause";
+import { restClock, sessionElapsed } from "@belay/shared/training/pause";
 import { sessionProgress } from "@belay/shared/training/rules";
 import type { Workout, WorkoutSet } from "@belay/shared/training/workout";
 import { Link } from "@tanstack/react-router";
 import { ChevronRight, Timer } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { readPauseStops } from "@/lib/pause-stops";
 import { type OpenAccount, useSessionView } from "@/sync/account";
 import { formatClock, useNow } from "@/workouts/hooks";
 
@@ -36,7 +37,9 @@ export function SessionBar({
   const active = view?.workoutId === workout.id ? view : null;
   const end = active?.restEndsAt ? Date.parse(active.restEndsAt) : null;
   const paused = active?.pausedAt ?? null;
-  const resting = end !== null && end > now;
+  // A pause that stops everything holds the rest left where it stood.
+  const restNow = restClock(paused, now, readPauseStops());
+  const resting = end !== null && end > restNow;
   const announced = useRestOver(end, resting);
   const { next } = sessionProgress(workout.plan, sets);
   const code = workout.sessionCode;
@@ -93,7 +96,7 @@ export function SessionBar({
           {resting ? (
             // A timer never read out each second.
             <span role="timer" aria-live="off">
-              {formatClock(end - now)}
+              {formatClock(end - restNow)}
             </span>
           ) : (
             formatClock(sessionElapsed(workout.startedAt, paused, now), Math.floor)

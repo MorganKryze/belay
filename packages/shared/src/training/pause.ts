@@ -32,3 +32,34 @@ export function pauseEndedBy(pausedAt: string, doneAts: readonly string[]): stri
       first = doneAt;
   return first;
 }
+
+// What a pause stops, a choice each device keeps: everything, or the session's time while the
+// rest keeps running.
+export type PauseStops = "all" | "session";
+
+// The moment the rest is read at: while everything stops, the pause's beginning (never later
+// than now, a clock put back during the pause), so the rest left stands still.
+export function restClock(
+  pausedAt: string | null | undefined,
+  now: number,
+  stops: PauseStops,
+): number {
+  return stops === "all" && pausedAt ? Math.min(now, Date.parse(pausedAt)) : now;
+}
+
+// The rest's end once the pause is left. When everything stopped, a rest still running at the
+// pause ends later by the time paused, so it goes on from the time it had left; never earlier
+// (a clock put back during the pause). Both values live on the device, so a reload reads the
+// same frozen rest and nothing new is sent.
+export function resumedRestEnd(
+  restEndsAt: string | null,
+  pausedAt: string,
+  resumedAt: string,
+  stops: PauseStops,
+): string | null {
+  if (stops !== "all" || restEndsAt === null) return restEndsAt;
+  const end = Date.parse(restEndsAt);
+  const paused = Date.parse(pausedAt);
+  if (end <= paused) return restEndsAt;
+  return new Date(end + Math.max(0, Date.parse(resumedAt) - paused)).toISOString();
+}

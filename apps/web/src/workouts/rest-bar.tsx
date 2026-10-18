@@ -1,3 +1,4 @@
+import { type PauseStops, restClock } from "@belay/shared/training/pause";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { formatClock, useNow } from "./hooks";
@@ -11,15 +12,19 @@ export function RestBar({
   endsAt,
   startedAt,
   next,
+  pausedAt,
+  stops,
   onChange,
 }: {
   endsAt: string;
   startedAt: string; // the last work set's doneAt: where the line starts
   next: string; // "Rest · set 3 next"
+  pausedAt: string | null;
+  stops: PauseStops; // a pause that stops everything holds the rest left where it stood
   onChange: (endsAt: string | null) => void;
 }) {
   const { t } = useTranslation();
-  const now = useNow(250);
+  const now = restClock(pausedAt, useNow(250), stops);
   const end = Date.parse(endsAt);
   const left = end - now;
   const over = left <= 0;
