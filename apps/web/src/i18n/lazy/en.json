@@ -374,19 +374,22 @@
     }
   },
   "summary": {
-    "title": "Session done",
     "close": "Close",
     "record": "Record: {{exercise}}, {{kg}} kg × {{reps}}",
     "recordSeconds": "Record: {{exercise}}, {{seconds}} s",
     "recordLoadSeconds": "Record: {{exercise}}, {{kg}} kg · {{seconds}} s",
     "duration": "Duration",
-    "workSets": "Work sets",
     "volume": "Volume",
     "warmups": "Warm-ups left out",
     "warmupCount_one": "{{count}} set",
     "warmupCount_other": "{{count}} sets",
     "note": "Session note (optional)",
-    "save": "Save"
+    "save": "Save",
+    "eyebrow": "Session done · {{day}}",
+    "logged": "What you logged",
+    "loggedSets_one": "1 set · {{set}}",
+    "loggedSets_other": "{{count}} sets · best {{set}}",
+    "sets": "Sets"
   },
   "preview": {
     "size_one": "{{count}} exercise · {{sets}} sets · about {{minutes}} min",

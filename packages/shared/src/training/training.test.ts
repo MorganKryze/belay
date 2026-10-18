@@ -14,6 +14,7 @@ import {
   type History,
   lastTime,
   liveSets,
+  loggedByExercise,
   nextTurn,
   openWorkout,
   prefill,
@@ -197,6 +198,62 @@ describe("prefill and lastTime", () => {
         sets: [set(w, 0, 80, 8), set(kept, 0, 80, 8, { removed: true }), set(kept, 1, 82.5, 8)],
       }).map((s) => s.weightKg),
     ).toEqual([82.5]);
+  });
+});
+
+describe("loggedByExercise", () => {
+  const w = workout();
+  it("lists the exercises in plan order, each with its work sets and its top set", () => {
+    const sets = [
+      set(w, 0, 10, 15, { slotIndex: 4, exerciseId: "ds:0334" }),
+      set(w, 0, 80, 8),
+      set(w, 1, 80, 7),
+    ];
+    expect(loggedByExercise(w, sets)).toEqual([
+      {
+        slotIndex: 0,
+        exerciseId: BENCH,
+        workSets: 2,
+        top: { weightKg: 80, reps: 8, seconds: null },
+      },
+      {
+        slotIndex: 4,
+        exerciseId: "ds:0334",
+        workSets: 1,
+        top: { weightKg: 10, reps: 15, seconds: null },
+      },
+    ]);
+  });
+
+  it("leaves out warm-ups, removed sets and a slot with no work set", () => {
+    const sets = [
+      warm(w, 0, 40, 8),
+      set(w, 0, 60, 8, { removed: true }),
+      set(w, 0, 70, 6, { slotIndex: 1 }),
+      warm(w, 1, 50, 5),
+      { ...warm(w, 0, 30, 5), slotIndex: 2 },
+    ];
+    expect(loggedByExercise(w, sets)).toEqual([
+      {
+        slotIndex: 1,
+        exerciseId: BENCH,
+        workSets: 1,
+        top: { weightKg: 70, reps: 6, seconds: null },
+      },
+    ]);
+  });
+
+  it("lists a replaced exercise under the exercise really done, and only this session's sets", () => {
+    const other = workout();
+    const sets = [set(w, 0, 30, 10, { exerciseId: "ds:0405" }), set(other, 0, 90, 5)];
+    expect(loggedByExercise(w, sets)).toEqual([
+      {
+        slotIndex: 0,
+        exerciseId: "ds:0405",
+        workSets: 1,
+        top: { weightKg: 30, reps: 10, seconds: null },
+      },
+    ]);
   });
 });
 

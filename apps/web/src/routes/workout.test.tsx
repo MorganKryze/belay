@@ -324,13 +324,14 @@ describe("the session screen (§4.2, §4.3)", () => {
     const sheet = await screen.findByRole("dialog", { name: "Finish the session?" });
     expect(within(sheet).getByText("18 sets not done will not be saved.")).toBeTruthy();
     fireEvent.click(within(sheet).getByRole("button", { name: "Finish" }));
-    expect(await screen.findByRole("heading", { name: "Session done", level: 1 })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "Session A · Push", level: 1 })).toBeTruthy();
+    expect(screen.getByText(/^Session done · /)).toBeTruthy();
     expect(screen.getByText("Record: Barbell bench press, 82.5 kg × 8")).toBeTruthy();
     const stats = screen.getByText("Duration").closest("dl")!;
     expect(stats.textContent).toContain("Duration1 h 04");
-    expect(stats.textContent).toContain("Work sets1");
+    expect(stats.textContent).toContain("Sets1");
     expect(stats.textContent).toContain("Volume660 kg");
-    expect(stats.textContent).toContain("Warm-ups left out0 sets");
+    expect(screen.getByText("Warm-ups left out · 0 sets")).toBeTruthy();
     fireEvent.change(screen.getByRole("textbox", { name: "Session note (optional)" }), {
       target: { value: "Bonne énergie" },
     });

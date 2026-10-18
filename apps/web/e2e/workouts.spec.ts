@@ -105,10 +105,10 @@ test("a whole session offline: summary, history, and a second device sees it", a
   // Every work set done: Finish asks nothing.
   await page.clock.setFixedTime(new Date(NOW.getTime() + 62 * 60_000));
   await page.getByRole("button", { name: "Finish" }).click();
-  await expect(page.getByRole("heading", { name: "Session done", level: 1 })).toBeVisible();
+  await expect(page.getByText(/^Session done · /)).toBeVisible();
   const stats = page.locator("dl");
   await expect(stats).toContainText("Duration1 h 02");
-  await expect(stats).toContainText("Work sets19");
+  await expect(stats).toContainText("Sets19");
   await page.getByRole("textbox", { name: "Session note (optional)" }).fill("Bonne séance");
   await page.getByRole("button", { name: "Save" }).click();
   await expect(sessionLine(page)).toContainText("Session B · Legs");

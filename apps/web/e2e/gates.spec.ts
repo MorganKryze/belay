@@ -250,6 +250,14 @@ const SCREENS: [string, (page: Page) => Promise<void>][] = [
       await expect(page.getByRole("dialog", { name: "Delete this session?" })).toBeVisible();
     },
   ],
+  [
+    "the summary",
+    async (page) => {
+      await fakeServer(page, { changes: LAST_A });
+      await page.goto(`/workout/summary/${LAST}`);
+      await expect(page.getByRole("heading", { level: 1, name: "Session A · Push" })).toBeVisible();
+    },
+  ],
 ];
 
 for (const viewport of [PHONE, DESKTOP]) {

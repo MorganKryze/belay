@@ -1,20 +1,24 @@
 import "@/i18n/lazy";
-import { liveSets, summary } from "@belay/shared/training/rules";
+import { exerciseById } from "@belay/shared/exercises/catalog";
+import { type Load, liveSets, loggedByExercise, summary } from "@belay/shared/training/rules";
 import { NOTE_MAX } from "@belay/shared/training/workout";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { PartyPopper } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { GroupedList, groupSurface } from "@/components/grouped-list";
 import { Button } from "@/components/ui/button";
 import { formatNumber, formatWeekday, sessionTitle } from "@/lib/format";
 import { useToday } from "@/lib/today";
+import { cn } from "@/lib/utils";
 import { type OpenAccount, useAccount, useHistory, useRecord } from "@/sync/account";
-import { formatDuration, recordText } from "@/workouts/format";
+import { durationParts, recordText } from "@/workouts/format";
 import { dayOf } from "@/workouts/history-panel";
 import { NotFound } from "./fallbacks";
 
-// The summary at the end of a session (§4.4): duration, work sets, volume (warm-ups left out),
-// records, and an optional note; Save goes back Home.
+// The summary at the end of a session (§4.4): the session's own page, its duration, work sets and
+// volume (warm-ups left out) in big figures, records, what was logged per exercise, and an
+// optional note; Save goes back Home.
 export function WorkoutSummary() {
   const account = useAccount();
   if (account.kind === "loading") return null;
@@ -52,24 +56,46 @@ function Summary({ account }: { account: OpenAccount }) {
       setError(t("weighIn.saveFailed"));
     }
   };
-  const stat = "flex flex-col";
-  const label = "text-[13px] text-muted-foreground";
-  const value = "text-[30px] leading-tight font-extrabold tabular-nums";
+  const kg = (value: number) => formatNumber(value, i18n.language, { digits: 2, grouping: false });
+  const loadText = (load: Load) =>
+    load.seconds !== null
+      ? load.weightKg > 0
+        ? t("history.loadSeconds", { kg: kg(load.weightKg), seconds: load.seconds })
+        : t("history.seconds", { seconds: load.seconds })
+      : t("history.load", { kg: kg(load.weightKg), reps: load.reps });
+  const logged = loggedByExercise(workout, history.sets);
+  const duration = durationParts(stats.durationMs, t);
 
   return (
     <section className="flex flex-col gap-4">
-      <div className="flex justify-end">
-        <Button variant="secondary" onClick={home}>
+      <div className="-mr-3 flex justify-end">
+        <Button variant="text" onClick={home}>
           {t("summary.close")}
         </Button>
       </div>
       <div>
-        <h1 className="text-[22px] leading-tight font-bold tracking-tight">{t("summary.title")}</h1>
-        <p className="text-sm text-muted-foreground">
-          {formatWeekday(dayOf(workout), i18n.language, today)} ·{" "}
-          {sessionTitle(workout.sessionCode, t)}
+        <p className="text-[13px] font-semibold text-muted-foreground">
+          {t("summary.eyebrow", {
+            day: formatWeekday(dayOf(workout), i18n.language, today, {
+              startOfLine: false,
+              long: true,
+            }),
+          })}
         </p>
+        <h1 className="text-[30px] leading-tight font-bold tracking-tight">
+          {sessionTitle(workout.sessionCode, t)}
+        </h1>
       </div>
+      <dl className="grid grid-cols-2 gap-3">
+        <Figure label={t("summary.duration")} value={duration.value} unit={duration.unit} />
+        <Figure label={t("summary.sets")} value={String(stats.workSets)} />
+        <Figure
+          label={t("summary.volume")}
+          value={n(stats.volumeKg)}
+          unit="kg"
+          className="col-span-2"
+        />
+      </dl>
       {stats.records.map((r) => (
         <p
           key={r.exerciseId}
@@ -79,29 +105,34 @@ function Summary({ account }: { account: OpenAccount }) {
           {recordText(r, t, i18n.language)}
         </p>
       ))}
-      <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
-        <div className={stat}>
-          <dt className={label}>{t("summary.duration")}</dt>
-          <dd className={value}>{formatDuration(stats.durationMs, t)}</dd>
-        </div>
-        <div className={stat}>
-          <dt className={label}>{t("summary.workSets")}</dt>
-          <dd className={value}>{stats.workSets}</dd>
-        </div>
-        <div className={stat}>
-          <dt className={label}>{t("summary.volume")}</dt>
-          <dd className={value}>
-            {n(stats.volumeKg)}
-            <span className="text-[13px] font-semibold text-muted-foreground"> kg</span>
-          </dd>
-        </div>
-        <div className={stat}>
-          <dt className={label}>{t("summary.warmups")}</dt>
-          <dd className="text-xl leading-tight font-bold text-muted-foreground">
-            {t("summary.warmupCount", { count: stats.warmupSets })}
-          </dd>
-        </div>
-      </dl>
+      {logged.length > 0 && (
+        <GroupedList label={t("summary.logged")}>
+          {logged.map((e) => (
+            <div
+              key={`${e.slotIndex}|${e.exerciseId}`}
+              className="flex min-h-14 items-center gap-3 px-4 py-2"
+            >
+              <span
+                aria-hidden
+                className="grid size-7 shrink-0 place-items-center rounded-icon bg-track text-[13px] font-semibold text-muted-foreground tabular-nums"
+              >
+                {e.slotIndex + 1}
+              </span>
+              <span className="flex min-w-0 flex-col">
+                <span className="text-body font-semibold break-words">
+                  {exerciseById(e.exerciseId)?.name ?? e.exerciseId}
+                </span>{" "}
+                <span className="text-(length:--text-secondary) leading-(--text-secondary--line-height) break-words text-muted-foreground">
+                  {t("summary.loggedSets", { count: e.workSets, set: loadText(e.top) })}
+                </span>
+              </span>
+            </div>
+          ))}
+        </GroupedList>
+      )}
+      <p className="text-[13px] text-muted-foreground">
+        {t("summary.warmups")} · {t("summary.warmupCount", { count: stats.warmupSets })}
+      </p>
       <label className="flex flex-col gap-1.5 text-[13px] font-semibold">
         {t("summary.note")}
         <textarea
@@ -117,5 +148,33 @@ function Summary({ account }: { account: OpenAccount }) {
         {t("summary.save")}
       </Button>
     </section>
+  );
+}
+
+// A figure card: its label, then the figure large and tabular, its unit small beside it.
+function Figure({
+  label,
+  value,
+  unit,
+  className,
+}: {
+  label: string;
+  value: string;
+  unit?: string;
+  className?: string;
+}) {
+  return (
+    <div className={cn("flex min-w-0 flex-col gap-1 p-4", groupSurface, className)}>
+      <dt className="text-[13px] font-semibold text-muted-foreground">{label}</dt>
+      <dd className="text-[44px] leading-none font-extrabold tracking-tight break-words tabular-nums">
+        {value}
+        {unit && (
+          <span className="text-[17px] font-semibold tracking-normal text-muted-foreground">
+            {" "}
+            {unit}
+          </span>
+        )}
+      </dd>
+    </div>
   );
 }

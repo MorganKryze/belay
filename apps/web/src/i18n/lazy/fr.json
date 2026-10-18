@@ -374,19 +374,22 @@
     }
   },
   "summary": {
-    "title": "Séance terminée",
     "close": "Fermer",
     "record": "Record : {{exercise}}, {{kg}} kg × {{reps}}",
     "recordSeconds": "Record : {{exercise}}, {{seconds}} s",
     "recordLoadSeconds": "Record : {{exercise}}, {{kg}} kg · {{seconds}} s",
     "duration": "Durée",
-    "workSets": "Séries de travail",
     "volume": "Volume",
     "warmups": "Montée exclue",
     "warmupCount_one": "{{count}} série",
     "warmupCount_other": "{{count}} séries",
     "note": "Note sur la séance (option)",
-    "save": "Enregistrer"
+    "save": "Enregistrer",
+    "eyebrow": "Séance terminée · {{day}}",
+    "logged": "Ce que tu as noté",
+    "loggedSets_one": "1 série · {{set}}",
+    "loggedSets_other": "{{count}} séries · meilleure {{set}}",
+    "sets": "Séries"
   },
   "preview": {
     "size_one": "{{count}} exercice · {{sets}} séries · environ {{minutes}} min",
