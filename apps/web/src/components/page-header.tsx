@@ -24,12 +24,12 @@ export function PageHeader({
   const large = useRef<HTMLHeadingElement>(null);
   // Without scroll timelines, the bar is marked folded once the large title has gone under it.
   useEffect(() => {
-    if (typeof IntersectionObserver === "undefined" || CSS.supports("animation-timeline: scroll()"))
-      return;
+    if (CSS.supports("animation-timeline: scroll()")) return;
     const header = bar.current!;
     const under = parseFloat(getComputedStyle(header).top) + header.offsetHeight;
     const observer = new IntersectionObserver(
-      ([entry]) => header.toggleAttribute("data-folded", !entry!.isIntersecting),
+      // The last entry is the latest state when a fast scroll queues several.
+      (entries) => header.toggleAttribute("data-folded", !entries.at(-1)!.isIntersecting),
       { rootMargin: `-${under}px 0px 0px` },
     );
     observer.observe(large.current!);
