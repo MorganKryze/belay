@@ -218,6 +218,86 @@ test.describe("at 390 px", () => {
   }
 });
 
+// The page's end: sign-out and the version close Réglages, at the bottom of a page that fits.
+// A build made outside a release shows its version as plain text, without the notes link.
+const versionLine = (page: Page) => page.locator("main > section p", { hasText: /^Belay / });
+const box = async (locator: ReturnType<Page["locator"]>) => (await locator.boundingBox())!;
+// The shell column's bottom padding, which the page's last line sits on.
+const columnPadding = (page: Page) =>
+  page
+    .locator("main")
+    .evaluate((main) => parseFloat(getComputedStyle(main.parentElement!).paddingBottom));
+const signOutCard = (page: Page) =>
+  signOut(page).locator("xpath=ancestor::*[contains(@class, 'rounded-group')][1]");
+
+async function expectAtTheBottom(page: Page) {
+  const version = await box(versionLine(page));
+  const { inner, scroll } = await page.evaluate(() => ({
+    inner: innerHeight,
+    scroll: document.documentElement.scrollHeight,
+  }));
+  expect(
+    Math.abs(version.y + version.height - (inner - (await columnPadding(page)))),
+  ).toBeLessThanOrEqual(1);
+  expect(scroll).toBe(inner);
+  return version;
+}
+
+for (const viewport of [
+  { width: 390, height: 844 },
+  { width: 1280, height: 800 },
+]) {
+  test.describe(`at ${viewport.width} × ${viewport.height}`, () => {
+    test.use({ viewport, reducedMotion: "reduce" });
+    test("sign-out and the version sit at the bottom of a page that fits", async ({ page }) => {
+      await openSettings(page);
+      await expect(signOut(page)).toBeVisible();
+      await expect(versionLine(page)).toBeVisible();
+      await settled(page);
+      const version = await expectAtTheBottom(page);
+      const card = await box(signOutCard(page));
+      expect(Math.abs(version.y - (card.y + card.height) - 16)).toBeLessThanOrEqual(1);
+    });
+  });
+}
+
+test.describe("on a page taller than the screen", () => {
+  test.use({ viewport: { width: 360, height: 560 }, reducedMotion: "reduce" });
+  test("the sign-out group keeps 24 px under the group above, the version last", async ({
+    page,
+  }) => {
+    await refusedWeighIn(page);
+    await expect(signOut(page)).toBeVisible();
+    await settled(page);
+    const tracking = await box(
+      page
+        .getByRole("region", { name: "Tracking" })
+        .locator("xpath=./*[contains(@class, 'rounded-group')]"),
+    );
+    const card = await box(signOutCard(page));
+    expect(card.y - (tracking.y + tracking.height)).toBeGreaterThanOrEqual(24 - 0.5);
+    const version = await box(versionLine(page));
+    expect(version.y).toBeGreaterThan(card.y + card.height);
+    const last = await page
+      .locator("main > section")
+      .evaluate((section) => section.lastElementChild!.lastElementChild!.textContent);
+    expect(last).toMatch(/^Belay /);
+  });
+});
+
+test.describe("signed out at 390 × 844", () => {
+  test.use({ viewport: { width: 390, height: 844 }, reducedMotion: "reduce" });
+  test("signed out, the version line sits alone at the bottom", async ({ page }) => {
+    await page.route("**/api/me", (r) => r.fulfill({ status: 401 }));
+    await page.goto("/settings");
+    await expect(row(page, "Language")).toBeVisible();
+    await expect(versionLine(page)).toBeVisible();
+    await settled(page);
+    await expect(signOut(page)).toHaveCount(0);
+    await expectAtTheBottom(page);
+  });
+});
+
 test.describe("at 360 px", () => {
   test.use({ viewport: { width: 360, height: 780 } });
 

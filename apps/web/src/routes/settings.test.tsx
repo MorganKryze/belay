@@ -108,6 +108,39 @@ describe("Settings preferences", () => {
   });
 });
 
+describe("Settings page end", () => {
+  // The section's last child, which holds what closes the page.
+  const pageEnd = async () =>
+    (await screen.findByRole("region", { name: "Preferences" })).parentElement!.closest("section")!
+      .lastElementChild!;
+
+  it("the sign-out group and the version line close the page, the version last", async () => {
+    version.current = "0.5.0";
+    signedIn(async () => Response.json({ redirectTo: idp }));
+    const signOut = await signOutButton();
+    const end = await pageEnd();
+    const link = screen.getByRole("link", { name: /^Belay 0\.5\.0/ });
+    expect(end.contains(signOut)).toBe(true);
+    expect(end.contains(link)).toBe(true);
+    expect(signOut.compareDocumentPosition(link) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+    expect(end.lastElementChild!.contains(link)).toBe(true);
+  });
+
+  it("signed out: the version line sits alone at the page's end", async () => {
+    version.current = "0.5.0";
+    fakeApi({ me: null });
+    renderRoute("/settings");
+    const link = await screen.findByRole("link", { name: /^Belay 0\.5\.0/ });
+    const end = await pageEnd();
+    // The same end as signed in, holding the version line alone.
+    expect(end).not.toBe(link.closest("p"));
+    expect(end.children).toHaveLength(1);
+    expect(end.firstElementChild).toBe(link.closest("p"));
+  });
+});
+
 describe("Settings account rows", () => {
   const SUPPLEMENT_A = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7e01";
   const SUPPLEMENT_B = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7e02";
