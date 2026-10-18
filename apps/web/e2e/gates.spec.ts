@@ -227,6 +227,20 @@ const SCREENS: [string, (page: Page) => Promise<void>][] = [
     },
   ],
   [
+    "the session screen, a set logged and a rest running",
+    async (page) => {
+      await fakeServer(page, { changes: LAST_A });
+      await page.goto("/workout?start=A");
+      await expect(page.locator(".launch")).toBeHidden();
+      const bench = page.getByRole("region", { name: /^Barbell bench press/ });
+      await bench.getByRole("textbox", { name: "Load of set 1, kg" }).fill("60");
+      await bench.getByRole("textbox", { name: "Reps of set 1" }).fill("8");
+      await bench.getByRole("button", { name: "Log set 1" }).click();
+      await expect(bench.getByRole("img", { name: "Set 1 logged" })).toBeVisible();
+      await expect(page.getByRole("timer")).toBeVisible();
+    },
+  ],
+  [
     "the remove-session action sheet",
     async (page) => {
       await fakeServer(page, { changes: LAST_A });

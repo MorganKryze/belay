@@ -317,6 +317,8 @@
     "upcoming": "{{target}} · à venir",
     "doneCount_one": "{{count}} série sur {{total}}",
     "doneCount_other": "{{count}} séries sur {{total}}",
+    "doneAll_one": "{{count}} série notée",
+    "doneAll_other": "{{count}} séries notées",
     "group": "{{kind}} · tour {{round}} sur {{rounds}}",
     "superset": "Superset",
     "triset": "Tri-set",

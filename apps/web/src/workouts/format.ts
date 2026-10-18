@@ -1,6 +1,6 @@
 import { exerciseById } from "@belay/shared/exercises/catalog";
 import { groupOf } from "@belay/shared/training/program";
-import type { Summary } from "@belay/shared/training/rules";
+import type { Load, Summary } from "@belay/shared/training/rules";
 import type { Slot } from "@belay/shared/training/workout";
 import type { TFunction } from "i18next";
 import { formatNumber } from "@/lib/format";
@@ -15,6 +15,15 @@ export const formatSets = (slot: Pick<Slot, "sets" | "repRange" | "measure">) =>
 
 export const formatRir = (slot: Slot, t: TFunction) =>
   t("workouts.rir", { range: formatRange(slot.rirTarget) });
+
+// "80 kg × 8", "10 kg · 45 s" or "45 s": one set, as the history writes it.
+export function formatLoad(load: Load, t: TFunction, locale: string): string {
+  const kg = formatNumber(load.weightKg, locale, { digits: 2, grouping: false });
+  if (load.seconds === null) return t("history.load", { kg, reps: load.reps });
+  return load.weightKg > 0
+    ? t("history.loadSeconds", { kg, seconds: load.seconds })
+    : t("history.seconds", { seconds: load.seconds });
+}
 
 // "45 s", "2 min", "2 min 30".
 export function formatRest(seconds: number, t: TFunction): string {
