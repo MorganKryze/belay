@@ -1,4 +1,5 @@
 import { isToolId, type ToolId } from "@belay/shared/tools/catalog";
+import { sessionByCode } from "@belay/shared/training/program";
 import { isSessionCode } from "@belay/shared/training/workout";
 import {
   createRootRoute,
@@ -51,6 +52,18 @@ const workoutsRoute = createRoute({
     return { ...(isWorkoutTab(search.tab) && { tab: search.tab }), ...(see && { see }) };
   },
 });
+// A session of the program before it starts. Opened from Accueil it says so (?from=home), so
+// its back chevron and the lit tab stay Accueil's, after a reload too.
+const sessionPreviewRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/workouts/session/$code",
+  beforeLoad: ({ params }) => {
+    if (!sessionByCode(params.code)) throw notFound();
+  },
+  component: lazyRouteComponent(() => import("./routes/session-preview"), "SessionPreview"),
+  validateSearch: (search: Record<string, unknown>): { from?: "home" } =>
+    search.from === "home" ? { from: "home" } : {},
+});
 const workoutDetailRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/workouts/$workoutId",
@@ -94,10 +107,18 @@ const exerciseRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/exercises/$exerciseId",
   component: lazyRouteComponent(() => import("./routes/exercise"), "ExercisePage"),
-  // Opened from the Programme, it leads back there with the same sessions open.
-  validateSearch: (search: Record<string, unknown>): { from?: "program"; see?: string } => {
+  // Opened from the Programme, it leads back there with the same sessions open; opened from a
+  // session's preview (?session=A, and from=home when that preview came from Accueil), back there.
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { from?: "program" | "home"; see?: string; session?: string } => {
     const see = parseSee(search.see);
-    return { ...(search.from === "program" && { from: "program" as const }), ...(see && { see }) };
+    const from = search.from === "program" || search.from === "home" ? search.from : undefined;
+    const session =
+      typeof search.session === "string" && sessionByCode(search.session)
+        ? search.session
+        : undefined;
+    return { ...(from && { from }), ...(see && { see }), ...(session && { session }) };
   },
 });
 const settingsRoute = createRoute({
@@ -141,6 +162,7 @@ const toolRoute = createRoute({
 export const routeTree = rootRoute.addChildren([
   homeRoute,
   workoutsRoute,
+  sessionPreviewRoute,
   workoutDetailRoute,
   workoutRoute,
   workoutEditorRoute,

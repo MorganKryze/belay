@@ -109,10 +109,12 @@ describe("Home's session line (§4.1)", () => {
     );
   });
 
-  it("starts the session full screen, then says how far it is", async () => {
+  it("starts the session full screen from its preview, then says how far it is", async () => {
     renderRoute("/");
     fireEvent.click(await screen.findByRole("link", { name: /^Session A · Push/ }));
-    expect(await screen.findByRole("heading", { name: "Session A · Push", level: 1 })).toBeTruthy();
+    fireEvent.click(await screen.findByRole("link", { name: "Start the session" }));
+    expect(await screen.findByRole("button", { name: "Finish" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Session A · Push", level: 1 })).toBeTruthy();
     expect(screen.queryByRole("navigation", { name: "Main" })).toBeNull();
     const bench = card("Barbell bench press");
     type(bench, "Load of set 1, kg", "80");
@@ -477,7 +479,8 @@ describe("fix round 1", () => {
     const line = await screen.findByRole("link", { name: /^Session [AB] · / });
     expect(line.textContent).not.toContain("in progress");
     fireEvent.click(line);
-    await screen.findByRole("heading", { level: 1, name: /^Session / });
+    fireEvent.click(await screen.findByRole("link", { name: "Start the session" }));
+    await screen.findByRole("button", { name: "Finish" });
     const { history } = await stored();
     expect(history.workouts).toHaveLength(2);
     expect(history.workouts.find((w) => w.id === id(2))?.endedAt).toBe(at(eleven)); // left at its last set

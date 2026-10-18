@@ -94,6 +94,8 @@ test("a whole session offline: summary, history, and a second device sees it", a
   server.offline = true;
   await page.context().setOffline(true);
   await sessionLine(page).click();
+  await page.getByRole("link", { name: "Start the session" }).click();
+  await expect(page.getByRole("button", { name: "Finish" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Session A · Push", level: 1 })).toBeVisible();
   await expect(page.getByRole("navigation", { name: "Main" })).toBeHidden();
   for (const [exercise, kg, reps, sets] of SESSION_A)

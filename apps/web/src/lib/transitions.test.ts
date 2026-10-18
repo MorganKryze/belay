@@ -10,6 +10,7 @@ const LEVELS = [
   ["/tools", "/tools", 0],
   ["/settings", "/settings", 1],
   ["/workouts/$workoutId", "/workouts/0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7e01", 1],
+  ["/workouts/session/$code", "/workouts/session/A", 1],
   ["/exercises/$exerciseId", "/exercises/ds:0025", 1],
   ["/tools/$toolId", "/tools/plates", 1],
   ["/settings/profile", "/settings/profile", 2],

@@ -122,6 +122,14 @@ const SCREENS: [string, (page: Page) => Promise<void>][] = [
     ],
   ),
   [
+    "the session preview",
+    async (page) => {
+      await fakeServer(page, { changes: LAST_A });
+      await page.goto("/workouts/session/A?from=home");
+      await expect(page.getByRole("link", { name: "Start the session" })).toBeVisible();
+    },
+  ],
+  [
     "Body",
     async (page) => {
       await fakeServer(page, { rows: WEEKS });

@@ -388,6 +388,18 @@
     "note": "Note sur la séance (option)",
     "save": "Enregistrer"
   },
+  "preview": {
+    "size_one": "{{count}} exercice · {{sets}} séries · environ {{minutes}} min",
+    "size_other": "{{count}} exercices · {{sets}} séries · environ {{minutes}} min",
+    "last": "La dernière fois : {{day}}, {{duration}}",
+    "start": "Commencer la séance",
+    "resume": "Reprendre la séance",
+    "otherOpen": "{{title}} est en cours.",
+    "resumeOther": "Reprendre la séance en cours",
+    "exercises": "Exercices",
+    "columns": "séries · la dernière fois",
+    "note": "Le programme se modifie sur ordinateur. En séance, tu peux remplacer un exercice ou ajouter une série."
+  },
   "activitySheet": {
     "title": "Activité",
     "date": "Date de l'activité",

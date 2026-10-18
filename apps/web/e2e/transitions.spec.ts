@@ -82,6 +82,13 @@ test.beforeEach(async ({ page }) => {
   await page.route("**/api/me", (r) => r.fulfill({ status: 401 }));
 });
 
+// Accueil's session row opens the preview, whose Start raises the session.
+async function startFromHome(page: Page) {
+  await page.getByRole("link", { name: /^Session [ABC] · / }).click();
+  await page.getByRole("link", { name: "Start the session" }).click();
+  await expect(page.getByRole("button", { name: "Finish" })).toBeVisible();
+}
+
 async function openPlates(page: Page) {
   await page.goto("/tools");
   await expect(page.getByRole("heading", { level: 1, name: "Tools" })).toBeVisible();
@@ -164,12 +171,11 @@ test.describe("reduced motion", () => {
     await fakeServer(page);
     await recordTransitions(page);
     await page.goto("/");
-    await page.getByRole("link", { name: /^Session [ABC] · / }).click();
-    await expect(page.getByRole("heading", { level: 1, name: /^Session [ABC] · / })).toBeVisible();
+    await startFromHome(page);
     await page.goBack();
     await expect(page.getByRole("heading", { level: 1, name: "Hello, Ada" })).toBeVisible();
-    await expect.poll(async () => (await played(page)).length).toBe(2);
-    const [cover, uncover] = await played(page);
+    await expect.poll(async () => (await played(page)).length).toBe(3);
+    const [, cover, uncover] = await played(page);
     expect(cover!.types).toEqual(["cover"]);
     const rise = animation(cover!, "::view-transition-new(root)");
     expect(rise).toMatchObject({ duration: 300, easing: OUT });
@@ -226,10 +232,9 @@ test("the session rises as a cover in 450 ms and leaves in 260 ms", async ({ pag
   await fakeServer(page);
   await recordTransitions(page);
   await page.goto("/");
-  await page.getByRole("link", { name: /^Session [ABC] · / }).click();
-  await expect(page.getByRole("heading", { level: 1, name: /^Session [ABC] · / })).toBeVisible();
-  await expect.poll(async () => (await played(page)).length).toBe(1);
-  const cover = (await played(page))[0]!;
+  await startFromHome(page);
+  await expect.poll(async () => (await played(page)).length).toBe(2);
+  const cover = (await played(page))[1]!;
   expect(cover.types).toEqual(["cover"]);
   const rise = animation(cover, "::view-transition-new(root)");
   expect(rise).toMatchObject({ duration: 450, easing: SHEET });
@@ -239,8 +244,8 @@ test("the session rises as a cover in 450 ms and leaves in 260 ms", async ({ pag
 
   await page.goBack();
   await expect(page.getByRole("heading", { level: 1, name: "Hello, Ada" })).toBeVisible();
-  await expect.poll(async () => (await played(page)).length).toBe(2);
-  const uncover = (await played(page))[1]!;
+  await expect.poll(async () => (await played(page)).length).toBe(3);
+  const uncover = (await played(page))[2]!;
   expect(uncover.types).toEqual(["uncover"]);
   const sink = animation(uncover, "::view-transition-old(root)");
   expect(sink).toMatchObject({ duration: 260, easing: EXIT });
@@ -323,15 +328,41 @@ test("the leaving page moves from where it was on screen, for push, pop, cover a
     )
     .toEqual([100, expect.any(Number)]);
   await page.getByRole("link", { name: /^Session [ABC] · / }).click();
-  await expect(page.getByRole("heading", { level: 1, name: /^Session [ABC] · / })).toBeVisible();
+  // The preview, scrolled before its Start raises the session.
+  const start = page.getByRole("link", { name: "Start the session" });
+  await expect(start).toBeVisible();
+  // Once the push has landed, so the router's settling of the new page comes before the scroll.
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          document
+            .getAnimations()
+            .filter((a) =>
+              (a.effect as KeyframeEffect | null)?.pseudoElement?.startsWith("::view-transition"),
+            ).length,
+      ),
+    )
+    .toBe(0);
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        window.scrollTo(0, 100);
+        return window.scrollY;
+      }),
+    )
+    .toBe(100);
+  await start.click();
+  await expect(page.getByRole("button", { name: "Finish" })).toBeVisible();
   await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
   await page.goBack();
   await expect(page.getByRole("heading", { level: 1, name: "Hello, Ada" })).toBeVisible();
-  await expect.poll(async () => (await played(page)).length).toBe(4);
+  await expect.poll(async () => (await played(page)).length).toBe(5);
   const all = await played(page);
-  expect(all.map((p) => p.types)).toEqual([["push"], ["pop"], ["cover"], ["uncover"]]);
+  expect(all.map((p) => p.types)).toEqual([["push"], ["pop"], ["push"], ["cover"], ["uncover"]]);
   for (const p of all) {
-    // From the scrolled tools list, Home and session (the BMI page is short and opens at its top).
+    // From the scrolled tools list, Home, preview and session (the BMI page is short and opens
+    // at its top).
     if (p.types[0] !== "pop") expect.soft(p.page.scrollY, p.types[0]).toBeGreaterThan(50);
     expect.soft(Math.round(p.page.drawn), p.types[0]).toBe(Math.round(p.page.top));
   }

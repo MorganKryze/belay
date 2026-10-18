@@ -388,6 +388,18 @@
     "note": "Session note (optional)",
     "save": "Save"
   },
+  "preview": {
+    "size_one": "{{count}} exercise · {{sets}} sets · about {{minutes}} min",
+    "size_other": "{{count}} exercises · {{sets}} sets · about {{minutes}} min",
+    "last": "Last time: {{day}}, {{duration}}",
+    "start": "Start the session",
+    "resume": "Resume the session",
+    "otherOpen": "{{title}} is in progress.",
+    "resumeOther": "Resume the session in progress",
+    "exercises": "Exercises",
+    "columns": "sets · last time",
+    "note": "The program is edited on a computer. During a session you can replace an exercise or add a set."
+  },
   "activitySheet": {
     "title": "Activity",
     "date": "Date of the activity",

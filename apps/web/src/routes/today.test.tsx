@@ -1,5 +1,6 @@
 import { addDays } from "@belay/shared/body/dates";
 import type { Change } from "@belay/shared/sync/schema";
+import { sessionByCode } from "@belay/shared/training/program";
 import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { IDBFactory } from "fake-indexeddb";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -96,6 +97,31 @@ describe("Home's gesture rows", () => {
       expect(row.querySelector("span[aria-hidden] > svg"), String(name)).not.toBeNull();
       expect(row.parentElement?.children).toHaveLength(1);
     }
+  });
+});
+
+describe("the session line", () => {
+  it("the session row opens the preview when no session is open, and the session when one is", async () => {
+    fakeApi({ me: ADA });
+    renderRoute("/");
+    const row = await screen.findByRole("link", { name: /^Session A · Push/ });
+    expect(row.getAttribute("href")).toBe("/workouts/session/A?from=home");
+    cleanup();
+    const start = new Date(2026, 9, 7, 7, 0).toISOString();
+    await seed(ADA.id, [
+      {
+        kind: "workout",
+        id: "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7e01",
+        field: "start",
+        sessionCode: "A",
+        plan: [...sessionByCode("A")!.slots],
+        startedAt: start,
+        at: start,
+      },
+    ]);
+    renderRoute("/");
+    const open = await screen.findByRole("link", { name: /^Session A · Push.*in progress/ });
+    expect(open.getAttribute("href")).toBe("/workout?start=A");
   });
 });
 

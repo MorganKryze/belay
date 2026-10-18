@@ -62,6 +62,14 @@ describe("tabIndexOf", () => {
   ] as const)("%s is tab %s", (path, index) => {
     expect(tabIndexOf(path)).toBe(index);
   });
+
+  it("the preview opened from Accueil keeps Accueil lit; from the Programme, Séances", () => {
+    expect(tabIndexOf("/workouts/session/A", { from: "home" })).toBe(0);
+    expect(tabIndexOf("/workouts/session/A", {})).toBe(1);
+    expect(tabIndexOf("/workouts/session/A")).toBe(1);
+    // Only the preview follows where it came from: an exercise is always Séances'.
+    expect(tabIndexOf("/exercises/ds:0025", { from: "home" })).toBe(1);
+  });
 });
 
 describe("the tab bar", () => {
@@ -135,6 +143,8 @@ describe("the tab bar", () => {
       ["/tools/bmi", "Tools"],
       ["/tools/plates", "Tools"],
       ["/tools/plates/equipment", "Tools"],
+      ["/workouts/session/A?from=home", "Home"],
+      ["/workouts/session/A", "Sessions"],
       ["/", "Home"],
     ] as const) {
       renderRoute(path);
