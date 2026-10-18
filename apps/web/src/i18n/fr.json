@@ -419,7 +419,6 @@
       "stepsDeleted": "Pas supprimés"
     },
     "weighIn": "Pesée",
-    "weighInDone": "{{value}} kg · enregistrée",
     "weighInEmpty": "pas encore saisie",
     "intake": "Apports",
     "intakeEmpty": "pas encore saisis",
@@ -427,7 +426,7 @@
     "intakeDeleted": "Apports supprimés",
     "supplements": "Compléments",
     "supplementsDone": "{{taken}} sur {{count}}",
-    "addSupplements": "Ajouter tes compléments"
+    "supplementsNone": "aucun pour l'instant"
   },
   "sessionCard": {
     "next": "La prochaine",

@@ -57,7 +57,7 @@ describe("the weigh-in line and its sheet", () => {
     expect(screen.getByText("prefilled with your last weigh-in")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
-    await waitFor(async () => expect((await row()).textContent).toContain("80.2 kg · saved"));
+    await waitFor(async () => expect((await row()).textContent).toBe("Weigh-in80.2\u00a0kg"));
     expect(screen.getByText("Weigh-in saved")).toBeTruthy();
     expect(await days()).toEqual([
       ["2026-10-06", 80.2],

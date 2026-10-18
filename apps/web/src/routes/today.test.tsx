@@ -10,7 +10,7 @@ import { writeLastUser } from "../sync/last-user";
 import { answer } from "../test/answer";
 import { fakeApi } from "../test/fake-api";
 import { renderRoute } from "../test/render-route";
-import { ADA, seed } from "../test/seed";
+import { ADA, seed, weight } from "../test/seed";
 
 // Wednesday 7 October 2026, 7:30 in the morning, on the phone's clock.
 beforeEach(() => {
@@ -49,6 +49,29 @@ const tick = (supplementId: string, date: string): Change => ({
 const db = () => openAccountDb(ADA.id);
 const line = (name: RegExp) => screen.findByRole("button", { name });
 
+describe("a gesture's status", () => {
+  it("a gesture with a value shows a check and its value; without one, its words", async () => {
+    await seed(ADA.id, [weight("2026-10-07", 80.2)]);
+    fakeApi({ me: ADA });
+    renderRoute("/");
+    await waitFor(async () =>
+      expect((await line(/^Weigh-in/)).textContent).toContain("80.2\u00a0kg"),
+    );
+    const weighIn = await line(/^Weigh-in/);
+    const check = weighIn.querySelector("svg.lucide-check")!;
+    expect(check.getAttribute("aria-hidden")).toBe("true");
+    expect(check.getAttribute("class")).toContain("text-reference-ink");
+    const value = within(weighIn).getByText("80.2 kg");
+    expect(value.className).toContain("text-foreground");
+    expect(value.className).toContain("font-medium");
+    const intake = await line(/^Intake/);
+    expect(intake.querySelector("svg.lucide-check")).toBeNull();
+    expect(within(intake).getByText("not entered yet").className).toContain(
+      "text-muted-foreground",
+    );
+  });
+});
+
 describe("the weigh-in line and its sheet", () => {
   it("a saved weigh-in shows on Home before its sheet starts leaving", async () => {
     vi.spyOn(motion, "exitWillAnimate").mockReturnValue(true);
@@ -69,7 +92,7 @@ describe("the weigh-in line and its sheet", () => {
     fireEvent.click(within(sheet).getByRole("button", { name: "Save" }));
     await waitFor(() =>
       expect(screen.getByRole("button", { name: /^Weigh-in/, hidden: true }).textContent).toContain(
-        "80.5 kg · saved",
+        "80.5\u00a0kg",
       ),
     );
     const leaving = screen.getByRole("dialog", { hidden: true });
@@ -94,7 +117,8 @@ describe("Home's gesture rows", () => {
     for (const name of [/^Weigh-in/, /^Intake/]) {
       const row = await line(name);
       expect(row.querySelector("span[aria-hidden] > svg"), String(name)).not.toBeNull();
-      expect(row.parentElement?.children).toHaveLength(1);
+      // The row is the group's own child: no wrapper sits around it outside the press tint.
+      expect(row.parentElement?.className, String(name)).toContain("divide-y");
     }
   });
 });
@@ -199,9 +223,40 @@ describe("the supplements line and its sheet", () => {
   it("leads to the list when there is none yet", async () => {
     fakeApi({ me: ADA });
     renderRoute("/");
-    const link = await screen.findByRole("link", { name: "Add your supplements" });
+    const link = await screen.findByRole("link", { name: /^Supplements\s*none yet$/ });
     expect(link.getAttribute("href")).toBe("/settings/supplements");
     expect(screen.queryByRole("button", { name: /^Supplements/ })).toBeNull();
+  });
+
+  it("an empty list reads Supplements · none yet in muted, with no check", async () => {
+    fakeApi({ me: ADA });
+    renderRoute("/");
+    const link = await screen.findByRole("link", { name: /^Supplements\s*none yet$/ });
+    expect(within(link).getByText("none yet").className).toContain("text-muted-foreground");
+    expect(link.querySelector("svg.lucide-check")).toBeNull();
+    expect(link.querySelector("svg.lucide-pill")).toBeTruthy();
+    expect(link.querySelector("svg.lucide-chevron-right")).toBeTruthy();
+  });
+
+  it("Compléments is checked only when every supplement is ticked", async () => {
+    await seed(ADA.id, [
+      named(CREATINE, "Créatine"),
+      named(VITAMIN, "Vitamine D"),
+      tick(CREATINE, "2026-10-07"),
+    ]);
+    fakeApi({ me: ADA });
+    renderRoute("/");
+    await waitFor(async () => expect((await line(/^Supplements/)).textContent).toContain("1 of 2"));
+    const row = await line(/^Supplements/);
+    expect(row.querySelector("svg.lucide-check")).toBeNull();
+    expect(within(row).getByText("1 of 2").className).toContain("text-muted-foreground");
+    fireEvent.click(row);
+    const sheet = await screen.findByRole("dialog", { name: "Supplements" });
+    fireEvent.click(within(sheet).getByRole("checkbox", { name: "Vitamine D" }));
+    const all = () => screen.getByRole("button", { name: /^Supplements/, hidden: true });
+    await waitFor(() => expect(all().textContent).toContain("2 of 2"));
+    expect(all().querySelector("svg.lucide-check")).toBeTruthy();
+    expect(within(all()).getByText("2 of 2").className).toContain("text-foreground");
   });
 
   it("ticks a box at once, shows the creatine course, and leaves out removed supplements", async () => {
@@ -294,7 +349,7 @@ describe("before the data is known", () => {
     expect(card().getAttribute("aria-busy")).toBe("true");
     release();
     await waitFor(async () =>
-      expect((await line(/^Weigh-in/)).textContent).toContain("80.4 kg · saved"),
+      expect((await line(/^Weigh-in/)).textContent).toContain("80.4\u00a0kg"),
     );
     expect((await line(/^Intake/)).textContent).toContain("not entered yet");
     expect(card().hasAttribute("aria-busy")).toBe(false);
@@ -343,14 +398,14 @@ describe("before the data is known", () => {
     expect(settled.className).toBe(blank.className);
   });
 
-  it("the Compléments row waits as itself, then becomes Add your supplements on an empty list", async () => {
+  it("the Compléments row waits as itself, then becomes Supplements · none yet on an empty list", async () => {
     const { sync, release } = heldSync();
     fakeApi({ me: ADA, sync });
     renderRoute("/");
     expect((await line(/^Supplements/)).textContent).toBe("Supplements\u00a0");
-    expect(screen.queryByRole("link", { name: "Add your supplements" })).toBeNull();
+    expect(screen.queryByRole("link", { name: /^Supplements\s*none yet$/ })).toBeNull();
     release();
-    expect(await screen.findByRole("link", { name: "Add your supplements" })).toBeTruthy();
+    expect(await screen.findByRole("link", { name: /^Supplements\s*none yet$/ })).toBeTruthy();
     expect(screen.queryByRole("button", { name: /^Supplements/ })).toBeNull();
   });
 });

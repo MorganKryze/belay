@@ -419,7 +419,6 @@
       "stepsDeleted": "Steps deleted"
     },
     "weighIn": "Weigh-in",
-    "weighInDone": "{{value}} kg · saved",
     "weighInEmpty": "not entered yet",
     "intake": "Intake",
     "intakeEmpty": "not entered yet",
@@ -427,7 +426,7 @@
     "intakeDeleted": "Intake deleted",
     "supplements": "Supplements",
     "supplementsDone": "{{taken}} of {{count}}",
-    "addSupplements": "Add your supplements"
+    "supplementsNone": "none yet"
   },
   "sessionCard": {
     "next": "Next up",
