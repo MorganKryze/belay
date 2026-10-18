@@ -235,3 +235,58 @@ test.describe("at 360 px", () => {
     expect(overflow).toBe(0);
   });
 });
+
+test.describe("Compléments", () => {
+  const openSupplements = async (page: Page) => {
+    await fakeServer(page);
+    await page.goto("/settings/supplements");
+    await expect(page.getByRole("heading", { level: 1, name: "My supplements" })).toBeVisible();
+  };
+
+  test.describe("at 390 px", () => {
+    test.use({ viewport: { width: 390, height: 844 } });
+    test("the Compléments empty state is left-aligned", async ({ page }) => {
+      await openSupplements(page);
+      await settled(page);
+      const sentence = page.getByText("No supplements on your list yet.");
+      // The grouped card that holds it: its text starts 16 px in.
+      const card = sentence.locator("xpath=ancestor::*[contains(@class, 'rounded-group')][1]");
+      const cardBox = (await card.boundingBox())!;
+      const sentenceBox = (await sentence.boundingBox())!;
+      expect(Math.abs(sentenceBox.x - (cardBox.x + 16))).toBeLessThanOrEqual(1);
+      expect(await sentence.evaluate((el) => getComputedStyle(el).textAlign)).toMatch(
+        /^(left|start)$/,
+      );
+    });
+  });
+
+  test.describe("at 360 px", () => {
+    test.use({ viewport: { width: 360, height: 780 } });
+    test("suggestion chips are 44 px and wrap at 360 px", async ({ page }) => {
+      await openSupplements(page);
+      await settled(page);
+      const chips = page.getByRole("list").last().getByRole("button");
+      await expect(chips.first()).toBeVisible();
+      for (const chip of await chips.all())
+        expect((await chip.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+      const tops = new Set(
+        await Promise.all((await chips.all()).map(async (c) => (await c.boundingBox())!.y)),
+      );
+      expect(tops.size).toBeGreaterThan(1);
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        ),
+      ).toBe(0);
+    });
+  });
+
+  test("no red on Compléments", async ({ page }) => {
+    await openSupplements(page);
+    await page.getByRole("button", { name: "Iron" }).click();
+    await page.getByRole("button", { name: "More for Iron" }).click();
+    await expect(page.getByRole("button", { name: "Remove" })).toBeVisible();
+    await settled(page);
+    expect(await paintedIn(page, await destructive(page))).toEqual([]);
+  });
+});

@@ -44,10 +44,10 @@ describe("Settings › My supplements", () => {
     await openList();
     const name = await screen.findByRole("textbox", { name: "Supplement name" });
     fireEvent.change(name, { target: { value: "   " } });
-    fireEvent.click(screen.getByRole("button", { name: "Add" }));
+    fireEvent.click(screen.getByRole("button", { name: /^Add$/ }));
     expect(await screen.findByText("Between 1 and 40 characters, on one line.")).toBeTruthy();
     fireEvent.change(name, { target: { value: "  Ashwagandha " } });
-    fireEvent.click(screen.getByRole("button", { name: "Add" }));
+    fireEvent.click(screen.getByRole("button", { name: /^Add$/ }));
     await waitFor(async () => expect(await stored()).toEqual([["Ashwagandha", "other", false]]));
     await waitFor(() => expect((name as HTMLInputElement).value).toBe(""));
     expect((name as HTMLInputElement).maxLength).toBe(40);
@@ -94,6 +94,41 @@ describe("Settings › My supplements", () => {
     ).toBeTruthy();
   });
 
+  it("an empty list says so with the note and a button that moves to the name field", async () => {
+    await openList();
+    expect(await screen.findByText("No supplements on your list yet.")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Add a supplement" }));
+    expect(document.activeElement).toBe(screen.getByRole("textbox", { name: "Supplement name" }));
+  });
+
+  it("the note under the form is not repeated while the list is empty", async () => {
+    await openList();
+    await screen.findByText("No supplements on your list yet.");
+    expect(screen.getAllByText(/Belay notes what you take/)).toHaveLength(1);
+    fireEvent.click(screen.getByRole("button", { name: "Iron" }));
+    await screen.findByRole("button", { name: "More for Iron" });
+    expect(screen.getAllByText(/Belay notes what you take/)).toHaveLength(1);
+  });
+
+  it("the name field has a visible label and the kit's placeholder", async () => {
+    await openList();
+    const name = await screen.findByRole("textbox", { name: "Supplement name" });
+    const label = screen.getByText("Supplement name", { selector: "label" });
+    expect(label.className).not.toContain("sr-only");
+    expect(name.getAttribute("placeholder")).toBe("Creatine, magnesium…");
+  });
+
+  it("says the empty state and the placeholder in French", async () => {
+    await i18n.changeLanguage("fr");
+    writeLastUser(ADA);
+    fakeApi({ me: "down" });
+    renderRoute("/settings/supplements");
+    expect(await screen.findByRole("button", { name: "Ajouter un complément" })).toBeTruthy();
+    expect(
+      screen.getByRole("textbox", { name: "Nom du complément" }).getAttribute("placeholder"),
+    ).toBe("Créatine, magnésium…");
+  });
+
   it("asks someone signed out to sign in", async () => {
     fakeApi({ me: null });
     renderRoute("/settings/supplements");
@@ -108,10 +143,10 @@ describe("Settings › My supplements, duplicates, double taps and focus", () =>
     await openList();
     const name = await screen.findByRole("textbox", { name: "Supplement name" });
     fireEvent.change(name, { target: { value: "Cafeine" } });
-    fireEvent.click(screen.getByRole("button", { name: "Add" }));
+    fireEvent.click(screen.getByRole("button", { name: /^Add$/ }));
     await waitFor(async () => expect(await stored()).toEqual([["Cafeine", "other", false]]));
     fireEvent.change(name, { target: { value: " CAFÉINE " } });
-    fireEvent.click(screen.getByRole("button", { name: "Add" }));
+    fireEvent.click(screen.getByRole("button", { name: /^Add$/ }));
     expect(await screen.findByText("This supplement is already on your list.")).toBeTruthy();
     expect(await stored()).toHaveLength(1);
   });

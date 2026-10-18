@@ -69,6 +69,8 @@
     "save": "Enregistrer",
     "add": "Ajouter",
     "name": "Nom du complément",
+    "placeholder": "Créatine, magnésium…",
+    "addFirst": "Ajouter un complément",
     "nameError": "De 1 à 40 caractères, sur une ligne.",
     "duplicate": "Ce complément est déjà dans ta liste.",
     "suggestionsTitle": "Suggestions",

@@ -194,6 +194,8 @@ export function GroupedList({
   );
 }
 
+// The kit's empty list: read from the left like the rows it stands in for, drawn by its caller
+// inside a grouped card.
 export function EmptyState({
   sentence,
   precision,
@@ -204,7 +206,7 @@ export function EmptyState({
   action: ReactNode;
 }) {
   return (
-    <div className="flex flex-col items-center gap-3 px-4 py-8 text-center">
+    <div className="flex flex-col items-start gap-3 p-4 text-left">
       <p className="text-body font-semibold">{sentence}</p>
       <p className="text-body text-muted-foreground">{precision}</p>
       {action}

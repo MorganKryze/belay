@@ -12,11 +12,11 @@ import { type FormEvent, useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { BackLink, PageHeader } from "@/components/page-header";
 import { FieldError } from "@/components/field-error";
+import { EmptyState, groupCard, sectionLabel } from "@/components/grouped-list";
 import { Button } from "@/components/ui/button";
 import { Toast, useWriter } from "@/components/weigh-in";
 import { type OpenAccount, useAccount, useSupplements } from "@/sync/account";
 
-const sectionTitle = "mx-0.5 text-xs font-semibold tracking-wider text-muted-foreground uppercase";
 const field = "field w-full min-w-0 px-4 text-base";
 
 // Case and accents aside: "Oméga-3" is "omega-3".
@@ -66,6 +66,7 @@ function SupplementList({ account }: { account: OpenAccount }) {
   const [invalid, setInvalid] = useState<"name" | "duplicate" | null>(null);
   const pending = useRef(new Set<string>());
   const nameId = useId();
+  const nameInput = useRef<HTMLInputElement>(null);
   if (!all) return null;
   const active = all.filter((s) => !s.removed);
   // `fromField`: the typed name is cleared once added; a suggestion leaves the field alone.
@@ -99,13 +100,24 @@ function SupplementList({ account }: { account: OpenAccount }) {
   return (
     <>
       {active.length > 0 ? (
-        <ul className="flex flex-col rounded-card border border-border bg-card px-4">
+        <ul className={groupCard}>
           {active.map((s) => (
             <SupplementItem key={s.id} supplement={s} others={active} write={write} />
           ))}
         </ul>
       ) : (
-        <p className="text-sm text-muted-foreground">{t("supplementsPage.empty")}</p>
+        <div className={groupCard}>
+          <EmptyState
+            sentence={t("supplementsPage.empty")}
+            precision={t("supplementsPage.note")}
+            action={
+              <Button variant="secondary" onClick={() => nameInput.current?.focus()}>
+                <Plus aria-hidden />
+                {t("supplementsPage.addFirst")}
+              </Button>
+            }
+          />
+        </div>
       )}
       {error && (
         <p role="alert" className="text-sm">
@@ -113,7 +125,7 @@ function SupplementList({ account }: { account: OpenAccount }) {
         </p>
       )}
       <section aria-labelledby="add-supplement" className="flex flex-col gap-2">
-        <h2 id="add-supplement" className={sectionTitle}>
+        <h2 id="add-supplement" className={sectionLabel}>
           {t("supplementsPage.add")}
         </h2>
         <form
@@ -123,14 +135,15 @@ function SupplementList({ account }: { account: OpenAccount }) {
             void add(name, true);
           }}
         >
-          <label htmlFor={nameId} className="sr-only">
+          <label htmlFor={nameId} className="text-[13px] font-semibold">
             {t("supplementsPage.name")}
           </label>
           <input
+            ref={nameInput}
             id={nameId}
             value={name}
             maxLength={SUPPLEMENT_NAME_MAX}
-            placeholder={t("supplementsPage.name")}
+            placeholder={t("supplementsPage.placeholder")}
             autoComplete="off"
             aria-invalid={invalid ? true : undefined}
             aria-describedby={invalid ? `${nameId}-error` : undefined}
@@ -156,7 +169,7 @@ function SupplementList({ account }: { account: OpenAccount }) {
                 <li key={key}>
                   <button
                     type="button"
-                    className="inline-flex min-h-11 items-center gap-1 rounded-full border border-dashed border-input px-3 text-sm text-muted-foreground"
+                    className="inline-flex min-h-11 items-center gap-1 rounded-chip bg-track px-3 text-body font-semibold"
                     onClick={() => void add(t(`supplementsPage.suggestions.${key}`), false)}
                   >
                     <Plus aria-hidden className="size-4" />
@@ -167,7 +180,10 @@ function SupplementList({ account }: { account: OpenAccount }) {
             </ul>
           </>
         )}
-        <p className="mt-2 text-[13px] text-muted-foreground">{t("supplementsPage.note")}</p>
+        {/* While the list is empty, its empty state already says this. */}
+        {active.length > 0 && (
+          <p className="mt-2 text-[13px] text-muted-foreground">{t("supplementsPage.note")}</p>
+        )}
       </section>
       <Toast toast={toast} onDone={dismiss} />
     </>
@@ -200,7 +216,7 @@ function SupplementItem({
   }, [renaming]);
   if (renaming !== null) {
     return (
-      <li className="border-t border-border py-3 first:border-t-0">
+      <li className="px-4 py-3">
         <form
           className="flex flex-col gap-2"
           onSubmit={(e) => {
@@ -260,9 +276,9 @@ function SupplementItem({
     );
   }
   return (
-    <li className="border-t border-border first:border-t-0">
-      <div className="flex min-h-12 items-center gap-2 py-1">
-        <span className="min-w-0 flex-1 break-words">{s.name}</span>
+    <li className="px-4">
+      <div className="flex min-h-14 items-center gap-2 py-1">
+        <span className="min-w-0 flex-1 text-body break-words">{s.name}</span>
         {s.kind === "creatine" && (
           <span className="shrink-0 rounded-full bg-track px-2 py-0.5 text-xs font-semibold whitespace-nowrap text-muted-foreground">
             {t("supplementsPage.marked")}

@@ -69,6 +69,8 @@
     "save": "Save",
     "add": "Add",
     "name": "Supplement name",
+    "placeholder": "Creatine, magnesium…",
+    "addFirst": "Add a supplement",
     "nameError": "Between 1 and 40 characters, on one line.",
     "duplicate": "This supplement is already on your list.",
     "suggestionsTitle": "Suggestions",

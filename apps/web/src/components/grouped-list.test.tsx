@@ -83,7 +83,7 @@ describe("GroupedList", () => {
     expect(classes(screen.getByText("Language"))).toContain("basis-auto");
   });
 
-  it("an empty list shows a sentence, a precision and one action, no image", () => {
+  it("an empty list shows a sentence, a precision and one action, no image, left-aligned", () => {
     const { container } = render(
       <EmptyState
         sentence="Nothing yet."
@@ -97,6 +97,10 @@ describe("GroupedList", () => {
     );
     expect(screen.getAllByRole("button")).toHaveLength(1);
     expect(container.querySelector("img, svg")).toBeNull();
+    const box = container.firstElementChild;
+    expect(classes(box)).toEqual(expect.arrayContaining(["items-start", "text-left", "p-4"]));
+    expect(classes(box)).not.toContain("items-center");
+    expect(classes(box)).not.toContain("text-center");
   });
 
   it("skeleton rows stand still with two grey lines", () => {
