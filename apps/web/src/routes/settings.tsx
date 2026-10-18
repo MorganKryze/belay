@@ -268,8 +268,10 @@ function SignOutGroup({ pending }: { pending: number | null }) {
   useEffect(() => {
     if (signOut.isError) rowRef.current?.focus();
   }, [signOut.isError]);
+  // The extra room above sets the destructive group apart, and lets the open Thème menu end in
+  // the row's top padding instead of across its label.
   return (
-    <div className="flex flex-col gap-2">
+    <div className="mt-6 flex flex-col gap-2">
       <GroupedList>
         <RowButton
           ref={rowRef}

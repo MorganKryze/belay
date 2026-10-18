@@ -187,6 +187,37 @@ test("a menu opens from the keyboard and gives the focus back to its row", async
   await expect(theme).toBeFocused();
 });
 
+test.describe("at 390 px", () => {
+  test.use({ viewport: { width: 390, height: 844 }, reducedMotion: "reduce" });
+
+  // An open menu ends above or below a line of text, never across it, which would leave half
+  // letters showing under its edge. The page is inert behind the menu, so it is found by CSS.
+  for (const theme of ["light", "dark"] as const) {
+    for (const menu of ["Language", "Theme"] as const) {
+      test(`the ${menu} menu never ends across a line of text, ${theme}`, async ({ page }) => {
+        await openSettings(page, theme);
+        await expect(signOut(page)).toBeVisible();
+        await settled(page);
+        await row(page, menu).click();
+        const list = page.getByRole("listbox");
+        await expect(list).toBeVisible();
+        await settled(page);
+        const box = (await list.boundingBox())!;
+        const bottom = box.y + box.height;
+        const lines = page.locator("main span", { hasText: /^(Sign out|Supplements)$/ });
+        await expect(lines).toHaveCount(2);
+        for (const line of await lines.all()) {
+          const text = (await line.boundingBox())!;
+          const across = bottom > text.y && bottom < text.y + text.height;
+          expect(across, `${await line.textContent()} at ${text.y}, menu ends at ${bottom}`).toBe(
+            false,
+          );
+        }
+      });
+    }
+  }
+});
+
 test.describe("at 360 px", () => {
   test.use({ viewport: { width: 360, height: 780 } });
 
