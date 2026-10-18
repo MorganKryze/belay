@@ -15,32 +15,47 @@ function declared(pattern: RegExp): Record<string, string> {
 }
 
 describe("design scales", () => {
-  it("defines exactly the charter's twelve durations", () => {
+  it("defines exactly the charter's durations", () => {
     expect(declared(/--(dur-[\w-]+):\s*([^;]+);/g)).toEqual({
       "dur-press": "90ms",
       "dur-fast": "140ms",
       "dur-check": "180ms",
       "dur-release": "200ms",
       "dur-base": "220ms",
-      "dur-sheet-out": "260ms",
-      "dur-overlay-in": "300ms",
-      "dur-pop": "340ms",
+      "dur-sheet-out": "300ms",
+      "dur-pill": "300ms",
+      "dur-overlay-in": "350ms",
+      "dur-overlay-out": "300ms",
+      "dur-cover-in": "450ms",
+      "dur-cover-out": "260ms",
+      "dur-slide-reduced": "300ms",
+      "dur-veil-reduced": "200ms",
+      "dur-pop": "380ms",
+      "dur-untint": "250ms",
       "dur-push": "420ms",
-      "dur-sheet-in": "450ms",
+      "dur-sheet-in": "500ms",
       "dur-pulse": "600ms",
       "dur-reduced": "120ms",
+      "dur-breathe": "1200ms",
+      "dur-launch-out": "240ms",
     });
   });
 
-  it("defines the six curves with the charter's values", () => {
+  it("holds the launch mark still for 600 ms before it breathes", () => {
+    expect(declared(/--(delay-[\w-]+):\s*([^;]+);/g)).toEqual({ "delay-launch-loader": "600ms" });
+  });
+
+  it("defines the eight curves with the charter's values", () => {
     expect(declared(/--((?:ease|spring)-[\w-]+):\s*([^;]+);/g)).toEqual({
       "ease-out": "cubic-bezier(0.2, 0.8, 0.2, 1)",
       "ease-nav": "cubic-bezier(0.32, 0.72, 0, 1)",
       "ease-sheet": "cubic-bezier(0.4, 0.2, 0, 1)",
       "ease-exit": "cubic-bezier(0.4, 0, 1, 1)",
+      "ease-pill": "linear(0, 0.2 10%, 0.6 25%, 0.9 40%, 1.03 55%, 1.01 70%, 1)",
       "spring-nav":
         "linear(0, 0.151 8.3%, 0.435 16.7%, 0.646 25%, 0.788 33.3%, 0.876 41.7%, 0.93 50%, 0.959 58.3%, 0.977 66.7%, 0.986 75%, 0.993 83.3%, 1)",
       "spring-pop-in": "linear(0, 0.5 18%, 0.9 35%, 1.06 52%, 1.02 70%, 1)",
+      "ease-breathe": "cubic-bezier(0.42, 0, 0.58, 1)",
     });
   });
 

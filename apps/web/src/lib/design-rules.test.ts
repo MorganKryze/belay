@@ -8,6 +8,7 @@ import {
   rawColours,
   sourceFiles,
 } from "@/test/design-rules";
+import { LAUNCH_BACKGROUND } from "@/lib/theme";
 
 const CSS = readFileSync(join(__dirname, "..", "index.css"), "utf8");
 
@@ -30,10 +31,20 @@ describe("design rules", () => {
   it("no component code carries a raw colour", () => {
     const files = sourceFiles();
     expect(files.length).toBeGreaterThan(20);
+    // The browser bar's colours live outside CSS; the next test holds them to the tokens.
+    const launch = Object.values(LAUNCH_BACKGROUND).map(
+      (colour) => `${join(__dirname, "theme.ts")}: ${colour}`,
+    );
     const found = files.flatMap((file) =>
       rawColours(readFileSync(file, "utf8")).map((colour) => `${file}: ${colour}`),
     );
-    expect(found).toEqual([]);
+    expect(found.filter((entry) => !launch.includes(entry))).toEqual([]);
+  });
+
+  it("the launch colours are the page's background tokens", () => {
+    const token = (selector: string) =>
+      declarations(block(CSS, selector)).get("--background")?.toUpperCase();
+    expect(LAUNCH_BACKGROUND).toEqual({ light: token(":root {"), dark: token(".dark {") });
   });
 
   it("finds hex, functional and palette colours", () => {
@@ -105,15 +116,45 @@ describe("design rules", () => {
     ]);
   });
 
-  it("reduced motion swaps every enter for a 120 ms fade, every leave for a 120 ms fade, and stills the tick pop and the loading arc", () => {
+  it("reduced motion keeps every enter and leave a fade of 120 ms at most, except the listed slides and veils", () => {
+    // Sheets still slide and their veil fades a little longer, the way iOS does it.
+    const ALLOWED: Record<string, string> = {
+      "--animate-sheet-in": "sheet-in var(--dur-slide-reduced) var(--ease-out) both",
+      "--animate-sheet-out": "sheet-out var(--dur-slide-reduced) var(--ease-out) both",
+      "--animate-overlay-in": "fade-in var(--dur-veil-reduced) var(--ease-out) both",
+      "--animate-overlay-out": "fade-out var(--dur-veil-reduced) var(--ease-out) both",
+      // A pushed page slides in over a still page and Back slides it out the same way; the session
+      // cover rises and sinks like a sheet.
+      "--animate-page-push-in": "page-push-in var(--dur-slide-reduced) var(--ease-out) both",
+      "--animate-page-push-out": "none",
+      "--animate-page-back-in": "none",
+      "--animate-page-back-out": "page-back-out var(--dur-slide-reduced) var(--ease-out) both",
+      "--animate-page-cover-in": "sheet-in var(--dur-slide-reduced) var(--ease-out) both",
+      "--animate-page-uncover-out": "sheet-out var(--dur-slide-reduced) var(--ease-out) both",
+      "--animate-page-under-in": "none",
+      "--animate-page-under-out": "none",
+    };
     const theme = declarations(block(CSS, "@theme static {"));
     const media = block(CSS, "@media (prefers-reduced-motion: reduce)");
     const reduced = declarations(media);
     const names = [...theme.keys()].filter((k) => k.startsWith("--animate-"));
     expect(names.length).toBeGreaterThanOrEqual(11);
+    for (const name of Object.keys(ALLOWED)) expect(names, name).toContain(name);
+    for (const name of ["--animate-breathe", "--animate-loader-in"])
+      expect(names, name).toContain(name);
     for (const name of names) {
       const value = reduced.get(name);
-      if (name === "--animate-pop-in" || name === "--animate-spin-arc") {
+      if (name in ALLOWED) {
+        expect(value, name).toBe(ALLOWED[name]);
+      } else if (name === "--animate-loader-in") {
+        // The loader only brightens, so it keeps its fade.
+        expect(value, name).toBeUndefined();
+        expect(theme.get(name), name).toBe("loader-in var(--dur-release) var(--ease-out) both");
+      } else if (
+        name === "--animate-pop-in" ||
+        name === "--animate-spin-arc" ||
+        name === "--animate-breathe"
+      ) {
         expect(value, name).toBe("none");
       } else if (name.endsWith("-in")) {
         expect(value, name).toBe("fade-in var(--dur-reduced) var(--ease-out) both");
@@ -121,10 +162,23 @@ describe("design rules", () => {
         expect(value, name).toBe("fade-out var(--dur-reduced) var(--ease-exit) both");
       }
     }
+    expect(reduced.get("--dock-fade")).toBe("var(--dur-veil-reduced)");
     expect(reduced.get("--press-scale")).toBe("1");
     expect(reduced.get("--slide-duration")).toBe("0s");
     expect(reduced.get("--tint-duration")).toBe("0s");
     expect(reduced.get("--press-release")).toBe("0s");
+    expect(reduced.get("--untint-duration")).toBe("0s");
+    // A card let go short of closing slides back as in normal motion.
+    expect([...reduced.keys()].filter((k) => k.startsWith("--swipe-"))).toEqual([]);
+  });
+
+  it("the dark row tint is 7 % of the foreground, light 6 %", () => {
+    expect(declarations(block(CSS, ":root {")).get("--press-tint")).toBe(
+      "color-mix(in srgb, var(--foreground) 6%, transparent)",
+    );
+    expect(declarations(block(CSS, ".dark {")).get("--press-tint")).toBe(
+      "color-mix(in srgb, var(--foreground) 7%, transparent)",
+    );
   });
 
   it("every transition duration a component names goes to 0s with reduced motion, unless it only fades", () => {
@@ -153,6 +207,11 @@ describe("design rules", () => {
       /&:active,\s*&\[data-pressed\]\s*\{[^}]*background-color:\s*var\(--press-tint\);[^}]*transition-duration:\s*0s/,
     );
     expect(tint).not.toMatch(/transform/);
+    // The row left for a deeper page clears its tint on the way back over its own duration.
+    expect(tint).toMatch(
+      /&\[data-untint\]\s*\{\s*transition:\s*background-color var\(--untint-duration\) var\(--ease-out\)/,
+    );
+    expect(CSS).toMatch(/--untint-duration:\s*var\(--dur-untint\);/);
   });
 
   it("the frosted surface falls back to an opaque background without backdrop-filter", () => {
@@ -162,6 +221,16 @@ describe("design rules", () => {
     expect(block(glass, "@supports not (backdrop-filter: blur(1px))")).toMatch(
       /background-color:\s*var\(--glass-fallback\)/,
     );
+  });
+
+  it("the loading mark's two hooks share one frame that holds the whole mark", () => {
+    // Hook A runs from y 140 down to its arc at 386, hook B from its arc at 126 down to 372; both
+    // span x 86 to 426. A tighter frame cuts the arcs flat.
+    const root = declarations(block(CSS, ":root {"));
+    for (const hook of ["--hook-a", "--hook-b"]) {
+      expect(root.get(hook), hook).toContain("viewBox='86 126 340 260'");
+    }
+    expect(block(CSS, "@utility loader-mark {")).toMatch(/aspect-ratio:\s*340 \/ 260;/);
   });
 
   it("the old 0.01 ms blanket rule is gone", () => {

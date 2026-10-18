@@ -211,7 +211,11 @@ const SCREENS: [string, (page: Page) => Promise<void>][] = [
       await page.goto("/");
       await expect(line(page, /^Supplements/)).toContainText(/of 2$/);
       await page.goto("/tools/energy");
-      await page.getByRole("textbox", { name: "Height" }).fill("180");
+      // The prefilled height lands a moment after the field: filled before it, "180" is typed
+      // after the 178 that replaced the selection, and "178180" is refused.
+      const height = page.getByRole("textbox", { name: "Height" });
+      await expect(height).toHaveValue("178");
+      await height.fill("180");
       await expect(page.getByRole("group", { name: "Profile update" })).toBeVisible();
     },
   ],

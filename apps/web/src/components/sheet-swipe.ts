@@ -18,6 +18,12 @@ export function releaseOf(dy: number, velocity: number): "close" | "snap" {
   return dy > CLOSE_PX || (dy > 0 && velocity > FLICK_PX_PER_MS) ? "close" : "snap";
 }
 
+// The veil lightens as the card goes down, gone once the card has travelled its own height.
+export function veilOpacity(dy: number, height: number): number {
+  if (height <= 0) return 1;
+  return Math.min(1, Math.max(0, 1 - dy / height));
+}
+
 // On a computer the sheet is a centred dialog: nothing to pull down.
 const wide = () => typeof matchMedia === "function" && matchMedia("(width >= 64rem)").matches;
 
@@ -33,14 +39,16 @@ function startsInContent(target: EventTarget | null, card: HTMLElement) {
   return false;
 }
 
-// Pulls a phone sheet down with the finger. The card follows without a transition; let go past
-// the threshold, it asks to close with --swipe-y set so the exit starts where the finger left it;
-// short of it, it goes back up through --swipe-snap-transition (a fade with reduced motion).
+// Pulls a phone sheet down with the finger. The card follows without a transition and the veil
+// lightens with it; let go past the threshold, it asks to close with --swipe-y set so the exit
+// starts where the finger left it, and the veil fades out from where it was; short of it, the card
+// goes back up through --swipe-snap-transition and the veil returns to full in the same time.
 // The close button, the overlay and Escape stay the guaranteed ways out.
 export function useSwipeToClose(
   card: RefObject<HTMLElement | null>,
   request: () => void,
   enabled: boolean,
+  veil?: RefObject<HTMLElement | null>,
 ): void {
   const latestRequest = useRef(request);
   useEffect(() => {
@@ -68,6 +76,7 @@ export function useSwipeToClose(
     let y0 = 0;
     let axis: ReturnType<typeof axisOf> = null;
     let dy = 0;
+    let height = 0;
     let samples: { y: number; t: number }[] = [];
 
     const stop = () => {
@@ -78,14 +87,13 @@ export function useSwipeToClose(
     };
 
     const snap = (el: HTMLElement) => {
-      // Reduced motion starts the way back from a hidden card and fades it in; otherwise the
-      // card slides up from where it was let go.
-      el.style.transition = "none";
-      el.style.opacity = "var(--swipe-snap-from)";
-      void el.offsetHeight;
       el.style.transition = "var(--swipe-snap-transition)";
       el.style.transform = "";
-      el.style.opacity = "";
+      const shade = veil?.current;
+      if (shade) {
+        shade.style.transition = "opacity var(--dur-release) var(--ease-out)";
+        shade.style.opacity = "";
+      }
     };
 
     const onDown = (e: PointerEvent) => {
@@ -96,6 +104,7 @@ export function useSwipeToClose(
       y0 = e.clientY;
       axis = null;
       dy = 0;
+      height = el.offsetHeight;
       samples = [{ y: e.clientY, t: e.timeStamp }];
       window.addEventListener("pointermove", onMove);
       window.addEventListener("pointerup", onUp);
@@ -115,6 +124,11 @@ export function useSwipeToClose(
       while (samples.length > 2 && now - samples[0]!.t > FLICK_WINDOW_MS) samples.shift();
       el.style.transition = "none";
       el.style.transform = `translateY(${dy}px)`;
+      const shade = veil?.current;
+      if (shade) {
+        shade.style.transition = "none";
+        shade.style.opacity = String(veilOpacity(dy, height));
+      }
     };
 
     const onUp = (e: PointerEvent) => {
@@ -144,5 +158,5 @@ export function useSwipeToClose(
       document.removeEventListener("pointerdown", onDown);
       document.removeEventListener("scroll", onScroll, { capture: true });
     };
-  }, [card, enabled]);
+  }, [card, enabled, veil]);
 }

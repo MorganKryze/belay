@@ -15,6 +15,7 @@ test.beforeEach(async ({ page }) => {
 const OUT = "cubic-bezier(0.2, 0.8, 0.2, 1)";
 const NAV = "cubic-bezier(0.32, 0.72, 0, 1)";
 const EXIT = "cubic-bezier(0.4, 0, 1, 1)";
+const PILL = "linear(0 0%, 0.2 10%, 0.6 25%, 0.9 40%, 1.03 55%, 1.01 70%, 1 100%)";
 const POP = "linear(0 0%, 0.5 18%, 0.9 35%, 1.06 52%, 1.02 70%, 1 100%)";
 
 // Session C started ten minutes ago, still open.
@@ -76,6 +77,7 @@ test.describe("normal motion", () => {
           duration: 200,
           easing: NAV,
           transforms: true,
+          scales: true,
         }),
       );
   });
@@ -112,7 +114,9 @@ test.describe("normal motion", () => {
     await cdp.send("Input.dispatchTouchEvent", { type: "touchCancel", touchPoints: [] });
   });
 
-  test("a tab switch slides only the pill, in 220 ms on the nav curve", async ({ page }) => {
+  test("a tab switch slides only the pill, in 300 ms on its overshooting curve", async ({
+    page,
+  }) => {
     await openHome(page);
     await since(page);
     await page
@@ -123,14 +127,39 @@ test.describe("normal motion", () => {
     await expect.poll(async () => (await readMotion(page)).length).toBeGreaterThan(0);
     const moving = (await readMotion(page)).filter((m) => m.transforms);
     expect(moving).toEqual([
-      {
+      expect.objectContaining({
         target: "span[data-pill]",
-        duration: 220,
-        easing: NAV,
+        duration: 300,
+        easing: PILL,
         transforms: true,
+        scales: false,
         kind: "transition",
-      },
+      }),
     ]);
+  });
+
+  test("a pressed tab's icon scales to 0.92 in 90 ms and back in 200 ms on the nav curve", async ({
+    page,
+  }) => {
+    await openHome(page);
+    const icon = page
+      .getByRole("navigation", { name: "Main" })
+      .getByRole("link", { name: "Tools" })
+      .locator("svg");
+    await icon.hover();
+    await since(page);
+    await page.mouse.down();
+    await expect
+      .poll(() => icon.evaluate((el) => getComputedStyle(el).transform))
+      .toBe("matrix(0.92, 0, 0, 0.92, 0, 0)");
+    const dip = { target: "svg", kind: "transition", transforms: true, scales: true } as const;
+    expect(await since(page)).toContainEqual(expect.objectContaining({ ...dip, duration: 90 }));
+    // Released away from it, so Home stays.
+    await page.mouse.move(0, 0);
+    await page.mouse.up();
+    await expect
+      .poll(() => readMotion(page))
+      .toContainEqual(expect.objectContaining({ ...dip, duration: 200, easing: NAV }));
   });
 
   test("the segmented thumb slides in 220 ms", async ({ page }) => {
@@ -142,13 +171,15 @@ test.describe("normal motion", () => {
     await radios.last().click();
     await expect
       .poll(() => readMotion(page))
-      .toContainEqual({
-        target: "span[data-slot]",
-        duration: 220,
-        easing: NAV,
-        transforms: true,
-        kind: "transition",
-      });
+      .toContainEqual(
+        expect.objectContaining({
+          target: "span[data-slot]",
+          duration: 220,
+          easing: NAV,
+          transforms: true,
+          kind: "transition",
+        }),
+      );
   });
 
   test("a checked set pops its tick in 180 ms and tints its row in 140 ms", async ({ page }) => {
@@ -163,8 +194,21 @@ test.describe("normal motion", () => {
       .poll(() => readMotion(page))
       .toEqual(
         expect.arrayContaining([
-          { target: "svg", duration: 180, easing: POP, transforms: true, kind: "animation" },
-          { target: "div", duration: 140, easing: OUT, transforms: false, kind: "transition" },
+          expect.objectContaining({
+            target: "svg",
+            duration: 180,
+            easing: POP,
+            transforms: true,
+            scales: true,
+            kind: "animation",
+          }),
+          expect.objectContaining({
+            target: "div",
+            duration: 140,
+            easing: OUT,
+            transforms: false,
+            kind: "transition",
+          }),
         ]),
       );
   });
@@ -175,27 +219,69 @@ test.describe("normal motion", () => {
     const toast = { target: "div", kind: "animation" } as const;
     await expect
       .poll(() => readMotion(page))
-      .toContainEqual({ ...toast, duration: 220, easing: OUT, transforms: true });
+      .toContainEqual(
+        expect.objectContaining({ ...toast, duration: 220, easing: OUT, transforms: true }),
+      );
     await page.getByRole("button", { name: "Undo" }).click();
     await expect
       .poll(() => readMotion(page))
-      .toContainEqual({ ...toast, duration: 140, easing: EXIT, transforms: false });
+      .toContainEqual(
+        expect.objectContaining({ ...toast, duration: 140, easing: EXIT, transforms: false }),
+      );
   });
 
-  test("the dock fades under a sheet in 140 ms", async ({ page }) => {
+  test("the dock fades under a sheet in 350 ms", async ({ page }) => {
     await openHome(page);
     await since(page);
     await page.getByRole("button", { name: /^Intake/ }).click();
     await expect(page.getByRole("dialog", { name: "Intake" })).toBeVisible();
     await expect
       .poll(() => readMotion(page))
-      .toContainEqual({
-        target: "div[data-dock]",
-        duration: 140,
-        easing: OUT,
-        transforms: false,
-        kind: "transition",
-      });
+      .toContainEqual(
+        expect.objectContaining({
+          target: "div[data-dock]",
+          duration: 350,
+          easing: OUT,
+          transforms: false,
+          kind: "transition",
+        }),
+      );
+  });
+
+  test("a row keeps its tint through the push and clears it in 250 ms on Back", async ({
+    page,
+  }) => {
+    // The row still marked pressed when the page change starts, so the leaving page shows it.
+    await page.addInitScript(() => {
+      const w = window as unknown as { held: (string | null)[] };
+      w.held = [];
+      const start = document.startViewTransition?.bind(document);
+      if (!start) return;
+      document.startViewTransition = ((arg: StartViewTransitionOptions) => {
+        w.held.push(document.querySelector("a[data-pressed]")?.getAttribute("href") ?? null);
+        return start(arg);
+      }) as typeof document.startViewTransition;
+    });
+    const held = () => page.evaluate(() => (window as unknown as { held: string[] }).held);
+    await page.route("**/api/me", (r) => r.fulfill({ status: 401 }));
+    await page.goto("/tools");
+    await page.getByRole("link", { name: /^Plates/ }).click();
+    await expect(page.getByRole("heading", { level: 1, name: "Plates" })).toBeVisible();
+    await expect.poll(held).toEqual(["/tools/plates"]);
+    await since(page);
+    await page.goBack();
+    await expect(page.getByRole("heading", { level: 1, name: "Tools" })).toBeVisible();
+    await expect
+      .poll(() => readMotion(page))
+      .toContainEqual(
+        expect.objectContaining({
+          target: expect.stringMatching(/^a\[.*data-untint\]/),
+          duration: 250,
+          easing: OUT,
+          transforms: false,
+          kind: "transition",
+        }),
+      );
   });
 
   test("the session bar rises in 220 ms", async ({ page }) => {
@@ -204,20 +290,51 @@ test.describe("normal motion", () => {
     await expect(page.getByRole("link", { name: /In progress/ })).toBeVisible();
     await expect
       .poll(() => readMotion(page))
-      .toContainEqual({
-        target: "a",
-        duration: 220,
-        easing: OUT,
-        transforms: true,
-        kind: "animation",
-      });
+      .toContainEqual(
+        expect.objectContaining({
+          target: "a",
+          duration: 220,
+          easing: OUT,
+          transforms: true,
+          kind: "animation",
+        }),
+      );
   });
 });
 
 test.describe("reduced motion", () => {
   test.use({ reducedMotion: "reduce" });
 
-  test("opening and closing a sheet, pushing and popping a page, switching tab, checking off a set and showing a toast run no transform and nothing longer than 150 ms", async ({
+  test("with reduced motion a sheet slides in and out in 300 ms on the out curve over a 200 ms veil", async ({
+    page,
+  }) => {
+    await openHome(page);
+    await since(page);
+    await page.getByRole("button", { name: /^Intake/ }).click();
+    const intake = page.getByRole("dialog", { name: "Intake" });
+    await expect(intake).toBeVisible();
+    await intake.getByRole("button", { name: "Close" }).click();
+    await expect(intake).toBeHidden();
+    const card = { target: "div[role=dialog][data-state]", kind: "animation" } as const;
+    const veil = { target: expect.stringContaining("[data-sheet-overlay]"), kind: "animation" };
+    const slide = { duration: 300, easing: OUT, transforms: true, scales: false };
+    const fade = { duration: 200, easing: OUT, transforms: false };
+    const ran = await readMotion(page);
+    // The way in, then the way out: the same slide and the same fade each time.
+    expect(ran.filter((m) => m.target === card.target)).toEqual([
+      expect.objectContaining({ ...card, ...slide }),
+      expect.objectContaining({ ...card, ...slide }),
+    ]);
+    expect(ran.filter((m) => m.target.includes("[data-sheet-overlay]"))).toEqual([
+      expect.objectContaining({ ...veil, ...fade }),
+      expect.objectContaining({ ...veil, ...fade }),
+    ]);
+    expect(ran).toContainEqual(
+      expect.objectContaining({ target: "div[data-dock]", kind: "transition", ...fade }),
+    );
+  });
+
+  test("opening and closing a sheet, pushing and popping a page, switching tab, checking off a set and showing a toast scale nothing, slide only the sheet and the page, and fade in 200 ms at most", async ({
     page,
   }) => {
     const ran: Motion[] = [];
@@ -231,16 +348,31 @@ test.describe("reduced motion", () => {
     await saveWeighIn(page);
     await page.getByRole("button", { name: "Undo" }).click();
     await expect(page.getByRole("button", { name: "Undo" })).toBeHidden();
-    // A tab switch, a push and a pop.
-    await page
+    // A tab switch, pressed down on the tab: neither the pill nor the icon moves.
+    const tools = page
       .getByRole("navigation", { name: "Main" })
-      .getByRole("link", { name: "Tools" })
-      .click();
+      .getByRole("link", { name: "Tools" });
+    await tools.hover();
+    await page.mouse.down();
+    expect(await tools.locator("svg").evaluate((el) => getComputedStyle(el).transform)).toMatch(
+      /^(none|matrix\(1, 0, 0, 1, 0, 0\))$/,
+    );
+    await page.mouse.up();
     await expect(page.getByRole("heading", { level: 1, name: "Tools" })).toBeVisible();
+    const tabbed = await readMotion(page);
+    expect(tabbed.filter((m) => m.target === "span[data-pill]")).toEqual([]);
+    expect(tabbed.filter((m) => m.target === "svg" && m.transforms)).toEqual([]);
+    // A push and a pop. The new heading shows before the page snapshots start to slide, and a
+    // Back taken in that gap cuts the push short, so each one waits for its slide to be seen.
+    const slides = async () =>
+      (await readMotion(page)).filter((m) => m.target.startsWith("::view-transition")).length;
     await page.getByRole("link", { name: /^Plates/ }).click();
     await expect(page.getByRole("heading", { level: 1, name: "Plates" })).toBeVisible();
+    await expect.poll(slides).toBeGreaterThan(0);
+    const pushed = await slides();
     await page.goBack();
     await expect(page.getByRole("heading", { level: 1, name: "Tools" })).toBeVisible();
+    await expect.poll(slides).toBeGreaterThan(pushed);
     ran.push(...(await readMotion(page)));
     // A set checked off.
     await page.goto("/workout?start=A");
@@ -256,6 +388,23 @@ test.describe("reduced motion", () => {
     expect(ran.filter((m) => m.target === "div[role=dialog][data-state]").length).toBeGreaterThan(
       0,
     );
-    expect(ran.filter((m) => m.transforms || m.duration > 150)).toEqual([]);
+    expect(ran.filter((m) => m.scales)).toEqual([]);
+    expect(ran.filter((m) => m.duration > 300)).toEqual([]);
+    expect(ran.filter((m) => m.transforms)).not.toEqual([]);
+    expect(ran.filter((m) => m.transforms && m.target.startsWith("::view-transition"))).not.toEqual(
+      [],
+    );
+    // Only the sheet card and the page snapshots slide.
+    const sliding = /^(div\[role=dialog\]\[data-state\]|::view-transition-(new|old)\(root\))$/;
+    for (const moving of ran.filter((m) => m.transforms)) {
+      expect(moving).toEqual(
+        expect.objectContaining({
+          target: expect.stringMatching(sliding),
+          duration: 300,
+          easing: OUT,
+        }),
+      );
+    }
+    expect(ran.filter((m) => !m.transforms && m.duration > 200)).toEqual([]);
   });
 });

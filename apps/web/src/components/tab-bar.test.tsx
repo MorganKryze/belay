@@ -78,11 +78,23 @@ describe("the tab bar", () => {
     expect(nav.queryByRole("link", { name: "Settings" })).toBeNull();
   });
 
-  it("tints a tab while it is pressed", async () => {
+  it("a pressed tab dips its icon and keeps its tint", async () => {
     fakeApi({ me: null });
     renderRoute("/tools");
     const nav = await dock();
-    for (const link of nav.getAllByRole("link")) expect(classes(link)).toContain("press-tint");
+    for (const link of nav.getAllByRole("link")) {
+      expect(classes(link)).toEqual(expect.arrayContaining(["press-tint", "press-icon"]));
+    }
+  });
+
+  it("the pill slides on its own curve, not the segmented thumb's", async () => {
+    fakeApi({ me: null });
+    renderRoute("/tools");
+    await dock();
+    expect(classes(pill())).toEqual(
+      expect.arrayContaining(["transition-transform", "duration-(--pill-duration)", "ease-pill"]),
+    );
+    expect(classes(pill())).not.toContain("duration-(--slide-duration)");
   });
 
   it("marks the active tab with aria-current, the pill and a 700 label", async () => {
@@ -148,8 +160,8 @@ describe("the tab bar", () => {
         expect.arrayContaining([
           "translate-x-[calc(var(--tab-i)*100%)]",
           "transition-transform",
-          "duration-(--slide-duration)",
-          "ease-nav",
+          "duration-(--pill-duration)",
+          "ease-pill",
         ]),
       );
       cleanup();
@@ -177,17 +189,17 @@ describe("the tab bar", () => {
     );
   });
 
-  it("fades out under an open dialog, quicker and without motion when reduced", () => {
+  it("fades out under an open dialog with its veil, quicker when reduced", () => {
     const css = readFileSync(join(__dirname, "..", "index.css"), "utf8");
     expect(css).toMatch(
       /html:has\(\[role="dialog"\]\[data-state="open"\]\) \[data-dock\] \{\s*opacity: 0;/,
     );
     expect(css).toMatch(
-      /\[data-dock\] \{\s*transition: opacity var\(--fade-duration\) var\(--ease-out\);/,
+      /\[data-dock\] \{\s*transition: opacity var\(--dock-fade\) var\(--ease-out\);/,
     );
-    expect(css).toMatch(/:root \{[^}]*--fade-duration: var\(--dur-fast\);/);
+    expect(css).toMatch(/:root \{[^}]*--dock-fade: var\(--dur-overlay-in\);/);
     expect(css).toMatch(
-      /@media \(prefers-reduced-motion: reduce\) \{\s*:root \{[^}]*--fade-duration: var\(--dur-reduced\);/,
+      /@media \(prefers-reduced-motion: reduce\) \{\s*:root \{[^}]*--dock-fade: var\(--dur-veil-reduced\);/,
     );
   });
 

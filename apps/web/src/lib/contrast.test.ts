@@ -135,6 +135,17 @@ describe("design tokens", () => {
     }
   });
 
+  // The loading mark settles at 80 % opacity: what the eye sees is the primary laid on the page.
+  it("the loader mark at 80 % keeps 3:1 on the background in both themes", () => {
+    for (const tokens of [light, dark]) {
+      const primary = tokens.primary!;
+      const channels = [1, 3, 5].map((i) => parseInt(primary.slice(i, i + 2), 16)).join(", ");
+      const mark = flatten(`rgba(${channels}, 0.8)`, tokens.background!);
+      const ratio = contrastRatio(mark, tokens.background!);
+      expect(ratio, `loader mark: ${ratio.toFixed(2)}`).toBeGreaterThanOrEqual(3);
+    }
+  });
+
   it("lays an rgba colour on an opaque one", () => {
     expect(flatten("rgba(0, 0, 0, 0.5)", "#ffffff")).toBe("#808080");
     expect(flatten("rgba(255, 255, 255, 1)", "#000000")).toBe("#ffffff");

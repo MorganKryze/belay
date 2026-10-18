@@ -31,6 +31,18 @@ describe("Home", () => {
     ).toBe("/tools");
   });
 
+  it("while the account loads Home shows the loader, with no title", async () => {
+    // /api/me never answers and nobody is remembered: the account stays unknown.
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => new Promise<Response>(() => {})),
+    );
+    renderRoute("/");
+    expect((await screen.findByText("Loading…")).getAttribute("role")).toBe("status");
+    expect(document.querySelector("[data-pending] .loader-mark")).not.toBeNull();
+    expect(screen.queryByRole("heading", { level: 1 })).toBeNull();
+  });
+
   it("greets the signed-in user by name", async () => {
     fakeApi({ me: ADA });
     renderRoute("/");

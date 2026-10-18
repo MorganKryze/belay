@@ -74,6 +74,7 @@ const played = (page: Page) =>
 const animation = (p: Played, target: string) => p.animations.find((a) => a.target === target);
 
 const NAV = "cubic-bezier(0.32, 0.72, 0, 1)";
+const OUT = "cubic-bezier(0.2, 0.8, 0.2, 1)";
 const SHEET = "cubic-bezier(0.4, 0.2, 0, 1)";
 const EXIT = "cubic-bezier(0.4, 0, 1, 1)";
 
@@ -88,28 +89,35 @@ async function openPlates(page: Page) {
   await expect(page.getByRole("heading", { level: 1, name: "Plates" })).toBeVisible();
 }
 
-test("a pushed page slides in from the right in 420 ms on the nav curve while the old one moves 25 % left", async ({
-  page,
-}) => {
-  await recordTransitions(page);
-  await openPlates(page);
-  await expect.poll(async () => (await played(page)).length).toBe(1);
-  const [push] = await played(page);
-  expect(push!.types).toEqual(["push"]);
-  const enter = animation(push!, "::view-transition-new(root)");
-  expect(enter).toMatchObject({ duration: 420, easing: NAV });
-  expect(enter!.keyframes[0]!.transform).toBe("translate(100%)");
-  const leave = animation(push!, "::view-transition-old(root)");
-  expect(leave).toMatchObject({ duration: 420, easing: NAV });
-  expect(leave!.keyframes.at(-1)).toMatchObject({ transform: "translate(-25%)", opacity: "0.94" });
-  // Only the page moves, as the root snapshot: no group morphs, the dock and top bar hold still.
-  expect(push!.animations.map((a) => a.target).sort()).toEqual([
-    "::view-transition-new(root)",
-    "::view-transition-old(root)",
-  ]);
-});
+for (const [scheme, dim] of [
+  ["dark", "0.8"],
+  ["light", "0.9"],
+] as const) {
+  test(`a pushed page slides in from the right in 420 ms on the nav curve while the old one moves 25 % left and dims to ${Number(dim) * 100} % in ${scheme}`, async ({
+    page,
+  }) => {
+    await page.emulateMedia({ colorScheme: scheme });
+    await recordTransitions(page);
+    await openPlates(page);
+    await expect.poll(async () => (await played(page)).length).toBe(1);
+    const [push] = await played(page);
+    expect(push!.types).toEqual(["push"]);
+    const enter = animation(push!, "::view-transition-new(root)");
+    expect(enter).toMatchObject({ duration: 420, easing: NAV });
+    expect(enter!.keyframes[0]!.transform).toBe("translate(100%)");
+    const leave = animation(push!, "::view-transition-old(root)");
+    expect(leave).toMatchObject({ duration: 420, easing: NAV });
+    expect(leave!.keyframes.at(-1)).toMatchObject({ transform: "translate(-25%)", opacity: dim });
+    // Only the page moves, as the root snapshot: no group morphs, the dock and top bar hold still.
+    expect(push!.animations.map((a) => a.target).sort()).toEqual([
+      "::view-transition-new(root)",
+      "::view-transition-old(root)",
+    ]);
+  });
+}
 
-test("Back plays the reverse in 340 ms", async ({ page }) => {
+test("Back plays the reverse in 380 ms", async ({ page }) => {
+  await page.emulateMedia({ colorScheme: "dark" });
   await recordTransitions(page);
   await openPlates(page);
   await page.goBack();
@@ -118,11 +126,61 @@ test("Back plays the reverse in 340 ms", async ({ page }) => {
   const pop = (await played(page))[1]!;
   expect(pop.types).toEqual(["pop"]);
   const enter = animation(pop, "::view-transition-new(root)");
-  expect(enter).toMatchObject({ duration: 340, easing: NAV });
-  expect(enter!.keyframes[0]).toMatchObject({ transform: "translate(-25%)", opacity: "0.94" });
+  expect(enter).toMatchObject({ duration: 380, easing: NAV });
+  expect(enter!.keyframes[0]).toMatchObject({ transform: "translate(-25%)", opacity: "0.8" });
   const leave = animation(pop, "::view-transition-old(root)");
-  expect(leave).toMatchObject({ duration: 340, easing: NAV });
+  expect(leave).toMatchObject({ duration: 380, easing: NAV });
   expect(leave!.keyframes.at(-1)!.transform).toBe("translate(100%)");
+});
+
+test.describe("reduced motion", () => {
+  test.use({ reducedMotion: "reduce" });
+
+  test("with reduced motion a pushed page slides in over a still page in 300 ms on the out curve, and Back slides it out over a still page", async ({
+    page,
+  }) => {
+    await recordTransitions(page);
+    await openPlates(page);
+    await page.goBack();
+    await expect(page.getByRole("heading", { level: 1, name: "Tools" })).toBeVisible();
+    await expect.poll(async () => (await played(page)).length).toBe(2);
+    const [push, pop] = await played(page);
+    expect(push!.types).toEqual(["push"]);
+    const enter = animation(push!, "::view-transition-new(root)");
+    expect(enter).toMatchObject({ duration: 300, easing: OUT });
+    expect(enter!.keyframes[0]!.transform).toBe("translate(100%)");
+    expect(animation(push!, "::view-transition-old(root)")).toBeUndefined();
+    expect(pop!.types).toEqual(["pop"]);
+    const leave = animation(pop!, "::view-transition-old(root)");
+    expect(leave).toMatchObject({ duration: 300, easing: OUT });
+    expect(leave!.keyframes.at(-1)!.transform).toBe("translate(100%)");
+    expect(animation(pop!, "::view-transition-new(root)")).toBeUndefined();
+  });
+
+  test("with reduced motion the session cover rises and sinks in 300 ms on the out curve", async ({
+    page,
+  }) => {
+    await page.unroute("**/api/me");
+    await fakeServer(page);
+    await recordTransitions(page);
+    await page.goto("/");
+    await page.getByRole("link", { name: /^Session [ABC] · / }).click();
+    await expect(page.getByRole("heading", { level: 1, name: /^Session [ABC] · / })).toBeVisible();
+    await page.goBack();
+    await expect(page.getByRole("heading", { level: 1, name: "Hello, Ada" })).toBeVisible();
+    await expect.poll(async () => (await played(page)).length).toBe(2);
+    const [cover, uncover] = await played(page);
+    expect(cover!.types).toEqual(["cover"]);
+    const rise = animation(cover!, "::view-transition-new(root)");
+    expect(rise).toMatchObject({ duration: 300, easing: OUT });
+    expect(rise!.keyframes[0]!.transform).toBe("translateY(100%)");
+    expect(animation(cover!, "::view-transition-old(root)")).toBeUndefined();
+    expect(uncover!.types).toEqual(["uncover"]);
+    const sink = animation(uncover!, "::view-transition-old(root)");
+    expect(sink).toMatchObject({ duration: 300, easing: OUT });
+    expect(sink!.keyframes.at(-1)!.transform).toBe("translateY(100%)");
+    expect(animation(uncover!, "::view-transition-new(root)")).toBeUndefined();
+  });
 });
 
 test("a tab switch runs no page animation", async ({ page }) => {
