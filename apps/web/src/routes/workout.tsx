@@ -18,6 +18,7 @@ import {
   type Load,
   nextTurn,
   restEndsAt,
+  restSecAfter,
   sessionProgress,
   type Turn,
   turnKey,
@@ -432,11 +433,15 @@ function Screen({
     else void navigate({ to: "/", replace: true });
   };
 
-  // The rest starts from a work set, never a warm-up: the line runs from the last one logged.
-  const workDone = sets.filter((s) => !s.warmup).map((s) => Date.parse(s.doneAt));
-  const restFrom = workDone.length
-    ? new Date(Math.max(...workDone)).toISOString()
-    : workout.startedAt;
+  // The rest starts from a work set, never a warm-up: the line measures the rest planned after
+  // the last one logged.
+  const lastWork = sets
+    .filter((s) => !s.warmup)
+    .reduce<WorkoutSet | null>(
+      (last, s) => (last && Date.parse(last.doneAt) >= Date.parse(s.doneAt) ? last : s),
+      null,
+    );
+  const restPlanned = lastWork ? restSecAfter(plan, lastWork.slotIndex) * 1000 : 0;
   // The rest bar names what comes next: the next set of this exercise, or the next exercise.
   const restLabel =
     next === null
@@ -588,7 +593,7 @@ function Screen({
       {active.restEndsAt && (
         <RestBar
           endsAt={active.restEndsAt}
-          startedAt={restFrom}
+          planned={restPlanned}
           next={restLabel}
           pausedAt={paused}
           stops={stops}

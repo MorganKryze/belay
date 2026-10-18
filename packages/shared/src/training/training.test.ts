@@ -20,6 +20,7 @@ import {
   openWorkout,
   prefill,
   restEndsAt,
+  restSecAfter,
   sessionProgress,
   summary,
   topSet,
@@ -358,6 +359,12 @@ describe("the order of work sets and the rest (§4.3)", () => {
     expect(
       restEndsAt(A.slots, done("0|0"), { slotIndex: 0, round: 0 }, "2026-10-07T17:00:00.000Z"),
     ).toBe("2026-10-07T17:02:30.000Z");
+  });
+
+  it("plans the rest a set starts: its slot's own, or its group's last slot's", () => {
+    expect(restSecAfter(A.slots, 0)).toBe(150);
+    expect(restSecAfter(A.slots, 3)).toBe(75);
+    expect(restSecAfter(A.slots, 5)).toBe(75);
   });
 
   it("does not rest between two exercises of a round", () => {

@@ -6,18 +6,19 @@ import { formatClock, useNow } from "./hooks";
 // §4.3: the rest, counted down from its end time (right even after the app slept), +30 s and
 // Skip. At zero: a short vibration where the phone can, "Back to it", a polite announcement,
 // and the bar goes at the next tap anywhere. The countdown is a timer never read out each second.
-// The line along the bottom is the rest left, from the set just logged to the end: data set on
-// each tick, never an animation.
+// The line along the bottom is the rest left out of the rest planned: data set on each tick, never
+// an animation. Measured against the plan, not the time since the set, so a resume that moves the
+// end later leaves it where it stood; +30 s past the plan fills it again.
 export function RestBar({
   endsAt,
-  startedAt,
+  planned,
   next,
   pausedAt,
   stops,
   onChange,
 }: {
   endsAt: string;
-  startedAt: string; // the last work set's doneAt: where the line starts
+  planned: number; // the rest planned after the last work set, in ms
   next: string; // "Rest · set 3 next"
   pausedAt: string | null;
   stops: PauseStops; // a pause that stops everything holds the rest left where it stood
@@ -28,7 +29,7 @@ export function RestBar({
   const end = Date.parse(endsAt);
   const left = end - now;
   const over = left <= 0;
-  const span = end - Date.parse(startedAt);
+  const span = Math.max(planned, left);
   const fraction = span > 0 ? Math.min(1, Math.max(0, left / span)) : over ? 0 : 1;
   const [announced, setAnnounced] = useState(false);
   const wasRunning = useRef(!over);

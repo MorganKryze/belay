@@ -192,6 +192,12 @@ export function sessionProgress(
 }
 
 // The end of the rest after a work set. Inside a group's round, none: the next exercise follows.
+// The rest planned after a set of this slot: the group's is its last slot's, even when that slot
+// is skipped today.
+export function restSecAfter(plan: readonly Slot[], slotIndex: number): number {
+  return plan[groupOf(plan, slotIndex).at(-1)!]!.restSec;
+}
+
 // After the round, or after a slot alone, the rest of the group's last slot (or the slot's own).
 // A slot skipped today has no turn in the round. After the last set of the session, none.
 export function restEndsAt(
@@ -204,8 +210,7 @@ export function restEndsAt(
   if (next === null) return null;
   const group = liveGroup(plan, after.slotIndex);
   if (group.length > 1 && group.includes(next.slotIndex) && next.round === after.round) return null;
-  // The group's rest is its last slot's, even when that slot is skipped today.
-  const restSec = plan[groupOf(plan, after.slotIndex).at(-1)!]!.restSec;
+  const restSec = restSecAfter(plan, after.slotIndex);
   return restSec > 0 ? new Date(Date.parse(doneAt) + restSec * 1000).toISOString() : null;
 }
 
