@@ -99,6 +99,8 @@
   --ease-exit: cubic-bezier(0.4, 0, 1, 1);
   /* The tab pill passes its column by a hair and settles back. */
   --ease-pill: linear(0, 0.2 10%, 0.6 25%, 0.9 40%, 1.03 55%, 1.01 70%, 1);
+  /* The loading mark's hooks fade out and back as evenly as they came. */
+  --ease-breathe: cubic-bezier(0.42, 0, 0.58, 1);
   --text-figure: 50px;
   --text-figure--line-height: 1;
   --text-figure--letter-spacing: -0.035em;
@@ -171,6 +173,9 @@
   --animate-pop-in: pop-in var(--dur-check) var(--spring-pop-in) both;
   /* The loading arc. */
   --animate-spin-arc: spin-arc var(--dur-pulse) linear infinite;
+  /* The loading mark brightens as it shows, then its two hooks breathe in turn. */
+  --animate-loader-in: loader-in var(--dur-release) var(--ease-out) both;
+  --animate-breathe: breathe var(--dur-breathe) var(--ease-breathe) infinite;
   /* Page changes: a push slides the new page in and the old one 25 % left as it dims, Back plays
      it in reverse at the same pace, the session rises as a cover over a page that stays put. */
   --animate-page-push-in: page-push-in var(--dur-push) var(--ease-nav) both;
@@ -255,6 +260,19 @@
   @keyframes spin-arc {
     to {
       transform: rotate(1turn);
+    }
+  }
+  @keyframes loader-in {
+    from {
+      opacity: 0.08;
+    }
+    to {
+      opacity: 0.8;
+    }
+  }
+  @keyframes breathe {
+    50% {
+      opacity: 0.35;
     }
   }
 }
@@ -348,6 +366,7 @@
   --dur-reduced: 120ms;
   --dur-slide-reduced: 300ms;
   --dur-veil-reduced: 200ms;
+  --dur-breathe: 1200ms;
   /* Springs sampled as linear() easings, for page pushes and pop-ins. */
   --spring-nav: linear(
     0,
@@ -364,6 +383,10 @@
     1
   );
   --spring-pop-in: linear(0, 0.5 18%, 0.9 35%, 1.06 52%, 1.02 70%, 1);
+  /* The mark's two hooks, as masks held in the stylesheet: the loader shows exactly when the
+     network is slow, so it must not wait on a file of its own. */
+  --hook-a: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='86 126 340 260'%3E%3Cpath d='M86 160L86 266A120 120 0 0 0 326 266L326 246A20 20 0 0 0 286 246L286 266A80 80 0 0 1 126 266L126 160A20 20 0 0 0 86 160Z'/%3E%3C/svg%3E");
+  --hook-b: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='86 126 340 260'%3E%3Cpath d='M426 352L426 246A120 120 0 0 0 186 246L186 266A20 20 0 0 0 226 266L226 246A80 80 0 0 1 386 246L386 352A20 20 0 0 0 426 352Z'/%3E%3C/svg%3E");
   /* How far the page left behind dims under a push: more in dark, where 90 % barely shows. */
   --push-dim: 0.9;
   /* IWF competition colours (rule 3.3.3.6), the same in both themes; grey for any other value. */
@@ -447,8 +470,8 @@
 /*
  * Calm by default: with reduced motion, nothing scales or bounces; a sheet, a pushed page and the
  * session cover still slide, without the spring, over a page or a veil that holds still or fades,
- * other enters and leaves become short fades, the tick and the loading arc stand still. Components
- * never write their own media query.
+ * other enters and leaves become short fades, the tick, the loading arc and the loading mark's
+ * hooks stand still. Components never write their own media query.
  */
 @media (prefers-reduced-motion: reduce) {
   :root {
@@ -463,6 +486,7 @@
     --animate-dialog-in: fade-in var(--dur-reduced) var(--ease-out) both;
     --animate-pop-in: none;
     --animate-spin-arc: none;
+    --animate-breathe: none;
     --animate-page-push-in: page-push-in var(--dur-slide-reduced) var(--ease-out) both;
     --animate-page-push-out: none;
     --animate-page-back-in: none;
@@ -504,6 +528,31 @@
   &[data-pressed] > svg {
     transform: scale(var(--press-scale-tab));
     transition-duration: var(--dur-press);
+  }
+}
+
+/*
+ * The loading mark: 56 px wide at the mark's own proportions, centred, its top at 44 % of the
+ * page's height. It brightens as it shows, then each hook breathes, the second half a beat behind.
+ */
+@utility loader-mark {
+  position: absolute;
+  top: 44%;
+  inset-inline: 0;
+  margin-inline: auto;
+  width: 56px;
+  aspect-ratio: 340 / 260;
+  animation: var(--animate-loader-in);
+  & > [data-hook] {
+    position: absolute;
+    inset: 0;
+    background-color: var(--primary);
+    mask: var(--hook-a) center / contain no-repeat;
+    animation: var(--animate-breathe);
+  }
+  & > [data-hook="b"] {
+    mask-image: var(--hook-b);
+    animation-delay: calc(var(--dur-breathe) / 2);
   }
 }
 

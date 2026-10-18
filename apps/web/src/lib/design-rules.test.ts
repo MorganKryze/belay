@@ -129,11 +129,21 @@ describe("design rules", () => {
     const names = [...theme.keys()].filter((k) => k.startsWith("--animate-"));
     expect(names.length).toBeGreaterThanOrEqual(11);
     for (const name of Object.keys(ALLOWED)) expect(names, name).toContain(name);
+    for (const name of ["--animate-breathe", "--animate-loader-in"])
+      expect(names, name).toContain(name);
     for (const name of names) {
       const value = reduced.get(name);
       if (name in ALLOWED) {
         expect(value, name).toBe(ALLOWED[name]);
-      } else if (name === "--animate-pop-in" || name === "--animate-spin-arc") {
+      } else if (name === "--animate-loader-in") {
+        // The loader only brightens, so it keeps its fade.
+        expect(value, name).toBeUndefined();
+        expect(theme.get(name), name).toBe("loader-in var(--dur-release) var(--ease-out) both");
+      } else if (
+        name === "--animate-pop-in" ||
+        name === "--animate-spin-arc" ||
+        name === "--animate-breathe"
+      ) {
         expect(value, name).toBe("none");
       } else if (name.endsWith("-in")) {
         expect(value, name).toBe("fade-in var(--dur-reduced) var(--ease-out) both");
@@ -200,6 +210,16 @@ describe("design rules", () => {
     expect(block(glass, "@supports not (backdrop-filter: blur(1px))")).toMatch(
       /background-color:\s*var\(--glass-fallback\)/,
     );
+  });
+
+  it("the loading mark's two hooks share one frame that holds the whole mark", () => {
+    // Hook A runs from y 140 down to its arc at 386, hook B from its arc at 126 down to 372; both
+    // span x 86 to 426. A tighter frame cuts the arcs flat.
+    const root = declarations(block(CSS, ":root {"));
+    for (const hook of ["--hook-a", "--hook-b"]) {
+      expect(root.get(hook), hook).toContain("viewBox='86 126 340 260'");
+    }
+    expect(block(CSS, "@utility loader-mark {")).toMatch(/aspect-ratio:\s*340 \/ 260;/);
   });
 
   it("the old 0.01 ms blanket rule is gone", () => {

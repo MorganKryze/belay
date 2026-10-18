@@ -145,6 +145,7 @@
     "notFoundTitle": "Page not found",
     "notFoundBody": "This address doesn't lead anywhere in Belay.",
     "backHome": "Back to home",
+    "loading": "Loading…",
     "errorTitle": "Something went wrong",
     "errorBody": "This page couldn't be displayed. If the app was just updated, reloading usually fixes it.",
     "reload": "Reload"

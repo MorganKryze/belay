@@ -12,7 +12,7 @@ import {
 // handles that popstate.
 import { viewTransition } from "./lib/transitions";
 import { trackEntries } from "./lib/back";
-import { NotFound, RouteError } from "./routes/fallbacks";
+import { NotFound, Pending, RouteError } from "./routes/fallbacks";
 import { Home } from "./routes/home";
 import { Layout } from "./routes/layout";
 import { isWorkoutTab, type WorkoutTab } from "./workouts/tabs";
@@ -161,6 +161,12 @@ export const createAppRouter = (history?: RouterHistory) => {
     // A link starts loading its page when a finger lands on it or a pointer hovers it, so the
     // tap rarely waits on the network.
     defaultPreload: "intent",
+    // A page whose code or data is late shows the breathing mark, never before 150 ms, so a page
+    // that is ready by then does not flash it, and once shown for at least 400 ms, so it does not
+    // flicker.
+    defaultPendingComponent: Pending,
+    defaultPendingMs: 150,
+    defaultPendingMinMs: 400,
   });
   // The back chevrons read it to go back rather than stack the page they name.
   trackEntries(router.history);
