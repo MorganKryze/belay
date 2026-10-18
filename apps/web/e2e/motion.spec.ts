@@ -105,10 +105,11 @@ test.describe("normal motion", () => {
     // scroll, and only a touch goes through that.
     const cdp = await page.context().newCDPSession(page);
     await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [point] });
-    await page.waitForTimeout(150);
-    const tint = await row.evaluate((el) => getComputedStyle(el).backgroundColor);
+    // Polled while the finger stays down: a slow runner may take a few frames to deliver the press.
+    await expect
+      .poll(() => row.evaluate((el) => getComputedStyle(el).backgroundColor), { timeout: 2000 })
+      .not.toBe("rgba(0, 0, 0, 0)");
     await cdp.send("Input.dispatchTouchEvent", { type: "touchCancel", touchPoints: [] });
-    expect(tint).not.toBe("rgba(0, 0, 0, 0)");
   });
 
   test("a tab switch slides only the pill, in 220 ms on the nav curve", async ({ page }) => {

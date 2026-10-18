@@ -43,6 +43,8 @@
       .launched .launch {
         opacity: 0;
         visibility: hidden;
+        /* Taps reach the app at once, while the splash is still fading. */
+        pointer-events: none;
         transition:
           opacity var(--dur-base) var(--ease-exit),
           visibility 0s var(--dur-base);
