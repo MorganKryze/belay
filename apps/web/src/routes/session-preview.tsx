@@ -5,7 +5,7 @@ import type { Measure } from "@belay/shared/exercises/library";
 import type { Activity } from "@belay/shared/training/activities";
 import { planFor } from "@belay/shared/training/plan";
 import { estimatedMinutes, plannedWorkSets, sessionByCode } from "@belay/shared/training/program";
-import { type History, lastTopSet, openWorkout } from "@belay/shared/training/rules";
+import { type History, lastFinished, lastTopSet, openWorkout } from "@belay/shared/training/rules";
 import { Link, useParams, useSearch } from "@tanstack/react-router";
 import { Play } from "lucide-react";
 import { useId } from "react";
@@ -52,7 +52,7 @@ function Preview({
   const listId = useId();
   // The route lets only a known code through.
   const plan = planFor(sessionByCode(code)!, activities, today);
-  const last = history && lastFinished(history, code);
+  const last = history && lastFinished(history.workouts, code);
   const open = history && openWorkout(history.workouts, { sets: history.sets, now: new Date() });
   const top = (exerciseId: string, measure: Measure) =>
     history && lastTopSet(history, exerciseId, measure);
@@ -158,17 +158,4 @@ function RowNumber({ n }: { n: number }) {
       {n}
     </span>
   );
-}
-
-// The last session of this code that ended, if any.
-function lastFinished(history: History, code: string) {
-  return history.workouts
-    .filter((w) => w.sessionCode === code && w.endedAt !== null && !w.removed)
-    .reduce<{ startedAt: string; endedAt: string } | null>(
-      (latest, w) =>
-        latest === null || w.startedAt > latest.startedAt
-          ? { startedAt: w.startedAt, endedAt: w.endedAt! }
-          : latest,
-      null,
-    );
 }

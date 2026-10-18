@@ -12,6 +12,7 @@ import {
 import {
   autoClose,
   type History,
+  lastFinished,
   lastTime,
   liveSets,
   loggedByExercise,
@@ -582,6 +583,28 @@ describe("autoClose (D12)", () => {
       kind: "end",
       endedAt: last,
     });
+  });
+});
+
+describe("lastFinished", () => {
+  it("is the latest ended session of the code, the open, removed and other ones left out", () => {
+    const early = workout({ startedAt: "2026-10-01T17:00:00.000Z" });
+    const late = workout({ startedAt: "2026-10-05T17:00:00.000Z" });
+    const workouts = [
+      late,
+      early,
+      workout({ startedAt: "2026-10-06T17:00:00.000Z", endedAt: null }),
+      workout({ startedAt: "2026-10-07T17:00:00.000Z", removed: true }),
+      workout({ startedAt: "2026-10-08T17:00:00.000Z", sessionCode: "B" }),
+    ];
+    expect(lastFinished(workouts, "A")).toBe(late);
+    expect(lastFinished([early, late], "A")).toBe(late);
+  });
+
+  it("is null when no session of the code ended", () => {
+    expect(lastFinished([], "A")).toBeNull();
+    expect(lastFinished([workout({ endedAt: null }), workout({ removed: true })], "A")).toBeNull();
+    expect(lastFinished([workout()], "B")).toBeNull();
   });
 });
 

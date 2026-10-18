@@ -294,6 +294,23 @@ export function loggedByExercise(
   }));
 }
 
+// The last session of this code that ended and was kept, if any: the preview's "last time" and
+// the program card's day.
+export function lastFinished<W extends Workout>(
+  workouts: readonly W[],
+  code: string,
+): (W & { endedAt: string }) | null {
+  return workouts
+    .filter(
+      (w): w is W & { endedAt: string } =>
+        w.sessionCode === code && w.endedAt !== null && !w.removed,
+    )
+    .reduce<(W & { endedAt: string }) | null>(
+      (last, w) => (last === null || w.startedAt > last.startedAt ? w : last),
+      null,
+    );
+}
+
 // The session in progress, if any: the latest one neither finished nor removed.
 // With `forgotten`, a session autoClose would close is not open: it is only waiting for the
 // next landed sync to be closed.

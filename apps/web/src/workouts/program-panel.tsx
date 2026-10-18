@@ -7,7 +7,7 @@ import {
   type SessionTemplate,
   starterProgram,
 } from "@belay/shared/training/program";
-import { type History, openWorkout } from "@belay/shared/training/rules";
+import { type History, lastFinished, openWorkout } from "@belay/shared/training/rules";
 import { Link } from "@tanstack/react-router";
 import { useId } from "react";
 import { useTranslation } from "react-i18next";
@@ -75,10 +75,8 @@ function List({
 
 // The day a session of this code last ended; null: never; undefined: no account.
 function lastDayOf(history: History, code: string): ISODate | null {
-  const last = history.workouts
-    .filter((w) => w.sessionCode === code && w.endedAt !== null && !w.removed)
-    .reduce<string | null>((l, w) => (l === null || w.startedAt > l ? w.startedAt : l), null);
-  return last === null ? null : dayOf({ startedAt: last });
+  const last = lastFinished(history.workouts, code);
+  return last === null ? null : dayOf(last);
 }
 
 // Whole days between two calendar days (UTC midnights: no daylight-saving shift).
