@@ -47,7 +47,7 @@
       .launch [data-hook="b"] {
         animation-delay: calc(var(--dur-breathe) / 2);
       }
-      /* Once the account is known: a short fade, then out of reach; at once under reduced motion. */
+      /* Once the account is known: a short fade, then out of reach; 120 ms under reduced motion. */
       .launched .launch {
         opacity: 0;
         visibility: hidden;
@@ -61,11 +61,6 @@
          behind the app for good. */
       .launched .launch [data-hook] {
         animation-play-state: paused;
-      }
-      @media (prefers-reduced-motion: reduce) {
-        .launched .launch {
-          transition: none;
-        }
       }
       html.dark .launch {
         background: #151412;

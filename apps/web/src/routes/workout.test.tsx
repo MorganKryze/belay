@@ -320,8 +320,7 @@ describe("the session screen (§4.2, §4.3)", () => {
     ]);
     const row = square.parentElement!;
     expect(row.className).toContain("bg-reference");
-    expect(row.className).toContain("transition-colors");
-    expect(row.className).toContain("duration-(--tint-duration)");
+    expect(row.className).not.toContain("transition-colors");
     expect(square.className).toContain("bg-reference-ink");
     expect(square.className).not.toContain("bg-primary");
     expect(square.className).not.toContain("animate-pop-in");

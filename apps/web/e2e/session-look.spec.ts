@@ -184,6 +184,56 @@ test("a done row has no cell boxes, its values in the reference ink, split by a 
     .toBe(true);
 });
 
+// The set row's background in the frame after its tick is tapped, against the reference tint.
+async function tintAfterTap(page: Page) {
+  await start(page);
+  await expect(reps(page, 1)).toHaveValue(/\d/);
+  await load(page, 1)
+    .locator("..")
+    .evaluate((row) => {
+      const probe = document.createElement("i");
+      document.body.append(probe);
+      probe.style.backgroundColor = "var(--reference)";
+      const reference = getComputedStyle(probe).backgroundColor;
+      probe.remove();
+      const before = getComputedStyle(row).backgroundColor;
+      const seen: { reference: string; background: string; running: string[] }[] = [];
+      (window as unknown as { tint: typeof seen }).tint = seen;
+      // Frame by frame from the tap, the first frame whose background has left the old one.
+      const frame = () => {
+        const background = getComputedStyle(row).backgroundColor;
+        if (background === before) return requestAnimationFrame(frame);
+        seen.push({
+          reference,
+          background,
+          running: row
+            .getAnimations()
+            .filter((a) => (a as CSSTransition).transitionProperty === "background-color")
+            .map((a) => a.playState),
+        });
+      };
+      document.addEventListener("click", () => requestAnimationFrame(frame), { once: true });
+    });
+  await bench(page).getByRole("button", { name: "Log set 1" }).click();
+  await expect
+    .poll(() => page.evaluate(() => (window as unknown as { tint: unknown[] }).tint.length))
+    .toBe(1);
+  const [seen] = await page.evaluate(
+    () =>
+      (
+        window as unknown as {
+          tint: { reference: string; background: string; running: string[] }[];
+        }
+      ).tint,
+  );
+  expect(seen!.background).toBe(seen!.reference);
+  expect(seen!.running).toEqual([]);
+}
+
+test("a checked set's row is green in the frame after the tap", async ({ page }) => {
+  await tintAfterTap(page);
+});
+
 test("the tick pops once when tapped, never after a reload", async ({ page }) => {
   await recordMotion(page);
   await start(page);
@@ -255,6 +305,12 @@ test("logging a set still takes 2 taps", async ({ page }) => {
 
 test.describe("reduced motion", () => {
   test.use({ reducedMotion: "reduce" });
+
+  test("with reduced motion a checked set's row is green in the frame after the tap", async ({
+    page,
+  }) => {
+    await tintAfterTap(page);
+  });
 
   test("with reduced motion the tick does not grow and the rest bar fades in 120 ms", async ({
     page,

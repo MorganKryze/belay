@@ -10,8 +10,11 @@ const oneLine = (value: string) =>
 // The stylesheet is the single source of the tokens; these pin the charter's scales.
 const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../index.css"), "utf8");
 
+// The scales as declared, before the reduced-motion block remaps some of them.
+const scales = css.slice(0, css.indexOf("@media (prefers-reduced-motion: reduce)"));
+
 function declared(pattern: RegExp): Record<string, string> {
-  return Object.fromEntries([...css.matchAll(pattern)].map((m) => [m[1]!, oneLine(m[2]!)]));
+  return Object.fromEntries([...scales.matchAll(pattern)].map((m) => [m[1]!, oneLine(m[2]!)]));
 }
 
 describe("design scales", () => {
