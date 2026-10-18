@@ -364,4 +364,13 @@ describe("the trend", () => {
     await waitFor(() => expect(link.textContent).toContain("—"));
     expect(link.textContent).not.toContain("last week");
   });
+
+  it("hidden on this device: no Your trend heading and no card", async () => {
+    localStorage.setItem("belay.homeTrend", "hidden");
+    await open([...week("2026-09-21", 80.8), ...week("2026-09-28", 80.4)]);
+    await screen.findByRole("heading", { name: "Hello, Ada", level: 1 });
+    await screen.findByRole("button", { name: /^Weigh-in/ });
+    expect(screen.queryByRole("heading", { name: "Your trend" })).toBeNull();
+    expect(screen.queryByRole("link", { name: /^7-day average/ })).toBeNull();
+  });
 });

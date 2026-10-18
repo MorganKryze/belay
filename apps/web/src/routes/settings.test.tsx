@@ -61,12 +61,12 @@ async function choose(row: RegExp, option: string) {
 describe("Settings preferences", () => {
   afterEach(() => document.documentElement.classList.remove("dark"));
 
-  it("groups Langue, Thème and En pause under Préférences, each showing its value", async () => {
+  it("groups Langue, Thème, En pause and Tendance sur Accueil under Préférences, each showing its value", async () => {
     fakeApi({ me: ADA });
     renderRoute("/settings");
     const list = await screen.findByRole("region", { name: "Preferences" });
     const rows = within(list).getAllByRole("combobox");
-    expect(rows).toHaveLength(3);
+    expect(rows).toHaveLength(4);
     expect(within(list).getByRole("combobox", { name: "Language English" })).toBe(rows[0]);
     expect(within(list).getByRole("combobox", { name: "Theme System" })).toBe(rows[1]);
     expect(within(list).getByRole("combobox", { name: "Paused Everything stops" })).toBe(rows[2]);
@@ -94,6 +94,32 @@ describe("Settings preferences", () => {
     ).toBeTruthy();
     await choose(/^En pause/, "Tout s'arrête");
     expect(localStorage.getItem("belay.pauseStops")).toBe("all");
+  });
+
+  it("Trend on Home offers Shown and Hidden and keeps the choice on this device", async () => {
+    fakeApi({ me: ADA });
+    renderRoute("/settings");
+    const list = await screen.findByRole("region", { name: "Preferences" });
+    const rows = within(list).getAllByRole("combobox");
+    expect(rows).toHaveLength(4);
+    expect(within(list).getByRole("combobox", { name: "Trend on Home Shown" })).toBe(rows[3]);
+    await choose(/^Trend on Home/, "Hidden");
+    expect(localStorage.getItem("belay.homeTrend")).toBe("hidden");
+    expect(await screen.findByRole("combobox", { name: "Trend on Home Hidden" })).toBeTruthy();
+    await choose(/^Trend on Home/, "Shown");
+    expect(localStorage.getItem("belay.homeTrend")).toBe("shown");
+  });
+
+  it("says the trend row in French", async () => {
+    await i18n.changeLanguage("fr");
+    fakeApi({ me: ADA });
+    renderRoute("/settings");
+    await choose(/^Tendance sur Accueil/, "Masquée");
+    expect(
+      await screen.findByRole("combobox", { name: "Tendance sur Accueil Masquée" }),
+    ).toBeTruthy();
+    await choose(/^Tendance sur Accueil/, "Affichée");
+    expect(localStorage.getItem("belay.homeTrend")).toBe("shown");
   });
 
   it("switches the language from its menu", async () => {

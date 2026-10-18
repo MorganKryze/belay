@@ -33,3 +33,22 @@ test("the figure is 50 px bold with tabular figures and the whole card opens Bod
   await page.touchscreen.tap(box.x + box.width - 8, box.y + box.height - 6);
   await expect(page).toHaveURL(/\/body$/);
 });
+
+test("hidden in Settings, Accueil shows no trend after Back, and Body still does", async ({
+  page,
+}) => {
+  await openHome(page);
+  await expect(trendCard(page)).toBeVisible();
+  await page.goto("/settings");
+  await page.getByRole("combobox", { name: /^Trend on Home/ }).tap();
+  await page.getByRole("option", { name: "Hidden" }).tap();
+  await expect(page.getByRole("combobox", { name: "Trend on Home Hidden" })).toBeVisible();
+  await page.getByRole("link", { name: "Home" }).first().tap();
+  await expect(page.getByRole("heading", { name: "Hello, Ada", level: 1 })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^Weigh-in/ })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Your trend" })).toHaveCount(0);
+  await expect(trendCard(page)).toHaveCount(0);
+  await page.goto("/body");
+  await expect(page.getByText("7-day average", { exact: true }).first()).toBeVisible();
+  await expect(page.getByText("80.4kg").first()).toBeVisible();
+});

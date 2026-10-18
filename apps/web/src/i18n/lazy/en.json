@@ -6,6 +6,11 @@
       "all": "Everything stops",
       "session": "The rest keeps running"
     },
+    "homeTrend": "Trend on Home",
+    "homeTrendOptions": {
+      "shown": "Shown",
+      "hidden": "Hidden"
+    },
     "versionNotes": "Belay {{version}} · release notes",
     "newTab": "(new tab)",
     "tracking": "Tracking",

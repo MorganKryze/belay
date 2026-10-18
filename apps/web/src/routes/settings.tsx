@@ -1,6 +1,6 @@
 import "@/i18n/lazy";
 import { useMutation } from "@tanstack/react-query";
-import { CirclePause, Languages, Pill, SunMoon, UserRound } from "lucide-react";
+import { CirclePause, Languages, Pill, Scale, SunMoon, UserRound } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
@@ -14,6 +14,7 @@ import { GroupedList, RowButton, RowLink, RowText } from "@/components/grouped-l
 import { MenuRow } from "@/components/menu-row";
 import { LOCALES, setLocale, type Locale } from "@/i18n";
 import { logout } from "@/lib/api";
+import { type HomeTrend, readHomeTrend, setHomeTrend } from "@/lib/home-trend";
 import { readPauseStops, setPauseStops } from "@/lib/pause-stops";
 import { readTheme, setTheme, type Theme } from "@/lib/theme";
 import { formatWeekday } from "@/lib/format";
@@ -33,11 +34,13 @@ import {
 const LANGUAGE_NAMES: Record<Locale, string> = { en: "English", fr: "Français" };
 const THEMES = ["light", "dark", "system"] as const satisfies readonly Theme[];
 const PAUSE_STOPS = ["all", "session"] as const satisfies readonly PauseStops[];
+const HOME_TREND = ["shown", "hidden"] as const satisfies readonly HomeTrend[];
 
 export function Settings() {
   const { t, i18n } = useTranslation();
   const [theme, setThemeState] = useState<Theme>(readTheme);
   const [pauseStops, setPauseStopsState] = useState<PauseStops>(readPauseStops);
+  const [homeTrend, setHomeTrendState] = useState<HomeTrend>(readHomeTrend);
   const account = useAccount();
 
   return (
@@ -76,6 +79,19 @@ export function Settings() {
           onChange={(v) => {
             setPauseStops(v);
             setPauseStopsState(v);
+          }}
+        />
+        <MenuRow
+          icon={Scale}
+          label={t("settings.homeTrend")}
+          value={homeTrend}
+          options={HOME_TREND.map((v) => ({
+            value: v,
+            label: t(`settings.homeTrendOptions.${v}`),
+          }))}
+          onChange={(v) => {
+            setHomeTrend(v);
+            setHomeTrendState(v);
           }}
         />
       </GroupedList>

@@ -6,6 +6,11 @@
       "all": "Tout s'arrête",
       "session": "Le repos continue"
     },
+    "homeTrend": "Tendance sur Accueil",
+    "homeTrendOptions": {
+      "shown": "Affichée",
+      "hidden": "Masquée"
+    },
     "versionNotes": "Belay {{version}} · notes de version",
     "newTab": "(nouvel onglet)",
     "tracking": "Suivi",

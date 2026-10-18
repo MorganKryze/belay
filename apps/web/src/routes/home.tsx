@@ -13,6 +13,7 @@ import { TodayCard } from "@/components/today-card";
 import { TodaySession } from "@/components/today-session";
 import { Button } from "@/components/ui/button";
 import { formatKg, formatNumber, formatWeekday, lossView } from "@/lib/format";
+import { readHomeTrend } from "@/lib/home-trend";
 import { useToday } from "@/lib/today";
 import {
   type OpenAccount,
@@ -92,6 +93,8 @@ function SignedInHome({ account }: { account: OpenAccount }) {
   const { t, i18n } = useTranslation();
   const today = useToday();
   const weighings = useWeighings(account).data;
+  // Read once per visit to Accueil: Réglages changes it on another screen.
+  const [trend] = useState(readHomeTrend);
   useCloseForgotten(account);
   return (
     <section className="flex flex-col gap-4">
@@ -109,7 +112,7 @@ function SignedInHome({ account }: { account: OpenAccount }) {
       {weighings && (
         <>
           <TodayCard account={account} weighings={weighings} today={today} />
-          <TrendCard account={account} weighings={weighings} today={today} />
+          {trend === "shown" && <TrendCard account={account} weighings={weighings} today={today} />}
         </>
       )}
     </section>
