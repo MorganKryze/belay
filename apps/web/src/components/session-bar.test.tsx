@@ -219,10 +219,15 @@ describe("SessionBar", () => {
     await show({ workout: tenMinutes(), sets: [set(0, 0, 3)] });
     const timer = await screen.findByRole("timer");
     expect(timer.textContent).toBe("1:30");
+    // Everything stopped: the bar says Paused over the frozen rest, not Rest.
+    expect(screen.getByText("Paused · set 2 of 4 · Session C")).toBeTruthy();
+    expect(screen.getByText("Paused · set 2/4")).toBeTruthy();
     await new Promise((r) => setTimeout(r, 1100));
     expect(timer.textContent).toBe("1:30");
     localStorage.setItem("belay.pauseStops", "session");
     await waitFor(() => expect(screen.getByRole("timer").textContent).toMatch(/^1:2\d$/));
+    // The rest goes on through the pause, so the bar still says Rest.
+    expect(screen.getByText("Rest · set 2 of 4 · Session C")).toBeTruthy();
   });
 
   it("the bar says the rest is over, once, and vibrates once", async () => {

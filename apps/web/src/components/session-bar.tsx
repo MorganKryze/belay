@@ -38,14 +38,20 @@ export function SessionBar({
   const end = active?.restEndsAt ? Date.parse(active.restEndsAt) : null;
   const paused = active?.pausedAt ?? null;
   // A pause that stops everything holds the rest left where it stood.
-  const restNow = restClock(paused, now, readPauseStops());
+  const stops = readPauseStops();
+  const restNow = restClock(paused, now, stops);
   const resting = end !== null && end > restNow;
   const announced = useRestOver(end, resting);
   const { next } = sessionProgress(workout.plan, sets);
   const code = workout.sessionCode;
   const slot = next && workout.plan[next.slotIndex];
+  // Paused over a frozen rest says Paused; a rest that runs on through the pause says Rest.
   const running = t(
-    resting ? "sessionBar.rest" : paused ? "sessionBar.paused" : "sessionBar.running",
+    paused && (stops === "all" || !resting)
+      ? "sessionBar.paused"
+      : resting
+        ? "sessionBar.rest"
+        : "sessionBar.running",
   );
   const letter = t("sessionBar.session", { code });
   // The 13 px step: a bare `text-secondary` is the colour token of the same name. Muted through
