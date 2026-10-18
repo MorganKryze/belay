@@ -6,7 +6,7 @@ import {
   Outlet,
   RouterProvider,
 } from "@tanstack/react-router";
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { Settings } from "lucide-react";
 import { afterEach, describe, expect, it } from "vitest";
 import { expectTokensOnly } from "@/test/design-rules";
@@ -129,9 +129,9 @@ describe("GroupedList", () => {
         <RowButton label="A" />
       </GroupedList>,
     );
-    expect(classes(screen.getByRole("list", { name: "Display" }))).toEqual(
-      expect.arrayContaining(groupCard.split(" ")),
-    );
+    expect(
+      classes(within(screen.getByRole("region", { name: "Display" })).getByRole("list")),
+    ).toEqual(expect.arrayContaining(groupCard.split(" ")));
     expect(classes(screen.getByRole("heading", { name: "Display" }))).toEqual(
       expect.arrayContaining(sectionLabel.split(" ")),
     );
@@ -185,6 +185,17 @@ describe("GroupedList", () => {
     expect(row.className).not.toMatch(/press-scale|scale-/);
   });
 
+  it("names the group once, on its section, not again on the list", () => {
+    render(
+      <GroupedList label="Display">
+        <RowButton label="A" />
+      </GroupedList>,
+    );
+    const list = within(screen.getByRole("region", { name: "Display" })).getByRole("list");
+    expect(list.hasAttribute("aria-labelledby")).toBe(false);
+    expect(screen.queryByRole("list", { name: "Display" })).toBeNull();
+  });
+
   it("labels the group and draws it as one card with hairlines", () => {
     render(
       <GroupedList label="Display">
@@ -192,7 +203,7 @@ describe("GroupedList", () => {
         <RowButton label="B" />
       </GroupedList>,
     );
-    const list = screen.getByRole("list", { name: "Display" });
+    const list = within(screen.getByRole("region", { name: "Display" })).getByRole("list");
     expect(classes(list)).toEqual(
       expect.arrayContaining(["bg-surface", "rounded-group", "shadow-card", "divide-y"]),
     );
@@ -232,7 +243,7 @@ describe("GroupedList", () => {
         <RowText label="Weigh-in" />
       </GroupedList>,
     );
-    const list = screen.getByRole("list", { name: "Refused" });
+    const list = within(screen.getByRole("region", { name: "Refused" })).getByRole("list");
     expect(list.getAttribute("aria-describedby")).toBeTruthy();
     const footer = screen.getByText("They are no longer waiting.");
     expect(footer.id).toBe(list.getAttribute("aria-describedby"));

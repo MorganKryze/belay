@@ -175,11 +175,8 @@ export function GroupedList({
           {label}
         </h2>
       )}
-      <ul
-        aria-labelledby={label ? id : undefined}
-        aria-describedby={footer ? footerId : undefined}
-        className={groupCard}
-      >
+      {/* Named by its section alone, so a screen reader says the group's name once. */}
+      <ul aria-describedby={footer ? footerId : undefined} className={groupCard}>
         {Children.map(children, (child) => (child == null ? null : <li>{child}</li>))}
       </ul>
       {footer && (

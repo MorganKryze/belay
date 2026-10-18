@@ -51,7 +51,7 @@ async function refusedWeighIn(
   await expect(sheet).toBeHidden();
   await expect(page.getByText("An entry was refused.")).toBeVisible();
   await page.goto("/settings");
-  const list = page.getByRole("list", { name: "Refused entries" });
+  const list = page.getByRole("region", { name: "Refused entries" });
   await expect(list).toBeVisible();
   return list;
 }
@@ -210,7 +210,7 @@ test.describe("at 360 px", () => {
     const header = (await list.getByRole("listitem").first().boundingBox())!;
     const profile = (await page.getByRole("link", { name: /^Ada/ }).boundingBox())!;
     expect(header.y).toBeGreaterThan(profile.y + profile.height);
-    const preferences = (await page.getByRole("list", { name: "Preferences" }).boundingBox())!;
+    const preferences = (await page.getByRole("region", { name: "Preferences" }).boundingBox())!;
     expect(header.y).toBeLessThan(preferences.y);
   });
 

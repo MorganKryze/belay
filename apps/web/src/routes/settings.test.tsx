@@ -64,7 +64,7 @@ describe("Settings preferences", () => {
   it("groups Langue and Thème under Préférences, each showing its value", async () => {
     fakeApi({ me: ADA });
     renderRoute("/settings");
-    const list = await screen.findByRole("list", { name: "Preferences" });
+    const list = await screen.findByRole("region", { name: "Preferences" });
     const rows = within(list).getAllByRole("combobox");
     expect(rows).toHaveLength(2);
     expect(within(list).getByRole("combobox", { name: "Language English" })).toBe(rows[0]);
@@ -92,7 +92,7 @@ describe("Settings preferences", () => {
   it("offers exactly today's preferences", async () => {
     fakeApi({ me: ADA });
     renderRoute("/settings");
-    await screen.findByRole("list", { name: "Preferences" });
+    await screen.findByRole("region", { name: "Preferences" });
     for (const role of ["combobox", "button", "link"] as const)
       expect(screen.queryByRole(role, { name: /Units|Unités|Sources/ })).toBeNull();
   });
@@ -101,7 +101,7 @@ describe("Settings preferences", () => {
     version.current = "0.5.0";
     fakeApi({ me: null });
     renderRoute("/settings");
-    await screen.findByRole("list", { name: "Preferences" });
+    await screen.findByRole("region", { name: "Preferences" });
     await screen.findByRole("link", { name: /^Belay 0\.5\.0/ });
     expect(screen.queryByRole("link", { name: /Profile/ })).toBeNull();
     expect(screen.queryByRole("button", { name: "Sign out" })).toBeNull();
@@ -119,8 +119,8 @@ describe("Settings account rows", () => {
     const signOut = await signOutButton();
     const order = [
       screen.getByRole("link", { name: /^Ada/ }),
-      screen.getByRole("list", { name: "Preferences" }),
-      screen.getByRole("list", { name: "Tracking" }),
+      screen.getByRole("region", { name: "Preferences" }),
+      screen.getByRole("region", { name: "Tracking" }),
       signOut,
       screen.getByRole("link", { name: /^Belay 0\.5\.0/ }),
     ];
@@ -159,7 +159,7 @@ describe("Settings account rows", () => {
     ]);
     fakeApi({ me: ADA });
     renderRoute("/settings");
-    const list = await screen.findByRole("list", { name: "Tracking" });
+    const list = await screen.findByRole("region", { name: "Tracking" });
     const link = await within(list).findByRole("link", { name: "Supplements 1 on your list" });
     expect(link.getAttribute("href")).toBe("/settings/supplements");
     fireEvent.click(link);
@@ -357,18 +357,21 @@ describe("refused entries", () => {
         ),
     });
     renderRoute("/settings");
-    const list = await screen.findByRole("list", { name: "Refused entries" });
+    const list = await screen.findByRole("region", { name: "Refused entries" });
     const items = within(list).getAllByRole("listitem");
     expect(items[0]!.textContent).toMatch(/Weigh-in for \w{3}, Oct 5/);
     expect(items[0]!.textContent).toContain("Refused by the server");
     expect(items[1]!.textContent).toContain("Loss range");
     expect(items[1]!.textContent).toContain("Not found on the server");
-    expect(list.getAttribute("aria-describedby")).toBeTruthy();
-    expect(document.getElementById(list.getAttribute("aria-describedby")!)?.textContent).toBe(
+    const described = within(list).getByRole("list").getAttribute("aria-describedby");
+    expect(described).toBeTruthy();
+    expect(document.getElementById(described!)?.textContent).toBe(
       "The server refused them, so they are no longer waiting. Enter them again if you need to.",
     );
     fireEvent.click(within(list).getByRole("button", { name: "Clear the list" }));
-    await waitFor(() => expect(screen.queryByRole("list", { name: "Refused entries" })).toBeNull());
+    await waitFor(() =>
+      expect(screen.queryByRole("region", { name: "Refused entries" })).toBeNull(),
+    );
   });
 
   it("refused entries sit right under the profile row", async () => {
@@ -381,9 +384,9 @@ describe("refused entries", () => {
         ),
     });
     renderRoute("/settings");
-    const list = await screen.findByRole("list", { name: "Refused entries" });
+    const list = await screen.findByRole("region", { name: "Refused entries" });
     const profile = screen.getByRole("link", { name: /^Ada/ });
-    const preferences = screen.getByRole("list", { name: "Preferences" });
+    const preferences = screen.getByRole("region", { name: "Preferences" });
     const following = Node.DOCUMENT_POSITION_FOLLOWING;
     expect(profile.compareDocumentPosition(list) & following).toBe(following);
     expect(list.compareDocumentPosition(preferences) & following).toBe(following);
