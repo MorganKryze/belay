@@ -550,6 +550,39 @@ describe("autoClose (D12)", () => {
     const gone = [set(open, 0, 80, 8, { doneAt: last, removed: true })];
     expect(autoClose(open, gone, at("2026-10-07T23:01:00.000Z"))).toEqual({ kind: "remove" });
   });
+
+  // Paused at 18:05 after the last set, resumed at 18:35 with no set after it: the start moved
+  // from 17:00 to 17:30, written at 18:35.
+  const resumed = { ...open, startedAt: "2026-10-07T17:30:00.000Z" };
+  const resumeAt = "2026-10-07T18:35:00.000Z";
+
+  it("ends a session resumed after its last set at the resume, 6 hours after it", () => {
+    const w = { ...resumed, startedAtAt: resumeAt };
+    expect(autoClose(w, sets, at("2026-10-08T00:01:00.000Z"))).toEqual({ kind: "keep" });
+    const closing = autoClose(w, sets, at("2026-10-08T00:36:00.000Z"));
+    expect(closing).toEqual({ kind: "end", endedAt: resumeAt });
+    // The time it records is the time the session's clock showed at the resume.
+    const ended = { ...w, endedAt: resumeAt };
+    expect(summary(ended, sets, { workouts: [ended], sets }).durationMs).toBe(65 * 60_000);
+  });
+
+  it("never ends a resumed session before its moved start, however long the pause", () => {
+    // Paused at 18:05, resumed at 20:00: the start moved to 18:55, after the last set.
+    const late = "2026-10-07T20:00:00.000Z";
+    const w = { ...open, startedAt: "2026-10-07T18:55:00.000Z", startedAtAt: late };
+    expect(autoClose(w, sets, at("2026-10-08T02:01:00.000Z"))).toEqual({
+      kind: "end",
+      endedAt: late,
+    });
+  });
+
+  it("still ends at the last set when the start moved before it", () => {
+    const w = { ...resumed, startedAtAt: "2026-10-07T17:45:00.000Z" };
+    expect(autoClose(w, sets, at("2026-10-08T00:01:00.000Z"))).toEqual({
+      kind: "end",
+      endedAt: last,
+    });
+  });
 });
 
 describe("openWorkout", () => {

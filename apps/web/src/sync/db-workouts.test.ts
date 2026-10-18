@@ -355,6 +355,24 @@ describe("a paused session", () => {
     expect(await readActiveSession(db)).toEqual(paused(pausedAt));
   });
 
+  it("when left open after a resume with no set, ends at the resume, never before its start", async () => {
+    // Set at 17:05, paused at 17:06, resumed at 19:00: the start moves from 17:00 to 18:54.
+    const resumeAt = "2026-10-07T19:00:00.000Z";
+    await recordChanges(db, [start()], { active: active() });
+    await recordSet(db, input(S1), LATER, active());
+    await recordChanges(db, [], { active: paused("2026-10-07T17:06:00.000Z") });
+    const value = resumedStart(AT, "2026-10-07T17:06:00.000Z", resumeAt);
+    expect(value).toBe("2026-10-07T18:54:00.000Z");
+    await recordChanges(db, [startedAt({ value, at: resumeAt })], { active: paused(null) });
+    // More than 6 hours after the set, less than 6 hours after the resume: still open.
+    expect(await closeForgotten(db, new Date("2026-10-08T00:30:00.000Z"))).toBe(false);
+    expect(await closeForgotten(db, new Date("2026-10-08T01:01:00.000Z"))).toBe(true);
+    const [w] = (await readHistory(db)).workouts;
+    expect(w).toMatchObject({ startedAt: value, endedAt: resumeAt });
+    // Six minutes: the time the session's clock showed when it was resumed.
+    expect(Date.parse(w!.endedAt!) - Date.parse(w!.startedAt)).toBe(6 * 60_000);
+  });
+
   it("starts unpaused on a device that takes up a session opened elsewhere", async () => {
     await recordChanges(db, [start(W, recent())]); // pulled from another device
     expect(await startWorkout(db, again())).toBe(W);

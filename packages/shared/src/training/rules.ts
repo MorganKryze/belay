@@ -316,20 +316,30 @@ export function openWorkout<W extends Workout>(
 
 // D12: a session left open is closed at its last set once that set is more than 6 hours old;
 // one without a set is removed after 6 hours.
+// A resume moves the start later by the time paused, and its change is written at the resume
+// (`startedAtAt`). When that came after the last set, the session ends at the resume instead:
+// ending at the set would take the pause out of time trained before it, down to a negative
+// duration.
 export const FORGOTTEN_MS = 6 * 3_600_000;
 export type Closing = { kind: "keep" } | { kind: "end"; endedAt: string } | { kind: "remove" };
 
-export function autoClose(workout: Workout, sets: readonly WorkoutSet[], now: Date): Closing {
+export function autoClose(
+  workout: Workout & { startedAtAt?: string | null },
+  sets: readonly WorkoutSet[],
+  now: Date,
+): Closing {
   if (workout.endedAt !== null || workout.removed) return { kind: "keep" };
   const times = sets
     .filter((s) => !s.removed && s.workoutId === workout.id)
     .map((s) => s.doneAt)
     .sort();
-  const last = times.at(-1);
-  if (last === undefined)
+  const lastSet = times.at(-1);
+  if (lastSet === undefined)
     return now.getTime() - Date.parse(workout.startedAt) > FORGOTTEN_MS
       ? { kind: "remove" }
       : { kind: "keep" };
+  const moved = workout.startedAtAt;
+  const last = moved && Date.parse(moved) > Date.parse(lastSet) ? moved : lastSet;
   return now.getTime() - Date.parse(last) > FORGOTTEN_MS
     ? { kind: "end", endedAt: last }
     : { kind: "keep" };
