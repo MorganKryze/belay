@@ -12,8 +12,9 @@ const BREATHE = "cubic-bezier(0.42, 0, 0.58, 1)";
 
 type Stamps = { tap?: number; mount?: number; unmount?: number; titleTop?: number };
 
-// When the finger leaves the tab, and when the pending page comes and goes, on the page's own
-// clock; the title's top is read as the pending page mounts.
+// When the finger leaves the tab, and when the pending page comes and goes after it, on the page's
+// own clock; the title's top is read as the pending page mounts. Home shows the same page while
+// the account loads, before any tap: that one is not counted.
 async function stamp(page: Page) {
   await page.addInitScript(() => {
     const w = window as unknown as { stamps: Stamps };
@@ -27,7 +28,7 @@ async function stamp(page: Page) {
     );
     new MutationObserver(() => {
       const pending = document.querySelector("[data-pending]");
-      if (pending && w.stamps.mount === undefined) {
+      if (pending && w.stamps.tap !== undefined && w.stamps.mount === undefined) {
         w.stamps.mount = performance.now();
         const title = pending.querySelector("p[aria-hidden]");
         if (title) w.stamps.titleTop = title.getBoundingClientRect().top;

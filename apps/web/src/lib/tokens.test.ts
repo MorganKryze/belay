@@ -37,7 +37,12 @@ describe("design scales", () => {
       "dur-pulse": "600ms",
       "dur-reduced": "120ms",
       "dur-breathe": "1200ms",
+      "dur-launch-out": "240ms",
     });
+  });
+
+  it("holds the launch mark still for 600 ms before it breathes", () => {
+    expect(declared(/--(delay-[\w-]+):\s*([^;]+);/g)).toEqual({ "delay-launch-loader": "600ms" });
   });
 
   it("defines the eight curves with the charter's values", () => {
