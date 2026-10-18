@@ -96,6 +96,21 @@ test.describe("normal motion", () => {
     await page.mouse.up();
   });
 
+  test("a row held under a finger tints while the finger stays down", async ({ page }) => {
+    await openHome(page);
+    const row = page.getByRole("button", { name: /^Intake/ });
+    const box = (await row.boundingBox())!;
+    const point = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+    // A real touch, not a mouse: the browser may hold back the press state to tell a tap from a
+    // scroll, and only a touch goes through that.
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [point] });
+    await page.waitForTimeout(150);
+    const tint = await row.evaluate((el) => getComputedStyle(el).backgroundColor);
+    await cdp.send("Input.dispatchTouchEvent", { type: "touchCancel", touchPoints: [] });
+    expect(tint).not.toBe("rgba(0, 0, 0, 0)");
+  });
+
   test("a tab switch slides only the pill, in 220 ms on the nav curve", async ({ page }) => {
     await openHome(page);
     await since(page);

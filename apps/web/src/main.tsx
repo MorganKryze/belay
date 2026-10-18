@@ -7,6 +7,7 @@ import "./index.css";
 import { applyTheme, readTheme } from "./lib/theme";
 import { startUpdates } from "./lib/update";
 import { preloadWhenIdle } from "./lib/idle";
+import { markPresses } from "./lib/press";
 import { router, TAB_PAGES } from "./router";
 
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () =>
@@ -14,6 +15,7 @@ matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () =>
 );
 
 startUpdates();
+markPresses();
 
 const queryClient = new QueryClient();
 

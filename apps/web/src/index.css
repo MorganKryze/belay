@@ -463,7 +463,8 @@
 /* A pressed control shrinks at once and springs back on the nav curve. */
 @utility press {
   transition: transform var(--press-release) var(--ease-nav);
-  &:active {
+  &:active,
+  &[data-pressed] {
     transform: scale(var(--press-scale));
     transition-duration: 0s;
   }
@@ -491,10 +492,14 @@
   }
 }
 
-/* A pressed row only tints: at once on the press, fading out on the release. */
+/*
+ * A pressed row only tints: at once on the press, fading out on the release. data-pressed stands in
+ * for :active under a finger, which Chromium applies late (lib/press.ts).
+ */
 @utility press-tint {
   transition: background-color var(--press-release) var(--ease-out);
-  &:active {
+  &:active,
+  &[data-pressed] {
     background-color: var(--press-tint);
     transition-duration: 0s;
   }

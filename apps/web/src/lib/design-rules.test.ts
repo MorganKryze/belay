@@ -140,15 +140,17 @@ describe("design rules", () => {
     expect(found).toEqual([]);
   });
 
-  it("press scales at once and springs back over the release on the nav curve; rows only tint", () => {
+  it("press scales at once, under a mouse or a finger, and springs back on the nav curve; rows only tint", () => {
     const press = block(CSS, "@utility press {");
     expect(press).toMatch(/transition:\s*transform var\(--press-release\) var\(--ease-nav\)/);
-    expect(press).toMatch(/&:active\s*\{[^}]*transform:\s*scale\(var\(--press-scale\)\)/);
-    expect(press).toMatch(/&:active\s*\{[^}]*transition-duration:\s*0s/);
+    expect(press).toMatch(
+      /&:active,\s*&\[data-pressed\]\s*\{[^}]*transform:\s*scale\(var\(--press-scale\)\)/,
+    );
+    expect(press).toMatch(/&:active,\s*&\[data-pressed\]\s*\{[^}]*transition-duration:\s*0s/);
     const tint = block(CSS, "@utility press-tint {");
     expect(tint).toMatch(/transition:\s*background-color var\(--press-release\) var\(--ease-out\)/);
     expect(tint).toMatch(
-      /&:active\s*\{[^}]*background-color:\s*var\(--press-tint\);[^}]*transition-duration:\s*0s/,
+      /&:active,\s*&\[data-pressed\]\s*\{[^}]*background-color:\s*var\(--press-tint\);[^}]*transition-duration:\s*0s/,
     );
     expect(tint).not.toMatch(/transform/);
   });
