@@ -241,6 +241,16 @@ const SCREENS: [string, (page: Page) => Promise<void>][] = [
     },
   ],
   [
+    "the paused session",
+    async (page) => {
+      await fakeServer(page, { changes: LAST_A });
+      await page.goto("/workout?start=A");
+      await expect(page.locator(".launch")).toBeHidden();
+      await page.getByRole("button", { name: "Pause the session" }).click();
+      await expect(page.getByRole("button", { name: "Resume", exact: true })).toBeVisible();
+    },
+  ],
+  [
     "the remove-session action sheet",
     async (page) => {
       await fakeServer(page, { changes: LAST_A });

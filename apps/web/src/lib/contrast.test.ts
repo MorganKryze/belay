@@ -50,6 +50,7 @@ const PAIRS = [
   ["destructive", "surface", 4.5],
   ["primary-ink", "track", 3], // the error edge on a field's fill
   ["toast-icon", "foreground", 3], // the session bar's timer and the toast's error icon
+  ["foreground", "toast-icon", 4.5], // « Resume » on the pause banner
 ] as const;
 
 describe("design tokens", () => {

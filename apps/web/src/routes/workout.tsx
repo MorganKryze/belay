@@ -3,6 +3,7 @@ import { newId } from "@belay/shared";
 import { toISODate } from "@belay/shared/body/dates";
 import { exerciseById } from "@belay/shared/exercises/catalog";
 import type { Exercise } from "@belay/shared/exercises/library";
+import { pauseEndedBy, resumedStart, sessionElapsed } from "@belay/shared/training/pause";
 import { appendSlot, planFor, replaceSlot, skipSlot } from "@belay/shared/training/plan";
 import { groupOf, sessionByCode } from "@belay/shared/training/program";
 import {
@@ -23,7 +24,7 @@ import {
   type WorkoutSet,
 } from "@belay/shared/training/workout";
 import { Navigate, useNavigate, useRouter, useSearch } from "@tanstack/react-router";
-import { ChevronDown, Timer } from "lucide-react";
+import { ChevronDown, Pause, Play, Timer } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Sheet } from "@/components/sheet";
@@ -174,6 +175,43 @@ function Screen({
       void save(() => record([], { active: { ...active, ...patch } })),
     [active, record, save],
   );
+  // The pause stays on this device; the session time stands still from it.
+  const paused = active.pausedAt ?? null;
+  // A resume counts from its own moment: the clock's last tick may be up to a second older,
+  // and the time would step back.
+  const [resumed, setResumed] = useState(0);
+  const elapsed = sessionElapsed(workout.startedAt, paused, Math.max(now, resumed));
+  const pause = () => setActive({ pausedAt: new Date().toISOString() });
+  // One write: the start moved later by the time paused and the pause cleared, so the recorded
+  // duration leaves the pause out on every device.
+  const resumeAt = useCallback(
+    (at: string) => {
+      setResumed((t) => Math.max(t, Date.parse(at)));
+      return record(
+        [
+          {
+            kind: "workout",
+            id: workout.id,
+            field: "startedAt",
+            value: resumedStart(workout.startedAt, paused!, at),
+            at,
+          },
+        ],
+        { active: { ...active, pausedAt: null } },
+      );
+    },
+    [active, paused, record, workout.id, workout.startedAt],
+  );
+  const resume = useCallback((at: string) => save(() => resumeAt(at)), [resumeAt, save]);
+  // A set logged on another device after the pause began ends it at that set's time, once.
+  const doneAts = sets.map((s) => s.doneAt);
+  const endedBy = paused && pauseEndedBy(paused, doneAts);
+  const ended = useRef<string | null>(null);
+  useEffect(() => {
+    if (!paused || !endedBy || ended.current === paused) return;
+    ended.current = paused;
+    void resume(endedBy);
+  }, [paused, endedBy, resume]);
   // The session's own copy of the plan (D7): the program never changes. Each edit is built from
   // the plan stored when its turn comes, edits one after the other, so quick taps compose.
   const edits = useRef<Promise<void>>(Promise.resolve());
@@ -228,8 +266,10 @@ function Screen({
       active.chrono?.slotIndex === slotIndex && active.chrono.position === row.position
         ? null
         : (active.chrono ?? null);
-    await save(() =>
-      recordSet(
+    await save(async () => {
+      // Checked while paused: the session resumes at this tap, written before the set.
+      if (paused) await resumeAt(doneAt);
+      await recordSet(
         {
           id: newId(),
           workoutId: workout.id,
@@ -253,9 +293,10 @@ function Screen({
               active.restEndsAt && Date.parse(active.restEndsAt) > Date.parse(doneAt)
               ? active.restEndsAt
               : null,
+          pausedAt: null,
         },
-      ),
-    );
+      );
+    });
     if (next && next.slotIndex !== slotIndex)
       setToggled((m) => new Map([...m].filter(([i]) => i !== slotIndex && i !== next.slotIndex)));
   };
@@ -351,8 +392,25 @@ function Screen({
         <span className="ml-0.5 flex min-h-11 items-center gap-1.5 font-bold tabular-nums">
           <Timer aria-hidden className="size-4.5 text-muted-foreground" />
           <span className="sr-only">{t("session.elapsed")}</span>
-          {formatClock(now - Date.parse(workout.startedAt), Math.floor)}
+          {formatClock(elapsed, Math.floor)}
         </span>
+        <button
+          type="button"
+          aria-label={paused ? t("session.resume") : t("session.pause")}
+          onClick={paused ? () => void resume(new Date().toISOString()) : pause}
+          className="press grid size-11 shrink-0 place-items-center rounded-control"
+        >
+          {paused ? (
+            <Play aria-hidden className="size-5" />
+          ) : (
+            <Pause aria-hidden className="size-5" />
+          )}
+        </button>
+        {paused && (
+          <span className="truncate rounded-[8px] bg-primary-soft px-2 py-0.5 text-(length:--text-secondary) leading-(--text-secondary--line-height) font-semibold text-primary-ink">
+            {t("session.paused")}
+          </span>
+        )}
         <span className="flex-1" />
         <Button
           variant="secondary"
@@ -361,6 +419,14 @@ function Screen({
           {t("session.finish")}
         </Button>
       </div>
+      {/* Said once when the session pauses; the banner below holds the way back. */}
+      <p role="status" className="sr-only">
+        {paused ? t("session.pausedTitle") : ""}
+      </p>
+      <PauseBanner
+        paused={paused !== null}
+        onResume={() => void resume(new Date().toISOString())}
+      />
       <h1 className="text-[22px] leading-tight font-bold tracking-tight">
         {sessionTitle(workout.sessionCode, t)}
       </h1>
@@ -458,5 +524,37 @@ function Screen({
         </Sheet>
       )}
     </section>
+  );
+}
+
+// Under the header, in the flow and pinned below it while the cards scroll, so it never covers
+// a card's name or a control. It drops in when the session pauses and fades out on resume,
+// while the time already runs again.
+function PauseBanner({ paused, onResume }: { paused: boolean; onResume: () => void }) {
+  const { t } = useTranslation();
+  const [shown, setShown] = useState(paused);
+  if (paused && !shown) setShown(true);
+  if (!shown) return null;
+  return (
+    <div
+      inert={!paused}
+      onAnimationEnd={(e) => {
+        if (e.target === e.currentTarget && !paused) setShown(false);
+      }}
+      className={`${paused ? "animate-drop-in" : "animate-fade-out"} sticky top-[calc(env(safe-area-inset-top)+3.25rem)] z-10 flex items-center gap-2.5 rounded-[18px] bg-foreground py-2.5 pr-2 pl-4 text-background`}
+    >
+      <Pause aria-hidden className="size-5 shrink-0 text-toast-icon" />
+      <p className="min-w-0 flex-1 text-sm leading-snug">
+        <span className="block font-bold">{t("session.pausedTitle")}</span>
+        {t("session.pausedBody")}
+      </p>
+      <button
+        type="button"
+        onClick={onResume}
+        className="press grid min-h-11 shrink-0 place-items-center rounded-[12px] bg-toast-icon px-3.5 text-sm font-bold whitespace-nowrap text-foreground"
+      >
+        {t("session.resumeShort")}
+      </button>
+    </div>
   );
 }

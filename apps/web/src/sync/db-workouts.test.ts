@@ -1,4 +1,5 @@
 import type { Change, SetRow, WorkoutRow } from "@belay/shared/sync/schema";
+import { resumedStart } from "@belay/shared/training/pause";
 import { sessionByCode } from "@belay/shared/training/program";
 import { liveSets } from "@belay/shared/training/rules";
 import { IDBFactory } from "fake-indexeddb";
@@ -294,6 +295,72 @@ describe("a session on the phone", () => {
     expect(send.mock.calls.at(-1)?.[0].changes.map((c) => c.kind)).toEqual(["workout", "set"]);
     expect(await readOutbox(db)).toEqual([]);
     expect((await readHistory(db)).sets).toHaveLength(1);
+  });
+});
+
+describe("a paused session", () => {
+  beforeEach(open);
+  const paused = (pausedAt: string | null = LATER): ActiveSession => ({ ...active(), pausedAt });
+  const startedAt = (patch: { value: string; at: string }): Change => ({
+    kind: "workout",
+    id: W,
+    field: "startedAt",
+    ...patch,
+  });
+
+  it("keeps its pause on this device through a reload, and queues nothing for it", async () => {
+    await recordChanges(db, [start()], { active: active() });
+    await recordChanges(db, [], { active: paused() });
+    db.close();
+    await open();
+    expect(await readActiveSession(db)).toEqual(paused());
+    expect((await readOutbox(db)).map((e) => e.change)).toEqual([start()]);
+  });
+
+  it("resumes with the later start and forgets the pause in one write", async () => {
+    await recordChanges(db, [start()], { active: paused() });
+    // Paused at 17:05, resumed at 17:10: the start moves from 17:00 to 17:05.
+    const value = resumedStart(AT, LATER, LATEST);
+    expect(value).toBe(LATER);
+    await recordChanges(db, [startedAt({ value, at: LATEST })], { active: paused(null) });
+    expect((await readHistory(db)).workouts).toEqual([
+      workoutRow({ startedAt: LATER, startedAtAt: LATEST }),
+    ]);
+    expect(await readActiveSession(db)).toEqual(paused(null));
+    expect((await readOutbox(db)).at(-1)?.change).toEqual(startedAt({ value, at: LATEST }));
+  });
+
+  it("stays paused when the resume cannot be written", async () => {
+    await recordChanges(db, [start()], { active: paused() });
+    // A start later than its own change is refused before anything is written.
+    await expect(
+      recordChanges(db, [startedAt({ value: LATEST, at: LATER })], { active: paused(null) }),
+    ).rejects.toThrow(RangeError);
+    expect(await readActiveSession(db)).toEqual(paused());
+    expect((await readHistory(db)).workouts).toEqual([workoutRow()]);
+    expect((await readOutbox(db)).map((e) => e.change)).toEqual([start()]);
+  });
+
+  // Started a minute ago on the real clock: a session still open, never a forgotten one.
+  const recent = () => new Date(Date.now() - 60_000).toISOString();
+  const again = () =>
+    start("0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d95", new Date().toISOString()) as Parameters<
+      typeof startWorkout
+    >[1];
+
+  it("keeps its pause when this device takes the same session up again (?start=)", async () => {
+    const pausedAt = new Date().toISOString();
+    await recordChanges(db, [start(W, recent())], { active: paused(pausedAt) });
+    expect(await startWorkout(db, again())).toBe(W);
+    expect(await readActiveSession(db)).toEqual(paused(pausedAt));
+  });
+
+  it("starts unpaused on a device that takes up a session opened elsewhere", async () => {
+    await recordChanges(db, [start(W, recent())]); // pulled from another device
+    expect(await startWorkout(db, again())).toBe(W);
+    const taken = await readActiveSession(db);
+    expect(taken?.workoutId).toBe(W);
+    expect(taken?.pausedAt ?? null).toBeNull();
   });
 });
 

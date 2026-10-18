@@ -1,5 +1,6 @@
 import "@/i18n/lazy";
 import { exerciseById } from "@belay/shared/exercises/catalog";
+import { sessionElapsed } from "@belay/shared/training/pause";
 import { sessionProgress } from "@belay/shared/training/rules";
 import type { Workout, WorkoutSet } from "@belay/shared/training/workout";
 import { Link } from "@tanstack/react-router";
@@ -10,7 +11,8 @@ import { type OpenAccount, useSessionView } from "@/sync/account";
 import { formatClock, useNow } from "@/workouts/hooks";
 
 // The open session above the tabs: the exercise holding the next set, where the session stands
-// and the time since it started, or the rest counted down while one runs. It loads on demand, so
+// and the time since it started (standing still while paused), or the rest counted down while
+// one runs. It loads on demand, so
 // the catalogue stays out of the shell.
 export function SessionBar({
   account,
@@ -29,16 +31,19 @@ export function SessionBar({
   // Its own clock, so the shell around it does not render again on each tick. A quarter second,
   // as the session's rest bar, so the end of a rest shows when it comes.
   const now = useNow(250);
-  // The rest lives in this device's open session, only for this session.
-  const active = useSessionView(account).data?.active;
-  const end =
-    active?.workoutId === workout.id && active.restEndsAt ? Date.parse(active.restEndsAt) : null;
+  // The rest and the pause live in this device's open session, only for this session.
+  const view = useSessionView(account).data?.active;
+  const active = view?.workoutId === workout.id ? view : null;
+  const end = active?.restEndsAt ? Date.parse(active.restEndsAt) : null;
+  const paused = active?.pausedAt ?? null;
   const resting = end !== null && end > now;
   const announced = useRestOver(end, resting);
   const { next } = sessionProgress(workout.plan, sets);
   const code = workout.sessionCode;
   const slot = next && workout.plan[next.slotIndex];
-  const running = t(resting ? "sessionBar.rest" : "sessionBar.running");
+  const running = t(
+    resting ? "sessionBar.rest" : paused ? "sessionBar.paused" : "sessionBar.running",
+  );
   const letter = t("sessionBar.session", { code });
   // The 13 px step: a bare `text-secondary` is the colour token of the same name. Muted through
   // opacity, since no muted colour token reads on the foreground-coloured backing.
@@ -91,7 +96,7 @@ export function SessionBar({
               {formatClock(end - now)}
             </span>
           ) : (
-            formatClock(now - Date.parse(workout.startedAt), Math.floor)
+            formatClock(sessionElapsed(workout.startedAt, paused, now), Math.floor)
           )}
         </span>
         <span aria-hidden className="grid size-11 place-items-center">

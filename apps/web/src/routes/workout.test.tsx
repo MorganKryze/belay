@@ -1,14 +1,28 @@
-import type { Change } from "@belay/shared/sync/schema";
+import type { Change, SyncRequest } from "@belay/shared/sync/schema";
+import { resumedStart } from "@belay/shared/training/pause";
 import { sessionByCode } from "@belay/shared/training/program";
 import { act, cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { IDBFactory } from "fake-indexeddb";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import i18n from "../i18n";
-import { openAccountDb, readActiveSession, readHistory, readOutbox } from "../sync/db";
+import {
+  openAccountDb,
+  readActiveSession,
+  readHistory,
+  readOutbox,
+  recordChanges,
+} from "../sync/db";
 import { writeLastUser } from "../sync/last-user";
+import { answer } from "../test/answer";
 import { fakeApi } from "../test/fake-api";
 import { renderRoute } from "../test/render-route";
 import { ADA, seed } from "../test/seed";
+
+// Passes through, until a test makes the device refuse a write (a lost connection, a full disk).
+vi.mock("../sync/db", async (importOriginal) => {
+  const real = await importOriginal<typeof import("../sync/db")>();
+  return { ...real, recordChanges: vi.fn(real.recordChanges) };
+});
 
 // Wednesday 7 October 2026, 18:00 on the phone's clock.
 const NOW = new Date(2026, 9, 7, 18, 0);
@@ -531,5 +545,157 @@ describe("fix round 1", () => {
     const { history } = await stored();
     expect(history.workouts).toHaveLength(2);
     expect(history.workouts.find((w) => w.id === id(2))?.endedAt).toBe(at(eleven)); // left at its last set
+  });
+});
+
+describe("pause", () => {
+  // The real clock: a pause lasts the time that passes, and the moved start is read against it.
+  beforeEach(() => vi.useRealTimers());
+  const wait = (ms: number) => act(() => new Promise((r) => setTimeout(r, ms)));
+  // What the device sent and what it still holds to send.
+  const sentOrQueued = async (requests: SyncRequest[]) => [
+    ...requests.flatMap((r) => r.changes),
+    ...(await stored()).outbox.map((e) => e.change),
+  ];
+  const moves = async (requests: SyncRequest[]) =>
+    (await sentOrQueued(requests)).flatMap((c) =>
+      c.kind === "workout" && c.field === "startedAt" ? [c] : [],
+    );
+  const pause = async () => {
+    fireEvent.click(screen.getByRole("button", { name: "Pause the session" }));
+    await waitFor(async () =>
+      expect((await stored()).active?.pausedAt).toEqual(expect.any(String)),
+    );
+    await screen.findByRole("button", { name: "Resume the session" });
+    return (await stored()).active!.pausedAt!;
+  };
+  const startOf = async () => (await stored()).history.workouts.find((w) => w.id !== id(1))!;
+
+  it("Pause stores since when, on this device only", async () => {
+    const { requests } = fakeApi({ me: ADA });
+    await startSession("A");
+    const pausedAt = await pause();
+    expect(Date.parse(pausedAt)).toBeLessThanOrEqual(Date.now());
+    expect(await screen.findByText("Paused")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Resume the session" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Pause the session" })).toBeNull();
+    // Only the start ever leaves the device: the pause stays on it.
+    expect((await sentOrQueued(requests)).map((c) => c.kind === "workout" && c.field)).toEqual([
+      "start",
+    ]);
+  });
+
+  it("Resume moves the start by the time paused and clears the pause in one write", async () => {
+    const { requests } = fakeApi({ me: ADA });
+    await startSession("A");
+    const { startedAt } = await startOf();
+    const pausedAt = await pause();
+    await wait(60);
+    fireEvent.click(screen.getByRole("button", { name: "Resume the session" }));
+    await waitFor(async () => expect(await moves(requests)).toHaveLength(1));
+    const [move] = await moves(requests);
+    expect(move!.value).toBe(resumedStart(startedAt, pausedAt, move!.at));
+    expect(Date.parse(move!.value) - Date.parse(startedAt)).toBeGreaterThanOrEqual(60);
+    const after = await stored();
+    expect(after.active?.pausedAt).toBeNull();
+    expect(after.history.workouts.find((w) => w.id !== id(1))?.startedAt).toBe(move!.value);
+    await waitFor(() => expect(screen.queryByText("Paused")).toBeNull());
+    expect(screen.getByRole("button", { name: "Pause the session" })).toBeTruthy();
+  });
+
+  it("a set checked while paused resumes first, then logs the set", async () => {
+    const { requests } = fakeApi({ me: ADA });
+    await seed(ADA.id, LAST_A);
+    await startSession("A");
+    const { startedAt } = await startOf();
+    const pausedAt = await pause();
+    await wait(60);
+    const bench = card("Barbell bench press");
+    log(bench, "Log set 1");
+    await waitFor(() => within(bench).getByRole("img", { name: "Set 1 logged" }));
+    expect((await screen.findByRole("timer")).textContent).toBe("2:30");
+    const order = (await sentOrQueued(requests))
+      .filter(
+        (c) =>
+          (c.kind === "set" && c.workoutId !== id(1)) ||
+          (c.kind === "workout" && c.field === "startedAt"),
+      )
+      .map((c) => c.kind);
+    expect(order).toEqual(["workout", "set"]);
+    const [move] = await moves(requests);
+    const set = (await stored()).history.sets.find((s) => s.workoutId !== id(1))!;
+    // Resumed at the tap that logged the set.
+    expect(move!.at).toBe(set.doneAt);
+    expect(move!.value).toBe(resumedStart(startedAt, pausedAt, set.doneAt));
+    const { active } = await stored();
+    expect(active?.pausedAt).toBeNull();
+    expect(active?.restEndsAt).toEqual(expect.any(String));
+  });
+
+  it("a set from another device after the pause ends it at that set's time", async () => {
+    let remote: string | null = null;
+    const api = fakeApi({ me: ADA });
+    const { requests } = fakeApi({
+      me: ADA,
+      sync: async (request) => {
+        if (!remote) return api.fetchMock("/api/sync", { body: JSON.stringify(request) });
+        const workout = await startOf();
+        return Response.json(
+          answer({
+            cursor: "2",
+            sets: [
+              {
+                id: id(30),
+                workoutId: workout.id,
+                slotIndex: 0,
+                position: 3,
+                exerciseId: "ds:0025",
+                warmup: false,
+                weightKg: 60,
+                reps: 8,
+                seconds: null,
+                rir: 1,
+                doneAt: remote,
+                fieldsAt: remote,
+                removed: false,
+                removedAt: null,
+              },
+            ],
+          }),
+        );
+      },
+    });
+    await startSession("A");
+    const { startedAt } = await startOf();
+    const pausedAt = await pause();
+    await wait(60);
+    remote = new Date(Date.parse(pausedAt) + 30).toISOString();
+    window.dispatchEvent(new Event("online"));
+    await waitFor(async () => expect((await stored()).active?.pausedAt).toBeNull());
+    await waitFor(async () => expect(await moves(requests)).toHaveLength(1));
+    const [move] = await moves(requests);
+    expect(move!.at).toBe(remote);
+    expect(move!.value).toBe(resumedStart(startedAt, pausedAt, remote));
+    expect(
+      within(card("Barbell bench press")).getByRole("img", { name: "Set 1 logged" }),
+    ).toBeTruthy();
+    // Once: further syncs bring the same set again and move nothing more.
+    window.dispatchEvent(new Event("online"));
+    await wait(100);
+    expect(await moves(requests)).toHaveLength(1);
+  });
+
+  it("a failed resume keeps the pause and says the save failed", async () => {
+    const { requests } = fakeApi({ me: ADA });
+    await startSession("A");
+    const pausedAt = await pause();
+    vi.mocked(recordChanges).mockRejectedValueOnce(new DOMException("lost", "InvalidStateError"));
+    fireEvent.click(screen.getByRole("button", { name: "Resume the session" }));
+    expect((await screen.findByRole("alert")).textContent).toBe(
+      "Couldn't save on this phone. Try again.",
+    );
+    expect((await stored()).active?.pausedAt).toBe(pausedAt);
+    expect(await moves(requests)).toEqual([]);
+    expect(screen.getByRole("button", { name: "Resume the session" })).toBeTruthy();
   });
 });

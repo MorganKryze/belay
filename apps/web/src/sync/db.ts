@@ -35,13 +35,15 @@ export type RejectedEntry = { id: number; change: Change; reason: Rejected["reas
 // A timed set counting down (spec §4.3): which row, its target, and when it ends; stopped early,
 // `seconds` is what was held and it ends at the stop.
 export type Chrono = { slotIndex: number; position: number; seconds: number; endsAt: string };
-// The session open on this device: which one, the slot it shows, when its rest ends, and the
-// timed set counting down, if any. Local only, never sent: the sets are what syncs.
+// The session open on this device: which one, the slot it shows, when its rest ends, the
+// timed set counting down, if any, and since when it is paused. Local only, never sent: the
+// sets are what syncs, and a resume moves the session's start instead of sending the pause.
 export type ActiveSession = {
   workoutId: string;
   slotIndex: number;
   restEndsAt: string | null;
   chrono?: Chrono | null;
+  pausedAt?: string | null; // absent or null: running
 };
 
 interface BelaySchema extends DBSchema {

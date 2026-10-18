@@ -186,6 +186,25 @@ describe("SessionBar", () => {
     expect(screen.queryByText(/^Rest/)).toBeNull();
   });
 
+  it("while paused the bar says Paused and its time stands still", async () => {
+    const started = tenMinutes();
+    await recordChanges(db, [], {
+      active: {
+        workoutId: workout.id,
+        slotIndex: 0,
+        restEndsAt: null,
+        pausedAt: new Date(Date.now() - 1000).toISOString(),
+      },
+    });
+    await show({ workout: started, sets: [set(0, 0, 3)] });
+    expect(await screen.findByText("Paused · set 2 of 4 · Session C")).toBeTruthy();
+    expect(screen.getByText("Paused · set 2/4")).toBeTruthy();
+    const time = () => screen.getByText(/^\d+:\d\d$/).textContent;
+    expect(time()).toBe("9:59");
+    await new Promise((r) => setTimeout(r, 1100));
+    expect(time()).toBe("9:59");
+  });
+
   it("the bar says the rest is over, once, and vibrates once", async () => {
     const vibrate = vi.fn(() => true);
     Object.defineProperty(navigator, "vibrate", { value: vibrate, configurable: true });

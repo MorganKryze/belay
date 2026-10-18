@@ -306,6 +306,12 @@
     "elapsed": "Elapsed time",
     "finish": "Finish",
     "lower": "Minimize the session",
+    "pause": "Pause the session",
+    "resume": "Resume the session",
+    "resumeShort": "Resume",
+    "paused": "Paused",
+    "pausedTitle": "Session paused",
+    "pausedBody": "The timer starts again as soon as you log a set.",
     "lastTime": "Last time: {{value}}",
     "set": "Set",
     "reps": "Reps",
@@ -454,6 +460,7 @@
   "sessionBar": {
     "rest": "Rest",
     "running": "In progress",
+    "paused": "Paused",
     "setOf": "set {{n}} of {{total}}",
     "setShort": "set {{n}}/{{total}}",
     "session": "Session {{code}}"
