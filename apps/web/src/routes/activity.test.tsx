@@ -1,5 +1,5 @@
 import type { Change } from "@belay/shared/sync/schema";
-import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { IDBFactory } from "fake-indexeddb";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import i18n from "../i18n";
@@ -61,8 +61,10 @@ describe("Home's activity line (§4.1)", () => {
     await seed(ADA.id, [climb({ date: "2026-10-03" })]); // last Saturday's, for the prefill
     const api = fakeApi({ me: ADA });
     renderRoute("/");
-    expect((await line()).textContent).toContain("not entered yet");
-    fireEvent.click(await line());
+    await waitFor(async () => expect((await line()).textContent).toContain("not entered yet"));
+    // Awaited: the sheet's code may still be loading, and its render resumes inside this act.
+    const row = await line();
+    await act(async () => fireEvent.click(row));
     const s = await sheet();
     // Climbing first, every field prefilled from the last climb.
     expect(within(s).getByRole("radio", { name: "Climbing" }).getAttribute("aria-checked")).toBe(

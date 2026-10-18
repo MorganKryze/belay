@@ -7,6 +7,7 @@ import i18n from "../i18n";
 import { motion } from "../lib/motion";
 import { openAccountDb, readIntake, readOutbox, readSupplementLogs } from "../sync/db";
 import { writeLastUser } from "../sync/last-user";
+import { answer } from "../test/answer";
 import { fakeApi } from "../test/fake-api";
 import { renderRoute } from "../test/render-route";
 import { ADA, seed } from "../test/seed";
@@ -102,7 +103,9 @@ describe("the intake line and its sheet", () => {
   it("saves calories alone, then protein, and the line says both", async () => {
     fakeApi({ me: ADA });
     renderRoute("/");
-    expect((await line(/^Intake/)).textContent).toContain("not entered yet");
+    await waitFor(async () =>
+      expect((await line(/^Intake/)).textContent).toContain("not entered yet"),
+    );
     fireEvent.click(await line(/^Intake/));
     const sheet = await screen.findByRole("dialog", { name: "Intake" });
     expect(within(sheet).getByText("One total per day, not food by food.")).toBeTruthy();
@@ -255,5 +258,99 @@ describe("the day's entries offline", () => {
     fireEvent.click(await screen.findByRole("checkbox", { name: "Vitamine D" }));
     await waitFor(async () => expect((await readOutbox(await db())).length).toBe(before + 2));
     expect(await screen.findByText(/3 entries waiting/)).toBeTruthy();
+  });
+});
+
+// The first sync waits until released, then answers with today's 80.4 kg, as the server would.
+function heldSync() {
+  let release = () => {};
+  const gate = new Promise<void>((resolve) => (release = resolve));
+  const sync = async () => {
+    await gate;
+    return Response.json(
+      answer({ cursor: "1", weights: [{ date: "2026-10-07", weightKg: 80.4, at: AT }] }),
+    );
+  };
+  return { sync, release };
+}
+
+const ROWS = [/^Weigh-in/, /^Activity/, /^Intake/];
+const card = () => screen.getByRole("region", { name: "Today" });
+
+describe("before the data is known", () => {
+  // The 4 s cap counts from the start of the visit: here, the start of the test.
+  beforeEach(() => {
+    const now = performance.now.bind(performance);
+    const start = now();
+    vi.spyOn(performance, "now").mockImplementation(() => now() - start);
+  });
+
+  it("on a device that never synced, the rows stay neutral until the first sync lands", async () => {
+    const { sync, release } = heldSync();
+    fakeApi({ me: ADA, sync });
+    renderRoute("/");
+    for (const name of ROWS)
+      expect((await line(name)).textContent).not.toContain("not entered yet");
+    expect(card().getAttribute("aria-busy")).toBe("true");
+    release();
+    await waitFor(async () =>
+      expect((await line(/^Weigh-in/)).textContent).toContain("80.4 kg · saved"),
+    );
+    expect((await line(/^Intake/)).textContent).toContain("not entered yet");
+    expect(card().hasAttribute("aria-busy")).toBe(false);
+  });
+
+  it("offline on a device that never synced, the rows say not entered yet at once", async () => {
+    fakeApi({ me: "down" });
+    renderRoute("/");
+    await waitFor(async () =>
+      expect((await line(/^Weigh-in/)).textContent).toContain("not entered yet"),
+    );
+    expect((await line(/^Intake/)).textContent).toContain("not entered yet");
+    expect(card().hasAttribute("aria-busy")).toBe(false);
+  });
+
+  it("a device that has synced before shows not entered yet once its reads are done, while a sync runs", async () => {
+    const local = await db();
+    await local.put("meta", "5", "cursor");
+    local.close();
+    const { sync } = heldSync();
+    const api = fakeApi({ me: ADA, sync });
+    renderRoute("/");
+    await waitFor(async () =>
+      expect((await line(/^Weigh-in/)).textContent).toContain("not entered yet"),
+    );
+    expect(api.requests.length).toBeGreaterThan(0); // the sync is under way, still unanswered
+    expect((await line(/^Intake/)).textContent).toContain("not entered yet");
+    expect(card().hasAttribute("aria-busy")).toBe(false);
+  });
+
+  it("a neutral row keeps its height and opens its sheet", async () => {
+    const { sync, release } = heldSync();
+    fakeApi({ me: ADA, sync });
+    renderRoute("/");
+    const row = await line(/^Weigh-in/);
+    // The blank line holds a no-break space in the status line's own style, so it keeps a line.
+    const blank = row.querySelector("span[aria-hidden].text-\\[13px\\]")!;
+    expect(blank.textContent).toBe("\u00a0");
+    fireEvent.click(row);
+    expect(await screen.findByRole("dialog", { name: "Weigh-in" })).toBeTruthy();
+    release();
+    // The open sheet hides the page from assistive technology: the rows are found hidden.
+    const intake = () => screen.getByRole("button", { name: /^Intake/, hidden: true });
+    await waitFor(() => expect(intake().textContent).toContain("not entered yet"));
+    const settled = intake().querySelector("span.text-\\[13px\\]")!;
+    expect(settled.className).toBe(blank.className);
+  });
+
+  it("the Compléments row waits as itself, then becomes Add your supplements on an empty list", async () => {
+    const { sync, release } = heldSync();
+    fakeApi({ me: ADA, sync });
+    renderRoute("/");
+    expect((await line(/^Supplements/)).textContent).toBe("Supplements\u00a0");
+    expect(screen.queryByRole("link", { name: "Add your supplements" })).toBeNull();
+    release();
+    expect(await screen.findByRole("link", { name: "Add your supplements" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /^Supplements/ })).toBeNull();
   });
 });
