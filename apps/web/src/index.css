@@ -767,3 +767,11 @@ html:active-view-transition-type(cover, uncover)::view-transition-new(top-bar) {
     -webkit-tap-highlight-color: transparent;
   }
 }
+
+/* After a tap, a control given the focus back by a closing menu or sheet draws no ring
+   (lib/pointer.ts); a key press brings the rings back. Outside the base layer, so that it also wins
+   over the focus-visible utilities on rows and buttons. A text field keeps its ring: it shows
+   where the typing goes. */
+html[data-pointer] :focus-visible:not(input, textarea, select, [contenteditable]) {
+  outline: none;
+}

@@ -7,6 +7,7 @@ import "./index.css";
 import { applyTheme, readTheme } from "./lib/theme";
 import { startUpdates } from "./lib/update";
 import { preloadWhenIdle } from "./lib/idle";
+import { markPointer } from "./lib/pointer";
 import { markPresses, settlePresses } from "./lib/press";
 import { navKind } from "./lib/transitions";
 import { router, TAB_PAGES } from "./router";
@@ -17,6 +18,7 @@ matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () =>
 
 startUpdates();
 markPresses();
+markPointer();
 // A row held through its push lets go once the next page is in, and tints again briefly on Back.
 router.subscribe("onResolved", ({ fromLocation, toLocation }) =>
   settlePresses(navKind(fromLocation?.pathname, toLocation.pathname, false)),

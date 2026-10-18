@@ -37,7 +37,7 @@ const pathBounds = (d: string) => {
   }
   return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
 };
-// Width and height of the orange mark's bounding box in an 8-bit RGB, non-interlaced PNG.
+// Width, height and top row of the orange mark's bounding box in an 8-bit RGB, non-interlaced PNG.
 const markBox = (p: string) => {
   const b = readFileSync(resolve(web, p));
   const [w, h] = [b.readUInt32BE(16), b.readUInt32BE(20)];
@@ -79,7 +79,7 @@ const markBox = (p: string) => {
       }
     }
   }
-  return [right - left + 1, bottom - top + 1] as const;
+  return [right - left + 1, bottom - top + 1, top] as const;
 };
 const MARK = "M86 160L86 266A120 120 0 0 0 326 266";
 
@@ -173,6 +173,15 @@ describe("app shell identity", () => {
     for (const theme of ["light", "dark"] as const) {
       const [w, h] = markBox(`public/${startupFile(theme, SCREENS[4]!)}`);
       expect(h / w).toBeCloseTo(260 / 340, 1);
+    }
+  });
+
+  it("places the mark where the launch screen shows it under the status bar", () => {
+    // Measured on an iPhone 1170x2532 in standalone mode: the HTML launch screen starts below the
+    // 47 px status bar and draws the mark's top at 996 device px. The image must match it.
+    for (const theme of ["light", "dark"] as const) {
+      const [, , top] = markBox(`public/${startupFile(theme, SCREENS[4]!)}`);
+      expect(Math.abs(top - 996)).toBeLessThanOrEqual(9);
     }
   });
 });
