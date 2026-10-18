@@ -60,5 +60,7 @@ export default defineConfig({
     environment: "jsdom",
     include: ["src/**/*.test.{ts,tsx}"],
     setupFiles: ["src/test/setup.ts"],
+    // Route tests render the whole app in jsdom; on a busy machine the 5 s default is too tight.
+    testTimeout: 15_000,
   },
 });
