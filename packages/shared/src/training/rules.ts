@@ -273,6 +273,27 @@ export function summary(workout: Workout, sets: readonly WorkoutSet[], history: 
   };
 }
 
+// The exercises of a finished session in plan order, each with its work sets and its top set. A
+// replaced exercise is listed as the one really done; a slot with no work set is left out.
+export function loggedByExercise(
+  workout: Workout,
+  sets: readonly WorkoutSet[],
+): { slotIndex: number; exerciseId: string; workSets: number; top: Load }[] {
+  const groups = new Map<string, WorkoutSet[]>();
+  for (const s of sets
+    .filter((s) => !s.removed && !s.warmup && s.workoutId === workout.id)
+    .sort(bySlot)) {
+    const key = `${s.slotIndex}|${s.exerciseId}`;
+    groups.set(key, [...(groups.get(key) ?? []), s]);
+  }
+  return [...groups.values()].map((own) => ({
+    slotIndex: own[0]!.slotIndex,
+    exerciseId: own[0]!.exerciseId,
+    workSets: own.length,
+    top: topSet(own)!,
+  }));
+}
+
 // The session in progress, if any: the latest one neither finished nor removed.
 // With `forgotten`, a session autoClose would close is not open: it is only waiting for the
 // next landed sync to be closed.

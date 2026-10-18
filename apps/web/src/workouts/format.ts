@@ -43,6 +43,16 @@ export function formatDuration(ms: number, t: TFunction): string {
       });
 }
 
+// The duration as a figure card draws it: "48 min" → { value: "48", unit: "min" }; an hour or
+// more stays whole, "1 h 04" → { value: "1 h 04" }.
+export function durationParts(ms: number, t: TFunction): { value: string; unit?: string } {
+  const text = formatDuration(ms, t);
+  const minutes = Math.max(0, Math.round(ms / 60_000));
+  if (minutes >= 60) return { value: text };
+  const value = String(minutes);
+  return { value, unit: text.slice(text.indexOf(value) + value.length).trim() };
+}
+
 // "Record : Barbell bench press, 82,5 kg × 8", or "Record : Dead hang, 75 s" for a timed one.
 export function recordText(r: Summary["records"][number], t: TFunction, locale: string): string {
   const exercise = exerciseById(r.exerciseId)?.name;
