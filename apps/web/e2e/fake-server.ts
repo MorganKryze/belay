@@ -1,5 +1,5 @@
 import { isCreatineName } from "@belay/shared/body/supplements";
-import type { Change, SyncRequest, WeightRow } from "@belay/shared/sync/schema";
+import type { Change, Rejected, SyncRequest, WeightRow } from "@belay/shared/sync/schema";
 import type { Page } from "@playwright/test";
 
 export const ADA = { id: "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d8e", displayName: "Ada" };
@@ -300,3 +300,30 @@ export const WEEKS = [
   { date: "2026-10-05", weightKg: 80 },
   { date: "2026-10-06", weightKg: 79.9 },
 ];
+
+// The server refuses whatever the phone sends; with nothing sent, the fake answers as usual.
+export async function refuseChanges(page: Page, reason: Rejected["reason"] = "refused") {
+  await page.route("**/api/sync", (route) => {
+    const request = route.request().postDataJSON() as SyncRequest;
+    if (request.changes.length === 0) return route.fallback();
+    return route.fulfill({
+      json: {
+        cursor: request.cursor,
+        weights: [],
+        measures: [],
+        intake: [],
+        supplements: [],
+        supplementLogs: [],
+        annotations: [],
+        steps: [],
+        activities: [],
+        workouts: [],
+        sets: [],
+        target: null,
+        profile: null,
+        rejected: request.changes.map((_, index) => ({ index, reason })),
+        hasMore: false,
+      },
+    });
+  });
+}

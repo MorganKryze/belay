@@ -137,19 +137,59 @@ export function RowButton({
   );
 }
 
-// One card of rows under an optional section label; each child is one row.
-export function GroupedList({ label, children }: { label?: string; children: ReactNode }) {
-  const id = useId();
+// A row that only reads: no press tint, no focus. Its label and detail wrap rather than end in
+// an ellipsis, since what it says (a refusal and its reason) must be read whole.
+export function RowText({ label, detail }: { label: string; detail?: string }) {
   return (
-    <section className="flex flex-col gap-2">
+    <div className="flex min-h-14 flex-col justify-center px-4 py-2">
+      <span className="text-body font-semibold break-words">{label}</span>
+      {detail && (
+        <>
+          {" "}
+          <span className="text-(length:--text-secondary) leading-(--text-secondary--line-height) break-words text-muted-foreground">
+            {detail}
+          </span>
+        </>
+      )}
+    </div>
+  );
+}
+
+// One card of rows under an optional section label; each child is one row. The footer, under
+// the card, is read as the list's description.
+export function GroupedList({
+  label,
+  footer,
+  children,
+}: {
+  label?: string;
+  footer?: ReactNode;
+  children: ReactNode;
+}) {
+  const id = useId();
+  const footerId = useId();
+  return (
+    <section aria-labelledby={label ? id : undefined} className="flex flex-col gap-2">
       {label && (
         <h2 id={id} className={sectionLabel}>
           {label}
         </h2>
       )}
-      <ul aria-labelledby={label ? id : undefined} className={groupCard}>
+      <ul
+        aria-labelledby={label ? id : undefined}
+        aria-describedby={footer ? footerId : undefined}
+        className={groupCard}
+      >
         {Children.map(children, (child) => (child == null ? null : <li>{child}</li>))}
       </ul>
+      {footer && (
+        <p
+          id={footerId}
+          className="px-4 text-(length:--text-secondary) leading-(--text-secondary--line-height) text-muted-foreground"
+        >
+          {footer}
+        </p>
+      )}
     </section>
   );
 }

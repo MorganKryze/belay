@@ -345,15 +345,36 @@ describe("refused entries", () => {
         ),
     });
     renderRoute("/settings");
-    const list = await screen.findByRole("region", { name: "Refused entries" });
-    expect(list.textContent).toMatch(/Weigh-in for \w{3}, Oct 5/);
-    expect(list.textContent).toContain("Refused by the server");
-    expect(list.textContent).toContain("Loss range");
-    expect(list.textContent).toContain("Not found on the server");
-    fireEvent.click(screen.getByRole("button", { name: "Clear the list" }));
-    await waitFor(() =>
-      expect(screen.queryByRole("region", { name: "Refused entries" })).toBeNull(),
+    const list = await screen.findByRole("list", { name: "Refused entries" });
+    const items = within(list).getAllByRole("listitem");
+    expect(items[0]!.textContent).toMatch(/Weigh-in for \w{3}, Oct 5/);
+    expect(items[0]!.textContent).toContain("Refused by the server");
+    expect(items[1]!.textContent).toContain("Loss range");
+    expect(items[1]!.textContent).toContain("Not found on the server");
+    expect(list.getAttribute("aria-describedby")).toBeTruthy();
+    expect(document.getElementById(list.getAttribute("aria-describedby")!)?.textContent).toBe(
+      "The server refused them, so they are no longer waiting. Enter them again if you need to.",
     );
+    fireEvent.click(within(list).getByRole("button", { name: "Clear the list" }));
+    await waitFor(() => expect(screen.queryByRole("list", { name: "Refused entries" })).toBeNull());
+  });
+
+  it("refused entries sit right under the profile row", async () => {
+    await seed(ADA.id, [weight("2026-10-05", 80)]);
+    fakeApi({
+      me: ADA,
+      sync: async (r) =>
+        Response.json(
+          answer({ rejected: r.changes.map((_, index) => ({ index, reason: "refused" })) }),
+        ),
+    });
+    renderRoute("/settings");
+    const list = await screen.findByRole("list", { name: "Refused entries" });
+    const profile = screen.getByRole("link", { name: /^Ada/ });
+    const preferences = screen.getByRole("list", { name: "Preferences" });
+    const following = Node.DOCUMENT_POSITION_FOLLOWING;
+    expect(profile.compareDocumentPosition(list) & following).toBe(following);
+    expect(list.compareDocumentPosition(preferences) & following).toBe(following);
   });
 
   const SUPPLEMENT = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d01";

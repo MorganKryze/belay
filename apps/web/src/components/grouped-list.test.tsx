@@ -16,6 +16,7 @@ import {
   GroupedList,
   RowButton,
   RowLink,
+  RowText,
   sectionLabel,
   SkeletonRows,
 } from "./grouped-list";
@@ -195,6 +196,46 @@ describe("GroupedList", () => {
     expect(classes(screen.getByText("Display"))).toEqual(
       expect.arrayContaining(["text-section", "text-muted-foreground"]),
     );
+  });
+
+  it("a text row wraps its label and detail, never cuts them, and takes no focus", () => {
+    render(
+      <GroupedList label="Refused">
+        <RowText label={"Long label ".repeat(10)} detail={"Long detail ".repeat(10)} />
+      </GroupedList>,
+    );
+    const label = screen.getByText(/Long label/);
+    const detail = screen.getByText(/Long detail/);
+    expect(classes(label)).toEqual(
+      expect.arrayContaining(["text-body", "font-semibold", "break-words"]),
+    );
+    expect(classes(detail)).toEqual(
+      expect.arrayContaining(["text-muted-foreground", "break-words"]),
+    );
+    expect(classes(label)).not.toContain("truncate");
+    expect(classes(detail)).not.toContain("truncate");
+    const row = label.parentElement!;
+    expect(classes(row)).toEqual(expect.arrayContaining(["min-h-14", "px-4", "py-2"]));
+    expect(classes(row)).not.toContain("press-tint");
+    expect(row.tagName).toBe("DIV");
+    expect(row.hasAttribute("tabindex")).toBe(false);
+    expect(screen.queryByRole("button")).toBeNull();
+  });
+
+  it("a footer sits under the card and describes the list", () => {
+    render(
+      <GroupedList label="Refused" footer="They are no longer waiting.">
+        <RowText label="Weigh-in" />
+      </GroupedList>,
+    );
+    const list = screen.getByRole("list", { name: "Refused" });
+    expect(list.getAttribute("aria-describedby")).toBeTruthy();
+    const footer = screen.getByText("They are no longer waiting.");
+    expect(footer.id).toBe(list.getAttribute("aria-describedby"));
+    expect(list.compareDocumentPosition(footer) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+    expect(classes(footer)).toEqual(expect.arrayContaining(["px-4", "text-muted-foreground"]));
   });
 
   it("RowLink navigates", async () => {

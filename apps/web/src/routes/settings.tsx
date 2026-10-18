@@ -9,9 +9,8 @@ import type { Change } from "@belay/shared/sync/schema";
 import { BackLink, PageHeader } from "@/components/page-header";
 import { initialOf } from "@/components/avatar";
 import { ActionSheet } from "@/components/action-sheet";
-import { GroupedList, RowButton, RowLink } from "@/components/grouped-list";
+import { GroupedList, RowButton, RowLink, RowText } from "@/components/grouped-list";
 import { MenuRow } from "@/components/menu-row";
-import { Button } from "@/components/ui/button";
 import { LOCALES, setLocale, type Locale } from "@/i18n";
 import { logout } from "@/lib/api";
 import { readTheme, setTheme, type Theme } from "@/lib/theme";
@@ -31,7 +30,6 @@ import {
 
 const LANGUAGE_NAMES: Record<Locale, string> = { en: "English", fr: "Français" };
 const THEMES = ["light", "dark", "system"] as const satisfies readonly Theme[];
-const sectionTitle = "mx-0.5 text-xs font-semibold tracking-wider text-muted-foreground uppercase";
 
 export function Settings() {
   const { t, i18n } = useTranslation();
@@ -43,6 +41,7 @@ export function Settings() {
       <PageHeader title={t("settings.title")} back={<BackLink to="/">{t("nav.home")}</BackLink>} />
 
       {"user" in account && <ProfileRow user={account.user} />}
+      {account.kind === "open" && <RejectedEntries account={account} />}
 
       <GroupedList label={t("settings.preferences")}>
         <MenuRow
@@ -167,12 +166,7 @@ function OpenAccountSettings({ account }: { account: OpenAccount }) {
   ) : data ? (
     <SignOutGroup pending={data.total} />
   ) : null;
-  return (
-    <>
-      {settings}
-      <RejectedEntries account={account} />
-    </>
-  );
+  return settings;
 }
 
 // What a refused entry was, as the person entered it. A removal or a tick carries no name or day
@@ -247,27 +241,16 @@ function RejectedEntries({ account }: { account: OpenAccount }) {
   const clear = useClearRejected(account);
   if (rejected.length === 0) return null;
   return (
-    <section aria-labelledby="rejected" className="flex flex-col gap-2">
-      <h2 id="rejected" className={sectionTitle}>
-        {t("settings.rejected.title")}
-      </h2>
-      <div className="flex flex-col gap-3 rounded-card border border-border bg-card p-4">
-        <p className="text-sm text-muted-foreground">{t("settings.rejected.note")}</p>
-        <ul className="flex flex-col">
-          {rejected.map((r) => (
-            <li key={r.id} className="border-t border-border py-2 first:border-t-0">
-              <p className="font-medium">{describe(r.change, t, i18n.language, today, known)}</p>
-              <p className="text-sm text-muted-foreground">
-                {t(`settings.rejected.reasons.${r.reason}`)}
-              </p>
-            </li>
-          ))}
-        </ul>
-        <Button variant="secondary" className="self-start" onClick={() => void clear()}>
-          {t("settings.rejected.clear")}
-        </Button>
-      </div>
-    </section>
+    <GroupedList label={t("settings.rejected.title")} footer={t("settings.rejected.note")}>
+      {rejected.map((r) => (
+        <RowText
+          key={r.id}
+          label={describe(r.change, t, i18n.language, today, known)}
+          detail={t(`settings.rejected.reasons.${r.reason}`)}
+        />
+      ))}
+      <RowButton label={t("settings.rejected.clear")} onClick={() => void clear()} />
+    </GroupedList>
   );
 }
 

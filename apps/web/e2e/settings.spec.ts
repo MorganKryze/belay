@@ -1,6 +1,6 @@
 import { expect, type Page, test } from "@playwright/test";
 import { expectNoAxeViolations, settled } from "./axe";
-import { fakeServer } from "./fake-server";
+import { fakeServer, refuseChanges } from "./fake-server";
 
 // Signed in as Ada, in English.
 test.use({ locale: "en-US", timezoneId: "Europe/Paris" });
@@ -31,6 +31,40 @@ test.describe("accessibility", () => {
         await expectNoAxeViolations(page);
       });
     }
+  }
+});
+
+// A weigh-in the server refuses, then Réglages, where it is listed.
+async function refusedWeighIn(
+  page: Page,
+  reason: Parameters<typeof refuseChanges>[1] = "refused",
+  theme?: "light" | "dark",
+) {
+  if (theme) await page.addInitScript((t) => localStorage.setItem("belay.theme", t), theme);
+  await fakeServer(page);
+  await refuseChanges(page, reason);
+  await page.goto("/");
+  await page.getByRole("button", { name: /^Weigh-in/ }).click();
+  const sheet = page.getByRole("dialog", { name: "Weigh-in" });
+  await sheet.getByRole("textbox", { name: "Weight" }).fill("80.5");
+  await sheet.getByRole("button", { name: "Save" }).click();
+  await expect(sheet).toBeHidden();
+  await expect(page.getByText("An entry was refused.")).toBeVisible();
+  await page.goto("/settings");
+  const list = page.getByRole("list", { name: "Refused entries" });
+  await expect(list).toBeVisible();
+  return list;
+}
+
+test.describe("accessibility of the refused entries", () => {
+  test.use({ reducedMotion: "reduce" });
+  for (const theme of ["light", "dark"] as const) {
+    test(`Réglages with refused entries has no axe violation, ${theme}`, async ({ page }) => {
+      const list = await refusedWeighIn(page, "refused", theme);
+      if (theme === "dark") await expect(page.locator("html")).toHaveClass(/dark/);
+      await expect(list.getByRole("button", { name: "Clear the list" })).toBeVisible();
+      await expectNoAxeViolations(page);
+    });
   }
 });
 
@@ -155,6 +189,30 @@ test("a menu opens from the keyboard and gives the focus back to its row", async
 
 test.describe("at 360 px", () => {
   test.use({ viewport: { width: 360, height: 780 } });
+
+  test("a long reason wraps, never cut, at 360 px", async ({ page }) => {
+    const list = await refusedWeighIn(page, "plan_shrank");
+    await settled(page);
+    const detail = list.getByText(/^Fewer exercises than the stored session/);
+    const box = await detail.evaluate((el) => {
+      const style = getComputedStyle(el);
+      return {
+        scroll: el.scrollWidth,
+        client: el.clientWidth,
+        overflow: style.textOverflow,
+        height: el.getBoundingClientRect().height,
+        line: parseFloat(style.lineHeight),
+      };
+    });
+    expect(box.scroll).toBeLessThanOrEqual(box.client);
+    expect(box.overflow).not.toBe("ellipsis");
+    expect(box.height).toBeGreaterThan(box.line * 1.5);
+    const header = (await list.getByRole("listitem").first().boundingBox())!;
+    const profile = (await page.getByRole("link", { name: /^Ada/ }).boundingBox())!;
+    expect(header.y).toBeGreaterThan(profile.y + profile.height);
+    const preferences = (await page.getByRole("list", { name: "Preferences" }).boundingBox())!;
+    expect(header.y).toBeLessThan(preferences.y);
+  });
 
   test("the preference rows follow the kit at 360 px", async ({ page }) => {
     await openSettings(page);
