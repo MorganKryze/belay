@@ -625,7 +625,9 @@ describe("pause", () => {
     expect(active?.restEndsAt).toEqual(expect.any(String));
   });
 
-  it("a set from another device after the pause ends it at that set's time", async () => {
+  // A server that, once `log(at)` is called, answers every sync with a set of the open session
+  // logged at that time on another device.
+  const anotherDevice = () => {
     let remote: string | null = null;
     const api = fakeApi({ me: ADA });
     const { requests } = fakeApi({
@@ -658,12 +660,21 @@ describe("pause", () => {
         );
       },
     });
+    const log = (at: string) => {
+      remote = at;
+      window.dispatchEvent(new Event("online"));
+    };
+    return { requests, log };
+  };
+
+  it("a set from another device after the pause ends it at that set's time", async () => {
+    const { requests, log } = anotherDevice();
     await startSession("A");
     const { startedAt } = await startOf();
     const pausedAt = await pause();
     await wait(60);
-    remote = new Date(Date.parse(pausedAt) + 30).toISOString();
-    window.dispatchEvent(new Event("online"));
+    const remote = new Date(Date.parse(pausedAt) + 30).toISOString();
+    log(remote);
     await waitFor(async () => expect((await stored()).active?.pausedAt).toBeNull());
     await waitFor(async () => expect(await moves(requests)).toHaveLength(1));
     const [move] = await moves(requests);
@@ -690,6 +701,29 @@ describe("pause", () => {
     expect((await stored()).active?.pausedAt).toBe(pausedAt);
     expect(await moves(requests)).toEqual([]);
     expect(screen.getByRole("button", { name: "Resume the session" })).toBeTruthy();
+  });
+
+  it("finished after another device's set failed to resume it, the start moves to that set only", async () => {
+    const { requests, log } = anotherDevice();
+    await startSession("A");
+    const { startedAt } = await startOf();
+    const pausedAt = await pause();
+    await wait(60);
+    const remote = new Date(Date.parse(pausedAt) + 30).toISOString();
+    vi.mocked(recordChanges).mockRejectedValueOnce(new DOMException("lost", "InvalidStateError"));
+    log(remote);
+    expect((await screen.findByRole("alert")).textContent).toBe(
+      "Couldn't save on this phone. Try again.",
+    );
+    expect((await stored()).active?.pausedAt).toBe(pausedAt);
+    await wait(60);
+    fireEvent.click(screen.getByRole("button", { name: "Finish" }));
+    const sheet = await screen.findByRole("dialog", { name: "Finish the session?" });
+    fireEvent.click(within(sheet).getByRole("button", { name: "Finish and save" }));
+    expect(await screen.findByText(/^Session done · /)).toBeTruthy();
+    // The time trained on the other device since its set stays in the session.
+    const [move] = await moves(requests);
+    expect(move!.value).toBe(resumedStart(startedAt, pausedAt, remote));
   });
 });
 

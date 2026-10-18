@@ -212,8 +212,12 @@ function Screen({
     [active, paused, record, workout.id, workout.startedAt],
   );
   const resume = useCallback((at: string) => save(() => resumeAt(at)), [resumeAt, save]);
+  // A set logged on another device after the pause began ends it at that set's time.
+  const doneAts = sets.map((s) => s.doneAt);
+  const endedBy = paused && pauseEndedBy(paused, doneAts);
   // Ended now; finished while paused, the start moves past the pause in the same write, so the
-  // duration leaves it out as a resume would.
+  // duration leaves it out as a resume would. A pause another device's set has ended (its resume
+  // not written) ends at that set: the time trained since stays in.
   const end = () => {
     const at = new Date().toISOString();
     const moved: Change[] = paused
@@ -222,7 +226,7 @@ function Screen({
             kind: "workout",
             id: workout.id,
             field: "startedAt",
-            value: resumedStart(workout.startedAt, paused, at),
+            value: resumedStart(workout.startedAt, paused, endedBy || at),
             at,
           },
         ]
@@ -265,9 +269,7 @@ function Screen({
           t("session.finishProgram"),
         ].join(" ")
       : t("session.finishAll", { count: done.size, total });
-  // A set logged on another device after the pause began ends it at that set's time, once.
-  const doneAts = sets.map((s) => s.doneAt);
-  const endedBy = paused && pauseEndedBy(paused, doneAts);
+  // The pause it ends is resumed once.
   const ended = useRef<string | null>(null);
   useEffect(() => {
     if (!paused || !endedBy || ended.current === paused) return;
