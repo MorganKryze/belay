@@ -89,7 +89,7 @@ test("one day of creatine ticked marks its course on Body", async ({ page }) => 
 test("an annotation is added on Body, drawn on its week, then deleted", async ({ page }) => {
   await fakeServer(page, { rows: WEEKS });
   await page.goto("/body");
-  await page.getByRole("button", { name: "Annotation", exact: true }).click();
+  await page.getByRole("button", { name: /^Annotation\b/ }).click();
   const add = sheet(page, "New annotation");
   await add.getByRole("radio", { name: "Break" }).click();
   await add.getByLabel("Date of the annotation").fill("2026-09-29");
