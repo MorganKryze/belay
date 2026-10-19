@@ -591,7 +591,7 @@ test.describe("Profil", () => {
     const range = page.getByRole("region", { name: "Your loss range" });
     await expect(range.getByText("At least")).toBeVisible();
     const card = (section: typeof range) =>
-      section.locator("xpath=./*[contains(@class, 'rounded-group')]");
+      section.locator("xpath=./*[contains(@class, 'rounded-group') and not(self::details)]");
     const widths = await hairlines(card(range));
     expect(widths).toEqual(widths.map(() => 0));
     const facts = await hairlines(card(page.getByRole("region", { name: "Your body" })));

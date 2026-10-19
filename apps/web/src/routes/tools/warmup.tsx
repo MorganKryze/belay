@@ -51,7 +51,7 @@ export function WarmupTool() {
           />
         )}
       </div>
-      <ResultCard label={t("warmup.result")} tone="plain">
+      <ResultCard label={t("warmup.result")}>
         {light ? (
           <p className="text-sm">{t("warmup.lightWork")}</p>
         ) : (
