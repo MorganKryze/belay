@@ -88,8 +88,6 @@ for (const locale of ["fr-FR", "en-US"] as const) {
     test.use({ locale, viewport: { width: 360, height: 800 } });
 
     test(`no hint ends in an ellipsis at 360 px, ${locale}`, async ({ page }) => {
-      // The French BMI hint is one word too long at 360 px until its shorter wording lands.
-      test.fixme(locale === "fr-FR");
       await page.goto("/tools");
       await expect(toolRows(page)).toHaveCount(8);
       await settled(page);
