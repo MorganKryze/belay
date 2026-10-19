@@ -59,7 +59,7 @@ describe("a connected tool", () => {
     // Mifflin for a man of 31, 178 cm and 80.2 kg, × 1.55 (sedentary, the default).
     expect(
       (await screen.findByRole("region", { name: "Today's expenditure" })).textContent,
-    ).toContain("2,730kcal");
+    ).toContain("2,730\u00a0kcal");
   });
 
   it("drops a field's source once the person changes it, and offers to update the profile", async () => {
@@ -193,6 +193,32 @@ describe("a connected tool", () => {
     renderRoute("/tools/energy");
     expect((await field("Height")).value).toBe("170");
     expect(screen.queryByText(/from your/)).toBeNull();
+  });
+});
+
+describe("with field sources hidden on this device", () => {
+  beforeEach(() => localStorage.setItem("belay.fieldSources", "hidden"));
+
+  it("prefills the values but no field says where its value comes from", async () => {
+    await openTool("energy", [...PROFILE, ...FOUR_DAYS]);
+    await waitFor(async () => expect((await field("Height")).value).toBe("178"));
+    expect((await field("Age")).value).toBe("31");
+    expect((await field("Weight")).value).toBe("80.2");
+    expect(screen.queryByText(/from your/)).toBeNull();
+    expect(screen.queryByText("your 7-day average")).toBeNull();
+    expect(screen.getByRole("button", { name: "Back to my last entries" })).toBeTruthy();
+    for (const el of document.querySelectorAll("[aria-describedby]"))
+      for (const id of el.getAttribute("aria-describedby")!.split(" "))
+        expect(document.getElementById(id)).not.toBeNull();
+  });
+
+  it("still shows the profile update offer under a changed field", async () => {
+    await openTool("energy", [...PROFILE, ...FOUR_DAYS]);
+    const height = await field("Height");
+    await waitFor(() => expect(height.value).toBe("178"));
+    fireEvent.change(height, { target: { value: "180" } });
+    const offer = await screen.findByRole("group", { name: "Profile update" });
+    expect(offer.textContent).toContain("Update your profile with 180 cm?");
   });
 });
 

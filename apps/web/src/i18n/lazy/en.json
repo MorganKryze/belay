@@ -31,6 +31,16 @@
       "shown": "Shown",
       "hidden": "Hidden"
     },
+    "oneRepMax": "1RM",
+    "oneRepMaxOptions": {
+      "shown": "Two formulas",
+      "hidden": "Epley only"
+    },
+    "fieldSources": "Field sources",
+    "fieldSourcesOptions": {
+      "shown": "Shown",
+      "hidden": "Hidden"
+    },
     "versionNotes": "Belay {{version}} · release notes",
     "newTab": "(new tab)",
     "tracking": "Tracking",

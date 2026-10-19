@@ -6,9 +6,10 @@ import {
 } from "@belay/shared/science/render";
 import { sourceById } from "@belay/shared/science/sources";
 import { type ScienceId, TOOL_SCIENCE } from "@belay/shared/science/tools";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Info } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { groupSurface } from "@/components/surfaces";
 
 const pill = "rounded-full bg-track px-2.5 py-0.5 text-xs font-semibold text-muted-foreground";
 const drawer =
@@ -40,10 +41,11 @@ function Drawer({
   );
 }
 
-// "How it's calculated", read in layers: the label, In short, Keep in mind, then drawers.
-// Native <details>: keyboard and screen-reader support with no script. `children` goes at the
-// end of the sheet (the body-fat reference set, D14). `toolId` is a tool or a rule
-// ("target-rate", whose sheet is titled "How it's chosen").
+// "How it's calculated", read in layers: a grouped row with its label, then In short, Keep in mind
+// and the drawers, opened in place in the same card. Native <details>: keyboard and screen-reader
+// support with no script. `children` goes at the end of the sheet: body fat puts its choice of
+// reference values there, a setting read once and kept beside the sources that define each set.
+// `toolId` is a tool or a rule ("target-rate", whose sheet is titled "How it's chosen").
 export function ScienceSheet({
   toolId,
   title,
@@ -56,21 +58,24 @@ export function ScienceSheet({
   const { t, i18n } = useTranslation();
   const science = TOOL_SCIENCE[toolId];
   const c = i18n.language.startsWith("fr") ? science.content.fr : science.content.en;
-  const labels =
-    science.label === "mixed" ? (["source", "heuristic"] as const) : ([science.label] as const);
   return (
-    <details className="group/sheet rounded-card border border-border bg-card px-4">
-      <summary className={`${drawer} min-h-14 flex-wrap py-2 text-[17px] font-bold`}>
-        <span>{title ?? t("science.title")}</span>
-        <span className="flex flex-wrap gap-1.5">
-          {labels.map((l) => (
-            <span key={l} className={pill}>
-              {t(`science.labels.${l}`)}
-            </span>
-          ))}
+    <details className={`group/sheet ${groupSurface}`}>
+      <summary className="press-tint flex min-h-14 cursor-pointer list-none items-center gap-3 px-4 py-2 outline-ring focus-visible:outline-2 focus-visible:-outline-offset-2 [&::-webkit-details-marker]:hidden">
+        <span className="flex size-7 shrink-0 items-center justify-center rounded-icon bg-primary-soft">
+          <Info aria-hidden className="size-5 text-primary-ink" />
         </span>
+        <span className="flex min-w-0 flex-1 flex-col">
+          <span className="text-body font-semibold">{title ?? t("science.title")}</span>{" "}
+          <span className="text-(length:--text-secondary) text-muted-foreground">
+            {t(`science.labels.${science.label}`)}
+          </span>
+        </span>
+        <ChevronRight
+          aria-hidden
+          className="size-4 shrink-0 text-muted-foreground transition-transform duration-(--tint-duration) ease-out group-open/sheet:rotate-90"
+        />
       </summary>
-      <div className="flex flex-col gap-2.5 pb-2">
+      <div className="flex flex-col gap-2.5 border-t border-border px-4 pt-3 pb-2">
         <div className="rounded-field border border-border p-3 text-sm">
           <h3 className="mb-1 text-[13px] font-semibold">{t("science.brief")}</h3>
           <p>{c.brief}</p>

@@ -13,6 +13,7 @@ export function Segmented<T extends string>({
   options,
   onChange,
   labelHidden = false,
+  hint,
 }: {
   label: string;
   value: T | null; // null: nothing chosen yet
@@ -20,6 +21,8 @@ export function Segmented<T extends string>({
   onChange: (value: T) => void;
   // For screen readers only, where the options say it all (the period of the Body chart).
   labelHidden?: boolean;
+  // A muted aside after the label, read as part of the group's name.
+  hint?: string;
 }) {
   const id = useId();
   const index = options.findIndex((o) => o.value === value);
@@ -29,6 +32,12 @@ export function Segmented<T extends string>({
     <div className="flex flex-col gap-1.5">
       <span id={id} className={labelHidden ? "sr-only" : `${type} font-semibold`}>
         {label}
+        {hint && (
+          <>
+            {" "}
+            <span className="font-normal text-muted-foreground">{hint}</span>
+          </>
+        )}
       </span>
       {/* The ring is marked important: the group sets an inline `outline: none` that would
           otherwise hide it, and the items drop their own so the whole groove rings once. */}

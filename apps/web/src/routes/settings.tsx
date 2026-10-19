@@ -5,12 +5,14 @@ import {
   Check,
   CirclePause,
   Dumbbell,
+  Info,
   Languages,
   Pill,
   Scale,
   SunMoon,
   UserRound,
   Utensils,
+  Weight,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { TFunction } from "i18next";
@@ -26,9 +28,13 @@ import { MenuRow } from "@/components/menu-row";
 import { LOCALES, setLocale, type Locale } from "@/i18n";
 import { logout } from "@/lib/api";
 import {
+  readBrzycki,
+  readFieldSources,
   readHistoryActivities,
   readSessionVolume,
   readWeekIntake,
+  setBrzycki,
+  setFieldSources,
   setHistoryActivities,
   setSessionVolume,
   setWeekIntake,
@@ -71,12 +77,15 @@ export function Settings() {
   const [weekIntake, setWeekIntakeState] = useState<Shown>(readWeekIntake);
   const [historyActivities, setHistoryActivitiesState] = useState<Shown>(readHistoryActivities);
   const [sessionVolume, setSessionVolumeState] = useState<Shown>(readSessionVolume);
+  const [brzycki, setBrzyckiState] = useState<Shown>(readBrzycki);
+  const [fieldSources, setFieldSourcesState] = useState<Shown>(readFieldSources);
   const account = useAccount();
   // The sections take the names of the screens their rows change.
   const general = t("settings.general");
   const home = t("nav.home");
   const sessions = t("nav.workouts");
   const body = t("nav.body");
+  const tools = t("nav.tools");
 
   return (
     <section className="flex flex-1 flex-col gap-4">
@@ -185,6 +194,34 @@ export function Settings() {
           onChange={(v) => {
             setWeekIntake(v);
             setWeekIntakeState(v);
+          }}
+        />
+      </GroupedList>
+      <GroupedList label={tools}>
+        <MenuRow
+          icon={Weight}
+          label={t("settings.oneRepMax")}
+          value={brzycki}
+          options={SHOWN.map((v) => ({
+            value: v,
+            label: t(`settings.oneRepMaxOptions.${v}`),
+          }))}
+          onChange={(v) => {
+            setBrzycki(v);
+            setBrzyckiState(v);
+          }}
+        />
+        <MenuRow
+          icon={Info}
+          label={t("settings.fieldSources")}
+          value={fieldSources}
+          options={SHOWN.map((v) => ({
+            value: v,
+            label: t(`settings.fieldSourcesOptions.${v}`),
+          }))}
+          onChange={(v) => {
+            setFieldSources(v);
+            setFieldSourcesState(v);
           }}
         />
       </GroupedList>

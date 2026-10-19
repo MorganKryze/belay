@@ -33,3 +33,9 @@ export const [readSessionVolume, setSessionVolume] = preference("belay.sessionVo
 
 // Whether Corps' weeks show the weekly intake, for someone who would rather not see what they eat.
 export const [readWeekIntake, setWeekIntake] = preference("belay.weekIntake");
+
+// Whether Outils' 1RM shows Brzycki beside Epley, for someone who would rather keep one figure.
+export const [readBrzycki, setBrzycki] = preference("belay.oneRepMaxBrzycki");
+
+// Whether Outils says where a prefilled field's value comes from, for someone who already knows.
+export const [readFieldSources, setFieldSources] = preference("belay.fieldSources");

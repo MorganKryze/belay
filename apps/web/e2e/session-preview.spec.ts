@@ -2,6 +2,7 @@ import { expect, type Page, test } from "@playwright/test";
 import { expectNoAxeViolations } from "./axe";
 import { fakeServer } from "./fake-server";
 import { readMotion, recordMotion } from "./motion";
+import { settled } from "./settle";
 
 // The real clock throughout: the push, the cover and the session time are read as they run.
 test.use({ locale: "en-US", timezoneId: "Europe/Paris" });
@@ -81,19 +82,8 @@ test("back from an exercise opened in the preview returns to the preview where i
   await fakeServer(page);
   await openPreview(page);
   const url = page.url();
-  // The push has landed: the router has settled the page before it is scrolled.
-  await expect
-    .poll(() =>
-      page.evaluate(
-        () =>
-          document
-            .getAnimations()
-            .filter((a) =>
-              (a.effect as KeyframeEffect | null)?.pseudoElement?.startsWith("::view-transition"),
-            ).length,
-      ),
-    )
-    .toBe(0);
+  // The push has played out before the page is scrolled.
+  await settled(page);
   await expect
     .poll(() =>
       page.evaluate(() => {

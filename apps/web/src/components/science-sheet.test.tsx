@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import i18n from "../i18n";
 import { ScienceSheet } from "./science-sheet";
@@ -22,14 +22,42 @@ describe("ScienceSheet", () => {
 
   it("labels a heuristic tool and says what is heuristic", () => {
     render(<ScienceSheet toolId="warmup" />);
-    expect(screen.getAllByText("Belay heuristic")).toHaveLength(2); // pill + box title
+    expect(screen.getAllByText("Belay heuristic")).toHaveLength(2); // row label + box title
     expect(screen.queryByText("Scientific source")).toBeNull();
   });
 
-  it("shows both labels on a mixed tool", () => {
-    render(<ScienceSheet toolId="projection" />);
-    expect(screen.getByText("Scientific source")).toBeTruthy();
-    expect(screen.getAllByText("Belay heuristic").length).toBeGreaterThan(0);
+  it("says Source and Belay heuristic on a mixed tool, with no pills", () => {
+    const { container } = render(<ScienceSheet toolId="projection" />);
+    const summary = container.querySelector("summary")!;
+    expect(summary.textContent).toBe("How it's calculated Source and Belay heuristic");
+    expect(screen.queryByText("Scientific source")).toBeNull();
+    expect(summary.querySelector(".rounded-full")).toBeNull();
+  });
+
+  it("the row is the summary, named by its title and its label", () => {
+    const { container } = render(<ScienceSheet toolId="bmi" />);
+    const summary = container.querySelector("summary")!;
+    expect(summary.textContent).toBe("How it's calculated Scientific source");
+    expect(summary.querySelector("svg.lucide-info")).toBeTruthy();
+    expect(summary.querySelector("svg.lucide-chevron-right")).toBeTruthy();
+  });
+
+  it("holds only phrasing content in the summary, as HTML allows there", () => {
+    const { container } = render(<ScienceSheet toolId="bmi" />);
+    const summary = container.querySelector("summary")!;
+    expect(summary.querySelector("div, p, ul, h1, h2, h3, h4, h5, h6")).toBeNull();
+  });
+
+  it("opens in place and closes on a second activation", () => {
+    const { container } = render(<ScienceSheet toolId="bmi" />);
+    const details = container.querySelector("details")!;
+    const summary = details.querySelector(":scope > summary")!;
+    expect(details.open).toBe(false);
+    fireEvent.click(summary);
+    expect(details.open).toBe(true);
+    expect(details.contains(screen.getByText("In short"))).toBe(true);
+    fireEvent.click(summary);
+    expect(details.open).toBe(false);
   });
 
   it("links DOIs and PubMed, and marks a reference without a DOI", () => {
@@ -48,6 +76,12 @@ describe("ScienceSheet", () => {
     render(<ScienceSheet toolId="one-rep-max" />);
     expect(screen.getByText("Comment c'est calculé")).toBeTruthy();
     expect(screen.getByText("C'est une estimation, pas un test.")).toBeTruthy();
+  });
+
+  it("says Source et heuristique Belay in French", async () => {
+    await i18n.changeLanguage("fr");
+    render(<ScienceSheet toolId="projection" />);
+    expect(screen.getByText("Source et heuristique Belay")).toBeTruthy();
   });
 
   it("links a source without a DOI to the record that was read", () => {

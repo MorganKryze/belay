@@ -33,6 +33,13 @@ describe("BMI", () => {
     expect(current?.textContent).toContain("Plage de référence de l'OMS");
   });
 
+  it("the BMI is a large figure with one decimal", async () => {
+    save({ heightCm: 180, weightKg: 81 });
+    renderRoute("/tools/bmi");
+    const card = await result("Your BMI");
+    expect(card.querySelector('[data-slot="result-figure"]')?.textContent).toBe("25.0");
+  });
+
   it("classifies the value shown: 24.97 shows 25.0 and sits in 25 – 30", async () => {
     save({ heightCm: 180, weightKg: 80.9 });
     renderRoute("/tools/bmi");
@@ -74,6 +81,7 @@ describe("body fat", () => {
     renderRoute("/tools/body-fat");
     const card = await result("Your estimated body fat");
     expect(card.textContent).toContain("17%");
+    screen.getByRole("heading", { name: "Reference values" });
     const list = screen.getByRole("list", { name: "Reference values" });
     expect(list.querySelector("[aria-current]")?.textContent).toContain(
       "Matches a BMI of 18.5 to 25",
@@ -82,6 +90,25 @@ describe("body fat", () => {
     expect(
       screen.getByText("For the male formula, ages 20 to 39 (Gallagher 2000, table 4)."),
     ).toBeTruthy();
+  });
+
+  it("the estimate is a large figure with its percent, then the error and the bias in muted lines", async () => {
+    await i18n.changeLanguage("fr");
+    save({
+      formula: "male",
+      heightCm: 177.8,
+      lastInputs: { "body-fat": { ageYears: 30, neckCm: 39.5, waistCm: 86.5 } },
+    });
+    renderRoute("/tools/body-fat");
+    const card = await result("Ta masse grasse estimée");
+    const figure = card.querySelector('[data-slot="result-figure"]')!;
+    expect(figure.textContent).toBe("17\u202f%");
+    const error = within(card).getByText("estimation ±4 points");
+    const bias = within(card).getByText(/surestime souvent/);
+    expect(error.tagName).toBe("P");
+    expect(bias.tagName).toBe("P");
+    expect(figure.compareDocumentPosition(error) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(error.compareDocumentPosition(bias) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it("refuses a waist smaller than the neck with a message, never NaN", async () => {

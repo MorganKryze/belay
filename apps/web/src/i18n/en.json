@@ -157,7 +157,8 @@
     "title": "How it's calculated",
     "labels": {
       "source": "Scientific source",
-      "heuristic": "Belay heuristic"
+      "heuristic": "Belay heuristic",
+      "mixed": "Source and Belay heuristic"
     },
     "brief": "In short",
     "keep": "Keep in mind",
@@ -207,7 +208,7 @@
       },
       "bmi": {
         "name": "BMI",
-        "hint": "Where you sit on the WHO ranges"
+        "hint": "Your place on the WHO ranges"
       },
       "body-fat": {
         "name": "Body fat",
@@ -241,8 +242,8 @@
     "barOnly": "Bar only",
     "bar": "{{bar}} kg bar",
     "unreachable": "{{target}} kg can't be loaded with your equipment.",
-    "below": "Just below: {{total}} kg ({{detail}})",
-    "above": "Just above: {{total}} kg ({{detail}})",
+    "below": "Just below · {{total}} kg",
+    "above": "Just above · {{total}} kg",
     "underBar": "The bar alone already weighs {{bar}} kg.",
     "equipment": "My equipment"
   },
@@ -294,11 +295,11 @@
       },
       "active": {
         "name": "Active",
-        "description": "Like sedentary, plus about one hour of moderate to vigorous exercise a day."
+        "description": "Sedentary, plus about one hour of moderate to vigorous exercise a day."
       },
       "very-active": {
         "name": "Very active",
-        "description": "A vigorously active lifestyle: hard physical work or exercise for much of the day."
+        "description": "Hard physical work or exercise for much of the day."
       }
     },
     "result": "Today's expenditure",
@@ -335,7 +336,7 @@
       "balanced": "Balanced",
       "steady": "Steady"
     },
-    "rateAside": "{{pct}}% · {{kg}} kg",
+    "rateLine": "{{pct}}% · {{kg}} kg per week",
     "fine": "Fine-tune",
     "presets": "Back to the paces",
     "fineLabel": "Pace (% per week)",

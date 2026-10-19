@@ -28,6 +28,8 @@ test.describe("accessibility", () => {
     "Volume",
     "Range pill",
     "Weekly intake",
+    "1RM",
+    "Field sources",
   ] as const) {
     for (const theme of ["light", "dark"] as const) {
       test(`Réglages with the ${menu} menu open has no axe violation, ${theme}`, async ({
@@ -326,8 +328,9 @@ test.describe("on a page taller than the screen", () => {
   });
 });
 
-test.describe("signed out at 390 × 844", () => {
-  test.use({ viewport: { width: 390, height: 844 }, reducedMotion: "reduce" });
+// Five preference sections outgrow 844 px: the check needs a screen the signed-out page fits.
+test.describe("signed out at 390 × 932", () => {
+  test.use({ viewport: { width: 390, height: 932 }, reducedMotion: "reduce" });
   test("signed out, the version line sits alone at the bottom", async ({ page }) => {
     await page.route("**/api/me", (r) => r.fulfill({ status: 401 }));
     await page.goto("/settings");
@@ -416,6 +419,13 @@ test.describe("at 360 px", () => {
             ["Weekly intake", "Shown", "Hidden"],
           ],
         ],
+        [
+          "Tools",
+          [
+            ["1RM", "Two formulas", "Epley only"],
+            ["Field sources", "Shown", "Hidden"],
+          ],
+        ],
       ],
     ],
     [
@@ -442,6 +452,13 @@ test.describe("at 360 px", () => {
           [
             ["Pastille", "Affichée", "Masquée"],
             ["Apports", "Affichés", "Masqués"],
+          ],
+        ],
+        [
+          "Outils",
+          [
+            ["1RM", "Deux formules", "Epley seule"],
+            ["Origine des champs", "Affichée", "Masquée"],
           ],
         ],
       ],
@@ -591,7 +608,7 @@ test.describe("Profil", () => {
     const range = page.getByRole("region", { name: "Your loss range" });
     await expect(range.getByText("At least")).toBeVisible();
     const card = (section: typeof range) =>
-      section.locator("xpath=./*[contains(@class, 'rounded-group')]");
+      section.locator("xpath=./*[contains(@class, 'rounded-group') and not(self::details)]");
     const widths = await hairlines(card(range));
     expect(widths).toEqual(widths.map(() => 0));
     const facts = await hairlines(card(page.getByRole("region", { name: "Your body" })));

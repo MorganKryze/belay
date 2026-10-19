@@ -157,7 +157,8 @@
     "title": "Comment c'est calculé",
     "labels": {
       "source": "Source scientifique",
-      "heuristic": "Heuristique Belay"
+      "heuristic": "Heuristique Belay",
+      "mixed": "Source et heuristique Belay"
     },
     "brief": "En bref",
     "keep": "À garder en tête",
@@ -207,7 +208,7 @@
       },
       "bmi": {
         "name": "IMC",
-        "hint": "Où tu te situes sur les plages de l'OMS"
+        "hint": "Ta place sur les plages de l'OMS"
       },
       "body-fat": {
         "name": "Masse grasse",
@@ -241,8 +242,8 @@
     "barOnly": "Barre seule",
     "bar": "Barre de {{bar}} kg",
     "unreachable": "{{target}} kg n'est pas faisable avec ton matériel.",
-    "below": "Juste en dessous : {{total}} kg ({{detail}})",
-    "above": "Juste au-dessus : {{total}} kg ({{detail}})",
+    "below": "Juste en dessous · {{total}} kg",
+    "above": "Juste au-dessus · {{total}} kg",
     "underBar": "La barre seule pèse déjà {{bar}} kg.",
     "equipment": "Mon matériel"
   },
@@ -294,11 +295,11 @@
       },
       "active": {
         "name": "Actif",
-        "description": "Comme sédentaire, plus environ une heure d'exercice modéré à soutenu par jour."
+        "description": "Sédentaire, plus environ une heure d'exercice modéré à soutenu par jour."
       },
       "very-active": {
         "name": "Très actif",
-        "description": "Un mode de vie très actif : travail physique ou exercice intense une bonne partie de la journée."
+        "description": "Travail physique ou exercice intense une bonne partie de la journée."
       }
     },
     "result": "Dépense du jour",
@@ -335,7 +336,7 @@
       "balanced": "Équilibré",
       "steady": "Soutenu"
     },
-    "rateAside": "{{pct}} % · {{kg}} kg",
+    "rateLine": "{{pct}} % · {{kg}} kg par semaine",
     "fine": "Réglage fin",
     "presets": "Revenir aux rythmes",
     "fineLabel": "Rythme (% par semaine)",
