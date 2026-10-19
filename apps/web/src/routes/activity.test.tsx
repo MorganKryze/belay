@@ -10,21 +10,22 @@ import { renderRoute } from "../test/render-route";
 import { ADA, seed } from "../test/seed";
 
 // Wednesday 7 October 2026, 19:30 on the phone's clock.
-beforeEach(() => {
+beforeEach(async () => {
   indexedDB = new IDBFactory();
   vi.useFakeTimers({ toFake: ["Date"] });
   vi.setSystemTime(new Date(2026, 9, 7, 19, 30));
-  // The app starts with each test: the first sync's 4 s cap counts from here, not from the worker's.
-  const now = performance.now.bind(performance);
-  const start = now();
-  vi.spyOn(performance, "now").mockImplementation(() => now() - start);
+  // A device that has synced before. On one that never did, the line stays blank until the first
+  // sync is seen running, and the fake server answers before Home is drawn: the line then waits
+  // for the 4 s cap, which a busy machine pushes past the 5 s a test waits.
+  const d = await openAccountDb(ADA.id);
+  await d.put("meta", "1", "cursor");
+  d.close();
   writeLastUser(ADA);
 });
 afterEach(async () => {
   cleanup();
   localStorage.clear();
   vi.useRealTimers();
-  vi.restoreAllMocks();
   vi.unstubAllGlobals();
   await i18n.changeLanguage("en");
 });
@@ -146,7 +147,10 @@ describe("Home's activity line (§4.1)", () => {
     fakeApi({ me: ADA });
     renderRoute("/");
     await waitFor(async () => expect((await line()).textContent).toContain("6b+"));
-    fireEvent.click(await line());
+    // Awaited: run alone, this test opens the sheet first, before its code has loaded; the page
+    // has settled, so nothing else would render it once the code arrives.
+    const row = await line();
+    await act(async () => fireEvent.click(row));
     let s = await sheet();
     fireEvent.click(within(s).getByRole("radio", { name: "Color" }));
     const colors = within(s).getByRole("radiogroup", { name: "Color" });
@@ -190,7 +194,8 @@ describe("Home's activity line (§4.1)", () => {
     renderRoute("/");
     const row = await screen.findByRole("button", { name: /^Activité/ });
     await waitFor(() => expect(row.textContent).toContain("Escalade · 1 h 30 · 6b+"));
-    fireEvent.click(row);
+    // Awaited, as above: the sheet's code may still be loading on a settled page.
+    await act(async () => fireEvent.click(row));
     const s = await screen.findByRole("dialog", { name: "Activité" });
     expect(within(s).getByRole("radio", { name: "Bloc" })).toBeTruthy();
     expect(within(s).getByText("Le plus dur")).toBeTruthy();
