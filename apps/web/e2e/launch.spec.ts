@@ -1,4 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
+import { readFileSync } from "node:fs";
 import { fakeServer } from "./fake-server";
 import { readMotion, recordMotion } from "./motion";
 
@@ -246,4 +247,54 @@ test("with reduced motion the launch hooks stand still", async ({ page }) => {
   await page.waitForTimeout(1_500);
   expect((await readMotion(page)).filter((m) => m.target === "path[data-hook]")).toEqual([]);
   answer();
+});
+
+test("the launch word sits where the 1170x2532 launch image draws it", async ({ page }) => {
+  // The iPhone 390x844 at 3x, in standalone mode: the page starts below its 47 px status bar, and
+  // the lift is pinned to the full screen height, as the launch image generator does.
+  const [width, height, top, ratio] = [390, 844, 47, 3];
+  await page.setViewportSize({ width, height: height - top });
+  await fakeServer(page);
+  const answer = await holdAccount(page);
+  await page.goto("/");
+  await page.addStyleTag({
+    content: `.launch > div { transform: translateY(${-0.06 * height}px) }`,
+  });
+  const word = page.getByRole("img", { name: "Belay" });
+  await expect(word).toBeVisible();
+  const html = await word.locator("path").evaluate((path) => {
+    const r = path.getBoundingClientRect();
+    return [r.left, r.top, r.right, r.bottom];
+  });
+  const drawn = [
+    html[0]! * ratio,
+    (html[1]! + top) * ratio,
+    html[2]! * ratio,
+    (html[3]! + top) * ratio,
+  ];
+  answer();
+
+  const png = readFileSync(new URL("../public/startup/light-1170x2532.png", import.meta.url));
+  await page.setContent(`<img src="data:image/png;base64,${png.toString("base64")}">`);
+  const image = await page.locator("img").evaluate(async (img: HTMLImageElement) => {
+    await img.decode();
+    const canvas = document.createElement("canvas");
+    [canvas.width, canvas.height] = [img.naturalWidth, img.naturalHeight];
+    const context = canvas.getContext("2d")!;
+    context.drawImage(img, 0, 0);
+    const { data } = context.getImageData(0, 0, canvas.width, canvas.height);
+    // The word's pixels: past halfway from the chalk background to its stone 900.
+    let [left, top, right, bottom] = [canvas.width, canvas.height, 0, 0];
+    for (let y = 0; y < canvas.height; y++)
+      for (let x = 0; x < canvas.width; x++) {
+        const at = (y * canvas.width + x) * 4;
+        if (Math.max(data[at]!, data[at + 1]!, data[at + 2]!) < 139) {
+          [left, top] = [Math.min(left, x), Math.min(top, y)];
+          [right, bottom] = [Math.max(right, x + 1), Math.max(bottom, y + 1)];
+        }
+      }
+    return [left, top, right, bottom];
+  });
+  for (const [i, edge] of image.entries())
+    expect(Math.abs(edge - drawn[i]!)).toBeLessThanOrEqual(3);
 });
