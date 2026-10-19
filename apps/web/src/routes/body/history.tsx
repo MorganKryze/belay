@@ -1,6 +1,6 @@
 import type { ISODate } from "@belay/shared/body/dates";
 import type { IntakeLog } from "@belay/shared/body/intake";
-import { type Measure, measureOf } from "@belay/shared/body/measures";
+import { MEASURE_FIELDS, type Measure, measureOf } from "@belay/shared/body/measures";
 import type { Weighing } from "@belay/shared/body/weighings";
 import { ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -46,7 +46,7 @@ export function History({
         t("body.dayParts.protein", {
           value: formatNumber(l.proteinG, i18n.language, { digits: 0 }),
         }),
-      ...(["waist", "neck", "hip"] as const).map((f) => {
+      ...MEASURE_FIELDS.map((f) => {
         const cm = m ? measureOf(m, f) : null;
         return cm !== null && t(`body.dayParts.${f}`, { value: number(cm) });
       }),
