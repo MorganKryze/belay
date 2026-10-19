@@ -28,7 +28,9 @@ import { SyncBanner } from "@/components/sync-banner";
 import { Button } from "@/components/ui/button";
 import { type Entry, Toast, useWriter } from "@/components/weigh-in";
 import { WeighInSheet } from "@/components/weigh-in-sheet";
+import { readWeekIntake } from "@/lib/display-prefs";
 import { useFirstPull } from "@/lib/first-pull";
+import { readRangePill } from "@/lib/home-trend";
 import {
   formatKg,
   formatNumber,
@@ -144,6 +146,9 @@ function BodyContent({
   const [open, setOpen] = useState<Open | null>(null);
   // A saved sheet plays its exit over the screen that already shows the record.
   const [leaving, setLeaving] = useState(false);
+  // Device preferences from Réglages, read once per visit as Home reads its trend.
+  const [rangePill] = useState(readRangePill);
+  const [weekIntake] = useState(readWeekIntake);
   const { write, toast, error, clearError, dismiss } = useWriter(account);
   const close = () => {
     setOpen(null);
@@ -257,7 +262,7 @@ function BodyContent({
           <TrendFigure
             averageKg={average?.averageKg ?? null}
             lossPct={lossPct}
-            pill={lossPct !== null && inTargetRange(lossPct, target)}
+            pill={lossPct !== null && inTargetRange(lossPct, target) && rangePill === "shown"}
           />
         )}
         {onCreatine && (
@@ -349,6 +354,8 @@ function BodyContent({
             measures,
             intake,
             courses,
+            pill: rangePill === "shown",
+            showIntake: weekIntake === "shown",
             t,
             lang: i18n.language,
           }}
@@ -468,6 +475,9 @@ type WeekContext = {
   measures: Measure[];
   intake: IntakeLog[];
   courses: { start: ISODate; end: ISODate }[];
+  // Whether the range pill and the weekly intake show, as Réglages sets them on this device.
+  pill: boolean;
+  showIntake: boolean;
   t: TFunction;
   lang: string;
 };
@@ -489,7 +499,7 @@ function weekView(
       ? { kind: "toFollow", text: t("body.toFollow") }
       : w.status === "valid" && w.lossPct !== null
         ? {
-            kind: inTargetRange(w.lossPct, ctx.target) ? "inRange" : "plain",
+            kind: ctx.pill && inTargetRange(w.lossPct, ctx.target) ? "inRange" : "plain",
             text: lossText(w.lossPct, t, lang),
           }
         : { kind: "plain", text: "—" };
@@ -508,7 +518,8 @@ function weekView(
     why,
     w.averageKg !== null && t("trend.kg", { value: formatKg(w.averageKg, lang) }),
     waist !== null && t("body.dayParts.waist", { value: formatNumber(waist, lang, { digits: 1 }) }),
-    food.kcalAvg !== null &&
+    ctx.showIntake &&
+      food.kcalAvg !== null &&
       t("body.kcal", { value: formatNumber(Math.round(food.kcalAvg), lang, { digits: 0 }) }),
     onCreatine && t("body.creatinePill"),
   ].filter((p): p is string => typeof p === "string");

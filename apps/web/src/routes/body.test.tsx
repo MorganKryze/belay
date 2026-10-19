@@ -130,6 +130,47 @@ describe("the Body page", () => {
     expect(within(list).queryByText("in your range")).toBeNull();
   });
 
+  it("with the range pill hidden on this device, Corps shows no pill: the figure card, the weeks and the header", async () => {
+    localStorage.setItem("belay.rangePill", "hidden");
+    const list = await open();
+    const row = within(list).getAllByRole("listitem")[1]!;
+    expect(value(row).textContent).toBe("0.7%");
+    expect(value(row).querySelector("svg")).toBeNull();
+    expect(within(list).queryByText("in your range")).toBeNull();
+    expect(figureCard().textContent).toBe("7-day average80.0kgloss 0.7%/wk last week");
+    expect(screen.queryByText("in your range")).toBeNull();
+  });
+
+  const intake = (date: string, kcal: number) =>
+    ({ kind: "intake", date, field: "kcal", value: kcal, at: "2026-10-07T06:00:00.000Z" }) as const;
+  const history = () =>
+    within(screen.getByRole("region", { name: "History" }))
+      .getAllByRole("listitem")
+      .map((li) => li.textContent!.replace(/\s/g, " "));
+
+  it("with the weekly intake hidden, the weeks leave out kcal and the history keeps it", async () => {
+    localStorage.setItem("belay.weekIntake", "hidden");
+    const list = await open([...WEEKS, intake("2026-10-01", 2100)]);
+    expect(within(list).getAllByRole("listitem")[1]!.textContent).toBe(
+      "Sep 28 – Oct 40.7% in your range80.2\u00a0kg",
+    );
+    expect(list.textContent).not.toContain("kcal");
+    expect(history()).toContain("Thu, Oct 180.2 kg2,100 kcal");
+  });
+
+  it("the choices apply when Corps mounts again", async () => {
+    const list = await open([...WEEKS, intake("2026-10-01", 2100)]);
+    expect(list.textContent).toContain("kcal");
+    expect(within(list).getAllByText("in your range")).toHaveLength(2);
+    cleanup();
+    localStorage.setItem("belay.rangePill", "hidden");
+    localStorage.setItem("belay.weekIntake", "hidden");
+    renderRoute("/body");
+    const again = await screen.findByRole("region", { name: "Your weeks" });
+    expect(again.textContent).not.toContain("kcal");
+    expect(screen.queryByText("in your range")).toBeNull();
+  });
+
   it("the chart's summary says stable for a flat week", async () => {
     await open([
       ...days("2026-09-21", [80.8, 80.8, 80.8, 80.8]),

@@ -14,7 +14,7 @@ import { TodaySession } from "@/components/today-session";
 import { TrendFigure } from "@/components/trend-figure";
 import { Button } from "@/components/ui/button";
 import { formatWeekday } from "@/lib/format";
-import { readHomeTrend } from "@/lib/home-trend";
+import { readHomeTrend, readRangePill } from "@/lib/home-trend";
 import { useToday } from "@/lib/today";
 import {
   type OpenAccount,
@@ -133,6 +133,8 @@ function TrendCard({
 }) {
   const { t } = useTranslation();
   const target = useTarget(account).data;
+  // Read once per visit, as Home reads its trend.
+  const [rangePill] = useState(readRangePill);
   if (weighings.length === 0) return null;
   const average = latestMovingAverage(weighings, today);
   const week = weeklySummaries(weighings, today).find((w) => w.status !== "in_progress");
@@ -150,7 +152,12 @@ function TrendCard({
         <TrendFigure
           averageKg={average?.averageKg ?? null}
           lossPct={lossPct}
-          pill={lossPct !== null && target !== undefined && inTargetRange(lossPct, target)}
+          pill={
+            rangePill === "shown" &&
+            lossPct !== null &&
+            target !== undefined &&
+            inTargetRange(lossPct, target)
+          }
         />
       </Link>
     </section>
