@@ -57,6 +57,20 @@ test("Accueil opens on today's date above the greeting", async ({ page }) => {
   expect(style).toEqual({ size: "13px", weight: "500", color: muted });
 });
 
+// The mockup's spacing: 16 px from the header (greeting and avatar) to the session card.
+for (const width of [360, 390, 1280]) {
+  test(`the session card sits 16 px under the header at ${width} px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 800 });
+    await openHome(page);
+    const header = page.getByRole("heading", { level: 1, name: "Hello, Ada" }).locator("../..");
+    const [headerBox, cardBox] = [
+      (await header.boundingBox())!,
+      (await sessionCard(page).boundingBox())!,
+    ];
+    expect(cardBox.y - (headerBox.y + headerBox.height)).toBeCloseTo(16, 0);
+  });
+}
+
 test("the next session's card pushes its preview", async ({ page }) => {
   await openHome(page);
   const card = sessionCard(page);
