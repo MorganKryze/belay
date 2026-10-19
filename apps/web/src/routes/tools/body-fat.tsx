@@ -7,7 +7,7 @@ import { InlineChoice } from "@/components/inline-choice";
 import { NumberStepper } from "@/components/number-stepper";
 import { ProfileProposal, RestoreButton, usePrefill } from "@/components/prefill";
 import { RangeList } from "@/components/range-list";
-import { ResultCard } from "@/components/result-card";
+import { ResultCard, ResultFigure } from "@/components/result-card";
 import { Segmented } from "@/components/segmented";
 import { ToolPage } from "@/components/tool-page";
 import { attempt } from "@/lib/attempt";
@@ -197,13 +197,13 @@ export function BodyFatTool() {
       <ResultCard label={t("bodyFat.result")}>
         {r?.kind === "ok" ? (
           <>
-            <div className="flex items-baseline gap-2">
-              <span className="text-[40px] leading-none font-extrabold tracking-tight">
-                {pct(r.percent)}
-              </span>
-              <span className="text-[13px] text-muted-foreground">{t("bodyFat.error")}</span>
-            </div>
-            <p className="text-[13px] text-muted-foreground">{t("bodyFat.bias")}</p>
+            <ResultFigure
+              value={n(r.percent)}
+              unit="%"
+              unitSpace={i18n.language.startsWith("fr") ? "\u202f" : ""}
+            />
+            <p className="text-[13.5px] text-muted-foreground">{t("bodyFat.error")}</p>
+            <p className="text-[13.5px] text-muted-foreground">{t("bodyFat.bias")}</p>
           </>
         ) : (
           <p className="text-sm">
@@ -214,6 +214,7 @@ export function BodyFatTool() {
       {refs && th ? (
         <>
           <RangeList
+            heading
             label={t("bodyFat.rangesLabel")}
             currentId={r?.kind === "ok" ? bodyFatBand(r.percent, th) : null}
             rows={[
