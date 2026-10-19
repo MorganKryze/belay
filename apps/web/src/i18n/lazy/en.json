@@ -295,7 +295,7 @@
     "none": "No session this month.",
     "workSets_one": "{{count}} work set",
     "workSets_other": "{{count}} work sets",
-    "volume": "{{value}} kg",
+    "started": "{{day}} · {{time}}",
     "warmup": "Warm-up",
     "load": "{{kg}} kg × {{reps}}",
     "seconds": "{{seconds}} s",

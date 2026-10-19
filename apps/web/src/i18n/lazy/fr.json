@@ -295,7 +295,7 @@
     "none": "Aucune séance ce mois-ci.",
     "workSets_one": "{{count}} série de travail",
     "workSets_other": "{{count}} séries de travail",
-    "volume": "{{value}} kg",
+    "started": "{{day}} · {{h}} h {{mm}}",
     "warmup": "Montée",
     "load": "{{kg}} kg × {{reps}}",
     "seconds": "{{seconds}} s",

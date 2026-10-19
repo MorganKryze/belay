@@ -208,3 +208,81 @@ test("the delete row is red, centred, alone in its group at the page's end", asy
   });
   expect(place).toEqual({ rows: 1, last: true, below: true });
 });
+
+const strip = (page: Page) => page.locator("main dl");
+
+for (const theme of ["light", "dark"] as const) {
+  test(`the strip's figures are 20 px bold tabular under 12 px labels, in three equal columns of one card, ${theme}`, async ({
+    page,
+  }) => {
+    await page.addInitScript((t) => localStorage.setItem("belay.theme", t), theme);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await open(page, A, "Session A · Push");
+    if (theme === "dark") await expect(page.locator("html")).toHaveClass(/dark/);
+    const columns = await strip(page)
+      .locator(":scope > div")
+      .evaluateAll((divs) =>
+        divs.map((div) => {
+          const dt = getComputedStyle(div.querySelector("dt")!);
+          const dd = getComputedStyle(div.querySelector("dd")!);
+          const unit = div.querySelector("dd span");
+          return {
+            width: div.getBoundingClientRect().width,
+            label: [dt.fontSize, dt.fontWeight],
+            figure: [dd.fontSize, dd.fontWeight, dd.fontVariantNumeric, dd.letterSpacing],
+            unit: unit && getComputedStyle(unit).fontSize,
+          };
+        }),
+      );
+    expect(columns).toHaveLength(3);
+    for (const c of columns) {
+      expect(c.label).toEqual(["12px", "600"]);
+      expect(c.figure).toEqual(["20px", "700", "tabular-nums", "-0.2px"]);
+      expect(Math.abs(c.width - columns[0]!.width)).toBeLessThanOrEqual(1);
+    }
+    // « 1 h 04 » stays whole and the sets have no unit: only the volume's « kg » is small.
+    expect(columns.map((c) => c.unit)).toEqual([null, null, "12px"]);
+    const card = await strip(page).evaluate((el) => {
+      const s = getComputedStyle(el);
+      return { shadow: s.boxShadow, border: s.borderTopWidth };
+    });
+    if (theme === "light") {
+      expect(card.shadow).toContain("0.035");
+      expect(card.border).toBe("0px");
+    } else {
+      expect(card.shadow).toBe("none");
+      expect(card.border).toBe("1px");
+    }
+  });
+}
+
+test("with Session volume hidden the strip has two columns", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("belay.sessionVolume", "hidden"));
+  await page.setViewportSize({ width: 390, height: 844 });
+  await open(page, A, "Session A · Push");
+  await expect(strip(page).locator("dt")).toHaveText(["Duration", "Sets"]);
+  const widths = await strip(page)
+    .locator(":scope > div")
+    .evaluateAll((divs) => divs.map((d) => d.getBoundingClientRect().width));
+  const card = (await strip(page).boundingBox())!;
+  expect(widths).toHaveLength(2);
+  // Two halves of the card.
+  for (const w of widths) expect(Math.abs(w - card.width / 2)).toBeLessThanOrEqual(1);
+});
+
+test.describe("in French", () => {
+  test.use({ locale: "fr-FR" });
+
+  test("the day and start time fit on one line at 360 px", async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 740 });
+    await open(page, C, "Séance C · Fessiers + tirage léger");
+    const line = page.getByText("Mardi 6 octobre · 18 h 00", { exact: true });
+    await expect(line).toBeVisible();
+    const lines = await line.evaluate((p) => {
+      const range = document.createRange();
+      range.selectNodeContents(p);
+      return new Set([...range.getClientRects()].map((r) => Math.round(r.top))).size;
+    });
+    expect(lines).toBe(1);
+  });
+});

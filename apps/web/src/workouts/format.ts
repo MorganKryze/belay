@@ -1,9 +1,10 @@
+import { type ISODate, toISODate } from "@belay/shared/body/dates";
 import { exerciseById } from "@belay/shared/exercises/catalog";
 import { groupOf } from "@belay/shared/training/program";
 import type { Load, Summary } from "@belay/shared/training/rules";
 import type { Slot } from "@belay/shared/training/workout";
 import type { TFunction } from "i18next";
-import { formatNumber } from "@/lib/format";
+import { formatNumber, formatWeekday } from "@/lib/format";
 
 // "6–8", or "2" when both ends are equal.
 export const formatRange = ([min, max]: readonly [number, number]) =>
@@ -71,4 +72,21 @@ export function recordText(r: Summary["records"][number], t: TFunction, locale: 
       ? t("summary.recordLoadSeconds", { exercise, kg, seconds: r.seconds })
       : t("summary.recordSeconds", { exercise, seconds: r.seconds });
   return t("summary.record", { exercise, kg, reps: r.reps });
+}
+
+// The day a session started and its start time, on this device's clock: « Lundi 28 septembre ·
+// 18 h 12 » (French writes the hour as the length writes « 1 h 02 »), "Monday, September 28 ·
+// 6:12 PM".
+export function formatStarted(startedAt: string, locale: string, today: ISODate, t: TFunction) {
+  const start = new Date(startedAt);
+  const clock = new Intl.DateTimeFormat(locale, { hour: "numeric", minute: "2-digit" });
+  const parts = clock.formatToParts(start);
+  const part = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((p) => p.type === type)?.value ?? "";
+  return t("history.started", {
+    day: formatWeekday(toISODate(start), locale, today, { long: true }),
+    time: clock.format(start),
+    h: part("hour"),
+    mm: part("minute"),
+  });
 }

@@ -30,6 +30,13 @@ afterEach(async () => {
   await i18n.changeLanguage("en");
 });
 
+// The strip under the title, as [label, figure] per column.
+const strip = () =>
+  [...screen.getByText(/^(Duration|Durée)$/).closest("dl")!.children].map((c) => [
+    c.querySelector("dt")!.textContent,
+    c.querySelector("dd")!.textContent,
+  ]);
+
 // The number drawn in a card's tile, hidden from screen readers as the heading says the name.
 const tile = (card: HTMLElement) => card.querySelector("[aria-hidden]")?.textContent;
 
@@ -56,7 +63,7 @@ describe("a session's detail", () => {
     renderRoute("/workouts?tab=history");
     fireEvent.click(await screen.findByRole("link", { name: /Session B · Legs/ }));
     expect(await screen.findByRole("heading", { name: "Session B · Legs", level: 1 })).toBeTruthy();
-    expect(screen.getByText(/Mon, Oct 5 · 58 min · 2 work sets · 1,000 kg/)).toBeTruthy();
+    expect(screen.getByText(/^Monday, October 5 · 6:00\sPM$/)).toBeTruthy();
     const squat = screen.getByRole("region", { name: "Barbell full squat" });
     expect(
       within(squat)
@@ -84,6 +91,54 @@ describe("a session's detail", () => {
       value: true,
     });
     db.close();
+  });
+
+  it("opens on its day and start time", async () => {
+    await seed(ADA.id, MONTH);
+    fakeApi({ me: ADA });
+    renderRoute(`/workouts/${id(2)}`);
+    await screen.findByRole("heading", { name: "Session B · Legs", level: 1 });
+    const line = screen.getByText(/^Monday, October 5 · 6:00\sPM$/);
+    // Right under the title, before the strip.
+    const title = screen.getByRole("heading", { level: 1 });
+    expect(line.previousElementSibling!.contains(title)).toBe(true);
+    expect(line.compareDocumentPosition(screen.getByText("Duration").closest("dl")!)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+  });
+
+  it("the strip reads Duration 58 min, Sets 2, Volume 1,000 kg", async () => {
+    await seed(ADA.id, MONTH);
+    fakeApi({ me: ADA });
+    renderRoute(`/workouts/${id(2)}`);
+    await screen.findByRole("heading", { name: "Session B · Legs", level: 1 });
+    // The warm-up at 60 kg × 5 is left out of the sets and the volume.
+    expect(strip()).toEqual([
+      ["Duration", "58 min"],
+      ["Sets", "2"],
+      ["Volume", "1,000 kg"],
+    ]);
+  });
+
+  it("from an hour the duration stays whole", async () => {
+    await seed(ADA.id, MONTH);
+    fakeApi({ me: ADA });
+    renderRoute(`/workouts/${id(1)}`);
+    await screen.findByRole("heading", { name: "Session A · Push", level: 1 });
+    expect(strip()[0]).toEqual(["Duration", "1 h 04"]);
+  });
+
+  it("with the volume hidden on this device the strip keeps Duration and Sets", async () => {
+    localStorage.setItem("belay.sessionVolume", "hidden");
+    await seed(ADA.id, MONTH);
+    fakeApi({ me: ADA });
+    renderRoute(`/workouts/${id(2)}`);
+    await screen.findByRole("heading", { name: "Session B · Legs", level: 1 });
+    expect(strip()).toEqual([
+      ["Duration", "58 min"],
+      ["Sets", "2"],
+    ]);
+    expect(screen.queryByText("Volume")).toBeNull();
   });
 
   it("numbers the work sets from 1 for each exercise, one replaced mid-session included", async () => {
@@ -250,9 +305,12 @@ describe("a session's detail", () => {
     fakeApi({ me: ADA });
     renderRoute(`/workouts/${id(2)}`);
     expect(await screen.findByRole("heading", { name: "Séance B · Legs", level: 1 })).toBeTruthy();
-    expect(
-      screen.getByText(/Lun\. 5 oct\. · 58 min · 2 séries de travail · 1\s000 kg/),
-    ).toBeTruthy();
+    expect(screen.getByText("Lundi 5 octobre · 18 h 00")).toBeTruthy();
+    expect(strip()).toEqual([
+      ["Durée", "58 min"],
+      ["Séries", "2"],
+      ["Volume", "1\u202f000 kg"],
+    ]);
     fireEvent.click(screen.getByRole("button", { name: "Supprimer cette séance" }));
     expect(await screen.findByRole("dialog", { name: "Supprimer cette séance ?" })).toBeTruthy();
   });
