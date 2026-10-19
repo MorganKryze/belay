@@ -74,11 +74,29 @@ WARMED.splice(1, 0, {
   doneAt: "2026-10-04T16:00:00.000Z",
   at: "2026-10-04T16:00:00.000Z",
 });
+const A2 = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7f04";
+// Session A again on Wednesday morning, one set at 85 kg beating Monday's 80 kg, with a note.
+const BEATEN: Change[] = [
+  ...finished(A2, "A", "2026-10-07T07:00:00.000Z", "2026-10-07T08:00:00.000Z", 1).map(
+    (c): Change =>
+      c.kind === "set" && c.field === "create"
+        ? { ...c, id: "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c8d10", weightKg: 85 }
+        : c,
+  ),
+  {
+    kind: "workout",
+    id: A2,
+    field: "note",
+    value: "Felt strong today.",
+    at: "2026-10-07T08:00:00.000Z",
+  },
+];
 // Session A on Monday, and session C, the longest title, on Tuesday.
 const PAST: Change[] = [
   ...WARMED,
   ...finished(A, "A", "2026-10-05T16:00:00.000Z", "2026-10-05T17:04:00.000Z", 12),
   ...finished(C, "C", "2026-10-06T16:00:00.000Z", "2026-10-06T17:10:00.000Z", 12),
+  ...BEATEN,
 ];
 
 async function open(page: Page, workout: string, title: string) {
@@ -322,6 +340,70 @@ for (const [locale, word, title] of [
       expect(text.lines).toBe(1);
       expect(text.gap).toBeGreaterThanOrEqual(4);
     });
+  });
+}
+
+test("a past session reads its figures, then its record, then its exercises", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await open(page, A2, "Session A · Push");
+  const record = page.locator("main p").filter({ hasText: "Record:" }).first();
+  await expect(record).toBeVisible();
+  const exercises = page.getByRole("heading", { level: 2, name: "Exercises" });
+  const order = await page
+    .locator("main")
+    .evaluate((main) =>
+      [...main.querySelectorAll("dl, p, h2")]
+        .map((el) =>
+          el.tagName === "DL"
+            ? "strip"
+            : el.tagName === "H2" && el.textContent === "Exercises"
+              ? "exercises"
+              : el.tagName === "P" && el.textContent?.startsWith("Record:")
+                ? "record"
+                : null,
+        )
+        .filter(Boolean),
+    );
+  expect(order).toEqual(["strip", "record", "exercises"]);
+  await expect(exercises).toBeVisible();
+});
+
+for (const theme of ["light", "dark"] as const) {
+  test(`the session note sits on the card surface, ${theme}`, async ({ page }) => {
+    await page.addInitScript((t) => localStorage.setItem("belay.theme", t), theme);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await open(page, A2, "Session A · Push");
+    if (theme === "dark") await expect(page.locator("html")).toHaveClass(/dark/);
+    const note = page.getByRole("region", { name: "Session note" });
+    await expect(note).toContainText("Felt strong today.");
+    const card = await page.evaluate(() => {
+      const probe = document.createElement("div");
+      probe.style.backgroundColor = "var(--card)";
+      probe.style.borderTopLeftRadius = "var(--radius-card)";
+      document.body.append(probe);
+      const s = getComputedStyle(probe);
+      const look = { bg: s.backgroundColor, radius: s.borderTopLeftRadius };
+      probe.remove();
+      return look;
+    });
+    const look = await note.evaluate((el) => {
+      const s = getComputedStyle(el);
+      return {
+        bg: s.backgroundColor,
+        radius: s.borderTopLeftRadius,
+        shadow: s.boxShadow,
+        border: s.borderTopWidth,
+      };
+    });
+    // A standalone card, not a grouped list's: the card's color and its larger corner.
+    expect(look.bg).toBe(card.bg);
+    expect(look.radius).toBe(card.radius);
+    if (theme === "light") {
+      expect(look.shadow).not.toBe("none");
+      expect(look.border).toBe("0px");
+    } else {
+      expect(look.border).toBe("1px");
+    }
   });
 }
 
