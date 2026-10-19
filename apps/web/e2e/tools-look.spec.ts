@@ -74,7 +74,7 @@ test("How it's calculated is a 56 px row with a 28 px info square and its source
     const summary = row(page);
     await expect(summary).toHaveText(`How it's calculated ${label}`);
     expect((await summary.boundingBox())!.height).toBeGreaterThanOrEqual(56);
-    const square = summary.locator("> div").first();
+    const square = summary.locator("> span").first();
     const box = (await square.boundingBox())!;
     expect([box.width, box.height]).toEqual([28, 28]);
     expect(await style(square, "background-color")).toBe(await token(page, "--primary-soft"));
