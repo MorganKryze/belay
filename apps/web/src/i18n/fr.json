@@ -24,10 +24,6 @@
       "quarter": "3 mois",
       "all": "Tout"
     },
-    "average": "Moyenne 7 jours",
-    "lossPerWeek": "Perte par semaine",
-    "lossUnit": "%",
-    "gainUnit": "% de prise",
     "inRange": "dans ta fourchette",
     "weeks": "Tes semaines",
     "thisWeek": "Cette semaine",
@@ -86,7 +82,8 @@
     "gain": "prise",
     "perWeek": "{{value}} %/sem",
     "kg": "{{value}} kg",
-    "lastWeek": "la semaine dernière"
+    "lastWeek": "la semaine dernière",
+    "stable": "stable"
   },
   "weighIn": {
     "weight": "Poids",

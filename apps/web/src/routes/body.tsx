@@ -18,6 +18,8 @@ import { Plus } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/page-header";
+import { cardSurface } from "@/components/surfaces";
+import { TrendFigure } from "@/components/trend-figure";
 import { AnnotationSheet } from "@/components/annotation-sheet";
 import { MeasuresSheet } from "@/components/measures-sheet";
 import { Segmented } from "@/components/segmented";
@@ -172,10 +174,8 @@ function BodyContent({
     logs.filter((l) => creatine.has(l.supplementId)).map((l) => l.date),
     today,
   );
-  // During a course, said once under the figures: the scale may rise with water.
-  const creatineNote = courses.some((c) => c.start <= today && today <= c.end) && (
-    <p className="text-sm text-muted-foreground">{t("body.creatineNote")}</p>
-  );
+  // During a course, said once under the figure: the scale may rise with water.
+  const onCreatine = courses.some((c) => c.start <= today && today <= c.end);
   const marks: ChartMark[] = annotations.map((a) => ({
     id: a.id,
     date: a.date,
@@ -220,6 +220,25 @@ function BodyContent({
 
   return (
     <>
+      <section aria-labelledby="figure" className={`${cardSurface} flex flex-col px-4 py-3.5`}>
+        <h2 id="figure" className="text-[13px] font-semibold text-muted-foreground">
+          {t("trend.average")}
+        </h2>
+        {weighings.length < MIN_WEIGHINGS ? (
+          <FirstDays weighings={weighings} today={today} />
+        ) : (
+          <TrendFigure
+            averageKg={average?.averageKg ?? null}
+            lossPct={lossPct}
+            pill={lossPct !== null && inTargetRange(lossPct, target)}
+          />
+        )}
+        {onCreatine && (
+          <p className="mt-2.5 border-t border-border pt-2.5 text-[13px] text-muted-foreground">
+            {t("body.creatineNote")}
+          </p>
+        )}
+      </section>
       <Segmented
         label={t("body.period")}
         labelHidden
@@ -232,7 +251,7 @@ function BodyContent({
         ]}
       />
       {shown.length > 0 && (
-        <div className={`${card} px-2 pt-2.5 pb-1.5`}>
+        <div className={`${cardSurface} px-2 pt-2.5 pb-1.5`}>
           <div
             aria-hidden
             className="mb-1 flex flex-wrap gap-x-3 gap-y-1 px-1 text-xs text-muted-foreground"
@@ -247,7 +266,7 @@ function BodyContent({
             </span>
             {shownCourses.length > 0 && (
               <span className="flex items-center gap-1">
-                <i className="size-2.5 rounded-[3px] border border-primary-ink/40 bg-primary-soft" />
+                <i className="size-2.5 rounded-[3px] bg-primary-soft ring-1 ring-primary-ink ring-inset" />
                 {t("chart.creatine")}
               </span>
             )}
@@ -301,28 +320,19 @@ function BodyContent({
           {t("annotation.button")}
         </Button>
       </div>
-      {weighings.length < MIN_WEIGHINGS ? (
-        <>
-          <FirstDays weighings={weighings} today={today} />
-          {creatineNote}
-        </>
-      ) : (
-        <>
-          <Figures average={average?.averageKg ?? null} lossPct={lossPct} target={target} />
-          {creatineNote}
-          <Weeks
-            weeks={weeks.filter((w) => w.end >= from)}
-            firstWeek={weeks.at(-1)!.start}
-            target={target}
-            today={today}
-            lossText={lossText}
-            measures={measures}
-            intake={intake}
-            courses={courses}
-            annotations={annotations}
-            onAnnotation={(annotation) => setOpen({ sheet: "annotation", annotation })}
-          />
-        </>
+      {weighings.length >= MIN_WEIGHINGS && (
+        <Weeks
+          weeks={weeks.filter((w) => w.end >= from)}
+          firstWeek={weeks.at(-1)!.start}
+          target={target}
+          today={today}
+          lossText={lossText}
+          measures={measures}
+          intake={intake}
+          courses={courses}
+          annotations={annotations}
+          onAnnotation={(annotation) => setOpen({ sheet: "annotation", annotation })}
+        />
       )}
       <History
         weighings={shown}
@@ -391,56 +401,18 @@ function FirstDays({ weighings, today }: { weighings: Weighing[]; today: ISODate
   const monday = isoWeekStart(today);
   const thisWeek = weighings.filter((w) => w.date >= monday).length;
   return (
-    <div className="flex flex-col gap-1 rounded-card bg-primary-soft p-4">
-      <h2 className={sectionTitle}>
+    <>
+      <span
+        data-slot="trend-figure"
+        className="mt-2.5 mb-2 text-figure tracking-[-0.03em] text-foreground tabular-nums"
+      >
+        —
+      </span>
+      <h3 className="text-body font-semibold">
         {t("body.firstDays", { count: Math.max(1, MIN_WEIGHINGS - thisWeek) })}
-      </h2>
-      <p className="text-sm text-muted-foreground">{t("body.firstDaysBody")}</p>
-    </div>
-  );
-}
-
-// The latest 7-day average, and the last complete week against the one before. Outside the
-// range the number stands alone: no colour, no word that judges; a gain is said as a gain.
-function Figures({
-  average,
-  lossPct,
-  target,
-}: {
-  average: number | null;
-  lossPct: number | null;
-  target: TargetRange;
-}) {
-  const { t, i18n } = useTranslation();
-  const loss = lossPct === null ? null : lossView(lossPct);
-  const big = "text-[26px] leading-tight font-extrabold tabular-nums";
-  const unit = "ml-1 text-[13px] font-semibold text-muted-foreground";
-  return (
-    <div className="grid grid-cols-2 gap-3">
-      <div>
-        <p className="text-sm text-muted-foreground">{t("body.average")}</p>
-        <p className={big}>
-          {average === null ? "—" : formatKg(average, i18n.language)}
-          {average !== null && <span className={unit}>kg</span>}
-        </p>
-      </div>
-      <div className="flex flex-col items-start">
-        <p className="text-sm text-muted-foreground">{t("body.lossPerWeek")}</p>
-        <p className={big}>
-          {loss === null
-            ? "—"
-            : formatNumber(loss.value, i18n.language, { digits: 1, minDigits: 1 })}
-          {loss !== null && (
-            <span className={unit}>
-              {t(loss.kind === "gain" ? "body.gainUnit" : "body.lossUnit")}
-            </span>
-          )}
-        </p>
-        {lossPct !== null && inTargetRange(lossPct, target) && (
-          <span className={rangePill}>{t("body.inRange")}</span>
-        )}
-      </div>
-    </div>
+      </h3>
+      <p className="mt-1 text-sm text-muted-foreground">{t("body.firstDaysBody")}</p>
+    </>
   );
 }
 

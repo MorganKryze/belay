@@ -11,8 +11,9 @@ import { cardSurface, sectionLabel } from "@/components/surfaces";
 import { SyncBanner } from "@/components/sync-banner";
 import { TodayCard } from "@/components/today-card";
 import { TodaySession } from "@/components/today-session";
+import { TrendFigure } from "@/components/trend-figure";
 import { Button } from "@/components/ui/button";
-import { formatKg, formatNumber, formatWeekday, lossView } from "@/lib/format";
+import { formatWeekday } from "@/lib/format";
 import { readHomeTrend } from "@/lib/home-trend";
 import { useToday } from "@/lib/today";
 import {
@@ -120,8 +121,7 @@ function SignedInHome({ account }: { account: OpenAccount }) {
 }
 
 // The 7-day average as the card's figure, and the loss of the last complete week; nothing before
-// the first weigh-in. The whole card opens Body. The pill follows Body's rule; outside the range
-// the number stands alone, with no colour or word that judges.
+// the first weigh-in. The whole card opens Body, whose figure card shows the same figure.
 function TrendCard({
   account,
   weighings,
@@ -131,13 +131,12 @@ function TrendCard({
   weighings: Weighing[];
   today: ISODate;
 }) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const target = useTarget(account).data;
   if (weighings.length === 0) return null;
   const average = latestMovingAverage(weighings, today);
   const week = weeklySummaries(weighings, today).find((w) => w.status !== "in_progress");
   const lossPct = week?.lossPct ?? null;
-  const loss = lossPct === null ? null : lossView(lossPct);
   return (
     <section aria-labelledby="trend" className="flex flex-col gap-2">
       <h2 id="trend" className={sectionLabel}>
@@ -148,33 +147,11 @@ function TrendCard({
           {t("trend.average")}
           <ChevronRight aria-hidden className="size-4" />
         </span>
-        <span
-          data-slot="trend-figure"
-          className="mt-2.5 mb-2 text-figure tracking-[-0.03em] text-foreground tabular-nums"
-        >
-          {average ? formatKg(average.averageKg, i18n.language) : "—"}
-          {average && (
-            <span className="ml-1.5 text-[17px] font-semibold tracking-normal text-muted-foreground">
-              kg
-            </span>
-          )}
-        </span>
-        {loss && (
-          <span className="text-[13.5px] text-muted-foreground">
-            {t(loss.kind === "gain" ? "trend.gain" : "trend.loss")}{" "}
-            <b className="font-semibold whitespace-nowrap text-foreground tabular-nums">
-              {t("trend.perWeek", {
-                value: formatNumber(loss.value, i18n.language, { digits: 1, minDigits: 1 }),
-              })}
-            </b>{" "}
-            {t("trend.lastWeek")}
-          </span>
-        )}
-        {lossPct !== null && target && inTargetRange(lossPct, target) && (
-          <span className="mt-2 self-start rounded-full bg-reference px-2 py-0.5 text-xs font-semibold whitespace-nowrap text-reference-ink">
-            {t("body.inRange")}
-          </span>
-        )}
+        <TrendFigure
+          averageKg={average?.averageKg ?? null}
+          lossPct={lossPct}
+          pill={lossPct !== null && target !== undefined && inTargetRange(lossPct, target)}
+        />
       </Link>
     </section>
   );

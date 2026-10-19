@@ -52,6 +52,8 @@ describe("the Body tab", () => {
   });
 });
 
+const AT = "2026-10-01T06:30:00.000Z";
+const CREATINE = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d8f";
 // Wednesday 7 October 2026: the current ISO week runs from Monday 5 October.
 const days = (first: string, kgs: number[]) => kgs.map((kg, i) => weight(addDays(first, i), kg));
 const WEEKS = [
@@ -89,22 +91,21 @@ describe("the Body page", () => {
     ]);
   });
 
-  it("shows the latest 7-day average and the last complete week's loss in the range", async () => {
+  const figureCard = () => screen.getByRole("region", { name: "7-day average" });
+
+  it("opens on the figure card: the 7-day average, last week's loss and the pill", async () => {
     await open();
-    expect(screen.getByText("7-day average", { selector: "p" }).nextSibling?.textContent).toBe(
-      "80.0kg",
-    );
-    expect(screen.getByText("Loss per week").parentElement?.textContent).toBe(
-      "Loss per week0.7%in your range",
-    );
+    const card = figureCard();
+    expect(card.textContent).toBe("7-day average80.0kgloss 0.7%/wk last weekin your range");
+    expect(within(card).queryByRole("link")).toBeNull();
   });
 
-  it("shows a loss outside the range as a number alone, with no word that judges", async () => {
+  it("a loss outside the range stands alone in the card", async () => {
     await open([
       ...WEEKS,
       { kind: "target", minPct: 0.25, maxPct: 0.5, at: "2026-10-07T06:00:00.000Z" },
     ]);
-    expect(screen.getByText("Loss per week").parentElement?.textContent).toBe("Loss per week0.7%");
+    expect(figureCard().textContent).toBe("7-day average80.0kgloss 0.7%/wk last week");
     expect(screen.queryByText("in your range")).toBeNull();
   });
 
@@ -116,20 +117,60 @@ describe("the Body page", () => {
     ]);
     fakeApi({ me: ADA });
     renderRoute("/body");
-    const perte = await screen.findByText("Perte par semaine");
-    expect(perte.parentElement?.textContent).toBe("Perte par semaine0,2% de prise");
     const weeks = await screen.findByRole("region", { name: "Tes semaines" });
+    const card = screen.getByRole("region", { name: "Moyenne 7 jours" });
+    expect(within(card).getByText(/^prise/).textContent).toBe(
+      "prise 0,2\u202f%/sem la semaine dernière",
+    );
     expect(within(weeks).getByText("0,2 % de prise")).toBeTruthy(); // the matcher folds the narrow space
   });
 
-  it("explains the first days instead of an average", async () => {
+  it("a flat week reads stable last week", async () => {
+    await open([
+      ...days("2026-09-21", [80.8, 80.8, 80.8, 80.8]),
+      ...days("2026-09-28", [80.8, 80.8, 80.8, 80.8]),
+    ]);
+    const card = figureCard();
+    expect(within(card).getByText("stable", { selector: "b" })).toBeTruthy();
+    expect(card.textContent).toContain("stable last week");
+    expect(card.textContent).not.toMatch(/loss|gain|0\.0/);
+  });
+
+  it("explains the first days inside the figure card", async () => {
     await seed(ADA.id, days("2026-10-06", [80.2, 80.1]));
     fakeApi({ me: ADA });
     renderRoute("/body");
-    expect(await screen.findByRole("heading", { name: "2 more weigh-ins this week" })).toBeTruthy();
-    expect(screen.getByText(/A single day's weight varies too much to say anything/)).toBeTruthy();
+    const heading = await screen.findByRole("heading", { name: "2 more weigh-ins this week" });
+    const card = figureCard();
+    expect(card.contains(heading)).toBe(true);
+    expect(heading.tagName).toBe("H3");
+    expect(within(card).getByText("—")).toBeTruthy();
+    expect(
+      within(card).getByText(/A single day's weight varies too much to say anything/),
+    ).toBeTruthy();
     expect(screen.queryByRole("region", { name: "Your weeks" })).toBeNull();
     expect(screen.getByRole("button", { name: /Yesterday/ })).toBeTruthy();
+  });
+
+  it("the creatine sentence sits in the figure card", async () => {
+    await open([
+      ...WEEKS,
+      { kind: "supplement", id: CREATINE, field: "name", value: "Créatine", at: AT },
+      { kind: "supplementLog", supplementId: CREATINE, date: "2026-10-01", taken: true, at: AT },
+    ]);
+    const note = screen.getByText(/rises by 1 to 2 kg of water/);
+    expect(figureCard().lastElementChild).toBe(note);
+  });
+
+  it("the period sits between the figure card and the chart", async () => {
+    await open();
+    const card = figureCard();
+    const period = screen.getByRole("radiogroup", { name: "Period" });
+    const chart = screen.getByRole("img", { name: /^Weigh-ins from/ });
+    const follows = (a: Node, b: Node) =>
+      Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(follows(card, period)).toBe(true);
+    expect(follows(period, chart)).toBe(true);
   });
 
   it("opens a weigh-in from the history, and gives focus back to its line", async () => {
