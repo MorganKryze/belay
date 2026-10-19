@@ -50,8 +50,33 @@ function finished(
     { kind: "workout", id: workout, field: "ended", value: end, at: end },
   ];
 }
+const B = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7f03";
+// Session B on Sunday, opened by a warm-up set before its two working sets.
+const WARMED: Change[] = finished(
+  B,
+  "B",
+  "2026-10-04T16:00:00.000Z",
+  "2026-10-04T16:58:00.000Z",
+  2,
+);
+WARMED.splice(1, 0, {
+  kind: "set",
+  id: "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c8b00",
+  workoutId: B,
+  field: "create",
+  slotIndex: 0,
+  position: 0,
+  exerciseId: sessionByCode("B")!.slots[0]!.exerciseId,
+  warmup: true,
+  weightKg: 40,
+  reps: 8,
+  rir: null,
+  doneAt: "2026-10-04T16:00:00.000Z",
+  at: "2026-10-04T16:00:00.000Z",
+});
 // Session A on Monday, and session C, the longest title, on Tuesday.
 const PAST: Change[] = [
+  ...WARMED,
   ...finished(A, "A", "2026-10-05T16:00:00.000Z", "2026-10-05T17:04:00.000Z", 12),
   ...finished(C, "C", "2026-10-06T16:00:00.000Z", "2026-10-06T17:10:00.000Z", 12),
 ];
@@ -268,6 +293,19 @@ test("with Session volume hidden the strip has two columns", async ({ page }) =>
   expect(widths).toHaveLength(2);
   // Two halves of the card.
   for (const w of widths) expect(Math.abs(w - card.width / 2)).toBeLessThanOrEqual(1);
+});
+
+test("the warm-up label holds on one line in its 40 px column", async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 740 });
+  await open(page, B, "Session B · Legs");
+  const label = page.locator("main li").getByText("Warm-up", { exact: true });
+  await expect(label).toBeVisible();
+  const lines = await label.evaluate((span) => {
+    const range = document.createRange();
+    range.selectNodeContents(span);
+    return new Set([...range.getClientRects()].map((r) => Math.round(r.top))).size;
+  });
+  expect(lines).toBe(1);
 });
 
 test.describe("in French", () => {

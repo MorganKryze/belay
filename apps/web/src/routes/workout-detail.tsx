@@ -254,7 +254,7 @@ function ExerciseSets({
             <span
               className={
                 s.warmup
-                  ? "text-center text-[11px] leading-tight font-semibold text-primary-ink"
+                  ? "justify-self-center text-center text-[11px] leading-tight font-semibold whitespace-nowrap text-primary-ink"
                   : `text-center font-semibold ${secondary}`
               }
             >
