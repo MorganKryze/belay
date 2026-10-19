@@ -327,6 +327,7 @@ function RowBody({
       </span>
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="font-semibold">{title}</span>
+        {/* Keyed: each state mounts its own span instead of patching the one before into it. */}
         {status === null ? (
           <span key="blank" aria-hidden className="text-[13px] text-muted-foreground">
             {"\u00a0"}
