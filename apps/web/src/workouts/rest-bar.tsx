@@ -25,7 +25,9 @@ export function RestBar({
   onChange: (endsAt: string | null) => void;
 }) {
   const { t } = useTranslation();
-  const now = restClock(pausedAt, useNow(250), stops);
+  // The last tick may be up to 250 ms old: a pause tapped since then would first show the rest
+  // from before the tap, then step down a second at the next tick.
+  const now = restClock(pausedAt, Math.max(useNow(250), Date.now()), stops);
   const end = Date.parse(endsAt);
   const left = end - now;
   const over = left <= 0;
