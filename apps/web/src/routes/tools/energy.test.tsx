@@ -248,13 +248,28 @@ describe("projection", () => {
     expect(screen.queryByText(/Belay suggests being followed/)).toBeNull();
   });
 
-  it("shows the presets with their kg per week at the current weight", async () => {
-    save({ weightKg: 82 });
+  it("sets the pace with a segment and states it as a line", async () => {
+    save({ weightKg: 80.4, lastInputs: { projection: { targetKg: 75 } } });
     renderRoute("/tools/projection");
-    const list = await screen.findByRole("radiogroup", { name: /Your pace/ });
-    expect(within(list).getByRole("radio", { name: /Balanced/ }).textContent).toContain(
-      "0.75% · 0.6 kg",
-    );
+    const group = await screen.findByRole("radiogroup", { name: "Your pace (loss per week)" });
+    const radios = within(group).getAllByRole("radio");
+    expect(radios.map((r) => r.textContent)).toEqual(["Gentle", "Balanced", "Steady"]);
+    expect(
+      within(group).getByRole("radio", { name: "Balanced" }).getAttribute("aria-checked"),
+    ).toBe("true");
+    expect(screen.getByText("0.75% · 0.6 kg per week")).toBeTruthy();
+    const before = (await result("Goal reached")).textContent;
+    fireEvent.click(within(group).getByRole("radio", { name: "Steady" }));
+    expect(screen.getByText("1% · 0.8 kg per week")).toBeTruthy();
+    expect((await result("Goal reached")).textContent).not.toBe(before);
+  });
+
+  it("opens a stored pace that matches no preset in fine tuning", async () => {
+    save({ lastInputs: { projection: { targetKg: 75, pct: 1.2, fine: false } } });
+    renderRoute("/tools/projection");
+    await result("Goal reached");
+    expect(screen.queryByRole("radiogroup", { name: /Your pace/ })).toBeNull();
+    expect(screen.getByRole("textbox", { name: /Pace \(% per week\)/ })).toBeTruthy();
   });
 
   it("does not crash on an empty or out-of-range value", async () => {

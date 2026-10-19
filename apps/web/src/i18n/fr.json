@@ -336,7 +336,7 @@
       "balanced": "Équilibré",
       "steady": "Soutenu"
     },
-    "rateAside": "{{pct}} % · {{kg}} kg",
+    "rateLine": "{{pct}} % · {{kg}} kg par semaine",
     "fine": "Réglage fin",
     "presets": "Revenir aux rythmes",
     "fineLabel": "Rythme (% par semaine)",
