@@ -129,6 +129,7 @@ function History({ account }: { account: OpenAccount }) {
                 sentence={t("history.first")}
                 precision={t("history.firstHow")}
                 action={null}
+                quiet
               />
             </div>
           ) : (

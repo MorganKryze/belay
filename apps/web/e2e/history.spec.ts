@@ -290,6 +290,40 @@ test.describe("the history's rows, on Wednesday 7 October 2026", () => {
     });
   }
 
+  test.describe("in French", () => {
+    test.use({ locale: "fr-FR" });
+
+    test("the empty History reads a regular sentence over a smaller muted line, two lines at 360 px", async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 360, height: 800 });
+      await fakeServer(page, { changes: [] });
+      await page.goto("/workouts?tab=history");
+      const sentence = page.getByText("Ta première séance apparaîtra ici.");
+      await expect(sentence).toBeVisible();
+      const how = sentence.locator("xpath=following-sibling::p[1]");
+      const read = (l: typeof sentence) =>
+        l.evaluate((el) => {
+          const s = getComputedStyle(el);
+          return {
+            size: s.fontSize,
+            weight: s.fontWeight,
+            color: s.color,
+            lines: Math.round(el.getBoundingClientRect().height / parseFloat(s.lineHeight)),
+          };
+        });
+      const first = await read(sentence);
+      expect([first.size, first.weight]).toEqual(["15px", "400"]);
+      const second = await read(how);
+      expect(second).toEqual({
+        size: "13px",
+        weight: "400",
+        color: await tokenColor(page, "--muted-foreground"),
+        lines: 2,
+      });
+    });
+  });
+
   test("an empty History has nothing scrolling sideways at 360 px", async ({ page }) => {
     await page.setViewportSize({ width: 360, height: 800 });
     await fakeServer(page, { changes: [] });

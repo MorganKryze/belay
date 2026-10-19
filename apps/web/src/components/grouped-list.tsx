@@ -204,20 +204,29 @@ export function NumberTile({ n }: { n: number }) {
 }
 
 // The kit's empty list: read from the left like the rows it stands in for, drawn by its caller
-// inside a grouped card.
+// inside a grouped card. A quiet one stands in a list that will fill by itself: a regular
+// sentence over a smaller muted line, with no action to call for.
 export function EmptyState({
   sentence,
   precision,
   action,
+  quiet,
 }: {
   sentence: string;
   precision: string;
   action: ReactNode;
+  quiet?: boolean;
 }) {
   return (
-    <div className="flex flex-col items-start gap-3 p-4 text-left">
-      <p className="text-body font-semibold">{sentence}</p>
-      <p className="text-body text-muted-foreground">{precision}</p>
+    <div
+      className={cn("flex flex-col items-start p-4 text-left", quiet ? "gap-0.5 py-3.5" : "gap-3")}
+    >
+      <p className={quiet ? "text-body" : "text-body font-semibold"}>{sentence}</p>
+      <p
+        className={`text-muted-foreground ${quiet ? "text-(length:--text-secondary) leading-(--text-secondary--line-height)" : "text-body"}`}
+      >
+        {precision}
+      </p>
       {action}
     </div>
   );
