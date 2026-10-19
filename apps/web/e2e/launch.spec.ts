@@ -148,27 +148,26 @@ test("the launch screen stays until the account is known, then leaves", async ({
   await expect(page.locator(".launch")).toBeHidden();
 });
 
-test("with reduced motion the launch screen leaves at once, without a fade", async ({ page }) => {
+test("with reduced motion the launch screen fades out in 120 ms on the out curve", async ({
+  page,
+}) => {
   await fakeServer(page);
   await page.emulateMedia({ reducedMotion: "reduce" });
   await recordLaunch(page);
-  // The screen's visibility the moment it is told to leave: a fade would keep it visible.
-  await page.addInitScript(() => {
-    const at: string[] = [];
-    (window as unknown as { leaving: string[] }).leaving = at;
-    new MutationObserver(() => {
-      const launch = document.querySelector(".launch");
-      if (launch && document.body.classList.contains("launched") && at.length === 0)
-        at.push(getComputedStyle(launch).visibility);
-    }).observe(document, { attributes: true, attributeFilter: ["class"], subtree: true });
-  });
+  await recordMotion(page);
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1, name: "Hello, Ada" })).toBeVisible();
   const { fcp, launchedAt } = await readLaunch(page);
   expect(launchedAt - fcp).toBeGreaterThanOrEqual(1000);
-  expect(await page.evaluate(() => (window as unknown as { leaving: string[] }).leaving)).toEqual([
-    "hidden",
-  ]);
+  await expect
+    .poll(async () =>
+      (await readMotion(page)).filter(
+        (m) => m.target === "div" && m.kind === "transition" && m.duration > 0,
+      ),
+    )
+    .toContainEqual(
+      expect.objectContaining({ duration: 120, delay: 0, easing: OUT, transforms: false }),
+    );
 });
 
 test("an account question that never gets an answer lets the launch screen go after 4 s", async ({

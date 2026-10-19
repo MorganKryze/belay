@@ -1,4 +1,4 @@
-import { cleanup, render } from "@testing-library/react";
+import { act, cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import i18n from "../i18n";
 import "../i18n/lazy";
@@ -43,5 +43,20 @@ describe("the rest bar's line", () => {
       />,
     );
     expect(line(container)).toBe("scaleX(1)");
+  });
+});
+
+describe("the rest bar's countdown", () => {
+  it("stands still from the tap that paused it, not from the clock's last tick", () => {
+    // 150 s of rest from 0 s; the clock last ticked at 0 s and the pause is tapped at 1.2 s.
+    vi.useFakeTimers({ now: Date.parse(at(0)) });
+    const props = { planned: 150_000, next: "Rest", stops: "all" as const, onChange: () => {} };
+    const { rerender } = render(<RestBar {...props} endsAt={at(150)} pausedAt={null} />);
+    expect(screen.getByRole("timer").textContent).toBe("2:30");
+    vi.setSystemTime(Date.parse(at(1.2)));
+    rerender(<RestBar {...props} endsAt={at(150)} pausedAt={at(1.2)} />);
+    expect(screen.getByRole("timer").textContent).toBe("2:29");
+    act(() => vi.advanceTimersByTime(2000));
+    expect(screen.getByRole("timer").textContent).toBe("2:29");
   });
 });

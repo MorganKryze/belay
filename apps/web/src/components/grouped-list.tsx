@@ -2,6 +2,7 @@ import { createLink } from "@tanstack/react-router";
 import { ChevronDown, ChevronRight, type LucideIcon } from "lucide-react";
 import { Children, type ComponentProps, forwardRef, type ReactNode, useId } from "react";
 import { cn } from "@/lib/utils";
+import { groupCard, sectionLabel } from "./surfaces";
 
 export type RowProps = {
   icon?: LucideIcon;
@@ -17,11 +18,8 @@ export type RowProps = {
   destructive?: boolean;
 };
 
-// The card alone, for content that is not a list of rows and so takes no hairlines.
-export const groupSurface =
-  "overflow-hidden rounded-group bg-surface shadow-card dark:border dark:border-border";
-export const groupCard = `divide-y divide-border ${groupSurface}`;
-export const sectionLabel = "px-4 text-section text-muted-foreground";
+// Also exported here, so a screen that lists rows imports one module.
+export { groupCard, groupSurface, sectionLabel } from "./surfaces";
 
 const row =
   "press-tint flex min-h-14 w-full items-center gap-3 px-4 py-2 text-left outline-ring focus-visible:outline-2 focus-visible:-outline-offset-2";

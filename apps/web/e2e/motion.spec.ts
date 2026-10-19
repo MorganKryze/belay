@@ -184,7 +184,7 @@ test.describe("normal motion", () => {
       );
   });
 
-  test("a checked set pops its tick in 180 ms and tints its row in 140 ms", async ({ page }) => {
+  test("a checked set pops its tick in 180 ms and tints its row at once", async ({ page }) => {
     await fakeServer(page, { rows: WEEKS });
     await page.goto("/workout?start=A");
     const bench = page.getByRole("region", { name: /^Barbell bench press/ });
@@ -204,15 +204,13 @@ test.describe("normal motion", () => {
             scales: true,
             kind: "animation",
           }),
-          expect.objectContaining({
-            target: "div",
-            duration: 140,
-            easing: OUT,
-            transforms: false,
-            kind: "transition",
-          }),
         ]),
       );
+    expect(
+      (await readMotion(page)).filter(
+        (m) => m.target === "div" && m.kind === "transition" && m.duration === 140,
+      ),
+    ).toEqual([]);
   });
 
   test("a toast rises in 220 ms and fades out in 140 ms", async ({ page }) => {

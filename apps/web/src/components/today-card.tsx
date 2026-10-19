@@ -1,34 +1,26 @@
 import { type ISODate, toISODate } from "@belay/shared/body/dates";
 import type { Weighing } from "@belay/shared/body/weighings";
-import { type Activity, activitySummary } from "@belay/shared/training/activities";
-import { planFor } from "@belay/shared/training/plan";
-import {
-  estimatedMinutes,
-  nextSession,
-  plannedWorkSets,
-  sessionByCode,
-} from "@belay/shared/training/program";
-import { liveSets, openWorkout } from "@belay/shared/training/rules";
+import { activitySummary } from "@belay/shared/training/activities";
 import { type AsyncRouteComponent, Link, lazyRouteComponent } from "@tanstack/react-router";
 import {
   Activity as ActivityIcon,
+  Check,
   ChevronRight,
-  Dumbbell,
   type LucideIcon,
   Pill,
   Scale,
   Utensils,
 } from "lucide-react";
-import { type ReactNode, Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { daySummaryText } from "@/lib/activities";
 import { useFirstPull } from "@/lib/first-pull";
+import { groupCard, sectionLabel } from "./surfaces";
 import { preloadWhenIdle } from "@/lib/idle";
-import { formatKg, formatNumber, sessionTitle } from "@/lib/format";
+import { formatKg, formatNumber } from "@/lib/format";
 import {
   type OpenAccount,
   useActivities,
-  useHistory,
   useIntake,
   useRecord,
   useSteps,
@@ -51,8 +43,7 @@ const SHEETS = [ActivitySheet, WeighInSheet, IntakeSheet, SupplementsSheet];
 
 type Gesture = "activity" | "weighIn" | "intake" | "supplements";
 
-// Home's "Today" card (D1): the day's session first, then one line per gesture of the day with
-// where it stands; a tap opens the session's preview or resumes the open one, or opens the
+// Home's "Today" card (D1): one line per gesture of the day with where it stands; a tap opens the
 // gesture's sheet.
 export function TodayCard({
   account,
@@ -117,82 +108,94 @@ export function TodayCard({
   );
   const kcal = (v: number) => formatNumber(v, i18n.language, { digits: 0 });
   const intakeText = !own
-    ? t("today.intakeEmpty")
-    : [
-        own.kcal !== null && `${kcal(own.kcal)} kcal`,
-        own.proteinG !== null && `${kcal(own.proteinG)} g`,
-      ]
-        .filter(Boolean)
-        .join(" · ");
+    ? { text: t("today.intakeEmpty"), done: false }
+    : {
+        done: true,
+        text: [
+          own.kcal !== null && `${kcal(own.kcal)} kcal`,
+          own.proteinG !== null && `${kcal(own.proteinG)} g`,
+        ]
+          .filter(Boolean)
+          .join(" · "),
+      };
+  const summary = activitySummary(activities, steps, today);
 
   return (
     <>
       <section
         aria-labelledby="today"
         aria-busy={anyUnknown || undefined}
-        className="flex flex-col rounded-card border border-border bg-card px-4 pt-3 pb-1"
+        className="flex flex-col gap-2"
       >
-        <h2
-          id="today"
-          tabIndex={-1}
-          data-focus-fallback
-          className="border-b border-border pb-2 text-[15px] font-semibold outline-none"
-        >
+        <h2 id="today" tabIndex={-1} data-focus-fallback className={`${sectionLabel} outline-none`}>
           {t("today.title")}
         </h2>
-        <SessionRow account={account} activities={activities} today={today} />
-        <Row
-          icon={ActivityIcon}
-          title={t("today.activity")}
-          status={
-            unknown.activity
-              ? null
-              : daySummaryText(activitySummary(activities, steps, today), t, i18n.language)
-          }
-          onClick={() => setOpen("activity")}
-          sheet={ActivitySheet}
-        />
-        <Row
-          icon={Scale}
-          title={t("today.weighIn")}
-          status={
-            unknown.weighIn
-              ? null
-              : weighed
-                ? t("today.weighInDone", { value: formatKg(weighed.weightKg, i18n.language) })
-                : t("today.weighInEmpty")
-          }
-          onClick={() => setOpen("weighIn")}
-          sheet={WeighInSheet}
-        />
-        <Row
-          icon={Utensils}
-          title={t("today.intake")}
-          status={unknown.intake ? null : intakeText}
-          onClick={() => setOpen("intake")}
-          sheet={IntakeSheet}
-        />
-        {unknown.supplements || active.length > 0 ? (
+        <div className={groupCard}>
           <Row
-            icon={Pill}
-            title={t("today.supplements")}
+            icon={ActivityIcon}
+            title={t("today.activity")}
             status={
-              unknown.supplements
+              unknown.activity
                 ? null
-                : t("today.supplementsDone", { taken: ticked.length, count: active.length })
+                : {
+                    text: daySummaryText(summary, t, i18n.language),
+                    done: summary.kind !== "none",
+                  }
             }
-            onClick={() => setOpen("supplements")}
-            sheet={SupplementsSheet}
+            onClick={() => setOpen("activity")}
+            sheet={ActivitySheet}
           />
-        ) : (
-          <RowShell>
-            <Link to="/settings/supplements" className={`${rowLine} font-semibold text-primary`}>
-              <RowIcon icon={Pill} />
-              <span className="min-w-0 flex-1">{t("today.addSupplements")}</span>
-              <ChevronRight aria-hidden className="size-5 shrink-0" />
+          <Row
+            icon={Scale}
+            title={t("today.weighIn")}
+            status={
+              unknown.weighIn
+                ? null
+                : weighed
+                  ? {
+                      text: t("trend.kg", { value: formatKg(weighed.weightKg, i18n.language) }),
+                      done: true,
+                    }
+                  : { text: t("today.weighInEmpty"), done: false }
+            }
+            onClick={() => setOpen("weighIn")}
+            sheet={WeighInSheet}
+          />
+          <Row
+            icon={Utensils}
+            title={t("today.intake")}
+            status={unknown.intake ? null : intakeText}
+            onClick={() => setOpen("intake")}
+            sheet={IntakeSheet}
+          />
+          {unknown.supplements || active.length > 0 ? (
+            <Row
+              icon={Pill}
+              title={t("today.supplements")}
+              status={
+                unknown.supplements
+                  ? null
+                  : {
+                      text: t("today.supplementsDone", {
+                        taken: ticked.length,
+                        count: active.length,
+                      }),
+                      done: ticked.length === active.length,
+                    }
+              }
+              onClick={() => setOpen("supplements")}
+              sheet={SupplementsSheet}
+            />
+          ) : (
+            <Link to="/settings/supplements" className={rowLine}>
+              <RowBody
+                icon={Pill}
+                title={t("today.supplements")}
+                status={{ text: t("today.supplementsNone"), done: false }}
+              />
             </Link>
-          </RowShell>
-        )}
+          )}
+        </div>
       </section>
       <Suspense fallback={null}>
         {open === "activity" && (
@@ -296,86 +299,57 @@ export function TodayCard({
   );
 }
 
-// §4.1: the next session of the program, or the one in progress and how far it is. Session C
-// counts the slots its rule adds in a week with no climbing.
-function SessionRow({
-  account,
-  activities,
-  today,
+// The icon tile sits inside the row's button or link, so a press tints the whole line.
+const rowLine =
+  "press-tint flex min-h-14 w-full min-w-0 items-center gap-3 px-4 py-2 text-left outline-ring focus-visible:outline-2 focus-visible:-outline-offset-2";
+
+// Where a gesture stands today: null while not known yet; done when something is logged.
+type Status = { text: string; done: boolean } | null;
+
+// The inside of a row: the icon square, the name over its status, and a chevron. A status still
+// unknown (null) is a blank line of the same height, so nothing moves when it comes; the
+// no-break space keeps the line from collapsing.
+function RowBody({
+  icon: Icon,
+  title,
+  status,
 }: {
-  account: OpenAccount;
-  activities: readonly Activity[];
-  today: ISODate;
+  icon: LucideIcon;
+  title: string;
+  status: Status;
 }) {
-  const { t } = useTranslation();
-  const history = useHistory(account).data;
-  if (!history) return null;
-  const open = openWorkout(history.workouts, { sets: history.sets, now: new Date() });
-  const code = open?.sessionCode ?? nextSession(history.workouts);
-  const session = sessionByCode(code);
-  if (!open && !session) return null;
-  let status: string;
-  if (open) {
-    const done = liveSets(history).filter((s) => s.workoutId === open.id && !s.warmup).length;
-    status = t("today.sessionOpen", { count: done, total: plannedWorkSets(open.plan) });
-  } else {
-    const plan = planFor(session!, activities, today);
-    status = t("today.sessionPlanned", {
-      count: plan.length,
-      minutes: estimatedMinutes({ slots: plan }),
-    });
-  }
-  const line = (
+  return (
     <>
-      <RowIcon icon={Dumbbell} />
-      <span className="flex min-w-0 flex-1 flex-col">
-        <span className="font-semibold">{sessionTitle(code, t)}</span>
-        <span className="text-[13px] text-muted-foreground">{status}</span>
+      <span
+        aria-hidden
+        className="grid size-7 shrink-0 place-items-center rounded-[8px] bg-primary-soft text-primary-ink"
+      >
+        <Icon className="size-4" />
       </span>
-      <ChevronRight aria-hidden className="size-5 shrink-0 text-muted-foreground" />
+      <span className="flex min-w-0 flex-1 flex-col">
+        <span className="font-semibold">{title}</span>
+        {/* Keyed: each state mounts its own span instead of patching the one before into it. */}
+        {status === null ? (
+          <span key="blank" aria-hidden className="text-[13px] text-muted-foreground">
+            {"\u00a0"}
+          </span>
+        ) : status.done ? (
+          <span key="done" className="flex min-w-0 items-center gap-1">
+            <Check aria-hidden className="size-4 shrink-0 text-reference-ink" />
+            <span className="text-[13px] font-medium text-foreground">{status.text}</span>
+          </span>
+        ) : (
+          <span key="todo" className="text-[13px] text-muted-foreground">
+            {status.text}
+          </span>
+        )}
+      </span>
+      <ChevronRight aria-hidden className="size-4 shrink-0 text-muted-foreground" />
     </>
   );
-  return (
-    <RowShell>
-      {open ? (
-        <Link to="/workout" search={{ start: code }} className={rowLine}>
-          {line}
-        </Link>
-      ) : (
-        <Link
-          to="/workouts/session/$code"
-          params={{ code }}
-          search={{ from: "home" }}
-          className={rowLine}
-        >
-          {line}
-        </Link>
-      )}
-    </RowShell>
-  );
 }
 
-// The icon tile sits inside the row's button or link, so a press tints the whole line.
-const rowLine = "press-tint flex min-h-14 w-full min-w-0 items-center gap-3 py-2 text-left";
-
-function RowShell({ children }: { children: ReactNode }) {
-  return <div className="flex border-t border-border first-of-type:border-t-0">{children}</div>;
-}
-
-function RowIcon({ icon: Icon }: { icon: LucideIcon }) {
-  return (
-    <span
-      aria-hidden
-      className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-primary-soft text-primary-ink"
-    >
-      <Icon className="size-5" />
-    </span>
-  );
-}
-
-// One gesture: its name, where it stands today, and a chevron; the whole line opens the sheet.
-// A status still unknown (null) is a blank line of the same height, so nothing moves when it
-// comes; the no-break space keeps the line from collapsing.
+// One gesture; the whole line opens its sheet.
 function Row({
   icon,
   title,
@@ -385,32 +359,19 @@ function Row({
 }: {
   icon: LucideIcon;
   title: string;
-  status: string | null;
+  status: Status;
   onClick: () => void;
   sheet: AsyncRouteComponent<never>;
 }) {
   return (
-    <RowShell>
-      <button
-        type="button"
-        className={rowLine}
-        onClick={onClick}
-        onPointerDown={sheet.preload}
-        onFocus={sheet.preload}
-      >
-        <RowIcon icon={icon} />
-        <span className="flex min-w-0 flex-1 flex-col">
-          <span className="font-semibold">{title}</span>
-          {status === null ? (
-            <span aria-hidden className="text-[13px] text-muted-foreground">
-              {"\u00a0"}
-            </span>
-          ) : (
-            <span className="text-[13px] text-muted-foreground">{status}</span>
-          )}
-        </span>
-        <ChevronRight aria-hidden className="size-5 shrink-0 text-muted-foreground" />
-      </button>
-    </RowShell>
+    <button
+      type="button"
+      className={rowLine}
+      onClick={onClick}
+      onPointerDown={sheet.preload}
+      onFocus={sheet.preload}
+    >
+      <RowBody icon={icon} title={title} status={status} />
+    </button>
   );
 }

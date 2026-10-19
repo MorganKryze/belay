@@ -110,22 +110,27 @@ const stored = async () => {
   return result;
 };
 
-describe("Home's session line (§4.1)", () => {
+// Accueil's card for the day's session, and its link to the preview.
+const sessionCard = (name: RegExp) => screen.findByRole("region", { name });
+const seeSession = async (name: RegExp) =>
+  within(await sessionCard(name)).getByRole("link", { name: "See the session" });
+
+describe("Home's session card (§4.1)", () => {
   it("offers the next session of the program, with its length", async () => {
     renderRoute("/");
-    const line = await screen.findByRole("link", { name: /^Session A · Push/ });
-    expect(line.textContent).toContain("6 exercises · about 55 min");
+    const line = await sessionCard(/^Session A · Push/);
+    expect(line.textContent).toContain("Next up · 6 exercises · about 55 min");
     cleanup();
     await seed(ADA.id, LAST_A);
     renderRoute("/");
-    expect((await screen.findByRole("link", { name: /^Session B · Legs/ })).textContent).toContain(
-      "7 exercises · about 60 min",
+    expect((await sessionCard(/^Session B · Legs/)).textContent).toContain(
+      "Next up · 7 exercises · about 60 min",
     );
   });
 
   it("starts the session full screen from its preview, then says how far it is", async () => {
     renderRoute("/");
-    fireEvent.click(await screen.findByRole("link", { name: /^Session A · Push/ }));
+    fireEvent.click(await seeSession(/^Session A · Push/));
     fireEvent.click(await screen.findByRole("link", { name: "Start the session" }));
     expect(await screen.findByRole("button", { name: "Finish" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "Session A · Push", level: 1 })).toBeTruthy();
@@ -137,8 +142,8 @@ describe("Home's session line (§4.1)", () => {
     await waitFor(() => within(bench).getByRole("img", { name: "Set 1 logged" }));
     cleanup();
     renderRoute("/");
-    expect((await screen.findByRole("link", { name: /^Session A · Push/ })).textContent).toContain(
-      "in progress · 1 of 19 sets",
+    expect((await sessionCard(/^Session A · Push/)).textContent).toContain(
+      "In progress · 1 of 19 sets",
     );
   });
 });
@@ -315,8 +320,7 @@ describe("the session screen (§4.2, §4.3)", () => {
     ]);
     const row = square.parentElement!;
     expect(row.className).toContain("bg-reference");
-    expect(row.className).toContain("transition-colors");
-    expect(row.className).toContain("duration-(--tint-duration)");
+    expect(row.className).not.toContain("transition-colors");
     expect(square.className).toContain("bg-reference-ink");
     expect(square.className).not.toContain("bg-primary");
     expect(square.className).not.toContain("animate-pop-in");
@@ -360,10 +364,10 @@ describe("the session screen (§4.2, §4.3)", () => {
       note: "Bonne énergie",
       endedAt: expect.any(String),
     });
-    // Home offers the next session.
-    expect((await screen.findByRole("link", { name: /^Session B · Legs/ })).textContent).toContain(
-      "7 exercises",
-    );
+    // Home says the session is done and names the next one.
+    const done = await sessionCard(/^Session A · Push/);
+    expect(done.textContent).toContain("Done today");
+    expect(within(done).getByRole("link", { name: "Next up: Session B · Legs" })).toBeTruthy();
   });
 
   it("resumes the open session from Program instead of starting another", async () => {
@@ -530,9 +534,9 @@ describe("fix round 1", () => {
       },
     ]);
     renderRoute("/");
-    const line = await screen.findByRole("link", { name: /^Session [AB] · / });
-    expect(line.textContent).not.toContain("in progress");
-    fireEvent.click(line);
+    const line = await sessionCard(/^Session [AB] · /);
+    expect(line.textContent).not.toContain("In progress");
+    fireEvent.click(within(line).getByRole("link", { name: "See the session" }));
     fireEvent.click(await screen.findByRole("link", { name: "Start the session" }));
     await screen.findByRole("button", { name: "Finish" });
     const { history } = await stored();

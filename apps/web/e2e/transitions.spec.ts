@@ -82,9 +82,15 @@ test.beforeEach(async ({ page }) => {
   await page.route("**/api/me", (r) => r.fulfill({ status: 401 }));
 });
 
-// Accueil's session row opens the preview, whose Start raises the session.
+// Accueil's session card, then its link to the preview.
+const seeSession = (page: Page) =>
+  page
+    .getByRole("region", { name: /^Session [ABC] · / })
+    .getByRole("link", { name: "See the session" });
+
+// Accueil's session card opens the preview, whose Start raises the session.
 async function startFromHome(page: Page) {
-  await page.getByRole("link", { name: /^Session [ABC] · / }).click();
+  await seeSession(page).click();
   await page.getByRole("link", { name: "Start the session" }).click();
   await expect(page.getByRole("button", { name: "Finish" })).toBeVisible();
 }
@@ -308,6 +314,8 @@ test("the leaving page moves from where it was on screen, for push, pop, cover a
   await recordTransitions(page);
   // Push and pop from the tools list scrolled past its first tools.
   await page.goto("/tools");
+  // A tap the launch screen takes sends the click looking for its link by scrolling.
+  await expect(page.locator(".launch")).toBeHidden();
   const bmi = page.getByRole("link", { name: /^BMI/ });
   await bmi.scrollIntoViewIfNeeded();
   await bmi.click();
@@ -327,14 +335,17 @@ test("the leaving page moves from where it was on screen, for push, pop, cover a
       }),
     )
     .toEqual([100, expect.any(Number)]);
-  await page.getByRole("link", { name: /^Session [ABC] · / }).click();
+  await seeSession(page).click();
   // The preview, scrolled before its Start raises the session.
   const start = page.getByRole("link", { name: "Start the session" });
   await expect(start).toBeVisible();
-  // Once the push has landed, so the router's settling of the new page comes before the scroll.
+  // Once the push has played, so the router's settling of the new page comes before the scroll.
+  // Its animations start a frame after the preview is drawn: a poll in between finds none, and a
+  // tap during them lands on the root, which sends the click looking for its link by scrolling.
   await expect
-    .poll(() =>
-      page.evaluate(
+    .poll(async () => ({
+      played: (await played(page)).length,
+      running: await page.evaluate(
         () =>
           document
             .getAnimations()
@@ -342,8 +353,8 @@ test("the leaving page moves from where it was on screen, for push, pop, cover a
               (a.effect as KeyframeEffect | null)?.pseudoElement?.startsWith("::view-transition"),
             ).length,
       ),
-    )
-    .toBe(0);
+    }))
+    .toEqual({ played: 3, running: 0 });
   await expect
     .poll(() =>
       page.evaluate(() => {

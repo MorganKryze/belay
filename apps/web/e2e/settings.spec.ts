@@ -5,7 +5,7 @@ import { fakeServer, refuseChanges } from "./fake-server";
 // Signed in as Ada, in English.
 test.use({ locale: "en-US", timezoneId: "Europe/Paris" });
 
-const row = (page: Page, name: "Language" | "Theme") =>
+const row = (page: Page, name: "Language" | "Theme" | "Trend on Home") =>
   page.getByRole("combobox", { name: new RegExp(`^${name}`) });
 
 const signOut = (page: Page) => page.getByRole("button", { name: "Sign out" });
@@ -19,7 +19,7 @@ async function openSettings(page: Page, theme?: "light" | "dark") {
 
 test.describe("accessibility", () => {
   test.use({ reducedMotion: "reduce" });
-  for (const menu of ["Language", "Theme"] as const) {
+  for (const menu of ["Language", "Theme", "Trend on Home"] as const) {
     for (const theme of ["light", "dark"] as const) {
       test(`Réglages with the ${menu} menu open has no axe violation, ${theme}`, async ({
         page,

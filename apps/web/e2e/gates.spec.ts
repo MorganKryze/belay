@@ -47,6 +47,27 @@ const RUNNING_C: Change[] = [
   },
 ];
 
+// Session A started at 16:00 on the frozen day and ended 48 minutes later.
+const DONE = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7f02";
+const DONE_A: Change[] = [
+  {
+    kind: "workout",
+    id: DONE,
+    field: "start",
+    sessionCode: "A",
+    plan: [...sessionByCode("A")!.slots],
+    startedAt: "2026-10-07T14:00:00.000Z",
+    at: "2026-10-07T14:00:00.000Z",
+  },
+  {
+    kind: "workout",
+    id: DONE,
+    field: "ended",
+    value: "2026-10-07T14:48:00.000Z",
+    at: "2026-10-07T14:48:00.000Z",
+  },
+];
+
 // Every visible control under 44 × 44 px, described for the failure message. A link inside a
 // sentence is exempt: it flows with the text around it, as WCAG 2.5.8 allows. Whatever an open
 // dialog hides from assistive tech is out of reach, so it is not measured either. A field takes
@@ -104,7 +125,7 @@ async function lowerSession(page: Page) {
   await page.goto("/workout?start=C");
   await expect(page.locator(".launch")).toBeHidden();
   await page.getByRole("button", { name: "Minimize the session" }).click();
-  await expect(page.getByRole("link", { name: /^Session C · .*in progress/ })).toBeVisible();
+  await expect(page.getByRole("region", { name: /^Session C · / })).toContainText("In progress");
 }
 
 // Session A started on this device, one set logged, then Finish tapped.
@@ -128,6 +149,24 @@ const SCREENS: [string, (page: Page) => Promise<void>][] = [
       await fakeServer(page, { rows: WEEKS });
       await page.goto("/");
       await expect(page.getByRole("button", { name: /^Weigh-in/ })).toBeVisible();
+    },
+  ],
+  [
+    "Home, a session open",
+    async (page) => {
+      await fakeServer(page, { changes: RUNNING_C });
+      await page.goto("/");
+      await expect(page.getByRole("region", { name: /^Session C · / })).toContainText(
+        "In progress",
+      );
+    },
+  ],
+  [
+    "Home, the session done",
+    async (page) => {
+      await fakeServer(page, { changes: DONE_A });
+      await page.goto("/");
+      await expect(page.getByRole("region", { name: /^Session A · / })).toContainText("Done today");
     },
   ],
   ...(["program", "history", "exercises"] as const).map(
@@ -494,10 +533,12 @@ test.describe("every action stays reachable on a computer", () => {
   test.use({ viewport: DESKTOP });
   test("avatar, Settings, supplements, Profile", ({ page }) => avatarToSupplements(page, "banner"));
   test("the sync banner's link to Settings", ({ page }) => bannerToSettings(page));
-  test("Home's Today card resumes the running session", async ({ page }) => {
+  test("Home's session card resumes the running session", async ({ page }) => {
     await fakeServer(page, { changes: RUNNING_C });
     await page.goto("/");
-    await page.getByRole("link", { name: /^Session C · .*in progress/ }).click();
+    const card = page.getByRole("region", { name: /^Session C · / });
+    await expect(card).toContainText("In progress");
+    await card.getByRole("link", { name: "Resume" }).click();
     await expect(page.getByRole("heading", { level: 1, name: /^Session C · / })).toBeVisible();
   });
   test("each tab from the top bar", ({ page }) => eachTab(page, page.getByRole("banner")));

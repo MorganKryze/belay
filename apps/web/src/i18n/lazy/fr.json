@@ -6,6 +6,11 @@
       "all": "Tout s'arrête",
       "session": "Le repos continue"
     },
+    "homeTrend": "Tendance sur Accueil",
+    "homeTrendOptions": {
+      "shown": "Affichée",
+      "hidden": "Masquée"
+    },
     "versionNotes": "Belay {{version}} · notes de version",
     "newTab": "(nouvel onglet)",
     "tracking": "Suivi",
@@ -198,15 +203,9 @@
       "superset": "superset",
       "triset": "tri-set",
       "editNote": "Le programme se modifie sur ordinateur.",
-      "next": "La prochaine",
       "never": "Jamais faite",
-      "today": "Faite aujourd'hui",
       "daysAgo_one": "Il y a {{count}} jour",
-      "daysAgo_other": "Il y a {{count}} jours",
-      "size_one": "{{count}} exercice · environ {{minutes}} min",
-      "size_other": "{{count}} exercices · environ {{minutes}} min",
-      "seeSession": "Voir la séance",
-      "resume": "Reprendre"
+      "daysAgo_other": "Il y a {{count}} jours"
     },
     "rir": "RIR {{range}}",
     "restSec": "{{s}} s",

@@ -525,6 +525,7 @@
     --press-release: 0s;
     --untint-duration: 0s;
     --dock-fade: var(--dur-veil-reduced);
+    --dur-launch-out: var(--dur-reduced);
   }
 }
 

@@ -6,6 +6,11 @@
       "all": "Everything stops",
       "session": "The rest keeps running"
     },
+    "homeTrend": "Trend on Home",
+    "homeTrendOptions": {
+      "shown": "Shown",
+      "hidden": "Hidden"
+    },
     "versionNotes": "Belay {{version}} · release notes",
     "newTab": "(new tab)",
     "tracking": "Tracking",
@@ -198,15 +203,9 @@
       "superset": "superset",
       "triset": "tri-set",
       "editNote": "The program is edited on a computer.",
-      "next": "Next up",
       "never": "Never done",
-      "today": "Done today",
       "daysAgo_one": "{{count}} day ago",
-      "daysAgo_other": "{{count}} days ago",
-      "size_one": "{{count}} exercise · about {{minutes}} min",
-      "size_other": "{{count}} exercises · about {{minutes}} min",
-      "seeSession": "See the session",
-      "resume": "Resume"
+      "daysAgo_other": "{{count}} days ago"
     },
     "rir": "RIR {{range}}",
     "restSec": "{{s}} s",

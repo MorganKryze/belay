@@ -29,8 +29,10 @@ export function SyncBanner({ account }: { account: OpenAccount }) {
           : rejected > 0
             ? "rejected"
             : null;
+  // Kept mounted so a change is announced; with nothing to say it takes back one of the 16 px gaps
+  // the screens put around it, so the blocks on either side sit as if it were not there.
   return (
-    <div role="status">
+    <div role="status" className="empty:-mt-4">
       {kind === "offline" && (
         <div className={`${box} bg-track`}>
           <CircleArrowUp aria-hidden className="mt-px size-5 shrink-0" />

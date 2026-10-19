@@ -406,7 +406,7 @@ export function ExerciseCard({
             return (
               <div key={row.position}>
                 <div
-                  className={`grid min-h-13 grid-cols-[3rem_1fr_1fr_2.75rem] items-center gap-2 border-t transition-colors duration-(--tint-duration) ease-out ${
+                  className={`grid min-h-13 grid-cols-[3rem_1fr_1fr_2.75rem] items-center gap-2 border-t ${
                     row.set
                       ? // Two done rows in a row are split by a hairline of their own ink.
                         `-mx-3 bg-reference px-3 ${rows[i - 1]?.set ? "border-reference-ink/12" : "border-transparent"}`

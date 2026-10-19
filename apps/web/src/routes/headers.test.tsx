@@ -16,6 +16,7 @@ beforeEach(() => {
 });
 afterEach(async () => {
   cleanup();
+  vi.useRealTimers();
   localStorage.clear();
   vi.unstubAllGlobals();
   await i18n.changeLanguage("en");
@@ -100,5 +101,19 @@ describe("pushed pages", () => {
       name: i18n.t("fallback.notFoundTitle"),
     });
     expect(classes(h1)).toContain("text-title-lg");
+  });
+});
+
+describe("the eyebrow", () => {
+  it("an eyebrow sits above the large title and the compact title stays the title", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(2026, 9, 7, 7, 30));
+    renderRoute("/");
+    const h1 = await screen.findByRole("heading", { level: 1, name: "Hello, Ada" });
+    const eyebrow = screen.getByText("Wednesday, October 7");
+    expect(eyebrow.compareDocumentPosition(h1) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // It fades with the large title as the page scrolls under the bar.
+    expect(classes(eyebrow)).toContain("fold-out");
+    expect(document.querySelector("[data-compact-title]")?.textContent).toBe("Hello, Ada");
   });
 });

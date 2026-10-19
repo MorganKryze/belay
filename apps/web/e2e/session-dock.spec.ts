@@ -192,14 +192,19 @@ test("on a computer Minimize returns to the page under the session and no bar sh
   await fakeServer(page, { changes: LAST_A });
   await page.goto("/");
   await expect(page.locator(".launch")).toBeHidden();
-  await page.getByRole("link", { name: /^Session B · Legs/ }).click();
+  await page
+    .getByRole("region", { name: /^Session B · Legs/ })
+    .getByRole("link", { name: "See the session" })
+    .click();
   await page.getByRole("link", { name: "Start the session" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Session B · Legs" })).toBeVisible();
   await minimize(page).click();
   await expect(page.getByRole("heading", { level: 1, name: "Hello, Ada" })).toBeVisible();
   // Back to the entry under the session, not a new one.
   expect(await page.evaluate(() => (history.state as { __TSR_index: number }).__TSR_index)).toBe(0);
-  await expect(page.getByRole("link", { name: /^Session B · Legs.*in progress/ })).toBeVisible();
+  await expect(page.getByRole("region", { name: /^Session B · Legs/ })).toContainText(
+    "In progress",
+  );
   await expect(page.getByRole("link", { name: /In progress · .*Session B/ })).toBeHidden();
 });
 

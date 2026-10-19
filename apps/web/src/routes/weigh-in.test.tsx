@@ -1,4 +1,3 @@
-import { addDays } from "@belay/shared/body/dates";
 import { act, cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { IDBFactory } from "fake-indexeddb";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -57,7 +56,7 @@ describe("the weigh-in line and its sheet", () => {
     expect(screen.getByText("prefilled with your last weigh-in")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
-    await waitFor(async () => expect((await row()).textContent).toContain("80.2 kg · saved"));
+    await waitFor(async () => expect((await row()).textContent).toBe("Weigh-in80.2\u00a0kg"));
     expect(screen.getByText("Weigh-in saved")).toBeTruthy();
     expect(await days()).toEqual([
       ["2026-10-06", 80.2],
@@ -277,30 +276,5 @@ describe("deleting from the sheet", () => {
     fireEvent.click(within(sheet).getByRole("button", { name: "Close" }));
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     expect(document.activeElement).toBe(await row());
-  });
-});
-
-describe("the trend card", () => {
-  it("shows the 7-day average and the last complete week's loss, with a link to Body", async () => {
-    const week = (monday: string, kg: number) =>
-      [0, 1, 2, 3].map((d) => weight(addDays(monday, d), kg));
-    await seed(ADA.id, [...week("2026-09-21", 80.3), ...week("2026-09-28", 79.8)]);
-    fakeApi({ me: ADA });
-    renderRoute("/");
-    const trend = await screen.findByRole("region", { name: "Your trend" });
-    await waitFor(() => expect(trend.textContent).toContain("7-day average 79.8 kg"));
-    expect(trend.textContent).toContain("loss 0.6%/wk");
-    expect(within(trend).getByRole("link", { name: "Body" }).getAttribute("href")).toBe("/body");
-  });
-
-  it("speaks of a gain in neutral words", async () => {
-    await i18n.changeLanguage("fr");
-    const week = (monday: string, kg: number) =>
-      [0, 1, 2, 3].map((d) => weight(addDays(monday, d), kg));
-    await seed(ADA.id, [...week("2026-09-21", 80.3), ...week("2026-09-28", 80.5)]);
-    fakeApi({ me: ADA });
-    renderRoute("/");
-    const trend = await screen.findByRole("region", { name: "Ta tendance" });
-    await waitFor(() => expect(trend.textContent).toContain("prise 0,2\u202f%/sem"));
   });
 });
