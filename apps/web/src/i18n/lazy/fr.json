@@ -185,14 +185,9 @@
       "measuresNone": "pas encore saisies",
       "annotationSub": "semaine allégée, pause ou note"
     },
-    "cells": {
-      "weight": "Poids moy.",
-      "waist": "Taille",
-      "intake": "Apports",
-      "intakeDays": "Apports ({{days}} j)"
-    },
-    "cm": "{{value}} cm",
     "kcal": "{{value}} kcal",
+    "weighIns_one": "{{count}} pesée",
+    "weighIns_other": "{{count}} pesées",
     "dayParts": {
       "waist": "taille {{value}} cm",
       "neck": "cou {{value}} cm",

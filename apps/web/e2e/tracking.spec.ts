@@ -1,3 +1,4 @@
+import type { Change } from "@belay/shared/sync/schema";
 import { expect, type Page, test } from "@playwright/test";
 import { expectNoAxeViolations } from "./axe";
 import { ADA, fakeServer, WEEKS } from "./fake-server";
@@ -92,10 +93,13 @@ test("Body lists the weeks, says which ones do not count, and reads the chart fr
   await fakeServer(page, { rows: WEEKS });
   await page.goto("/body");
   const weeks = page.getByRole("region", { name: "Your weeks" });
-  await expect(weeks.getByRole("listitem")).toHaveCount(4);
-  await expect(weeks.getByRole("listitem").nth(1)).toContainText("0.7%in your range");
-  await expect(weeks).toContainText("week before insufficient");
-  await expect(weeks).toContainText("3 weigh-ins, 4 minimum");
+  const rows = weeks.getByRole("listitem");
+  await expect(rows).toHaveCount(4);
+  await expect(rows.nth(0)).toHaveText("This weekongoing2 weigh-ins");
+  await expect(rows.nth(1)).toHaveText("Sep 28 – Oct 40.7% in your range80.2\u00a0kg");
+  await expect(rows.nth(1).locator("svg.lucide-check")).toHaveCount(1); // the pill's check
+  await expect(rows.nth(2)).toHaveText("Sep 21 – 27—week before insufficient ·80.8\u00a0kg");
+  await expect(rows.nth(3)).toHaveText("Sep 14 – 20—3 weigh-ins, 4 minimum");
 
   await page.getByRole("img", { name: /^Weigh-ins from Sep 8 to Oct 7\./ }).focus();
   const tooltip = page.locator("[aria-live=polite]");
@@ -106,6 +110,106 @@ test("Body lists the weeks, says which ones do not count, and reads the chart fr
   const sheet = page.getByRole("dialog", { name: "Weigh-in" });
   await expect(sheet).toBeVisible();
   await expect(sheet.getByText("Mon, Oct 5")).toBeVisible(); // the day, in the header
+});
+
+// The colour a custom property resolves to, read the way the page paints it.
+const tokenColor = (page: Page, token: string) =>
+  page.evaluate((t) => {
+    const probe = document.createElement("span");
+    probe.style.color = `var(${t})`;
+    document.body.append(probe);
+    const c = getComputedStyle(probe).color;
+    probe.remove();
+    return c;
+  }, token);
+// The week's three parts of a row: its title, its value at the right, its parts below.
+const weekRows = async (page: Page, changes: Change[] = []) => {
+  await fakeServer(page, { rows: WEEKS, changes });
+  await page.goto("/body");
+  await expect(page.locator(".launch")).toBeHidden();
+  const rows = page
+    .getByRole("region", { name: /^(Your weeks|Tes semaines)$/ })
+    .getByRole("listitem");
+  await expect(rows).toHaveCount(4);
+  return rows;
+};
+const AT = "2026-10-01T06:30:00.000Z";
+const CREATINE = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d8f";
+// A waist and an intake on every weighed day, and a course of creatine: every part is written.
+const crowded: Change[] = [
+  ...WEEKS.flatMap(({ date }, i): Change[] => [
+    { kind: "measure", date, field: "waist", value: 83 - i * 0.1, at: AT },
+    { kind: "intake", date, field: "kcal", value: 1850 + i * 10, at: AT },
+  ]),
+  { kind: "supplement", id: CREATINE, field: "name", value: "Créatine", at: AT },
+  { kind: "supplementLog", supplementId: CREATINE, date: "2026-09-30", taken: true, at: AT },
+];
+
+test("the weeks are one grouped list of 56 px rows: the value 15 px 600 tabular at the right, the parts 13 px muted", async ({
+  page,
+}) => {
+  const rows = await weekRows(page, crowded);
+  const list = page.getByRole("region", { name: "Your weeks" }).getByRole("list");
+  await expect(list).toHaveCount(1);
+  await expect(list).toHaveCSS("border-radius", "16px");
+  const muted = await tokenColor(page, "--muted-foreground");
+  for (const row of await rows.all()) {
+    const box = (await row.boundingBox())!;
+    expect(box.height).toBeGreaterThanOrEqual(56);
+    const value = row.locator(":scope > :nth-child(2)");
+    await expect(value).toHaveCSS("font-size", "15px");
+    await expect(value).toHaveCSS("font-weight", "600");
+    await expect(value).toHaveCSS("font-variant-numeric", "tabular-nums");
+    const v = (await value.boundingBox())!;
+    expect(Math.abs(v.x + v.width - (box.x + box.width - 16))).toBeLessThanOrEqual(1);
+    const parts = row.locator(":scope > :nth-child(3)");
+    await expect(parts).toHaveCSS("font-size", "13px");
+    await expect(parts).toHaveCSS("color", muted);
+    await expect(parts).toHaveCSS("font-variant-numeric", "tabular-nums");
+    // The parts sit on the second line, under the title.
+    const title = (await row.locator(":scope > :nth-child(1)").boundingBox())!;
+    expect((await parts.boundingBox())!.y).toBeGreaterThanOrEqual(title.y + title.height - 1);
+  }
+  await expect(rows.nth(1).locator(":scope > :nth-child(3)")).toHaveText(
+    "80.2\u00a0kg ·waist 82 cm ·1,935 kcal ·creatine",
+  );
+});
+
+test("the in-range pill is reference green with its check", async ({ page }) => {
+  const rows = await weekRows(page);
+  const pill = rows.nth(1).locator(":scope > :nth-child(2) > span");
+  await expect(pill).toHaveCSS("background-color", await tokenColor(page, "--reference"));
+  await expect(pill).toHaveCSS("color", await tokenColor(page, "--reference-ink"));
+  await expect(pill).toHaveCSS("font-size", "12px");
+  await expect(pill).toHaveCSS("font-weight", "600");
+  const check = pill.locator("svg.lucide-check");
+  await expect(check).toHaveAttribute("aria-hidden", "true");
+  expect((await check.boundingBox())!.width).toBe(12);
+  // Said once in the header too, after the same check.
+  const header = page.getByRole("heading", { name: "Your weeks" }).locator("xpath=..");
+  await expect(header).toHaveText("Your weeksin your range");
+  await expect(header.locator("svg.lucide-check")).toHaveCount(1);
+});
+
+test.describe("in French at 360 px", () => {
+  test.use({ locale: "fr-FR", viewport: { width: 360, height: 780 } });
+  test("the weeks wrap only between parts and nothing scrolls sideways", async ({ page }) => {
+    const rows = await weekRows(page, crowded);
+    await expect(rows.nth(1)).toContainText("taille");
+    for (const row of await rows.all()) {
+      const parts = row.locator(":scope > :nth-child(3) > span");
+      for (const part of await parts.all()) {
+        // One line each: a part breaks onto the next line whole, never inside itself.
+        expect(await part.evaluate((e) => e.getClientRects().length)).toBe(1);
+        const lineHeight = await part.evaluate((e) => parseFloat(getComputedStyle(e).lineHeight));
+        expect((await part.boundingBox())!.height).toBeLessThanOrEqual(lineHeight + 1);
+      }
+    }
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    );
+    expect(overflow).toBeLessThanOrEqual(0);
+  });
 });
 
 test("Profile: the range steppers stop at 1 % and keep 0.1 between the bounds", async ({

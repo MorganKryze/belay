@@ -84,11 +84,60 @@ describe("the Body page", () => {
 
   it("lists the weeks and says in words why one does not count", async () => {
     expect(rows(await open())).toEqual([
-      "This week—ongoingin progress · 3 weigh-insAvg weight—Waist—Intake—",
-      "Sep 28 – Oct 40.7%in your rangeAvg weight80.2\u00a0kgWaist—Intake—",
-      "Sep 21 – 27—week before insufficientAvg weight80.8\u00a0kgWaist—Intake—",
-      "Sep 14 – 20—insufficient3 weigh-ins, 4 minimumAvg weight—Waist—Intake—",
+      "This weekongoing3 weigh-ins",
+      "Sep 28 – Oct 40.7% in your range80.2\u00a0kg",
+      "Sep 21 – 27—week before insufficient ·80.8\u00a0kg",
+      "Sep 14 – 20—3 weigh-ins, 4 minimum",
     ]);
+  });
+
+  // The first line of a week: its title, then its value at the right.
+  const value = (row: HTMLElement) => row.children[1]!;
+
+  it("a flat week reads stable, with no pill", async () => {
+    const list = await open([
+      ...days("2026-09-21", [80.8, 80.8, 80.8, 80.8]),
+      ...days("2026-09-28", [80.8, 80.8, 80.8, 80.8]),
+    ]);
+    const flat = within(list).getAllByRole("listitem")[1]!;
+    expect(flat.textContent).toBe("Sep 28 – Oct 4stable80.8\u00a0kg");
+    expect(value(flat).textContent).toBe("stable");
+    expect(within(list).queryByText("in your range")).toBeNull();
+  });
+
+  it("the pill says in your range once in the header and in words inside the pill", async () => {
+    const list = await open();
+    const said = within(list).getAllByText("in your range");
+    expect(said).toHaveLength(2);
+    const [legend, inPill] = said as [HTMLElement, HTMLElement];
+    expect(legend.closest("li")).toBeNull(); // the header, beside « Your weeks »
+    const header = legend.closest("div")!;
+    expect(header.contains(screen.getByRole("heading", { name: "Your weeks" }))).toBe(true);
+    const row = within(list).getAllByRole("listitem")[1]!;
+    expect(value(row).contains(inPill)).toBe(true);
+    expect(inPill.className).toContain("sr-only");
+    expect(value(row).querySelector("svg")!.getAttribute("aria-hidden")).toBe("true");
+  });
+
+  it("a loss outside the range is the number alone", async () => {
+    const list = await open([
+      ...WEEKS,
+      { kind: "target", minPct: 0.25, maxPct: 0.5, at: "2026-10-07T06:00:00.000Z" },
+    ]);
+    const row = within(list).getAllByRole("listitem")[1]!;
+    expect(value(row).textContent).toBe("0.7%");
+    expect(value(row).querySelector("svg")).toBeNull();
+    expect(within(list).queryByText("in your range")).toBeNull();
+  });
+
+  it("the chart's summary says stable for a flat week", async () => {
+    await open([
+      ...days("2026-09-21", [80.8, 80.8, 80.8, 80.8]),
+      ...days("2026-09-28", [80.8, 80.8, 80.8, 80.8]),
+    ]);
+    expect(
+      screen.getByRole("img", { name: /^Weigh-ins from/ }).getAttribute("aria-label"),
+    ).toContain("Loss per week: stable.");
   });
 
   const figureCard = () => screen.getByRole("region", { name: "7-day average" });
@@ -122,7 +171,9 @@ describe("the Body page", () => {
     expect(within(card).getByText(/^prise/).textContent).toBe(
       "prise 0,2\u202f%/sem la semaine dernière",
     );
-    expect(within(weeks).getByText("0,2 % de prise")).toBeTruthy(); // the matcher folds the narrow space
+    const gain = within(weeks).getAllByRole("listitem")[1]!;
+    expect(gain.children[1]!.textContent).toBe("0,2\u202f% de prise");
+    expect(gain.querySelector("svg")).toBeNull(); // no pill on a gain
   });
 
   it("a flat week reads stable last week", async () => {
