@@ -21,6 +21,16 @@
       "shown": "Affiché",
       "hidden": "Masqué"
     },
+    "rangePill": "Pastille de fourchette",
+    "rangePillOptions": {
+      "shown": "Affichée",
+      "hidden": "Masquée"
+    },
+    "weekIntake": "Apports par semaine",
+    "weekIntakeOptions": {
+      "shown": "Affichés",
+      "hidden": "Masqués"
+    },
     "versionNotes": "Belay {{version}} · notes de version",
     "newTab": "(nouvel onglet)",
     "tracking": "Suivi",

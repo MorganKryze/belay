@@ -7,7 +7,14 @@ test.use({ locale: "en-US", timezoneId: "Europe/Paris" });
 
 const row = (
   page: Page,
-  name: "Language" | "Theme" | "Trend on Home" | "History" | "Session volume",
+  name:
+    | "Language"
+    | "Theme"
+    | "Trend on Home"
+    | "In-range pill"
+    | "Weekly intake"
+    | "History"
+    | "Session volume",
 ) => page.getByRole("combobox", { name: new RegExp(`^${name}`) });
 
 const signOut = (page: Page) => page.getByRole("button", { name: "Sign out" });
@@ -21,7 +28,15 @@ async function openSettings(page: Page, theme?: "light" | "dark") {
 
 test.describe("accessibility", () => {
   test.use({ reducedMotion: "reduce" });
-  for (const menu of ["Language", "Theme", "Trend on Home", "History", "Session volume"] as const) {
+  for (const menu of [
+    "Language",
+    "Theme",
+    "Trend on Home",
+    "In-range pill",
+    "Weekly intake",
+    "History",
+    "Session volume",
+  ] as const) {
     for (const theme of ["light", "dark"] as const) {
       test(`Réglages with the ${menu} menu open has no axe violation, ${theme}`, async ({
         page,
@@ -244,17 +259,19 @@ test.describe("at 390 px", () => {
   }
 });
 
-// The page's end: sign-out and the version close Réglages, at the bottom of a page that fits.
+// The page's end: sign-out and the version close Réglages, reached at the end of the scroll.
+// Réglages may outgrow one screen; the version line stays last, under the sign-out group.
 // A build made outside a release shows its version as plain text, without the notes link.
 const versionLine = (page: Page) => page.locator("main > section p", { hasText: /^Belay / });
 const box = async (locator: ReturnType<Page["locator"]>) => (await locator.boundingBox())!;
-// The shell column's bottom padding, which the page's last line sits on.
+const signOutCard = (page: Page) =>
+  signOut(page).locator("xpath=ancestor::*[contains(@class, 'rounded-group')][1]");
+
+// Signed out, the page fits: the version line sits on the shell column's bottom padding.
 const columnPadding = (page: Page) =>
   page
     .locator("main")
     .evaluate((main) => parseFloat(getComputedStyle(main.parentElement!).paddingBottom));
-const signOutCard = (page: Page) =>
-  signOut(page).locator("xpath=ancestor::*[contains(@class, 'rounded-group')][1]");
 
 async function expectAtTheBottom(page: Page) {
   const version = await box(versionLine(page));
@@ -266,24 +283,29 @@ async function expectAtTheBottom(page: Page) {
     Math.abs(version.y + version.height - (inner - (await columnPadding(page)))),
   ).toBeLessThanOrEqual(1);
   expect(scroll).toBe(inner);
-  return version;
 }
 
 for (const viewport of [
   { width: 390, height: 844 },
-  // Six preference rows: Réglages signed in no longer fits 800 px high on a desktop.
-  { width: 1280, height: 900 },
+  { width: 1280, height: 800 },
 ]) {
   test.describe(`at ${viewport.width} × ${viewport.height}`, () => {
     test.use({ viewport, reducedMotion: "reduce" });
-    test("sign-out and the version sit at the bottom of a page that fits", async ({ page }) => {
+    test("sign-out and the version close the page, reachable at the end of the scroll", async ({
+      page,
+    }) => {
       await openSettings(page);
       await expect(signOut(page)).toBeVisible();
-      await expect(versionLine(page)).toBeVisible();
       await settled(page);
-      const version = await expectAtTheBottom(page);
+      await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+      await expect(versionLine(page)).toBeInViewport();
+      const version = await box(versionLine(page));
       const card = await box(signOutCard(page));
       expect(Math.abs(version.y - (card.y + card.height) - 16)).toBeLessThanOrEqual(1);
+      const last = await page
+        .locator("main > section")
+        .evaluate((section) => section.lastElementChild!.lastElementChild!.textContent);
+      expect(last).toMatch(/^Belay /);
     });
   });
 }

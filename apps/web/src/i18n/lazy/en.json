@@ -21,6 +21,16 @@
       "shown": "Shown",
       "hidden": "Hidden"
     },
+    "rangePill": "In-range pill",
+    "rangePillOptions": {
+      "shown": "Shown",
+      "hidden": "Hidden"
+    },
+    "weekIntake": "Weekly intake",
+    "weekIntakeOptions": {
+      "shown": "Shown",
+      "hidden": "Hidden"
+    },
     "versionNotes": "Belay {{version}} · release notes",
     "newTab": "(new tab)",
     "tracking": "Tracking",
