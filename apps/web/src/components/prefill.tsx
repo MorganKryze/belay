@@ -12,6 +12,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { RotateCcw } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
+import { readFieldSources } from "@/lib/display-prefs";
 import { formatWeekday } from "@/lib/format";
 import { useToday } from "@/lib/today";
 import { useAccount } from "@/sync/account";
@@ -56,6 +57,8 @@ export function usePrefill(fields: readonly ToolField[]) {
     enabled: open !== null,
     networkMode: "always",
   }).data;
+  // Réglages may hide the source lines on this device; read once, like the values.
+  const [sources] = useState(readFieldSources);
   const [dropped, setDropped] = useState<ReadonlySet<ToolField> | "all">(new Set());
   const [edited, setEdited] = useState<ReadonlySet<ProfileField>>(new Set());
   const [declined, setDeclined] = useState<Partial<Record<ProfileField, unknown>>>({});
@@ -81,7 +84,7 @@ export function usePrefill(fields: readonly ToolField[]) {
     anyOf: (shown: readonly ToolField[]) => shown.some((f) => get(f) !== undefined),
     // The line under a prefilled field, or undefined so the field renders as in M1.
     hint: (field: ToolField): ReactNode =>
-      get(field) ? <SourceLine source={get(field)?.source} /> : undefined,
+      sources !== "hidden" && get(field) ? <SourceLine source={get(field)?.source} /> : undefined,
     restore: () => setDropped("all"),
     // The update to offer under a profile field the person changed, or null.
     proposal(field: ProfileField, current: Formula | number): Proposal | null {
