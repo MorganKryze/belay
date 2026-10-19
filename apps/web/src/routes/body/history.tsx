@@ -2,11 +2,16 @@ import type { ISODate } from "@belay/shared/body/dates";
 import type { IntakeLog } from "@belay/shared/body/intake";
 import { type Measure, measureOf } from "@belay/shared/body/measures";
 import type { Weighing } from "@belay/shared/body/weighings";
+import { ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { groupCard, sectionLabel } from "@/components/surfaces";
 import { dayLabel } from "@/components/weigh-in";
 import { formatKg, formatNumber } from "@/lib/format";
 
-const sectionTitle = "text-[15px] font-bold";
+// Two columns: the day's lines, then the chevron's 16 px, kept empty on a day without a weigh-in so
+// every weight ends at the same right edge.
+const row =
+  "grid min-h-14 w-full grid-cols-[minmax(0,1fr)_16px] items-center gap-x-3 px-4 py-2 text-left";
 
 // One line per day of the period that holds an entry, the most recent first, saying what was
 // entered ("79.8 kg · 2,100 kcal", "waist 82 cm"); a day with a weigh-in opens its sheet.
@@ -47,29 +52,28 @@ export function History({
       }),
     ].filter((part): part is string => typeof part === "string");
   };
-  const line = "flex min-h-11 w-full flex-col justify-center gap-0.5 py-2 text-left";
   return (
-    <section aria-labelledby="history" className="flex flex-col gap-1">
-      <h2 id="history" className={sectionTitle}>
+    <section aria-labelledby="history" className="flex flex-col gap-2">
+      <h2 id="history" className={sectionLabel}>
         {t("body.history")}
       </h2>
-      <ul>
+      <ul className={groupCard}>
         {days.map((date) => {
           const w = weighings.find((x) => x.date === date);
           const rest = parts(date);
           const content = (
             <>
-              <span className="flex items-baseline justify-between gap-x-3">
+              <span className="col-start-1 flex items-baseline justify-between gap-x-3 text-[15px] font-semibold">
                 <span>{dayLabel(date, today, t, i18n.language)}</span>
                 {w && (
-                  <b className="tabular-nums">
+                  <b className="font-semibold text-foreground tabular-nums">
                     {t("trend.kg", { value: formatKg(w.weightKg, i18n.language) })}
                   </b>
                 )}
               </span>
               {rest.length > 0 && (
                 // A line only breaks between two parts, never inside one.
-                <span className="flex flex-wrap gap-x-1.5 text-sm text-muted-foreground tabular-nums">
+                <span className="col-start-1 flex flex-wrap gap-x-1.5 text-[13px] text-muted-foreground tabular-nums">
                   {rest.map((part, i) => (
                     <span key={part} className="whitespace-nowrap">
                       {part}
@@ -81,13 +85,24 @@ export function History({
             </>
           );
           return (
-            <li key={date} className="border-t border-border first:border-t-0">
+            <li key={date}>
               {w ? (
-                <button type="button" className={line} onClick={() => onSelect(date)}>
+                <button
+                  type="button"
+                  className={`press-tint ${row} outline-ring focus-visible:outline-2 focus-visible:-outline-offset-2`}
+                  onClick={() => onSelect(date)}
+                >
                   {content}
+                  <ChevronRight
+                    aria-hidden="true"
+                    className="col-start-2 row-span-2 row-start-1 size-4 text-muted-foreground"
+                  />
                 </button>
               ) : (
-                <div className={line}>{content}</div>
+                <div className={row}>
+                  {content}
+                  <span aria-hidden="true" className="col-start-2 row-span-2 row-start-1 size-4" />
+                </div>
               )}
             </li>
           );
