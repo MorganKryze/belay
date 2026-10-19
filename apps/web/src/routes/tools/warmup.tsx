@@ -3,7 +3,7 @@ import { Check } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
 import { NumberStepper } from "@/components/number-stepper";
-import { ResultCard } from "@/components/result-card";
+import { GroupedList, NumberTile, RowText } from "@/components/grouped-list";
 import { ToolPage } from "@/components/tool-page";
 import { attempt } from "@/lib/attempt";
 import { formatNumber, formatPlates } from "@/lib/format";
@@ -15,9 +15,13 @@ export const WarmupInputs = z.object({
   count: z.number().int().min(0).max(3).nullable().catch(null),
 });
 
-const row =
-  "grid min-h-[52px] grid-cols-[26px_1fr_auto] items-center gap-2.5 border-t border-border px-3 py-1 first:border-t-0";
-const badge = "grid size-6 place-items-center rounded-full text-xs font-bold";
+// The kit's row, written here since a set reads three ways at once: its number, its load and plates,
+// its reps.
+const row = "flex min-h-14 items-center gap-3 px-4 py-2";
+const load = "text-body font-semibold tabular-nums";
+const detail =
+  "text-(length:--text-secondary) leading-(--text-secondary--line-height) break-words text-muted-foreground";
+const end = "shrink-0 text-body font-semibold tabular-nums text-foreground";
 
 export function WarmupTool() {
   const { t, i18n } = useTranslation();
@@ -51,47 +55,44 @@ export function WarmupTool() {
           />
         )}
       </div>
-      <ResultCard label={t("warmup.result")}>
-        {light ? (
-          <p className="text-sm">{t("warmup.lightWork")}</p>
-        ) : (
-          sets && (
-            <ol className="-mx-4 -mb-4 overflow-hidden rounded-b-card">
-              {sets.map((s, i) => (
-                <li key={s.loadKg} className={row}>
-                  <span aria-hidden className={`${badge} bg-track text-muted-foreground`}>
-                    {i + 1}
-                  </span>
-                  <span>
-                    <b className="tabular-nums">{n(s.loadKg)} kg</b>
-                    <small className="block text-xs text-muted-foreground">
+      <div aria-live="polite" aria-atomic="true">
+        <GroupedList label={t("warmup.result")}>
+          {light ? (
+            <RowText label={t("warmup.lightWork")} />
+          ) : (
+            sets && [
+              ...sets.map((s, i) => (
+                <div key={s.loadKg} className={row}>
+                  <NumberTile n={i + 1} />
+                  <span className="flex min-w-0 flex-1 flex-col">
+                    <span className={load}>{n(s.loadKg)} kg</span>{" "}
+                    <span className={detail}>
                       {s.perSideKg.length === 0
                         ? t("warmup.barOnly")
                         : t("warmup.perSide", { plates: formatPlates(s.perSideKg, i18n.language) })}
-                    </small>
+                    </span>
                   </span>
-                  <span className="font-bold tabular-nums">
-                    {t("warmup.reps", { reps: s.reps })}
-                  </span>
-                </li>
-              ))}
-              <li className={`${row} bg-primary-soft`}>
-                <span aria-hidden className={`${badge} bg-primary text-primary-foreground`}>
-                  <Check className="size-3.5" />
+                  <span className={end}>{t("warmup.reps", { reps: s.reps })}</span>
+                </div>
+              )),
+              <div key="work" className={row}>
+                <span
+                  aria-hidden
+                  className="grid size-7 shrink-0 place-items-center rounded-icon bg-primary-soft"
+                >
+                  <Check className="size-5 text-primary-ink" />
                 </span>
-                <span>
-                  <b className="tabular-nums">{n(inputs.workKg)} kg</b>
-                  <small className="block text-xs text-muted-foreground">
-                    {t("warmup.workSets")}
-                  </small>
+                <span className="flex min-w-0 flex-1 flex-col">
+                  <span className={load}>{n(inputs.workKg)} kg</span>{" "}
+                  <span className={detail}>{t("warmup.workSets")}</span>
                 </span>
-                <span className="font-bold">{t("warmup.yours")}</span>
-              </li>
-            </ol>
-          )
-        )}
-      </ResultCard>
-      <p className="text-[13px] text-muted-foreground">
+                <span className={end}>{t("warmup.yours")}</span>
+              </div>,
+            ]
+          )}
+        </GroupedList>
+      </div>
+      <p className={`px-4 ${detail}`}>
         {t("warmup.note", { preset: t(`equipment.presets.${state.equipment.preset}`) })}
       </p>
     </ToolPage>

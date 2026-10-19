@@ -242,8 +242,8 @@
     "barOnly": "Bar only",
     "bar": "{{bar}} kg bar",
     "unreachable": "{{target}} kg can't be loaded with your equipment.",
-    "below": "Just below: {{total}} kg ({{detail}})",
-    "above": "Just above: {{total}} kg ({{detail}})",
+    "below": "Just below · {{total}} kg",
+    "above": "Just above · {{total}} kg",
     "underBar": "The bar alone already weighs {{bar}} kg.",
     "equipment": "My equipment"
   },
