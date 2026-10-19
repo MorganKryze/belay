@@ -214,8 +214,11 @@ function BodyContent({
       }),
     ),
   ].join(" ");
-  // Each annotation of the period has its row, the newest first, wherever the weeks start.
-  const listedNotes = [...shownNotes].sort((a, b) => (a.date < b.date ? 1 : -1));
+  // Each annotation of the period has its row, the newest first, wherever the weeks start; on one
+  // day, the later made (its UUID v7 sorts after) comes first.
+  const listedNotes = [...shownNotes].sort(
+    (a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id),
+  );
   const weekday = (d: ISODate) => formatWeekday(d, i18n.language, today, { startOfLine: false });
   // Until this device has the account's data, the rows wait rather than say nothing was entered.
   const firstPull = useFirstPull(account);

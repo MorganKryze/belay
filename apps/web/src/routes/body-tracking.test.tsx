@@ -354,6 +354,12 @@ describe("Annotations", () => {
     }
   });
 
+  it("lists two annotations of one day the later made first", async () => {
+    await open([note(OLD, "2026-10-01"), note(LATER, "2026-10-01", "deload")]);
+    const rows = within(annotationsList()).getAllByRole("button");
+    expect(rows.map((r) => r.textContent)).toEqual(["Break Thu, Oct 1", "Deload Thu, Oct 1"]);
+  });
+
   it("a note named by its text says Note before its day", async () => {
     await open([named(NOTE, "2026-09-30", "trip to Lisbon"), named(LATER, "2026-10-02", null)]);
     const list = annotationsList();
