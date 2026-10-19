@@ -43,8 +43,9 @@ function Drawer({
 
 // "How it's calculated", read in layers: a grouped row with its label, then In short, Keep in mind
 // and the drawers, opened in place in the same card. Native <details>: keyboard and screen-reader
-// support with no script. `children` goes at the end of the sheet (the body-fat reference set,
-// D14). `toolId` is a tool or a rule ("target-rate", whose sheet is titled "How it's chosen").
+// support with no script. `children` goes at the end of the sheet: body fat puts its choice of
+// reference values there, a setting read once and kept beside the sources that define each set.
+// `toolId` is a tool or a rule ("target-rate", whose sheet is titled "How it's chosen").
 export function ScienceSheet({
   toolId,
   title,
