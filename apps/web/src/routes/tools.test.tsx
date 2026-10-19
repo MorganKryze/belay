@@ -35,17 +35,20 @@ describe("tools", () => {
     renderRoute("/tools");
     await screen.findByRole("heading", { name: "Tools", level: 1 });
     const expected = {
-      Strength: ["One-rep max", "Plates", "Warm-up"],
-      Energy: ["Energy expenditure", "Protein", "Projection"],
-      Body: ["BMI", "Body fat"],
+      Strength: ["one-rep-max", "plates", "warmup"],
+      Energy: ["energy", "protein", "projection"],
+      Body: ["bmi", "body-fat"],
     };
     for (const [group, tools] of Object.entries(expected)) {
       const section = screen.getByRole("region", { name: group });
       const list = within(section).getByRole("list");
-      const names = within(list)
-        .getAllByRole("link")
-        .map((a) => a.querySelector("span.text-body")?.textContent);
-      expect(names).toEqual(tools);
+      // Each link in turn, read by its accessible name: the tool's name then its hint.
+      const links = within(list).getAllByRole("link");
+      expect(links).toHaveLength(tools.length);
+      tools.forEach((id, i) => {
+        const name = `${i18n.t(`tools.items.${id}.name`)} ${i18n.t(`tools.items.${id}.hint`)}`;
+        expect(within(list).getByRole("link", { name })).toBe(links[i]);
+      });
     }
   });
 
