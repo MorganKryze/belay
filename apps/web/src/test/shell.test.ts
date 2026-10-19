@@ -37,8 +37,9 @@ const pathBounds = (d: string) => {
   }
   return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
 };
-// Width, height and top row of the orange mark's bounding box in an 8-bit RGB, non-interlaced PNG.
-const markBox = (p: string) => {
+// Bounding box (left, top, right, bottom) of the pixels that pass `ink` in an 8-bit RGB,
+// non-interlaced PNG.
+const inkBox = (p: string, ink: (r: number, g: number, b: number) => boolean) => {
   const b = readFileSync(resolve(web, p));
   const [w, h] = [b.readUInt32BE(16), b.readUInt32BE(20)];
   expect([b[24], b[25], b[28]]).toEqual([8, 2, 0]);
@@ -72,14 +73,30 @@ const markBox = (p: string) => {
       px[j * row + i] = (v + pred) & 255;
     }
     for (let i = 0; i < w; i++) {
-      const [r, , bl] = [px[j * row + i * 3]!, 0, px[j * row + i * 3 + 2]!];
-      if (r > 150 && bl < 100) {
+      const at = j * row + i * 3;
+      if (ink(px[at]!, px[at + 1]!, px[at + 2]!)) {
         [top, bottom] = [Math.min(top, j), Math.max(bottom, j)];
         [left, right] = [Math.min(left, i), Math.max(right, i)];
       }
     }
   }
+  return [left, top, right, bottom] as const;
+};
+// Width, height and top row of the orange mark's bounding box.
+const markBox = (p: string) => {
+  const [left, top, right, bottom] = inkBox(p, (r, _, b) => r > 150 && b < 100);
   return [right - left + 1, bottom - top + 1, top] as const;
+};
+// The launch word's box: the pixels past halfway from the background to the text color, stone
+// 900 on chalk or stone 100 on the dark background, the orange mark aside.
+const wordBox = (p: string, theme: "light" | "dark") =>
+  inkBox(p, (r, g, b) =>
+    theme === "light" ? Math.max(r, g, b) < 139 : Math.min(r, g, b) > 133 && b > 100,
+  );
+// The launch screen's markup, before the app's root.
+const launchMarkup = () => {
+  const html = read("index.html");
+  return html.slice(html.indexOf("<body>"), html.indexOf('<div id="root">'));
 };
 const MARK = "M86 160L86 266A120 120 0 0 0 326 266";
 
@@ -154,8 +171,7 @@ describe("app shell identity", () => {
       }
   });
   it("frames the whole mark on the launch screen", () => {
-    const html = read("index.html");
-    const launch = html.slice(html.indexOf("<body>"), html.indexOf('<div id="root">'));
+    const launch = launchMarkup().split("</svg>")[0]!;
     const box = /viewBox="([\d. ]+)"/.exec(launch);
     expect(box).not.toBeNull();
     const [vx, vy, vw, vh] = box![1]!.split(" ").map(Number) as [number, number, number, number];
@@ -182,6 +198,28 @@ describe("app shell identity", () => {
     for (const theme of ["light", "dark"] as const) {
       const [, , top] = markBox(`public/${startupFile(theme, SCREENS[4]!)}`);
       expect(Math.abs(top - 996)).toBeLessThanOrEqual(9);
+    }
+  });
+
+  it("draws the launch word as a named image, with no text left to a font", () => {
+    // The fonts are not loaded at the first paint: a text node would show in the system font
+    // while the launch image shows Inter, and the word would jump at the handover.
+    const launch = launchMarkup().replace(/<!--[\s\S]*?-->/g, "");
+    expect(launch.replace(/<[^>]*>/g, "").trim()).toBe("");
+    expect(launch).toMatch(/<svg[^>]* role="img" aria-label="Belay"/);
+  });
+
+  it("keeps the launch word's place and size in the launch images", () => {
+    // The word as the launch images showed it before it became a drawing, in device px on the
+    // 1170x2532 iPhone: 180 by 64, 53 px under the mark, centred.
+    for (const theme of ["light", "dark"] as const) {
+      const file = `public/${startupFile(theme, SCREENS[4]!)}`;
+      const [left, top, right, bottom] = wordBox(file, theme);
+      const [, markHeight, markTop] = markBox(file);
+      expect(Math.abs(right - left + 1 - 180)).toBeLessThanOrEqual(3);
+      expect(Math.abs(bottom - top + 1 - 64)).toBeLessThanOrEqual(3);
+      expect(Math.abs(top - (markTop + markHeight) - 53)).toBeLessThanOrEqual(3);
+      expect(Math.abs((left + right + 1) / 2 - 1170 / 2)).toBeLessThanOrEqual(3);
     }
   });
 });
