@@ -163,11 +163,35 @@ describe("the chart", () => {
     expect(label).toContain("Annotation Break, Sep 22.");
   });
 
+  // jsdom has no layout: the drawing is 320 wide at scale 1, from Sep 8 to Oct 7, its plot from
+  // 26 to 286; a name's box is 14 tall above its baseline, 150 at the bottom and 17 in the strip.
+  const LATER = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d91";
+  const lineX = (day: number) => 26 + (260 * day) / 29;
+  const opened = async (type: string) => {
+    const sheet = await screen.findByRole("dialog", { name: "Annotation" });
+    expect(within(sheet).getByRole("radio", { name: type }).getAttribute("aria-checked")).toBe(
+      "true",
+    );
+  };
+
   it("opens an annotation from a tap on its name under the curve", async () => {
     await open([note(NOTE, "2026-09-22")]);
-    // jsdom has no layout: the drawing is 320 units wide at scale 1, from Sep 8 to Oct 7.
-    fireEvent.click(chart(), { clientX: 28 + (284 * 14) / 29, clientY: 140 });
-    expect(await screen.findByRole("dialog", { name: "Annotation" })).toBeTruthy();
+    fireEvent.click(chart(), { clientX: lineX(14) + 12, clientY: 144 });
+    await opened("Break");
+  });
+
+  it("a name raised into the strip opens from there", async () => {
+    await open([note(NOTE, "2026-09-22"), note(LATER, "2026-09-23", "deload")]);
+    const raised = chart().querySelector("text[data-level=top]");
+    expect(raised?.textContent).toBe("Deload");
+    fireEvent.click(chart(), { clientX: lineX(15), clientY: 14 });
+    await opened("Deload");
+  });
+
+  it("writes the last 7-day average at the end of its line", async () => {
+    await open([]);
+    // Oct 1 at 80.2, Oct 5 to 7 at 80, 79.9 and 79.8: an average of 79.975.
+    expect(chart().textContent).toContain("80.0");
   });
 
   it("keeps an annotation reachable under the chart when no week shows its pill", async () => {
