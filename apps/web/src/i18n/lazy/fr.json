@@ -11,6 +11,16 @@
       "shown": "Affichée",
       "hidden": "Masquée"
     },
+    "historyActivities": "Historique",
+    "historyActivitiesOptions": {
+      "shown": "Avec activités",
+      "hidden": "Séances seules"
+    },
+    "sessionVolume": "Volume sur la séance",
+    "sessionVolumeOptions": {
+      "shown": "Affiché",
+      "hidden": "Masqué"
+    },
     "versionNotes": "Belay {{version}} · notes de version",
     "newTab": "(nouvel onglet)",
     "tracking": "Suivi",

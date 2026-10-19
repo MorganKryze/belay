@@ -5,8 +5,10 @@ import { fakeServer, refuseChanges } from "./fake-server";
 // Signed in as Ada, in English.
 test.use({ locale: "en-US", timezoneId: "Europe/Paris" });
 
-const row = (page: Page, name: "Language" | "Theme" | "Trend on Home") =>
-  page.getByRole("combobox", { name: new RegExp(`^${name}`) });
+const row = (
+  page: Page,
+  name: "Language" | "Theme" | "Trend on Home" | "History" | "Session volume",
+) => page.getByRole("combobox", { name: new RegExp(`^${name}`) });
 
 const signOut = (page: Page) => page.getByRole("button", { name: "Sign out" });
 
@@ -19,7 +21,7 @@ async function openSettings(page: Page, theme?: "light" | "dark") {
 
 test.describe("accessibility", () => {
   test.use({ reducedMotion: "reduce" });
-  for (const menu of ["Language", "Theme", "Trend on Home"] as const) {
+  for (const menu of ["Language", "Theme", "Trend on Home", "History", "Session volume"] as const) {
     for (const theme of ["light", "dark"] as const) {
       test(`Réglages with the ${menu} menu open has no axe violation, ${theme}`, async ({
         page,
@@ -269,7 +271,8 @@ async function expectAtTheBottom(page: Page) {
 
 for (const viewport of [
   { width: 390, height: 844 },
-  { width: 1280, height: 800 },
+  // Six preference rows: Réglages signed in no longer fits 800 px high on a desktop.
+  { width: 1280, height: 900 },
 ]) {
   test.describe(`at ${viewport.width} × ${viewport.height}`, () => {
     test.use({ viewport, reducedMotion: "reduce" });
@@ -369,6 +372,64 @@ test.describe("at 360 px", () => {
     );
     expect(overflow).toBe(0);
   });
+
+  // The wording of both rows was measured to fit one line at 360 px: label and value stay single
+  // lines, side by side, in both languages.
+  for (const [locale, rows] of [
+    [
+      "en-US",
+      [
+        ["History", "With activities", "Sessions only"],
+        ["Session volume", "Shown", "Hidden"],
+      ],
+    ],
+    [
+      "fr-FR",
+      [
+        ["Historique", "Avec activités", "Séances seules"],
+        ["Volume sur la séance", "Affiché", "Masqué"],
+      ],
+    ],
+  ] as const) {
+    test.describe(locale, () => {
+      test.use({ locale });
+      test(`the history and volume rows hold on one line at 360 px, ${locale}`, async ({
+        page,
+      }) => {
+        await fakeServer(page);
+        await page.goto("/settings");
+        await expect(page.locator(".launch")).toBeHidden();
+        await settled(page);
+        for (const [label, ...values] of rows) {
+          const trigger = page.getByRole("combobox", { name: new RegExp(`^${label} `) });
+          for (const v of values) {
+            if (v !== values[0]) {
+              await trigger.click();
+              await page.getByRole("option", { name: v }).click();
+              await expect(page.getByRole("listbox")).toBeHidden();
+            }
+            await expect(trigger).toHaveAccessibleName(`${label} ${v}`);
+            const lines = async (el: ReturnType<Page["locator"]>) =>
+              el.evaluate((n) => {
+                const r = n.getBoundingClientRect();
+                return {
+                  top: r.top,
+                  right: r.right,
+                  left: r.left,
+                  lines: Math.round(r.height / parseFloat(getComputedStyle(n).lineHeight)),
+                };
+              });
+            const name = await lines(trigger.getByText(label, { exact: true }));
+            const value = await lines(trigger.locator("[data-slot=select-value]"));
+            expect(name.lines, label).toBe(1);
+            expect(value.lines, `${label} ${v}`).toBe(1);
+            expect(Math.abs(value.top - name.top), `${label} ${v}`).toBeLessThanOrEqual(2);
+            expect(value.left, `${label} ${v}`).toBeGreaterThan(name.right);
+          }
+        }
+      });
+    });
+  }
 });
 
 test.describe("Compléments", () => {

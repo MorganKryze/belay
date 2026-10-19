@@ -61,15 +61,18 @@ async function choose(row: RegExp, option: string) {
 describe("Settings preferences", () => {
   afterEach(() => document.documentElement.classList.remove("dark"));
 
-  it("groups Langue, Thème, En pause and Tendance sur Accueil under Préférences, each showing its value", async () => {
+  it("groups six rows under Préférences, in order, each showing its value", async () => {
     fakeApi({ me: ADA });
     renderRoute("/settings");
     const list = await screen.findByRole("region", { name: "Preferences" });
     const rows = within(list).getAllByRole("combobox");
-    expect(rows).toHaveLength(4);
+    expect(rows).toHaveLength(6);
     expect(within(list).getByRole("combobox", { name: "Language English" })).toBe(rows[0]);
     expect(within(list).getByRole("combobox", { name: "Theme System" })).toBe(rows[1]);
     expect(within(list).getByRole("combobox", { name: "Paused Everything stops" })).toBe(rows[2]);
+    expect(within(list).getByRole("combobox", { name: "Trend on Home Shown" })).toBe(rows[3]);
+    expect(within(list).getByRole("combobox", { name: "History With activities" })).toBe(rows[4]);
+    expect(within(list).getByRole("combobox", { name: "Session volume Shown" })).toBe(rows[5]);
   });
 
   it("keeps on this device whether a pause also stops the rest", async () => {
@@ -101,7 +104,7 @@ describe("Settings preferences", () => {
     renderRoute("/settings");
     const list = await screen.findByRole("region", { name: "Preferences" });
     const rows = within(list).getAllByRole("combobox");
-    expect(rows).toHaveLength(4);
+    expect(rows).toHaveLength(6);
     expect(within(list).getByRole("combobox", { name: "Trend on Home Shown" })).toBe(rows[3]);
     await choose(/^Trend on Home/, "Hidden");
     expect(localStorage.getItem("belay.homeTrend")).toBe("hidden");
@@ -120,6 +123,44 @@ describe("Settings preferences", () => {
     ).toBeTruthy();
     await choose(/^Tendance sur Accueil/, "Affichée");
     expect(localStorage.getItem("belay.homeTrend")).toBe("shown");
+  });
+
+  it("History offers With activities and Sessions only and keeps the choice on this device", async () => {
+    fakeApi({ me: ADA });
+    renderRoute("/settings");
+    await choose(/^History/, "Sessions only");
+    expect(localStorage.getItem("belay.historyActivities")).toBe("hidden");
+    expect(await screen.findByRole("combobox", { name: "History Sessions only" })).toBeTruthy();
+    expect(localStorage.getItem("belay.sessionVolume")).toBeNull();
+    await choose(/^History/, "With activities");
+    expect(localStorage.getItem("belay.historyActivities")).toBe("shown");
+  });
+
+  it("Session volume offers Shown and Hidden and keeps the choice on this device", async () => {
+    fakeApi({ me: ADA });
+    renderRoute("/settings");
+    await choose(/^Session volume/, "Hidden");
+    expect(localStorage.getItem("belay.sessionVolume")).toBe("hidden");
+    expect(await screen.findByRole("combobox", { name: "Session volume Hidden" })).toBeTruthy();
+    expect(localStorage.getItem("belay.historyActivities")).toBeNull();
+    await choose(/^Session volume/, "Shown");
+    expect(localStorage.getItem("belay.sessionVolume")).toBe("shown");
+  });
+
+  it("says the history and volume rows in French", async () => {
+    await i18n.changeLanguage("fr");
+    fakeApi({ me: ADA });
+    renderRoute("/settings");
+    await choose(/^Historique/, "Séances seules");
+    expect(await screen.findByRole("combobox", { name: "Historique Séances seules" })).toBeTruthy();
+    await choose(/^Historique/, "Avec activités");
+    expect(localStorage.getItem("belay.historyActivities")).toBe("shown");
+    await choose(/^Volume sur la séance/, "Masqué");
+    expect(
+      await screen.findByRole("combobox", { name: "Volume sur la séance Masqué" }),
+    ).toBeTruthy();
+    await choose(/^Volume sur la séance/, "Affiché");
+    expect(localStorage.getItem("belay.sessionVolume")).toBe("shown");
   });
 
   it("switches the language from its menu", async () => {
@@ -143,7 +184,17 @@ describe("Settings preferences", () => {
   it("offers exactly today's preferences", async () => {
     fakeApi({ me: ADA });
     renderRoute("/settings");
-    await screen.findByRole("region", { name: "Preferences" });
+    const list = await screen.findByRole("region", { name: "Preferences" });
+    expect(within(list).getAllByRole("combobox")).toHaveLength(6);
+    for (const name of [
+      /^Language/,
+      /^Theme/,
+      /^Paused/,
+      /^Trend on Home/,
+      /^History/,
+      /^Session volume/,
+    ])
+      expect(within(list).getByRole("combobox", { name })).toBeTruthy();
     for (const role of ["combobox", "button", "link"] as const)
       expect(screen.queryByRole(role, { name: /Units|Unités|Sources/ })).toBeNull();
   });
