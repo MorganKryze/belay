@@ -61,18 +61,20 @@ async function choose(row: RegExp, option: string) {
 describe("Settings preferences", () => {
   afterEach(() => document.documentElement.classList.remove("dark"));
 
-  it("groups six rows under Préférences, in order, each showing its value", async () => {
+  it("groups eight rows under Préférences, in order, each showing its value", async () => {
     fakeApi({ me: ADA });
     renderRoute("/settings");
     const list = await screen.findByRole("region", { name: "Preferences" });
     const rows = within(list).getAllByRole("combobox");
-    expect(rows).toHaveLength(6);
+    expect(rows).toHaveLength(8);
     expect(within(list).getByRole("combobox", { name: "Language English" })).toBe(rows[0]);
     expect(within(list).getByRole("combobox", { name: "Theme System" })).toBe(rows[1]);
     expect(within(list).getByRole("combobox", { name: "Paused Everything stops" })).toBe(rows[2]);
     expect(within(list).getByRole("combobox", { name: "Trend on Home Shown" })).toBe(rows[3]);
-    expect(within(list).getByRole("combobox", { name: "History With activities" })).toBe(rows[4]);
-    expect(within(list).getByRole("combobox", { name: "Session volume Shown" })).toBe(rows[5]);
+    expect(within(list).getByRole("combobox", { name: "In-range pill Shown" })).toBe(rows[4]);
+    expect(within(list).getByRole("combobox", { name: "Weekly intake Shown" })).toBe(rows[5]);
+    expect(within(list).getByRole("combobox", { name: "History With activities" })).toBe(rows[6]);
+    expect(within(list).getByRole("combobox", { name: "Session volume Shown" })).toBe(rows[7]);
   });
 
   it("keeps on this device whether a pause also stops the rest", async () => {
@@ -104,7 +106,7 @@ describe("Settings preferences", () => {
     renderRoute("/settings");
     const list = await screen.findByRole("region", { name: "Preferences" });
     const rows = within(list).getAllByRole("combobox");
-    expect(rows).toHaveLength(6);
+    expect(rows).toHaveLength(8);
     expect(within(list).getByRole("combobox", { name: "Trend on Home Shown" })).toBe(rows[3]);
     await choose(/^Trend on Home/, "Hidden");
     expect(localStorage.getItem("belay.homeTrend")).toBe("hidden");
@@ -123,6 +125,46 @@ describe("Settings preferences", () => {
     ).toBeTruthy();
     await choose(/^Tendance sur Accueil/, "Affichée");
     expect(localStorage.getItem("belay.homeTrend")).toBe("shown");
+  });
+
+  it("In-range pill offers Shown and Hidden and keeps the choice on this device", async () => {
+    fakeApi({ me: ADA });
+    renderRoute("/settings");
+    await choose(/^In-range pill/, "Hidden");
+    expect(localStorage.getItem("belay.rangePill")).toBe("hidden");
+    expect(await screen.findByRole("combobox", { name: "In-range pill Hidden" })).toBeTruthy();
+    expect(localStorage.getItem("belay.weekIntake")).toBeNull();
+    await choose(/^In-range pill/, "Shown");
+    expect(localStorage.getItem("belay.rangePill")).toBe("shown");
+  });
+
+  it("Weekly intake offers Shown and Hidden and keeps the choice on this device", async () => {
+    fakeApi({ me: ADA });
+    renderRoute("/settings");
+    await choose(/^Weekly intake/, "Hidden");
+    expect(localStorage.getItem("belay.weekIntake")).toBe("hidden");
+    expect(await screen.findByRole("combobox", { name: "Weekly intake Hidden" })).toBeTruthy();
+    expect(localStorage.getItem("belay.rangePill")).toBeNull();
+    await choose(/^Weekly intake/, "Shown");
+    expect(localStorage.getItem("belay.weekIntake")).toBe("shown");
+  });
+
+  it("says the pill and intake rows in French", async () => {
+    await i18n.changeLanguage("fr");
+    fakeApi({ me: ADA });
+    renderRoute("/settings");
+    await choose(/^Pastille de fourchette/, "Masquée");
+    expect(
+      await screen.findByRole("combobox", { name: "Pastille de fourchette Masquée" }),
+    ).toBeTruthy();
+    await choose(/^Pastille de fourchette/, "Affichée");
+    expect(localStorage.getItem("belay.rangePill")).toBe("shown");
+    await choose(/^Apports par semaine/, "Masqués");
+    expect(
+      await screen.findByRole("combobox", { name: "Apports par semaine Masqués" }),
+    ).toBeTruthy();
+    await choose(/^Apports par semaine/, "Affichés");
+    expect(localStorage.getItem("belay.weekIntake")).toBe("shown");
   });
 
   it("History offers With activities and Sessions only and keeps the choice on this device", async () => {
@@ -185,12 +227,14 @@ describe("Settings preferences", () => {
     fakeApi({ me: ADA });
     renderRoute("/settings");
     const list = await screen.findByRole("region", { name: "Preferences" });
-    expect(within(list).getAllByRole("combobox")).toHaveLength(6);
+    expect(within(list).getAllByRole("combobox")).toHaveLength(8);
     for (const name of [
       /^Language/,
       /^Theme/,
       /^Paused/,
       /^Trend on Home/,
+      /^In-range pill/,
+      /^Weekly intake/,
       /^History/,
       /^Session volume/,
     ])

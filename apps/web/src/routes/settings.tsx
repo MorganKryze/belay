@@ -2,6 +2,7 @@ import "@/i18n/lazy";
 import { useMutation } from "@tanstack/react-query";
 import {
   CalendarDays,
+  Check,
   CirclePause,
   Dumbbell,
   Languages,
@@ -9,6 +10,7 @@ import {
   Scale,
   SunMoon,
   UserRound,
+  Utensils,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { TFunction } from "i18next";
@@ -26,11 +28,19 @@ import { logout } from "@/lib/api";
 import {
   readHistoryActivities,
   readSessionVolume,
+  readWeekIntake,
   setHistoryActivities,
   setSessionVolume,
+  setWeekIntake,
   type Shown,
 } from "@/lib/display-prefs";
-import { type HomeTrend, readHomeTrend, setHomeTrend } from "@/lib/home-trend";
+import {
+  type HomeTrend,
+  readHomeTrend,
+  readRangePill,
+  setHomeTrend,
+  setRangePill,
+} from "@/lib/home-trend";
 import { readPauseStops, setPauseStops } from "@/lib/pause-stops";
 import { readTheme, setTheme, type Theme } from "@/lib/theme";
 import { formatWeekday } from "@/lib/format";
@@ -57,6 +67,8 @@ export function Settings() {
   const [theme, setThemeState] = useState<Theme>(readTheme);
   const [pauseStops, setPauseStopsState] = useState<PauseStops>(readPauseStops);
   const [homeTrend, setHomeTrendState] = useState<HomeTrend>(readHomeTrend);
+  const [rangePill, setRangePillState] = useState<HomeTrend>(readRangePill);
+  const [weekIntake, setWeekIntakeState] = useState<Shown>(readWeekIntake);
   const [historyActivities, setHistoryActivitiesState] = useState<Shown>(readHistoryActivities);
   const [sessionVolume, setSessionVolumeState] = useState<Shown>(readSessionVolume);
   const account = useAccount();
@@ -110,6 +122,32 @@ export function Settings() {
           onChange={(v) => {
             setHomeTrend(v);
             setHomeTrendState(v);
+          }}
+        />
+        <MenuRow
+          icon={Check}
+          label={t("settings.rangePill")}
+          value={rangePill}
+          options={SHOWN.map((v) => ({
+            value: v,
+            label: t(`settings.rangePillOptions.${v}`),
+          }))}
+          onChange={(v) => {
+            setRangePill(v);
+            setRangePillState(v);
+          }}
+        />
+        <MenuRow
+          icon={Utensils}
+          label={t("settings.weekIntake")}
+          value={weekIntake}
+          options={SHOWN.map((v) => ({
+            value: v,
+            label: t(`settings.weekIntakeOptions.${v}`),
+          }))}
+          onChange={(v) => {
+            setWeekIntake(v);
+            setWeekIntakeState(v);
           }}
         />
         <MenuRow

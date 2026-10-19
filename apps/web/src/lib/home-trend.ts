@@ -24,3 +24,27 @@ export function setHomeTrend(choice: HomeTrend) {
     // Storage refused: the choice holds for this visit only, through the fallback above.
   }
 }
+
+// Whether the trend shows its range pill, on Accueil and on Corps: someone can keep the figure
+// without being told whether it sits in range. Kept here, not with the lazy preferences, because
+// Accueil reads it at startup.
+const PILL_KEY = "belay.rangePill";
+
+let pillFallback: HomeTrend = "shown";
+
+export function readRangePill(): HomeTrend {
+  try {
+    return localStorage.getItem(PILL_KEY) === "hidden" ? "hidden" : "shown";
+  } catch {
+    return pillFallback;
+  }
+}
+
+export function setRangePill(choice: HomeTrend) {
+  pillFallback = choice;
+  try {
+    localStorage.setItem(PILL_KEY, choice);
+  } catch {
+    // Storage refused: the choice holds for this visit only, through the fallback above.
+  }
+}
