@@ -185,14 +185,9 @@
       "measuresNone": "not entered yet",
       "annotationSub": "deload week, break or note"
     },
-    "cells": {
-      "weight": "Avg weight",
-      "waist": "Waist",
-      "intake": "Intake",
-      "intakeDays": "Intake ({{days}} d)"
-    },
-    "cm": "{{value}} cm",
     "kcal": "{{value}} kcal",
+    "weighIns_one": "{{count}} weigh-in",
+    "weighIns_other": "{{count}} weigh-ins",
     "dayParts": {
       "waist": "waist {{value}} cm",
       "neck": "neck {{value}} cm",

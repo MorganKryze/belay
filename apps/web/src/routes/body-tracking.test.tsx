@@ -63,7 +63,7 @@ const week = (list: HTMLElement, i: number) => within(list).getAllByRole("listit
 const db = () => openAccountDb(ADA.id);
 
 describe("Your weeks", () => {
-  it("show the week's last waist and its intake average, with the days entered", async () => {
+  it("show the week's last waist and its intake average on the second line", async () => {
     const list = await open([
       waist("2026-09-29", 83),
       waist("2026-10-02", 82.5),
@@ -71,9 +71,21 @@ describe("Your weeks", () => {
         intake(d, 2000 + i * 50),
       ),
     ]);
-    expect(week(list, 1).textContent).toContain("Waist82.5 cm");
-    expect(week(list, 1).textContent).toContain("Intake (5 d)2,100 kcal");
-    expect(week(list, 2).textContent).toContain("Waist—Intake—");
+    // The second line: the average, the waist, the intake, without the days entered.
+    const parts = week(list, 1).lastElementChild!;
+    expect([...parts.children].map((p) => p.textContent)).toEqual([
+      "80.2\u00a0kg ·",
+      "waist 82.5 cm ·",
+      "2,100 kcal",
+    ]);
+    expect(week(list, 2).textContent).not.toMatch(/waist|kcal/);
+  });
+
+  it("no grey cells and no insufficient pill", async () => {
+    const list = await open([]);
+    expect(list.querySelector("dl, dt, dd")).toBeNull();
+    expect(within(list).queryByText("insufficient")).toBeNull();
+    expect(within(list).queryByText(/Avg weight|Intake|Waist/)).toBeNull();
   });
 
   it("mark the weeks of a creatine course, and say once what it does to the scale", async () => {
@@ -446,8 +458,8 @@ describe("the measurements sheet", () => {
       target: { value: "82" },
     });
     fireEvent.click(within(sheet).getByRole("button", { name: "Save" }));
-    // Only the history writes this line; a text query sees it under the open dialog.
-    expect(await screen.findByText("waist 82 cm")).toBeTruthy();
+    // The history's day and this week's parts write it; a text query sees them under the dialog.
+    expect(await screen.findAllByText("waist 82 cm")).toHaveLength(2);
     const leaving = screen.getByRole("dialog", { hidden: true });
     expect(leaving.getAttribute("data-state")).toBe("closed");
     fireEvent.animationEnd(leaving);

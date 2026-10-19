@@ -14,7 +14,7 @@ import {
 } from "@belay/shared/body/weighings";
 import type { AnnotationRow, SupplementLogRow, SupplementRow } from "@belay/shared/sync/schema";
 import type { TFunction } from "i18next";
-import { Flag, type LucideIcon, Ruler, Scale } from "lucide-react";
+import { Check, Flag, type LucideIcon, Ruler, Scale } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/page-header";
@@ -53,11 +53,9 @@ import {
 import { type ChartMark, WeightChart } from "./body/chart";
 import { History } from "./body/history";
 
-const card = "rounded-card border border-border bg-card";
-const sectionTitle = "text-[15px] font-bold";
-const pill = "rounded-full px-2 py-0.5 text-xs font-semibold whitespace-nowrap";
-const neutralPill = `${pill} bg-track text-muted-foreground`;
-const rangePill = `${pill} bg-reference text-reference-ink`;
+// The range pill as the validated drawing sets it: its check, then the number.
+const rangePill =
+  "inline-flex items-center gap-[3px] rounded-full bg-reference pr-[7px] pl-[5px] font-semibold text-reference-ink";
 
 type Period = "month" | "quarter" | "all";
 type Open =
@@ -191,16 +189,11 @@ function BodyContent({
     label: annotationName(a, t),
   }));
 
-  const lossText = (pct: number) => {
-    const { kind, value } = lossView(pct);
-    const n = formatNumber(value, i18n.language, { digits: 1, minDigits: 1 });
-    return t(kind === "gain" ? "body.gainText" : "body.lossText", { value: n });
-  };
   const summary = t("chart.summary", {
     from: formatShortDay(from, i18n.language, today),
     to: formatShortDay(to, i18n.language, today),
     average: average ? t("trend.kg", { value: formatKg(average.averageKg, i18n.language) }) : "—",
-    loss: lossPct === null ? "—" : lossText(lossPct),
+    loss: lossPct === null ? "—" : lossText(lossPct, t, i18n.language),
   });
   // The band and the lines are drawn in context only; the same context goes to the summary.
   const inPeriod = (d: ISODate) => d >= from && d <= to;
@@ -349,13 +342,16 @@ function BodyContent({
       {weighings.length >= MIN_WEIGHINGS && (
         <Weeks
           weeks={weeks.filter((w) => w.end >= from)}
-          firstWeek={weeks.at(-1)!.start}
-          target={target}
-          today={today}
-          lossText={lossText}
-          measures={measures}
-          intake={intake}
-          courses={courses}
+          ctx={{
+            firstWeek: weeks.at(-1)!.start,
+            target,
+            today,
+            measures,
+            intake,
+            courses,
+            t,
+            lang: i18n.language,
+          }}
         />
       )}
       {listedNotes.length > 0 && (
@@ -441,6 +437,14 @@ function BodyContent({
   );
 }
 
+// A week's loss in words: a gain as a gain, and « stable » once it rounds to 0.0 %.
+function lossText(pct: number, t: TFunction, lang: string): string {
+  const { kind, value } = lossView(pct);
+  if (value === 0) return t("trend.stable");
+  const n = formatNumber(value, lang, { digits: 1, minDigits: 1 });
+  return t(kind === "gain" ? "body.gainText" : "body.lossText", { value: n });
+}
+
 // Before 4 weigh-ins: no average yet, and why, without judging (§9).
 function FirstDays({ weighings, today }: { weighings: Weighing[]; today: ISODate }) {
   const { t } = useTranslation();
@@ -457,114 +461,111 @@ function FirstDays({ weighings, today }: { weighings: Weighing[]; today: ISODate
   );
 }
 
-// One block per ISO week, the most recent first: its dates and loss, its pills (in the range,
-// creatine), then three figures: average weight, waist, intake (D5, D6).
-function Weeks({
-  weeks,
-  firstWeek,
-  target,
-  today,
-  lossText,
-  measures,
-  intake,
-  courses,
-}: {
-  weeks: WeekSummary[];
+type WeekContext = {
   firstWeek: ISODate;
   target: TargetRange;
   today: ISODate;
-  lossText: (pct: number) => string;
   measures: Measure[];
   intake: IntakeLog[];
   courses: { start: ISODate; end: ISODate }[];
-}) {
-  const { t, i18n } = useTranslation();
-  const sub = "text-xs text-muted-foreground";
+  t: TFunction;
+  lang: string;
+};
+type WeekValue = { kind: "toFollow" | "inRange" | "plain"; text: string };
+
+// One week as its row says it: the title, the value at the right, the parts below, each part only
+// when known.
+function weekView(
+  w: WeekSummary,
+  ctx: WeekContext,
+): { title: string; value: WeekValue; parts: string[] } {
+  const { t, lang } = ctx;
+  const title =
+    w.status === "in_progress"
+      ? t("body.thisWeek")
+      : formatWeekRange(w.start, w.end, lang, ctx.today);
+  const value: WeekValue =
+    w.status === "in_progress"
+      ? { kind: "toFollow", text: t("body.toFollow") }
+      : w.status === "valid" && w.lossPct !== null
+        ? {
+            kind: inTargetRange(w.lossPct, ctx.target) ? "inRange" : "plain",
+            text: lossText(w.lossPct, t, lang),
+          }
+        : { kind: "plain", text: "—" };
+  const why =
+    w.status === "in_progress"
+      ? t("body.weighIns", { count: w.count })
+      : w.status === "insufficient"
+        ? t("body.tooFew", { count: w.count })
+        : w.lossPct === null
+          ? t(w.start === ctx.firstWeek ? "body.firstWeek" : "body.previousInsufficient")
+          : null;
+  const waist = weeklyWaist(ctx.measures, w.start);
+  const food = weeklyIntake(ctx.intake, w.start);
+  const onCreatine = ctx.courses.some((c) => c.start <= w.end && c.end >= w.start);
+  const parts = [
+    why,
+    w.averageKg !== null && t("trend.kg", { value: formatKg(w.averageKg, lang) }),
+    waist !== null && t("body.dayParts.waist", { value: formatNumber(waist, lang, { digits: 1 }) }),
+    food.kcalAvg !== null &&
+      t("body.kcal", { value: formatNumber(Math.round(food.kcalAvg), lang, { digits: 0 }) }),
+    onCreatine && t("body.creatinePill"),
+  ].filter((p): p is string => typeof p === "string");
+  return { title, value, parts };
+}
+
+// The range pill's check: in the value of a week in the range, and once in the header.
+const rangeCheck = <Check aria-hidden className="size-3" />;
+
+// One row per ISO week, the most recent first: the title and the value, then the parts.
+function Weeks({ weeks, ctx }: { weeks: WeekSummary[]; ctx: WeekContext }) {
+  const { t } = ctx;
+  const views = weeks.map((w) => ({ start: w.start, ...weekView(w, ctx) }));
   return (
-    <section aria-labelledby="weeks" className="flex flex-col gap-1.5">
-      <h2 id="weeks" className={sectionTitle}>
-        {t("body.weeks")}
-      </h2>
-      <ul className={`${card} px-3`}>
-        {weeks.map((w) => {
-          const waist = weeklyWaist(measures, w.start);
-          const food = weeklyIntake(intake, w.start);
-          const onCreatine = courses.some((c) => c.start <= w.end && c.end >= w.start);
-          const status =
-            w.status === "in_progress"
-              ? t("body.inProgress", { count: w.count })
-              : w.status === "insufficient"
-                ? t("body.tooFew", { count: w.count })
-                : w.lossPct === null
-                  ? w.start === firstWeek
-                    ? t("body.firstWeek")
-                    : t("body.previousInsufficient")
-                  : null;
-          return (
-            <li
-              key={w.start}
-              className="flex flex-col gap-2 border-t border-border py-3 first:border-t-0"
-            >
-              <div className="flex items-baseline justify-between gap-3">
-                <span className="text-sm font-semibold">
-                  {w.status === "in_progress"
-                    ? t("body.thisWeek")
-                    : formatWeekRange(w.start, w.end, i18n.language, today)}
+    <section aria-labelledby="weeks" className="flex flex-col gap-2">
+      <div className={`${sectionLabel} flex items-baseline justify-between`}>
+        <h2 id="weeks">{t("body.weeks")}</h2>
+        {views.some((v) => v.value.kind === "inRange") && (
+          <span className="flex items-center gap-1 font-medium">
+            <span className="inline-flex self-center rounded-full bg-reference px-[5px] py-px text-reference-ink">
+              {rangeCheck}
+            </span>
+            <span>{t("body.inRange")}</span>
+          </span>
+        )}
+      </div>
+      <ul className={groupCard}>
+        {views.map(({ start, title, value, parts }) => (
+          <li
+            key={start}
+            className="grid min-h-14 grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-3 gap-y-0.5 px-4 py-[9px]"
+          >
+            <span className="text-body font-semibold">{title}</span>
+            <span className="text-right text-body font-semibold tabular-nums">
+              {value.kind === "toFollow" ? (
+                <span className="rounded-full bg-track px-2 py-0.5 text-[13px] font-semibold text-muted-foreground">
+                  {value.text}
                 </span>
-                <b className="text-sm tabular-nums">
-                  {w.status === "valid" && w.lossPct !== null ? lossText(w.lossPct) : "—"}
-                </b>
-              </div>
-              <div className="flex flex-wrap items-center gap-1.5">
-                {w.status === "valid" && w.lossPct !== null && inTargetRange(w.lossPct, target) && (
-                  <span className={rangePill}>{t("body.inRange")}</span>
-                )}
-                {w.status === "in_progress" && (
-                  <span className={neutralPill}>{t("body.toFollow")}</span>
-                )}
-                {w.status === "insufficient" && (
-                  <span className={neutralPill}>{t("body.insufficient")}</span>
-                )}
-                {onCreatine && <span className={neutralPill}>{t("body.creatinePill")}</span>}
-                {status && <span className={sub}>{status}</span>}
-              </div>
-              <dl className="grid grid-cols-3 gap-2">
-                <Cell
-                  label={t("body.cells.weight")}
-                  value={
-                    w.averageKg === null
-                      ? "—"
-                      : t("trend.kg", { value: formatKg(w.averageKg, i18n.language) })
-                  }
-                />
-                <Cell
-                  label={t("body.cells.waist")}
-                  value={
-                    waist === null
-                      ? "—"
-                      : t("body.cm", { value: formatNumber(waist, i18n.language, { digits: 1 }) })
-                  }
-                />
-                <Cell
-                  label={
-                    food.days > 0 && food.days < 7
-                      ? t("body.cells.intakeDays", { days: food.days })
-                      : t("body.cells.intake")
-                  }
-                  value={
-                    food.kcalAvg === null
-                      ? "—"
-                      : t("body.kcal", {
-                          value: formatNumber(Math.round(food.kcalAvg), i18n.language, {
-                            digits: 0,
-                          }),
-                        })
-                  }
-                />
-              </dl>
-            </li>
-          );
-        })}
+              ) : value.kind === "inRange" ? (
+                <span className={`${rangePill} text-xs`}>
+                  {rangeCheck}
+                  {value.text}
+                  <span className="sr-only">{` ${t("body.inRange")}`}</span>
+                </span>
+              ) : (
+                value.text
+              )}
+            </span>
+            <span className="col-span-2 flex flex-wrap gap-x-1.5 text-[13px] text-muted-foreground tabular-nums">
+              {parts.map((p, i) => (
+                <span key={p} className="whitespace-nowrap">
+                  {i < parts.length - 1 ? `${p} ·` : p}
+                </span>
+              ))}
+            </span>
+          </li>
+        ))}
       </ul>
     </section>
   );
@@ -586,14 +587,5 @@ function EntryRow({
     <button type="button" className={rowLine} onClick={onClick}>
       <RowBody icon={icon} title={title} status={status} />
     </button>
-  );
-}
-
-function Cell({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex min-w-0 flex-col rounded-[10px] bg-background px-2 py-1.5">
-      <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className="text-sm font-bold tabular-nums">{value}</dd>
-    </div>
   );
 }
