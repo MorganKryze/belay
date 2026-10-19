@@ -87,7 +87,6 @@ export function Settings() {
 
       <GroupedList label={general}>
         <MenuRow
-          section={general}
           icon={Languages}
           label={t("settings.language")}
           value={i18n.language as Locale}
@@ -95,7 +94,6 @@ export function Settings() {
           onChange={setLocale}
         />
         <MenuRow
-          section={general}
           icon={SunMoon}
           label={t("settings.theme")}
           value={theme}
@@ -108,7 +106,6 @@ export function Settings() {
       </GroupedList>
       <GroupedList label={home}>
         <MenuRow
-          section={home}
           icon={Scale}
           label={t("settings.homeTrend")}
           value={homeTrend}
@@ -124,7 +121,6 @@ export function Settings() {
       </GroupedList>
       <GroupedList label={sessions}>
         <MenuRow
-          section={sessions}
           icon={CirclePause}
           label={t("settings.pauseStops")}
           value={pauseStops}
@@ -138,7 +134,6 @@ export function Settings() {
           }}
         />
         <MenuRow
-          section={sessions}
           icon={CalendarDays}
           label={t("settings.historyActivities")}
           value={historyActivities}
@@ -152,7 +147,6 @@ export function Settings() {
           }}
         />
         <MenuRow
-          section={sessions}
           icon={Dumbbell}
           label={t("settings.sessionVolume")}
           value={sessionVolume}
@@ -168,7 +162,6 @@ export function Settings() {
       </GroupedList>
       <GroupedList label={body}>
         <MenuRow
-          section={body}
           icon={Check}
           label={t("settings.rangePill")}
           value={rangePill}
@@ -182,7 +175,6 @@ export function Settings() {
           }}
         />
         <MenuRow
-          section={body}
           icon={Utensils}
           label={t("settings.weekIntake")}
           value={weekIntake}

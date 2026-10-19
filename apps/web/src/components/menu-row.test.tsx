@@ -53,25 +53,11 @@ const open = () => {
 describe("MenuRow", () => {
   afterEach(() => document.getElementById("root")?.remove());
 
-  it("names the row by its label and value and announces a menu", () => {
+  it("names the row by its label then its value, a dot between them, and announces a menu", () => {
     renderInRoot(<Language />);
-    const trigger = screen.getByRole("combobox", { name: "Language English" });
+    const trigger = screen.getByRole("combobox", { name: "Language · English" });
     expect(trigger.getAttribute("aria-expanded")).toBe("false");
     expect(trigger.querySelector("[data-slot=row-chevron]")).not.toBeNull();
-  });
-
-  it("puts its section before the label and value in its name, a dot between each", () => {
-    renderInRoot(
-      <MenuRow
-        icon={Languages}
-        section="General"
-        label="Language"
-        value="en"
-        options={OPTIONS}
-        onChange={() => {}}
-      />,
-    );
-    expect(screen.getByRole("combobox", { name: "General · Language · English" })).toBeTruthy();
   });
 
   it("opens the options with the current one ticked, and a choice calls onChange and closes the menu", () => {
@@ -87,7 +73,7 @@ describe("MenuRow", () => {
     fireEvent.click(french);
     expect(onChange).toHaveBeenCalledWith("fr");
     expect(screen.queryByRole("listbox")).toBeNull();
-    expect(screen.getByRole("combobox", { name: "Language Français" })).toBeTruthy();
+    expect(screen.getByRole("combobox", { name: "Language · Français" })).toBeTruthy();
   });
 
   it("keeps the page out of reach while open and gives it back before the focus returns", () => {

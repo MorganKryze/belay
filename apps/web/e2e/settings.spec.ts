@@ -5,19 +5,9 @@ import { fakeServer, refuseChanges } from "./fake-server";
 // Signed in as Ada, in English.
 test.use({ locale: "en-US", timezoneId: "Europe/Paris" });
 
-// Each row by its short label; its name starts with its section's.
-const SECTION_OF = {
-  Language: "General",
-  Theme: "General",
-  Trend: "Home",
-  History: "Sessions",
-  Volume: "Sessions",
-  Range: "Body",
-  Intake: "Body",
-} as const;
-
-const row = (page: Page, name: keyof typeof SECTION_OF) =>
-  page.getByRole("combobox", { name: new RegExp(`^${SECTION_OF[name]} · ${name} · `) });
+// Each row by its label; its name is the label then the value.
+const row = (page: Page, name: string) =>
+  page.getByRole("combobox", { name: new RegExp(`^${name} · `) });
 
 const signOut = (page: Page) => page.getByRole("button", { name: "Sign out" });
 
@@ -189,7 +179,7 @@ test("a menu opens from the keyboard and gives the focus back to its row", async
   await expect(page.getByRole("option", { name: "Dark" })).toBeFocused();
   await page.keyboard.press("Enter");
   await expect(menu).toBeHidden();
-  await expect(theme).toHaveAccessibleName("General · Theme · Dark");
+  await expect(theme).toHaveAccessibleName("Theme · Dark");
   await expect(theme).toBeFocused();
 
   await page.keyboard.press("Space");
@@ -213,11 +203,11 @@ test("a choice tapped in a menu leaves its row without a ring, a key press bring
   page,
 }) => {
   await openSettings(page, "light");
-  const paused = page.getByRole("combobox", { name: /^Sessions · Paused · / });
+  const paused = page.getByRole("combobox", { name: /^Paused · / });
   await paused.tap();
   await page.getByRole("option", { name: "Rest continues" }).tap();
   await expect(page.getByRole("listbox")).toBeHidden();
-  await expect(paused).toHaveAccessibleName("Sessions · Paused · Rest continues");
+  await expect(paused).toHaveAccessibleName("Paused · Rest continues");
   await expect(paused).toBeFocused();
   await paused.evaluate((el: HTMLElement) => {
     el.blur();
@@ -483,7 +473,7 @@ test.describe("at 360 px", () => {
           const region = page.getByRole("region", { name: section });
           for (const [label, ...values] of rows) {
             const trigger = region.getByRole("combobox", {
-              name: new RegExp(`^${section} · ${label} · `),
+              name: new RegExp(`^${label} · `),
             });
             for (const v of values) {
               if (v !== values[0]) {
@@ -492,7 +482,7 @@ test.describe("at 360 px", () => {
                 await expect(page.getByRole("listbox")).toBeHidden();
               }
               const what = `${section} · ${label} · ${v}`;
-              await expect(trigger).toHaveAccessibleName(what);
+              await expect(trigger).toHaveAccessibleName(`${label} · ${v}`);
               const name = await measure(trigger.getByText(label, { exact: true }));
               const value = await measure(trigger.locator("[data-slot=select-value]"));
               expect(name.lines, what).toBe(1);

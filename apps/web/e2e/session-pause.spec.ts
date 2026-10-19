@@ -164,11 +164,9 @@ test("a pause stops the rest by default, and lets it run once Réglages says so"
   // Rest continues: a pause leaves the countdown going.
   await page.goto("/settings");
   await expect(page.locator(".launch")).toBeHidden();
-  await page.getByRole("combobox", { name: "Sessions · Paused · Everything stops" }).click();
+  await page.getByRole("combobox", { name: "Paused · Everything stops" }).click();
   await page.getByRole("option", { name: "Rest continues" }).click();
-  await expect(
-    page.getByRole("combobox", { name: "Sessions · Paused · Rest continues" }),
-  ).toBeVisible();
+  await expect(page.getByRole("combobox", { name: "Paused · Rest continues" })).toBeVisible();
   await page.goto("/workout");
   await expect(page.locator(".launch")).toBeHidden();
   await expect(timer).toBeVisible();

@@ -13,15 +13,12 @@ const root = () => document.getElementById("root");
 // A grouped row that shows its current value and opens an anchored menu of the choices.
 export function MenuRow<T extends string>({
   icon,
-  section,
   label,
   value,
   options,
   onChange,
 }: {
   icon: LucideIcon;
-  // The section the row sits in, said first in its name: a short label leans on its section.
-  section?: string;
   label: string;
   value: T;
   options: readonly MenuOption<T>[];
@@ -52,7 +49,7 @@ export function MenuRow<T extends string>({
       {/* A combobox takes no name from its content: the row says its label and value itself. */}
       <SelectPrimitive.Trigger asChild>
         <RowButton
-          aria-label={section ? `${section} · ${label} · ${current}` : `${label} ${current}`.trim()}
+          aria-label={current ? `${label} · ${current}` : label}
           icon={icon}
           label={label}
           trailing="menu"
