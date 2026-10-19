@@ -295,18 +295,35 @@ test("with Session volume hidden the strip has two columns", async ({ page }) =>
   for (const w of widths) expect(Math.abs(w - card.width / 2)).toBeLessThanOrEqual(1);
 });
 
-test("the warm-up label holds on one line in its 40 px column", async ({ page }) => {
-  await page.setViewportSize({ width: 360, height: 740 });
-  await open(page, B, "Session B · Legs");
-  const label = page.locator("main li").getByText("Warm-up", { exact: true });
-  await expect(label).toBeVisible();
-  const lines = await label.evaluate((span) => {
-    const range = document.createRange();
-    range.selectNodeContents(span);
-    return new Set([...range.getClientRects()].map((r) => Math.round(r.top))).size;
+for (const [locale, word, title] of [
+  ["en-US", "Warm-up", "Session B · Legs"],
+  ["fr-FR", "Montée", "Séance B · Legs"],
+] as const) {
+  test.describe(locale, () => {
+    test.use({ locale });
+
+    test(`the warm-up label « ${word} » holds on one line, at least 4 px clear of the load`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 360, height: 740 });
+      await open(page, B, title);
+      const label = page.locator("main li").getByText(word, { exact: true });
+      await expect(label).toBeVisible();
+      const text = await label.evaluate((span) => {
+        const range = document.createRange();
+        range.selectNodeContents(span);
+        const rects = [...range.getClientRects()];
+        const load = span.nextElementSibling!.getBoundingClientRect();
+        return {
+          lines: new Set(rects.map((r) => Math.round(r.top))).size,
+          gap: load.left - Math.max(...rects.map((r) => r.right)),
+        };
+      });
+      expect(text.lines).toBe(1);
+      expect(text.gap).toBeGreaterThanOrEqual(4);
+    });
   });
-  expect(lines).toBe(1);
-});
+}
 
 test.describe("in French", () => {
   test.use({ locale: "fr-FR" });

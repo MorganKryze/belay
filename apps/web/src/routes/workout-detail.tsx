@@ -249,7 +249,7 @@ function ExerciseSets({
         {sets.map((s) => (
           <li
             key={s.id}
-            className={`${hairline} grid min-h-10 grid-cols-[40px_minmax(0,1fr)_auto] items-center gap-1.5 pr-4 pl-2.5 text-body tabular-nums`}
+            className={`${hairline} grid min-h-10 grid-cols-[52px_minmax(0,1fr)_auto] items-center gap-1.5 pr-4 pl-2.5 text-body tabular-nums`}
           >
             <span
               className={
