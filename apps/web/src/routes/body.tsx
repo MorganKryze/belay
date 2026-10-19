@@ -448,12 +448,7 @@ function FirstDays({ weighings, today }: { weighings: Weighing[]; today: ISODate
   const thisWeek = weighings.filter((w) => w.date >= monday).length;
   return (
     <>
-      <span
-        data-slot="trend-figure"
-        className="mt-2.5 mb-2 text-figure tracking-[-0.03em] text-foreground tabular-nums"
-      >
-        —
-      </span>
+      <TrendFigure averageKg={null} lossPct={null} pill={false} />
       <h3 className="text-body font-semibold">
         {t("body.firstDays", { count: Math.max(1, MIN_WEIGHINGS - thisWeek) })}
       </h3>
