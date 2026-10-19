@@ -70,3 +70,33 @@ test("chosen in Settings, Epley only leaves one figure on the 1RM", async ({ pag
   const box = await figures.first().boundingBox();
   expect(box?.height).toBeGreaterThan(0);
 });
+
+test("hidden in Settings, field sources leave Energy in the same visit, with no reload", async ({
+  page,
+}) => {
+  await signedIn(page);
+  await page.evaluate(() => ((window as unknown as { sameVisit: boolean }).sameVisit = true));
+  const tools = page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Tools" });
+  await tools.tap();
+  await page.getByRole("link", { name: /^Energy expenditure/ }).tap();
+  await expect(page.getByText("from your year of birth")).toBeVisible();
+  await page.goBack();
+  await page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Home" }).tap();
+  await page.getByRole("link", { name: "Settings" }).tap();
+  await page
+    .getByRole("combobox")
+    .filter({ hasText: /^Field sources/ })
+    .tap();
+  await page.getByRole("option", { name: "Hidden" }).tap();
+  await expect(page.getByRole("combobox").filter({ hasText: /^Field sources/ })).toContainText(
+    "Hidden",
+  );
+  await page.goBack(); // Réglages is pushed over Home, the tabs come back with it
+  await tools.tap();
+  await page.getByRole("link", { name: /^Energy expenditure/ }).tap();
+  await expect(page.getByRole("textbox", { name: "Height" })).toHaveValue("178");
+  await expect(page.getByText(/^from your/)).toHaveCount(0);
+  expect(await page.evaluate(() => (window as unknown as { sameVisit?: boolean }).sameVisit)).toBe(
+    true,
+  );
+});
