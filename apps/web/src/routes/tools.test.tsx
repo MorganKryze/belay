@@ -31,6 +31,60 @@ describe("tools", () => {
     ]);
   });
 
+  it("lists three sections of tools, each a list under its label", async () => {
+    renderRoute("/tools");
+    await screen.findByRole("heading", { name: "Tools", level: 1 });
+    const expected = {
+      Strength: ["One-rep max", "Plates", "Warm-up"],
+      Energy: ["Energy expenditure", "Protein", "Projection"],
+      Body: ["BMI", "Body fat"],
+    };
+    for (const [group, tools] of Object.entries(expected)) {
+      const section = screen.getByRole("region", { name: group });
+      const list = within(section).getByRole("list");
+      const names = within(list)
+        .getAllByRole("link")
+        .map((a) => a.querySelector("span.text-body")?.textContent);
+      expect(names).toEqual(tools);
+    }
+  });
+
+  it("each tool is a link named by its name then its hint", async () => {
+    renderRoute("/tools");
+    await screen.findByRole("heading", { name: "Tools", level: 1 });
+    for (const id of ["one-rep-max", "plates", "bmi", "body-fat"]) {
+      const name = i18n.t(`tools.items.${id}.name`);
+      const hint = i18n.t(`tools.items.${id}.hint`);
+      const link = screen.getByRole("link", { name: `${name} ${hint}` });
+      expect(link.getAttribute("href")).toBe(`/tools/${id}`);
+    }
+  });
+
+  it("the lead is the page's last paragraph, after the lists", async () => {
+    renderRoute("/tools");
+    const h1 = await screen.findByRole("heading", { name: "Tools", level: 1 });
+    const page = h1.closest("section")!;
+    const lead = within(page).getByText(i18n.t("tools.lead"));
+    expect(lead.tagName).toBe("P");
+    expect(lead.closest("header")).toBeNull();
+    expect(page.lastElementChild).toBe(lead);
+    const lists = within(page).getAllByRole("list");
+    for (const list of lists) {
+      expect(list.compareDocumentPosition(lead) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(list.getAttribute("aria-describedby")).toBeNull();
+    }
+  });
+
+  it("1RM and BMI draw weight and gauge, never Séances' dumbbell or Corps' ruler", async () => {
+    renderRoute("/tools");
+    await screen.findByRole("heading", { name: "Tools", level: 1 });
+    const svg = (name: string) =>
+      screen.getByRole("link", { name: new RegExp(`^${name} `) }).querySelector("svg");
+    expect(svg("One-rep max")?.classList.contains("lucide-weight")).toBe(true);
+    expect(svg("BMI")?.classList.contains("lucide-gauge")).toBe(true);
+    expect(screen.getByRole("main").querySelector(".lucide-dumbbell, .lucide-ruler")).toBeNull();
+  });
+
   it("tool rows tint on press", async () => {
     renderRoute("/tools");
     await screen.findByRole("heading", { name: "Tools", level: 1 });
