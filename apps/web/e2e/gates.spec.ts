@@ -51,6 +51,27 @@ const RUNNING_C: Change[] = [
 // sentence is exempt: it flows with the text around it, as WCAG 2.5.8 allows. Whatever an open
 // dialog hides from assistive tech is out of reach, so it is not measured either. A field takes
 // taps on its whole box (the stepper's, or the label it sits in), so that box is what counts.
+// Session A started at 16:00 on the frozen day and ended 48 minutes later.
+const DONE = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7f02";
+const DONE_A: Change[] = [
+  {
+    kind: "workout",
+    id: DONE,
+    field: "start",
+    sessionCode: "A",
+    plan: [...sessionByCode("A")!.slots],
+    startedAt: "2026-10-07T14:00:00.000Z",
+    at: "2026-10-07T14:00:00.000Z",
+  },
+  {
+    kind: "workout",
+    id: DONE,
+    field: "ended",
+    value: "2026-10-07T14:48:00.000Z",
+    at: "2026-10-07T14:48:00.000Z",
+  },
+];
+
 const smallTargets = (page: Page) =>
   page.evaluate(() =>
     [...document.querySelectorAll<HTMLElement>("button, a, input, [role=radio], [role=option]")]
@@ -138,6 +159,14 @@ const SCREENS: [string, (page: Page) => Promise<void>][] = [
       await expect(page.getByRole("region", { name: /^Session C · / })).toContainText(
         "In progress",
       );
+    },
+  ],
+  [
+    "Home, the session done",
+    async (page) => {
+      await fakeServer(page, { changes: DONE_A });
+      await page.goto("/");
+      await expect(page.getByRole("region", { name: /^Session A · / })).toContainText("Done today");
     },
   ],
   ...(["program", "history", "exercises"] as const).map(

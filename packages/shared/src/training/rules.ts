@@ -1,4 +1,5 @@
 // What a session computes from the history (spec §7). Pure; the callers pass the clock.
+import { type ISODate, toISODate } from "../body/dates";
 import type { Measure } from "../exercises/library";
 import type { Equipment } from "../exercises/muscles";
 import { epley, RELIABLE_MAX_REPS } from "../tools/one-rep-max";
@@ -297,6 +298,29 @@ export function loggedByExercise(
     workSets: own.length,
     top: topSet(own)!,
   }));
+}
+
+// The last session kept and ended whose day (the day it started, on this device's clock) is
+// `day`, with its length and its work sets: Accueil's "done today". null when there is none.
+export function finishedOn(
+  history: History,
+  day: ISODate,
+): { workout: Workout & { endedAt: string }; durationMs: number; workSets: number } | null {
+  const last = history.workouts
+    .filter(
+      (w): w is Workout & { endedAt: string } =>
+        w.endedAt !== null && !w.removed && toISODate(new Date(w.startedAt)) === day,
+    )
+    .reduce<(Workout & { endedAt: string }) | null>(
+      (last, w) => (last === null || w.startedAt > last.startedAt ? w : last),
+      null,
+    );
+  if (!last) return null;
+  return {
+    workout: last,
+    durationMs: Date.parse(last.endedAt) - Date.parse(last.startedAt),
+    workSets: liveSets(history).filter((s) => s.workoutId === last.id && !s.warmup).length,
+  };
 }
 
 // The last session of this code that ended and was kept, if any: the preview's "last time" and
