@@ -9,15 +9,15 @@ import {
   rateWarning,
 } from "@belay/shared/tools/projection";
 import { roundTo } from "@belay/shared/tools/round";
-import { Info } from "lucide-react";
+import { TriangleAlert } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
-import { ChoiceList } from "@/components/choice-list";
 import { MonthStrip } from "@/components/month-strip";
 import { NumberStepper } from "@/components/number-stepper";
 import { RestoreButton, usePrefill } from "@/components/prefill";
 import { ResultCard } from "@/components/result-card";
+import { Segmented } from "@/components/segmented";
 import { ToolPage } from "@/components/tool-page";
 import { attempt } from "@/lib/attempt";
 import { formatDay, formatNumber } from "@/lib/format";
@@ -39,6 +39,8 @@ export function ProjectionTool() {
   const warning = rateWarning(inputs.pct);
   const n = (v: number, digits = 1) => formatNumber(v, i18n.language, { digits });
   const preset = RATE_PRESETS.find((r) => r.pct === inputs.pct);
+  // A stored pace that matches no preset opens in fine tuning.
+  const fine = inputs.fine || !preset;
   return (
     <ToolPage
       title={t("tools.items.projection.name")}
@@ -73,7 +75,7 @@ export function ProjectionTool() {
         />
       </div>
       <RestoreButton prefill={prefill} />
-      {inputs.fine ? (
+      {fine ? (
         <NumberStepper
           label={t("projection.fineLabel")}
           unit="%"
@@ -84,47 +86,50 @@ export function ProjectionTool() {
           onChange={(v) => v !== null && setInputs({ pct: roundTo(v, RATE_STEP_PCT) })}
         />
       ) : (
-        <ChoiceList
-          label={t("projection.rate")}
-          hint={t("projection.rateHint")}
-          value={preset?.id ?? null}
-          options={RATE_PRESETS.map((r) => ({
-            value: r.id,
-            label: t(`projection.rates.${r.id}`),
-            aside: t("projection.rateAside", {
-              pct: n(r.pct, 2),
-              kg: n(roundTo(kgPerWeek(currentKg, r.pct), 0.1)),
-            }),
-          }))}
-          onChange={(id) => setInputs({ pct: RATE_PRESETS.find((r) => r.id === id)?.pct ?? 0.75 })}
-        />
+        <>
+          <Segmented
+            label={t("projection.rate")}
+            hint={t("projection.rateHint")}
+            value={preset.id}
+            options={[
+              { value: "gentle", label: t("projection.rates.gentle") },
+              { value: "balanced", label: t("projection.rates.balanced") },
+              { value: "steady", label: t("projection.rates.steady") },
+            ]}
+            onChange={(id) => setInputs({ pct: RATE_PRESETS.find((r) => r.id === id)!.pct })}
+          />
+          <p className="-mt-2 text-[13px] text-muted-foreground tabular-nums">
+            {t("projection.rateLine", {
+              pct: n(preset.pct, 2),
+              kg: n(roundTo(kgPerWeek(currentKg, preset.pct), 0.1)),
+            })}
+          </p>
+        </>
       )}
       <button
         type="button"
         className="-mt-2 min-h-11 self-end text-[13px] font-semibold text-primary"
-        onClick={() =>
-          setInputs(inputs.fine ? { fine: false, pct: preset?.pct ?? 0.75 } : { fine: true })
-        }
+        onClick={() => setInputs(fine ? { fine: false, pct: preset?.pct ?? 0.75 } : { fine: true })}
       >
-        {inputs.fine ? t("projection.presets") : `${t("projection.fine")} ›`}
+        {fine ? t("projection.presets") : `${t("projection.fine")} ›`}
       </button>
       {p?.kind === "ok" && warning !== "none" && (
         <p className="flex gap-2 rounded-field border border-border bg-card p-3 text-sm">
-          <Info aria-hidden className="mt-0.5 size-4 shrink-0" />
+          <TriangleAlert aria-hidden className="mt-0.5 size-4 shrink-0" />
           {t(warning === "above-1.5" ? "projection.above15" : "projection.above1")}
         </p>
       )}
       <ResultCard label={t("projection.result")}>
         {p?.kind === "ok" && (
           <>
-            <p className="text-[22px] leading-tight font-extrabold tracking-tight">
+            <p className="text-[22px] leading-tight font-bold tracking-tight">
               {t("projection.between", {
                 low: formatDay(p.dateLow, i18n.language, today),
                 high: formatDay(p.dateHigh, i18n.language, today),
               })}
             </p>
             <MonthStrip today={today} low={p.dateLow} high={p.dateHigh} />
-            <p className="text-[13px] text-muted-foreground">
+            <p className="text-[13.5px] text-muted-foreground">
               {t("projection.weeks", { low: p.weeksLow, high: p.weeksHigh })}
             </p>
           </>
