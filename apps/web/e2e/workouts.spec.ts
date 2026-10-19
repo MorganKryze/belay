@@ -463,3 +463,30 @@ test.describe("accessibility", () => {
     });
   }
 });
+
+test("Programme cards sit on the card surface", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await fakeServer(page, { changes: LAST_A });
+  const titles = page.getByRole("heading", { level: 2, name: /^Session / });
+  // Each card: the region its title names, or the link that is the whole card.
+  const surfaces = () =>
+    titles.evaluateAll((hs) =>
+      hs.map((h) => {
+        const s = getComputedStyle(h.closest("a, section[aria-labelledby]")!);
+        return { shadow: s.boxShadow, border: s.borderTopWidth };
+      }),
+    );
+  await page.addInitScript(() => localStorage.setItem("belay.theme", "light"));
+  await page.goto("/workouts?tab=program");
+  await expect(titles).toHaveCount(3);
+  const light = await surfaces();
+  for (const s of light) {
+    expect(s.shadow).toContain("rgba(28, 25, 23, 0.035) 0px 0px 0px 1px");
+    expect(s.border).toBe("0px");
+  }
+  await page.addInitScript(() => localStorage.setItem("belay.theme", "dark"));
+  await page.reload();
+  await expect(page.locator("html")).toHaveClass(/dark/);
+  await expect(titles).toHaveCount(3);
+  expect(await surfaces()).toEqual(Array(3).fill({ shadow: "none", border: "1px" }));
+});
