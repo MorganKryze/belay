@@ -241,7 +241,7 @@ function ExerciseSets({
       <div className="flex min-h-14 items-center gap-3 py-1.5 pr-3.5 pl-4">
         <NumberTile n={n} />
         <div className="min-w-0 flex-1">
-          <h2 className="truncate text-body font-semibold">{name}</h2>
+          <h3 className="truncate text-body font-semibold">{name}</h3>
           <p className={`truncate ${secondary}`}>{prescription}</p>
         </div>
       </div>

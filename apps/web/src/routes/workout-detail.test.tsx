@@ -178,7 +178,7 @@ describe("a session's detail", () => {
     fakeApi({ me: ADA });
     renderRoute(`/workouts/${id(2)}`);
     const squat = await screen.findByRole("region", { name: "Barbell full squat" });
-    expect(within(squat).getByRole("heading", { level: 2 }).textContent).toBe("Barbell full squat");
+    expect(within(squat).getByRole("heading", { level: 3 }).textContent).toBe("Barbell full squat");
     // The session's own plan: four sets of 5 to 8 at RIR 2.
     expect(within(squat).getByText("4 × 5–8 · RIR 2")).toBeTruthy();
     expect(tile(squat)).toBe("1");
