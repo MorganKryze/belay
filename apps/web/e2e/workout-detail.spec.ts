@@ -299,7 +299,7 @@ for (const theme of ["light", "dark"] as const) {
   });
 }
 
-test("with Session volume hidden the strip has two columns", async ({ page }) => {
+test("with Volume hidden the strip has two columns", async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem("belay.sessionVolume", "hidden"));
   await page.setViewportSize({ width: 390, height: 844 });
   await open(page, A, "Session A · Push");

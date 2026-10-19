@@ -300,16 +300,17 @@ export function TodayCard({
 }
 
 // The icon tile sits inside the row's button or link, so a press tints the whole line.
-const rowLine =
+export const rowLine =
   "press-tint flex min-h-14 w-full min-w-0 items-center gap-3 px-4 py-2 text-left outline-ring focus-visible:outline-2 focus-visible:-outline-offset-2";
 
 // Where a gesture stands today: null while not known yet; done when something is logged.
-type Status = { text: string; done: boolean } | null;
+export type Status = { text: string; done: boolean } | null;
 
 // The inside of a row: the icon square, the name over its status, and a chevron. A status still
 // unknown (null) is a blank line of the same height, so nothing moves when it comes; the
-// no-break space keeps the line from collapsing.
-function RowBody({
+// no-break space keeps the line from collapsing. The space between the name and the status is
+// for the row's accessible name ("Weigh-in 80.2 kg"); the column drops it from the layout.
+export function RowBody({
   icon: Icon,
   title,
   status,
@@ -327,7 +328,7 @@ function RowBody({
         <Icon className="size-4" />
       </span>
       <span className="flex min-w-0 flex-1 flex-col">
-        <span className="font-semibold">{title}</span>
+        <span className="font-semibold">{title}</span>{" "}
         {/* Keyed: each state mounts its own span instead of patching the one before into it. */}
         {status === null ? (
           <span key="blank" aria-hidden className="text-[13px] text-muted-foreground">

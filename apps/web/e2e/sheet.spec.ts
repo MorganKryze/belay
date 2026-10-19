@@ -371,7 +371,7 @@ test.describe("in French on a 360 px phone", () => {
   }) => {
     await fakeServer(page, { rows: WEEKS });
     await page.goto("/body");
-    await page.getByRole("button", { name: "Annotation", exact: true }).click();
+    await page.getByRole("button", { name: /^Annotation\b/ }).click();
     const sheet = page.getByRole("dialog", { name: "Nouvelle annotation" });
     await sheet.getByLabel(/^Date de l.annotation$/).fill("2026-09-30");
     await sheet.evaluate((el) => Promise.all(el.getAnimations().map((a) => a.finished)));

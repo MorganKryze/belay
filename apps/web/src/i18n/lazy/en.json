@@ -1,12 +1,12 @@
 {
   "settings": {
-    "preferences": "Preferences",
+    "general": "General",
     "pauseStops": "Paused",
     "pauseStopsOptions": {
       "all": "Everything stops",
-      "session": "The rest keeps running"
+      "session": "Rest continues"
     },
-    "homeTrend": "Trend on Home",
+    "homeTrend": "Trend",
     "homeTrendOptions": {
       "shown": "Shown",
       "hidden": "Hidden"
@@ -16,8 +16,18 @@
       "shown": "With activities",
       "hidden": "Sessions only"
     },
-    "sessionVolume": "Session volume",
+    "sessionVolume": "Volume",
     "sessionVolumeOptions": {
+      "shown": "Shown",
+      "hidden": "Hidden"
+    },
+    "rangePill": "Range pill",
+    "rangePillOptions": {
+      "shown": "Shown",
+      "hidden": "Hidden"
+    },
+    "weekIntake": "Weekly intake",
+    "weekIntakeOptions": {
       "shown": "Shown",
       "hidden": "Hidden"
     },
@@ -170,15 +180,14 @@
   "body": {
     "creatineNote": "During the 14 days of creatine, the weight often rises by 1 to 2 kg of water: it isn't fat.",
     "creatinePill": "creatine",
-    "openAnnotation": "Open the annotation {{name}}",
-    "cells": {
-      "weight": "Avg weight",
-      "waist": "Waist",
-      "intake": "Intake",
-      "intakeDays": "Intake ({{days}} d)"
+    "entries": {
+      "title": "Log",
+      "measuresNone": "not entered yet",
+      "annotationSub": "deload week, break or note"
     },
-    "cm": "{{value}} cm",
     "kcal": "{{value}} kcal",
+    "weighIns_one": "{{count}} weigh-in",
+    "weighIns_other": "{{count}} weigh-ins",
     "dayParts": {
       "waist": "waist {{value}} cm",
       "neck": "neck {{value}} cm",

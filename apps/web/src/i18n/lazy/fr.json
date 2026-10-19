@@ -1,12 +1,12 @@
 {
   "settings": {
-    "preferences": "Préférences",
+    "general": "Général",
     "pauseStops": "En pause",
     "pauseStopsOptions": {
       "all": "Tout s'arrête",
       "session": "Le repos continue"
     },
-    "homeTrend": "Tendance sur Accueil",
+    "homeTrend": "Tendance",
     "homeTrendOptions": {
       "shown": "Affichée",
       "hidden": "Masquée"
@@ -16,10 +16,20 @@
       "shown": "Avec activités",
       "hidden": "Séances seules"
     },
-    "sessionVolume": "Volume sur la séance",
+    "sessionVolume": "Volume",
     "sessionVolumeOptions": {
       "shown": "Affiché",
       "hidden": "Masqué"
+    },
+    "rangePill": "Pastille",
+    "rangePillOptions": {
+      "shown": "Affichée",
+      "hidden": "Masquée"
+    },
+    "weekIntake": "Apports",
+    "weekIntakeOptions": {
+      "shown": "Affichés",
+      "hidden": "Masqués"
     },
     "versionNotes": "Belay {{version}} · notes de version",
     "newTab": "(nouvel onglet)",
@@ -170,15 +180,14 @@
   "body": {
     "creatineNote": "Pendant les 14 jours de créatine, le poids monte souvent d'1 à 2 kg d'eau : ce n'est pas du gras.",
     "creatinePill": "créatine",
-    "openAnnotation": "Ouvrir l'annotation {{name}}",
-    "cells": {
-      "weight": "Poids moy.",
-      "waist": "Taille",
-      "intake": "Apports",
-      "intakeDays": "Apports ({{days}} j)"
+    "entries": {
+      "title": "Saisir",
+      "measuresNone": "pas encore saisies",
+      "annotationSub": "semaine allégée, pause ou note"
     },
-    "cm": "{{value}} cm",
     "kcal": "{{value}} kcal",
+    "weighIns_one": "{{count}} pesée",
+    "weighIns_other": "{{count}} pesées",
     "dayParts": {
       "waist": "taille {{value}} cm",
       "neck": "cou {{value}} cm",

@@ -40,9 +40,9 @@ test("hidden in Settings, Accueil shows no trend after Back, and Body still does
   await openHome(page);
   await expect(trendCard(page)).toBeVisible();
   await page.goto("/settings");
-  await page.getByRole("combobox", { name: /^Trend on Home/ }).tap();
+  await page.getByRole("combobox", { name: /^Trend · / }).tap();
   await page.getByRole("option", { name: "Hidden" }).tap();
-  await expect(page.getByRole("combobox", { name: "Trend on Home Hidden" })).toBeVisible();
+  await expect(page.getByRole("combobox", { name: "Trend · Hidden" })).toBeVisible();
   await page.getByRole("link", { name: "Home" }).first().tap();
   await expect(page.getByRole("heading", { name: "Hello, Ada", level: 1 })).toBeVisible();
   await expect(page.getByRole("button", { name: /^Weigh-in/ })).toBeVisible();

@@ -1,7 +1,7 @@
 import "@/i18n/lazy";
 import { addDays, type ISODate, isoWeekStart } from "@belay/shared/body/dates";
 import { type IntakeLog, weeklyIntake } from "@belay/shared/body/intake";
-import { type Measure, measureOf, weeklyWaist } from "@belay/shared/body/measures";
+import { MEASURE_FIELDS, type Measure, measureOf, weeklyWaist } from "@belay/shared/body/measures";
 import { creatineWindows } from "@belay/shared/body/supplements";
 import { inTargetRange, type TargetRange } from "@belay/shared/body/target";
 import {
@@ -14,18 +14,31 @@ import {
 } from "@belay/shared/body/weighings";
 import type { AnnotationRow, SupplementLogRow, SupplementRow } from "@belay/shared/sync/schema";
 import type { TFunction } from "i18next";
-import { Plus } from "lucide-react";
+import { Check, Flag, type LucideIcon, Ruler, Scale } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/page-header";
+import { cardSurface, groupCard, sectionLabel } from "@/components/surfaces";
+import { RowBody, rowLine, type Status } from "@/components/today-card";
+import { TrendFigure } from "@/components/trend-figure";
 import { AnnotationSheet } from "@/components/annotation-sheet";
 import { MeasuresSheet } from "@/components/measures-sheet";
 import { Segmented } from "@/components/segmented";
 import { SyncBanner } from "@/components/sync-banner";
 import { Button } from "@/components/ui/button";
-import { dayLabel, type Entry, Toast, useWriter } from "@/components/weigh-in";
+import { type Entry, Toast, useWriter } from "@/components/weigh-in";
 import { WeighInSheet } from "@/components/weigh-in-sheet";
-import { formatKg, formatNumber, formatShortDay, formatWeekRange, lossView } from "@/lib/format";
+import { readWeekIntake } from "@/lib/display-prefs";
+import { useFirstPull } from "@/lib/first-pull";
+import { readRangePill } from "@/lib/home-trend";
+import {
+  formatKg,
+  formatNumber,
+  formatShortDay,
+  formatWeekday,
+  formatWeekRange,
+  lossView,
+} from "@/lib/format";
 import { useToday } from "@/lib/today";
 import {
   type Account,
@@ -40,12 +53,11 @@ import {
   useWeighings,
 } from "@/sync/account";
 import { type ChartMark, WeightChart } from "./body/chart";
+import { History } from "./body/history";
 
-const card = "rounded-card border border-border bg-card";
-const sectionTitle = "text-[15px] font-bold";
-const pill = "rounded-full px-2 py-0.5 text-xs font-semibold whitespace-nowrap";
-const neutralPill = `${pill} bg-track text-muted-foreground`;
-const rangePill = `${pill} bg-reference text-reference-ink`;
+// The range pill as the validated drawing sets it: its check, then the number.
+const rangePill =
+  "inline-flex items-center gap-[3px] rounded-full bg-reference pr-[7px] pl-[5px] font-semibold text-reference-ink";
 
 type Period = "month" | "quarter" | "all";
 type Open =
@@ -134,6 +146,9 @@ function BodyContent({
   const [open, setOpen] = useState<Open | null>(null);
   // A saved sheet plays its exit over the screen that already shows the record.
   const [leaving, setLeaving] = useState(false);
+  // Device preferences from Réglages, read once per visit as Home reads its trend.
+  const [rangePill] = useState(readRangePill);
+  const [weekIntake] = useState(readWeekIntake);
   const { write, toast, error, clearError, dismiss } = useWriter(account);
   const close = () => {
     setOpen(null);
@@ -171,26 +186,19 @@ function BodyContent({
     logs.filter((l) => creatine.has(l.supplementId)).map((l) => l.date),
     today,
   );
-  // During a course, said once under the figures: the scale may rise with water.
-  const creatineNote = courses.some((c) => c.start <= today && today <= c.end) && (
-    <p className="text-sm text-muted-foreground">{t("body.creatineNote")}</p>
-  );
+  // During a course, said once under the figure: the scale may rise with water.
+  const onCreatine = courses.some((c) => c.start <= today && today <= c.end);
   const marks: ChartMark[] = annotations.map((a) => ({
     id: a.id,
     date: a.date,
     label: annotationName(a, t),
   }));
 
-  const lossText = (pct: number) => {
-    const { kind, value } = lossView(pct);
-    const n = formatNumber(value, i18n.language, { digits: 1, minDigits: 1 });
-    return t(kind === "gain" ? "body.gainText" : "body.lossText", { value: n });
-  };
   const summary = t("chart.summary", {
     from: formatShortDay(from, i18n.language, today),
     to: formatShortDay(to, i18n.language, today),
     average: average ? t("trend.kg", { value: formatKg(average.averageKg, i18n.language) }) : "—",
-    loss: lossPct === null ? "—" : lossText(lossPct),
+    loss: lossPct === null ? "—" : lossText(lossPct, t, i18n.language),
   });
   // The band and the lines are drawn in context only; the same context goes to the summary.
   const inPeriod = (d: ISODate) => d >= from && d <= to;
@@ -211,14 +219,61 @@ function BodyContent({
       }),
     ),
   ].join(" ");
-  // Annotations whose pill is not on a week shown (no weeks list yet, or the date outside it).
-  const weeksShown = weighings.length < MIN_WEIGHINGS ? [] : weeks.filter((w) => w.end >= from);
-  const orphans = shownNotes.filter(
-    (a) => !weeksShown.some((w) => a.date >= w.start && a.date <= w.end),
+  // Each annotation of the period has its row, the newest first, wherever the weeks start; on one
+  // day, the later made (its UUID v7 sorts after) comes first.
+  const listedNotes = [...shownNotes].sort(
+    (a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id),
   );
+  const weekday = (d: ISODate) => formatWeekday(d, i18n.language, today, { startOfLine: false });
+  // Until this device has the account's data, the rows wait rather than say nothing was entered.
+  const firstPull = useFirstPull(account);
+  const weighed = weighings.find((w) => w.date === today);
+  const weighInStatus: Status = firstPull
+    ? null
+    : weighed
+      ? { text: t("trend.kg", { value: formatKg(weighed.weightKg, i18n.language) }), done: true }
+      : { text: t("today.weighInEmpty"), done: false };
+  // The latest measurement up to today: its waist, else its neck, else its hips.
+  const lastMeasure = measures
+    .filter((m) => m.date <= today && MEASURE_FIELDS.some((f) => measureOf(m, f) !== null))
+    .sort((a, b) => (a.date < b.date ? -1 : 1))
+    .at(-1);
+  const measureField =
+    lastMeasure && MEASURE_FIELDS.find((f) => measureOf(lastMeasure, f) !== null);
+  const measuresStatus: Status = firstPull
+    ? null
+    : lastMeasure && measureField
+      ? {
+          text: `${t(`body.dayParts.${measureField}`, {
+            value: formatNumber(measureOf(lastMeasure, measureField)!, i18n.language, {
+              digits: 1,
+            }),
+          })} · ${weekday(lastMeasure.date)}`,
+          done: false,
+        }
+      : { text: t("body.entries.measuresNone"), done: false };
 
   return (
     <>
+      <section aria-labelledby="figure" className={`${cardSurface} flex flex-col px-4 py-3.5`}>
+        <h2 id="figure" className="text-[13px] font-semibold text-muted-foreground">
+          {t("trend.average")}
+        </h2>
+        {weighings.length < MIN_WEIGHINGS ? (
+          <FirstDays weighings={weighings} today={today} />
+        ) : (
+          <TrendFigure
+            averageKg={average?.averageKg ?? null}
+            lossPct={lossPct}
+            pill={lossPct !== null && inTargetRange(lossPct, target) && rangePill === "shown"}
+          />
+        )}
+        {onCreatine && (
+          <p className="mt-2.5 border-t border-border pt-2.5 text-[13px] text-muted-foreground">
+            {t("body.creatineNote")}
+          </p>
+        )}
+      </section>
       <Segmented
         label={t("body.period")}
         labelHidden
@@ -231,7 +286,7 @@ function BodyContent({
         ]}
       />
       {shown.length > 0 && (
-        <div className={`${card} px-2 pt-2.5 pb-1.5`}>
+        <div className={`${cardSurface} px-2 pt-2.5 pb-1.5`}>
           <div
             aria-hidden
             className="mb-1 flex flex-wrap gap-x-3 gap-y-1 px-1 text-xs text-muted-foreground"
@@ -246,7 +301,7 @@ function BodyContent({
             </span>
             {shownCourses.length > 0 && (
               <span className="flex items-center gap-1">
-                <i className="size-2.5 rounded-[3px] border border-primary-ink/40 bg-primary-soft" />
+                <i className="size-2.5 rounded-[3px] bg-primary-soft ring-1 ring-primary-ink ring-inset" />
                 {t("chart.creatine")}
               </span>
             )}
@@ -265,63 +320,71 @@ function BodyContent({
               setOpen({ sheet: "annotation", annotation: annotations.find((a) => a.id === id)! })
             }
           />
-          {orphans.length > 0 && (
-            <div
-              role="group"
-              aria-label={t("annotation.row")}
-              className="flex flex-wrap gap-x-2 px-1"
-            >
-              {orphans.map((a) => (
-                <AnnotationPill
-                  key={a.id}
-                  annotation={a}
-                  onOpen={() => setOpen({ sheet: "annotation", annotation: a })}
-                />
-              ))}
-            </div>
-          )}
         </div>
       )}
-      <div className="grid grid-cols-2 gap-2">
-        <Button
-          variant="secondary"
-          className="px-2"
-          onClick={() => setOpen({ sheet: "measures", date: today })}
-        >
-          <Plus aria-hidden className="size-4" />
-          {t("measures.title")}
-        </Button>
-        <Button
-          variant="secondary"
-          className="px-2"
-          onClick={() => setOpen({ sheet: "annotation", annotation: null })}
-        >
-          <Plus aria-hidden className="size-4" />
-          {t("annotation.button")}
-        </Button>
-      </div>
-      {weighings.length < MIN_WEIGHINGS ? (
-        <>
-          <FirstDays weighings={weighings} today={today} />
-          {creatineNote}
-        </>
-      ) : (
-        <>
-          <Figures average={average?.averageKg ?? null} lossPct={lossPct} target={target} />
-          {creatineNote}
-          <Weeks
-            weeks={weeks.filter((w) => w.end >= from)}
-            firstWeek={weeks.at(-1)!.start}
-            target={target}
-            today={today}
-            lossText={lossText}
-            measures={measures}
-            intake={intake}
-            courses={courses}
-            annotations={annotations}
-            onAnnotation={(annotation) => setOpen({ sheet: "annotation", annotation })}
+      <section aria-labelledby="entries" className="flex flex-col gap-2">
+        <h2 id="entries" className={sectionLabel}>
+          {t("body.entries.title")}
+        </h2>
+        <div className={groupCard}>
+          <EntryRow
+            icon={Scale}
+            title={t("today.weighIn")}
+            status={weighInStatus}
+            onClick={() => setOpen({ sheet: "weighIn", date: today })}
           />
-        </>
+          <EntryRow
+            icon={Ruler}
+            title={t("measures.title")}
+            status={measuresStatus}
+            onClick={() => setOpen({ sheet: "measures", date: today })}
+          />
+          <EntryRow
+            icon={Flag}
+            title={t("annotation.button")}
+            status={{ text: t("body.entries.annotationSub"), done: false }}
+            onClick={() => setOpen({ sheet: "annotation", annotation: null })}
+          />
+        </div>
+      </section>
+      {weighings.length >= MIN_WEIGHINGS && (
+        <Weeks
+          weeks={weeks.filter((w) => w.end >= from)}
+          ctx={{
+            firstWeek: weeks.at(-1)!.start,
+            target,
+            today,
+            measures,
+            intake,
+            courses,
+            pill: rangePill === "shown",
+            showIntake: weekIntake === "shown",
+            t,
+            lang: i18n.language,
+          }}
+        />
+      )}
+      {listedNotes.length > 0 && (
+        <section aria-labelledby="annotations" className="flex flex-col gap-2">
+          <h2 id="annotations" className={sectionLabel}>
+            {t("annotation.row")}
+          </h2>
+          <div className={groupCard}>
+            {listedNotes.map((a) => (
+              <EntryRow
+                key={a.id}
+                icon={Flag}
+                title={annotationName(a, t)}
+                status={{
+                  // A note named by its own text says what it is before its day.
+                  text: `${a.type === "note" && a.label ? `${t("annotation.kinds.note")} · ` : ""}${weekday(a.date)}`,
+                  done: false,
+                }}
+                onClick={() => setOpen({ sheet: "annotation", annotation: a })}
+              />
+            ))}
+          </div>
+        </section>
       )}
       <History
         weighings={shown}
@@ -384,297 +447,162 @@ function BodyContent({
   );
 }
 
+// A week's loss in words: a gain as a gain, and « stable » once it rounds to 0.0 %.
+function lossText(pct: number, t: TFunction, lang: string): string {
+  const { kind, value } = lossView(pct);
+  if (value === 0) return t("trend.stable");
+  const n = formatNumber(value, lang, { digits: 1, minDigits: 1 });
+  return t(kind === "gain" ? "body.gainText" : "body.lossText", { value: n });
+}
+
 // Before 4 weigh-ins: no average yet, and why, without judging (§9).
 function FirstDays({ weighings, today }: { weighings: Weighing[]; today: ISODate }) {
   const { t } = useTranslation();
   const monday = isoWeekStart(today);
   const thisWeek = weighings.filter((w) => w.date >= monday).length;
   return (
-    <div className="flex flex-col gap-1 rounded-card bg-primary-soft p-4">
-      <h2 className={sectionTitle}>
+    <>
+      <TrendFigure averageKg={null} lossPct={null} pill={false} />
+      <h3 className="text-body font-semibold">
         {t("body.firstDays", { count: Math.max(1, MIN_WEIGHINGS - thisWeek) })}
-      </h2>
-      <p className="text-sm text-muted-foreground">{t("body.firstDaysBody")}</p>
-    </div>
+      </h3>
+      <p className="mt-1 text-sm text-muted-foreground">{t("body.firstDaysBody")}</p>
+    </>
   );
 }
 
-// The latest 7-day average, and the last complete week against the one before. Outside the
-// range the number stands alone: no colour, no word that judges; a gain is said as a gain.
-function Figures({
-  average,
-  lossPct,
-  target,
-}: {
-  average: number | null;
-  lossPct: number | null;
-  target: TargetRange;
-}) {
-  const { t, i18n } = useTranslation();
-  const loss = lossPct === null ? null : lossView(lossPct);
-  const big = "text-[26px] leading-tight font-extrabold tabular-nums";
-  const unit = "ml-1 text-[13px] font-semibold text-muted-foreground";
-  return (
-    <div className="grid grid-cols-2 gap-3">
-      <div>
-        <p className="text-sm text-muted-foreground">{t("body.average")}</p>
-        <p className={big}>
-          {average === null ? "—" : formatKg(average, i18n.language)}
-          {average !== null && <span className={unit}>kg</span>}
-        </p>
-      </div>
-      <div className="flex flex-col items-start">
-        <p className="text-sm text-muted-foreground">{t("body.lossPerWeek")}</p>
-        <p className={big}>
-          {loss === null
-            ? "—"
-            : formatNumber(loss.value, i18n.language, { digits: 1, minDigits: 1 })}
-          {loss !== null && (
-            <span className={unit}>
-              {t(loss.kind === "gain" ? "body.gainUnit" : "body.lossUnit")}
-            </span>
-          )}
-        </p>
-        {lossPct !== null && inTargetRange(lossPct, target) && (
-          <span className={rangePill}>{t("body.inRange")}</span>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// One block per ISO week, the most recent first: its dates and loss, its pills (in the range,
-// creatine, annotations), then three figures: average weight, waist, intake (D5, D6).
-function Weeks({
-  weeks,
-  firstWeek,
-  target,
-  today,
-  lossText,
-  measures,
-  intake,
-  courses,
-  annotations,
-  onAnnotation,
-}: {
-  weeks: WeekSummary[];
+type WeekContext = {
   firstWeek: ISODate;
   target: TargetRange;
   today: ISODate;
-  lossText: (pct: number) => string;
   measures: Measure[];
   intake: IntakeLog[];
   courses: { start: ISODate; end: ISODate }[];
-  annotations: AnnotationRow[];
-  onAnnotation: (annotation: AnnotationRow) => void;
-}) {
-  const { t, i18n } = useTranslation();
-  const sub = "text-xs text-muted-foreground";
+  // Whether the range pill and the weekly intake show, as Réglages sets them on this device.
+  pill: boolean;
+  showIntake: boolean;
+  t: TFunction;
+  lang: string;
+};
+type WeekValue = { kind: "toFollow" | "inRange" | "plain"; text: string };
+
+// One week as its row says it: the title, the value at the right, the parts below, each part only
+// when known.
+function weekView(
+  w: WeekSummary,
+  ctx: WeekContext,
+): { title: string; value: WeekValue; parts: string[] } {
+  const { t, lang } = ctx;
+  const title =
+    w.status === "in_progress"
+      ? t("body.thisWeek")
+      : formatWeekRange(w.start, w.end, lang, ctx.today);
+  const value: WeekValue =
+    w.status === "in_progress"
+      ? { kind: "toFollow", text: t("body.toFollow") }
+      : w.status === "valid" && w.lossPct !== null
+        ? {
+            kind: ctx.pill && inTargetRange(w.lossPct, ctx.target) ? "inRange" : "plain",
+            text: lossText(w.lossPct, t, lang),
+          }
+        : { kind: "plain", text: "—" };
+  const why =
+    w.status === "in_progress"
+      ? // A week just begun says nothing rather than « 0 pesée »: no absence is ever pointed out.
+        w.count > 0
+        ? t("body.weighIns", { count: w.count })
+        : null
+      : w.status === "insufficient"
+        ? t("body.tooFew", { count: w.count })
+        : w.lossPct === null
+          ? t(w.start === ctx.firstWeek ? "body.firstWeek" : "body.previousInsufficient")
+          : null;
+  const waist = weeklyWaist(ctx.measures, w.start);
+  const food = weeklyIntake(ctx.intake, w.start);
+  const onCreatine = ctx.courses.some((c) => c.start <= w.end && c.end >= w.start);
+  const parts = [
+    why,
+    w.averageKg !== null && t("trend.kg", { value: formatKg(w.averageKg, lang) }),
+    waist !== null && t("body.dayParts.waist", { value: formatNumber(waist, lang, { digits: 1 }) }),
+    ctx.showIntake &&
+      food.kcalAvg !== null &&
+      t("body.kcal", { value: formatNumber(Math.round(food.kcalAvg), lang, { digits: 0 }) }),
+    onCreatine && t("body.creatinePill"),
+  ].filter((p): p is string => typeof p === "string");
+  return { title, value, parts };
+}
+
+// The range pill's check: in the value of a week in the range, and once in the header.
+const rangeCheck = <Check aria-hidden className="size-3" />;
+
+// One row per ISO week, the most recent first: the title and the value, then the parts.
+function Weeks({ weeks, ctx }: { weeks: WeekSummary[]; ctx: WeekContext }) {
+  const { t } = ctx;
+  const views = weeks.map((w) => ({ start: w.start, ...weekView(w, ctx) }));
   return (
-    <section aria-labelledby="weeks" className="flex flex-col gap-1.5">
-      <h2 id="weeks" className={sectionTitle}>
-        {t("body.weeks")}
-      </h2>
-      <ul className={`${card} px-3`}>
-        {weeks.map((w) => {
-          const waist = weeklyWaist(measures, w.start);
-          const food = weeklyIntake(intake, w.start);
-          const notes = annotations.filter((a) => a.date >= w.start && a.date <= w.end);
-          const onCreatine = courses.some((c) => c.start <= w.end && c.end >= w.start);
-          const status =
-            w.status === "in_progress"
-              ? t("body.inProgress", { count: w.count })
-              : w.status === "insufficient"
-                ? t("body.tooFew", { count: w.count })
-                : w.lossPct === null
-                  ? w.start === firstWeek
-                    ? t("body.firstWeek")
-                    : t("body.previousInsufficient")
-                  : null;
-          return (
-            <li
-              key={w.start}
-              className="flex flex-col gap-2 border-t border-border py-3 first:border-t-0"
-            >
-              <div className="flex items-baseline justify-between gap-3">
-                <span className="text-sm font-semibold">
-                  {w.status === "in_progress"
-                    ? t("body.thisWeek")
-                    : formatWeekRange(w.start, w.end, i18n.language, today)}
+    <section aria-labelledby="weeks" className="flex flex-col gap-2">
+      <div className={`${sectionLabel} flex items-baseline justify-between`}>
+        <h2 id="weeks">{t("body.weeks")}</h2>
+        {views.some((v) => v.value.kind === "inRange") && (
+          <span className="flex items-center gap-1 font-medium">
+            <span className="inline-flex self-center rounded-full bg-reference px-[5px] py-px text-reference-ink">
+              {rangeCheck}
+            </span>
+            <span>{t("body.inRange")}</span>
+          </span>
+        )}
+      </div>
+      <ul className={groupCard}>
+        {views.map(({ start, title, value, parts }) => (
+          <li
+            key={start}
+            className="grid min-h-14 grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-3 gap-y-0.5 px-4 py-[9px]"
+          >
+            <span className="text-body font-semibold">{title}</span>
+            <span className="text-right text-body font-semibold tabular-nums">
+              {value.kind === "toFollow" ? (
+                <span className="rounded-full bg-track px-2 py-0.5 text-[13px] font-semibold text-muted-foreground">
+                  {value.text}
                 </span>
-                <b className="text-sm tabular-nums">
-                  {w.status === "valid" && w.lossPct !== null ? lossText(w.lossPct) : "—"}
-                </b>
-              </div>
-              <div className="flex flex-wrap items-center gap-1.5">
-                {w.status === "valid" && w.lossPct !== null && inTargetRange(w.lossPct, target) && (
-                  <span className={rangePill}>{t("body.inRange")}</span>
-                )}
-                {w.status === "in_progress" && (
-                  <span className={neutralPill}>{t("body.toFollow")}</span>
-                )}
-                {w.status === "insufficient" && (
-                  <span className={neutralPill}>{t("body.insufficient")}</span>
-                )}
-                {onCreatine && <span className={neutralPill}>{t("body.creatinePill")}</span>}
-                {notes.map((a) => (
-                  // A 44 px target around a pill of the usual size.
-                  <AnnotationPill key={a.id} annotation={a} onOpen={() => onAnnotation(a)} />
-                ))}
-                {status && <span className={sub}>{status}</span>}
-              </div>
-              <dl className="grid grid-cols-3 gap-2">
-                <Cell
-                  label={t("body.cells.weight")}
-                  value={
-                    w.averageKg === null
-                      ? "—"
-                      : t("trend.kg", { value: formatKg(w.averageKg, i18n.language) })
-                  }
-                />
-                <Cell
-                  label={t("body.cells.waist")}
-                  value={
-                    waist === null
-                      ? "—"
-                      : t("body.cm", { value: formatNumber(waist, i18n.language, { digits: 1 }) })
-                  }
-                />
-                <Cell
-                  label={
-                    food.days > 0 && food.days < 7
-                      ? t("body.cells.intakeDays", { days: food.days })
-                      : t("body.cells.intake")
-                  }
-                  value={
-                    food.kcalAvg === null
-                      ? "—"
-                      : t("body.kcal", {
-                          value: formatNumber(Math.round(food.kcalAvg), i18n.language, {
-                            digits: 0,
-                          }),
-                        })
-                  }
-                />
-              </dl>
-            </li>
-          );
-        })}
-      </ul>
-    </section>
-  );
-}
-
-// A 44 px target around a pill of the usual size.
-function AnnotationPill({ annotation, onOpen }: { annotation: AnnotationRow; onOpen: () => void }) {
-  const { t } = useTranslation();
-  const name = annotationName(annotation, t);
-  return (
-    <button
-      type="button"
-      className="-my-2.5 inline-flex min-h-11 items-center"
-      aria-label={t("body.openAnnotation", { name })}
-      onClick={onOpen}
-    >
-      <span className={`${neutralPill} underline underline-offset-2`}>{name}</span>
-    </button>
-  );
-}
-
-function Cell({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex min-w-0 flex-col rounded-[10px] bg-background px-2 py-1.5">
-      <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className="text-sm font-bold tabular-nums">{value}</dd>
-    </div>
-  );
-}
-
-// One line per day of the period that holds an entry, the most recent first, saying what was
-// entered ("79.8 kg · 2,100 kcal", "waist 82 cm"); a day with a weigh-in opens its sheet.
-// ponytail: "All" renders every line at once. Upgrade: show the latest hundred and a "More" button.
-function History({
-  weighings,
-  measures,
-  intake,
-  today,
-  onSelect,
-}: {
-  weighings: Weighing[];
-  measures: Measure[];
-  intake: IntakeLog[];
-  today: ISODate;
-  onSelect: (date: ISODate) => void;
-}) {
-  const { t, i18n } = useTranslation();
-  const days = [...new Set([...weighings, ...measures, ...intake].map((e) => e.date))].sort(
-    (a, b) => (a < b ? 1 : -1),
-  );
-  if (days.length === 0) return null;
-  const number = (v: number) => formatNumber(v, i18n.language, { digits: 1 });
-  // The other parts of a day, apart from its weight: one line of their own under the day.
-  const parts = (date: ISODate): string[] => {
-    const l = intake.find((x) => x.date === date);
-    const m = measures.find((x) => x.date === date);
-    return [
-      l?.kcal != null &&
-        t("body.kcal", { value: formatNumber(l.kcal, i18n.language, { digits: 0 }) }),
-      l?.proteinG != null &&
-        t("body.dayParts.protein", {
-          value: formatNumber(l.proteinG, i18n.language, { digits: 0 }),
-        }),
-      ...(["waist", "neck", "hip"] as const).map((f) => {
-        const cm = m ? measureOf(m, f) : null;
-        return cm !== null && t(`body.dayParts.${f}`, { value: number(cm) });
-      }),
-    ].filter((part): part is string => typeof part === "string");
-  };
-  const line = "flex min-h-11 w-full flex-col justify-center gap-0.5 py-2 text-left";
-  return (
-    <section aria-labelledby="history" className="flex flex-col gap-1">
-      <h2 id="history" className={sectionTitle}>
-        {t("body.history")}
-      </h2>
-      <ul>
-        {days.map((date) => {
-          const w = weighings.find((x) => x.date === date);
-          const rest = parts(date);
-          const content = (
-            <>
-              <span className="flex items-baseline justify-between gap-x-3">
-                <span>{dayLabel(date, today, t, i18n.language)}</span>
-                {w && (
-                  <b className="tabular-nums">
-                    {t("trend.kg", { value: formatKg(w.weightKg, i18n.language) })}
-                  </b>
-                )}
-              </span>
-              {rest.length > 0 && (
-                // A line only breaks between two parts, never inside one.
-                <span className="flex flex-wrap gap-x-1.5 text-sm text-muted-foreground tabular-nums">
-                  {rest.map((part, i) => (
-                    <span key={part} className="whitespace-nowrap">
-                      {part}
-                      {i < rest.length - 1 && " ·"}
-                    </span>
-                  ))}
+              ) : value.kind === "inRange" ? (
+                <span className={`${rangePill} text-xs`}>
+                  {rangeCheck}
+                  {value.text}
+                  <span className="sr-only">{` ${t("body.inRange")}`}</span>
                 </span>
-              )}
-            </>
-          );
-          return (
-            <li key={date} className="border-t border-border first:border-t-0">
-              {w ? (
-                <button type="button" className={line} onClick={() => onSelect(date)}>
-                  {content}
-                </button>
               ) : (
-                <div className={line}>{content}</div>
+                value.text
               )}
-            </li>
-          );
-        })}
+            </span>
+            <span className="col-span-2 flex flex-wrap gap-x-1.5 text-[13px] text-muted-foreground tabular-nums">
+              {parts.map((p, i) => (
+                <span key={p} className="whitespace-nowrap">
+                  {i < parts.length - 1 ? `${p} ·` : p}
+                </span>
+              ))}
+            </span>
+          </li>
+        ))}
       </ul>
     </section>
+  );
+}
+
+// A line of a grouped list, drawn as Home's gesture rows; the whole line opens its sheet.
+function EntryRow({
+  icon,
+  title,
+  status,
+  onClick,
+}: {
+  icon: LucideIcon;
+  title: string;
+  status: Status;
+  onClick: () => void;
+}) {
+  return (
+    <button type="button" className={rowLine} onClick={onClick}>
+      <RowBody icon={icon} title={title} status={status} />
+    </button>
   );
 }

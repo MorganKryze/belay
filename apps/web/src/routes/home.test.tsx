@@ -350,6 +350,14 @@ describe("the trend", () => {
     expect(within(link).queryByText("in your range")).toBeNull();
   });
 
+  it("with the range pill hidden on this device, Accueil's trend card shows no pill", async () => {
+    localStorage.setItem("belay.rangePill", "hidden");
+    await open([...week("2026-09-21", 80.8), ...week("2026-09-28", 80.4)]);
+    const link = await card();
+    await waitFor(() => expect(link.textContent).toContain("loss 0.5%/wk last week"));
+    expect(within(link).queryByText("in your range")).toBeNull();
+  });
+
   it("a gain says gain, in French too", async () => {
     await i18n.changeLanguage("fr");
     await open([...week("2026-09-21", 80.3), ...week("2026-09-28", 80.5)]);

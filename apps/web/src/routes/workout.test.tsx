@@ -690,7 +690,7 @@ describe("pause", () => {
     );
   });
 
-  it("with The rest keeps running, the rest counts down through the pause and keeps its end", async () => {
+  it("with Rest continues, the rest counts down through the pause and keeps its end", async () => {
     localStorage.setItem("belay.pauseStops", "session");
     fakeApi({ me: ADA });
     const endsAt = await rest();

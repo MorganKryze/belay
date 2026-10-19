@@ -52,6 +52,8 @@ describe("the Body tab", () => {
   });
 });
 
+const AT = "2026-10-01T06:30:00.000Z";
+const CREATINE = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d8f";
 // Wednesday 7 October 2026: the current ISO week runs from Monday 5 October.
 const days = (first: string, kgs: number[]) => kgs.map((kg, i) => weight(addDays(first, i), kg));
 const WEEKS = [
@@ -82,29 +84,123 @@ describe("the Body page", () => {
 
   it("lists the weeks and says in words why one does not count", async () => {
     expect(rows(await open())).toEqual([
-      "This week—ongoingin progress · 3 weigh-insAvg weight—Waist—Intake—",
-      "Sep 28 – Oct 40.7%in your rangeAvg weight80.2\u00a0kgWaist—Intake—",
-      "Sep 21 – 27—week before insufficientAvg weight80.8\u00a0kgWaist—Intake—",
-      "Sep 14 – 20—insufficient3 weigh-ins, 4 minimumAvg weight—Waist—Intake—",
+      "This weekongoing3 weigh-ins",
+      "Sep 28 – Oct 40.7% in your range80.2\u00a0kg",
+      "Sep 21 – 27—week before insufficient ·80.8\u00a0kg",
+      "Sep 14 – 20—3 weigh-ins, 4 minimum",
     ]);
   });
 
-  it("shows the latest 7-day average and the last complete week's loss in the range", async () => {
-    await open();
-    expect(screen.getByText("7-day average", { selector: "p" }).nextSibling?.textContent).toBe(
-      "80.0kg",
-    );
-    expect(screen.getByText("Loss per week").parentElement?.textContent).toBe(
-      "Loss per week0.7%in your range",
-    );
+  it("a week just begun with no weigh-in yet names no count", async () => {
+    const list = await open(WEEKS.slice(0, 11)); // nothing yet from Monday 5 October
+    expect(rows(list)[0]).toBe("This weekongoing");
   });
 
-  it("shows a loss outside the range as a number alone, with no word that judges", async () => {
+  // The first line of a week: its title, then its value at the right.
+  const value = (row: HTMLElement) => row.children[1]!;
+
+  it("a flat week reads stable, with no pill", async () => {
+    const list = await open([
+      ...days("2026-09-21", [80.8, 80.8, 80.8, 80.8]),
+      ...days("2026-09-28", [80.8, 80.8, 80.8, 80.8]),
+    ]);
+    const flat = within(list).getAllByRole("listitem")[1]!;
+    expect(flat.textContent).toBe("Sep 28 – Oct 4stable80.8\u00a0kg");
+    expect(value(flat).textContent).toBe("stable");
+    expect(within(list).queryByText("in your range")).toBeNull();
+  });
+
+  it("the pill says in your range once in the header and in words inside the pill", async () => {
+    const list = await open();
+    const said = within(list).getAllByText("in your range");
+    expect(said).toHaveLength(2);
+    const [legend, inPill] = said as [HTMLElement, HTMLElement];
+    expect(legend.closest("li")).toBeNull(); // the header, beside « Your weeks »
+    const header = legend.closest("div")!;
+    expect(header.contains(screen.getByRole("heading", { name: "Your weeks" }))).toBe(true);
+    const row = within(list).getAllByRole("listitem")[1]!;
+    expect(value(row).contains(inPill)).toBe(true);
+    expect(inPill.className).toContain("sr-only");
+    expect(value(row).querySelector("svg")!.getAttribute("aria-hidden")).toBe("true");
+  });
+
+  it("a loss outside the range is the number alone", async () => {
+    const list = await open([
+      ...WEEKS,
+      { kind: "target", minPct: 0.25, maxPct: 0.5, at: "2026-10-07T06:00:00.000Z" },
+    ]);
+    const row = within(list).getAllByRole("listitem")[1]!;
+    expect(value(row).textContent).toBe("0.7%");
+    expect(value(row).querySelector("svg")).toBeNull();
+    expect(within(list).queryByText("in your range")).toBeNull();
+  });
+
+  it("with the range pill hidden on this device, Corps shows no pill: the figure card, the weeks and the header", async () => {
+    localStorage.setItem("belay.rangePill", "hidden");
+    const list = await open();
+    const row = within(list).getAllByRole("listitem")[1]!;
+    expect(value(row).textContent).toBe("0.7%");
+    expect(value(row).querySelector("svg")).toBeNull();
+    expect(within(list).queryByText("in your range")).toBeNull();
+    expect(figureCard().textContent).toBe("7-day average80.0kgloss 0.7%/wk last week");
+    expect(screen.queryByText("in your range")).toBeNull();
+  });
+
+  const intake = (date: string, kcal: number) =>
+    ({ kind: "intake", date, field: "kcal", value: kcal, at: "2026-10-07T06:00:00.000Z" }) as const;
+  const history = () =>
+    within(screen.getByRole("region", { name: "History" }))
+      .getAllByRole("listitem")
+      .map((li) => li.textContent!.replace(/\s/g, " "));
+
+  it("with the weekly intake hidden, the weeks leave out kcal and the history keeps it", async () => {
+    localStorage.setItem("belay.weekIntake", "hidden");
+    const list = await open([...WEEKS, intake("2026-10-01", 2100)]);
+    expect(within(list).getAllByRole("listitem")[1]!.textContent).toBe(
+      "Sep 28 – Oct 40.7% in your range80.2\u00a0kg",
+    );
+    expect(list.textContent).not.toContain("kcal");
+    expect(history()).toContain("Thu, Oct 180.2 kg2,100 kcal");
+  });
+
+  it("the choices apply when Corps mounts again", async () => {
+    const list = await open([...WEEKS, intake("2026-10-01", 2100)]);
+    expect(list.textContent).toContain("kcal");
+    expect(within(list).getAllByText("in your range")).toHaveLength(2);
+    cleanup();
+    localStorage.setItem("belay.rangePill", "hidden");
+    localStorage.setItem("belay.weekIntake", "hidden");
+    renderRoute("/body");
+    const again = await screen.findByRole("region", { name: "Your weeks" });
+    expect(again.textContent).not.toContain("kcal");
+    expect(screen.queryByText("in your range")).toBeNull();
+  });
+
+  it("the chart's summary says stable for a flat week", async () => {
+    await open([
+      ...days("2026-09-21", [80.8, 80.8, 80.8, 80.8]),
+      ...days("2026-09-28", [80.8, 80.8, 80.8, 80.8]),
+    ]);
+    expect(
+      screen.getByRole("img", { name: /^Weigh-ins from/ }).getAttribute("aria-label"),
+    ).toContain("Loss per week: stable.");
+  });
+
+  const figureCard = () => screen.getByRole("region", { name: "7-day average" });
+
+  it("opens on the figure card: the 7-day average, last week's loss and the pill", async () => {
+    await open();
+    const card = figureCard();
+    expect(card.textContent).toBe("7-day average80.0kgloss 0.7%/wk last weekin your range");
+    expect(within(card).queryByRole("link")).toBeNull();
+  });
+
+  it("a loss outside the range stands alone in the card", async () => {
     await open([
       ...WEEKS,
       { kind: "target", minPct: 0.25, maxPct: 0.5, at: "2026-10-07T06:00:00.000Z" },
     ]);
-    expect(screen.getByText("Loss per week").parentElement?.textContent).toBe("Loss per week0.7%");
+    expect(figureCard().textContent).toBe("7-day average80.0kgloss 0.7%/wk last week");
     expect(screen.queryByText("in your range")).toBeNull();
   });
 
@@ -116,20 +212,68 @@ describe("the Body page", () => {
     ]);
     fakeApi({ me: ADA });
     renderRoute("/body");
-    const perte = await screen.findByText("Perte par semaine");
-    expect(perte.parentElement?.textContent).toBe("Perte par semaine0,2% de prise");
     const weeks = await screen.findByRole("region", { name: "Tes semaines" });
-    expect(within(weeks).getByText("0,2 % de prise")).toBeTruthy(); // the matcher folds the narrow space
+    const card = screen.getByRole("region", { name: "Moyenne 7 jours" });
+    expect(within(card).getByText(/^prise/).textContent).toBe(
+      "prise 0,2\u202f%/sem la semaine dernière",
+    );
+    const gain = within(weeks).getAllByRole("listitem")[1]!;
+    expect(gain.children[1]!.textContent).toBe("0,2\u202f% de prise");
+    expect(gain.querySelector("svg")).toBeNull(); // no pill on a gain
   });
 
-  it("explains the first days instead of an average", async () => {
+  it("a flat week reads stable last week", async () => {
+    await open([
+      ...days("2026-09-21", [80.8, 80.8, 80.8, 80.8]),
+      ...days("2026-09-28", [80.8, 80.8, 80.8, 80.8]),
+    ]);
+    const card = figureCard();
+    expect(within(card).getByText("stable", { selector: "b" })).toBeTruthy();
+    expect(card.textContent).toContain("stable last week");
+    expect(card.textContent).not.toMatch(/loss|gain|0\.0/);
+  });
+
+  it("explains the first days inside the figure card", async () => {
     await seed(ADA.id, days("2026-10-06", [80.2, 80.1]));
     fakeApi({ me: ADA });
     renderRoute("/body");
-    expect(await screen.findByRole("heading", { name: "2 more weigh-ins this week" })).toBeTruthy();
-    expect(screen.getByText(/A single day's weight varies too much to say anything/)).toBeTruthy();
+    const heading = await screen.findByRole("heading", { name: "2 more weigh-ins this week" });
+    const card = figureCard();
+    expect(card.contains(heading)).toBe(true);
+    expect(heading.tagName).toBe("H3");
+    expect(within(card).getByText("—")).toBeTruthy();
+    expect(
+      within(card).getByText(/A single day's weight varies too much to say anything/),
+    ).toBeTruthy();
     expect(screen.queryByRole("region", { name: "Your weeks" })).toBeNull();
     expect(screen.getByRole("button", { name: /Yesterday/ })).toBeTruthy();
+  });
+
+  it("the creatine sentence sits in the figure card", async () => {
+    await open([
+      ...WEEKS,
+      { kind: "supplement", id: CREATINE, field: "name", value: "Créatine", at: AT },
+      { kind: "supplementLog", supplementId: CREATINE, date: "2026-10-01", taken: true, at: AT },
+    ]);
+    const note = screen.getByText(/rises by 1 to 2 kg of water/);
+    expect(figureCard().lastElementChild).toBe(note);
+  });
+
+  it("the period sits between the figure card and the chart", async () => {
+    await open();
+    const card = figureCard();
+    const period = screen.getByRole("radiogroup", { name: "Period" });
+    const chart = screen.getByRole("img", { name: /^Weigh-ins from/ });
+    const follows = (a: Node, b: Node) =>
+      Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(follows(card, period)).toBe(true);
+    expect(follows(period, chart)).toBe(true);
+  });
+
+  it("the chart keeps a fixed height, so a resize never stretches it", async () => {
+    await open();
+    const chart = screen.getByRole("img", { name: /^Weigh-ins from/ });
+    expect(chart.getAttribute("height")).toBe("180");
   });
 
   it("opens a weigh-in from the history, and gives focus back to its line", async () => {

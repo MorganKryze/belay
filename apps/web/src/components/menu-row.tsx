@@ -25,6 +25,7 @@ export function MenuRow<T extends string>({
   onChange: (value: T) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const current = options.find((o) => o.value === value)?.label ?? "";
 
   // Unmounted while open (a navigation): the page must not stay out of reach.
   useEffect(() => {
@@ -48,7 +49,7 @@ export function MenuRow<T extends string>({
       {/* A combobox takes no name from its content: the row says its label and value itself. */}
       <SelectPrimitive.Trigger asChild>
         <RowButton
-          aria-label={`${label} ${options.find((o) => o.value === value)?.label ?? ""}`.trim()}
+          aria-label={current ? `${label} · ${current}` : label}
           icon={icon}
           label={label}
           trailing="menu"

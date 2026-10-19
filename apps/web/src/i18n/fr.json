@@ -24,22 +24,14 @@
       "quarter": "3 mois",
       "all": "Tout"
     },
-    "average": "Moyenne 7 jours",
-    "lossPerWeek": "Perte par semaine",
-    "lossUnit": "%",
-    "gainUnit": "% de prise",
     "inRange": "dans ta fourchette",
     "weeks": "Tes semaines",
     "thisWeek": "Cette semaine",
-    "inProgress_one": "en cours · {{count}} pesée",
-    "inProgress_other": "en cours · {{count}} pesées",
     "toFollow": "à suivre",
-    "weekAverage": "moyenne",
     "previousInsufficient": "semaine d'avant insuffisante",
     "firstWeek": "première semaine",
     "tooFew_one": "{{count}} pesée, 4 minimum",
     "tooFew_other": "{{count}} pesées, 4 minimum",
-    "insufficient": "insuffisante",
     "history": "Historique",
     "firstDays_one": "Encore {{count}} pesée cette semaine",
     "firstDays_other": "Encore {{count}} pesées cette semaine",
@@ -86,7 +78,8 @@
     "gain": "prise",
     "perWeek": "{{value}} %/sem",
     "kg": "{{value}} kg",
-    "lastWeek": "la semaine dernière"
+    "lastWeek": "la semaine dernière",
+    "stable": "stable"
   },
   "weighIn": {
     "weight": "Poids",

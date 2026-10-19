@@ -2,8 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   readHistoryActivities,
   readSessionVolume,
+  readWeekIntake,
   setHistoryActivities,
   setSessionVolume,
+  setWeekIntake,
 } from "./display-prefs";
 
 beforeEach(() => localStorage.clear());
@@ -49,5 +51,37 @@ describe("what the history and a session show", () => {
     expect(readSessionVolume()).toBe("hidden");
     expect(readHistoryActivities()).toBe("shown");
     setSessionVolume("shown");
+  });
+});
+
+describe("whether Corps shows the weekly intake", () => {
+  it("shown by default, and an unknown value reads as shown", () => {
+    expect(readWeekIntake()).toBe("shown");
+    localStorage.setItem("belay.weekIntake", "neon");
+    expect(readWeekIntake()).toBe("shown");
+  });
+
+  it("hidden once chosen, under its own key", () => {
+    setWeekIntake("hidden");
+    expect(localStorage.getItem("belay.weekIntake")).toBe("hidden");
+    expect(readWeekIntake()).toBe("hidden");
+    expect(readSessionVolume()).toBe("shown");
+    expect(readHistoryActivities()).toBe("shown");
+    setWeekIntake("shown");
+    expect(readWeekIntake()).toBe("shown");
+  });
+
+  it("storage refused: shown, and a choice holds for the visit", () => {
+    const refuse = () => {
+      throw new DOMException("refused", "SecurityError");
+    };
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(refuse);
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(refuse);
+    expect(readWeekIntake()).toBe("shown");
+    setWeekIntake("hidden");
+    expect(readWeekIntake()).toBe("hidden");
+    expect(readSessionVolume()).toBe("shown");
+    setWeekIntake("shown");
+    expect(readWeekIntake()).toBe("shown");
   });
 });

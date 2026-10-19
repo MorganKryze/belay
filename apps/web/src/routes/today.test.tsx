@@ -13,10 +13,16 @@ import { renderRoute } from "../test/render-route";
 import { ADA, seed, weight } from "../test/seed";
 
 // Wednesday 7 October 2026, 7:30 in the morning, on the phone's clock.
-beforeEach(() => {
+beforeEach(async () => {
   indexedDB = new IDBFactory();
   vi.useFakeTimers({ toFake: ["Date"] });
   vi.setSystemTime(new Date(2026, 9, 7, 7, 30));
+  // A device that has synced before: on one that never did, the rows stay blank until the first
+  // sync is seen, and a busy machine can push that past the 5 s a test waits. "before the data is
+  // known" starts from a device that never synced.
+  const d = await openAccountDb(ADA.id);
+  await d.put("meta", "1", "cursor");
+  d.close();
   writeLastUser(ADA);
 });
 afterEach(async () => {
@@ -335,6 +341,7 @@ const card = () => screen.getByRole("region", { name: "Today" });
 describe("before the data is known", () => {
   // The 4 s cap counts from the start of the visit: here, the start of the test.
   beforeEach(() => {
+    indexedDB = new IDBFactory(); // a device that never synced
     const now = performance.now.bind(performance);
     const start = now();
     vi.spyOn(performance, "now").mockImplementation(() => now() - start);
@@ -402,7 +409,7 @@ describe("before the data is known", () => {
     const { sync, release } = heldSync();
     fakeApi({ me: ADA, sync });
     renderRoute("/");
-    expect((await line(/^Supplements/)).textContent).toBe("Supplements\u00a0");
+    expect((await line(/^Supplements/)).textContent).toBe("Supplements \u00a0");
     expect(screen.queryByRole("link", { name: /^Supplements\s*none yet$/ })).toBeNull();
     release();
     expect(await screen.findByRole("link", { name: /^Supplements\s*none yet$/ })).toBeTruthy();

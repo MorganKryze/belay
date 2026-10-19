@@ -30,3 +30,6 @@ export const [readHistoryActivities, setHistoryActivities] = preference("belay.h
 
 // Whether a past session and its summary show the volume.
 export const [readSessionVolume, setSessionVolume] = preference("belay.sessionVolume");
+
+// Whether Corps' weeks show the weekly intake, for someone who would rather not see what they eat.
+export const [readWeekIntake, setWeekIntake] = preference("belay.weekIntake");

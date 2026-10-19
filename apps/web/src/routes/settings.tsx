@@ -2,6 +2,7 @@ import "@/i18n/lazy";
 import { useMutation } from "@tanstack/react-query";
 import {
   CalendarDays,
+  Check,
   CirclePause,
   Dumbbell,
   Languages,
@@ -9,6 +10,7 @@ import {
   Scale,
   SunMoon,
   UserRound,
+  Utensils,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { TFunction } from "i18next";
@@ -26,11 +28,19 @@ import { logout } from "@/lib/api";
 import {
   readHistoryActivities,
   readSessionVolume,
+  readWeekIntake,
   setHistoryActivities,
   setSessionVolume,
+  setWeekIntake,
   type Shown,
 } from "@/lib/display-prefs";
-import { type HomeTrend, readHomeTrend, setHomeTrend } from "@/lib/home-trend";
+import {
+  type HomeTrend,
+  readHomeTrend,
+  readRangePill,
+  setHomeTrend,
+  setRangePill,
+} from "@/lib/home-trend";
 import { readPauseStops, setPauseStops } from "@/lib/pause-stops";
 import { readTheme, setTheme, type Theme } from "@/lib/theme";
 import { formatWeekday } from "@/lib/format";
@@ -57,9 +67,16 @@ export function Settings() {
   const [theme, setThemeState] = useState<Theme>(readTheme);
   const [pauseStops, setPauseStopsState] = useState<PauseStops>(readPauseStops);
   const [homeTrend, setHomeTrendState] = useState<HomeTrend>(readHomeTrend);
+  const [rangePill, setRangePillState] = useState<HomeTrend>(readRangePill);
+  const [weekIntake, setWeekIntakeState] = useState<Shown>(readWeekIntake);
   const [historyActivities, setHistoryActivitiesState] = useState<Shown>(readHistoryActivities);
   const [sessionVolume, setSessionVolumeState] = useState<Shown>(readSessionVolume);
   const account = useAccount();
+  // The sections take the names of the screens their rows change.
+  const general = t("settings.general");
+  const home = t("nav.home");
+  const sessions = t("nav.workouts");
+  const body = t("nav.body");
 
   return (
     <section className="flex flex-1 flex-col gap-4">
@@ -68,7 +85,7 @@ export function Settings() {
       {"user" in account && <ProfileRow user={account.user} />}
       {account.kind === "open" && <RejectedEntries account={account} />}
 
-      <GroupedList label={t("settings.preferences")}>
+      <GroupedList label={general}>
         <MenuRow
           icon={Languages}
           label={t("settings.language")}
@@ -86,19 +103,8 @@ export function Settings() {
             setThemeState(th);
           }}
         />
-        <MenuRow
-          icon={CirclePause}
-          label={t("settings.pauseStops")}
-          value={pauseStops}
-          options={PAUSE_STOPS.map((v) => ({
-            value: v,
-            label: t(`settings.pauseStopsOptions.${v}`),
-          }))}
-          onChange={(v) => {
-            setPauseStops(v);
-            setPauseStopsState(v);
-          }}
-        />
+      </GroupedList>
+      <GroupedList label={home}>
         <MenuRow
           icon={Scale}
           label={t("settings.homeTrend")}
@@ -110,6 +116,21 @@ export function Settings() {
           onChange={(v) => {
             setHomeTrend(v);
             setHomeTrendState(v);
+          }}
+        />
+      </GroupedList>
+      <GroupedList label={sessions}>
+        <MenuRow
+          icon={CirclePause}
+          label={t("settings.pauseStops")}
+          value={pauseStops}
+          options={PAUSE_STOPS.map((v) => ({
+            value: v,
+            label: t(`settings.pauseStopsOptions.${v}`),
+          }))}
+          onChange={(v) => {
+            setPauseStops(v);
+            setPauseStopsState(v);
           }}
         />
         <MenuRow
@@ -136,6 +157,34 @@ export function Settings() {
           onChange={(v) => {
             setSessionVolume(v);
             setSessionVolumeState(v);
+          }}
+        />
+      </GroupedList>
+      <GroupedList label={body}>
+        <MenuRow
+          icon={Check}
+          label={t("settings.rangePill")}
+          value={rangePill}
+          options={SHOWN.map((v) => ({
+            value: v,
+            label: t(`settings.rangePillOptions.${v}`),
+          }))}
+          onChange={(v) => {
+            setRangePill(v);
+            setRangePillState(v);
+          }}
+        />
+        <MenuRow
+          icon={Utensils}
+          label={t("settings.weekIntake")}
+          value={weekIntake}
+          options={SHOWN.map((v) => ({
+            value: v,
+            label: t(`settings.weekIntakeOptions.${v}`),
+          }))}
+          onChange={(v) => {
+            setWeekIntake(v);
+            setWeekIntakeState(v);
           }}
         />
       </GroupedList>

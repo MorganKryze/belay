@@ -63,7 +63,7 @@ const week = (list: HTMLElement, i: number) => within(list).getAllByRole("listit
 const db = () => openAccountDb(ADA.id);
 
 describe("Your weeks", () => {
-  it("show the week's last waist and its intake average, with the days entered", async () => {
+  it("show the week's last waist and its intake average on the second line", async () => {
     const list = await open([
       waist("2026-09-29", 83),
       waist("2026-10-02", 82.5),
@@ -71,9 +71,21 @@ describe("Your weeks", () => {
         intake(d, 2000 + i * 50),
       ),
     ]);
-    expect(week(list, 1).textContent).toContain("Waist82.5 cm");
-    expect(week(list, 1).textContent).toContain("Intake (5 d)2,100 kcal");
-    expect(week(list, 2).textContent).toContain("Waist—Intake—");
+    // The second line: the average, the waist, the intake, without the days entered.
+    const parts = week(list, 1).lastElementChild!;
+    expect([...parts.children].map((p) => p.textContent)).toEqual([
+      "80.2\u00a0kg ·",
+      "waist 82.5 cm ·",
+      "2,100 kcal",
+    ]);
+    expect(week(list, 2).textContent).not.toMatch(/waist|kcal/);
+  });
+
+  it("no grey cells and no insufficient pill", async () => {
+    const list = await open([]);
+    expect(list.querySelector("dl, dt, dd")).toBeNull();
+    expect(within(list).queryByText("insufficient")).toBeNull();
+    expect(within(list).queryByText(/Avg weight|Intake|Waist/)).toBeNull();
   });
 
   it("mark the weeks of a creatine course, and say once what it does to the scale", async () => {
@@ -113,37 +125,12 @@ describe("Your weeks", () => {
     expect(screen.queryByText("Creatine")).toBeNull();
     expect(screen.queryByText("creatine · 14 d")).toBeNull();
   });
-
-  it("open an annotation from its pill, and delete it with an undo", async () => {
-    const list = await open([
-      {
-        kind: "annotation",
-        id: NOTE,
-        field: "fields",
-        date: "2026-09-22",
-        type: "diet_break",
-        label: null,
-        at: AT,
-      },
-    ]);
-    fireEvent.click(
-      within(week(list, 2)).getByRole("button", { name: "Open the annotation Break" }),
-    );
-    const sheet = await screen.findByRole("dialog", { name: "Annotation" });
-    expect(within(sheet).getByRole("radio", { name: "Break" }).getAttribute("aria-checked")).toBe(
-      "true",
-    );
-    fireEvent.click(within(sheet).getByRole("button", { name: "Delete this annotation" }));
-    await waitFor(async () => expect(await readAnnotations(await db())).toEqual([]));
-    expect(await screen.findByText("Annotation deleted")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
-    await waitFor(async () => expect(await readAnnotations(await db())).toHaveLength(1));
-  });
 });
 
 const note = (id: string, date: string, type = "diet_break"): Change =>
   ({ kind: "annotation", id, field: "fields", date, type, label: null, at: AT }) as Change;
 const chart = () => screen.getByRole("img", { name: /^Weigh-ins from/ });
+const annotationsList = () => screen.getByRole("region", { name: "Annotations" });
 
 describe("the chart", () => {
   it("says the creatine course and the annotations in its summary", async () => {
@@ -163,25 +150,42 @@ describe("the chart", () => {
     expect(label).toContain("Annotation Break, Sep 22.");
   });
 
+  // jsdom has no layout: the drawing is 320 wide at scale 1, from Sep 8 to Oct 7, its plot from
+  // 26 to 286; a name's box is 14 tall above its baseline, 150 at the bottom and 17 in the strip.
+  const LATER = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d91";
+  const lineX = (day: number) => 26 + (260 * day) / 29;
+  const opened = async (type: string) => {
+    const sheet = await screen.findByRole("dialog", { name: "Annotation" });
+    expect(within(sheet).getByRole("radio", { name: type }).getAttribute("aria-checked")).toBe(
+      "true",
+    );
+  };
+
   it("opens an annotation from a tap on its name under the curve", async () => {
     await open([note(NOTE, "2026-09-22")]);
-    // jsdom has no layout: the drawing is 320 units wide at scale 1, from Sep 8 to Oct 7.
-    fireEvent.click(chart(), { clientX: 28 + (284 * 14) / 29, clientY: 140 });
-    expect(await screen.findByRole("dialog", { name: "Annotation" })).toBeTruthy();
+    fireEvent.click(chart(), { clientX: lineX(14) + 12, clientY: 144 });
+    await opened("Break");
   });
 
-  it("keeps an annotation reachable under the chart when no week shows its pill", async () => {
-    await open([note(NOTE, "2026-09-10")]); // inside the month, before the first week
-    const row = screen.getByRole("group", { name: "Annotations" });
-    fireEvent.click(within(row).getByRole("button", { name: "Open the annotation Break" }));
-    expect(await screen.findByRole("dialog", { name: "Annotation" })).toBeTruthy();
+  it("a name raised into the strip opens from there", async () => {
+    await open([note(NOTE, "2026-09-22"), note(LATER, "2026-09-23", "deload")]);
+    const raised = chart().querySelector("text[data-level=top]");
+    expect(raised?.textContent).toBe("Deload");
+    fireEvent.click(chart(), { clientX: lineX(15), clientY: 14 });
+    await opened("Deload");
+  });
+
+  it("writes the last 7-day average at the end of its line", async () => {
+    await open([]);
+    // Oct 1 at 80.2, Oct 5 to 7 at 80, 79.9 and 79.8: an average of 79.975.
+    expect(chart().textContent).toContain("80.0");
   });
 });
 
 describe("the annotation sheet", () => {
-  it("adds a named note on a past day, drawn on the chart and pinned to its week", async () => {
-    const list = await open([]);
-    fireEvent.click(screen.getByRole("button", { name: "Annotation" }));
+  it("adds a named note on a past day, drawn on the chart and listed", async () => {
+    await open([]);
+    fireEvent.click(screen.getByRole("button", { name: /^Annotation\b/ }));
     const sheet = await screen.findByRole("dialog", { name: "New annotation" });
     expect(document.activeElement).toBe(
       within(sheet).getByRole("heading", { name: "New annotation" }),
@@ -202,16 +206,219 @@ describe("the annotation sheet", () => {
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     const [stored] = await readAnnotations(await db());
     expect(stored).toMatchObject({ date: "2026-09-30", type: "note", label: "trip to Lisbon" });
-    // Cut to 12 characters on the chart and on the week's pill.
-    expect(await within(week(list, 1)).findByText("trip to Lisb…")).toBeTruthy();
+    // Cut to 12 characters on the chart and on its row.
+    expect(await within(annotationsList()).findByText("trip to Lisb…")).toBeTruthy();
     expect(screen.getAllByText("trip to Lisb…")).toHaveLength(2);
+  });
+});
+
+describe("Log", () => {
+  const log = () => screen.getByRole("region", { name: "Log" });
+  // Only the entries given, without the three weeks: a day with no weigh-in, or no data at all.
+  const openWith = async (changes: Change[]) => {
+    await seed(ADA.id, changes);
+    fakeApi({ me: "down" });
+    renderRoute("/body");
+    return screen.findByRole("region", { name: "Log" });
+  };
+
+  it("Log lists Weigh-in, Measurements and Annotation, each opening its sheet", async () => {
+    await open([]);
+    const rows = within(log()).getAllByRole("button");
+    expect(rows.map((r) => r.textContent)).toEqual([
+      expect.stringMatching(/^Weigh-in/),
+      expect.stringMatching(/^Measurements/),
+      expect.stringMatching(/^Annotation/),
+    ]);
+    for (const [i, name] of ["Weigh-in", "Measurements", "New annotation"].entries()) {
+      fireEvent.click(within(log()).getAllByRole("button")[i]!);
+      const sheet = await screen.findByRole("dialog", { name });
+      fireEvent.keyDown(sheet, { key: "Escape" });
+      await waitFor(() => expect(screen.queryByRole("dialog", { hidden: true })).toBeNull());
+    }
+  });
+
+  it("the Weigh-in row says today's weight, else not entered yet", async () => {
+    await open([]);
+    expect(within(log()).getByRole("button", { name: /^Weigh-in 79\.8\skg$/ })).toBeTruthy();
+    cleanup();
+    indexedDB = new IDBFactory();
+    const empty = await openWith([weight("2026-10-06", 80)]);
+    expect(within(empty).getByRole("button", { name: "Weigh-in not entered yet" })).toBeTruthy();
+  });
+
+  it("the Measurements row says the latest waist and its day, else not entered yet", async () => {
+    await open([waist("2026-09-29", 83), waist("2026-10-02", 82.5), waist("2026-10-09", 81)]);
+    expect(
+      within(log()).getByRole("button", { name: /^Measurements waist 82\.5\scm · Fri, Oct 2$/ }),
+    ).toBeTruthy();
+    cleanup();
+    indexedDB = new IDBFactory();
+    await openWith([
+      waist("2026-09-29", 83),
+      { kind: "measure", date: "2026-10-03", field: "neck", value: 39, at: AT },
+    ]);
+    // A day without a waist says its neck.
+    expect(
+      within(log()).getByRole("button", { name: /^Measurements neck 39\scm · Sat, Oct 3$/ }),
+    ).toBeTruthy();
+    cleanup();
+    indexedDB = new IDBFactory();
+    await openWith([]);
+    expect(
+      within(log()).getByRole("button", { name: "Measurements not entered yet" }),
+    ).toBeTruthy();
+  });
+
+  it("before the first sync the two statuses are blank", async () => {
+    // The 4 s cap counts from the start of the visit: here, the start of the test.
+    const now = performance.now.bind(performance);
+    const start = now();
+    vi.spyOn(performance, "now").mockImplementation(() => now() - start);
+    // A device that never synced, its first sync still unanswered.
+    fakeApi({ me: ADA, sync: () => new Promise<Response>(() => {}) });
+    renderRoute("/body");
+    const list = await screen.findByRole("region", { name: "Log" });
+    const [weighIn, measures, annotation] = within(list).getAllByRole("button");
+    for (const row of [weighIn!, measures!]) {
+      expect(row.textContent).not.toContain("not entered yet");
+      expect(row.querySelector("span[aria-hidden].text-\\[13px\\]")!.textContent).toBe("\u00a0");
+    }
+    expect(annotation!.textContent).toContain("deload week, break or note");
+  });
+
+  it("a weight saved from the Weigh-in row shows on the row before the sheet leaves", async () => {
+    vi.spyOn(motion, "exitWillAnimate").mockReturnValue(true);
+    // Hold the sheet's 400 ms fallback, so the slow test machine cannot end the exit early.
+    const timeout = globalThis.setTimeout;
+    vi.spyOn(globalThis, "setTimeout").mockImplementation(((
+      fn: () => void,
+      ms?: number,
+      ...args: unknown[]
+    ) => (ms === 400 ? 0 : timeout(fn, ms, ...args))) as typeof setTimeout);
+    await open([]);
+    fireEvent.click(within(log()).getByRole("button", { name: /^Weigh-in/ }));
+    const sheet = await screen.findByRole("dialog", { name: "Weigh-in" });
+    fireEvent.change(within(sheet).getByRole("textbox", { name: "Weight" }), {
+      target: { value: "79.5" },
+    });
+    fireEvent.click(within(sheet).getByRole("button", { name: "Save" }));
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /^Weigh-in/, hidden: true }).textContent).toContain(
+        "79.5\u00a0kg",
+      ),
+    );
+    const leaving = screen.getByRole("dialog", { hidden: true });
+    expect(leaving.getAttribute("data-state")).toBe("closed");
+    fireEvent.animationEnd(leaving);
+    expect(screen.queryByRole("dialog", { hidden: true })).toBeNull();
+  });
+
+  it("the grey buttons are gone", async () => {
+    await open([]);
+    expect(screen.queryByRole("button", { name: "Measurements" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Annotation" })).toBeNull();
+    expect(document.querySelector("main svg.lucide-plus")).toBeNull();
+  });
+});
+
+describe("Annotations", () => {
+  const LATER = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d91";
+  const OLD = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d92";
+  const named = (id: string, date: string, label: string | null): Change => ({
+    kind: "annotation",
+    id,
+    field: "fields",
+    date,
+    type: "note",
+    label,
+    at: AT,
+  });
+
+  it("lists the period's annotations, newest first, each opening its sheet", async () => {
+    await open([
+      note(NOTE, "2026-09-22"),
+      note(LATER, "2026-10-01", "deload"),
+      note(OLD, "2026-08-01"),
+    ]);
+    const rows = within(annotationsList()).getAllByRole("button");
+    expect(rows.map((r) => r.textContent)).toEqual(["Deload Thu, Oct 1", "Break Tue, Sep 22"]);
+    for (const [i, type] of ["Deload", "Break"].entries()) {
+      fireEvent.click(within(annotationsList()).getAllByRole("button")[i]!);
+      const sheet = await screen.findByRole("dialog", { name: "Annotation" });
+      expect(within(sheet).getByRole("radio", { name: type }).getAttribute("aria-checked")).toBe(
+        "true",
+      );
+      fireEvent.keyDown(sheet, { key: "Escape" });
+      await waitFor(() => expect(screen.queryByRole("dialog", { hidden: true })).toBeNull());
+    }
+  });
+
+  it("lists two annotations of one day the later made first", async () => {
+    await open([note(OLD, "2026-10-01"), note(LATER, "2026-10-01", "deload")]);
+    const rows = within(annotationsList()).getAllByRole("button");
+    expect(rows.map((r) => r.textContent)).toEqual(["Break Thu, Oct 1", "Deload Thu, Oct 1"]);
+  });
+
+  it("a note named by its text says Note before its day", async () => {
+    await open([named(NOTE, "2026-09-30", "trip to Lisbon"), named(LATER, "2026-10-02", null)]);
+    const list = annotationsList();
+    expect(
+      within(list).getByRole("button", { name: "trip to Lisb… Note · Wed, Sep 30" }),
+    ).toBeTruthy();
+    expect(within(list).getByRole("button", { name: "Note Fri, Oct 2" })).toBeTruthy();
+  });
+
+  it("an annotation before the first week is still listed", async () => {
+    await open([note(NOTE, "2026-09-10")]); // inside the month, before the first week
+    fireEvent.click(within(annotationsList()).getByRole("button", { name: /^Break / }));
+    expect(await screen.findByRole("dialog", { name: "Annotation" })).toBeTruthy();
+    cleanup();
+    indexedDB = new IDBFactory();
+    // Before 4 weigh-ins, with no weeks at all.
+    await seed(ADA.id, [weight("2026-10-06", 80), note(NOTE, "2026-10-05")]);
+    fakeApi({ me: "down" });
+    renderRoute("/body");
+    expect(
+      await within(await screen.findByRole("region", { name: "Annotations" })).findByRole(
+        "button",
+        { name: /^Break / },
+      ),
+    ).toBeTruthy();
+  });
+
+  it("the weeks carry no annotation pill", async () => {
+    const list = await open([note(NOTE, "2026-09-22")]);
+    expect(within(list).queryByRole("button", { name: /Break/ })).toBeNull();
+    expect(within(list).queryByText("Break")).toBeNull();
+  });
+
+  it("open an annotation from its row, and delete it with an undo", async () => {
+    await open([note(NOTE, "2026-09-22")]);
+    fireEvent.click(within(annotationsList()).getByRole("button", { name: /^Break / }));
+    const sheet = await screen.findByRole("dialog", { name: "Annotation" });
+    expect(within(sheet).getByRole("radio", { name: "Break" }).getAttribute("aria-checked")).toBe(
+      "true",
+    );
+    fireEvent.click(within(sheet).getByRole("button", { name: "Delete this annotation" }));
+    await waitFor(async () => expect(await readAnnotations(await db())).toEqual([]));
+    expect(await screen.findByText("Annotation deleted")).toBeTruthy();
+    await waitFor(() => expect(screen.queryByRole("region", { name: "Annotations" })).toBeNull());
+    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+    await waitFor(async () => expect(await readAnnotations(await db())).toHaveLength(1));
+    expect(
+      await within(await screen.findByRole("region", { name: "Annotations" })).findByRole(
+        "button",
+        { name: /^Break / },
+      ),
+    ).toBeTruthy();
   });
 });
 
 describe("the measurements sheet", () => {
   it("saves the waist, and the neck if given, then the history says so", async () => {
     await open([]);
-    fireEvent.click(screen.getByRole("button", { name: "Measurements" }));
+    fireEvent.click(screen.getByRole("button", { name: /^Measurements\b/ }));
     const sheet = await screen.findByRole("dialog", { name: "Measurements" });
     expect(
       within(sheet).getByText(
@@ -251,14 +458,14 @@ describe("the measurements sheet", () => {
       ...args: unknown[]
     ) => (ms === 400 ? 0 : timeout(fn, ms, ...args))) as typeof setTimeout);
     await open([]);
-    fireEvent.click(screen.getByRole("button", { name: "Measurements" }));
+    fireEvent.click(screen.getByRole("button", { name: /^Measurements\b/ }));
     const sheet = await screen.findByRole("dialog", { name: "Measurements" });
     fireEvent.change(within(sheet).getByRole("textbox", { name: "Waist" }), {
       target: { value: "82" },
     });
     fireEvent.click(within(sheet).getByRole("button", { name: "Save" }));
-    // Only the history writes this line; a text query sees it under the open dialog.
-    expect(await screen.findByText("waist 82 cm")).toBeTruthy();
+    // The history's day and this week's parts write it; a text query sees them under the dialog.
+    expect(await screen.findAllByText("waist 82 cm")).toHaveLength(2);
     const leaving = screen.getByRole("dialog", { hidden: true });
     expect(leaving.getAttribute("data-state")).toBe("closed");
     fireEvent.animationEnd(leaving);
@@ -267,7 +474,7 @@ describe("the measurements sheet", () => {
 
   it("refuses a waist outside 40 to 200 cm", async () => {
     await open([]);
-    fireEvent.click(screen.getByRole("button", { name: "Measurements" }));
+    fireEvent.click(screen.getByRole("button", { name: /^Measurements\b/ }));
     fireEvent.change(await screen.findByRole("textbox", { name: "Waist" }), {
       target: { value: "820" },
     });
