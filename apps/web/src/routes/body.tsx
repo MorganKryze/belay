@@ -1,7 +1,7 @@
 import "@/i18n/lazy";
 import { addDays, type ISODate, isoWeekStart } from "@belay/shared/body/dates";
 import { type IntakeLog, weeklyIntake } from "@belay/shared/body/intake";
-import { type Measure, measureOf, weeklyWaist } from "@belay/shared/body/measures";
+import { MEASURE_FIELDS, type Measure, measureOf, weeklyWaist } from "@belay/shared/body/measures";
 import { creatineWindows } from "@belay/shared/body/supplements";
 import { inTargetRange, type TargetRange } from "@belay/shared/body/target";
 import {
@@ -226,12 +226,12 @@ function BodyContent({
       ? { text: t("trend.kg", { value: formatKg(weighed.weightKg, i18n.language) }), done: true }
       : { text: t("today.weighInEmpty"), done: false };
   // The latest measurement up to today: its waist, else its neck, else its hips.
-  const fields = ["waist", "neck", "hip"] as const;
   const lastMeasure = measures
-    .filter((m) => m.date <= today && fields.some((f) => measureOf(m, f) !== null))
+    .filter((m) => m.date <= today && MEASURE_FIELDS.some((f) => measureOf(m, f) !== null))
     .sort((a, b) => (a.date < b.date ? -1 : 1))
     .at(-1);
-  const measureField = lastMeasure && fields.find((f) => measureOf(lastMeasure, f) !== null);
+  const measureField =
+    lastMeasure && MEASURE_FIELDS.find((f) => measureOf(lastMeasure, f) !== null);
   const measuresStatus: Status = firstPull
     ? null
     : lastMeasure && measureField
