@@ -12,6 +12,7 @@ import {
 import {
   autoClose,
   finishedOn,
+  workSetsOf,
   type History,
   lastFinished,
   lastTime,
@@ -654,6 +655,21 @@ describe("finishedOn", () => {
     const done = finishedOn(history([w], sets), "2026-10-07");
     expect(done?.durationMs).toBe(48 * 60_000);
     expect(done?.workSets).toBe(2);
+  });
+});
+
+describe("workSetsOf", () => {
+  it("counts a session's kept work sets, warm-ups left out", () => {
+    const w = workout();
+    const sets = [
+      warm(w, 0, 40, 8),
+      set(w, 1, 60, 8),
+      set(w, 2, 60, 8),
+      set(w, 3, 60, 8, { removed: true }),
+      set(workout(), 1, 60, 8),
+    ];
+    expect(workSetsOf({ workouts: [w], sets }, w.id)).toBe(2);
+    expect(workSetsOf({ workouts: [w], sets: [] }, w.id)).toBe(0);
   });
 });
 

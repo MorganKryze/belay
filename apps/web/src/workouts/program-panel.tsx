@@ -8,7 +8,7 @@ import {
   type SessionTemplate,
   starterProgram,
 } from "@belay/shared/training/program";
-import { type History, lastFinished, liveSets, openWorkout } from "@belay/shared/training/rules";
+import { type History, lastFinished, openWorkout, workSetsOf } from "@belay/shared/training/rules";
 import { Link } from "@tanstack/react-router";
 import { useId } from "react";
 import { useTranslation } from "react-i18next";
@@ -61,10 +61,7 @@ function List({
   // How far the open session is: its work sets logged over the ones its plan holds.
   const progress =
     history && open
-      ? {
-          count: liveSets(history).filter((s) => s.workoutId === open.id && !s.warmup).length,
-          total: plannedWorkSets(open.plan),
-        }
+      ? { count: workSetsOf(history, open.id), total: plannedWorkSets(open.plan) }
       : null;
   return ordered.map((s) => (
     <ProgramCard
@@ -74,10 +71,8 @@ function List({
       lastDay={history ? lastDayOf(history, s.code) : undefined}
       activities={activities}
       today={today}
-      action={
-        open ? (open.sessionCode === s.code ? "resume" : null) : s.code === next ? "see" : null
-      }
-      progress={progress}
+      see={!open && s.code === next}
+      progress={open?.sessionCode === s.code ? progress : null}
     />
   ));
 }
@@ -92,15 +87,15 @@ function lastDayOf(history: History, code: string): ISODate | null {
 const daysBetween = (from: ISODate, to: ISODate) =>
   Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000);
 
-// "see": the next card's button to the preview; "resume": the open session's card, with how far
-// it is; null: the whole card is a link to the preview.
+// With progress: the open session's card, with how far it is; see: the next card's button to the
+// preview; else the whole card is a link to the preview.
 function ProgramCard({
   session,
   next,
   lastDay,
   activities,
   today,
-  action,
+  see,
   progress,
 }: {
   session: SessionTemplate;
@@ -108,7 +103,7 @@ function ProgramCard({
   lastDay: ISODate | null | undefined;
   activities: readonly Activity[];
   today: ISODate;
-  action: "see" | "resume" | null;
+  see: boolean;
   progress: { count: number; total: number } | null;
 }) {
   const { t } = useTranslation();
@@ -119,7 +114,7 @@ function ProgramCard({
     count: plan.length,
     minutes: estimatedMinutes({ slots: plan }),
   });
-  if (action === "resume" && progress) {
+  if (progress) {
     return (
       <SessionCard
         code={code}
@@ -134,9 +129,9 @@ function ProgramCard({
       </SessionCard>
     );
   }
-  if (action === "see") {
+  if (see) {
     return (
-      <SessionCard code={code} lead={next ? t("sessionCard.next") : undefined} detail={size}>
+      <SessionCard code={code} lead={t("sessionCard.next")} detail={size}>
         <Button asChild variant="primary">
           <Link to="/workouts/session/$code" params={{ code }}>
             {t("sessionCard.see")}
@@ -145,9 +140,8 @@ function ProgramCard({
       </SessionCard>
     );
   }
-  const when = next
-    ? t("sessionCard.next")
-    : lastDay === undefined
+  const when =
+    lastDay === undefined
       ? null
       : lastDay === null
         ? t("workouts.program.never")
@@ -163,7 +157,7 @@ function ProgramCard({
       <SessionHeading
         id={id}
         code={code}
-        lead={next ? when! : undefined}
+        lead={next ? t("sessionCard.next") : undefined}
         detail={when && !next ? `${when} · ${size}` : size}
       />
     </Link>

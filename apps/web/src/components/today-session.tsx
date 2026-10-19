@@ -6,7 +6,7 @@ import {
   plannedWorkSets,
   sessionByCode,
 } from "@belay/shared/training/program";
-import { finishedOn, liveSets, openWorkout } from "@belay/shared/training/rules";
+import { finishedOn, openWorkout, workSetsOf } from "@belay/shared/training/rules";
 import { Link } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -28,7 +28,7 @@ export function TodaySession({ account, today }: { account: OpenAccount; today: 
   const open = openWorkout(history.workouts, { sets: history.sets, now: new Date() });
   if (open) {
     const code = open.sessionCode;
-    const done = liveSets(history).filter((s) => s.workoutId === open.id && !s.warmup).length;
+    const done = workSetsOf(history, open.id);
     return (
       <SessionCard
         code={code}

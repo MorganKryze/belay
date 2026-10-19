@@ -300,6 +300,11 @@ export function loggedByExercise(
   }));
 }
 
+// How many work sets a session holds: kept, warm-ups left out.
+export function workSetsOf(history: History, workoutId: string): number {
+  return liveSets(history).filter((s) => s.workoutId === workoutId && !s.warmup).length;
+}
+
 // The last session kept and ended whose day (the day it started, on this device's clock) is
 // `day`, with its length and its work sets: Accueil's "done today". null when there is none.
 export function finishedOn(
@@ -319,7 +324,7 @@ export function finishedOn(
   return {
     workout: last,
     durationMs: Date.parse(last.endedAt) - Date.parse(last.startedAt),
-    workSets: liveSets(history).filter((s) => s.workoutId === last.id && !s.warmup).length,
+    workSets: workSetsOf(history, last.id),
   };
 }
 
