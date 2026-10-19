@@ -72,6 +72,11 @@ export function Settings() {
   const [historyActivities, setHistoryActivitiesState] = useState<Shown>(readHistoryActivities);
   const [sessionVolume, setSessionVolumeState] = useState<Shown>(readSessionVolume);
   const account = useAccount();
+  // The sections take the names of the screens their rows change.
+  const general = t("settings.general");
+  const home = t("nav.home");
+  const sessions = t("nav.workouts");
+  const body = t("nav.body");
 
   return (
     <section className="flex flex-1 flex-col gap-4">
@@ -80,8 +85,9 @@ export function Settings() {
       {"user" in account && <ProfileRow user={account.user} />}
       {account.kind === "open" && <RejectedEntries account={account} />}
 
-      <GroupedList label={t("settings.preferences")}>
+      <GroupedList label={general}>
         <MenuRow
+          section={general}
           icon={Languages}
           label={t("settings.language")}
           value={i18n.language as Locale}
@@ -89,6 +95,7 @@ export function Settings() {
           onChange={setLocale}
         />
         <MenuRow
+          section={general}
           icon={SunMoon}
           label={t("settings.theme")}
           value={theme}
@@ -98,7 +105,26 @@ export function Settings() {
             setThemeState(th);
           }}
         />
+      </GroupedList>
+      <GroupedList label={home}>
         <MenuRow
+          section={home}
+          icon={Scale}
+          label={t("settings.homeTrend")}
+          value={homeTrend}
+          options={SHOWN.map((v) => ({
+            value: v,
+            label: t(`settings.homeTrendOptions.${v}`),
+          }))}
+          onChange={(v) => {
+            setHomeTrend(v);
+            setHomeTrendState(v);
+          }}
+        />
+      </GroupedList>
+      <GroupedList label={sessions}>
+        <MenuRow
+          section={sessions}
           icon={CirclePause}
           label={t("settings.pauseStops")}
           value={pauseStops}
@@ -112,45 +138,7 @@ export function Settings() {
           }}
         />
         <MenuRow
-          icon={Scale}
-          label={t("settings.homeTrend")}
-          value={homeTrend}
-          options={SHOWN.map((v) => ({
-            value: v,
-            label: t(`settings.homeTrendOptions.${v}`),
-          }))}
-          onChange={(v) => {
-            setHomeTrend(v);
-            setHomeTrendState(v);
-          }}
-        />
-        <MenuRow
-          icon={Check}
-          label={t("settings.rangePill")}
-          value={rangePill}
-          options={SHOWN.map((v) => ({
-            value: v,
-            label: t(`settings.rangePillOptions.${v}`),
-          }))}
-          onChange={(v) => {
-            setRangePill(v);
-            setRangePillState(v);
-          }}
-        />
-        <MenuRow
-          icon={Utensils}
-          label={t("settings.weekIntake")}
-          value={weekIntake}
-          options={SHOWN.map((v) => ({
-            value: v,
-            label: t(`settings.weekIntakeOptions.${v}`),
-          }))}
-          onChange={(v) => {
-            setWeekIntake(v);
-            setWeekIntakeState(v);
-          }}
-        />
-        <MenuRow
+          section={sessions}
           icon={CalendarDays}
           label={t("settings.historyActivities")}
           value={historyActivities}
@@ -164,6 +152,7 @@ export function Settings() {
           }}
         />
         <MenuRow
+          section={sessions}
           icon={Dumbbell}
           label={t("settings.sessionVolume")}
           value={sessionVolume}
@@ -174,6 +163,36 @@ export function Settings() {
           onChange={(v) => {
             setSessionVolume(v);
             setSessionVolumeState(v);
+          }}
+        />
+      </GroupedList>
+      <GroupedList label={body}>
+        <MenuRow
+          section={body}
+          icon={Check}
+          label={t("settings.rangePill")}
+          value={rangePill}
+          options={SHOWN.map((v) => ({
+            value: v,
+            label: t(`settings.rangePillOptions.${v}`),
+          }))}
+          onChange={(v) => {
+            setRangePill(v);
+            setRangePillState(v);
+          }}
+        />
+        <MenuRow
+          section={body}
+          icon={Utensils}
+          label={t("settings.weekIntake")}
+          value={weekIntake}
+          options={SHOWN.map((v) => ({
+            value: v,
+            label: t(`settings.weekIntakeOptions.${v}`),
+          }))}
+          onChange={(v) => {
+            setWeekIntake(v);
+            setWeekIntakeState(v);
           }}
         />
       </GroupedList>

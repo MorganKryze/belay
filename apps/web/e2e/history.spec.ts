@@ -350,10 +350,10 @@ test.describe("with Sessions only, on Wednesday 7 October 2026", () => {
     await expect(page.locator(".launch")).toBeHidden();
     await page.getByRole("main").getByRole("link", { name: "Settings" }).click();
     await expect(page.getByRole("heading", { level: 1, name: "Settings" })).toBeVisible();
-    const trigger = page.getByRole("combobox", { name: /^History / });
+    const trigger = page.getByRole("combobox", { name: /^Sessions · History · / });
     await trigger.click();
     await page.getByRole("option", { name: "Sessions only" }).click();
-    await expect(trigger).toHaveAccessibleName("History Sessions only");
+    await expect(trigger).toHaveAccessibleName("Sessions · History · Sessions only");
     await page.goBack();
     await expect(page.getByRole("button", { name: /^Activity/ })).toBeVisible();
     await page.getByRole("link", { name: "Sessions" }).click();

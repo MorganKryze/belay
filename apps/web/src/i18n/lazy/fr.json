@@ -1,12 +1,12 @@
 {
   "settings": {
-    "preferences": "Préférences",
+    "general": "Général",
     "pauseStops": "En pause",
     "pauseStopsOptions": {
       "all": "Tout s'arrête",
       "session": "Le repos continue"
     },
-    "homeTrend": "Tendance sur Accueil",
+    "homeTrend": "Tendance",
     "homeTrendOptions": {
       "shown": "Affichée",
       "hidden": "Masquée"
@@ -16,17 +16,17 @@
       "shown": "Avec activités",
       "hidden": "Séances seules"
     },
-    "sessionVolume": "Volume sur la séance",
+    "sessionVolume": "Volume",
     "sessionVolumeOptions": {
       "shown": "Affiché",
       "hidden": "Masqué"
     },
-    "rangePill": "Pastille de fourchette",
+    "rangePill": "Fourchette",
     "rangePillOptions": {
       "shown": "Affichée",
       "hidden": "Masquée"
     },
-    "weekIntake": "Apports par semaine",
+    "weekIntake": "Apports",
     "weekIntakeOptions": {
       "shown": "Affichés",
       "hidden": "Masqués"

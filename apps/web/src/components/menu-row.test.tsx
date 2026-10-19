@@ -60,6 +60,20 @@ describe("MenuRow", () => {
     expect(trigger.querySelector("[data-slot=row-chevron]")).not.toBeNull();
   });
 
+  it("puts its section before the label and value in its name, a dot between each", () => {
+    renderInRoot(
+      <MenuRow
+        icon={Languages}
+        section="General"
+        label="Language"
+        value="en"
+        options={OPTIONS}
+        onChange={() => {}}
+      />,
+    );
+    expect(screen.getByRole("combobox", { name: "General · Language · English" })).toBeTruthy();
+  });
+
   it("opens the options with the current one ticked, and a choice calls onChange and closes the menu", () => {
     const onChange = vi.fn();
     renderInRoot(<Language onChange={onChange} />);
