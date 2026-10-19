@@ -91,6 +91,11 @@ describe("the Body page", () => {
     ]);
   });
 
+  it("a week just begun with no weigh-in yet names no count", async () => {
+    const list = await open(WEEKS.slice(0, 11)); // nothing yet from Monday 5 October
+    expect(rows(list)[0]).toBe("This weekongoing");
+  });
+
   // The first line of a week: its title, then its value at the right.
   const value = (row: HTMLElement) => row.children[1]!;
 

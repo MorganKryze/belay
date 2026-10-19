@@ -508,7 +508,10 @@ function weekView(
         : { kind: "plain", text: "—" };
   const why =
     w.status === "in_progress"
-      ? t("body.weighIns", { count: w.count })
+      ? // A week just begun says nothing rather than « 0 pesée »: no absence is ever pointed out.
+        w.count > 0
+        ? t("body.weighIns", { count: w.count })
+        : null
       : w.status === "insufficient"
         ? t("body.tooFew", { count: w.count })
         : w.lossPct === null
