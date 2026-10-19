@@ -1,12 +1,12 @@
 {
   "settings": {
-    "preferences": "Preferences",
+    "general": "General",
     "pauseStops": "Paused",
     "pauseStopsOptions": {
       "all": "Everything stops",
-      "session": "The rest keeps running"
+      "session": "Rest continues"
     },
-    "homeTrend": "Trend on Home",
+    "homeTrend": "Trend",
     "homeTrendOptions": {
       "shown": "Shown",
       "hidden": "Hidden"
@@ -16,17 +16,17 @@
       "shown": "With activities",
       "hidden": "Sessions only"
     },
-    "sessionVolume": "Session volume",
+    "sessionVolume": "Volume",
     "sessionVolumeOptions": {
       "shown": "Shown",
       "hidden": "Hidden"
     },
-    "rangePill": "In-range pill",
+    "rangePill": "Range",
     "rangePillOptions": {
       "shown": "Shown",
       "hidden": "Hidden"
     },
-    "weekIntake": "Weekly intake",
+    "weekIntake": "Intake",
     "weekIntakeOptions": {
       "shown": "Shown",
       "hidden": "Hidden"

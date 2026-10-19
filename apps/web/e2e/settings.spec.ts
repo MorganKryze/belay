@@ -5,17 +5,19 @@ import { fakeServer, refuseChanges } from "./fake-server";
 // Signed in as Ada, in English.
 test.use({ locale: "en-US", timezoneId: "Europe/Paris" });
 
-const row = (
-  page: Page,
-  name:
-    | "Language"
-    | "Theme"
-    | "Trend on Home"
-    | "In-range pill"
-    | "Weekly intake"
-    | "History"
-    | "Session volume",
-) => page.getByRole("combobox", { name: new RegExp(`^${name}`) });
+// Each row by its short label; its name starts with its section's.
+const SECTION_OF = {
+  Language: "General",
+  Theme: "General",
+  Trend: "Home",
+  History: "Sessions",
+  Volume: "Sessions",
+  Range: "Body",
+  Intake: "Body",
+} as const;
+
+const row = (page: Page, name: keyof typeof SECTION_OF) =>
+  page.getByRole("combobox", { name: new RegExp(`^${SECTION_OF[name]} · ${name} · `) });
 
 const signOut = (page: Page) => page.getByRole("button", { name: "Sign out" });
 
@@ -31,11 +33,11 @@ test.describe("accessibility", () => {
   for (const menu of [
     "Language",
     "Theme",
-    "Trend on Home",
-    "In-range pill",
-    "Weekly intake",
+    "Trend",
     "History",
-    "Session volume",
+    "Volume",
+    "Range",
+    "Intake",
   ] as const) {
     for (const theme of ["light", "dark"] as const) {
       test(`Réglages with the ${menu} menu open has no axe violation, ${theme}`, async ({
@@ -187,7 +189,7 @@ test("a menu opens from the keyboard and gives the focus back to its row", async
   await expect(page.getByRole("option", { name: "Dark" })).toBeFocused();
   await page.keyboard.press("Enter");
   await expect(menu).toBeHidden();
-  await expect(theme).toHaveAccessibleName("Theme Dark");
+  await expect(theme).toHaveAccessibleName("General · Theme · Dark");
   await expect(theme).toBeFocused();
 
   await page.keyboard.press("Space");
@@ -211,11 +213,11 @@ test("a choice tapped in a menu leaves its row without a ring, a key press bring
   page,
 }) => {
   await openSettings(page, "light");
-  const paused = page.getByRole("combobox", { name: /^Paused/ });
+  const paused = page.getByRole("combobox", { name: /^Sessions · Paused · / });
   await paused.tap();
-  await page.getByRole("option", { name: "The rest keeps running" }).tap();
+  await page.getByRole("option", { name: "Rest continues" }).tap();
   await expect(page.getByRole("listbox")).toBeHidden();
-  await expect(paused).toHaveAccessibleName("Paused The rest keeps running");
+  await expect(paused).toHaveAccessibleName("Sessions · Paused · Rest continues");
   await expect(paused).toBeFocused();
   await paused.evaluate((el: HTMLElement) => {
     el.blur();
@@ -370,7 +372,7 @@ test.describe("at 360 px", () => {
     const header = (await list.getByRole("listitem").first().boundingBox())!;
     const profile = (await page.getByRole("link", { name: /^Ada/ }).boundingBox())!;
     expect(header.y).toBeGreaterThan(profile.y + profile.height);
-    const preferences = (await page.getByRole("region", { name: "Preferences" }).boundingBox())!;
+    const preferences = (await page.getByRole("region", { name: "General" }).boundingBox())!;
     expect(header.y).toBeLessThan(preferences.y);
   });
 
@@ -395,58 +397,109 @@ test.describe("at 360 px", () => {
     expect(overflow).toBe(0);
   });
 
-  // The wording of both rows was measured to fit one line at 360 px: label and value stay single
-  // lines, side by side, in both languages.
-  for (const [locale, rows] of [
+  // Each section's rows with every value they can show; the language row shows its current one,
+  // since picking the other changes the labels.
+  for (const [locale, sections] of [
     [
       "en-US",
       [
-        ["History", "With activities", "Sessions only"],
-        ["Session volume", "Shown", "Hidden"],
+        [
+          "General",
+          [
+            ["Language", "English"],
+            ["Theme", "System", "Light", "Dark"],
+          ],
+        ],
+        ["Home", [["Trend", "Shown", "Hidden"]]],
+        [
+          "Sessions",
+          [
+            ["Paused", "Everything stops", "Rest continues"],
+            ["History", "With activities", "Sessions only"],
+            ["Volume", "Shown", "Hidden"],
+          ],
+        ],
+        [
+          "Body",
+          [
+            ["Range", "Shown", "Hidden"],
+            ["Intake", "Shown", "Hidden"],
+          ],
+        ],
       ],
     ],
     [
       "fr-FR",
       [
-        ["Historique", "Avec activités", "Séances seules"],
-        ["Volume sur la séance", "Affiché", "Masqué"],
+        [
+          "Général",
+          [
+            ["Langue", "Français"],
+            ["Thème", "Système", "Clair", "Sombre"],
+          ],
+        ],
+        ["Accueil", [["Tendance", "Affichée", "Masquée"]]],
+        [
+          "Séances",
+          [
+            ["En pause", "Tout s'arrête", "Le repos continue"],
+            ["Historique", "Avec activités", "Séances seules"],
+            ["Volume", "Affiché", "Masqué"],
+          ],
+        ],
+        [
+          "Corps",
+          [
+            ["Fourchette", "Affichée", "Masquée"],
+            ["Apports", "Affichés", "Masqués"],
+          ],
+        ],
       ],
     ],
   ] as const) {
     test.describe(locale, () => {
       test.use({ locale });
-      test(`the history and volume rows hold on one line at 360 px, ${locale}`, async ({
+      test(`the sections come in order and every row holds on one line at 360 px, ${locale}`, async ({
         page,
       }) => {
         await fakeServer(page);
         await page.goto("/settings");
         await expect(page.locator(".launch")).toBeHidden();
         await settled(page);
-        for (const [label, ...values] of rows) {
-          const trigger = page.getByRole("combobox", { name: new RegExp(`^${label} `) });
-          for (const v of values) {
-            if (v !== values[0]) {
-              await trigger.click();
-              await page.getByRole("option", { name: v }).click();
-              await expect(page.getByRole("listbox")).toBeHidden();
+        const headings = await page.locator("main h2").allTextContents();
+        expect(headings.slice(0, sections.length)).toEqual(sections.map(([s]) => s));
+        // Height over line height, rounded: 1 is a single line.
+        const measure = (el: ReturnType<Page["locator"]>) =>
+          el.evaluate((n) => {
+            const r = n.getBoundingClientRect();
+            return {
+              top: r.top,
+              right: r.right,
+              left: r.left,
+              lines: Math.round(r.height / parseFloat(getComputedStyle(n).lineHeight)),
+            };
+          });
+        for (const [section, rows] of sections) {
+          const region = page.getByRole("region", { name: section });
+          for (const [label, ...values] of rows) {
+            const trigger = region.getByRole("combobox", {
+              name: new RegExp(`^${section} · ${label} · `),
+            });
+            for (const v of values) {
+              if (v !== values[0]) {
+                await trigger.click();
+                await page.getByRole("option", { name: v }).click();
+                await expect(page.getByRole("listbox")).toBeHidden();
+              }
+              const what = `${section} · ${label} · ${v}`;
+              await expect(trigger).toHaveAccessibleName(what);
+              const name = await measure(trigger.getByText(label, { exact: true }));
+              const value = await measure(trigger.locator("[data-slot=select-value]"));
+              expect(name.lines, what).toBe(1);
+              expect(value.lines, what).toBe(1);
+              expect(Math.abs(value.top - name.top), what).toBeLessThanOrEqual(2);
+              expect(value.left, what).toBeGreaterThan(name.right);
             }
-            await expect(trigger).toHaveAccessibleName(`${label} ${v}`);
-            const lines = async (el: ReturnType<Page["locator"]>) =>
-              el.evaluate((n) => {
-                const r = n.getBoundingClientRect();
-                return {
-                  top: r.top,
-                  right: r.right,
-                  left: r.left,
-                  lines: Math.round(r.height / parseFloat(getComputedStyle(n).lineHeight)),
-                };
-              });
-            const name = await lines(trigger.getByText(label, { exact: true }));
-            const value = await lines(trigger.locator("[data-slot=select-value]"));
-            expect(name.lines, label).toBe(1);
-            expect(value.lines, `${label} ${v}`).toBe(1);
-            expect(Math.abs(value.top - name.top), `${label} ${v}`).toBeLessThanOrEqual(2);
-            expect(value.left, `${label} ${v}`).toBeGreaterThan(name.right);
           }
         }
       });
