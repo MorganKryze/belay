@@ -50,7 +50,6 @@ import {
 const LANGUAGE_NAMES: Record<Locale, string> = { en: "English", fr: "Français" };
 const THEMES = ["light", "dark", "system"] as const satisfies readonly Theme[];
 const PAUSE_STOPS = ["all", "session"] as const satisfies readonly PauseStops[];
-const HOME_TREND = ["shown", "hidden"] as const satisfies readonly HomeTrend[];
 const SHOWN = ["shown", "hidden"] as const satisfies readonly Shown[];
 
 export function Settings() {
@@ -104,7 +103,7 @@ export function Settings() {
           icon={Scale}
           label={t("settings.homeTrend")}
           value={homeTrend}
-          options={HOME_TREND.map((v) => ({
+          options={SHOWN.map((v) => ({
             value: v,
             label: t(`settings.homeTrendOptions.${v}`),
           }))}
