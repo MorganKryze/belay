@@ -221,11 +221,8 @@ function BodyContent({
       }),
     ),
   ].join(" ");
-  // Annotations whose pill is not on a week shown (no weeks list yet, or the date outside it).
-  const weeksShown = weighings.length < MIN_WEIGHINGS ? [] : weeks.filter((w) => w.end >= from);
-  const orphans = shownNotes.filter(
-    (a) => !weeksShown.some((w) => a.date >= w.start && a.date <= w.end),
-  );
+  // Each annotation of the period has its row, the newest first, wherever the weeks start.
+  const listedNotes = [...shownNotes].sort((a, b) => (a.date < b.date ? 1 : -1));
   const weekday = (d: ISODate) => formatWeekday(d, i18n.language, today, { startOfLine: false });
   // Until this device has the account's data, the rows wait rather than say nothing was entered.
   const firstPull = useFirstPull(account);
@@ -322,21 +319,6 @@ function BodyContent({
               setOpen({ sheet: "annotation", annotation: annotations.find((a) => a.id === id)! })
             }
           />
-          {orphans.length > 0 && (
-            <div
-              role="group"
-              aria-label={t("annotation.row")}
-              className="flex flex-wrap gap-x-2 px-1"
-            >
-              {orphans.map((a) => (
-                <AnnotationPill
-                  key={a.id}
-                  annotation={a}
-                  onOpen={() => setOpen({ sheet: "annotation", annotation: a })}
-                />
-              ))}
-            </div>
-          )}
         </div>
       )}
       <section aria-labelledby="entries" className="flex flex-col gap-2">
@@ -374,9 +356,29 @@ function BodyContent({
           measures={measures}
           intake={intake}
           courses={courses}
-          annotations={annotations}
-          onAnnotation={(annotation) => setOpen({ sheet: "annotation", annotation })}
         />
+      )}
+      {listedNotes.length > 0 && (
+        <section aria-labelledby="annotations" className="flex flex-col gap-2">
+          <h2 id="annotations" className={sectionLabel}>
+            {t("annotation.row")}
+          </h2>
+          <div className={groupCard}>
+            {listedNotes.map((a) => (
+              <EntryRow
+                key={a.id}
+                icon={Flag}
+                title={annotationName(a, t)}
+                status={{
+                  // A note named by its own text says what it is before its day.
+                  text: `${a.type === "note" && a.label ? `${t("annotation.kinds.note")} · ` : ""}${weekday(a.date)}`,
+                  done: false,
+                }}
+                onClick={() => setOpen({ sheet: "annotation", annotation: a })}
+              />
+            ))}
+          </div>
+        </section>
       )}
       <History
         weighings={shown}
@@ -461,7 +463,7 @@ function FirstDays({ weighings, today }: { weighings: Weighing[]; today: ISODate
 }
 
 // One block per ISO week, the most recent first: its dates and loss, its pills (in the range,
-// creatine, annotations), then three figures: average weight, waist, intake (D5, D6).
+// creatine), then three figures: average weight, waist, intake (D5, D6).
 function Weeks({
   weeks,
   firstWeek,
@@ -471,8 +473,6 @@ function Weeks({
   measures,
   intake,
   courses,
-  annotations,
-  onAnnotation,
 }: {
   weeks: WeekSummary[];
   firstWeek: ISODate;
@@ -482,8 +482,6 @@ function Weeks({
   measures: Measure[];
   intake: IntakeLog[];
   courses: { start: ISODate; end: ISODate }[];
-  annotations: AnnotationRow[];
-  onAnnotation: (annotation: AnnotationRow) => void;
 }) {
   const { t, i18n } = useTranslation();
   const sub = "text-xs text-muted-foreground";
@@ -496,7 +494,6 @@ function Weeks({
         {weeks.map((w) => {
           const waist = weeklyWaist(measures, w.start);
           const food = weeklyIntake(intake, w.start);
-          const notes = annotations.filter((a) => a.date >= w.start && a.date <= w.end);
           const onCreatine = courses.some((c) => c.start <= w.end && c.end >= w.start);
           const status =
             w.status === "in_progress"
@@ -534,10 +531,6 @@ function Weeks({
                   <span className={neutralPill}>{t("body.insufficient")}</span>
                 )}
                 {onCreatine && <span className={neutralPill}>{t("body.creatinePill")}</span>}
-                {notes.map((a) => (
-                  // A 44 px target around a pill of the usual size.
-                  <AnnotationPill key={a.id} annotation={a} onOpen={() => onAnnotation(a)} />
-                ))}
                 {status && <span className={sub}>{status}</span>}
               </div>
               <dl className="grid grid-cols-3 gap-2">
@@ -597,22 +590,6 @@ function EntryRow({
   return (
     <button type="button" className={rowLine} onClick={onClick}>
       <RowBody icon={icon} title={title} status={status} />
-    </button>
-  );
-}
-
-// A 44 px target around a pill of the usual size.
-function AnnotationPill({ annotation, onOpen }: { annotation: AnnotationRow; onOpen: () => void }) {
-  const { t } = useTranslation();
-  const name = annotationName(annotation, t);
-  return (
-    <button
-      type="button"
-      className="-my-2.5 inline-flex min-h-11 items-center"
-      aria-label={t("body.openAnnotation", { name })}
-      onClick={onOpen}
-    >
-      <span className={`${neutralPill} underline underline-offset-2`}>{name}</span>
     </button>
   );
 }

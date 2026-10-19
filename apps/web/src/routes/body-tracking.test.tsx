@@ -113,36 +113,12 @@ describe("Your weeks", () => {
     expect(screen.queryByText("Creatine")).toBeNull();
     expect(screen.queryByText("creatine · 14 d")).toBeNull();
   });
-  it("open an annotation from its pill, and delete it with an undo", async () => {
-    const list = await open([
-      {
-        kind: "annotation",
-        id: NOTE,
-        field: "fields",
-        date: "2026-09-22",
-        type: "diet_break",
-        label: null,
-        at: AT,
-      },
-    ]);
-    fireEvent.click(
-      within(week(list, 2)).getByRole("button", { name: "Open the annotation Break" }),
-    );
-    const sheet = await screen.findByRole("dialog", { name: "Annotation" });
-    expect(within(sheet).getByRole("radio", { name: "Break" }).getAttribute("aria-checked")).toBe(
-      "true",
-    );
-    fireEvent.click(within(sheet).getByRole("button", { name: "Delete this annotation" }));
-    await waitFor(async () => expect(await readAnnotations(await db())).toEqual([]));
-    expect(await screen.findByText("Annotation deleted")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
-    await waitFor(async () => expect(await readAnnotations(await db())).toHaveLength(1));
-  });
 });
 
 const note = (id: string, date: string, type = "diet_break"): Change =>
   ({ kind: "annotation", id, field: "fields", date, type, label: null, at: AT }) as Change;
 const chart = () => screen.getByRole("img", { name: /^Weigh-ins from/ });
+const annotationsList = () => screen.getByRole("region", { name: "Annotations" });
 
 describe("the chart", () => {
   it("says the creatine course and the annotations in its summary", async () => {
@@ -192,17 +168,11 @@ describe("the chart", () => {
     // Oct 1 at 80.2, Oct 5 to 7 at 80, 79.9 and 79.8: an average of 79.975.
     expect(chart().textContent).toContain("80.0");
   });
-  it("keeps an annotation reachable under the chart when no week shows its pill", async () => {
-    await open([note(NOTE, "2026-09-10")]); // inside the month, before the first week
-    const row = screen.getByRole("group", { name: "Annotations" });
-    fireEvent.click(within(row).getByRole("button", { name: "Open the annotation Break" }));
-    expect(await screen.findByRole("dialog", { name: "Annotation" })).toBeTruthy();
-  });
 });
 
 describe("the annotation sheet", () => {
-  it("adds a named note on a past day, drawn on the chart and pinned to its week", async () => {
-    const list = await open([]);
+  it("adds a named note on a past day, drawn on the chart and listed", async () => {
+    await open([]);
     fireEvent.click(screen.getByRole("button", { name: /^Annotation\b/ }));
     const sheet = await screen.findByRole("dialog", { name: "New annotation" });
     expect(document.activeElement).toBe(
@@ -224,8 +194,8 @@ describe("the annotation sheet", () => {
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     const [stored] = await readAnnotations(await db());
     expect(stored).toMatchObject({ date: "2026-09-30", type: "note", label: "trip to Lisbon" });
-    // Cut to 12 characters on the chart and on the week's pill.
-    expect(await within(week(list, 1)).findByText("trip to Lisb…")).toBeTruthy();
+    // Cut to 12 characters on the chart and on its row.
+    expect(await within(annotationsList()).findByText("trip to Lisb…")).toBeTruthy();
     expect(screen.getAllByText("trip to Lisb…")).toHaveLength(2);
   });
 });
@@ -337,6 +307,93 @@ describe("Log", () => {
     expect(screen.queryByRole("button", { name: "Measurements" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Annotation" })).toBeNull();
     expect(document.querySelector("main svg.lucide-plus")).toBeNull();
+  });
+});
+
+describe("Annotations", () => {
+  const LATER = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d91";
+  const OLD = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d92";
+  const named = (id: string, date: string, label: string | null): Change => ({
+    kind: "annotation",
+    id,
+    field: "fields",
+    date,
+    type: "note",
+    label,
+    at: AT,
+  });
+
+  it("lists the period's annotations, newest first, each opening its sheet", async () => {
+    await open([
+      note(NOTE, "2026-09-22"),
+      note(LATER, "2026-10-01", "deload"),
+      note(OLD, "2026-08-01"),
+    ]);
+    const rows = within(annotationsList()).getAllByRole("button");
+    expect(rows.map((r) => r.textContent)).toEqual(["Deload Thu, Oct 1", "Break Tue, Sep 22"]);
+    for (const [i, type] of ["Deload", "Break"].entries()) {
+      fireEvent.click(within(annotationsList()).getAllByRole("button")[i]!);
+      const sheet = await screen.findByRole("dialog", { name: "Annotation" });
+      expect(within(sheet).getByRole("radio", { name: type }).getAttribute("aria-checked")).toBe(
+        "true",
+      );
+      fireEvent.keyDown(sheet, { key: "Escape" });
+      await waitFor(() => expect(screen.queryByRole("dialog", { hidden: true })).toBeNull());
+    }
+  });
+
+  it("a note named by its text says Note before its day", async () => {
+    await open([named(NOTE, "2026-09-30", "trip to Lisbon"), named(LATER, "2026-10-02", null)]);
+    const list = annotationsList();
+    expect(
+      within(list).getByRole("button", { name: "trip to Lisb… Note · Wed, Sep 30" }),
+    ).toBeTruthy();
+    expect(within(list).getByRole("button", { name: "Note Fri, Oct 2" })).toBeTruthy();
+  });
+
+  it("an annotation before the first week is still listed", async () => {
+    await open([note(NOTE, "2026-09-10")]); // inside the month, before the first week
+    fireEvent.click(within(annotationsList()).getByRole("button", { name: /^Break / }));
+    expect(await screen.findByRole("dialog", { name: "Annotation" })).toBeTruthy();
+    cleanup();
+    indexedDB = new IDBFactory();
+    // Before 4 weigh-ins, with no weeks at all.
+    await seed(ADA.id, [weight("2026-10-06", 80), note(NOTE, "2026-10-05")]);
+    fakeApi({ me: "down" });
+    renderRoute("/body");
+    expect(
+      await within(await screen.findByRole("region", { name: "Annotations" })).findByRole(
+        "button",
+        { name: /^Break / },
+      ),
+    ).toBeTruthy();
+  });
+
+  it("the weeks carry no annotation pill", async () => {
+    const list = await open([note(NOTE, "2026-09-22")]);
+    expect(within(list).queryByRole("button", { name: /Break/ })).toBeNull();
+    expect(within(list).queryByText("Break")).toBeNull();
+  });
+
+  it("open an annotation from its row, and delete it with an undo", async () => {
+    await open([note(NOTE, "2026-09-22")]);
+    fireEvent.click(within(annotationsList()).getByRole("button", { name: /^Break / }));
+    const sheet = await screen.findByRole("dialog", { name: "Annotation" });
+    expect(within(sheet).getByRole("radio", { name: "Break" }).getAttribute("aria-checked")).toBe(
+      "true",
+    );
+    fireEvent.click(within(sheet).getByRole("button", { name: "Delete this annotation" }));
+    await waitFor(async () => expect(await readAnnotations(await db())).toEqual([]));
+    expect(await screen.findByText("Annotation deleted")).toBeTruthy();
+    await waitFor(() => expect(screen.queryByRole("region", { name: "Annotations" })).toBeNull());
+    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+    await waitFor(async () => expect(await readAnnotations(await db())).toHaveLength(1));
+    expect(
+      await within(await screen.findByRole("region", { name: "Annotations" })).findByRole(
+        "button",
+        { name: /^Break / },
+      ),
+    ).toBeTruthy();
   });
 });
 

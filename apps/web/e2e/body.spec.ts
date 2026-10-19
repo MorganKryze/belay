@@ -1,7 +1,7 @@
 import { addDays } from "@belay/shared/body/dates";
 import type { Change } from "@belay/shared/sync/schema";
 import { expect, type Locator, type Page, test } from "@playwright/test";
-import { settled } from "./axe";
+import { expectNoAxeViolations, settled } from "./axe";
 import { fakeServer } from "./fake-server";
 
 // On the real clock, in English: "today" is the real date in Paris.
@@ -9,6 +9,8 @@ test.use({ locale: "en-US", timezoneId: "Europe/Paris" });
 
 const AT = "2026-10-01T06:30:00.000Z";
 const CREATINE = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d8f";
+const DELOAD = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d90";
+const TRIP = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d91";
 const parisToday = () =>
   new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris" }).format(new Date());
 // A weigh-in at 80.4 kg on each of the last `count` days: a flat week once there are 21.
@@ -152,7 +154,29 @@ for (const width of [360, 390, 1280]) {
   });
 }
 
+// Two annotations of the month: a deload three days ago, a note named by its text ten days ago.
+const annotations = (): Change[] => [
+  {
+    kind: "annotation",
+    id: DELOAD,
+    field: "fields",
+    date: addDays(parisToday(), -3),
+    type: "deload",
+    label: null,
+    at: AT,
+  },
+  {
+    kind: "annotation",
+    id: TRIP,
+    field: "fields",
+    date: addDays(parisToday(), -10),
+    type: "note",
+    label: "voyage à Lisbonne",
+    at: AT,
+  },
+];
 const log = (page: Page) => page.getByRole("region", { name: "Log" });
+const notes = (page: Page) => page.getByRole("region", { name: "Annotations" });
 
 async function expectGestureRow(row: Locator) {
   const box = (await row.boundingBox())!;
@@ -182,4 +206,65 @@ test("the Log rows are 56 px with 28 px icon squares and 16 px chevrons", async 
     "600",
   );
   await expect(rows.nth(2).getByText("deload week, break or note")).toHaveCSS("font-size", "13px");
+});
+
+test("the Annotations rows are 56 px and open their sheet", async ({ page }) => {
+  await openBody(page, flat(21), annotations());
+  const rows = notes(page).getByRole("button");
+  await expect(rows).toHaveCount(2);
+  await expect(rows.nth(0)).toHaveAccessibleName(/^Deload /);
+  await expect(rows.nth(1)).toHaveAccessibleName(/^voyage à Lis… Note · /);
+  for (const row of await rows.all()) await expectGestureRow(row);
+  await rows.nth(1).tap();
+  const sheet = page.getByRole("dialog", { name: "Annotation" });
+  await expect(sheet.getByRole("radio", { name: "Note" })).toHaveAttribute("aria-checked", "true");
+});
+
+for (const scheme of ["light", "dark"] as const) {
+  test.describe(`${scheme} lists`, () => {
+    test.use({ colorScheme: scheme });
+
+    test(`Corps with creatine, two annotations and its lists has no axe violation, ${scheme}`, async ({
+      page,
+    }) => {
+      await openBody(page, flat(21), [...creatine(), ...annotations()]);
+      await expect(notes(page).getByRole("button")).toHaveCount(2);
+      await expect(log(page).getByRole("button")).toHaveCount(3);
+      await expectNoAxeViolations(page);
+    });
+  });
+}
+
+test.describe("in French", () => {
+  test.use({ locale: "fr-FR" });
+
+  test("the bottom of Corps has nothing scrolling sideways at 360 px in French", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 360, height: 800 });
+    await openBody(page, flat(21), [...creatine(), ...annotations()]);
+    const list = page.getByRole("region", { name: "Annotations" });
+    await expect(list.getByRole("button")).toHaveCount(2);
+    await expect(page.getByRole("region", { name: "Saisir" })).toContainText(
+      "semaine allégée, pause ou note",
+    );
+    await page.getByRole("region", { name: "Historique" }).scrollIntoViewIfNeeded();
+    await settled(page);
+    const wide = await page.evaluate(() => {
+      const root = document.documentElement;
+      const out = [...document.querySelectorAll("main *")]
+        .filter((el) => el.getBoundingClientRect().right > root.clientWidth + 0.5)
+        .map((el) => `${el.tagName.toLowerCase()} ${Math.round(el.getBoundingClientRect().right)}`);
+      if (root.scrollWidth > root.clientWidth) out.push(`html ${root.scrollWidth}`);
+      return out;
+    });
+    expect(wide).toEqual([]);
+    // Each row of the two lists keeps its status on one line.
+    for (const row of await page
+      .locator(
+        "section[aria-labelledby=entries] button, section[aria-labelledby=annotations] button",
+      )
+      .all())
+      expect((await row.boundingBox())!.height).toBeLessThanOrEqual(64);
+  });
 });
