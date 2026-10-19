@@ -156,3 +156,28 @@ test("at 360 px a long name ends in an ellipsis and nothing scrolls sideways", a
   );
   expect(sideways).toBe(0);
 });
+
+// Each list is a rounded card that clips its overflow: a ring drawn outside the row would vanish.
+test("a library row shows its keyboard focus ring inside the card", async ({ page }) => {
+  await openLibrary(page);
+  const lists = page.getByRole("main").getByRole("list");
+  for (const index of [0, 1]) {
+    const row = lists.nth(index).getByRole("link").first();
+    await page.keyboard.press("Tab");
+    await row.focus();
+    const ring = await row.evaluate((el) => {
+      const s = getComputedStyle(el);
+      return {
+        focusVisible: el.matches(":focus-visible"),
+        style: s.outlineStyle,
+        width: parseFloat(s.outlineWidth),
+        reach: parseFloat(s.outlineWidth) + parseFloat(s.outlineOffset),
+      };
+    });
+    expect(ring.focusVisible).toBe(true);
+    expect(ring.style).toBe("solid");
+    expect(ring.width).toBeGreaterThan(0);
+    // The ring's outer edge stays on or inside the row's border box, so the card does not clip it.
+    expect(ring.reach).toBeLessThanOrEqual(0);
+  }
+});
