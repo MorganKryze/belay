@@ -113,7 +113,6 @@ describe("Your weeks", () => {
     expect(screen.queryByText("Creatine")).toBeNull();
     expect(screen.queryByText("creatine · 14 d")).toBeNull();
   });
-
   it("open an annotation from its pill, and delete it with an undo", async () => {
     const list = await open([
       {
@@ -193,7 +192,6 @@ describe("the chart", () => {
     // Oct 1 at 80.2, Oct 5 to 7 at 80, 79.9 and 79.8: an average of 79.975.
     expect(chart().textContent).toContain("80.0");
   });
-
   it("keeps an annotation reachable under the chart when no week shows its pill", async () => {
     await open([note(NOTE, "2026-09-10")]); // inside the month, before the first week
     const row = screen.getByRole("group", { name: "Annotations" });
@@ -229,6 +227,116 @@ describe("the annotation sheet", () => {
     // Cut to 12 characters on the chart and on the week's pill.
     expect(await within(week(list, 1)).findByText("trip to Lisb…")).toBeTruthy();
     expect(screen.getAllByText("trip to Lisb…")).toHaveLength(2);
+  });
+});
+
+describe("Log", () => {
+  const log = () => screen.getByRole("region", { name: "Log" });
+  // Only the entries given, without the three weeks: a day with no weigh-in, or no data at all.
+  const openWith = async (changes: Change[]) => {
+    await seed(ADA.id, changes);
+    fakeApi({ me: "down" });
+    renderRoute("/body");
+    return screen.findByRole("region", { name: "Log" });
+  };
+
+  it("Log lists Weigh-in, Measurements and Annotation, each opening its sheet", async () => {
+    await open([]);
+    const rows = within(log()).getAllByRole("button");
+    expect(rows.map((r) => r.textContent)).toEqual([
+      expect.stringMatching(/^Weigh-in/),
+      expect.stringMatching(/^Measurements/),
+      expect.stringMatching(/^Annotation/),
+    ]);
+    for (const [i, name] of ["Weigh-in", "Measurements", "New annotation"].entries()) {
+      fireEvent.click(within(log()).getAllByRole("button")[i]!);
+      const sheet = await screen.findByRole("dialog", { name });
+      fireEvent.keyDown(sheet, { key: "Escape" });
+      await waitFor(() => expect(screen.queryByRole("dialog", { hidden: true })).toBeNull());
+    }
+  });
+
+  it("the Weigh-in row says today's weight, else not entered yet", async () => {
+    await open([]);
+    expect(within(log()).getByRole("button", { name: /^Weigh-in 79\.8\skg$/ })).toBeTruthy();
+    cleanup();
+    indexedDB = new IDBFactory();
+    const empty = await openWith([weight("2026-10-06", 80)]);
+    expect(within(empty).getByRole("button", { name: "Weigh-in not entered yet" })).toBeTruthy();
+  });
+
+  it("the Measurements row says the latest waist and its day, else not entered yet", async () => {
+    await open([waist("2026-09-29", 83), waist("2026-10-02", 82.5), waist("2026-10-09", 81)]);
+    expect(
+      within(log()).getByRole("button", { name: /^Measurements waist 82\.5\scm · Fri, Oct 2$/ }),
+    ).toBeTruthy();
+    cleanup();
+    indexedDB = new IDBFactory();
+    await openWith([
+      waist("2026-09-29", 83),
+      { kind: "measure", date: "2026-10-03", field: "neck", value: 39, at: AT },
+    ]);
+    // A day without a waist says its neck.
+    expect(
+      within(log()).getByRole("button", { name: /^Measurements neck 39\scm · Sat, Oct 3$/ }),
+    ).toBeTruthy();
+    cleanup();
+    indexedDB = new IDBFactory();
+    await openWith([]);
+    expect(
+      within(log()).getByRole("button", { name: "Measurements not entered yet" }),
+    ).toBeTruthy();
+  });
+
+  it("before the first sync the two statuses are blank", async () => {
+    // The 4 s cap counts from the start of the visit: here, the start of the test.
+    const now = performance.now.bind(performance);
+    const start = now();
+    vi.spyOn(performance, "now").mockImplementation(() => now() - start);
+    // A device that never synced, its first sync still unanswered.
+    fakeApi({ me: ADA, sync: () => new Promise<Response>(() => {}) });
+    renderRoute("/body");
+    const list = await screen.findByRole("region", { name: "Log" });
+    const [weighIn, measures, annotation] = within(list).getAllByRole("button");
+    for (const row of [weighIn!, measures!]) {
+      expect(row.textContent).not.toContain("not entered yet");
+      expect(row.querySelector("span[aria-hidden].text-\\[13px\\]")!.textContent).toBe("\u00a0");
+    }
+    expect(annotation!.textContent).toContain("deload week, break or note");
+  });
+
+  it("a weight saved from the Weigh-in row shows on the row before the sheet leaves", async () => {
+    vi.spyOn(motion, "exitWillAnimate").mockReturnValue(true);
+    // Hold the sheet's 400 ms fallback, so the slow test machine cannot end the exit early.
+    const timeout = globalThis.setTimeout;
+    vi.spyOn(globalThis, "setTimeout").mockImplementation(((
+      fn: () => void,
+      ms?: number,
+      ...args: unknown[]
+    ) => (ms === 400 ? 0 : timeout(fn, ms, ...args))) as typeof setTimeout);
+    await open([]);
+    fireEvent.click(within(log()).getByRole("button", { name: /^Weigh-in/ }));
+    const sheet = await screen.findByRole("dialog", { name: "Weigh-in" });
+    fireEvent.change(within(sheet).getByRole("textbox", { name: "Weight" }), {
+      target: { value: "79.5" },
+    });
+    fireEvent.click(within(sheet).getByRole("button", { name: "Save" }));
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /^Weigh-in/, hidden: true }).textContent).toContain(
+        "79.5\u00a0kg",
+      ),
+    );
+    const leaving = screen.getByRole("dialog", { hidden: true });
+    expect(leaving.getAttribute("data-state")).toBe("closed");
+    fireEvent.animationEnd(leaving);
+    expect(screen.queryByRole("dialog", { hidden: true })).toBeNull();
+  });
+
+  it("the grey buttons are gone", async () => {
+    await open([]);
+    expect(screen.queryByRole("button", { name: "Measurements" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Annotation" })).toBeNull();
+    expect(document.querySelector("main svg.lucide-plus")).toBeNull();
   });
 });
 

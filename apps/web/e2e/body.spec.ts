@@ -151,3 +151,35 @@ for (const width of [360, 390, 1280]) {
     expect(wide).toEqual([]);
   });
 }
+
+const log = (page: Page) => page.getByRole("region", { name: "Log" });
+
+async function expectGestureRow(row: Locator) {
+  const box = (await row.boundingBox())!;
+  expect(box.height).toBeGreaterThanOrEqual(56);
+  return box;
+}
+
+test("the Log rows are 56 px with 28 px icon squares and 16 px chevrons", async ({ page }) => {
+  await openBody(page, flat(21));
+  const rows = log(page).getByRole("button");
+  await expect(rows).toHaveCount(3);
+  await expect(rows.nth(0)).toHaveAccessibleName(/^Weigh-in 80\.4\skg$/);
+  await expect(rows.nth(1)).toHaveAccessibleName("Measurements not entered yet");
+  await expect(rows.nth(2)).toHaveAccessibleName("Annotation deload week, break or note");
+  for (const row of await rows.all()) {
+    await expectGestureRow(row);
+    const square = row.locator("> span[aria-hidden]").first();
+    await expect(square).toHaveCSS("width", "28px");
+    await expect(square).toHaveCSS("height", "28px");
+    const chevron = row.locator("svg.lucide-chevron-right");
+    await expect(chevron).toHaveCSS("width", "16px");
+    await expect(chevron).toHaveCSS("height", "16px");
+  }
+  // The name 15 px semibold over a 13 px status.
+  await expect(rows.nth(2).getByText("Annotation", { exact: true })).toHaveCSS(
+    "font-weight",
+    "600",
+  );
+  await expect(rows.nth(2).getByText("deload week, break or note")).toHaveCSS("font-size", "13px");
+});

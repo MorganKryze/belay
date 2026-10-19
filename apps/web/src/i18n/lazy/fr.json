@@ -181,6 +181,11 @@
     "creatineNote": "Pendant les 14 jours de créatine, le poids monte souvent d'1 à 2 kg d'eau : ce n'est pas du gras.",
     "creatinePill": "créatine",
     "openAnnotation": "Ouvrir l'annotation {{name}}",
+    "entries": {
+      "title": "Saisir",
+      "measuresNone": "pas encore saisies",
+      "annotationSub": "semaine allégée, pause ou note"
+    },
     "cells": {
       "weight": "Poids moy.",
       "waist": "Taille",

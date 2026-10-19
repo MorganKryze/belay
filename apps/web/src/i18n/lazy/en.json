@@ -181,6 +181,11 @@
     "creatineNote": "During the 14 days of creatine, the weight often rises by 1 to 2 kg of water: it isn't fat.",
     "creatinePill": "creatine",
     "openAnnotation": "Open the annotation {{name}}",
+    "entries": {
+      "title": "Log",
+      "measuresNone": "not entered yet",
+      "annotationSub": "deload week, break or note"
+    },
     "cells": {
       "weight": "Avg weight",
       "waist": "Waist",
