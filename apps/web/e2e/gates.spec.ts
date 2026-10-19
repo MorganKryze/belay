@@ -47,10 +47,6 @@ const RUNNING_C: Change[] = [
   },
 ];
 
-// Every visible control under 44 × 44 px, described for the failure message. A link inside a
-// sentence is exempt: it flows with the text around it, as WCAG 2.5.8 allows. Whatever an open
-// dialog hides from assistive tech is out of reach, so it is not measured either. A field takes
-// taps on its whole box (the stepper's, or the label it sits in), so that box is what counts.
 // Session A started at 16:00 on the frozen day and ended 48 minutes later.
 const DONE = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7f02";
 const DONE_A: Change[] = [
@@ -72,6 +68,10 @@ const DONE_A: Change[] = [
   },
 ];
 
+// Every visible control under 44 × 44 px, described for the failure message. A link inside a
+// sentence is exempt: it flows with the text around it, as WCAG 2.5.8 allows. Whatever an open
+// dialog hides from assistive tech is out of reach, so it is not measured either. A field takes
+// taps on its whole box (the stepper's, or the label it sits in), so that box is what counts.
 const smallTargets = (page: Page) =>
   page.evaluate(() =>
     [...document.querySelectorAll<HTMLElement>("button, a, input, [role=radio], [role=option]")]
