@@ -67,9 +67,10 @@ describe("Settings preferences", () => {
     ["Home", ["Trend · Shown"]],
     ["Sessions", ["Paused · Everything stops", "History · With activities", "Volume · Shown"]],
     ["Body", ["Range pill · Shown", "Weekly intake · Shown"]],
+    ["Tools", ["1RM · Two formulas", "Field sources · Shown"]],
   ] as const;
 
-  it("groups the eight rows under General, Home, Sessions and Body, in order, each showing its value", async () => {
+  it("groups the ten rows under General, Home, Sessions, Body and Tools, in order, each showing its value", async () => {
     fakeApi({ me: ADA });
     renderRoute("/settings");
     const general = await screen.findByRole("region", { name: "General" });
@@ -98,6 +99,7 @@ describe("Settings preferences", () => {
       ["Accueil", ["Tendance · Affichée"]],
       ["Séances", ["En pause · Tout s'arrête", "Historique · Avec activités"]],
       ["Corps", ["Pastille · Affichée", "Apports · Affichés"]],
+      ["Outils", ["1RM · Deux formules", "Origine des champs · Affichée"]],
     ] as const;
     await screen.findByRole("region", { name: "Général" });
     for (const [section, rows] of names) {
@@ -185,6 +187,44 @@ describe("Settings preferences", () => {
     expect(localStorage.getItem("belay.weekIntake")).toBe("shown");
   });
 
+  it("1RM offers Two formulas and Epley only and keeps the choice on this device", async () => {
+    fakeApi({ me: ADA });
+    renderRoute("/settings");
+    await choose(/^1RM/, "Epley only");
+    expect(localStorage.getItem("belay.oneRepMaxBrzycki")).toBe("hidden");
+    expect(await screen.findByRole("combobox", { name: "1RM · Epley only" })).toBeTruthy();
+    expect(localStorage.getItem("belay.fieldSources")).toBeNull();
+    await choose(/^1RM/, "Two formulas");
+    expect(localStorage.getItem("belay.oneRepMaxBrzycki")).toBe("shown");
+  });
+
+  it("Field sources offers Shown and Hidden and keeps the choice on this device", async () => {
+    fakeApi({ me: ADA });
+    renderRoute("/settings");
+    await choose(/^Field sources/, "Hidden");
+    expect(localStorage.getItem("belay.fieldSources")).toBe("hidden");
+    expect(await screen.findByRole("combobox", { name: "Field sources · Hidden" })).toBeTruthy();
+    expect(localStorage.getItem("belay.oneRepMaxBrzycki")).toBeNull();
+    await choose(/^Field sources/, "Shown");
+    expect(localStorage.getItem("belay.fieldSources")).toBe("shown");
+  });
+
+  it("says the Outils rows in French", async () => {
+    await i18n.changeLanguage("fr");
+    fakeApi({ me: ADA });
+    renderRoute("/settings");
+    await choose(/^1RM/, "Epley seule");
+    expect(await screen.findByRole("combobox", { name: "1RM · Epley seule" })).toBeTruthy();
+    await choose(/^1RM/, "Deux formules");
+    expect(localStorage.getItem("belay.oneRepMaxBrzycki")).toBe("shown");
+    await choose(/^Origine des champs/, "Masquée");
+    expect(
+      await screen.findByRole("combobox", { name: "Origine des champs · Masquée" }),
+    ).toBeTruthy();
+    await choose(/^Origine des champs/, "Affichée");
+    expect(localStorage.getItem("belay.fieldSources")).toBe("shown");
+  });
+
   it("History offers With activities and Sessions only and keeps the choice on this device", async () => {
     fakeApi({ me: ADA });
     renderRoute("/settings");
@@ -245,9 +285,9 @@ describe("Settings preferences", () => {
     fakeApi({ me: ADA });
     renderRoute("/settings");
     await screen.findByRole("region", { name: "General" });
-    expect(screen.getAllByRole("combobox")).toHaveLength(8);
+    expect(screen.getAllByRole("combobox")).toHaveLength(10);
     for (const role of ["combobox", "button", "link"] as const)
-      expect(screen.queryByRole(role, { name: /Units|Unités|Sources/ })).toBeNull();
+      expect(screen.queryByRole(role, { name: /Units|Unités/ })).toBeNull();
   });
 
   it("signed out: preferences and version only", async () => {

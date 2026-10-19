@@ -1,8 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  readBrzycki,
+  readFieldSources,
   readHistoryActivities,
   readSessionVolume,
   readWeekIntake,
+  setBrzycki,
+  setFieldSources,
   setHistoryActivities,
   setSessionVolume,
   setWeekIntake,
@@ -83,5 +87,48 @@ describe("whether Corps shows the weekly intake", () => {
     expect(readSessionVolume()).toBe("shown");
     setWeekIntake("shown");
     expect(readWeekIntake()).toBe("shown");
+  });
+});
+
+describe("what Outils shows: the second 1RM formula and where a field's value comes from", () => {
+  it("both shown by default, and an unknown value reads as shown", () => {
+    expect(readBrzycki()).toBe("shown");
+    expect(readFieldSources()).toBe("shown");
+    localStorage.setItem("belay.oneRepMaxBrzycki", "neon");
+    localStorage.setItem("belay.fieldSources", "neon");
+    expect(readBrzycki()).toBe("shown");
+    expect(readFieldSources()).toBe("shown");
+  });
+
+  it("each hidden once chosen, under its own key", () => {
+    setBrzycki("hidden");
+    expect(localStorage.getItem("belay.oneRepMaxBrzycki")).toBe("hidden");
+    expect(readBrzycki()).toBe("hidden");
+    expect(readFieldSources()).toBe("shown");
+    expect(readWeekIntake()).toBe("shown");
+    setFieldSources("hidden");
+    setBrzycki("shown");
+    expect(localStorage.getItem("belay.fieldSources")).toBe("hidden");
+    expect(readFieldSources()).toBe("hidden");
+    expect(readBrzycki()).toBe("shown");
+    setFieldSources("shown");
+  });
+
+  it("storage refused: shown, and each choice holds for the visit on its own", () => {
+    const refuse = () => {
+      throw new DOMException("refused", "SecurityError");
+    };
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(refuse);
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(refuse);
+    expect(readBrzycki()).toBe("shown");
+    expect(readFieldSources()).toBe("shown");
+    setBrzycki("hidden");
+    expect(readBrzycki()).toBe("hidden");
+    expect(readFieldSources()).toBe("shown");
+    setFieldSources("hidden");
+    setBrzycki("shown");
+    expect(readFieldSources()).toBe("hidden");
+    expect(readBrzycki()).toBe("shown");
+    setFieldSources("shown");
   });
 });
