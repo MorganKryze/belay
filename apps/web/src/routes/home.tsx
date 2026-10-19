@@ -1,4 +1,5 @@
 import type { ISODate } from "@belay/shared/body/dates";
+import { inTargetRange } from "@belay/shared/body/target";
 import { latestMovingAverage, type Weighing, weeklySummaries } from "@belay/shared/body/weighings";
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
@@ -6,13 +7,21 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AvatarLink } from "@/components/avatar";
 import { PageHeader } from "@/components/page-header";
+import { cardSurface, sectionLabel } from "@/components/surfaces";
 import { SyncBanner } from "@/components/sync-banner";
 import { TodayCard } from "@/components/today-card";
 import { TodaySession } from "@/components/today-session";
 import { Button } from "@/components/ui/button";
 import { formatKg, formatNumber, formatWeekday, lossView } from "@/lib/format";
+import { readHomeTrend } from "@/lib/home-trend";
 import { useToday } from "@/lib/today";
-import { type OpenAccount, useAccount, useCloseForgotten, useWeighings } from "@/sync/account";
+import {
+  type OpenAccount,
+  useAccount,
+  useCloseForgotten,
+  useTarget,
+  useWeighings,
+} from "@/sync/account";
 import { Pending } from "./fallbacks";
 
 // What the server puts in `/?signin=` when a sign-in fails (apps/server/src/auth/routes.ts).
@@ -84,6 +93,8 @@ function SignedInHome({ account }: { account: OpenAccount }) {
   const { t, i18n } = useTranslation();
   const today = useToday();
   const weighings = useWeighings(account).data;
+  // Read once per visit to Accueil: Réglages changes it on another screen.
+  const [trend] = useState(readHomeTrend);
   useCloseForgotten(account);
   return (
     <section className="flex flex-col gap-4">
@@ -101,51 +112,69 @@ function SignedInHome({ account }: { account: OpenAccount }) {
       {weighings && (
         <>
           <TodayCard account={account} weighings={weighings} today={today} />
-          <TrendCard weighings={weighings} today={today} />
+          {trend === "shown" && <TrendCard account={account} weighings={weighings} today={today} />}
         </>
       )}
     </section>
   );
 }
 
-// The 7-day average and the loss of the last complete week; nothing before the first weigh-in.
-function TrendCard({ weighings, today }: { weighings: Weighing[]; today: ISODate }) {
+// The 7-day average as the card's figure, and the loss of the last complete week; nothing before
+// the first weigh-in. The whole card opens Body. The pill follows Body's rule; outside the range
+// the number stands alone, with no colour or word that judges.
+function TrendCard({
+  account,
+  weighings,
+  today,
+}: {
+  account: OpenAccount;
+  weighings: Weighing[];
+  today: ISODate;
+}) {
   const { t, i18n } = useTranslation();
+  const target = useTarget(account).data;
   if (weighings.length === 0) return null;
   const average = latestMovingAverage(weighings, today);
   const week = weeklySummaries(weighings, today).find((w) => w.status !== "in_progress");
   const lossPct = week?.lossPct ?? null;
   const loss = lossPct === null ? null : lossView(lossPct);
-  const strong = "font-semibold whitespace-nowrap text-foreground";
   return (
-    <section
-      aria-labelledby="trend"
-      className="flex flex-col gap-1 rounded-card border border-border bg-card p-4"
-    >
-      <h2 id="trend" className="text-[15px] font-semibold">
+    <section aria-labelledby="trend" className="flex flex-col gap-2">
+      <h2 id="trend" className={sectionLabel}>
         {t("trend.title")}
       </h2>
-      <p className="text-sm text-muted-foreground">
-        {t("trend.average")}{" "}
-        <span className={strong}>
-          {average ? t("trend.kg", { value: formatKg(average.averageKg, i18n.language) }) : "—"}
+      <Link to="/body" className={`${cardSurface} flex flex-col px-4 py-3.5`}>
+        <span className="flex items-center justify-between text-[13px] font-semibold text-muted-foreground">
+          {t("trend.average")}
+          <ChevronRight aria-hidden className="size-4" />
         </span>
-        {" · "}
-        {t(loss?.kind === "gain" ? "trend.gain" : "trend.loss")}{" "}
-        <span className={strong}>
-          {loss
-            ? t("trend.perWeek", {
+        <span
+          data-slot="trend-figure"
+          className="mt-2.5 mb-2 text-figure tracking-[-0.03em] text-foreground tabular-nums"
+        >
+          {average ? formatKg(average.averageKg, i18n.language) : "—"}
+          {average && (
+            <span className="ml-1.5 text-[17px] font-semibold tracking-normal text-muted-foreground">
+              kg
+            </span>
+          )}
+        </span>
+        {loss && (
+          <span className="text-[13.5px] text-muted-foreground">
+            {t(loss.kind === "gain" ? "trend.gain" : "trend.loss")}{" "}
+            <b className="font-semibold whitespace-nowrap text-foreground tabular-nums">
+              {t("trend.perWeek", {
                 value: formatNumber(loss.value, i18n.language, { digits: 1, minDigits: 1 }),
-              })
-            : "—"}
-        </span>
-      </p>
-      <Link
-        to="/body"
-        className="-mr-1 inline-flex min-h-11 items-center gap-0.5 self-end font-semibold text-primary"
-      >
-        {t("trend.link")}
-        <ChevronRight aria-hidden className="size-5" />
+              })}
+            </b>{" "}
+            {t("trend.lastWeek")}
+          </span>
+        )}
+        {lossPct !== null && target && inTargetRange(lossPct, target) && (
+          <span className="mt-2 self-start rounded-full bg-reference px-2 py-0.5 text-xs font-semibold whitespace-nowrap text-reference-ink">
+            {t("body.inRange")}
+          </span>
+        )}
       </Link>
     </section>
   );

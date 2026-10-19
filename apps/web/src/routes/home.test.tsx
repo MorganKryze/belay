@@ -1,3 +1,4 @@
+import { addDays } from "@belay/shared/body/dates";
 import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { IDBFactory } from "fake-indexeddb";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -305,5 +306,71 @@ describe("the sync banner", () => {
     renderRoute("/");
     const title = await screen.findByText("Offline.");
     expect(title.closest(".rounded-field")!.classList).toContain("animate-drop-in");
+  });
+});
+
+describe("the trend", () => {
+  // Wednesday 7 October: the weeks of 21 and 28 September are complete.
+  const week = (monday: string, kg: number) =>
+    [0, 1, 2, 3].map((d) => weight(addDays(monday, d), kg));
+  async function open(changes: Parameters<typeof seed>[1]) {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(2026, 9, 7, 7, 30));
+    await seed(ADA.id, changes);
+    fakeApi({ me: ADA });
+    renderRoute("/");
+  }
+  const card = () => screen.findByRole("link", { name: /^7-day average/ });
+
+  it("the trend is one link to Body with the average as its figure", async () => {
+    await open([...week("2026-09-21", 80.8), ...week("2026-09-28", 80.4)]);
+    const trend = await screen.findByRole("region", { name: "Your trend" });
+    expect(within(trend).getByRole("heading", { level: 2 })).toBeTruthy();
+    const link = await card();
+    expect(within(trend).getAllByRole("link")).toEqual([link]);
+    await waitFor(() => expect(link.textContent).toContain("80.4kg"));
+    expect(link.getAttribute("href")).toBe("/body");
+  });
+
+  it("loss line and the in-range pill by Body's rule", async () => {
+    await open([...week("2026-09-21", 80.8), ...week("2026-09-28", 80.4)]);
+    const link = await card();
+    await waitFor(() => expect(link.textContent).toContain("loss 0.5%/wk last week"));
+    expect(within(link).getByText("in your range")).toBeTruthy();
+  });
+
+  it("no pill outside the range", async () => {
+    await open([
+      ...week("2026-09-21", 80.8),
+      ...week("2026-09-28", 80.4),
+      { kind: "target", minPct: 0.6, maxPct: 1, at: "2026-10-01T06:00:00.000Z" },
+    ]);
+    const link = await card();
+    await waitFor(() => expect(link.textContent).toContain("loss 0.5%/wk last week"));
+    expect(within(link).queryByText("in your range")).toBeNull();
+  });
+
+  it("a gain says gain, in French too", async () => {
+    await i18n.changeLanguage("fr");
+    await open([...week("2026-09-21", 80.3), ...week("2026-09-28", 80.5)]);
+    const link = await screen.findByRole("link", { name: /^Moyenne 7 jours/ });
+    await waitFor(() => expect(link.textContent).toContain("prise 0,2 %/sem la semaine dernière"));
+    expect(within(link).queryByText("dans ta fourchette")).toBeNull();
+  });
+
+  it("no average yet: —; no complete week: no line", async () => {
+    await open([weight("2026-09-01", 80)]);
+    const link = await card();
+    await waitFor(() => expect(link.textContent).toContain("—"));
+    expect(link.textContent).not.toContain("last week");
+  });
+
+  it("hidden on this device: no Your trend heading and no card", async () => {
+    localStorage.setItem("belay.homeTrend", "hidden");
+    await open([...week("2026-09-21", 80.8), ...week("2026-09-28", 80.4)]);
+    await screen.findByRole("heading", { name: "Hello, Ada", level: 1 });
+    await screen.findByRole("button", { name: /^Weigh-in/ });
+    expect(screen.queryByRole("heading", { name: "Your trend" })).toBeNull();
+    expect(screen.queryByRole("link", { name: /^7-day average/ })).toBeNull();
   });
 });
