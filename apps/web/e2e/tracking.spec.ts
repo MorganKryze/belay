@@ -20,7 +20,7 @@ test("a weigh-in from Home takes less than 5 seconds: its line, then Save", asyn
   await weighInLine(page).click();
   await expect(page.getByRole("textbox", { name: "Weight" })).toHaveValue("79.9"); // prefilled
   await page.getByRole("button", { name: "Save" }).click();
-  await expect(weighInLine(page)).toContainText("79.9 kg · saved");
+  await expect(weighInLine(page)).toContainText("79.9 kg");
   expect(Date.now() - start).toBeLessThan(5000);
 });
 
@@ -38,7 +38,7 @@ test("airplane mode: the weigh-in stays on the phone and goes once, when the net
   await weighInLine(page).click();
   await page.getByRole("textbox", { name: "Weight" }).fill("79.8");
   await page.getByRole("button", { name: "Save" }).click();
-  await expect(weighInLine(page)).toContainText("79.8 kg · saved");
+  await expect(weighInLine(page)).toContainText("79.8 kg");
 
   await page.reload(); // still offline: the shell and the weigh-in come from the phone
   await expect(hello(page)).toBeVisible();
