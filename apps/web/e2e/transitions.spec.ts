@@ -1,5 +1,6 @@
 import { expect, type Page, test } from "@playwright/test";
 import { fakeServer } from "./fake-server";
+import { preloaded, settled } from "./settle";
 
 test.use({ locale: "en-US" });
 
@@ -282,9 +283,11 @@ test("a pushed page opens at its top and Back restores the scroll", async ({ pag
   expect(scrolled).toBeGreaterThan(100);
   await bmi.click();
   await expect(page.getByRole("heading", { level: 1, name: "BMI" })).toBeVisible();
+  await settled(page);
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
   await page.goBack();
   await expect(page.getByRole("heading", { level: 1, name: "Tools" })).toBeVisible();
+  await settled(page);
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(scrolled);
 });
 
@@ -318,13 +321,17 @@ test("the leaving page moves from where it was on screen, for push, pop, cover a
   await expect(page.locator(".launch")).toBeHidden();
   const bmi = page.getByRole("link", { name: /^BMI/ });
   await bmi.scrollIntoViewIfNeeded();
+  await preloaded(page, bmi);
   await bmi.click();
   await expect(page.getByRole("heading", { level: 1, name: "BMI" })).toBeVisible();
+  await settled(page);
   await page.goBack();
   await expect(page.getByRole("heading", { level: 1, name: "Tools" })).toBeVisible();
+  await settled(page);
   // Cover from a scrolled Home, uncover from a scrolled session.
   await page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Home" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Hello, Ada" })).toBeVisible();
+  await settled(page);
   // Shorter, so Home scrolls while its session card stays in view.
   await page.setViewportSize({ width: 390, height: 400 });
   await expect
@@ -335,26 +342,14 @@ test("the leaving page moves from where it was on screen, for push, pop, cover a
       }),
     )
     .toEqual([100, expect.any(Number)]);
+  await preloaded(page, seeSession(page));
   await seeSession(page).click();
   // The preview, scrolled before its Start raises the session.
   const start = page.getByRole("link", { name: "Start the session" });
   await expect(start).toBeVisible();
   // Once the push has played, so the router's settling of the new page comes before the scroll.
-  // Its animations start a frame after the preview is drawn: a poll in between finds none, and a
-  // tap during them lands on the root, which sends the click looking for its link by scrolling.
-  await expect
-    .poll(async () => ({
-      played: (await played(page)).length,
-      running: await page.evaluate(
-        () =>
-          document
-            .getAnimations()
-            .filter((a) =>
-              (a.effect as KeyframeEffect | null)?.pseudoElement?.startsWith("::view-transition"),
-            ).length,
-      ),
-    }))
-    .toEqual({ played: 3, running: 0 });
+  await expect.poll(async () => (await played(page)).length).toBe(3);
+  await settled(page);
   await expect
     .poll(() =>
       page.evaluate(() => {
@@ -363,8 +358,10 @@ test("the leaving page moves from where it was on screen, for push, pop, cover a
       }),
     )
     .toBe(100);
+  await preloaded(page, start);
   await start.click();
   await expect(page.getByRole("button", { name: "Finish" })).toBeVisible();
+  await settled(page);
   await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
   await page.goBack();
   await expect(page.getByRole("heading", { level: 1, name: "Hello, Ada" })).toBeVisible();

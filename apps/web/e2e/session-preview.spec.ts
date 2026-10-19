@@ -2,6 +2,7 @@ import { expect, type Page, test } from "@playwright/test";
 import { expectNoAxeViolations } from "./axe";
 import { fakeServer } from "./fake-server";
 import { readMotion, recordMotion } from "./motion";
+import { settled } from "./settle";
 
 // The real clock throughout: the push, the cover and the session time are read as they run.
 test.use({ locale: "en-US", timezoneId: "Europe/Paris" });
@@ -81,16 +82,8 @@ test("back from an exercise opened in the preview returns to the preview where i
   await fakeServer(page);
   await openPreview(page);
   const url = page.url();
-  // The push has played out before the page is scrolled. Its animations start a frame after the
-  // preview is drawn, so counting them can find none too early; while the transition runs, its
-  // overlay takes the tap and the click scrolls the page looking for its link.
-  await expect
-    .poll(() =>
-      page.evaluate(
-        () => (document as { activeViewTransition?: ViewTransition | null }).activeViewTransition,
-      ),
-    )
-    .toBeNull();
+  // The push has played out before the page is scrolled.
+  await settled(page);
   await expect
     .poll(() =>
       page.evaluate(() => {
