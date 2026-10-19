@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { placeNames } from "./chart";
+import { lastAverageBox, placeNames } from "./chart";
 
 // A plot running from 26 to 286.
 const bounds = { left: 26, right: 286 };
@@ -43,5 +43,15 @@ describe("placeNames", () => {
     // Clear of the label by 6 units, it is raised.
     const clear = placeNames([name("a", 40), name("b", 50)], bounds, [{ x0: 95.5, x1: 170 }]);
     expect(clear.map((p) => p.level)).toEqual(["bottom", "top"]);
+  });
+});
+
+describe("lastAverageBox", () => {
+  it("reserves the last average's width when its text reaches the strip above the plot", () => {
+    expect(lastAverageBox(200, 22, "105.4", 20)).toEqual({ x0: 207, x1: 207 + 5 * 6.7 });
+  });
+
+  it("reserves nothing when the last average sits lower in the plot", () => {
+    expect(lastAverageBox(200, 60, "79.8", 20)).toBeNull();
   });
 });

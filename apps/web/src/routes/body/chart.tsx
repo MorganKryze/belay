@@ -29,6 +29,11 @@ const NAME_EM = 6.7;
 const NAME_GAP = 6;
 // A name's tap box: its line of text, this tall above its baseline.
 const NAME_BOX = 14;
+// Within this distance of the plot's right edge, a name ends at its line instead of starting there.
+const END_ZONE = 60;
+// The last average's text: this far right of its dot, its cap height above its centre.
+const LAST_DX = 7;
+const LAST_CAP = 8;
 
 const daysBetween = (a: ISODate, b: ISODate) =>
   Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / 86_400_000);
@@ -68,7 +73,7 @@ export function placeNames(
     const width = label.length * NAME_EM;
     // Near the right edge the name ends at its line, on the line's left, unless that crosses the
     // plot's left edge.
-    const end = x > bounds.right - 60 && x - 4 - width >= bounds.left;
+    const end = x > bounds.right - END_ZONE && x - 4 - width >= bounds.left;
     const box = end ? { x0: x - 4 - width, x1: x - 4 } : { x0: x + 4, x1: x + 4 + width };
     const placed: PlacedName = { id, level: null, ...box, anchor: end ? "end" : "start" };
     if (!bottom.some((b) => overlaps(b, box))) {
@@ -80,6 +85,18 @@ export function placeNames(
     }
     return placed;
   });
+}
+
+// The last average's box, for the names of the strip above the plot to avoid, when its text rises
+// into that strip; null when it sits lower.
+export function lastAverageBox(
+  x: number,
+  y: number,
+  label: string,
+  plotTop: number,
+): { x0: number; x1: number } | null {
+  if (y - LAST_CAP >= plotTop) return null;
+  return { x0: x + LAST_DX, x1: x + LAST_DX + label.length * NAME_EM };
 }
 
 // Grey dots for the daily weigh-ins, an orange line for the 7-day average (D12, §8), and, in
@@ -165,12 +182,17 @@ export function WeightChart({
     );
     return { x0, x1: x0 + bandLabel.length * LABEL_EM };
   });
+  const kg = (v: number) => formatKg(v, i18n.language);
+  // The last 7-day average of the period, written at the end of its line.
+  const last = averages.at(-1);
+  const lastBox =
+    last && lastAverageBox(x(last.date), y(last.averageKg), kg(last.averageKg), PAD.top);
   // Each name's baseline: just above the dates, or in the strip above the plot.
   const baseline = { bottom: H - PAD.bottom - 6, top: PAD.top - 3 };
   const names = placeNames(
     shownMarks.map((m) => ({ id: m.id, x: x(m.date), label: m.label })),
     { left: PAD.left, right: W - PAD.right },
-    bandLabels,
+    lastBox ? [...bandLabels, lastBox] : bandLabels,
   );
   const nearest = (at: number) =>
     days.reduce<ISODate | null>(
@@ -211,12 +233,9 @@ export function WeightChart({
     }
   };
 
-  const kg = (v: number) => formatKg(v, i18n.language);
   const activeKg = active ? byDate.get(active) : undefined;
   const activeAvg = active ? avgByDate.get(active) : undefined;
   const labels = [from, addDays(from, Math.round(span / 2)), to];
-  // The last 7-day average of the period, written at the end of its line.
-  const last = averages.at(-1);
   // Smaller dots on longer periods, so they never cover the line.
   const dotR = span <= 31 ? 2.6 : span <= 91 ? 2 : 1.6;
 
@@ -364,7 +383,7 @@ export function WeightChart({
             />
             <text
               data-slot="last-average"
-              x={x(last.date) + 7}
+              x={x(last.date) + LAST_DX}
               y={y(last.averageKg) + 4}
               className="fill-chart-line text-xs font-bold tabular-nums"
             >
