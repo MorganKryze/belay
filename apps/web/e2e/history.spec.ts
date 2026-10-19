@@ -288,3 +288,31 @@ test.describe("the history's rows, on Wednesday 7 October 2026", () => {
     expect(over).toBeLessThanOrEqual(0);
   });
 });
+
+test.describe("with Sessions only, on Wednesday 7 October 2026", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.clock.setFixedTime(new Date("2026-10-07T18:00:00+02:00"));
+  });
+
+  test("Sessions only keeps the history to gym sessions, Home keeps its Activity row", async ({
+    page,
+  }) => {
+    await fakeServer(page, { changes: month("2026-10") });
+    await page.goto("/");
+    await expect(page.locator(".launch")).toBeHidden();
+    await page.getByRole("main").getByRole("link", { name: "Settings" }).click();
+    await expect(page.getByRole("heading", { level: 1, name: "Settings" })).toBeVisible();
+    const trigger = page.getByRole("combobox", { name: /^History / });
+    await trigger.click();
+    await page.getByRole("option", { name: "Sessions only" }).click();
+    await expect(trigger).toHaveAccessibleName("History Sessions only");
+    await page.goBack();
+    await expect(page.getByRole("button", { name: /^Activity/ })).toBeVisible();
+    await page.getByRole("link", { name: "Sessions" }).click();
+    await page.getByRole("radio", { name: "History" }).click();
+    await expect(page.locator('[data-day$="-02"]')).toHaveClass(/bg-primary/);
+    await expect(page.getByRole("region", { name: "Recent" }).getByRole("listitem")).toHaveCount(2);
+    await expect(page.locator("[data-dot]")).toHaveCount(0);
+    await expect(page.getByRole("list", { name: "Legend" }).getByRole("listitem")).toHaveCount(2);
+  });
+});

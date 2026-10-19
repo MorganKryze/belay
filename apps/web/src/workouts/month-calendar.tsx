@@ -26,17 +26,20 @@ export const shiftMonth = (month: string, by: number) => {
 // (inside the disc when both), today a ring, never a fill, so it never reads as a session. Every
 // mark is also said in words to screen readers and named in the legend under the grid; the month
 // before and after one tap away, never past the current month. The whole sits in one card, the
-// days 40 px so a ring 1 px off today's disc clears its neighbours on a 360 px screen.
+// days 40 px so a ring 1 px off today's disc clears its neighbours on a 360 px screen. Without
+// activities, the legend leaves out the activity mark.
 export function MonthCalendar({
   month,
   marked,
   circled = new Set(),
+  activities = true,
   current,
   onMonth,
 }: {
   month: string;
   marked: ReadonlySet<ISODate>;
   circled?: ReadonlySet<ISODate>;
+  activities?: boolean;
   current: string;
   onMonth: (month: string) => void;
 }) {
@@ -132,10 +135,12 @@ export function MonthCalendar({
           <span aria-hidden className="size-3 rounded-full bg-primary" />
           {t("history.sessionDay")}
         </li>
-        <li className="flex items-center gap-1.5">
-          <span aria-hidden className="size-1.25 rounded-full bg-primary-ink" />
-          {t("history.activityDay")}
-        </li>
+        {activities && (
+          <li className="flex items-center gap-1.5">
+            <span aria-hidden className="size-1.25 rounded-full bg-primary-ink" />
+            {t("history.activityDay")}
+          </li>
+        )}
         <li className="flex items-center gap-1.5">
           <span aria-hidden className="size-3 rounded-full ring-2 ring-foreground" />
           {t("history.today")}
