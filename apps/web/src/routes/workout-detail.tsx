@@ -17,11 +17,10 @@ import {
 } from "@/components/grouped-list";
 import { BackLink, PageHeader } from "@/components/page-header";
 import { cardSurface } from "@/components/surfaces";
-import { formatNumber, formatWeekday, sessionTitle } from "@/lib/format";
+import { formatNumber, sessionTitle } from "@/lib/format";
 import { useToday } from "@/lib/today";
 import { type OpenAccount, useAccount, useHistory, useRecord } from "@/sync/account";
-import { formatDuration, formatRir, formatSets, recordText } from "@/workouts/format";
-import { dayOf } from "@/workouts/history-panel";
+import { durationParts, formatRir, formatSets, formatStarted, recordText } from "@/workouts/format";
 import { NotFound } from "./fallbacks";
 
 // A finished session (§4.4): its exercises and sets as they were done, its records and notes;
@@ -88,15 +87,21 @@ function Detail({ account }: { account: OpenAccount }) {
           </Link>
         }
       >
-        <p className="text-sm text-muted-foreground">
-          {formatWeekday(dayOf(workout), i18n.language, today)} ·{" "}
-          {formatDuration(stats.durationMs, t)} · {t("history.workSets", { count: stats.workSets })}{" "}
-          ·{" "}
-          {t("history.volume", {
-            value: formatNumber(stats.volumeKg, i18n.language, { digits: 0 }),
-          })}
+        <p className="text-body text-muted-foreground">
+          {formatStarted(workout.startedAt, i18n.language, today, t)}
         </p>
       </PageHeader>
+      <Strip
+        figures={[
+          { label: t("summary.duration"), ...durationParts(stats.durationMs, t) },
+          { label: t("summary.sets"), value: String(stats.workSets) },
+          {
+            label: t("summary.volume"),
+            value: formatNumber(stats.volumeKg, i18n.language, { digits: 0 }),
+            unit: "kg",
+          },
+        ]}
+      />
       {stats.records.map((r) => (
         <p
           key={r.exerciseId}
@@ -145,6 +150,33 @@ function Detail({ account }: { account: OpenAccount }) {
         />
       )}
     </section>
+  );
+}
+
+type Figure = { label: string; value: string; unit?: string };
+
+// The session's figures in one card, side by side: the label small above, the figure large and
+// tabular, its unit small beside it.
+function Strip({ figures }: { figures: Figure[] }) {
+  return (
+    <dl
+      className={`grid ${figures.length === 3 ? "grid-cols-3" : "grid-cols-2"} divide-x divide-border py-2.5 ${groupSurface}`}
+    >
+      {figures.map(({ label, value, unit }) => (
+        <div key={label} className="flex min-w-0 flex-col items-center px-1 text-center">
+          <dt className="text-[12px] font-semibold text-muted-foreground">{label}</dt>
+          <dd className="text-[20px] font-bold tracking-[-0.01em] tabular-nums">
+            {value}
+            {unit && (
+              <span className="text-[12px] font-semibold tracking-normal text-muted-foreground">
+                {" "}
+                {unit}
+              </span>
+            )}
+          </dd>
+        </div>
+      ))}
+    </dl>
   );
 }
 

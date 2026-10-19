@@ -200,7 +200,10 @@ test("yesterday's session is logged afterwards and filed on its day", async ({ p
   await squat.getByRole("textbox", { name: "Load of set 1, kg" }).fill("100");
   await squat.getByRole("textbox", { name: "Reps of set 1" }).fill("5");
   await page.getByRole("button", { name: "Save" }).click();
-  await expect(page.getByText(/Tue, Oct 6 · 1 h 00 · 1 work set/)).toBeVisible();
+  // A session logged afterwards starts at noon on its day.
+  await expect(page.getByText(/^Tuesday, October 6 · 12:00\sPM$/)).toBeVisible();
+  const figures = page.locator("main dl");
+  await expect(figures.getByRole("definition")).toHaveText(["1 h 00", "1", /^500 kg$/]);
   await page.goto("/workouts?tab=history");
   await expect(page.getByRole("region", { name: "Recent" }).getByRole("link").first()).toHaveText(
     /Tue, Oct 6 · 1 h 00\s*Session B · Legs/,
