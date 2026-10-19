@@ -154,6 +154,17 @@ describe("the Exercises segment", () => {
     expect(rows[0]!.getAttribute("aria-setsize")).toBe("1291");
   });
 
+  it("only the first row of a list draws no hairline", async () => {
+    await openLibrary();
+    for (const list of within(screen.getByRole("main")).getAllByRole("list").slice(0, 2)) {
+      const lines = within(list)
+        .getAllByRole("link")
+        .slice(0, 3)
+        .map((a) => a.classList.contains("border-t"));
+      expect(lines).toEqual([false, true, true]);
+    }
+  });
+
   it("finds an exercise by words in any order", async () => {
     await openLibrary();
     fireEvent.change(screen.getByRole("searchbox", { name: "Search exercises" }), {

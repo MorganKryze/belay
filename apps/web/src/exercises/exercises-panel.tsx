@@ -14,6 +14,7 @@ import { RadioGroup } from "radix-ui";
 import { type ReactNode, type RefObject, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Sheet } from "@/components/sheet";
+import { groupSurface, sectionLabel } from "@/components/surfaces";
 import { Button } from "@/components/ui/button";
 import { formatNumber } from "@/lib/format";
 import { BodyThumb } from "./body-map";
@@ -55,8 +56,6 @@ export const filterExercises = (list: readonly Exercise[], f: Filters) => {
     );
   });
 };
-
-const sectionTitle = "mx-0.5 mt-2 text-[15px] font-semibold";
 
 // Exercises (§4.5): search, a muscle and an equipment filter, the program's exercises first.
 export function ExercisesPanel() {
@@ -100,7 +99,7 @@ export function ExercisesPanel() {
       </div>
       {narrowed ? (
         <>
-          <p role="status" className="mx-0.5 text-sm text-muted-foreground">
+          <p role="status" className={sectionLabel}>
             {filtered.length > 0
               ? t("library.found", { count: filtered.length, value: count(filtered.length) })
               : t("library.none")}
@@ -109,15 +108,15 @@ export function ExercisesPanel() {
         </>
       ) : (
         <>
-          <h2 className={sectionTitle}>{t("library.inProgram")}</h2>
-          <ul className="flex flex-col">
-            {IN_PROGRAM.map((e) => (
+          <h2 className={sectionLabel}>{t("library.inProgram")}</h2>
+          <ul className={`relative ${groupSurface}`}>
+            {IN_PROGRAM.map((e, i) => (
               <li key={e.id}>
-                <Row exercise={e} />
+                <Row exercise={e} first={i === 0} />
               </li>
             ))}
           </ul>
-          <h2 className={sectionTitle}>{t("library.everything", { value: count(ALL.length) })}</h2>
+          <h2 className={sectionLabel}>{t("library.everything", { value: count(ALL.length) })}</h2>
           <ExerciseList items={ALL} />
         </>
       )}
@@ -168,7 +167,7 @@ function FilterButton({
   onClear: () => void;
 }) {
   const { t } = useTranslation();
-  const chip = "inline-flex min-h-11 items-center gap-1 rounded-chip border px-3 font-semibold";
+  const chip = "inline-flex min-h-11 items-center gap-1 rounded-chip px-3 font-semibold";
   return (
     <span className="inline-flex items-center gap-1">
       <button
@@ -176,11 +175,7 @@ function FilterButton({
         aria-haspopup="dialog"
         aria-label={value ? t("library.filtered", { label, value }) : undefined}
         onClick={onOpen}
-        className={
-          value
-            ? `${chip} border-foreground bg-foreground text-background`
-            : `${chip} border-border bg-card`
-        }
+        className={value ? `${chip} bg-foreground text-background` : `${chip} bg-track`}
       >
         {value ?? label}
         <ChevronDown aria-hidden className="size-4" />
@@ -220,7 +215,7 @@ function ChoiceSheet<T extends string>({
   const { t, i18n } = useTranslation();
   const [chosen, setChosen] = useState<T | null>(value);
   const chip =
-    "min-h-11 rounded-chip border border-border bg-card px-3.5 font-semibold data-[state=checked]:border-foreground data-[state=checked]:bg-foreground data-[state=checked]:text-background";
+    "min-h-11 rounded-chip bg-track px-3.5 font-semibold data-[state=checked]:bg-foreground data-[state=checked]:text-background";
   const n = count(chosen);
   return (
     <Sheet title={title} onClose={onClose}>
@@ -289,7 +284,7 @@ export function ExerciseList({ items }: { items: readonly Exercise[] }) {
   const list = useRef<HTMLUListElement>(null);
   const { start, end } = useVisibleRange(list, items.length);
   return (
-    <ul ref={list} className="relative" style={{ height: items.length * ROW }}>
+    <ul ref={list} className={`relative ${groupSurface}`} style={{ height: items.length * ROW }}>
       {items.slice(start, end).map((e, i) => (
         <li
           key={e.id}
@@ -298,14 +293,16 @@ export function ExerciseList({ items }: { items: readonly Exercise[] }) {
           className="absolute inset-x-0"
           style={{ top: (start + i) * ROW, height: ROW }}
         >
-          <Row exercise={e} />
+          <Row exercise={e} first={start + i === 0} />
         </li>
       ))}
     </ul>
   );
 }
 
-function Row({ exercise: e }: { exercise: Exercise }) {
+// Rows split by a hairline above each but the list's first: the virtual list's rows are absolute,
+// so the card cannot draw them with divide-y.
+function Row({ exercise: e, first }: { exercise: Exercise; first: boolean }) {
   const { t } = useTranslation();
   const codes = SESSIONS.get(e.id);
   const aside: ReactNode = codes ? (
@@ -314,13 +311,13 @@ function Row({ exercise: e }: { exercise: Exercise }) {
       {codes.join(" · ")}
     </span>
   ) : (
-    <ChevronRight aria-hidden className="size-5 shrink-0 text-muted-foreground" />
+    <ChevronRight aria-hidden className="size-4 shrink-0 text-muted-foreground" />
   );
   return (
     <Link
       to="/exercises/$exerciseId"
       params={{ exerciseId: e.id }}
-      className="press-tint flex h-[72px] items-center gap-3 border-t border-border px-0.5"
+      className={`press-tint flex h-[72px] items-center gap-3 px-4${first ? "" : " border-t border-border"}`}
     >
       <BodyThumb primary={e.primary[0]!} secondary={e.secondary} />
       <span className="flex min-w-0 flex-1 flex-col">
