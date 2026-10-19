@@ -31,6 +31,16 @@
       "shown": "Affichés",
       "hidden": "Masqués"
     },
+    "oneRepMax": "1RM",
+    "oneRepMaxOptions": {
+      "shown": "Deux formules",
+      "hidden": "Epley seule"
+    },
+    "fieldSources": "Origine des champs",
+    "fieldSourcesOptions": {
+      "shown": "Affichée",
+      "hidden": "Masquée"
+    },
     "versionNotes": "Belay {{version}} · notes de version",
     "newTab": "(nouvel onglet)",
     "tracking": "Suivi",
