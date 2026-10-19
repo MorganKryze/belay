@@ -116,9 +116,9 @@ describe("History with activities (spec §4.4)", () => {
         .getAllByRole("listitem")
         .map((li) => li.textContent),
     ).toEqual([
-      "Mon, Oct 5Session B · Legs58 min",
-      "Sat, Oct 3Climbing · 1 h 30 · 6b+",
-      "Thu, Oct 1Session B · Legs1 h 00",
+      "Mon, Oct 5 · 58 min Session B · Legs",
+      "Sat, Oct 3 Climbing · 1 h 30 · 6b+",
+      "Thu, Oct 1 · 1 h 00 Session B · Legs",
     ]);
     fireEvent.click(within(list).getByRole("button", { name: /Climbing/ }));
     const sheet = await screen.findByRole("dialog", { name: "Activity" });
@@ -134,7 +134,7 @@ describe("a session logged afterwards (spec D10)", () => {
     await seed(ADA.id, PAST);
     fakeApi({ me: ADA });
     renderRoute("/workouts?tab=history");
-    fireEvent.click(await screen.findByRole("button", { name: "Log a session" }));
+    fireEvent.click(await screen.findByRole("button", { name: /^Log a session/ }));
     const sheet = await screen.findByRole("dialog", { name: "Log a session" });
     // The next session of the program, and its estimated duration.
     expect(within(sheet).getByRole("radio", { name: "C" }).getAttribute("aria-checked")).toBe(
@@ -186,9 +186,9 @@ describe("a session logged afterwards (spec D10)", () => {
         .getAllByRole("link")
         .map((a) => a.textContent),
     ).toEqual([
-      "Mon, Oct 5Session B · Legs58 min",
-      "Mon, Oct 5Session A · Push45 min",
-      "Thu, Oct 1Session B · Legs1 h 00",
+      "Mon, Oct 5 · 58 min Session B · Legs",
+      "Mon, Oct 5 · 45 min Session A · Push",
+      "Thu, Oct 1 · 1 h 00 Session B · Legs",
     ]);
     // Begun at noon, before Monday's B at 18:00: B stays the last one, C comes next.
     expect(nextSession((await stored()).history.workouts)).toBe("C");
