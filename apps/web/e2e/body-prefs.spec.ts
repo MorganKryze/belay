@@ -38,7 +38,7 @@ test("chosen in Settings, the in-range pill leaves Accueil and Corps", async ({ 
   await openHome(page);
   const card = page.getByRole("link", { name: /^7-day average/ });
   await expect(card).toContainText("in your range");
-  await choose(page, /^Range/, "Hidden");
+  await choose(page, /^Range pill/, "Hidden");
   await page.getByRole("link", { name: "Home" }).first().tap();
   await expect(card).toContainText("loss 0.7%/wk last week");
   await expect(card).not.toContainText("in your range");
@@ -54,7 +54,7 @@ test("chosen in Settings, weekly intake leaves the weeks and stays in the histor
   await openHome(page);
   await page.goto("/body");
   await expect(weeks(page)).toContainText("2,100 kcal");
-  await choose(page, /^Intake/, "Hidden");
+  await choose(page, /^Weekly intake/, "Hidden");
   await page.goto("/body");
   await expect(weeks(page).getByRole("listitem").nth(1)).toContainText("80.2");
   await expect(weeks(page)).not.toContainText("kcal");
