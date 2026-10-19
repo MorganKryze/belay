@@ -27,4 +27,22 @@ describe("RangeList", () => {
     render(<RangeList label="WHO ranges" rows={rows} currentId={null} />);
     expect(screen.queryByText(/Your value is in this range/)).toBeNull();
   });
+
+  it("a heading list is named by its visible label", () => {
+    render(<RangeList heading label="Reference values" rows={rows} currentId={null} />);
+    const heading = screen.getByRole("heading", { name: "Reference values" });
+    const list = screen.getByRole("list", { name: "Reference values" });
+    expect(list.getAttribute("aria-labelledby")).toBe(heading.id);
+    expect(list.getAttribute("aria-label")).toBeNull();
+  });
+
+  it("the pill keeps its own colours in the reference row", () => {
+    // A guard only: the computed colours are proven in the browser.
+    render(<RangeList label="WHO ranges" rows={rows} currentId="reference" />);
+    const pill = screen.getByText("you");
+    expect(pill.className).toContain("bg-primary");
+    expect(pill.className).toContain("text-primary-foreground");
+    const item = pill.closest("li")!;
+    expect(item.className).not.toContain("inset");
+  });
 });

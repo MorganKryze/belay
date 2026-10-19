@@ -5,7 +5,7 @@ import { z } from "zod";
 import { NumberStepper } from "@/components/number-stepper";
 import { ProfileProposal, RestoreButton, usePrefill } from "@/components/prefill";
 import { RangeList } from "@/components/range-list";
-import { ResultCard } from "@/components/result-card";
+import { ResultCard, ResultFigure } from "@/components/result-card";
 import { ToolPage } from "@/components/tool-page";
 import { attempt } from "@/lib/attempt";
 import { formatNumber } from "@/lib/format";
@@ -71,11 +71,13 @@ export function BmiTool() {
       <ResultCard label={t("bmi.result")}>
         {value !== null && band !== null && (
           <>
-            <div className="text-5xl leading-none font-extrabold tracking-tight">
-              {formatNumber(value, i18n.language, { minDigits: 1 })}
-            </div>
-            <p className="mt-1 text-sm font-semibold">{t(`bmi.sentence.${band}`, bounds[band])}</p>
-            {bmiSuggestsProfessional(value) && <p className="text-sm">{t("bmi.professional")}</p>}
+            <ResultFigure value={formatNumber(value, i18n.language, { minDigits: 1 })} />
+            <p className="mt-1 text-body font-semibold">
+              {t(`bmi.sentence.${band}`, bounds[band])}
+            </p>
+            {bmiSuggestsProfessional(value) && (
+              <p className="text-[13.5px]">{t("bmi.professional")}</p>
+            )}
           </>
         )}
       </ResultCard>
