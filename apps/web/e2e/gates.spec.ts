@@ -428,7 +428,7 @@ const FIELD_SCREENS: [string, (page: Page) => Promise<void>][] = [
     async (page) => {
       await fakeServer(page, { rows: WEEKS });
       await page.goto("/body");
-      await page.getByRole("button", { name: "Annotation", exact: true }).click();
+      await page.getByRole("button", { name: /^Annotation\b/ }).click();
       await expect(page.getByRole("dialog", { name: "New annotation" })).toBeVisible();
     },
   ],

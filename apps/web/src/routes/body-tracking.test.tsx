@@ -181,7 +181,7 @@ describe("the chart", () => {
 describe("the annotation sheet", () => {
   it("adds a named note on a past day, drawn on the chart and pinned to its week", async () => {
     const list = await open([]);
-    fireEvent.click(screen.getByRole("button", { name: "Annotation" }));
+    fireEvent.click(screen.getByRole("button", { name: /^Annotation\b/ }));
     const sheet = await screen.findByRole("dialog", { name: "New annotation" });
     expect(document.activeElement).toBe(
       within(sheet).getByRole("heading", { name: "New annotation" }),
@@ -211,7 +211,7 @@ describe("the annotation sheet", () => {
 describe("the measurements sheet", () => {
   it("saves the waist, and the neck if given, then the history says so", async () => {
     await open([]);
-    fireEvent.click(screen.getByRole("button", { name: "Measurements" }));
+    fireEvent.click(screen.getByRole("button", { name: /^Measurements\b/ }));
     const sheet = await screen.findByRole("dialog", { name: "Measurements" });
     expect(
       within(sheet).getByText(
@@ -251,7 +251,7 @@ describe("the measurements sheet", () => {
       ...args: unknown[]
     ) => (ms === 400 ? 0 : timeout(fn, ms, ...args))) as typeof setTimeout);
     await open([]);
-    fireEvent.click(screen.getByRole("button", { name: "Measurements" }));
+    fireEvent.click(screen.getByRole("button", { name: /^Measurements\b/ }));
     const sheet = await screen.findByRole("dialog", { name: "Measurements" });
     fireEvent.change(within(sheet).getByRole("textbox", { name: "Waist" }), {
       target: { value: "82" },
@@ -267,7 +267,7 @@ describe("the measurements sheet", () => {
 
   it("refuses a waist outside 40 to 200 cm", async () => {
     await open([]);
-    fireEvent.click(screen.getByRole("button", { name: "Measurements" }));
+    fireEvent.click(screen.getByRole("button", { name: /^Measurements\b/ }));
     fireEvent.change(await screen.findByRole("textbox", { name: "Waist" }), {
       target: { value: "820" },
     });
