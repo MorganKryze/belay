@@ -11,6 +11,16 @@
       "shown": "Shown",
       "hidden": "Hidden"
     },
+    "historyActivities": "History",
+    "historyActivitiesOptions": {
+      "shown": "With activities",
+      "hidden": "Sessions only"
+    },
+    "sessionVolume": "Session volume",
+    "sessionVolumeOptions": {
+      "shown": "Shown",
+      "hidden": "Hidden"
+    },
     "versionNotes": "Belay {{version}} · release notes",
     "newTab": "(new tab)",
     "tracking": "Tracking",

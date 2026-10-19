@@ -99,21 +99,15 @@ test("nothing scrolls sideways", async ({ page }) => {
   }
 });
 
+// Réglages grows with each preference, so only Outils is held to one screen.
 test("a short page does not scroll under the top bar", async ({ page }) => {
   await fakeServer(page, { rows: WEEKS });
-  for (const path of ["/tools", "/settings"]) {
-    await page.goto(path);
-    await expect(page.locator("main h1")).toBeVisible();
-    const extra = await page.evaluate(
-      () => document.documentElement.scrollHeight - document.documentElement.clientHeight,
-    );
-    expect(extra, path).toBe(0);
-  }
-  // Réglages' version line closes the page: it must sit above the fold.
-  const version = page.locator("main p").filter({ hasText: /^Belay / });
-  await expect(version).toContainText(/^Belay /);
-  const box = (await version.boundingBox())!;
-  expect(box.y + box.height).toBeLessThanOrEqual(800);
+  await page.goto("/tools");
+  await expect(page.locator("main h1")).toBeVisible();
+  const extra = await page.evaluate(
+    () => document.documentElement.scrollHeight - document.documentElement.clientHeight,
+  );
+  expect(extra).toBe(0);
 });
 
 test.describe("accessibility", () => {
