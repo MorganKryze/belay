@@ -19,7 +19,7 @@ import { NotFound } from "./fallbacks";
 const card = "rounded-card border border-border bg-card";
 
 // A finished session (§4.4): its exercises and sets as they were done, its records and notes;
-// « Modifier » opens the editor (spec D9), and it can still be removed whole.
+// « Modifier », up in the bar, opens the editor (spec D9), and it can still be removed whole.
 export function WorkoutDetail() {
   const account = useAccount();
   if (account.kind !== "open") return <NotFound />;
@@ -67,8 +67,17 @@ function Detail({ account }: { account: OpenAccount }) {
         title={sessionTitle(workout.sessionCode, t)}
         back={
           <BackLink to="/workouts" search={{ tab: "history" }}>
-            {t("workouts.title")}
+            {t("workouts.tabs.history")}
           </BackLink>
+        }
+        action={
+          <Link
+            to="/workout/edit"
+            search={{ id: workout.id }}
+            className="inline-flex min-h-11 min-w-11 items-center justify-end px-1.5 font-medium text-primary"
+          >
+            {t("history.edit")}
+          </Link>
         }
       >
         <p className="text-sm text-muted-foreground">
@@ -100,16 +109,9 @@ function Detail({ account }: { account: OpenAccount }) {
           <p className="mt-1 whitespace-pre-line">{workout.note}</p>
         </section>
       )}
-      <div className="flex flex-col gap-2">
-        <Button asChild variant="secondary" className="w-full">
-          <Link to="/workout/edit" search={{ id: workout.id }}>
-            {t("history.edit")}
-          </Link>
-        </Button>
-        <Button variant="destructive" className="self-start" onClick={() => setConfirm(true)}>
-          {t("history.remove")}
-        </Button>
-      </div>
+      <Button variant="destructive" className="self-start" onClick={() => setConfirm(true)}>
+        {t("history.remove")}
+      </Button>
       {error && <p role="alert">{error}</p>}
       {confirm && (
         <ActionSheet

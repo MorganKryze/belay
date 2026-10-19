@@ -129,4 +129,31 @@ describe("a session's detail", () => {
     renderRoute(`/workouts/${id(5)}`);
     expect(await screen.findByRole("heading", { name: "Page not found" })).toBeTruthy();
   });
+
+  it("Edit sits in the bar and opens the editor", async () => {
+    await seed(ADA.id, MONTH);
+    fakeApi({ me: ADA });
+    renderRoute(`/workouts/${id(2)}`);
+    await screen.findByRole("heading", { name: "Session B · Legs", level: 1 });
+    const edit = screen.getByRole("link", { name: "Edit" });
+    const bar = document.querySelector("[data-compact-title]")!.parentElement!;
+    expect(bar.contains(edit)).toBe(true);
+    expect(edit.getAttribute("href")).toBe(`/workout/edit?id=${id(2)}`);
+    fireEvent.click(edit);
+    expect(
+      await screen.findByText(
+        "Correcting changes only what you edit; the records are worked out again.",
+      ),
+    ).toBeTruthy();
+  });
+
+  it("the back link says History and opens the history segment", async () => {
+    await seed(ADA.id, MONTH);
+    fakeApi({ me: ADA });
+    renderRoute(`/workouts/${id(2)}`);
+    await screen.findByRole("heading", { name: "Session B · Legs", level: 1 });
+    fireEvent.click(screen.getByRole("link", { name: "History" }));
+    expect(await screen.findByRole("table", { name: "October 2026" })).toBeTruthy();
+    expect(screen.getByRole("radio", { name: "History", checked: true })).toBeTruthy();
+  });
 });
