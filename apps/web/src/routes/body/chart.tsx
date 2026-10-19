@@ -13,10 +13,11 @@ import { useTranslation } from "react-i18next";
 import { formatKg, formatShortDay, formatWeekday } from "@/lib/format";
 
 // The drawing is as wide as the card, in screen pixels, so its text renders at its true size;
-// 320 where nothing is laid out (unit tests). The right padding leaves room for the last average.
+// 320 where nothing is laid out (unit tests). The right padding leaves room for the last average,
+// five characters wide from 100.0 kg.
 const FALLBACK_W = 320;
 const H = 180;
-const PAD = { left: 26, right: 34, top: 20, bottom: 24 };
+const PAD = { left: 26, right: 42, top: 20, bottom: 24 };
 // A tap this close to a dot (in screen pixels) opens that day's weigh-in.
 const HIT_PX = 22;
 // Rough width of an 11.5px semibold character, to keep the band's label inside the drawing.

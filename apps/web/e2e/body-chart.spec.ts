@@ -13,11 +13,12 @@ const today = () =>
 
 // Six weeks of weigh-ins drifting down from 81.5 kg, a creatine course ticked three days ago, and
 // two annotations two days apart, early in the month shown, away from the course's label.
-async function openBody(page: Page) {
+// `base` moves the whole series, to test a five-character average (100.0 kg and above).
+async function openBody(page: Page, base = 80) {
   const day = today();
   const rows = Array.from({ length: 42 }, (_, i) => ({
     date: addDays(day, -i),
-    weightKg: Math.round((80 + i * 0.035 + (i % 3) * 0.2) * 10) / 10,
+    weightKg: Math.round((base + i * 0.035 + (i % 3) * 0.2) * 10) / 10,
   }));
   const annotation = (id: string, date: string, type: string): Change =>
     ({ kind: "annotation", id, field: "fields", date, type, label: null, at: AT }) as Change;
@@ -84,6 +85,16 @@ test("the last average is written in the line's colour inside the card", async (
   expect(text.x + text.width).toBeLessThanOrEqual(card.x + card.width);
   expect(text.y).toBeGreaterThanOrEqual(card.y);
   expect(text.y + text.height).toBeLessThanOrEqual(card.y + card.height);
+});
+
+test("a last average of 100.0 kg and above stays inside the drawing", async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 900 });
+  const chart = await openBody(page, 104);
+  const last = chart.locator("text[data-slot=last-average]");
+  await expect(last).toHaveText(/^\d{3}\.\d$/);
+  const svg = await boxOf(chart);
+  const text = await boxOf(last);
+  expect(text.x + text.width).toBeLessThanOrEqual(svg.x + svg.width);
 });
 
 test("annotation names are 12 px, 600, in the text ink with the card's halo", async ({ page }) => {

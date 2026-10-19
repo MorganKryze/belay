@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { placeNames } from "./chart";
 
-// A drawing 320 wide with the chart's paddings: the plot runs from 26 to 286.
+// A plot running from 26 to 286.
 const bounds = { left: 26, right: 286 };
 // "Break" is 5 characters: 33.5 units at 6.7 a character.
 const name = (id: string, x: number, label = "Break") => ({ id, x, label });
