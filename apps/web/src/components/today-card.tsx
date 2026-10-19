@@ -300,7 +300,8 @@ export function TodayCard({
 }
 
 // The icon tile sits inside the row's button or link, so a press tints the whole line.
-const rowLine = "press-tint flex min-h-14 w-full min-w-0 items-center gap-3 px-4 py-2 text-left";
+const rowLine =
+  "press-tint flex min-h-14 w-full min-w-0 items-center gap-3 px-4 py-2 text-left outline-ring focus-visible:outline-2 focus-visible:-outline-offset-2";
 
 // Where a gesture stands today: null while not known yet; done when something is logged.
 type Status = { text: string; done: boolean } | null;
