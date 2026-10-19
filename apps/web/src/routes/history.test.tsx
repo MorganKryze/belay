@@ -153,6 +153,29 @@ describe("the History segment", () => {
     expect(await screen.findByRole("dialog", { name: "Activity" })).toBeTruthy();
   });
 
+  it("lists the month's activities when no session was ever finished", async () => {
+    const climb: Change = {
+      kind: "activity",
+      id: "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7da3",
+      field: "fields",
+      date: "2026-10-04",
+      type: "climbing",
+      durationMin: 90,
+      cardioType: null,
+      climbStyle: "boulder",
+      climbRuns: 14,
+      climbGrade: "6b+",
+      climbColor: null,
+      at: "2026-10-04T16:00:00.000Z",
+    };
+    await seed(ADA.id, [climb]);
+    fakeApi({ me: ADA });
+    renderRoute("/workouts?tab=history");
+    const list = await screen.findByRole("region", { name: "Recent" });
+    expect(await within(list).findByRole("button", { name: /^Sun, Oct 4/ })).toBeTruthy();
+    expect(screen.queryByText("Your first session will show here.")).toBeNull();
+  });
+
   it("an empty history explains, inside the card, how a session gets there", async () => {
     fakeApi({ me: ADA });
     renderRoute("/workouts?tab=history");

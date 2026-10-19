@@ -122,18 +122,20 @@ function History({ account }: { account: OpenAccount }) {
         <h2 id="sessions" className={cn(sectionLabel, "first-letter:uppercase")}>
           {month === current ? t("history.recent") : monthName}
         </h2>
-        {finished.length === 0 ? (
-          <div className={groupSurface}>
-            <EmptyState
-              sentence={t("history.first")}
-              precision={t("history.firstHow")}
-              action={null}
-            />
-          </div>
-        ) : items.length === 0 ? (
-          <p className={cn(groupSurface, "p-4 text-body text-muted-foreground")}>
-            {t("history.none")}
-          </p>
+        {items.length === 0 ? (
+          finished.length === 0 ? (
+            <div className={groupSurface}>
+              <EmptyState
+                sentence={t("history.first")}
+                precision={t("history.firstHow")}
+                action={null}
+              />
+            </div>
+          ) : (
+            <p className={cn(groupSurface, "p-4 text-body text-muted-foreground")}>
+              {t("history.none")}
+            </p>
+          )
         ) : (
           <ul className={groupCard}>
             {items.map((item) => (
