@@ -4,20 +4,20 @@ import { planFor } from "@belay/shared/training/plan";
 import {
   estimatedMinutes,
   nextSession,
+  plannedWorkSets,
   type SessionTemplate,
   starterProgram,
 } from "@belay/shared/training/program";
-import { type History, lastFinished, openWorkout } from "@belay/shared/training/rules";
+import { type History, lastFinished, liveSets, openWorkout } from "@belay/shared/training/rules";
 import { Link } from "@tanstack/react-router";
 import { useId } from "react";
 import { useTranslation } from "react-i18next";
+import { SessionCard, SessionHeading } from "@/components/session-card";
+import { cardSurface } from "@/components/surfaces";
 import { Button } from "@/components/ui/button";
-import { sessionTitle } from "@/lib/format";
 import { useToday } from "@/lib/today";
 import { type OpenAccount, useActivities, useHistory } from "@/sync/account";
 import { dayOf } from "./history-panel";
-
-const card = "rounded-card border border-border bg-card px-4 py-3";
 
 // Program (spec D13, §4.5): the sessions as cards, the next one first with « See the session »;
 // every other card opens its session's preview on a tap anywhere. While a session is open, its
@@ -58,8 +58,16 @@ function List({
     starterProgram.findIndex((s) => s.code === next),
   );
   const ordered = [...starterProgram.slice(at), ...starterProgram.slice(0, at)];
+  // How far the open session is: its work sets logged over the ones its plan holds.
+  const progress =
+    history && open
+      ? {
+          count: liveSets(history).filter((s) => s.workoutId === open.id && !s.warmup).length,
+          total: plannedWorkSets(open.plan),
+        }
+      : null;
   return ordered.map((s) => (
-    <SessionCard
+    <ProgramCard
       key={s.code}
       session={s}
       next={s.code === next}
@@ -69,6 +77,7 @@ function List({
       action={
         open ? (open.sessionCode === s.code ? "resume" : null) : s.code === next ? "see" : null
       }
+      progress={progress}
     />
   ));
 }
@@ -83,15 +92,16 @@ function lastDayOf(history: History, code: string): ISODate | null {
 const daysBetween = (from: ISODate, to: ISODate) =>
   Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000);
 
-// "see": the next card's button to the preview; "resume": the open session's card; null: the
-// whole card is a link to the preview.
-function SessionCard({
+// "see": the next card's button to the preview; "resume": the open session's card, with how far
+// it is; null: the whole card is a link to the preview.
+function ProgramCard({
   session,
   next,
   lastDay,
   activities,
   today,
   action,
+  progress,
 }: {
   session: SessionTemplate;
   next: boolean;
@@ -99,63 +109,63 @@ function SessionCard({
   activities: readonly Activity[];
   today: ISODate;
   action: "see" | "resume" | null;
+  progress: { count: number; total: number } | null;
 }) {
   const { t } = useTranslation();
   const id = useId();
   const { code } = session;
   const plan = planFor(session, activities, today);
+  const size = t("sessionCard.size", {
+    count: plan.length,
+    minutes: estimatedMinutes({ slots: plan }),
+  });
+  if (action === "resume" && progress) {
+    return (
+      <SessionCard
+        code={code}
+        lead={t("sessionCard.inProgress")}
+        detail={t("sessionCard.sets", progress)}
+      >
+        <Button asChild variant="primary">
+          <Link to="/workout" search={{ start: code }}>
+            {t("sessionCard.resume")}
+          </Link>
+        </Button>
+      </SessionCard>
+    );
+  }
+  if (action === "see") {
+    return (
+      <SessionCard code={code} lead={next ? t("sessionCard.next") : undefined} detail={size}>
+        <Button asChild variant="primary">
+          <Link to="/workouts/session/$code" params={{ code }}>
+            {t("sessionCard.see")}
+          </Link>
+        </Button>
+      </SessionCard>
+    );
+  }
   const when = next
-    ? t("workouts.program.next")
+    ? t("sessionCard.next")
     : lastDay === undefined
       ? null
       : lastDay === null
         ? t("workouts.program.never")
         : lastDay === today
-          ? t("workouts.program.today")
+          ? t("sessionCard.doneToday")
           : t("workouts.program.daysAgo", { count: daysBetween(lastDay, today) });
-  const size = t("workouts.program.size", {
-    count: plan.length,
-    minutes: estimatedMinutes({ slots: plan }),
-  });
-  const heading = (
-    <div className="flex flex-col">
-      <h2 id={id} className="text-[17px] font-semibold">
-        {sessionTitle(code, t)}
-      </h2>
-      {/* The space keeps the title and this line apart in the link's name. */}{" "}
-      <p className="text-[13px] text-muted-foreground">
-        {when && (
-          <span className={next ? "font-semibold text-primary-ink" : undefined}>{when} · </span>
-        )}
-        {size}
-      </p>
-    </div>
-  );
-  if (action === null) {
-    return (
-      <Link
-        to="/workouts/session/$code"
-        params={{ code }}
-        className={`${card} press-tint block outline-ring focus-visible:outline-2`}
-      >
-        {heading}
-      </Link>
-    );
-  }
   return (
-    <section aria-labelledby={id} className={`${card} flex flex-col gap-3`}>
-      {heading}
-      <Button asChild variant="primary">
-        {action === "resume" ? (
-          <Link to="/workout" search={{ start: code }}>
-            {t("workouts.program.resume")}
-          </Link>
-        ) : (
-          <Link to="/workouts/session/$code" params={{ code }}>
-            {t("workouts.program.seeSession")}
-          </Link>
-        )}
-      </Button>
-    </section>
+    <Link
+      to="/workouts/session/$code"
+      params={{ code }}
+      className={`${cardSurface} press-tint block px-4 py-3 outline-ring focus-visible:outline-2`}
+    >
+      <SessionHeading
+        id={id}
+        code={code}
+        lead={next ? when! : undefined}
+        detail={when && !next ? `${when} · ${size}` : size}
+      />
+    </Link>
   );
 }

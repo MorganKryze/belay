@@ -129,6 +129,45 @@ describe("the program as cards (spec D13, §4.5)", () => {
     expect(screen.getAllByRole("link", { name: "Resume" })).toHaveLength(1);
   });
 
+  it("with A open, A's card says In progress · 1 of 19 sets and still resumes it", async () => {
+    const begun = new Date(2026, 9, 7, 17, 30).toISOString();
+    const plan = [...sessionByCode("A")!.slots];
+    await seed(ADA.id, [
+      {
+        kind: "workout",
+        id: id(1),
+        field: "start",
+        sessionCode: "A",
+        plan,
+        startedAt: begun,
+        at: begun,
+      },
+      // A warm-up does not count; the one work set does.
+      ...[0, 3].map((position, k): Change => ({
+        kind: "set",
+        id: id(10 + k),
+        workoutId: id(1),
+        field: "create",
+        slotIndex: 0,
+        position,
+        exerciseId: plan[0]!.exerciseId,
+        warmup: position < 3,
+        weightKg: 60,
+        reps: 8,
+        seconds: null,
+        rir: position < 3 ? null : 2,
+        doneAt: begun,
+        at: begun,
+      })),
+    ]);
+    renderRoute("/workouts?tab=program");
+    const a = await screen.findByRole("region", { name: "Session A · Push" });
+    expect(a.textContent).toContain("In progress · 1 of 19 sets");
+    expect(within(a).getByRole("link", { name: "Resume" }).getAttribute("href")).toBe(
+      "/workout?start=A",
+    );
+  });
+
   it("says never done, done today, and counts C without its rule once climbed", async () => {
     await seed(ADA.id, [
       ...done(1, "B", 7),
