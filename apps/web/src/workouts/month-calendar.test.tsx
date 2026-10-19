@@ -57,12 +57,12 @@ describe("MonthCalendar", () => {
     expect(cell.className).not.toMatch(/\bbg-/);
   });
 
-  it("today with a session gets the disc and an outer ring", () => {
+  it("today with a session gets the disc and a ring 1 px off it", () => {
     show({ marked: ["2026-10-07"] });
     const cell = day(7);
     expect(cell.className).toMatch(/\bbg-primary\b/);
     expect(cell.className).toMatch(/\boutline-2\b/);
-    expect(cell.className).toMatch(/\boutline-offset-2\b/);
+    expect(cell.className).toMatch(/\boutline-offset-1\b/);
     expect(cell.className).toMatch(/\boutline-foreground\b/);
   });
 
@@ -112,9 +112,9 @@ describe("MonthCalendar", () => {
     expect(legend.className).toMatch(/\btext-muted-foreground\b/);
   });
 
-  it("cells are 44 × 44", () => {
+  it("days are 40 × 40 discs, not taps", () => {
     show({ marked: ["2026-10-05"] });
-    for (const n of [1, 5, 7, 31]) expect(day(n).className).toMatch(/\bsize-11\b/);
+    for (const n of [1, 5, 7, 31]) expect(day(n).className).toMatch(/\bsize-10\b/);
   });
 
   it("screen readers hear each day's marks, today included", () => {
