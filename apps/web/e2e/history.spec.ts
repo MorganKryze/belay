@@ -245,6 +245,20 @@ test.describe("the history's rows, on Wednesday 7 October 2026", () => {
     }
   });
 
+  test("the « Recent » header is the shared section label: 13 px, 600, muted", async ({ page }) => {
+    await openHistory(page, month("2026-10"));
+    const header = page.getByRole("heading", { name: "Recent", level: 2 });
+    const style = await header.evaluate((el) => {
+      const s = getComputedStyle(el);
+      return { size: s.fontSize, weight: s.fontWeight, color: s.color };
+    });
+    expect(style).toEqual({
+      size: "13px",
+      weight: "600",
+      color: await tokenColor(page, "--muted-foreground"),
+    });
+  });
+
   test.describe("in French", () => {
     test.use({ locale: "fr-FR" });
 

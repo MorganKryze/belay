@@ -119,7 +119,7 @@ function History({ account }: { account: OpenAccount }) {
         </li>
       </ul>
       <section aria-labelledby="sessions" className="flex flex-col gap-2">
-        <h2 id="sessions" className={cn(sectionLabel, "first-letter:uppercase")}>
+        <h2 id="sessions" className={`${sectionLabel} first-letter:uppercase`}>
           {month === current ? t("history.recent") : monthName}
         </h2>
         {items.length === 0 ? (
