@@ -12,6 +12,7 @@ export function PageHeader({
   title,
   eyebrow,
   back,
+  action,
   trailing,
   focusFallback,
   children,
@@ -19,6 +20,8 @@ export function PageHeader({
   title: string;
   eyebrow?: string;
   back?: ReactNode;
+  // Drawn at the right end of the bar and always shown, such as a past session's Edit.
+  action?: ReactNode;
   trailing?: ReactNode;
   focusFallback?: boolean;
   children?: ReactNode;
@@ -49,9 +52,20 @@ export function PageHeader({
       >
         <div aria-hidden className="absolute inset-0 glass border-b border-border fold-in" />
         {/* An invisible copy of the back link holds the right column at the same width, so the
-            compact title stays centred and truncates before it reaches the back label. */}
+            compact title stays centred and truncates before it reaches the back label. With an
+            action, each side stacks its own content over an invisible copy of the other's in one
+            cell, so both columns take the wider of the two. */}
         <div className="relative grid h-11 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-1.5">
-          <div>{back}</div>
+          {action ? (
+            <div className="grid justify-items-start *:[grid-area:1/1]">
+              {back}
+              <div aria-hidden inert className="invisible">
+                {action}
+              </div>
+            </div>
+          ) : (
+            <div>{back}</div>
+          )}
           <p
             data-compact-title
             aria-hidden
@@ -59,9 +73,18 @@ export function PageHeader({
           >
             {title}
           </p>
-          <div aria-hidden inert className="invisible">
-            {back}
-          </div>
+          {action ? (
+            <div className="grid justify-items-end *:[grid-area:1/1]">
+              {action}
+              <div aria-hidden inert className="invisible">
+                {back}
+              </div>
+            </div>
+          ) : (
+            <div aria-hidden inert className="invisible">
+              {back}
+            </div>
+          )}
         </div>
       </div>
       <div className="flex flex-col">
