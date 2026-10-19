@@ -180,6 +180,63 @@ describe("the History segment", () => {
     expect(within(card as HTMLElement).queryByRole("button")).toBeNull();
   });
 
+  describe("with Sessions only", () => {
+    const climb = (date: string): Change => ({
+      kind: "activity",
+      id: "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7da2",
+      field: "fields",
+      date,
+      type: "climbing",
+      durationMin: 90,
+      cardioType: null,
+      climbStyle: "boulder",
+      climbRuns: 14,
+      climbGrade: "6b+",
+      climbColor: null,
+      at: `${date}T16:00:00.000Z`,
+    });
+    beforeEach(() => localStorage.setItem("belay.historyActivities", "hidden"));
+
+    it("leaves activities out: no dot, a two-item legend, no activity row", async () => {
+      await seed(ADA.id, [...MONTH, climb("2026-10-04")]);
+      fakeApi({ me: ADA });
+      renderRoute("/workouts?tab=history");
+      const list = await screen.findByRole("region", { name: "Recent" });
+      await waitFor(() => expect(within(list).getAllByRole("link")).toHaveLength(3));
+      expect(document.querySelector("[data-dot]")).toBeNull();
+      const legend = screen.getByRole("list", { name: "Legend" });
+      expect(
+        within(legend)
+          .getAllByRole("listitem")
+          .map((li) => li.textContent),
+      ).toEqual(["session", "today"]);
+      expect(within(list).queryByRole("button")).toBeNull();
+    });
+
+    it("a month with only an activity says there is no session", async () => {
+      await seed(ADA.id, [...MONTH, climb("2026-09-12")]);
+      fakeApi({ me: ADA });
+      renderRoute("/workouts?tab=history");
+      await screen.findByRole("table", { name: "October 2026" });
+      fireEvent.click(screen.getByRole("button", { name: "Previous month" }));
+      expect(await screen.findByText("No session this month.")).toBeTruthy();
+    });
+
+    it("the choice applies on the next mount", async () => {
+      await seed(ADA.id, [...MONTH, climb("2026-10-04")]);
+      fakeApi({ me: ADA });
+      renderRoute("/workouts?tab=history");
+      const list = await screen.findByRole("region", { name: "Recent" });
+      await waitFor(() => expect(within(list).getAllByRole("link")).toHaveLength(3));
+      localStorage.setItem("belay.historyActivities", "shown");
+      expect(within(list).queryByRole("button")).toBeNull();
+      cleanup();
+      renderRoute("/workouts?tab=history");
+      const again = await screen.findByRole("region", { name: "Recent" });
+      expect(await within(again).findByRole("button", { name: /^Sun, Oct 4/ })).toBeTruthy();
+    });
+  });
+
   it("says it in French", async () => {
     await seed(ADA.id, MONTH);
     await i18n.changeLanguage("fr");

@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { type Entry, Toast, useWriter } from "@/components/weigh-in";
 import { activityText } from "@/lib/activities";
+import { readHistoryActivities } from "@/lib/display-prefs";
 import { formatWeekday, sessionTitle } from "@/lib/format";
 import { useToday } from "@/lib/today";
 import { cn } from "@/lib/utils";
@@ -60,6 +61,8 @@ function History({ account }: { account: OpenAccount }) {
   const today = useToday();
   const current = today.slice(0, 7);
   const [month, setMonth] = useState(current);
+  // « Séances seules » keeps the history to gym sessions; read once, when the screen opens.
+  const [withActivities] = useState(() => readHistoryActivities() === "shown");
   const history = useHistory(account).data;
   const activities = useActivities(account).data;
   const steps = useSteps(account).data ?? [];
@@ -70,6 +73,7 @@ function History({ account }: { account: OpenAccount }) {
   // A saved sheet plays its exit over the screen that already shows the record.
   const [leaving, setLeaving] = useState(false);
   if (!history || !activities) return null;
+  const listed = withActivities ? activities : [];
   const finished = history.workouts
     .filter((w) => !w.removed && w.endedAt !== null)
     .sort((a, b) => (a.startedAt < b.startedAt ? 1 : -1));
@@ -78,7 +82,7 @@ function History({ account }: { account: OpenAccount }) {
   type Item = { day: ISODate; workout: Workout } | { day: ISODate; activity: Activity };
   const items: Item[] = [
     ...finished.map((w) => ({ day: dayOf(w), workout: w })),
-    ...activities.map((a) => ({ day: a.date, activity: a })),
+    ...listed.map((a) => ({ day: a.date, activity: a })),
   ]
     .filter((i) => i.day.startsWith(month))
     .sort((a, b) => (a.day === b.day ? 0 : a.day < b.day ? 1 : -1));
@@ -99,7 +103,8 @@ function History({ account }: { account: OpenAccount }) {
         month={month}
         current={current}
         marked={new Set(finished.map(dayOf))}
-        circled={new Set(activities.map((a) => a.date))}
+        circled={new Set(listed.map((a) => a.date))}
+        activities={withActivities}
         onMonth={setMonth}
       />
       <ul className={groupCard}>
