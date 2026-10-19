@@ -10,7 +10,7 @@ import { Link, useParams, useSearch } from "@tanstack/react-router";
 import { Play } from "lucide-react";
 import { useId } from "react";
 import { useTranslation } from "react-i18next";
-import { groupCard, RowLink } from "@/components/grouped-list";
+import { groupCard, NumberTile, RowLink } from "@/components/grouped-list";
 import { BackLink, PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { formatWeekday, sessionTitle } from "@/lib/format";
@@ -128,7 +128,7 @@ function Preview({
                   to="/exercises/$exerciseId"
                   params={{ exerciseId: slot.exerciseId }}
                   search={{ session: code, ...(from && { from }) }}
-                  leading={<RowNumber n={i + 1} />}
+                  leading={<NumberTile n={i + 1} />}
                   label={exerciseById(slot.exerciseId)?.name ?? slot.exerciseId}
                   sub={[
                     formatSets(slot),
@@ -145,17 +145,5 @@ function Preview({
         </p>
       </section>
     </section>
-  );
-}
-
-// The 28 px tile that numbers a row.
-function RowNumber({ n }: { n: number }) {
-  return (
-    <span
-      aria-hidden
-      className="grid size-7 place-items-center rounded-icon bg-track text-[13px] font-semibold text-muted-foreground tabular-nums"
-    >
-      {n}
-    </span>
   );
 }
