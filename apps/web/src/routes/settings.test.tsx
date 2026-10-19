@@ -97,7 +97,7 @@ describe("Settings preferences", () => {
       ["Général", ["Langue · Français", "Thème · Système"]],
       ["Accueil", ["Tendance · Affichée"]],
       ["Séances", ["En pause · Tout s'arrête", "Historique · Avec activités"]],
-      ["Corps", ["Fourchette · Affichée", "Apports · Affichés"]],
+      ["Corps", ["Pastille · Affichée", "Apports · Affichés"]],
     ] as const;
     await screen.findByRole("region", { name: "Général" });
     for (const [section, rows] of names) {
@@ -175,9 +175,9 @@ describe("Settings preferences", () => {
     await i18n.changeLanguage("fr");
     fakeApi({ me: ADA });
     renderRoute("/settings");
-    await choose(/^Fourchette/, "Masquée");
-    expect(await screen.findByRole("combobox", { name: "Fourchette · Masquée" })).toBeTruthy();
-    await choose(/^Fourchette/, "Affichée");
+    await choose(/^Pastille/, "Masquée");
+    expect(await screen.findByRole("combobox", { name: "Pastille · Masquée" })).toBeTruthy();
+    await choose(/^Pastille/, "Affichée");
     expect(localStorage.getItem("belay.rangePill")).toBe("shown");
     await choose(/^Apports/, "Masqués");
     expect(await screen.findByRole("combobox", { name: "Apports · Masqués" })).toBeTruthy();

@@ -440,7 +440,7 @@ test.describe("at 360 px", () => {
         [
           "Corps",
           [
-            ["Fourchette", "Affichée", "Masquée"],
+            ["Pastille", "Affichée", "Masquée"],
             ["Apports", "Affichés", "Masqués"],
           ],
         ],
