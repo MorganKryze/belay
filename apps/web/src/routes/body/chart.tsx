@@ -248,6 +248,7 @@ export function WeightChart({
         aria-describedby={hintId}
         tabIndex={0}
         viewBox={`0 0 ${W} ${H}`}
+        height={H}
         className="block w-full touch-pan-y overflow-visible"
         onPointerMove={onPointerMove}
         onPointerLeave={(e) => e.pointerType === "mouse" && setActive(null)}

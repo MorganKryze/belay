@@ -173,6 +173,12 @@ describe("the Body page", () => {
     expect(follows(period, chart)).toBe(true);
   });
 
+  it("the chart keeps a fixed height, so a resize never stretches it", async () => {
+    await open();
+    const chart = screen.getByRole("img", { name: /^Weigh-ins from/ });
+    expect(chart.getAttribute("height")).toBe("180");
+  });
+
   it("opens a weigh-in from the history, and gives focus back to its line", async () => {
     await open();
     const history = screen.getByRole("region", { name: "History" });
