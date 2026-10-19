@@ -102,8 +102,7 @@ export function lastAverageBox(
 // Grey dots for the daily weigh-ins, an orange line for the 7-day average (D12, §8), and, in
 // context only (D5): the first 14 days of each creatine course as a band, the annotations as
 // named dashed lines. Pointer, touch or arrow keys move a crosshair over the nearest day; its
-// values are read out politely. The weeks list and the history below are the data table, and
-// the weeks' pills open the annotations from the keyboard.
+// values are read out politely. The weeks list and the history below are the data table.
 export function WeightChart({
   weighings,
   averages,
