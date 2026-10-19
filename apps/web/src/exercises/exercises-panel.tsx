@@ -104,7 +104,7 @@ export function ExercisesPanel() {
               ? t("library.found", { count: filtered.length, value: count(filtered.length) })
               : t("library.none")}
           </p>
-          <ExerciseList items={filtered} />
+          {filtered.length > 0 && <ExerciseList items={filtered} />}
         </>
       ) : (
         <>
@@ -284,7 +284,12 @@ export function ExerciseList({ items }: { items: readonly Exercise[] }) {
   const list = useRef<HTMLUListElement>(null);
   const { start, end } = useVisibleRange(list, items.length);
   return (
-    <ul ref={list} className={`relative ${groupSurface}`} style={{ height: items.length * ROW }}>
+    // The height counts the rows only: in dark the card's border sits outside it, not over the last row.
+    <ul
+      ref={list}
+      className={`relative box-content ${groupSurface}`}
+      style={{ height: items.length * ROW }}
+    >
       {items.slice(start, end).map((e, i) => (
         <li
           key={e.id}

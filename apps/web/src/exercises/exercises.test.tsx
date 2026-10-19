@@ -178,6 +178,8 @@ describe("the Exercises segment", () => {
     expect((await within(screen.getByRole("main")).findByRole("status")).textContent).toBe(
       "No exercise matches.",
     );
+    // No empty card under the line.
+    expect(within(screen.getByRole("main")).queryByRole("list")).toBeNull();
   });
 
   it("filters by one muscle from a sheet that says how many will show, then clears it", async () => {

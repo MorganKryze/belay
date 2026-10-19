@@ -88,6 +88,25 @@ for (const scheme of ["light", "dark"] as const) {
   });
 }
 
+test("in dark, a found list's last row ends inside the card's border", async ({ page }) => {
+  await page.emulateMedia({ colorScheme: "dark" });
+  await openLibrary(page);
+  await page.getByRole("searchbox", { name: "Search exercises" }).fill("press bench barbell close");
+  await expect(page.getByRole("main").getByRole("status")).toHaveText("3 exercises");
+  const { last, inner } = await page
+    .getByRole("main")
+    .getByRole("list")
+    .evaluate((ul) => {
+      const box = ul.getBoundingClientRect();
+      const rows = ul.querySelectorAll("li");
+      return {
+        last: rows[rows.length - 1]!.getBoundingClientRect().bottom,
+        inner: box.bottom - parseFloat(getComputedStyle(ul).borderBottomWidth),
+      };
+    });
+  expect(last).toBeLessThanOrEqual(inner + 0.5);
+});
+
 test("section headers are 13 px, 600, muted", async ({ page }) => {
   await openLibrary(page);
   const muted = await tokenColor(page, "--muted-foreground");
