@@ -42,6 +42,12 @@ describe("ScienceSheet", () => {
     expect(summary.querySelector("svg.lucide-chevron-right")).toBeTruthy();
   });
 
+  it("holds only phrasing content in the summary, as HTML allows there", () => {
+    const { container } = render(<ScienceSheet toolId="bmi" />);
+    const summary = container.querySelector("summary")!;
+    expect(summary.querySelector("div, p, ul, h1, h2, h3, h4, h5, h6")).toBeNull();
+  });
+
   it("opens in place and closes on a second activation", () => {
     const { container } = render(<ScienceSheet toolId="bmi" />);
     const details = container.querySelector("details")!;

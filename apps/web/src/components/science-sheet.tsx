@@ -60,9 +60,9 @@ export function ScienceSheet({
   return (
     <details className={`group/sheet ${groupSurface}`}>
       <summary className="press-tint flex min-h-14 cursor-pointer list-none items-center gap-3 px-4 py-2 outline-ring focus-visible:outline-2 focus-visible:-outline-offset-2 [&::-webkit-details-marker]:hidden">
-        <div className="flex size-7 shrink-0 items-center justify-center rounded-icon bg-primary-soft">
+        <span className="flex size-7 shrink-0 items-center justify-center rounded-icon bg-primary-soft">
           <Info aria-hidden className="size-5 text-primary-ink" />
-        </div>
+        </span>
         <span className="flex min-w-0 flex-1 flex-col">
           <span className="text-body font-semibold">{title ?? t("science.title")}</span>{" "}
           <span className="text-(length:--text-secondary) text-muted-foreground">
