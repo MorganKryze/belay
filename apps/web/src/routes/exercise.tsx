@@ -7,12 +7,11 @@ import { Link, useParams, useSearch } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { BackLink, PageHeader } from "@/components/page-header";
+import { cardSurface } from "@/components/surfaces";
 import { BodyMap, BodySymbols } from "@/exercises/body-map";
 import { formatNumber, sessionTitle } from "@/lib/format";
 import { formatRest, formatRir, formatSets, groupKind } from "@/workouts/format";
 import { NotFound } from "./fallbacks";
-
-const card = "rounded-card border border-border bg-card";
 
 // An exercise's sheet (§4.5): its equipment, the body map, where the program uses it, and how
 // to do it in the app's language.
@@ -62,7 +61,7 @@ export function ExercisePage() {
           })}
         </p>
       </PageHeader>
-      <div className={`${card} p-4`}>
+      <div className={`${cardSurface} p-4`}>
         <BodyMap primary={exercise.primary} secondary={exercise.secondary} />
       </div>
       {uses.map(({ s, slot, i }) => {
@@ -70,9 +69,9 @@ export function ExercisePage() {
         return (
           <Link
             key={`${s.code}${i}`}
-            to="/workouts"
-            search={{ tab: "program" }}
-            className={`${card} flex min-h-16 items-center justify-between gap-2 px-4 py-3`}
+            to="/workouts/session/$code"
+            params={{ code: s.code }}
+            className={`${cardSurface} flex min-h-16 items-center justify-between gap-2 px-4 py-3`}
           >
             <span className="flex flex-col">
               <span className="font-semibold">{sessionTitle(s.code, t)}</span>
