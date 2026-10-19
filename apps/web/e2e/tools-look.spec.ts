@@ -109,6 +109,8 @@ test("the BMI hint and the activity levels read the shorter copy", async ({ page
   await expect(page.getByText("Your place on the WHO ranges")).toBeVisible();
   await page.goto("/tools/energy");
   await expect(page.getByRole("heading", { name: "Energy expenditure", level: 1 })).toBeVisible();
+  // The levels and their descriptions live in the activity sheet.
+  await page.getByRole("button", { name: /^Your activity/ }).click();
   await expect(
     page.getByText("Sedentary, plus about one hour of moderate to vigorous exercise a day."),
   ).toBeVisible();
