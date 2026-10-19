@@ -242,8 +242,8 @@
     "barOnly": "Barre seule",
     "bar": "Barre de {{bar}} kg",
     "unreachable": "{{target}} kg n'est pas faisable avec ton matériel.",
-    "below": "Juste en dessous : {{total}} kg ({{detail}})",
-    "above": "Juste au-dessus : {{total}} kg ({{detail}})",
+    "below": "Juste en dessous · {{total}} kg",
+    "above": "Juste au-dessus · {{total}} kg",
     "underBar": "La barre seule pèse déjà {{bar}} kg.",
     "equipment": "Mon matériel"
   },

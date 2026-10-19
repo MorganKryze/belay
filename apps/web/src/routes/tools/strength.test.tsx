@@ -25,8 +25,16 @@ describe("one-rep max", () => {
   it("shows both formulas side by side", async () => {
     renderRoute("/tools/one-rep-max");
     const card = await result("Your estimated 1RM");
-    expect(within(card).getByText("Epley").nextElementSibling?.textContent).toBe("116.5kg");
-    expect(within(card).getByText("Brzycki").nextElementSibling?.textContent).toBe("112.5kg");
+    expect(within(card).getByText("Epley").nextElementSibling?.textContent).toBe("116.5\u00a0kg");
+    expect(within(card).getByText("Brzycki").nextElementSibling?.textContent).toBe("112.5\u00a0kg");
+  });
+
+  it("with Epley only on this device, one figure under Epley", async () => {
+    localStorage.setItem("belay.oneRepMaxBrzycki", "hidden");
+    renderRoute("/tools/one-rep-max");
+    const card = await result("Your estimated 1RM");
+    expect(within(card).getByText("Epley").nextElementSibling?.textContent).toBe("116.5\u00a0kg");
+    expect(within(card).queryByText("Brzycki")).toBeNull();
   });
 
   it("warns beyond 10 reps and never accepts more than 12", async () => {
@@ -53,8 +61,17 @@ describe("plates", () => {
     await result("On each side");
     type("Target load", "101");
     expect(screen.getByText("101 kg can't be loaded with your equipment.")).toBeTruthy();
-    expect(screen.getByText("Just below: 100 kg (20 + 20 kg per side)")).toBeTruthy();
-    expect(screen.getByText("Just above: 105 kg (20 + 20 + 2.5 kg per side)")).toBeTruthy();
+    const below = screen.getByText("Just below · 100 kg");
+    expect(below.nextElementSibling?.textContent).toBe("20 + 20 kg per side");
+    const above = screen.getByText("Just above · 105 kg");
+    expect(above.nextElementSibling?.textContent).toBe("20 + 20 + 2.5 kg per side");
+  });
+
+  it("My equipment is a row that says the preset and opens the equipment page", async () => {
+    renderRoute("/tools/plates");
+    const link = await screen.findByRole("link", { name: "My equipment Gym" });
+    fireEvent.click(link);
+    expect(await screen.findByRole("heading", { name: "My equipment" })).toBeTruthy();
   });
 });
 
@@ -79,10 +96,18 @@ describe("warm-up", () => {
       .getAllByRole("listitem")
       .map((li) => li.textContent);
     expect(rows).toEqual([
-      "150 kg10 + 5 per side× 5",
-      "275 kg20 + 5 + 2.5 per side× 3",
-      "100 kgworking setsyour call",
+      "150 kg 10 + 5 per side× 5",
+      "275 kg 20 + 5 + 2.5 per side× 3",
+      "100 kg working setsyour call",
     ]);
+  });
+
+  it("the warm-up list stays a polite live region", async () => {
+    renderRoute("/tools/warmup");
+    const list = await result("Your warm-up");
+    const live = list.parentElement!;
+    expect(live.getAttribute("aria-live")).toBe("polite");
+    expect(live.getAttribute("aria-atomic")).toBe("true");
   });
 
   it("collapses a warm-up entirely at the bar into one bar-only set", async () => {
@@ -93,8 +118,8 @@ describe("warm-up", () => {
     fireEvent.click(screen.getByRole("button", { name: "Increase Warm-up" }));
     const rows = within(await result("Your warm-up")).getAllByRole("listitem");
     expect(rows.map((li) => li.textContent)).toEqual([
-      "120 kgbar only× 5",
-      "26 kgworking setsyour call",
+      "120 kg bar only× 5",
+      "26 kg working setsyour call",
     ]);
   });
 

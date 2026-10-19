@@ -1,9 +1,8 @@
 import { type Loading, loadBar } from "@belay/shared/tools/plates";
-import { Link } from "@tanstack/react-router";
-import { ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
 import { Barbell } from "@/components/barbell";
+import { GroupedList, RowLink } from "@/components/grouped-list";
 import { NumberStepper } from "@/components/number-stepper";
 import { ResultCard } from "@/components/result-card";
 import { ToolPage } from "@/components/tool-page";
@@ -38,52 +37,47 @@ export function PlatesTool() {
         {result?.kind === "exact" ? (
           <>
             <Barbell perSideKg={result.loading.perSideKg} label={detail(result.loading)} />
-            <p className="text-sm">
-              <b>{detail(result.loading)}</b>
-              <br />
-              <span className="text-[13px] text-muted-foreground">
-                {t("plates.bar", { bar: n(barKg) })}
-              </span>
+            <p className="text-body font-semibold tabular-nums">{detail(result.loading)}</p>
+            <p className="text-[13.5px] text-muted-foreground">
+              {t("plates.bar", { bar: n(barKg) })}
             </p>
           </>
         ) : (
           result && (
-            <div className="flex flex-col gap-1 text-sm">
-              <p className="font-semibold">
+            <>
+              <p className="text-body font-semibold">
                 {result.below === null
                   ? t("plates.underBar", { bar: n(barKg) })
                   : t("plates.unreachable", { target: n(inputs.targetKg) })}
               </p>
-              {result.below && (
-                <p>
-                  {t("plates.below", {
-                    total: n(result.below.totalKg),
-                    detail: detail(result.below),
-                  })}
-                </p>
+              {[
+                result.below && (["plates.below", result.below] as const),
+                result.above && (["plates.above", result.above] as const),
+              ].map(
+                (item) =>
+                  item && (
+                    <div key={item[0]} className="mt-2 border-t border-border pt-2.5">
+                      <p className="text-body font-semibold">
+                        {t(item[0], { total: n(item[1].totalKg) })}
+                      </p>
+                      <p className="text-[13.5px] text-muted-foreground tabular-nums">
+                        {detail(item[1])}
+                      </p>
+                    </div>
+                  ),
               )}
-              {result.above && (
-                <p>
-                  {t("plates.above", {
-                    total: n(result.above.totalKg),
-                    detail: detail(result.above),
-                  })}
-                </p>
-              )}
-            </div>
+            </>
           )
         )}
       </ResultCard>
-      <Link
-        to="/tools/plates/equipment"
-        className="flex min-h-[50px] items-center justify-between border-y border-border font-medium"
-      >
-        {t("plates.equipment")}
-        <span className="flex items-center gap-1 text-sm font-normal text-muted-foreground">
-          {t(`equipment.presets.${state.equipment.preset}`)}
-          <ChevronRight aria-hidden className="size-4" />
-        </span>
-      </Link>
+      <GroupedList>
+        <RowLink
+          to="/tools/plates/equipment"
+          label={t("plates.equipment")}
+          value={t(`equipment.presets.${state.equipment.preset}`)}
+          trailing="push"
+        />
+      </GroupedList>
     </ToolPage>
   );
 }
