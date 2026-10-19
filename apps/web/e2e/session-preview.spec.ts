@@ -81,19 +81,16 @@ test("back from an exercise opened in the preview returns to the preview where i
   await fakeServer(page);
   await openPreview(page);
   const url = page.url();
-  // The push has landed: the router has settled the page before it is scrolled.
+  // The push has played out before the page is scrolled. Its animations start a frame after the
+  // preview is drawn, so counting them can find none too early; while the transition runs, its
+  // overlay takes the tap and the click scrolls the page looking for its link.
   await expect
     .poll(() =>
       page.evaluate(
-        () =>
-          document
-            .getAnimations()
-            .filter((a) =>
-              (a.effect as KeyframeEffect | null)?.pseudoElement?.startsWith("::view-transition"),
-            ).length,
+        () => (document as { activeViewTransition?: ViewTransition | null }).activeViewTransition,
       ),
     )
-    .toBe(0);
+    .toBeNull();
   await expect
     .poll(() =>
       page.evaluate(() => {
