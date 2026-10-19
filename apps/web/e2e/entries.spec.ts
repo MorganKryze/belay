@@ -86,20 +86,21 @@ test("one day of creatine ticked marks its course on Body", async ({ page }) => 
   await expect(weeks.getByRole("listitem").first()).toContainText("creatine");
 });
 
-test("an annotation is added on Body, drawn on its week, then deleted", async ({ page }) => {
+test("an annotation is added on Body, listed as a row, then deleted", async ({ page }) => {
   await fakeServer(page, { rows: WEEKS });
   await page.goto("/body");
+  await expect(page.locator(".launch")).toBeHidden();
   await page.getByRole("button", { name: /^Annotation\b/ }).click();
   const add = sheet(page, "New annotation");
   await add.getByRole("radio", { name: "Break" }).click();
   await add.getByLabel("Date of the annotation").fill("2026-09-29");
   await add.getByRole("button", { name: "Add" }).click();
-  const weeks = page.getByRole("region", { name: "Your weeks" });
-  const pill = weeks.getByRole("button", { name: "Open the annotation Break" });
-  await expect(pill).toBeVisible();
-  await pill.click();
+  const list = page.getByRole("region", { name: "Annotations" });
+  const row = list.getByRole("button", { name: /^Break / });
+  await expect(row).toBeVisible();
+  await row.click();
   await sheet(page, "Annotation").getByRole("button", { name: "Delete this annotation" }).click();
-  await expect(pill).toBeHidden();
+  await expect(row).toBeHidden();
   await expect(page.getByText("Annotation deleted")).toBeVisible();
 });
 
@@ -165,7 +166,9 @@ const SCREENS: [string, (page: Page) => Promise<void>][] = [
       await expect(sheet(page, "Supplements").getByText("for 1 day")).toBeVisible();
       await page.goto("/body");
       await expect(page.getByText("creatine · 14 d")).toBeVisible();
-      await expect(page.getByRole("button", { name: "Open the annotation Break" })).toBeVisible();
+      await expect(
+        page.getByRole("region", { name: "Annotations" }).getByRole("button", { name: /^Break / }),
+      ).toBeVisible();
     },
   ],
   [
@@ -184,7 +187,10 @@ const SCREENS: [string, (page: Page) => Promise<void>][] = [
     "the annotation sheet",
     async (page) => {
       await page.goto("/body");
-      await page.getByRole("button", { name: "Open the annotation Break" }).click();
+      await page
+        .getByRole("region", { name: "Annotations" })
+        .getByRole("button", { name: /^Break / })
+        .click();
       await expect(
         sheet(page, "Annotation").getByRole("button", { name: "Delete this annotation" }),
       ).toBeVisible();

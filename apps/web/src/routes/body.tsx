@@ -1,7 +1,7 @@
 import "@/i18n/lazy";
 import { addDays, type ISODate, isoWeekStart } from "@belay/shared/body/dates";
 import { type IntakeLog, weeklyIntake } from "@belay/shared/body/intake";
-import { type Measure, weeklyWaist } from "@belay/shared/body/measures";
+import { type Measure, measureOf, weeklyWaist } from "@belay/shared/body/measures";
 import { creatineWindows } from "@belay/shared/body/supplements";
 import { inTargetRange, type TargetRange } from "@belay/shared/body/target";
 import {
@@ -14,11 +14,12 @@ import {
 } from "@belay/shared/body/weighings";
 import type { AnnotationRow, SupplementLogRow, SupplementRow } from "@belay/shared/sync/schema";
 import type { TFunction } from "i18next";
-import { Plus } from "lucide-react";
+import { Flag, type LucideIcon, Ruler, Scale } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/page-header";
-import { cardSurface } from "@/components/surfaces";
+import { cardSurface, groupCard, sectionLabel } from "@/components/surfaces";
+import { RowBody, rowLine, type Status } from "@/components/today-card";
 import { TrendFigure } from "@/components/trend-figure";
 import { AnnotationSheet } from "@/components/annotation-sheet";
 import { MeasuresSheet } from "@/components/measures-sheet";
@@ -27,7 +28,15 @@ import { SyncBanner } from "@/components/sync-banner";
 import { Button } from "@/components/ui/button";
 import { type Entry, Toast, useWriter } from "@/components/weigh-in";
 import { WeighInSheet } from "@/components/weigh-in-sheet";
-import { formatKg, formatNumber, formatShortDay, formatWeekRange, lossView } from "@/lib/format";
+import { useFirstPull } from "@/lib/first-pull";
+import {
+  formatKg,
+  formatNumber,
+  formatShortDay,
+  formatWeekday,
+  formatWeekRange,
+  lossView,
+} from "@/lib/format";
 import { useToday } from "@/lib/today";
 import {
   type Account,
@@ -212,11 +221,36 @@ function BodyContent({
       }),
     ),
   ].join(" ");
-  // Annotations whose pill is not on a week shown (no weeks list yet, or the date outside it).
-  const weeksShown = weighings.length < MIN_WEIGHINGS ? [] : weeks.filter((w) => w.end >= from);
-  const orphans = shownNotes.filter(
-    (a) => !weeksShown.some((w) => a.date >= w.start && a.date <= w.end),
-  );
+  // Each annotation of the period has its row, the newest first, wherever the weeks start.
+  const listedNotes = [...shownNotes].sort((a, b) => (a.date < b.date ? 1 : -1));
+  const weekday = (d: ISODate) => formatWeekday(d, i18n.language, today, { startOfLine: false });
+  // Until this device has the account's data, the rows wait rather than say nothing was entered.
+  const firstPull = useFirstPull(account);
+  const weighed = weighings.find((w) => w.date === today);
+  const weighInStatus: Status = firstPull
+    ? null
+    : weighed
+      ? { text: t("trend.kg", { value: formatKg(weighed.weightKg, i18n.language) }), done: true }
+      : { text: t("today.weighInEmpty"), done: false };
+  // The latest measurement up to today: its waist, else its neck, else its hips.
+  const fields = ["waist", "neck", "hip"] as const;
+  const lastMeasure = measures
+    .filter((m) => m.date <= today && fields.some((f) => measureOf(m, f) !== null))
+    .sort((a, b) => (a.date < b.date ? -1 : 1))
+    .at(-1);
+  const measureField = lastMeasure && fields.find((f) => measureOf(lastMeasure, f) !== null);
+  const measuresStatus: Status = firstPull
+    ? null
+    : lastMeasure && measureField
+      ? {
+          text: `${t(`body.dayParts.${measureField}`, {
+            value: formatNumber(measureOf(lastMeasure, measureField)!, i18n.language, {
+              digits: 1,
+            }),
+          })} · ${weekday(lastMeasure.date)}`,
+          done: false,
+        }
+      : { text: t("body.entries.measuresNone"), done: false };
 
   return (
     <>
@@ -285,41 +319,33 @@ function BodyContent({
               setOpen({ sheet: "annotation", annotation: annotations.find((a) => a.id === id)! })
             }
           />
-          {orphans.length > 0 && (
-            <div
-              role="group"
-              aria-label={t("annotation.row")}
-              className="flex flex-wrap gap-x-2 px-1"
-            >
-              {orphans.map((a) => (
-                <AnnotationPill
-                  key={a.id}
-                  annotation={a}
-                  onOpen={() => setOpen({ sheet: "annotation", annotation: a })}
-                />
-              ))}
-            </div>
-          )}
         </div>
       )}
-      <div className="grid grid-cols-2 gap-2">
-        <Button
-          variant="secondary"
-          className="px-2"
-          onClick={() => setOpen({ sheet: "measures", date: today })}
-        >
-          <Plus aria-hidden className="size-4" />
-          {t("measures.title")}
-        </Button>
-        <Button
-          variant="secondary"
-          className="px-2"
-          onClick={() => setOpen({ sheet: "annotation", annotation: null })}
-        >
-          <Plus aria-hidden className="size-4" />
-          {t("annotation.button")}
-        </Button>
-      </div>
+      <section aria-labelledby="entries" className="flex flex-col gap-2">
+        <h2 id="entries" className={sectionLabel}>
+          {t("body.entries.title")}
+        </h2>
+        <div className={groupCard}>
+          <EntryRow
+            icon={Scale}
+            title={t("today.weighIn")}
+            status={weighInStatus}
+            onClick={() => setOpen({ sheet: "weighIn", date: today })}
+          />
+          <EntryRow
+            icon={Ruler}
+            title={t("measures.title")}
+            status={measuresStatus}
+            onClick={() => setOpen({ sheet: "measures", date: today })}
+          />
+          <EntryRow
+            icon={Flag}
+            title={t("annotation.button")}
+            status={{ text: t("body.entries.annotationSub"), done: false }}
+            onClick={() => setOpen({ sheet: "annotation", annotation: null })}
+          />
+        </div>
+      </section>
       {weighings.length >= MIN_WEIGHINGS && (
         <Weeks
           weeks={weeks.filter((w) => w.end >= from)}
@@ -330,9 +356,29 @@ function BodyContent({
           measures={measures}
           intake={intake}
           courses={courses}
-          annotations={annotations}
-          onAnnotation={(annotation) => setOpen({ sheet: "annotation", annotation })}
         />
+      )}
+      {listedNotes.length > 0 && (
+        <section aria-labelledby="annotations" className="flex flex-col gap-2">
+          <h2 id="annotations" className={sectionLabel}>
+            {t("annotation.row")}
+          </h2>
+          <div className={groupCard}>
+            {listedNotes.map((a) => (
+              <EntryRow
+                key={a.id}
+                icon={Flag}
+                title={annotationName(a, t)}
+                status={{
+                  // A note named by its own text says what it is before its day.
+                  text: `${a.type === "note" && a.label ? `${t("annotation.kinds.note")} · ` : ""}${weekday(a.date)}`,
+                  done: false,
+                }}
+                onClick={() => setOpen({ sheet: "annotation", annotation: a })}
+              />
+            ))}
+          </div>
+        </section>
       )}
       <History
         weighings={shown}
@@ -417,7 +463,7 @@ function FirstDays({ weighings, today }: { weighings: Weighing[]; today: ISODate
 }
 
 // One block per ISO week, the most recent first: its dates and loss, its pills (in the range,
-// creatine, annotations), then three figures: average weight, waist, intake (D5, D6).
+// creatine), then three figures: average weight, waist, intake (D5, D6).
 function Weeks({
   weeks,
   firstWeek,
@@ -427,8 +473,6 @@ function Weeks({
   measures,
   intake,
   courses,
-  annotations,
-  onAnnotation,
 }: {
   weeks: WeekSummary[];
   firstWeek: ISODate;
@@ -438,8 +482,6 @@ function Weeks({
   measures: Measure[];
   intake: IntakeLog[];
   courses: { start: ISODate; end: ISODate }[];
-  annotations: AnnotationRow[];
-  onAnnotation: (annotation: AnnotationRow) => void;
 }) {
   const { t, i18n } = useTranslation();
   const sub = "text-xs text-muted-foreground";
@@ -452,7 +494,6 @@ function Weeks({
         {weeks.map((w) => {
           const waist = weeklyWaist(measures, w.start);
           const food = weeklyIntake(intake, w.start);
-          const notes = annotations.filter((a) => a.date >= w.start && a.date <= w.end);
           const onCreatine = courses.some((c) => c.start <= w.end && c.end >= w.start);
           const status =
             w.status === "in_progress"
@@ -490,10 +531,6 @@ function Weeks({
                   <span className={neutralPill}>{t("body.insufficient")}</span>
                 )}
                 {onCreatine && <span className={neutralPill}>{t("body.creatinePill")}</span>}
-                {notes.map((a) => (
-                  // A 44 px target around a pill of the usual size.
-                  <AnnotationPill key={a.id} annotation={a} onOpen={() => onAnnotation(a)} />
-                ))}
                 {status && <span className={sub}>{status}</span>}
               </div>
               <dl className="grid grid-cols-3 gap-2">
@@ -538,18 +575,21 @@ function Weeks({
   );
 }
 
-// A 44 px target around a pill of the usual size.
-function AnnotationPill({ annotation, onOpen }: { annotation: AnnotationRow; onOpen: () => void }) {
-  const { t } = useTranslation();
-  const name = annotationName(annotation, t);
+// A line of a grouped list, drawn as Home's gesture rows; the whole line opens its sheet.
+function EntryRow({
+  icon,
+  title,
+  status,
+  onClick,
+}: {
+  icon: LucideIcon;
+  title: string;
+  status: Status;
+  onClick: () => void;
+}) {
   return (
-    <button
-      type="button"
-      className="-my-2.5 inline-flex min-h-11 items-center"
-      aria-label={t("body.openAnnotation", { name })}
-      onClick={onOpen}
-    >
-      <span className={`${neutralPill} underline underline-offset-2`}>{name}</span>
+    <button type="button" className={rowLine} onClick={onClick}>
+      <RowBody icon={icon} title={title} status={status} />
     </button>
   );
 }

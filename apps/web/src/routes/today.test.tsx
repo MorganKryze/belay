@@ -402,7 +402,7 @@ describe("before the data is known", () => {
     const { sync, release } = heldSync();
     fakeApi({ me: ADA, sync });
     renderRoute("/");
-    expect((await line(/^Supplements/)).textContent).toBe("Supplements\u00a0");
+    expect((await line(/^Supplements/)).textContent).toBe("Supplements \u00a0");
     expect(screen.queryByRole("link", { name: /^Supplements\s*none yet$/ })).toBeNull();
     release();
     expect(await screen.findByRole("link", { name: /^Supplements\s*none yet$/ })).toBeTruthy();
