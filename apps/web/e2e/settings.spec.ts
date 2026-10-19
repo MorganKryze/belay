@@ -26,8 +26,8 @@ test.describe("accessibility", () => {
     "Trend",
     "History",
     "Volume",
-    "Range",
-    "Intake",
+    "Range pill",
+    "Weekly intake",
   ] as const) {
     for (const theme of ["light", "dark"] as const) {
       test(`Réglages with the ${menu} menu open has no axe violation, ${theme}`, async ({
@@ -412,8 +412,8 @@ test.describe("at 360 px", () => {
         [
           "Body",
           [
-            ["Range", "Shown", "Hidden"],
-            ["Intake", "Shown", "Hidden"],
+            ["Range pill", "Shown", "Hidden"],
+            ["Weekly intake", "Shown", "Hidden"],
           ],
         ],
       ],

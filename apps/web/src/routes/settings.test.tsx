@@ -66,7 +66,7 @@ describe("Settings preferences", () => {
     ["General", ["Language · English", "Theme · System"]],
     ["Home", ["Trend · Shown"]],
     ["Sessions", ["Paused · Everything stops", "History · With activities", "Volume · Shown"]],
-    ["Body", ["Range · Shown", "Intake · Shown"]],
+    ["Body", ["Range pill · Shown", "Weekly intake · Shown"]],
   ] as const;
 
   it("groups the eight rows under General, Home, Sessions and Body, in order, each showing its value", async () => {
@@ -149,25 +149,25 @@ describe("Settings preferences", () => {
     expect(localStorage.getItem("belay.homeTrend")).toBe("shown");
   });
 
-  it("Range offers Shown and Hidden and keeps the choice on this device", async () => {
+  it("Range pill offers Shown and Hidden and keeps the choice on this device", async () => {
     fakeApi({ me: ADA });
     renderRoute("/settings");
-    await choose(/^Range/, "Hidden");
+    await choose(/^Range pill/, "Hidden");
     expect(localStorage.getItem("belay.rangePill")).toBe("hidden");
-    expect(await screen.findByRole("combobox", { name: "Range · Hidden" })).toBeTruthy();
+    expect(await screen.findByRole("combobox", { name: "Range pill · Hidden" })).toBeTruthy();
     expect(localStorage.getItem("belay.weekIntake")).toBeNull();
-    await choose(/^Range/, "Shown");
+    await choose(/^Range pill/, "Shown");
     expect(localStorage.getItem("belay.rangePill")).toBe("shown");
   });
 
-  it("Intake offers Shown and Hidden and keeps the choice on this device", async () => {
+  it("Weekly intake offers Shown and Hidden and keeps the choice on this device", async () => {
     fakeApi({ me: ADA });
     renderRoute("/settings");
-    await choose(/^Intake/, "Hidden");
+    await choose(/^Weekly intake/, "Hidden");
     expect(localStorage.getItem("belay.weekIntake")).toBe("hidden");
-    expect(await screen.findByRole("combobox", { name: "Intake · Hidden" })).toBeTruthy();
+    expect(await screen.findByRole("combobox", { name: "Weekly intake · Hidden" })).toBeTruthy();
     expect(localStorage.getItem("belay.rangePill")).toBeNull();
-    await choose(/^Intake/, "Shown");
+    await choose(/^Weekly intake/, "Shown");
     expect(localStorage.getItem("belay.weekIntake")).toBe("shown");
   });
 
