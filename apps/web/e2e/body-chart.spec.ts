@@ -13,10 +13,11 @@ const today = () =>
 
 // Six weeks of weigh-ins drifting down from 81.5 kg, a creatine course ticked three days ago, and
 // two annotations two days apart, early in the month shown, away from the course's label.
-// `base` moves the whole series, to test a five-character average (100.0 kg and above).
-async function openBody(page: Page, base = 80) {
+// `base` moves the whole series, to test a five-character average (100.0 kg and above); `days`
+// lengthens it, so that « All » spans more than three months.
+async function openBody(page: Page, base = 80, days = 42) {
   const day = today();
-  const rows = Array.from({ length: 42 }, (_, i) => ({
+  const rows = Array.from({ length: days }, (_, i) => ({
     date: addDays(day, -i),
     weightKg: Math.round((base + i * 0.035 + (i % 3) * 0.2) * 10) / 10,
   }));
@@ -159,4 +160,50 @@ test("a period change redraws the chart with no animation", async ({ page }) => 
   });
   expect(seen.label).not.toBe(before);
   expect(seen.animations).toBe(0);
+});
+
+test("dots shrink on longer periods; the crosshair's dot and the last average are ringed in the card", async ({
+  page,
+}) => {
+  const chart = await openBody(page, 80, 120);
+  const card = await tokenColor(page, "--card");
+  const line = await tokenColor(page, "--chart-line");
+  const ringed = await chart.evaluate((svg, ink) => {
+    const c = [...svg.querySelectorAll("circle")].filter((e) => getComputedStyle(e).fill === ink);
+    return c.map((e) => {
+      const s = getComputedStyle(e);
+      return { r: e.getAttribute("r"), stroke: s.stroke, width: s.strokeWidth };
+    });
+  }, line);
+  expect(ringed).toEqual([{ r: "4", stroke: card, width: "2px" }]);
+  const radii = () =>
+    chart.evaluate(
+      (svg, ink) => [
+        ...new Set(
+          [...svg.querySelectorAll("circle")]
+            .filter((e) => getComputedStyle(e).fill !== ink)
+            .map((e) => e.getAttribute("r")),
+        ),
+      ],
+      line,
+    );
+  for (const [period, r] of [
+    ["1 month", "2.6"],
+    ["3 months", "2"],
+    ["All", "1.6"],
+  ] as const) {
+    await page.getByRole("radio", { name: period }).click();
+    await expect.poll(radii).toEqual([r]);
+  }
+  await chart.focus();
+  const crosshair = chart.locator("line[stroke-dasharray='3 3']");
+  await expect(crosshair).toHaveCount(1);
+  const dot = await chart.evaluate((svg, ink) => {
+    const x = svg.querySelector("line[stroke-dasharray='3 3']")!.getAttribute("x1");
+    const e = [...svg.querySelectorAll("circle")].find(
+      (c) => c.getAttribute("cx") === x && getComputedStyle(c).fill !== ink,
+    )!;
+    return { r: e.getAttribute("r"), stroke: getComputedStyle(e).stroke };
+  }, line);
+  expect(dot).toEqual({ r: "5", stroke: card });
 });
