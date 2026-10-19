@@ -1,16 +1,18 @@
 import { AGE_RANGE_YEARS, HEIGHT_RANGE_CM, WEIGHT_RANGE_KG } from "@belay/shared/tools/bounds";
 import { dailyEnergy, PAL_LEVELS } from "@belay/shared/tools/energy";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
-import { ChoiceList } from "@/components/choice-list";
+import { GroupedList, RowButton } from "@/components/grouped-list";
 import { InlineChoice } from "@/components/inline-choice";
 import { NumberStepper } from "@/components/number-stepper";
 import { ProfileProposal, RestoreButton, usePrefill } from "@/components/prefill";
-import { ResultCard } from "@/components/result-card";
+import { ResultCard, ResultFigure } from "@/components/result-card";
 import { ToolPage } from "@/components/tool-page";
 import { attempt } from "@/lib/attempt";
 import { formatNumber } from "@/lib/format";
 import { useTool } from "@/lib/tool-storage";
+import { PalSheet } from "./pal-sheet";
 
 export const EnergyInputs = z.object({
   ageYears: z.number().int().min(AGE_RANGE_YEARS.min).max(AGE_RANGE_YEARS.max).catch(30),
@@ -25,6 +27,7 @@ export function EnergyTool() {
   const ageYears = prefill.value("ageYears", inputs.ageYears);
   const heightCm = prefill.value("heightCm", state.heightCm ?? 170);
   const weightKg = prefill.value("weightKg", state.weightKg ?? 70);
+  const [sheet, setSheet] = useState(false);
   const pal = PAL_LEVELS.find((l) => l.id === inputs.pal)?.pal ?? 1.55;
   const e = attempt(() => dailyEnergy({ formula, ageYears, heightCm, weightKg }, pal));
   const kcal = (v: number) => formatNumber(v, i18n.language, { digits: 0 });
@@ -94,30 +97,33 @@ export function EnergyTool() {
         hint={prefill.hint("weightKg")}
       />
       <RestoreButton prefill={prefill} />
-      <ChoiceList
-        label={t("energy.activity")}
-        value={inputs.pal}
-        options={PAL_LEVELS.map((l) => ({
-          value: l.id,
-          label: t(`energy.levels.${l.id}.name`),
-          description: t(`energy.levels.${l.id}.description`),
-          aside: formatNumber(l.pal, i18n.language, { digits: 2, minDigits: 2 }),
-        }))}
-        onChange={(id) => setInputs({ pal: id })}
-      />
+      <GroupedList>
+        <RowButton
+          label={t("energy.activity")}
+          sub={`${t(`energy.levels.${inputs.pal}.name`)} · ${formatNumber(pal, i18n.language, { digits: 2, minDigits: 2 })}`}
+          trailing="push"
+          onClick={() => setSheet(true)}
+        />
+      </GroupedList>
+      {sheet && (
+        <PalSheet
+          value={inputs.pal}
+          onPick={(id) => setInputs({ pal: id })}
+          onClose={() => setSheet(false)}
+        />
+      )}
       <ResultCard label={t("energy.result")}>
         {e && (
           <>
-            <div className="text-[32px] leading-tight font-extrabold tracking-tight whitespace-nowrap">
-              {kcal(e.dayKcal)}
-              <span className="ml-1 text-[15px] font-semibold text-muted-foreground">kcal</span>
-            </div>
-            <p className="text-[13px] text-muted-foreground">
+            <ResultFigure value={kcal(e.dayKcal)} unit="kcal" />
+            <p className="text-[13.5px] text-muted-foreground">
               {t("energy.range", { low: kcal(e.lowKcal), high: kcal(e.highKcal) })}
             </p>
-            <p className="mt-2 flex items-baseline justify-between gap-2 border-t border-primary/20 pt-2">
-              <span className="text-[13px] text-muted-foreground">{t("energy.bmr")}</span>
-              <b className="whitespace-nowrap tabular-nums">{kcal(e.bmrKcal)} kcal</b>
+            <p className="mt-2 flex items-baseline justify-between gap-3 border-t border-border pt-2.5">
+              <span className="text-[13.5px] text-muted-foreground">{t("energy.bmr")}</span>{" "}
+              <b className="text-body font-semibold whitespace-nowrap tabular-nums">
+                {kcal(e.bmrKcal)} kcal
+              </b>
             </p>
           </>
         )}

@@ -6,7 +6,7 @@ import { useTranslation } from "react-i18next";
 import { z } from "zod";
 import { NumberStepper } from "@/components/number-stepper";
 import { RestoreButton, usePrefill } from "@/components/prefill";
-import { ResultCard } from "@/components/result-card";
+import { ResultCard, ResultFigure } from "@/components/result-card";
 import { Segmented } from "@/components/segmented";
 import { ToolPage } from "@/components/tool-page";
 import { attempt } from "@/lib/attempt";
@@ -69,17 +69,14 @@ export function ProteinTool() {
       <ResultCard label={t("protein.result")}>
         {r && (
           <>
-            <div className="text-[32px] leading-tight font-extrabold tracking-tight">
-              {range(r.lowG, r.highG)}
-              <span className="ml-1 text-[15px] font-semibold text-muted-foreground">g</span>
-            </div>
-            <p className="text-[13px] text-muted-foreground">
+            <ResultFigure value={range(r.lowG, r.highG)} unit="g" />
+            <p className="text-[13.5px] text-muted-foreground">
               {t("protein.perKg", {
                 low: n(roundTo(r.lowG / weightKg, 0.1)),
                 high: n(roundTo(r.highG / weightKg, 0.1)),
               })}
             </p>
-            <div className="mt-2 grid grid-cols-2 gap-2.5">
+            <div className="mt-2 grid grid-cols-2 gap-3 border-t border-border pt-2.5">
               {(
                 [
                   ["meals3", r.perMeal3],
@@ -87,10 +84,8 @@ export function ProteinTool() {
                 ] as const
               ).map(([key, [low, high]]) => (
                 <div key={key}>
-                  <div className="text-[13px] font-semibold text-primary-ink">
-                    {t(`protein.${key}`)}
-                  </div>
-                  <div className="text-lg font-bold">{range(low, high)} g</div>
+                  <div className="text-[13px] text-muted-foreground">{t(`protein.${key}`)}</div>
+                  <div className="text-[17px] font-bold tabular-nums">{range(low, high)} g</div>
                 </div>
               ))}
             </div>

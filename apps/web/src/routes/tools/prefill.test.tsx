@@ -59,7 +59,7 @@ describe("a connected tool", () => {
     // Mifflin for a man of 31, 178 cm and 80.2 kg, × 1.55 (sedentary, the default).
     expect(
       (await screen.findByRole("region", { name: "Today's expenditure" })).textContent,
-    ).toContain("2,730kcal");
+    ).toContain("2,730\u00a0kcal");
   });
 
   it("drops a field's source once the person changes it, and offers to update the profile", async () => {
