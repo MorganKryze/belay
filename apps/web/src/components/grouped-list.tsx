@@ -196,7 +196,7 @@ export function NumberTile({ n }: { n: number }) {
   return (
     <span
       aria-hidden
-      className="grid size-7 place-items-center rounded-icon bg-track text-(length:--text-secondary) font-semibold text-muted-foreground tabular-nums"
+      className="grid size-7 shrink-0 place-items-center rounded-icon bg-track text-(length:--text-secondary) font-semibold text-muted-foreground tabular-nums"
     >
       {n}
     </span>

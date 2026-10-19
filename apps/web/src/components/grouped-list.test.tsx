@@ -14,6 +14,7 @@ import {
   EmptyState,
   groupCard,
   GroupedList,
+  NumberTile,
   RowButton,
   RowLink,
   RowText,
@@ -290,6 +291,13 @@ describe("GroupedList", () => {
       fireEvent.click(link);
     });
     expect(await screen.findByText("Units page")).toBeTruthy();
+  });
+
+  it("a number tile stays 28 px beside a label that fills the row", () => {
+    const { container } = render(<NumberTile n={3} />);
+    const tile = container.firstElementChild;
+    expect(tile?.textContent).toBe("3");
+    expect(classes(tile)).toEqual(expect.arrayContaining(["size-7", "shrink-0"]));
   });
 
   it("uses tokens only", () => {
