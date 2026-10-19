@@ -191,6 +191,18 @@ export function GroupedList({
   );
 }
 
+// The 28 px tile that numbers a row: the preview's exercises, a past session's cards.
+export function NumberTile({ n }: { n: number }) {
+  return (
+    <span
+      aria-hidden
+      className="grid size-7 place-items-center rounded-icon bg-track text-(length:--text-secondary) font-semibold text-muted-foreground tabular-nums"
+    >
+      {n}
+    </span>
+  );
+}
+
 // The kit's empty list: read from the left like the rows it stands in for, drawn by its caller
 // inside a grouped card.
 export function EmptyState({

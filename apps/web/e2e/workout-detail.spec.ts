@@ -124,3 +124,87 @@ test("the past session has nothing scrolling sideways at 360, 390 and 1 280 px",
     ).toBe(0);
   }
 });
+
+const bench = (page: Page) => page.getByRole("region", { name: "Barbell bench press" });
+
+test("a set's number, load and RIR line up in three columns", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await open(page, A, "Session A · Push");
+  const rows = await bench(page)
+    .getByRole("listitem")
+    .evaluateAll((items) =>
+      items.map((li) => {
+        const [, load, rir] = [...li.children].map((c) => c.getBoundingClientRect());
+        return {
+          height: li.getBoundingClientRect().height,
+          loadLeft: load!.left,
+          rirRight: rir!.right,
+        };
+      }),
+    );
+  expect(rows).toHaveLength(12);
+  for (const row of rows) {
+    expect(row.height).toBeGreaterThanOrEqual(40);
+    expect(Math.abs(row.loadLeft - rows[0]!.loadLeft)).toBeLessThanOrEqual(1);
+    expect(Math.abs(row.rirRight - rows[0]!.rirRight)).toBeLessThanOrEqual(1);
+  }
+  // The RIR closes the row at the right, 16 px in from the card's edge.
+  const card = (await bench(page).boundingBox())!;
+  expect(Math.abs(card.x + card.width - 16 - rows[0]!.rirRight)).toBeLessThanOrEqual(1);
+  // Hairlines start under the name, 56 px in from the card's edge.
+  const hairline = await bench(page)
+    .getByRole("listitem")
+    .nth(1)
+    .evaluate((li) => {
+      const before = getComputedStyle(li, "::before");
+      return { left: before.left, height: before.height };
+    });
+  expect(hairline).toEqual({ left: "56px", height: "1px" });
+});
+
+test("each exercise card has a 56 px header with a 28 px tile", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await open(page, A, "Session A · Push");
+  const tile = bench(page).locator("[aria-hidden]").first();
+  await expect(tile).toHaveText("1");
+  const box = (await tile.boundingBox())!;
+  expect(box.width).toBe(28);
+  expect(box.height).toBe(28);
+  const header = (await tile.locator("xpath=..").boundingBox())!;
+  expect(header.height).toBeGreaterThanOrEqual(56);
+  // The tile sits in the middle of its header.
+  expect(Math.abs(box.y + box.height / 2 - (header.y + header.height / 2))).toBeLessThanOrEqual(1);
+});
+
+test("the delete row is red, centred, alone in its group at the page's end", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await open(page, A, "Session A · Push");
+  const remove = page.getByRole("button", { name: "Delete this session" });
+  const label = remove.locator("span");
+  const red = await page.evaluate(() => {
+    const probe = document.createElement("div");
+    probe.style.color = "var(--destructive)";
+    document.body.append(probe);
+    const color = getComputedStyle(probe).color;
+    probe.remove();
+    return color;
+  });
+  await expect(label).toHaveCSS("color", red);
+  const row = (await remove.boundingBox())!;
+  const text = (await label.boundingBox())!;
+  expect(Math.abs(text.x + text.width / 2 - (row.x + row.width / 2))).toBeLessThanOrEqual(1);
+  expect(row.height).toBeGreaterThanOrEqual(44);
+  const place = await remove.evaluate((el) => {
+    const group = el.closest("section")!;
+    return {
+      rows: group.querySelectorAll("li").length,
+      last: group.nextElementSibling === null,
+      below: [...group.parentElement!.children].every(
+        (other) =>
+          other === group ||
+          other.getBoundingClientRect().bottom <= group.getBoundingClientRect().top,
+      ),
+    };
+  });
+  expect(place).toEqual({ rows: 1, last: true, below: true });
+});
