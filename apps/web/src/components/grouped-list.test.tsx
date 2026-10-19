@@ -25,6 +25,16 @@ afterEach(cleanup);
 
 const classes = (el: Element | null) => (el?.getAttribute("class") ?? "").split(/\s+/);
 
+describe("EmptyState, quiet", () => {
+  it("reads a regular sentence over a smaller muted line", () => {
+    render(<EmptyState sentence="Soon." precision="It fills by itself." action={null} quiet />);
+    expect(classes(screen.getByText("Soon."))).not.toContain("font-semibold");
+    expect(classes(screen.getByText("It fills by itself."))).toEqual(
+      expect.arrayContaining(["text-(length:--text-secondary)", "text-muted-foreground"]),
+    );
+  });
+});
+
 describe("GroupedList", () => {
   it("a row is at least 52 px with a 28 px tinted square and a 20 px icon", () => {
     render(<RowButton icon={Settings} label="Units" />);

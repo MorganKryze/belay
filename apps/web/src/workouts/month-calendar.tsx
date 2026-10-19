@@ -1,6 +1,7 @@
 import type { ISODate } from "@belay/shared/body/dates";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { cardSurface } from "@/components/surfaces";
 import { useToday } from "@/lib/today";
 
 // "2026-10" → the days of that month, Monday first: null for the blanks before the 1st.
@@ -24,17 +25,21 @@ export const shiftMonth = (month: string, by: number) => {
 // The month's calendar: a session day is a solid disc, an activity day a dot under the number
 // (inside the disc when both), today a ring, never a fill, so it never reads as a session. Every
 // mark is also said in words to screen readers and named in the legend under the grid; the month
-// before and after one tap away, never past the current month.
+// before and after one tap away, never past the current month. The whole sits in one card, the
+// days 40 px so a ring 1 px off today's disc clears its neighbours on a 360 px screen. Without
+// activities, the legend leaves out the activity mark.
 export function MonthCalendar({
   month,
   marked,
   circled = new Set(),
+  activities = true,
   current,
   onMonth,
 }: {
   month: string;
   marked: ReadonlySet<ISODate>;
   circled?: ReadonlySet<ISODate>;
+  activities?: boolean;
   current: string;
   onMonth: (month: string) => void;
 }) {
@@ -63,8 +68,9 @@ export function MonthCalendar({
   const nav =
     "grid size-11 place-items-center rounded-chip text-foreground disabled:text-muted-foreground disabled:opacity-40";
   return (
-    <div className="flex flex-col gap-1">
-      <div className="flex items-center justify-between">
+    <div className={`${cardSurface} flex flex-col gap-1 px-3 pt-2 pb-3`}>
+      {/* The header bleeds so the 44 px arrows sit near the card's edge. */}
+      <div className="-mx-1.5 flex items-center justify-between">
         <button
           type="button"
           className={nav}
@@ -129,10 +135,12 @@ export function MonthCalendar({
           <span aria-hidden className="size-3 rounded-full bg-primary" />
           {t("history.sessionDay")}
         </li>
-        <li className="flex items-center gap-1.5">
-          <span aria-hidden className="size-1.25 rounded-full bg-primary-ink" />
-          {t("history.activityDay")}
-        </li>
+        {activities && (
+          <li className="flex items-center gap-1.5">
+            <span aria-hidden className="size-1.25 rounded-full bg-primary-ink" />
+            {t("history.activityDay")}
+          </li>
+        )}
         <li className="flex items-center gap-1.5">
           <span aria-hidden className="size-3 rounded-full ring-2 ring-foreground" />
           {t("history.today")}
@@ -155,14 +163,14 @@ function DayCell({
 }) {
   const { t } = useTranslation();
   const look = session
-    ? `bg-primary font-bold text-primary-foreground${today ? " outline-2 outline-offset-2 outline-foreground" : ""}`
+    ? `bg-primary font-bold text-primary-foreground${today ? " outline-2 outline-offset-1 outline-foreground" : ""}`
     : today
       ? "font-bold text-foreground ring-2 ring-foreground ring-inset"
       : "text-foreground";
   return (
     <span
       data-day={day}
-      className={`relative mx-auto grid size-11 place-items-center rounded-full tabular-nums ${look}`}
+      className={`relative mx-auto grid size-10 place-items-center rounded-full tabular-nums ${look}`}
     >
       {Number(day.slice(8))}
       {session && <span className="sr-only">, {t("history.sessionDay")}</span>}
@@ -172,7 +180,7 @@ function DayCell({
         <span
           aria-hidden
           data-dot
-          className={`absolute bottom-1.5 left-1/2 size-1.25 -translate-x-1/2 rounded-full ${
+          className={`absolute bottom-1 left-1/2 size-1.25 -translate-x-1/2 rounded-full ${
             session ? "bg-primary-foreground" : "bg-primary-ink"
           }`}
         />

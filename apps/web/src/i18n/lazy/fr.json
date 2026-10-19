@@ -11,6 +11,16 @@
       "shown": "Affichée",
       "hidden": "Masquée"
     },
+    "historyActivities": "Historique",
+    "historyActivitiesOptions": {
+      "shown": "Avec activités",
+      "hidden": "Séances seules"
+    },
+    "sessionVolume": "Volume sur la séance",
+    "sessionVolumeOptions": {
+      "shown": "Affiché",
+      "hidden": "Masqué"
+    },
     "versionNotes": "Belay {{version}} · notes de version",
     "newTab": "(nouvel onglet)",
     "tracking": "Suivi",
@@ -281,10 +291,11 @@
     "legendLabel": "Légende",
     "recent": "Récentes",
     "first": "Ta première séance apparaîtra ici.",
+    "firstHow": "Elle s'ajoute toute seule quand tu termines une séance, ou avec « Saisir une séance ».",
     "none": "Aucune séance ce mois-ci.",
     "workSets_one": "{{count}} série de travail",
     "workSets_other": "{{count}} séries de travail",
-    "volume": "{{value}} kg",
+    "started": "{{day}} · {{h}} h {{mm}}",
     "warmup": "Montée",
     "load": "{{kg}} kg × {{reps}}",
     "seconds": "{{seconds}} s",
@@ -299,6 +310,7 @@
     "cancel": "Annuler",
     "log": {
       "button": "Saisir une séance",
+      "sub": "faite sans l'app, un autre jour",
       "title": "Saisir une séance",
       "date": "Date de la séance",
       "session": "Séance",

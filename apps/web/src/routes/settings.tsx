@@ -1,6 +1,15 @@
 import "@/i18n/lazy";
 import { useMutation } from "@tanstack/react-query";
-import { CirclePause, Languages, Pill, Scale, SunMoon, UserRound } from "lucide-react";
+import {
+  CalendarDays,
+  CirclePause,
+  Dumbbell,
+  Languages,
+  Pill,
+  Scale,
+  SunMoon,
+  UserRound,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
@@ -14,6 +23,13 @@ import { GroupedList, RowButton, RowLink, RowText } from "@/components/grouped-l
 import { MenuRow } from "@/components/menu-row";
 import { LOCALES, setLocale, type Locale } from "@/i18n";
 import { logout } from "@/lib/api";
+import {
+  readHistoryActivities,
+  readSessionVolume,
+  setHistoryActivities,
+  setSessionVolume,
+  type Shown,
+} from "@/lib/display-prefs";
 import { type HomeTrend, readHomeTrend, setHomeTrend } from "@/lib/home-trend";
 import { readPauseStops, setPauseStops } from "@/lib/pause-stops";
 import { readTheme, setTheme, type Theme } from "@/lib/theme";
@@ -34,13 +50,15 @@ import {
 const LANGUAGE_NAMES: Record<Locale, string> = { en: "English", fr: "Français" };
 const THEMES = ["light", "dark", "system"] as const satisfies readonly Theme[];
 const PAUSE_STOPS = ["all", "session"] as const satisfies readonly PauseStops[];
-const HOME_TREND = ["shown", "hidden"] as const satisfies readonly HomeTrend[];
+const SHOWN = ["shown", "hidden"] as const satisfies readonly Shown[];
 
 export function Settings() {
   const { t, i18n } = useTranslation();
   const [theme, setThemeState] = useState<Theme>(readTheme);
   const [pauseStops, setPauseStopsState] = useState<PauseStops>(readPauseStops);
   const [homeTrend, setHomeTrendState] = useState<HomeTrend>(readHomeTrend);
+  const [historyActivities, setHistoryActivitiesState] = useState<Shown>(readHistoryActivities);
+  const [sessionVolume, setSessionVolumeState] = useState<Shown>(readSessionVolume);
   const account = useAccount();
 
   return (
@@ -85,13 +103,39 @@ export function Settings() {
           icon={Scale}
           label={t("settings.homeTrend")}
           value={homeTrend}
-          options={HOME_TREND.map((v) => ({
+          options={SHOWN.map((v) => ({
             value: v,
             label: t(`settings.homeTrendOptions.${v}`),
           }))}
           onChange={(v) => {
             setHomeTrend(v);
             setHomeTrendState(v);
+          }}
+        />
+        <MenuRow
+          icon={CalendarDays}
+          label={t("settings.historyActivities")}
+          value={historyActivities}
+          options={SHOWN.map((v) => ({
+            value: v,
+            label: t(`settings.historyActivitiesOptions.${v}`),
+          }))}
+          onChange={(v) => {
+            setHistoryActivities(v);
+            setHistoryActivitiesState(v);
+          }}
+        />
+        <MenuRow
+          icon={Dumbbell}
+          label={t("settings.sessionVolume")}
+          value={sessionVolume}
+          options={SHOWN.map((v) => ({
+            value: v,
+            label: t(`settings.sessionVolumeOptions.${v}`),
+          }))}
+          onChange={(v) => {
+            setSessionVolume(v);
+            setSessionVolumeState(v);
           }}
         />
       </GroupedList>

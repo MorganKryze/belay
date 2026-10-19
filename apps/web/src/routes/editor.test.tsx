@@ -94,6 +94,9 @@ const stored = async () => {
   db.close();
   return result;
 };
+// The figures of the past session's strip, once saved: duration, sets, volume.
+const figures = () =>
+  [...screen.getByText("Duration").closest("dl")!.querySelectorAll("dd")].map((d) => d.textContent);
 const slot = (name: string) => screen.getByRole("region", { name: new RegExp(`^${name}`) });
 const cell = (scope: HTMLElement, name: string) =>
   within(scope).getByRole("textbox", { name }) as HTMLInputElement;
@@ -116,9 +119,9 @@ describe("History with activities (spec §4.4)", () => {
         .getAllByRole("listitem")
         .map((li) => li.textContent),
     ).toEqual([
-      "Mon, Oct 5Session B · Legs58 min",
-      "Sat, Oct 3Climbing · 1 h 30 · 6b+",
-      "Thu, Oct 1Session B · Legs1 h 00",
+      "Mon, Oct 5 · 58 min Session B · Legs",
+      "Sat, Oct 3 Climbing · 1 h 30 · 6b+",
+      "Thu, Oct 1 · 1 h 00 Session B · Legs",
     ]);
     fireEvent.click(within(list).getByRole("button", { name: /Climbing/ }));
     const sheet = await screen.findByRole("dialog", { name: "Activity" });
@@ -134,7 +137,7 @@ describe("a session logged afterwards (spec D10)", () => {
     await seed(ADA.id, PAST);
     fakeApi({ me: ADA });
     renderRoute("/workouts?tab=history");
-    fireEvent.click(await screen.findByRole("button", { name: "Log a session" }));
+    fireEvent.click(await screen.findByRole("button", { name: /^Log a session/ }));
     const sheet = await screen.findByRole("dialog", { name: "Log a session" });
     // The next session of the program, and its estimated duration.
     expect(within(sheet).getByRole("radio", { name: "C" }).getAttribute("aria-checked")).toBe(
@@ -156,7 +159,8 @@ describe("a session logged afterwards (spec D10)", () => {
     expect(cell(squat, "Load of set 1, kg").value).toBe("100");
     fireEvent.change(cell(squat, "Reps of set 1"), { target: { value: "6" } });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
-    expect(await screen.findByText(/Tue, Oct 6 · 1 h 00 · 1 work set/)).toBeTruthy();
+    expect(await screen.findByText(/^Tuesday, October 6 · 12:00\sPM$/)).toBeTruthy();
+    expect(figures().slice(0, 2)).toEqual(["1 h 00", "1"]);
     expect(screen.getByText("Record: Barbell full squat, 100 kg × 6")).toBeTruthy();
     const logged = (await stored()).history.workouts.find(
       (w) => w.sessionCode === "B" && w.id !== id(1) && w.id !== id(2),
@@ -177,7 +181,8 @@ describe("a session logged afterwards (spec D10)", () => {
     fireEvent.change(cell(bench, "Load of set 1, kg"), { target: { value: "60" } });
     fireEvent.change(cell(bench, "Reps of set 1"), { target: { value: "8" } });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
-    await screen.findByText(/Mon, Oct 5 · 45 min/);
+    await screen.findByText(/^Monday, October 5 · 12:00\sPM$/);
+    expect(figures()[0]).toBe("45 min");
     cleanup();
     renderRoute("/workouts?tab=history");
     const list = await screen.findByRole("region", { name: "Recent" });
@@ -186,9 +191,9 @@ describe("a session logged afterwards (spec D10)", () => {
         .getAllByRole("link")
         .map((a) => a.textContent),
     ).toEqual([
-      "Mon, Oct 5Session B · Legs58 min",
-      "Mon, Oct 5Session A · Push45 min",
-      "Thu, Oct 1Session B · Legs1 h 00",
+      "Mon, Oct 5 · 58 min Session B · Legs",
+      "Mon, Oct 5 · 45 min Session A · Push",
+      "Thu, Oct 1 · 1 h 00 Session B · Legs",
     ]);
     // Begun at noon, before Monday's B at 18:00: B stays the last one, C comes next.
     expect(nextSession((await stored()).history.workouts)).toBe("C");
@@ -231,7 +236,8 @@ describe("correcting a finished session (spec D9)", () => {
       target: { value: "2026-09-28" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
-    expect(await screen.findByText(/Mon, Sep 28 · 58 min/)).toBeTruthy();
+    expect(await screen.findByText(/^Monday, September 28 · 6:00\sPM$/)).toBeTruthy();
+    expect(figures()[0]).toBe("58 min");
     const moved = (await stored()).history.workouts.find((w) => w.id === id(2))!;
     expect(moved.startedAt).toBe(new Date(2026, 8, 28, 18, 0).toISOString());
     expect(moved.plan).toEqual(sessionByCode("B")!.slots);

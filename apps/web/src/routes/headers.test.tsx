@@ -60,7 +60,7 @@ const fresh = () => {
 describe("pushed pages", () => {
   it("a session detail, an exercise, a tool, the equipment page, Profil and Compléments show their back chevron and large title", async () => {
     await seed(ADA.id, FINISHED);
-    await pushed(`/workouts/${WORKOUT}`, "Session B · Legs", "Sessions", "/workouts?tab=history");
+    await pushed(`/workouts/${WORKOUT}`, "Session B · Legs", "History", "/workouts?tab=history");
     fresh();
     await pushed(
       "/exercises/ds:0025",
@@ -101,6 +101,44 @@ describe("pushed pages", () => {
       name: i18n.t("fallback.notFoundTitle"),
     });
     expect(classes(h1)).toContain("text-title-lg");
+  });
+});
+
+// The bar's three columns: the back side, the compact title, the action side.
+const bar = () => document.querySelector("[data-compact-title]")!.parentElement!;
+
+describe("the bar's action", () => {
+  it("an action sits at the right end of the bar and the back link keeps its place", async () => {
+    await seed(ADA.id, FINISHED);
+    renderRoute(`/workouts/${WORKOUT}`);
+    await screen.findByRole("heading", { level: 1, name: "Session B · Legs" });
+    const [left, title, right] = [...bar().children];
+    expect(title!.hasAttribute("data-compact-title")).toBe(true);
+    // Each side shows its own content and holds an inert, invisible copy of the other.
+    expect(within(left as HTMLElement).getByRole("link", { name: "History" })).toBeTruthy();
+    expect(within(right as HTMLElement).getByRole("link", { name: "Edit" })).toBeTruthy();
+    const ghosts = bar().querySelectorAll("[inert]");
+    expect([...ghosts].map((g) => [g.parentElement === left, g.textContent])).toEqual([
+      [true, "Edit"],
+      [false, "History"],
+    ]);
+    for (const g of ghosts) {
+      expect(classes(g)).toContain("invisible");
+      expect(g.getAttribute("aria-hidden")).toBe("true");
+    }
+  });
+
+  it("with no action the bar is unchanged", async () => {
+    renderRoute("/tools/plates");
+    await screen.findByRole("heading", { level: 1, name: i18n.t("tools.items.plates.name") });
+    const [left, , right] = [...bar().children];
+    expect(left!.outerHTML).toBe(
+      `<div>${within(left as HTMLElement).getByRole("link", { name: "Tools" }).outerHTML}</div>`,
+    );
+    // The right column is only the inert copy of the back link.
+    expect(right!.getAttribute("class")).toBe("invisible");
+    expect(right!.hasAttribute("inert")).toBe(true);
+    expect(right!.innerHTML).toBe(left!.innerHTML);
   });
 });
 

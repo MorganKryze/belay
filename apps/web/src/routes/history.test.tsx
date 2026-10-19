@@ -1,14 +1,21 @@
 import type { Change } from "@belay/shared/sync/schema";
-import { sessionByCode } from "@belay/shared/training/program";
-import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  fireEvent,
+  getDefaultNormalizer,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { IDBFactory } from "fake-indexeddb";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import i18n from "../i18n";
-import { openAccountDb, readOutbox } from "../sync/db";
 import { writeLastUser } from "../sync/last-user";
 import { fakeApi } from "../test/fake-api";
 import { renderRoute } from "../test/render-route";
 import { ADA, seed } from "../test/seed";
+import { MONTH, marked, session } from "../test/workout-fixtures";
 
 // Wednesday 7 October 2026, 7:30 in the morning, on the phone's clock.
 beforeEach(() => {
@@ -24,67 +31,6 @@ afterEach(async () => {
   vi.unstubAllGlobals();
   await i18n.changeLanguage("en");
 });
-
-const id = (n: number) => `0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d${String(n).padStart(2, "0")}`;
-// A session started at `start` (the phone's local time), its sets, and its end `minutes` later.
-function session(
-  n: number,
-  code: string,
-  start: Date,
-  minutes: number | null,
-  sets: [slotIndex: number, position: number, kg: number, reps: number, rir: number | null][] = [],
-): Change[] {
-  const startedAt = start.toISOString();
-  const end = minutes === null ? null : new Date(start.getTime() + minutes * 60_000).toISOString();
-  const at = end ?? startedAt;
-  const plan = [...sessionByCode(code)!.slots];
-  return [
-    {
-      kind: "workout",
-      id: id(n),
-      field: "start",
-      sessionCode: code,
-      plan,
-      startedAt,
-      at: startedAt,
-    },
-    ...sets.map(([slotIndex, position, weightKg, reps, rir], i): Change => ({
-      kind: "set",
-      id: id(n * 10 + i),
-      workoutId: id(n),
-      field: "create",
-      slotIndex,
-      position,
-      exerciseId: plan[slotIndex]!.exerciseId,
-      warmup: position < 3,
-      weightKg,
-      reps,
-      rir,
-      doneAt: startedAt,
-      at: startedAt,
-    })),
-    ...(end ? [{ kind: "workout", id: id(n), field: "ended", value: end, at } as Change] : []),
-  ];
-}
-
-const MONTH: Change[] = [
-  ...session(1, "A", new Date(2026, 9, 2, 18, 0), 64),
-  ...session(2, "B", new Date(2026, 9, 5, 18, 0), 58, [
-    [0, 0, 60, 5, null],
-    [0, 3, 100, 5, 2],
-    [0, 4, 100, 5, 4],
-  ]),
-  // Begun at 23:30 on the 6th, finished at 00:40 on the 7th: it stays on the 6th.
-  ...session(3, "C", new Date(2026, 9, 6, 23, 30), 70),
-  ...session(4, "A", new Date(2026, 9, 3, 18, 0), 50),
-  { kind: "workout", id: id(4), field: "removed", value: true, at: "2026-10-04T08:00:00.000Z" },
-  ...session(5, "A", new Date(2026, 9, 7, 7, 0), null), // in progress
-];
-
-const marked = (calendar: HTMLElement) =>
-  within(calendar)
-    .getAllByText(", session")
-    .map((s) => s.parentElement!.textContent!.replace(", session", ""));
 
 describe("the History segment", () => {
   it("asks to sign in when there is no account", async () => {
@@ -106,9 +52,9 @@ describe("the History segment", () => {
         .getAllByRole("link")
         .map((a) => a.textContent),
     ).toEqual([
-      "Tue, Oct 6Session C · Glutes + light pull1 h 10",
-      "Mon, Oct 5Session B · Legs58 min",
-      "Fri, Oct 2Session A · Push1 h 04",
+      "Tue, Oct 6 · 1 h 10 Session C · Glutes + light pull",
+      "Mon, Oct 5 · 58 min Session B · Legs",
+      "Fri, Oct 2 · 1 h 04 Session A · Push",
     ]);
   });
 
@@ -140,115 +86,205 @@ describe("the History segment", () => {
     expect(await screen.findByText("No session this month.")).toBeTruthy();
   });
 
-  it("says where the first session will be", async () => {
+  it("the log row sits under the calendar and opens the log sheet", async () => {
+    await seed(ADA.id, MONTH);
     fakeApi({ me: ADA });
     renderRoute("/workouts?tab=history");
-    expect(await screen.findByText("Your first session will show here.")).toBeTruthy();
-  });
-});
-
-describe("a session's detail", () => {
-  it("shows its sets as done, and deletes it whole after asking", async () => {
-    const notes: Change[] = [
-      {
-        kind: "workout",
-        id: id(2),
-        field: "note",
-        value: "Bonne énergie",
-        at: "2026-10-05T17:00:00.000Z",
-      },
-      {
-        kind: "workout",
-        id: id(2),
-        field: "exerciseNotes",
-        value: { "0": "Talons surélevés" },
-        at: "2026-10-05T17:00:00.000Z",
-      },
-    ];
-    await seed(ADA.id, [...MONTH, ...notes]);
-    const api = fakeApi({ me: ADA });
-    renderRoute("/workouts?tab=history");
-    fireEvent.click(await screen.findByRole("link", { name: /Session B · Legs/ }));
-    expect(await screen.findByRole("heading", { name: "Session B · Legs", level: 1 })).toBeTruthy();
-    expect(screen.getByText(/Mon, Oct 5 · 58 min · 2 work sets · 1,000 kg/)).toBeTruthy();
-    const squat = screen.getByRole("region", { name: "Barbell full squat" });
-    expect(
-      within(squat)
-        .getAllByRole("listitem")
-        .map((li) => li.textContent),
-    ).toEqual(["Warm-up60 kg × 5", "1100 kg × 5 · RIR 2", "2100 kg × 5 · RIR 4+"]);
-    expect(within(squat).getByText("Talons surélevés")).toBeTruthy();
-    expect(screen.getByText("Bonne énergie")).toBeTruthy();
-
-    fireEvent.click(screen.getByRole("button", { name: "Delete this session" }));
-    const sheet = await screen.findByRole("dialog", { name: "Delete this session?" });
-    fireEvent.click(within(sheet).getByRole("button", { name: "Delete" }));
     const calendar = await screen.findByRole("table", { name: "October 2026" });
-    await waitFor(() => expect(marked(calendar)).toEqual(["2", "6"]));
-    // Still queued, or already sent: the opening sync, if still going, takes it along.
-    const db = await openAccountDb(ADA.id);
-    const recorded = [
-      ...api.requests.flatMap((r) => r.changes),
-      ...(await readOutbox(db)).map((e) => e.change),
-    ];
-    expect(recorded.at(-1)).toMatchObject({
-      kind: "workout",
-      id: id(2),
-      field: "removed",
-      value: true,
-    });
-    db.close();
+    const rows = screen.getAllByRole("button", { name: /^Log a session/ });
+    expect(rows).toHaveLength(1);
+    const row = rows[0]!;
+    expect(row.textContent).toContain("done without the app, on another day");
+    expect(calendar.compareDocumentPosition(row) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // Nothing between the page's segments and the calendar: the log row left the top.
+    const card = calendar.parentElement!;
+    const above = screen
+      .getAllByRole("button")
+      .filter(
+        (b) =>
+          !card.contains(b) && card.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_PRECEDING,
+      );
+    expect(above.map((b) => b.textContent)).not.toContainEqual(expect.stringMatching(/Log/));
+    await act(async () => fireEvent.click(row));
+    expect(await screen.findByRole("dialog", { name: "Log a session" })).toBeTruthy();
   });
 
-  it("numbers the work sets from 1 for each exercise, one replaced mid-session included", async () => {
-    const base = session(7, "B", new Date(2026, 9, 5, 18, 0), 58, [[0, 3, 100, 5, 2]]);
-    const replaced: Change[] = [4, 5].map((position, i) => ({
-      kind: "set",
-      id: id(79 + i),
-      workoutId: id(7),
-      field: "create",
-      slotIndex: 0,
-      position,
-      exerciseId: "ds:1760",
-      warmup: false,
-      weightKg: 24,
-      reps: 10,
-      rir: 2,
-      doneAt: "2026-10-05T16:30:00.000Z",
-      at: "2026-10-05T16:30:00.000Z",
-    }));
-    await seed(ADA.id, [...base, ...replaced]);
+  it("lists the month as one grouped list: day and length, then the title in full", async () => {
+    await seed(ADA.id, MONTH);
     fakeApi({ me: ADA });
     renderRoute("/workouts?tab=history");
-    fireEvent.click(await screen.findByRole("link", { name: /Session B · Legs/ }));
-    const numbers = async (name: string) =>
-      within(await screen.findByRole("region", { name }))
+    const list = await screen.findByRole("region", { name: "Recent" });
+    await waitFor(() => expect(within(list).getAllByRole("link")).toHaveLength(3));
+    expect(within(list).getByRole("heading", { level: 2, name: "Recent" })).toBeTruthy();
+    expect(within(list).getAllByRole("list")).toHaveLength(1);
+    const first = within(list).getAllByRole("link")[0]!;
+    expect(first.textContent).toBe("Tue, Oct 6 · 1 h 10 Session C · Glutes + light pull");
+    expect(within(first).getByText("Session C · Glutes + light pull")).toBeTruthy();
+  });
+
+  it("an activity row says its day, then its summary", async () => {
+    const climb: Change = {
+      kind: "activity",
+      id: "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7da1",
+      field: "fields",
+      date: "2026-10-04",
+      type: "climbing",
+      durationMin: 90,
+      cardioType: null,
+      climbStyle: "boulder",
+      climbRuns: 14,
+      climbGrade: "6b+",
+      climbColor: null,
+      at: "2026-10-04T16:00:00.000Z",
+    };
+    await seed(ADA.id, [...MONTH, climb]);
+    fakeApi({ me: ADA });
+    renderRoute("/workouts?tab=history");
+    const list = await screen.findByRole("region", { name: "Recent" });
+    const row = await within(list).findByRole("button", { name: /^Sun, Oct 4/ });
+    expect(row.textContent).toBe("Sun, Oct 4 Climbing · 1 h 30 · 6b+");
+    // Between the 5th and the 2nd, in the one list.
+    expect(
+      within(list)
         .getAllByRole("listitem")
-        .map((li) => li.firstElementChild!.textContent);
-    expect(await numbers("Barbell full squat")).toEqual(["1"]);
-    expect(await numbers("Dumbbell goblet squat")).toEqual(["1", "2"]);
+        .map((li) => li.textContent!.slice(0, 10)),
+    ).toEqual(["Tue, Oct 6", "Mon, Oct 5", "Sun, Oct 4", "Fri, Oct 2"]);
+    await act(async () => fireEvent.click(row));
+    expect(await screen.findByRole("dialog", { name: "Activity" })).toBeTruthy();
+  });
+
+  it("lists the month's activities when no session was ever finished", async () => {
+    const climb: Change = {
+      kind: "activity",
+      id: "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7da3",
+      field: "fields",
+      date: "2026-10-04",
+      type: "climbing",
+      durationMin: 90,
+      cardioType: null,
+      climbStyle: "boulder",
+      climbRuns: 14,
+      climbGrade: "6b+",
+      climbColor: null,
+      at: "2026-10-04T16:00:00.000Z",
+    };
+    await seed(ADA.id, [climb]);
+    fakeApi({ me: ADA });
+    renderRoute("/workouts?tab=history");
+    const list = await screen.findByRole("region", { name: "Recent" });
+    expect(await within(list).findByRole("button", { name: /^Sun, Oct 4/ })).toBeTruthy();
+    expect(screen.queryByText("Your first session will show here.")).toBeNull();
+  });
+
+  it("an empty history explains, inside the card, how a session gets there", async () => {
+    fakeApi({ me: ADA });
+    renderRoute("/workouts?tab=history");
+    const sentence = await screen.findByText("Your first session will show here.");
+    const card = sentence.closest(".rounded-group")!;
+    expect(card).toBeTruthy();
+    expect(screen.getByRole("region", { name: "Recent" }).contains(card)).toBe(true);
+    expect(card.textContent).toContain(
+      "It shows up on its own when you finish a session, or with “Log a session”.",
+    );
+    expect(within(card as HTMLElement).queryByRole("button")).toBeNull();
+    expect(within(card as HTMLElement).queryByRole("link")).toBeNull();
+  });
+
+  it("a month with nothing says so in the card", async () => {
+    await seed(ADA.id, MONTH);
+    fakeApi({ me: ADA });
+    renderRoute("/workouts?tab=history");
+    await screen.findByRole("table", { name: "October 2026" });
+    fireEvent.click(screen.getByRole("button", { name: "Previous month" }));
+    const line = await screen.findByText("No session this month.");
+    const card = line.closest(".rounded-group")!;
+    expect(card).toBeTruthy();
+    expect(screen.getByRole("region", { name: "September 2026" }).contains(card)).toBe(true);
+    expect(within(card as HTMLElement).queryByRole("button")).toBeNull();
+  });
+
+  describe("with Sessions only", () => {
+    const climb = (date: string): Change => ({
+      kind: "activity",
+      id: "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7da2",
+      field: "fields",
+      date,
+      type: "climbing",
+      durationMin: 90,
+      cardioType: null,
+      climbStyle: "boulder",
+      climbRuns: 14,
+      climbGrade: "6b+",
+      climbColor: null,
+      at: `${date}T16:00:00.000Z`,
+    });
+    beforeEach(() => localStorage.setItem("belay.historyActivities", "hidden"));
+
+    it("leaves activities out: no dot, a two-item legend, no activity row", async () => {
+      await seed(ADA.id, [...MONTH, climb("2026-10-04")]);
+      fakeApi({ me: ADA });
+      renderRoute("/workouts?tab=history");
+      const list = await screen.findByRole("region", { name: "Recent" });
+      await waitFor(() => expect(within(list).getAllByRole("link")).toHaveLength(3));
+      expect(document.querySelector("[data-dot]")).toBeNull();
+      const legend = screen.getByRole("list", { name: "Legend" });
+      expect(
+        within(legend)
+          .getAllByRole("listitem")
+          .map((li) => li.textContent),
+      ).toEqual(["session", "today"]);
+      expect(within(list).queryByRole("button")).toBeNull();
+    });
+
+    it("a month with only an activity says there is no session", async () => {
+      await seed(ADA.id, [...MONTH, climb("2026-09-12")]);
+      fakeApi({ me: ADA });
+      renderRoute("/workouts?tab=history");
+      await screen.findByRole("table", { name: "October 2026" });
+      fireEvent.click(screen.getByRole("button", { name: "Previous month" }));
+      expect(await screen.findByText("No session this month.")).toBeTruthy();
+    });
+
+    it("the choice applies on the next mount", async () => {
+      await seed(ADA.id, [...MONTH, climb("2026-10-04")]);
+      fakeApi({ me: ADA });
+      renderRoute("/workouts?tab=history");
+      const list = await screen.findByRole("region", { name: "Recent" });
+      await waitFor(() => expect(within(list).getAllByRole("link")).toHaveLength(3));
+      localStorage.setItem("belay.historyActivities", "shown");
+      expect(within(list).queryByRole("button")).toBeNull();
+      cleanup();
+      renderRoute("/workouts?tab=history");
+      const again = await screen.findByRole("region", { name: "Recent" });
+      expect(await within(again).findByRole("button", { name: /^Sun, Oct 4/ })).toBeTruthy();
+    });
   });
 
   it("says it in French", async () => {
     await seed(ADA.id, MONTH);
     await i18n.changeLanguage("fr");
     fakeApi({ me: ADA });
-    renderRoute(`/workouts/${id(2)}`);
-    expect(await screen.findByRole("heading", { name: "Séance B · Legs", level: 1 })).toBeTruthy();
-    expect(
-      screen.getByText(/Lun\. 5 oct\. · 58 min · 2 séries de travail · 1\s000 kg/),
-    ).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Supprimer cette séance" }));
-    expect(await screen.findByRole("dialog", { name: "Supprimer cette séance ?" })).toBeTruthy();
+    renderRoute("/workouts?tab=history");
+    const list = await screen.findByRole("region", { name: "Récentes" });
+    await waitFor(() => expect(within(list).getAllByRole("link")).toHaveLength(3));
+    expect(within(list).getAllByRole("link")[2]!.textContent).toBe(
+      "Ven. 2 oct. · 1 h 04 Séance A · Push",
+    );
+    const row = screen.getByRole("button", { name: /^Saisir une séance/ });
+    expect(row.textContent).toBe("Saisir une séance faite sans l'app, un autre jour");
   });
 
-  it("is not found for a session removed or still in progress", async () => {
-    await seed(ADA.id, MONTH);
+  it("says in French how the first session gets there", async () => {
+    await i18n.changeLanguage("fr");
     fakeApi({ me: ADA });
-    renderRoute(`/workouts/${id(4)}`);
-    expect(await screen.findByRole("heading", { name: "Page not found" })).toBeTruthy();
-    cleanup();
-    renderRoute(`/workouts/${id(5)}`);
-    expect(await screen.findByRole("heading", { name: "Page not found" })).toBeTruthy();
+    renderRoute("/workouts?tab=history");
+    expect(await screen.findByText("Ta première séance apparaîtra ici.")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Elle s'ajoute toute seule quand tu termines une séance, ou avec «\u202fSaisir une séance\u202f».",
+        // Kept as written: the default normalizer would turn the narrow spaces into plain ones.
+        { normalizer: getDefaultNormalizer({ collapseWhitespace: false }) },
+      ),
+    ).toBeTruthy();
   });
 });

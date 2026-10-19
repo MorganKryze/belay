@@ -29,15 +29,15 @@
         gap: 12px;
         transform: translateY(-6vh);
       }
-      .launch svg {
+      .launch .mark {
         width: 112px;
         color: #c2410c;
       }
-      .launch span {
-        font:
-          700 24px Inter,
-          system-ui,
-          sans-serif;
+      /* The word is drawn, not set: no font is loaded at the first paint, and the launch images
+         must show the same shapes. 62 px wide is Inter Bold at 23 px, the size of the word the
+         launch images showed before. */
+      .launch .word {
+        width: 62px;
       }
       /* The mark breathes from its first frame, the second hook half a beat behind. Each breath
          starts at full strength, as the launch images paint the mark. */
@@ -66,7 +66,7 @@
         background: #151412;
         color: #f5f5f4;
       }
-      html.dark .launch svg {
+      html.dark .launch .mark {
         color: #fb923c;
       }
       /* Charter §8: no launch screen on a computer, the tab favicon is enough. */
@@ -82,7 +82,7 @@
     <!-- Outside #root, so the first render leaves it: it goes once the account is known. -->
     <div class="launch">
       <div>
-        <svg viewBox="86 126 340 260" fill="currentColor" aria-hidden="true">
+        <svg class="mark" viewBox="86 126 340 260" fill="currentColor" aria-hidden="true">
           <path
             data-hook="a"
             d="M86 160L86 266A120 120 0 0 0 326 266L326 246A20 20 0 0 0 286 246L286 266A80 80 0 0 1 126 266L126 160A20 20 0 0 0 86 160Z"
@@ -92,7 +92,15 @@
             d="M426 352L426 246A120 120 0 0 0 186 246L186 266A20 20 0 0 0 226 266L226 246A80 80 0 0 1 386 246L386 352A20 20 0 0 0 426 352Z"
           />
         </svg>
-        <span>Belay</span>
+        <!-- "Belay" in Inter 4.001 Bold: the wght 700 instance of @fontsource-variable/inter 5.3.0
+             (inter-latin-wght-normal.woff2), shaped with HarfBuzz and outlined with fontTools in
+             font units (2048 per em). The box is the advance by the ascent plus the descent, the
+             line box the text had. -->
+        <svg class="word" viewBox="0 0 5517 2478" fill="currentColor" role="img" aria-label="Belay">
+          <path
+            d="M135 1984V494H726Q890 494 999 543Q1109 593 1163 679Q1218 765 1218 877Q1218 965 1183 1030Q1148 1096 1087 1138Q1027 1179 950 1197V1212Q1034 1215 1108 1259Q1183 1304 1229 1383Q1276 1463 1276 1574Q1276 1691 1218 1784Q1160 1877 1047 1930Q933 1984 764 1984ZM440 1733H704Q838 1733 900 1681Q962 1629 962 1545Q962 1481 931 1433Q901 1384 845 1356Q789 1329 712 1329H440ZM440 1120H681Q746 1120 798 1097Q850 1073 880 1030Q909 986 909 926Q909 845 852 794Q794 743 687 743H440ZM1988 2006Q1817 2006 1693 1936Q1569 1866 1503 1737Q1436 1608 1436 1431Q1436 1258 1502 1128Q1568 998 1689 925Q1810 852 1973 852Q2083 852 2178 887Q2273 922 2345 992Q2417 1063 2457 1169Q2498 1275 2498 1419V1503H1559V1315H2351L2211 1365Q2211 1278 2185 1213Q2158 1149 2106 1113Q2053 1078 1975 1078Q1898 1078 1844 1114Q1789 1150 1761 1212Q1733 1273 1733 1352V1485Q1733 1582 1765 1648Q1798 1714 1857 1747Q1915 1780 1993 1780Q2046 1780 2089 1765Q2132 1750 2162 1721Q2193 1691 2209 1648L2481 1699Q2454 1791 2387 1860Q2320 1930 2219 1968Q2119 2006 1988 2006ZM3003 494V1984H2703V494ZM3570 2006Q3464 2006 3379 1968Q3295 1931 3247 1856Q3198 1782 3198 1671Q3198 1578 3233 1515Q3267 1452 3326 1414Q3386 1376 3461 1356Q3537 1336 3620 1328Q3717 1318 3776 1309Q3836 1301 3863 1282Q3891 1264 3891 1228V1223Q3891 1175 3871 1142Q3851 1109 3812 1091Q3773 1074 3716 1074Q3658 1074 3615 1091Q3572 1109 3545 1138Q3518 1167 3505 1203L3230 1157Q3259 1060 3326 992Q3393 924 3493 888Q3592 852 3716 852Q3807 852 3892 873Q3977 895 4044 940Q4112 985 4151 1057Q4191 1129 4191 1231V1984H3907V1829H3897Q3870 1881 3825 1921Q3780 1960 3717 1983Q3653 2006 3570 2006ZM3655 1795Q3726 1795 3779 1767Q3833 1739 3863 1691Q3893 1643 3893 1584V1463Q3880 1473 3853 1481Q3826 1489 3793 1495Q3760 1501 3728 1506Q3696 1511 3671 1514Q3616 1522 3574 1540Q3532 1558 3509 1588Q3486 1617 3486 1663Q3486 1706 3508 1736Q3530 1765 3568 1780Q3605 1795 3655 1795ZM4404 2380 4473 2154 4510 2163Q4570 2179 4617 2172Q4664 2165 4692 2134Q4721 2103 4727 2047L4735 1987L4315 866H4634L4822 1446Q4856 1556 4878 1666Q4899 1776 4927 1896H4857Q4884 1776 4911 1665Q4938 1555 4974 1446L5170 866H5485L5010 2116Q4976 2206 4923 2272Q4870 2338 4791 2374Q4712 2410 4600 2410Q4540 2410 4488 2401Q4436 2393 4404 2380Z"
+          />
+        </svg>
       </div>
     </div>
     <div id="root"></div>

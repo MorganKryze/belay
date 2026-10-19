@@ -8,6 +8,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { GroupedList, groupSurface } from "@/components/grouped-list";
 import { Button } from "@/components/ui/button";
+import { readSessionVolume } from "@/lib/display-prefs";
 import { formatNumber, formatWeekday, sessionTitle } from "@/lib/format";
 import { useToday } from "@/lib/today";
 import { cn } from "@/lib/utils";
@@ -17,8 +18,8 @@ import { dayOf } from "@/workouts/history-panel";
 import { NotFound } from "./fallbacks";
 
 // The summary at the end of a session (§4.4): the session's own page, its duration, work sets and
-// volume (warm-ups left out) in big figures, records, what was logged per exercise, and an
-// optional note; Save goes back Home.
+// volume (warm-ups left out) in big figures, the volume unless this device hides it; records, what
+// was logged per exercise, and an optional note; Save goes back Home.
 export function WorkoutSummary() {
   const account = useAccount();
   if (account.kind === "loading") return null;
@@ -35,6 +36,8 @@ function Summary({ account }: { account: OpenAccount }) {
   const record = useRecord(account);
   const [note, setNote] = useState("");
   const [error, setError] = useState<string>();
+  // A device preference, read once as the page opens.
+  const [volumeShown] = useState(() => readSessionVolume() === "shown");
   if (!history) return null;
   const workout = history.workouts.find((w) => w.id === workoutId);
   if (!workout || workout.removed || workout.endedAt === null) return <NotFound />;
@@ -82,12 +85,14 @@ function Summary({ account }: { account: OpenAccount }) {
       <dl className="grid grid-cols-2 gap-3">
         <Figure label={t("summary.duration")} value={duration.value} unit={duration.unit} />
         <Figure label={t("summary.sets")} value={String(stats.workSets)} />
-        <Figure
-          label={t("summary.volume")}
-          value={n(stats.volumeKg)}
-          unit="kg"
-          className="col-span-2"
-        />
+        {volumeShown && (
+          <Figure
+            label={t("summary.volume")}
+            value={n(stats.volumeKg)}
+            unit="kg"
+            className="col-span-2"
+          />
+        )}
       </dl>
       {stats.records.map((r) => (
         <p
