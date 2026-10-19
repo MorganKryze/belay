@@ -121,7 +121,7 @@ test("a whole session offline: summary, history, and a second device sees it", a
   await page.getByRole("link", { name: "Sessions" }).click();
   await page.getByRole("radio", { name: "History" }).click();
   const recent = page.getByRole("region", { name: "Recent" });
-  await expect(recent.getByRole("link")).toHaveText(/Wed, Oct 7Session A · Push1 h 02/);
+  await expect(recent.getByRole("link")).toHaveText(/Wed, Oct 7 · 1 h 02\s*Session A · Push/);
 
   // Back online: the session goes in one queue, and another device gets all of it.
   server.offline = false;

@@ -1,6 +1,7 @@
 import type { Change } from "@belay/shared/sync/schema";
 import { sessionByCode } from "@belay/shared/training/program";
 import { expect, type Page, test } from "@playwright/test";
+import { expectNoAxeViolations } from "./axe";
 import { fakeServer } from "./fake-server";
 
 // Séances' history: the month's calendar in one card, days as 40 px discs.
@@ -8,7 +9,7 @@ test.use({ locale: "en-US", timezoneId: "Europe/Paris" });
 
 const id = (n: number) => `0199c3a2-7b1e-7cc0-8f3e-${String(n).padStart(12, "0")}`;
 // A finished session on a day in Paris, as another device sent it.
-function finished(n: number, day: string): Change[] {
+function finished(n: number, day: string, code = "A"): Change[] {
   const startedAt = new Date(`${day}T08:00:00+02:00`).toISOString();
   const endedAt = new Date(`${day}T09:00:00+02:00`).toISOString();
   return [
@@ -16,8 +17,8 @@ function finished(n: number, day: string): Change[] {
       kind: "workout",
       id: id(n),
       field: "start",
-      sessionCode: "A",
-      plan: [...sessionByCode("A")!.slots],
+      sessionCode: code,
+      plan: [...sessionByCode(code)!.slots],
       startedAt,
       at: startedAt,
     },
@@ -173,4 +174,117 @@ test("a tapped month arrow shows the other month in the next frame, with no anim
   });
   expect(seen.caption.toLowerCase()).toBe(previous.toLowerCase());
   expect(seen.animations).toBe(0);
+});
+
+// A token's colour as the browser computes it, to compare with an element's.
+const tokenColor = (page: Page, token: string) =>
+  page.evaluate((t) => {
+    const probe = document.createElement("span");
+    probe.style.color = `var(${t})`;
+    document.body.append(probe);
+    const color = getComputedStyle(probe).color;
+    probe.remove();
+    return color;
+  }, token);
+const box = async (l: ReturnType<Page["locator"]>) => (await l.boundingBox())!;
+
+test.describe("the history's rows, on Wednesday 7 October 2026", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.clock.setFixedTime(new Date("2026-10-07T18:00:00+02:00"));
+  });
+
+  test("the log row sits under the calendar: 56 px, a 28 px icon square, a 16 px chevron, no orange text", async ({
+    page,
+  }) => {
+    await openHistory(page, month("2026-10"));
+    const row = page.getByRole("button", { name: /^Log a session/ });
+    await expect(row).toHaveText(/Log a session\s*done without the app, on another day/);
+    const card = await box(calendarCard(page));
+    const b = await box(row);
+    expect(b.y).toBeGreaterThanOrEqual(card.y + card.height);
+    expect(b.height).toBe(56);
+    const icon = await box(row.locator('[data-slot="row-icon"]'));
+    expect([icon.width, icon.height]).toEqual([28, 28]);
+    const chevron = await box(row.locator('[data-slot="row-chevron"]'));
+    expect([chevron.width, chevron.height]).toEqual([16, 16]);
+    const label = row.getByText("Log a session", { exact: true });
+    expect(await label.evaluate((el) => getComputedStyle(el).color)).toBe(
+      await tokenColor(page, "--foreground"),
+    );
+    // The orange button above the calendar is gone.
+    await expect(page.getByRole("button", { name: /Log a session/ })).toHaveCount(1);
+  });
+
+  test("sessions and activities read as one grouped list of 56 px rows with 28 px icon squares", async ({
+    page,
+  }) => {
+    await openHistory(page, month("2026-10"));
+    const recent = page.getByRole("region", { name: "Recent" });
+    const list = recent.getByRole("list");
+    await expect(list).toHaveCount(1);
+    const items = list.getByRole("listitem");
+    await expect(items).toHaveCount(3);
+    const borderColor = tokenColor(page, "--border");
+    await expect(items.nth(0)).toHaveText(/Wed, Oct 7 · 1 h 00\s*Session A · Push/);
+    await expect(items.nth(1)).toHaveText(/Sat, Oct 3\s*Climbing · 1 h 30 · 6b\+/);
+    const surface = await list.evaluate((el) => getComputedStyle(el).backgroundColor);
+    expect(surface).toBe(await tokenColor(page, "--surface"));
+    expect(await list.evaluate((el) => getComputedStyle(el).borderTopLeftRadius)).not.toBe("0px");
+    for (let i = 0; i < 3; i++) {
+      const row = items.nth(i).locator("a, button");
+      expect((await box(row)).height).toBe(56);
+      const icon = await box(row.locator('[data-slot="row-icon"]'));
+      expect([icon.width, icon.height]).toEqual([28, 28]);
+      // A hairline in the border colour between rows, none under the last.
+      const line = await items.nth(i).evaluate((el) => {
+        const st = getComputedStyle(el);
+        return { width: st.borderBottomWidth, color: st.borderBottomColor };
+      });
+      expect(line.width).toBe(i === 2 ? "0px" : "1px");
+      if (i < 2) expect(line.color).toBe(await borderColor);
+    }
+  });
+
+  test.describe("in French", () => {
+    test.use({ locale: "fr-FR" });
+
+    test("the longest session title shows whole at 360 px in French", async ({ page }) => {
+      await page.setViewportSize({ width: 360, height: 800 });
+      await openHistory(page, [...month("2026-10"), ...finished(3, "2026-10-06", "C")]);
+      const row = page.getByRole("region", { name: "Récentes" }).getByRole("link", {
+        name: /^Mar\. 6 oct\./,
+      });
+      const title = row.getByText("Séance C · Fessiers + tirage léger", { exact: true });
+      await expect(title).toBeVisible();
+      const fit = await title.evaluate((el) => el.scrollWidth - el.clientWidth);
+      expect(fit).toBeLessThanOrEqual(0);
+    });
+  });
+
+  for (const theme of ["light", "dark"] as const) {
+    test(`History, empty, has no axe violation, ${theme}`, async ({ page }) => {
+      await page.addInitScript((t) => localStorage.setItem("belay.theme", t), theme);
+      await fakeServer(page, { changes: [] });
+      await page.goto("/workouts?tab=history");
+      await expect(page.getByText("Your first session will show here.")).toBeVisible();
+      await expect(
+        page.getByText(
+          "It shows up on its own when you finish a session, or with “Log a session”.",
+        ),
+      ).toBeVisible();
+      await expectNoAxeViolations(page);
+    });
+  }
+
+  test("an empty History has nothing scrolling sideways at 360 px", async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 800 });
+    await fakeServer(page, { changes: [] });
+    await page.goto("/workouts?tab=history");
+    await expect(page.locator(".launch")).toBeHidden();
+    await expect(page.getByText("Your first session will show here.")).toBeVisible();
+    const over = await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    );
+    expect(over).toBeLessThanOrEqual(0);
+  });
 });

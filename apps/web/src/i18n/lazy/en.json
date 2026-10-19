@@ -291,6 +291,7 @@
     "legendLabel": "Legend",
     "recent": "Recent",
     "first": "Your first session will show here.",
+    "firstHow": "It shows up on its own when you finish a session, or with “Log a session”.",
     "none": "No session this month.",
     "workSets_one": "{{count}} work set",
     "workSets_other": "{{count}} work sets",
@@ -309,6 +310,7 @@
     "cancel": "Cancel",
     "log": {
       "button": "Log a session",
+      "sub": "done without the app, on another day",
       "title": "Log a session",
       "date": "Date of the session",
       "session": "Session",

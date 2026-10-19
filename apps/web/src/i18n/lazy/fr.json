@@ -291,6 +291,7 @@
     "legendLabel": "Légende",
     "recent": "Récentes",
     "first": "Ta première séance apparaîtra ici.",
+    "firstHow": "Elle s'ajoute toute seule quand tu termines une séance, ou avec « Saisir une séance ».",
     "none": "Aucune séance ce mois-ci.",
     "workSets_one": "{{count}} série de travail",
     "workSets_other": "{{count}} séries de travail",
@@ -309,6 +310,7 @@
     "cancel": "Annuler",
     "log": {
       "button": "Saisir une séance",
+      "sub": "faite sans l'app, un autre jour",
       "title": "Saisir une séance",
       "date": "Date de la séance",
       "session": "Séance",

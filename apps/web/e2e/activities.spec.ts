@@ -203,7 +203,7 @@ test("yesterday's session is logged afterwards and filed on its day", async ({ p
   await expect(page.getByText(/Tue, Oct 6 · 1 h 00 · 1 work set/)).toBeVisible();
   await page.goto("/workouts?tab=history");
   await expect(page.getByRole("region", { name: "Recent" }).getByRole("link").first()).toHaveText(
-    /Tue, Oct 6Session B · Legs1 h 00/,
+    /Tue, Oct 6 · 1 h 00\s*Session B · Legs/,
   );
   await expect
     .poll(() =>

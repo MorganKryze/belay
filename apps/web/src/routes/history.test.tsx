@@ -1,4 +1,13 @@
-import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
+import type { Change } from "@belay/shared/sync/schema";
+import {
+  act,
+  cleanup,
+  fireEvent,
+  getDefaultNormalizer,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { IDBFactory } from "fake-indexeddb";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import i18n from "../i18n";
@@ -43,9 +52,9 @@ describe("the History segment", () => {
         .getAllByRole("link")
         .map((a) => a.textContent),
     ).toEqual([
-      "Tue, Oct 6Session C · Glutes + light pull1 h 10",
-      "Mon, Oct 5Session B · Legs58 min",
-      "Fri, Oct 2Session A · Push1 h 04",
+      "Tue, Oct 6 · 1 h 10 Session C · Glutes + light pull",
+      "Mon, Oct 5 · 58 min Session B · Legs",
+      "Fri, Oct 2 · 1 h 04 Session A · Push",
     ]);
   });
 
@@ -77,9 +86,125 @@ describe("the History segment", () => {
     expect(await screen.findByText("No session this month.")).toBeTruthy();
   });
 
-  it("says where the first session will be", async () => {
+  it("the log row sits under the calendar and opens the log sheet", async () => {
+    await seed(ADA.id, MONTH);
     fakeApi({ me: ADA });
     renderRoute("/workouts?tab=history");
-    expect(await screen.findByText("Your first session will show here.")).toBeTruthy();
+    const calendar = await screen.findByRole("table", { name: "October 2026" });
+    const rows = screen.getAllByRole("button", { name: /^Log a session/ });
+    expect(rows).toHaveLength(1);
+    const row = rows[0]!;
+    expect(row.textContent).toContain("done without the app, on another day");
+    expect(calendar.compareDocumentPosition(row) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // Nothing between the page's segments and the calendar: the log row left the top.
+    const card = calendar.parentElement!;
+    const above = screen
+      .getAllByRole("button")
+      .filter(
+        (b) =>
+          !card.contains(b) && card.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_PRECEDING,
+      );
+    expect(above.map((b) => b.textContent)).not.toContainEqual(expect.stringMatching(/Log/));
+    await act(async () => fireEvent.click(row));
+    expect(await screen.findByRole("dialog", { name: "Log a session" })).toBeTruthy();
+  });
+
+  it("lists the month as one grouped list: day and length, then the title in full", async () => {
+    await seed(ADA.id, MONTH);
+    fakeApi({ me: ADA });
+    renderRoute("/workouts?tab=history");
+    const list = await screen.findByRole("region", { name: "Recent" });
+    await waitFor(() => expect(within(list).getAllByRole("link")).toHaveLength(3));
+    expect(within(list).getByRole("heading", { level: 2, name: "Recent" })).toBeTruthy();
+    expect(within(list).getAllByRole("list")).toHaveLength(1);
+    const first = within(list).getAllByRole("link")[0]!;
+    expect(first.textContent).toBe("Tue, Oct 6 · 1 h 10 Session C · Glutes + light pull");
+    expect(within(first).getByText("Session C · Glutes + light pull")).toBeTruthy();
+  });
+
+  it("an activity row says its day, then its summary", async () => {
+    const climb: Change = {
+      kind: "activity",
+      id: "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7da1",
+      field: "fields",
+      date: "2026-10-04",
+      type: "climbing",
+      durationMin: 90,
+      cardioType: null,
+      climbStyle: "boulder",
+      climbRuns: 14,
+      climbGrade: "6b+",
+      climbColor: null,
+      at: "2026-10-04T16:00:00.000Z",
+    };
+    await seed(ADA.id, [...MONTH, climb]);
+    fakeApi({ me: ADA });
+    renderRoute("/workouts?tab=history");
+    const list = await screen.findByRole("region", { name: "Recent" });
+    const row = await within(list).findByRole("button", { name: /^Sun, Oct 4/ });
+    expect(row.textContent).toBe("Sun, Oct 4 Climbing · 1 h 30 · 6b+");
+    // Between the 5th and the 2nd, in the one list.
+    expect(
+      within(list)
+        .getAllByRole("listitem")
+        .map((li) => li.textContent!.slice(0, 10)),
+    ).toEqual(["Tue, Oct 6", "Mon, Oct 5", "Sun, Oct 4", "Fri, Oct 2"]);
+    await act(async () => fireEvent.click(row));
+    expect(await screen.findByRole("dialog", { name: "Activity" })).toBeTruthy();
+  });
+
+  it("an empty history explains, inside the card, how a session gets there", async () => {
+    fakeApi({ me: ADA });
+    renderRoute("/workouts?tab=history");
+    const sentence = await screen.findByText("Your first session will show here.");
+    const card = sentence.closest(".rounded-group")!;
+    expect(card).toBeTruthy();
+    expect(screen.getByRole("region", { name: "Recent" }).contains(card)).toBe(true);
+    expect(card.textContent).toContain(
+      "It shows up on its own when you finish a session, or with “Log a session”.",
+    );
+    expect(within(card as HTMLElement).queryByRole("button")).toBeNull();
+    expect(within(card as HTMLElement).queryByRole("link")).toBeNull();
+  });
+
+  it("a month with nothing says so in the card", async () => {
+    await seed(ADA.id, MONTH);
+    fakeApi({ me: ADA });
+    renderRoute("/workouts?tab=history");
+    await screen.findByRole("table", { name: "October 2026" });
+    fireEvent.click(screen.getByRole("button", { name: "Previous month" }));
+    const line = await screen.findByText("No session this month.");
+    const card = line.closest(".rounded-group")!;
+    expect(card).toBeTruthy();
+    expect(screen.getByRole("region", { name: "September 2026" }).contains(card)).toBe(true);
+    expect(within(card as HTMLElement).queryByRole("button")).toBeNull();
+  });
+
+  it("says it in French", async () => {
+    await seed(ADA.id, MONTH);
+    await i18n.changeLanguage("fr");
+    fakeApi({ me: ADA });
+    renderRoute("/workouts?tab=history");
+    const list = await screen.findByRole("region", { name: "Récentes" });
+    await waitFor(() => expect(within(list).getAllByRole("link")).toHaveLength(3));
+    expect(within(list).getAllByRole("link")[2]!.textContent).toBe(
+      "Ven. 2 oct. · 1 h 04 Séance A · Push",
+    );
+    const row = screen.getByRole("button", { name: /^Saisir une séance/ });
+    expect(row.textContent).toBe("Saisir une séance faite sans l'app, un autre jour");
+  });
+
+  it("says in French how the first session gets there", async () => {
+    await i18n.changeLanguage("fr");
+    fakeApi({ me: ADA });
+    renderRoute("/workouts?tab=history");
+    expect(await screen.findByText("Ta première séance apparaîtra ici.")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Elle s'ajoute toute seule quand tu termines une séance, ou avec «\u202fSaisir une séance\u202f».",
+        // Kept as written: the default normalizer would turn the narrow spaces into plain ones.
+        { normalizer: getDefaultNormalizer({ collapseWhitespace: false }) },
+      ),
+    ).toBeTruthy();
   });
 });
