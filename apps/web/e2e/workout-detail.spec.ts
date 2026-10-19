@@ -256,6 +256,20 @@ for (const theme of ["light", "dark"] as const) {
   });
 }
 
+test("with Session volume hidden the strip has two columns", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("belay.sessionVolume", "hidden"));
+  await page.setViewportSize({ width: 390, height: 844 });
+  await open(page, A, "Session A · Push");
+  await expect(strip(page).locator("dt")).toHaveText(["Duration", "Sets"]);
+  const widths = await strip(page)
+    .locator(":scope > div")
+    .evaluateAll((divs) => divs.map((d) => d.getBoundingClientRect().width));
+  const card = (await strip(page).boundingBox())!;
+  expect(widths).toHaveLength(2);
+  // Two halves of the card.
+  for (const w of widths) expect(Math.abs(w - card.width / 2)).toBeLessThanOrEqual(1);
+});
+
 test.describe("in French", () => {
   test.use({ locale: "fr-FR" });
 

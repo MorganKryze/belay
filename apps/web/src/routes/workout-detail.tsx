@@ -17,6 +17,7 @@ import {
 } from "@/components/grouped-list";
 import { BackLink, PageHeader } from "@/components/page-header";
 import { cardSurface } from "@/components/surfaces";
+import { readSessionVolume } from "@/lib/display-prefs";
 import { formatNumber, sessionTitle } from "@/lib/format";
 import { useToday } from "@/lib/today";
 import { type OpenAccount, useAccount, useHistory, useRecord } from "@/sync/account";
@@ -41,6 +42,8 @@ function Detail({ account }: { account: OpenAccount }) {
   const [confirm, setConfirm] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [error, setError] = useState<string>();
+  // A device preference, read once as the page opens.
+  const [volumeShown] = useState(() => readSessionVolume() === "shown");
   const exercisesId = useId();
   if (!history) return null;
   const workout = history.workouts.find((w) => w.id === workoutId);
@@ -95,11 +98,15 @@ function Detail({ account }: { account: OpenAccount }) {
         figures={[
           { label: t("summary.duration"), ...durationParts(stats.durationMs, t) },
           { label: t("summary.sets"), value: String(stats.workSets) },
-          {
-            label: t("summary.volume"),
-            value: formatNumber(stats.volumeKg, i18n.language, { digits: 0 }),
-            unit: "kg",
-          },
+          ...(volumeShown
+            ? [
+                {
+                  label: t("summary.volume"),
+                  value: formatNumber(stats.volumeKg, i18n.language, { digits: 0 }),
+                  unit: "kg",
+                },
+              ]
+            : []),
         ]}
       />
       {stats.records.map((r) => (

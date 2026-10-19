@@ -128,6 +128,19 @@ describe("a session's detail", () => {
     expect(strip()[0]).toEqual(["Duration", "1 h 04"]);
   });
 
+  it("with the volume hidden on this device the strip keeps Duration and Sets", async () => {
+    localStorage.setItem("belay.sessionVolume", "hidden");
+    await seed(ADA.id, MONTH);
+    fakeApi({ me: ADA });
+    renderRoute(`/workouts/${id(2)}`);
+    await screen.findByRole("heading", { name: "Session B · Legs", level: 1 });
+    expect(strip()).toEqual([
+      ["Duration", "58 min"],
+      ["Sets", "2"],
+    ]);
+    expect(screen.queryByText("Volume")).toBeNull();
+  });
+
   it("numbers the work sets from 1 for each exercise, one replaced mid-session included", async () => {
     const base = session(7, "B", new Date(2026, 9, 5, 18, 0), 58, [[0, 3, 100, 5, 2]]);
     const replaced: Change[] = [4, 5].map((position, i) => ({

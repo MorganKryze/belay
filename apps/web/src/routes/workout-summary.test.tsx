@@ -122,6 +122,19 @@ describe("the summary", () => {
     expect(within(rows[3]!).getByText("4")).toBeTruthy();
   });
 
+  it("with the volume hidden on this device, the summary shows Duration and Sets only", async () => {
+    localStorage.setItem("belay.sessionVolume", "hidden");
+    await seed(ADA.id, DONE);
+    renderRoute(URL);
+    await screen.findByRole("heading", { level: 1, name: "Session A · Push" });
+    const figures = screen.getByText("Duration").closest("dl")!;
+    expect([...figures.querySelectorAll("dt")].map((dt) => dt.textContent)).toEqual([
+      "Duration",
+      "Sets",
+    ]);
+    expect(figures.textContent).toBe("Duration48 minSets11");
+  });
+
   it("reads in French with the narrow space of the volume", async () => {
     await seed(ADA.id, DONE);
     await i18n.changeLanguage("fr");
