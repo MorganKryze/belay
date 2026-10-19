@@ -1,3 +1,4 @@
+import { Check } from "lucide-react";
 import { type ReactNode, useId } from "react";
 import { useTranslation } from "react-i18next";
 import { sessionTitle } from "@/lib/format";
@@ -31,22 +32,35 @@ export function SessionHeading({
   );
 }
 
-// A session as a card of its own: a region named by its title, then its action.
+// A session as a card of its own: a region named by its title, then its action. A session done
+// shows the reference tile with a check before its title.
 export function SessionCard({
   code,
   lead,
   detail,
+  done = false,
   children,
 }: {
   code: string;
   lead?: string;
   detail: string;
+  done?: boolean;
   children?: ReactNode;
 }) {
   const id = useId();
+  const heading = <SessionHeading id={id} code={code} lead={lead} detail={detail} />;
   return (
     <section aria-labelledby={id} className={`${cardSurface} flex flex-col gap-3 px-4 py-3`}>
-      <SessionHeading id={id} code={code} lead={lead} detail={detail} />
+      {done ? (
+        <div className="flex items-center gap-3">
+          <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-reference text-reference-ink">
+            <Check className="size-5" aria-hidden="true" />
+          </span>
+          {heading}
+        </div>
+      ) : (
+        heading
+      )}
       {children}
     </section>
   );

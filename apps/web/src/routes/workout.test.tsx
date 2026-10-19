@@ -364,8 +364,10 @@ describe("the session screen (§4.2, §4.3)", () => {
       note: "Bonne énergie",
       endedAt: expect.any(String),
     });
-    // Home offers the next session.
-    expect((await sessionCard(/^Session B · Legs/)).textContent).toContain("7 exercises");
+    // Home says the session is done and names the next one.
+    const done = await sessionCard(/^Session A · Push/);
+    expect(done.textContent).toContain("Done today");
+    expect(within(done).getByRole("link", { name: "Next up: Session B · Legs" })).toBeTruthy();
   });
 
   it("resumes the open session from Program instead of starting another", async () => {

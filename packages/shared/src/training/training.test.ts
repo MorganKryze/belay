@@ -11,6 +11,7 @@ import {
 } from "./program";
 import {
   autoClose,
+  finishedOn,
   type History,
   lastFinished,
   lastTime,
@@ -612,6 +613,47 @@ describe("lastFinished", () => {
     expect(lastFinished([], "A")).toBeNull();
     expect(lastFinished([workout({ endedAt: null }), workout({ removed: true })], "A")).toBeNull();
     expect(lastFinished([workout()], "B")).toBeNull();
+  });
+});
+
+describe("finishedOn", () => {
+  // Times on this device's clock: the day is the one the session started on here.
+  const at = (day: number, h: number, m = 0) => new Date(2026, 9, day, h, m).toISOString();
+  const history = (workouts: Workout[], sets: WorkoutSet[] = []): History => ({ workouts, sets });
+
+  it("the session started today and ended", () => {
+    const today = workout({ startedAt: at(7, 18), endedAt: at(7, 19) });
+    expect(finishedOn(history([workout(), today]), "2026-10-07")?.workout).toBe(today);
+  });
+
+  it("removed, still open or started yesterday and ended today: none", () => {
+    const workouts = [
+      workout({ startedAt: at(7, 6), endedAt: at(7, 7), removed: true }),
+      workout({ startedAt: at(7, 8), endedAt: null }),
+      workout({ startedAt: at(6, 23, 30), endedAt: at(7, 0, 30) }),
+    ];
+    expect(finishedOn(history(workouts), "2026-10-07")).toBeNull();
+    expect(finishedOn(history([]), "2026-10-07")).toBeNull();
+  });
+
+  it("two today: the one started last", () => {
+    const morning = workout({ startedAt: at(7, 7), endedAt: at(7, 8) });
+    const evening = workout({ startedAt: at(7, 18), endedAt: at(7, 19) });
+    expect(finishedOn(history([evening, morning]), "2026-10-07")?.workout).toBe(evening);
+  });
+
+  it("length and work sets, warm-ups left out", () => {
+    const w = workout({ startedAt: at(7, 18), endedAt: at(7, 18, 48) });
+    const sets = [
+      warm(w, 0, 40, 8),
+      set(w, 1, 60, 8),
+      set(w, 2, 60, 8),
+      set(w, 3, 60, 8, { removed: true }),
+      set(workout(), 1, 60, 8),
+    ];
+    const done = finishedOn(history([w], sets), "2026-10-07");
+    expect(done?.durationMs).toBe(48 * 60_000);
+    expect(done?.workSets).toBe(2);
   });
 });
 

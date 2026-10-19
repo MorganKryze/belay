@@ -113,3 +113,55 @@ for (const theme of ["light", "dark"] as const) {
     await expectNoAxeViolations(page);
   });
 }
+
+// Session A started half a minute ago and ended a second ago: done today, B comes next.
+const DONE = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7f02";
+const doneA = (): Change[] => {
+  const from = new Date(Date.now() - 30_000).toISOString();
+  const to = new Date(Date.now() - 1_000).toISOString();
+  return [
+    {
+      kind: "workout",
+      id: DONE,
+      field: "start",
+      sessionCode: "A",
+      plan: [...sessionByCode("A")!.slots],
+      startedAt: from,
+      at: from,
+    },
+    { kind: "workout", id: DONE, field: "ended", value: to, at: to },
+  ];
+};
+
+test.describe("the session done", () => {
+  test("after today's session the card says done and names the next one quietly", async ({
+    page,
+  }) => {
+    await openHome(page, doneA());
+    const card = sessionCard(page);
+    await expect(card).toContainText("Done today · ");
+    // No filled button and no accent anywhere in the card.
+    const accent = await card.evaluate((el) => {
+      const probe = document.createElement("span");
+      probe.style.backgroundColor = "var(--primary)";
+      document.body.append(probe);
+      const primary = getComputedStyle(probe).backgroundColor;
+      probe.remove();
+      return [el, ...el.querySelectorAll("*")].filter(
+        (n) => getComputedStyle(n).backgroundColor === primary,
+      ).length;
+    });
+    expect(accent).toBe(0);
+    const next = card.getByRole("link", { name: "Next up: Session B · Legs" });
+    await expect(next).toHaveAttribute("href", "/workouts/session/B?from=home");
+    expect((await next.boundingBox())!.height).toBeGreaterThanOrEqual(48);
+  });
+
+  for (const theme of ["light", "dark"] as const)
+    test(`Accueil with the session done has no axe violation, ${theme}`, async ({ page }) => {
+      await page.addInitScript((t) => localStorage.setItem("belay.theme", t), theme);
+      await openHome(page, doneA());
+      await expect(sessionCard(page)).toContainText("Done today");
+      await expectNoAxeViolations(page);
+    });
+});

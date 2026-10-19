@@ -171,4 +171,64 @@ describe("Accueil's session card", () => {
     region = await card(/^Session A · Push$/);
     expect(within(region).getByRole("link").getAttribute("href")).toBe("/workout?start=A");
   });
+
+  it("done today: the check tile, Done today · 48 min · 11 sets, and Next up: Session B · Legs pushes B's preview from Accueil, with no filled button", async () => {
+    await seed(ADA.id, DONE_A);
+    fakeApi({ me: ADA });
+    renderRoute("/");
+    const region = await card(/^Session A · Push$/);
+    expect(region.textContent).toContain("Done today · 48 min · 11 sets");
+    expect(region.querySelector("svg.lucide-check")).toBeTruthy();
+    const next = within(region).getByRole("link", { name: "Next up: Session B · Legs" });
+    expect(next.getAttribute("href")).toBe("/workouts/session/B?from=home");
+    expect(within(region).getAllByRole("link")).toHaveLength(1);
+    expect(region.querySelector(".bg-primary")).toBeNull();
+  });
+
+  it("an open session wins over one done today", async () => {
+    await seed(ADA.id, [...DONE_A, ...OPEN_A]);
+    fakeApi({ me: ADA });
+    renderRoute("/");
+    const region = await card(/^Session A · Push$/);
+    expect(region.textContent).toContain("In progress · 1 of 19 sets");
+    expect(region.textContent).not.toContain("Done today");
+  });
+
+  it("in French: « Faite aujourd'hui · 48 min · 11 séries », « La prochaine : Séance B · Legs »", async () => {
+    await i18n.changeLanguage("fr");
+    await seed(ADA.id, DONE_A);
+    fakeApi({ me: ADA });
+    renderRoute("/");
+    const region = await card(/^Séance A · Push$/);
+    expect(region.textContent).toContain("Faite aujourd'hui · 48 min · 11 séries");
+    expect(
+      within(region).getByRole("link", { name: "La prochaine\u202f: Séance B · Legs" }),
+    ).toBeTruthy();
+  });
 });
+
+// Session A done this morning, 6:00 to 6:48: a warm-up and 11 work sets.
+const DONE = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7e31";
+const DONE_A: Change[] = [
+  ...finished(DONE, "A", 7).map((c) => {
+    const at = new Date(2026, 9, 7, 6, c.kind === "workout" && c.field === "ended" ? 48 : 0);
+    return c.kind === "workout" && c.field === "ended"
+      ? { ...c, value: at.toISOString(), at: at.toISOString() }
+      : { ...c, startedAt: at.toISOString(), at: at.toISOString() };
+  }),
+  ...Array.from({ length: 12 }, (_, k): Change => ({
+    kind: "set",
+    id: `0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7e${40 + k}`,
+    workoutId: DONE,
+    field: "create",
+    slotIndex: k === 0 ? 0 : (k - 1) % 6,
+    position: k === 0 ? 1 : 3 + Math.floor((k - 1) / 6),
+    exerciseId: "ds:0025",
+    warmup: k === 0,
+    weightKg: 60,
+    reps: 8,
+    rir: k === 0 ? null : 2,
+    doneAt: new Date(2026, 9, 7, 6, 10 + k).toISOString(),
+    at: new Date(2026, 9, 7, 6, 10 + k).toISOString(),
+  })),
+];
