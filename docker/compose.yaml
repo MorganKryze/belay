@@ -39,6 +39,10 @@ services:
       # ports through its own iptables rules and bypasses host firewalls (ufw, firewalld),
       # so a bare "3000:3000" would expose the app to the network.
       - "127.0.0.1:${BELAY_PORT:-3000}:3000"
+    # Optional exercise loops (see README, "Exercise loops"): mount your own folder of
+    # <number>.mp4 files read-only and set BELAY_MEDIA_DIR=/media in .env.
+    # volumes:
+    #   - /path/to/your/loops:/media:ro
     restart: unless-stopped
 
 volumes:
