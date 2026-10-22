@@ -1,4 +1,7 @@
 import { createHash, createHmac } from "node:crypto";
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { describe, expect, it } from "vitest";
@@ -65,7 +68,7 @@ describe("GET /api/me", () => {
     const { user, cookie } = await signedInCookie("me-1", "Alex");
     const res = await app.request("/api/me", { headers: { cookie } });
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ id: user, displayName: "Alex" });
+    expect(await res.json()).toEqual({ id: user, displayName: "Alex", media: false });
   });
 
   it("scopes the answer to the caller when several users exist", async () => {
@@ -77,8 +80,20 @@ describe("GET /api/me", () => {
       expect(await res.json()).toEqual({
         id: who.user,
         displayName: who === ada ? "Ada" : "Bo",
+        media: false,
       });
     }
+  });
+
+  it("says media is on where the instance has a media directory", async () => {
+    const mediaCfg = loadConfig(
+      testEnv({ BELAY_MEDIA_DIR: mkdtempSync(join(tmpdir(), "belay-media-me-")) }),
+    );
+    const mediaApp = new Hono().route("/api", apiRoutes(mediaCfg, db));
+    const { user, cookie } = await signedInCookie("media-1", "Noa");
+    const res = await mediaApp.request("/api/me", { headers: { cookie } });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ id: user, displayName: "Noa", media: true });
   });
 
   it("re-issues the session cookie so its lifetime slides with the session", async () => {
