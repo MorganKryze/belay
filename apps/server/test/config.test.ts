@@ -1,3 +1,6 @@
+import { mkdirSync, mkdtempSync, realpathSync, symlinkSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { loadConfig } from "../src/config";
 import { testEnv } from "./config";
@@ -144,6 +147,32 @@ describe("loadConfig", () => {
         () => loadConfig(testEnv({ OIDC_REQUIRED_ROLE: "belay", OIDC_ROLES_CLAIM: path })),
         JSON.stringify(path),
       ).toThrow(/OIDC_ROLES_CLAIM/);
+    }
+  });
+
+  it("media is off when BELAY_MEDIA_DIR is unset or blank", () => {
+    expect(loadConfig(testEnv()).mediaDir).toBeUndefined();
+    expect(loadConfig(testEnv({ BELAY_MEDIA_DIR: "" })).mediaDir).toBeUndefined();
+    expect(loadConfig(testEnv({ BELAY_MEDIA_DIR: "  " })).mediaDir).toBeUndefined();
+  });
+
+  it("BELAY_MEDIA_DIR resolves to the directory's real path", () => {
+    const base = mkdtempSync(join(tmpdir(), "belay-media-cfg-"));
+    const target = join(base, "loops");
+    mkdirSync(target);
+    const link = join(base, "link");
+    symlinkSync(target, link);
+    expect(loadConfig(testEnv({ BELAY_MEDIA_DIR: link })).mediaDir).toBe(realpathSync(target));
+  });
+
+  it("refuses a BELAY_MEDIA_DIR that does not exist, or is a file, naming the variable", () => {
+    const base = mkdtempSync(join(tmpdir(), "belay-media-cfg-"));
+    const file = join(base, "0001.mp4");
+    writeFileSync(file, "x");
+    for (const dir of [join(base, "missing"), file]) {
+      expect(() => loadConfig(testEnv({ BELAY_MEDIA_DIR: dir })), dir).toThrow(
+        /Invalid configuration:\nBELAY_MEDIA_DIR must be an existing directory/,
+      );
     }
   });
 });

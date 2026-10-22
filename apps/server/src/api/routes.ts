@@ -24,7 +24,10 @@ export function apiRoutes(cfg: Config, db: Db) {
         .from(users)
         .where(eq(users.id, userId)),
     );
-    return me ? c.json(me) : c.json({ error: "unauthenticated" }, 401);
+    // Only whether loops exist, never where they live.
+    return me
+      ? c.json({ ...me, media: cfg.mediaDir !== undefined })
+      : c.json({ error: "unauthenticated" }, 401);
   });
 
   // The whole batch or nothing: an invalid change refuses the batch before anything is written.

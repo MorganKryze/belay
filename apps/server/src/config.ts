@@ -1,4 +1,5 @@
 import { hkdfSync } from "node:crypto";
+import { realpathSync, statSync } from "node:fs";
 import { z } from "zod";
 
 export const APP_ROLE = "belay_app";
@@ -28,6 +29,8 @@ const schema = z.object({
   PORT: z.coerce.number().int().positive().default(3000),
   WEB_DIST: z.string().default("../web/dist"),
   MIGRATIONS_DIR: z.string().default("drizzle"),
+  // Optional: the folder of exercise loops (<four digits>.mp4). Unset or blank turns media off.
+  BELAY_MEDIA_DIR: z.string().optional(),
 });
 
 export type Config = {
@@ -52,6 +55,8 @@ export type Config = {
   port: number;
   webDist: string;
   migrationsDir: string;
+  // The media directory's real path, resolved once here; undefined means media is off.
+  mediaDir: string | undefined;
 };
 
 const LOOPBACK = new Set(["localhost", "127.0.0.1", "[::1]"]);
@@ -72,6 +77,21 @@ function appRolePassword(url: string): string | undefined {
   } catch {
     return undefined;
   }
+}
+
+// Resolved once at startup: every loop path is later checked against this real path, so a link in
+// the configured path cannot move the boundary while the server runs.
+function mediaDirectory(value: string | undefined): string | undefined {
+  if (!value?.trim()) return undefined;
+  try {
+    const real = realpathSync(value);
+    if (statSync(real).isDirectory()) return real;
+  } catch {
+    // Missing or unreadable: refused below with the same message as a file.
+  }
+  throw new Error(
+    "Invalid configuration:\nBELAY_MEDIA_DIR must be an existing directory (the folder of <number>.mp4 loops)",
+  );
 }
 
 export function loadConfig(env: Record<string, string | undefined>): Config {
@@ -108,6 +128,7 @@ export function loadConfig(env: Record<string, string | undefined>): Config {
     throw new Error(`Invalid configuration:\nAPP_DATABASE_URL ${APP_URL_RULE}`);
   }
   const publicUrl = new URL(e.PUBLIC_URL);
+  const mediaDir = mediaDirectory(e.BELAY_MEDIA_DIR);
   return {
     databaseUrl: e.DATABASE_URL,
     appDatabaseUrl: e.APP_DATABASE_URL,
@@ -133,5 +154,6 @@ export function loadConfig(env: Record<string, string | undefined>): Config {
     port: e.PORT,
     webDist: e.WEB_DIST,
     migrationsDir: e.MIGRATIONS_DIR,
+    mediaDir,
   };
 }
