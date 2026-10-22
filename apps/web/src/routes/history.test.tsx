@@ -209,7 +209,9 @@ describe("the History segment", () => {
     fakeApi({ me: ADA });
     renderRoute("/workouts?tab=history");
     const sentence = await screen.findByText("Your first session will show here.");
-    const card = sentence.closest(".rounded-group")!;
+    // The sentence sits in the empty state, itself inside the group card: the surface is proven in
+    // the browser, by its computed background.
+    const card = sentence.parentElement!.parentElement!;
     expect(card).toBeTruthy();
     expect(screen.getByRole("region", { name: "Recent" }).contains(card)).toBe(true);
     expect(card.textContent).toContain(

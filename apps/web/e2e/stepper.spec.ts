@@ -7,6 +7,8 @@ test.use({ locale: "en-US", viewport: { width: 390, height: 844 } });
 
 type Boxes = {
   height: number;
+  // The input's own box, to read the rest against.
+  box: { left: number; right: number; top: number };
   fontSize: number;
   // The value's text box (right-aligned in the input, its line centred in the input's box) and
   // the unit's (a Range around its text); each with its baseline.
@@ -42,6 +44,7 @@ const boxes = (input: Locator): Promise<Boxes> =>
     }
     return {
       height: b.height,
+      box: { left: b.left, right: b.right, top: b.top },
       fontSize: parseFloat(s.fontSize),
       value: { left: right - v.width, right, top, baseline: top + v.ascent },
       unit,
@@ -118,22 +121,24 @@ for (const [name, open] of PAGES) {
   });
 }
 
-// Measured on the base at 390 px, light, before the input filled its field (value "100", unit "kg").
+// Measured on the base at 390 px, light, before the input filled its field (value "100", unit
+// "kg"), as offsets from the input's own box: the page can move, the field's contents may not.
 const BEFORE = {
-  value: { right: 194, top: 176, baseline: 195 },
-  unit: { left: 196, top: 182, baseline: 195 },
+  value: { right: 0, top: 12, baseline: 31 },
+  unit: { left: 2, top: 18, baseline: 31 },
 };
 
 test("the value and its unit stay where they were, on one baseline", async ({ page }) => {
   await PAGES[0]![1](page);
   const b = await boxes(page.getByRole("textbox", { name: "Target" }));
-  expect(Math.abs(b.value.right - BEFORE.value.right)).toBeLessThanOrEqual(1);
-  expect(Math.abs(b.value.top - BEFORE.value.top)).toBeLessThanOrEqual(1);
-  expect(Math.abs(b.value.baseline - BEFORE.value.baseline)).toBeLessThanOrEqual(1);
-  expect(Math.abs(b.unit!.left - BEFORE.unit.left)).toBeLessThanOrEqual(1);
-  expect(Math.abs(b.unit!.top - BEFORE.unit.top)).toBeLessThanOrEqual(1);
-  expect(Math.abs(b.unit!.baseline - BEFORE.unit.baseline)).toBeLessThanOrEqual(1);
-  expect(Math.abs(b.unit!.baseline - b.value.baseline)).toBeLessThanOrEqual(1);
+  const near = (got: number, want: number) => expect(Math.abs(got - want)).toBeLessThanOrEqual(1);
+  near(b.value.right - b.box.right, BEFORE.value.right);
+  near(b.value.top - b.box.top, BEFORE.value.top);
+  near(b.value.baseline - b.box.top, BEFORE.value.baseline);
+  near(b.unit!.left - b.box.right, BEFORE.unit.left);
+  near(b.unit!.top - b.box.top, BEFORE.unit.top);
+  near(b.unit!.baseline - b.box.top, BEFORE.unit.baseline);
+  near(b.unit!.baseline, b.value.baseline);
 });
 
 test("a tap anywhere in the field still lands the caret in it", async ({ page }) => {
