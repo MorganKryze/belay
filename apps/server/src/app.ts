@@ -72,7 +72,7 @@ export function createApp({ cfg, db, getOidc }: { cfg: Config; db: Db; getOidc: 
   app.route("/media", mediaRoutes(cfg, db));
   app.all("/media/*", (c) => c.json({ error: "not_found" }, 404));
 
-  // ponytail: no conditional requests (ETag/304), so every revalidation re-sends the whole file.
+  // ponytail: assets get no conditional requests (ETag/304), so every revalidation re-sends the whole file.
   // Upgrade: an ETag layer in front of serveStatic.
 
   // Hashed build output: a missing file is a plain 404, never the app shell cached as immutable.

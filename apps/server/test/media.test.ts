@@ -6,6 +6,7 @@ import {
   openSync,
   promises as fsp,
   statSync,
+  chmodSync,
   symlinkSync,
   writeFileSync,
 } from "node:fs";
@@ -43,6 +44,12 @@ const big = openSync(join(media, "0005.mp4"), "w");
 closeSync(big);
 await fsp.truncate(join(media, "0005.mp4"), 9 * 1024 * 1024);
 symlinkSync(join(media, "0001.mp4"), join(media, "0006.mp4"));
+// A link inside the directory to a page, and a loop the server cannot read.
+writeFileSync(join(media, "page.html"), "<script>alert(1)</script>");
+symlinkSync(join(media, "page.html"), join(media, "0007.mp4"));
+writeFileSync(join(media, "0008.mp4"), bytes);
+chmodSync(join(media, "0008.mp4"), 0o000);
+const asRoot = process.getuid?.() === 0; // root reads a mode-000 file anyway
 
 const st = statSync(join(media, "0001.mp4"));
 const etag = `"${st.size.toString(16)}-${Math.trunc(st.mtimeMs).toString(16)}"`;
@@ -124,8 +131,16 @@ describe("GET /media/exercises/:id", () => {
     expect(realpath).not.toHaveBeenCalled();
   });
 
-  it("answers 404 for a missing file, a directory, a FIFO, an oversize file and a link that leaves the directory", async () => {
-    const ids = ["0009", "0003", "0005", "0002", ...(hasFifo ? ["0004"] : [])];
+  it("answers 404 for a missing file, a directory, a FIFO, an oversize file, a link that leaves the directory, a link to a non-loop and an unreadable file", async () => {
+    const ids = [
+      "0009",
+      "0003",
+      "0005",
+      "0002",
+      "0007",
+      ...(asRoot ? [] : ["0008"]),
+      ...(hasFifo ? ["0004"] : []),
+    ];
     for (const id of ids) {
       const res = await Promise.race([
         get(`/media/exercises/${id}`),

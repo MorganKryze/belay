@@ -1,4 +1,4 @@
-import { promises as fsp } from "node:fs";
+import { constants, promises as fsp } from "node:fs";
 import { join, sep } from "node:path";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono, type MiddlewareHandler } from "hono";
@@ -42,10 +42,19 @@ export function mediaRoutes(cfg: Config, db: Db) {
     if (!dir || !MEDIA_ID.test(id)) return c.json(notFound, 404);
     // Containment on the real path: a link leading out of the directory is refused.
     const real = await fsp.realpath(join(dir, `${id}.mp4`)).catch(() => null);
-    if (!real?.startsWith(dir + sep)) return c.json(notFound, 404);
+    // An .mp4 target only: serveStatic types the reply from the real file's extension.
+    if (!real?.startsWith(dir + sep) || !real.endsWith(".mp4")) return c.json(notFound, 404);
     const st = await fsp.stat(real).catch(() => null);
     // Regular files only: opening a FIFO would block the read forever.
     if (!st?.isFile() || st.size > MEDIA_MAX_BYTES) return c.json(notFound, 404);
+    // Readable before the 200 goes out, or the reply would be cut short and cached for a month.
+    if (
+      !(await fsp.access(real, constants.R_OK).then(
+        () => true,
+        () => false,
+      ))
+    )
+      return c.json(notFound, 404);
 
     // Only computed values go into headers, never anything the request sent.
     const etag = `"${st.size.toString(16)}-${Math.trunc(st.mtimeMs).toString(16)}"`;
