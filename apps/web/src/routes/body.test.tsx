@@ -1,4 +1,5 @@
 import { addDays } from "@belay/shared/body/dates";
+import type { Change } from "@belay/shared/sync/schema";
 import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { IDBFactory } from "fake-indexeddb";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -84,7 +85,7 @@ describe("the Body page", () => {
 
   it("lists the weeks and says in words why one does not count", async () => {
     expect(rows(await open())).toEqual([
-      "This weekongoing3 weigh-ins",
+      "This weekongoing3 weigh-ins ·79.9\u00a0kg",
       "Sep 28 – Oct 40.7% in your range80.2\u00a0kg",
       "Sep 21 – 27—week before insufficient ·80.8\u00a0kg",
       "Sep 14 – 20—3 weigh-ins, 4 minimum",
@@ -312,5 +313,42 @@ describe("the Body page", () => {
     expect(within(history).queryByText("Wed, Jul 1")).toBeNull();
     fireEvent.click(screen.getByRole("radio", { name: "All" }));
     expect(await within(history).findByText("Wed, Jul 1")).toBeTruthy();
+  });
+
+  // "All" spans from the earliest entry of any kind: a measure, an intake or an annotation may
+  // come before the first weigh-in.
+  const NOTE = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d90";
+  const before: Change[] = [
+    { kind: "measure", date: "2026-05-04", field: "waist", value: 84, at: AT },
+    { kind: "intake", date: "2026-05-11", field: "kcal", value: 1900, at: AT },
+    {
+      kind: "annotation",
+      id: NOTE,
+      field: "fields",
+      date: "2026-05-18",
+      type: "deload",
+      label: null,
+      at: AT,
+    } as Change,
+  ];
+  const listsEverythingWithAll = async () => {
+    fireEvent.click(await screen.findByRole("radio", { name: "All" }));
+    const history = await screen.findByRole("region", { name: "History" });
+    expect(await within(history).findByText("Mon, May 4")).toBeTruthy();
+    expect(within(history).getByText("Mon, May 11")).toBeTruthy();
+    const notes = screen.getByRole("region", { name: "Annotations" });
+    expect(within(notes).getByText(/May 18/)).toBeTruthy();
+  };
+
+  it("All lists the entries and annotations dated before the first weigh-in", async () => {
+    await open([...WEEKS, ...before]);
+    await listsEverythingWithAll();
+  });
+
+  it("All lists every entry and annotation without any weigh-in", async () => {
+    await seed(ADA.id, before);
+    fakeApi({ me: ADA });
+    renderRoute("/body");
+    await listsEverythingWithAll();
   });
 });

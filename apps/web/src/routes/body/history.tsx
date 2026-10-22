@@ -13,6 +13,10 @@ import { formatKg, formatNumber } from "@/lib/format";
 const row =
   "grid min-h-14 w-full grid-cols-[minmax(0,1fr)_16px] items-center gap-x-3 px-4 py-2 text-left";
 
+// The chevron, or its spacer, spans the second line only when there is one: a lone line would
+// otherwise share the row's height with an empty second track and sit above the middle.
+const span = (rest: string[]) => (rest.length > 0 ? "row-span-2" : "");
+
 // One line per day of the period that holds an entry, the most recent first, saying what was
 // entered ("79.8 kg · 2,100 kcal", "waist 82 cm"); a day with a weigh-in opens its sheet.
 // ponytail: "All" renders every line at once. Upgrade: show the latest hundred and a "More" button.
@@ -95,13 +99,16 @@ export function History({
                   {content}
                   <ChevronRight
                     aria-hidden="true"
-                    className="col-start-2 row-span-2 row-start-1 size-4 text-muted-foreground"
+                    className={`col-start-2 row-start-1 size-4 text-muted-foreground ${span(rest)}`}
                   />
                 </button>
               ) : (
                 <div className={row}>
                   {content}
-                  <span aria-hidden="true" className="col-start-2 row-span-2 row-start-1 size-4" />
+                  <span
+                    aria-hidden="true"
+                    className={`col-start-2 row-start-1 size-4 ${span(rest)}`}
+                  />
                 </div>
               )}
             </li>
