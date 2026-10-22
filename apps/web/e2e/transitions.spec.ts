@@ -134,6 +134,8 @@ test("Back plays the reverse in 380 ms", async ({ page }) => {
   await page.emulateMedia({ colorScheme: "dark" });
   await recordTransitions(page);
   await openPlates(page);
+  // Back during the push's own transition would skip the pop's: wait for it to end.
+  await settled(page);
   await page.goBack();
   await expect(page.getByRole("heading", { level: 1, name: "Tools" })).toBeVisible();
   await expect.poll(async () => (await played(page)).length).toBe(2);
