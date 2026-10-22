@@ -9,7 +9,7 @@
     "typecheck": "tsc -p .",
     "test": "vitest run",
     "e2e": "playwright test",
-    "cn:tables": "cn build --full --css src/index.css -o src/lib/cn-tables.ts && prettier --write src/lib/cn-tables.ts"
+    "cn:tables": "cn build --full --css src/index.css -o src/lib/cn-tables.ts && node -e \"const f='src/lib/cn-tables.ts',fs=require('fs');fs.writeFileSync(f,fs.readFileSync(f,'utf8').replace(' \\u2014 ',': '))\" && prettier --write src/lib/cn-tables.ts"
   },
   "dependencies": {
     "@belay/shared": "workspace:*",
