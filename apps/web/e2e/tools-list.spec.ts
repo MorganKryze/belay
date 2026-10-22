@@ -93,8 +93,10 @@ for (const locale of ["fr-FR", "en-US"] as const) {
       await settled(page);
       const cut = await toolRows(page).evaluateAll((rows) =>
         rows
-          .map((row) => row.querySelector<HTMLElement>(".truncate.text-muted-foreground")!)
-          .filter((hint) => hint.scrollWidth > hint.clientWidth)
+          .map((row) => row.querySelector<HTMLElement>(".text-muted-foreground")!)
+          .filter(
+            (hint) => hint.scrollWidth > hint.clientWidth || hint.scrollHeight > hint.clientHeight,
+          )
           .map((hint) => hint.textContent),
       );
       expect(cut).toEqual([]);
