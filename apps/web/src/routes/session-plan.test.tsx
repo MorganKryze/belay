@@ -368,10 +368,10 @@ describe("a timed exercise and its chrono (spec D11, §4.3)", () => {
     await later(5);
     await pauseSession();
     await later(20);
-    await waitFor(() =>
-      expect(within(card("Dead hang")).getByRole("timer", { name: "Timer" }).textContent).toBe(
-        "0:25",
-      ),
+    // Let the card's one-second clock tick during the pause: only then would a running chrono show.
+    await act(() => new Promise((resolve) => setTimeout(resolve, 1100)));
+    expect(within(card("Dead hang")).getByRole("timer", { name: "Timer" }).textContent).toBe(
+      "0:25",
     );
     fireEvent.click(screen.getByRole("button", { name: "Resume the session" }));
     await screen.findByRole("button", { name: "Pause the session" });
