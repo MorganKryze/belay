@@ -375,3 +375,51 @@ test("the leaving page moves from where it was on screen, for push, pop, cover a
     expect.soft(Math.round(p.page.drawn), p.types[0]).toBe(Math.round(p.page.top));
   }
 });
+
+test.describe("late code", () => {
+  // Once the service worker controls the page it serves the chunks from its cache, where no route
+  // can hold them.
+  test.use({ serviceWorkers: "block" });
+
+  test("a pushed page whose code is late leaves the list where it was, and Back restores it", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 500 });
+    await recordTransitions(page);
+    // The tools' shared page code arrives a second late, past the 150 ms the pending page waits.
+    await page.route(/\/chunk-tool-[\w-]{8}\.js$/, async (route) => {
+      await new Promise((r) => setTimeout(r, 1000));
+      await route.continue();
+    });
+    await page.goto("/tools");
+    await expect(page.locator(".launch")).toBeHidden();
+    const bmi = page.getByRole("link", { name: /^BMI/ });
+    await bmi.scrollIntoViewIfNeeded();
+    const scrolled = await page.evaluate(() => window.scrollY);
+    expect(scrolled).toBeGreaterThan(100);
+    await bmi.click();
+    await expect(page.getByRole("heading", { level: 1, name: "BMI" })).toBeVisible();
+    await settled(page);
+    await page.goBack();
+    await expect(page.getByRole("heading", { level: 1, name: "Tools" })).toBeVisible();
+    await settled(page);
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(scrolled);
+    const [push] = await played(page);
+    expect(push!.types).toEqual(["push"]);
+    expect(push!.page.scrollY).toBe(scrolled);
+    expect(Math.round(push!.page.drawn)).toBe(Math.round(push!.page.top));
+  });
+
+  test("a pushed page opened first, its code late, shows the breathing mark", async ({ page }) => {
+    await page.route(/\/chunk-tool-[\w-]{8}\.js$/, async (route) => {
+      await new Promise((r) => setTimeout(r, 3000));
+      await route.continue();
+    });
+    await page.goto("/tools/bmi");
+    await expect(page.locator(".launch")).toBeHidden();
+    await expect(page.locator("[data-pending] .loader-mark")).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "BMI" })).toBeVisible({
+      timeout: 5000,
+    });
+  });
+});
