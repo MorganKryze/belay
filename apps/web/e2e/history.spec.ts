@@ -133,6 +133,19 @@ test.describe("on Wednesday 7 October 2026", () => {
     });
   }
 
+  test("Back from a session of September opens September again", async ({ page }) => {
+    await openHistory(page, [...month("2026-10"), ...finished(5, "2026-09-15", "B")]);
+    await page.getByRole("button", { name: "Previous month" }).click();
+    await expect(page.getByRole("table", { name: "September 2026" })).toBeVisible();
+    await page.getByRole("region", { name: "September 2026" }).getByRole("link").click();
+    await expect(page.getByRole("heading", { level: 1, name: /^Session B/ })).toBeVisible();
+    await page.goBack();
+    await expect(page.getByRole("table", { name: "September 2026" })).toBeVisible();
+    await expect(
+      page.getByRole("region", { name: "September 2026" }).getByRole("link"),
+    ).toHaveCount(1);
+  });
+
   for (const width of [360, 1280]) {
     test(`History has nothing scrolling sideways at ${width} px`, async ({ page }) => {
       await page.setViewportSize({ width, height: 800 });

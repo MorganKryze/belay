@@ -86,6 +86,35 @@ describe("the History segment", () => {
     expect(await screen.findByText("No session this month.")).toBeTruthy();
   });
 
+  it("keeps the month shown in the address, so Back from a session reopens that month", async () => {
+    await seed(ADA.id, [...MONTH, ...session(6, "C", new Date(2026, 8, 28, 18, 0), 45)]);
+    fakeApi({ me: ADA });
+    const router = renderRoute("/workouts?tab=history");
+    await screen.findByRole("table", { name: "October 2026" });
+    fireEvent.click(screen.getByRole("button", { name: "Previous month" }));
+    await screen.findByRole("table", { name: "September 2026" });
+    expect(router.state.location.search).toEqual({ tab: "history", month: "2026-09" });
+    const list = screen.getByRole("region", { name: "September 2026" });
+    fireEvent.click(await within(list).findByRole("link"));
+    await screen.findByRole("heading", { level: 1, name: /^Session C/ });
+    act(() => router.history.back());
+    expect(await screen.findByRole("table", { name: "September 2026" })).toBeTruthy();
+    // Back to the current month, the address drops it.
+    fireEvent.click(screen.getByRole("button", { name: "Next month" }));
+    await screen.findByRole("table", { name: "October 2026" });
+    expect(router.state.location.search).toEqual({ tab: "history" });
+  });
+
+  it("opens on the month in the address, never one past the current month", async () => {
+    await seed(ADA.id, MONTH);
+    fakeApi({ me: ADA });
+    renderRoute("/workouts?tab=history&month=2026-08");
+    expect(await screen.findByRole("table", { name: "August 2026" })).toBeTruthy();
+    cleanup();
+    renderRoute("/workouts?tab=history&month=2027-01");
+    expect(await screen.findByRole("table", { name: "October 2026" })).toBeTruthy();
+  });
+
   it("the log row sits under the calendar and opens the log sheet", async () => {
     await seed(ADA.id, MONTH);
     fakeApi({ me: ADA });
