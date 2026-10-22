@@ -24,7 +24,7 @@ afterEach(async () => {
 const classes = (el: Element | null) => (el?.getAttribute("class") ?? "").split(/\s+/);
 const avatar = () => within(screen.getByRole("main")).getByRole("link", { name: "Settings" });
 const shell = () => screen.getByRole("main").parentElement!;
-const sessionBar = () => screen.queryByRole("link", { name: /In progress/ });
+const sessionBar = () => screen.queryByRole("link", { name: /Set \d+ of \d+ · Session [A-Z]/ });
 
 // A session started a few minutes ago and still open.
 const OPEN = (): Change[] => {
@@ -158,7 +158,7 @@ describe("the shell", () => {
 
     await seed(ADA.id, OPEN());
     renderRoute("/tools");
-    const bar = await screen.findByRole("link", { name: /In progress/ });
+    const bar = await screen.findByRole("link", { name: /Set \d+ of \d+ · Session [A-Z]/ });
     expect(bar.getAttribute("href")).toBe("/workout?start=C");
     expect(bar.closest("[data-dock]")).toBeTruthy();
     expect(classes(bar)).toContain("lg:hidden");
@@ -203,7 +203,7 @@ describe("the shell", () => {
       },
     ]);
     renderRoute("/tools");
-    await screen.findByRole("link", { name: /In progress/ });
+    await screen.findByRole("link", { name: /Set \d+ of \d+ · Session [A-Z]/ });
     // A minute on, with no new data, and past its exit: tapping it now would start a new
     // session instead of reopening this one.
     await act(() => vi.advanceTimersByTimeAsync(60_000));
@@ -216,7 +216,7 @@ describe("the shell", () => {
     fakeApi({ me: ADA });
     await seed(ADA.id, OPEN());
     renderRoute("/tools");
-    await screen.findByRole("link", { name: /In progress/ });
+    await screen.findByRole("link", { name: /Set \d+ of \d+ · Session [A-Z]/ });
     expect(classes(shell())).toEqual(
       expect.arrayContaining([
         "[--chrome-bottom:calc(8.875rem+max(0.75rem,env(safe-area-inset-bottom)))]",

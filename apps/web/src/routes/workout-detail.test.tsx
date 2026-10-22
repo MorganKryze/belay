@@ -351,4 +351,13 @@ describe("a session's detail", () => {
     expect(await screen.findByRole("table", { name: "October 2026" })).toBeTruthy();
     expect(screen.getByRole("radio", { name: "History", checked: true })).toBeTruthy();
   });
+
+  it("the back link reopens the history on the session's month", async () => {
+    await seed(ADA.id, [...session(9, "A", new Date(2026, 8, 14, 18, 0), 50)]);
+    fakeApi({ me: ADA });
+    renderRoute(`/workouts/${id(9)}`);
+    await screen.findByRole("heading", { name: /^Session A/, level: 1 });
+    fireEvent.click(screen.getByRole("link", { name: "History" }));
+    expect(await screen.findByRole("table", { name: "September 2026" })).toBeTruthy();
+  });
 });

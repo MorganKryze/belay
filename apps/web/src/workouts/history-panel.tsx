@@ -1,7 +1,7 @@
 import { type ISODate, toISODate } from "@belay/shared/body/dates";
 import type { Activity } from "@belay/shared/training/activities";
 import type { Workout } from "@belay/shared/training/workout";
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import { Activity as ActivityIcon, Dumbbell, Plus } from "lucide-react";
 import { lazy, Suspense, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -60,13 +60,22 @@ function History({ account }: { account: OpenAccount }) {
   const { t, i18n } = useTranslation();
   const today = useToday();
   const current = today.slice(0, 7);
-  const [month, setMonth] = useState(current);
+  // The month shown lives in the address (?month=), never past the current one; the current
+  // month leaves it out.
+  const asked = useSearch({ from: "/workouts" }).month;
+  const month = asked && asked < current ? asked : current;
   // « Séances seules » keeps the history to gym sessions; read once, when the screen opens.
   const [withActivities] = useState(() => readHistoryActivities() === "shown");
   const history = useHistory(account).data;
   const activities = useActivities(account).data;
   const steps = useSteps(account).data ?? [];
   const navigate = useNavigate();
+  const setMonth = (next: string) =>
+    void navigate({
+      to: "/workouts",
+      search: (prev) => ({ tab: prev.tab, ...(next < current && { month: next }) }),
+      replace: true,
+    });
   const { write, toast, error, clearError, dismiss } = useWriter(account);
   const [logging, setLogging] = useState(false);
   const [opened, setOpened] = useState<ISODate | null>(null); // the day of the activity sheet

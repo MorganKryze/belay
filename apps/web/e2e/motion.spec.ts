@@ -287,7 +287,7 @@ test.describe("normal motion", () => {
   test("the session bar rises in 220 ms", async ({ page }) => {
     await fakeServer(page, { rows: WEEKS, changes: RUNNING_C });
     await page.goto("/");
-    await expect(page.getByRole("link", { name: /In progress/ })).toBeVisible();
+    await expect(page.getByRole("link", { name: /Set \d+ of \d+ · Session [A-Z]/ })).toBeVisible();
     await expect
       .poll(() => readMotion(page))
       .toContainEqual(

@@ -104,21 +104,17 @@ const resting = (endsAt: number, workoutId = workout.id) =>
 const tenMinutes = () => ({ ...workout, startedAt: new Date(Date.now() - 600_000).toISOString() });
 
 describe("SessionBar", () => {
-  it("names the exercise of the next set, set 3 of 4 and the session letter from 390 px, 3/4 below", async () => {
+  it("names the exercise of the next set, then « Série 3 sur 4 · Séance C » at every width", async () => {
     await i18n.changeLanguage("fr");
     const { link } = await show({ workout, sets: twoDone });
     expect(C.slots[0]!.sets).toBe(4);
-    const long = screen.getByText("En cours · série 3 sur 4 · Séance C");
-    const short = screen.getByText("En cours · série 3/4");
-    expect(long.className.split(/\s+/)).toEqual(
-      expect.arrayContaining(["hidden", "min-[390px]:block"]),
-    );
-    expect(short.className.split(/\s+/)).toContain("min-[390px]:hidden");
+    // The validated bar: no « En cours » while the session simply runs, one line at every width.
+    const line = screen.getByText("Série 3 sur 4 · Séance C");
+    expect(line.className.split(/\s+/)).not.toContain("hidden");
+    expect(link.textContent).not.toMatch(/En cours|3\/4/);
     // The 13 px step, not the colour token that shares its name.
-    for (const line of [long, short]) {
-      expect(line.className.split(/\s+/)).toContain("text-(length:--text-secondary)");
-      expect(line.className.split(/\s+/)).not.toContain("text-secondary");
-    }
+    expect(line.className.split(/\s+/)).toContain("text-(length:--text-secondary)");
+    expect(line.className.split(/\s+/)).not.toContain("text-secondary");
     expect(screen.getByText("Barbell hip thrust")).toBeTruthy();
     expect(link.getAttribute("href")).toBe("/workout?start=C");
     expect(link.className.split(/\s+/)).toContain("lg:hidden");
@@ -169,7 +165,6 @@ describe("SessionBar", () => {
     await resting(Date.now() + 90_000);
     const { link } = await show({ workout: tenMinutes(), sets: [set(0, 0, 3)] });
     expect(await screen.findByText("Rest · set 2 of 4 · Session C")).toBeTruthy();
-    expect(screen.getByText("Rest · set 2/4")).toBeTruthy();
     expect(screen.getByText("Barbell hip thrust")).toBeTruthy();
     expect(link.textContent).toMatch(/1:(29|30)/);
     expect(link.textContent).not.toMatch(/10:0\d/);
@@ -179,7 +174,7 @@ describe("SessionBar", () => {
     await resting(Date.now() + 90_000, "another");
     await show({ workout: tenMinutes(), sets: [set(0, 0, 3)] });
     expect(await screen.findByText(/^10:0\d$/)).toBeTruthy();
-    expect(screen.getByText("In progress · set 2 of 4 · Session C")).toBeTruthy();
+    expect(screen.getByText("Set 2 of 4 · Session C")).toBeTruthy();
     cleanup();
     await resting(Date.now() - 1000);
     await show({ workout: tenMinutes(), sets: [set(0, 0, 3)] });
@@ -199,7 +194,6 @@ describe("SessionBar", () => {
     });
     await show({ workout: started, sets: [set(0, 0, 3)] });
     expect(await screen.findByText("Paused · set 2 of 4 · Session C")).toBeTruthy();
-    expect(screen.getByText("Paused · set 2/4")).toBeTruthy();
     const time = () => screen.getByText(/^\d+:\d\d$/).textContent;
     expect(time()).toBe("9:59");
     await new Promise((r) => setTimeout(r, 1100));
@@ -221,7 +215,6 @@ describe("SessionBar", () => {
     expect(timer.textContent).toBe("1:30");
     // Everything stopped: the bar says Paused over the frozen rest, not Rest.
     expect(screen.getByText("Paused · set 2 of 4 · Session C")).toBeTruthy();
-    expect(screen.getByText("Paused · set 2/4")).toBeTruthy();
     await new Promise((r) => setTimeout(r, 1100));
     expect(timer.textContent).toBe("1:30");
     localStorage.setItem("belay.pauseStops", "session");
@@ -243,7 +236,7 @@ describe("SessionBar", () => {
     expect(vibrate).toHaveBeenCalledOnce();
     expect(vibrate).toHaveBeenCalledWith(200);
     // Back to the session time once the rest is over.
-    expect(await screen.findByText("In progress · set 2 of 4 · Session C")).toBeTruthy();
+    expect(await screen.findByText("Set 2 of 4 · Session C")).toBeTruthy();
     // The bar renders again on each tick of its clock: the cue stays a single one.
     await new Promise((r) => setTimeout(r, 600));
     expect(vibrate).toHaveBeenCalledOnce();
@@ -255,7 +248,7 @@ describe("SessionBar", () => {
     Object.defineProperty(navigator, "vibrate", { value: vibrate, configurable: true });
     await resting(Date.now() - 1000);
     await show({ workout: tenMinutes(), sets: [set(0, 0, 3)] });
-    await screen.findByText("In progress · set 2 of 4 · Session C");
+    await screen.findByText("Set 2 of 4 · Session C");
     await new Promise((r) => setTimeout(r, 600));
     expect(screen.getByRole("status").textContent).toBe("");
     expect(vibrate).not.toHaveBeenCalled();

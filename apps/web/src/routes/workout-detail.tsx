@@ -1,4 +1,5 @@
 import "@/i18n/lazy";
+import { toISODate } from "@belay/shared/body/dates";
 import { exerciseById } from "@belay/shared/exercises/catalog";
 import { liveSets, summary } from "@belay/shared/training/rules";
 import { type Workout, type WorkoutSet } from "@belay/shared/training/workout";
@@ -53,6 +54,7 @@ function Detail({ account }: { account: OpenAccount }) {
   const kg = (v: number) => formatNumber(v, i18n.language, { digits: 2 });
   const cards = exerciseCards(workout, sets, t);
 
+  const month = toISODate(new Date(workout.startedAt)).slice(0, 7);
   const remove = async () => {
     setError(undefined);
     setLeaving(true); // the session goes before the page does: no "not found" in between
@@ -76,7 +78,11 @@ function Detail({ account }: { account: OpenAccount }) {
       <PageHeader
         title={sessionTitle(workout.sessionCode, t)}
         back={
-          <BackLink to="/workouts" search={{ tab: "history" }}>
+          // Onto the session's month, wherever it was opened from; the current month goes unsaid.
+          <BackLink
+            to="/workouts"
+            search={{ tab: "history", ...(month < today.slice(0, 7) && { month }) }}
+          >
             {t("workouts.tabs.history")}
           </BackLink>
         }

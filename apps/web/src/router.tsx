@@ -46,8 +46,12 @@ const workoutsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/workouts",
   component: workoutsPage,
-  validateSearch: (search: Record<string, unknown>): { tab?: WorkoutTab } =>
-    isWorkoutTab(search.tab) ? { tab: search.tab } : {},
+  // The history's month rides in the address, so Back from a session lands on it again.
+  validateSearch: (search: Record<string, unknown>): { tab?: WorkoutTab; month?: string } => ({
+    ...(isWorkoutTab(search.tab) && { tab: search.tab }),
+    ...(typeof search.month === "string" &&
+      /^\d{4}-(0[1-9]|1[0-2])$/.test(search.month) && { month: search.month }),
+  }),
 });
 // A session of the program before it starts. Opened from Accueil it says so (?from=home), so
 // its back chevron and the lit tab stay Accueil's, after a reload too.

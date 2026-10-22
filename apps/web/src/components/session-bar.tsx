@@ -77,17 +77,17 @@ export function SessionBar({
               <span className="truncate font-semibold">
                 {exerciseById(slot.exerciseId)?.name ?? slot.exerciseId}
               </span>
-              <span className={`hidden ${status} min-[390px]:block`}>
+              {/* As validated: « Série 2 sur 3 · Séance A » while it runs, the rest or the pause
+                  ahead of it, one line at every width. */}
+              <span className={status}>
                 {[
-                  running,
-                  t("sessionBar.setOf", { n: next.round + 1, total: slot.sets }),
+                  ...(paused || resting ? [running] : []),
+                  t(paused || resting ? "sessionBar.setOf" : "sessionBar.setLead", {
+                    n: next.round + 1,
+                    total: slot.sets,
+                  }),
                   letter,
                 ].join(" · ")}
-              </span>
-              <span className={`${status} min-[390px]:hidden`}>
-                {[running, t("sessionBar.setShort", { n: next.round + 1, total: slot.sets })].join(
-                  " · ",
-                )}
               </span>
             </>
           ) : (
