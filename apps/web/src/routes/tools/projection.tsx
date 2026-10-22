@@ -83,7 +83,8 @@ export function ProjectionTool() {
           min={RATE_MIN_PCT}
           max={RATE_MAX_PCT}
           step={RATE_STEP_PCT}
-          onChange={(v) => v !== null && setInputs({ pct: roundTo(v, RATE_STEP_PCT) })}
+          // Fine tuning stays on a pace that lands on a preset: the stepper keeps the focus.
+          onChange={(v) => v !== null && setInputs({ pct: roundTo(v, RATE_STEP_PCT), fine: true })}
         />
       ) : (
         <>
