@@ -1,6 +1,6 @@
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
-import { cn } from "cn"
+import { cn } from "@/lib/utils"
 import { Slot } from "radix-ui"
 
 // Belay: four variants from the charter. Every target is at least 44 px; a disabled button reads
@@ -35,8 +35,7 @@ const buttonBox = cva(
   }
 )
 
-// The charter's type steps, kept out of the class merge: it reads text-button or text-body as a
-// colour and would drop it against the variant's text colour.
+// The charter's type steps, applied last so they win over a size in className.
 const TYPE = {
   primary: "text-button",
   secondary: "text-body font-semibold",
@@ -49,7 +48,7 @@ function buttonVariants({
   size,
   className,
 }: VariantProps<typeof buttonBox> & { className?: string } = {}) {
-  return `${cn(buttonBox({ variant, size, className }))} ${TYPE[variant ?? "primary"]}`
+  return cn(buttonBox({ variant, size, className }), TYPE[variant ?? "primary"])
 }
 
 function Button({

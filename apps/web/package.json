@@ -8,7 +8,8 @@
     "preview": "vite preview",
     "typecheck": "tsc -p .",
     "test": "vitest run",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "cn:tables": "cn build --full --css src/index.css -o src/lib/cn-tables.ts && prettier --write src/lib/cn-tables.ts"
   },
   "dependencies": {
     "@belay/shared": "workspace:*",

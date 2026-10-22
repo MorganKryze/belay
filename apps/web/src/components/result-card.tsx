@@ -38,11 +38,13 @@ export function ResultFigure({
   unitSpace?: string;
 }) {
   return (
-    // A plain string, not cn(): the merge takes the custom text-figure size for a color and drops
-    // it in favor of text-foreground.
     <div
       data-slot="result-figure"
-      className={`${size === "medium" ? "text-figure-md" : "text-figure"} tabular-nums ${muted ? "text-muted-foreground" : "text-foreground"}`}
+      className={cn(
+        size === "medium" ? "text-figure-md" : "text-figure",
+        "tabular-nums",
+        muted ? "text-muted-foreground" : "text-foreground",
+      )}
     >
       {value}
       {unit && (
