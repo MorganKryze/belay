@@ -38,7 +38,7 @@ test("the top bar replaces the dock and the session bar", async ({ page }) => {
   await page.goto("/workouts");
   await expect(bar.getByRole("link", { name: "Sessions" })).toHaveAttribute("aria-current", "page");
   await expect(page.getByRole("navigation", { name: "Main" })).toBeHidden();
-  await expect(page.getByRole("link", { name: /In progress/ })).toBeHidden();
+  await expect(page.getByRole("link", { name: /Set \d+ of \d+ · Session [A-Z]/ })).toBeHidden();
   const box = (await bar.boundingBox())!;
   expect(box.y).toBe(0);
   expect(box.width).toBe(1280);

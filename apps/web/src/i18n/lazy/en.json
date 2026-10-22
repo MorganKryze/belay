@@ -509,7 +509,7 @@
     "running": "In progress",
     "paused": "Paused",
     "setOf": "set {{n}} of {{total}}",
-    "setShort": "set {{n}}/{{total}}",
+    "setLead": "Set {{n}} of {{total}}",
     "session": "Session {{code}}"
   }
 }

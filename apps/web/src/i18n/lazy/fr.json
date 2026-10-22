@@ -509,7 +509,7 @@
     "running": "En cours",
     "paused": "En pause",
     "setOf": "série {{n}} sur {{total}}",
-    "setShort": "série {{n}}/{{total}}",
+    "setLead": "Série {{n}} sur {{total}}",
     "session": "Séance {{code}}"
   }
 }
