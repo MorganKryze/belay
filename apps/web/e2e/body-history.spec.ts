@@ -157,3 +157,49 @@ test("History has nothing scrolling sideways at 360 px", async ({ page }) => {
   );
   expect(wide).toEqual([]);
 });
+
+test("a weighed day with no second line is one centred line, its weight still at the right", async ({
+  page,
+}) => {
+  const history = await openBody(page);
+  // Yesterday holds a weigh-in alone: its first line sits in the middle of its row, no band below.
+  const row = history.getByRole("button", { name: /^Yesterday/ });
+  const box = await row.evaluate((el) => {
+    const r = el.getBoundingClientRect();
+    const line = el.firstElementChild!.getBoundingClientRect();
+    const s = getComputedStyle(el);
+    return {
+      gap: r.bottom - parseFloat(s.paddingBottom) - line.bottom,
+      above: line.top - r.top - parseFloat(s.paddingTop),
+      lines: el.querySelectorAll(":scope > span").length,
+    };
+  });
+  expect(box.lines).toBe(1);
+  expect(Math.abs(box.gap - box.above)).toBeLessThanOrEqual(1);
+});
+
+test("All lists the entries and annotations dated before the first weigh-in", async ({ page }) => {
+  const day = today();
+  await fakeServer(page, {
+    rows: [{ date: day, weightKg: 80 }],
+    changes: [
+      { kind: "measure", date: addDays(day, -200), field: "waist", value: 84, at: AT },
+      {
+        kind: "annotation",
+        id: "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d90",
+        field: "fields",
+        date: addDays(day, -190),
+        type: "deload",
+        label: null,
+        at: AT,
+      } as Change,
+    ],
+  });
+  await page.goto("/body");
+  await expect(page.locator(".launch")).toBeHidden();
+  const history = page.getByRole("region", { name: "History" });
+  await expect(history.getByRole("listitem")).toHaveCount(1);
+  await page.getByRole("radio", { name: "All" }).click();
+  await expect(history.getByRole("listitem")).toHaveCount(2);
+  await expect(page.getByRole("region", { name: "Annotations" }).getByText("Deload")).toBeVisible();
+});
