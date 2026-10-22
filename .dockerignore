@@ -17,3 +17,5 @@
 **/playwright-report
 **/test-results
 **/.env*
+# Exercise loops belong to the operator and never enter an image.
+**/*.mp4

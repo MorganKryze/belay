@@ -5,3 +5,6 @@ coverage/
 playwright-report/
 test-results/
 .env
+# Exercise loops are operator media; only the synthetic test clip is tracked.
+*.mp4
+!apps/web/e2e/fixtures/loop.mp4
