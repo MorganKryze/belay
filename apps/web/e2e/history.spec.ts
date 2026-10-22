@@ -295,7 +295,20 @@ test.describe("the history's rows, on Wednesday 7 October 2026", () => {
       await page.addInitScript((t) => localStorage.setItem("belay.theme", t), theme);
       await fakeServer(page, { changes: [] });
       await page.goto("/workouts?tab=history");
-      await expect(page.getByText("Your first session will show here.")).toBeVisible();
+      const sentence = page.getByText("Your first session will show here.");
+      await expect(sentence).toBeVisible();
+      // The empty state stands on the kit's group surface: its card is the sentence's grandparent.
+      const card = sentence.locator("xpath=../..");
+      expect(await card.evaluate((el) => getComputedStyle(el).backgroundColor)).toBe(
+        await page.evaluate(() => {
+          const probe = document.createElement("div");
+          probe.style.backgroundColor = "var(--surface)";
+          document.body.append(probe);
+          const value = getComputedStyle(probe).backgroundColor;
+          probe.remove();
+          return value;
+        }),
+      );
       await expect(
         page.getByText(
           "It shows up on its own when you finish a session, or with “Log a session”.",

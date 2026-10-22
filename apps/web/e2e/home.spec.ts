@@ -1,6 +1,6 @@
 import type { Change } from "@belay/shared/sync/schema";
 import { sessionByCode } from "@belay/shared/training/program";
-import { expect, type Page, test } from "@playwright/test";
+import { expect, type Locator, type Page, test } from "@playwright/test";
 import { expectNoAxeViolations } from "./axe";
 import { fakeServer } from "./fake-server";
 
@@ -26,8 +26,12 @@ const runningA = (): Change[] => {
 
 const sessionCard = (page: Page) => page.getByRole("region", { name: /^Session A · Push/ });
 
-async function openHome(page: Page, changes: Change[] = []) {
-  await fakeServer(page, { changes });
+async function openHome(
+  page: Page,
+  changes: Change[] = [],
+  rows: { date: string; weightKg: number }[] = [],
+) {
+  await fakeServer(page, { changes, rows });
   await page.goto("/");
   await expect(page.locator(".launch")).toBeHidden();
   await expect(sessionCard(page)).toBeVisible();
@@ -130,9 +134,27 @@ for (const theme of ["light", "dark"] as const) {
 
 // Session A started half a minute ago and ended a second ago: done today, B comes next.
 const DONE = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7f02";
-const doneA = (): Change[] => {
-  const from = new Date(Date.now() - 30_000).toISOString();
-  const to = new Date(Date.now() - 1_000).toISOString();
+// Paris's day is the app's: the session never starts before today's midnight there, whatever the
+// second the test runs at.
+const sinceParisMidnight = (now: Date): number => {
+  const part = (type: string) =>
+    Number(
+      new Intl.DateTimeFormat("en-GB", {
+        timeZone: "Europe/Paris",
+        hourCycle: "h23",
+        hour: "numeric",
+        minute: "numeric",
+        second: "numeric",
+      })
+        .formatToParts(now)
+        .find((p) => p.type === type)!.value,
+    );
+  return ((part("hour") * 60 + part("minute")) * 60 + part("second")) * 1000;
+};
+const doneA = (now = new Date()): Change[] => {
+  const back = Math.min(30_000, Math.max(sinceParisMidnight(now), 2_000));
+  const from = new Date(now.getTime() - back).toISOString();
+  const to = new Date(now.getTime() - back / 2).toISOString();
   return [
     {
       kind: "workout",
@@ -178,4 +200,58 @@ test.describe("the session done", () => {
       await expect(sessionCard(page)).toContainText("Done today");
       await expectNoAxeViolations(page);
     });
+});
+
+// Accueil's kit values, read from the page and not from class names.
+const px = (el: Locator, prop: string) =>
+  el.evaluate((node, p) => getComputedStyle(node).getPropertyValue(p), prop);
+const colour = (page: Page, name: string, prop = "color") =>
+  page.evaluate(
+    ([n, p]) => {
+      const probe = document.createElement("span");
+      probe.style.setProperty(p!, `var(${n})`);
+      document.body.append(probe);
+      const value = getComputedStyle(probe).getPropertyValue(p!);
+      probe.remove();
+      return value;
+    },
+    [name, prop],
+  );
+
+test("the session card's title is 17 px 600 and its lead is in the accent ink", async ({
+  page,
+}) => {
+  await openHome(page);
+  const title = sessionCard(page).getByRole("heading", { name: /^Session A · Push/ });
+  expect(await px(title, "font-size")).toBe("17px");
+  expect(await px(title, "font-weight")).toBe("600");
+  const lead = sessionCard(page).getByText("Next up · ", { exact: true });
+  expect(await px(lead, "color")).toBe(await colour(page, "--primary-ink"));
+  expect(await px(lead, "font-weight")).toBe("600");
+});
+
+test("the done tile is 36 px and tinted in the reference green", async ({ page }) => {
+  await openHome(page, doneA());
+  const tile = sessionCard(page).locator("svg").first().locator("..");
+  const box = (await tile.boundingBox())!;
+  expect([box.width, box.height]).toEqual([36, 36]);
+  expect(await px(tile, "background-color")).toBe(
+    await colour(page, "--reference", "background-color"),
+  );
+  expect(await px(tile, "color")).toBe(await colour(page, "--reference-ink"));
+});
+
+test("the Today header is a 13 px 600 label, and comes before the trend", async ({ page }) => {
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris" }).format(new Date());
+  await openHome(page, [], [{ date: today, weightKg: 80.4 }]);
+  const header = page.getByRole("heading", { name: "Today", level: 2 });
+  const trend = page.getByRole("heading", { name: "Your trend", level: 2 });
+  await expect(trend).toBeVisible();
+  expect(await px(header, "font-size")).toBe("13px");
+  expect(await px(header, "font-weight")).toBe("600");
+  const before = await header.evaluate(
+    (a, b) => !!(a.compareDocumentPosition(b!) & Node.DOCUMENT_POSITION_FOLLOWING),
+    await trend.elementHandle(),
+  );
+  expect(before).toBe(true);
 });

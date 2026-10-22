@@ -13,13 +13,18 @@ const STATE = {
   lastInputs: { "body-fat": { ageYears: 30, neckCm: 39.5, waistCm: 86.5 } },
 };
 
-async function open(page: Page, path: string, theme: "light" | "dark" = "light") {
+async function open(
+  page: Page,
+  path: string,
+  theme: "light" | "dark" = "light",
+  state: object = STATE,
+) {
   await page.addInitScript(
     ([t, s]) => {
       localStorage.setItem("belay.theme", t!);
       localStorage.setItem("belay.tools.v1", s!);
     },
-    [theme, JSON.stringify(STATE)],
+    [theme, JSON.stringify(state)],
   );
   await page.goto(path);
   await expect(page.locator(".launch")).toBeHidden();
@@ -57,6 +62,9 @@ test.describe("en", () => {
     const bmi = page.getByRole("region", { name: "Your BMI" }).locator("[data-slot=result-figure]");
     await expect(bmi).toHaveText("24.2");
     await expectLargeFigure(bmi);
+    const sentence = page.getByText("In the WHO reference range", { exact: false });
+    expect(await style(sentence, "font-size")).toBe("15px");
+    expect(await style(sentence, "font-weight")).toBe("600");
 
     await open(page, "/tools/body-fat");
     const card = page.getByRole("region", { name: "Your estimated body fat" });
@@ -67,6 +75,16 @@ test.describe("en", () => {
       expect(await style(line, "font-size")).toBe("13.5px");
       expect(await style(line, "color")).toBe(await token(page, "--muted-foreground", "color"));
     }
+  });
+
+  test("a BMI far from the reference adds the professional line, 13.5 px", async ({ page }) => {
+    await open(page, "/tools/bmi", "light", { ...STATE, weightKg: 120 });
+    const card = page.getByRole("region", { name: "Your BMI" });
+    const sentence = card.getByText("Well above the WHO reference range", { exact: false });
+    expect(await style(sentence, "font-size")).toBe("15px");
+    expect(await style(sentence, "font-weight")).toBe("600");
+    const line = card.getByText("talk to a health professional");
+    expect(await style(line, "font-size")).toBe("13.5px");
   });
 
   for (const theme of ["light", "dark"] as const) {

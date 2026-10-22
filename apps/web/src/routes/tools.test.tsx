@@ -78,13 +78,25 @@ describe("tools", () => {
     }
   });
 
-  it("1RM and BMI draw weight and gauge, never Séances' dumbbell or Corps' ruler", async () => {
+  it("each tool draws its own icon, never Séances' dumbbell or Corps' ruler", async () => {
     renderRoute("/tools");
     await screen.findByRole("heading", { name: "Tools", level: 1 });
-    const svg = (name: string) =>
-      screen.getByRole("link", { name: new RegExp(`^${name} `) }).querySelector("svg");
-    expect(svg("One-rep max")?.classList.contains("lucide-weight")).toBe(true);
-    expect(svg("BMI")?.classList.contains("lucide-gauge")).toBe(true);
+    const icons: Record<string, string> = {
+      "one-rep-max": "lucide-weight",
+      plates: "lucide-circle-dot",
+      warmup: "lucide-trending-up",
+      energy: "lucide-zap",
+      protein: "lucide-egg",
+      projection: "lucide-calendar-range",
+      bmi: "lucide-gauge",
+      "body-fat": "lucide-percent",
+    };
+    for (const [id, icon] of Object.entries(icons)) {
+      const link = screen
+        .getAllByRole("link")
+        .find((a) => a.getAttribute("href") === `/tools/${id}`)!;
+      expect(link.querySelector("svg")?.classList.contains(icon), id).toBe(true);
+    }
     expect(screen.getByRole("main").querySelector(".lucide-dumbbell, .lucide-ruler")).toBeNull();
   });
 
