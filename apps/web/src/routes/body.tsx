@@ -173,8 +173,13 @@ function BodyContent({
   const sorted = [...weighings].sort((a, b) => (a.date < b.date ? -1 : 1));
   const last = sorted.at(-1)?.date ?? today;
   const to = last > today ? last : today; // a weigh-in dated "tomorrow" after a timezone change
-  const from =
-    period === "all" ? (sorted[0]?.date ?? today) : addDays(today, period === "month" ? -29 : -90);
+  // « All » starts at the earliest entry of any kind: a measure, an intake or an annotation may come
+  // before the first weigh-in, or without any weigh-in at all.
+  const earliest = [...weighings, ...measures, ...intake, ...annotations].reduce<ISODate>(
+    (m, e) => (e.date < m ? e.date : m),
+    today,
+  );
+  const from = period === "all" ? earliest : addDays(today, period === "month" ? -29 : -90);
   const shown = sorted.filter((w) => w.date >= from);
   const weeks = weeklySummaries(weighings, today);
   const average = latestMovingAverage(weighings, today);

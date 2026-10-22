@@ -107,12 +107,27 @@ describe("weeklySummaries", () => {
   it("never makes the current week valid, even with 7 weigh-ins", () => {
     const now = weekOf("2026-10-05", [79, 79, 79, 79, 79, 79, 79]);
     const [current] = weeklySummaries([...last, ...now], "2026-10-11");
-    expect(current).toMatchObject({
-      status: "in_progress",
-      count: 7,
-      averageKg: null,
-      lossPct: null,
-    });
+    expect(current).toMatchObject({ status: "in_progress", count: 7, lossPct: null });
+  });
+
+  it("gives the current week the running average of its weigh-ins, from the first one", () => {
+    const [one] = weeklySummaries([...last, w("2026-10-06", 79.4)], TODAY);
+    expect(one).toMatchObject({ status: "in_progress", count: 1, averageKg: 79.4, lossPct: null });
+    const [two] = weeklySummaries([...last, w("2026-10-06", 79.4), w("2026-10-07", 79)], TODAY);
+    expect(two!.averageKg).toBeCloseTo(79.2, 10);
+  });
+
+  it("gives an empty current week no average", () => {
+    const [current] = weeklySummaries(last, TODAY);
+    expect(current).toMatchObject({ status: "in_progress", count: 0, averageKg: null });
+  });
+
+  it("never computes a loss from a week in progress", () => {
+    const weeks = weeklySummaries([w("2026-10-06", 80), w("2026-10-12", 79)], "2026-10-11");
+    expect(weeks.map((s) => [s.start, s.averageKg, s.lossPct])).toEqual([
+      ["2026-10-12", 79, null],
+      ["2026-10-05", 80, null],
+    ]);
   });
 
   it("gives no loss when either week is insufficient", () => {

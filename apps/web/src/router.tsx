@@ -11,7 +11,7 @@ import {
 } from "@tanstack/react-router";
 // Loaded before the router is created: its capture listener sees a back swipe before the router
 // handles that popstate.
-import { viewTransition } from "./lib/transitions";
+import { navKind, viewTransition } from "./lib/transitions";
 import { trackEntries } from "./lib/back";
 import { NotFound, Pending, RouteError } from "./routes/fallbacks";
 import { Home } from "./routes/home";
@@ -46,8 +46,12 @@ const workoutsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/workouts",
   component: workoutsPage,
-  validateSearch: (search: Record<string, unknown>): { tab?: WorkoutTab } =>
-    isWorkoutTab(search.tab) ? { tab: search.tab } : {},
+  // The history's month rides in the address, so Back from a session lands on it again.
+  validateSearch: (search: Record<string, unknown>): { tab?: WorkoutTab; month?: string } => ({
+    ...(isWorkoutTab(search.tab) && { tab: search.tab }),
+    ...(typeof search.month === "string" &&
+      /^\d{4}-(0[1-9]|1[0-2])$/.test(search.month) && { month: search.month }),
+  }),
 });
 // A session of the program before it starts. Opened from Accueil it says so (?from=home), so
 // its back chevron and the lit tab stay Accueil's, after a reload too.
@@ -170,6 +174,8 @@ export const routeTree = rootRoute.addChildren([
   toolRoute,
 ]);
 
+const PENDING_MS = 150;
+
 // Localized not-found and error screens for every route (tests build their own router here).
 export const createAppRouter = (history?: RouterHistory) => {
   const router = createRouter({
@@ -188,8 +194,18 @@ export const createAppRouter = (history?: RouterHistory) => {
     // that is ready by then does not flash it, and once shown for at least 400 ms, so it does not
     // flicker.
     defaultPendingComponent: Pending,
-    defaultPendingMs: 150,
+    defaultPendingMs: PENDING_MS,
     defaultPendingMinMs: 400,
+  });
+  // The breathing mark takes the place of the page left, which drops that page's scroll before
+  // the transition captures it. A page change that moves (push, pop, cover, uncover) keeps the
+  // page left on screen, where it was, until the next one is ready; a tab switch, which changes in
+  // place, and the first load, with nothing to keep, still show the mark. Read on every load.
+  router.subscribe("onBeforeLoad", ({ fromLocation, toLocation }) => {
+    router.options.defaultPendingMs =
+      fromLocation && navKind(fromLocation.pathname, toLocation.pathname, false)
+        ? Infinity
+        : PENDING_MS;
   });
   // The back chevrons read it to go back rather than stack the page they name.
   trackEntries(router.history);

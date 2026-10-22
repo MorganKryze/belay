@@ -509,7 +509,7 @@ test.describe("every action stays reachable on a phone", () => {
   test("the session bar resumes the running session", async ({ page }) => {
     await fakeServer(page, { changes: RUNNING_C });
     await page.goto("/tools");
-    await page.getByRole("link", { name: /In progress · set \d+ of \d+ · Session C/ }).click();
+    await page.getByRole("link", { name: /Set \d+ of \d+ · Session C/ }).click();
     await expect(page.getByRole("heading", { level: 1, name: /^Session C · / })).toBeVisible();
   });
   test("a tool stays reachable while a session is lowered, and the bar raises it", async ({
@@ -522,7 +522,7 @@ test.describe("every action stays reachable on a phone", () => {
       .click();
     await page.getByRole("link", { name: /^Plates/ }).click();
     await expect(page.getByRole("heading", { level: 1, name: "Plates" })).toBeVisible();
-    await page.getByRole("link", { name: /In progress · set \d+ of \d+ · Session C/ }).click();
+    await page.getByRole("link", { name: /Set \d+ of \d+ · Session C/ }).click();
     await expect(page.getByRole("heading", { level: 1, name: /^Session C · / })).toBeVisible();
   });
   test("each tab from the dock", ({ page }) =>

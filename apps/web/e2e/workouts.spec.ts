@@ -212,7 +212,7 @@ const RUNNING_C: Change[] = [
   })),
 ];
 const sessionBar = (page: Page) =>
-  page.getByRole("link", { name: /^Barbell hip thrust In progress · set 3 of 4 · Session C/ });
+  page.getByRole("link", { name: /^Barbell hip thrust Set 3 of 4 · Session C/ });
 
 test("the running session sits above the tabs and reopens in one tap", async ({ page }) => {
   await fakeServer(page, { changes: RUNNING_C });
@@ -234,7 +234,7 @@ test("the session bar's status line fits whole at 390 px, in the secondary size"
   await page.setViewportSize({ width: 390, height: 844 });
   await fakeServer(page, { changes: RUNNING_C });
   await page.goto("/tools");
-  const line = sessionBar(page).getByText("In progress · set 3 of 4 · Session C");
+  const line = sessionBar(page).getByText("Set 3 of 4 · Session C");
   await expect(line).toBeVisible();
   const { size, cut } = await line.evaluate((el) => ({
     size: getComputedStyle(el).fontSize,

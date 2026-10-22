@@ -51,7 +51,7 @@ const finishSheet = (page: Page) => page.getByRole("dialog", { name: "Finish the
 const deleteSheet = (page: Page) => page.getByRole("dialog", { name: "Delete the session?" });
 const emptySheet = (page: Page) => page.getByRole("dialog", { name: "Nothing logged yet" });
 const sessionBar = (page: Page) =>
-  page.getByRole("link", { name: /(Rest|In progress|Paused) · .*Session A/ });
+  page.getByRole("link", { name: /[Ss]et \d+ of \d+ · Session A|Session A In progress/ });
 const home = (page: Page) => page.getByRole("heading", { level: 1, name: "Hello, Ada" });
 
 // Session A started on this device; with its cells prefilled from last time when asked.

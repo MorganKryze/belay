@@ -205,7 +205,7 @@ test("on a computer Minimize returns to the page under the session and no bar sh
   await expect(page.getByRole("region", { name: /^Session B · Legs/ })).toContainText(
     "In progress",
   );
-  await expect(page.getByRole("link", { name: /In progress · .*Session B/ })).toBeHidden();
+  await expect(page.getByRole("link", { name: /Set \d+ of \d+ · Session B/ })).toBeHidden();
 });
 
 test.describe("reduced motion", () => {

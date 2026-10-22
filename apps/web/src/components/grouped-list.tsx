@@ -68,7 +68,8 @@ function RowContent({
         {sub ? (
           <span className="flex min-w-0 flex-1 basis-auto flex-col">
             <span className={labelClass(prominent)}>{label}</span>{" "}
-            <span className="truncate text-(length:--text-secondary) leading-(--text-secondary--line-height) text-muted-foreground">
+            {/* The summary wraps rather than ends in an ellipsis: two lines at most. */}
+            <span className="line-clamp-2 break-words text-(length:--text-secondary) leading-(--text-secondary--line-height) text-muted-foreground">
               {sub}
             </span>
           </span>

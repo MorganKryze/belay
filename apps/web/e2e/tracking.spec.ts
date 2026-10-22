@@ -95,7 +95,7 @@ test("Body lists the weeks, says which ones do not count, and reads the chart fr
   const weeks = page.getByRole("region", { name: "Your weeks" });
   const rows = weeks.getByRole("listitem");
   await expect(rows).toHaveCount(4);
-  await expect(rows.nth(0)).toHaveText("This weekongoing2 weigh-ins");
+  await expect(rows.nth(0)).toHaveText("This weekongoing2 weigh-ins ·80.0\u00a0kg");
   await expect(rows.nth(1)).toHaveText("Sep 28 – Oct 40.7% in your range80.2\u00a0kg");
   await expect(rows.nth(1).locator("svg.lucide-check")).toHaveCount(1); // the pill's check
   await expect(rows.nth(2)).toHaveText("Sep 21 – 27—week before insufficient ·80.8\u00a0kg");

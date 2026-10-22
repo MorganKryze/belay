@@ -5,7 +5,9 @@ import { exerciseById } from "@belay/shared/exercises/catalog";
 import type { Exercise } from "@belay/shared/exercises/library";
 import type { Change } from "@belay/shared/sync/schema";
 import {
+  type PauseStops,
   pauseEndedBy,
+  restClock,
   resumedRestEnd,
   resumedStart,
   sessionElapsed,
@@ -42,7 +44,13 @@ import { readPauseStops } from "@/lib/pause-stops";
 import { sessionTitle } from "@/lib/format";
 import { readToolState, resolveEquipment } from "@/lib/tool-storage";
 import { levelOf } from "@/lib/transitions";
-import { type ActiveSession, readActiveSession, readActivities, readHistory } from "@/sync/db";
+import {
+  type ActiveSession,
+  type Chrono,
+  readActiveSession,
+  readActivities,
+  readHistory,
+} from "@/sync/db";
 import {
   type OpenAccount,
   useAccount,
@@ -223,6 +231,7 @@ function Screen({
             ...active,
             pausedAt: null,
             restEndsAt: resumedRestEnd(active.restEndsAt, paused!, at, stops),
+            chrono: resumedChrono(active.chrono ?? null, paused!, at, stops),
           },
         },
       );
@@ -347,7 +356,9 @@ function Screen({
     const chrono =
       active.chrono?.slotIndex === slotIndex && active.chrono.position === row.position
         ? null
-        : (active.chrono ?? null);
+        : paused
+          ? resumedChrono(active.chrono ?? null, paused, doneAt, stops)
+          : (active.chrono ?? null);
     // The rest as the resume written first leaves it.
     const restEnd = paused
       ? resumedRestEnd(active.restEndsAt, paused, doneAt, stops)
@@ -553,6 +564,7 @@ function Screen({
             note={workout.exerciseNotes[String(i)] ?? ""}
             chrono={active.chrono?.slotIndex === i ? active.chrono : null}
             now={now}
+            clock={(n) => restClock(paused, n, stops)}
             onToggle={() => setToggled((m) => new Map(m).set(i, !open))}
             onValidate={validate(i)}
             onCorrect={correct}
@@ -668,4 +680,15 @@ function PauseBanner({ paused, onResume }: { paused: boolean; onResume: () => vo
       </button>
     </div>
   );
+}
+
+// A chrono a pause that stops everything held goes on from the time it had left, as the rest.
+function resumedChrono(
+  chrono: Chrono | null,
+  pausedAt: string,
+  resumedAt: string,
+  stops: PauseStops,
+): Chrono | null {
+  if (!chrono) return null;
+  return { ...chrono, endsAt: resumedRestEnd(chrono.endsAt, pausedAt, resumedAt, stops)! };
 }

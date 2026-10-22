@@ -110,25 +110,40 @@ test.describe("on Wednesday 7 October 2026", () => {
     }
   });
 
-  test("today on a session day keeps its ring clear of its neighbours at 360 px", async ({
-    page,
-  }) => {
-    await page.setViewportSize({ width: 360, height: 800 });
-    await openHistory(page, month("2026-10"));
-    const reach = await page.locator('[data-day="2026-10-07"]').evaluate((el) => {
-      const s = getComputedStyle(el);
-      const out = parseFloat(s.outlineWidth) + parseFloat(s.outlineOffset);
-      const b = el.getBoundingClientRect();
-      return { l: b.left - out, r: b.right + out, t: b.top - out, b: b.bottom + out, out };
+  for (const width of [360, 390, 1280]) {
+    test(`today on a session day keeps its ring clear of its neighbours at ${width} px`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: 800 });
+      await openHistory(page, month("2026-10"));
+      const reach = await page.locator('[data-day="2026-10-07"]').evaluate((el) => {
+        const s = getComputedStyle(el);
+        const out = parseFloat(s.outlineWidth) + parseFloat(s.outlineOffset);
+        const b = el.getBoundingClientRect();
+        return { l: b.left - out, r: b.right + out, t: b.top - out, b: b.bottom + out, out };
+      });
+      expect(reach.out).toBeGreaterThan(0);
+      // Tuesday the 6th and Thursday the 8th beside, Wednesday 30 Sept is blank: the 14th below.
+      for (const n of ["06", "08", "14"]) {
+        const b = (await page.locator(`[data-day="2026-10-${n}"]`).boundingBox())!;
+        const meets =
+          b.x < reach.r && b.x + b.width > reach.l && b.y < reach.b && b.y + b.height > reach.t;
+        expect(meets, `the ring meets the ${n}`).toBe(false);
+      }
     });
-    expect(reach.out).toBeGreaterThan(0);
-    // Tuesday the 6th and Thursday the 8th beside, Wednesday 30 Sept is blank: the 14th below.
-    for (const n of ["06", "08", "14"]) {
-      const b = (await page.locator(`[data-day="2026-10-${n}"]`).boundingBox())!;
-      const meets =
-        b.x < reach.r && b.x + b.width > reach.l && b.y < reach.b && b.y + b.height > reach.t;
-      expect(meets, `the ring meets the ${n}`).toBe(false);
-    }
+  }
+
+  test("Back from a session of September opens September again", async ({ page }) => {
+    await openHistory(page, [...month("2026-10"), ...finished(5, "2026-09-15", "B")]);
+    await page.getByRole("button", { name: "Previous month" }).click();
+    await expect(page.getByRole("table", { name: "September 2026" })).toBeVisible();
+    await page.getByRole("region", { name: "September 2026" }).getByRole("link").click();
+    await expect(page.getByRole("heading", { level: 1, name: /^Session B/ })).toBeVisible();
+    await page.goBack();
+    await expect(page.getByRole("table", { name: "September 2026" })).toBeVisible();
+    await expect(
+      page.getByRole("region", { name: "September 2026" }).getByRole("link"),
+    ).toHaveCount(1);
   });
 
   for (const width of [360, 1280]) {
@@ -280,7 +295,20 @@ test.describe("the history's rows, on Wednesday 7 October 2026", () => {
       await page.addInitScript((t) => localStorage.setItem("belay.theme", t), theme);
       await fakeServer(page, { changes: [] });
       await page.goto("/workouts?tab=history");
-      await expect(page.getByText("Your first session will show here.")).toBeVisible();
+      const sentence = page.getByText("Your first session will show here.");
+      await expect(sentence).toBeVisible();
+      // The empty state stands on the kit's group surface: its card is the sentence's grandparent.
+      const card = sentence.locator("xpath=../..");
+      expect(await card.evaluate((el) => getComputedStyle(el).backgroundColor)).toBe(
+        await page.evaluate(() => {
+          const probe = document.createElement("div");
+          probe.style.backgroundColor = "var(--surface)";
+          document.body.append(probe);
+          const value = getComputedStyle(probe).backgroundColor;
+          probe.remove();
+          return value;
+        }),
+      );
       await expect(
         page.getByText(
           "It shows up on its own when you finish a session, or with “Log a session”.",
