@@ -68,7 +68,9 @@ export interface WeekSummary {
   end: ISODate; // Sunday
   count: number;
   status: "in_progress" | "valid" | "insufficient";
-  averageKg: number | null; // only for "valid"
+  // The mean of a "valid" week; for a week in progress, the running mean of its weigh-ins so far
+  // (null before the first); null for an "insufficient" week.
+  averageKg: number | null;
   // (average of week n − 1 − average of week n) / average of week n − 1 × 100, positive when
   // losing; null unless both weeks are "valid".
   lossPct: number | null;
@@ -92,15 +94,20 @@ export function weeklySummaries(ws: readonly Weighing[], today: ISODate): WeekSu
     const kgs = byWeek.get(start) ?? [];
     const status =
       start >= current ? "in_progress" : kgs.length >= MIN_WEIGHINGS ? "valid" : "insufficient";
-    const averageKg = status === "valid" ? mean(kgs) : null;
-    const before = previous?.averageKg ?? null;
+    const averageKg =
+      status === "valid" || (status === "in_progress" && kgs.length > 0) ? mean(kgs) : null;
+    // A loss compares two complete weeks only: a running average never enters it.
+    const before = previous?.status === "valid" ? previous.averageKg : null;
     const week: WeekSummary = {
       start,
       end: addDays(start, 6),
       count: kgs.length,
       status,
       averageKg,
-      lossPct: averageKg !== null && before !== null ? ((before - averageKg) / before) * 100 : null,
+      lossPct:
+        status === "valid" && averageKg !== null && before !== null
+          ? ((before - averageKg) / before) * 100
+          : null,
     };
     out.push(week);
     previous = week;
