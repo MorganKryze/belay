@@ -77,6 +77,7 @@ function Card({ initial = [] as WorkoutSet[], unfolded = true }) {
       group={null}
       note=""
       chrono={null}
+      clock={(n) => n}
       now={Date.now()}
       onToggle={() => setOpen((o) => !o)}
       onValidate={validate}

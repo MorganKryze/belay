@@ -41,3 +41,28 @@ test("the segmented group shows a focus ring while the keyboard moves the choice
   });
   expect(ring).toBe("solid 2px");
 });
+
+// As every other ring: after a tap the groove shows none, even where the browser counts the
+// focus as a keyboard one (forced here, as Chromium never does it on a tap); Tab brings it back.
+test("a tapped segment shows no focus ring, Tab brings it back", async ({ page }) => {
+  await page.goto("/tools/protein");
+  const group = page.getByRole("radiogroup", { name: "Your goal" });
+  const ring = () => group.evaluate((el) => getComputedStyle(el).outlineStyle);
+  await group.getByRole("radio", { name: "Cut" }).click();
+  await expect(group.getByRole("radio", { name: "Cut" })).toBeChecked();
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send("DOM.enable");
+  await cdp.send("CSS.enable");
+  const { root } = await cdp.send("DOM.getDocument");
+  const { nodeId } = await cdp.send("DOM.querySelector", {
+    nodeId: root.nodeId,
+    selector: "[role=radio][aria-checked=true]",
+  });
+  await cdp.send("CSS.forcePseudoState", { nodeId, forcedPseudoClasses: ["focus-visible"] });
+  expect(await ring()).toBe("none");
+  await cdp.send("CSS.forcePseudoState", { nodeId, forcedPseudoClasses: [] });
+  await page.keyboard.press("Shift+Tab");
+  await page.keyboard.press("Tab");
+  await expect(group.getByRole("radio", { name: "Cut" })).toBeFocused();
+  expect(await ring()).toBe("solid");
+});

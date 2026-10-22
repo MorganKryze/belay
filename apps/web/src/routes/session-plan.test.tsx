@@ -356,6 +356,47 @@ describe("a timed exercise and its chrono (spec D11, §4.3)", () => {
     );
   });
 
+  const pauseSession = async () => {
+    fireEvent.click(screen.getByRole("button", { name: "Pause the session" }));
+    await screen.findByRole("button", { name: "Resume the session" });
+  };
+
+  it("stands still while everything is paused, and goes on from there on resume", async () => {
+    const hang = await addHang();
+    fireEvent.click(within(hang).getByRole("button", { name: "Timer 0:30" }));
+    await within(hang).findByRole("timer");
+    await later(5);
+    await pauseSession();
+    await later(20);
+    await waitFor(() =>
+      expect(within(card("Dead hang")).getByRole("timer", { name: "Timer" }).textContent).toBe(
+        "0:25",
+      ),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Resume the session" }));
+    await screen.findByRole("button", { name: "Pause the session" });
+    await later(10);
+    await waitFor(() =>
+      expect(within(card("Dead hang")).getByRole("timer", { name: "Timer" }).textContent).toBe(
+        "0:15",
+      ),
+    );
+  });
+
+  it("with Rest continues, keeps counting through the pause", async () => {
+    localStorage.setItem("belay.pauseStops", "session");
+    const hang = await addHang();
+    fireEvent.click(within(hang).getByRole("button", { name: "Timer 0:30" }));
+    await within(hang).findByRole("timer");
+    await pauseSession();
+    await later(10);
+    await waitFor(() =>
+      expect(within(card("Dead hang")).getByRole("timer", { name: "Timer" }).textContent).toBe(
+        "0:20",
+      ),
+    );
+  });
+
   it("says it in French", async () => {
     await i18n.changeLanguage("fr");
     renderRoute("/workout?start=C");

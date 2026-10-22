@@ -172,7 +172,7 @@ describe("GroupedList", () => {
       expect.arrayContaining(["text-title-compact"]),
     );
     expect(classes(screen.getByText("Profile · height, age, loss range"))).toEqual(
-      expect.arrayContaining(["truncate", "text-muted-foreground"]),
+      expect.arrayContaining(["line-clamp-2", "text-muted-foreground"]),
     );
     expect(row.querySelector("[data-slot=row-chevron]")).toBeTruthy();
   });

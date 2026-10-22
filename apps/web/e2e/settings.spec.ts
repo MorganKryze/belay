@@ -615,3 +615,28 @@ test.describe("Profil", () => {
     expect(facts.slice(0, -1).every((width) => width > 0)).toBe(true);
   });
 });
+
+// Settings rows never end in an ellipsis: the profile summary wraps, two lines at most.
+for (const [locale, sub] of [
+  ["en-US", "Profile · height, age, loss range"],
+  ["fr-FR", "Profil · taille, âge, fourchette de perte"],
+] as const) {
+  test.describe(`profile row at 360 px, ${locale}`, () => {
+    test.use({ locale, viewport: { width: 360, height: 780 } });
+    test("its summary is shown whole, on two lines at most", async ({ page }) => {
+      await fakeServer(page);
+      await page.goto("/settings");
+      const line = page.getByText(sub, { exact: true });
+      await expect(line).toBeVisible();
+      const fit = await line.evaluate((el) => {
+        const s = getComputedStyle(el);
+        return {
+          cut: el.scrollWidth > el.clientWidth || el.scrollHeight > el.clientHeight,
+          lines: Math.round(el.getBoundingClientRect().height / parseFloat(s.lineHeight)),
+        };
+      });
+      expect(fit.cut).toBe(false);
+      expect(fit.lines).toBeLessThanOrEqual(2);
+    });
+  });
+}

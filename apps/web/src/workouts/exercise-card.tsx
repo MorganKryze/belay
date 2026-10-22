@@ -134,6 +134,7 @@ export function ExerciseCard({
   note,
   chrono,
   now,
+  clock,
   onToggle,
   onValidate,
   onCorrect,
@@ -154,6 +155,8 @@ export function ExerciseCard({
   note: string;
   chrono: Chrono | null; // this slot's timed set counting down, if any
   now: number;
+  // The moment the chrono is read at: a pause that stops everything holds it where it stood.
+  clock: (now: number) => number;
   onToggle: () => void;
   onValidate: (row: Row, load: Load, rir: number | null) => Promise<void>;
   onCorrect: (set: WorkoutSet, load: Load) => Promise<void>;
@@ -199,7 +202,8 @@ export function ExerciseCard({
   const canAdd = (rows.at(-1)?.position ?? 0) < MAX_POSITION;
   // The timed set counting down, and once over, what it fills in.
   // `now` ticks once a second: a chrono stopped since is over, whatever the last tick says.
-  const running = chrono !== null && Date.parse(chrono.endsAt) > Math.max(now, Date.now());
+  const at = clock(Math.max(now, Date.now()));
+  const running = chrono !== null && Date.parse(chrono.endsAt) > at;
   const timedOut = chrono !== null && !running;
 
   const shown = (row: Row, field: "kg" | "count") => {
@@ -270,7 +274,8 @@ export function ExerciseCard({
       slotIndex,
       position: next.position,
       seconds: target,
-      endsAt: new Date(now + target * 1000).toISOString(),
+      // Started during a pause that stops everything, it waits for the resume at its full target.
+      endsAt: new Date(clock(now) + target * 1000).toISOString(),
     });
   };
   const stopChrono = () =>
@@ -279,9 +284,9 @@ export function ExerciseCard({
       ...chrono,
       seconds: Math.max(
         0,
-        chrono.seconds - Math.ceil((Date.parse(chrono.endsAt) - Date.now()) / 1000),
+        chrono.seconds - Math.ceil((Date.parse(chrono.endsAt) - clock(Date.now())) / 1000),
       ),
-      endsAt: new Date().toISOString(),
+      endsAt: new Date(clock(Date.now())).toISOString(),
     });
 
   const tag = slot.rule ? t("session.addedNoClimbing") : slot.added ? t("session.added") : null;
@@ -483,7 +488,7 @@ export function ExerciseCard({
             <ChronoControl
               running={running}
               over={timedOut}
-              left={chrono ? Date.parse(chrono.endsAt) - now : 0}
+              left={chrono ? Date.parse(chrono.endsAt) - at : 0}
               target={target}
               onStart={startChrono}
               onStop={stopChrono}

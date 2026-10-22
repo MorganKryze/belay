@@ -226,6 +226,23 @@ describe("projection", () => {
     );
   });
 
+  it("a stepper press that lands on a preset keeps fine tuning and the focus", async () => {
+    save({ lastInputs: { projection: { pct: 0.7 } } });
+    renderRoute("/tools/projection");
+    await result("Goal reached");
+    const plus = screen.getByRole("button", { name: "Increase Pace (% per week)" });
+    plus.focus();
+    fireEvent.click(plus);
+    await waitFor(() =>
+      expect(
+        screen.getByRole<HTMLInputElement>("textbox", { name: "Pace (% per week)" }).value,
+      ).toMatch(/0[.,]75/),
+    );
+    expect(document.activeElement).toBe(
+      screen.getByRole("button", { name: "Increase Pace (% per week)" }),
+    );
+  });
+
   it("states the source at 1% and Belay's advice above 1.5%", async () => {
     renderRoute("/tools/projection");
     await result("Goal reached");
