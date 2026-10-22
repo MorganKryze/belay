@@ -561,14 +561,31 @@ describe("paging with interleaved sequences", () => {
     const start = await sync("0");
     const day = (i: number) =>
       new Date(Date.UTC(2020, 0, 1) + i * 86_400_000).toISOString().slice(0, 10);
-    for (let i = 0; i < 600; i++) {
-      await owner
-        .insert(intakeLogs)
-        .values({ userId: user, date: day(i), kcal: 2000, kcalAt: new Date(AT) });
-      await owner
-        .insert(bodyMetrics)
-        .values({ userId: user, date: day(i), waistCm: 82, waistAt: new Date(AT) });
-    }
+    // 1 200 sequence numbers in one round trip, alternated between the two tables: one insert per
+    // row took 1 200 round trips and ran past the timeout on a loaded machine.
+    const seqs = await owner.execute<{ seq: string }>(
+      sql`select nextval('belay_sync_seq') as seq from generate_series(1, 1200)`,
+    );
+    const ordered = seqs.map((r) => BigInt(r.seq)).sort((a, b) => (a < b ? -1 : 1));
+    const seq = (n: number) => ordered[n]!;
+    await owner.insert(intakeLogs).values(
+      Array.from({ length: 600 }, (_, i) => ({
+        userId: user,
+        date: day(i),
+        kcal: 2000,
+        kcalAt: new Date(AT),
+        serverSeq: seq(2 * i),
+      })),
+    );
+    await owner.insert(bodyMetrics).values(
+      Array.from({ length: 600 }, (_, i) => ({
+        userId: user,
+        date: day(i),
+        waistCm: 82,
+        waistAt: new Date(AT),
+        serverSeq: seq(2 * i + 1),
+      })),
+    );
     const seen: string[] = [];
     let cursor = start.cursor;
     let pages = 0;
