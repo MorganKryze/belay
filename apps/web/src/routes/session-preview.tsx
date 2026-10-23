@@ -11,9 +11,11 @@ import { Play } from "lucide-react";
 import { useId } from "react";
 import { useTranslation } from "react-i18next";
 import { groupCard, NumberTile, RowLink } from "@/components/grouped-list";
+import { LoopThumb } from "@/components/loop-thumb";
 import { BackLink, PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { formatWeekday, sessionTitle } from "@/lib/format";
+import { readMedia } from "@/lib/media-flag";
 import { useToday } from "@/lib/today";
 import { type OpenAccount, useAccount, useActivities, useHistory } from "@/sync/account";
 import { formatDuration, formatLoad, formatRir, formatSets } from "@/workouts/format";
@@ -50,6 +52,9 @@ function Preview({
   const { from } = useSearch({ from: "/workouts/session/$code" });
   const today = useToday();
   const listId = useId();
+  // Where the instance serves loops, each row's still takes a 44 px place and the row's padding
+  // gives way, so the row stays 56 px; elsewhere the rows are as they were.
+  const media = readMedia() === "on";
   // The route lets only a known code through.
   const plan = planFor(sessionByCode(code)!, activities, today);
   const last = history && lastFinished(history.workouts, code);
@@ -128,7 +133,14 @@ function Preview({
                   to="/exercises/$exerciseId"
                   params={{ exerciseId: slot.exerciseId }}
                   search={{ session: code, ...(from && { from }) }}
-                  leading={<NumberTile n={i + 1} />}
+                  className={media ? "py-1.5" : undefined}
+                  leading={
+                    media ? (
+                      <LoopThumb exerciseId={slot.exerciseId} fallback={<NumberTile n={i + 1} />} />
+                    ) : (
+                      <NumberTile n={i + 1} />
+                    )
+                  }
                   label={exerciseById(slot.exerciseId)?.name ?? slot.exerciseId}
                   sub={[
                     formatSets(slot),
