@@ -1,9 +1,10 @@
 import type { Change } from "@belay/shared/sync/schema";
 import { sessionByCode } from "@belay/shared/training/program";
-import { cleanup, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { IDBFactory } from "fake-indexeddb";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import i18n from "../i18n";
+import { writeMedia } from "../lib/media-flag";
 import { openAccountDb, readHistory } from "../sync/db";
 import { writeLastUser } from "../sync/last-user";
 import { fakeApi } from "../test/fake-api";
@@ -192,5 +193,42 @@ describe("the session preview", () => {
     expect((await screen.findByRole("link", { name: "Session A" })).getAttribute("href")).toBe(
       "/workouts/session/A",
     );
+  });
+
+  it("a row shows its loop's first frame where there is one, its number otherwise", async () => {
+    renderRoute("/workouts/session/A");
+    const plain = rows(await exercises());
+    // Media off: the rows are as they were, numbers and no video.
+    expect(plain[0]!.querySelector("video")).toBeNull();
+    expect(within(plain[0]!).getByText("1")).toBeTruthy();
+    cleanup();
+
+    // The instance serves loops, as /api/me says.
+    writeMedia("on");
+    fakeApi({ me: { ...ADA, media: true } });
+    renderRoute("/workouts/session/C");
+    const links = rows(await exercises());
+    const video = (n: number) => links[n]!.querySelector("video");
+    // Before its first frame is ready, the number holds the place.
+    const bench = video(1)!;
+    expect(bench.getAttribute("src")).toMatch(/^\/media\/exercises\/\d{4}#t=0\.001$/);
+    expect(bench.muted).toBe(true);
+    expect(bench.autoplay).toBe(false);
+    expect(bench.getAttribute("preload")).toBe("metadata");
+    expect(bench.getAttribute("aria-hidden")).toBe("true");
+    expect(within(links[1]!).getByText("2")).toBeTruthy();
+    fireEvent.loadedData(bench);
+    expect(within(links[1]!).queryByText("2")).toBeNull();
+    expect(bench.hidden).toBe(false);
+    // A loop that fails leaves its number, and a belay: exercise has none to try.
+    fireEvent.error(video(2)!);
+    expect(within(links[2]!).getByText("3")).toBeTruthy();
+    const own = links.findIndex((a) => a.getAttribute("href")!.includes("belay%3A"));
+    expect(own).toBeGreaterThanOrEqual(0);
+    expect(video(own)).toBeNull();
+    expect(within(links[own]!).getByText(String(own + 1))).toBeTruthy();
+    // The name and the link stay.
+    expect(links[1]!.textContent).toMatch(/\S/);
+    expect(links[1]!.getAttribute("href")).toMatch(/^\/exercises\//);
   });
 });
