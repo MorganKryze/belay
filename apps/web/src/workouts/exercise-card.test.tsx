@@ -145,15 +145,16 @@ describe("ExerciseCard's loop", () => {
     if (still) fireEvent(still, new Event("loadeddata"));
     return within(card()).queryByRole("button", { name: /movement$/ });
   };
-  const loop = () => card().querySelector("figure");
+  const sheet = () => screen.queryByRole("dialog");
 
   it("an open card offers the loop when there is one, never when there is none", () => {
     writeMedia("on");
     render(<Card />);
     const button = control()!;
-    expect(button.getAttribute("aria-expanded")).toBe("false");
     expect(button.getAttribute("aria-label")).toBe("Show the movement");
-    expect(loop()).toBeNull();
+    expect(button.getAttribute("aria-haspopup")).toBe("dialog");
+    expect(card().querySelector("figure")).toBeNull();
+    expect(sheet()).toBeNull();
     cleanup();
 
     writeMedia("off");
@@ -162,29 +163,33 @@ describe("ExerciseCard's loop", () => {
     expect(card().querySelector("video, figure")).toBeNull();
   });
 
-  it("the loop is hidden when a card opens and when it folds", () => {
+  it("the still opens a sheet holding only the loop, named after the exercise", () => {
     writeMedia("on");
     render(<Card />);
     fireEvent.click(control()!);
-    expect(loop()).not.toBeNull();
-    toggle();
-    expect(card().querySelector("video, figure")).toBeNull();
-    toggle();
-    expect(control()!.getAttribute("aria-expanded")).toBe("false");
-    expect(loop()).toBeNull();
-  });
-
-  it("a second press hides it", () => {
-    writeMedia("on");
-    render(<Card />);
-    fireEvent.click(control()!);
-    const shown = within(card()).getByRole("button", { name: "Hide the movement" });
-    expect(shown.getAttribute("aria-expanded")).toBe("true");
-    expect(loop()!.querySelector("video")!.getAttribute("src")).toBe(
+    const dialog = sheet()!;
+    expect(within(dialog).getByRole("heading", { name: "Barbell bench press" })).toBeTruthy();
+    fireEvent(dialog.querySelector("video")!, new Event("loadeddata"));
+    const figure = within(dialog).getByRole("figure", {
+      name: "Demonstration of Barbell bench press",
+    });
+    expect(figure.querySelector("video")!.getAttribute("src")).toBe(
       "/media/exercises/0025#t=0.001",
     );
-    fireEvent.click(shown);
-    expect(loop()).toBeNull();
+    // The only loop is the sheet's: nothing lands in the card, so its rows never move.
+    expect(document.querySelectorAll("figure")).toHaveLength(1);
+    expect(within(dialog).queryAllByRole("textbox")).toHaveLength(0);
+  });
+
+  it("closing the sheet takes the loop away, and a folded card offers nothing", async () => {
+    writeMedia("on");
+    render(<Card />);
+    fireEvent.click(control()!);
+    fireEvent.click(within(sheet()!).getByRole("button", { name: "Close" }));
+    await waitFor(() => expect(sheet()).toBeNull());
+    expect(screen.queryByRole("figure")).toBeNull();
     expect(control()!.getAttribute("aria-label")).toBe("Show the movement");
+    toggle();
+    expect(card().querySelector("video, figure")).toBeNull();
   });
 });

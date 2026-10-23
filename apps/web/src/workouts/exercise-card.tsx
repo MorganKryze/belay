@@ -19,11 +19,12 @@ import {
   type WorkoutSet,
   workPosition,
 } from "@belay/shared/training/workout";
-import { ArrowLeftRight, Check, ChevronDown, Play, Plus, X } from "lucide-react";
+import { ArrowLeftRight, Check, ChevronDown, Play, Plus } from "lucide-react";
 import { RadioGroup } from "radix-ui";
 import { useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ExerciseLoop } from "@/components/exercise-loop";
+import { Sheet } from "@/components/sheet";
 import { formatNumber, parseDecimal } from "@/lib/format";
 import { useLoop } from "@/lib/media";
 import type { Chrono } from "@/sync/db";
@@ -179,7 +180,7 @@ export function ExerciseCard({
   // earlier stays still when the card unfolds, mounts again or the page reloads.
   const [fresh, setFresh] = useState<ReadonlySet<number>>(new Set());
   if (!open && fresh.size > 0) setFresh(new Set());
-  // The demonstration, on demand and only in the open card: hidden again whenever it folds.
+  // The demonstration, on demand from the open card, in a sheet of its own: gone when it folds.
   const { src: loopSrc, failed: loopFailed } = useLoop(open ? exercise.id : "");
   const [loopShown, setLoopShown] = useState(false);
   if (!open && loopShown) setLoopShown(false);
@@ -518,8 +519,8 @@ export function ExerciseCard({
               {t("session.addSet").replace(/^\+\s*/, "")}
             </button>
           </div>
-          {/* The loop's control shares the note's line, below the logging path, so the set rows
-              never move for it. */}
+          {/* The loop's still shares the note's line, below the logging path, and the loop opens
+              in a sheet, so the set rows never move for it. */}
           <div className="flex items-start justify-between gap-2">
             <div className="flex min-w-0 flex-1 flex-col">
               <NoteField
@@ -532,16 +533,13 @@ export function ExerciseCard({
               />
             </div>
             {loopSrc && (
-              <LoopStill
-                src={loopSrc}
-                shown={loopShown}
-                onToggle={() => setLoopShown((s) => !s)}
-                onError={loopFailed}
-              />
+              <LoopStill src={loopSrc} onOpen={() => setLoopShown(true)} onError={loopFailed} />
             )}
           </div>
           {loopSrc && loopShown && (
-            <ExerciseLoop exerciseId={exercise.id} name={exercise.name} className="mt-2" />
+            <Sheet title={exercise.name} onClose={() => setLoopShown(false)}>
+              <ExerciseLoop exerciseId={exercise.id} name={exercise.name} />
+            </Sheet>
           )}
         </div>
       )}
@@ -549,17 +547,15 @@ export function ExerciseCard({
   );
 }
 
-// The loop's first frame, 44 px, as the button that shows the loop in the card and hides it. It
-// waits for that frame, so a loop that fails never offers a control.
+// The loop's first frame, 44 px, as the button that opens the loop's sheet. It waits for that
+// frame, so a loop that fails never offers a control.
 function LoopStill({
   src,
-  shown,
-  onToggle,
+  onOpen,
   onError,
 }: {
   src: string;
-  shown: boolean;
-  onToggle: () => void;
+  onOpen: () => void;
   onError: () => void;
 }) {
   const { t } = useTranslation();
@@ -568,9 +564,9 @@ function LoopStill({
     <button
       type="button"
       hidden={!ready}
-      aria-expanded={shown}
-      aria-label={t(shown ? "loop.hide" : "loop.show")}
-      onClick={onToggle}
+      aria-haspopup="dialog"
+      aria-label={t("loop.show")}
+      onClick={onOpen}
       className="press relative mt-1.5 size-11 shrink-0 overflow-hidden rounded-[12px] bg-track"
     >
       {/* Never played: the fragment draws the first frame, on iOS too. */}
@@ -588,7 +584,7 @@ function LoopStill({
         aria-hidden
         className="absolute right-0.5 bottom-0.5 grid size-4 place-items-center rounded-round bg-foreground text-background"
       >
-        {shown ? <X className="size-2.5" strokeWidth={3} /> : <Play className="size-2.5" />}
+        <Play className="size-2.5" />
       </span>
     </button>
   );

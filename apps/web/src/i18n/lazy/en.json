@@ -516,7 +516,6 @@
     "name": "Demonstration of {{name}}",
     "play": "Play the demonstration",
     "pause": "Pause",
-    "show": "Show the movement",
-    "hide": "Hide the movement"
+    "show": "Show the movement"
   }
 }

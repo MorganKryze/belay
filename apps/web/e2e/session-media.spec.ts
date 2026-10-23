@@ -45,9 +45,9 @@ const load = (page: Page, n: number) =>
 const reps = (page: Page, n: number) =>
   bench(page).getByRole("textbox", { name: `Reps of set ${n}` });
 const show = (card: Locator) => card.getByRole("button", { name: "Show the movement" });
-const hide = (card: Locator) => card.getByRole("button", { name: "Hide the movement" });
-const loop = (card: Locator) =>
-  card.getByRole("figure", { name: /^Demonstration of Barbell bench press$/ });
+const sheet = (page: Page) => page.getByRole("dialog", { name: "Barbell bench press" });
+const loop = (page: Page) =>
+  sheet(page).getByRole("figure", { name: /^Demonstration of Barbell bench press$/ });
 
 // Session A started on this device, its cells prefilled from last time.
 async function start(page: Page, media = true, worker = false) {
@@ -87,40 +87,49 @@ const pathBoxes = async (page: Page) => {
   return boxes;
 };
 
-test("the loop control shows and hides the loop in the open card", async ({ page }) => {
+test("the still opens the loop in a sheet, which closes back on the still", async ({ page }) => {
   await start(page);
   const card = bench(page);
   await expect(show(card)).toBeVisible();
-  await expect(show(card)).toHaveAttribute("aria-expanded", "false");
-  await expect(card.locator("figure")).toHaveCount(0);
+  await expect(show(card)).toHaveAttribute("aria-haspopup", "dialog");
+  await expect(page.locator("figure")).toHaveCount(0);
   const b = await box(show(card));
   expect(b.width).toBeGreaterThanOrEqual(44);
   expect(b.height).toBeGreaterThanOrEqual(44);
 
   await show(card).click();
-  await expect(hide(card)).toHaveAttribute("aria-expanded", "true");
-  const video = loop(card).locator("video");
-  await expect(loop(card)).toBeVisible();
+  await expect(sheet(page)).toBeVisible();
+  // The sheet holds the loop and nothing else: no field, no button but close and pause.
+  await expect(sheet(page).getByRole("textbox")).toHaveCount(0);
+  await expect(sheet(page).getByRole("button")).toHaveCount(2);
+  const video = loop(page).locator("video");
+  await expect(loop(page)).toBeVisible();
   await expect.poll(async () => (await media(video)).paused).toBe(false);
   const state = await media(video);
   expect(state.muted).toBe(true);
   expect(state.controls).toBe(false);
   expect(state.src).toBe("/media/exercises/0025");
-  // Square, inside the card.
+  // Square, inside the sheet.
+  await settled(page);
   const v = await box(video);
-  const c = await box(card);
+  const s = await box(sheet(page));
   expect(Math.abs(v.width - v.height)).toBeLessThanOrEqual(1);
-  expect(v.x).toBeGreaterThanOrEqual(c.x);
-  expect(v.x + v.width).toBeLessThanOrEqual(c.x + c.width);
-  expect(v.y + v.height).toBeLessThanOrEqual(c.y + c.height);
-  await expect(card.getByRole("button", { name: "Pause" })).toBeVisible();
+  expect(v.x).toBeGreaterThanOrEqual(s.x);
+  expect(v.x + v.width).toBeLessThanOrEqual(s.x + s.width);
+  expect(v.y + v.height).toBeLessThanOrEqual(s.y + s.height);
 
-  await hide(card).click();
-  await expect(card.locator("figure")).toHaveCount(0);
-  await expect(show(card)).toHaveAttribute("aria-expanded", "false");
+  await sheet(page).getByRole("button", { name: "Pause" }).click();
+  await expect.poll(async () => (await media(video)).paused).toBe(true);
+  await sheet(page).getByRole("button", { name: "Play the demonstration" }).click();
+  await expect.poll(async () => (await media(video)).paused).toBe(false);
+
+  await sheet(page).getByRole("button", { name: "Close" }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(page.locator("figure")).toHaveCount(0);
+  await expect(show(card)).toBeFocused();
 });
 
-test("with the loop hidden, the set rows sit where they sit without media", async ({
+test("with a loop on offer, the set rows sit where they sit without media", async ({
   page,
   browser,
 }) => {
@@ -149,13 +158,15 @@ test("with the loop hidden, the set rows sit where they sit without media", asyn
   });
 });
 
-test("a set is logged in two taps with the loop shown", async ({ page }) => {
+test("a set is still logged in two taps once the loop's sheet is closed", async ({ page }) => {
   await start(page);
   const card = bench(page);
   const before = await pathBoxes(page);
   await show(card).click();
-  await expect(loop(card)).toBeVisible();
-  // The loop opens below the logging path: nothing on it moves.
+  await expect(loop(page)).toBeVisible();
+  await sheet(page).getByRole("button", { name: "Close" }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  // The loop opened over the card, not in it: nothing on the logging path moved.
   expect(await pathBoxes(page)).toEqual(before);
 
   // ✓ on the prefilled values, then the RIR under the next set, as without media.
@@ -164,23 +175,28 @@ test("a set is logged in two taps with the loop shown", async ({ page }) => {
   const rir = card.getByRole("radiogroup", { name: "RIR, reps in reserve" });
   await rir.getByRole("radio", { name: "2", exact: true }).click();
   await expect(rir.getByRole("radio", { name: "2", exact: true })).toBeChecked();
-  await expect(loop(card)).toBeVisible();
 });
 
-test("reduced motion: the card's loop waits on its first frame", async ({ page }) => {
+test("reduced motion: the sheet's loop waits on its first frame", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await start(page);
   const card = bench(page);
   await show(card).click();
-  const video = loop(card).locator("video");
-  await expect(loop(card)).toBeVisible();
+  const video = loop(page).locator("video");
+  await expect(loop(page)).toBeVisible();
   await expect.poll(async () => (await media(video)).readyState).toBeGreaterThanOrEqual(2);
   // Still on its first frame, a beat later.
   await page.waitForTimeout(300);
   const state = await media(video);
   expect(state.paused).toBe(true);
   expect(state.currentTime).toBeLessThan(0.1);
-  await expect(card.getByRole("button", { name: "Play the demonstration" })).toBeVisible();
+  // The play control sits in the pause's corner, at the loop's bottom right.
+  const play = sheet(page).getByRole("button", { name: "Play the demonstration" });
+  await expect(play).toBeVisible();
+  const p = await box(play);
+  const v = await box(video);
+  expect(Math.abs(v.x + v.width - (p.x + p.width))).toBeLessThanOrEqual(12);
+  expect(Math.abs(v.y + v.height - (p.y + p.height))).toBeLessThanOrEqual(12);
 });
 
 test("offline, an unseen exercise offers no control", async ({ page, context }) => {
@@ -213,26 +229,25 @@ test("offline, an unseen exercise offers no control", async ({ page, context }) 
 test("nothing scrolls sideways at 360 px", async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 780 });
   await start(page);
-  const card = bench(page);
-  await show(card).click();
-  await expect(loop(card)).toBeVisible();
+  await show(bench(page)).click();
+  await expect(loop(page)).toBeVisible();
+  await settled(page);
   const { scroll, client } = await page.evaluate(() => ({
     scroll: document.documentElement.scrollWidth,
     client: document.documentElement.clientWidth,
   }));
   expect(scroll).toBeLessThanOrEqual(client);
-  const v = await box(loop(card).locator("video"));
+  const v = await box(loop(page).locator("video"));
   expect(v.x).toBeGreaterThanOrEqual(0);
   expect(v.x + v.width).toBeLessThanOrEqual(360);
 });
 
 for (const scheme of ["light", "dark"] as const) {
-  test(`the session card with its loop has no axe violation, ${scheme}`, async ({ page }) => {
+  test(`the loop's sheet over the session has no axe violation, ${scheme}`, async ({ page }) => {
     await page.emulateMedia({ colorScheme: scheme });
     await start(page);
-    const card = bench(page);
-    await show(card).click();
-    await expect(loop(card)).toBeVisible();
+    await show(bench(page)).click();
+    await expect(loop(page)).toBeVisible();
     await expectNoAxeViolations(page);
   });
 }

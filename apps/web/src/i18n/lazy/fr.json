@@ -516,7 +516,6 @@
     "name": "Démonstration de {{name}}",
     "play": "Lire la démonstration",
     "pause": "Mettre en pause",
-    "show": "Voir le geste",
-    "hide": "Masquer le geste"
+    "show": "Voir le geste"
   }
 }

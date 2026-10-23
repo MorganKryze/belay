@@ -14,11 +14,9 @@ const reducedMotion = () =>
 export function ExerciseLoop({
   exerciseId,
   name,
-  className,
 }: {
   exerciseId: string;
   name: string; // the exercise's, which names the card for assistive technologies
-  className?: string;
 }) {
   const { t } = useTranslation();
   const { src, failed } = useLoop(exerciseId);
@@ -40,7 +38,7 @@ export function ExerciseLoop({
     <figure
       aria-label={t("loop.name", { name })}
       hidden={!ready}
-      className={`${cardSurface} relative aspect-square w-full overflow-hidden lg:max-w-90 ${className ?? ""}`}
+      className={`${cardSurface} relative aspect-square w-full overflow-hidden lg:max-w-90`}
     >
       {/* The fragment makes iOS draw the first frame without playing; it never reaches the
           server or the cache. */}
