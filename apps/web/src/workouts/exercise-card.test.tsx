@@ -7,12 +7,16 @@ import { useState } from "react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import i18n from "../i18n";
 import "../i18n/lazy";
+import { writeMedia } from "../lib/media-flag";
 import { ExerciseCard, type Row } from "./exercise-card";
 
 beforeEach(async () => {
   await i18n.changeLanguage("en");
 });
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  localStorage.clear();
+});
 
 // The bench press of session A: 4 work sets, 2 warm-ups.
 const slot = sessionByCode("A")!.slots[0]!;
@@ -130,5 +134,57 @@ describe("ExerciseCard", () => {
     await i18n.changeLanguage("fr");
     render(<Card />);
     expect(within(card()).getByText("4 × 6–8 · RIR 1–2 · la dernière fois 80 kg × 8")).toBeTruthy();
+  });
+});
+
+// The bench press has a loop wherever the instance serves them (ds:0025).
+describe("ExerciseCard's loop", () => {
+  // The control waits for its still: a loop that fails never offers one.
+  const control = () => {
+    const still = card().querySelector<HTMLVideoElement>("button video");
+    if (still) fireEvent(still, new Event("loadeddata"));
+    return within(card()).queryByRole("button", { name: /movement$/ });
+  };
+  const loop = () => card().querySelector("figure");
+
+  it("an open card offers the loop when there is one, never when there is none", () => {
+    writeMedia("on");
+    render(<Card />);
+    const button = control()!;
+    expect(button.getAttribute("aria-expanded")).toBe("false");
+    expect(button.getAttribute("aria-label")).toBe("Show the movement");
+    expect(loop()).toBeNull();
+    cleanup();
+
+    writeMedia("off");
+    render(<Card />);
+    expect(control()).toBeNull();
+    expect(card().querySelector("video, figure")).toBeNull();
+  });
+
+  it("the loop is hidden when a card opens and when it folds", () => {
+    writeMedia("on");
+    render(<Card />);
+    fireEvent.click(control()!);
+    expect(loop()).not.toBeNull();
+    toggle();
+    expect(card().querySelector("video, figure")).toBeNull();
+    toggle();
+    expect(control()!.getAttribute("aria-expanded")).toBe("false");
+    expect(loop()).toBeNull();
+  });
+
+  it("a second press hides it", () => {
+    writeMedia("on");
+    render(<Card />);
+    fireEvent.click(control()!);
+    const shown = within(card()).getByRole("button", { name: "Hide the movement" });
+    expect(shown.getAttribute("aria-expanded")).toBe("true");
+    expect(loop()!.querySelector("video")!.getAttribute("src")).toBe(
+      "/media/exercises/0025#t=0.001",
+    );
+    fireEvent.click(shown);
+    expect(loop()).toBeNull();
+    expect(control()!.getAttribute("aria-label")).toBe("Show the movement");
   });
 });
