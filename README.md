@@ -154,7 +154,7 @@ Read this before hosting Belay for anyone else.
   runs until that deadline, at most `SESSION_MAX_DAYS` days.
 - **Media**: with `BELAY_MEDIA_DIR` set, `/media/exercises/<number>` serves
   files of that folder to signed-in people only: four digits, regular files
-  under 8 MiB, inside the folder (links leaving it are refused).
+  of 8 MiB at most, inside the folder (links leaving it are refused).
 - **Minimal data**: from your identity provider, Belay keeps an identifier and a
   display name. Never your e-mail address.
 

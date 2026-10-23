@@ -176,14 +176,14 @@ describe("GET /media/exercises/:id", () => {
     expect(Buffer.from(await res.arrayBuffer())).toEqual(bytes);
   });
 
-  it("serves the whole loop with its type, length, ETag, Last-Modified, a private 30-day cache, nosniff and same-origin CORP", async () => {
+  it("serves the whole loop with its type, length, ETag, Last-Modified, a private cache revalidated on every use, nosniff and same-origin CORP", async () => {
     const res = await get("/media/exercises/0001");
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toBe("video/mp4");
     expect(res.headers.get("content-length")).toBe("1000");
     expect(res.headers.get("etag")).toBe(etag);
     expect(res.headers.get("last-modified")).toBe(st.mtime.toUTCString());
-    expect(res.headers.get("cache-control")).toBe("private, max-age=2592000");
+    expect(res.headers.get("cache-control")).toBe("private, no-cache");
     expect(res.headers.get("accept-ranges")).toBe("bytes");
     expect(res.headers.get("x-content-type-options")).toBe("nosniff");
     expect(res.headers.get("cross-origin-resource-policy")).toBe("same-origin");
@@ -199,7 +199,7 @@ describe("GET /media/exercises/:id", () => {
       const res = await get("/media/exercises/0001", { range });
       expect(res.status, range).toBe(206);
       expect(res.headers.get("content-range"), range).toBe(`bytes ${start}-${end}/1000`);
-      expect(res.headers.get("cache-control"), range).toBe("private, max-age=2592000");
+      expect(res.headers.get("cache-control"), range).toBe("private, no-cache");
       expect(Buffer.from(await res.arrayBuffer()), range).toEqual(bytes.subarray(start, end + 1));
     }
   });
@@ -216,7 +216,7 @@ describe("GET /media/exercises/:id", () => {
       const res = await get("/media/exercises/0001", { "if-none-match": tag });
       expect(res.status, tag).toBe(304);
       expect(res.headers.get("etag"), tag).toBe(etag);
-      expect(res.headers.get("cache-control"), tag).toBe("private, max-age=2592000");
+      expect(res.headers.get("cache-control"), tag).toBe("private, no-cache");
       expect(await res.text(), tag).toBe("");
     }
     const res = await get("/media/exercises/0001", { "if-none-match": '"3e8-0"' });

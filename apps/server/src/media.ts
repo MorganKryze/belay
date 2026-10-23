@@ -10,8 +10,9 @@ import type { Db } from "./db/client";
 export const MEDIA_ID = /^\d{4}$/;
 // A loop weighs about 100 KB; the cap bounds what a misplaced file in the directory could cost.
 export const MEDIA_MAX_BYTES = 8 * 1024 * 1024;
-// 30 days, revalidated by ETag.
-export const MEDIA_CACHE_CONTROL = "private, max-age=2592000";
+// Revalidated on every use, so a signed-out browser gets a 401 rather than its own copy; the
+// ETag keeps that a 304, and offline play comes from the app's own cache, emptied at sign-out.
+export const MEDIA_CACHE_CONTROL = "private, no-cache";
 
 const notFound = { error: "not_found" } as const;
 
