@@ -511,5 +511,12 @@
     "setOf": "set {{n}} of {{total}}",
     "setLead": "Set {{n}} of {{total}}",
     "session": "Session {{code}}"
+  },
+  "loop": {
+    "name": "Demonstration",
+    "play": "Play",
+    "pause": "Pause",
+    "show": "Show the demonstration",
+    "hide": "Hide the demonstration"
   }
 }
