@@ -62,7 +62,7 @@ export function ExercisePage() {
           })}
         </p>
       </PageHeader>
-      <ExerciseLoop exerciseId={exercise.id} />
+      <ExerciseLoop exerciseId={exercise.id} name={exercise.name} />
       <div className={`${cardSurface} p-4`}>
         <BodyMap primary={exercise.primary} secondary={exercise.secondary} />
       </div>

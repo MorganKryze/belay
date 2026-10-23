@@ -513,10 +513,10 @@
     "session": "Session {{code}}"
   },
   "loop": {
-    "name": "Demonstration",
-    "play": "Play",
+    "name": "Demonstration of {{name}}",
+    "play": "Play the demonstration",
     "pause": "Pause",
-    "show": "Show the demonstration",
-    "hide": "Hide the demonstration"
+    "show": "Show the movement",
+    "hide": "Hide the movement"
   }
 }

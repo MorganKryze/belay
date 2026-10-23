@@ -13,9 +13,11 @@ const reducedMotion = () =>
 // word. One button pauses it and plays it again; with reduced motion it waits on its first frame.
 export function ExerciseLoop({
   exerciseId,
+  name,
   className,
 }: {
   exerciseId: string;
+  name: string; // the exercise's, which names the card for assistive technologies
   className?: string;
 }) {
   const { t } = useTranslation();
@@ -36,7 +38,7 @@ export function ExerciseLoop({
 
   return (
     <figure
-      aria-label={t("loop.name")}
+      aria-label={t("loop.name", { name })}
       hidden={!ready}
       className={`${cardSurface} relative aspect-square w-full overflow-hidden lg:max-w-90 ${className ?? ""}`}
     >

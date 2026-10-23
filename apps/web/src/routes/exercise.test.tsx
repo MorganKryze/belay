@@ -46,7 +46,7 @@ describe("an exercise's sheet", () => {
     const video = document.querySelector("video")!;
     expect(video.getAttribute("src")).toBe("/media/exercises/0025#t=0.001");
     fireEvent(video, new Event("loadeddata"));
-    const loop = screen.getByRole("figure", { name: "Demonstration" });
+    const loop = screen.getByRole("figure", { name: "Demonstration of Barbell bench press" });
     // The loop's card comes right under the header, before the body map's card.
     expect(loop.compareDocumentPosition(map) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     const title = screen.getByRole("heading", { level: 1 });
@@ -59,7 +59,7 @@ describe("an exercise's sheet", () => {
     renderRoute("/exercises/belay:barbell-hip-thrust");
     await screen.findByRole("img", { name: /Glutes/ });
     expect(document.querySelector("video, figure[aria-label]")).toBeNull();
-    expect(screen.queryByRole("button", { name: /^(Play|Pause)$/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /^(Play the demonstration|Pause)$/ })).toBeNull();
     cleanup();
 
     fakeApi({ me: ADA });
@@ -67,6 +67,6 @@ describe("an exercise's sheet", () => {
     renderRoute("/exercises/ds:0025");
     await screen.findByRole("img", { name: /Chest/ });
     expect(document.querySelector("video, figure[aria-label]")).toBeNull();
-    expect(screen.queryByText(/Demonstration|^Play$|^Pause$/)).toBeNull();
+    expect(screen.queryByText(/Demonstration|^Play the demonstration$|^Pause$/)).toBeNull();
   });
 });
