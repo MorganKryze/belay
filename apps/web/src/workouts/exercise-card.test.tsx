@@ -189,7 +189,23 @@ describe("ExerciseCard's loop", () => {
     await waitFor(() => expect(sheet()).toBeNull());
     expect(screen.queryByRole("figure")).toBeNull();
     expect(control()!.getAttribute("aria-label")).toBe("Show the movement");
+    fireEvent.click(control()!);
+    expect(within(sheet()!).getByRole("heading", { name: "Barbell bench press" })).toBeTruthy();
+    fireEvent.click(within(sheet()!).getByRole("button", { name: "Close" }));
+    await waitFor(() => expect(sheet()).toBeNull());
     toggle();
     expect(card().querySelector("video, figure")).toBeNull();
+  });
+
+  it("the still shows only once its first frame is in, and goes when the loop fails", () => {
+    writeMedia("on");
+    render(<Card />);
+    const still = card().querySelector<HTMLVideoElement>("button video")!;
+    expect(within(card()).queryByRole("button", { name: /movement$/ })).toBeNull();
+    fireEvent(still, new Event("loadeddata"));
+    expect(within(card()).getByRole("button", { name: /movement$/ })).toBeTruthy();
+    fireEvent(still, new Event("error"));
+    expect(within(card()).queryByRole("button", { name: /movement$/ })).toBeNull();
+    expect(card().querySelector("video")).toBeNull();
   });
 });
