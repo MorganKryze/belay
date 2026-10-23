@@ -119,9 +119,12 @@ shows none.
 - Loops are served only to people signed in on your instance, never
   cached by shared proxies, and kept on each phone for offline use (at
   most 150 loops for 30 days, deleted at sign-out).
-- **You alone are responsible for the rights to the media you mount.** Most
-  exercise videos are licensed for private use; Belay's repository,
-  images and releases contain none, and its import refuses media fields.
+- **The operator alone is responsible for the media they mount and show.**
+  The Belay project declines all responsibility for it. Most exercise videos
+  are licensed for private use; Belay's repository, images and releases
+  contain none, and its import refuses media fields.
+- Someone without an account learns nothing: without a session, an instance
+  with loops answers exactly like one without, for every address.
 
 ## Threat model
 

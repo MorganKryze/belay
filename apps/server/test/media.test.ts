@@ -99,6 +99,22 @@ describe("GET /media/exercises/:id", () => {
     }
   });
 
+  it("tells a stranger nothing: without a session, an instance with media answers exactly like one without", async () => {
+    const strip = (h: Headers) => [...h].filter(([k]) => k !== "date").sort();
+    for (const path of [
+      "/media/exercises/0001",
+      "/media/exercises/9999",
+      "/media/exercises/nope",
+    ]) {
+      for (const init of [{}, { method: "HEAD" }, { headers: { range: "bytes=0-9" } }]) {
+        const [on, none] = await Promise.all([app.request(path, init), off.request(path, init)]);
+        expect(on.status, path).toBe(none.status);
+        expect(strip(on.headers), path).toEqual(strip(none.headers));
+        expect(await on.text(), path).toBe(await none.text());
+      }
+    }
+  });
+
   it("answers 404 to an id that is not four ASCII digits", async () => {
     const realpath = vi.spyOn(fsp, "realpath");
     const stat = vi.spyOn(fsp, "stat");
