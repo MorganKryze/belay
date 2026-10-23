@@ -1,6 +1,9 @@
 import { isCreatineName } from "@belay/shared/body/supplements";
 import type { Change, Rejected, SyncRequest, WeightRow } from "@belay/shared/sync/schema";
 import type { Page } from "@playwright/test";
+import { fileURLToPath } from "node:url";
+
+const LOOP = fileURLToPath(new URL("fixtures/loop.mp4", import.meta.url));
 
 export const ADA = { id: "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d8e", displayName: "Ada" };
 
@@ -11,10 +14,16 @@ const bare = (row: Row) => Object.fromEntries(Object.entries(row).filter(([k]) =
 // The API behind page.route: /api/me answers Ada, /api/sync merges like the real server (the
 // later write wins, field by field) and sends back what changed since the cursor. Flip
 // `offline` to make every call fail, `session` to answer 401. `changes` are entries already on
-// the server, as another device would have sent them.
+// the server, as another device would have sent them. `media` makes the instance serve exercise
+// loops (the synthetic clip), except the numbers in `missingLoops`.
 export async function fakeServer(
   page: Page,
-  { rows = [] as { date: string; weightKg: number }[], changes = [] as Change[] } = {},
+  {
+    rows = [] as { date: string; weightKg: number }[],
+    changes = [] as Change[],
+    media = false,
+    missingLoops = [] as string[],
+  } = {},
 ) {
   const state = {
     offline: false,
@@ -245,9 +254,19 @@ export async function fakeServer(
     state.offline
       ? route.abort("internetdisconnected")
       : state.session === "live"
-        ? route.fulfill({ json: ADA })
+        ? route.fulfill({ json: media ? { ...ADA, media: true } : ADA })
         : route.fulfill({ status: 401 }),
   );
+  if (media) {
+    // On the context, so the service worker's requests come here too.
+    await page.context().route("**/media/exercises/*", (route) => {
+      if (state.offline) return route.abort("internetdisconnected");
+      if (state.session === "expired") return route.fulfill({ status: 401 });
+      const n = new URL(route.request().url()).pathname.split("/").pop()!;
+      if (missingLoops.includes(n)) return route.fulfill({ status: 404 });
+      return route.fulfill({ status: 200, contentType: "video/mp4", path: LOOP });
+    });
+  }
   await page.route("**/api/sync", (route) => {
     if (state.offline) return route.abort("internetdisconnected");
     const request = route.request().postDataJSON() as SyncRequest;

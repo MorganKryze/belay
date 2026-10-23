@@ -67,6 +67,7 @@ describe("app", () => {
     expect(csp).toContain("default-src 'self'");
     expect(csp).toContain("script-src 'self'");
     expect(csp).toContain("frame-ancestors 'none'");
+    expect(csp).toContain("media-src 'self'");
     expect(res.headers.get("x-content-type-options")).toBe("nosniff");
   });
 

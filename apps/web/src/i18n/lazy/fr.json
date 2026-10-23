@@ -511,5 +511,11 @@
     "setOf": "série {{n}} sur {{total}}",
     "setLead": "Série {{n}} sur {{total}}",
     "session": "Séance {{code}}"
+  },
+  "loop": {
+    "name": "Démonstration de {{name}}",
+    "play": "Lire la démonstration",
+    "pause": "Mettre en pause",
+    "show": "Voir le geste"
   }
 }

@@ -102,6 +102,30 @@ terminates TLS on the same host. Belay has no accounts of its own.
 - Your data lives in the `belay_db` volume of the `belay` Compose project.
   `down -v` deletes it. See the threat model below.
 
+### Exercise loops (optional)
+
+Belay can show a short looping video of each exercise. It ships none: the
+operator of an instance provides them, and an instance without them simply
+shows none.
+
+- Put one file per exercise in a folder, named by the exercise's 4-digit
+  library number (`0025.mp4`; the number after `ds:` in the library). MP4
+  (H.264), square, a few hundred kilobytes at most; files over 8 MiB are
+  refused.
+- Mount the folder read-only and point `BELAY_MEDIA_DIR` at it (commented
+  example in `docker/compose.yaml` and `.env.example`). The files must be
+  readable by the container's `node` user. Belay refuses to start if the
+  variable points at no folder.
+- Loops are served only to people signed in on your instance, never
+  cached by shared proxies, and kept on each phone for offline use (at
+  most 150 loops for 30 days, deleted at sign-out).
+- **The operator alone is responsible for the media they mount and show.**
+  The Belay project declines all responsibility for it. Most exercise videos
+  are licensed for private use; Belay's repository, images and releases
+  contain none, and its import refuses media fields.
+- Someone without an account learns nothing: without a session, an instance
+  with loops answers exactly like one without, for every address.
+
 ## Threat model
 
 Read this before hosting Belay for anyone else.
@@ -128,6 +152,9 @@ Read this before hosting Belay for anyone else.
   use and never more than `SESSION_MAX_DAYS` (90) after sign-in. Disabling
   someone at your identity provider does not end an active Belay session: it
   runs until that deadline, at most `SESSION_MAX_DAYS` days.
+- **Media**: with `BELAY_MEDIA_DIR` set, `/media/exercises/<number>` serves
+  files of that folder to signed-in people only: four digits, regular files
+  of 8 MiB at most, inside the folder (links leaving it are refused).
 - **Minimal data**: from your identity provider, Belay keeps an identifier and a
   display name. Never your e-mail address.
 

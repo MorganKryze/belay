@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link, useParams, useSearch } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { ExerciseLoop } from "@/components/exercise-loop";
 import { BackLink, PageHeader } from "@/components/page-header";
 import { cardSurface } from "@/components/surfaces";
 import { BodyMap, BodySymbols } from "@/exercises/body-map";
@@ -13,8 +14,8 @@ import { formatNumber, sessionTitle } from "@/lib/format";
 import { formatRest, formatRir, formatSets, groupKind } from "@/workouts/format";
 import { NotFound } from "./fallbacks";
 
-// An exercise's sheet (§4.5): its equipment, the body map, where the program uses it, and how
-// to do it in the app's language.
+// An exercise's sheet (§4.5): its equipment, its demonstration loop where the instance has one,
+// the body map, where the program uses it, and how to do it in the app's language.
 export function ExercisePage() {
   const { t, i18n } = useTranslation();
   const { exerciseId } = useParams({ from: "/exercises/$exerciseId" });
@@ -61,6 +62,7 @@ export function ExercisePage() {
           })}
         </p>
       </PageHeader>
+      <ExerciseLoop key={exercise.id} exerciseId={exercise.id} name={exercise.name} />
       <div className={`${cardSurface} p-4`}>
         <BodyMap primary={exercise.primary} secondary={exercise.secondary} />
       </div>

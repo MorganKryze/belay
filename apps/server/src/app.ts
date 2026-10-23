@@ -10,6 +10,7 @@ import { authRoutes } from "./auth/routes";
 import type { Config } from "./config";
 import type { Db } from "./db/client";
 import { describeError } from "./log";
+import { mediaRoutes } from "./media";
 
 // Answers that carry a session or a person's data are never kept by a browser or a proxy.
 const noStore: MiddlewareHandler = async (c, next) => {
@@ -28,6 +29,7 @@ export function createApp({ cfg, db, getOidc }: { cfg: Config; db: Db; getOidc: 
         // ponytail: 'unsafe-inline' styles because Radix positions popovers with inline style attributes; nonce-based styles if that ever matters.
         styleSrc: ["'self'", "'unsafe-inline'"],
         imgSrc: ["'self'", "data:"],
+        mediaSrc: ["'self'"],
         connectSrc: ["'self'"],
         manifestSrc: ["'self'"],
         workerSrc: ["'self'"],
@@ -66,8 +68,11 @@ export function createApp({ cfg, db, getOidc }: { cfg: Config; db: Db; getOidc: 
   app.route("/api", apiRoutes(cfg, db));
   app.all("/auth/*", (c) => c.text("Not found", 404));
   app.all("/api/*", (c) => c.json({ error: "not_found" }, 404));
+  // Before the shell: a missing loop is a JSON 404, never index.html cached as a video.
+  app.route("/media", mediaRoutes(cfg, db));
+  app.all("/media/*", (c) => c.json({ error: "not_found" }, 404));
 
-  // ponytail: no conditional requests (ETag/304), so every revalidation re-sends the whole file.
+  // ponytail: assets get no conditional requests (ETag/304), so every revalidation re-sends the whole file.
   // Upgrade: an ETag layer in front of serveStatic.
 
   // Hashed build output: a missing file is a plain 404, never the app shell cached as immutable.

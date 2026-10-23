@@ -1,12 +1,15 @@
 import { clearLastUser } from "@/sync/last-user";
+import { MEDIA_CACHE, writeMedia } from "./media-flag";
 
-export type Me = { id: string; displayName: string };
+export type Me = { id: string; displayName: string; media?: boolean };
 
 export async function fetchMe(): Promise<Me | null> {
   const res = await fetch("/api/me", { credentials: "same-origin" });
   if (res.status === 401) return null;
   if (!res.ok) throw new Error(`GET /api/me: ${res.status}`);
-  return (await res.json()) as Me;
+  const me = (await res.json()) as Me;
+  writeMedia(me.media === true ? "on" : "off");
+  return me;
 }
 
 // Throws (and never navigates) on any failure, so the caller can tell the user. Once signed out,
@@ -23,5 +26,11 @@ export async function logout(): Promise<void> {
     throw new Error("POST /auth/logout: response has no redirectTo");
   }
   clearLastUser();
+  // The loops seen on this device leave with the account; no Cache Storage still signs out.
+  try {
+    await caches.delete(MEDIA_CACHE);
+  } catch {
+    // Nothing to forget.
+  }
   window.location.assign(redirectTo);
 }

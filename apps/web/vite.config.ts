@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import type { Plugin } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
 import { defineConfig } from "vitest/config";
+import { mediaRuntimeCaching } from "./src/lib/media-cache";
 import { SCREENS, startupFile, startupMedia } from "./startup-images";
 
 const backend = "http://localhost:3000";
@@ -69,11 +70,13 @@ export default defineConfig({
         clientsClaim: true,
         navigateFallback: "/index.html",
         // /auth, /api and /healthz must always reach the network: a cached shell there would fake
-        // a login or a healthy server.
-        navigateFallbackDenylist: [/^\/auth\//, /^\/api\//, /^\/healthz$/],
+        // a login or a healthy server. A loop opened on its own is a video, never the shell.
+        navigateFallbackDenylist: [/^\/auth\//, /^\/api\//, /^\/healthz$/, /^\/media\//],
         globPatterns: ["**/*.{js,css,html,svg,png,ico,woff2}"],
         // 22 full-screen PNGs, one of which a phone ever reads, and only at install.
         globIgnores: ["startup/**"],
+        // Exercise loops are kept once seen, in a capped cache of their own.
+        runtimeCaching: [mediaRuntimeCaching],
       },
     }),
   ],
@@ -84,7 +87,7 @@ export default defineConfig({
   // the entry: a shared chunk named after some index.js would otherwise be counted as initial.
   build: { rolldownOptions: { output: { chunkFileNames: "assets/chunk-[name]-[hash].js" } } },
   // 127.0.0.1, not localhost: on macOS Vite would bind IPv6 only and IPv4 browsers miss it.
-  server: { host: "127.0.0.1", proxy: { "/api": backend, "/auth": backend } },
+  server: { host: "127.0.0.1", proxy: { "/api": backend, "/auth": backend, "/media": backend } },
   test: {
     environment: "jsdom",
     include: ["src/**/*.test.{ts,tsx}"],

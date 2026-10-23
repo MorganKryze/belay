@@ -7,12 +7,16 @@ import { useState } from "react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import i18n from "../i18n";
 import "../i18n/lazy";
+import { writeMedia } from "../lib/media-flag";
 import { ExerciseCard, type Row } from "./exercise-card";
 
 beforeEach(async () => {
   await i18n.changeLanguage("en");
 });
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  localStorage.clear();
+});
 
 // The bench press of session A: 4 work sets, 2 warm-ups.
 const slot = sessionByCode("A")!.slots[0]!;
@@ -130,5 +134,78 @@ describe("ExerciseCard", () => {
     await i18n.changeLanguage("fr");
     render(<Card />);
     expect(within(card()).getByText("4 × 6–8 · RIR 1–2 · la dernière fois 80 kg × 8")).toBeTruthy();
+  });
+});
+
+// The bench press has a loop wherever the instance serves them (ds:0025).
+describe("ExerciseCard's loop", () => {
+  // The control waits for its still: a loop that fails never offers one.
+  const control = () => {
+    const still = card().querySelector<HTMLVideoElement>("button video");
+    if (still) fireEvent(still, new Event("loadeddata"));
+    return within(card()).queryByRole("button", { name: /movement$/ });
+  };
+  const sheet = () => screen.queryByRole("dialog");
+
+  it("an open card offers the loop when there is one, never when there is none", () => {
+    writeMedia("on");
+    render(<Card />);
+    const button = control()!;
+    expect(button.getAttribute("aria-label")).toBe("Show the movement");
+    expect(button.getAttribute("aria-haspopup")).toBe("dialog");
+    expect(card().querySelector("figure")).toBeNull();
+    expect(sheet()).toBeNull();
+    cleanup();
+
+    writeMedia("off");
+    render(<Card />);
+    expect(control()).toBeNull();
+    expect(card().querySelector("video, figure")).toBeNull();
+  });
+
+  it("the still opens a sheet holding only the loop, named after the exercise", () => {
+    writeMedia("on");
+    render(<Card />);
+    fireEvent.click(control()!);
+    const dialog = sheet()!;
+    expect(within(dialog).getByRole("heading", { name: "Barbell bench press" })).toBeTruthy();
+    fireEvent(dialog.querySelector("video")!, new Event("loadeddata"));
+    const figure = within(dialog).getByRole("figure", {
+      name: "Demonstration of Barbell bench press",
+    });
+    expect(figure.querySelector("video")!.getAttribute("src")).toBe(
+      "/media/exercises/0025#t=0.001",
+    );
+    // The only loop is the sheet's: nothing lands in the card, so its rows never move.
+    expect(document.querySelectorAll("figure")).toHaveLength(1);
+    expect(within(dialog).queryAllByRole("textbox")).toHaveLength(0);
+  });
+
+  it("closing the sheet takes the loop away, and a folded card offers nothing", async () => {
+    writeMedia("on");
+    render(<Card />);
+    fireEvent.click(control()!);
+    fireEvent.click(within(sheet()!).getByRole("button", { name: "Close" }));
+    await waitFor(() => expect(sheet()).toBeNull());
+    expect(screen.queryByRole("figure")).toBeNull();
+    expect(control()!.getAttribute("aria-label")).toBe("Show the movement");
+    fireEvent.click(control()!);
+    expect(within(sheet()!).getByRole("heading", { name: "Barbell bench press" })).toBeTruthy();
+    fireEvent.click(within(sheet()!).getByRole("button", { name: "Close" }));
+    await waitFor(() => expect(sheet()).toBeNull());
+    toggle();
+    expect(card().querySelector("video, figure")).toBeNull();
+  });
+
+  it("the still shows only once its first frame is in, and goes when the loop fails", () => {
+    writeMedia("on");
+    render(<Card />);
+    const still = card().querySelector<HTMLVideoElement>("button video")!;
+    expect(within(card()).queryByRole("button", { name: /movement$/ })).toBeNull();
+    fireEvent(still, new Event("loadeddata"));
+    expect(within(card()).getByRole("button", { name: /movement$/ })).toBeTruthy();
+    fireEvent(still, new Event("error"));
+    expect(within(card()).queryByRole("button", { name: /movement$/ })).toBeNull();
+    expect(card().querySelector("video")).toBeNull();
   });
 });

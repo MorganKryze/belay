@@ -23,7 +23,10 @@ import { ArrowLeftRight, Check, ChevronDown, Play, Plus } from "lucide-react";
 import { RadioGroup } from "radix-ui";
 import { useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { ExerciseLoop } from "@/components/exercise-loop";
+import { Sheet } from "@/components/sheet";
 import { formatNumber, parseDecimal } from "@/lib/format";
+import { useLoop } from "@/lib/media";
 import type { Chrono } from "@/sync/db";
 import { formatLoad, formatRir, formatSets } from "./format";
 import { formatClock } from "./hooks";
@@ -177,6 +180,10 @@ export function ExerciseCard({
   // earlier stays still when the card unfolds, mounts again or the page reloads.
   const [fresh, setFresh] = useState<ReadonlySet<number>>(new Set());
   if (!open && fresh.size > 0) setFresh(new Set());
+  // The demonstration, on demand from the open card, in a sheet of its own: gone when it folds.
+  const { src: loopSrc, failed: loopFailed } = useLoop(open ? exercise.id : "");
+  const [loopShown, setLoopShown] = useState(false);
+  if (!open && loopShown) setLoopShown(false);
   const kgText = (kg: number) => formatNumber(kg, i18n.language, { digits: 2, grouping: false });
   const measure: Measure = slot.measure ?? "reps";
   const timed = measure === "seconds";
@@ -512,17 +519,74 @@ export function ExerciseCard({
               {t("session.addSet").replace(/^\+\s*/, "")}
             </button>
           </div>
-          <NoteField
-            exercise={exercise.name}
-            note={note}
-            open={noteOpen}
-            onOpen={() => setNoteOpen(true)}
-            onSave={onNote}
-            slotIndex={slotIndex}
-          />
+          {/* The loop's still shares the note's line, below the logging path, and the loop opens
+              in a sheet, so the set rows never move for it. */}
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex min-w-0 flex-1 flex-col">
+              <NoteField
+                exercise={exercise.name}
+                note={note}
+                open={noteOpen}
+                onOpen={() => setNoteOpen(true)}
+                onSave={onNote}
+                slotIndex={slotIndex}
+              />
+            </div>
+            {loopSrc && (
+              <LoopStill src={loopSrc} onOpen={() => setLoopShown(true)} onError={loopFailed} />
+            )}
+          </div>
+          {loopSrc && loopShown && (
+            <Sheet title={exercise.name} onClose={() => setLoopShown(false)}>
+              <ExerciseLoop exerciseId={exercise.id} name={exercise.name} />
+            </Sheet>
+          )}
         </div>
       )}
     </section>
+  );
+}
+
+// The loop's first frame, 44 px, as the button that opens the loop's sheet. It waits for that
+// frame, so a loop that fails never offers a control.
+function LoopStill({
+  src,
+  onOpen,
+  onError,
+}: {
+  src: string;
+  onOpen: () => void;
+  onError: () => void;
+}) {
+  const { t } = useTranslation();
+  const [ready, setReady] = useState(false);
+  return (
+    <button
+      type="button"
+      hidden={!ready}
+      aria-haspopup="dialog"
+      aria-label={t("loop.show")}
+      onClick={onOpen}
+      className="press relative mt-1.5 size-11 shrink-0 overflow-hidden rounded-[12px] bg-track"
+    >
+      {/* Never played: the fragment draws the first frame, on iOS too. */}
+      <video
+        src={`${src}#t=0.001`}
+        muted
+        playsInline
+        preload="metadata"
+        aria-hidden
+        className="size-full object-cover"
+        onLoadedData={() => setReady(true)}
+        onError={onError}
+      />
+      <span
+        aria-hidden
+        className="absolute right-0.5 bottom-0.5 grid size-4 place-items-center rounded-round bg-foreground text-background"
+      >
+        <Play className="size-2.5" />
+      </span>
+    </button>
   );
 }
 
