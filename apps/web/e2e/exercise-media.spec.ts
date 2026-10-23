@@ -6,7 +6,8 @@ import { fakeServer } from "./fake-server";
 test.use({ locale: "en-US", timezoneId: "Europe/Paris" });
 
 const BENCH = "/exercises/ds:0025";
-const loop = (page: Page) => page.getByRole("figure", { name: "Demonstration" });
+const loop = (page: Page) =>
+  page.getByRole("figure", { name: "Demonstration of Barbell bench press" });
 const bodyMap = (page: Page) => page.getByRole("img", { name: /^Body map/ });
 
 async function open(page: Page, path = BENCH) {
@@ -50,7 +51,7 @@ test("the loop plays above the body map", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Pause" })).toBeVisible();
 });
 
-test("with reduced motion the loop waits on its first frame and Play starts it", async ({
+test("with reduced motion the loop waits on its first frame and its play button starts it", async ({
   page,
 }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
@@ -63,7 +64,7 @@ test("with reduced motion the loop waits on its first frame and Play starts it",
   await page.waitForTimeout(300);
   expect((await media(video)).paused).toBe(true);
   expect(await video.evaluate((v: HTMLVideoElement) => v.currentTime)).toBeLessThan(0.1);
-  await page.getByRole("button", { name: "Play" }).click();
+  await page.getByRole("button", { name: "Play the demonstration" }).click();
   await expect.poll(async () => (await media(video)).paused).toBe(false);
   await expect(page.getByRole("button", { name: "Pause" })).toBeVisible();
 });
@@ -75,7 +76,7 @@ test("Pause stops it", async ({ page }) => {
   await expect.poll(async () => (await media(video)).paused).toBe(false);
   await page.getByRole("button", { name: "Pause" }).click();
   await expect.poll(async () => (await media(video)).paused).toBe(true);
-  const play = page.getByRole("button", { name: "Play" });
+  const play = page.getByRole("button", { name: "Play the demonstration" });
   await expect(play).toBeVisible();
   // The press springs back before the button is measured.
   await settled(page);
