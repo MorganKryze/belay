@@ -66,6 +66,12 @@ const sessionPreviewRoute = createRoute({
   validateSearch: (search: Record<string, unknown>): { from?: "home" } =>
     search.from === "home" ? { from: "home" } : {},
 });
+// The program editor, a computer's page. Static, so it wins over $workoutId.
+const programEditorRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/workouts/program",
+  component: lazyRouteComponent(() => import("./routes/program-editor"), "ProgramEditor"),
+});
 const workoutDetailRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/workouts/$workoutId",
@@ -161,6 +167,7 @@ export const routeTree = rootRoute.addChildren([
   homeRoute,
   workoutsRoute,
   sessionPreviewRoute,
+  programEditorRoute,
   workoutDetailRoute,
   workoutRoute,
   workoutEditorRoute,
