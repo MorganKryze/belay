@@ -150,6 +150,7 @@ export function editChanges({
   id,
   workout,
   sessionCode,
+  sessionId,
   plan,
   date,
   minutes,
@@ -160,6 +161,7 @@ export function editChanges({
   id: string;
   workout: Workout | null; // null: a session logged afterwards
   sessionCode: string;
+  sessionId?: string; // the program session a session logged afterwards comes from
   plan: Slot[];
   date: ISODate;
   minutes: number; // the duration of a session logged afterwards
@@ -178,6 +180,7 @@ export function editChanges({
       id,
       field: "start",
       sessionCode,
+      ...(sessionId && { sessionId }),
       plan,
       startedAt: times.startedAt,
       at,

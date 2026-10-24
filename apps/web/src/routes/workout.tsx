@@ -13,7 +13,7 @@ import {
   sessionElapsed,
 } from "@belay/shared/training/pause";
 import { appendSlot, planFor, replaceSlot, skipSlot } from "@belay/shared/training/plan";
-import { groupOf, sessionByCode } from "@belay/shared/training/program";
+import { groupOf } from "@belay/shared/training/program";
 import {
   type History,
   liveSets,
@@ -25,6 +25,7 @@ import {
   type Turn,
   turnKey,
 } from "@belay/shared/training/rules";
+import { rotationOf } from "@belay/shared/training/stored-program";
 import {
   MAX_SLOTS,
   MAX_WARMUPS,
@@ -51,6 +52,7 @@ import {
   readActiveSession,
   readActivities,
   readHistory,
+  readPrograms,
 } from "@/sync/db";
 import {
   type OpenAccount,
@@ -94,18 +96,21 @@ function Session({ account }: { account: OpenAccount }) {
   // The first tap on the session unlocks the end-of-rest tone, for whoever turned it on.
   useEffect(() => armRestSound(), []);
 
-  // ?start=B: start session B (or take up the one already open), then drop the parameter so a
-  // reload never starts another. Session C's rule reads the week's activities now, once (D6).
+  // ?start=B: start the active rotation's session B (or take up the one already open), then drop
+  // the parameter so a reload never starts another. The session copies the rotation as it stands
+  // now and records the session it came from; a later program change never reaches it (HF1).
+  // Session C's rule reads the week's activities now, once (D6).
   useEffect(() => {
     if (!start || started.current) return;
     started.current = true;
-    const session = sessionByCode(start);
     const go = () => void navigate({ to: "/workout", search: {}, replace: true });
-    if (!session) return go();
-    void readActivities(account.db)
-      .then((activities) =>
-        startWorkout(newId(), session.code, planFor(session, activities, toISODate(new Date()))),
-      )
+    void Promise.all([readPrograms(account.db), readActivities(account.db)])
+      .then(([programs, activities]) => {
+        const session = rotationOf(programs).find((s) => s.code === start);
+        if (!session) return;
+        const plan = planFor(session, activities, toISODate(new Date()));
+        return startWorkout(newId(), session.code, plan, session.sessionId);
+      })
       .then(go, go);
   }, [start, navigate, startWorkout, account.db]);
 

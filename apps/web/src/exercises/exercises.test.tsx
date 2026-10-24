@@ -219,7 +219,7 @@ describe("an exercise's sheet", () => {
     expect(
       screen.getByRole("img", { name: "Body map: primary Chest; secondary Triceps, Front delts" }),
     ).toBeTruthy();
-    const use = screen.getByRole("link", { name: /Session A · Push/ });
+    const use = await screen.findByRole("link", { name: /Session A · Push/ });
     expect(use.textContent).toContain("4 × 6–8 · RIR 1–2 · 2 min 30 s");
     const how = screen.getByRole("region", { name: "How to do it" });
     const steps = await within(how).findAllByRole("listitem");
@@ -235,7 +235,9 @@ describe("an exercise's sheet", () => {
     expect(await screen.findByRole("heading", { name: "Dumbbell lateral raise" })).toBeTruthy();
     expect(screen.getByText("Haltères · incrément 2 kg")).toBeTruthy();
     expect(screen.getByRole("img", { name: "Silhouette : principal Épaules côté" })).toBeTruthy();
-    expect(screen.getByRole("link", { name: /Séance A · Push/ }).textContent).toContain("tri-set");
+    expect((await screen.findByRole("link", { name: /Séance A · Push/ })).textContent).toContain(
+      "tri-set",
+    );
     expect(
       screen.getByRole("link", { name: /Séance C · Fessiers \+ tirage léger/ }).textContent,
     ).toContain("1 min");

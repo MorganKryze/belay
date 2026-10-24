@@ -4,7 +4,6 @@ import type { ISODate } from "@belay/shared/body/dates";
 import { exerciseById } from "@belay/shared/exercises/catalog";
 import type { Exercise } from "@belay/shared/exercises/library";
 import { appendSlot, planFor } from "@belay/shared/training/plan";
-import { sessionByCode } from "@belay/shared/training/program";
 import { type History, liveSets } from "@belay/shared/training/rules";
 import { MAX_SLOTS, MAX_WARMUPS, type Slot, type Workout } from "@belay/shared/training/workout";
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
@@ -16,7 +15,14 @@ import { Button } from "@/components/ui/button";
 import { sessionTitle } from "@/lib/format";
 import { useToday } from "@/lib/today";
 import { loadNumber, readWeightUnit, type WeightUnit } from "@/lib/units";
-import { type OpenAccount, useAccount, useActivities, useHistory, useRecord } from "@/sync/account";
+import {
+  type OpenAccount,
+  useAccount,
+  useActivities,
+  useHistory,
+  useProgram,
+  useRecord,
+} from "@/sync/account";
 import { addRow, editChanges, type EditRow, rowsOf } from "@/workouts/editor";
 import { ExercisePicker } from "@/workouts/exercise-picker";
 import { formatSets } from "@/workouts/format";
@@ -40,13 +46,15 @@ function Load({ account }: { account: OpenAccount }) {
   const today = useToday();
   const history = useHistory(account).data;
   const activities = useActivities(account).data;
-  if (!history || !activities) return null;
+  const rotation = useProgram(account).data?.rotation;
+  if (!history || !activities || !rotation) return null;
   if (search.id) {
     const workout = history.workouts.find((w) => w.id === search.id);
     if (!workout || workout.removed || workout.endedAt === null) return <NotFound />;
     return <Editor account={account} history={history} workout={workout} start={null} />;
   }
-  const session = search.code ? sessionByCode(search.code) : undefined;
+  // The active rotation's session at that letter, as a session started now would copy it.
+  const session = rotation.find((s) => s.code === search.code);
   if (!session || !search.date || search.date > today || !search.minutes) return <NotFound />;
   return (
     <Editor
@@ -55,6 +63,7 @@ function Load({ account }: { account: OpenAccount }) {
       workout={null}
       start={{
         code: session.code,
+        sessionId: session.sessionId,
         date: search.date,
         minutes: search.minutes,
         plan: planFor(session, activities, search.date),
@@ -72,7 +81,7 @@ function Editor({
   account: OpenAccount;
   history: History;
   workout: Workout | null;
-  start: { code: string; date: ISODate; minutes: number; plan: Slot[] } | null;
+  start: { code: string; sessionId: string; date: ISODate; minutes: number; plan: Slot[] } | null;
 }) {
   const { t, i18n } = useTranslation();
   const today = useToday();
@@ -104,6 +113,7 @@ function Editor({
     id,
     workout,
     sessionCode,
+    sessionId: start?.sessionId,
     plan,
     date,
     minutes: start?.minutes ?? 0,
@@ -139,6 +149,7 @@ function Editor({
       id,
       workout,
       sessionCode,
+      sessionId: start?.sessionId,
       plan,
       date,
       minutes: start?.minutes ?? 0,
