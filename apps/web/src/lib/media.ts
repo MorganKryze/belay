@@ -1,4 +1,4 @@
-import { useEffect, useReducer, useState } from "react";
+import { useEffect, useReducer, useRef, useState } from "react";
 import { MEDIA_CACHE, readMedia } from "./media-flag";
 import { useOnline } from "./online";
 
@@ -18,20 +18,26 @@ export function useLoop(exerciseId: string): { src: string | null; failed: () =>
   const path = readMedia() === "on" ? loopPath(exerciseId) : null;
   const usable = path !== null && !failedPaths.has(path);
   // Offline, only a loop already in the cache can play.
-  const [cached, setCached] = useState<string | null>(null);
+  // The answer names the path it is for, so a pending check is told apart from a miss.
+  const [checked, setChecked] = useState<{ path: string; hit: boolean } | null>(null);
   useEffect(() => {
     if (online || !usable) return;
     let live = true;
     caches
       .open(MEDIA_CACHE)
       .then((cache) => cache.match(path))
-      .then((hit) => live && setCached(hit ? path : null))
-      .catch(() => live && setCached(null));
+      .then((hit) => live && setChecked({ path, hit: hit !== undefined }))
+      .catch(() => live && setChecked({ path, hit: false }));
     return () => {
       live = false;
     };
   }, [online, usable, path]);
-  const src = usable && (online || cached === path) ? path : null;
+  // Until the cache answers, the source already playing stays, so going offline does not remount it.
+  const last = useRef<string | null>(null);
+  const answered = checked?.path === path;
+  const offlineSrc = answered ? (checked.hit ? path : null) : last.current === path ? path : null;
+  const src = usable && (online || offlineSrc !== null) ? path : null;
+  last.current = src;
   const failed = () => {
     if (path === null) return;
     failedPaths.add(path);
