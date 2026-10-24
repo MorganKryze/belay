@@ -10,7 +10,7 @@ import { act, cleanup, fireEvent, screen, waitFor, within } from "@testing-libra
 import { IDBFactory } from "fake-indexeddb";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import i18n from "../i18n";
-import { openAccountDb, readHistory, readPrograms, recordChanges } from "../sync/db";
+import { openAccountDb, readHistory, readOutbox, readPrograms, recordChanges } from "../sync/db";
 import { writeLastUser } from "../sync/last-user";
 import { fakeApi } from "../test/fake-api";
 import { renderRoute } from "../test/render-route";
@@ -324,6 +324,52 @@ describe("the program switcher", () => {
     expect((await stored()).programs.programs.find((p) => p.id === FORCE)!.name).toBe(
       "Force 4 jours d'hiver",
     );
+  });
+
+  it("a click away saves the name; Enter then the click away writes it once; Escape still cancels", async () => {
+    const api = fakeApi({ me: ADA });
+    // Each name written, sent already or still queued.
+    const names = async () => {
+      const db = await openAccountDb(ADA.id);
+      const queued = (await readOutbox(db)).map((e) => e.change);
+      db.close();
+      return [...api.requests.flatMap((r) => r.changes), ...queued]
+        .filter((c) => c.kind === "program" && c.id === FORCE && c.field === "name")
+        .map((c) => (c as { value: unknown }).value);
+    };
+    const before = (await names()).length;
+    renderRoute("/workouts/program");
+
+    await openMenu();
+    await choose("Renommer ce programme");
+    fireEvent.change(await nameField(), { target: { value: "Force d'hiver" } });
+    await act(async () => (await nameField()).blur());
+    expect(await selector("Force d'hiver")).toBeTruthy();
+    expect(screen.queryByRole("textbox", { name: "Nom du programme" })).toBeNull();
+
+    await openMenu("Force d'hiver");
+    await choose("Renommer ce programme");
+    const typed = await nameField();
+    fireEvent.change(typed, { target: { value: "Force de printemps" } });
+    await act(async () => {
+      fireEvent.keyDown(typed, { key: "Enter" });
+      typed.blur();
+    });
+    expect(await selector("Force de printemps")).toBeTruthy();
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect((await names()).slice(before)).toEqual(["Force d'hiver", "Force de printemps"]);
+
+    await openMenu("Force de printemps");
+    await choose("Renommer ce programme");
+    const kept = await nameField();
+    fireEvent.change(kept, { target: { value: "Autre" } });
+    await act(async () => {
+      fireEvent.keyDown(kept, { key: "Escape" });
+      kept.blur();
+    });
+    expect(await selector("Force de printemps")).toBeTruthy();
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect((await names()).slice(before)).toEqual(["Force d'hiver", "Force de printemps"]);
   });
 
   it("Supprimer asks on the sheet naming the program, its session count and the one that becomes active; confirming removes it", async () => {
