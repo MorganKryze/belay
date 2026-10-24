@@ -9,7 +9,8 @@ import { MAX_SLOTS, type Slot } from "./workout";
 
 // The day's plan: the session's slots, then its no-climbing slots, marked, when no climb is
 // recorded in the week of `date` (Monday to Sunday). Judged once, at the start: a session
-// already started never changes when a climb is recorded later.
+// already started never changes when a climb is recorded later. Two devices adding slots at once
+// can leave a stored session past MAX_SLOTS: the plan keeps the first ones so it always starts (PM8).
 export function planFor(
   session: SessionTemplate,
   activities: readonly Pick<Activity, "date" | "kind" | "removed">[],
@@ -19,7 +20,7 @@ export function planFor(
     session.noClimbing && !climbedThisWeek(activities, date)
       ? session.noClimbing.map((s): Slot => ({ ...s, rule: "no_climbing" }))
       : [];
-  return [...session.slots.map((s) => ({ ...s })), ...extra];
+  return [...session.slots.map((s) => ({ ...s })), ...extra].slice(0, MAX_SLOTS);
 }
 
 // The slots done today, in order: the timer, the order of rounds and the next set read these.

@@ -182,6 +182,25 @@ describe("session C's rule (spec D6)", () => {
     expect(planFor(B, [], "2026-10-07")).toEqual(B.slots);
   });
 
+  it("a plan keeps the first 30 slots of an overfull session", () => {
+    // Two devices adding at once can leave 31 live slots (PM8): the session still starts.
+    const slots = Array.from({ length: MAX_SLOTS + 1 }, (_, i) => ({
+      ...A.slots[0]!,
+      sets: (i % 10) + 1,
+    }));
+    const plan = planFor({ code: "D", slots }, [], "2026-10-07");
+    expect(plan).toHaveLength(MAX_SLOTS);
+    expect(plan).toEqual(slots.slice(0, MAX_SLOTS));
+    expect(isPlan(plan)).toBe(true);
+    const noClimbing = [{ ...A.slots[1]! }];
+    expect(
+      planFor({ code: "D", slots: slots.slice(0, 29), noClimbing }, [], "2026-10-07"),
+    ).toHaveLength(30);
+    expect(planFor({ code: "D", slots: slots.slice(0, 30), noClimbing }, [], "2026-10-07")).toEqual(
+      slots.slice(0, 30),
+    );
+  });
+
   it("gives a copy: changing it never changes the program", () => {
     const plan = planFor(C, [], "2026-10-07");
     plan[0]!.sets = 9;

@@ -149,6 +149,30 @@ describe("nextSession", () => {
     ).toBe("B");
     expect(nextSession([workout({ sessionCode: "Z" })])).toBe("A");
   });
+
+  // A stored program of n sessions in its own order, letters D to G included (PM9).
+  const stored = (codes: string) => [...codes].map((code) => ({ code, slots: A.slots }));
+  const done = (sessionCode: string) => workout({ sessionCode });
+
+  it("the next session follows the stored order for 2 to 7 sessions", () => {
+    for (const codes of ["AB", "BAC", "DACB", "ABCDE", "FEDCBA", "ABCDEFG"]) {
+      const program = stored(codes);
+      expect(nextSession([], program)).toBe(codes[0]);
+      for (let i = 0; i < codes.length; i++) {
+        expect(nextSession([done(codes[i]!)], program)).toBe(codes[(i + 1) % codes.length]);
+      }
+    }
+  });
+
+  it("after G comes A", () => {
+    expect(nextSession([done("F")], stored("ABCDEFG"))).toBe("G");
+    expect(nextSession([done("G")], stored("ABCDEFG"))).toBe("A");
+  });
+
+  it("after a session whose letter left the program comes the first", () => {
+    expect(nextSession([done("B")], stored("DAC"))).toBe("D");
+    expect(nextSession([done("E")], stored("ABCD"))).toBe("A");
+  });
 });
 
 describe("prefill and lastTime", () => {
