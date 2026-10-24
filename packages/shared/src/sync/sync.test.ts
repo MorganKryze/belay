@@ -1177,7 +1177,7 @@ describe("a slot change over its stored row (SY2, ED4)", () => {
     });
   });
 
-  it("an exercise in the same measure leaves a newer range and warm-ups in place", () => {
+  it("an exercise in the same measure never overwrites a range or warm-ups edit", () => {
     const same = change({
       field: "exercise",
       exerciseId: "ds:0047",
@@ -1195,10 +1195,26 @@ describe("a slot change over its stored row (SY2, ED4)", () => {
       ...edited,
       exerciseId: "ds:0047",
       exerciseAt: T2,
-      warmupsAt: T2,
     });
+    // An offline edit older than the swap survives it, in both arrival orders.
+    const older = change({ field: "reps", value: [3, 5], measure: null, at: T1 });
+    const base = { ...row, repsAt: T0 };
+    expect(mergeSlotChange(mergeSlotChange(base, same)!, older)?.repRange).toEqual([3, 5]);
+    expect(mergeSlotChange(mergeSlotChange(base, older)!, same)?.repRange).toEqual([3, 5]);
     // An older exercise change loses whole.
     expect(mergeSlotChange(row, { ...same, at: T0 })).toBe(row);
+  });
+
+  it("refuses warm-ups on a timed slot", () => {
+    const timed = {
+      ...row,
+      measure: "seconds" as const,
+      repRange: [30, 60] as [number, number],
+      warmupSets: 0,
+    };
+    expect(mergeSlotChange(timed, change({ field: "warmups", value: 2, measure: "seconds" }))).toBe(
+      null,
+    );
   });
 
   it("refuses a change that would leave the merged slot out of its bounds", () => {

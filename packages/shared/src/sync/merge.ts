@@ -100,13 +100,17 @@ export function mergeSlotChange(
   if (change.field === "exercise") {
     if (!isNewer(at, row.exerciseAt)) return row;
     // In another measure the row's range and warm-ups mean nothing: the exercise's replace them,
-    // however recent. In the same one each stays a field of its own.
-    const moved = change.measure !== row.measure;
+    // however recent. In the same one they stay as they are: the change carries the sender's
+    // unedited values, which would overwrite an edit it never saw.
     next = { ...row, exerciseId: change.exerciseId, measure: change.measure, exerciseAt: at };
-    if (moved || isNewer(at, row.repsAt))
-      next = { ...next, repRange: [...change.repRange] as [number, number], repsAt: at };
-    if (moved || isNewer(at, row.warmupsAt))
-      next = { ...next, warmupSets: change.warmupSets, warmupsAt: at };
+    if (change.measure !== row.measure)
+      next = {
+        ...next,
+        repRange: [...change.repRange] as [number, number],
+        repsAt: at,
+        warmupSets: change.warmupSets,
+        warmupsAt: at,
+      };
   } else {
     const atKey = `${change.field}At` as const;
     if (!isNewer(at, row[atKey])) return row;
@@ -117,5 +121,7 @@ export function mergeSlotChange(
       : change.field;
     next = { ...row, [key]: change.value, [atKey]: at };
   }
+  // A timed slot takes no warm-up (ED4), whichever change brought it.
+  if (next.measure === "seconds" && next.warmupSets > 0) return null;
   return isProgramSlot({ ...next, measure: next.measure ?? undefined }) ? next : null;
 }
