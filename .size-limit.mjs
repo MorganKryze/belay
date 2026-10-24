@@ -12,8 +12,8 @@ export default [
     name: "web: initial JavaScript (gzip)",
     path: path.length > 0 ? path : [`${dist}/assets/index-*.js`],
     gzip: true,
-    // 176 KiB: the motion, preload and press code of the redesign filled the old 170 KiB; screens
-    // stay lazy-loaded, so this covers the startup shell only.
-    limit: "176 KiB",
+    // 180 KiB: the redesign filled 170 KiB, then units and the stored program filled 176 KiB.
+    // Screens stay lazy-loaded, so this covers the startup shell only.
+    limit: "180 KiB",
   },
 ];
