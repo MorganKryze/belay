@@ -17,7 +17,7 @@ import { Home } from "./routes/home";
 import { Layout } from "./routes/layout";
 import { isWorkoutTab, type WorkoutTab } from "./workouts/tabs";
 
-// ponytail: code-based routes, 20 screens today (the tools share one lazy `$toolId` route).
+// ponytail: code-based routes, 21 screens today (the tools share one lazy `$toolId` route).
 // Switch to file-based routing at ~20 screens, or when this file passes ~150 lines of route
 // declarations.
 const rootRoute = createRootRoute({ component: Layout });
