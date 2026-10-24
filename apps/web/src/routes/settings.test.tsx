@@ -341,7 +341,8 @@ describe("Settings preferences", () => {
     fakeApi({ me: ADA });
     renderRoute("/settings");
     await screen.findByRole("region", { name: "General" });
-    expect(screen.getAllByRole("combobox")).toHaveLength(12);
+    // Twelve, and the editor's four drawn from 1 024 px only.
+    expect(screen.getAllByRole("combobox")).toHaveLength(16);
     for (const role of ["combobox", "button", "link"] as const)
       expect(screen.queryByRole(role, { name: /Units|Unités/ })).toBeNull();
   });
@@ -355,6 +356,77 @@ describe("Settings preferences", () => {
     await screen.findByRole("link", { name: /^Belay 0\.5\.0/ });
     expect(screen.queryByRole("link", { name: /Profile/ })).toBeNull();
     expect(screen.queryByRole("button", { name: "Sign out" })).toBeNull();
+  });
+});
+
+describe("the program editor's preferences", () => {
+  const editor = () => screen.findByRole("region", { name: "Program editor" });
+
+  it("from 1 024 px the « Éditeur du programme » group lists four rows after Sessions", async () => {
+    fakeApi({ me: ADA });
+    renderRoute("/settings");
+    const group = await editor();
+    expect(
+      within(group)
+        .getAllByRole("combobox")
+        .map((r) => r.getAttribute("aria-label")),
+    ).toEqual([
+      "Rest · 2\u00A0min 30",
+      "Thumbnails · Shown",
+      "Keyboard help · Always",
+      "New exercise · Default values",
+    ]);
+    const sessions = screen.getByRole("region", { name: "Sessions" });
+    expect(sessions.compareDocumentPosition(group) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(
+      group.compareDocumentPosition(screen.getByRole("region", { name: "Body" })) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it("below 1 024 px the group is not shown", async () => {
+    fakeApi({ me: ADA });
+    renderRoute("/settings");
+    // Hidden by its wrapper until the large breakpoint; the e2e checks the boxes.
+    expect((await editor()).parentElement!.className.split(" ")).toEqual(
+      expect.arrayContaining(["hidden", "lg:block"]),
+    );
+  });
+
+  it("each choice is stored on the device", async () => {
+    fakeApi({ me: ADA });
+    renderRoute("/settings");
+    await editor();
+    await choose(/^Rest/, "2:30");
+    expect(localStorage.getItem("belay.editorRest")).toBe("clock");
+    await choose(/^Thumbnails/, "Hidden");
+    expect(localStorage.getItem("belay.editorThumbs")).toBe("hidden");
+    await choose(/^Keyboard help/, "On focus");
+    expect(localStorage.getItem("belay.editorHelp")).toBe("focus");
+    await choose(/^New exercise/, "Like the row above");
+    expect(localStorage.getItem("belay.editorAdded")).toBe("above");
+    expect(screen.getByRole("combobox", { name: "Rest · 2:30" })).toBeTruthy();
+    await choose(/^Rest/, "2\u00A0min 30");
+    expect(localStorage.getItem("belay.editorRest")).toBe("words");
+  });
+
+  it("reads the stored choices and says them in French", async () => {
+    localStorage.setItem("belay.editorThumbs", "hidden");
+    localStorage.setItem("belay.editorAdded", "above");
+    await i18n.changeLanguage("fr");
+    fakeApi({ me: ADA });
+    renderRoute("/settings");
+    const group = await screen.findByRole("region", { name: "Éditeur du programme" });
+    expect(
+      within(group)
+        .getAllByRole("combobox")
+        .map((r) => r.getAttribute("aria-label")),
+    ).toEqual([
+      "Repos · 2\u00A0min 30",
+      "Vignettes · Masquées",
+      "Aide clavier · Toujours",
+      "Nouvel exercice · Comme la rangée du dessus",
+    ]);
   });
 });
 

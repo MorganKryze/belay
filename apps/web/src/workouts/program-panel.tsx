@@ -1,44 +1,174 @@
 import type { ISODate } from "@belay/shared/body/dates";
 import type { Activity } from "@belay/shared/training/activities";
 import { planFor } from "@belay/shared/training/plan";
+import { chooseActive, programOrder } from "@belay/shared/training/program-edits";
 import { estimatedMinutes, plannedWorkSets } from "@belay/shared/training/program";
 import { type History, lastFinished, openWorkout, workSetsOf } from "@belay/shared/training/rules";
 import {
+  byPosition,
   type LetteredTemplate,
   nextInRotation,
+  type Program,
   startedAs,
   type StoredPrograms,
 } from "@belay/shared/training/stored-program";
 import { Link } from "@tanstack/react-router";
-import { useId } from "react";
+import { Check } from "lucide-react";
+import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { GroupedList, RowButton, RowLink } from "@/components/grouped-list";
 import { SessionCard, SessionHeading } from "@/components/session-card";
-import { cardSurface } from "@/components/surfaces";
+import { Sheet } from "@/components/sheet";
+import { cardSurface, groupCard } from "@/components/surfaces";
 import { Button } from "@/components/ui/button";
-import { rotationTitle } from "@/lib/format";
+import { programName, rotationTitle, sessionName } from "@/lib/format";
 import { useToday } from "@/lib/today";
-import { type OpenAccount, useActivities, useHistory, useProgram } from "@/sync/account";
+import { type OpenAccount, useActivities, useHistory, useProgram, useRecord } from "@/sync/account";
 import { dayOf } from "./history-panel";
 
 // Program (spec D13, §4.5): the active program's rotation as cards, the next one first with « See
 // the session »; every other card opens its session's preview on a tap anywhere. While a session
 // is open, its card resumes it and the others open their preview, which says what is open.
 // Without an account nothing is next, so every card opens the starting program's preview. A
-// session set aside is not in the rotation, so it has no card; with no active program there is
-// none at all.
+// session set aside is not in the rotation, so it has no card: it is listed under the cards; with
+// no active program there is no card at all. Above the cards, a row names the active program and
+// opens the sheet that picks another. The program is edited on a computer, where the note under
+// the list becomes the editor's entry.
 export function ProgramPanel({ account }: { account: OpenAccount | null }) {
   const { t } = useTranslation();
   const program = useProgram(account).data;
   return (
     <div className="flex flex-col gap-3">
+      {account && program && <ActiveProgram account={account} programs={program.programs} />}
       {program &&
         (account ? (
           <Cards account={account} program={program} />
         ) : (
           <List history={null} activities={[]} {...program} />
         ))}
-      <p className="mx-0.5 text-sm text-muted-foreground">{t("workouts.program.editNote")}</p>
+      {program && <SetAside programs={program.programs} />}
+      <p className="mx-0.5 text-sm text-muted-foreground lg:hidden">
+        {t("workouts.program.editNote")}
+      </p>
+      <div className={`hidden lg:block ${groupCard}`}>
+        <RowLink to="/workouts/program" label={t("workouts.program.edit")} trailing="push" />
+      </div>
     </div>
+  );
+}
+
+// A program's live sessions, the ones its rotation letters.
+const sessionsOf = (programs: StoredPrograms, programId: string) =>
+  programs.sessions.filter((s) => s.programId === programId && !s.removed).length;
+
+// The row naming the active program, and its sheet: one tap on another program makes it active
+// (one change, written at once) and closes; on the active one it only closes. With no live
+// active program (removed on another device) the row still opens the sheet to pick one.
+function ActiveProgram({ account, programs }: { account: OpenAccount; programs: StoredPrograms }) {
+  const { t } = useTranslation();
+  const write = useRecord(account);
+  const [sheet, setSheet] = useState(false);
+  const active = programs.programs.find((p) => p.id === programs.activeId && !p.removed);
+  return (
+    <>
+      <div className={groupCard}>
+        <RowButton
+          label={active ? programName(active, t) : t("workouts.program.sheetTitle")}
+          sub={
+            active
+              ? t("workouts.program.active", { count: sessionsOf(programs, active.id) })
+              : undefined
+          }
+          trailing="push"
+          onClick={() => setSheet(true)}
+        />
+      </div>
+      {sheet && (
+        <ProgramSheet
+          programs={programs}
+          activeId={active?.id ?? null}
+          onPick={async (id, close) => {
+            const changes = chooseActive(programs, id, new Date().toISOString());
+            if (changes) await write(changes);
+            close();
+          }}
+          onClose={() => setSheet(false)}
+        />
+      )}
+    </>
+  );
+}
+
+function ProgramSheet({
+  programs,
+  activeId,
+  onPick,
+  onClose,
+}: {
+  programs: StoredPrograms;
+  activeId: string | null;
+  onPick: (id: string, close: () => void) => Promise<void>;
+  onClose: () => void;
+}) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(true);
+  const close = () => setOpen(false);
+  const pick = (p: Program) => (p.id === activeId ? close() : void onPick(p.id, close));
+  return (
+    <Sheet title={t("workouts.program.sheetTitle")} open={open} onClose={onClose}>
+      <ul className={groupCard}>
+        {programOrder(programs).map((p) => (
+          <li key={p.id}>
+            <RowButton
+              aria-current={p.id === activeId || undefined}
+              label={programName(p, t)}
+              sub={t("workouts.program.sessions", { count: sessionsOf(programs, p.id) })}
+              value={
+                p.id === activeId ? (
+                  <Check aria-hidden className="size-5 text-primary" />
+                ) : undefined
+              }
+              onClick={() => pick(p)}
+            />
+          </li>
+        ))}
+      </ul>
+      <p className="px-1 text-(length:--text-secondary) leading-(--text-secondary--line-height) text-muted-foreground">
+        {t("workouts.program.sheetNote")}
+      </p>
+    </Sheet>
+  );
+}
+
+// The sessions set aside, out of the rotation: each one's normal slots sized as a card is, and a
+// row to its preview by its id. Nothing when the collection is empty.
+function SetAside({ programs }: { programs: StoredPrograms }) {
+  const { t } = useTranslation();
+  const aside = programs.sessions
+    .filter((s) => s.programId === null && !s.removed)
+    .sort(byPosition);
+  if (aside.length === 0) return null;
+  return (
+    <GroupedList label={t("workouts.program.aside")}>
+      {aside.map((session) => {
+        const slots = programs.slots
+          .filter((s) => s.sessionId === session.id && s.rule === null && !s.removed)
+          .map((s) => ({ ...s, rule: undefined }));
+        return (
+          <RowLink
+            key={session.id}
+            to="/workouts/session/$code"
+            params={{ code: session.id }}
+            label={sessionName(session, t)}
+            sub={t("sessionCard.size", {
+              count: slots.length,
+              minutes: estimatedMinutes({ slots }),
+            })}
+            trailing="push"
+          />
+        );
+      })}
+    </GroupedList>
   );
 }
 

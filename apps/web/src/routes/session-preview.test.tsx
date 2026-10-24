@@ -1,6 +1,12 @@
 import type { Change } from "@belay/shared/sync/schema";
 import { sessionByCode, starterProgram } from "@belay/shared/training/program";
-import { addSession, addSlot, placeSession } from "@belay/shared/training/program-edits";
+import {
+  addSession,
+  addSlot,
+  placeSession,
+  removeSession,
+  renameSession,
+} from "@belay/shared/training/program-edits";
 import {
   SEED_PROGRAM_ID,
   seedId,
@@ -273,5 +279,70 @@ describe("the session preview", () => {
     // The name and the link stay.
     expect(links[1]!.textContent).toMatch(/\S/);
     expect(links[1]!.getAttribute("href")).toMatch(/^\/exercises\//);
+  });
+});
+
+describe("the session preview by id", () => {
+  const ASIDE = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7f30";
+  const ASIDE_SLOT = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7f31";
+
+  it("a set-aside session's id shows its name, its exercises, the lead and no start", async () => {
+    await seed(ADA.id, OPEN_A);
+    await edit((p) => addSession(p, ASIDE, null, EDIT_AT));
+    await edit(() => renameSession(ASIDE, "Léa's full body", EDIT_AT));
+    await edit((p) => addSlot(p, ASIDE_SLOT, ASIDE, { id: "ds:0025", measure: "reps" }, EDIT_AT));
+    renderRoute(`/workouts/session/${ASIDE}`);
+    expect(await screen.findByRole("heading", { level: 1, name: "Léa's full body" })).toBeTruthy();
+    expect(screen.getByText("Set aside · out of the rotation")).toBeTruthy();
+    const [bench, ...others] = rows(await exercises());
+    expect(others).toEqual([]);
+    expect(bench!.textContent).toContain("Barbell bench press");
+    expect(screen.getByText(/^1 exercise · \d+ sets · about \d+.min$/)).toBeTruthy();
+    for (const name of [/^Start/, /^Resume/])
+      expect(screen.queryByRole("link", { name })).toBeNull();
+    expect(screen.queryByText(/is in progress/)).toBeNull();
+    expect(screen.queryByText(/^Next up/)).toBeNull();
+    expect((await back("Program")).getAttribute("href")).toBe("/workouts?tab=program");
+  });
+
+  it("says the lead in French", async () => {
+    await edit((p) => placeSession(p, seedId(2), null, 0, EDIT_AT));
+    await i18n.changeLanguage("fr");
+    renderRoute(`/workouts/session/${seedId(2)}`);
+    expect(await screen.findByRole("heading", { level: 1, name: "Legs" })).toBeTruthy();
+    expect(screen.getByText("De côté · hors rotation")).toBeTruthy();
+    expect(rows(await exercises("Exercices"))).toHaveLength(7);
+  });
+
+  it("a rotation session's id shows it as its letter does", async () => {
+    await seed(ADA.id, LAST_A);
+    // Push moves last: its id shows Session C, started as C.
+    await edit((p) => placeSession(p, seedId(1), SEED_PROGRAM_ID, 2, EDIT_AT));
+    renderRoute(`/workouts/session/${seedId(1)}`);
+    expect(await screen.findByRole("heading", { level: 1, name: "Session C · Push" })).toBeTruthy();
+    expect(screen.getByText("6 exercises · 19 sets · about 55 min")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Start the session" }).getAttribute("href")).toBe(
+      "/workout?start=C",
+    );
+    const [bench] = rows(await exercises());
+    expect(bench!.getAttribute("href")).toBe("/exercises/ds%3A0025?session=C");
+    expect(screen.queryByText("Set aside · out of the rotation")).toBeNull();
+  });
+
+  it("an unknown id is not found", async () => {
+    renderRoute(`/workouts/session/${ASIDE}`);
+    expect(await screen.findByRole("heading", { name: "Page not found" })).toBeTruthy();
+    cleanup();
+    // An id in upper case is not an address, even of a session the account holds.
+    await edit((p) => addSession(p, ASIDE, null, EDIT_AT));
+    renderRoute(`/workouts/session/${ASIDE.toUpperCase()}`);
+    expect(await screen.findByRole("heading", { name: "Page not found" })).toBeTruthy();
+    cleanup();
+    // A removed session is not found either.
+    await edit((p) => placeSession(p, seedId(3), null, 0, EDIT_AT));
+    await edit(() => removeSession(seedId(3), EDIT_AT));
+    renderRoute(`/workouts/session/${seedId(3)}`);
+    expect(await screen.findByRole("heading", { name: "Page not found" })).toBeTruthy();
+    expect(screen.queryByRole("link", { name: "Start the session" })).toBeNull();
   });
 });
