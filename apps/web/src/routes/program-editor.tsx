@@ -1,23 +1,40 @@
 import "@/i18n/lazy";
+import { newId } from "@belay/shared";
 import { estimatedMinutes, plannedWorkSets } from "@belay/shared/training/program";
 import {
-  isSeedSession,
+  copySlotsInto,
+  cutName,
+  putBack,
+  renameSession,
+} from "@belay/shared/training/program-edits";
+import {
+  MAX_ROTATION,
   rotationOf,
+  SESSION_NAME_MAX,
   type StoredPrograms,
 } from "@belay/shared/training/stored-program";
 import type { Slot } from "@belay/shared/training/workout";
 import { Link } from "@tanstack/react-router";
-import type { TFunction } from "i18next";
-import { Check } from "lucide-react";
-import { type KeyboardEvent, useEffect, useId, useMemo, useState } from "react";
+import { Check, Copy, Eye, Pencil, Plus } from "lucide-react";
+import {
+  type KeyboardEvent,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 import { BackLink, PageHeader } from "@/components/page-header";
+import { SyncBanner } from "@/components/sync-banner";
 import { Button } from "@/components/ui/button";
 import { Toast } from "@/components/weigh-in";
 import {
   EditorContext,
   type EditorState,
   isMac,
+  LETTERS,
   type PlacedSession,
   placedOf,
   titleOf,
@@ -25,12 +42,14 @@ import {
 } from "@/editor/editor-context";
 import { ProgramSwitcher } from "@/editor/program-switcher";
 import { SessionCard } from "@/editor/session-card";
+import { chipId, chipName, PANEL, SessionChips, spokenName } from "@/editor/session-chips";
+import { SessionMenu } from "@/editor/session-menu";
 import { GridHelp, SlotGrid } from "@/editor/slot-grid";
 import { useEdits } from "@/editor/use-edits";
 import i18n from "@/i18n";
 import en from "@/i18n/editor/en.json";
 import fr from "@/i18n/editor/fr.json";
-import { sessionName } from "@/lib/format";
+import { sessionName, sessionTitle } from "@/lib/format";
 import { type OpenAccount, useAccount, useProgram } from "@/sync/account";
 
 // The editor's strings load with it, deep and never replacing a key, as the lazy screens' do.
@@ -77,7 +96,8 @@ function WithData({ account }: { account: OpenAccount }) {
 
 function Editor({ account, programs }: { account: OpenAccount; programs: StoredPrograms }) {
   const { t } = useTranslation();
-  const [show, setShow] = useState<string | null>(null);
+  // The session asked for, then the one to show while it is gone.
+  const [show, setShow] = useState<readonly string[]>([]);
   const [said, announce] = useState("");
   const [searchFor, setSearchFor] = useState<string | null>(null);
   const edits = useEdits(account, programs);
@@ -85,8 +105,9 @@ function Editor({ account, programs }: { account: OpenAccount; programs: StoredP
   const state = useMemo((): EditorState => {
     const program = programs.programs.find((x) => x.id === programs.activeId && !x.removed);
     const { rotation, aside } = placedOf(programs);
+    const all = [...rotation, ...aside];
     const shown = program
-      ? ([...rotation, ...aside].find((p) => p.session.id === show) ??
+      ? (show.flatMap((id) => all.filter((p) => p.session.id === id))[0] ??
         rotation[0] ??
         aside[0] ??
         null)
@@ -98,7 +119,7 @@ function Editor({ account, programs }: { account: OpenAccount; programs: StoredP
       rotation,
       aside,
       shown,
-      show: setShow,
+      show: (id, otherwise) => setShow(otherwise ? [id, otherwise] : [id]),
       announce,
       search: { for: searchFor, request: setSearchFor, done: () => setSearchFor(null) },
       edits,
@@ -108,15 +129,13 @@ function Editor({ account, programs }: { account: OpenAccount; programs: StoredP
     <EditorContext.Provider value={state}>
       <section className="flex flex-col gap-4">
         <Header switcher saved={edits.saved} />
+        <SyncBanner account={account} />
         <p role="status" aria-live="polite" className="sr-only">
           {said}
         </p>
         {state.program ? (
           <>
-            <div className="flex flex-col gap-2">
-              <Chips />
-              <p className="text-sm text-muted-foreground">{t("editor.hint")}</p>
-            </div>
+            <SessionChips />
             {state.shown && <Shown placed={state.shown} />}
           </>
         ) : (
@@ -146,112 +165,29 @@ function useUndoKey(undo: () => Promise<boolean>) {
   }, [undo]);
 }
 
-const chipBox =
-  "inline-flex min-h-11 items-center gap-2 rounded-control px-4 text-body outline-ring focus-visible:outline-2 -outline-offset-2";
-const chipOn = `${chipBox} bg-primary-soft font-semibold text-primary-ink ring-[1.5px] ring-primary-ink ring-inset`;
-
-// The rotation's chips, lettered by place, then the set-aside ones, outlined and without a letter.
-// Each list is one tab stop; a chip shows its session as soon as it has focus, and ← → move.
-function Chips() {
-  const { t } = useTranslation();
-  const { rotation, aside } = useEditor();
-  const asideId = useId();
-  return (
-    <>
-      <div role="tablist" aria-label={t("editor.chips.label")} className="flex flex-wrap gap-2">
-        <ChipList list={rotation} />
-      </div>
-      {aside.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2">
-          <span id={asideId} className="px-0.5 text-sm font-semibold text-muted-foreground">
-            {t("editor.chips.aside")}
-          </span>
-          <div role="tablist" aria-labelledby={asideId} className="flex flex-wrap gap-2">
-            <ChipList list={aside} />
-          </div>
-        </div>
-      )}
-    </>
-  );
-}
-
-// The panel the chips control, named after the shown chip.
-const PANEL = "program-editor-session";
-const chipId = (sessionId: string) => `program-editor-chip-${sessionId}`;
-
-// A rotation session's name: its own, else a starting session's translated one; none for a session
-// left without a name, whose chip shows its letter alone.
-function chipName({ session }: PlacedSession, t: TFunction): string | null {
-  return session.name !== null || isSeedSession(session.id) ? sessionName(session, t) : null;
-}
-
-function move(e: KeyboardEvent<HTMLButtonElement>) {
-  const tabs = [...e.currentTarget.parentElement!.querySelectorAll<HTMLElement>("[role=tab]")];
-  const at = tabs.indexOf(e.currentTarget);
-  const to =
-    e.key === "ArrowRight"
-      ? (at + 1) % tabs.length
-      : e.key === "ArrowLeft"
-        ? (at - 1 + tabs.length) % tabs.length
-        : e.key === "Home"
-          ? 0
-          : e.key === "End"
-            ? tabs.length - 1
-            : null;
-  if (to === null) return;
-  e.preventDefault();
-  tabs[to]!.focus();
-}
-
-function ChipList({ list }: { list: readonly PlacedSession[] }) {
-  const { t } = useTranslation();
-  const { shown, show } = useEditor();
-  const holdsShown = list.some((p) => p === shown);
-  return list.map((p, i) => {
-    const on = p === shown;
-    const name = p.letter === null ? null : chipName(p, t);
-    return (
-      <button
-        key={p.session.id}
-        id={chipId(p.session.id)}
-        type="button"
-        role="tab"
-        aria-selected={on}
-        aria-controls={on ? PANEL : undefined}
-        aria-label={
-          p.letter !== null && name !== null
-            ? t("editor.chips.named", { code: p.letter, name })
-            : undefined
-        }
-        tabIndex={on || (!holdsShown && i === 0) ? 0 : -1}
-        onFocus={() => show(p.session.id)}
-        onClick={() => show(p.session.id)}
-        onKeyDown={move}
-        className={
-          on
-            ? chipOn
-            : p.letter === null
-              ? `${chipBox} font-medium text-foreground ring-[1.5px] ring-input ring-inset`
-              : `${chipBox} bg-track font-semibold text-muted-foreground`
-        }
-      >
-        {p.letter === null ? (
-          sessionName(p.session, t)
-        ) : (
-          <>
-            <span className={on ? "font-bold" : "font-bold text-foreground"}>{p.letter}</span>
-            {name}
-          </>
-        )}
-      </button>
-    );
-  });
-}
-
-// The shown session's card: its title and size, the way to its preview, its table.
+// The shown session's card: its title with the pencil that names it in place, its size, the way
+// to its preview (or, set aside, back into the rotation) and its menu, then its table, or for a
+// session with no exercise the sessions it can start from.
 function Shown({ placed }: { placed: PlacedSession }) {
   const { t } = useTranslation();
-  const { programs } = useEditor();
+  const { programs, rotation, edits } = useEditor();
+  const id = placed.session.id;
+  // The session being named, so another session shown closes the field.
+  const [renaming, setRenaming] = useState<string | null>(null);
+  const naming = renaming === id;
+  const pencil = useRef<HTMLButtonElement>(null);
+  const hintId = useId();
+  // A field closed hands the focus back to the pencil once it is drawn again.
+  const refocus = useRef(false);
+  const close = () => {
+    refocus.current = true;
+    setRenaming(null);
+  };
+  useLayoutEffect(() => {
+    if (naming || !refocus.current) return;
+    refocus.current = false;
+    pencil.current?.focus();
+  }, [naming]);
   // The size counts the normal section, as the session starts in a week with climbing.
   const plan: Slot[] = placed.slots.map(({ rule, ...s }) => (rule ? { ...s, rule } : s));
   const size = [
@@ -259,34 +195,172 @@ function Shown({ placed }: { placed: PlacedSession }) {
     t("editor.card.sets", { count: plannedWorkSets(plan) }),
     t("editor.card.minutes", { count: estimatedMinutes({ slots: plan }) }),
   ].join(" · ");
-  // The preview opens a session by its letter in the rotation that starts sessions, which leaves
-  // empty ones out; a set-aside or empty session has no preview.
-  const code =
-    placed.letter === null
-      ? undefined
-      : rotationOf(programs).find((r) => r.sessionId === placed.session.id)?.code;
+  // The preview opens a rotation session by its id, as the rotation that starts sessions holds it,
+  // which leaves empty ones out.
+  const previewed = placed.letter !== null && rotationOf(programs).some((r) => r.sessionId === id);
+  const empty = placed.slots.length === 0 && placed.noClimbing.length === 0;
+
+  const save = (value: string) => {
+    const name = cutName(value, SESSION_NAME_MAX);
+    if (name === (placed.session.name ?? chipName(placed, t))) return close();
+    void edits.record((_, at) => renameSession(id, name, at)).then((ok) => ok && close());
+  };
+  const back = () => {
+    const code = LETTERS[rotation.length];
+    void edits.record((p, at) => putBack(p, id, at), {
+      toast: t("editor.toast.putBack", { name: spokenName(placed, t), code }),
+      refused: t(
+        rotation.length >= MAX_ROTATION ? "editor.limit.rotation" : "editor.toast.refused",
+      ),
+    });
+  };
+
   return (
-    <div role="tabpanel" id={PANEL} aria-labelledby={chipId(placed.session.id)}>
+    <div role="tabpanel" id={PANEL} aria-labelledby={chipId(id)}>
       <SessionCard
         heading={
           <>
-            <h2 className="truncate text-title-card">{titleOf(placed, t)}</h2>
+            {naming ? (
+              <NameField placed={placed} hintId={hintId} onSave={save} onCancel={close} />
+            ) : (
+              <div className="flex min-w-0 items-center gap-1">
+                <h2 className="truncate text-title-card">{titleOf(placed, t)}</h2>
+                <button
+                  ref={pencil}
+                  type="button"
+                  aria-label={t("editor.card.rename")}
+                  onClick={() => setRenaming(id)}
+                  className="grid size-11 shrink-0 place-items-center rounded-control text-muted-foreground outline-ring focus-visible:outline-2 -outline-offset-2 hover:bg-(--press-tint)"
+                >
+                  <Pencil aria-hidden className="size-5" />
+                </button>
+              </div>
+            )}
             <p className="text-sm text-muted-foreground tabular-nums">{size}</p>
           </>
         }
         actions={
-          code && (
-            <Button asChild variant="secondary">
-              <Link to="/workouts/session/$code" params={{ code }}>
-                {t("editor.card.see")}
-              </Link>
-            </Button>
-          )
+          <>
+            {placed.letter === null ? (
+              <Button variant="secondary" onClick={back}>
+                <Plus aria-hidden />
+                {t("editor.card.putBack")}
+              </Button>
+            ) : (
+              previewed && (
+                <Button asChild variant="secondary">
+                  <Link to="/workouts/session/$code" params={{ code: id }}>
+                    <Eye aria-hidden />
+                    {t("editor.card.see")}
+                  </Link>
+                </Button>
+              )
+            )}
+            <SessionMenu placed={placed} onRename={() => setRenaming(id)} />
+          </>
         }
       >
-        <SlotGrid placed={placed} />
+        {empty ? <StartFrom placed={placed} /> : <SlotGrid placed={placed} />}
       </SessionCard>
-      <GridHelp />
+      {naming ? (
+        <p id={hintId} className="min-h-11 px-1 py-2.5 text-sm text-muted-foreground">
+          {t("editor.card.nameHint")}
+        </p>
+      ) : (
+        <GridHelp />
+      )}
+    </div>
+  );
+}
+
+// The name in place of the title, « Séance D · » fixed before it: Enter saves it trimmed (empty
+// means no name), Escape leaves it as it was.
+function NameField({
+  placed,
+  hintId,
+  onSave,
+  onCancel,
+}: {
+  placed: PlacedSession;
+  hintId: string;
+  onSave(value: string): void;
+  onCancel(): void;
+}) {
+  const { t } = useTranslation();
+  const [value, setValue] = useState(
+    placed.letter === null ? sessionName(placed.session, t) : (chipName(placed, t) ?? ""),
+  );
+  const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      onSave(value);
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      onCancel();
+    }
+  };
+  return (
+    <label className="flex min-h-11 w-[30rem] max-w-full items-center rounded-control bg-surface px-3 text-title-card ring-[1.5px] ring-primary-ink ring-inset">
+      {placed.letter !== null && (
+        <span className="shrink-0 whitespace-pre text-muted-foreground">
+          {`${sessionTitle(placed.letter, t, null)} · `}
+        </span>
+      )}
+      <input
+        ref={(el) => {
+          if (!el || document.activeElement === el) return;
+          el.focus();
+          el.select();
+        }}
+        value={value}
+        maxLength={SESSION_NAME_MAX}
+        aria-label={t("editor.card.nameLabel")}
+        aria-describedby={hintId}
+        autoComplete="off"
+        onChange={(e) => setValue(e.target.value)}
+        onKeyDown={onKeyDown}
+        className="min-w-0 flex-1 bg-transparent text-foreground outline-none"
+      />
+    </label>
+  );
+}
+
+// A session with no exercise: the search above, or a start from another session of the program,
+// whose exercises and values it copies.
+function StartFrom({ placed }: { placed: PlacedSession }) {
+  const { t } = useTranslation();
+  const { rotation, edits } = useEditor();
+  const sources = rotation.filter(
+    (p) => p.session.id !== placed.session.id && p.slots.length + p.noClimbing.length > 0,
+  );
+  const copy = (sourceId: string) =>
+    void edits.record((p, at) => copySlotsInto(p, placed.session.id, sourceId, newId, at), {
+      refused: t("editor.limit.slots"),
+    });
+  return (
+    <div className="flex flex-col gap-4 border-t border-border px-4 pt-5 pb-4">
+      <p className="text-body text-muted-foreground">{t("editor.empty.text")}</p>
+      {sources.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {sources.map((p) => {
+            const label = chipName(p, t);
+            const session =
+              label === null ? p.letter! : t("editor.chips.named", { code: p.letter, name: label });
+            return (
+              <button
+                key={p.session.id}
+                type="button"
+                aria-label={t("editor.empty.from", { session })}
+                onClick={() => copy(p.session.id)}
+                className="inline-flex min-h-11 items-center gap-2 rounded-control bg-track px-4 text-body font-semibold text-foreground outline-ring focus-visible:outline-2 -outline-offset-2"
+              >
+                <Copy aria-hidden className="size-5 text-muted-foreground" />
+                {session}
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

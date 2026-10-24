@@ -28,7 +28,9 @@ export interface EditorState {
   rotation: readonly PlacedSession[];
   aside: readonly PlacedSession[];
   shown: PlacedSession | null;
-  show(sessionId: string): void;
+  // A second id is shown while the first is gone: a removed session's neighbour, until an undo
+  // brings the removed one back.
+  show(sessionId: string, otherwise?: string): void;
   announce(text: string): void;
   search: { for: string | null; request(sessionId: string): void; done(): void };
   edits: Edits;
@@ -42,7 +44,7 @@ export function useEditor(): EditorState {
   return editor;
 }
 
-const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+export const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 // The active program's live sessions lettered by place, A first, and the collection in its order.
 // No active program, or a removed one, has no rotation; the collection is every program's.

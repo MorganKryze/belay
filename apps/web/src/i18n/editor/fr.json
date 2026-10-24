@@ -92,7 +92,8 @@
       "toPermanent": "redevient un exercice de chaque semaine"
     },
     "letters": {
-      "becomes": "{{from}} devient {{to}}"
+      "becomes": "{{from}} devient {{to}}",
+      "join": " ; "
     },
     "session": {
       "rename": "Renommer",
