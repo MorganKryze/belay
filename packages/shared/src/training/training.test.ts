@@ -173,6 +173,11 @@ describe("nextSession", () => {
     expect(nextSession([done("B")], stored("DAC"))).toBe("D");
     expect(nextSession([done("E")], stored("ABCD"))).toBe("A");
   });
+
+  it("offers none when the program holds no session", () => {
+    expect(nextSession([], [])).toBeNull();
+    expect(nextSession([done("A")], [])).toBeNull();
+  });
 });
 
 describe("prefill and lastTime", () => {
