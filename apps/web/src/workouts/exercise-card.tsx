@@ -188,8 +188,9 @@ export function ExerciseCard({
   const { src: loopSrc, failed: loopFailed } = useLoop(open ? exercise.id : "");
   const [loopShown, setLoopShown] = useState(false);
   if (!open && loopShown) setLoopShown(false);
-  // Read on each render, as the theme: a change in Réglages shows on the next visit.
-  const unit = readWeightUnit();
+  // Frozen while the card lives: a number typed but not logged keeps the unit it was typed in,
+  // even if another tab changes the unit meanwhile. A change shows on the next visit.
+  const [unit] = useState(readWeightUnit);
   const kgText = (kg: number) => loadNumber(kg, i18n.language, unit);
   const measure: Measure = slot.measure ?? "reps";
   const timed = measure === "seconds";
