@@ -41,7 +41,7 @@ export function movesSentence(before: readonly string[], after: readonly string[
 }
 
 const chipBase =
-  "inline-flex min-h-11 items-center gap-2 rounded-control px-4 text-body -outline-offset-2";
+  "inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-control px-4 text-body -outline-offset-2";
 const chipBox = `${chipBase} outline-ring focus-visible:outline-2`;
 const chipOn = `${chipBox} bg-primary-soft font-semibold text-primary-ink ring-[1.5px] ring-primary-ink ring-inset`;
 // The lifted chip as the lifted row: the soft tint and a ring drawn inside, raised above the rest.
@@ -77,7 +77,7 @@ const arrange = (list: readonly PlacedSession[], ids: readonly string[]) =>
 // or by Space, ← →, Space, Escape cancelling; the chips read as they would after the drop.
 export function SessionChips() {
   const { t } = useTranslation();
-  const { rotation, aside, programs, edits, show, search, announce } = useEditor();
+  const { rotation, aside, programs, edits, show, search, announce, markAdded } = useEditor();
   const asideId = useId();
   const box = useRef<HTMLDivElement>(null);
   const [lift, setLift] = useState<Lift | null>(null);
@@ -256,6 +256,7 @@ export function SessionChips() {
     });
     if (!added) return;
     show(id);
+    markAdded(id);
     search.request(id);
     announce(t("editor.session.added", { code }));
   };

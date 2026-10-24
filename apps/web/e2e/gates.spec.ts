@@ -191,6 +191,19 @@ const SCREENS: [string, (page: Page) => Promise<void>][] = [
     },
   ],
   [
+    "the program editor, a session just added",
+    async (page) => {
+      await fakeServer(page);
+      await page.goto("/workouts/program");
+      await expect(page.locator(".launch")).toBeHidden();
+      await page.getByRole("button", { name: "Add a session" }).click();
+      await expect(page.getByRole("tab", { name: "D", exact: true })).toHaveAttribute(
+        "aria-selected",
+        "true",
+      );
+    },
+  ],
+  [
     "Body",
     async (page) => {
       await fakeServer(page, { rows: WEEKS });

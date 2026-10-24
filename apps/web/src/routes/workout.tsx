@@ -103,7 +103,7 @@ function Session({ account }: { account: OpenAccount }) {
   // ?start=B: start the active rotation's session B (or take up the one already open), then drop
   // the parameter so a reload never starts another. The session copies the rotation as it stands
   // now and records the session it came from; a later program change never reaches it (HF1).
-  // Session C's rule reads the week's activities now, once (D6). A letter the rotation lacks is
+  // Session C's rule reads the week's activities now, once. A letter the rotation lacks is
   // not found, even with a session open, unless it is that session's own letter: Home's resume
   // row and the session bar ask for it, and it may have left the rotation since.
   useEffect(() => {

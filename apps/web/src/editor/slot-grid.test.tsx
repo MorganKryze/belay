@@ -1,7 +1,7 @@
 import { exerciseById } from "@belay/shared/exercises/catalog";
 import { addSlot, replaceExercise } from "@belay/shared/training/program-edits";
 import { type ProgramSlot, seedId } from "@belay/shared/training/stored-program";
-import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { IDBFactory } from "fake-indexeddb";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import i18n from "@/i18n";
@@ -252,6 +252,33 @@ describe("the slot grid", () => {
     }
     expect(await queued()).toBe(before);
     expect((await stored(BENCH)).sets).toBe(4);
+  });
+
+  it("a click away saves a readable value and closes the cell", async () => {
+    await open();
+    key(target(BENCH, "sets"), "Enter");
+    type("5");
+    act(() => field().blur());
+    expect(noField()).toBeNull();
+    await waitFor(async () => expect((await stored(BENCH)).sets).toBe(5));
+    await waitFor(() => expect(shown(BENCH, "sets")).toBe("5"));
+  });
+
+  it("a click away from an unreadable value closes the cell and writes nothing", async () => {
+    await open();
+    const before = await queued();
+    for (const typed of ["11", "abc", ""]) {
+      key(target(BENCH, "sets"), "Enter");
+      type(typed);
+      act(() => field().blur());
+      expect(noField()).toBeNull();
+    }
+    await settle();
+    expect(await queued()).toBe(before);
+    expect((await stored(BENCH)).sets).toBe(4);
+    expect(shown(BENCH, "sets")).toBe("4");
+    // Not even an attempt the rules turn down: nothing is said.
+    expect(screen.queryByText(/Pas enregistré/)).toBeNull();
   });
 
   it("a timed exercise takes no warm-up", async () => {

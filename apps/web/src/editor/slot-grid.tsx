@@ -986,6 +986,18 @@ export function GridHelp() {
   );
 }
 
+// Under a session « + Séance » has just added: where it went, and the search's keys.
+export function AddedHelp({ code }: { code: string }) {
+  const { t } = useTranslation();
+  return (
+    <p className="min-h-11 px-1 py-2.5 text-sm text-muted-foreground">
+      {t("editor.help.added", { code })} · <Key>{t("editor.help.enter")}</Key>{" "}
+      {t("editor.help.adds")} · <Key>{t("editor.help.escape")}</Key> {t("editor.help.closes")} ·{" "}
+      <Key>{isMac() ? "⌘" : "Ctrl"}</Key> <Key>Z</Key> {t("editor.help.undo")}
+    </p>
+  );
+}
+
 const Key = ({ children }: { children: ReactNode }) => (
   <kbd className="mx-0.5 rounded-icon bg-track px-1.5 py-px font-sans font-semibold text-foreground">
     {children}

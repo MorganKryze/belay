@@ -55,10 +55,9 @@ export function SessionMenu({ placed, onRename }: { placed: PlacedSession; onRen
       return next;
     };
     const ok = await edits.record((p, at) => copySession(p, id, copyName, nextId, at), {
-      toast: t("editor.toast.duplicated", {
-        name,
-        code: inRotation ? LETTERS[rotation.length] : copyName,
-      }),
+      toast: inRotation
+        ? t("editor.toast.duplicated", { name, code: LETTERS[rotation.length] })
+        : t("editor.toast.duplicatedAside", { name, copy: copyName }),
       refused: t(
         inRotation && rotation.length >= MAX_ROTATION
           ? "editor.limit.rotation"

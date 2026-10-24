@@ -127,8 +127,11 @@ function Shell() {
           scroll by the bar's height. */}
       <div
         className={`mx-auto flex min-h-dvh max-w-xl flex-col gap-6 ${
-          // The program editor lays out in the top bar's box; every other page keeps the column.
-          pathname === "/workouts/program" ? "lg:max-w-5xl" : ""
+          // The program editor's content lays out in the top bar's 1 024 px box, the side padding
+          // outside it; every other page keeps the column.
+          pathname === "/workouts/program"
+            ? "lg:max-w-[calc(64rem+max(1rem,env(safe-area-inset-left))+max(1rem,env(safe-area-inset-right)))]"
+            : ""
         } ${topBar ? "lg:min-h-[calc(100dvh-var(--top-bar))]" : ""} ${
           tabRoot
             ? "has-[>[role=status]:not(.sr-only)]:pt-[max(1rem,env(safe-area-inset-top))]"

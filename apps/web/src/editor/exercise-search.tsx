@@ -133,7 +133,8 @@ export function ExerciseSearch({ placed }: { placed: PlacedSession }) {
         onFocus={() => setOpen(true)}
         onBlur={() => setOpen(false)}
         onKeyDown={onKeyDown}
-        className="h-11 w-full min-w-0 rounded-field bg-track pr-3 pl-11 text-body outline-ring placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary"
+        // 16 px under 1 024 px, so a phone's browser does not zoom into the field.
+        className="h-11 w-full min-w-0 rounded-field bg-track pr-3 pl-11 text-base outline-ring lg:text-body placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary"
       />
       <div
         hidden={!expanded}

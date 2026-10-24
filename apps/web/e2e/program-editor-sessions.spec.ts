@@ -116,8 +116,12 @@ test("+ Séance, a name, two exercises, then Supprimer and Annuler bring D back"
   await expect(search(page)).toBeFocused();
   await expect(page.getByText("pars d'une séance existante")).toBeVisible();
 
-  // The pencil and the menu are 44 px targets.
-  for (const target of [page.getByRole("button", { name: "Renommer la séance" }), more(page)]) {
+  // The pencil, the menu and the lone letter's chip are 44 px targets.
+  for (const target of [
+    page.getByRole("button", { name: "Renommer la séance" }),
+    more(page),
+    chip(page, "D"),
+  ]) {
     const box = (await target.boundingBox())!;
     expect(Math.min(box.width, box.height)).toBeGreaterThanOrEqual(44);
   }
@@ -188,6 +192,46 @@ test("Mettre de côté says the letter that moves, Remettre dans la rotation put
   await expect(toast(page)).toContainText("Haut léger remise dans la rotation, en D.");
   await expect(page.getByRole("tablist", { name: "De côté" })).toHaveCount(0);
 });
+
+for (const width of [1280, 1024]) {
+  test(`at ${width} px the search is 300 px against the header's action, a set-aside session's size holds one line and its note sits under the card`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await open(page, force(session(id(0x40), "Full body de Léa", null, 0)));
+    // The search ends 12 px before the action beside it, « Voir la séance » or « Remettre dans la
+    // rotation ».
+    const against = (action: string) =>
+      expect
+        .poll(async () => {
+          const field = await search(page).boundingBox();
+          const button = await page
+            .getByRole("button", { name: action })
+            .or(page.getByRole("link", { name: action }))
+            .boundingBox();
+          return field && button && [field.width, button.x - (field.x + field.width)];
+        })
+        .toEqual([300, 12]);
+    await against("Voir la séance");
+    await expect(page.getByText(/^De côté : hors rotation/)).toHaveCount(0);
+
+    await chip(page, "Full body de Léa").click();
+    await expect(title(page)).toHaveText("Full body de Léa");
+    await against("Remettre dans la rotation");
+    const lines = await page
+      .getByText(/^1 exercice · /)
+      .evaluate(
+        (el) => el.getBoundingClientRect().height / parseFloat(getComputedStyle(el).lineHeight),
+      );
+    expect(Math.round(lines)).toBe(1);
+    const note = page.getByText(
+      "De côté : hors rotation, sans lettre. Elle reste modifiable ; « Remettre dans la rotation » l'ajoute à la fin.",
+    );
+    await expect(note).toBeVisible();
+    const card = (await page.getByRole("tabpanel").locator("section").first().boundingBox())!;
+    expect((await note.boundingBox())!.y).toBeGreaterThanOrEqual(card.y + card.height);
+  });
+}
 
 test("a chip dragged before another takes its letter, said in words", async ({ page }) => {
   await open(page, force());

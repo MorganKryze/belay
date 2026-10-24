@@ -44,7 +44,7 @@ import { ProgramSwitcher } from "@/editor/program-switcher";
 import { SessionCard } from "@/editor/session-card";
 import { chipId, chipName, PANEL, SessionChips, spokenName } from "@/editor/session-chips";
 import { SessionMenu } from "@/editor/session-menu";
-import { GridHelp, SlotGrid } from "@/editor/slot-grid";
+import { AddedHelp, GridHelp, SlotGrid } from "@/editor/slot-grid";
 import { useEdits } from "@/editor/use-edits";
 import i18n from "@/i18n";
 import en from "@/i18n/editor/en.json";
@@ -64,7 +64,8 @@ export function ProgramEditor() {
   return account.kind === "open" ? <WithData account={account} /> : <Header />;
 }
 
-// The title, and beside it, once the programs are read, the selector of the active program.
+// The title with the selector of the active program, once the programs are read, and on the same
+// line, once something changed, the word that it is kept on the device.
 function Header({ switcher = false, saved = false }: { switcher?: boolean; saved?: boolean }) {
   const { t } = useTranslation();
   return (
@@ -72,20 +73,21 @@ function Header({ switcher = false, saved = false }: { switcher?: boolean; saved
       title={t("editor.title")}
       back={
         <BackLink to="/workouts" search={{ tab: "program" }}>
-          {t("workouts.tabs.program")}
+          {t("nav.workouts")}
         </BackLink>
       }
       trailing={
-        <div className="flex min-w-0 flex-1 items-center">{switcher && <ProgramSwitcher />}</div>
+        <div className="flex min-w-0 flex-1 items-center justify-between gap-3">
+          {switcher ? <ProgramSwitcher /> : <span />}
+          {saved && (
+            <p className="flex shrink-0 items-center gap-1.5 text-sm text-muted-foreground">
+              <Check aria-hidden className="size-4" />
+              {t("editor.saved")}
+            </p>
+          )}
+        </div>
       }
-    >
-      {saved && (
-        <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
-          <Check aria-hidden className="size-4" />
-          {t("editor.saved")}
-        </p>
-      )}
-    </PageHeader>
+    />
   );
 }
 
@@ -100,6 +102,7 @@ function Editor({ account, programs }: { account: OpenAccount; programs: StoredP
   const [show, setShow] = useState<readonly string[]>([]);
   const [said, announce] = useState("");
   const [searchFor, setSearchFor] = useState<string | null>(null);
+  const [added, setAdded] = useState<string | null>(null);
   const edits = useEdits(account, programs);
   useUndoKey(edits.undo);
   const state = useMemo((): EditorState => {
@@ -119,12 +122,17 @@ function Editor({ account, programs }: { account: OpenAccount; programs: StoredP
       rotation,
       aside,
       shown,
-      show: (id, otherwise) => setShow(otherwise ? [id, otherwise] : [id]),
+      show: (id, otherwise) => {
+        setShow(otherwise ? [id, otherwise] : [id]);
+        setAdded((was) => (was === id ? was : null));
+      },
       announce,
       search: { for: searchFor, request: setSearchFor, done: () => setSearchFor(null) },
+      added,
+      markAdded: setAdded,
       edits,
     };
-  }, [account, programs, show, searchFor, edits]);
+  }, [account, programs, show, searchFor, added, edits]);
   return (
     <EditorContext.Provider value={state}>
       <section className="flex flex-col gap-4">
@@ -170,7 +178,7 @@ function useUndoKey(undo: () => Promise<boolean>) {
 // session with no exercise the sessions it can start from.
 function Shown({ placed }: { placed: PlacedSession }) {
   const { t } = useTranslation();
-  const { programs, rotation, edits } = useEditor();
+  const { programs, rotation, edits, added } = useEditor();
   const id = placed.session.id;
   // The session being named, so another session shown closes the field.
   const [renaming, setRenaming] = useState<string | null>(null);
@@ -190,15 +198,17 @@ function Shown({ placed }: { placed: PlacedSession }) {
   }, [naming]);
   // The size counts the normal section, as the session starts in a week with climbing.
   const plan: Slot[] = placed.slots.map(({ rule, ...s }) => (rule ? { ...s, rule } : s));
-  const size = [
-    t("editor.card.exercises", { count: plan.length }),
-    t("editor.card.sets", { count: plannedWorkSets(plan) }),
-    t("editor.card.minutes", { count: estimatedMinutes({ slots: plan }) }),
-  ].join(" · ");
+  const empty = placed.slots.length === 0 && placed.noClimbing.length === 0;
+  const size = empty
+    ? t("editor.card.newSession")
+    : [
+        t("editor.card.exercises", { count: plan.length }),
+        t("editor.card.sets", { count: plannedWorkSets(plan) }),
+        t("editor.card.minutes", { count: estimatedMinutes({ slots: plan }) }),
+      ].join(" · ");
   // The preview opens a rotation session by its id, as the rotation that starts sessions holds it,
   // which leaves empty ones out.
   const previewed = placed.letter !== null && rotationOf(programs).some((r) => r.sessionId === id);
-  const empty = placed.slots.length === 0 && placed.noClimbing.length === 0;
 
   const save = (value: string) => {
     const name = cutName(value, SESSION_NAME_MAX);
@@ -236,7 +246,7 @@ function Shown({ placed }: { placed: PlacedSession }) {
                 </button>
               </div>
             )}
-            <p className="text-sm text-muted-foreground tabular-nums">{size}</p>
+            <p className="text-sm whitespace-nowrap text-muted-foreground tabular-nums">{size}</p>
           </>
         }
         actions={
@@ -266,6 +276,13 @@ function Shown({ placed }: { placed: PlacedSession }) {
         <p id={hintId} className="min-h-11 px-1 py-2.5 text-sm text-muted-foreground">
           {t("editor.card.nameHint")}
         </p>
+      ) : placed.letter === null ? (
+        <>
+          <p className="px-1 pt-2.5 text-sm text-muted-foreground">{t("editor.asideHint")}</p>
+          <GridHelp />
+        </>
+      ) : added === id && empty ? (
+        <AddedHelp code={placed.letter} />
       ) : (
         <GridHelp />
       )}
@@ -273,8 +290,8 @@ function Shown({ placed }: { placed: PlacedSession }) {
   );
 }
 
-// The name in place of the title, « Séance D · » fixed before it: Enter saves it trimmed (empty
-// means no name), Escape leaves it as it was.
+// The name in place of the title, « Séance D · » fixed before it: Enter or a click away saves it
+// trimmed (empty means no name), Escape leaves it as it was.
 function NameField({
   placed,
   hintId,
@@ -290,12 +307,16 @@ function NameField({
   const [value, setValue] = useState(
     placed.letter === null ? sessionName(placed.session, t) : (chipName(placed, t) ?? ""),
   );
+  // Enter and Escape have answered: the blur that follows them saves nothing more.
+  const answered = useRef(false);
   const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       e.preventDefault();
+      answered.current = true;
       onSave(value);
     } else if (e.key === "Escape") {
       e.preventDefault();
+      answered.current = true;
       onCancel();
     }
   };
@@ -317,8 +338,14 @@ function NameField({
         aria-label={t("editor.card.nameLabel")}
         aria-describedby={hintId}
         autoComplete="off"
-        onChange={(e) => setValue(e.target.value)}
+        onChange={(e) => {
+          answered.current = false;
+          setValue(e.target.value);
+        }}
         onKeyDown={onKeyDown}
+        onBlur={() => {
+          if (!answered.current) onSave(value);
+        }}
         className="min-w-0 flex-1 bg-transparent text-foreground outline-none"
       />
     </label>
@@ -339,7 +366,10 @@ function StartFrom({ placed }: { placed: PlacedSession }) {
     });
   return (
     <div className="flex flex-col gap-4 border-t border-border px-4 pt-5 pb-4">
-      <p className="text-body text-muted-foreground">{t("editor.empty.text")}</p>
+      <div className="flex flex-col gap-0.5">
+        <p className="text-body font-semibold text-foreground">{t("editor.empty.title")}</p>
+        <p className="text-sm text-muted-foreground">{t("editor.empty.text")}</p>
+      </div>
       {sources.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {sources.map((p) => {

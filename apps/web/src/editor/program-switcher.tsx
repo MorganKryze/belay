@@ -313,7 +313,8 @@ export function ProgramSwitcher() {
   );
 }
 
-// The name in place of the selector: Enter saves it trimmed, Escape leaves it as it was.
+// The name in place of the selector: Enter or a click away saves it trimmed, Escape leaves it as it
+// was.
 function NameField({
   initial,
   hintId,
@@ -327,12 +328,18 @@ function NameField({
 }) {
   const { t } = useTranslation();
   const [value, setValue] = useState(initial);
+  // Enter and Escape have answered: the blur that follows them saves nothing more.
+  const answered = useRef(false);
+  // The name as it was writes nothing.
+  const save = () => (value.trim() === initial ? onCancel() : onSave(value.trim()));
   const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       e.preventDefault();
-      onSave(value.trim());
+      answered.current = true;
+      save();
     } else if (e.key === "Escape") {
       e.preventDefault();
+      answered.current = true;
       onCancel();
     }
   };
@@ -349,8 +356,14 @@ function NameField({
         aria-label={t("editor.programs.nameLabel")}
         aria-describedby={hintId}
         autoComplete="off"
-        onChange={(e) => setValue(e.target.value)}
+        onChange={(e) => {
+          answered.current = false;
+          setValue(e.target.value);
+        }}
         onKeyDown={onKeyDown}
+        onBlur={() => {
+          if (!answered.current) save();
+        }}
         className="min-h-11 w-[300px] max-w-full rounded-control bg-surface px-3 text-body font-semibold text-foreground ring-[1.5px] ring-primary-ink outline-none ring-inset"
       />
       <p id={hintId} className="text-sm text-muted-foreground">
