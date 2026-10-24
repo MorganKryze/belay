@@ -1,0 +1,161 @@
+{
+  "editor": {
+    "title": "Program",
+    "saved": "Saved on this device",
+    "noActive": "No active program: choose one or create one.",
+    "hint": "Guide: 3 to 4 sessions a week suit most people",
+    "chips": {
+      "label": "Program sessions",
+      "add": "Session",
+      "addLabel": "Add a session",
+      "aside": "Set aside",
+      "named": "{{code}} · {{name}}"
+    },
+    "asideHint": "Set aside: out of the rotation, no letter. It stays editable; \"Put back in the rotation\" adds it at the end.",
+    "card": {
+      "exercises_one": "{{count}} exercise",
+      "exercises_other": "{{count}} exercises",
+      "sets_one": "{{count}} set",
+      "sets_other": "{{count}} sets",
+      "minutes": "about {{count}} min",
+      "add": "Add an exercise",
+      "see": "See the session",
+      "putBack": "Put back in the rotation",
+      "rename": "Rename the session",
+      "more": "More session actions",
+      "nameLabel": "Session name",
+      "nameHint": "Session name · Enter saves · Esc cancels"
+    },
+    "col": {
+      "exercise": "Exercise",
+      "sets": "Sets",
+      "reps": "Reps",
+      "rir": "RIR",
+      "rest": "Rest",
+      "warmups": "Warm-up",
+      "main": "Main",
+      "actions": "Actions"
+    },
+    "grid": {
+      "label": "Exercises of {{session}}",
+      "group": "Chained · rest after the last",
+      "noClimbing": "Week with no climbing",
+      "noRest": "—",
+      "seconds": "{{range}} s",
+      "sub": "{{muscle}} · {{equipment}}",
+      "main": "Main",
+      "notMain": "Not main"
+    },
+    "help": {
+      "move": "move",
+      "edit": "edit",
+      "lift": "move a row",
+      "search": "search",
+      "undo": "undo",
+      "enter": "Enter",
+      "space": "Space",
+      "on": "on"
+    },
+    "cell": {
+      "reps": "Between 1 and 100, for example 6-10",
+      "seconds": "Between 1 and 3,600 s, for example 30-60",
+      "rir": "Between 0 and 4, for example 1-2",
+      "sets": "Between 1 and 10",
+      "rest": "Up to 15 min, for example 2:30",
+      "warmups": "Between 0 and 3",
+      "warmupsTimed": "No warm-up for a timed exercise"
+    },
+    "search": {
+      "label": "Search an exercise",
+      "empty": "No exercise matches",
+      "added": "{{name}} added at the end of the session"
+    },
+    "row": {
+      "handle": "Move {{name}}",
+      "more": "Actions for {{name}}",
+      "duplicate": "Duplicate",
+      "chain": "Chain with the next one",
+      "unchain": "Leave the group",
+      "remove": "Remove from the session"
+    },
+    "move": {
+      "lifted": "{{name}} lifted, position {{n}} of {{total}}. ↑ ↓ to move, Space to drop, Esc to cancel.",
+      "chipLifted": "{{name}} lifted, position {{n}} of {{total}}. ← → to move, Space to drop, Esc to cancel.",
+      "position": "position {{n}} of {{total}}",
+      "dropped": "{{name}} dropped, position {{n}} of {{total}}",
+      "cancelled": "Move cancelled",
+      "joinGroup": "joins the chained group",
+      "leaveGroup": "leaves the chained group",
+      "toNoClimbing": "becomes an exercise of weeks with no climbing",
+      "toPermanent": "is done every week again"
+    },
+    "letters": {
+      "becomes": "{{from}} becomes {{to}}"
+    },
+    "session": {
+      "rename": "Rename",
+      "duplicate": "Duplicate the session",
+      "setAside": "Set aside",
+      "setAsideSub": "out of the rotation, kept as it is",
+      "see": "See the session",
+      "remove": "Delete session {{code}}",
+      "removeAside": "Delete the session",
+      "lastOne": "A program keeps at least one session.",
+      "copyName": "{{name}} (copy)",
+      "added": "Session {{code}} added"
+    },
+    "empty": {
+      "text": "Add an exercise with the field above, or start from an existing session:",
+      "from": "Start from {{session}}"
+    },
+    "toast": {
+      "slotRemoved": "{{name}} removed from session {{code}}",
+      "slotRemovedAside": "{{name}} removed from {{session}}",
+      "sessionRemoved": "{{title}} deleted.",
+      "setAside": "{{name}} set aside.",
+      "putBack": "{{name}} back in the rotation, as {{code}}.",
+      "duplicated": "{{name}} duplicated as {{code}}.",
+      "switched": "{{program}} is active: the next session is {{session}}.",
+      "switchedNone": "{{program}} is active.",
+      "created": "{{program}} created and active.",
+      "undone": "Change undone",
+      "nothingToUndo": "Nothing to undo",
+      "refused": "Not saved: this change is not possible here.",
+      "stale": "Not saved: this program changed elsewhere meanwhile. The current values are shown.",
+      "failed": "Could not save on this device. Try again."
+    },
+    "limit": {
+      "slots": "A session holds 30 exercises at most.",
+      "rotation": "A rotation holds 26 sessions at most, one per letter.",
+      "sessions": "An account holds 200 sessions at most.",
+      "programs": "An account holds 20 programs at most."
+    },
+    "programs": {
+      "selector": "Active program: {{name}}. Change program",
+      "label": "Your programs · one is active",
+      "count_one": "{{count}} session",
+      "count_other": "{{count}} sessions",
+      "active": "active",
+      "new": "New program",
+      "newLabel": "New program · it becomes active",
+      "empty": "Empty",
+      "emptySub": "one empty session to fill",
+      "copy": "Copy of \"{{name}}\"",
+      "copySub": "the same sessions, to change",
+      "rename": "Rename this program",
+      "remove": "Delete this program",
+      "lastOne": "At least one program remains.",
+      "nameLabel": "Program name",
+      "nameHint": "Program name · Enter saves · Esc cancels",
+      "newName": "New program",
+      "copyName": "Copy of {{name}}",
+      "removeTitle": "Delete the program \"{{name}}\"?",
+      "removeBody_one": "Its session goes with it. {{previous}} becomes active again. History does not change.",
+      "removeBody_other": "Its {{count}} sessions go with it. {{previous}} becomes active again. History does not change.",
+      "removeBodyInactive_one": "Its session goes with it. History does not change.",
+      "removeBodyInactive_other": "Its {{count}} sessions go with it. History does not change.",
+      "removeConfirm": "Delete the program",
+      "cancel": "Cancel"
+    }
+  }
+}

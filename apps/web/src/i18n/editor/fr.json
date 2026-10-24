@@ -1,0 +1,161 @@
+{
+  "editor": {
+    "title": "Programme",
+    "saved": "Enregistré sur cet appareil",
+    "noActive": "Aucun programme actif : choisis-en un ou crée-le.",
+    "hint": "Repère : 3 à 4 séances par semaine conviennent à la plupart",
+    "chips": {
+      "label": "Séances du programme",
+      "add": "Séance",
+      "addLabel": "Ajouter une séance",
+      "aside": "De côté",
+      "named": "{{code}} · {{name}}"
+    },
+    "asideHint": "De côté : hors rotation, sans lettre. Elle reste modifiable ; « Remettre dans la rotation » l'ajoute à la fin.",
+    "card": {
+      "exercises_one": "{{count}} exercice",
+      "exercises_other": "{{count}} exercices",
+      "sets_one": "{{count}} série",
+      "sets_other": "{{count}} séries",
+      "minutes": "environ {{count}} min",
+      "add": "Ajouter un exercice",
+      "see": "Voir la séance",
+      "putBack": "Remettre dans la rotation",
+      "rename": "Renommer la séance",
+      "more": "Autres actions sur la séance",
+      "nameLabel": "Nom de la séance",
+      "nameHint": "Nom de la séance · Entrée enregistre · Échap annule"
+    },
+    "col": {
+      "exercise": "Exercice",
+      "sets": "Séries",
+      "reps": "Reps",
+      "rir": "RIR",
+      "rest": "Repos",
+      "warmups": "Montée",
+      "main": "Principal",
+      "actions": "Actions"
+    },
+    "grid": {
+      "label": "Exercices de {{session}}",
+      "group": "Enchaînés · repos après le dernier",
+      "noClimbing": "Semaine sans escalade",
+      "noRest": "—",
+      "seconds": "{{range}} s",
+      "sub": "{{muscle}} · {{equipment}}",
+      "main": "Principal",
+      "notMain": "Pas principal"
+    },
+    "help": {
+      "move": "se déplacer",
+      "edit": "modifier",
+      "lift": "déplacer une rangée",
+      "search": "chercher",
+      "undo": "annuler",
+      "enter": "Entrée",
+      "space": "Espace",
+      "on": "sur"
+    },
+    "cell": {
+      "reps": "Entre 1 et 100, par exemple 6-10",
+      "seconds": "Entre 1 et 3 600 s, par exemple 30-60",
+      "rir": "Entre 0 et 4, par exemple 1-2",
+      "sets": "Entre 1 et 10",
+      "rest": "Jusqu'à 15 min, par exemple 2:30",
+      "warmups": "Entre 0 et 3",
+      "warmupsTimed": "Pas de montée pour un exercice chronométré"
+    },
+    "search": {
+      "label": "Chercher un exercice",
+      "empty": "Aucun exercice ne correspond",
+      "added": "{{name}} ajouté en fin de séance"
+    },
+    "row": {
+      "handle": "Déplacer {{name}}",
+      "more": "Actions pour {{name}}",
+      "duplicate": "Dupliquer",
+      "chain": "Enchaîner avec le suivant",
+      "unchain": "Sortir du groupe",
+      "remove": "Retirer de la séance"
+    },
+    "move": {
+      "lifted": "{{name}} soulevé, position {{n}} sur {{total}}. ↑ ↓ pour déplacer, Espace pour poser, Échap pour annuler.",
+      "chipLifted": "{{name}} soulevée, position {{n}} sur {{total}}. ← → pour déplacer, Espace pour poser, Échap pour annuler.",
+      "position": "position {{n}} sur {{total}}",
+      "dropped": "{{name}} posé, position {{n}} sur {{total}}",
+      "cancelled": "Déplacement annulé",
+      "joinGroup": "entre dans le groupe enchaîné",
+      "leaveGroup": "sort du groupe enchaîné",
+      "toNoClimbing": "devient un exercice des semaines sans escalade",
+      "toPermanent": "redevient un exercice de chaque semaine"
+    },
+    "letters": {
+      "becomes": "{{from}} devient {{to}}"
+    },
+    "session": {
+      "rename": "Renommer",
+      "duplicate": "Dupliquer la séance",
+      "setAside": "Mettre de côté",
+      "setAsideSub": "hors rotation, gardée telle quelle",
+      "see": "Voir la séance",
+      "remove": "Supprimer la séance {{code}}",
+      "removeAside": "Supprimer la séance",
+      "lastOne": "Le programme garde au moins une séance.",
+      "copyName": "{{name}} (copie)",
+      "added": "Séance {{code}} ajoutée"
+    },
+    "empty": {
+      "text": "Ajoute un exercice avec le champ ci-dessus, ou pars d'une séance existante :",
+      "from": "Partir de {{session}}"
+    },
+    "toast": {
+      "slotRemoved": "{{name}} retiré de la séance {{code}}",
+      "slotRemovedAside": "{{name}} retiré de {{session}}",
+      "sessionRemoved": "{{title}} supprimée.",
+      "setAside": "{{name}} mise de côté.",
+      "putBack": "{{name}} remise dans la rotation, en {{code}}.",
+      "duplicated": "{{name}} dupliquée en {{code}}.",
+      "switched": "{{program}} est actif : la prochaine séance est {{session}}.",
+      "switchedNone": "{{program}} est actif.",
+      "created": "{{program}} créé, il est actif.",
+      "undone": "Modification annulée",
+      "nothingToUndo": "Rien à annuler",
+      "refused": "Pas enregistré : cette modification n'est pas possible ici.",
+      "stale": "Pas enregistré : ce programme a changé ailleurs entre-temps. Les valeurs à jour sont affichées.",
+      "failed": "Pas pu enregistrer sur cet appareil. Réessaie."
+    },
+    "limit": {
+      "slots": "Une séance garde 30 exercices au plus.",
+      "rotation": "Une rotation garde 26 séances au plus, une par lettre.",
+      "sessions": "Le compte garde 200 séances au plus.",
+      "programs": "Le compte garde 20 programmes au plus."
+    },
+    "programs": {
+      "selector": "Programme actif : {{name}}. Changer de programme",
+      "label": "Tes programmes · un seul est actif",
+      "count_one": "{{count}} séance",
+      "count_other": "{{count}} séances",
+      "active": "actif",
+      "new": "Nouveau programme",
+      "newLabel": "Nouveau programme · il devient actif",
+      "empty": "Vide",
+      "emptySub": "une séance vide, tu la remplis",
+      "copy": "Copie de « {{name}} »",
+      "copySub": "les mêmes séances, à modifier",
+      "rename": "Renommer ce programme",
+      "remove": "Supprimer ce programme",
+      "lastOne": "Il reste au moins un programme.",
+      "nameLabel": "Nom du programme",
+      "nameHint": "Nom du programme · Entrée enregistre · Échap annule",
+      "newName": "Nouveau programme",
+      "copyName": "Copie de {{name}}",
+      "removeTitle": "Supprimer le programme « {{name}} » ?",
+      "removeBody_one": "Sa séance part avec lui. {{previous}} redevient actif. L'historique ne change pas.",
+      "removeBody_other": "Ses {{count}} séances partent avec lui. {{previous}} redevient actif. L'historique ne change pas.",
+      "removeBodyInactive_one": "Sa séance part avec lui. L'historique ne change pas.",
+      "removeBodyInactive_other": "Ses {{count}} séances partent avec lui. L'historique ne change pas.",
+      "removeConfirm": "Supprimer le programme",
+      "cancel": "Annuler"
+    }
+  }
+}
