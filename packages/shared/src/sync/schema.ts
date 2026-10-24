@@ -229,6 +229,9 @@ export const WorkoutChangeSchema = z.discriminatedUnion("field", [
     sessionCode: z.string().check(z.refine(isSessionCode)),
     // The program session it came from (absent from an older phone's start).
     sessionId: z.optional(z.nullable(z.uuid())),
+    // That session's name on the day, kept so history never follows a rename: null when it had
+    // none, absent from an older phone's start.
+    sessionName: z.optional(z.custom<string | null>(isSessionName)),
     plan,
     startedAt: workoutTime,
     at,
@@ -552,6 +555,7 @@ export const WorkoutRowSchema = z.object({
   id: z.uuid(),
   sessionCode: z.string(),
   sessionId: z.optional(z.nullable(z.uuid())), // absent from an older server
+  sessionName: z.optional(z.nullable(z.string())), // absent: not kept with its start
   plan: z.custom<Slot[]>((v) => Array.isArray(v)),
   planAt: writtenAt,
   startedAt: isoDateTime,

@@ -33,6 +33,9 @@ export interface Workout {
   // The program session it came from; absent or null on a session started before sessions
   // recorded it.
   sessionId?: string | null;
+  // That session's name on the day it started: null when it had none; absent on a session
+  // started before names were kept, which shows the session's current name.
+  sessionName?: string | null;
   plan: Slot[];
   startedAt: string;
   endedAt: string | null; // null: in progress

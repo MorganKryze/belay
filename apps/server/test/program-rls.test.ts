@@ -390,15 +390,20 @@ const publicTables = async (conn: Db) =>
 
 describe("migration 0007", () => {
   it("on a populated database keeps every row of the earlier tables; sessions done gain no recorded session", async () => {
-    // The migrations up to 0006 only, from a copy of the folder whose journal stops there.
-    const upTo0006 = mkdtempSync(join(tmpdir(), "belay-0006-"));
-    cpSync("drizzle", upTo0006, { recursive: true });
-    const journalPath = join(upTo0006, "meta", "_journal.json");
-    const journal = JSON.parse(readFileSync(journalPath, "utf8")) as {
-      entries: { idx: number }[];
+    // The migrations up to 0006, then up to 0007, each from a copy of the folder whose journal
+    // stops there: later migrations change these tables again and have their own test.
+    const upTo = (last: number) => {
+      const dir = mkdtempSync(join(tmpdir(), `belay-000${last}-`));
+      cpSync("drizzle", dir, { recursive: true });
+      const journalPath = join(dir, "meta", "_journal.json");
+      const journal = JSON.parse(readFileSync(journalPath, "utf8")) as {
+        entries: { idx: number }[];
+      };
+      journal.entries = journal.entries.filter((e) => e.idx <= last);
+      writeFileSync(journalPath, JSON.stringify(journal));
+      return dir;
     };
-    journal.entries = journal.entries.filter((e) => e.idx <= 6);
-    writeFileSync(journalPath, JSON.stringify(journal));
+    const upTo0006 = upTo(6);
 
     await owner.execute(sql`drop database if exists belay_0007`);
     await owner.execute(sql`create database belay_0007`);
@@ -429,7 +434,7 @@ describe("migration 0007", () => {
         values (${user}, '2026-10-07', 81.4, ${at}, 86.5, ${at})`);
       const rowsBefore = await dump(fresh.db, before, "session_id");
 
-      await runMigrations(fresh.db, "drizzle");
+      await runMigrations(fresh.db, upTo(7));
 
       expect(await dump(fresh.db, before, "session_id")).toEqual(rowsBefore);
       // Sessions done gain the session they came from, empty for every one done before, with no
