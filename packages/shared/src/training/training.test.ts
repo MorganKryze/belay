@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { exerciseById } from "../exercises/catalog";
-import { PLATE_PRESETS } from "../tools/plates";
+import { MAX_TARGET_KG, PLATE_PRESETS } from "../tools/plates";
+import { lbToKg, loadFromKg } from "../tools/units";
 import {
   estimatedMinutes,
   groupOf,
@@ -345,6 +346,41 @@ describe("warmups (D7)", () => {
     expect(warmups({ warmupSets: 2 }, 8000, barbell, gym)).toEqual([]);
     expect(warmups({ warmupSets: 2 }, Number.POSITIVE_INFINITY, barbell, gym)).toEqual([]);
     expect(warmups({ warmupSets: 2 }, Number.NaN, barbell, gym)).toEqual([]);
+  });
+
+  it("lb warm-ups of a 225 lb barbell set come from the lb set", () => {
+    // 225 lb is 102.06 kg, stored as 102 kg; the kg set would give 40, 60 and 80 kg.
+    const sets = warmups({ warmupSets: 3 }, 102, barbell, gym, "lb");
+    expect(sets.map((s) => loadFromKg(s.weightKg, "lb"))).toEqual([90, 135, 180]);
+    expect(sets.map((s) => s.reps)).toEqual([5, 3, 1]);
+    for (const s of sets) expect(isSetKg(s.weightKg)).toBe(true);
+    expect(warmups({ warmupSets: 3 }, 102, barbell, gym)).toEqual([
+      { weightKg: 40, reps: 5, seconds: null },
+      { weightKg: 60, reps: 3, seconds: null },
+      { weightKg: 80, reps: 1, seconds: null },
+    ]);
+  });
+
+  it("lb warm-ups of a dumbbell round to 5 lb", () => {
+    // 60 lb work: 50 % → 30 lb, 75 % → 45 lb.
+    const sets = warmups({ warmupSets: 2 }, 27.25, dumbbell, gym, "lb");
+    expect(sets.map((s) => loadFromKg(s.weightKg, "lb"))).toEqual([30, 45]);
+    for (const s of sets) expect(isSetKg(s.weightKg)).toBe(true);
+    // 10 lb work: 60 % → 6 lb → 5 lb; a set rounding to the work load or to nothing is dropped.
+    expect(warmups({ warmupSets: 1 }, 4.5, dumbbell, gym, "lb").map((s) => s.weightKg)).toEqual([
+      2.25,
+    ]);
+    expect(warmups({ warmupSets: 1 }, 1, dumbbell, gym, "lb")).toEqual([]);
+  });
+
+  it("lb warm-ups keep the 1 000 kg guard", () => {
+    expect(warmups({ warmupSets: 2 }, MAX_TARGET_KG + 0.25, barbell, gym, "lb")).toEqual([]);
+    expect(warmups({ warmupSets: 2 }, 8000, dumbbell, gym, "lb")).toEqual([]);
+    expect(warmups({ warmupSets: 2 }, Number.NaN, barbell, gym, "lb")).toEqual([]);
+    expect(warmups({ warmupSets: 2 }, null, barbell, gym, "lb")).toEqual([]);
+    expect(warmups({ warmupSets: 0 }, 100, barbell, gym, "lb")).toEqual([]);
+    // Past the plate table's 1 000 units, but under 1 000 kg: no warm-up, never a throw.
+    expect(warmups({ warmupSets: 3 }, lbToKg(1400), barbell, gym, "lb")).toEqual([]);
   });
 });
 

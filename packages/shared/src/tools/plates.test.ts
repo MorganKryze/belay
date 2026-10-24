@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { iwfColor, loadBar, nearestLoading, PLATE_PRESETS } from "./plates";
+import { iwfColor, LB_PLATES, loadBar, nearestLoading, PLATE_PRESETS } from "./plates";
 
 const gym = PLATE_PRESETS.gym.platesKg;
 const competition = PLATE_PRESETS.competition.platesKg;
@@ -79,6 +79,21 @@ describe("loadBar", () => {
       kind: "exact",
       loading: { totalKg: 60, perSideKg: [20] },
     });
+  });
+});
+
+describe("the lb set", () => {
+  it("loadBar loads 225 on the lb set as 45 + 45 per side", () => {
+    expect(loadBar(225, LB_PLATES.bar, LB_PLATES.plates)).toEqual({
+      kind: "exact",
+      loading: { totalKg: 225, perSideKg: [45, 45] },
+    });
+  });
+
+  it("the lb set reaches every multiple of 5 from 45 to 500", () => {
+    for (let lb = 45; lb <= 500; lb += 5) {
+      expect(loadBar(lb, LB_PLATES.bar, LB_PLATES.plates).kind, `${lb} lb`).toBe("exact");
+    }
   });
 });
 

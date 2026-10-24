@@ -3,8 +3,9 @@ import { type ISODate, toISODate } from "../body/dates";
 import type { Measure } from "../exercises/library";
 import type { Equipment } from "../exercises/muscles";
 import { epley, RELIABLE_MAX_REPS } from "../tools/one-rep-max";
-import { MAX_TARGET_KG } from "../tools/plates";
+import { LB_PLATES, MAX_TARGET_KG } from "../tools/plates";
 import { roundTo } from "../tools/round";
+import { INCREMENT_LB, kgFromLoad, loadFromKg, type WeightUnit } from "../tools/units";
 import { WARMUP_SCHEMES, warmupSets } from "../tools/warmup";
 import { liveSlots } from "./plan";
 import { groupOf, plannedWorkSets } from "./program";
@@ -104,23 +105,34 @@ export const lastTopSet = (history: History, exerciseId: string, measure: Measur
 // and plates); anything else takes the same fractions and reps, rounded to the exercise's step,
 // never 0 or less, never the working load or more. No working load yet, or one past what the
 // plate table handles (a typo like 8000): no warm-up, so the set stays as typed.
+// In lb the sets are worked out in whole pounds, on the standard pound set and the pound steps,
+// then stored back on the kg grid.
 export function warmups(
   slot: Pick<Slot, "warmupSets">,
   workKg: number | null,
   exercise: { equipment: Equipment; incrementKg: number },
   bar: { barKg: number; platesKg: readonly number[] },
+  unit: WeightUnit = "kg",
 ): Load[] {
   if (workKg === null || slot.warmupSets === 0) return [];
   if (!Number.isFinite(workKg) || workKg > MAX_TARGET_KG) return [];
-  if (exercise.equipment === "barbell")
-    return warmupSets(workKg, slot.warmupSets, bar.barKg, bar.platesKg).map((s) => ({
-      weightKg: s.loadKg,
-      reps: s.reps,
-      seconds: null,
-    }));
+  const work = loadFromKg(workKg, unit);
+  // The plate table counts in the unit it is given: 1 000 lb is its limit in pounds.
+  if (work > MAX_TARGET_KG) return [];
+  const [barWeight, plates, step] =
+    unit === "kg"
+      ? [bar.barKg, bar.platesKg, exercise.incrementKg]
+      : [LB_PLATES.bar, LB_PLATES.plates, INCREMENT_LB[exercise.equipment]];
+  const candidates: [load: number, reps: number][] =
+    exercise.equipment === "barbell"
+      ? warmupSets(work, slot.warmupSets, barWeight, plates).map((s) => [s.loadKg, s.reps])
+      : WARMUP_SCHEMES[slot.warmupSets].map(([fraction, reps]) => [
+          roundTo(work * fraction, step),
+          reps,
+        ]);
   const out: Load[] = [];
-  for (const [fraction, reps] of WARMUP_SCHEMES[slot.warmupSets]) {
-    const weightKg = roundTo(workKg * fraction, exercise.incrementKg);
+  for (const [load, reps] of candidates) {
+    const weightKg = kgFromLoad(load, unit);
     if (weightKg <= 0 || weightKg >= workKg || out.some((s) => s.weightKg === weightKg)) continue;
     out.push({ weightKg, reps, seconds: null });
   }
