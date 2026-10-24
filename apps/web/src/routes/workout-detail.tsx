@@ -1,6 +1,7 @@
 import "@/i18n/lazy";
 import { toISODate } from "@belay/shared/body/dates";
 import { exerciseById } from "@belay/shared/exercises/catalog";
+import { kgToLb } from "@belay/shared/tools/units";
 import { liveSets, summary } from "@belay/shared/training/rules";
 import { type Workout, type WorkoutSet } from "@belay/shared/training/workout";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
@@ -20,9 +21,17 @@ import { BackLink, PageHeader } from "@/components/page-header";
 import { cardSurface } from "@/components/surfaces";
 import { readSessionVolume } from "@/lib/display-prefs";
 import { formatNumber, sessionTitle } from "@/lib/format";
+import { readWeightUnit } from "@/lib/units";
 import { useToday } from "@/lib/today";
 import { type OpenAccount, useAccount, useHistory, useRecord } from "@/sync/account";
-import { durationParts, formatRir, formatSets, formatStarted, recordText } from "@/workouts/format";
+import {
+  durationParts,
+  formatLoad,
+  formatRir,
+  formatSets,
+  formatStarted,
+  recordText,
+} from "@/workouts/format";
 import { NotFound } from "./fallbacks";
 
 // A finished session (§4.4): its exercises and sets as they were done, its records and notes;
@@ -51,7 +60,7 @@ function Detail({ account }: { account: OpenAccount }) {
   if (!workout || workout.removed || workout.endedAt === null) return leaving ? null : <NotFound />;
   const sets = liveSets(history).filter((s) => s.workoutId === workout.id);
   const stats = summary(workout, sets, history);
-  const kg = (v: number) => formatNumber(v, i18n.language, { digits: 2 });
+  const unit = readWeightUnit();
   const cards = exerciseCards(workout, sets, t);
 
   const month = toISODate(new Date(workout.startedAt)).slice(0, 7);
@@ -108,8 +117,13 @@ function Detail({ account }: { account: OpenAccount }) {
             ? [
                 {
                   label: t("summary.volume"),
-                  value: formatNumber(stats.volumeKg, i18n.language, { digits: 0 }),
-                  unit: "kg",
+                  // A sum of loads: the sum converted is the converted loads summed.
+                  value: formatNumber(
+                    unit === "kg" ? stats.volumeKg : kgToLb(stats.volumeKg),
+                    i18n.language,
+                    { digits: 0 },
+                  ),
+                  unit,
                 },
               ]
             : []),
@@ -131,7 +145,7 @@ function Detail({ account }: { account: OpenAccount }) {
           </h2>
           <div className="flex flex-col gap-4">
             {cards.map(({ key, ...c }) => (
-              <ExerciseSets key={key} {...c} kg={kg} />
+              <ExerciseSets key={key} {...c} />
             ))}
           </div>
         </section>
@@ -231,15 +245,8 @@ function exerciseCards(workout: Workout, sets: WorkoutSet[], t: TFunction): Exer
 const hairline =
   "relative before:absolute before:top-0 before:right-0 before:left-14 before:h-px before:bg-border";
 
-function ExerciseSets({
-  n,
-  name,
-  prescription,
-  sets,
-  note,
-  kg,
-}: Omit<ExerciseCard, "key"> & { kg: (v: number) => string }) {
-  const { t } = useTranslation();
+function ExerciseSets({ n, name, prescription, sets, note }: Omit<ExerciseCard, "key">) {
+  const { t, i18n } = useTranslation();
   const secondary =
     "text-(length:--text-secondary) leading-(--text-secondary--line-height) text-muted-foreground";
   return (
@@ -267,11 +274,11 @@ function ExerciseSets({
               {s.warmup ? t("history.warmup") : sets.filter((o) => !o.warmup).indexOf(s) + 1}
             </span>
             <span>
-              {s.seconds != null
-                ? s.weightKg > 0
-                  ? t("history.loadSeconds", { kg: kg(s.weightKg), seconds: s.seconds })
-                  : t("history.seconds", { seconds: s.seconds })
-                : t("history.load", { kg: kg(s.weightKg), reps: s.reps })}
+              {formatLoad(
+                { weightKg: s.weightKg, reps: s.reps, seconds: s.seconds ?? null },
+                t,
+                i18n.language,
+              )}
             </span>
             <span className={secondary}>
               {s.rir !== null && t("history.rir", { rir: s.rir === 4 ? "4+" : s.rir })}

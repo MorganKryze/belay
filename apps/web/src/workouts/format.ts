@@ -4,7 +4,8 @@ import { groupOf } from "@belay/shared/training/program";
 import type { Load, Summary } from "@belay/shared/training/rules";
 import type { Slot } from "@belay/shared/training/workout";
 import type { TFunction } from "i18next";
-import { formatNumber, formatWeekday } from "@/lib/format";
+import { formatWeekday } from "@/lib/format";
+import { loadNumber, readWeightUnit } from "@/lib/units";
 
 // "6–8", or "2" when both ends are equal.
 export const formatRange = ([min, max]: readonly [number, number]) =>
@@ -17,12 +18,18 @@ export const formatSets = (slot: Pick<Slot, "sets" | "repRange" | "measure">) =>
 export const formatRir = (slot: Slot, t: TFunction) =>
   t("workouts.rir", { range: formatRange(slot.rirTarget) });
 
-// "80 kg × 8", "10 kg · 45 s" or "45 s": one set, as the history writes it.
-export function formatLoad(load: Load, t: TFunction, locale: string): string {
-  const kg = formatNumber(load.weightKg, locale, { digits: 2, grouping: false });
-  if (load.seconds === null) return t("history.load", { kg, reps: load.reps });
+// "80 kg × 8", "176 lb × 8", "10 kg · 45 s" or "45 s": one set, as the history writes it, in the
+// unit the person reads.
+export function formatLoad(
+  load: Load,
+  t: TFunction,
+  locale: string,
+  unit = readWeightUnit(),
+): string {
+  const text = loadNumber(load.weightKg, locale, unit);
+  if (load.seconds === null) return t("history.load", { load: text, unit, reps: load.reps });
   return load.weightKg > 0
-    ? t("history.loadSeconds", { kg, seconds: load.seconds })
+    ? t("history.loadSeconds", { load: text, unit, seconds: load.seconds })
     : t("history.seconds", { seconds: load.seconds });
 }
 
@@ -63,15 +70,21 @@ export function durationParts(ms: number, t: TFunction): { value: string; unit?:
   return { value, unit: text.slice(text.indexOf(value) + value.length).trim() };
 }
 
-// "Record : Barbell bench press, 82,5 kg × 8", or "Record : Dead hang, 75 s" for a timed one.
-export function recordText(r: Summary["records"][number], t: TFunction, locale: string): string {
+// "Record : Barbell bench press, 82,5 kg × 8" (182 lb in pounds), or "Record : Dead hang, 75 s"
+// for a timed one.
+export function recordText(
+  r: Summary["records"][number],
+  t: TFunction,
+  locale: string,
+  unit = readWeightUnit(),
+): string {
   const exercise = exerciseById(r.exerciseId)?.name;
-  const kg = formatNumber(r.weightKg, locale, { digits: 2 });
+  const load = loadNumber(r.weightKg, locale, unit, true);
   if (r.seconds !== null)
     return r.weightKg > 0
-      ? t("summary.recordLoadSeconds", { exercise, kg, seconds: r.seconds })
+      ? t("summary.recordLoadSeconds", { exercise, load, unit, seconds: r.seconds })
       : t("summary.recordSeconds", { exercise, seconds: r.seconds });
-  return t("summary.record", { exercise, kg, reps: r.reps });
+  return t("summary.record", { exercise, load, unit, reps: r.reps });
 }
 
 // The day a session started and its start time, on this device's clock: « Lundi 28 septembre ·

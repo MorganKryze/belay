@@ -9,6 +9,7 @@ import { Sheet } from "@/components/sheet";
 import { BodyThumb } from "@/exercises/body-map";
 import { filterExercises } from "@/exercises/exercises-panel";
 import { formatNumber } from "@/lib/format";
+import { loadNumber, readWeightUnit } from "@/lib/units";
 
 // The library in a sheet shows the first matches only: a few words narrow 1 291 exercises to a
 // handful, and a sheet never lays out the whole list.
@@ -41,14 +42,16 @@ export function ExercisePicker({
   const alternatives = (replacing ? alternativesOf(replacing.id) : []).flatMap(
     (id) => exerciseById(id) ?? [],
   );
-  const kg = (v: number) => formatNumber(v, i18n.language, { digits: 2 });
-  // "la dernière fois 24 kg × 10", or "jamais faite".
+  const weightUnit = readWeightUnit();
+  // "la dernière fois 24 kg × 10" (53 lb in pounds), or "jamais faite".
   const last = (e: Exercise) => {
     const groups = lastTime(history, e.id, e.measure);
     if (groups.length === 0) return t("session.picker.never");
     const unit = e.measure === "seconds" ? "\u00a0s" : "";
+    const load = (kg: number) =>
+      `${loadNumber(kg, i18n.language, weightUnit, true)} ${weightUnit} × `;
     const value = groups
-      .map((g) => `${g.weightKg > 0 ? `${kg(g.weightKg)} kg × ` : ""}${g.counts.join(", ")}${unit}`)
+      .map((g) => `${g.weightKg > 0 ? load(g.weightKg) : ""}${g.counts.join(", ")}${unit}`)
       .join(" · ");
     return t("session.picker.lastTime", { value });
   };
