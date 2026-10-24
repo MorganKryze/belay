@@ -1,6 +1,6 @@
 import type { Change, SyncRequest } from "@belay/shared/sync/schema";
 import { resumedStart } from "@belay/shared/training/pause";
-import { sessionByCode } from "@belay/shared/training/program";
+import { sessionByCode, starterProgram } from "@belay/shared/training/program";
 import { DEFAULT_SCHEDULE, SEED_PROGRAM_ID } from "@belay/shared/training/stored-program";
 import { act, cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { IDBFactory } from "fake-indexeddb";
@@ -56,7 +56,7 @@ const LAST_A: Change[] = [
     id: id(1),
     field: "start",
     sessionCode: "A",
-    plan: [...sessionByCode("A")!.slots],
+    plan: [...sessionByCode("A", starterProgram)!.slots],
     startedAt: at(MONDAY),
     at: at(MONDAY),
   },
@@ -514,7 +514,7 @@ describe("fix round 1", () => {
         id: id(2),
         field: "start",
         sessionCode: "A",
-        plan: [...sessionByCode("A")!.slots],
+        plan: [...sessionByCode("A", starterProgram)!.slots],
         startedAt: at(eleven),
         at: at(eleven),
       },
@@ -828,7 +828,7 @@ describe("finish", () => {
   // Session A open on this device, started 40 minutes ago, with the given number of work sets
   // logged in each slot from the first, and a warm-up of the bench press when asked.
   async function openWith(counts: number[], { warmup = false } = {}) {
-    const plan = [...sessionByCode("A")!.slots];
+    const plan = [...sessionByCode("A", starterProgram)!.slots];
     const changes: Change[] = [
       {
         kind: "workout",
@@ -1009,7 +1009,7 @@ describe("finish", () => {
     workoutId: OPEN,
     slotIndex: 0,
     position: 3,
-    exerciseId: sessionByCode("A")!.slots[0]!.exerciseId,
+    exerciseId: sessionByCode("A", starterProgram)!.slots[0]!.exerciseId,
     warmup: false,
     weightKg: 60,
     reps: 8,

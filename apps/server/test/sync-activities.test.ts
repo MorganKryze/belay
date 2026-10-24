@@ -1,7 +1,7 @@
 import { newId } from "@belay/shared";
 import type { Change, SyncResponse } from "@belay/shared/sync/schema";
 import { appendSlot, replaceSlot, skipSlot } from "@belay/shared/training/plan";
-import { sessionByCode } from "@belay/shared/training/program";
+import { sessionByCode, starterProgram } from "@belay/shared/training/program";
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { createApp } from "../src/app";
@@ -24,7 +24,7 @@ const app = createApp({ cfg, db, getOidc: oidcProvider(cfg.oidc) });
 const AT = "2026-10-07T17:00:00.000Z";
 const LATER = "2026-10-07T17:05:00.000Z";
 const LATEST = "2026-10-07T17:10:00.000Z";
-const B = [...sessionByCode("B")!.slots];
+const B = [...sessionByCode("B", starterProgram)!.slots];
 const PLANK = { id: "ds:2135", measure: "seconds" as const };
 
 async function signIn(sub: string) {

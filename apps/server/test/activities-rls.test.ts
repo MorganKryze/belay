@@ -1,5 +1,5 @@
 import { newId } from "@belay/shared";
-import { sessionByCode } from "@belay/shared/training/program";
+import { sessionByCode, starterProgram } from "@belay/shared/training/program";
 import { eq, sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { asUser, type Tx } from "../src/db/client";
@@ -42,7 +42,7 @@ async function twoPeople(tag: string) {
       id: workout,
       userId: a,
       sessionCode: "C",
-      plan: [...sessionByCode("C")!.slots],
+      plan: [...sessionByCode("C", starterProgram)!.slots],
       startedAt: AT,
     });
     await tx.insert(workoutSets).values({

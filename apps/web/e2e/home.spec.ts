@@ -1,5 +1,5 @@
 import type { Change } from "@belay/shared/sync/schema";
-import { sessionByCode } from "@belay/shared/training/program";
+import { sessionByCode, starterProgram } from "@belay/shared/training/program";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, type Locator, type Page, test } from "@playwright/test";
 import { expectNoAxeViolations, settled } from "./axe";
@@ -18,7 +18,7 @@ const runningA = (): Change[] => {
       id: RUNNING,
       field: "start",
       sessionCode: "A",
-      plan: [...sessionByCode("A")!.slots],
+      plan: [...sessionByCode("A", starterProgram)!.slots],
       startedAt: at,
       at,
     },
@@ -156,7 +156,7 @@ const doneA = (now = DONE_NOW): Change[] => {
       id: DONE,
       field: "start",
       sessionCode: "A",
-      plan: [...sessionByCode("A")!.slots],
+      plan: [...sessionByCode("A", starterProgram)!.slots],
       startedAt: from,
       at: from,
     },

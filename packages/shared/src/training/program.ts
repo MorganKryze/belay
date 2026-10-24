@@ -77,10 +77,10 @@ export const ALTERNATIVES: Readonly<Record<string, readonly string[]>> = {
 export const alternativesOf = (exerciseId: string): readonly string[] =>
   ALTERNATIVES[exerciseId] ?? [];
 
-// Every screen passes the stored rotation; the constant stays the default for the tests' fixtures.
+// Every caller passes the stored rotation.
 export const sessionByCode = (
   code: string,
-  program: readonly SessionTemplate[] = starterProgram,
+  program: readonly SessionTemplate[],
 ): SessionTemplate | undefined => program.find((s) => s.code === code);
 
 // The slot indexes of a slot's group (consecutive slots of one groupKey), or the slot alone.
@@ -96,17 +96,11 @@ export function groupOf(plan: readonly Slot[], slotIndex: number): number[] {
 
 // The next session after the last one finished (D11): the one that follows it in the program's
 // order, the first after the last one; the first with no history, or when the last one's letter
-// left the program (PM9); none when the program holds no session. The constant always holds one,
-// so a call without a program still reads as a letter.
+// left the program (PM9); none when the program holds no session.
 type Done = Pick<Workout, "sessionCode" | "startedAt" | "endedAt" | "removed">;
-export function nextSession(workouts: readonly Done[]): string;
 export function nextSession(
   workouts: readonly Done[],
   program: readonly SessionTemplate[],
-): string | null;
-export function nextSession(
-  workouts: readonly Done[],
-  program: readonly SessionTemplate[] = starterProgram,
 ): string | null {
   if (program.length === 0) return null;
   const last = workouts

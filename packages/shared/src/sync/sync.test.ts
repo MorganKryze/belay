@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { MIN_WEIGH_IN_DATE } from "../body/weighings";
-import { sessionByCode } from "../training/program";
+import { sessionByCode, starterProgram } from "../training/program";
 import { DEFAULT_SCHEDULE } from "../training/stored-program";
 import { MAX_CHANGES } from "./limits";
 import {
@@ -65,7 +65,7 @@ const SAMPLES: Change[] = [
 ];
 const WORKOUT = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d90";
 const SET = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d91";
-const PLAN = [...sessionByCode("A")!.slots];
+const PLAN = [...sessionByCode("A", starterProgram)!.slots];
 const LATER = "2026-10-07T06:45:00.000Z";
 // A session and its sets, as the phone writes them.
 const SESSION: Change[] = [
@@ -499,7 +499,7 @@ describe("isValidChange", () => {
 });
 
 describe("steps, activities, a session's own plan and start, timed sets (spec §7)", () => {
-  const plan = [...sessionByCode("C")!.slots];
+  const plan = [...sessionByCode("C", starterProgram)!.slots];
   const climb: Change = {
     kind: "activity",
     id: ID,

@@ -1,5 +1,5 @@
 import type { Change } from "@belay/shared/sync/schema";
-import { sessionByCode } from "@belay/shared/training/program";
+import { sessionByCode, starterProgram } from "@belay/shared/training/program";
 import { act, cleanup, fireEvent, screen, within } from "@testing-library/react";
 import { IDBFactory } from "fake-indexeddb";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -35,7 +35,7 @@ const OPEN = (): Change[] => {
       id: "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d02",
       field: "start",
       sessionCode: "C",
-      plan: [...sessionByCode("C")!.slots],
+      plan: [...sessionByCode("C", starterProgram)!.slots],
       startedAt,
       at: startedAt,
     },
@@ -193,7 +193,7 @@ describe("the shell", () => {
         field: "create",
         slotIndex: 0,
         position: 3,
-        exerciseId: sessionByCode("C")!.slots[0]!.exerciseId,
+        exerciseId: sessionByCode("C", starterProgram)!.slots[0]!.exerciseId,
         warmup: false,
         weightKg: 80,
         reps: 10,

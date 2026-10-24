@@ -2,7 +2,7 @@ import { IDBFactory } from "fake-indexeddb";
 import { act, cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Change } from "@belay/shared/sync/schema";
-import { sessionByCode } from "@belay/shared/training/program";
+import { sessionByCode, starterProgram } from "@belay/shared/training/program";
 import i18n from "../i18n";
 import { pendingCounts } from "../sync/db";
 import { readLastUser } from "../sync/last-user";
@@ -688,7 +688,7 @@ describe("refused entries", () => {
     id: WORKOUT,
     field: "start",
     sessionCode: "A",
-    plan: [...sessionByCode("A")!.slots],
+    plan: [...sessionByCode("A", starterProgram)!.slots],
     startedAt: at,
     at,
   };

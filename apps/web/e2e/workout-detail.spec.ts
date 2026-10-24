@@ -1,5 +1,5 @@
 import type { Change } from "@belay/shared/sync/schema";
-import { sessionByCode } from "@belay/shared/training/program";
+import { sessionByCode, starterProgram } from "@belay/shared/training/program";
 import { expect, type Page, test } from "@playwright/test";
 import { fakeServer } from "./fake-server";
 
@@ -21,7 +21,7 @@ function finished(
   end: string,
   sets: number,
 ): Change[] {
-  const plan = [...sessionByCode(code)!.slots];
+  const plan = [...sessionByCode(code, starterProgram)!.slots];
   return [
     {
       kind: "workout",
@@ -66,7 +66,7 @@ WARMED.splice(1, 0, {
   field: "create",
   slotIndex: 0,
   position: 0,
-  exerciseId: sessionByCode("B")!.slots[0]!.exerciseId,
+  exerciseId: sessionByCode("B", starterProgram)!.slots[0]!.exerciseId,
   warmup: true,
   weightKg: 40,
   reps: 8,

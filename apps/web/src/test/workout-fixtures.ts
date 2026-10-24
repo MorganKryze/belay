@@ -1,5 +1,5 @@
 import type { Change } from "@belay/shared/sync/schema";
-import { sessionByCode } from "@belay/shared/training/program";
+import { sessionByCode, starterProgram } from "@belay/shared/training/program";
 import { within } from "@testing-library/react";
 
 export const id = (n: number) => `0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d${String(n).padStart(2, "0")}`;
@@ -14,7 +14,7 @@ export function session(
   const startedAt = start.toISOString();
   const end = minutes === null ? null : new Date(start.getTime() + minutes * 60_000).toISOString();
   const at = end ?? startedAt;
-  const plan = [...sessionByCode(code)!.slots];
+  const plan = [...sessionByCode(code, starterProgram)!.slots];
   return [
     {
       kind: "workout",

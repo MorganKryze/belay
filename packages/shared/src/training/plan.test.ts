@@ -12,7 +12,7 @@ import {
   weekOf,
 } from "./activities";
 import { appendSlot, liveSlots, planFor, replaceSlot, skipSlot } from "./plan";
-import { estimatedMinutes, plannedWorkSets, sessionByCode } from "./program";
+import { estimatedMinutes, plannedWorkSets, sessionByCode, starterProgram } from "./program";
 import { lastTime, nextTurn, prefill, restEndsAt, summary, turnKey, workOrder } from "./rules";
 import {
   isPlan,
@@ -25,9 +25,9 @@ import {
   workPosition,
 } from "./workout";
 
-const A = sessionByCode("A")!;
-const B = sessionByCode("B")!;
-const C = sessionByCode("C")!;
+const A = sessionByCode("A", starterProgram)!;
+const B = sessionByCode("B", starterProgram)!;
+const C = sessionByCode("C", starterProgram)!;
 const SQUAT = "ds:0043";
 const GOBLET = "ds:1760";
 const PLANK = "ds:2135";

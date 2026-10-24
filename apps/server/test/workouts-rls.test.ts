@@ -1,5 +1,5 @@
 import { newId } from "@belay/shared";
-import { sessionByCode } from "@belay/shared/training/program";
+import { sessionByCode, starterProgram } from "@belay/shared/training/program";
 import { planBytes } from "@belay/shared/training/workout";
 import { eq, sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
@@ -17,7 +17,7 @@ const denied = { cause: { code: "42501" } };
 const checkViolation = { cause: { code: "23514" } };
 const foreignKey = { cause: { code: "23503" } };
 const AT = new Date("2026-10-07T17:00:00.000Z");
-const PLAN = [...sessionByCode("A")!.slots];
+const PLAN = [...sessionByCode("A", starterProgram)!.slots];
 // The longest value of {"k": "…"} that fits 32 KiB as jsonb text (9 bytes of frame).
 const NOTES_FIT = 32768 - 9;
 

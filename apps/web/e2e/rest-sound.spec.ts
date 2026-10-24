@@ -1,5 +1,5 @@
 import type { Change } from "@belay/shared/sync/schema";
-import { sessionByCode } from "@belay/shared/training/program";
+import { sessionByCode, starterProgram } from "@belay/shared/training/program";
 import { expect, type Page, test } from "@playwright/test";
 import { fakeServer } from "./fake-server";
 
@@ -16,7 +16,7 @@ const LAST_A: Change[] = [
     id: LAST,
     field: "start",
     sessionCode: "A",
-    plan: [...sessionByCode("A")!.slots],
+    plan: [...sessionByCode("A", starterProgram)!.slots],
     startedAt: at(0),
     at: at(0),
   },
@@ -40,7 +40,7 @@ const LAST_A: Change[] = [
 
 // Session A open since five minutes ago, the bench press resting only a few seconds.
 function open(restSec: number): Change[] {
-  const [first, ...rest] = sessionByCode("A")!.slots;
+  const [first, ...rest] = sessionByCode("A", starterProgram)!.slots;
   const startedAt = new Date(Date.now() - 5 * 60_000).toISOString();
   return [
     ...LAST_A,

@@ -49,9 +49,9 @@ import {
   workPosition,
 } from "./workout";
 
-const A = sessionByCode("A")!;
-const B = sessionByCode("B")!;
-const C = sessionByCode("C")!;
+const A = sessionByCode("A", starterProgram)!;
+const B = sessionByCode("B", starterProgram)!;
+const C = sessionByCode("C", starterProgram)!;
 const BENCH = "ds:0025";
 
 let n = 0;
@@ -129,26 +129,32 @@ describe("the starter program (§6)", () => {
 
 describe("nextSession", () => {
   it("is A with no history, then follows the last session finished, C going back to A", () => {
-    expect(nextSession([])).toBe("A");
-    expect(nextSession([workout({ sessionCode: "A" })])).toBe("B");
+    expect(nextSession([], starterProgram)).toBe("A");
+    expect(nextSession([workout({ sessionCode: "A" })], starterProgram)).toBe("B");
     expect(
-      nextSession([
-        workout({ sessionCode: "B", startedAt: "2026-10-07T17:00:00.000Z" }),
-        workout({ sessionCode: "A", startedAt: "2026-10-05T17:00:00.000Z" }),
-      ]),
+      nextSession(
+        [
+          workout({ sessionCode: "B", startedAt: "2026-10-07T17:00:00.000Z" }),
+          workout({ sessionCode: "A", startedAt: "2026-10-05T17:00:00.000Z" }),
+        ],
+        starterProgram,
+      ),
     ).toBe("C");
-    expect(nextSession([workout({ sessionCode: "C" })])).toBe("A");
+    expect(nextSession([workout({ sessionCode: "C" })], starterProgram)).toBe("A");
   });
 
   it("ignores a session in progress, a removed one, and a code the program lacks", () => {
     expect(
-      nextSession([
-        workout({ sessionCode: "A" }),
-        workout({ sessionCode: "B", startedAt: "2026-10-06T17:00:00.000Z", endedAt: null }),
-        workout({ sessionCode: "C", startedAt: "2026-10-07T17:00:00.000Z", removed: true }),
-      ]),
+      nextSession(
+        [
+          workout({ sessionCode: "A" }),
+          workout({ sessionCode: "B", startedAt: "2026-10-06T17:00:00.000Z", endedAt: null }),
+          workout({ sessionCode: "C", startedAt: "2026-10-07T17:00:00.000Z", removed: true }),
+        ],
+        starterProgram,
+      ),
     ).toBe("B");
-    expect(nextSession([workout({ sessionCode: "Z" })])).toBe("A");
+    expect(nextSession([workout({ sessionCode: "Z" })], starterProgram)).toBe("A");
   });
 
   // A stored program of n sessions in its own order, letters D to G included (PM9).

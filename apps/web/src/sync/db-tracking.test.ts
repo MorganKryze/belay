@@ -1,5 +1,5 @@
 import type { Change } from "@belay/shared/sync/schema";
-import { sessionByCode } from "@belay/shared/training/program";
+import { sessionByCode, starterProgram } from "@belay/shared/training/program";
 import { IDBFactory } from "fake-indexeddb";
 import { openDB } from "idb";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -244,7 +244,7 @@ describe("the new entries", () => {
         id: W,
         field: "start",
         sessionCode: "A",
-        plan: [...sessionByCode("A")!.slots],
+        plan: [...sessionByCode("A", starterProgram)!.slots],
         startedAt: AT,
         at: AT,
       },

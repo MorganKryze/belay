@@ -1,6 +1,6 @@
 import { newId } from "@belay/shared";
 import type { Change, ProgramSlotRow, SyncResponse } from "@belay/shared/sync/schema";
-import { sessionByCode } from "@belay/shared/training/program";
+import { sessionByCode, starterProgram } from "@belay/shared/training/program";
 import {
   DEFAULT_SCHEDULE,
   MAX_PROGRAMS,
@@ -264,7 +264,7 @@ describe("the starting program", () => {
       id: past,
       userId: user,
       sessionCode: "B",
-      plan: [...sessionByCode("B")!.slots],
+      plan: [...sessionByCode("B", starterProgram)!.slots],
       startedAt: new Date(AT),
       endedAt: new Date(LATER),
     });
@@ -654,7 +654,7 @@ describe("program edits through /api/sync", () => {
 
   it("a start's sessionId is stored and sent back; a start without it is stored", async () => {
     const { user, sync } = await signIn("pg-start");
-    const plan = [...sessionByCode("B")!.slots];
+    const plan = [...sessionByCode("B", starterProgram)!.slots];
     const recorded = newId();
     const bare = newId();
     const stray = newId();

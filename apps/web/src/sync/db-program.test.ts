@@ -4,7 +4,7 @@ import type {
   ProgramSessionRow,
   ProgramSlotRow,
 } from "@belay/shared/sync/schema";
-import { sessionByCode } from "@belay/shared/training/program";
+import { sessionByCode, starterProgram } from "@belay/shared/training/program";
 import {
   DEFAULT_SCHEDULE,
   rotationOf,
@@ -45,7 +45,7 @@ const P2 = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d80";
 const S2 = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d81";
 const SLOT2 = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d82";
 const W = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d90";
-const PLAN = [...sessionByCode("A")!.slots];
+const PLAN = [...sessionByCode("A", starterProgram)!.slots];
 
 // The server's copy of a starting row: seeded with every field unwritten.
 const benchRow = (patch: Partial<ProgramSlotRow> = {}): ProgramSlotRow => {

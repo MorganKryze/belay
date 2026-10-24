@@ -1,5 +1,5 @@
 import type { Change } from "@belay/shared/sync/schema";
-import { sessionByCode } from "@belay/shared/training/program";
+import { sessionByCode, starterProgram } from "@belay/shared/training/program";
 import { expect, type Locator, type Page, test } from "@playwright/test";
 import { expectNoAxeViolations } from "./axe";
 import { fakeServer } from "./fake-server";
@@ -21,7 +21,7 @@ function finished(
 ): Change[] {
   const startedAt = new Date(`${day}T18:00:00+02:00`).toISOString();
   const endedAt = new Date(`${day}T19:00:00+02:00`).toISOString();
-  const plan = [...sessionByCode(code)!.slots];
+  const plan = [...sessionByCode(code, starterProgram)!.slots];
   return [
     {
       kind: "workout",

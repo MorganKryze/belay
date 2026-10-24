@@ -1,6 +1,6 @@
 import { newId } from "@belay/shared";
 import type { Change, SetRow, SyncResponse, WorkoutRow } from "@belay/shared/sync/schema";
-import { sessionByCode } from "@belay/shared/training/program";
+import { sessionByCode, starterProgram } from "@belay/shared/training/program";
 import { liveSets } from "@belay/shared/training/rules";
 import { MAX_SETS, type Workout, type WorkoutSet } from "@belay/shared/training/workout";
 import { eq, sql } from "drizzle-orm";
@@ -25,7 +25,7 @@ const app = createApp({ cfg, db, getOidc: oidcProvider(cfg.oidc) });
 const AT = "2026-10-07T17:00:00.000Z";
 const LATER = "2026-10-07T17:05:00.000Z";
 const LATEST = "2026-10-07T17:10:00.000Z";
-const PLAN = [...sessionByCode("A")!.slots];
+const PLAN = [...sessionByCode("A", starterProgram)!.slots];
 
 async function signIn(sub: string) {
   const user = await upsertUser(db, { issuer: "https://idp.test", sub, displayName: sub });

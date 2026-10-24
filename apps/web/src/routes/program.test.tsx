@@ -6,7 +6,7 @@ import {
   createProgram,
   placeSession,
 } from "@belay/shared/training/program-edits";
-import { sessionByCode } from "@belay/shared/training/program";
+import { sessionByCode, starterProgram } from "@belay/shared/training/program";
 import {
   SEED_PROGRAM_ID,
   seedId,
@@ -58,7 +58,7 @@ const done = (n: number, code: string, d: number, sessionId?: string): Change[] 
       field: "start",
       sessionCode: code,
       ...(sessionId && { sessionId }),
-      plan: [...(sessionByCode(code) ?? sessionByCode("A")!).slots],
+      plan: [...(sessionByCode(code, starterProgram) ?? sessionByCode("A", starterProgram)!).slots],
       startedAt: start,
       at: start,
     },
@@ -133,7 +133,7 @@ describe("the program as cards (spec D13, §4.5)", () => {
         id: id(1),
         field: "start",
         sessionCode: "A",
-        plan: [...sessionByCode("A")!.slots],
+        plan: [...sessionByCode("A", starterProgram)!.slots],
         startedAt: begun,
         at: begun,
       },
@@ -153,7 +153,7 @@ describe("the program as cards (spec D13, §4.5)", () => {
 
   it("with A open, A's card says In progress · 1 of 19 sets and still resumes it", async () => {
     const begun = new Date(2026, 9, 7, 17, 30).toISOString();
-    const plan = [...sessionByCode("A")!.slots];
+    const plan = [...sessionByCode("A", starterProgram)!.slots];
     await seed(ADA.id, [
       {
         kind: "workout",

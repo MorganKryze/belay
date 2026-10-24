@@ -1,5 +1,5 @@
 import type { Change } from "@belay/shared/sync/schema";
-import { sessionByCode } from "@belay/shared/training/program";
+import { sessionByCode, starterProgram } from "@belay/shared/training/program";
 import { act, cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { IDBFactory } from "fake-indexeddb";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -52,7 +52,7 @@ const LAST_B: Change[] = [
     id: id(1),
     field: "start",
     sessionCode: "B",
-    plan: [{ ...sessionByCode("B")!.slots[0]!, exerciseId: "ds:1760" }],
+    plan: [{ ...sessionByCode("B", starterProgram)!.slots[0]!, exerciseId: "ds:1760" }],
     startedAt: at(MONDAY),
     at: at(MONDAY),
   },
@@ -233,7 +233,7 @@ describe("replacing an exercise (spec D7, §4.3)", () => {
       ]),
     );
     expect((await session()).plan[0]!.exerciseId).toBe("ds:1760");
-    expect(sessionByCode("B")!.slots[0]!.exerciseId).toBe("ds:0043"); // the program stays
+    expect(sessionByCode("B", starterProgram)!.slots[0]!.exerciseId).toBe("ds:0043"); // the program stays
   });
 });
 

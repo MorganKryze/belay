@@ -6,7 +6,7 @@ import {
   createProgram,
   placeSession,
 } from "@belay/shared/training/program-edits";
-import { sessionByCode } from "@belay/shared/training/program";
+import { sessionByCode, starterProgram } from "@belay/shared/training/program";
 import {
   SEED_PROGRAM_ID,
   seedId,
@@ -56,7 +56,7 @@ const OPEN_A: Change[] = [
     id: OPEN,
     field: "start",
     sessionCode: "A",
-    plan: [...sessionByCode("A")!.slots],
+    plan: [...sessionByCode("A", starterProgram)!.slots],
     startedAt: start,
     at: start,
   },
@@ -87,7 +87,7 @@ const finished = (id: string, code: string, day: number): Change[] => {
       id,
       field: "start",
       sessionCode: code,
-      plan: [...(sessionByCode(code) ?? sessionByCode("A")!).slots],
+      plan: [...(sessionByCode(code, starterProgram) ?? sessionByCode("A", starterProgram)!).slots],
       startedAt: from,
       at: from,
     },

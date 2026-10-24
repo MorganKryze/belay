@@ -1,5 +1,5 @@
 import type { Change } from "@belay/shared/sync/schema";
-import { sessionByCode } from "@belay/shared/training/program";
+import { sessionByCode, starterProgram } from "@belay/shared/training/program";
 import { addSession, addSlot, placeSession } from "@belay/shared/training/program-edits";
 import {
   SEED_PROGRAM_ID,
@@ -46,7 +46,7 @@ const LAST_A: Change[] = [
     id: id(1),
     field: "start",
     sessionCode: "A",
-    plan: [...sessionByCode("A")!.slots],
+    plan: [...sessionByCode("A", starterProgram)!.slots],
     startedAt: START,
     at: START,
   },
@@ -81,7 +81,7 @@ const OPEN_A: Change[] = [
     id: id(2),
     field: "start",
     sessionCode: "A",
-    plan: [...sessionByCode("A")!.slots],
+    plan: [...sessionByCode("A", starterProgram)!.slots],
     startedAt: TEN_AGO,
     at: TEN_AGO,
   },

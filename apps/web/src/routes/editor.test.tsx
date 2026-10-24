@@ -1,5 +1,5 @@
 import type { Change } from "@belay/shared/sync/schema";
-import { nextSession, sessionByCode } from "@belay/shared/training/program";
+import { nextSession, sessionByCode, starterProgram } from "@belay/shared/training/program";
 import { SEED_PROGRAM_ID } from "@belay/shared/training/stored-program";
 import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { IDBFactory } from "fake-indexeddb";
@@ -37,7 +37,7 @@ function session(
 ): Change[] {
   const startedAt = start.toISOString();
   const end = new Date(start.getTime() + minutes * 60_000).toISOString();
-  const plan = [...sessionByCode(code)!.slots];
+  const plan = [...sessionByCode(code, starterProgram)!.slots];
   return [
     {
       kind: "workout",
@@ -197,7 +197,7 @@ describe("a session logged afterwards (spec D10)", () => {
       "Thu, Oct 1 · 1 h 00 Session B · Legs",
     ]);
     // Begun at noon, before Monday's B at 18:00: B stays the last one, C comes next.
-    expect(nextSession((await stored()).history.workouts)).toBe("C");
+    expect(nextSession((await stored()).history.workouts, starterProgram)).toBe("C");
   });
 });
 
@@ -241,9 +241,9 @@ describe("correcting a finished session (spec D9)", () => {
     expect(figures()[0]).toBe("58 min");
     const moved = (await stored()).history.workouts.find((w) => w.id === id(2))!;
     expect(moved.startedAt).toBe(new Date(2026, 8, 28, 18, 0).toISOString());
-    expect(moved.plan).toEqual(sessionByCode("B")!.slots);
+    expect(moved.plan).toEqual(sessionByCode("B", starterProgram)!.slots);
     // Thursday's B is now the last one.
-    expect(nextSession((await stored()).history.workouts)).toBe("C");
+    expect(nextSession((await stored()).history.workouts, starterProgram)).toBe("C");
   });
 
   it("writes nothing when cancelled", async () => {

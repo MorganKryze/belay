@@ -1,6 +1,6 @@
 import type { Change, SetRow, WorkoutRow } from "@belay/shared/sync/schema";
 import { resumedStart } from "@belay/shared/training/pause";
-import { sessionByCode } from "@belay/shared/training/program";
+import { sessionByCode, starterProgram } from "@belay/shared/training/program";
 import { liveSets } from "@belay/shared/training/rules";
 import { IDBFactory } from "fake-indexeddb";
 import { openDB } from "idb";
@@ -35,7 +35,7 @@ const LATEST = "2026-10-07T17:10:00.000Z";
 const W = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d90";
 const S1 = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d91";
 const S2 = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d92";
-const PLAN = [...sessionByCode("A")!.slots];
+const PLAN = [...sessionByCode("A", starterProgram)!.slots];
 
 const start = (id = W, at = AT): Change => ({
   kind: "workout",
