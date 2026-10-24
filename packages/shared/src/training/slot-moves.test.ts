@@ -218,6 +218,34 @@ describe("placing a row", () => {
     ]);
   });
 
+  it("the only row between two runs of one key leaves them apart: the lower takes a key of its own", () => {
+    const apart = rows(["G", "G", null, "G", "G"]);
+    const key = (id: string) => id.replace(/-/g, "").slice(-12);
+    expect(placed(apart, R(2), stop(0))).toEqual([
+      change(R(2), "position", 0),
+      change(R(0), "position", 1),
+      change(R(1), "position", 2),
+      change(R(3), "group", key(R(3))),
+      change(R(4), "group", key(R(3))),
+    ]);
+    expect(placed(apart, R(2), NC(0))).toEqual([
+      change(R(2), "rule", "no_climbing"),
+      change(R(2), "position", 0),
+      change(R(3), "position", 2),
+      change(R(4), "position", 3),
+      change(R(3), "group", key(R(3))),
+      change(R(4), "group", key(R(3))),
+    ]);
+    // Joining the lower run, the row leaves the upper one a key of its own instead.
+    expect(placed(apart, R(2), stop(3, "G"))).toEqual([
+      change(R(2), "group", "G"),
+      change(R(3), "position", 2),
+      change(R(2), "position", 3),
+      change(R(0), "group", key(R(0))),
+      change(R(1), "group", key(R(0))),
+    ]);
+  });
+
   it("writes nothing for the row's own stop, and refuses a stop it does not offer", () => {
     const state = rows([null, "G", "G"]);
     expect(placed(state, R(1), slotStops(state, R(1))[stopOf(state, R(1))]!)).toEqual([]);

@@ -68,7 +68,9 @@
     "search": {
       "label": "Search an exercise",
       "empty": "No exercise matches",
-      "added": "{{name}} added at the end of the session"
+      "added": "{{name}} added at the end of the session",
+      "results_one": "Library · {{count}} result for \"{{query}}\"",
+      "results_other": "Library · {{count}} results for \"{{query}}\""
     },
     "row": {
       "handle": "Move {{name}}",

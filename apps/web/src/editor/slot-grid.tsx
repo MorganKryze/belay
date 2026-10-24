@@ -1,17 +1,50 @@
 import { exerciseById } from "@belay/shared/exercises/catalog";
+import { newId } from "@belay/shared";
 import type { WarmupCount } from "@belay/shared/tools/warmup";
-import { editSlot, type SlotEdit } from "@belay/shared/training/program-edits";
+import type { ProgramEdit } from "@belay/shared/training/program-undo";
+import {
+  chainWithNext,
+  copySlot,
+  editSlot,
+  leaveGroup,
+  removeSlot,
+  type SlotEdit,
+  sectionOf,
+} from "@belay/shared/training/program-edits";
 import { parseCount, parseRange, parseRest, restClock } from "@belay/shared/training/slot-input";
-import type { ProgramSlot } from "@belay/shared/training/stored-program";
+import {
+  moveNotes,
+  placeSlot,
+  type Stop,
+  slotStops,
+  stopOf,
+} from "@belay/shared/training/slot-moves";
+import {
+  byPosition,
+  type ProgramSlot,
+  type StoredPrograms,
+} from "@belay/shared/training/stored-program";
 import { MAX_WARMUPS, RIR_MAX, SLOT_BOUNDS } from "@belay/shared/training/workout";
 import type { TFunction } from "i18next";
-import { Check, Link2, Mountain } from "lucide-react";
+import {
+  Check,
+  Copy,
+  Ellipsis,
+  GripVertical,
+  Link2,
+  Mountain,
+  Trash2,
+  Unlink2,
+} from "lucide-react";
+import { DropdownMenu } from "radix-ui";
 import {
   type KeyboardEvent,
+  type PointerEvent,
   type ReactNode,
   useEffect,
   useId,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -21,12 +54,13 @@ import { LoopThumb } from "@/components/loop-thumb";
 import { BodyThumb } from "@/exercises/body-map";
 import { readHelp, readRestStyle, readThumbs } from "@/lib/editor-prefs";
 import { formatRange, formatRest } from "@/workouts/format";
+import { type EditOptions } from "./use-edits";
 import { isMac, type PlacedSession, titleOf, useEditor } from "./editor-context";
 
 // The eight columns: the exercise takes what the fixed value columns leave. The table keeps a
 // minimum width, so a narrow window scrolls it inside its card.
 const COLUMNS =
-  "grid min-w-3xl grid-cols-[minmax(12rem,1fr)_4.25rem_5.25rem_4.25rem_6rem_4.5rem_4.75rem_2.75rem] items-center gap-x-1.5 pr-2.5 pl-4";
+  "grid min-w-3xl grid-cols-[minmax(15rem,1fr)_4.25rem_5.25rem_4.25rem_6rem_4.5rem_4.75rem_2.75rem] items-center gap-x-1.5 pr-2.5 pl-1";
 const COLUMN_KEYS = ["exercise", "sets", "reps", "rir", "rest", "warmups", "main", "actions"];
 const ring = "outline-ring focus-visible:outline-2 -outline-offset-2";
 const value = `relative grid h-11 place-items-center rounded-chip bg-track font-semibold whitespace-nowrap ${ring}`;
@@ -34,10 +68,11 @@ const opened =
   "relative grid h-11 place-items-center rounded-chip bg-card font-semibold ring-2 ring-primary ring-inset";
 const line = "col-span-full flex items-center gap-2 text-section text-muted-foreground";
 
-// The cells the keyboard reaches in a row, left to right; all but Principal open as a field.
-const CELLS = ["sets", "reps", "rir", "rest", "warmups", "main"] as const;
+// The cells the keyboard reaches in a row, left to right: the handle, the values (all but Principal
+// open as a field) and the ⋯.
+const CELLS = ["handle", "sets", "reps", "rir", "rest", "warmups", "main", "more"] as const;
 type Cell = (typeof CELLS)[number];
-type TextCell = Exclude<Cell, "main">;
+type TextCell = Exclude<Cell, "handle" | "main" | "more">;
 
 interface Row {
   slot: ProgramSlot;
@@ -52,7 +87,7 @@ interface Draft {
 const keyOf = (slotId: string, cell: Cell) => `${slotId}:${cell}`;
 // Only the last slot of a group rests, so the others' rest is no field.
 const opens = (row: Row, cell: Cell): cell is TextCell =>
-  cell !== "main" && (cell !== "rest" || row.rests);
+  cell !== "handle" && cell !== "main" && cell !== "more" && (cell !== "rest" || row.rests);
 
 // Where a slot sits in its group: chained slots share a group key with a neighbour; only the last
 // of a group rests, the others go straight to the next exercise.
@@ -127,25 +162,104 @@ function shownValue(slot: ProgramSlot, cell: TextCell, t: TFunction): string {
   return slot.measure === "seconds" ? t("editor.grid.seconds", { range }) : range;
 }
 
+interface Lift {
+  id: string;
+  stop: number; // in the row's stops
+  by: "key" | "pointer";
+}
+// A row just dropped, shown where it landed until the programs read again hold the move.
+interface Held {
+  id: string;
+  stop: Stop;
+  programs: StoredPrograms;
+}
+// Where the rows sat when a drag began, in page coordinates: each section's row midpoints, the
+// lifted row left out, the grid's top and bottom and the top of the no-climbing section.
+interface Geometry {
+  normal: number[];
+  noClimbing: number[];
+  top: number;
+  noClimbingTop: number;
+  bottom: number;
+}
+
+const applied = (s: ProgramSlot, c: ProgramEdit): ProgramSlot => {
+  if (c.kind !== "programSlot" || c.id !== s.id) return s;
+  if (c.field === "position") return { ...s, position: c.value };
+  if (c.field === "group") return { ...s, groupKey: c.value };
+  if (c.field === "rule") return { ...s, rule: c.value };
+  return s;
+};
+// The session as it reads with the row at a stop: what the grid shows while a row is lifted.
+function arranged(p: StoredPrograms, sessionId: string, id: string, stop: Stop) {
+  const changes = placeSlot(p, id, stop, "") ?? [];
+  const own = p.slots
+    .filter((s) => s.sessionId === sessionId && !s.removed)
+    .map((s) => changes.reduce(applied, s))
+    .sort(byPosition);
+  return {
+    slots: own.filter((s) => s.rule === null),
+    noClimbing: own.filter((s) => s.rule === "no_climbing"),
+  };
+}
+
+// The stop under the pointer: the gap between the row midpoints it falls in, then, where a gap
+// offers more than one stop (a group's edge), the stops share the gap from top to bottom, so the
+// upper half of the gap above a group is outside it and the lower half inside.
+function stopAt(g: Geometry, stops: readonly Stop[], y: number, current: number): number {
+  const rule = y >= g.noClimbingTop ? "no_climbing" : null;
+  const mids = rule ? g.noClimbing : g.normal;
+  const index = mids.filter((m) => m < y).length;
+  const here = stops.flatMap((s, i) => (s.rule === rule && s.index === index ? [i] : []));
+  if (here.length === 0) return current;
+  const lo = mids[index - 1] ?? (rule ? g.noClimbingTop : g.top);
+  const hi = mids[index] ?? (rule ? g.bottom : Math.min(g.noClimbingTop, g.bottom));
+  const share = Math.min(Math.max((y - lo) / Math.max(hi - lo, 1), 0), 0.999);
+  return here[Math.floor(share * here.length)]!;
+}
+
+const reducedMotion = () =>
+  typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+
 // The shown session's slots as a grid with one Tab stop: arrows move from cell to cell, Enter or a
 // click opens a cell as a field, Enter saves and stays, Tab saves and opens the next, Escape
 // restores. A value that cannot be read keeps its field open with the reason and saves nothing.
 export function SlotGrid({ placed }: { placed: PlacedSession }) {
   const { t } = useTranslation();
-  const { edits } = useEditor();
+  const { edits, programs, announce } = useEditor();
   // Edits are written one after the other, so undo takes them back in the order they were made:
   // Tab saves a field and opens the next before the first write has landed.
   const latest = useRef(edits);
   latest.current = edits;
   const queue = useRef<Promise<unknown>>(Promise.resolve());
-  const write = (slotId: string, edit: SlotEdit) => {
-    queue.current = queue.current.then(() =>
-      latest.current.record((p, at) => editSlot(p, slotId, edit, at)),
-    );
+  const run = (
+    build: (p: StoredPrograms, at: string) => readonly ProgramEdit[] | null,
+    options?: EditOptions,
+  ) => {
+    queue.current = queue.current.then(() => latest.current.record(build, options));
   };
+  const write = (slotId: string, edit: SlotEdit) => run((p, at) => editSlot(p, slotId, edit, at));
   const grid = useRef<HTMLDivElement>(null);
-  const normal = rowsOf(placed.slots);
-  const noClimbing = rowsOf(placed.noClimbing);
+
+  // A lifted row walks the stops the shared rules offer; the grid shows the session as it would
+  // read with the row there, and only the drop writes.
+  const [lift, setLift] = useState<Lift | null>(null);
+  const [held, setHeld] = useState<Held | null>(null);
+  const liftedId = lift?.id ?? null;
+  const stops = useMemo(
+    () => (liftedId === null ? [] : slotStops(programs, liftedId)),
+    [programs, liftedId],
+  );
+  const moving = lift
+    ? { id: lift.id, stop: stops[lift.stop] }
+    : held?.programs === programs
+      ? held
+      : null;
+  const view = moving?.stop
+    ? arranged(programs, placed.session.id, moving.id, moving.stop)
+    : placed;
+  const normal = rowsOf(view.slots);
+  const noClimbing = rowsOf(view.noClimbing);
   const rows = [...normal, ...noClimbing];
   const [focus, setFocus] = useState<string | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
@@ -191,6 +305,169 @@ export function SlotGrid({ placed }: { placed: PlacedSession }) {
   };
   const toggle = (slot: ProgramSlot) => write(slot.id, { field: "main", value: !slot.isMain });
 
+  const nameOf = (id: string) => {
+    const exerciseId = programs.slots.find((s) => s.id === id)?.exerciseId ?? "";
+    return exerciseById(exerciseId)?.name ?? exerciseId;
+  };
+  // « position 3 sur 6 » in the section the stop is in, the lifted row counted.
+  const positionOf = (id: string, stop: Stop) => ({
+    n: stop.index + 1,
+    total: sectionOf(programs, placed.session.id, stop.rule, id).length + 1,
+  });
+  const start = (id: string, by: Lift["by"]) => {
+    const at = stopOf(programs, id);
+    const stop = slotStops(programs, id)[at];
+    if (!stop) return;
+    setLift({ id, stop: at, by });
+    announce(t("editor.move.lifted", { name: nameOf(id), ...positionOf(id, stop) }));
+  };
+  const goTo = (next: number) => {
+    const stop = stops[next];
+    if (!lift || !stop || next === lift.stop) return;
+    setLift({ ...lift, stop: next });
+    const notes = moveNotes(programs, lift.id, stop).map((note) => t(`editor.move.${note}`));
+    announce([t("editor.move.position", positionOf(lift.id, stop)), ...notes].join(", "));
+  };
+  const drop = () => {
+    if (!lift) return;
+    const { id } = lift;
+    const stop = stops[lift.stop];
+    setLift(null);
+    if (!stop) return;
+    setHeld({ id, stop, programs });
+    run((p, at) => placeSlot(p, id, stop, at));
+    announce(t("editor.move.dropped", { name: nameOf(id), ...positionOf(id, stop) }));
+  };
+  const cancel = () => {
+    if (!lift) return;
+    setLift(null);
+    announce(t("editor.move.cancelled"));
+  };
+  // Space lifts and drops, ↑ ↓ walk the stops, Escape puts the row back; Tab leaves it where it was.
+  const onHandleKey = (e: KeyboardEvent<HTMLElement>, row: Row): boolean => {
+    const lifted = lift?.id === row.slot.id;
+    if (e.key === " ") {
+      e.preventDefault();
+      if (lifted) drop();
+      else if (!lift) start(row.slot.id, "key");
+      return true;
+    }
+    if (!lifted) return false;
+    if (e.key === "Tab") {
+      cancel();
+      return true;
+    }
+    e.preventDefault();
+    if (e.key === "ArrowDown" || e.key === "ArrowUp")
+      goTo(Math.min(Math.max(lift.stop + (e.key === "ArrowDown" ? 1 : -1), 0), stops.length - 1));
+    else if (e.key === "Escape") cancel();
+    return true;
+  };
+
+  // A drag follows the pointer over the whole page, so a row that moves under it never loses it.
+  const geometry = useRef<Geometry | null>(null);
+  const measure = (id: string): Geometry => {
+    const box = grid.current!.getBoundingClientRect();
+    const mid = (el: Element) => {
+      const r = el.getBoundingClientRect();
+      return r.top + scrollY + r.height / 2;
+    };
+    const mids = (rule: string) =>
+      [...grid.current!.querySelectorAll(`[data-row][data-rule="${rule}"]`)]
+        .filter((el) => el.getAttribute("data-row") !== id)
+        .map(mid);
+    const section = grid.current!.querySelector("[data-no-climbing]")?.getBoundingClientRect();
+    return {
+      normal: mids("normal"),
+      noClimbing: mids("no_climbing"),
+      top: box.top + scrollY,
+      noClimbingTop: section ? section.top + scrollY : Infinity,
+      bottom: box.bottom + scrollY,
+    };
+  };
+  const pointer = useRef<{ move(y: number): void; drop(): void; cancel(): void } | null>(null);
+  pointer.current = {
+    move: (y) => {
+      if (!lift) return;
+      geometry.current ??= measure(lift.id);
+      goTo(stopAt(geometry.current, stops, y, lift.stop));
+    },
+    drop,
+    cancel,
+  };
+  const dragging = lift?.by === "pointer";
+  useEffect(() => {
+    if (!dragging) return;
+    const move = (e: globalThis.PointerEvent) => pointer.current?.move(e.clientY + scrollY);
+    const up = () => pointer.current?.drop();
+    const lost = () => pointer.current?.cancel();
+    const key = (e: globalThis.KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      e.preventDefault();
+      pointer.current?.cancel();
+    };
+    addEventListener("pointermove", move);
+    addEventListener("pointerup", up);
+    addEventListener("pointercancel", lost);
+    addEventListener("keydown", key);
+    return () => {
+      removeEventListener("pointermove", move);
+      removeEventListener("pointerup", up);
+      removeEventListener("pointercancel", lost);
+      removeEventListener("keydown", key);
+    };
+  }, [dragging]);
+  const onHandleDown = (e: PointerEvent<HTMLElement>, row: Row) => {
+    if (e.button !== 0 || lift) return;
+    e.preventDefault();
+    // A touch holds its pointer on the handle; let it go, so the page keeps reporting it when the
+    // row moves.
+    if (e.currentTarget.hasPointerCapture?.(e.pointerId))
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    geometry.current = null;
+    e.currentTarget.focus();
+    start(row.slot.id, "pointer");
+  };
+
+  // The lifted row keeps the focus while it moves from one place to another in the grid.
+  useLayoutEffect(() => {
+    if (lift?.by !== "key") return;
+    const handle = grid.current?.querySelector<HTMLElement>(
+      `[data-cell="${keyOf(lift.id, "handle")}"]`,
+    );
+    if (handle && document.activeElement !== handle) handle.focus();
+  });
+  // The others slide out of the lifted row's way: each row starts where it was drawn and moves to
+  // its new place, by its transform only; with reduced motion they move at once.
+  const tops = useRef(new Map<string, number>());
+  const layout = rows.map((r) => `${r.slot.id}${r.grouped ? "+" : ""}`).join() + (lift ? "|" : "");
+  useLayoutEffect(() => {
+    const now = new Map<string, number>();
+    const slide = liftedId !== null && !reducedMotion();
+    for (const el of grid.current?.querySelectorAll<HTMLElement>("[data-row]") ?? []) {
+      const id = el.dataset.row!;
+      el.style.transition = "";
+      el.style.transform = "";
+      now.set(id, el.offsetTop);
+      const was = tops.current.get(id);
+      if (!slide || was === undefined || was === el.offsetTop) continue;
+      el.style.transform = `translateY(${was - el.offsetTop}px)`;
+      void el.offsetHeight;
+      el.style.transition = "transform var(--dur-release) var(--ease-out)";
+      el.style.transform = "";
+    }
+    tops.current = now;
+  }, [layout, liftedId]);
+
+  const removedText = (slot: ProgramSlot) =>
+    placed.letter === null
+      ? t("editor.toast.slotRemovedAside", {
+          name: nameOf(slot.id),
+          session: titleOf(placed, t),
+        })
+      : t("editor.toast.slotRemoved", { name: nameOf(slot.id), code: placed.letter });
+  const refused = { refused: t("editor.limit.slots") };
+
   // The next field after a cell in reading order, or before it with Shift.
   const fieldAfter = (r: number, c: number, back: boolean) => {
     const order = rows.flatMap((row) => CELLS.map((cell) => ({ row, cell })));
@@ -204,6 +481,8 @@ export function SlotGrid({ placed }: { placed: PlacedSession }) {
     if (e.target !== e.currentTarget) return;
     const row = rows[r]!;
     const cell = CELLS[c]!;
+    if (cell === "handle" && onHandleKey(e, row)) return;
+    if (lift) return;
     const to: Partial<Record<string, [number, number]>> = {
       ArrowRight: [r, Math.min(c + 1, CELLS.length - 1)],
       ArrowLeft: [r, Math.max(c - 1, 0)],
@@ -251,8 +530,8 @@ export function SlotGrid({ placed }: { placed: PlacedSession }) {
     setDraft(null);
   };
 
-  const cells = (row: Row, r: number) =>
-    CELLS.map((cell, c) => {
+  const cells = (row: Row, r: number, last: boolean): RowCells => {
+    const nodes = CELLS.map((cell, c) => {
       const key = keyOf(row.slot.id, cell);
       const focusable = {
         "data-cell": key,
@@ -260,6 +539,39 @@ export function SlotGrid({ placed }: { placed: PlacedSession }) {
         onFocus: () => setFocus(key),
         onKeyDown: (e: KeyboardEvent<HTMLElement>) => onCellKey(e, r, c),
       };
+      const name = nameOf(row.slot.id);
+      if (cell === "handle")
+        return (
+          <button
+            key={cell}
+            type="button"
+            {...focusable}
+            aria-label={t("editor.row.handle", { name })}
+            onPointerDown={(e) => onHandleDown(e, row)}
+            className={`grid size-11 shrink-0 cursor-grab touch-none place-items-center rounded-control text-muted-foreground ${ring}`}
+          >
+            <GripVertical aria-hidden className="size-5" />
+          </button>
+        );
+      if (cell === "more")
+        return (
+          <RowMenu
+            key={cell}
+            label={t("editor.row.more", { name })}
+            focusable={focusable}
+            up={r >= rows.length - 3}
+            onDuplicate={() => run((p, at) => copySlot(p, newId(), row.slot.id, at), refused)}
+            onChain={
+              row.grouped || last
+                ? null
+                : () => run((p, at) => chainWithNext(p, row.slot.id, newId, at))
+            }
+            onLeave={row.grouped ? () => run((p, at) => leaveGroup(p, row.slot.id, at)) : null}
+            onRemove={() =>
+              run((p, at) => removeSlot(p, row.slot.id, at), { toast: removedText(row.slot) })
+            }
+          />
+        );
       if (cell === "main")
         return <MainCell key={cell} slot={row.slot} focusable={focusable} onToggle={toggle} />;
       if (!opens(row, cell))
@@ -300,6 +612,8 @@ export function SlotGrid({ placed }: { placed: PlacedSession }) {
         </span>
       );
     });
+    return { handle: nodes[0], values: nodes.slice(1, -1), more: nodes.at(-1) };
+  };
 
   return (
     <div
@@ -308,7 +622,7 @@ export function SlotGrid({ placed }: { placed: PlacedSession }) {
       aria-label={t("editor.grid.label", { session: titleOf(placed, t) })}
       // Positioned, so what is drawn out of the flow (a column's hidden name, a field's reason)
       // scrolls with the table inside its card instead of widening the page.
-      className="relative tabular-nums"
+      className={`relative tabular-nums ${dragging ? "cursor-grabbing select-none" : ""}`}
     >
       <div role="rowgroup">
         <div role="row" className={`${COLUMNS} min-h-8.5 border-t border-border`}>
@@ -316,7 +630,8 @@ export function SlotGrid({ placed }: { placed: PlacedSession }) {
             <span
               key={key}
               role="columnheader"
-              className={`text-section text-muted-foreground ${i === 0 ? "text-left" : "text-center"}`}
+              // The exercise's name starts after the row's handle.
+              className={`text-section text-muted-foreground ${i === 0 ? "pl-14 text-left" : "text-center"}`}
             >
               {key === "actions" ? (
                 <span className="sr-only">{t("editor.col.actions")}</span>
@@ -327,20 +642,32 @@ export function SlotGrid({ placed }: { placed: PlacedSession }) {
           ))}
         </div>
       </div>
-      <Rows rows={normal} cells={(row, i) => cells(row, i)} />
-      {noClimbing.length > 0 && (
-        <div role="rowgroup" aria-label={t("editor.grid.noClimbing")}>
-          <div role="row" className="grid min-w-3xl">
-            <span
-              role="gridcell"
-              className={`${line} min-h-11 border-t border-border px-4 pt-2.5 pb-1.5`}
-            >
-              <Mountain aria-hidden className="size-4" />
-              {t("editor.grid.noClimbing")}
-            </span>
-          </div>
-          <Rows rows={noClimbing} cells={(row, i) => cells(row, normal.length + i)} />
-        </div>
+      <Rows
+        rows={normal}
+        rule="normal"
+        lifted={liftedId}
+        cells={(row, i) => cells(row, i, i === normal.length - 1)}
+      />
+      {/* While a row is lifted the section shows even empty, as a place to drop it. */}
+      {(noClimbing.length > 0 || lift) && (
+        <Rows
+          rows={noClimbing}
+          rule="no_climbing"
+          lifted={liftedId}
+          label={t("editor.grid.noClimbing")}
+          head={
+            <div role="row" data-no-climbing className="grid min-w-3xl">
+              <span
+                role="gridcell"
+                className={`${line} min-h-11 border-t border-border pt-2.5 pr-4 pb-1.5 pl-15`}
+              >
+                <Mountain aria-hidden className="size-4" />
+                {t("editor.grid.noClimbing")}
+              </span>
+            </div>
+          }
+          cells={(row, i) => cells(row, normal.length + i, i === noClimbing.length - 1)}
+        />
       )}
     </div>
   );
@@ -441,27 +768,48 @@ function MainCell({
   );
 }
 
+interface RowCells {
+  handle: ReactNode;
+  values: ReactNode;
+  more: ReactNode;
+}
+
 function Rows({
   rows,
+  rule,
+  lifted,
+  label,
+  head,
   cells,
 }: {
   rows: readonly Row[];
-  cells: (row: Row, index: number) => ReactNode;
+  rule: "normal" | "no_climbing";
+  lifted: string | null;
+  label?: string;
+  head?: ReactNode;
+  cells: (row: Row, index: number) => RowCells;
 }) {
   const { t } = useTranslation();
   const slots = rows.map((r) => r.slot);
+  // A section's heading row sits in its own row group: a row group holds rows, never another group.
   return (
-    <div role="rowgroup">
+    <div role="rowgroup" aria-label={label}>
+      {head}
       {rows.flatMap((row, i) => {
         const slotRow = (
-          <SlotRow key={row.slot.id} slot={row.slot} grouped={row.grouped}>
-            {cells(row, i)}
-          </SlotRow>
+          <SlotRow
+            key={row.slot.id}
+            slot={row.slot}
+            rule={rule}
+            grouped={row.grouped}
+            lifted={row.slot.id === lifted}
+            cells={cells(row, i)}
+          />
         );
         if (!groupPlace(slots, i).first) return [slotRow];
         return [
           <div key={`${row.slot.id}-group`} role="row" className="grid min-w-3xl">
-            <span role="gridcell" className={`${line} min-h-8.5 pt-2 pl-4`}>
+            <span role="gridcell" className={`${line} min-h-8.5 pt-2 pl-15`}>
               <Link2 aria-hidden className="size-4" />
               {t("editor.grid.group")}
             </span>
@@ -473,27 +821,37 @@ function Rows({
   );
 }
 
+// A slot's row: its handle and its exercise, its values, its ⋯. Lifted, it takes the soft primary
+// tint with a ring drawn inside, above the rows sliding past it.
 function SlotRow({
   slot,
+  rule,
   grouped,
-  children,
+  lifted,
+  cells,
 }: {
   slot: ProgramSlot;
+  rule: "normal" | "no_climbing";
   grouped: boolean;
-  children: ReactNode;
+  lifted: boolean;
+  cells: RowCells;
 }) {
   const { t } = useTranslation();
   const exercise = exerciseById(slot.exerciseId);
   return (
     <div
       role="row"
+      data-row={slot.id}
+      data-rule={rule}
+      aria-current={lifted || undefined}
       className={`${COLUMNS} relative min-h-15 border-t border-border ${
         grouped
-          ? "before:absolute before:inset-y-0 before:left-1.5 before:w-0.5 before:rounded-full before:bg-muted-foreground"
+          ? "before:absolute before:inset-y-0 before:left-13 before:w-0.5 before:rounded-full before:bg-muted-foreground"
           : ""
-      }`}
+      } ${lifted ? "z-10 bg-primary-soft outline-2 -outline-offset-2 outline-primary" : ""}`}
     >
       <span role="gridcell" className="flex min-w-0 items-center gap-3 py-2">
+        {cells.handle}
         {exercise && readThumbs() === "shown" && (
           <LoopThumb
             exerciseId={exercise.id}
@@ -514,9 +872,83 @@ function SlotRow({
           )}
         </span>
       </span>
-      {children}
-      <span role="gridcell" />
+      {cells.values}
+      <span role="gridcell" className="grid place-items-center">
+        {cells.more}
+      </span>
     </div>
+  );
+}
+
+const item =
+  "flex min-h-11 cursor-default items-center gap-3 rounded-chip px-3 text-body font-medium outline-hidden select-none data-highlighted:bg-(--press-tint)";
+
+// A row's ⋯: Dupliquer, then Enchaîner avec le suivant or Sortir du groupe when the row has one,
+// then Retirer de la séance in red, apart. Near the bottom of the table it opens upward.
+function RowMenu({
+  label,
+  focusable,
+  up,
+  onDuplicate,
+  onChain,
+  onLeave,
+  onRemove,
+}: {
+  label: string;
+  focusable: Focusable;
+  up: boolean;
+  onDuplicate(): void;
+  onChain: (() => void) | null;
+  onLeave: (() => void) | null;
+  onRemove(): void;
+}) {
+  const { t } = useTranslation();
+  return (
+    // Not modal: a modal menu hides the page from assistive technology while the page's own controls
+    // stay focusable behind it. Focus still moves into the menu and Escape brings it back.
+    <DropdownMenu.Root modal={false}>
+      <DropdownMenu.Trigger asChild>
+        <button
+          type="button"
+          {...focusable}
+          aria-label={label}
+          className={`grid size-11 place-items-center rounded-control text-muted-foreground data-[state=open]:bg-track ${ring}`}
+        >
+          <Ellipsis aria-hidden className="size-5" />
+        </button>
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Portal>
+        <DropdownMenu.Content
+          side={up ? "top" : "bottom"}
+          align="end"
+          sideOffset={4}
+          collisionPadding={8}
+          className="z-50 min-w-60 rounded-field bg-popover p-1 text-popover-foreground shadow-float data-[state=open]:animate-fade-in dark:border dark:border-border"
+        >
+          <DropdownMenu.Item className={item} onSelect={onDuplicate}>
+            <Copy aria-hidden className="size-5 text-muted-foreground" />
+            {t("editor.row.duplicate")}
+          </DropdownMenu.Item>
+          {onChain && (
+            <DropdownMenu.Item className={item} onSelect={onChain}>
+              <Link2 aria-hidden className="size-5 text-muted-foreground" />
+              {t("editor.row.chain")}
+            </DropdownMenu.Item>
+          )}
+          {onLeave && (
+            <DropdownMenu.Item className={item} onSelect={onLeave}>
+              <Unlink2 aria-hidden className="size-5 text-muted-foreground" />
+              {t("editor.row.unchain")}
+            </DropdownMenu.Item>
+          )}
+          <DropdownMenu.Separator className="-mx-1 my-1 h-px bg-border" />
+          <DropdownMenu.Item className={`${item} text-destructive`} onSelect={onRemove}>
+            <Trash2 aria-hidden className="size-5" />
+            {t("editor.row.remove")}
+          </DropdownMenu.Item>
+        </DropdownMenu.Content>
+      </DropdownMenu.Portal>
+    </DropdownMenu.Root>
   );
 }
 
@@ -546,8 +978,10 @@ export function GridHelp() {
       <Key>↓</Key>
       <Key>←</Key>
       <Key>→</Key> {t("editor.help.move")} · <Key>{t("editor.help.enter")}</Key>{" "}
-      {t("editor.help.edit")} · <Key>{isMac() ? "⌘" : "Ctrl"}</Key> <Key>Z</Key>{" "}
-      {t("editor.help.undo")}
+      {t("editor.help.edit")} · <Key>{t("editor.help.space")}</Key> {t("editor.help.on")}{" "}
+      <GripVertical aria-hidden className="inline size-4 align-text-bottom" />{" "}
+      {t("editor.help.lift")} · <Key>/</Key> {t("editor.help.search")} ·{" "}
+      <Key>{isMac() ? "⌘" : "Ctrl"}</Key> <Key>Z</Key> {t("editor.help.undo")}
     </p>
   );
 }

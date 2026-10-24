@@ -207,6 +207,32 @@ export function dissolved(
   return left.length === 1 ? [groupChange(left[0]!.id, null, at)] : [];
 }
 
+// A key for a run of rows that no other row of the section holds, made from one of their ids.
+function freshKey(section: readonly ProgramSlot[], run: readonly ProgramSlot[]): string {
+  const keys = run.map((s) => keyOf(s.id));
+  return keys.find((k) => !section.some((s) => s.groupKey === k)) ?? keys[0]!;
+}
+
+// When row `id` is all that keeps two runs of one key apart in `section` (the row still in it),
+// taking it out would make them one group: the run below takes a key of its own, or the run above
+// with `upper`, for a row that goes on to join the run below.
+export function keptApart(
+  section: readonly ProgramSlot[],
+  id: string,
+  at: string,
+  upper = false,
+): ProgramSlotChange[] {
+  const i = section.findIndex((s) => s.id === id);
+  const before = section[i - 1];
+  const after = section[i + 1];
+  const key = before?.groupKey ?? null;
+  if (i < 0 || !after || key === null || after.groupKey !== key || section[i]!.groupKey === key)
+    return [];
+  const run = runOf(section, upper ? before!.id : after.id);
+  const fresh = freshKey(section, run);
+  return run.map((s) => groupChange(s.id, fresh, at));
+}
+
 // A slot at the end of its section with the default targets of « + Exercice », or the values of
 // the slot `like` (the row above, as a setting chooses): its sets, RIR, rest and warm-ups (none for
 // a timed exercise) and, in the same measure, its range; never its main mark nor its group. Refused
@@ -290,7 +316,15 @@ export function copySlot(
   const below = section.findIndex((s) => s.id === sourceId) + 1;
   return [
     ...renumber(section.slice(0, below), at),
-    createOf(source, id, source.sessionId, below, source.groupKey, at),
+    // A row alone with its key is in no group: its copy takes none, so the two never make one.
+    createOf(
+      source,
+      id,
+      source.sessionId,
+      below,
+      runOf(section, sourceId).length > 1 ? source.groupKey : null,
+      at,
+    ),
     ...renumber(section.slice(below), at, below + 1),
   ];
 }
@@ -423,12 +457,15 @@ export function moveSlot(
   return renumber(insert(sectionOf(p, slot.sessionId, slot.rule, id), slot, toIndex), at);
 }
 
-// The slot removed, and the key of the one row its group is left with.
+// The slot removed, the key of the one row its group is left with, and a key of its own for the
+// run below when the slot was all that kept it apart from a run of the same key.
 export function removeSlot(p: StoredPrograms, id: string, at: string): ProgramSlotChange[] {
   const slot = slotOf(p, id);
+  const section = slot ? sectionOf(p, slot.sessionId, slot.rule) : [];
   return [
     { kind: "programSlot", id, field: "removed", value: true, at },
-    ...(slot ? dissolved(sectionOf(p, slot.sessionId, slot.rule), id, at) : []),
+    ...dissolved(section, id, at),
+    ...keptApart(section, id, at),
   ];
 }
 
