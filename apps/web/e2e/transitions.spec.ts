@@ -389,7 +389,9 @@ test.describe("late code", () => {
     await page.setViewportSize({ width: 390, height: 500 });
     await recordTransitions(page);
     // The tools' shared page code arrives a second late, past the 150 ms the pending page waits.
+    let held = 0;
     await page.route(/\/chunk-tool-[\w-]{8}\.js$/, async (route) => {
+      held++;
       await new Promise((r) => setTimeout(r, 1000));
       await route.continue();
     });
@@ -406,6 +408,8 @@ test.describe("late code", () => {
     await expect(page.getByRole("heading", { level: 1, name: "Tools" })).toBeVisible();
     await settled(page);
     await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(scrolled);
+    // The code really was late: a renamed chunk would leave this test proving nothing.
+    expect(held).toBeGreaterThan(0);
     const [push] = await played(page);
     expect(push!.types).toEqual(["push"]);
     expect(push!.page.scrollY).toBe(scrolled);
@@ -413,7 +417,9 @@ test.describe("late code", () => {
   });
 
   test("a pushed page opened first, its code late, shows the breathing mark", async ({ page }) => {
+    let held = 0;
     await page.route(/\/chunk-tool-[\w-]{8}\.js$/, async (route) => {
+      held++;
       await new Promise((r) => setTimeout(r, 3000));
       await route.continue();
     });
@@ -423,5 +429,6 @@ test.describe("late code", () => {
     await expect(page.getByRole("heading", { level: 1, name: "BMI" })).toBeVisible({
       timeout: 5000,
     });
+    expect(held).toBeGreaterThan(0);
   });
 });

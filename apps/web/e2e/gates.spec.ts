@@ -345,6 +345,55 @@ const SCREENS: [string, (page: Page) => Promise<void>][] = [
       await expect(page.getByRole("heading", { level: 1, name: "Session A · Push" })).toBeVisible();
     },
   ],
+  [
+    "the exercise page with its loop",
+    async (page) => {
+      await fakeServer(page, { media: true });
+      await page.goto("/exercises/ds:0025");
+      await expect(page.getByRole("figure", { name: /^Demonstration of / })).toBeVisible();
+      await expect(page.locator("video")).toHaveCount(1);
+    },
+  ],
+  [
+    "the session card's still",
+    async (page) => {
+      await fakeServer(page, { changes: LAST_A, media: true });
+      await page.goto("/workout?start=A");
+      await expect(page.locator(".launch")).toBeHidden();
+      await expect(page.getByRole("button", { name: "Show the movement" }).first()).toBeVisible();
+    },
+  ],
+  [
+    "the loop's sheet",
+    async (page) => {
+      await fakeServer(page, { changes: LAST_A, media: true });
+      await page.goto("/workout?start=A");
+      await expect(page.locator(".launch")).toBeHidden();
+      await page.getByRole("button", { name: "Show the movement" }).first().click();
+      const sheet = page.getByRole("dialog");
+      await expect(sheet).toBeVisible();
+      await expect(sheet.getByRole("figure")).toBeVisible();
+    },
+  ],
+  [
+    "the preview's stills",
+    async (page) => {
+      await fakeServer(page, { media: true });
+      await page.goto("/workouts/session/A");
+      await expect(page.locator(".launch")).toBeHidden();
+      const list = page.getByRole("region", { name: "Exercises" });
+      await expect(list.getByRole("link")).toHaveCount(6);
+      await expect
+        .poll(() =>
+          list
+            .locator("video")
+            .evaluateAll(
+              (all: HTMLVideoElement[]) => all.filter((v) => v.readyState >= 2 && !v.hidden).length,
+            ),
+        )
+        .toBe(6);
+    },
+  ],
 ];
 
 for (const viewport of [PHONE, DESKTOP]) {

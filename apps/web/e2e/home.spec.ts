@@ -134,27 +134,12 @@ for (const theme of ["light", "dark"] as const) {
 
 // Session A started half a minute ago and ended a second ago: done today, B comes next.
 const DONE = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7f02";
-// Paris's day is the app's: the session never starts before today's midnight there, whatever the
-// second the test runs at.
-const sinceParisMidnight = (now: Date): number => {
-  const part = (type: string) =>
-    Number(
-      new Intl.DateTimeFormat("en-GB", {
-        timeZone: "Europe/Paris",
-        hourCycle: "h23",
-        hour: "numeric",
-        minute: "numeric",
-        second: "numeric",
-      })
-        .formatToParts(now)
-        .find((p) => p.type === type)!.value,
-    );
-  return ((part("hour") * 60 + part("minute")) * 60 + part("second")) * 1000;
-};
-const doneA = (now = new Date()): Change[] => {
-  const back = Math.min(30_000, Math.max(sinceParisMidnight(now), 2_000));
-  const from = new Date(now.getTime() - back).toISOString();
-  const to = new Date(now.getTime() - back / 2).toISOString();
+// A fixed Paris noon, so the session never starts before today's midnight whatever the second
+// the test runs at; timers still run, only the date is fixed.
+const DONE_NOW = new Date("2026-10-07T12:00:00+02:00");
+const doneA = (now = DONE_NOW): Change[] => {
+  const from = new Date(now.getTime() - 30_000).toISOString();
+  const to = new Date(now.getTime() - 15_000).toISOString();
   return [
     {
       kind: "workout",
@@ -168,11 +153,13 @@ const doneA = (now = new Date()): Change[] => {
     { kind: "workout", id: DONE, field: "ended", value: to, at: to },
   ];
 };
+const fixDate = (page: Page) => page.clock.setFixedTime(DONE_NOW);
 
 test.describe("the session done", () => {
   test("after today's session the card says done and names the next one quietly", async ({
     page,
   }) => {
+    await fixDate(page);
     await openHome(page, doneA());
     const card = sessionCard(page);
     await expect(card).toContainText("Done today · ");
@@ -196,6 +183,7 @@ test.describe("the session done", () => {
   for (const theme of ["light", "dark"] as const)
     test(`Accueil with the session done has no axe violation, ${theme}`, async ({ page }) => {
       await page.addInitScript((t) => localStorage.setItem("belay.theme", t), theme);
+      await fixDate(page);
       await openHome(page, doneA());
       await expect(sessionCard(page)).toContainText("Done today");
       await expectNoAxeViolations(page);
@@ -231,6 +219,7 @@ test("the session card's title is 17 px 600 and its lead is in the accent ink", 
 });
 
 test("the done tile is 36 px and tinted in the reference green", async ({ page }) => {
+  await fixDate(page);
   await openHome(page, doneA());
   const tile = sessionCard(page).locator("svg").first().locator("..");
   const box = (await tile.boundingBox())!;
