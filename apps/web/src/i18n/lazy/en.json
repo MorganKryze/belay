@@ -97,6 +97,27 @@
         "wrong_measure": "Counted in reps for a timed exercise, or the other way round",
         "plan_shrank": "Fewer exercises than the stored session (an exercise is never removed)"
       }
+    },
+    "editor": "Program editor",
+    "editorRest": "Rest",
+    "editorRestOptions": {
+      "words": "2 min 30",
+      "clock": "2:30"
+    },
+    "editorThumbs": "Thumbnails",
+    "editorThumbsOptions": {
+      "shown": "Shown",
+      "hidden": "Hidden"
+    },
+    "editorHelp": "Keyboard help",
+    "editorHelpOptions": {
+      "always": "Always",
+      "focus": "On focus"
+    },
+    "editorAdded": "New exercise",
+    "editorAddedOptions": {
+      "defaults": "Default values",
+      "above": "Like the row above"
     }
   },
   "profile": {
@@ -244,7 +265,15 @@
       "editNote": "The program is edited on a computer.",
       "never": "Never done",
       "daysAgo_one": "{{count}} day ago",
-      "daysAgo_other": "{{count}} days ago"
+      "daysAgo_other": "{{count}} days ago",
+      "edit": "Edit the program",
+      "active_one": "Active program · {{count}} session",
+      "active_other": "Active program · {{count}} sessions",
+      "sheetTitle": "Active program",
+      "sessions_one": "{{count}} session",
+      "sessions_other": "{{count}} sessions",
+      "sheetNote": "One tap makes it active and closes. Creating, renaming or deleting a program happens on a computer.",
+      "aside": "Set aside · out of the rotation"
     },
     "rir": "RIR {{range}}",
     "restSec": "{{s}} s",
@@ -464,7 +493,8 @@
     "resumeOther": "Resume the session in progress",
     "exercises": "Exercises",
     "columns": "sets · last time",
-    "note": "The program is edited on a computer. During a session you can replace an exercise or add a set."
+    "note": "The program is edited on a computer. During a session you can replace an exercise or add a set.",
+    "aside": "Set aside · out of the rotation"
   },
   "activitySheet": {
     "title": "Activity",

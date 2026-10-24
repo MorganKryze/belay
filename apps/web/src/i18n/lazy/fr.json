@@ -97,6 +97,27 @@
         "wrong_measure": "Compté en répétitions pour un exercice chronométré, ou l'inverse",
         "plan_shrank": "Moins d'exercices que la séance enregistrée (un exercice n'est jamais retiré)"
       }
+    },
+    "editor": "Éditeur du programme",
+    "editorRest": "Repos",
+    "editorRestOptions": {
+      "words": "2 min 30",
+      "clock": "2:30"
+    },
+    "editorThumbs": "Vignettes",
+    "editorThumbsOptions": {
+      "shown": "Affichées",
+      "hidden": "Masquées"
+    },
+    "editorHelp": "Aide clavier",
+    "editorHelpOptions": {
+      "always": "Toujours",
+      "focus": "Au focus"
+    },
+    "editorAdded": "Nouvel exercice",
+    "editorAddedOptions": {
+      "defaults": "Valeurs par défaut",
+      "above": "Comme la rangée du dessus"
     }
   },
   "profile": {
@@ -244,7 +265,15 @@
       "editNote": "Le programme se modifie sur ordinateur.",
       "never": "Jamais faite",
       "daysAgo_one": "Il y a {{count}} jour",
-      "daysAgo_other": "Il y a {{count}} jours"
+      "daysAgo_other": "Il y a {{count}} jours",
+      "edit": "Modifier le programme",
+      "active_one": "Programme actif · {{count}} séance",
+      "active_other": "Programme actif · {{count}} séances",
+      "sheetTitle": "Programme actif",
+      "sessions_one": "{{count}} séance",
+      "sessions_other": "{{count}} séances",
+      "sheetNote": "Un toucher l'active et ferme. Créer, renommer ou supprimer un programme se fait sur ordinateur.",
+      "aside": "De côté · hors rotation"
     },
     "rir": "RIR {{range}}",
     "restSec": "{{s}} s",
@@ -464,7 +493,8 @@
     "resumeOther": "Reprendre la séance en cours",
     "exercises": "Exercices",
     "columns": "séries · la dernière fois",
-    "note": "Le programme se modifie sur ordinateur. En séance, tu peux remplacer un exercice ou ajouter une série."
+    "note": "Le programme se modifie sur ordinateur. En séance, tu peux remplacer un exercice ou ajouter une série.",
+    "aside": "De côté · hors rotation"
   },
   "activitySheet": {
     "title": "Activité",

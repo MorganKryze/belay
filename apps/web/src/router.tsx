@@ -53,14 +53,18 @@ const workoutsRoute = createRoute({
   }),
 });
 // A session of the program before it starts. Opened from Accueil it says so (?from=home), so
-// its back chevron and the lit tab stay Accueil's, after a reload too. Only the letter's shape
-// here: which letters the active rotation holds is read on the phone, so the page says when it
-// lacks one.
+// its back chevron and the lit tab stay Accueil's, after a reload too. The code is a letter or a
+// session's id, lower case as ids are written; only the shape here: which sessions the account
+// holds is read on the phone, so the page says when it lacks one.
 const sessionPreviewRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/workouts/session/$code",
   beforeLoad: ({ params }) => {
-    if (!isSessionCode(params.code)) throw notFound();
+    if (
+      !isSessionCode(params.code) &&
+      !/^[\da-f]{8}(-[\da-f]{4}){3}-[\da-f]{12}$/.test(params.code)
+    )
+      throw notFound();
   },
   component: lazyRouteComponent(() => import("./routes/session-preview"), "SessionPreview"),
   validateSearch: (search: Record<string, unknown>): { from?: "home" } =>

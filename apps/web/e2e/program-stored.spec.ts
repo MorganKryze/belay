@@ -132,7 +132,9 @@ const row = (page: Page, title: string) =>
     .filter({ has: page.getByRole("heading", { level: 2, name: title, exact: true }) });
 const heading = (page: Page, name: string) =>
   page.getByRole("heading", { level: 1, name, exact: true });
-const programTitles = (page: Page) => page.getByRole("main").getByRole("heading", { level: 2 });
+// The cards' titles, not the section of the sessions set aside.
+const programTitles = (page: Page) =>
+  page.getByRole("main").getByRole("heading", { level: 2, name: /^Séance / });
 const FIVE = [
   "Séance D · Dos et abdos",
   "Séance E",
@@ -159,7 +161,8 @@ test("Programme lists the active rotation with letters by position and no set-as
   await open(page, "/workouts?tab=program");
   await expect(programTitles(page)).toHaveText(FIVE);
   await expect(row(page, "Séance C · Tirage")).toContainText("Il y a 2 jours");
-  await expect(page.getByText("Partagée par Lou")).toHaveCount(0);
+  // Set aside, it has no card: it is listed under them.
+  await expect(row(page, "Partagée par Lou")).toHaveCount(0);
 });
 
 test("the preview of D shows its exercises, and a letter the rotation lacks is not found", async ({

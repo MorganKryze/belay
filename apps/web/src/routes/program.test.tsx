@@ -5,6 +5,8 @@ import {
   chooseActive,
   createProgram,
   placeSession,
+  renameProgram,
+  renameSession,
 } from "@belay/shared/training/program-edits";
 import { sessionByCode, starterProgram } from "@belay/shared/training/program";
 import {
@@ -251,7 +253,7 @@ const hrefs = () =>
   screen
     .getAllByRole("link")
     .map((a) => a.getAttribute("href")!)
-    .filter((href) => href.startsWith("/workouts/session/"));
+    .filter((href) => /^\/workouts\/session\/[A-Z]$/.test(href));
 
 describe("the program cards read the active program", () => {
   it("list the active rotation from the next session", async () => {
@@ -298,3 +300,159 @@ describe("the program cards read the active program", () => {
     expect(screen.queryAllByRole("heading", { level: 2, name: /^Session / })).toEqual([]);
   });
 });
+
+const ASIDE = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7f30";
+const ASIDE_SLOT = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7f31";
+const OTHER_SESSION = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7f21";
+const OTHER_SLOT = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7f22";
+// A second program « Summer » holding one session with the bench press.
+async function summer() {
+  await edit((p) => createProgram(p, OTHER, EDIT_AT));
+  await edit(() => renameProgram(OTHER, "Summer", EDIT_AT));
+  await edit((p) => addSession(p, OTHER_SESSION, OTHER, EDIT_AT));
+  await edit((p) =>
+    addSlot(p, OTHER_SLOT, OTHER_SESSION, { id: "ds:0025", measure: "reps" }, EDIT_AT),
+  );
+}
+// The row above the cards, by its program's name.
+const activeRow = (name: string | RegExp) => screen.findByRole("button", { name });
+
+describe("the active program on Programme", () => {
+  it("a row above the cards names the active program and the number of its sessions", async () => {
+    await summer();
+    renderRoute("/workouts?tab=program");
+    const row = await activeRow(/^Starter program/);
+    expect(row.textContent).toContain("Active program · 3 sessions");
+    const [first] = await screen.findAllByRole("heading", { level: 2, name: /^Session / });
+    expect(row.compareDocumentPosition(first!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("says it in French", async () => {
+    await i18n.changeLanguage("fr");
+    renderRoute("/workouts?tab=program");
+    expect((await activeRow(/^Programme de départ/)).textContent).toContain(
+      "Programme actif · 3 séances",
+    );
+  });
+
+  it("the row opens a sheet listing the programs with a check on the active one; a tap activates another and closes", async () => {
+    await summer();
+    renderRoute("/workouts?tab=program");
+    fireEvent.click(await activeRow(/^Starter program/));
+    const sheet = await screen.findByRole("dialog", { name: "Active program" });
+    const choices = within(sheet).getAllByRole("button", { name: /sessions?$/ });
+    expect(choices.map((b) => b.textContent!.trim())).toEqual([
+      "Starter program 3 sessions",
+      "Summer 1 session",
+    ]);
+    expect(choices[0]!.getAttribute("aria-current")).toBe("true");
+    expect(choices[1]!.getAttribute("aria-current")).toBeNull();
+    expect(
+      within(sheet).getByText(
+        "One tap makes it active and closes. Creating, renaming or deleting a program happens on a computer.",
+      ),
+    ).toBeTruthy();
+    fireEvent.click(choices[1]!);
+    await waitForGone(() => screen.queryByRole("dialog"));
+    expect((await activeRow(/^Summer/)).textContent).toContain("Active program · 1 session");
+    expect(await cards()).toEqual(["Session A"]);
+    const db = await openAccountDb(ADA.id);
+    expect((await readPrograms(db)).activeId).toBe(OTHER);
+    db.close();
+  });
+
+  it("a tap on the active program just closes the sheet", async () => {
+    await summer();
+    renderRoute("/workouts?tab=program");
+    fireEvent.click(await activeRow(/^Starter program/));
+    const sheet = await screen.findByRole("dialog", { name: "Active program" });
+    fireEvent.click(within(sheet).getByRole("button", { name: /^Starter program/ }));
+    await waitForGone(() => screen.queryByRole("dialog"));
+    const db = await openAccountDb(ADA.id);
+    expect((await readPrograms(db)).activeAt).toBeNull();
+    db.close();
+  });
+
+  it("without an account there is no row", async () => {
+    fakeApi({ me: null });
+    localStorage.clear();
+    renderRoute("/workouts?tab=program");
+    await cards();
+    expect(screen.queryByRole("button", { name: /Active program|Starter program/ })).toBeNull();
+  });
+});
+
+describe("sessions set aside on Programme", () => {
+  it("De côté lists each set-aside session with its size, each linking to its preview", async () => {
+    await edit((p) => addSession(p, ASIDE, null, EDIT_AT));
+    await edit(() => renameSession(ASIDE, "Léa's full body", EDIT_AT));
+    await edit((p) => addSlot(p, ASIDE_SLOT, ASIDE, { id: "ds:0025", measure: "reps" }, EDIT_AT));
+    renderRoute("/workouts?tab=program");
+    const aside = await screen.findByRole("region", { name: "Set aside · out of the rotation" });
+    const [row, ...others] = within(aside).getAllByRole("link");
+    expect(others).toEqual([]);
+    expect(row!.textContent).toMatch(/^Léa's full body 1 exercise · about \d+\u00A0min$/);
+    expect(row!.getAttribute("href")).toBe(`/workouts/session/${ASIDE}`);
+    // Under the cards.
+    const [first] = await screen.findAllByRole("heading", { level: 2, name: /^Session / });
+    expect(first!.compareDocumentPosition(aside) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("says it in French", async () => {
+    await edit((p) => placeSession(p, seedId(2), null, 0, EDIT_AT));
+    await i18n.changeLanguage("fr");
+    renderRoute("/workouts?tab=program");
+    const aside = await screen.findByRole("region", { name: "De côté · hors rotation" });
+    expect(within(aside).getByRole("link").textContent).toBe("Legs 7 exercices · environ 60 min");
+  });
+
+  it("no section when nothing is set aside", async () => {
+    renderRoute("/workouts?tab=program");
+    await cards();
+    await settled();
+    expect(screen.queryByRole("region", { name: /^Set aside/ })).toBeNull();
+  });
+});
+
+describe("the editor's entry on Programme", () => {
+  it("from 1 024 px the note becomes « Modifier le programme » to the editor", async () => {
+    renderRoute("/workouts?tab=program");
+    const note = await screen.findByText("The program is edited on a computer.");
+    expect(note.className.split(" ")).toContain("lg:hidden");
+    const entry = screen.getByRole("link", { name: "Edit the program" });
+    expect(entry.getAttribute("href")).toBe("/workouts/program");
+    expect(entry.parentElement!.className.split(" ")).toEqual(
+      expect.arrayContaining(["hidden", "lg:block"]),
+    );
+  });
+});
+
+describe("the open session's card", () => {
+  it("while a session is open its card shows « En cours » after a reorder", async () => {
+    const begun = new Date(2026, 9, 7, 17, 30).toISOString();
+    await seed(ADA.id, [
+      {
+        kind: "workout",
+        id: id(1),
+        field: "start",
+        sessionCode: "A",
+        sessionId: seedId(1),
+        plan: [...sessionByCode("A", starterProgram)!.slots],
+        startedAt: begun,
+        at: begun,
+      },
+    ]);
+    // Push moves last: it now reads C, and Legs reads A.
+    await edit((p) => placeSession(p, seedId(1), SEED_PROGRAM_ID, 2, EDIT_AT));
+    renderRoute("/workouts?tab=program");
+    const push = await screen.findByRole("region", { name: "Session C · Push" });
+    expect(push.textContent).toContain("In progress");
+    expect(within(push).getByRole("link", { name: "Resume" })).toBeTruthy();
+    expect(screen.getAllByText(/^In progress/)).toHaveLength(1);
+    expect(cardLink("Session A · Legs").getAttribute("href")).toBe("/workouts/session/A");
+  });
+});
+
+// Waits until the query finds nothing.
+const waitForGone = (query: () => HTMLElement | null) =>
+  vi.waitFor(() => expect(query()).toBeNull());

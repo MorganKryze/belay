@@ -499,7 +499,8 @@ test.describe("at 360 px", () => {
         await page.goto("/settings");
         await expect(page.locator(".launch")).toBeHidden();
         await settled(page);
-        const headings = await page.locator("main h2").allTextContents();
+        // The visible sections: the editor's group is drawn from 1 024 px only.
+        const headings = await page.locator("main h2:visible").allTextContents();
         expect(headings.slice(0, sections.length)).toEqual(sections.map(([s]) => s));
         // Height over line height, rounded: 1 is a single line.
         const measure = (el: ReturnType<Page["locator"]>) =>
