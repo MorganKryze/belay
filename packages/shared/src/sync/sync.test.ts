@@ -3,10 +3,20 @@ import { MIN_WEIGH_IN_DATE } from "../body/weighings";
 import { sessionByCode } from "../training/program";
 import { DEFAULT_SCHEDULE } from "../training/stored-program";
 import { MAX_CHANGES } from "./limits";
-import { clampAt, isNewer, mergeFields, mergeTarget, mergeWeights, staleKeys } from "./merge";
+import {
+  clampAt,
+  isNewer,
+  mergeFields,
+  mergeSlotChange,
+  mergeTarget,
+  mergeWeights,
+  staleKeys,
+} from "./merge";
 import {
   type Change,
   ChangeSchema,
+  type ProgramSlotChange,
+  type ProgramSlotRow,
   SyncRequestSchema,
   SyncResponseSchema,
   type TargetChange,
@@ -814,17 +824,29 @@ describe("programs, the active one, their sessions and slots (SY1, SY7, SY9, SY1
     session({ field: "removed", value: false }),
     counted,
     timed,
-    slot({ field: "exercise", exerciseId: "ds:2135", measure: "seconds" }),
-    slot({ field: "exercise", exerciseId: "belay:dead-hang", measure: null }),
-    slot({ field: "reps", value: [1, 3600] }),
-    slot({ field: "reps", value: [8, 8] }),
+    slot({
+      field: "exercise",
+      exerciseId: "ds:2135",
+      measure: "seconds",
+      repRange: [1, 3600],
+      warmupSets: 0,
+    }),
+    slot({
+      field: "exercise",
+      exerciseId: "belay:dead-hang",
+      measure: null,
+      repRange: [1, 100],
+      warmupSets: 3,
+    }),
+    slot({ field: "reps", value: [1, 3600], measure: "seconds" }),
+    slot({ field: "reps", value: [8, 8], measure: null }),
     slot({ field: "sets", value: 1 }),
     slot({ field: "sets", value: 10 }),
     slot({ field: "rir", value: [0, 4] }),
     slot({ field: "rest", value: 0 }),
     slot({ field: "rest", value: 900 }),
-    slot({ field: "warmups", value: 0 }),
-    slot({ field: "warmups", value: 3 }),
+    slot({ field: "warmups", value: 0, measure: "seconds" }),
+    slot({ field: "warmups", value: 3, measure: null }),
     slot({ field: "main", value: true }),
     slot({ field: "group", value: null }),
     slot({ field: "group", value: "A1" }),
@@ -873,9 +895,22 @@ describe("programs, the active one, their sessions and slots (SY1, SY7, SY9, SY1
     broken(timed, { measure: "minutes" }),
     broken(VALID[16]!, { exerciseId: "bench" }),
     broken(VALID[16]!, { measure: "reps" }),
+    // The exercise brings its range and warm-ups, bounded by its measure (ED4).
+    broken(VALID[16]!, { repRange: [1, 3601] }),
+    broken(VALID[16]!, { repRange: undefined }),
+    broken(VALID[16]!, { warmupSets: 4 }),
+    broken(VALID[16]!, { warmupSets: undefined }),
+    broken(VALID[17]!, { repRange: [1, 101] }),
+    broken(VALID[17]!, { repRange: [9, 8] }),
     broken(VALID[18]!, { value: [0, 10] }),
     broken(VALID[18]!, { value: [10, 8] }),
     broken(VALID[18]!, { value: [1, 3601] }),
+    // A range or warm-ups name the measure they were written for, and a counted range stops at 100.
+    broken(VALID[18]!, { measure: null }),
+    broken(VALID[19]!, { measure: undefined }),
+    broken(VALID[19]!, { measure: "reps" }),
+    broken(VALID[26]!, { measure: undefined }),
+    broken(VALID[26]!, { measure: "minutes" }),
     broken(VALID[21]!, { value: 11 }),
     broken(VALID[22]!, { value: [3, 2] }),
     broken(VALID[24]!, { value: 901 }),
@@ -886,8 +921,8 @@ describe("programs, the active one, their sessions and slots (SY1, SY7, SY9, SY1
     broken(VALID[33]!, { value: 1000 }),
     broken(VALID[34]!, { value: null }),
     broken(VALID[34]!, { field: "color" }),
-    broken(VALID[19]!, { field: "toString" }), // a name every object answers to
-    broken(VALID[19]!, { field: "constructor" }),
+    broken(VALID[20]!, { field: "toString" }), // a name every object answers to
+    broken(VALID[20]!, { field: "constructor" }),
   ];
 
   it("crosses the wire at its bounds, and a change one past them is refused", () => {
@@ -1035,5 +1070,140 @@ describe("programs, the active one, their sessions and slots (SY1, SY7, SY9, SY1
       SyncResponseSchema.safeParse({ ...answer, programs: [{ ...rows.programs[0], id: "x" }] })
         .success,
     ).toBe(false);
+  });
+});
+
+describe("a slot change over its stored row (SY2, ED4)", () => {
+  const PSLOT = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d94";
+  const T0 = "2026-10-07T06:00:00.000Z";
+  const T1 = "2026-10-07T06:10:00.000Z";
+  const T2 = "2026-10-07T06:20:00.000Z";
+  const row: ProgramSlotRow = {
+    id: PSLOT,
+    sessionId: "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d93",
+    position: 0,
+    positionAt: null,
+    exerciseId: "ds:0025",
+    measure: null,
+    exerciseAt: T1,
+    repRange: [6, 8],
+    repsAt: T1,
+    sets: 3,
+    setsAt: T1,
+    rirTarget: [1, 2],
+    rirAt: null,
+    restSec: 90,
+    restAt: null,
+    warmupSets: 2,
+    warmupsAt: T1,
+    isMain: false,
+    mainAt: null,
+    groupKey: null,
+    groupAt: null,
+    rule: null,
+    ruleAt: null,
+    removed: false,
+    removedAt: null,
+  };
+  const change = (patch: Record<string, unknown>) =>
+    ({ kind: "programSlot", id: PSLOT, at: T2, ...patch }) as ProgramSlotChange;
+
+  it("writes a field strictly newer with its time, and keeps the row on a tie or an older write", () => {
+    expect(mergeSlotChange(row, change({ field: "sets", value: 5 }))).toEqual({
+      ...row,
+      sets: 5,
+      setsAt: T2,
+    });
+    expect(mergeSlotChange(row, change({ field: "rest", value: 120, at: T0 }))).toEqual({
+      ...row,
+      restSec: 120,
+      restAt: T0,
+    }); // never written: any time wins
+    for (const at of [T1, T0])
+      expect(mergeSlotChange(row, change({ field: "sets", value: 5, at }))).toBe(row);
+    expect(mergeSlotChange(row, change({ field: "position", value: 4 }))).toMatchObject({
+      position: 4,
+      positionAt: T2,
+    });
+    expect(mergeSlotChange(row, change({ field: "removed", value: true }))).toMatchObject({
+      removed: true,
+      removedAt: T2,
+    });
+  });
+
+  it("a creation replayed changes nothing", () => {
+    const create = change({ field: "create", exerciseId: "ds:0047", sets: 1 });
+    expect(mergeSlotChange(row, create)).toBe(row);
+  });
+
+  it("writes a range or warm-ups made for the row's measure, and refuses one made for another", () => {
+    expect(
+      mergeSlotChange(row, change({ field: "reps", value: [8, 12], measure: null })),
+    ).toMatchObject({ repRange: [8, 12], repsAt: T2 });
+    expect(
+      mergeSlotChange(row, change({ field: "reps", value: [8, 12], measure: "seconds" })),
+    ).toBe(null);
+    expect(mergeSlotChange(row, change({ field: "warmups", value: 1, measure: "seconds" }))).toBe(
+      null,
+    );
+    // Older, it simply loses: the row goes back as for any stale write.
+    const old = change({ field: "reps", value: [8, 12], measure: "seconds", at: T0 });
+    expect(mergeSlotChange(row, old)).toBe(row);
+  });
+
+  it("an exercise in another measure brings its range and warm-ups over newer ones", () => {
+    const toTimed = change({
+      field: "exercise",
+      exerciseId: "ds:2135",
+      measure: "seconds",
+      repRange: [30, 60],
+      warmupSets: 0,
+      at: T2,
+    });
+    const edited = {
+      ...row,
+      repRange: [10, 15] as [number, number],
+      repsAt: "2026-10-07T06:25:00.000Z",
+    };
+    expect(mergeSlotChange(edited, toTimed)).toEqual({
+      ...row,
+      exerciseId: "ds:2135",
+      measure: "seconds",
+      exerciseAt: T2,
+      repRange: [30, 60],
+      repsAt: T2,
+      warmupSets: 0,
+      warmupsAt: T2,
+    });
+  });
+
+  it("an exercise in the same measure leaves a newer range and warm-ups in place", () => {
+    const same = change({
+      field: "exercise",
+      exerciseId: "ds:0047",
+      measure: null,
+      repRange: [6, 8],
+      warmupSets: 2,
+      at: T2,
+    });
+    const edited = {
+      ...row,
+      repRange: [10, 15] as [number, number],
+      repsAt: "2026-10-07T06:25:00.000Z",
+    };
+    expect(mergeSlotChange(edited, same)).toEqual({
+      ...edited,
+      exerciseId: "ds:0047",
+      exerciseAt: T2,
+      warmupsAt: T2,
+    });
+    // An older exercise change loses whole.
+    expect(mergeSlotChange(row, { ...same, at: T0 })).toBe(row);
+  });
+
+  it("refuses a change that would leave the merged slot out of its bounds", () => {
+    expect(mergeSlotChange(row, change({ field: "reps", value: [1, 101], measure: null }))).toBe(
+      null,
+    );
   });
 });

@@ -375,9 +375,23 @@ export const ProgramSessionChangeSchema = z.discriminatedUnion("field", [
   fieldChange("programSession", "removed", z.boolean()),
 ]);
 const slotValue = <T>(field: SlotField) => z.custom<T>((v) => isSlotValue(field, v));
-const range = slotValue<readonly [number, number]>;
 const rule = z.nullable(z.literal("no_climbing"));
-// A slot's exercise and its measure travel together (null: counted in repetitions).
+// null: counted in repetitions.
+const measure = z.nullable(z.literal("seconds"));
+// A rep range or warm-ups carry the measure they were written for: merged on a slot now in another
+// measure, they are refused rather than read in the wrong unit (ED4).
+const measured = <F extends "reps" | "warmups", T>(field: F) =>
+  z
+    .object({
+      kind: z.literal("programSlot"),
+      id: z.uuid(),
+      field: z.literal(field),
+      value: z.custom<T>(),
+      measure,
+      at,
+    })
+    .check(z.refine((c) => isSlotValue(field, c.value, c.measure)));
+// A slot's exercise, its measure, its rep range and warm-ups travel together, one write (ED4).
 export const ProgramSlotChangeSchema = z.discriminatedUnion("field", [
   z
     .object({
@@ -399,19 +413,29 @@ export const ProgramSlotChangeSchema = z.discriminatedUnion("field", [
       at,
     })
     .check(z.refine(isProgramSlot)),
-  z.object({
-    kind: z.literal("programSlot"),
-    id: z.uuid(),
-    field: z.literal("exercise"),
-    exerciseId: z.string().check(z.regex(EXERCISE_ID)),
-    measure: z.nullable(z.literal("seconds")),
-    at,
-  }),
-  fieldChange("programSlot", "reps", range("reps")),
+  z
+    .object({
+      kind: z.literal("programSlot"),
+      id: z.uuid(),
+      field: z.literal("exercise"),
+      exerciseId: z.string().check(z.regex(EXERCISE_ID)),
+      measure,
+      repRange: z.custom<readonly [number, number]>(),
+      warmupSets: z.custom<WarmupCount>(),
+      at,
+    })
+    .check(
+      z.refine(
+        (c) =>
+          isSlotValue("reps", c.repRange, c.measure) &&
+          isSlotValue("warmups", c.warmupSets, c.measure),
+      ),
+    ),
+  measured<"reps", readonly [number, number]>("reps"),
   fieldChange("programSlot", "sets", slotValue<number>("sets")),
-  fieldChange("programSlot", "rir", range("rir")),
+  fieldChange("programSlot", "rir", slotValue<readonly [number, number]>("rir")),
   fieldChange("programSlot", "rest", slotValue<number>("rest")),
-  fieldChange("programSlot", "warmups", slotValue<WarmupCount>("warmups")),
+  measured<"warmups", WarmupCount>("warmups"),
   fieldChange("programSlot", "main", z.boolean()),
   fieldChange("programSlot", "group", slotValue<string | null>("group")),
   fieldChange("programSlot", "rule", rule),

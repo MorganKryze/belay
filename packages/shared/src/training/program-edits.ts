@@ -24,7 +24,7 @@ import {
   type SlotField,
   type StoredPrograms,
 } from "./stored-program";
-import { MAX_SLOTS, type Slot } from "./workout";
+import { MAX_SLOTS } from "./workout";
 
 type Exercise = { id: string; measure: Measure };
 // One value of a slot, as editSlot takes it: the change without its envelope.
@@ -167,7 +167,7 @@ export function addSlot(
 }
 
 // One value of a slot; refused when the slot would leave its bounds with it (a counted range past
-// 100), or for a slot the account lacks.
+// 100), or for a slot the account lacks. A rep range or warm-ups carry the slot's measure (ED4).
 export function editSlot(
   p: StoredPrograms,
   id: string,
@@ -177,11 +177,13 @@ export function editSlot(
   const slot = slotOf(p, id);
   const key = edit.field === "rule" ? "rule" : SLOT_FIELDS[edit.field];
   if (!slot || !isProgramSlot({ ...slot, [key]: edit.value })) return null;
-  return [{ kind: "programSlot", id, ...edit, at } as ProgramSlotChange];
+  const measure =
+    edit.field === "reps" || edit.field === "warmups" ? { measure: slot.measure ?? null } : {};
+  return [{ kind: "programSlot", id, ...edit, ...measure, at } as ProgramSlotChange];
 }
 
 // Another exercise, as replaceSlot does in a session (ED4): in another measure, its default target
-// and, timed, no warm-up, each in its own change with the same time.
+// and, timed, no warm-up. One change carries the four, so no merge splits them.
 export function replaceExercise(
   p: StoredPrograms,
   id: string,
@@ -190,23 +192,19 @@ export function replaceExercise(
 ): ProgramSlotChange[] | null {
   const slot = slotOf(p, id);
   if (!slot) return null;
-  const before: Slot = { ...slot, rule: undefined };
-  const after = replaceSlot([before], 0, exercise)[0]!;
-  const changes: ProgramSlotChange[] = [
+  const next = replaceSlot([{ ...slot, rule: undefined }], 0, exercise)[0]!;
+  return [
     {
       kind: "programSlot",
       id,
       field: "exercise",
       exerciseId: exercise.id,
-      measure: after.measure ?? null,
+      measure: next.measure ?? null,
+      repRange: next.repRange,
+      warmupSets: next.warmupSets,
       at,
     },
   ];
-  if (after.repRange !== before.repRange)
-    changes.push({ kind: "programSlot", id, field: "reps", value: after.repRange, at });
-  if (after.warmupSets !== before.warmupSets)
-    changes.push({ kind: "programSlot", id, field: "warmups", value: after.warmupSets, at });
-  return changes;
 }
 
 // A slot moved to index toIndex of its section; only the slots whose position changes get one.

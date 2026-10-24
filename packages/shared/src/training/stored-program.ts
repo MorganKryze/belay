@@ -265,9 +265,9 @@ export const SLOT_FIELDS = {
 } as const;
 export type SlotField = keyof typeof SLOT_FIELDS;
 
-// One value within isSlot's bounds, judged on a valid slot that differs by that value alone. The
-// base counts seconds, the wider range: the measure travels in another change, so a counted range
-// past 100 is refused on the merged slot (the editor's check, and the server's).
+// One value within isSlot's bounds, judged on a valid slot that differs by that value alone, in
+// the measure given (null: counted in repetitions). A rep range and warm-ups travel with the
+// measure they were written for (ED4); the other values are bounded alike in either measure.
 const BASE: Slot = {
   exerciseId: "ds:0001",
   measure: "seconds",
@@ -279,5 +279,8 @@ const BASE: Slot = {
   isMain: false,
   groupKey: null,
 };
-export const isSlotValue = (field: SlotField, value: unknown): boolean =>
-  isSlot({ ...BASE, [SLOT_FIELDS[field]]: value });
+export const isSlotValue = (
+  field: SlotField,
+  value: unknown,
+  measure: "seconds" | null = "seconds",
+): boolean => isSlot({ ...BASE, measure: measure ?? undefined, [SLOT_FIELDS[field]]: value });

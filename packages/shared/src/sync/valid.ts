@@ -67,6 +67,8 @@ const isLoad = (c: {
 const isPlace = (c: { programId: string | null; position: number }) =>
   isNullOr(c.programId, isId) && isPosition(c.position);
 const isBool = (v: unknown) => typeof v === "boolean";
+// null: counted in repetitions.
+const isMeasure = (v: unknown): v is "seconds" | null => v === null || v === "seconds";
 
 export function isValidChange(change: Change): boolean {
   if (!isISOTime(change.at)) return false;
@@ -204,15 +206,19 @@ export function isValidChange(change: Change): boolean {
           ? isId(change.sessionId) && isPosition(change.position) && isProgramSlot(change)
           : change.field === "exercise"
             ? isExerciseId(String(change.exerciseId)) &&
-              (change.measure === null || change.measure === "seconds")
-            : change.field === "rule"
-              ? change.value === null || change.value === "no_climbing"
-              : change.field === "position"
-                ? isPosition(change.value)
-                : change.field === "main" || change.field === "removed"
-                  ? isBool(change.value)
-                  : Object.hasOwn(SLOT_FIELDS, change.field) &&
-                    isSlotValue(change.field, change.value))
+              isMeasure(change.measure) &&
+              isSlotValue("reps", change.repRange, change.measure) &&
+              isSlotValue("warmups", change.warmupSets, change.measure)
+            : change.field === "reps" || change.field === "warmups"
+              ? isMeasure(change.measure) && isSlotValue(change.field, change.value, change.measure)
+              : change.field === "rule"
+                ? change.value === null || change.value === "no_climbing"
+                : change.field === "position"
+                  ? isPosition(change.value)
+                  : change.field === "main" || change.field === "removed"
+                    ? isBool(change.value)
+                    : Object.hasOwn(SLOT_FIELDS, change.field) &&
+                      isSlotValue(change.field, change.value))
       );
     default:
       return false;

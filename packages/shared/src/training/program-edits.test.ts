@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { Change } from "../sync/schema";
+import { mergeSlotChange } from "../sync/merge";
+import type { Change, ProgramSlotChange, ProgramSlotRow } from "../sync/schema";
 import { isValidChange } from "../sync/valid";
 import {
   addSession,
@@ -333,12 +334,23 @@ describe("slots (ED1, ED3, ED4)", () => {
     expect(editSlot(SEED, id, { field: "sets", value: 5 }, AT)).toEqual([
       { kind: "programSlot", id, field: "sets", value: 5, at: AT },
     ]);
-    expect(editSlot(SEED, id, { field: "reps", value: [6, 10] }, AT)).toHaveLength(1);
     expect(editSlot(SEED, id, { field: "reps", value: [6, 101] }, AT)).toBeNull(); // counted
-    const timed = withSeed({ slots: [slot(NEW, { measure: "seconds", repRange: [30, 60] })] });
-    expect(editSlot(timed, NEW, { field: "reps", value: [60, 600] }, AT)).toHaveLength(1);
     expect(editSlot(SEED, id, { field: "group", value: "a-b" }, AT)).toBeNull();
     expect(editSlot(SEED, NEW, { field: "sets", value: 5 }, AT)).toBeNull();
+  });
+
+  it("writes a rep range or warm-ups with the measure they were written for (ED4)", () => {
+    const id = seedA[0]!.id;
+    expect(editSlot(SEED, id, { field: "reps", value: [6, 10] }, AT)).toEqual([
+      { kind: "programSlot", id, field: "reps", value: [6, 10], measure: null, at: AT },
+    ]);
+    expect(editSlot(SEED, id, { field: "warmups", value: 1 }, AT)).toEqual([
+      { kind: "programSlot", id, field: "warmups", value: 1, measure: null, at: AT },
+    ]);
+    const timed = withSeed({ slots: [slot(NEW, { measure: "seconds", repRange: [30, 60] })] });
+    expect(editSlot(timed, NEW, { field: "reps", value: [60, 600] }, AT)).toEqual([
+      { kind: "programSlot", id: NEW, field: "reps", value: [60, 600], measure: "seconds", at: AT },
+    ]);
   });
 
   describe("another exercise (ED4)", () => {
@@ -347,7 +359,7 @@ describe("slots (ED1, ED3, ED4)", () => {
       slots: [slot(NEW, { measure: "seconds", repRange: [20, 40], warmupSets: 0 })],
     });
 
-    it("in the same measure writes the exercise alone", () => {
+    it("in the same measure writes the exercise with the range and warm-ups it keeps", () => {
       expect(replaceExercise(counted, NEW, exercise, AT)).toEqual([
         {
           kind: "programSlot",
@@ -355,12 +367,14 @@ describe("slots (ED1, ED3, ED4)", () => {
           field: "exercise",
           exerciseId: "ds:0047",
           measure: null,
+          repRange: [6, 8],
+          warmupSets: 2,
           at: AT,
         },
       ]);
     });
 
-    it("counted in seconds writes its measure, the 30-60 s target and no warm-up together", () => {
+    it("counted in seconds writes its measure, the 30-60 s target and no warm-up in one change", () => {
       expect(replaceExercise(counted, NEW, { id: "ds:2135", measure: "seconds" }, AT)).toEqual([
         {
           kind: "programSlot",
@@ -368,14 +382,14 @@ describe("slots (ED1, ED3, ED4)", () => {
           field: "exercise",
           exerciseId: "ds:2135",
           measure: "seconds",
+          repRange: [30, 60],
+          warmupSets: 0,
           at: AT,
         },
-        { kind: "programSlot", id: NEW, field: "reps", value: [30, 60], at: AT },
-        { kind: "programSlot", id: NEW, field: "warmups", value: 0, at: AT },
       ]);
     });
 
-    it("counted in reps writes the 8-12 target and keeps the warm-ups", () => {
+    it("counted in reps writes the 8-12 target and keeps the warm-ups, in one change", () => {
       expect(replaceExercise(timed, NEW, exercise, AT)).toEqual([
         {
           kind: "programSlot",
@@ -383,9 +397,10 @@ describe("slots (ED1, ED3, ED4)", () => {
           field: "exercise",
           exerciseId: "ds:0047",
           measure: null,
+          repRange: [8, 12],
+          warmupSets: 0,
           at: AT,
         },
-        { kind: "programSlot", id: NEW, field: "reps", value: [8, 12], at: AT },
       ]);
     });
 
@@ -422,6 +437,60 @@ describe("slots (ED1, ED3, ED4)", () => {
   });
 });
 
+describe("two devices editing one slot (ED4, SY2)", () => {
+  const T1 = "2026-10-25T08:00:00.000Z";
+  const T2 = "2026-10-25T09:00:00.000Z";
+  const counted = SEED.slots.find((s) => s.sessionId === A && s.measure === undefined)!;
+  // The slot as the server stores it, never edited yet.
+  const stored: ProgramSlotRow = {
+    id: counted.id,
+    sessionId: counted.sessionId,
+    position: counted.position,
+    positionAt: null,
+    exerciseId: counted.exerciseId,
+    measure: null,
+    exerciseAt: null,
+    repRange: [counted.repRange[0], counted.repRange[1]],
+    repsAt: null,
+    sets: counted.sets,
+    setsAt: null,
+    rirTarget: [counted.rirTarget[0], counted.rirTarget[1]],
+    rirAt: null,
+    restSec: counted.restSec,
+    restAt: null,
+    warmupSets: counted.warmupSets,
+    warmupsAt: null,
+    isMain: counted.isMain,
+    mainAt: null,
+    groupKey: counted.groupKey,
+    groupAt: null,
+    rule: counted.rule,
+    ruleAt: null,
+    removed: false,
+    removedAt: null,
+  };
+  const merged = (changes: readonly ProgramSlotChange[]) =>
+    changes.reduce((row, c) => mergeSlotChange(row, c) ?? row, stored);
+
+  it("a range or warm-ups written for reps never land on a slot made timed meanwhile", () => {
+    // Device A makes it timed at t1; device B, offline, still sees it counted and edits at t2.
+    const toTimed = replaceExercise(SEED, counted.id, { id: "ds:2135", measure: "seconds" }, T1)!;
+    const reps = editSlot(SEED, counted.id, { field: "reps", value: [8, 12] }, T2)!;
+    const warmups = editSlot(SEED, counted.id, { field: "warmups", value: 3 }, T2)!;
+    expect(toTimed).toHaveLength(1);
+    const timed = { exerciseId: "ds:2135", measure: "seconds", repRange: [30, 60], warmupSets: 0 };
+    for (const order of [
+      [...toTimed, ...reps, ...warmups],
+      [...reps, ...warmups, ...toTimed],
+    ])
+      expect(merged(order)).toMatchObject(timed);
+    // Either way B's edits are refused or overwritten: the row goes back and B's phone reverts.
+    const afterA = merged(toTimed);
+    expect(mergeSlotChange(afterA, reps[0]!)).toBeNull();
+    expect(mergeSlotChange(afterA, warmups[0]!)).toBeNull();
+  });
+});
+
 describe("every change built", () => {
   it("passes isValidChange, so the phone may queue it", () => {
     const id = SEED.slots[0]!.id;
@@ -446,10 +515,17 @@ describe("every change built", () => {
         editSlot(SEED, id, { field: "rir", value: [0, 4] }, AT),
         editSlot(SEED, id, { field: "rest", value: 900 }, AT),
         editSlot(SEED, id, { field: "warmups", value: 3 }, AT),
+        editSlot(
+          withSeed({ slots: [slot(NEW, { measure: "seconds", repRange: [30, 600] })] }),
+          NEW,
+          { field: "reps", value: [60, 900] },
+          AT,
+        ),
         editSlot(SEED, id, { field: "main", value: false }, AT),
         editSlot(SEED, id, { field: "group", value: "A1" }, AT),
         editSlot(SEED, id, { field: "rule", value: "no_climbing" }, AT),
         replaceExercise(SEED, id, { id: "ds:2135", measure: "seconds" }, AT),
+        replaceExercise(SEED, id, { id: "ds:0047", measure: "reps" }, AT),
         moveSlot(SEED, id, 2, AT),
         removeSlot(id, AT),
       ] as (readonly Change[] | null)[]
