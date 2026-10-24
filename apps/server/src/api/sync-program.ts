@@ -74,7 +74,7 @@ export async function seedProgram({ tx, userId }: Ctx): Promise<void> {
     .onConflictDoNothing();
   await tx
     .insert(programSlots)
-    .values(SEED.slots.map((s) => ({ userId, id: s.id, ...slotColumns(newSlot(s, null)) })))
+    .values(SEED.slots.map((s) => ({ userId, id: s.id, ...slotColumns(newSlot(s)) })))
     .onConflictDoNothing();
 }
 
@@ -130,9 +130,7 @@ export async function writePrograms(
               userId,
               id: c.id,
               name: c.name,
-              nameAt: at(clampAt(c.at, now)),
               schedule: { mode: c.schedule.mode, days: [...c.schedule.days] },
-              scheduleAt: at(clampAt(c.at, now)),
             })
             .onConflictDoNothing()
             .returning({ id: programs.id }),
@@ -368,10 +366,8 @@ export async function writeProgramSessions(
               userId,
               id: c.id,
               name: c.name,
-              nameAt: at(clampAt(c.at, now)),
               programId: c.programId,
               position: c.position,
-              placeAt: at(clampAt(c.at, now)),
             })
             .onConflictDoNothing()
             .returning({ id: programSessions.id }),
@@ -445,11 +441,12 @@ export async function writeProgramSessions(
   );
 }
 
-// A slot as stored, every value written at `writtenAt` (null: the seed's, never written).
+// A slot as stored at its creation or seeded: every value unwritten until a change of its own,
+// as on the phone, so an edit sent at the creation's instant still wins.
 function newSlot(
   s: Omit<ProgramSlot, "removed" | "measure"> & { measure?: "seconds" },
-  writtenAt: string | null,
 ): ProgramSlotRow {
+  const writtenAt = null;
   return {
     id: s.id,
     sessionId: s.sessionId,
@@ -585,7 +582,7 @@ export async function writeProgramSlots(
         ? Promise.resolve([])
         : sp
             .insert(programSlots)
-            .values({ userId, id: c.id, ...slotColumns(newSlot(c, clampAt(c.at, now))) })
+            .values({ userId, id: c.id, ...slotColumns(newSlot(c)) })
             .onConflictDoNothing()
             .returning({ id: programSlots.id }),
   );

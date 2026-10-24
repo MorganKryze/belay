@@ -376,6 +376,23 @@ describe("program edits through /api/sync", () => {
     });
   });
 
+  it("an edit sent at its creation's instant applies", async () => {
+    const { user, sync } = await signIn("pg-same-instant");
+    const p = newId();
+    const s = newId();
+    const l = newId();
+    const res = await sync("0", [
+      createProgram(p),
+      renameProgram(p, "Edited", AT),
+      createSessionChange(s, p, 0),
+      createSlot(l, s),
+      slotField(l, "sets", 5, AT),
+    ]);
+    expect(rejected(res)).toEqual([]);
+    expect(await programRow(user, p)).toMatchObject({ name: "Edited" });
+    expect(await slotRow(user, l)).toMatchObject({ sets: 5 });
+  });
+
   it("an older change loses and gets its row back", async () => {
     const { user, sync } = await signIn("pg-older");
     const { cursor } = await sync("0", [
