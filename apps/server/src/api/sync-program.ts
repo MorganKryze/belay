@@ -380,6 +380,8 @@ export async function writeProgramSessions(
   // A place in a program the account lacks: that change alone.
   const strays = kept.filter((c) => c.field === "place" && !isOwned(c.programId));
   unknown(out, strays);
+  // The phone blanked its place for the stored one: send it back.
+  for (const c of strays) out.sessions.add(c.id);
   const rows = await read();
   const state = new Map(rows.map((r) => [r.id, { programId: r.programId, removed: r.gone }]));
   const stored = new Map(

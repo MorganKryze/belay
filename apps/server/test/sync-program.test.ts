@@ -439,7 +439,8 @@ describe("program edits through /api/sync", () => {
     await other.sync("0", [createProgram(theirs)]);
     const { user, sync } = await signIn("pg-unknown");
     const lost = newId();
-    const res = await sync("0", [
+    const first = await sync("0");
+    const res = await sync(first.cursor, [
       place(SESSION_A, newId(), 0),
       place(SESSION_B, theirs, 0),
       renameSession(SESSION_A, "Haut"),
@@ -462,6 +463,8 @@ describe("program edits through /api/sync", () => {
       position: 0,
     });
     expect(await sessionRow(user, SESSION_B)).toMatchObject({ programId: PROGRAM, position: 1 });
+    // The refused places get their stored rows back.
+    expect(res.programSessions?.map((r) => r.id).sort()).toEqual([SESSION_A, SESSION_B].sort());
     expect(await sessionRow(user, lost)).toBeUndefined();
     expect(await counts(user)).toEqual(SEEDED);
   });
