@@ -32,7 +32,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { DropdownMenu } from "radix-ui";
-import { type KeyboardEvent, type ReactNode, useId, useRef, useState } from "react";
+import { type KeyboardEvent, type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActionSheet } from "@/components/action-sheet";
 import { programName, sessionName } from "@/lib/format";
@@ -42,6 +42,10 @@ import { useEditor } from "./editor-context";
 // What a menu row asks for once the menu has closed and given the focus back: the name field
 // and the sheet each take the focus themselves, so they open only after.
 type After = { kind: "rename"; program: Program } | { kind: "remove"; program: Program };
+
+// Radix hides the page behind an open menu with aria-hidden only, so its controls stay focusable
+// behind the menu. Marking the app's root inert takes them out of reach too, as MenuRow does.
+const root = () => document.getElementById("root");
 
 const liveSessions = (p: StoredPrograms, programId: string) =>
   p.sessions.filter((s) => s.programId === programId && !s.removed);
@@ -85,6 +89,13 @@ export function ProgramSwitcher() {
   const hintId = useId();
   const order = programOrder(programs);
   const name = program ? programName(program, t) : t("editor.programs.label");
+  const open = menu !== null;
+
+  // Unmounted while open (a navigation): the page must not stay out of reach.
+  useEffect(() => {
+    if (!open) return;
+    return () => root()?.removeAttribute("inert");
+  }, [open]);
 
   const choose = (id: string) => {
     if (id === programs.activeId) return;
@@ -147,8 +158,14 @@ export function ProgramSwitcher() {
         />
       ) : (
         <DropdownMenu.Root
-          open={menu !== null}
-          onOpenChange={(o) => setMenu(o ? "programs" : null)}
+          open={open}
+          onOpenChange={(o) => {
+            // Freed here, synchronously, before Radix gives the focus back to the selector: an
+            // inert selector cannot take it.
+            if (o) root()?.setAttribute("inert", "");
+            else root()?.removeAttribute("inert");
+            setMenu(o ? "programs" : null);
+          }}
         >
           <DropdownMenu.Trigger
             aria-label={t("editor.programs.selector", { name })}
