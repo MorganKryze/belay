@@ -118,6 +118,7 @@
       "setAside": "{{name}} set aside.",
       "putBack": "{{name}} back in the rotation, as {{code}}.",
       "duplicated": "{{name}} duplicated as {{code}}.",
+      "duplicatedAside": "{{name}} copied as \"{{copy}}\".",
       "switched": "{{program}} is active: the next session is {{session}}.",
       "switchedNone": "{{program}} is active.",
       "created": "{{program}} created and active.",

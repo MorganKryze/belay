@@ -428,6 +428,21 @@ describe("the editor's sessions", () => {
     );
   });
 
+  it("Dupliquer la séance on a set-aside one says the copy's name, never a letter", async () => {
+    await edit((p) => placeSession(p, LEGS, null, 0, AT));
+    renderRoute("/workouts/program");
+    fireEvent.click(await screen.findByRole("tab", { name: "Legs" }));
+    await titleIs("Legs");
+    await pick("Dupliquer la séance");
+    await waitFor(async () =>
+      expect(tabNames(await screen.findByRole("tablist", { name: "De côté" }))).toEqual([
+        "Legs",
+        "Legs (copie)",
+      ]),
+    );
+    await said("Legs copiée en « Legs (copie) ».");
+  });
+
   it("Mettre de côté closes the letters up and the toast says « D devient C »", async () => {
     await edit((p) => addSession(p, id(1), SEED_PROGRAM_ID, AT));
     await edit(() => renameSession(id(1), "Haut léger", AT));
