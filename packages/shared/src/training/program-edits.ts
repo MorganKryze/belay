@@ -16,6 +16,7 @@ import {
   MAX_PROGRAMS,
   MAX_ROTATION,
   MAX_SESSIONS,
+  POSITION_MAX,
   type ProgramSession,
   type ProgramSlot,
   type Schedule,
@@ -33,6 +34,9 @@ type EditOf<C> = C extends { field: SlotField | "rule"; value: unknown }
 export type SlotEdit = EditOf<ProgramSlotChange>;
 
 const live = <T extends { removed: boolean }>(rows: readonly T[]) => rows.filter((r) => !r.removed);
+// The position after the last of a list's rows: removals leave gaps, so its count may tie one.
+const after = (rows: readonly { position: number }[]) =>
+  rows.reduce((max, r) => Math.max(max, r.position), -1) + 1;
 const liveProgram = (p: StoredPrograms, id: string) =>
   p.programs.some((x) => x.id === id && !x.removed);
 
@@ -68,7 +72,8 @@ const siblings = (p: StoredPrograms, programId: string | null, but?: string) =>
     .sort(byPosition);
 
 // A session with no name at the end of a rotation, or of the collection; refused past 200
-// sessions in the account or 26 in the rotation (PM11), or in a program the account lacks.
+// sessions in the account or 26 in the rotation (PM11), in a program the account lacks, or past
+// position 999 (a reorder writes the list's positions back to 0..n-1).
 export function addSession(
   p: StoredPrograms,
   id: string,
@@ -79,6 +84,8 @@ export function addSession(
   const list = siblings(p, programId);
   if (programId !== null && (!liveProgram(p, programId) || list.length >= MAX_ROTATION))
     return null;
+  const position = after(list);
+  if (position > POSITION_MAX) return null;
   return [
     {
       kind: "programSession",
@@ -86,7 +93,7 @@ export function addSession(
       field: "create",
       name: null,
       programId,
-      position: list.length,
+      position,
       at,
     },
   ];
@@ -140,7 +147,7 @@ export function placeSession(
 const slotOf = (p: StoredPrograms, id: string) => live(p.slots).find((s) => s.id === id);
 
 // A slot at the end of its section with the default targets of « + Exercice »; refused at 30 live
-// slots in the session (ED3) or in a session the account lacks.
+// slots in the session (ED3), in a session the account lacks, or past position 999.
 export function addSlot(
   p: StoredPrograms,
   id: string,
@@ -154,7 +161,8 @@ export function addSlot(
   if (own.length >= MAX_SLOTS) return null;
   const fresh = appendSlot([], exercise)[0]!;
   delete fresh.added; // a session's mark, never a program's
-  const position = own.filter((s) => s.rule === rule).length;
+  const position = after(own.filter((s) => s.rule === rule));
+  if (position > POSITION_MAX) return null;
   return [{ kind: "programSlot", id, field: "create", sessionId, position, rule, ...fresh, at }];
 }
 

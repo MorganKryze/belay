@@ -147,6 +147,17 @@ describe("sessions (ED1, PM11)", () => {
     expect(addSession(two, NEW, seedId(0xfff), AT)).toBeNull(); // a program it lacks
   });
 
+  it("adds after the last live session when removals left gaps, refused past position 999", () => {
+    const gaps = withSeed({
+      programs: [prog(P2)],
+      sessions: [session(X, { position: 9, removed: true }), session(Y, { position: 4 })],
+    });
+    expect(addSession(gaps, NEW, P2, AT)).toMatchObject([{ programId: P2, position: 5 }]);
+    expect(addSession(gaps, NEW, null, AT)).toMatchObject([{ programId: null, position: 0 }]);
+    const last = withSeed({ programs: [prog(P2)], sessions: [session(Y, { position: 999 })] });
+    expect(addSession(last, NEW, P2, AT)).toBeNull();
+  });
+
   it("a 201st session and a 27th in a rotation are refused", () => {
     const aside = withSeed({
       sessions: many(MAX_SESSIONS - 3, 0xd00, (id, i) =>
@@ -288,6 +299,18 @@ describe("slots (ED1, ED3, ED4)", () => {
     expect(timed).toMatchObject([
       { measure: "seconds", repRange: [30, 60], rule: "no_climbing", position: 2 },
     ]);
+  });
+
+  it("adds after the last live slot of its section when removals left gaps", () => {
+    const S1 = seedId(0xe01);
+    const S2 = seedId(0xe02);
+    const gaps = withSeed({
+      slots: [slot(S1, { position: 7 }), slot(S2, { position: 20, removed: true })],
+    });
+    expect(addSlot(gaps, NEW, A, exercise, AT)).toMatchObject([{ position: 8 }]);
+    expect(addSlot(gaps, NEW, A, exercise, AT, "no_climbing")).toMatchObject([{ position: 0 }]);
+    const last = withSeed({ slots: [slot(S1, { position: 999 })] });
+    expect(addSlot(last, NEW, A, exercise, AT)).toBeNull();
   });
 
   it("a 31st slot is refused; a removed one does not count", () => {
