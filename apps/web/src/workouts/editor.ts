@@ -6,14 +6,13 @@ import {
   isReps,
   isRir,
   isSeconds,
-  isSetKg,
   MAX_POSITION,
   MAX_WARMUPS,
   type Slot,
   type Workout,
   type WorkoutSet,
 } from "@belay/shared/training/workout";
-import { parseDecimal } from "@/lib/format";
+import { parseLoad, type WeightUnit } from "@/lib/units";
 
 // The editor of a finished session, or of one logged afterwards (spec D9, D10): every set as
 // text cells, nothing written until Save, then only what changed.
@@ -25,7 +24,8 @@ export type EditRow = {
   warmup: boolean;
   exerciseId: string;
   measure: Measure;
-  kg: string;
+  kg: string; // in the unit the editor was opened in
+  fromKg: number | null; // the stored load the kg cell was drawn from, if any
   count: string; // reps, or seconds for a timed set
   rir: string; // empty: none
   set: WorkoutSet | null; // as stored; null for a set added here
@@ -44,6 +44,7 @@ export function rowsOf(sets: readonly WorkoutSet[], kgText: (kg: number) => stri
       exerciseId: s.exerciseId,
       measure: s.seconds == null ? "reps" : "seconds",
       kg: kgText(s.weightKg),
+      fromKg: s.weightKg,
       count: String(countOf(s)),
       rir: s.rir === null ? "" : String(s.rir),
       set: s,
@@ -75,6 +76,7 @@ export function addRow(
     exerciseId: slot.exerciseId,
     measure,
     kg: before?.kg ?? (last ? kgText(last.weightKg) : ""),
+    fromKg: before ? before.fromKg : (last?.weightKg ?? null),
     count: before?.count ?? (last ? String(countOf(last)) : ""),
     rir: "",
     set: null,
@@ -85,16 +87,18 @@ export function addRow(
 const parseWhole = (text: string): number | null =>
   /^\s*\d+\s*$/.test(text) ? Number(text) : null;
 
-// A row's load, count and RIR, or null when a cell is not a valid value. A timed set may carry
-// no added load (an empty cell) and has no RIR.
+// A row's load (typed in the unit, saved in kg), count and RIR, or null when a cell is not a valid
+// value. A timed set may carry no added load (an empty cell) and has no RIR. A cell still showing
+// the load it was drawn from gives that load back.
 export function parseRow(
   row: EditRow,
+  unit: WeightUnit = "kg",
 ): { weightKg: number; reps: number | null; seconds: number | null; rir: number | null } | null {
   const timed = row.measure === "seconds";
-  const kg = timed && row.kg.trim() === "" ? 0 : parseDecimal(row.kg);
+  const kg = timed && row.kg.trim() === "" ? 0 : parseLoad(row.kg, unit, row.fromKg ?? undefined);
   const count = parseWhole(row.count);
   const rir = row.rir.trim() === "" ? null : parseWhole(row.rir);
-  if (kg === null || !isSetKg(kg) || count === null) return null;
+  if (kg === null || count === null) return null;
   if (timed ? !isSeconds(count) : !isReps(count)) return null;
   if (row.rir.trim() !== "" && (rir === null || !isRir(rir) || timed || row.warmup)) return null;
   return {
@@ -151,6 +155,7 @@ export function editChanges({
   minutes,
   rows,
   now,
+  unit = "kg",
 }: {
   id: string;
   workout: Workout | null; // null: a session logged afterwards
@@ -160,6 +165,7 @@ export function editChanges({
   minutes: number; // the duration of a session logged afterwards
   rows: readonly EditRow[];
   now: Date;
+  unit?: WeightUnit; // the unit the rows were typed in
 }): Change[] | null {
   const at = now.toISOString();
   const changes: Change[] = [];
@@ -193,7 +199,7 @@ export function editChanges({
         changes.push({ kind: "set", id: row.id, workoutId: id, field: "removed", value: true, at });
       continue;
     }
-    const value = parseRow(row);
+    const value = parseRow(row, unit);
     if (!value) return null;
     if (!row.set)
       changes.push({

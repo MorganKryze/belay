@@ -297,7 +297,7 @@
       "other": "Other"
     },
     "back": "Exercises",
-    "increment": "{{equipment}} · steps of {{value}} kg",
+    "increment": "{{equipment}} · steps of {{value}} {{unit}}",
     "primary": "Primary",
     "secondary": "Secondary",
     "figure": "Body map: primary {{primary}}; secondary {{secondary}}",

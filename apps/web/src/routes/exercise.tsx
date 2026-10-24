@@ -1,6 +1,7 @@
 import "@/i18n/lazy";
 import { exerciseById } from "@belay/shared/exercises/catalog";
 import { loadSteps } from "@belay/shared/exercises/steps";
+import { incrementIn } from "@belay/shared/tools/units";
 import { starterProgram } from "@belay/shared/training/program";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams, useSearch } from "@tanstack/react-router";
@@ -11,12 +12,14 @@ import { BackLink, PageHeader } from "@/components/page-header";
 import { cardSurface } from "@/components/surfaces";
 import { BodyMap, BodySymbols } from "@/exercises/body-map";
 import { formatNumber, sessionTitle } from "@/lib/format";
+import { readWeightUnit } from "@/lib/units";
 import { formatRest, formatRir, formatSets, groupKind } from "@/workouts/format";
 import { NotFound } from "./fallbacks";
 
 // An exercise's sheet (§4.5): its equipment, its demonstration loop where the instance has one,
 // the body map, where the program uses it, and how to do it in the app's language.
 export function ExercisePage() {
+  const unit = readWeightUnit();
   const { t, i18n } = useTranslation();
   const { exerciseId } = useParams({ from: "/exercises/$exerciseId" });
   // Opened from a session's preview, Back leads to that preview, as it was opened.
@@ -58,7 +61,8 @@ export function ExercisePage() {
         <p className="text-sm text-muted-foreground">
           {t("library.increment", {
             equipment: t(`library.equipment.${exercise.equipment}`),
-            value: formatNumber(exercise.incrementKg, i18n.language, { digits: 2 }),
+            value: formatNumber(incrementIn(exercise, unit), i18n.language, { digits: 2 }),
+            unit,
           })}
         </p>
       </PageHeader>
