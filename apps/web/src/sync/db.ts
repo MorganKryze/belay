@@ -673,14 +673,14 @@ async function revert(tx: WriteTx, change: Change): Promise<void> {
     case "programSlot": {
       // A refused creation takes its row away; a refused field goes back to unwritten, its value
       // shown until the server's row, sent back in the same answer, replaces it; a refused
-      // removal is taken back.
+      // removal or restore is taken back.
       const store = tx.objectStore(PROGRAM_STORE[change.kind]);
       if (change.field === "create") return store.delete(change.id);
       const row = (await programRow(tx, change.kind, change.id))!;
       await store.put({
         ...row,
         [`${change.field}At`]: null,
-        ...(change.field === "removed" && { removed: false }),
+        ...(change.field === "removed" && { removed: !change.value }),
       });
       return;
     }
