@@ -6,6 +6,7 @@ import { sessionByCode } from "@belay/shared/training/program";
 import i18n from "../i18n";
 import { pendingCounts } from "../sync/db";
 import { readLastUser } from "../sync/last-user";
+import { previewRestSound } from "../lib/rest-sound";
 import { answer } from "../test/answer";
 import { fakeApi } from "../test/fake-api";
 import { renderRoute } from "../test/render-route";
@@ -15,6 +16,12 @@ import { ADA, seed, weight } from "../test/seed";
 vi.mock("../sync/db", async (importOriginal) => {
   const real = await importOriginal<typeof import("../sync/db")>();
   return { ...real, pendingCounts: vi.fn(real.pendingCounts) };
+});
+
+// Passes through, but for the tone, which needs an audio device.
+vi.mock("../lib/rest-sound", async (importOriginal) => {
+  const real = await importOriginal<typeof import("../lib/rest-sound")>();
+  return { ...real, previewRestSound: vi.fn() };
 });
 
 // Radix Select calls pointer-capture and scrolling APIs jsdom does not implement.
@@ -63,14 +70,22 @@ describe("Settings preferences", () => {
 
   // Each section and the names of its rows, in order, as a person signed in first finds them.
   const SECTIONS = [
-    ["General", ["Language · English", "Theme · System"]],
+    ["General", ["Language · English", "Theme · System", "Weight unit · Kilograms (kg)"]],
     ["Home", ["Trend · Shown"]],
-    ["Sessions", ["Paused · Everything stops", "History · With activities", "Volume · Shown"]],
+    [
+      "Sessions",
+      [
+        "Paused · Everything stops",
+        "End-of-rest sound · Off",
+        "History · With activities",
+        "Volume · Shown",
+      ],
+    ],
     ["Body", ["Range pill · Shown", "Weekly intake · Shown"]],
     ["Tools", ["1RM · Two formulas", "Field sources · Shown"]],
   ] as const;
 
-  it("groups the ten rows under General, Home, Sessions, Body and Tools, in order, each showing its value", async () => {
+  it("groups the twelve rows under General, Home, Sessions, Body and Tools, in order, each showing its value", async () => {
     fakeApi({ me: ADA });
     renderRoute("/settings");
     const general = await screen.findByRole("region", { name: "General" });
@@ -95,9 +110,12 @@ describe("Settings preferences", () => {
     fakeApi({ me: ADA });
     renderRoute("/settings");
     const names = [
-      ["Général", ["Langue · Français", "Thème · Système"]],
+      ["Général", ["Langue · Français", "Thème · Système", "Unité de poids · Kilos (kg)"]],
       ["Accueil", ["Tendance · Affichée"]],
-      ["Séances", ["En pause · Tout s'arrête", "Historique · Avec activités"]],
+      [
+        "Séances",
+        ["En pause · Tout s'arrête", "Son de fin de repos · Coupé", "Historique · Avec activités"],
+      ],
       ["Corps", ["Pastille · Affichée", "Apports · Affichés"]],
       ["Outils", ["1RM · Deux formules", "Origine des champs · Affichée"]],
     ] as const;
@@ -129,6 +147,44 @@ describe("Settings preferences", () => {
     ).toBeTruthy();
     await choose(/^En pause/, "Tout s'arrête");
     expect(localStorage.getItem("belay.pauseStops")).toBe("all");
+  });
+
+  it("General offers kilos or pounds, kilos first, and keeps pounds on this device", async () => {
+    fakeApi({ me: ADA });
+    renderRoute("/settings");
+    expect(
+      await screen.findByRole("combobox", { name: "Weight unit · Kilograms (kg)" }),
+    ).toBeTruthy();
+    await choose(/^Weight unit/, "Pounds (lb)");
+    expect(localStorage.getItem("belay.weightUnit")).toBe("lb");
+    expect(await screen.findByRole("combobox", { name: "Weight unit · Pounds (lb)" })).toBeTruthy();
+  });
+
+  it("Sessions offers the end-of-rest sound, off first, and plays the tone once on choosing on", async () => {
+    fakeApi({ me: ADA });
+    renderRoute("/settings");
+    expect(await screen.findByRole("combobox", { name: "End-of-rest sound · Off" })).toBeTruthy();
+    vi.mocked(previewRestSound).mockClear();
+    await choose(/^End-of-rest sound/, "On");
+    expect(localStorage.getItem("belay.restSound")).toBe("on");
+    expect(previewRestSound).toHaveBeenCalledTimes(1);
+    await choose(/^End-of-rest sound/, "Off");
+    expect(localStorage.getItem("belay.restSound")).toBe("off");
+    expect(previewRestSound).toHaveBeenCalledTimes(1);
+  });
+
+  it("says the unit and sound rows in French", async () => {
+    await i18n.changeLanguage("fr");
+    fakeApi({ me: ADA });
+    renderRoute("/settings");
+    await choose(/^Unité de poids/, "Livres (lb)");
+    expect(
+      await screen.findByRole("combobox", { name: "Unité de poids · Livres (lb)" }),
+    ).toBeTruthy();
+    await choose(/^Son de fin de repos/, "Activé");
+    expect(
+      await screen.findByRole("combobox", { name: "Son de fin de repos · Activé" }),
+    ).toBeTruthy();
   });
 
   it("Trend offers Shown and Hidden and keeps the choice on this device", async () => {
@@ -285,7 +341,7 @@ describe("Settings preferences", () => {
     fakeApi({ me: ADA });
     renderRoute("/settings");
     await screen.findByRole("region", { name: "General" });
-    expect(screen.getAllByRole("combobox")).toHaveLength(10);
+    expect(screen.getAllByRole("combobox")).toHaveLength(12);
     for (const role of ["combobox", "button", "link"] as const)
       expect(screen.queryByRole(role, { name: /Units|Unités/ })).toBeNull();
   });

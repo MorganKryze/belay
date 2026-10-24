@@ -1,6 +1,16 @@
 {
   "settings": {
     "general": "Général",
+    "weightUnit": "Unité de poids",
+    "weightUnitOptions": {
+      "kg": "Kilos (kg)",
+      "lb": "Livres (lb)"
+    },
+    "restSound": "Son de fin de repos",
+    "restSoundOptions": {
+      "off": "Coupé",
+      "on": "Activé"
+    },
     "pauseStops": "En pause",
     "pauseStopsOptions": {
       "all": "Tout s'arrête",
