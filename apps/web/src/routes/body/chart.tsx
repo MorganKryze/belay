@@ -11,6 +11,7 @@ import {
 } from "react";
 import { useTranslation } from "react-i18next";
 import { formatKg, formatShortDay, formatWeekday } from "@/lib/format";
+import type { WeightUnit } from "@/lib/units";
 
 // The drawing is as wide as the card, in screen pixels, so its text renders at its true size;
 // 320 where nothing is laid out (unit tests). The right padding leaves room for the last average,
@@ -38,8 +39,8 @@ const LAST_CAP = 8;
 const daysBetween = (a: ISODate, b: ISODate) =>
   Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / 86_400_000);
 
-// Whole kilos, at most 6 lines: every kilo, or every 2, 5 or 10 on a wide range.
-function yAxis(values: number[]) {
+// Whole kilos or pounds, at most 6 lines: every unit, or every 2, 5 or 10 on a wide range.
+export function yAxis(values: number[]) {
   const lo = Math.floor(Math.min(...values) - 0.5);
   const hi = Math.ceil(Math.max(...values) + 0.5);
   const step = [1, 2, 5, 10, 20, 50].find((s) => (hi - lo) / s <= 5) ?? 100;
@@ -102,10 +103,12 @@ export function lastAverageBox(
 // Grey dots for the daily weigh-ins, an orange line for the 7-day average (D12, §8), and, in
 // context only (D5): the first 14 days of each creatine course as a band, the annotations as
 // named dashed lines. Pointer, touch or arrow keys move a crosshair over the nearest day; its
-// values are read out politely. The weeks list and the history below are the data table.
+// values are read out politely. The weeks list and the history below are the data table. The
+// weights come in the person's unit, `unit` says which: the chart only draws and labels them.
 export function WeightChart({
   weighings,
   averages,
+  unit,
   from,
   to,
   summary,
@@ -117,6 +120,7 @@ export function WeightChart({
 }: {
   weighings: readonly Weighing[];
   averages: readonly { date: ISODate; averageKg: number }[];
+  unit: WeightUnit;
   from: ISODate;
   to: ISODate;
   summary: string;
@@ -413,10 +417,12 @@ export function WeightChart({
           >
             <span className="block">{formatWeekday(active, i18n.language, to)}</span>
             {activeKg !== undefined && (
-              <span className="block">{t("chart.weighIn", { value: kg(activeKg) })}</span>
+              <span className="block">{t("chart.weighIn", { value: kg(activeKg), unit })}</span>
             )}
             {activeAvg !== undefined && (
-              <span className="block">{t("chart.movingAverage", { value: kg(activeAvg) })}</span>
+              <span className="block">
+                {t("chart.movingAverage", { value: kg(activeAvg), unit })}
+              </span>
             )}
           </div>
         )}

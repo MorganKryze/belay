@@ -44,8 +44,8 @@
     "average": "7-day average",
     "summary": "Weigh-ins from {{from}} to {{to}}. 7-day average: {{average}}. Loss per week: {{loss}}.",
     "hint": "Left and right arrows: day by day. Enter: edit the weigh-in.",
-    "weighIn": "Weigh-in {{value}} kg",
-    "movingAverage": "7-day avg {{value}} kg"
+    "weighIn": "Weigh-in {{value}} {{unit}}",
+    "movingAverage": "7-day avg {{value}} {{unit}}"
   },
   "account": {
     "unavailable": "This browser won't let Belay save on the device, so tracking isn't available here. The tools still work."
@@ -77,7 +77,6 @@
     "loss": "loss",
     "gain": "gain",
     "perWeek": "{{value}}%/wk",
-    "kg": "{{value}} kg",
     "lastWeek": "last week",
     "stable": "stable"
   },
@@ -90,7 +89,7 @@
     "save": "Save",
     "delete": "Delete this weigh-in",
     "close": "Close",
-    "outOfRange": "Enter a weight between 20 and 400 kg.",
+    "outOfRange": "Enter a weight between {{min}} and {{max}} {{unit}}.",
     "toastSaved": "Weigh-in saved",
     "toastDeleted": "Weigh-in deleted",
     "saveFailed": "Couldn't save on this phone. Try again.",
