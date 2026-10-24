@@ -44,16 +44,24 @@ export const loadNumber = (
 ): string =>
   formatNumber(loadFromKg(kg, unit), locale, { digits: unit === "kg" ? 2 : 0, grouping });
 
-// Typed text to kg on the set grid, or null: not a number, or outside SET_KG once converted.
-export function parseLoad(text: string, unit = readWeightUnit()): number | null {
+// Typed text to kg on the set grid, or null: not a number, or outside SET_KG once converted. Text
+// that still reads as the prefilled load gives that load back: 100 kg shown "220" lb stays 100.
+export function parseLoad(
+  text: string,
+  unit = readWeightUnit(),
+  prefillKg?: number,
+): number | null {
   const value = parseDecimal(text);
   if (value === null) return null;
   const kg = kgFromLoad(value, unit);
+  if (prefillKg !== undefined && kg === kgFromLoad(loadFromKg(prefillKg, unit), unit))
+    return prefillKg;
   return isSetKg(kg) ? kg : null;
 }
 
 // A weight stepper in the unit: what NumberStepper takes, and the way back to kg. toKg is not
-// rounded: the tools store unrounded kg, and the weigh-in sheet rounds with kgFromWeighing.
+// rounded: the tools store unrounded kg, and the weigh-in sheet rounds with kgFromWeighing. The
+// value shown, handed back untouched, gives the kg it came from: 80 kg stays 80, not 79.83.
 export function weightStepper(
   kg: number,
   rangeKg: { min: number; max: number },
@@ -70,11 +78,12 @@ export function weightStepper(
   if (unit === "kg")
     return { unit, value: kg, min: rangeKg.min, max: rangeKg.max, step: stepKg, toKg: (v) => v };
   const step = stepIn(stepKg, unit);
+  const value = roundTo(kgToLb(kg), step);
   return {
     unit,
-    value: roundTo(kgToLb(kg), step),
+    value,
     ...rangeIn(rangeKg, unit, step),
     step,
-    toKg: lbToKg,
+    toKg: (v) => (v === value ? kg : lbToKg(v)),
   };
 }

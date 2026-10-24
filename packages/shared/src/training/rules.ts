@@ -9,7 +9,7 @@ import { INCREMENT_LB, kgFromLoad, loadFromKg, type WeightUnit } from "../tools/
 import { WARMUP_SCHEMES, warmupSets } from "../tools/warmup";
 import { liveSlots } from "./plan";
 import { groupOf, plannedWorkSets } from "./program";
-import { MAX_WARMUPS, type Slot, type Workout, type WorkoutSet } from "./workout";
+import { MAX_WARMUPS, SET_KG, type Slot, type Workout, type WorkoutSet } from "./workout";
 
 export interface History {
   workouts: readonly Workout[];
@@ -104,7 +104,8 @@ export const lastTopSet = (history: History, exerciseId: string, measure: Measur
 // The warm-up sets of a slot (D7). A barbell is loaded as the Plates tool says (the person's bar
 // and plates); anything else takes the same fractions and reps, rounded to the exercise's step,
 // never 0 or less, never the working load or more. No working load yet, or one past what the
-// plate table handles (a typo like 8000): no warm-up, so the set stays as typed.
+// plate table handles (a typo like 8000): no warm-up, so the set stays as typed. In lb the bound
+// is the set grid's 500 kg (1 102 lb): its warm-ups stay under the plate table's 1 000 units.
 // In lb the sets are worked out in whole pounds, on the standard pound set and the pound steps,
 // then stored back on the kg grid.
 export function warmups(
@@ -116,9 +117,8 @@ export function warmups(
 ): Load[] {
   if (workKg === null || slot.warmupSets === 0) return [];
   if (!Number.isFinite(workKg) || workKg > MAX_TARGET_KG) return [];
+  if (unit === "lb" && workKg > SET_KG.max) return [];
   const work = loadFromKg(workKg, unit);
-  // The plate table counts in the unit it is given: 1 000 lb is its limit in pounds.
-  if (work > MAX_TARGET_KG) return [];
   const [barWeight, plates, step] =
     unit === "kg"
       ? [bar.barKg, bar.platesKg, exercise.incrementKg]

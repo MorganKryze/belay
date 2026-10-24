@@ -373,6 +373,14 @@ describe("warmups (D7)", () => {
     expect(warmups({ warmupSets: 1 }, 1, dumbbell, gym, "lb")).toEqual([]);
   });
 
+  it("lb warm-ups reach the top of the set grid as kg ones do", () => {
+    // 454 kg is 1 001 lb: past 1 000 units, still a valid set.
+    const sets = warmups({ warmupSets: 3 }, 454, barbell, gym, "lb");
+    expect(sets.length).toBeGreaterThan(0);
+    for (const s of sets) expect(isSetKg(s.weightKg)).toBe(true);
+    expect(warmups({ warmupSets: 3 }, 500, barbell, gym, "lb").length).toBeGreaterThan(0);
+  });
+
   it("lb warm-ups keep the 1 000 kg guard", () => {
     expect(warmups({ warmupSets: 2 }, MAX_TARGET_KG + 0.25, barbell, gym, "lb")).toEqual([]);
     expect(warmups({ warmupSets: 2 }, 8000, dumbbell, gym, "lb")).toEqual([]);

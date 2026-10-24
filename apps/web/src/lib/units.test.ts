@@ -75,13 +75,24 @@ describe("a load", () => {
     expect(parseLoad("82,3", "kg")).toBeNull();
     expect(parseLoad("501", "kg")).toBeNull();
   });
+
+  it("parseLoad gives back the prefilled kg when its shown text is left as it is", () => {
+    // 100 kg is shown "220"; saved untouched it stays 100, not 99.75.
+    expect(parseLoad("220", "lb", 100)).toBe(100);
+    for (let q = 0; q <= 2000; q++) {
+      expect(parseLoad(loadNumber(q / 4, "en", "lb"), "lb", q / 4)).toBe(q / 4);
+    }
+    // Edited text is converted as usual.
+    expect(parseLoad("221", "lb", 100)).toBe(100.25);
+  });
 });
 
 describe("a weight stepper", () => {
   it("weightStepper gives 67 to 661 lb at step 1 for the tools' 30 to 300 kg at 0.5", () => {
     const lb = weightStepper(80, { min: 30, max: 300 }, 0.5, "lb");
     expect(lb).toMatchObject({ unit: "lb", value: 176, min: 67, max: 661, step: 1 });
-    expect(lb.toKg(176)).toBeCloseTo(79.832, 3);
+    expect(lb.toKg(176)).toBe(80);
+    expect(lb.toKg(177)).toBeCloseTo(80.286, 3);
     const kg = weightStepper(80, { min: 30, max: 300 }, 0.5, "kg");
     expect(kg).toMatchObject({ unit: "kg", value: 80, min: 30, max: 300, step: 0.5 });
     expect(kg.toKg(80.5)).toBe(80.5);
