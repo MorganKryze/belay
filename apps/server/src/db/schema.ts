@@ -17,7 +17,6 @@ import {
   text,
   timestamp,
   unique,
-  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 
@@ -315,6 +314,10 @@ export const workouts = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     sessionCode: text("session_code").notNull(),
+    // The program session it was started from, written once with the start; null for a start
+    // without it (before programs were stored, or from an older phone). No key: a start is never
+    // refused for it, and it is only read within the same account.
+    sessionId: uuid("session_id"),
     plan: jsonb("plan").$type<Slot[]>().notNull(),
     planAt: ts("plan_at"),
     startedAt: ts("started_at").notNull(),
@@ -391,45 +394,23 @@ export const workoutSets = pgTable(
   ],
 );
 
-// The account's program (one per account, keyed by it): its schedule, Monday first, a letter or
-// null per day. The sessions and slots are their own rows below; every field has its own time
-// (null: the starting program's value, never written since).
+// A program of the account: its optional name and its schedule, Monday first, a session id or null
+// per day. Keyed by (account, id): the starting program's id is the same for every account.
+// Removed, never deleted; every field has its own time (null: the starting program's value, never
+// written since).
 export const programs = pgTable(
   "programs",
-  {
-    userId: uuid("user_id")
-      .primaryKey()
-      .references(() => users.id, { onDelete: "cascade" }),
-    schedule: jsonb("schedule")
-      .$type<{ mode: "rotation" | "fixed"; days: (string | null)[] }>()
-      .notNull(),
-    scheduleAt: ts("schedule_at"),
-    serverSeq: serverSeq(),
-    createdAt: ts("created_at").notNull().defaultNow(),
-    updatedAt: ts("updated_at").notNull().defaultNow(),
-  },
-  (t) => [
-    index("programs_user_seq").on(t.userId, t.serverSeq),
-    // Seven days of a letter or null fit well within it; the API checks the shape.
-    check("programs_schedule_size", sql`octet_length(${t.schedule}::text) <= 256`),
-  ],
-);
-
-// A session of the program. Keyed by (account, id): the starting program's ids are the same for
-// every account. Its letter is fixed at creation; removed, never deleted, so its slots and the
-// letter it used stay. Only one live session holds a letter.
-export const programSessions = pgTable(
-  "program_sessions",
   {
     userId: uuid("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     id: uuid("id").notNull(),
-    code: text("code").notNull(),
     name: text("name"),
     nameAt: ts("name_at"),
-    position: smallint("position").notNull(),
-    positionAt: ts("position_at"),
+    schedule: jsonb("schedule")
+      .$type<{ mode: "rotation" | "fixed"; days: (string | null)[] }>()
+      .notNull(),
+    scheduleAt: ts("schedule_at"),
     removed: boolean("removed").notNull().default(false),
     removedAt: ts("removed_at"),
     serverSeq: serverSeq(),
@@ -438,12 +419,72 @@ export const programSessions = pgTable(
   },
   (t) => [
     primaryKey({ columns: [t.userId, t.id] }),
+    index("programs_user_seq").on(t.userId, t.serverSeq),
+    check("programs_name", sql`${t.name} IS NULL OR char_length(${t.name}) BETWEEN 1 AND 60`),
+    // Seven session ids (about 320 bytes) fit with room to spare; the API checks the shape.
+    check("programs_schedule_size", sql`octet_length(${t.schedule}::text) <= 512`),
+  ],
+);
+
+// Which program the account follows, one row per account; its presence marks an account as given
+// the starting program. The time is when it became active (null: since the start), so the next
+// session counts only the sessions done since.
+export const activePrograms = pgTable(
+  "active_programs",
+  {
+    userId: uuid("user_id")
+      .primaryKey()
+      .references(() => users.id, { onDelete: "cascade" }),
+    programId: uuid("program_id").notNull(),
+    at: ts("at"),
+    serverSeq: serverSeq(),
+    createdAt: ts("created_at").notNull().defaultNow(),
+    updatedAt: ts("updated_at").notNull().defaultNow(),
+  },
+  (t) => [
+    // Never a program of another account: the key holds the account too.
+    foreignKey({
+      name: "active_programs_program_fk",
+      columns: [t.userId, t.programId],
+      foreignColumns: [programs.userId, programs.id],
+    }).onDelete("cascade"),
+  ],
+);
+
+// A session: placed in a program's rotation, or set aside in the account's collection (no
+// program). Keyed by (account, id): the starting program's ids are the same for every account. No
+// stored letter: its letter is its place in the active rotation. Removed, never deleted, so its
+// slots stay.
+export const programSessions = pgTable(
+  "program_sessions",
+  {
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    id: uuid("id").notNull(),
+    name: text("name"),
+    nameAt: ts("name_at"),
+    // Its place: the program and the position in it change together, under one time.
+    programId: uuid("program_id"),
+    position: smallint("position").notNull(),
+    placeAt: ts("place_at"),
+    removed: boolean("removed").notNull().default(false),
+    removedAt: ts("removed_at"),
+    serverSeq: serverSeq(),
+    createdAt: ts("created_at").notNull().defaultNow(),
+    updatedAt: ts("updated_at").notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.userId, t.id] }),
+    // Never a program of another account. MATCH SIMPLE, the default: a session set aside has no
+    // program, and the key is not checked for it.
+    foreignKey({
+      name: "program_sessions_program_fk",
+      columns: [t.userId, t.programId],
+      foreignColumns: [programs.userId, programs.id],
+    }).onDelete("cascade"),
     index("program_sessions_user_seq").on(t.userId, t.serverSeq),
-    // A backstop: the server gives a clashing creation the next free letter first.
-    uniqueIndex("program_sessions_live_code")
-      .on(t.userId, t.code)
-      .where(sql`NOT ${t.removed}`),
-    check("program_sessions_code", sql`${t.code} ~ '^[A-Z]$'`),
+    index("program_sessions_program").on(t.userId, t.programId),
     check(
       "program_sessions_name",
       sql`${t.name} IS NULL OR char_length(${t.name}) BETWEEN 1 AND 40`,

@@ -2,11 +2,12 @@ import { cpSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { newId } from "@belay/shared";
+import { SEED_PROGRAM_ID, seedId } from "@belay/shared/training/stored-program";
 import { eq, sql } from "drizzle-orm";
 import { describe, expect, inject, it } from "vitest";
 import { asUser, connect, runMigrations, type Db, type Tx } from "../src/db/client";
 import { upsertUser } from "../src/db/identity";
-import { programSessions, programSlots, programs, users } from "../src/db/schema";
+import { activePrograms, programSessions, programSlots, programs, users } from "../src/db/schema";
 import { appDb, testDb } from "./db";
 
 // As the server runs: the belay_app login role, row-level security on every query.
@@ -16,16 +17,22 @@ const issuer = "https://idp.test";
 // drizzle wraps driver errors in DrizzleQueryError; the Postgres error is its `cause`.
 const denied = { cause: { code: "42501" } };
 const foreignKey = { cause: { code: "23503" } };
-const unique = { cause: { code: "23505" } };
 const checkViolation = { cause: { code: "23514" } };
 const AT = new Date("2026-10-07T17:00:00.000Z");
 const SCHEDULE = { mode: "rotation" as const, days: [null, null, null, null, null, null, null] };
 
-// The starting program's ids are the same for every account (a v7-shaped UUID with a zero time
-// part): session A is 1, its first slot 0x101.
-const seedId = (n: number) => "00000000-0000-7000-8000-" + n.toString(16).padStart(12, "0");
+// The starting program's ids are the same for every account: the program, session A and its
+// first slot.
+const PROGRAM = SEED_PROGRAM_ID;
 const SESSION_A = seedId(1);
 const SLOT_A1 = seedId(0x101);
+// Seven session ids, the largest schedule a program holds.
+const FULL_WEEK = { mode: "fixed" as const, days: Array.from({ length: 7 }, () => newId()) };
+
+const programOf = (
+  userId: string,
+  patch: Partial<typeof programs.$inferInsert> = {},
+): typeof programs.$inferInsert => ({ userId, id: PROGRAM, schedule: SCHEDULE, ...patch });
 
 const sessionOf = (
   userId: string,
@@ -33,7 +40,7 @@ const sessionOf = (
 ): typeof programSessions.$inferInsert => ({
   userId,
   id: SESSION_A,
-  code: "A",
+  programId: PROGRAM,
   position: 0,
   ...patch,
 });
@@ -58,10 +65,12 @@ const slotOf = (
   ...patch,
 });
 
-// The starting program's first session and slot, under the same ids, for each account given.
+// The starting program, active, with its first session and slot, under the same ids, for each
+// account given.
 async function seed(userId: string) {
   await asUser(db, userId, async (tx) => {
-    await tx.insert(programs).values({ userId, schedule: SCHEDULE });
+    await tx.insert(programs).values(programOf(userId));
+    await tx.insert(activePrograms).values({ userId, programId: PROGRAM });
     await tx.insert(programSessions).values(sessionOf(userId));
     await tx.insert(programSlots).values(slotOf(userId));
   });
@@ -76,8 +85,12 @@ async function twoAccounts(tag: string) {
   return { a, b };
 }
 
-const TABLES = { programs, programSessions, programSlots } as const;
-const NEW = ["program_sessions", "program_slots", "programs"];
+const TABLES = { programs, activePrograms, programSessions, programSlots } as const;
+const NEW = ["active_programs", "program_sessions", "program_slots", "programs"];
+const NEW_SQL = sql.join(
+  NEW.map((t) => sql`${t}`),
+  sql`, `,
+);
 
 describe("the program as belay_app", () => {
   it("each account sees only its own rows, though both hold the same seed ids", async () => {
@@ -104,27 +117,36 @@ describe("the program as belay_app", () => {
         .returning({ userId: programSessions.userId })),
       ...(await tx
         .update(programs)
-        .set({ schedule: { mode: "fixed", days: ["A", null, null, null, null, null, null] } })
+        .set({ schedule: FULL_WEEK, name: "Hiver", nameAt: AT })
+        .where(eq(programs.id, PROGRAM))
         .returning({ userId: programs.userId })),
+      ...(await tx
+        .update(activePrograms)
+        .set({ at: AT })
+        .returning({ userId: activePrograms.userId })),
     ]);
-    expect(changed).toEqual([{ userId: b }, { userId: b }, { userId: b }]);
+    expect(changed).toEqual([{ userId: b }, { userId: b }, { userId: b }, { userId: b }]);
     const [slotOfA] = await asUser(db, a, (tx) => tx.select().from(programSlots));
     const [sessionOfA] = await asUser(db, a, (tx) => tx.select().from(programSessions));
     const [programOfA] = await asUser(db, a, (tx) => tx.select().from(programs));
+    const [activeOfA] = await asUser(db, a, (tx) => tx.select().from(activePrograms));
     expect(slotOfA).toMatchObject({ userId: a, sets: 3, setsAt: null });
     expect(sessionOfA).toMatchObject({ userId: a, name: null, nameAt: null });
-    expect(programOfA?.schedule).toEqual(SCHEDULE);
+    expect(programOfA).toMatchObject({ userId: a, schedule: SCHEDULE, name: null, nameAt: null });
+    expect(activeOfA).toMatchObject({ userId: a, programId: PROGRAM, at: null });
   });
 
   it("refuses writing a row for another account", async () => {
     const { a, b } = await twoAccounts("pg-insert");
     const other = newId();
     const writes = [
-      (tx: Tx) => tx.insert(programs).values({ userId: a, schedule: SCHEDULE }),
-      (tx: Tx) => tx.insert(programSessions).values(sessionOf(a, { id: other, code: "D" })),
+      (tx: Tx) => tx.insert(programs).values(programOf(a, { id: other })),
+      (tx: Tx) => tx.insert(activePrograms).values({ userId: a, programId: PROGRAM }),
+      (tx: Tx) => tx.insert(programSessions).values(sessionOf(a, { id: other })),
       (tx: Tx) => tx.insert(programSlots).values(slotOf(a, { id: other })),
       // Nor hand one's own row over to someone else.
       (tx: Tx) => tx.update(programSlots).set({ userId: a }).where(eq(programSlots.userId, b)),
+      (tx: Tx) => tx.update(activePrograms).set({ userId: a }).where(eq(activePrograms.userId, b)),
     ];
     for (const write of writes) await expect(asUser(db, b, write)).rejects.toMatchObject(denied);
   });
@@ -142,7 +164,7 @@ describe("the program as belay_app", () => {
     const { a, b } = await twoAccounts("pg-fk");
     const sessionOnlyA = newId();
     await asUser(db, a, (tx) =>
-      tx.insert(programSessions).values(sessionOf(a, { id: sessionOnlyA, code: "D" })),
+      tx.insert(programSessions).values(sessionOf(a, { id: sessionOnlyA, position: 1 })),
     );
     const writes = [
       (tx: Tx) =>
@@ -162,36 +184,68 @@ describe("the program as belay_app", () => {
     );
   });
 
-  it("two live sessions never share a letter", async () => {
-    const { a, b } = await twoAccounts("pg-letter");
-    await expect(
-      asUser(db, a, (tx) =>
-        tx.insert(programSessions).values(sessionOf(a, { id: newId(), code: "A", position: 1 })),
-      ),
-    ).rejects.toMatchObject(unique);
-    // A removed session keeps its letter without holding it; another account has its own letters.
-    const removedD = newId();
-    await asUser(db, a, async (tx) => {
+  it("a session never sits in another account's program", async () => {
+    const { a, b } = await twoAccounts("pg-place");
+    const programOnlyA = newId();
+    await asUser(db, a, (tx) => tx.insert(programs).values(programOf(a, { id: programOnlyA })));
+    const writes = [
+      (tx: Tx) =>
+        tx.insert(programSessions).values(sessionOf(b, { id: newId(), programId: programOnlyA })),
+      (tx: Tx) =>
+        tx
+          .update(programSessions)
+          .set({ programId: programOnlyA })
+          .where(eq(programSessions.id, SESSION_A)),
+      (tx: Tx) =>
+        tx.insert(programSessions).values(sessionOf(b, { id: newId(), programId: newId() })),
+    ];
+    for (const write of writes)
+      await expect(asUser(db, b, write)).rejects.toMatchObject(foreignKey);
+    // A's own session there is fine; B sets a session aside (no program), at a position another
+    // already holds; a removed session comes back beside live ones.
+    await asUser(db, a, (tx) =>
+      tx.insert(programSessions).values(sessionOf(a, { id: newId(), programId: programOnlyA })),
+    );
+    const removed = newId();
+    await asUser(db, b, async (tx) => {
+      await tx.insert(programSessions).values(sessionOf(b, { id: newId(), programId: null }));
+      await tx.insert(programSessions).values(sessionOf(b, { id: newId() }));
       await tx
         .insert(programSessions)
-        .values(sessionOf(a, { id: removedD, code: "D", removed: true, removedAt: AT }));
-      await tx.insert(programSessions).values(sessionOf(a, { id: newId(), code: "D" }));
+        .values(sessionOf(b, { id: removed, removed: true, removedAt: AT }));
+      await tx
+        .update(programSessions)
+        .set({ removed: false, removedAt: AT })
+        .where(eq(programSessions.id, removed));
     });
-    await asUser(db, b, (tx) =>
-      tx.insert(programSessions).values(sessionOf(b, { id: newId(), code: "D" })),
-    );
-    // Putting the removed one back while a live session holds its letter is refused.
+    const ofB = await asUser(db, b, (tx) => tx.select().from(programSessions));
+    expect(ofB.filter((s) => s.programId === null)).toHaveLength(1);
+    expect(ofB.filter((s) => !s.removed)).toHaveLength(4);
+  });
+
+  it("the active pointer never names another account's program", async () => {
+    const { a, b } = await twoAccounts("pg-active");
+    const programOnlyA = newId();
+    await asUser(db, a, (tx) => tx.insert(programs).values(programOf(a, { id: programOnlyA })));
+    for (const programId of [programOnlyA, newId()])
+      await expect(
+        asUser(db, b, (tx) => tx.update(activePrograms).set({ programId, at: AT })),
+      ).rejects.toMatchObject(foreignKey);
+    // A switches to its own second program; B's pointer stays on its own.
+    await asUser(db, a, (tx) => tx.update(activePrograms).set({ programId: programOnlyA, at: AT }));
+    const [activeOfB] = await asUser(db, b, (tx) => tx.select().from(activePrograms));
+    expect(activeOfB).toMatchObject({ userId: b, programId: PROGRAM, at: null });
+    // One pointer per account.
     await expect(
-      asUser(db, a, (tx) =>
-        tx.update(programSessions).set({ removed: false }).where(eq(programSessions.id, removedD)),
-      ),
-    ).rejects.toMatchObject(unique);
+      asUser(db, a, (tx) => tx.insert(activePrograms).values({ userId: a, programId: PROGRAM })),
+    ).rejects.toMatchObject({ cause: { code: "23505" } });
   });
 
   it("the database refuses a counted slot past 100 reps and a timed one past 3600 s", async () => {
     const { a } = await twoAccounts("pg-check");
     const slot = eq(programSlots.id, SLOT_A1);
     const session = eq(programSessions.id, SESSION_A);
+    const program = eq(programs.id, PROGRAM);
     const refused = [
       (tx: Tx) => tx.update(programSlots).set({ repMax: 101 }).where(slot),
       (tx: Tx) =>
@@ -215,8 +269,6 @@ describe("the program as belay_app", () => {
           .where(slot),
       (tx: Tx) => tx.update(programSlots).set({ rule: "deload" }).where(slot),
       (tx: Tx) => tx.update(programSlots).set({ position: 1000 }).where(slot),
-      (tx: Tx) => tx.update(programSessions).set({ code: "a" }).where(session),
-      (tx: Tx) => tx.update(programSessions).set({ code: "AB" }).where(session),
       (tx: Tx) => tx.update(programSessions).set({ name: "" }).where(session),
       (tx: Tx) =>
         tx
@@ -224,10 +276,18 @@ describe("the program as belay_app", () => {
           .set({ name: "x".repeat(41) })
           .where(session),
       (tx: Tx) => tx.update(programSessions).set({ position: -1 }).where(session),
+      (tx: Tx) => tx.update(programSessions).set({ position: 1000 }).where(session),
+      (tx: Tx) => tx.update(programs).set({ name: "" }).where(program),
       (tx: Tx) =>
         tx
           .update(programs)
-          .set({ schedule: { mode: "rotation", days: Array(7).fill("x".repeat(40)) } }),
+          .set({ name: "x".repeat(61) })
+          .where(program),
+      (tx: Tx) =>
+        tx
+          .update(programs)
+          .set({ schedule: { mode: "rotation", days: Array(7).fill("x".repeat(80)) } })
+          .where(program),
     ];
     for (const write of refused)
       await expect(asUser(db, a, write)).rejects.toMatchObject(checkViolation);
@@ -252,8 +312,13 @@ describe("the program as belay_app", () => {
         .where(slot);
       await tx
         .update(programSessions)
-        .set({ code: "Z", name: "x".repeat(40), position: 999 })
+        .set({ name: "x".repeat(40), position: 999 })
         .where(session);
+      // Seven session ids fit, and a 60-character name.
+      await tx
+        .update(programs)
+        .set({ schedule: FULL_WEEK, name: "x".repeat(60) })
+        .where(program);
     });
   });
 
@@ -269,7 +334,7 @@ describe("the database catalogue, after 0007", () => {
   it("has row-level security and an owner policy on each table, using and checking the account", async () => {
     const rows = await owner.execute<{ tablename: string; qual: string; with_check: string }>(
       sql`select tablename, qual, with_check from pg_policies
-          where tablename in ('programs', 'program_sessions', 'program_slots') order by tablename`,
+          where tablename in (${NEW_SQL}) order by tablename`,
     );
     expect(rows.map((r) => r.tablename)).toEqual(NEW);
     for (const r of rows) {
@@ -278,7 +343,7 @@ describe("the database catalogue, after 0007", () => {
     }
     const rls = await owner.execute<{ relname: string; relrowsecurity: boolean }>(
       sql`select relname, relrowsecurity from pg_class
-          where relname in ('programs', 'program_sessions', 'program_slots') order by relname`,
+          where relname in (${NEW_SQL}) order by relname`,
     );
     expect(rls).toEqual(NEW.map((relname) => ({ relname, relrowsecurity: true })));
   });
@@ -286,7 +351,7 @@ describe("the database catalogue, after 0007", () => {
   it("grants belay_app reading, adding and changing, never deleting or truncating", async () => {
     const rows = await owner.execute<{ table_name: string; privilege_type: string }>(
       sql`select table_name, privilege_type from information_schema.role_table_grants
-          where grantee = 'belay_app' and table_name in ('programs', 'program_sessions', 'program_slots')
+          where grantee = 'belay_app' and table_name in (${NEW_SQL})
           order by table_name, privilege_type`,
     );
     expect(rows).toEqual(
@@ -297,16 +362,19 @@ describe("the database catalogue, after 0007", () => {
   });
 });
 
-// Every row of each table, as text in a stable order, and the columns that hold them.
-async function dump(conn: Db, tables: readonly string[]) {
+// Every row of each table, as text in a stable order, and the columns that hold them; a column
+// the migration adds is left out of both, so earlier tables compare equal around it.
+async function dump(conn: Db, tables: readonly string[], added: string) {
   const out: Record<string, unknown> = {};
   for (const table of tables) {
     const [rows] = await conn.execute<{ rows: string }>(
-      sql`select coalesce(json_agg(t::text order by t::text), '[]')::text as rows from ${sql.identifier(table)} t`,
+      sql`select coalesce(json_agg(r order by r), '[]')::text as rows
+          from (select (to_jsonb(t) - ${added}::text)::text as r from ${sql.identifier(table)} t) s`,
     );
     const columns = await conn.execute(
       sql`select column_name, data_type, is_nullable, column_default from information_schema.columns
-          where table_schema = 'public' and table_name = ${table} order by ordinal_position`,
+          where table_schema = 'public' and table_name = ${table} and column_name <> ${added}
+          order by ordinal_position`,
     );
     out[table] = { rows: rows!.rows, columns: [...columns] };
   }
@@ -321,7 +389,7 @@ const publicTables = async (conn: Db) =>
   ).map((r) => r.tablename);
 
 describe("migration 0007", () => {
-  it("on a populated database keeps every row of the earlier tables", async () => {
+  it("on a populated database keeps every row of the earlier tables; sessions done gain no recorded session", async () => {
     // The migrations up to 0006 only, from a copy of the folder whose journal stops there.
     const upTo0006 = mkdtempSync(join(tmpdir(), "belay-0006-"));
     cpSync("drizzle", upTo0006, { recursive: true });
@@ -350,7 +418,8 @@ describe("migration 0007", () => {
         values (${user}, ${issuer}, 'populated', 'P', 178, ${at})`);
       await fresh.db
         .execute(sql`insert into workouts (id, user_id, session_code, plan, started_at, ended_at, note, note_at)
-        values (${workout}, ${user}, 'C', '[{"exerciseId": "ds:0025"}]'::jsonb, ${at}, ${at}, 'Bien', ${at})`);
+        values (${workout}, ${user}, 'C', '[{"exerciseId": "ds:0025"}]'::jsonb, ${at}, ${at}, 'Bien', ${at}),
+               (${newId()}, ${user}, 'A', '[{"exerciseId": "ds:0043"}]'::jsonb, ${at}, null, null, null)`);
       await fresh.db.execute(sql`insert into workout_sets
         (id, user_id, workout_id, slot_index, position, exercise_id, warmup, weight_kg, reps, seconds, rir, done_at, fields_at)
         values (${newId()}, ${user}, ${workout}, 0, 3, 'ds:0025', false, 82.5, 8, null, 1, ${at}, ${at}),
@@ -358,11 +427,30 @@ describe("migration 0007", () => {
       await fresh.db
         .execute(sql`insert into body_metrics (user_id, date, weight_kg, weight_at, waist_cm, waist_at)
         values (${user}, '2026-10-07', 81.4, ${at}, 86.5, ${at})`);
-      const rowsBefore = await dump(fresh.db, before);
+      const rowsBefore = await dump(fresh.db, before, "session_id");
 
       await runMigrations(fresh.db, "drizzle");
 
-      expect(await dump(fresh.db, before)).toEqual(rowsBefore);
+      expect(await dump(fresh.db, before, "session_id")).toEqual(rowsBefore);
+      // Sessions done gain the session they came from, empty for every one done before, with no
+      // key: a start is never refused for it.
+      const [recorded] = await fresh.db.execute<{ n: number; empty: number }>(
+        sql`select count(*)::int as n, count(*) filter (where session_id is null)::int as empty
+            from workouts`,
+      );
+      expect(recorded).toEqual({ n: 2, empty: 2 });
+      const column = await fresh.db.execute(
+        sql`select data_type, is_nullable, column_default from information_schema.columns
+            where table_schema = 'public' and table_name = 'workouts' and column_name = 'session_id'`,
+      );
+      expect([...column]).toEqual([
+        { data_type: "uuid", is_nullable: "YES", column_default: null },
+      ]);
+      const keys = await fresh.db.execute(
+        sql`select constraint_name from information_schema.key_column_usage
+            where table_name = 'workouts' and column_name = 'session_id'`,
+      );
+      expect([...keys]).toEqual([]);
       expect(await publicTables(fresh.db)).toEqual([...before, ...NEW].sort());
       for (const table of NEW) {
         const [row] = await fresh.db.execute<{ n: number; rls: boolean }>(

@@ -1,9 +1,90 @@
 {
-  "id": "f48a9ff2-d3a0-42f2-83af-7539b6ff787e",
+  "id": "590ca665-3012-4a03-be13-6d87fa4e4e8a",
   "prevId": "e415b955-011a-474f-91e2-a896f6ee87dd",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
+    "public.active_programs": {
+      "name": "active_programs",
+      "schema": "",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "program_id": {
+          "name": "program_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "at": {
+          "name": "at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "server_seq": {
+          "name": "server_seq",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "nextval('belay_sync_seq')"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "active_programs_user_id_users_id_fk": {
+          "name": "active_programs_user_id_users_id_fk",
+          "tableFrom": "active_programs",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "active_programs_program_fk": {
+          "name": "active_programs_program_fk",
+          "tableFrom": "active_programs",
+          "tableTo": "programs",
+          "columnsFrom": [
+            "user_id",
+            "program_id"
+          ],
+          "columnsTo": [
+            "user_id",
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.activities": {
       "name": "activities",
       "schema": "",
@@ -711,12 +792,6 @@
           "primaryKey": false,
           "notNull": true
         },
-        "code": {
-          "name": "code",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
         "name": {
           "name": "name",
           "type": "text",
@@ -729,14 +804,20 @@
           "primaryKey": false,
           "notNull": false
         },
+        "program_id": {
+          "name": "program_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
         "position": {
           "name": "position",
           "type": "smallint",
           "primaryKey": false,
           "notNull": true
         },
-        "position_at": {
-          "name": "position_at",
+        "place_at": {
+          "name": "place_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
@@ -798,8 +879,8 @@
           "method": "btree",
           "with": {}
         },
-        "program_sessions_live_code": {
-          "name": "program_sessions_live_code",
+        "program_sessions_program": {
+          "name": "program_sessions_program",
           "columns": [
             {
               "expression": "user_id",
@@ -808,14 +889,13 @@
               "nulls": "last"
             },
             {
-              "expression": "code",
+              "expression": "program_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
             }
           ],
-          "isUnique": true,
-          "where": "NOT \"program_sessions\".\"removed\"",
+          "isUnique": false,
           "concurrently": false,
           "method": "btree",
           "with": {}
@@ -834,6 +914,21 @@
           ],
           "onDelete": "cascade",
           "onUpdate": "no action"
+        },
+        "program_sessions_program_fk": {
+          "name": "program_sessions_program_fk",
+          "tableFrom": "program_sessions",
+          "tableTo": "programs",
+          "columnsFrom": [
+            "user_id",
+            "program_id"
+          ],
+          "columnsTo": [
+            "user_id",
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
@@ -848,10 +943,6 @@
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {
-        "program_sessions_code": {
-          "name": "program_sessions_code",
-          "value": "\"program_sessions\".\"code\" ~ '^[A-Z]$'"
-        },
         "program_sessions_name": {
           "name": "program_sessions_name",
           "value": "\"program_sessions\".\"name\" IS NULL OR char_length(\"program_sessions\".\"name\") BETWEEN 1 AND 40"
@@ -1194,8 +1285,26 @@
         "user_id": {
           "name": "user_id",
           "type": "uuid",
-          "primaryKey": true,
+          "primaryKey": false,
           "notNull": true
+        },
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "name_at": {
+          "name": "name_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
         },
         "schedule": {
           "name": "schedule",
@@ -1205,6 +1314,19 @@
         },
         "schedule_at": {
           "name": "schedule_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "removed": {
+          "name": "removed",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "removed_at": {
+          "name": "removed_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
@@ -1269,13 +1391,25 @@
           "onUpdate": "no action"
         }
       },
-      "compositePrimaryKeys": {},
+      "compositePrimaryKeys": {
+        "programs_user_id_id_pk": {
+          "name": "programs_user_id_id_pk",
+          "columns": [
+            "user_id",
+            "id"
+          ]
+        }
+      },
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {
+        "programs_name": {
+          "name": "programs_name",
+          "value": "\"programs\".\"name\" IS NULL OR char_length(\"programs\".\"name\") BETWEEN 1 AND 60"
+        },
         "programs_schedule_size": {
           "name": "programs_schedule_size",
-          "value": "octet_length(\"programs\".\"schedule\"::text) <= 256"
+          "value": "octet_length(\"programs\".\"schedule\"::text) <= 512"
         }
       },
       "isRLSEnabled": false
@@ -1964,6 +2098,12 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true
+        },
+        "session_id": {
+          "name": "session_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
         },
         "plan": {
           "name": "plan",
