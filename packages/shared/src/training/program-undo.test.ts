@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { isNewer } from "../sync/merge";
 import { isValidChange } from "../sync/valid";
 import {
   addSession,
@@ -285,6 +286,27 @@ describe("undoOf", () => {
         at: UNDO,
       },
     ]);
+  });
+
+  it("an undo whose clock is behind the edit lands just after it, so it still restores", () => {
+    const LATER = "2026-10-25T08:00:30.000Z";
+    const edit: ProgramEdit[] = [
+      ...editSlot(before, BENCH, { field: "sets", value: 5 }, AT)!,
+      ...renameProgram(P2, "Été", LATER),
+    ];
+    const now = withProgram(withSlot(before, BENCH, { sets: 5 }), P2, { name: "Été" });
+    const AFTER = "2026-10-25T08:00:30.001Z"; // the edit's latest time, plus one millisecond
+    for (const clock of ["2026-10-25T07:00:00.000Z", LATER]) {
+      const undo = undoOf(before, edit, now, clock);
+      expect(undo).toEqual([
+        { kind: "program", id: P2, field: "name", value: null, at: AFTER },
+        { kind: "programSlot", id: BENCH, field: "sets", value: bench.sets, at: AFTER },
+      ]);
+      // Strictly newer than what the edit wrote: last write wins puts the old values back.
+      for (const change of undo) expect(isNewer(change.at, LATER)).toBe(true);
+    }
+    // A clock ahead of the edit keeps its own time.
+    expect(undoOf(before, edit, now, UNDO).map((c) => c.at)).toEqual([UNDO, UNDO]);
   });
 
   it("every undo change passes isValidChange", () => {

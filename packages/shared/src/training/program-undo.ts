@@ -45,8 +45,12 @@ export function undoOf(
   before: StoredPrograms,
   edit: readonly ProgramEdit[],
   now: StoredPrograms,
-  at: string,
+  clock: string,
 ): ProgramEdit[] {
+  // Strictly after the edit, even on a clock behind it (set back, or another tab's edit read
+  // fresh): on a tie or an older time, last write wins would keep the edit.
+  const latest = Math.max(...edit.map((c) => Date.parse(c.at)));
+  const at = Date.parse(clock) > latest ? clock : new Date(latest + 1).toISOString();
   const undo: ProgramEdit[] = [];
   let pointer: ActiveProgramChange | null = null;
   let pointed = false;
