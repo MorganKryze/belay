@@ -54,7 +54,11 @@ export function parseLoad(
   const value = parseDecimal(text);
   if (value === null) return null;
   const kg = kgFromLoad(value, unit);
-  if (prefillKg !== undefined && kg === kgFromLoad(loadFromKg(prefillKg, unit), unit))
+  if (
+    prefillKg !== undefined &&
+    isSetKg(prefillKg) &&
+    kg === kgFromLoad(loadFromKg(prefillKg, unit), unit)
+  )
     return prefillKg;
   return isSetKg(kg) ? kg : null;
 }
