@@ -10,10 +10,12 @@ import {
   parseRow,
   rowsOf,
 } from "./editor";
+import { loadNumber } from "@/lib/units";
 
 const B = [...sessionByCode("B")!.slots];
 const W = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7e01";
 const kgText = (kg: number) => String(kg);
+const lbText = (kg: number) => loadNumber(kg, "en", "lb");
 const local = (d: number, h: number, m = 0) => new Date(2026, 9, d, h, m);
 const workout: Workout = {
   id: W,
@@ -191,5 +193,29 @@ describe("what Save writes", () => {
   it("writes nothing at all while a row is incomplete", () => {
     const rows = rowsOf(SETS, kgText);
     expect(edit([{ ...rows[1]!, count: "" }])).toBeNull();
+  });
+
+  it("in pounds a typed 225 is saved as 102 kg", () => {
+    const rows = rowsOf(SETS, lbText);
+    expect(edit([rows[0]!, { ...rows[1]!, kg: "225" }, rows[2]!], { unit: "lb" })).toEqual([
+      expect.objectContaining({ id: rows[1]!.id, field: "values", weightKg: 102 }),
+    ]);
+  });
+
+  it("an unedited row in pounds is not a change", () => {
+    const sets = SETS.map((s) => ({ ...s, weightKg: 61.25 }));
+    expect(edit(rowsOf(sets, lbText), { unit: "lb" })).toEqual([]);
+    const history = { workouts: [workout], sets };
+    const added = addRow([], 0, B[0]!, history, "x", lbText)!;
+    expect(added.kg).toBe("135");
+    expect(edit([added], { unit: "lb" })).toEqual([
+      expect.objectContaining({ field: "create", weightKg: 61.25 }),
+    ]);
+  });
+
+  it("a lb row past 500 kg is refused", () => {
+    const rows = rowsOf(SETS, lbText);
+    expect(edit([{ ...rows[1]!, kg: "1105" }], { unit: "lb" })).toBeNull();
+    expect(edit([{ ...rows[1]!, kg: "1100" }], { unit: "lb" })).not.toBeNull();
   });
 });

@@ -297,7 +297,7 @@
       "other": "Autre"
     },
     "back": "Exercices",
-    "increment": "{{equipment}} · incrément {{value}} kg",
+    "increment": "{{equipment}} · incrément {{value}} {{unit}}",
     "primary": "Principal",
     "secondary": "Secondaires",
     "figure": "Silhouette : principal {{primary}} ; secondaires {{secondary}}",
