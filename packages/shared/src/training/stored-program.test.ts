@@ -341,7 +341,7 @@ describe("nextInRotation (PM10)", () => {
     };
   };
 
-  it("the next session follows the last one's recorded id, then its letter for an old session, counting only sessions since the program became active", () => {
+  it("the next session follows the last one's recorded id, whenever it was started, then its letter for an old session", () => {
     expect(nextInRotation([], rotation, null)!.sessionId).toBe(idOf(0));
     // By its recorded id, whatever letter it had.
     expect(
@@ -363,12 +363,8 @@ describe("nextInRotation (PM10)", () => {
       { ...done({ sessionId: idOf(3), startedAt: "2026-10-09T17:00:00.000Z" }), removed: true },
     ];
     expect(nextInRotation(history, rotation, null)!.sessionId).toBe(idOf(2));
-    // Only since the program became active: the session of the 7th is before it.
-    expect(nextInRotation(history, rotation, "2026-10-08T00:00:00.000Z")!.sessionId).toBe(idOf(0));
-    // Started exactly when it became active counts, in any offset.
-    expect(nextInRotation(history, rotation, "2026-10-07T19:00:00.000+02:00")!.sessionId).toBe(
-      idOf(2),
-    );
+    // A recorded session counts even when started before the program became active.
+    expect(nextInRotation(history, rotation, "2026-10-08T00:00:00.000Z")!.sessionId).toBe(idOf(2));
   });
 
   it("of two sessions started at the same instant, the one with the greater id counts on every device", () => {
@@ -386,8 +382,8 @@ describe("nextInRotation (PM10)", () => {
     expect(nextInRotation([done({ sessionCode: "F" })], rotation, null)!.code).toBe("A");
   });
 
-  it("after a switch the next session is the first", () => {
-    // The other program's rotation: two sessions; the last one done belongs to the first program.
+  it("after a switch the next session follows the last one done when the new rotation holds it, else the first", () => {
+    // The other program's rotation: sessions 0 and 1; sessions 2 and 3 stay in the first program.
     const other = rotationOf(
       stored(
         sessions.map((s, i) => (i < 2 ? { ...s, programId: P2 } : s)),
@@ -396,9 +392,44 @@ describe("nextInRotation (PM10)", () => {
       ),
     );
     const before = [done({ sessionId: idOf(0), startedAt: "2026-10-19T17:00:00.000Z" })];
-    expect(nextInRotation(before, other, "2026-10-20T08:00:00.000Z")!.sessionId).toBe(idOf(0));
-    const since = [...before, done({ sessionId: idOf(0), startedAt: "2026-10-21T17:00:00.000Z" })];
+    expect(nextInRotation(before, other, "2026-10-20T08:00:00.000Z")!.sessionId).toBe(idOf(1));
+    const elsewhere = [done({ sessionId: idOf(2), startedAt: "2026-10-19T17:00:00.000Z" })];
+    expect(nextInRotation(elsewhere, other, "2026-10-20T08:00:00.000Z")!.sessionId).toBe(idOf(0));
+    const since = [
+      ...elsewhere,
+      done({ sessionId: idOf(0), startedAt: "2026-10-21T17:00:00.000Z" }),
+    ];
     expect(nextInRotation(since, other, "2026-10-20T08:00:00.000Z")!.sessionId).toBe(idOf(1));
+  });
+
+  it("switching away and back with no session in between offers the same next session", () => {
+    const history = [done({ sessionId: idOf(1), startedAt: "2026-10-19T17:00:00.000Z" })];
+    expect(nextInRotation(history, rotation, null)!.sessionId).toBe(idOf(2));
+    const other = rotationOf(
+      stored(
+        sessions.map((s, i) => (i === 3 ? { ...s, programId: P2 } : s)),
+        slots,
+        { activeId: P2, activeAt: "2026-10-20T08:00:00.000Z" },
+      ),
+    );
+    expect(nextInRotation(history, other, "2026-10-20T08:00:00.000Z")!.sessionId).toBe(idOf(3));
+    // Back to the first program a minute later: the same session as before the switch.
+    expect(nextInRotation(history, rotation, "2026-10-20T08:01:00.000Z")!.sessionId).toBe(idOf(2));
+  });
+
+  it("a session recorded before ids counts by letter only since activation", () => {
+    const old = [done({ sessionCode: "B", startedAt: "2026-10-07T17:00:00.000Z" })];
+    expect(nextInRotation(old, rotation, null)!.code).toBe("C");
+    expect(nextInRotation(old, rotation, "2026-10-08T00:00:00.000Z")!.code).toBe("A");
+    // Started exactly when it became active counts, in any offset.
+    expect(nextInRotation(old, rotation, "2026-10-07T19:00:00.000+02:00")!.code).toBe("C");
+    // Left out before activation, it no longer hides an earlier session that recorded its own.
+    const mixed = [
+      done({ sessionId: idOf(0), startedAt: "2026-10-05T17:00:00.000Z" }),
+      done({ sessionCode: "C", sessionId: null, startedAt: "2026-10-07T17:00:00.000Z" }),
+    ];
+    expect(nextInRotation(mixed, rotation, "2026-10-08T00:00:00.000Z")!.sessionId).toBe(idOf(1));
+    expect(nextInRotation(mixed, rotation, null)!.sessionId).toBe(idOf(3));
   });
 
   it("an empty rotation offers none", () => {
