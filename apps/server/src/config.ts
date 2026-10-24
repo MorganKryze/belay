@@ -1,5 +1,6 @@
 import { hkdfSync } from "node:crypto";
 import { realpathSync, statSync } from "node:fs";
+import { parse } from "node:path";
 import { z } from "zod";
 
 export const APP_ROLE = "belay_app";
@@ -83,12 +84,20 @@ function appRolePassword(url: string): string | undefined {
 // the configured path cannot move the boundary while the server runs.
 function mediaDirectory(value: string | undefined): string | undefined {
   if (!value?.trim()) return undefined;
+  let real: string | undefined;
   try {
-    const real = realpathSync(value);
-    if (statSync(real).isDirectory()) return real;
+    real = realpathSync(value);
+    if (!statSync(real).isDirectory()) real = undefined;
   } catch {
     // Missing or unreadable: refused below with the same message as a file.
   }
+  // The root would make the containment prefix "//", which no loop path matches.
+  if (real !== undefined && parse(real).root === real) {
+    throw new Error(
+      "Invalid configuration:\nBELAY_MEDIA_DIR must not be the filesystem root (the folder of <number>.mp4 loops)",
+    );
+  }
+  if (real !== undefined) return real;
   throw new Error(
     "Invalid configuration:\nBELAY_MEDIA_DIR must be an existing directory (the folder of <number>.mp4 loops)",
   );

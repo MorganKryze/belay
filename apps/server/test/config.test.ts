@@ -165,6 +165,14 @@ describe("loadConfig", () => {
     expect(loadConfig(testEnv({ BELAY_MEDIA_DIR: link })).mediaDir).toBe(realpathSync(target));
   });
 
+  it("refuses the filesystem root as BELAY_MEDIA_DIR, naming the variable", () => {
+    for (const dir of ["/", "//", "/."]) {
+      expect(() => loadConfig(testEnv({ BELAY_MEDIA_DIR: dir })), dir).toThrow(
+        /Invalid configuration:\nBELAY_MEDIA_DIR must not be the filesystem root/,
+      );
+    }
+  });
+
   it("refuses a BELAY_MEDIA_DIR that does not exist, or is a file, naming the variable", () => {
     const base = mkdtempSync(join(tmpdir(), "belay-media-cfg-"));
     const file = join(base, "0001.mp4");
