@@ -3,6 +3,7 @@ import type { Slot } from "@belay/shared/training/workout";
 import { expect, type Page, test } from "@playwright/test";
 import { expectNoAxeViolations, settled } from "./axe";
 import { fakeServer, refuseChanges } from "./fake-server";
+import { settled as transitioned } from "./settle";
 
 // The sessions of a program on a computer: « + Séance », the name in place, the session's menu,
 // setting aside and putting back, the empty session. The starting program as a new account holds
@@ -87,6 +88,9 @@ async function open(page: Page, changes: Change[] = [], theme?: "light" | "dark"
   await expect(page.locator(".launch")).toBeHidden();
   if (theme === "dark") await expect(page.locator("html")).toHaveClass(/dark/);
   await expect(page.getByRole("heading", { level: 2 })).toBeVisible();
+  // The arrival hands the focus to the page once its transition ends: a field opened before then
+  // would lose it, and a field left saves and closes.
+  await transitioned(page);
   return server;
 }
 const chips = (page: Page) => page.getByRole("tablist", { name: "Séances du programme" });
