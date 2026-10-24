@@ -3,6 +3,7 @@ import { exerciseById, isKnownExercise } from "@belay/shared/exercises/catalog";
 import { MAX_ROWS } from "@belay/shared/sync/limits";
 import { clampAt, mergeFields, mergeTarget, staleKeys } from "@belay/shared/sync/merge";
 import type {
+  ActiveProgramRow,
   ActivityChange,
   ActivityRow,
   AnnotationChange,
@@ -12,6 +13,9 @@ import type {
   MeasureRow,
   ProfileChange,
   ProfileRow,
+  ProgramRow,
+  ProgramSessionRow,
+  ProgramSlotRow,
   Rejected,
   SetChange,
   SetRow,
@@ -32,26 +36,40 @@ import { and, asc, eq, gt, inArray, or, sql } from "drizzle-orm";
 import type { PgColumn } from "drizzle-orm/pg-core";
 import { asUser, type Db, type Tx } from "../db/client";
 import {
+  activePrograms,
   activities,
   annotations,
   bodyMetrics,
   dailySteps,
   intakeLogs,
+  programSessions,
+  programSlots,
+  programs,
   supplementLogs,
   supplements,
   users,
   workoutSets,
   workouts,
 } from "../db/schema";
+import {
+  pointerRow,
+  programRow,
+  seedProgram,
+  sessionRow,
+  slotRow,
+  writePrograms,
+  writeProgramSessions,
+  writeProgramSlots,
+} from "./sync-program";
 
 // A change and its place in the request, which a refusal names.
-type Indexed<C extends Change = Change> = C & { index: number };
+export type Indexed<C extends Change = Change> = C & { index: number };
 const of =
   <K extends Change["kind"]>(kind: K) =>
   (c: Indexed): c is Indexed<Extract<Change, { kind: K }>> =>
     c.kind === kind;
-const nextSeq = sql`nextval('belay_sync_seq')`;
-const iso = (d: Date | null) => d?.toISOString() ?? null;
+export const nextSeq = sql`nextval('belay_sync_seq')`;
+export const iso = (d: Date | null) => d?.toISOString() ?? null;
 
 // What one sync owes the phone beyond the rows past its cursor: the changes it refused, and the
 // keys whose stored rows it sends back because a change lost against them or was refused.
@@ -66,10 +84,14 @@ interface Outcome {
   activities: Set<string>; // by id
   workouts: Set<string>; // by id
   sets: Set<string>; // by id
+  programs: Set<string>; // by id
+  sessions: Set<string>; // program sessions, by id
+  slots: Set<string>; // program slots, by id
+  active: boolean; // the active program pointer
   user: boolean; // the range and the profile
 }
 
-interface Ctx {
+export interface Ctx {
   tx: Tx;
   userId: string;
   now: Date;
@@ -101,9 +123,15 @@ export function runSync(
       activities: new Set(),
       workouts: new Set(),
       sets: new Set(),
+      programs: new Set(),
+      sessions: new Set(),
+      slots: new Set(),
+      active: false,
       user: false,
     };
     const ctx: Ctx = { tx, userId, now, out, kinds: changes.map((c) => c.kind) };
+    // The starting program first, so an edit made on its rows before this first sync lands on them.
+    await seedProgram(ctx);
     // A weigh-in is the day's "weight" field, beside the measurements.
     const body: DayChange[] = [
       ...changes.filter(of("weight")).map((c) => ({ ...c, field: "weight", value: c.weightKg })),
@@ -120,6 +148,11 @@ export function runSync(
     const steps = changes.filter(of("steps")).map((c) => ({ ...c, field: "steps" }));
     await writeDayFields(ctx, STEPS, steps, out.steps);
     await writeActivities(ctx, changes.filter(of("activity")));
+    // Programs before their sessions, sessions before their slots: each may name one created in
+    // the same batch. All before the sessions done, which record the session they came from.
+    await writePrograms(ctx, changes.filter(of("program")), changes.filter(of("activeProgram")));
+    await writeProgramSessions(ctx, changes.filter(of("programSession")));
+    await writeProgramSlots(ctx, changes.filter(of("programSlot")));
     // Sessions before their sets: a set may name a session started in the same batch.
     await writeWorkouts(ctx, changes.filter(of("workout")));
     await writeSets(ctx, changes.filter(of("set")));
@@ -142,7 +175,7 @@ function sqlstate(error: unknown): string | null {
 // written again alone, so only the refused ones are dropped: one bad change never blocks a queue.
 // ponytail: a refused statement is retried row by row, one savepoint each (500 at most per
 // request). Upgrade: bisect the rows if refusals ever come in long queues.
-async function guarded<R extends { index: number }>(
+export async function guarded<R extends { index: number }>(
   { tx, out, kinds }: Ctx,
   rows: R[],
   write: (tx: Tx, rows: R[]) => Promise<unknown>,
@@ -169,7 +202,7 @@ async function guarded<R extends { index: number }>(
 }
 
 // Changes naming something this account does not have: someone else's, or never created.
-function unknown(out: Outcome, changes: { index: number }[]) {
+export function unknown(out: Outcome, changes: { index: number }[]) {
   for (const c of changes) out.rejected.push({ index: c.index, reason: "unknown" });
 }
 
@@ -300,7 +333,7 @@ async function writeProfile(ctx: Ctx, changes: Indexed<ProfileChange>[]) {
 // Supplements and annotations are created by the first change of their id that carries the
 // required fields (a name; a day, type and text). An id that is someone else's (the insert finds
 // it taken) or never had such a change is unknown to this account: its changes are refused.
-async function createMissing<C extends { id: string; index: number }>(
+export async function createMissing<C extends { id: string; index: number }>(
   ctx: Ctx,
   changes: C[],
   known: Set<string>,
@@ -569,7 +602,9 @@ async function writeActivities(ctx: Ctx, changes: Indexed<ActivityChange>[]) {
 
 // Why a plan cannot be taken: a slot of an exercise the library lacks, or one counted in another
 // measure than its exercise; null when every slot is right.
-function planProblem(plan: readonly Slot[]): Rejected["reason"] | null {
+export function planProblem(
+  plan: readonly { exerciseId: string; measure?: Slot["measure"] | null }[],
+): Rejected["reason"] | null {
   for (const slot of plan) {
     const exercise = exerciseById(slot.exerciseId);
     if (!exercise) return "unknown_exercise";
@@ -649,6 +684,9 @@ async function writeWorkouts(ctx: Ctx, all: Indexed<WorkoutChange>[]) {
               id: c.id,
               userId,
               sessionCode: c.sessionCode,
+              // Written once with the start, never checked: a start is never refused for it, and
+              // it is only read within this account.
+              sessionId: c.sessionId ?? null,
               plan: c.plan,
               startedAt: new Date(clampWorkoutTime(c.startedAt, now)),
             })
@@ -860,7 +898,11 @@ type Item =
   | { seq: bigint; t: "steps"; row: typeof dailySteps.$inferSelect }
   | { seq: bigint; t: "activity"; row: typeof activities.$inferSelect }
   | { seq: bigint; t: "workout"; row: typeof workouts.$inferSelect }
-  | { seq: bigint; t: "set"; row: typeof workoutSets.$inferSelect };
+  | { seq: bigint; t: "set"; row: typeof workoutSets.$inferSelect }
+  | { seq: bigint; t: "program"; row: typeof programs.$inferSelect }
+  | { seq: bigint; t: "pointer"; row: typeof activePrograms.$inferSelect }
+  | { seq: bigint; t: "session"; row: typeof programSessions.$inferSelect }
+  | { seq: bigint; t: "slot"; row: typeof programSlots.$inferSelect };
 const tag =
   <T extends Item["t"]>(t: T) =>
   (row: Extract<Item, { t: T }>["row"]) =>
@@ -950,6 +992,38 @@ async function readSince(
         .orderBy(asc(workoutSets.serverSeq))
         .limit(limit)
     ).map(tag("set")),
+    ...(
+      await tx
+        .select()
+        .from(programs)
+        .where(after(programs))
+        .orderBy(asc(programs.serverSeq))
+        .limit(limit)
+    ).map(tag("program")),
+    ...(
+      await tx
+        .select()
+        .from(activePrograms)
+        .where(after(activePrograms))
+        .orderBy(asc(activePrograms.serverSeq))
+        .limit(limit)
+    ).map(tag("pointer")),
+    ...(
+      await tx
+        .select()
+        .from(programSessions)
+        .where(after(programSessions))
+        .orderBy(asc(programSessions.serverSeq))
+        .limit(limit)
+    ).map(tag("session")),
+    ...(
+      await tx
+        .select()
+        .from(programSlots)
+        .where(after(programSlots))
+        .orderBy(asc(programSlots.serverSeq))
+        .limit(limit)
+    ).map(tag("slot")),
   ].sort((a, b) => (a.seq < b.seq ? -1 : a.seq > b.seq ? 1 : 0));
   const hasMore = items.length > MAX_ROWS;
   const sent = items.slice(0, MAX_ROWS);
@@ -1030,6 +1104,30 @@ async function readSince(
           .from(workoutSets)
           .where(and(mine(workoutSets), inArray(workoutSets.id, [...out.sets])))
     ).map(tag("set")),
+    ...(out.programs.size === 0
+      ? []
+      : await tx
+          .select()
+          .from(programs)
+          .where(and(mine(programs), inArray(programs.id, [...out.programs])))
+    ).map(tag("program")),
+    ...(!out.active ? [] : await tx.select().from(activePrograms).where(mine(activePrograms))).map(
+      tag("pointer"),
+    ),
+    ...(out.sessions.size === 0
+      ? []
+      : await tx
+          .select()
+          .from(programSessions)
+          .where(and(mine(programSessions), inArray(programSessions.id, [...out.sessions])))
+    ).map(tag("session")),
+    ...(out.slots.size === 0
+      ? []
+      : await tx
+          .select()
+          .from(programSlots)
+          .where(and(mine(programSlots), inArray(programSlots.id, [...out.slots])))
+    ).map(tag("slot")),
   ];
 
   const [me] = await tx.select().from(users).where(eq(users.id, userId));
@@ -1057,7 +1155,27 @@ function rowsOf(items: Item[]) {
   const setRows = new Map<string, SetRow>();
   const stepsRows = new Map<string, StepsRow>();
   const activityRows = new Map<string, ActivityRow>();
+  const programRows = new Map<string, ProgramRow>();
+  const sessionRows = new Map<string, ProgramSessionRow>();
+  const slotRows = new Map<string, ProgramSlotRow>();
+  let activeProgram: ActiveProgramRow | undefined;
   for (const item of items) {
+    if (item.t === "program") {
+      programRows.set(item.row.id, programRow(item.row));
+      continue;
+    }
+    if (item.t === "pointer") {
+      activeProgram = pointerRow(item.row);
+      continue;
+    }
+    if (item.t === "session") {
+      sessionRows.set(item.row.id, sessionRow(item.row));
+      continue;
+    }
+    if (item.t === "slot") {
+      slotRows.set(item.row.id, slotRow(item.row));
+      continue;
+    }
     if (item.t === "steps") {
       const r = item.row;
       stepsRows.set(r.date, { date: r.date, steps: r.steps, stepsAt: iso(r.stepsAt) });
@@ -1086,6 +1204,8 @@ function rowsOf(items: Item[]) {
       workoutRows.set(r.id, {
         id: r.id,
         sessionCode: r.sessionCode,
+        // Only when it recorded one: an older phone reads the row as before.
+        ...(r.sessionId !== null && { sessionId: r.sessionId }),
         plan: r.plan,
         planAt: iso(r.planAt),
         startedAt: r.startedAt.toISOString(),
@@ -1183,6 +1303,11 @@ function rowsOf(items: Item[]) {
     activities: [...activityRows.values()],
     workouts: [...workoutRows.values()],
     sets: [...setRows.values()],
+    // Only what there is to send: an answer with no program row reads as an older server's.
+    ...(activeProgram && { activeProgram }),
+    ...(programRows.size > 0 && { programs: [...programRows.values()] }),
+    ...(sessionRows.size > 0 && { programSessions: [...sessionRows.values()] }),
+    ...(slotRows.size > 0 && { programSlots: [...slotRows.values()] }),
   };
 }
 
