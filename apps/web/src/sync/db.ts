@@ -35,6 +35,7 @@ import { isValidChange } from "@belay/shared/sync/valid";
 import type { Activity, StepsLog } from "@belay/shared/training/activities";
 import { autoClose, type History, openWorkout } from "@belay/shared/training/rules";
 import {
+  isSessionName,
   type Program,
   type ProgramSession,
   type ProgramSlot,
@@ -482,6 +483,7 @@ async function applyLocal(tx: WriteTx, change: Change): Promise<void> {
             sessionCode: change.sessionCode,
             // Absent from a start that recorded none (an older phone's, still queued).
             ...(change.sessionId !== undefined && { sessionId: change.sessionId }),
+            ...(change.sessionName !== undefined && { sessionName: change.sessionName }),
             plan: change.plan,
             planAt: null,
             startedAt: change.startedAt,
@@ -699,13 +701,28 @@ export async function recordChanges(
 ): Promise<void> {
   if (!changes.every(isValidChange)) throw new RangeError("invalid change");
   await write(db, async (tx) => {
-    for (const change of changes) {
+    for (const written of changes) {
+      const change =
+        written.kind === "workout" && written.field === "start"
+          ? await withSessionName(tx, written)
+          : written;
       await applyLocal(tx, change);
       await tx.objectStore("outbox").add({ change });
     }
     if (active === null) await tx.objectStore("activeSession").delete("current");
     else if (active) await tx.objectStore("activeSession").put(active, "current");
   });
+}
+
+// A start keeps the name its program session holds on this device at that instant, read in the
+// transaction that writes it, so the session done never follows a later rename. Null: the session
+// had none (a starting session shows its translated name); a start with no session keeps none.
+type Start = Extract<Change, { kind: "workout"; field: "start" }>;
+async function withSessionName(tx: WriteTx, start: Start): Promise<Start> {
+  if (!start.sessionId) return start;
+  const name = (await tx.objectStore("programSessions").get(start.sessionId))?.name ?? null;
+  // A stored name always passed the same rule; if one did not, the start still goes through.
+  return { ...start, sessionName: isSessionName(name) ? name : null };
 }
 
 // One readwrite transaction over every store: all of it is written, or none of it.
@@ -768,12 +785,9 @@ export async function recordSet(
 // Starts a session, unless one is open already, here or on another device: then this device
 // takes that one up and its id is returned (one open session per account, §9.2; a second tap,
 // or React running an effect twice, never opens two).
-export async function startWorkout(
-  db: AccountDb,
-  start: Extract<Change, { kind: "workout"; field: "start" }>,
-): Promise<string> {
-  let id = start.id;
-  if (!isValidChange(start)) throw new RangeError("invalid change");
+export async function startWorkout(db: AccountDb, asked: Start): Promise<string> {
+  let id = asked.id;
+  if (!isValidChange(asked)) throw new RangeError("invalid change");
   await write(db, async (tx) => {
     const workouts = await tx.objectStore("workouts").getAll();
     const sets = await tx.objectStore("sets").getAll();
@@ -794,6 +808,7 @@ export async function startWorkout(
       await applyLocal(tx, change);
       await tx.objectStore("outbox").add({ change });
     }
+    const start = await withSessionName(tx, asked);
     await applyLocal(tx, start);
     await tx.objectStore("outbox").add({ change: start });
     await tx

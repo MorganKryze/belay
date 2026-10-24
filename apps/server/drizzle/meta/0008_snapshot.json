@@ -1,0 +1,2313 @@
+{
+  "id": "58c8fe4c-520c-4a1f-b5de-40409bbc97c4",
+  "prevId": "590ca665-3012-4a03-be13-6d87fa4e4e8a",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.active_programs": {
+      "name": "active_programs",
+      "schema": "",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "program_id": {
+          "name": "program_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "at": {
+          "name": "at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "server_seq": {
+          "name": "server_seq",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "nextval('belay_sync_seq')"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "active_programs_user_id_users_id_fk": {
+          "name": "active_programs_user_id_users_id_fk",
+          "tableFrom": "active_programs",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "active_programs_program_fk": {
+          "name": "active_programs_program_fk",
+          "tableFrom": "active_programs",
+          "tableTo": "programs",
+          "columnsFrom": [
+            "user_id",
+            "program_id"
+          ],
+          "columnsTo": [
+            "user_id",
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.activities": {
+      "name": "activities",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "date": {
+          "name": "date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "duration_min": {
+          "name": "duration_min",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cardio_type": {
+          "name": "cardio_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "climb_style": {
+          "name": "climb_style",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "climb_runs": {
+          "name": "climb_runs",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "climb_grade": {
+          "name": "climb_grade",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "climb_color": {
+          "name": "climb_color",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fields_at": {
+          "name": "fields_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "removed": {
+          "name": "removed",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "removed_at": {
+          "name": "removed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "server_seq": {
+          "name": "server_seq",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "nextval('belay_sync_seq')"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "activities_user_seq": {
+          "name": "activities_user_seq",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "server_seq",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "activities_user_id_users_id_fk": {
+          "name": "activities_user_id_users_id_fk",
+          "tableFrom": "activities",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "activities_kind": {
+          "name": "activities_kind",
+          "value": "\"activities\".\"kind\" IN ('cardio', 'climbing')"
+        },
+        "activities_duration": {
+          "name": "activities_duration",
+          "value": "\"activities\".\"duration_min\" BETWEEN 5 AND 480 AND \"activities\".\"duration_min\" % 5 = 0"
+        },
+        "activities_cardio_type": {
+          "name": "activities_cardio_type",
+          "value": "\"activities\".\"cardio_type\" IS NULL OR \"activities\".\"cardio_type\" IN ('run', 'bike', 'row', 'walk', 'swim', 'other')"
+        },
+        "activities_climb_style": {
+          "name": "activities_climb_style",
+          "value": "\"activities\".\"climb_style\" IS NULL OR \"activities\".\"climb_style\" IN ('boulder', 'route')"
+        },
+        "activities_climb_runs": {
+          "name": "activities_climb_runs",
+          "value": "\"activities\".\"climb_runs\" IS NULL OR \"activities\".\"climb_runs\" BETWEEN 0 AND 200"
+        },
+        "activities_climb_grade": {
+          "name": "activities_climb_grade",
+          "value": "\"activities\".\"climb_grade\" IS NULL OR \"activities\".\"climb_grade\" ~ '^[5-8][abc]\\+?$'"
+        },
+        "activities_climb_color": {
+          "name": "activities_climb_color",
+          "value": "\"activities\".\"climb_color\" IS NULL OR \"activities\".\"climb_color\" IN ('yellow', 'green', 'blue', 'red', 'black', 'purple', 'white')"
+        },
+        "activities_cardio_only": {
+          "name": "activities_cardio_only",
+          "value": "\"activities\".\"kind\" = 'cardio' OR \"activities\".\"cardio_type\" IS NULL"
+        },
+        "activities_climbing_only": {
+          "name": "activities_climbing_only",
+          "value": "\"activities\".\"kind\" = 'climbing' OR (\"activities\".\"climb_style\" IS NULL AND \"activities\".\"climb_runs\" IS NULL AND \"activities\".\"climb_grade\" IS NULL AND \"activities\".\"climb_color\" IS NULL)"
+        },
+        "activities_grade_or_color": {
+          "name": "activities_grade_or_color",
+          "value": "\"activities\".\"climb_grade\" IS NULL OR \"activities\".\"climb_color\" IS NULL"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.annotations": {
+      "name": "annotations",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "date": {
+          "name": "date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "label": {
+          "name": "label",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fields_at": {
+          "name": "fields_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "removed": {
+          "name": "removed",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "removed_at": {
+          "name": "removed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "server_seq": {
+          "name": "server_seq",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "nextval('belay_sync_seq')"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "annotations_user_seq": {
+          "name": "annotations_user_seq",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "server_seq",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "annotations_user_id_users_id_fk": {
+          "name": "annotations_user_id_users_id_fk",
+          "tableFrom": "annotations",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "annotations_kind": {
+          "name": "annotations_kind",
+          "value": "\"annotations\".\"kind\" IN ('deload', 'diet_break', 'note')"
+        },
+        "annotations_label": {
+          "name": "annotations_label",
+          "value": "\"annotations\".\"label\" IS NULL OR char_length(\"annotations\".\"label\") <= 80"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.body_metrics": {
+      "name": "body_metrics",
+      "schema": "",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "date": {
+          "name": "date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "weight_kg": {
+          "name": "weight_kg",
+          "type": "numeric(4, 1)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "weight_at": {
+          "name": "weight_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "waist_cm": {
+          "name": "waist_cm",
+          "type": "numeric(4, 1)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "waist_at": {
+          "name": "waist_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "neck_cm": {
+          "name": "neck_cm",
+          "type": "numeric(4, 1)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "neck_at": {
+          "name": "neck_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "hip_cm": {
+          "name": "hip_cm",
+          "type": "numeric(4, 1)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "hip_at": {
+          "name": "hip_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "server_seq": {
+          "name": "server_seq",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "nextval('belay_sync_seq')"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "body_metrics_user_seq": {
+          "name": "body_metrics_user_seq",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "server_seq",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "body_metrics_user_id_users_id_fk": {
+          "name": "body_metrics_user_id_users_id_fk",
+          "tableFrom": "body_metrics",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "body_metrics_user_id_date_pk": {
+          "name": "body_metrics_user_id_date_pk",
+          "columns": [
+            "user_id",
+            "date"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "body_metrics_weight_range": {
+          "name": "body_metrics_weight_range",
+          "value": "\"body_metrics\".\"weight_kg\" IS NULL OR \"body_metrics\".\"weight_kg\" BETWEEN 20 AND 400"
+        },
+        "body_metrics_measures_range": {
+          "name": "body_metrics_measures_range",
+          "value": "(\"body_metrics\".\"waist_cm\" IS NULL OR \"body_metrics\".\"waist_cm\" BETWEEN 40 AND 200) AND (\"body_metrics\".\"neck_cm\" IS NULL OR \"body_metrics\".\"neck_cm\" BETWEEN 20 AND 80) AND (\"body_metrics\".\"hip_cm\" IS NULL OR \"body_metrics\".\"hip_cm\" BETWEEN 50 AND 200)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.daily_steps": {
+      "name": "daily_steps",
+      "schema": "",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "date": {
+          "name": "date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "steps": {
+          "name": "steps",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "steps_at": {
+          "name": "steps_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "server_seq": {
+          "name": "server_seq",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "nextval('belay_sync_seq')"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "daily_steps_user_seq": {
+          "name": "daily_steps_user_seq",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "server_seq",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "daily_steps_user_id_users_id_fk": {
+          "name": "daily_steps_user_id_users_id_fk",
+          "tableFrom": "daily_steps",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "daily_steps_user_id_date_pk": {
+          "name": "daily_steps_user_id_date_pk",
+          "columns": [
+            "user_id",
+            "date"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "daily_steps_range": {
+          "name": "daily_steps_range",
+          "value": "\"daily_steps\".\"steps\" IS NULL OR \"daily_steps\".\"steps\" BETWEEN 0 AND 100000"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.intake_logs": {
+      "name": "intake_logs",
+      "schema": "",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "date": {
+          "name": "date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kcal": {
+          "name": "kcal",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "kcal_at": {
+          "name": "kcal_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "protein_g": {
+          "name": "protein_g",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "protein_at": {
+          "name": "protein_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "server_seq": {
+          "name": "server_seq",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "nextval('belay_sync_seq')"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "intake_logs_user_seq": {
+          "name": "intake_logs_user_seq",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "server_seq",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "intake_logs_user_id_users_id_fk": {
+          "name": "intake_logs_user_id_users_id_fk",
+          "tableFrom": "intake_logs",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "intake_logs_user_id_date_pk": {
+          "name": "intake_logs_user_id_date_pk",
+          "columns": [
+            "user_id",
+            "date"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "intake_logs_range": {
+          "name": "intake_logs_range",
+          "value": "(\"intake_logs\".\"kcal\" IS NULL OR \"intake_logs\".\"kcal\" BETWEEN 0 AND 10000) AND (\"intake_logs\".\"protein_g\" IS NULL OR \"intake_logs\".\"protein_g\" BETWEEN 0 AND 500)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.program_sessions": {
+      "name": "program_sessions",
+      "schema": "",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "name_at": {
+          "name": "name_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "program_id": {
+          "name": "program_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "position": {
+          "name": "position",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "place_at": {
+          "name": "place_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "removed": {
+          "name": "removed",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "removed_at": {
+          "name": "removed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "server_seq": {
+          "name": "server_seq",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "nextval('belay_sync_seq')"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "program_sessions_user_seq": {
+          "name": "program_sessions_user_seq",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "server_seq",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "program_sessions_program": {
+          "name": "program_sessions_program",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "program_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "program_sessions_user_id_users_id_fk": {
+          "name": "program_sessions_user_id_users_id_fk",
+          "tableFrom": "program_sessions",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "program_sessions_program_fk": {
+          "name": "program_sessions_program_fk",
+          "tableFrom": "program_sessions",
+          "tableTo": "programs",
+          "columnsFrom": [
+            "user_id",
+            "program_id"
+          ],
+          "columnsTo": [
+            "user_id",
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "program_sessions_user_id_id_pk": {
+          "name": "program_sessions_user_id_id_pk",
+          "columns": [
+            "user_id",
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "program_sessions_name": {
+          "name": "program_sessions_name",
+          "value": "\"program_sessions\".\"name\" IS NULL OR char_length(\"program_sessions\".\"name\") BETWEEN 1 AND 40"
+        },
+        "program_sessions_position": {
+          "name": "program_sessions_position",
+          "value": "\"program_sessions\".\"position\" BETWEEN 0 AND 999"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.program_slots": {
+      "name": "program_slots",
+      "schema": "",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "session_id": {
+          "name": "session_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "position": {
+          "name": "position",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "position_at": {
+          "name": "position_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "exercise_id": {
+          "name": "exercise_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "measure": {
+          "name": "measure",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "exercise_at": {
+          "name": "exercise_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "rep_min": {
+          "name": "rep_min",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rep_max": {
+          "name": "rep_max",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "reps_at": {
+          "name": "reps_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sets": {
+          "name": "sets",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sets_at": {
+          "name": "sets_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "rir_min": {
+          "name": "rir_min",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rir_max": {
+          "name": "rir_max",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rir_at": {
+          "name": "rir_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "rest_sec": {
+          "name": "rest_sec",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rest_at": {
+          "name": "rest_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "warmup_sets": {
+          "name": "warmup_sets",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "warmups_at": {
+          "name": "warmups_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_main": {
+          "name": "is_main",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "main_at": {
+          "name": "main_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "group_key": {
+          "name": "group_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "group_at": {
+          "name": "group_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "rule": {
+          "name": "rule",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "rule_at": {
+          "name": "rule_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "removed": {
+          "name": "removed",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "removed_at": {
+          "name": "removed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "server_seq": {
+          "name": "server_seq",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "nextval('belay_sync_seq')"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "program_slots_user_seq": {
+          "name": "program_slots_user_seq",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "server_seq",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "program_slots_session": {
+          "name": "program_slots_session",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "session_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "program_slots_user_id_users_id_fk": {
+          "name": "program_slots_user_id_users_id_fk",
+          "tableFrom": "program_slots",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "program_slots_session_fk": {
+          "name": "program_slots_session_fk",
+          "tableFrom": "program_slots",
+          "tableTo": "program_sessions",
+          "columnsFrom": [
+            "user_id",
+            "session_id"
+          ],
+          "columnsTo": [
+            "user_id",
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "program_slots_user_id_id_pk": {
+          "name": "program_slots_user_id_id_pk",
+          "columns": [
+            "user_id",
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "program_slots_exercise": {
+          "name": "program_slots_exercise",
+          "value": "\"program_slots\".\"exercise_id\" ~ '^(ds|belay):[a-z0-9-]{1,40}$'"
+        },
+        "program_slots_measure": {
+          "name": "program_slots_measure",
+          "value": "\"program_slots\".\"measure\" IS NULL OR \"program_slots\".\"measure\" = 'seconds'"
+        },
+        "program_slots_reps": {
+          "name": "program_slots_reps",
+          "value": "\"program_slots\".\"rep_min\" >= 1 AND \"program_slots\".\"rep_min\" <= \"program_slots\".\"rep_max\" AND \"program_slots\".\"rep_max\" <= CASE WHEN \"program_slots\".\"measure\" = 'seconds' THEN 3600 ELSE 100 END"
+        },
+        "program_slots_sets": {
+          "name": "program_slots_sets",
+          "value": "\"program_slots\".\"sets\" BETWEEN 1 AND 10"
+        },
+        "program_slots_rir": {
+          "name": "program_slots_rir",
+          "value": "\"program_slots\".\"rir_min\" >= 0 AND \"program_slots\".\"rir_min\" <= \"program_slots\".\"rir_max\" AND \"program_slots\".\"rir_max\" <= 4"
+        },
+        "program_slots_rest": {
+          "name": "program_slots_rest",
+          "value": "\"program_slots\".\"rest_sec\" BETWEEN 0 AND 900"
+        },
+        "program_slots_warmups": {
+          "name": "program_slots_warmups",
+          "value": "\"program_slots\".\"warmup_sets\" BETWEEN 0 AND 3"
+        },
+        "program_slots_group_key": {
+          "name": "program_slots_group_key",
+          "value": "\"program_slots\".\"group_key\" IS NULL OR \"program_slots\".\"group_key\" ~ '^[A-Za-z0-9]{1,16}$'"
+        },
+        "program_slots_rule": {
+          "name": "program_slots_rule",
+          "value": "\"program_slots\".\"rule\" IS NULL OR \"program_slots\".\"rule\" = 'no_climbing'"
+        },
+        "program_slots_position": {
+          "name": "program_slots_position",
+          "value": "\"program_slots\".\"position\" BETWEEN 0 AND 999"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.programs": {
+      "name": "programs",
+      "schema": "",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "name_at": {
+          "name": "name_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "schedule": {
+          "name": "schedule",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "schedule_at": {
+          "name": "schedule_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "removed": {
+          "name": "removed",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "removed_at": {
+          "name": "removed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "server_seq": {
+          "name": "server_seq",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "nextval('belay_sync_seq')"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "programs_user_seq": {
+          "name": "programs_user_seq",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "server_seq",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "programs_user_id_users_id_fk": {
+          "name": "programs_user_id_users_id_fk",
+          "tableFrom": "programs",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "programs_user_id_id_pk": {
+          "name": "programs_user_id_id_pk",
+          "columns": [
+            "user_id",
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "programs_name": {
+          "name": "programs_name",
+          "value": "\"programs\".\"name\" IS NULL OR char_length(\"programs\".\"name\") BETWEEN 1 AND 60"
+        },
+        "programs_schedule_size": {
+          "name": "programs_schedule_size",
+          "value": "octet_length(\"programs\".\"schedule\"::text) <= 512"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.sessions": {
+      "name": "sessions",
+      "schema": "",
+      "columns": {
+        "token_hash": {
+          "name": "token_hash",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "sessions_user_id_users_id_fk": {
+          "name": "sessions_user_id_users_id_fk",
+          "tableFrom": "sessions",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.supplement_logs": {
+      "name": "supplement_logs",
+      "schema": "",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "supplement_id": {
+          "name": "supplement_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "date": {
+          "name": "date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "taken": {
+          "name": "taken",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "taken_at": {
+          "name": "taken_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "server_seq": {
+          "name": "server_seq",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "nextval('belay_sync_seq')"
+        }
+      },
+      "indexes": {
+        "supplement_logs_user_seq": {
+          "name": "supplement_logs_user_seq",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "server_seq",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "supplement_logs_user_id_users_id_fk": {
+          "name": "supplement_logs_user_id_users_id_fk",
+          "tableFrom": "supplement_logs",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "supplement_logs_supplement_fk": {
+          "name": "supplement_logs_supplement_fk",
+          "tableFrom": "supplement_logs",
+          "tableTo": "supplements",
+          "columnsFrom": [
+            "supplement_id",
+            "user_id"
+          ],
+          "columnsTo": [
+            "id",
+            "user_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "supplement_logs_user_id_supplement_id_date_pk": {
+          "name": "supplement_logs_user_id_supplement_id_date_pk",
+          "columns": [
+            "user_id",
+            "supplement_id",
+            "date"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.supplements": {
+      "name": "supplements",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name_at": {
+          "name": "name_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "removed": {
+          "name": "removed",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "removed_at": {
+          "name": "removed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "server_seq": {
+          "name": "server_seq",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "nextval('belay_sync_seq')"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "supplements_user_seq": {
+          "name": "supplements_user_seq",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "server_seq",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "supplements_user_id_users_id_fk": {
+          "name": "supplements_user_id_users_id_fk",
+          "tableFrom": "supplements",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "supplements_id_user": {
+          "name": "supplements_id_user",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "user_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "supplements_kind": {
+          "name": "supplements_kind",
+          "value": "\"supplements\".\"kind\" IN ('creatine', 'other')"
+        },
+        "supplements_name": {
+          "name": "supplements_name",
+          "value": "char_length(\"supplements\".\"name\") BETWEEN 1 AND 40"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.users": {
+      "name": "users",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "oidc_issuer": {
+          "name": "oidc_issuer",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "oidc_sub": {
+          "name": "oidc_sub",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "display_name": {
+          "name": "display_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "target_min_pct": {
+          "name": "target_min_pct",
+          "type": "numeric(3, 2)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0.5
+        },
+        "target_max_pct": {
+          "name": "target_max_pct",
+          "type": "numeric(3, 2)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "target_at": {
+          "name": "target_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "formula": {
+          "name": "formula",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "formula_at": {
+          "name": "formula_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "birth_year": {
+          "name": "birth_year",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "birth_year_at": {
+          "name": "birth_year_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "height_cm": {
+          "name": "height_cm",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "height_at": {
+          "name": "height_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "server_seq": {
+          "name": "server_seq",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "nextval('belay_sync_seq')"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "users_oidc_identity": {
+          "name": "users_oidc_identity",
+          "nullsNotDistinct": false,
+          "columns": [
+            "oidc_issuer",
+            "oidc_sub"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "users_target_range": {
+          "name": "users_target_range",
+          "value": "\"users\".\"target_min_pct\" >= 0.25 AND \"users\".\"target_max_pct\" <= 1.0 AND \"users\".\"target_min_pct\" <= \"users\".\"target_max_pct\" - 0.1"
+        },
+        "users_formula": {
+          "name": "users_formula",
+          "value": "\"users\".\"formula\" IS NULL OR \"users\".\"formula\" IN ('female', 'male')"
+        },
+        "users_birth_year": {
+          "name": "users_birth_year",
+          "value": "\"users\".\"birth_year\" IS NULL OR \"users\".\"birth_year\" >= 1900"
+        },
+        "users_height": {
+          "name": "users_height",
+          "value": "\"users\".\"height_cm\" IS NULL OR \"users\".\"height_cm\" BETWEEN 120 AND 230"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.workout_sets": {
+      "name": "workout_sets",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "workout_id": {
+          "name": "workout_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "slot_index": {
+          "name": "slot_index",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "position": {
+          "name": "position",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "exercise_id": {
+          "name": "exercise_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "warmup": {
+          "name": "warmup",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "weight_kg": {
+          "name": "weight_kg",
+          "type": "numeric(5, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "reps": {
+          "name": "reps",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "seconds": {
+          "name": "seconds",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "rir": {
+          "name": "rir",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "done_at": {
+          "name": "done_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "fields_at": {
+          "name": "fields_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "removed": {
+          "name": "removed",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "removed_at": {
+          "name": "removed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "server_seq": {
+          "name": "server_seq",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "nextval('belay_sync_seq')"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "workout_sets_user_seq": {
+          "name": "workout_sets_user_seq",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "server_seq",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "workout_sets_workout": {
+          "name": "workout_sets_workout",
+          "columns": [
+            {
+              "expression": "workout_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "workout_sets_user_id_users_id_fk": {
+          "name": "workout_sets_user_id_users_id_fk",
+          "tableFrom": "workout_sets",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "workout_sets_workout_fk": {
+          "name": "workout_sets_workout_fk",
+          "tableFrom": "workout_sets",
+          "tableTo": "workouts",
+          "columnsFrom": [
+            "workout_id",
+            "user_id"
+          ],
+          "columnsTo": [
+            "id",
+            "user_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "workout_sets_slot_index": {
+          "name": "workout_sets_slot_index",
+          "value": "\"workout_sets\".\"slot_index\" BETWEEN 0 AND 29"
+        },
+        "workout_sets_position": {
+          "name": "workout_sets_position",
+          "value": "\"workout_sets\".\"position\" BETWEEN 0 AND 49"
+        },
+        "workout_sets_exercise": {
+          "name": "workout_sets_exercise",
+          "value": "\"workout_sets\".\"exercise_id\" ~ '^(ds|belay):[a-z0-9-]{1,40}$'"
+        },
+        "workout_sets_weight": {
+          "name": "workout_sets_weight",
+          "value": "\"workout_sets\".\"weight_kg\" BETWEEN 0 AND 500"
+        },
+        "workout_sets_reps": {
+          "name": "workout_sets_reps",
+          "value": "\"workout_sets\".\"reps\" BETWEEN 0 AND 100"
+        },
+        "workout_sets_seconds": {
+          "name": "workout_sets_seconds",
+          "value": "\"workout_sets\".\"seconds\" BETWEEN 0 AND 3600"
+        },
+        "workout_sets_one_measure": {
+          "name": "workout_sets_one_measure",
+          "value": "(\"workout_sets\".\"reps\" IS NULL) <> (\"workout_sets\".\"seconds\" IS NULL)"
+        },
+        "workout_sets_rir": {
+          "name": "workout_sets_rir",
+          "value": "\"workout_sets\".\"rir\" IS NULL OR \"workout_sets\".\"rir\" BETWEEN 0 AND 4"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.workouts": {
+      "name": "workouts",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "session_code": {
+          "name": "session_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "session_id": {
+          "name": "session_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "session_name": {
+          "name": "session_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "session_name_kept": {
+          "name": "session_name_kept",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "plan": {
+          "name": "plan",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "plan_at": {
+          "name": "plan_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "started_at": {
+          "name": "started_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "started_at_at": {
+          "name": "started_at_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ended_at": {
+          "name": "ended_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ended_at_at": {
+          "name": "ended_at_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "note": {
+          "name": "note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "note_at": {
+          "name": "note_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "exercise_notes": {
+          "name": "exercise_notes",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "exercise_notes_at": {
+          "name": "exercise_notes_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "removed": {
+          "name": "removed",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "removed_at": {
+          "name": "removed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "server_seq": {
+          "name": "server_seq",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "nextval('belay_sync_seq')"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "workouts_user_seq": {
+          "name": "workouts_user_seq",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "server_seq",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "workouts_user_id_users_id_fk": {
+          "name": "workouts_user_id_users_id_fk",
+          "tableFrom": "workouts",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "workouts_id_user": {
+          "name": "workouts_id_user",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "user_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "workouts_session_code": {
+          "name": "workouts_session_code",
+          "value": "\"workouts\".\"session_code\" ~ '^[A-Z]$'"
+        },
+        "workouts_session_name": {
+          "name": "workouts_session_name",
+          "value": "\"workouts\".\"session_name\" IS NULL OR (\"workouts\".\"session_name_kept\" AND char_length(\"workouts\".\"session_name\") BETWEEN 1 AND 40)"
+        },
+        "workouts_plan_size": {
+          "name": "workouts_plan_size",
+          "value": "octet_length(\"workouts\".\"plan\"::text) <= 16384"
+        },
+        "workouts_note": {
+          "name": "workouts_note",
+          "value": "\"workouts\".\"note\" IS NULL OR char_length(\"workouts\".\"note\") <= 500"
+        },
+        "workouts_exercise_notes_size": {
+          "name": "workouts_exercise_notes_size",
+          "value": "\"workouts\".\"exercise_notes\" IS NULL OR octet_length(\"workouts\".\"exercise_notes\"::text) <= 32768"
+        }
+      },
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {
+    "public.belay_sync_seq": {
+      "name": "belay_sync_seq",
+      "schema": "public",
+      "increment": "1",
+      "startWith": "1",
+      "minValue": "1",
+      "maxValue": "9223372036854775807",
+      "cache": "1",
+      "cycle": false
+    }
+  },
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

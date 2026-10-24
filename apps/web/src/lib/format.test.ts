@@ -175,6 +175,35 @@ describe("session and program titles", () => {
     );
   });
 
+  it("titles a session done by the name its session held that day, whatever it is called now (HN5)", () => {
+    const sessions = [
+      { id: OWN, name: "Bas du corps" },
+      { id: seedId(1), name: "Pecs" },
+      { id: seedId(3), name: "Tirage" },
+    ];
+    expect(
+      workoutTitle({ sessionCode: "B", sessionId: OWN, sessionName: "Legs" }, sessions, fr),
+    ).toBe("Séance B · Legs");
+    // None that day: a starting session's own name in the language shown, else the letter alone.
+    expect(
+      workoutTitle({ sessionCode: "A", sessionId: seedId(1), sessionName: null }, sessions, fr),
+    ).toBe("Séance A · Push");
+    expect(
+      workoutTitle({ sessionCode: "C", sessionId: seedId(3), sessionName: null }, sessions, en),
+    ).toBe("Session C · Glutes + light pull");
+    expect(
+      workoutTitle({ sessionCode: "D", sessionId: OWN, sessionName: null }, sessions, fr),
+    ).toBe("Séance D");
+    // Kept with no session id (not written by this app, still read): the name, else the letter.
+    expect(workoutTitle({ sessionCode: "E", sessionName: "Gainage" }, [], fr)).toBe(
+      "Séance E · Gainage",
+    );
+    // Not kept (started before names were): the current name, as before.
+    expect(workoutTitle({ sessionCode: "B", sessionId: OWN }, sessions, fr)).toBe(
+      "Séance B · Bas du corps",
+    );
+  });
+
   it("names a set-aside session by its name, a starting one by its own, else untitled", () => {
     expect(sessionName({ id: OWN, name: "Partagée par Lou" }, fr)).toBe("Partagée par Lou");
     expect(sessionName({ id: seedId(2), name: null }, en)).toBe("Legs");
