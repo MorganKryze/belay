@@ -27,6 +27,8 @@ export function TrendFigure({
         className="mt-2.5 mb-2 text-figure tracking-[-0.03em] text-foreground tabular-nums"
       >
         {averageKg === null ? "—" : bodyWeight(averageKg, i18n.language, unit)}
+        {/* Read out as shown, « 80,4 kg »: the gap is a margin, which a name never counts. */}
+        {averageKg !== null && <span className="sr-only"> </span>}
         {averageKg !== null && (
           <span className="ml-1.5 text-[17px] font-semibold tracking-normal text-muted-foreground">
             {unit}

@@ -21,7 +21,9 @@ test("the figure is 50 px bold with tabular figures and the whole card opens Bod
 }) => {
   await openHome(page);
   const card = trendCard(page);
-  await expect(card).toContainText("80.4kg");
+  await expect(card).toContainText("80.4 kg");
+  // Read out with the space the figure shows between the number and its unit.
+  await expect(card).toHaveAccessibleName(/80\.4 kg/);
   const figure = card.locator("[data-slot=trend-figure]");
   await expect(figure).toHaveCSS("font-size", "50px");
   await expect(figure).toHaveCSS("font-weight", "700");
@@ -50,5 +52,5 @@ test("hidden in Settings, Accueil shows no trend after Back, and Body still does
   await expect(trendCard(page)).toHaveCount(0);
   await page.goto("/body");
   await expect(page.getByText("7-day average", { exact: true }).first()).toBeVisible();
-  await expect(page.getByText("80.4kg").first()).toBeVisible();
+  await expect(page.getByText("80.4 kg").first()).toBeVisible();
 });

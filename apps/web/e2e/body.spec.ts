@@ -60,7 +60,7 @@ for (const scheme of ["light", "dark"] as const) {
     }) => {
       await openBody(page);
       const card = figureCard(page);
-      await expect(card).toContainText("80.4kg");
+      await expect(card).toContainText("80.4 kg");
       await expect(card.getByRole("heading", { name: "7-day average", level: 2 })).toHaveCSS(
         "font-size",
         "13px",
