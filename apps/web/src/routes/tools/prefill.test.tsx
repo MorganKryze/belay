@@ -70,7 +70,7 @@ describe("a connected tool", () => {
     expect(hintOf(height)).not.toContain("from your profile");
     const offer = await screen.findByRole("group", { name: "Profile update" });
     expect(offer.textContent).toBe(
-      "Your profile says 178 cm. Update your profile with 180 cm?UpdateNo, just here",
+      "Your profile says 178 cm. Update your profile with 180 cm?UpdateNo, just here",
     );
     fireEvent.click(within(offer).getByRole("button", { name: "No, just here" }));
     expect(screen.queryByRole("group", { name: "Profile update" })).toBeNull();
@@ -156,7 +156,7 @@ describe("a connected tool", () => {
     expect(height.value).toBe("180");
     expect(document.activeElement).toBe(height);
     const offer = await screen.findByRole("group", { name: "Profile update" });
-    expect(offer.textContent).toContain("Update your profile with 180 cm?");
+    expect(offer.textContent).toContain("Update your profile with 180 cm?");
   });
 
   it("offers the way back only for what is on screen (no hip for the male formula)", async () => {
@@ -218,7 +218,7 @@ describe("with field sources hidden on this device", () => {
     await waitFor(() => expect(height.value).toBe("178"));
     fireEvent.change(height, { target: { value: "180" } });
     const offer = await screen.findByRole("group", { name: "Profile update" });
-    expect(offer.textContent).toContain("Update your profile with 180 cm?");
+    expect(offer.textContent).toContain("Update your profile with 180 cm?");
   });
 });
 
@@ -234,7 +234,7 @@ describe("in French", () => {
     fireEvent.change(height, { target: { value: "180" } });
     const offer = await screen.findByRole("group", { name: "Mise à jour du profil" });
     expect(offer.textContent).toContain(
-      "Ton profil indique 178 cm. Mettre à jour ton profil avec 180 cm ?",
+      "Ton profil indique 178 cm. Mettre à jour ton profil avec 180 cm ?",
     );
     expect(within(offer).getByRole("button", { name: "Non, juste ici" })).toBeTruthy();
   });

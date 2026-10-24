@@ -61,9 +61,9 @@ describe("the program as cards (spec D13, §4.5)", () => {
     ]);
     const c = screen.getByRole("region", { name: "Session C · Glutes + light pull" });
     // No climb this week: the rule's two slots count.
-    expect(c.textContent).toContain("Next up · 10 exercises · about 60 min");
+    expect(c.textContent).toContain("Next up · 10 exercises · about 60 min");
     const a = cardLink("Session A · Push");
-    expect(a.textContent).toContain("4 days ago · 6 exercises · about 55 min");
+    expect(a.textContent).toContain("4 days ago · 6 exercises · about 55 min");
     expect(cardLink("Session B · Legs").textContent).toContain("3 days ago");
   });
 
@@ -200,7 +200,7 @@ describe("the program as cards (spec D13, §4.5)", () => {
     await i18n.changeLanguage("fr");
     renderRoute("/workouts?tab=program");
     const b = await screen.findByRole("region", { name: "Séance B · Legs" });
-    expect(b.textContent).toContain("La prochaine · 7 exercices · environ 60 min");
+    expect(b.textContent).toContain("La prochaine · 7 exercices · environ 60 min");
     expect(within(b).getByRole("link", { name: "Voir la séance" })).toBeTruthy();
     expect(cardLink("Séance A · Push").textContent).toContain("Il y a 4 jours");
   });

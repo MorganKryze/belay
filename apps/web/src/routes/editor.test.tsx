@@ -119,7 +119,7 @@ describe("History with activities (spec §4.4)", () => {
         .getAllByRole("listitem")
         .map((li) => li.textContent),
     ).toEqual([
-      "Mon, Oct 5 · 58 min Session B · Legs",
+      "Mon, Oct 5 · 58 min Session B · Legs",
       "Sat, Oct 3 Climbing · 1 h 30 · 6b+",
       "Thu, Oct 1 · 1 h 00 Session B · Legs",
     ]);
@@ -191,8 +191,8 @@ describe("a session logged afterwards (spec D10)", () => {
         .getAllByRole("link")
         .map((a) => a.textContent),
     ).toEqual([
-      "Mon, Oct 5 · 58 min Session B · Legs",
-      "Mon, Oct 5 · 45 min Session A · Push",
+      "Mon, Oct 5 · 58 min Session B · Legs",
+      "Mon, Oct 5 · 45 min Session A · Push",
       "Thu, Oct 1 · 1 h 00 Session B · Legs",
     ]);
     // Begun at noon, before Monday's B at 18:00: B stays the last one, C comes next.

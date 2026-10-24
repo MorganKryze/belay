@@ -115,6 +115,25 @@ it("offline, useLoop gives the source only for a cached loop", async () => {
   expect(missing.result.current.src).toBeNull();
 });
 
+it("going offline keeps the playing source until the cache answers, then follows it", async () => {
+  writeMedia("on");
+  const status = online(true);
+  const answers: ((hit: Response | undefined) => void)[] = [];
+  vi.stubGlobal("caches", {
+    open: vi.fn().mockResolvedValue({
+      match: vi.fn(() => new Promise<Response | undefined>((r) => answers.push(r))),
+    }),
+  });
+  const { result } = renderHook(() => useLoop("ds:0025"));
+  expect(result.current.src).toBe("/media/exercises/0025");
+  status.mockReturnValue(false);
+  act(() => void window.dispatchEvent(new Event("offline")));
+  await waitFor(() => expect(answers.length).toBeGreaterThan(0));
+  expect(result.current.src).toBe("/media/exercises/0025");
+  await act(async () => answers.forEach((answer) => answer(undefined)));
+  expect(result.current.src).toBeNull();
+});
+
 it("a failed loop is not offered again during the visit", () => {
   writeMedia("on");
   online(true);

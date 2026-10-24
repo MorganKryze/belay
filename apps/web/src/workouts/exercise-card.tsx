@@ -562,7 +562,7 @@ export function ExerciseCard({
           </div>
           {loopSrc && loopShown && (
             <Sheet title={exercise.name} onClose={() => setLoopShown(false)}>
-              <ExerciseLoop exerciseId={exercise.id} name={exercise.name} />
+              <ExerciseLoop exerciseId={exercise.id} name={exercise.name} centred />
             </Sheet>
           )}
         </div>
@@ -591,7 +591,7 @@ function LoopStill({
       aria-haspopup="dialog"
       aria-label={t("loop.show")}
       onClick={onOpen}
-      className="press relative mt-1.5 size-11 shrink-0 overflow-hidden rounded-[12px] bg-track"
+      className="press relative size-11 shrink-0 overflow-hidden rounded-[12px] bg-track"
     >
       {/* Never played: the fragment draws the first frame, on iOS too. */}
       <video

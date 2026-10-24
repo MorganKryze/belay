@@ -41,7 +41,7 @@ describe("the Sessions tab", () => {
     // Nothing is next without an account: every card is a link to its preview, none starts.
     const a = await screen.findByRole("link", { name: /^Session A · Push/ });
     expect(a.getAttribute("href")).toBe("/workouts/session/A");
-    expect(a.textContent).toContain("6 exercises · about 55 min");
+    expect(a.textContent).toContain("6 exercises · about 55 min");
     expect(screen.getAllByRole("link", { name: /^Session [ABC] · / })).toHaveLength(3);
     expect(screen.queryByRole("link", { name: /^(Start|See the session|Resume)$/ })).toBeNull();
     expect(screen.queryByRole("button", { name: /^(See|Hide)$/ })).toBeNull();

@@ -44,6 +44,14 @@ const big = openSync(join(media, "0005.mp4"), "w");
 closeSync(big);
 await fsp.truncate(join(media, "0005.mp4"), 9 * 1024 * 1024);
 symlinkSync(join(media, "0001.mp4"), join(media, "0006.mp4"));
+// The size cap boundary: exactly 8 MiB is served, one byte more is not.
+for (const [name, size] of [
+  ["0010.mp4", 8 * 1024 * 1024],
+  ["0011.mp4", 8 * 1024 * 1024 + 1],
+] as const) {
+  closeSync(openSync(join(media, name), "w"));
+  await fsp.truncate(join(media, name), size);
+}
 // A link inside the directory to a page, and a loop the server cannot read.
 writeFileSync(join(media, "page.html"), "<script>alert(1)</script>");
 symlinkSync(join(media, "page.html"), join(media, "0007.mp4"));
@@ -152,6 +160,7 @@ describe("GET /media/exercises/:id", () => {
       "0009",
       "0003",
       "0005",
+      "0011",
       "0002",
       "0007",
       ...(asRoot ? [] : ["0008"]),
@@ -168,6 +177,13 @@ describe("GET /media/exercises/:id", () => {
       expect(res.headers.get("cache-control"), id).toBe("no-store");
       expect(await res.json(), id).toEqual({ error: "not_found" });
     }
+  });
+
+  it("serves a loop of exactly 8 MiB", async () => {
+    const res = await get("/media/exercises/0010");
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-length")).toBe(String(8 * 1024 * 1024));
+    await res.arrayBuffer();
   });
 
   it("serves a link that stays inside the directory", async () => {

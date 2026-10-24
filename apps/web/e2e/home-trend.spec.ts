@@ -21,13 +21,15 @@ test("the figure is 50 px bold with tabular figures and the whole card opens Bod
 }) => {
   await openHome(page);
   const card = trendCard(page);
-  await expect(card).toContainText("80.4kg");
+  await expect(card).toContainText("80.4 kg");
+  // Read out with the space the figure shows between the number and its unit.
+  await expect(card).toHaveAccessibleName(/80\.4 kg/);
   const figure = card.locator("[data-slot=trend-figure]");
   await expect(figure).toHaveCSS("font-size", "50px");
   await expect(figure).toHaveCSS("font-weight", "700");
   await expect(figure).toHaveCSS("font-variant-numeric", "tabular-nums");
   await expect(figure).toHaveCSS("letter-spacing", "-1.5px");
-  await expect(figure.locator("span")).toHaveCSS("font-size", "17px");
+  await expect(figure.getByText("kg", { exact: true })).toHaveCSS("font-size", "17px");
   // A tap near the card's bottom-right corner, far from the words, still opens Body.
   const box = (await card.boundingBox())!;
   await page.touchscreen.tap(box.x + box.width - 8, box.y + box.height - 6);
@@ -50,5 +52,5 @@ test("hidden in Settings, Accueil shows no trend after Back, and Body still does
   await expect(trendCard(page)).toHaveCount(0);
   await page.goto("/body");
   await expect(page.getByText("7-day average", { exact: true }).first()).toBeVisible();
-  await expect(page.getByText("80.4kg").first()).toBeVisible();
+  await expect(page.getByText("80.4 kg").first()).toBeVisible();
 });

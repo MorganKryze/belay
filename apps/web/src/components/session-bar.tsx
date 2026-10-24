@@ -62,7 +62,8 @@ export function SessionBar({
   const status =
     "truncate text-(length:--text-secondary) leading-(--text-secondary--line-height) opacity-80";
   return (
-    <>
+    // A landmark of its own, so nothing on the page sits outside one.
+    <section aria-label={t("sessionBar.label")}>
       {/* Beside the link, so its name never takes the announcement in. */}
       <span role="status" className="sr-only">
         {announced ? t("session.restOver") : ""}
@@ -115,7 +116,7 @@ export function SessionBar({
           <ChevronRight className="size-5" />
         </span>
       </Link>
-    </>
+    </section>
   );
 }
 
