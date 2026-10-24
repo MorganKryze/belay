@@ -88,12 +88,13 @@ describe("the program editor", () => {
     expect(back.getAttribute("href")).toBe("/workouts?tab=program");
     expect(await screen.findByText("Programme de départ")).toBeTruthy();
     const shell = screen.getByRole("main").parentElement!;
-    expect(shell.getAttribute("class")!.split(/\s+/)).toContain("lg:max-w-5xl");
+    const WIDE = /^lg:max-w-\[calc\(64rem\+/;
+    expect(shell.getAttribute("class")!.split(/\s+/).some((c) => WIDE.test(c))).toBe(true);
     cleanup();
     renderRoute("/workouts/session/A");
     await screen.findByRole("heading", { level: 1, name: "Séance A · Push" });
     const other = screen.getByRole("main").parentElement!;
-    expect(other.getAttribute("class")!.split(/\s+/)).not.toContain("lg:max-w-5xl");
+    expect(other.getAttribute("class")!.split(/\s+/).some((c) => WIDE.test(c))).toBe(false);
   });
 
   it("the route's code is a lazy chunk", async () => {

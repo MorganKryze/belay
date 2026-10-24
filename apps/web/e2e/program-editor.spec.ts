@@ -70,11 +70,17 @@ test("a row edited from the keyboard is kept at once, and ⌘ Z or Ctrl Z puts t
   await expect(cell(page, PRESS, "rest")).toHaveText("2 min");
 });
 
-test("the editor lays out 1 024 px wide at 1 280, other pages keep 576", async ({ page }) => {
+test("the editor's content is the top bar's 1 024 px box at 1 280, other pages keep 576", async ({
+  page,
+}) => {
   await open(page);
   const column = page.getByRole("main").locator("..");
   await expect(grid(page)).toBeVisible();
-  expect((await column.boundingBox())!.width).toBe(1024);
+  // The content, not the column with its side padding, lines up with the top bar's box.
+  const content = (await page.getByRole("main").boundingBox())!;
+  const bar = (await page.getByRole("banner").locator("> div").boundingBox())!;
+  expect([content.x, content.width]).toEqual([bar.x, 1024]);
+  expect(bar.width).toBe(1024);
   await page.goto("/workouts?tab=program");
   await expect(page.getByRole("heading", { level: 1, name: "Séances" })).toBeVisible();
   expect((await column.boundingBox())!.width).toBe(576);
