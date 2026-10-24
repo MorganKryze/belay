@@ -178,9 +178,16 @@ export function rotationOf(p: StoredPrograms): LetteredTemplate[] {
     }));
 }
 
-// The session after the last one finished since the program became active (PM10): found by the
-// session it recorded, or by its letter when it recorded none (started before sessions recorded
-// theirs); the first when there is none, or when that session left the rotation.
+// Whether a session done (or open) is this rotation session: by the session it recorded, or by its
+// letter when it recorded none (started before sessions recorded theirs). Letters follow the
+// rotation, so a recorded id is the only thing that survives a reorder (D7).
+export const startedAs = (
+  w: { sessionCode: string; sessionId?: string | null },
+  s: { code: string; sessionId: string },
+): boolean => (w.sessionId ? w.sessionId === s.sessionId : w.sessionCode === s.code);
+
+// The session after the last one finished since the program became active (PM10), found as
+// startedAs says; the first when there is none, or when that session left the rotation.
 export function nextInRotation(
   workouts: readonly {
     id: string;
@@ -203,12 +210,7 @@ export function nextInRotation(
     const ahead = last === null ? 1 : Date.parse(w.startedAt) - Date.parse(last.startedAt);
     if (ahead > 0 || (ahead === 0 && byId(w, last!) > 0)) last = w;
   }
-  const at =
-    last === null
-      ? -1
-      : last.sessionId
-        ? rotation.findIndex((t) => t.sessionId === last.sessionId)
-        : rotation.findIndex((t) => t.code === last.sessionCode);
+  const at = last === null ? -1 : rotation.findIndex((t) => startedAs(last, t));
   return rotation[(at + 1) % rotation.length]!;
 }
 

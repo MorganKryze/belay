@@ -16,7 +16,7 @@ import { ExerciseLoop } from "@/components/exercise-loop";
 import { BackLink, PageHeader } from "@/components/page-header";
 import { cardSurface } from "@/components/surfaces";
 import { BodyMap, BodySymbols } from "@/exercises/body-map";
-import { formatNumber, sessionTitle } from "@/lib/format";
+import { formatNumber, rotationTitle, sessionName } from "@/lib/format";
 import { readWeightUnit } from "@/lib/units";
 import { useAccount, useProgram } from "@/sync/account";
 import { formatRest, formatRir, formatSets, groupKind } from "@/workouts/format";
@@ -119,7 +119,9 @@ export function ExercisePage() {
         const body = (
           <span className="flex flex-col">
             <span className="font-semibold">
-              {code ? sessionTitle(code, t) : (name ?? t("program.untitledSession"))}
+              {code
+                ? rotationTitle({ code, sessionId: key, name }, t)
+                : sessionName({ id: key, name }, t)}
             </span>
             <span className="text-[13px] text-muted-foreground">
               {[

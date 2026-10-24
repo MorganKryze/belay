@@ -25,6 +25,7 @@ import {
   SEED_PROGRAM_ID,
   seedId,
   SESSION_NAME_MAX,
+  startedAs,
   type StoredPrograms,
   withSeed,
 } from "./stored-program";
@@ -403,6 +404,23 @@ describe("nextInRotation (PM10)", () => {
   it("an empty rotation offers none", () => {
     expect(nextInRotation([], [], null)).toBeNull();
     expect(nextInRotation([done({ sessionId: idOf(0) })], [], null)).toBeNull();
+  });
+});
+
+describe("startedAs", () => {
+  const { sessions, slots } = sessionsOf(3);
+  const [a, b] = rotationOf(stored(sessions, slots));
+
+  it("a session done is a rotation session by the id it recorded, whatever letter it had", () => {
+    expect(startedAs({ sessionCode: "B", sessionId: a!.sessionId }, a!)).toBe(true);
+    expect(startedAs({ sessionCode: "A", sessionId: b!.sessionId }, a!)).toBe(false);
+    expect(startedAs({ sessionCode: "A", sessionId: newId() }, a!)).toBe(false);
+  });
+
+  it("one recorded before sessions kept their id is the session now at its letter", () => {
+    expect(startedAs({ sessionCode: "A" }, a!)).toBe(true);
+    expect(startedAs({ sessionCode: "A", sessionId: null }, a!)).toBe(true);
+    expect(startedAs({ sessionCode: "B" }, a!)).toBe(false);
   });
 });
 

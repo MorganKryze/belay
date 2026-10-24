@@ -77,7 +77,7 @@ export const ALTERNATIVES: Readonly<Record<string, readonly string[]>> = {
 export const alternativesOf = (exerciseId: string): readonly string[] =>
   ALTERNATIVES[exerciseId] ?? [];
 
-// The constant stays the default until every screen passes the stored program's templates.
+// Every screen passes the stored rotation; the constant stays the default for the tests' fixtures.
 export const sessionByCode = (
   code: string,
   program: readonly SessionTemplate[] = starterProgram,

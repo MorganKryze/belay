@@ -1,15 +1,12 @@
 import type { ISODate } from "@belay/shared/body/dates";
 import type { Activity } from "@belay/shared/training/activities";
 import { planFor } from "@belay/shared/training/plan";
-import {
-  estimatedMinutes,
-  plannedWorkSets,
-  type SessionTemplate,
-} from "@belay/shared/training/program";
+import { estimatedMinutes, plannedWorkSets } from "@belay/shared/training/program";
 import { type History, lastFinished, openWorkout, workSetsOf } from "@belay/shared/training/rules";
 import {
   type LetteredTemplate,
   nextInRotation,
+  startedAs,
   type StoredPrograms,
 } from "@belay/shared/training/stored-program";
 import { Link } from "@tanstack/react-router";
@@ -18,6 +15,7 @@ import { useTranslation } from "react-i18next";
 import { SessionCard, SessionHeading } from "@/components/session-card";
 import { cardSurface } from "@/components/surfaces";
 import { Button } from "@/components/ui/button";
+import { rotationTitle } from "@/lib/format";
 import { useToday } from "@/lib/today";
 import { type OpenAccount, useActivities, useHistory, useProgram } from "@/sync/account";
 import { dayOf } from "./history-panel";
@@ -84,18 +82,18 @@ function List({
       key={s.sessionId}
       session={s}
       next={s === next}
-      lastDay={history ? lastDayOf(history, s.code) : undefined}
+      lastDay={history ? lastDayOf(history, s) : undefined}
       activities={activities}
       today={today}
       see={!open && s === next}
-      progress={open?.sessionCode === s.code ? progress : null}
+      progress={open && startedAs(open, s) ? progress : null}
     />
   ));
 }
 
-// The day a session of this code last ended; null: never; undefined: no account.
-function lastDayOf(history: History, code: string): ISODate | null {
-  const last = lastFinished(history.workouts, code);
+// The day this session was last done; null: never; undefined: no account.
+function lastDayOf(history: History, session: LetteredTemplate): ISODate | null {
+  const last = lastFinished(history.workouts, session);
   return last === null ? null : dayOf(last);
 }
 
@@ -114,7 +112,7 @@ function ProgramCard({
   see,
   progress,
 }: {
-  session: SessionTemplate;
+  session: LetteredTemplate;
   next: boolean;
   lastDay: ISODate | null | undefined;
   activities: readonly Activity[];
@@ -125,6 +123,7 @@ function ProgramCard({
   const { t } = useTranslation();
   const id = useId();
   const { code } = session;
+  const title = rotationTitle(session, t);
   const plan = planFor(session, activities, today);
   const size = t("sessionCard.size", {
     count: plan.length,
@@ -133,7 +132,7 @@ function ProgramCard({
   if (progress) {
     return (
       <SessionCard
-        code={code}
+        title={title}
         lead={t("sessionCard.inProgress")}
         detail={t("sessionCard.sets", progress)}
       >
@@ -147,7 +146,7 @@ function ProgramCard({
   }
   if (see) {
     return (
-      <SessionCard code={code} lead={t("sessionCard.next")} detail={size}>
+      <SessionCard title={title} lead={t("sessionCard.next")} detail={size}>
         <Button asChild variant="primary">
           <Link to="/workouts/session/$code" params={{ code }}>
             {t("sessionCard.see")}
@@ -172,7 +171,7 @@ function ProgramCard({
     >
       <SessionHeading
         id={id}
-        code={code}
+        title={title}
         lead={next ? t("sessionCard.next") : undefined}
         detail={when && !next ? `${when} · ${size}` : size}
       />

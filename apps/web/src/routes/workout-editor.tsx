@@ -12,7 +12,7 @@ import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { DayChip } from "@/components/day-chip";
 import { Button } from "@/components/ui/button";
-import { sessionTitle } from "@/lib/format";
+import { rotationTitle, workoutTitle } from "@/lib/format";
 import { useToday } from "@/lib/today";
 import { loadNumber, readWeightUnit, type WeightUnit } from "@/lib/units";
 import {
@@ -42,16 +42,26 @@ export function WorkoutEditor() {
 }
 
 function Load({ account }: { account: OpenAccount }) {
+  const { t } = useTranslation();
   const search = useSearch({ from: "/workout/edit" });
   const today = useToday();
   const history = useHistory(account).data;
   const activities = useActivities(account).data;
-  const rotation = useProgram(account).data?.rotation;
-  if (!history || !activities || !rotation) return null;
+  const program = useProgram(account).data;
+  if (!history || !activities || !program) return null;
+  const { rotation } = program;
   if (search.id) {
     const workout = history.workouts.find((w) => w.id === search.id);
     if (!workout || workout.removed || workout.endedAt === null) return <NotFound />;
-    return <Editor account={account} history={history} workout={workout} start={null} />;
+    return (
+      <Editor
+        account={account}
+        history={history}
+        title={workoutTitle(workout, program.programs.sessions, t)}
+        workout={workout}
+        start={null}
+      />
+    );
   }
   // The active rotation's session at that letter, as a session started now would copy it.
   const session = rotation.find((s) => s.code === search.code);
@@ -60,6 +70,7 @@ function Load({ account }: { account: OpenAccount }) {
     <Editor
       account={account}
       history={history}
+      title={rotationTitle(session, t)}
       workout={null}
       start={{
         code: session.code,
@@ -75,11 +86,13 @@ function Load({ account }: { account: OpenAccount }) {
 function Editor({
   account,
   history,
+  title,
   workout,
   start,
 }: {
   account: OpenAccount;
   history: History;
+  title: string;
   workout: Workout | null;
   start: { code: string; sessionId: string; date: ISODate; minutes: number; plan: Slot[] } | null;
 }) {
@@ -175,7 +188,7 @@ function Editor({
         </Link>
         <div className="flex items-center gap-2">
           <h1 className="min-w-0 flex-1 text-[22px] leading-tight font-bold tracking-tight">
-            {sessionTitle(sessionCode, t)}
+            {title}
           </h1>
           <DayChip date={date} today={today} onChange={setDate} label={t("editor.date")} />
         </div>

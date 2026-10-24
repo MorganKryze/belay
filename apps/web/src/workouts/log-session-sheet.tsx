@@ -15,7 +15,7 @@ import { DurationStepper } from "@/components/duration-stepper";
 import { Segmented, type SegmentedOptions } from "@/components/segmented";
 import { Sheet } from "@/components/sheet";
 import { Button } from "@/components/ui/button";
-import { sessionTitle } from "@/lib/format";
+import { rotationTitle } from "@/lib/format";
 import { useAccount, useProgram } from "@/sync/account";
 
 // The bounds of a session's duration logged afterwards (spec §5).
@@ -85,7 +85,7 @@ function LogSession({
             })) as unknown as SegmentedOptions<string>
           }
         />
-        <p className="text-[13px] text-muted-foreground">{sessionTitle(code, t)}</p>
+        <p className="text-[13px] text-muted-foreground">{rotationTitle(session, t)}</p>
       </div>
       <DurationStepper
         label={t("history.log.duration")}

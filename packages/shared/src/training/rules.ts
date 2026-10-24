@@ -9,6 +9,7 @@ import { INCREMENT_LB, kgFromLoad, loadFromKg, type WeightUnit } from "../tools/
 import { WARMUP_SCHEMES, warmupSets } from "../tools/warmup";
 import { liveSlots } from "./plan";
 import { groupOf, plannedWorkSets } from "./program";
+import { startedAs } from "./stored-program";
 import { MAX_WARMUPS, SET_KG, type Slot, type Workout, type WorkoutSet } from "./workout";
 
 export interface History {
@@ -340,16 +341,16 @@ export function finishedOn(
   };
 }
 
-// The last session of this code that ended and was kept, if any: the preview's "last time" and
-// the program card's day.
+// The last session done as this rotation session (startedAs) that ended and was kept, if any: the
+// preview's "last time" and the program card's day.
 export function lastFinished<W extends Workout>(
   workouts: readonly W[],
-  code: string,
+  session: { code: string; sessionId: string },
 ): (W & { endedAt: string }) | null {
   return workouts
     .filter(
       (w): w is W & { endedAt: string } =>
-        w.sessionCode === code && w.endedAt !== null && !w.removed,
+        startedAs(w, session) && w.endedAt !== null && !w.removed,
     )
     .reduce<(W & { endedAt: string }) | null>(
       (last, w) => (last === null || w.startedAt > last.startedAt ? w : last),

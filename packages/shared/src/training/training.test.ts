@@ -32,6 +32,7 @@ import {
   warmups,
   workOrder,
 } from "./rules";
+import { seedId } from "./stored-program";
 import {
   isExerciseNotes,
   isPlan,
@@ -669,6 +670,7 @@ describe("autoClose (D12)", () => {
 });
 
 describe("lastFinished", () => {
+  const a = { code: "A", sessionId: seedId(1) };
   it("is the latest ended session of the code, the open, removed and other ones left out", () => {
     const early = workout({ startedAt: "2026-10-01T17:00:00.000Z" });
     const late = workout({ startedAt: "2026-10-05T17:00:00.000Z" });
@@ -679,14 +681,24 @@ describe("lastFinished", () => {
       workout({ startedAt: "2026-10-07T17:00:00.000Z", removed: true }),
       workout({ startedAt: "2026-10-08T17:00:00.000Z", sessionCode: "B" }),
     ];
-    expect(lastFinished(workouts, "A")).toBe(late);
-    expect(lastFinished([early, late], "A")).toBe(late);
+    expect(lastFinished(workouts, a)).toBe(late);
+    expect(lastFinished([early, late], a)).toBe(late);
+  });
+
+  it("follows the session each one recorded, not the letter it had", () => {
+    const moved = workout({
+      startedAt: "2026-10-06T17:00:00.000Z",
+      sessionCode: "B",
+      sessionId: a.sessionId,
+    });
+    const other = workout({ startedAt: "2026-10-07T17:00:00.000Z", sessionId: seedId(2) });
+    expect(lastFinished([workout(), moved, other], a)).toBe(moved);
   });
 
   it("is null when no session of the code ended", () => {
-    expect(lastFinished([], "A")).toBeNull();
-    expect(lastFinished([workout({ endedAt: null }), workout({ removed: true })], "A")).toBeNull();
-    expect(lastFinished([workout()], "B")).toBeNull();
+    expect(lastFinished([], a)).toBeNull();
+    expect(lastFinished([workout({ endedAt: null }), workout({ removed: true })], a)).toBeNull();
+    expect(lastFinished([workout()], { code: "B", sessionId: seedId(2) })).toBeNull();
   });
 });
 

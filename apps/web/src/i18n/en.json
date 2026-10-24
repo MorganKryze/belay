@@ -439,6 +439,10 @@
   },
   "program": {
     "session": "Session {{code}} · {{name}}",
+    "sessionCode": "Session {{code}}",
+    "untitledSession": "Untitled session",
+    "starter": "Starter program",
+    "untitledProgram": "Untitled program",
     "names": {
       "A": "Push",
       "B": "Legs",

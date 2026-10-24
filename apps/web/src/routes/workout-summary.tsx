@@ -10,11 +10,11 @@ import { useTranslation } from "react-i18next";
 import { GroupedList, groupSurface } from "@/components/grouped-list";
 import { Button } from "@/components/ui/button";
 import { readSessionVolume } from "@/lib/display-prefs";
-import { formatNumber, formatWeekday, sessionTitle } from "@/lib/format";
+import { formatNumber, formatWeekday, workoutTitle } from "@/lib/format";
 import { useToday } from "@/lib/today";
 import { readWeightUnit } from "@/lib/units";
 import { cn } from "@/lib/utils";
-import { type OpenAccount, useAccount, useHistory, useRecord } from "@/sync/account";
+import { type OpenAccount, useAccount, useHistory, useProgram, useRecord } from "@/sync/account";
 import { durationParts, formatLoad, recordText } from "@/workouts/format";
 import { dayOf } from "@/workouts/history-panel";
 import { NotFound } from "./fallbacks";
@@ -35,6 +35,7 @@ function Summary({ account }: { account: OpenAccount }) {
   const navigate = useNavigate();
   const { workoutId } = useParams({ from: "/workout/summary/$workoutId" });
   const history = useHistory(account).data;
+  const sessions = useProgram(account).data?.programs.sessions ?? [];
   const record = useRecord(account);
   const [note, setNote] = useState("");
   const [error, setError] = useState<string>();
@@ -82,7 +83,7 @@ function Summary({ account }: { account: OpenAccount }) {
           })}
         </p>
         <h1 className="text-[30px] leading-tight font-bold tracking-tight">
-          {sessionTitle(workout.sessionCode, t)}
+          {workoutTitle(workout, sessions, t)}
         </h1>
       </div>
       <dl className="grid grid-cols-2 gap-3">

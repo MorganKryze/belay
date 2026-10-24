@@ -19,6 +19,7 @@ import {
   liveSets,
   type Load,
   nextTurn,
+  openWorkout,
   restEndsAt,
   restSecAfter,
   sessionProgress,
@@ -43,7 +44,7 @@ import { Button } from "@/components/ui/button";
 import { previousHref } from "@/lib/back";
 import { readPauseStops } from "@/lib/pause-stops";
 import { armRestSound } from "@/lib/rest-sound";
-import { sessionTitle } from "@/lib/format";
+import { workoutTitle } from "@/lib/format";
 import { readToolState, resolveEquipment } from "@/lib/tool-storage";
 import { levelOf } from "@/lib/transitions";
 import {
@@ -57,12 +58,14 @@ import {
 import {
   type OpenAccount,
   useAccount,
+  useProgram,
   useRecord,
   useRecordSet,
   useSessionView,
   useStartWorkout,
 } from "@/sync/account";
 import { ExerciseCard, type Row } from "@/workouts/exercise-card";
+import { NotFound } from "./fallbacks";
 import { ExercisePicker } from "@/workouts/exercise-picker";
 import { groupKind } from "@/workouts/format";
 import { formatClock, useNow, useWakeLock } from "@/workouts/hooks";
@@ -92,6 +95,7 @@ function Session({ account }: { account: OpenAccount }) {
   // shows a session already over, and the page that leaves is the one the person saw.
   const [leaving, setLeaving] = useState<typeof view>();
   const [failed, setFailed] = useState<string>();
+  const [missing, setMissing] = useState(false);
   useWakeLock();
   // The first tap on the session unlocks the end-of-rest tone, for whoever turned it on.
   useEffect(() => armRestSound(), []);
@@ -99,19 +103,32 @@ function Session({ account }: { account: OpenAccount }) {
   // ?start=B: start the active rotation's session B (or take up the one already open), then drop
   // the parameter so a reload never starts another. The session copies the rotation as it stands
   // now and records the session it came from; a later program change never reaches it (HF1).
-  // Session C's rule reads the week's activities now, once (D6).
+  // Session C's rule reads the week's activities now, once (D6). A letter the rotation lacks still
+  // takes up the session open, whose letter may have left it since; with none open, it is not
+  // found (RD3).
   useEffect(() => {
     if (!start || started.current) return;
     started.current = true;
     const go = () => void navigate({ to: "/workout", search: {}, replace: true });
-    void Promise.all([readPrograms(account.db), readActivities(account.db)])
-      .then(([programs, activities]) => {
-        const session = rotationOf(programs).find((s) => s.code === start);
-        if (!session) return;
-        const plan = planFor(session, activities, toISODate(new Date()));
-        return startWorkout(newId(), session.code, plan, session.sessionId);
-      })
-      .then(go, go);
+    void Promise.all([
+      readPrograms(account.db),
+      readActivities(account.db),
+      readHistory(account.db),
+    ]).then(([programs, activities, history]) => {
+      const session = rotationOf(programs).find((s) => s.code === start);
+      const open = openWorkout(history.workouts, { sets: history.sets, now: new Date() });
+      if (!session && !open) return setMissing(true);
+      return (
+        session
+          ? startWorkout(
+              newId(),
+              session.code,
+              planFor(session, activities, toISODate(new Date())),
+              session.sessionId,
+            )
+          : startWorkout(open!.id, open!.sessionCode, open!.plan, open!.sessionId ?? undefined)
+      ).then(go, go);
+    }, go);
   }, [start, navigate, startWorkout, account.db]);
 
   // Ended, the session gives its place to its summary; removed, to Accueil. Either way the
@@ -135,6 +152,7 @@ function Session({ account }: { account: OpenAccount }) {
   };
 
   const shown = leaving ?? view;
+  if (missing) return <NotFound />;
   if (start || !shown) return null;
   const { active, history } = shown;
   const workout = active && history.workouts.find((w) => w.id === active.workoutId);
@@ -173,6 +191,7 @@ function Screen({
   const queryClient = useQueryClient();
   const record = useRecord(account);
   const recordSet = useRecordSet(account);
+  const sessions = useProgram(account).data?.programs.sessions ?? [];
   const now = useNow();
   const [toggled, setToggled] = useState<ReadonlyMap<number, boolean>>(new Map());
   const [sheet, setSheet] = useState<FinishSheet>(null);
@@ -539,7 +558,7 @@ function Screen({
         onResume={() => void resume(new Date().toISOString())}
       />
       <h1 className="text-[22px] leading-tight font-bold tracking-tight">
-        {sessionTitle(workout.sessionCode, t)}
+        {workoutTitle(workout, sessions, t)}
       </h1>
       {plan.some((s) => s.rule === "no_climbing") && (
         <p className="rounded-[12px] bg-primary-soft px-3 py-2.5 text-sm text-primary-ink">

@@ -8,7 +8,7 @@ import { ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { formatMinutes } from "@/lib/activities";
-import { sessionTitle } from "@/lib/format";
+import { rotationTitle, workoutTitle } from "@/lib/format";
 import { type OpenAccount, useActivities, useHistory, useProgram } from "@/sync/account";
 import { SessionCard } from "./session-card";
 
@@ -23,13 +23,14 @@ export function TodaySession({ account, today }: { account: OpenAccount; today: 
   const activities = useActivities(account).data;
   const program = useProgram(account).data;
   if (!history || !activities || !program) return null;
+  const { sessions } = program.programs;
   const open = openWorkout(history.workouts, { sets: history.sets, now: new Date() });
   if (open) {
     const code = open.sessionCode;
     const done = workSetsOf(history, open.id);
     return (
       <SessionCard
-        code={code}
+        title={workoutTitle(open, sessions, t)}
         lead={t("sessionCard.inProgress")}
         detail={t("sessionCard.sets", { count: done, total: plannedWorkSets(open.plan) })}
       >
@@ -46,7 +47,7 @@ export function TodaySession({ account, today }: { account: OpenAccount; today: 
   if (done) {
     return (
       <SessionCard
-        code={done.workout.sessionCode}
+        title={workoutTitle(done.workout, sessions, t)}
         done
         detail={`${t("sessionCard.doneToday")} · ${t("sessionCard.doneLine", {
           duration: formatMinutes(Math.round(done.durationMs / 60_000), t),
@@ -62,7 +63,7 @@ export function TodaySession({ account, today }: { account: OpenAccount; today: 
           >
             <span className="flex-1">
               {t("sessionCard.nextLink")}{" "}
-              <b className="font-semibold text-foreground">{sessionTitle(next.code, t)}</b>
+              <b className="font-semibold text-foreground">{rotationTitle(next, t)}</b>
             </span>
             <ChevronRight className="size-4" aria-hidden="true" />
           </Link>
@@ -75,7 +76,7 @@ export function TodaySession({ account, today }: { account: OpenAccount; today: 
   const plan = planFor(next, activities, today);
   return (
     <SessionCard
-      code={code}
+      title={rotationTitle(next, t)}
       lead={t("sessionCard.next")}
       detail={t("sessionCard.size", {
         count: plan.length,
