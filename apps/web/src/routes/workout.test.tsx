@@ -1297,4 +1297,26 @@ describe("a session of the stored program (§4.2)", () => {
     const after = (await stored()).history.workouts;
     expect(after).toEqual([before]);
   });
+
+  it("?start= with a letter the rotation lacks is not found even with a session open", async () => {
+    const before = await startD();
+    cleanup();
+    renderRoute("/workout?start=E");
+    expect(await screen.findByRole("heading", { name: "Page not found" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Finish" })).toBeNull();
+    expect((await stored()).history.workouts).toEqual([before]);
+  });
+
+  it("?start= with the open session's own letter takes it up after the letter left the rotation", async () => {
+    const before = await startD();
+    const edited = at(new Date(NOW.getTime() + 60_000));
+    await seed(ADA.id, [
+      { kind: "programSession", id: D, field: "removed", value: true, at: edited },
+    ]);
+    cleanup();
+    renderRoute("/workout?start=D");
+    expect(await screen.findByRole("button", { name: "Finish" })).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toMatch(/^Session D/);
+    expect((await stored()).history.workouts).toEqual([before]);
+  });
 });
