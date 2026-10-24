@@ -92,7 +92,8 @@
       "toPermanent": "is done every week again"
     },
     "letters": {
-      "becomes": "{{from}} becomes {{to}}"
+      "becomes": "{{from}} becomes {{to}}",
+      "join": "; "
     },
     "session": {
       "rename": "Rename",
