@@ -326,9 +326,9 @@
     "workSets_other": "{{count}} séries de travail",
     "started": "{{day}} · {{h}} h {{mm}}",
     "warmup": "Montée",
-    "load": "{{kg}} kg × {{reps}}",
+    "load": "{{load}} {{unit}} × {{reps}}",
     "seconds": "{{seconds}} s",
-    "loadSeconds": "{{kg}} kg · {{seconds}} s",
+    "loadSeconds": "{{load}} {{unit}} · {{seconds}} s",
     "rir": "RIR {{rir}}",
     "note": "Note sur la séance",
     "edit": "Modifier",
@@ -370,14 +370,14 @@
     "superset": "Superset",
     "triset": "Tri-set",
     "setField": {
-      "kg": "Charge de la série {{n}}, kg",
+      "kg": "Charge de la série {{n}}, {{unit}}",
       "reps": "Répétitions de la série {{n}}",
       "seconds": "Secondes de la série {{n}}",
       "validate": "Valider la série {{n}}",
       "done": "Série {{n}} validée"
     },
     "warmupField": {
-      "kg": "Charge de la montée {{n}}, kg",
+      "kg": "Charge de la montée {{n}}, {{unit}}",
       "reps": "Répétitions de la montée {{n}}",
       "validate": "Valider la montée {{n}}",
       "done": "Montée {{n}} validée"
@@ -438,9 +438,9 @@
   },
   "summary": {
     "close": "Fermer",
-    "record": "Record : {{exercise}}, {{kg}} kg × {{reps}}",
+    "record": "Record : {{exercise}}, {{load}} {{unit}} × {{reps}}",
     "recordSeconds": "Record : {{exercise}}, {{seconds}} s",
-    "recordLoadSeconds": "Record : {{exercise}}, {{kg}} kg · {{seconds}} s",
+    "recordLoadSeconds": "Record : {{exercise}}, {{load}} {{unit}} · {{seconds}} s",
     "duration": "Durée",
     "volume": "Volume",
     "warmups": "Montée exclue",

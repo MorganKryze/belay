@@ -293,7 +293,7 @@ function EditorSlot({
           {rows.map((row) => {
             const n = row.warmup ? row.position + 1 : row.position - MAX_WARMUPS + 1;
             const label = (key: string) =>
-              t(`session.${row.warmup ? "warmupField" : "setField"}.${key}`, { n });
+              t(`session.${row.warmup ? "warmupField" : "setField"}.${key}`, { n, unit: "kg" });
             const input =
               "h-11 w-full min-w-0 rounded-[10px] border border-input bg-card text-center text-base font-semibold tabular-nums";
             return (

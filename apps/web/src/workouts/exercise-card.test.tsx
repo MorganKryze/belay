@@ -1,6 +1,7 @@
 import { exerciseById } from "@belay/shared/exercises/catalog";
 import { sessionByCode } from "@belay/shared/training/program";
-import type { History, Load } from "@belay/shared/training/rules";
+import { type History, type Load, warmups } from "@belay/shared/training/rules";
+import { loadFromKg } from "@belay/shared/tools/units";
 import { workPosition, type Workout, type WorkoutSet } from "@belay/shared/training/workout";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { useState } from "react";
@@ -8,6 +9,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import i18n from "../i18n";
 import "../i18n/lazy";
 import { writeMedia } from "../lib/media-flag";
+import { setWeightUnit } from "../lib/units";
 import { ExerciseCard, type Row } from "./exercise-card";
 
 beforeEach(async () => {
@@ -15,8 +17,13 @@ beforeEach(async () => {
 });
 afterEach(() => {
   cleanup();
+  setWeightUnit("kg");
   localStorage.clear();
+  logged.length = 0;
 });
+
+// Every load the card hands to the session, in the order the sets were checked.
+const logged: Load[] = [];
 
 // The bench press of session A: 4 work sets, 2 warm-ups.
 const slot = sessionByCode("A")!.slots[0]!;
@@ -62,6 +69,7 @@ function Card({ initial = [] as WorkoutSet[], unfolded = true }) {
   const [sets, setSets] = useState(initial);
   const [open, setOpen] = useState(unfolded);
   const validate = async (row: Row, load: Load, rir: number | null) => {
+    logged.push(load);
     setSets((s) => [
       ...s,
       { ...set(TODAY, row.position - workPosition(0), load.weightKg, load.reps!), rir },
@@ -207,5 +215,110 @@ describe("ExerciseCard's loop", () => {
     fireEvent(still, new Event("error"));
     expect(within(card()).queryByRole("button", { name: /movement$/ })).toBeNull();
     expect(card().querySelector("video")).toBeNull();
+  });
+});
+
+// Pounds are what a person reads and types; the session still receives kg on the set grid.
+describe("ExerciseCard in pounds", () => {
+  const load = (n: number) => within(card()).getByRole("textbox", { name: `Load of set ${n}, lb` });
+  const warmLoad = (n: number) =>
+    within(card()).getByRole("textbox", { name: `Load of warm-up ${n}, lb` });
+  const log = (n: number) =>
+    fireEvent.click(within(card()).getByRole("button", { name: `Log set ${n}` }));
+
+  it("in pounds the load column says lb and the prefill reads whole pounds", () => {
+    setWeightUnit("lb");
+    render(<Card />);
+    const header = card().querySelector("[aria-hidden].grid")!;
+    expect(within(header as HTMLElement).getByText("lb")).toBeTruthy();
+    expect(within(header as HTMLElement).queryByText("kg")).toBeNull();
+    // 80 kg last time is 176.37 lb.
+    expect((load(1) as HTMLInputElement).value).toBe("176");
+    expect(within(card()).getByText("4 × 6–8 · RIR 1–2 · last time 176 lb × 8")).toBeTruthy();
+  });
+
+  it("a set typed 135 in pounds is logged as 61.25 kg", async () => {
+    setWeightUnit("lb");
+    render(<Card />);
+    fireEvent.change(load(1), { target: { value: "135" } });
+    log(1);
+    await waitFor(() => expect(logged).toHaveLength(1));
+    expect(logged[0]).toEqual({ weightKg: 61.25, reps: 8, seconds: null });
+  });
+
+  it("an untouched prefill in pounds logs the stored kg", async () => {
+    setWeightUnit("lb");
+    render(<Card />);
+    log(1);
+    await waitFor(() => expect(logged).toHaveLength(1));
+    // 176 lb converted back would be 79.75 kg: the stored 80 is logged instead.
+    expect(logged[0]!.weightKg).toBe(80);
+    // Typed back to the same pounds, it is still the stored kg.
+    fireEvent.change(load(2), { target: { value: "17" } });
+    fireEvent.change(load(2), { target: { value: "176" } });
+    log(2);
+    await waitFor(() => expect(logged).toHaveLength(2));
+    expect(logged[1]!.weightKg).toBe(80);
+  });
+
+  it("a lb load past 500 kg is refused as a kg one is", () => {
+    render(<Card />);
+    const kgInput = within(card()).getByRole("textbox", { name: "Load of set 1, kg" });
+    fireEvent.change(kgInput, { target: { value: "501" } });
+    expect(within(card()).getByRole("button", { name: "Log set 1" })).toHaveProperty(
+      "disabled",
+      true,
+    );
+    cleanup();
+    setWeightUnit("lb");
+    render(<Card />);
+    const button = () => within(card()).getByRole("button", { name: "Log set 1" });
+    fireEvent.change(load(1), { target: { value: "1102" } });
+    expect(button()).toHaveProperty("disabled", false);
+    fireEvent.change(load(1), { target: { value: "1103" } });
+    expect(button()).toHaveProperty("disabled", true);
+    fireEvent.change(load(1), { target: { value: "lourd" } });
+    expect(button()).toHaveProperty("disabled", true);
+  });
+
+  it("lb warm-ups come from the lb set", () => {
+    setWeightUnit("lb");
+    render(<Card />);
+    const expected = warmups(slot, 80, bench, BAR, "lb");
+    expect(expected.length).toBeGreaterThan(0);
+    expected.forEach((w, j) => {
+      expect((warmLoad(j + 1) as HTMLInputElement).value).toBe(
+        String(loadFromKg(w.weightKg, "lb")),
+      );
+    });
+    // A first load typed in pounds sets the warm-ups from it: 225 lb is 45 + 45 per side.
+    fireEvent.change(load(1), { target: { value: "225" } });
+    const from225 = warmups(slot, 102, bench, BAR, "lb");
+    from225.forEach((w, j) => {
+      expect((warmLoad(j + 1) as HTMLInputElement).value).toBe(
+        String(loadFromKg(w.weightKg, "lb")),
+      );
+    });
+  });
+
+  it("the same set written in kg and in lb modes writes the same change", async () => {
+    render(<Card />);
+    fireEvent.change(within(card()).getByRole("textbox", { name: "Load of set 1, kg" }), {
+      target: { value: "61,25" },
+    });
+    log(1);
+    await waitFor(() => expect(logged).toHaveLength(1));
+    log(2);
+    await waitFor(() => expect(logged).toHaveLength(2));
+    const inKg = logged.splice(0);
+    cleanup();
+    setWeightUnit("lb");
+    render(<Card />);
+    fireEvent.change(load(1), { target: { value: "135" } });
+    log(1);
+    await waitFor(() => expect(logged).toHaveLength(1));
+    log(2);
+    await waitFor(() => expect(logged).toHaveLength(2));
+    expect(logged).toEqual(inKg);
   });
 });
