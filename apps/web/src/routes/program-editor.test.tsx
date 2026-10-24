@@ -540,6 +540,9 @@ describe("the editor's sessions", () => {
     fireEvent.click(await screen.findByRole("tab", { name: "Haut léger" }));
     await titleIs("Haut léger");
     expect(screen.queryByRole("link", { name: "Voir la séance" })).toBeNull();
+    // The note under the card says what set aside means.
+    const note = /^De côté : hors rotation, sans lettre\. Elle reste modifiable/;
+    expect(screen.getByText(note)).toBeTruthy();
     // Voir la séance moves into its menu, to the preview by id.
     const menu = await sessionMenu();
     expect(
@@ -552,6 +555,7 @@ describe("the editor's sessions", () => {
     await titleIs("Séance D · Haut léger");
     await said("Haut léger remise dans la rotation, en D.");
     expect(screen.queryByRole("tablist", { name: "De côté" })).toBeNull();
+    expect(screen.queryByText(note)).toBeNull();
     expect(screen.getByRole("link", { name: "Voir la séance" }).getAttribute("href")).toBe(
       `/workouts/session/${id(1)}`,
     );

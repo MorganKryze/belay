@@ -244,7 +244,7 @@ function Shown({ placed }: { placed: PlacedSession }) {
                 </button>
               </div>
             )}
-            <p className="text-sm text-muted-foreground tabular-nums">{size}</p>
+            <p className="text-sm whitespace-nowrap text-muted-foreground tabular-nums">{size}</p>
           </>
         }
         actions={
@@ -274,7 +274,12 @@ function Shown({ placed }: { placed: PlacedSession }) {
         <p id={hintId} className="min-h-11 px-1 py-2.5 text-sm text-muted-foreground">
           {t("editor.card.nameHint")}
         </p>
-      ) : added === id && empty && placed.letter !== null ? (
+      ) : placed.letter === null ? (
+        <>
+          <p className="px-1 pt-2.5 text-sm text-muted-foreground">{t("editor.asideHint")}</p>
+          <GridHelp />
+        </>
+      ) : added === id && empty ? (
         <AddedHelp code={placed.letter} />
       ) : (
         <GridHelp />
