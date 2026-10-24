@@ -4,8 +4,8 @@ import { useEditor } from "./editor-context";
 import { ExerciseSearch } from "./exercise-search";
 
 // The shown session on the kit card: its heading on the left, the search (300 px) and its actions
-// on the right of one row, then its table. Below 1 024 px the search takes a row of its own and the table
-// scrolls inside the card, never the page. The search comes after the table in reading order, so
+// on the right of one row, then its table. Below 1 024 px the search takes a row of its own and
+// the table scrolls inside the card, never the page. The search comes after the table in reading order, so
 // Tab out of the table reaches it before the rest of the page.
 export function SessionCard({
   heading,
