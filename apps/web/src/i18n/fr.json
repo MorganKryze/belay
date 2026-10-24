@@ -263,7 +263,7 @@
     "plates": "Disques",
     "edit": "Modifier ce matériel",
     "presetNote": "« Modifier » copie ce préréglage dans « Sur mesure » : les préréglages ne changent jamais.",
-    "lbNote": "En livres, Belay prend la barre de 45 lb et les disques standard.",
+    "lbNote": "En livres, Belay prend la barre de 45 lb et les disques standard.",
     "copied": "Copié depuis « {{preset}} ». Touche un disque pour l'ajouter ou le retirer.",
     "customNote": "Touche un disque pour l'ajouter ou le retirer.",
     "newPlate": "Nouveau disque",
@@ -319,12 +319,12 @@
     "bodyFat": "Masse grasse (facultatif)",
     "result": "Par jour",
     "range": "{{low}} à {{high}}",
-    "perKg": "soit {{low}} à {{high}} g par kg de poids",
+    "perKg": "soit {{low}} à {{high}} g par kg de poids",
     "meals3": "Sur 3 repas",
     "meals4": "Sur 4 repas",
-    "leanMass": "En sèche, la fourchette part de ta masse maigre : 2,3 à 3,1 g par kg de masse maigre.",
-    "noBodyFat": "Sans masse grasse, Belay prend 1,8 à 2,5 g par kg de poids (heuristique Belay). Ajoute ta masse grasse pour une fourchette plus juste.",
-    "floor": "Relevée à 1,6 g par kg de poids, le plancher que Belay garde en sèche (heuristique Belay)."
+    "leanMass": "En sèche, la fourchette part de ta masse maigre : 2,3 à 3,1 g par kg de masse maigre.",
+    "noBodyFat": "Sans masse grasse, Belay prend 1,8 à 2,5 g par kg de poids (heuristique Belay). Ajoute ta masse grasse pour une fourchette plus juste.",
+    "floor": "Relevée à 1,6 g par kg de poids, le plancher que Belay garde en sèche (heuristique Belay)."
   },
   "projection": {
     "lead": "Quand tu peux atteindre ton objectif, sous forme de fourchette de dates.",
@@ -374,7 +374,7 @@
     "waistMale": "Tour de taille au nombril",
     "waistFemale": "Tour de taille au plus fin",
     "hip": "Tour de hanches",
-    "heightKnown": "Taille : {{height}} cm (depuis tes saisies)",
+    "heightKnown": "Taille : {{height}} cm (depuis tes saisies)",
     "editHeight": "modifier",
     "result": "Ta masse grasse estimée",
     "error": "estimation ±4 points",
@@ -426,8 +426,8 @@
   "sessionCard": {
     "next": "La prochaine",
     "inProgress": "En cours",
-    "size_one": "{{count}} exercice · environ {{minutes}} min",
-    "size_other": "{{count}} exercices · environ {{minutes}} min",
+    "size_one": "{{count}} exercice · environ {{minutes}} min",
+    "size_other": "{{count}} exercices · environ {{minutes}} min",
     "sets_one": "{{count}} série sur {{total}}",
     "sets_other": "{{count}} séries sur {{total}}",
     "see": "Voir la séance",
@@ -465,7 +465,7 @@
       "white": "blanc"
     },
     "steps": "{{value}} pas",
-    "minutes": "{{m}} min",
+    "minutes": "{{m}} min",
     "hours": "{{h}} h {{mm}}",
     "hoursOnly": "{{h}} h"
   }

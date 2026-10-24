@@ -81,7 +81,7 @@ test("one day of creatine ticked marks its course on Body", async ({ page }) => 
   await page.keyboard.press("Escape");
   await page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Body" }).click();
   await expect(page.getByText("creatine · 14 d")).toBeVisible();
-  await expect(page.getByText(/rises by 1 to 2 kg of water/)).toBeVisible();
+  await expect(page.getByText(/rises by 1 to 2\skg of water/)).toBeVisible();
   const weeks = page.getByRole("region", { name: "Your weeks" });
   await expect(weeks.getByRole("listitem").first()).toContainText("creatine");
 });

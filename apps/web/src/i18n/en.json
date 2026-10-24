@@ -263,7 +263,7 @@
     "plates": "Plates",
     "edit": "Edit this equipment",
     "presetNote": "“Edit” copies this preset into “Custom”: presets never change.",
-    "lbNote": "In pounds, Belay uses a 45 lb bar and standard plates.",
+    "lbNote": "In pounds, Belay uses a 45 lb bar and standard plates.",
     "copied": "Copied from “{{preset}}”. Tap a plate to add or remove it.",
     "customNote": "Tap a plate to add or remove it.",
     "newPlate": "New plate",
@@ -319,12 +319,12 @@
     "bodyFat": "Body fat (optional)",
     "result": "Per day",
     "range": "{{low}} to {{high}}",
-    "perKg": "that is {{low}} to {{high}} g per kg of body weight",
+    "perKg": "that is {{low}} to {{high}} g per kg of body weight",
     "meals3": "Over 3 meals",
     "meals4": "Over 4 meals",
-    "leanMass": "When cutting, the range starts from your lean mass: 2.3 to 3.1 g per kg of lean mass.",
-    "noBodyFat": "Without a body-fat value, Belay uses 1.8 to 2.5 g per kg of body weight (Belay heuristic). Add your body fat for a closer range.",
-    "floor": "Raised to 1.6 g per kg of body weight, the floor Belay keeps when cutting (Belay heuristic)."
+    "leanMass": "When cutting, the range starts from your lean mass: 2.3 to 3.1 g per kg of lean mass.",
+    "noBodyFat": "Without a body-fat value, Belay uses 1.8 to 2.5 g per kg of body weight (Belay heuristic). Add your body fat for a closer range.",
+    "floor": "Raised to 1.6 g per kg of body weight, the floor Belay keeps when cutting (Belay heuristic)."
   },
   "projection": {
     "lead": "When you could reach your goal, as a range of dates.",
@@ -374,7 +374,7 @@
     "waistMale": "Waist at the navel",
     "waistFemale": "Waist at the narrowest",
     "hip": "Hips",
-    "heightKnown": "Height: {{height}} cm (from your entries)",
+    "heightKnown": "Height: {{height}} cm (from your entries)",
     "editHeight": "change",
     "result": "Your estimated body fat",
     "error": "estimate ±4 points",
@@ -426,8 +426,8 @@
   "sessionCard": {
     "next": "Next up",
     "inProgress": "In progress",
-    "size_one": "{{count}} exercise · about {{minutes}} min",
-    "size_other": "{{count}} exercises · about {{minutes}} min",
+    "size_one": "{{count}} exercise · about {{minutes}} min",
+    "size_other": "{{count}} exercises · about {{minutes}} min",
     "sets_one": "{{count}} of {{total}} sets",
     "sets_other": "{{count}} of {{total}} sets",
     "see": "See the session",
@@ -465,7 +465,7 @@
       "white": "white"
     },
     "steps": "{{value}} steps",
-    "minutes": "{{m}} min",
+    "minutes": "{{m}} min",
     "hours": "{{h}} h {{mm}}",
     "hoursOnly": "{{h}} h"
   }

@@ -53,7 +53,7 @@ describe("the History segment", () => {
         .map((a) => a.textContent),
     ).toEqual([
       "Tue, Oct 6 · 1 h 10 Session C · Glutes + light pull",
-      "Mon, Oct 5 · 58 min Session B · Legs",
+      "Mon, Oct 5 · 58 min Session B · Legs",
       "Fri, Oct 2 · 1 h 04 Session A · Push",
     ]);
   });
@@ -81,7 +81,7 @@ describe("the History segment", () => {
     const calendar = await screen.findByRole("table", { name: "September 2026" });
     expect(marked(calendar)).toEqual(["28"]);
     const list = screen.getByRole("region", { name: "September 2026" });
-    expect(within(list).getByRole("link").textContent).toContain("45 min");
+    expect(within(list).getByRole("link").textContent).toContain("45 min");
     fireEvent.click(screen.getByRole("button", { name: "Previous month" }));
     expect(await screen.findByText("No session this month.")).toBeTruthy();
   });

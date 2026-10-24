@@ -75,8 +75,8 @@ describe("Your weeks", () => {
     const parts = week(list, 1).lastElementChild!;
     expect([...parts.children].map((p) => p.textContent)).toEqual([
       "80.2\u00a0kg ·",
-      "waist 82.5 cm ·",
-      "2,100 kcal",
+      "waist 82.5 cm ·",
+      "2,100 kcal",
     ]);
     expect(week(list, 2).textContent).not.toMatch(/waist|kcal/);
   });
@@ -472,7 +472,7 @@ describe("the measurements sheet", () => {
     expect(screen.queryByRole("dialog", { hidden: true })).toBeNull();
   });
 
-  it("refuses a waist outside 40 to 200 cm", async () => {
+  it("refuses a waist outside 40 to 200 cm", async () => {
     await open([]);
     fireEvent.click(screen.getByRole("button", { name: /^Measurements\b/ }));
     fireEvent.change(await screen.findByRole("textbox", { name: "Waist" }), {
