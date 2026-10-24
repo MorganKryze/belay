@@ -23,13 +23,14 @@ import {
   titleOf,
   useEditor,
 } from "@/editor/editor-context";
+import { ProgramSwitcher } from "@/editor/program-switcher";
 import { SessionCard } from "@/editor/session-card";
 import { GridHelp, SlotGrid } from "@/editor/slot-grid";
 import { useEdits } from "@/editor/use-edits";
 import i18n from "@/i18n";
 import en from "@/i18n/editor/en.json";
 import fr from "@/i18n/editor/fr.json";
-import { programName, sessionName } from "@/lib/format";
+import { sessionName } from "@/lib/format";
 import { type OpenAccount, useAccount, useProgram } from "@/sync/account";
 
 // The editor's strings load with it, deep and never replacing a key, as the lazy screens' do.
@@ -41,10 +42,11 @@ i18n.addResourceBundle("fr", "translation", fr, true, false);
 export function ProgramEditor() {
   const account = useAccount();
   if (account.kind === "loading") return null;
-  return account.kind === "open" ? <WithData account={account} /> : <Header name={null} />;
+  return account.kind === "open" ? <WithData account={account} /> : <Header />;
 }
 
-function Header({ name, saved = false }: { name: string | null; saved?: boolean }) {
+// The title, and beside it, once the programs are read, the selector of the active program.
+function Header({ switcher = false, saved = false }: { switcher?: boolean; saved?: boolean }) {
   const { t } = useTranslation();
   return (
     <PageHeader
@@ -55,9 +57,7 @@ function Header({ name, saved = false }: { name: string | null; saved?: boolean 
         </BackLink>
       }
       trailing={
-        <div className="flex min-w-0 flex-1 items-center">
-          {name && <span className="truncate text-body font-semibold">{name}</span>}
-        </div>
+        <div className="flex min-w-0 flex-1 items-center">{switcher && <ProgramSwitcher />}</div>
       }
     >
       {saved && (
@@ -107,7 +107,7 @@ function Editor({ account, programs }: { account: OpenAccount; programs: StoredP
   return (
     <EditorContext.Provider value={state}>
       <section className="flex flex-col gap-4">
-        <Header name={state.program && programName(state.program, t)} saved={edits.saved} />
+        <Header switcher saved={edits.saved} />
         <p role="status" aria-live="polite" className="sr-only">
           {said}
         </p>
