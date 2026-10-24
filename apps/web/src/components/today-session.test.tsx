@@ -1,19 +1,31 @@
 import type { Change } from "@belay/shared/sync/schema";
+import {
+  addSession,
+  addSlot,
+  chooseActive,
+  createProgram,
+  placeSession,
+} from "@belay/shared/training/program-edits";
 import { sessionByCode } from "@belay/shared/training/program";
-import { cleanup, screen, within } from "@testing-library/react";
+import {
+  SEED_PROGRAM_ID,
+  seedId,
+  type StoredPrograms,
+} from "@belay/shared/training/stored-program";
+import { act, cleanup, screen, within } from "@testing-library/react";
 import { IDBFactory } from "fake-indexeddb";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import i18n from "../i18n";
-import { openAccountDb, readHistory, recordChanges } from "../sync/db";
+import { openAccountDb, readHistory, readPrograms, recordChanges } from "../sync/db";
 import { writeLastUser } from "../sync/last-user";
 import { fakeApi } from "../test/fake-api";
 import { renderRoute } from "../test/render-route";
 import { ADA, seed } from "../test/seed";
 
-// Passes through, until a test holds the history's read.
+// Passes through, until a test holds the history's read; the programs' read is watched.
 vi.mock("../sync/db", async (importOriginal) => {
   const real = await importOriginal<typeof import("../sync/db")>();
-  return { ...real, readHistory: vi.fn(real.readHistory) };
+  return { ...real, readHistory: vi.fn(real.readHistory), readPrograms: vi.fn(real.readPrograms) };
 });
 
 // Wednesday 7 October 2026, 7:30 in the morning, on the phone's clock.
@@ -30,6 +42,7 @@ afterEach(async () => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
   vi.mocked(readHistory).mockReset(); // back to the real read
+  vi.mocked(readPrograms).mockClear();
   await i18n.changeLanguage("en");
 });
 
@@ -74,7 +87,7 @@ const finished = (id: string, code: string, day: number): Change[] => {
       id,
       field: "start",
       sessionCode: code,
-      plan: [...sessionByCode(code)!.slots],
+      plan: [...(sessionByCode(code) ?? sessionByCode("A")!).slots],
       startedAt: from,
       at: from,
     },
@@ -232,3 +245,107 @@ const DONE_A: Change[] = [
     at: new Date(2026, 9, 7, 6, 10 + k).toISOString(),
   })),
 ];
+
+// Program edits as the editor queues them, built on what the phone holds.
+async function edit(build: (p: StoredPrograms) => Change[] | null) {
+  const db = await openAccountDb(ADA.id);
+  await recordChanges(db, build(await readPrograms(db))!);
+  db.close();
+}
+const EDIT_AT = "2026-10-01T06:00:00.000Z";
+const D = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7f0d";
+const E = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7f0e";
+const BENCH = { id: "ds:0025", measure: "reps" as const };
+// Sessions D and E at the end of the starting program's rotation, one bench press slot each.
+async function addDAndE() {
+  for (const [session, slot] of [
+    [D, "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7f1d"],
+    [E, "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7f1e"],
+  ] as const) {
+    await edit((p) => addSession(p, session, SEED_PROGRAM_ID, EDIT_AT));
+    await edit((p) => addSlot(p, slot, session, BENCH, EDIT_AT));
+  }
+}
+// A session finished on day `day` of October that recorded the session it came from.
+const finishedFrom = (id: string, code: string, sessionId: string, day: number): Change[] =>
+  finished(id, code, day).map((c) =>
+    c.kind === "workout" && c.field === "start" ? { ...c, sessionId } : c,
+  );
+// Every read of the programs answered and the screen given its turn.
+async function settled() {
+  await vi.waitFor(() => expect(readPrograms).toHaveBeenCalled());
+  await act(async () => {
+    await Promise.all(vi.mocked(readPrograms).mock.results.map((r) => r.value));
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  });
+}
+
+describe("Accueil reads the active program", () => {
+  it("offers the session after the last one done in a rotation of five", async () => {
+    await addDAndE();
+    await seed(ADA.id, finishedFrom("0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7e23", "D", D, 6));
+    fakeApi({ me: ADA });
+    renderRoute("/");
+    const region = await card(/^Session E/);
+    expect(region.textContent).toMatch(/Next up · 1 exercise · about \d+\u00A0min/);
+    expect(within(region).getByRole("link", { name: "See the session" }).getAttribute("href")).toBe(
+      "/workouts/session/E?from=home",
+    );
+  });
+
+  it("after the last session wraps to the first", async () => {
+    await addDAndE();
+    await seed(ADA.id, finishedFrom("0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7e23", "E", E, 6));
+    fakeApi({ me: ADA });
+    renderRoute("/");
+    const region = await card(/^Session A · Push$/);
+    expect(region.textContent).toContain("Next up · 6 exercises · about 55\u00A0min");
+  });
+
+  it("after a reorder follows the recorded session, not the letter", async () => {
+    // A done on Tuesday, then moved to the end: Legs is now A, and comes after it.
+    await seed(ADA.id, finishedFrom("0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7e23", "A", seedId(1), 6));
+    await edit((p) => placeSession(p, seedId(1), SEED_PROGRAM_ID, 2, EDIT_AT));
+    fakeApi({ me: ADA });
+    renderRoute("/");
+    const see = await screen.findByRole("link", { name: "See the session" });
+    expect(see.getAttribute("href")).toBe("/workouts/session/A?from=home");
+    expect(see.closest("section")!.textContent).toContain(
+      "Next up · 7 exercises · about 60\u00A0min",
+    );
+  });
+
+  it("an empty rotation shows no card", async () => {
+    await edit((p) => createProgram(p, "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7f20", EDIT_AT));
+    await edit((p) => chooseActive(p, "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7f20", EDIT_AT));
+    fakeApi({ me: ADA });
+    renderRoute("/");
+    await screen.findByRole("button", { name: /^Weigh-in/ });
+    await settled();
+    expect(screen.queryByRole("region", { name: /^Session / })).toBeNull();
+    expect(screen.queryByRole("link", { name: "See the session" })).toBeNull();
+  });
+
+  it("an active program removed on another device: the session done today, with no next one", async () => {
+    const other = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7f20";
+    await edit((p) => createProgram(p, other, EDIT_AT));
+    await edit((p) => chooseActive(p, other, EDIT_AT));
+    await edit(() => [{ kind: "program", id: other, field: "removed", value: true, at: EDIT_AT }]);
+    await seed(ADA.id, DONE_A);
+    fakeApi({ me: ADA });
+    renderRoute("/");
+    const region = await card(/^Session A · Push$/);
+    expect(region.textContent).toContain("Done today · 48\u00A0min · 11 sets");
+    expect(within(region).queryByRole("link")).toBeNull();
+  });
+
+  it("an open session keeps its card when the rotation is empty", async () => {
+    await edit((p) => createProgram(p, "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7f20", EDIT_AT));
+    await edit((p) => chooseActive(p, "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7f20", EDIT_AT));
+    await seed(ADA.id, OPEN_A);
+    fakeApi({ me: ADA });
+    renderRoute("/");
+    const region = await card(/^Session A · Push$/);
+    expect(region.textContent).toContain("In progress · 1 of 19 sets");
+  });
+});

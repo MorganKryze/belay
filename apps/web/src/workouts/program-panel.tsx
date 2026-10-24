@@ -3,12 +3,15 @@ import type { Activity } from "@belay/shared/training/activities";
 import { planFor } from "@belay/shared/training/plan";
 import {
   estimatedMinutes,
-  nextSession,
   plannedWorkSets,
   type SessionTemplate,
-  starterProgram,
 } from "@belay/shared/training/program";
 import { type History, lastFinished, openWorkout, workSetsOf } from "@belay/shared/training/rules";
+import {
+  type LetteredTemplate,
+  nextInRotation,
+  type StoredPrograms,
+} from "@belay/shared/training/stored-program";
 import { Link } from "@tanstack/react-router";
 import { useId } from "react";
 import { useTranslation } from "react-i18next";
@@ -16,48 +19,61 @@ import { SessionCard, SessionHeading } from "@/components/session-card";
 import { cardSurface } from "@/components/surfaces";
 import { Button } from "@/components/ui/button";
 import { useToday } from "@/lib/today";
-import { type OpenAccount, useActivities, useHistory } from "@/sync/account";
+import { type OpenAccount, useActivities, useHistory, useProgram } from "@/sync/account";
 import { dayOf } from "./history-panel";
 
-// Program (spec D13, §4.5): the sessions as cards, the next one first with « See the session »;
-// every other card opens its session's preview on a tap anywhere. While a session is open, its
-// card resumes it and the others open their preview, which says what is open. Without an
-// account nothing is next, so every card opens its preview.
+// Program (spec D13, §4.5): the active program's rotation as cards, the next one first with « See
+// the session »; every other card opens its session's preview on a tap anywhere. While a session
+// is open, its card resumes it and the others open their preview, which says what is open.
+// Without an account nothing is next, so every card opens the starting program's preview. A
+// session set aside is not in the rotation, so it has no card; with no active program there is
+// none at all.
 export function ProgramPanel({ account }: { account: OpenAccount | null }) {
   const { t } = useTranslation();
+  const program = useProgram(account).data;
   return (
     <div className="flex flex-col gap-3">
-      {account ? <Cards account={account} /> : <List history={null} activities={[]} />}
+      {program &&
+        (account ? (
+          <Cards account={account} program={program} />
+        ) : (
+          <List history={null} activities={[]} {...program} />
+        ))}
       <p className="mx-0.5 text-sm text-muted-foreground">{t("workouts.program.editNote")}</p>
     </div>
   );
 }
 
-function Cards({ account }: { account: OpenAccount }) {
+// What useProgram reads: the programs and the active rotation, lettered.
+interface ProgramRead {
+  programs: StoredPrograms;
+  rotation: readonly LetteredTemplate[];
+}
+
+function Cards({ account, program }: { account: OpenAccount; program: ProgramRead }) {
   const history = useHistory(account).data;
   const activities = useActivities(account).data;
   if (!history || !activities) return null;
-  return <List history={history} activities={activities} />;
+  return <List history={history} activities={activities} {...program} />;
 }
 
 function List({
   history,
   activities,
-}: {
+  programs,
+  rotation,
+}: ProgramRead & {
   history: History | null;
   activities: readonly Activity[];
 }) {
   const today = useToday();
-  const next = history ? nextSession(history.workouts) : null;
+  const next = history ? nextInRotation(history.workouts, rotation, programs.activeAt) : null;
   const open = history
     ? openWorkout(history.workouts, { sets: history.sets, now: new Date() })
     : null;
-  // The next session first, then the program's order from there.
-  const at = Math.max(
-    0,
-    starterProgram.findIndex((s) => s.code === next),
-  );
-  const ordered = [...starterProgram.slice(at), ...starterProgram.slice(0, at)];
+  // The next session first (one of the rotation's own), then the rotation's order from there.
+  const at = next ? rotation.indexOf(next) : 0;
+  const ordered = [...rotation.slice(at), ...rotation.slice(0, at)];
   // How far the open session is: its work sets logged over the ones its plan holds.
   const progress =
     history && open
@@ -65,13 +81,13 @@ function List({
       : null;
   return ordered.map((s) => (
     <ProgramCard
-      key={s.code}
+      key={s.sessionId}
       session={s}
-      next={s.code === next}
+      next={s === next}
       lastDay={history ? lastDayOf(history, s.code) : undefined}
       activities={activities}
       today={today}
-      see={!open && s.code === next}
+      see={!open && s === next}
       progress={open?.sessionCode === s.code ? progress : null}
     />
   ));
