@@ -68,7 +68,9 @@
     "search": {
       "label": "Chercher un exercice",
       "empty": "Aucun exercice ne correspond",
-      "added": "{{name}} ajouté en fin de séance"
+      "added": "{{name}} ajouté en fin de séance",
+      "results_one": "Bibliothèque · {{count}} résultat pour « {{query}} »",
+      "results_other": "Bibliothèque · {{count}} résultats pour « {{query}} »"
     },
     "row": {
       "handle": "Déplacer {{name}}",

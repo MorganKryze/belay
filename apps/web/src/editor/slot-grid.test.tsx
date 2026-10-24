@@ -5,7 +5,7 @@ import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/re
 import { IDBFactory } from "fake-indexeddb";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import i18n from "@/i18n";
-import { setHelp, setRestStyle } from "@/lib/editor-prefs";
+import { setAdded, setHelp, setRestStyle } from "@/lib/editor-prefs";
 import { openAccountDb, readOutbox, readPrograms, recordChanges } from "@/sync/db";
 import { writeLastUser } from "@/sync/last-user";
 import { fakeApi } from "@/test/fake-api";
@@ -37,6 +37,8 @@ const PRESS = "ds:0405"; // 3 × 8–10, RIR 1–2, 2 min, 1 warm-up, main
 const RAISE = "ds:0334"; // in a group, not its last: no rest of its own
 const CALF = "ds:0605"; // the group's last, the session's last row
 const PLANK = { id: "ds:2135", measure: "seconds" } as const;
+const SLED = "ds:0739"; // third, plain, right above the group
+const PUSHDOWN = "ds:0201"; // in the group, between the raise and the calf raise
 const OLD = "2026-10-01T06:00:00.000Z";
 
 const COLUMNS = { sets: 1, reps: 2, rir: 3, rest: 4, warmups: 5, main: 6 } as const;
@@ -79,6 +81,32 @@ async function open() {
   renderRoute("/workouts/program");
   await grid();
 }
+const handle = (exerciseId: string) =>
+  within(rowOf(exerciseId)).getByRole("button", { name: `Déplacer ${name(exerciseId)}` });
+const more = (exerciseId: string) =>
+  within(rowOf(exerciseId)).getByRole("button", { name: `Actions pour ${name(exerciseId)}` });
+// The page's polite live region, where moves are said.
+const said = () =>
+  plain(
+    screen.getByText((_, el) => el?.getAttribute("aria-live") === "polite" && el.tagName === "P")
+      .textContent,
+  );
+const order = () =>
+  within(screen.getByRole("grid"))
+    .getAllByRole("row")
+    .slice(1)
+    .map((r) => r.querySelector(".truncate")?.textContent)
+    .filter(Boolean);
+async function menuOf(exerciseId: string) {
+  more(exerciseId).focus();
+  key(more(exerciseId), "Enter");
+  return screen.findByRole("menu");
+}
+const items = (menu: HTMLElement) =>
+  within(menu)
+    .getAllByRole("menuitem")
+    .map((i) => i.textContent);
+
 // Long enough for a write that should not happen to land.
 const settle = () => new Promise((resolve) => setTimeout(resolve, 100));
 const onPlatform = (platform: string) =>
@@ -89,17 +117,22 @@ describe("the slot grid", () => {
     await open();
     const focusable = [...screen.getByRole("grid").querySelectorAll<HTMLElement>("[tabindex]")];
     expect(focusable.filter((el) => el.tabIndex === 0)).toEqual([target(BENCH, "sets")]);
-    expect(focusable.length).toBe(6 * 6);
+    // Per row: the handle, six value cells and the ⋯.
+    expect(focusable.length).toBe(6 * 8);
     target(BENCH, "sets").focus();
     key(document.activeElement!, "ArrowRight");
     expect(document.activeElement).toBe(target(BENCH, "reps"));
     key(document.activeElement!, "ArrowDown");
     expect(document.activeElement).toBe(target(PRESS, "reps"));
     key(document.activeElement!, "End");
-    expect(document.activeElement).toBe(target(PRESS, "main"));
+    expect(document.activeElement).toBe(more(PRESS));
     key(document.activeElement!, "ArrowRight");
+    expect(document.activeElement).toBe(more(PRESS));
+    key(document.activeElement!, "ArrowLeft");
     expect(document.activeElement).toBe(target(PRESS, "main"));
     key(document.activeElement!, "Home");
+    expect(document.activeElement).toBe(handle(PRESS));
+    key(document.activeElement!, "ArrowRight");
     expect(document.activeElement).toBe(target(PRESS, "sets"));
     key(document.activeElement!, "ArrowUp");
     key(document.activeElement!, "ArrowUp");
@@ -313,7 +346,9 @@ describe("the slot grid", () => {
       );
     onPlatform("MacIntel");
     await open();
-    expect(plain(help()?.textContent)).toBe("↑↓←→ se déplacer · Entrée modifier · ⌘ Z annuler");
+    expect(plain(help()?.textContent)).toBe(
+      "↑↓←→ se déplacer · Entrée modifier · Espace sur  déplacer une rangée · / chercher · ⌘ Z annuler",
+    );
     cleanup();
     onPlatform("Win32");
     setHelp("focus");
@@ -322,7 +357,7 @@ describe("the slot grid", () => {
     target(BENCH, "sets").focus();
     await waitFor(() =>
       expect(plain(help()?.textContent)).toBe(
-        "↑↓←→ se déplacer · Entrée modifier · Ctrl Z annuler",
+        "↑↓←→ se déplacer · Entrée modifier · Espace sur  déplacer une rangée · / chercher · Ctrl Z annuler",
       ),
     );
     key(target(BENCH, "sets"), "Enter");
@@ -349,5 +384,186 @@ describe("the slot grid", () => {
     ).toBeTruthy();
     expect(await queued()).toBe(before);
     expect(screen.queryByText("Enregistré sur cet appareil")).toBeNull();
+  });
+});
+
+describe("moving rows", () => {
+  it("Space lifts, ↓ moves one stop, Space drops at position 3 of 6 and announces it", async () => {
+    await open();
+    handle(PRESS).focus();
+    key(handle(PRESS), " ");
+    await waitFor(() =>
+      expect(said()).toBe(
+        `${name(PRESS)} soulevé, position 2 sur 6. ↑ ↓ pour déplacer, Espace pour poser, Échap pour annuler.`,
+      ),
+    );
+    key(handle(PRESS), "ArrowDown");
+    await waitFor(() => expect(said()).toBe("position 3 sur 6"));
+    expect(document.activeElement).toBe(handle(PRESS));
+    key(handle(PRESS), " ");
+    await waitFor(() => expect(said()).toBe(`${name(PRESS)} posé, position 3 sur 6`));
+    await waitFor(async () => expect((await stored(PRESS)).position).toBe(2));
+    expect((await stored(SLED)).position).toBe(1);
+    expect(order().slice(0, 3)).toEqual([name(BENCH), name(SLED), name(PRESS)]);
+  });
+
+  it("Escape puts it back", async () => {
+    await open();
+    const before = await queued();
+    key(handle(PRESS), " ");
+    key(handle(PRESS), "ArrowDown");
+    await waitFor(() => expect(order()[2]).toBe(name(PRESS)));
+    key(handle(PRESS), "Escape");
+    await waitFor(() => expect(said()).toBe("Déplacement annulé"));
+    expect(order().slice(0, 3)).toEqual([name(BENCH), name(PRESS), name(SLED)]);
+    await settle();
+    expect(await queued()).toBe(before);
+  });
+
+  it("a first ↓ at a group's edge stays outside, the next joins and announces it", async () => {
+    await open();
+    key(handle(PRESS), " ");
+    key(handle(PRESS), "ArrowDown");
+    await waitFor(() => expect(said()).toBe("position 3 sur 6"));
+    key(handle(PRESS), "ArrowDown");
+    await waitFor(() => expect(said()).toBe("position 3 sur 6, entre dans le groupe enchaîné"));
+    key(handle(PRESS), " ");
+    await waitFor(async () => expect((await stored(PRESS)).groupKey).not.toBeNull());
+    expect((await stored(PRESS)).groupKey).toBe((await stored(RAISE)).groupKey);
+    expect((await stored(PRESS)).position).toBe(2);
+  });
+
+  it("dropping into « Semaine sans escalade » announces it and writes the rule", async () => {
+    await open();
+    // The section shows while a row is lifted, even empty.
+    expect(screen.queryByText("Semaine sans escalade")).toBeNull();
+    key(handle(CALF), " ");
+    expect(await screen.findByText("Semaine sans escalade")).toBeTruthy();
+    key(handle(CALF), "ArrowDown");
+    await waitFor(() => expect(said()).toBe("position 6 sur 6, sort du groupe enchaîné"));
+    key(handle(CALF), "ArrowDown");
+    await waitFor(() =>
+      expect(said()).toBe(
+        "position 1 sur 1, sort du groupe enchaîné, devient un exercice des semaines sans escalade",
+      ),
+    );
+    key(handle(CALF), " ");
+    await waitFor(async () => expect((await stored(CALF)).rule).toBe("no_climbing"));
+    expect((await stored(CALF)).groupKey).toBeNull();
+    expect(screen.getByRole("rowgroup", { name: "Semaine sans escalade" })).toBeTruthy();
+  });
+
+  it("the lifted row says so to assistive technology and the others stay put until it moves", async () => {
+    await open();
+    key(handle(BENCH), " ");
+    await waitFor(() => expect(rowOf(BENCH).getAttribute("aria-current")).toBe("true"));
+    key(handle(BENCH), "Escape");
+    await waitFor(() => expect(rowOf(BENCH).getAttribute("aria-current")).toBeNull());
+  });
+});
+
+describe("the row menu", () => {
+  it("offers Enchaîner on all rows but a section's last, Sortir only in a group", async () => {
+    await open();
+    expect(items(await menuOf(BENCH))).toEqual([
+      "Dupliquer",
+      "Enchaîner avec le suivant",
+      "Retirer de la séance",
+    ]);
+    key(document.activeElement!, "Escape");
+    await waitFor(() => expect(screen.queryByRole("menu")).toBeNull());
+    expect(items(await menuOf(PUSHDOWN))).toEqual([
+      "Dupliquer",
+      "Sortir du groupe",
+      "Retirer de la séance",
+    ]);
+    key(document.activeElement!, "Escape");
+    await waitFor(() => expect(screen.queryByRole("menu")).toBeNull());
+    // Out of its group, the calf raise is the section's last row: nothing to chain with.
+    fireEvent.click(within(await menuOf(CALF)).getByRole("menuitem", { name: "Sortir du groupe" }));
+    await waitFor(async () => expect((await stored(CALF)).groupKey).toBeNull());
+    expect(items(await menuOf(CALF))).toEqual(["Dupliquer", "Retirer de la séance"]);
+  });
+
+  it("Enchaîner chains a row with the next one", async () => {
+    await open();
+    fireEvent.click(
+      within(await menuOf(SLED)).getByRole("menuitem", { name: "Enchaîner avec le suivant" }),
+    );
+    await waitFor(async () => expect((await stored(SLED)).groupKey).not.toBeNull());
+    expect((await stored(SLED)).groupKey).toBe((await stored(RAISE)).groupKey);
+  });
+
+  it("Retirer shows the toast and Annuler brings the row back", async () => {
+    await open();
+    key(target(PRESS, "sets"), "Enter");
+    type("5");
+    key(field(), "Enter");
+    await waitFor(() => expect(shown(PRESS, "sets")).toBe("5"));
+    fireEvent.click(
+      within(await menuOf(PRESS)).getByRole("menuitem", { name: "Retirer de la séance" }),
+    );
+    await screen.findByText(`${name(PRESS)} retiré de la séance A`);
+    await waitFor(() => expect(order()).not.toContain(name(PRESS)));
+    fireEvent.click(screen.getByRole("button", { name: "Annuler" }));
+    await waitFor(() => expect(order()[1]).toBe(name(PRESS)));
+    expect(shown(PRESS, "sets")).toBe("5");
+  });
+
+  it("Dupliquer adds the copy below", async () => {
+    await open();
+    fireEvent.click(within(await menuOf(BENCH)).getByRole("menuitem", { name: "Dupliquer" }));
+    await waitFor(() =>
+      expect(order().slice(0, 3)).toEqual([name(BENCH), name(BENCH), name(PRESS)]),
+    );
+  });
+});
+
+describe("the exercise search", () => {
+  const search = () =>
+    screen.getByRole("combobox", { name: "Ajouter un exercice" }) as HTMLInputElement;
+
+  it("/ focuses it unless a field has focus", async () => {
+    await open();
+    key(document.body, "/");
+    expect(document.activeElement).toBe(search());
+    target(PRESS, "sets").focus();
+    key(target(PRESS, "sets"), "Enter");
+    key(field(), "/");
+    expect(document.activeElement).toBe(field());
+  });
+
+  it("filters the library, ↓ moves the active option, Enter adds at the end and stays open", async () => {
+    await open();
+    search().focus();
+    fireEvent.change(search(), { target: { value: "standing fly" } });
+    const list = await screen.findByRole("listbox");
+    const options = within(list).getAllByRole("option");
+    expect(options[0]!.textContent).toContain("Cable standing fly");
+    expect(search().getAttribute("aria-activedescendant")).toBeNull();
+    key(search(), "ArrowDown");
+    expect(search().getAttribute("aria-activedescendant")).toBe(options[0]!.id);
+    expect(options[0]!.getAttribute("aria-selected")).toBe("true");
+    key(search(), "Enter");
+    await waitFor(() => expect(order().at(-1)).toBe("Cable standing fly"));
+    await waitFor(() => expect(said()).toBe("Cable standing fly ajouté en fin de séance"));
+    expect(search().value).toBe("");
+    expect(document.activeElement).toBe(search());
+  });
+
+  it("with « Comme la rangée du dessus » the added row copies the row above", async () => {
+    setAdded("above");
+    await open();
+    search().focus();
+    fireEvent.change(search(), { target: { value: "standing fly" } });
+    fireEvent.click((await screen.findAllByRole("option"))[0]!);
+    await waitFor(() => expect(order().at(-1)).toBe("Cable standing fly"));
+    const added = await stored("ds:0227");
+    const calf = await stored(CALF);
+    expect([added.sets, added.restSec, added.rirTarget]).toEqual([
+      calf.sets,
+      calf.restSec,
+      calf.rirTarget,
+    ]);
   });
 });
