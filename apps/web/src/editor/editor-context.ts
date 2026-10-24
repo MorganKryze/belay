@@ -9,6 +9,7 @@ import type { TFunction } from "i18next";
 import { createContext, useContext } from "react";
 import { rotationTitle, sessionName } from "@/lib/format";
 import type { OpenAccount } from "@/sync/account";
+import type { Edits } from "./use-edits";
 
 // A session as the editor shows it: its live slots by position, the normal ones and those of the
 // weeks with no climbing apart. The letter is its place among the program's live sessions, empty
@@ -30,6 +31,7 @@ export interface EditorState {
   show(sessionId: string): void;
   announce(text: string): void;
   search: { for: string | null; request(sessionId: string): void; done(): void };
+  edits: Edits;
 }
 
 export const EditorContext = createContext<EditorState | null>(null);
@@ -69,3 +71,9 @@ export const titleOf = ({ session, letter }: PlacedSession, t: TFunction): strin
   letter === null
     ? sessionName(session, t)
     : rotationTitle({ code: letter, sessionId: session.id, name: session.name }, t);
+
+// The undo key and the one the help shows: ⌘ on a Mac, Ctrl elsewhere.
+export function isMac(): boolean {
+  const { userAgentData } = navigator as Navigator & { userAgentData?: { platform: string } };
+  return /mac/i.test(userAgentData?.platform ?? navigator.platform);
+}

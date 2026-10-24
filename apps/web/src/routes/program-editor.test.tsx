@@ -59,7 +59,7 @@ const tabNames = (list: HTMLElement) =>
     .getAllByRole("tab")
     .map((tab) => tab.getAttribute("aria-label") ?? tab.textContent);
 const cardTitle = () => screen.findByRole("heading", { level: 2 });
-const table = () => screen.findByRole("table");
+const table = () => screen.findByRole("grid");
 const name = (exerciseId: string) => exerciseById(exerciseId)!.name;
 // A row of the table by its exercise, and the text of each of its cells.
 const row = (within_: HTMLElement, exerciseId: string) =>
@@ -70,8 +70,10 @@ const row = (within_: HTMLElement, exerciseId: string) =>
 const plain = (text: string | null) => (text ?? "").replace(/\s/g, " ");
 const cells = (r: HTMLElement) =>
   within(r)
-    .getAllByRole("cell")
+    .getAllByRole("gridcell")
     .map((c) => plain(c.textContent));
+// Principal is a box, ticked or not.
+const main = (r: HTMLElement) => within(r).getByRole("checkbox").getAttribute("aria-checked");
 const HINT = "Repère : 3 à 4 séances par semaine conviennent à la plupart";
 
 describe("the program editor", () => {
@@ -209,9 +211,10 @@ describe("the program editor", () => {
       "1–2",
       "2 min 30",
       "2",
-      "Principal",
+      "",
       "",
     ]);
+    expect(main(bench)).toBe("true");
     expect(bench.querySelector("img")).toBeTruthy();
     expect(cells(row(grid, "ds:2135"))[2]).toBe("30–60 s");
   });
@@ -223,7 +226,7 @@ describe("the program editor", () => {
     expect(cells(row(grid, "ds:0334"))[4]).toBe("—");
     expect(cells(row(grid, "ds:0201"))[4]).toBe("—");
     expect(cells(row(grid, "ds:0605"))[4]).toBe("1 min 15");
-    expect(cells(row(grid, "ds:0334"))[6]).toBe("Pas principal");
+    expect(main(row(grid, "ds:0334"))).toBe("false");
   });
 
   it("the no-climbing rows sit in their own section", async () => {
@@ -273,6 +276,6 @@ describe("the program editor", () => {
     ).toBeTruthy();
     expect(screen.getByRole("heading", { level: 1, name: "Programme" })).toBeTruthy();
     expect(screen.queryByRole("tablist", { name: "Séances du programme" })).toBeNull();
-    expect(screen.queryByRole("table")).toBeNull();
+    expect(screen.queryByRole("grid")).toBeNull();
   });
 });
