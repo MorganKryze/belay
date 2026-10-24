@@ -31,6 +31,17 @@ import {
   MIN_TIME,
   type Slot,
 } from "../training/workout";
+import {
+  isPosition,
+  isProgramName,
+  isProgramSlot,
+  isSchedule,
+  isSessionName,
+  isSlotValue,
+  type Schedule,
+  type SlotField,
+} from "../training/stored-program";
+import type { WarmupCount } from "../tools/warmup";
 import { MAX_CHANGES } from "./limits";
 
 const isoDate = z.iso.date();
@@ -216,6 +227,8 @@ export const WorkoutChangeSchema = z.discriminatedUnion("field", [
     id: z.uuid(),
     field: z.literal("start"),
     sessionCode: z.string().check(z.refine(isSessionCode)),
+    // The program session it came from (absent from an older phone's start).
+    sessionId: z.optional(z.nullable(z.uuid())),
     plan,
     startedAt: workoutTime,
     at,
@@ -307,6 +320,105 @@ export const SetChangeSchema = z.discriminatedUnion("field", [
   }),
 ]);
 
+// Programs, their sessions and slots: one field per change, each merged on its own (D2); a
+// creation carries every field and is written once. The bounds are the phone's (stored-program.ts).
+const fieldChange = <K extends string, F extends string, V extends z.ZodMiniType>(
+  kind: K,
+  field: F,
+  value: V,
+) => z.object({ kind: z.literal(kind), id: z.uuid(), field: z.literal(field), value, at });
+const programName = z.custom<string | null>(isProgramName);
+const sessionName = z.custom<string | null>(isSessionName);
+const schedule = z.custom<Schedule>(isSchedule);
+const position = z.custom<number>(isPosition);
+// null: set aside in the collection.
+const programId = z.nullable(z.uuid());
+
+export const ProgramChangeSchema = z.discriminatedUnion("field", [
+  z.object({
+    kind: z.literal("program"),
+    id: z.uuid(),
+    field: z.literal("create"),
+    name: programName,
+    schedule,
+    at,
+  }),
+  fieldChange("program", "name", programName),
+  fieldChange("program", "schedule", schedule),
+  fieldChange("program", "removed", z.boolean()),
+]);
+export const ActiveProgramChangeSchema = z.object({
+  kind: z.literal("activeProgram"),
+  programId: z.uuid(),
+  at,
+});
+// A session's program and its position in it travel together (its place).
+export const ProgramSessionChangeSchema = z.discriminatedUnion("field", [
+  z.object({
+    kind: z.literal("programSession"),
+    id: z.uuid(),
+    field: z.literal("create"),
+    name: sessionName,
+    programId,
+    position,
+    at,
+  }),
+  fieldChange("programSession", "name", sessionName),
+  z.object({
+    kind: z.literal("programSession"),
+    id: z.uuid(),
+    field: z.literal("place"),
+    programId,
+    position,
+    at,
+  }),
+  fieldChange("programSession", "removed", z.boolean()),
+]);
+const slotValue = <T>(field: SlotField) => z.custom<T>((v) => isSlotValue(field, v));
+const range = slotValue<readonly [number, number]>;
+const rule = z.nullable(z.literal("no_climbing"));
+// A slot's exercise and its measure travel together (null: counted in repetitions).
+export const ProgramSlotChangeSchema = z.discriminatedUnion("field", [
+  z
+    .object({
+      kind: z.literal("programSlot"),
+      id: z.uuid(),
+      field: z.literal("create"),
+      sessionId: z.uuid(),
+      position,
+      rule,
+      exerciseId: z.string(),
+      measure: z.optional(z.literal("seconds")),
+      sets: z.number(),
+      repRange: z.custom<readonly [number, number]>(),
+      rirTarget: z.custom<readonly [number, number]>(),
+      restSec: z.number(),
+      warmupSets: z.custom<WarmupCount>(),
+      isMain: z.boolean(),
+      groupKey: z.nullable(z.string()),
+      at,
+    })
+    .check(z.refine(isProgramSlot)),
+  z.object({
+    kind: z.literal("programSlot"),
+    id: z.uuid(),
+    field: z.literal("exercise"),
+    exerciseId: z.string().check(z.regex(EXERCISE_ID)),
+    measure: z.nullable(z.literal("seconds")),
+    at,
+  }),
+  fieldChange("programSlot", "reps", range("reps")),
+  fieldChange("programSlot", "sets", slotValue<number>("sets")),
+  fieldChange("programSlot", "rir", range("rir")),
+  fieldChange("programSlot", "rest", slotValue<number>("rest")),
+  fieldChange("programSlot", "warmups", slotValue<WarmupCount>("warmups")),
+  fieldChange("programSlot", "main", z.boolean()),
+  fieldChange("programSlot", "group", slotValue<string | null>("group")),
+  fieldChange("programSlot", "rule", rule),
+  fieldChange("programSlot", "position", position),
+  fieldChange("programSlot", "removed", z.boolean()),
+]);
+
 export const ChangeSchema = z.discriminatedUnion("kind", [
   WeightChangeSchema,
   TargetChangeSchema,
@@ -320,6 +432,10 @@ export const ChangeSchema = z.discriminatedUnion("kind", [
   ActivityChangeSchema,
   WorkoutChangeSchema,
   SetChangeSchema,
+  ProgramChangeSchema,
+  ActiveProgramChangeSchema,
+  ProgramSessionChangeSchema,
+  ProgramSlotChangeSchema,
 ]);
 
 export const SyncRequestSchema = z.object({
@@ -411,6 +527,7 @@ export const ActivityRowSchema = z.object({
 export const WorkoutRowSchema = z.object({
   id: z.uuid(),
   sessionCode: z.string(),
+  sessionId: z.optional(z.nullable(z.uuid())), // absent from an older server
   plan: z.custom<Slot[]>((v) => Array.isArray(v)),
   planAt: writtenAt,
   startedAt: isoDateTime,
@@ -437,6 +554,59 @@ export const SetRowSchema = z.object({
   rir: z.nullable(z.int()),
   doneAt: isoDateTime,
   fieldsAt: isoDateTime,
+  removed: z.boolean(),
+  removedAt: writtenAt,
+});
+
+// A program's rows, each field with its own time (null: never written, as the starting program).
+export const ProgramRowSchema = z.object({
+  id: z.uuid(),
+  name: z.nullable(z.string()),
+  nameAt: writtenAt,
+  schedule: z.object({
+    mode: z.enum(["rotation", "fixed"]),
+    days: z.array(z.nullable(z.string())),
+  }),
+  scheduleAt: writtenAt,
+  removed: z.boolean(),
+  removedAt: writtenAt,
+});
+export const ActiveProgramRowSchema = z.object({ programId: z.uuid(), at: writtenAt });
+export const ProgramSessionRowSchema = z.object({
+  id: z.uuid(),
+  name: z.nullable(z.string()),
+  nameAt: writtenAt,
+  programId: z.nullable(z.uuid()),
+  position: z.int(),
+  placeAt: writtenAt,
+  removed: z.boolean(),
+  removedAt: writtenAt,
+});
+const pair = z.tuple([z.int(), z.int()]);
+export const ProgramSlotRowSchema = z.object({
+  id: z.uuid(),
+  sessionId: z.uuid(),
+  position: z.int(),
+  positionAt: writtenAt,
+  exerciseId: z.string(),
+  measure: z.nullable(z.literal("seconds")),
+  exerciseAt: writtenAt,
+  repRange: pair,
+  repsAt: writtenAt,
+  sets: z.int(),
+  setsAt: writtenAt,
+  rirTarget: pair,
+  rirAt: writtenAt,
+  restSec: z.int(),
+  restAt: writtenAt,
+  warmupSets: z.int(),
+  warmupsAt: writtenAt,
+  isMain: z.boolean(),
+  mainAt: writtenAt,
+  groupKey: z.nullable(z.string()),
+  groupAt: writtenAt,
+  rule: z.nullable(z.literal("no_climbing")),
+  ruleAt: writtenAt,
   removed: z.boolean(),
   removedAt: writtenAt,
 });
@@ -475,6 +645,11 @@ export const SyncResponseSchema = z.object({
   sets: z.array(SetRowSchema),
   target: z.nullable(TargetRowSchema), // when written since that cursor, or sent back as above
   profile: z.nullable(ProfileRowSchema), // likewise
+  // Absent from an older server's answer; activeProgram null: no pointer written since the cursor.
+  activeProgram: z.optional(z.nullable(ActiveProgramRowSchema)),
+  programs: z.optional(z.array(ProgramRowSchema)),
+  programSessions: z.optional(z.array(ProgramSessionRowSchema)),
+  programSlots: z.optional(z.array(ProgramSlotRowSchema)),
   rejected: z.array(RejectedSchema),
   hasMore: z.boolean(), // more than MAX_ROWS rows were waiting: call again
 });
@@ -491,6 +666,10 @@ export type StepsChange = z.infer<typeof StepsChangeSchema>;
 export type ActivityChange = z.infer<typeof ActivityChangeSchema>;
 export type WorkoutChange = z.infer<typeof WorkoutChangeSchema>;
 export type SetChange = z.infer<typeof SetChangeSchema>;
+export type ProgramChange = z.infer<typeof ProgramChangeSchema>;
+export type ActiveProgramChange = z.infer<typeof ActiveProgramChangeSchema>;
+export type ProgramSessionChange = z.infer<typeof ProgramSessionChangeSchema>;
+export type ProgramSlotChange = z.infer<typeof ProgramSlotChangeSchema>;
 export type Change = z.infer<typeof ChangeSchema>;
 export type SyncRequest = z.infer<typeof SyncRequestSchema>;
 export type WeightRow = z.infer<typeof WeightRowSchema>;
@@ -505,5 +684,9 @@ export type StepsRow = z.infer<typeof StepsRowSchema>;
 export type ActivityRow = z.infer<typeof ActivityRowSchema>;
 export type WorkoutRow = z.infer<typeof WorkoutRowSchema>;
 export type SetRow = z.infer<typeof SetRowSchema>;
+export type ProgramRow = z.infer<typeof ProgramRowSchema>;
+export type ActiveProgramRow = z.infer<typeof ActiveProgramRowSchema>;
+export type ProgramSessionRow = z.infer<typeof ProgramSessionRowSchema>;
+export type ProgramSlotRow = z.infer<typeof ProgramSlotRowSchema>;
 export type Rejected = z.infer<typeof RejectedSchema>;
 export type SyncResponse = z.infer<typeof SyncResponseSchema>;

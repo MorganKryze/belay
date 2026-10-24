@@ -18,7 +18,10 @@ export interface Schedule {
   mode: "rotation" | "fixed";
   days: readonly (string | null)[]; // a session id or null per day
 }
-export const DEFAULT_SCHEDULE: Schedule = { mode: "rotation", days: Array(DAYS).fill(null) };
+export const DEFAULT_SCHEDULE: Schedule = {
+  mode: "rotation",
+  days: /* @__PURE__ */ Array(DAYS).fill(null),
+};
 
 export interface Program {
   id: string;
@@ -59,7 +62,7 @@ export interface StoredPrograms {
 // match rows by them.
 export const seedId = (n: number): string =>
   "00000000-0000-7000-8000-" + n.toString(16).padStart(12, "0");
-export const SEED_PROGRAM_ID = seedId(0x10);
+export const SEED_PROGRAM_ID = /* @__PURE__ */ seedId(0x10);
 
 function seedOf(templates: readonly SessionTemplate[]): StoredPrograms {
   const sessions: ProgramSession[] = [];
@@ -97,10 +100,9 @@ function seedOf(templates: readonly SessionTemplate[]): StoredPrograms {
 }
 
 // Built from the constant, so the two can never drift apart (SD1).
-export const SEED: StoredPrograms = seedOf(starterProgram);
+export const SEED: StoredPrograms = /* @__PURE__ */ seedOf(starterProgram);
 
-const seedSessions = new Set(SEED.sessions.map((s) => s.id));
-export const isSeedSession = (id: string): boolean => seedSessions.has(id);
+export const isSeedSession = (id: string): boolean => SEED.sessions.some((s) => s.id === id);
 
 // Stored rows win by id; every seed row the device lacks is read from SEED (SD3).
 function overlay<T extends { id: string }>(seed: readonly T[], stored: readonly T[]): T[] {
@@ -120,8 +122,11 @@ export const withSeed = (stored: Partial<StoredPrograms>): StoredPrograms => ({
 });
 
 // By position, then by id so every device reads two equal positions in the same order (PM4).
-const byPosition = (a: { position: number; id: string }, b: { position: number; id: string }) =>
-  a.position - b.position || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+const byId = (a: { id: string }, b: { id: string }) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+export const byPosition = (
+  a: { position: number; id: string },
+  b: { position: number; id: string },
+) => a.position - b.position || byId(a, b);
 
 const toSlot = (s: ProgramSlot): Slot => {
   const out: Slot = {
@@ -178,6 +183,7 @@ export function rotationOf(p: StoredPrograms): LetteredTemplate[] {
 // theirs); the first when there is none, or when that session left the rotation.
 export function nextInRotation(
   workouts: readonly {
+    id: string;
     sessionCode: string;
     sessionId?: string | null;
     startedAt: string;
@@ -189,11 +195,14 @@ export function nextInRotation(
 ): LetteredTemplate | null {
   if (rotation.length === 0) return null;
   // Times compared as instants: the pointer's time comes from the server, a start from the phone.
+  // Two starts at the same instant: the greater id, so every device picks the same one.
   const since = activeAt === null ? -Infinity : Date.parse(activeAt);
   let last: (typeof workouts)[number] | null = null;
-  for (const w of workouts)
-    if (w.endedAt !== null && !w.removed && Date.parse(w.startedAt) >= since)
-      if (last === null || Date.parse(w.startedAt) > Date.parse(last.startedAt)) last = w;
+  for (const w of workouts) {
+    if (w.endedAt === null || w.removed || Date.parse(w.startedAt) < since) continue;
+    const ahead = last === null ? 1 : Date.parse(w.startedAt) - Date.parse(last.startedAt);
+    if (ahead > 0 || (ahead === 0 && byId(w, last!) > 0)) last = w;
+  }
   const at =
     last === null
       ? -1
@@ -242,3 +251,33 @@ export function isProgramSlot(v: unknown): boolean {
   if ("added" in s || "skipped" in s) return false;
   return isSlot({ ...s, rule: undefined });
 }
+
+// The slot values a change sets one at a time, by the change's field (SY1); the exercise, the
+// section, the position and the removal travel in changes of their own.
+export const SLOT_FIELDS = {
+  reps: "repRange",
+  sets: "sets",
+  rir: "rirTarget",
+  rest: "restSec",
+  warmups: "warmupSets",
+  main: "isMain",
+  group: "groupKey",
+} as const;
+export type SlotField = keyof typeof SLOT_FIELDS;
+
+// One value within isSlot's bounds, judged on a valid slot that differs by that value alone. The
+// base counts seconds, the wider range: the measure travels in another change, so a counted range
+// past 100 is refused on the merged slot (the editor's check, and the server's).
+const BASE: Slot = {
+  exerciseId: "ds:0001",
+  measure: "seconds",
+  sets: 1,
+  repRange: [1, 1],
+  rirTarget: [0, 0],
+  restSec: 0,
+  warmupSets: 0,
+  isMain: false,
+  groupKey: null,
+};
+export const isSlotValue = (field: SlotField, value: unknown): boolean =>
+  isSlot({ ...BASE, [SLOT_FIELDS[field]]: value });

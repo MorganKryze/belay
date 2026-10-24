@@ -281,6 +281,11 @@ async function localAt(tx: WriteTx, change: Change): Promise<string | null> {
       if (change.field === "create") return row ? change.at : null; // written once
       return (change.field === "values" ? row?.fieldsAt : row?.removedAt) ?? null;
     }
+    case "program":
+    case "activeProgram":
+    case "programSession":
+    case "programSlot":
+      return null; // not kept on this device yet
   }
 }
 
@@ -824,6 +829,12 @@ function entryOf(change: Change): string {
       return `workout|${change.id}`;
     case "set":
       return `workout|${change.workoutId}`; // a session is one entry, however many sets
+    case "activeProgram":
+      return change.kind;
+    case "program":
+    case "programSession":
+    case "programSlot":
+      return `${change.kind}|${change.id}`;
   }
 }
 

@@ -323,9 +323,21 @@ describe("nextInRotation (PM10)", () => {
   const idOf = (i: number) => sessions[i]!.id;
   let day = 1;
   // A session finished, one day later than the one before.
-  const done = (patch: { sessionCode?: string; sessionId?: string | null; startedAt?: string }) => {
+  const done = (patch: {
+    id?: string;
+    sessionCode?: string;
+    sessionId?: string | null;
+    startedAt?: string;
+  }) => {
     const startedAt = patch.startedAt ?? `2026-10-${String(day++).padStart(2, "0")}T17:00:00.000Z`;
-    return { sessionCode: "A", startedAt, endedAt: startedAt, removed: false, ...patch };
+    return {
+      id: newId(),
+      sessionCode: "A",
+      startedAt,
+      endedAt: startedAt,
+      removed: false,
+      ...patch,
+    };
   };
 
   it("the next session follows the last one's recorded id, then its letter for an old session, counting only sessions since the program became active", () => {
@@ -356,6 +368,14 @@ describe("nextInRotation (PM10)", () => {
     expect(nextInRotation(history, rotation, "2026-10-07T19:00:00.000+02:00")!.sessionId).toBe(
       idOf(2),
     );
+  });
+
+  it("of two sessions started at the same instant, the one with the greater id counts on every device", () => {
+    const startedAt = "2026-10-10T17:00:00.000Z";
+    const first = done({ id: seedId(0xf01), sessionId: idOf(0), startedAt });
+    const second = done({ id: seedId(0xf02), sessionId: idOf(1), startedAt });
+    expect(nextInRotation([first, second], rotation, null)!.sessionId).toBe(idOf(2));
+    expect(nextInRotation([second, first], rotation, null)!.sessionId).toBe(idOf(2));
   });
 
   it("a recorded session that left the rotation, or a letter it lacks, gives the first", () => {

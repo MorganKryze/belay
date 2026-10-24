@@ -9,6 +9,15 @@ import { isWeighingKg, MIN_WEIGH_IN_DATE } from "../body/weighings";
 import { isExerciseId } from "../exercises/library";
 import { isActivityFields, isSteps } from "../training/activities";
 import {
+  isPosition,
+  isProgramName,
+  isProgramSlot,
+  isSchedule,
+  isSessionName,
+  isSlotValue,
+  SLOT_FIELDS,
+} from "../training/stored-program";
+import {
   isExerciseNotes,
   isNote,
   isPlan,
@@ -53,6 +62,11 @@ const isLoad = (c: {
   (c.seconds == null
     ? c.reps !== null && isReps(c.reps)
     : c.reps === null && isSeconds(c.seconds) && c.rir === null);
+
+// A session's place: a program, or none (set aside), and its position there.
+const isPlace = (c: { programId: string | null; position: number }) =>
+  isNullOr(c.programId, isId) && isPosition(c.position);
+const isBool = (v: unknown) => typeof v === "boolean";
 
 export function isValidChange(change: Change): boolean {
   if (!isISOTime(change.at)) return false;
@@ -118,6 +132,7 @@ export function isValidChange(change: Change): boolean {
         case "start":
           return (
             isSessionCode(change.sessionCode) &&
+            (change.sessionId == null || isId(change.sessionId)) &&
             isPlan(change.plan) &&
             isTimeOf(change.startedAt, change.at)
           );
@@ -158,6 +173,47 @@ export function isValidChange(change: Change): boolean {
         default:
           return false;
       }
+    case "program":
+      return (
+        isId(change.id) &&
+        (change.field === "create"
+          ? isProgramName(change.name) && isSchedule(change.schedule)
+          : change.field === "name"
+            ? isProgramName(change.value)
+            : change.field === "schedule"
+              ? isSchedule(change.value)
+              : change.field === "removed" && isBool(change.value))
+      );
+    case "activeProgram":
+      return isId(change.programId);
+    case "programSession":
+      return (
+        isId(change.id) &&
+        (change.field === "create"
+          ? isSessionName(change.name) && isPlace(change)
+          : change.field === "name"
+            ? isSessionName(change.value)
+            : change.field === "place"
+              ? isPlace(change)
+              : change.field === "removed" && isBool(change.value))
+      );
+    case "programSlot":
+      return (
+        isId(change.id) &&
+        (change.field === "create"
+          ? isId(change.sessionId) && isPosition(change.position) && isProgramSlot(change)
+          : change.field === "exercise"
+            ? isExerciseId(String(change.exerciseId)) &&
+              (change.measure === null || change.measure === "seconds")
+            : change.field === "rule"
+              ? change.value === null || change.value === "no_climbing"
+              : change.field === "position"
+                ? isPosition(change.value)
+                : change.field === "main" || change.field === "removed"
+                  ? isBool(change.value)
+                  : Object.hasOwn(SLOT_FIELDS, change.field) &&
+                    isSlotValue(change.field, change.value))
+      );
     default:
       return false;
   }

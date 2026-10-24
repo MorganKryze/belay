@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { MIN_WEIGH_IN_DATE } from "../body/weighings";
 import { sessionByCode } from "../training/program";
+import { DEFAULT_SCHEDULE } from "../training/stored-program";
 import { MAX_CHANGES } from "./limits";
 import { clampAt, isNewer, mergeFields, mergeTarget, mergeWeights, staleKeys } from "./merge";
 import {
@@ -752,5 +753,287 @@ describe("merge", () => {
   it("merges the target range under its single timestamp", () => {
     expect(mergeTarget(null, [target(0.25, 0.75)], now)).toEqual(target(0.25, 0.75));
     expect(mergeTarget("2026-10-07T06:45:00.000Z", [target(0.25, 0.75)], now)).toBeNull();
+  });
+});
+
+describe("programs, the active one, their sessions and slots (SY1, SY7, SY9, SY10)", () => {
+  const PROGRAM = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d92";
+  const PSESSION = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d93";
+  const PSLOT = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d94";
+  const fixed = { mode: "fixed", days: [PSESSION, null, null, PSESSION, null, null, null] };
+  const program = (patch: Record<string, unknown>) =>
+    ({ kind: "program", id: PROGRAM, at: AT, ...patch }) as Change;
+  const session = (patch: Record<string, unknown>) =>
+    ({ kind: "programSession", id: PSESSION, at: AT, ...patch }) as Change;
+  const slot = (patch: Record<string, unknown>) =>
+    ({ kind: "programSlot", id: PSLOT, at: AT, ...patch }) as Change;
+  // A slot created at every upper bound, and a timed one at the lower ones.
+  const counted = slot({
+    field: "create",
+    sessionId: PSESSION,
+    position: 999,
+    rule: null,
+    exerciseId: "ds:0025",
+    sets: 10,
+    repRange: [1, 100],
+    rirTarget: [0, 4],
+    restSec: 900,
+    warmupSets: 3,
+    isMain: true,
+    groupKey: "A".repeat(16),
+  });
+  const timed = slot({
+    field: "create",
+    sessionId: PSESSION,
+    position: 0,
+    rule: "no_climbing",
+    exerciseId: "ds:2135",
+    measure: "seconds",
+    sets: 1,
+    repRange: [1, 3600],
+    rirTarget: [0, 0],
+    restSec: 0,
+    warmupSets: 0,
+    isMain: false,
+    groupKey: null,
+  });
+  const VALID: Change[] = [
+    program({ field: "create", name: null, schedule: DEFAULT_SCHEDULE }),
+    program({ field: "create", name: "P".repeat(60), schedule: fixed }),
+    program({ field: "name", value: "Force" }),
+    program({ field: "name", value: null }),
+    program({ field: "schedule", value: fixed }),
+    program({ field: "removed", value: true }),
+    { kind: "activeProgram", programId: PROGRAM, at: AT },
+    session({ field: "create", name: null, programId: PROGRAM, position: 0 }),
+    session({ field: "create", name: "S".repeat(40), programId: null, position: 999 }),
+    session({ field: "name", value: "Tirage" }),
+    session({ field: "name", value: null }),
+    session({ field: "place", programId: PROGRAM, position: 25 }),
+    session({ field: "place", programId: null, position: 0 }),
+    session({ field: "removed", value: false }),
+    counted,
+    timed,
+    slot({ field: "exercise", exerciseId: "ds:2135", measure: "seconds" }),
+    slot({ field: "exercise", exerciseId: "belay:dead-hang", measure: null }),
+    slot({ field: "reps", value: [1, 3600] }),
+    slot({ field: "reps", value: [8, 8] }),
+    slot({ field: "sets", value: 1 }),
+    slot({ field: "sets", value: 10 }),
+    slot({ field: "rir", value: [0, 4] }),
+    slot({ field: "rest", value: 0 }),
+    slot({ field: "rest", value: 900 }),
+    slot({ field: "warmups", value: 0 }),
+    slot({ field: "warmups", value: 3 }),
+    slot({ field: "main", value: true }),
+    slot({ field: "group", value: null }),
+    slot({ field: "group", value: "A1" }),
+    slot({ field: "rule", value: "no_climbing" }),
+    slot({ field: "rule", value: null }),
+    slot({ field: "position", value: 0 }),
+    slot({ field: "position", value: 999 }),
+    slot({ field: "removed", value: true }),
+  ];
+  const broken = (c: Change, patch: Record<string, unknown>) => ({ ...c, ...patch }) as Change;
+  const [create, , rename, , reschedule, remove, active, sCreate, , sName, , place] = VALID;
+  const PAST: Change[] = [
+    broken(create!, { id: "x" }),
+    broken(create!, { name: "" }),
+    broken(create!, { name: "P".repeat(61) }),
+    broken(rename!, { value: " Force" }),
+    broken(rename!, { value: "a\nb" }),
+    broken(reschedule!, { value: { mode: "fixed", days: fixed.days.slice(1) } }),
+    broken(reschedule!, { value: { mode: "weekly", days: fixed.days } }),
+    broken(reschedule!, { value: { mode: "fixed", days: ["A", ...fixed.days.slice(1)] } }),
+    broken(remove!, { value: "yes" }),
+    broken(active!, { programId: "x" }),
+    broken(active!, { programId: null }),
+    broken(sCreate!, { name: "S".repeat(41) }),
+    broken(sCreate!, { position: 1000 }),
+    broken(sCreate!, { position: -1 }),
+    broken(sCreate!, { position: 1.5 }),
+    broken(sCreate!, { programId: "x" }),
+    broken(sName!, { value: "" }),
+    broken(place!, { position: 1000 }),
+    broken(place!, { programId: "x" }),
+    broken(counted, { sessionId: "x" }),
+    broken(counted, { position: 1000 }),
+    broken(counted, { sets: 11 }),
+    broken(counted, { sets: 0 }),
+    broken(counted, { repRange: [1, 101] }), // a counted range stops at 100
+    broken(counted, { repRange: [12, 8] }),
+    broken(counted, { rirTarget: [0, 5] }),
+    broken(counted, { restSec: 901 }),
+    broken(counted, { warmupSets: 4 }),
+    broken(counted, { groupKey: "A".repeat(17) }),
+    broken(counted, { groupKey: "a-b" }),
+    broken(counted, { rule: "rain" }),
+    broken(counted, { exerciseId: "bench" }),
+    broken(timed, { repRange: [1, 3601] }),
+    broken(timed, { measure: "minutes" }),
+    broken(VALID[16]!, { exerciseId: "bench" }),
+    broken(VALID[16]!, { measure: "reps" }),
+    broken(VALID[18]!, { value: [0, 10] }),
+    broken(VALID[18]!, { value: [10, 8] }),
+    broken(VALID[18]!, { value: [1, 3601] }),
+    broken(VALID[21]!, { value: 11 }),
+    broken(VALID[22]!, { value: [3, 2] }),
+    broken(VALID[24]!, { value: 901 }),
+    broken(VALID[26]!, { value: 4 }),
+    broken(VALID[27]!, { value: "yes" }),
+    broken(VALID[29]!, { value: "" }),
+    broken(VALID[30]!, { value: "rain" }),
+    broken(VALID[33]!, { value: 1000 }),
+    broken(VALID[34]!, { value: null }),
+    broken(VALID[34]!, { field: "color" }),
+    broken(VALID[19]!, { field: "toString" }), // a name every object answers to
+    broken(VALID[19]!, { field: "constructor" }),
+  ];
+
+  it("crosses the wire at its bounds, and a change one past them is refused", () => {
+    expect(request(VALID).success).toBe(true);
+    for (const change of PAST)
+      expect(request([change]).success, JSON.stringify(change).slice(0, 160)).toBe(false);
+  });
+
+  it("is what the phone writes and checks before queuing, never wider than the server", () => {
+    expect(VALID.filter((c) => !isValidChange(c))).toEqual([]);
+    expect(PAST.filter(isValidChange)).toEqual([]);
+    const upper = (c: Change) => broken(c, { id: PSLOT.toUpperCase() });
+    expect(isValidChange(upper(VALID[34]!))).toBe(false);
+    for (const change of [...VALID, ...PAST, upper(VALID[34]!)])
+      if (isValidChange(change))
+        expect(ChangeSchema.safeParse(change).success, JSON.stringify(change)).toBe(true);
+  });
+
+  it("a start records the session it came from, and one without it stays valid (SY10)", () => {
+    const start = SESSION[0]!;
+    const withId = broken(start, { sessionId: PSESSION });
+    const without = broken(start, { sessionId: null });
+    for (const c of [start, withId, without]) {
+      expect(isValidChange(c), JSON.stringify(c).slice(0, 120)).toBe(true);
+      expect(request([c]).success).toBe(true);
+    }
+    expect(ChangeSchema.parse(withId)).toMatchObject({ sessionId: PSESSION });
+    for (const c of [broken(start, { sessionId: "A" }), broken(start, { sessionId: 3 })]) {
+      expect(isValidChange(c)).toBe(false);
+      expect(request([c]).success).toBe(false);
+    }
+    expect(isValidChange(broken(start, { sessionId: PSESSION.toUpperCase() }))).toBe(false);
+  });
+
+  it("drops a key it does not know rather than refusing the batch, as an older server does", () => {
+    // An older server's start has no sessionId: it strips the field and stores the session.
+    const parsed = request([{ ...SESSION[0]!, recordedBy: PSESSION }]);
+    expect(parsed.success).toBe(true);
+    expect(parsed.data!.changes[0]).not.toHaveProperty("recordedBy");
+  });
+
+  const answer = {
+    cursor: "0",
+    weights: [],
+    measures: [],
+    intake: [],
+    supplements: [],
+    supplementLogs: [],
+    annotations: [],
+    steps: [],
+    activities: [],
+    workouts: [],
+    sets: [],
+    target: null,
+    profile: null,
+    rejected: [],
+    hasMore: false,
+  };
+  const rows = {
+    activeProgram: { programId: PROGRAM, at: null },
+    programs: [
+      {
+        id: PROGRAM,
+        name: null,
+        nameAt: null,
+        schedule: DEFAULT_SCHEDULE,
+        scheduleAt: null,
+        removed: false,
+        removedAt: null,
+      },
+    ],
+    programSessions: [
+      {
+        id: PSESSION,
+        name: "Tirage",
+        nameAt: AT,
+        programId: null,
+        position: 0,
+        placeAt: AT,
+        removed: false,
+        removedAt: null,
+      },
+    ],
+    programSlots: [
+      {
+        id: PSLOT,
+        sessionId: PSESSION,
+        position: 0,
+        positionAt: null,
+        exerciseId: "ds:2135",
+        measure: "seconds",
+        exerciseAt: AT,
+        repRange: [30, 60],
+        repsAt: null,
+        sets: 3,
+        setsAt: null,
+        rirTarget: [1, 2],
+        rirAt: null,
+        restSec: 90,
+        restAt: null,
+        warmupSets: 0,
+        warmupsAt: null,
+        isMain: false,
+        mainAt: null,
+        groupKey: null,
+        groupAt: null,
+        rule: null,
+        ruleAt: null,
+        removed: false,
+        removedAt: null,
+      },
+    ],
+  };
+
+  it("reads an answer without program rows, as an older server sends it (SY9)", () => {
+    expect(SyncResponseSchema.safeParse(answer).success).toBe(true);
+    expect(SyncResponseSchema.safeParse({ ...answer, activeProgram: null }).success).toBe(true);
+  });
+
+  it("reads the program rows and a session's recorded id when they come", () => {
+    const workout = {
+      id: WORKOUT,
+      sessionCode: "A",
+      plan: PLAN,
+      planAt: null,
+      startedAt: AT,
+      startedAtAt: null,
+      endedAt: null,
+      endedAtAt: null,
+      note: null,
+      noteAt: null,
+      exerciseNotes: {},
+      exerciseNotesAt: null,
+      removed: false,
+      removedAt: null,
+    };
+    const parsed = SyncResponseSchema.parse({
+      ...answer,
+      ...rows,
+      workouts: [workout, { ...workout, sessionId: PSESSION }, { ...workout, sessionId: null }],
+    });
+    expect(parsed).toMatchObject(rows);
+    expect(parsed.workouts.map((w) => w.sessionId)).toEqual([undefined, PSESSION, null]);
+    expect(
+      SyncResponseSchema.safeParse({ ...answer, programs: [{ ...rows.programs[0], id: "x" }] })
+        .success,
+    ).toBe(false);
   });
 });
