@@ -12,6 +12,7 @@ import { ToolPage } from "@/components/tool-page";
 import { attempt } from "@/lib/attempt";
 import { formatNumber } from "@/lib/format";
 import { useTool } from "@/lib/tool-storage";
+import { weightStepper } from "@/lib/units";
 
 export const ProteinInputs = z.object({
   goal: z.enum(["maintain", "cut", "gain"]).catch("maintain"),
@@ -23,6 +24,7 @@ export function ProteinTool() {
   // The weight only: the body fat keeps the M1 rule (a recent estimate of the body-fat tool).
   const prefill = usePrefill(["weightKg"]);
   const weightKg = prefill.value("weightKg", state.weightKg ?? 70);
+  const w = weightStepper(weightKg, WEIGHT_RANGE_KG, 0.5);
   const r = attempt(() => proteinRange(weightKg, inputs.goal, state.bodyFatPct));
   const n = (v: number) => formatNumber(v, i18n.language, { digits: 1 });
   const range = (low: number, high: number) =>
@@ -41,15 +43,15 @@ export function ProteinTool() {
       />
       <NumberStepper
         label={t("tools.fields.weight")}
-        unit="kg"
-        value={weightKg}
-        min={WEIGHT_RANGE_KG.min}
-        max={WEIGHT_RANGE_KG.max}
-        step={0.5}
+        unit={w.unit}
+        value={w.value}
+        min={w.min}
+        max={w.max}
+        step={w.step}
         onChange={(v) => {
           if (v === null) return;
           prefill.edit("weightKg");
-          update((s) => ({ ...s, weightKg: v }));
+          update((s) => ({ ...s, weightKg: w.toKg(v) }));
         }}
         hint={prefill.hint("weightKg")}
       />

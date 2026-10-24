@@ -10,6 +10,7 @@ import { ToolPage } from "@/components/tool-page";
 import { attempt } from "@/lib/attempt";
 import { formatNumber } from "@/lib/format";
 import { useTool } from "@/lib/tool-storage";
+import { weightStepper } from "@/lib/units";
 
 export const BmiInputs = z.object({});
 
@@ -19,6 +20,7 @@ export function BmiTool() {
   const prefill = usePrefill(["heightCm", "weightKg"]);
   const heightCm = prefill.value("heightCm", state.heightCm ?? 170);
   const weightKg = prefill.value("weightKg", state.weightKg ?? 70);
+  const w = weightStepper(weightKg, WEIGHT_RANGE_KG, 0.5);
   const value = attempt(() => bmi(weightKg, heightCm));
   const band = value === null ? null : bmiBand(value);
   const n = (v: number) => formatNumber(v, i18n.language);
@@ -49,16 +51,16 @@ export function BmiTool() {
         />
         <NumberStepper
           label={t("tools.fields.weight")}
-          unit="kg"
-          value={weightKg}
-          min={WEIGHT_RANGE_KG.min}
-          max={WEIGHT_RANGE_KG.max}
-          step={0.5}
+          unit={w.unit}
+          value={w.value}
+          min={w.min}
+          max={w.max}
+          step={w.step}
           buttons={false}
           onChange={(v) => {
             if (v === null) return;
             prefill.edit("weightKg");
-            update((s) => ({ ...s, weightKg: v }));
+            update((s) => ({ ...s, weightKg: w.toKg(v) }));
           }}
           hint={prefill.hint("weightKg")}
         />
