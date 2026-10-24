@@ -16,11 +16,18 @@ const BENCH = seedId(0x101); // session A's first slot, counted in repetitions
 const PLANK = { id: "ds:2135", measure: "seconds" } as const;
 const USER = { id: "user-ada", displayName: "Ada" };
 
+// A fixed clock moved on by hand: each write lands at a known time, never in the same millisecond
+// as the one before it by chance.
+const START = "2026-10-25T08:00:00.000Z";
+const later = () => vi.setSystemTime(Date.now() + 1000);
+
 let db: AccountDb;
 let client: QueryClient;
 let account: OpenAccount;
 
 beforeEach(async () => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date(START));
   indexedDB = new IDBFactory();
   db = await openAccountDb(USER.id);
   client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -31,6 +38,7 @@ beforeEach(async () => {
 afterEach(() => {
   cleanup();
   db.close();
+  vi.useRealTimers();
 });
 
 const wrapper = ({ children }: { children: ReactNode }) => (
@@ -95,9 +103,11 @@ describe("useEdits", () => {
 
   it("a stale change (RangeError) writes nothing, shows the stale toast and refreshes the view", async () => {
     const { result } = await mount();
-    // Another tab swapped the slot to a timed exercise after this view was drawn.
+    // Another tab swapped the slot to a timed exercise after this view was drawn, at an earlier
+    // time than the edit below: only the measure refuses that edit, not its time.
     const view = await readPrograms(db);
-    await recordChanges(db, replaceExercise(view, BENCH, PLANK, new Date().toISOString())!);
+    await recordChanges(db, replaceExercise(view, BENCH, PLANK, START)!);
+    later();
     const refresh = vi.spyOn(client, "invalidateQueries");
     let ok = true;
     await act(async () => {
@@ -136,6 +146,7 @@ describe("useEdits", () => {
     expect(result.current.toast).toMatchObject({ text: "Saved" });
     expect(result.current.toast?.undo).toBeTypeOf("function");
     await act(refresh);
+    later();
     let ok = false;
     await act(async () => {
       ok = await result.current.undo();
@@ -159,7 +170,9 @@ describe("useEdits", () => {
       await result.current.record(setsTo(5));
     });
     await act(refresh);
+    later();
     await recordChanges(db, setsTo(6)(await readPrograms(db), new Date().toISOString())!);
+    later();
     let ok = true;
     await act(async () => {
       ok = await result.current.undo();
@@ -178,6 +191,7 @@ describe("useEdits", () => {
     });
     const first = result.current.toast!;
     await act(refresh);
+    later();
     await act(async () => {
       await result.current.record(
         (p, at) => editSlot(p, BENCH, { field: "rest", value: 240 }, at),
@@ -187,6 +201,7 @@ describe("useEdits", () => {
       );
     });
     await act(refresh);
+    later();
     await act(async () => {
       expect(await first.undo!()).toBe(true);
     });
@@ -194,6 +209,7 @@ describe("useEdits", () => {
     // The newer entry is still there, and only it.
     expect(result.current.canUndo).toBe(true);
     await act(refresh);
+    later();
     await act(async () => {
       await result.current.undo();
     });
@@ -208,6 +224,7 @@ describe("useEdits", () => {
         await result.current.record((_, at) => renameSession(A, `Name ${i}`, at));
       });
       await act(refresh);
+      later();
     }
     let undone = 0;
     while (result.current.canUndo) {
@@ -215,6 +232,7 @@ describe("useEdits", () => {
         if (await result.current.undo()) undone++;
       });
       await act(refresh);
+      later();
     }
     expect(undone).toBe(50);
     // The oldest edit was dropped: its name stays.
