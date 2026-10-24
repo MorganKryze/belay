@@ -337,7 +337,7 @@
       "balanced": "Balanced",
       "steady": "Steady"
     },
-    "rateLine": "{{pct}}% · {{kg}} kg per week",
+    "rateLine": "{{pct}}% · {{weight}} {{unit}} per week",
     "fine": "Fine-tune",
     "presets": "Back to the paces",
     "fineLabel": "Pace (% per week)",

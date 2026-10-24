@@ -12,6 +12,7 @@ import { ToolPage } from "@/components/tool-page";
 import { attempt } from "@/lib/attempt";
 import { formatNumber } from "@/lib/format";
 import { useTool } from "@/lib/tool-storage";
+import { weightStepper } from "@/lib/units";
 import { PalSheet } from "./pal-sheet";
 
 export const EnergyInputs = z.object({
@@ -27,6 +28,7 @@ export function EnergyTool() {
   const ageYears = prefill.value("ageYears", inputs.ageYears);
   const heightCm = prefill.value("heightCm", state.heightCm ?? 170);
   const weightKg = prefill.value("weightKg", state.weightKg ?? 70);
+  const w = weightStepper(weightKg, WEIGHT_RANGE_KG, 0.5);
   const [sheet, setSheet] = useState(false);
   const pal = PAL_LEVELS.find((l) => l.id === inputs.pal)?.pal ?? 1.55;
   const e = attempt(() => dailyEnergy({ formula, ageYears, heightCm, weightKg }, pal));
@@ -84,15 +86,15 @@ export function EnergyTool() {
       />
       <NumberStepper
         label={t("tools.fields.weight")}
-        unit="kg"
-        value={weightKg}
-        min={WEIGHT_RANGE_KG.min}
-        max={WEIGHT_RANGE_KG.max}
-        step={0.5}
+        unit={w.unit}
+        value={w.value}
+        min={w.min}
+        max={w.max}
+        step={w.step}
         onChange={(v) => {
           if (v === null) return;
           prefill.edit("weightKg");
-          update((s) => ({ ...s, weightKg: v }));
+          update((s) => ({ ...s, weightKg: w.toKg(v) }));
         }}
         hint={prefill.hint("weightKg")}
       />
