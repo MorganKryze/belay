@@ -64,7 +64,8 @@ export function ProgramEditor() {
   return account.kind === "open" ? <WithData account={account} /> : <Header />;
 }
 
-// The title, and beside it, once the programs are read, the selector of the active program.
+// The title with the selector of the active program, once the programs are read, and on the same
+// line, once something changed, the word that it is kept on the device.
 function Header({ switcher = false, saved = false }: { switcher?: boolean; saved?: boolean }) {
   const { t } = useTranslation();
   return (
@@ -72,20 +73,21 @@ function Header({ switcher = false, saved = false }: { switcher?: boolean; saved
       title={t("editor.title")}
       back={
         <BackLink to="/workouts" search={{ tab: "program" }}>
-          {t("workouts.tabs.program")}
+          {t("nav.workouts")}
         </BackLink>
       }
       trailing={
-        <div className="flex min-w-0 flex-1 items-center">{switcher && <ProgramSwitcher />}</div>
+        <div className="flex min-w-0 flex-1 items-center justify-between gap-3">
+          {switcher ? <ProgramSwitcher /> : <span />}
+          {saved && (
+            <p className="flex shrink-0 items-center gap-1.5 text-sm text-muted-foreground">
+              <Check aria-hidden className="size-4" />
+              {t("editor.saved")}
+            </p>
+          )}
+        </div>
       }
-    >
-      {saved && (
-        <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
-          <Check aria-hidden className="size-4" />
-          {t("editor.saved")}
-        </p>
-      )}
-    </PageHeader>
+    />
   );
 }
 

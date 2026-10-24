@@ -79,11 +79,11 @@ const main = (r: HTMLElement) => within(r).getByRole("checkbox").getAttribute("a
 const HINT = "Repère : 3 à 4 séances par semaine conviennent à la plupart";
 
 describe("the program editor", () => {
-  it("is its own page, the shell widened for it, its back chevron to Programme", async () => {
+  it("is its own page, the shell widened for it, its back chevron to the sessions", async () => {
     renderRoute("/workouts/program");
     expect(await screen.findByRole("heading", { level: 1, name: "Programme" })).toBeTruthy();
     const back = within(screen.getByRole("main"))
-      .getAllByRole("link", { name: "Programme" })
+      .getAllByRole("link", { name: "Séances" })
       .find((a) => a.closest("nav") === null)!;
     expect(back.getAttribute("href")).toBe("/workouts?tab=program");
     expect(await screen.findByText("Programme de départ")).toBeTruthy();
