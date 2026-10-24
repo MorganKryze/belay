@@ -175,8 +175,37 @@ describe("placing a row", () => {
 
   it("a plain row between two groups of one key stays plain where it is", () => {
     const state = rows(["K", "K", null, "K", "K"]);
-    expect(slotStops(state, R(2)).filter((s) => s.index === 2)).toEqual([stop(2, "K"), stop(2)]);
+    // Taking the key there would merge the two groups: only the outside stop is offered.
+    expect(slotStops(state, R(2)).filter((s) => s.index === 2)).toEqual([stop(2)]);
+    expect(placeSlot(state, R(2), stop(2, "K"), AT)).toBeNull();
     expect(placed(state, R(2), slotStops(state, R(2))[stopOf(state, R(2))]!)).toEqual([]);
+  });
+
+  it("a row still holding the key of a group it is alone in stays where it is", () => {
+    const state = rows(["H", "H", "K", null]);
+    expect(slotStops(state, R(2))[stopOf(state, R(2))]).toEqual(stop(2));
+    expect(placed(state, R(2), slotStops(state, R(2))[stopOf(state, R(2))]!)).toEqual([]);
+    expect(moveNotes(state, R(2), stop(2))).toEqual([]);
+  });
+
+  it("a row alone with a key loses it next to a group of that key", () => {
+    expect(placed(rows(["K", "K", null, "K"]), R(3), stop(2))).toEqual([
+      change(R(3), "group", null),
+      change(R(3), "position", 2),
+      change(R(2), "position", 3),
+    ]);
+  });
+
+  it("leaving a group for another of the same key clears the one left behind", () => {
+    const state = rows(["K", "K", null, "K", "K"]);
+    expect(placed(state, R(0), stop(3, "K"))).toEqual([
+      change(R(1), "position", 0),
+      change(R(2), "position", 1),
+      change(R(3), "position", 2),
+      change(R(0), "position", 3),
+      change(R(1), "group", null),
+    ]);
+    expect(moveNotes(state, R(0), stop(3, "K"))).toEqual(["leaveGroup", "joinGroup"]);
   });
 
   it("a row leaving a group of two clears the other even when its key comes back further down", () => {

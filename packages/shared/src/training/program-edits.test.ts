@@ -482,7 +482,7 @@ describe("slots (ED1, ED3, ED4)", () => {
   });
 
   it("removes a slot", () => {
-    expect(removeSlot(NEW, AT)).toEqual([
+    expect(removeSlot(SEED, NEW, AT)).toEqual([
       { kind: "programSlot", id: NEW, field: "removed", value: true, at: AT },
     ]);
   });
@@ -510,6 +510,21 @@ const position = (id: string, value: number) => ({
   field: "position",
   value,
   at: AT,
+});
+
+describe("removing a grouped slot", () => {
+  it("clears the key of the one row a group of two is left with", () => {
+    expect(removeSlot(grouped, R(5), AT)).toEqual([
+      { kind: "programSlot", id: R(5), field: "removed", value: true, at: AT },
+      group(R(6), null),
+    ]);
+  });
+
+  it("leaves a group of three its two others", () => {
+    expect(removeSlot(grouped, R(1), AT)).toEqual([
+      { kind: "programSlot", id: R(1), field: "removed", value: true, at: AT },
+    ]);
+  });
 });
 
 describe("a slot like another", () => {
@@ -1138,7 +1153,8 @@ describe("every change built", () => {
         replaceExercise(SEED, id, { id: "ds:2135", measure: "seconds" }, AT),
         replaceExercise(SEED, id, { id: "ds:0047", measure: "reps" }, AT),
         moveSlot(SEED, id, 2, AT),
-        removeSlot(id, AT),
+        removeSlot(SEED, id, AT),
+        removeSlot(grouped, R(5), AT),
         copySlot(grouped, NEW, R(1), AT),
         copySession(SEED, C, "C (copie)", ids(0xf00), AT),
         copySlotsInto(two, Y, B, ids(0xf00), AT),
