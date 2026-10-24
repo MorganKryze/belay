@@ -1,8 +1,13 @@
-import { act, cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import i18n from "../i18n";
 import "../i18n/lazy";
+import { restEnded } from "../lib/rest-sound";
 import { RestBar } from "./rest-bar";
+
+// The tone itself is the sound module's to test; here, only when the bar asks for it.
+vi.mock("../lib/rest-sound", () => ({ restEnded: vi.fn(() => true) }));
 
 beforeEach(async () => {
   await i18n.changeLanguage("en");
@@ -10,6 +15,8 @@ beforeEach(async () => {
 afterEach(() => {
   cleanup();
   vi.useRealTimers();
+  vi.mocked(restEnded).mockClear();
+  Reflect.deleteProperty(navigator, "vibrate");
 });
 
 const at = (s: number) => new Date(Date.parse("2026-10-05T17:00:00.000Z") + s * 1000).toISOString();
@@ -58,5 +65,58 @@ describe("the rest bar's countdown", () => {
     expect(screen.getByRole("timer").textContent).toBe("2:29");
     act(() => vi.advanceTimersByTime(2000));
     expect(screen.getByRole("timer").textContent).toBe("2:29");
+  });
+});
+
+describe("the rest bar's end", () => {
+  const props = { planned: 90_000, next: "Rest", stops: "all" as const, pausedAt: null };
+  // The session screen around the bar: it keeps the end, and drops the bar once it is null.
+  function Host({ endsAt: first }: { endsAt: string }) {
+    const [endsAt, setEndsAt] = useState<string | null>(first);
+    return endsAt && <RestBar {...props} endsAt={endsAt} onChange={setEndsAt} />;
+  }
+
+  it("the rest bar plays the tone when its rest runs out, not when skipped", () => {
+    const vibrate = vi.fn(() => true);
+    Object.defineProperty(navigator, "vibrate", { value: vibrate, configurable: true });
+    vi.useFakeTimers({ now: Date.parse(at(0)) });
+    const { rerender } = render(<RestBar {...props} endsAt={at(2)} onChange={() => {}} />);
+    act(() => vi.advanceTimersByTime(1000));
+    expect(restEnded).not.toHaveBeenCalled();
+    act(() => vi.advanceTimersByTime(1500));
+    // Beside the vibration and the announcement, which stay as they were.
+    expect(restEnded).toHaveBeenCalledExactlyOnceWith(at(2));
+    expect(vibrate).toHaveBeenCalledExactlyOnceWith(200);
+    expect(screen.getByRole("status").textContent).toBe("Rest over");
+    act(() => vi.advanceTimersByTime(2000));
+    rerender(<RestBar {...props} endsAt={at(2)} onChange={() => {}} />);
+    expect(restEnded).toHaveBeenCalledOnce();
+    cleanup();
+
+    // Skip puts the rest away before its end: the bar goes with it and plays nothing.
+    vi.mocked(restEnded).mockClear();
+    vi.setSystemTime(Date.parse(at(0)));
+    render(<Host endsAt={at(4)} />);
+    fireEvent.click(screen.getByRole("button", { name: "Skip" }));
+    expect(screen.queryByRole("timer")).toBeNull();
+    act(() => vi.advanceTimersByTime(10_000));
+    cleanup();
+    // +30 s moves the end later: nothing at the first end, the tone at the new one.
+    vi.setSystemTime(Date.parse(at(0)));
+    render(<Host endsAt={at(4)} />);
+    fireEvent.click(screen.getByRole("button", { name: "+30 s" }));
+    act(() => vi.advanceTimersByTime(10_000));
+    expect(restEnded).not.toHaveBeenCalled();
+    act(() => vi.advanceTimersByTime(25_000));
+    expect(restEnded).toHaveBeenCalledExactlyOnceWith(at(34));
+  });
+
+  it("a rest frozen by a pause plays nothing", () => {
+    // 60 s left when the pause came at 30 s; two minutes later it still holds them.
+    vi.useFakeTimers({ now: Date.parse(at(30)) });
+    render(<RestBar {...props} pausedAt={at(30)} endsAt={at(90)} onChange={() => {}} />);
+    act(() => vi.advanceTimersByTime(120_000));
+    expect(screen.getByRole("timer").textContent).toBe("1:00");
+    expect(restEnded).not.toHaveBeenCalled();
   });
 });

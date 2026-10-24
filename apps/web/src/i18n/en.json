@@ -44,8 +44,8 @@
     "average": "7-day average",
     "summary": "Weigh-ins from {{from}} to {{to}}. 7-day average: {{average}}. Loss per week: {{loss}}.",
     "hint": "Left and right arrows: day by day. Enter: edit the weigh-in.",
-    "weighIn": "Weigh-in {{value}} kg",
-    "movingAverage": "7-day avg {{value}} kg"
+    "weighIn": "Weigh-in {{value}} {{unit}}",
+    "movingAverage": "7-day avg {{value}} {{unit}}"
   },
   "account": {
     "unavailable": "This browser won't let Belay save on the device, so tracking isn't available here. The tools still work."
@@ -77,7 +77,6 @@
     "loss": "loss",
     "gain": "gain",
     "perWeek": "{{value}}%/wk",
-    "kg": "{{value}} kg",
     "lastWeek": "last week",
     "stable": "stable"
   },
@@ -90,7 +89,7 @@
     "save": "Save",
     "delete": "Delete this weigh-in",
     "close": "Close",
-    "outOfRange": "Enter a weight between 20 and 400 kg.",
+    "outOfRange": "Enter a weight between {{min}} and {{max}} {{unit}}.",
     "toastSaved": "Weigh-in saved",
     "toastDeleted": "Weigh-in deleted",
     "saveFailed": "Couldn't save on this phone. Try again.",
@@ -238,13 +237,13 @@
     "lead": "What to put on each side of the bar.",
     "target": "Target load",
     "result": "On each side",
-    "perSide": "{{plates}} kg per side",
+    "perSide": "{{plates}} {{unit}} per side",
     "barOnly": "Bar only",
-    "bar": "{{bar}} kg bar",
-    "unreachable": "{{target}} kg can't be loaded with your equipment.",
-    "below": "Just below · {{total}} kg",
-    "above": "Just above · {{total}} kg",
-    "underBar": "The bar alone already weighs {{bar}} kg.",
+    "bar": "{{bar}} {{unit}} bar",
+    "unreachable": "{{target}} {{unit}} can't be loaded with your equipment.",
+    "below": "Just below · {{total}} {{unit}}",
+    "above": "Just above · {{total}} {{unit}}",
+    "underBar": "The bar alone already weighs {{bar}} {{unit}}.",
     "equipment": "My equipment"
   },
   "equipment": {
@@ -253,16 +252,18 @@
     "start": "Starting point",
     "presets": {
       "competition": "Competition",
+      "pounds": "Standard (lb)",
       "gym": "Gym",
       "custom": "Custom"
     },
     "bar": "Bar",
-    "kg": "{{value}} kg",
+    "kg": "{{value}} {{unit}}",
     "otherBar": "Other",
     "otherBarLabel": "Bar weight",
     "plates": "Plates",
     "edit": "Edit this equipment",
     "presetNote": "“Edit” copies this preset into “Custom”: presets never change.",
+    "lbNote": "In pounds, Belay uses a 45 lb bar and standard plates.",
     "copied": "Copied from “{{preset}}”. Tap a plate to add or remove it.",
     "customNote": "Tap a plate to add or remove it.",
     "newPlate": "New plate",
@@ -336,7 +337,7 @@
       "balanced": "Balanced",
       "steady": "Steady"
     },
-    "rateLine": "{{pct}}% · {{kg}} kg per week",
+    "rateLine": "{{pct}}% · {{weight}} {{unit}} per week",
     "fine": "Fine-tune",
     "presets": "Back to the paces",
     "fineLabel": "Pace (% per week)",

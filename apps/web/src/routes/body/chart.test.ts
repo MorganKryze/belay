@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { lastAverageBox, placeNames } from "./chart";
+import { lastAverageBox, placeNames, yAxis } from "./chart";
 
 // A plot running from 26 to 286.
 const bounds = { left: 26, right: 286 };
@@ -53,5 +53,16 @@ describe("lastAverageBox", () => {
 
   it("reserves nothing when the last average sits lower in the plot", () => {
     expect(lastAverageBox(200, 60, "79.8", 20)).toBeNull();
+  });
+});
+
+describe("yAxis", () => {
+  it("axis ticks of lb values are whole-pound steps", () => {
+    // 80.0 to 81.1 kg is 176.4 to 178.8 lb: a line every pound.
+    expect(yAxis([176.4, 177.3, 178.8]).ticks).toEqual([175, 176, 177, 178, 179, 180]);
+    // Wider ranges in pounds step by 2, then 5, still whole pounds.
+    expect(yAxis([175.9, 179.9]).ticks).toEqual([176, 178, 180]);
+    expect(yAxis([160.4, 181.2]).ticks).toEqual([160, 165, 170, 175, 180]);
+    for (const t of yAxis([150.3, 199.7]).ticks) expect(Number.isInteger(t)).toBe(true);
   });
 });

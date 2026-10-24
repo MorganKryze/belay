@@ -1,8 +1,13 @@
-import { cleanup, fireEvent, screen, within } from "@testing-library/react";
+import { addDays } from "@belay/shared/body/dates";
+import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
+import { IDBFactory } from "fake-indexeddb";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import i18n from "../../i18n";
 import { TOOL_STATE_KEY } from "../../lib/tool-storage";
+import { writeLastUser } from "../../sync/last-user";
+import { fakeApi } from "../../test/fake-api";
 import { renderRoute } from "../../test/render-route";
+import { ADA, seed, weight } from "../../test/seed";
 
 afterEach(async () => {
   cleanup();
@@ -339,5 +344,75 @@ describe("guards", () => {
     type("Neck", "80");
     type("Waist at the navel", "40");
     expect(JSON.parse(localStorage.getItem(TOOL_STATE_KEY)!).bodyFatPct).toBeUndefined();
+  });
+});
+
+describe("in pounds", () => {
+  const lb = () => localStorage.setItem("belay.weightUnit", "lb");
+  const weightField = () =>
+    screen.findByRole("textbox", { name: "Weight" }) as Promise<HTMLInputElement>;
+
+  it("IMC takes 176 lb and gives the BMI of 79.83 kg", async () => {
+    lb();
+    save({ heightCm: 180, weightKg: 70 });
+    renderRoute("/tools/bmi");
+    expect((await weightField()).value).toBe("154");
+    type("Weight", "176");
+    // 176 lb = 79.83 kg: 24.6 at 180 cm.
+    expect((await result("Your BMI")).textContent).toContain("24.6");
+    expect(JSON.parse(localStorage.getItem(TOOL_STATE_KEY)!).weightKg).toBeCloseTo(79.832, 2);
+  });
+
+  it("Énergie's kcal equal the kilo answer", async () => {
+    const state = { formula: "male", heightCm: 178, weightKg: 80 };
+    save(state);
+    renderRoute("/tools/energy");
+    const kilo = (await result("Today's expenditure")).textContent;
+    cleanup();
+    lb();
+    save(state);
+    renderRoute("/tools/energy");
+    expect((await weightField()).value).toBe("176");
+    expect((await result("Today's expenditure")).textContent).toBe(kilo);
+  });
+
+  it("Protéines keeps grams per day and the per-kg line", async () => {
+    save({ weightKg: 80 });
+    renderRoute("/tools/protein");
+    const kilo = (await screen.findByRole("region", { name: "Per day" })).textContent;
+    cleanup();
+    lb();
+    save({ weightKg: 80 });
+    renderRoute("/tools/protein");
+    expect((await weightField()).value).toBe("176");
+    const card = await screen.findByRole("region", { name: "Per day" });
+    expect(card.textContent).toBe(kilo);
+    expect(card.textContent).toContain("g per kg");
+  });
+
+  it("Projection's weekly rate says lb", async () => {
+    lb();
+    save({ weightKg: 80 });
+    renderRoute("/tools/projection");
+    // 0.75 % of 80 kg = 0.6 kg = 1.3 lb per week.
+    expect(await screen.findByText("0.75% · 1.3 lb per week")).toBeTruthy();
+    expect((screen.getByRole("textbox", { name: "Goal" }) as HTMLInputElement).value).toBe("165");
+  });
+
+  it("a prefilled weight shows in lb", async () => {
+    indexedDB = new IDBFactory();
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(2026, 9, 7, 9, 0));
+    lb();
+    // 80.0 to 80.3 kg from 3 October: a 7-day average of 80.15 kg, 176.7 lb, shown 177.
+    await seed(
+      ADA.id,
+      [0, 1, 2, 3].map((i) => weight(addDays("2026-10-03", i), 80 + i / 10)),
+    );
+    writeLastUser(ADA);
+    fakeApi({ me: "down" });
+    renderRoute("/tools/energy");
+    await waitFor(async () => expect((await weightField()).value).toBe("177"));
+    vi.useRealTimers();
   });
 });

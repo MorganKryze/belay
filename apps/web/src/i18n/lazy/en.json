@@ -1,6 +1,16 @@
 {
   "settings": {
     "general": "General",
+    "weightUnit": "Weight unit",
+    "weightUnitOptions": {
+      "kg": "Kilograms (kg)",
+      "lb": "Pounds (lb)"
+    },
+    "restSound": "End-of-rest sound",
+    "restSoundOptions": {
+      "off": "Off",
+      "on": "On"
+    },
     "pauseStops": "Paused",
     "pauseStopsOptions": {
       "all": "Everything stops",
@@ -287,7 +297,7 @@
       "other": "Other"
     },
     "back": "Exercises",
-    "increment": "{{equipment}} · steps of {{value}} kg",
+    "increment": "{{equipment}} · steps of {{value}} {{unit}}",
     "primary": "Primary",
     "secondary": "Secondary",
     "figure": "Body map: primary {{primary}}; secondary {{secondary}}",
@@ -316,9 +326,9 @@
     "workSets_other": "{{count}} work sets",
     "started": "{{day}} · {{time}}",
     "warmup": "Warm-up",
-    "load": "{{kg}} kg × {{reps}}",
+    "load": "{{load}} {{unit}} × {{reps}}",
     "seconds": "{{seconds}} s",
-    "loadSeconds": "{{kg}} kg · {{seconds}} s",
+    "loadSeconds": "{{load}} {{unit}} · {{seconds}} s",
     "rir": "RIR {{rir}}",
     "note": "Session note",
     "edit": "Edit",
@@ -360,14 +370,14 @@
     "superset": "Superset",
     "triset": "Tri-set",
     "setField": {
-      "kg": "Load of set {{n}}, kg",
+      "kg": "Load of set {{n}}, {{unit}}",
       "reps": "Reps of set {{n}}",
       "seconds": "Seconds of set {{n}}",
       "validate": "Log set {{n}}",
       "done": "Set {{n}} logged"
     },
     "warmupField": {
-      "kg": "Load of warm-up {{n}}, kg",
+      "kg": "Load of warm-up {{n}}, {{unit}}",
       "reps": "Reps of warm-up {{n}}",
       "validate": "Log warm-up {{n}}",
       "done": "Warm-up {{n}} logged"
@@ -428,9 +438,9 @@
   },
   "summary": {
     "close": "Close",
-    "record": "Record: {{exercise}}, {{kg}} kg × {{reps}}",
+    "record": "Record: {{exercise}}, {{load}} {{unit}} × {{reps}}",
     "recordSeconds": "Record: {{exercise}}, {{seconds}} s",
-    "recordLoadSeconds": "Record: {{exercise}}, {{kg}} kg · {{seconds}} s",
+    "recordLoadSeconds": "Record: {{exercise}}, {{load}} {{unit}} · {{seconds}} s",
     "duration": "Duration",
     "volume": "Volume",
     "warmups": "Warm-ups left out",

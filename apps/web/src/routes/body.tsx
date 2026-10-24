@@ -4,6 +4,7 @@ import { type IntakeLog, weeklyIntake } from "@belay/shared/body/intake";
 import { MEASURE_FIELDS, type Measure, measureOf, weeklyWaist } from "@belay/shared/body/measures";
 import { creatineWindows } from "@belay/shared/body/supplements";
 import { inTargetRange, type TargetRange } from "@belay/shared/body/target";
+import { weighingFromKg } from "@belay/shared/tools/units";
 import {
   latestMovingAverage,
   MIN_WEIGHINGS,
@@ -32,7 +33,6 @@ import { readWeekIntake } from "@/lib/display-prefs";
 import { useFirstPull } from "@/lib/first-pull";
 import { readRangePill } from "@/lib/home-trend";
 import {
-  formatKg,
   formatNumber,
   formatShortDay,
   formatWeekday,
@@ -40,6 +40,7 @@ import {
   lossView,
 } from "@/lib/format";
 import { useToday } from "@/lib/today";
+import { bodyWeightText, readWeightUnit } from "@/lib/units";
 import {
   type Account,
   type OpenAccount,
@@ -181,6 +182,7 @@ function BodyContent({
   );
   const from = period === "all" ? earliest : addDays(today, period === "month" ? -29 : -90);
   const shown = sorted.filter((w) => w.date >= from);
+  const unit = readWeightUnit();
   const weeks = weeklySummaries(weighings, today);
   const average = latestMovingAverage(weighings, today);
   const lastWeek = weeks.find((w) => w.status !== "in_progress");
@@ -202,7 +204,7 @@ function BodyContent({
   const summary = t("chart.summary", {
     from: formatShortDay(from, i18n.language, today),
     to: formatShortDay(to, i18n.language, today),
-    average: average ? t("trend.kg", { value: formatKg(average.averageKg, i18n.language) }) : "—",
+    average: average ? bodyWeightText(average.averageKg, i18n.language) : "—",
     loss: lossPct === null ? "—" : lossText(lossPct, t, i18n.language),
   });
   // The band and the lines are drawn in context only; the same context goes to the summary.
@@ -236,7 +238,7 @@ function BodyContent({
   const weighInStatus: Status = firstPull
     ? null
     : weighed
-      ? { text: t("trend.kg", { value: formatKg(weighed.weightKg, i18n.language) }), done: true }
+      ? { text: bodyWeightText(weighed.weightKg, i18n.language), done: true }
       : { text: t("today.weighInEmpty"), done: false };
   // The latest measurement up to today: its waist, else its neck, else its hips.
   const lastMeasure = measures
@@ -312,8 +314,12 @@ function BodyContent({
             )}
           </div>
           <WeightChart
-            weighings={shown}
-            averages={movingAverageSeries(weighings, from, to)}
+            weighings={shown.map((w) => ({ ...w, weightKg: weighingFromKg(w.weightKg, unit) }))}
+            averages={movingAverageSeries(weighings, from, to).map((a) => ({
+              ...a,
+              averageKg: weighingFromKg(a.averageKg, unit),
+            }))}
+            unit={unit}
             from={from}
             to={to}
             summary={fullSummary}
@@ -527,7 +533,7 @@ function weekView(
   const onCreatine = ctx.courses.some((c) => c.start <= w.end && c.end >= w.start);
   const parts = [
     why,
-    w.averageKg !== null && t("trend.kg", { value: formatKg(w.averageKg, lang) }),
+    w.averageKg !== null && bodyWeightText(w.averageKg, lang),
     waist !== null && t("body.dayParts.waist", { value: formatNumber(waist, lang, { digits: 1 }) }),
     ctx.showIntake &&
       food.kcalAvg !== null &&

@@ -9,6 +9,7 @@ import {
   rateWarning,
 } from "@belay/shared/tools/projection";
 import { roundTo } from "@belay/shared/tools/round";
+import { kgToLb } from "@belay/shared/tools/units";
 import { TriangleAlert } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -22,6 +23,7 @@ import { ToolPage } from "@/components/tool-page";
 import { attempt } from "@/lib/attempt";
 import { formatDay, formatNumber } from "@/lib/format";
 import { useTool } from "@/lib/tool-storage";
+import { weightStepper } from "@/lib/units";
 
 export const ProjectionInputs = z.object({
   targetKg: z.number().min(WEIGHT_RANGE_KG.min).max(WEIGHT_RANGE_KG.max).catch(75),
@@ -35,6 +37,8 @@ export function ProjectionTool() {
   const [today] = useState(() => new Date());
   const prefill = usePrefill(["weightKg"]);
   const currentKg = prefill.value("weightKg", state.weightKg ?? 80);
+  const w = weightStepper(currentKg, WEIGHT_RANGE_KG, 0.5);
+  const target = weightStepper(inputs.targetKg, WEIGHT_RANGE_KG, 0.5);
   const p = attempt(() => projectLoss(currentKg, inputs.targetKg, inputs.pct, today));
   const warning = rateWarning(inputs.pct);
   const n = (v: number, digits = 1) => formatNumber(v, i18n.language, { digits });
@@ -50,28 +54,28 @@ export function ProjectionTool() {
       <div className="grid grid-cols-2 gap-2.5">
         <NumberStepper
           label={t("projection.current")}
-          unit="kg"
-          value={currentKg}
-          min={WEIGHT_RANGE_KG.min}
-          max={WEIGHT_RANGE_KG.max}
-          step={0.5}
+          unit={w.unit}
+          value={w.value}
+          min={w.min}
+          max={w.max}
+          step={w.step}
           buttons={false}
           onChange={(v) => {
             if (v === null) return;
             prefill.edit("weightKg");
-            update((s) => ({ ...s, weightKg: v }));
+            update((s) => ({ ...s, weightKg: w.toKg(v) }));
           }}
           hint={prefill.hint("weightKg")}
         />
         <NumberStepper
           label={t("projection.target")}
-          unit="kg"
-          value={inputs.targetKg}
-          min={WEIGHT_RANGE_KG.min}
-          max={WEIGHT_RANGE_KG.max}
-          step={0.5}
+          unit={target.unit}
+          value={target.value}
+          min={target.min}
+          max={target.max}
+          step={target.step}
           buttons={false}
-          onChange={(v) => v !== null && setInputs({ targetKg: v })}
+          onChange={(v) => v !== null && setInputs({ targetKg: target.toKg(v) })}
         />
       </div>
       <RestoreButton prefill={prefill} />
@@ -102,7 +106,15 @@ export function ProjectionTool() {
           <p className="-mt-2 text-[13px] text-muted-foreground tabular-nums">
             {t("projection.rateLine", {
               pct: n(preset.pct, 2),
-              kg: n(roundTo(kgPerWeek(currentKg, preset.pct), 0.1)),
+              weight: n(
+                roundTo(
+                  w.unit === "kg"
+                    ? kgPerWeek(currentKg, preset.pct)
+                    : kgToLb(kgPerWeek(currentKg, preset.pct)),
+                  0.1,
+                ),
+              ),
+              unit: w.unit,
             })}
           </p>
         </>

@@ -41,6 +41,7 @@ import { ActionSheet } from "@/components/action-sheet";
 import { Button } from "@/components/ui/button";
 import { previousHref } from "@/lib/back";
 import { readPauseStops } from "@/lib/pause-stops";
+import { armRestSound } from "@/lib/rest-sound";
 import { sessionTitle } from "@/lib/format";
 import { readToolState, resolveEquipment } from "@/lib/tool-storage";
 import { levelOf } from "@/lib/transitions";
@@ -90,6 +91,8 @@ function Session({ account }: { account: OpenAccount }) {
   const [leaving, setLeaving] = useState<typeof view>();
   const [failed, setFailed] = useState<string>();
   useWakeLock();
+  // The first tap on the session unlocks the end-of-rest tone, for whoever turned it on.
+  useEffect(() => armRestSound(), []);
 
   // ?start=B: start session B (or take up the one already open), then drop the parameter so a
   // reload never starts another. Session C's rule reads the week's activities now, once (D6).

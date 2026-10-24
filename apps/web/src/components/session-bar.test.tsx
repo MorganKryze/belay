@@ -15,9 +15,17 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import i18n from "../i18n";
 import type { OpenAccount } from "../sync/account";
 import { type ActiveSession, type AccountDb, openAccountDb, recordChanges } from "../sync/db";
+import { armRestSound, restEnded } from "../lib/rest-sound";
 import { expectTokensOnly } from "../test/design-rules";
 import { ADA } from "../test/seed";
 import { SessionBar } from "./session-bar";
+
+// The tone itself is the sound module's to test; here, only when the bar asks for it.
+const disarm = vi.fn();
+vi.mock("../lib/rest-sound", () => ({
+  armRestSound: vi.fn(() => disarm),
+  restEnded: vi.fn(() => true),
+}));
 
 let db: AccountDb;
 let account: OpenAccount;
@@ -32,6 +40,9 @@ afterEach(async () => {
   db.close();
   vi.useRealTimers();
   Reflect.deleteProperty(navigator, "vibrate");
+  vi.mocked(armRestSound).mockClear();
+  vi.mocked(restEnded).mockClear();
+  disarm.mockClear();
   localStorage.clear();
   await i18n.changeLanguage("en");
 });
@@ -252,5 +263,52 @@ describe("SessionBar", () => {
     await new Promise((r) => setTimeout(r, 600));
     expect(screen.getByRole("status").textContent).toBe("");
     expect(vibrate).not.toHaveBeenCalled();
+  });
+
+  it("the session bar plays the tone when its rest runs out", async () => {
+    const endsAt = new Date(Date.now() + 400).toISOString();
+    await recordChanges(db, [], {
+      active: { workoutId: workout.id, slotIndex: 0, restEndsAt: endsAt },
+    });
+    await show({ workout: tenMinutes(), sets: [set(0, 0, 3)] });
+    // Armed on mount, so the first tap on Accueil unlocks the audio.
+    expect(armRestSound).toHaveBeenCalledOnce();
+    await screen.findByText("Rest · set 2 of 4 · Session C");
+    expect(restEnded).not.toHaveBeenCalled();
+    await waitFor(() => expect(screen.getByRole("status").textContent).toBe("Rest over"), {
+      timeout: 1500,
+    });
+    // Keyed by the stored end itself, as the rest bar keys it, so one end plays once.
+    expect(restEnded).toHaveBeenCalledExactlyOnceWith(endsAt);
+    await new Promise((r) => setTimeout(r, 600));
+    expect(restEnded).toHaveBeenCalledOnce();
+    cleanup();
+    expect(disarm).toHaveBeenCalledOnce();
+  });
+
+  it("it plays nothing when the rest ended before it mounted", async () => {
+    await resting(Date.now() - 1000);
+    await show({ workout: tenMinutes(), sets: [set(0, 0, 3)] });
+    await screen.findByText("Set 2 of 4 · Session C");
+    await new Promise((r) => setTimeout(r, 600));
+    expect(restEnded).not.toHaveBeenCalled();
+  });
+
+  it("it plays nothing while a pause holds the rest", async () => {
+    // The rest would have ended 300 ms in, but the pause that stops everything froze it.
+    const pausedAt = new Date(Date.now() - 100).toISOString();
+    await recordChanges(db, [], {
+      active: {
+        workoutId: workout.id,
+        slotIndex: 0,
+        restEndsAt: new Date(Date.now() + 300).toISOString(),
+        pausedAt,
+      },
+    });
+    await show({ workout: tenMinutes(), sets: [set(0, 0, 3)] });
+    await screen.findByRole("timer");
+    await new Promise((r) => setTimeout(r, 900));
+    expect(screen.getByRole("timer").textContent).toBe("0:01");
+    expect(restEnded).not.toHaveBeenCalled();
   });
 });

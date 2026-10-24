@@ -13,8 +13,9 @@ import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { DayChip } from "@/components/day-chip";
 import { Button } from "@/components/ui/button";
-import { formatNumber, sessionTitle } from "@/lib/format";
+import { sessionTitle } from "@/lib/format";
 import { useToday } from "@/lib/today";
+import { loadNumber, readWeightUnit, type WeightUnit } from "@/lib/units";
 import { type OpenAccount, useAccount, useActivities, useHistory, useRecord } from "@/sync/account";
 import { addRow, editChanges, type EditRow, rowsOf } from "@/workouts/editor";
 import { ExercisePicker } from "@/workouts/exercise-picker";
@@ -77,7 +78,9 @@ function Editor({
   const today = useToday();
   const navigate = useNavigate();
   const record = useRecord(account);
-  const kgText = (kg: number) => formatNumber(kg, i18n.language, { digits: 2, grouping: false });
+  // The unit is kept from the opening: rows typed in it are read back in it.
+  const [unit] = useState(readWeightUnit);
+  const kgText = (kg: number) => loadNumber(kg, i18n.language, unit);
   const [id] = useState(() => workout?.id ?? newId());
   const [date, setDate] = useState<ISODate>(workout ? dayOf(workout) : start!.date);
   const [plan, setPlan] = useState<Slot[]>(() => [...(workout?.plan ?? start!.plan)]);
@@ -106,6 +109,7 @@ function Editor({
     minutes: start?.minutes ?? 0,
     rows,
     now: new Date(),
+    unit,
   });
   const leave = workout
     ? ({ to: "/workouts/$workoutId", params: { workoutId: workout.id } } as const)
@@ -140,6 +144,7 @@ function Editor({
       minutes: start?.minutes ?? 0,
       rows,
       now: new Date(),
+      unit,
     });
     if (!written) return;
     try {
@@ -186,6 +191,7 @@ function Editor({
             onEdit={update}
             onRemove={remove}
             onAdd={() => add(i)}
+            unit={unit}
           />
         );
       })}
@@ -229,6 +235,7 @@ function EditorSlot({
   onEdit,
   onRemove,
   onAdd,
+  unit,
 }: {
   slot: Slot;
   exercise: Exercise;
@@ -238,6 +245,7 @@ function EditorSlot({
   onEdit: (id: string, patch: Partial<EditRow>) => void;
   onRemove: (row: EditRow) => void;
   onAdd: () => void;
+  unit: WeightUnit;
 }) {
   const { t } = useTranslation();
   const id = useId();
@@ -285,7 +293,7 @@ function EditorSlot({
               className={`grid ${grid} gap-2 px-0.5 pb-1 text-[11px] font-semibold text-muted-foreground`}
             >
               <span>{t("session.set")}</span>
-              <span className="text-center">kg</span>
+              <span className="text-center">{unit}</span>
               <span className="text-center">{t(timed ? "session.seconds" : "session.reps")}</span>
               {!timed && <span className="text-center">RIR</span>}
             </div>
@@ -293,7 +301,7 @@ function EditorSlot({
           {rows.map((row) => {
             const n = row.warmup ? row.position + 1 : row.position - MAX_WARMUPS + 1;
             const label = (key: string) =>
-              t(`session.${row.warmup ? "warmupField" : "setField"}.${key}`, { n });
+              t(`session.${row.warmup ? "warmupField" : "setField"}.${key}`, { n, unit });
             const input =
               "h-11 w-full min-w-0 rounded-[10px] border border-input bg-card text-center text-base font-semibold tabular-nums";
             return (

@@ -1,6 +1,7 @@
 import "@/i18n/lazy";
 import { useMutation } from "@tanstack/react-query";
 import {
+  BellRing,
   CalendarDays,
   Check,
   CirclePause,
@@ -48,7 +49,9 @@ import {
   setRangePill,
 } from "@/lib/home-trend";
 import { readPauseStops, setPauseStops } from "@/lib/pause-stops";
+import { previewRestSound, readRestSound, setRestSound, type RestSound } from "@/lib/rest-sound";
 import { readTheme, setTheme, type Theme } from "@/lib/theme";
+import { readWeightUnit, setWeightUnit, type WeightUnit } from "@/lib/units";
 import { formatWeekday } from "@/lib/format";
 import { useToday } from "@/lib/today";
 import { APP_VERSION, releaseUrl } from "@/lib/version";
@@ -66,12 +69,16 @@ import {
 const LANGUAGE_NAMES: Record<Locale, string> = { en: "English", fr: "Français" };
 const THEMES = ["light", "dark", "system"] as const satisfies readonly Theme[];
 const PAUSE_STOPS = ["all", "session"] as const satisfies readonly PauseStops[];
+const WEIGHT_UNITS = ["kg", "lb"] as const satisfies readonly WeightUnit[];
+const REST_SOUNDS = ["off", "on"] as const satisfies readonly RestSound[];
 const SHOWN = ["shown", "hidden"] as const satisfies readonly Shown[];
 
 export function Settings() {
   const { t, i18n } = useTranslation();
   const [theme, setThemeState] = useState<Theme>(readTheme);
   const [pauseStops, setPauseStopsState] = useState<PauseStops>(readPauseStops);
+  const [weightUnit, setWeightUnitState] = useState<WeightUnit>(readWeightUnit);
+  const [restSound, setRestSoundState] = useState<RestSound>(readRestSound);
   const [homeTrend, setHomeTrendState] = useState<HomeTrend>(readHomeTrend);
   const [rangePill, setRangePillState] = useState<HomeTrend>(readRangePill);
   const [weekIntake, setWeekIntakeState] = useState<Shown>(readWeekIntake);
@@ -112,6 +119,19 @@ export function Settings() {
             setThemeState(th);
           }}
         />
+        <MenuRow
+          icon={Weight}
+          label={t("settings.weightUnit")}
+          value={weightUnit}
+          options={WEIGHT_UNITS.map((v) => ({
+            value: v,
+            label: t(`settings.weightUnitOptions.${v}`),
+          }))}
+          onChange={(v) => {
+            setWeightUnit(v);
+            setWeightUnitState(v);
+          }}
+        />
       </GroupedList>
       <GroupedList label={home}>
         <MenuRow
@@ -140,6 +160,20 @@ export function Settings() {
           onChange={(v) => {
             setPauseStops(v);
             setPauseStopsState(v);
+          }}
+        />
+        <MenuRow
+          icon={BellRing}
+          label={t("settings.restSound")}
+          value={restSound}
+          options={REST_SOUNDS.map((v) => ({
+            value: v,
+            label: t(`settings.restSoundOptions.${v}`),
+          }))}
+          onChange={(v) => {
+            setRestSound(v);
+            setRestSoundState(v);
+            if (v === "on") previewRestSound();
           }}
         />
         <MenuRow

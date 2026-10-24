@@ -20,6 +20,8 @@ export const PLATE_PRESETS = {
   gym: { barKg: 20, platesKg: [20, 10, 5, 2.5] },
 } as const;
 export type PlatePreset = keyof typeof PLATE_PRESETS;
+// A standard pound gym: a 45 lb bar and its plates. loadBar is unit-free, so these load in pounds.
+export const LB_PLATES = { bar: 45, plates: [45, 35, 25, 10, 5, 2.5] } as const;
 
 // What "Custom" offers as one-tap chips; any other value can be added by hand.
 export const STANDARD_PLATES_KG = [25, 20, 15, 10, 5, 2.5, 2, 1.5, 1.25, 1, 0.5] as const;

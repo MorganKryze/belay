@@ -44,8 +44,8 @@
     "average": "Moyenne 7 jours",
     "summary": "Pesées du {{from}} au {{to}}. Moyenne 7 jours : {{average}}. Perte par semaine : {{loss}}.",
     "hint": "Flèches gauche et droite : jour par jour. Entrée : modifier la pesée.",
-    "weighIn": "Pesée {{value}} kg",
-    "movingAverage": "Moyenne 7 j {{value}} kg"
+    "weighIn": "Pesée {{value}} {{unit}}",
+    "movingAverage": "Moyenne 7 j {{value}} {{unit}}"
   },
   "account": {
     "unavailable": "Ce navigateur ne permet pas à Belay d'enregistrer sur l'appareil : le suivi n'est pas disponible ici. Les outils restent utilisables."
@@ -77,7 +77,6 @@
     "loss": "perte",
     "gain": "prise",
     "perWeek": "{{value}} %/sem",
-    "kg": "{{value}} kg",
     "lastWeek": "la semaine dernière",
     "stable": "stable"
   },
@@ -90,7 +89,7 @@
     "save": "Enregistrer",
     "delete": "Supprimer cette pesée",
     "close": "Fermer",
-    "outOfRange": "Saisis un poids entre 20 et 400 kg.",
+    "outOfRange": "Saisis un poids entre {{min}} et {{max}} {{unit}}.",
     "toastSaved": "Pesée enregistrée",
     "toastDeleted": "Pesée supprimée",
     "saveFailed": "Pas pu enregistrer sur ce téléphone. Réessaie.",
@@ -238,13 +237,13 @@
     "lead": "Quoi mettre de chaque côté de la barre.",
     "target": "Charge visée",
     "result": "De chaque côté",
-    "perSide": "{{plates}} kg par côté",
+    "perSide": "{{plates}} {{unit}} par côté",
     "barOnly": "Barre seule",
-    "bar": "Barre de {{bar}} kg",
-    "unreachable": "{{target}} kg n'est pas faisable avec ton matériel.",
-    "below": "Juste en dessous · {{total}} kg",
-    "above": "Juste au-dessus · {{total}} kg",
-    "underBar": "La barre seule pèse déjà {{bar}} kg.",
+    "bar": "Barre de {{bar}} {{unit}}",
+    "unreachable": "{{target}} {{unit}} n'est pas faisable avec ton matériel.",
+    "below": "Juste en dessous · {{total}} {{unit}}",
+    "above": "Juste au-dessus · {{total}} {{unit}}",
+    "underBar": "La barre seule pèse déjà {{bar}} {{unit}}.",
     "equipment": "Mon matériel"
   },
   "equipment": {
@@ -253,16 +252,18 @@
     "start": "Point de départ",
     "presets": {
       "competition": "Compétition",
+      "pounds": "Standard (lb)",
       "gym": "Salle",
       "custom": "Sur mesure"
     },
     "bar": "Barre",
-    "kg": "{{value}} kg",
+    "kg": "{{value}} {{unit}}",
     "otherBar": "Autre",
     "otherBarLabel": "Poids de la barre",
     "plates": "Disques",
     "edit": "Modifier ce matériel",
     "presetNote": "« Modifier » copie ce préréglage dans « Sur mesure » : les préréglages ne changent jamais.",
+    "lbNote": "En livres, Belay prend la barre de 45 lb et les disques standard.",
     "copied": "Copié depuis « {{preset}} ». Touche un disque pour l'ajouter ou le retirer.",
     "customNote": "Touche un disque pour l'ajouter ou le retirer.",
     "newPlate": "Nouveau disque",
@@ -336,7 +337,7 @@
       "balanced": "Équilibré",
       "steady": "Soutenu"
     },
-    "rateLine": "{{pct}} % · {{kg}} kg par semaine",
+    "rateLine": "{{pct}} % · {{weight}} {{unit}} par semaine",
     "fine": "Réglage fin",
     "presets": "Revenir aux rythmes",
     "fineLabel": "Rythme (% par semaine)",

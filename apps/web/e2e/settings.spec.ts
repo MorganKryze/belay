@@ -23,6 +23,8 @@ test.describe("accessibility", () => {
   for (const menu of [
     "Language",
     "Theme",
+    "Weight unit",
+    "End-of-rest sound",
     "Trend",
     "History",
     "Volume",
@@ -43,6 +45,26 @@ test.describe("accessibility", () => {
       });
     }
   }
+});
+
+test("the weight unit row reads Weight unit · Kilograms (kg) and switches to Pounds (lb)", async ({
+  page,
+}) => {
+  await openSettings(page);
+  await expect(row(page, "Weight unit")).toHaveAccessibleName("Weight unit · Kilograms (kg)");
+  await row(page, "Weight unit").click();
+  await page.getByRole("option", { name: "Pounds (lb)" }).click();
+  await expect(row(page, "Weight unit")).toHaveAccessibleName("Weight unit · Pounds (lb)");
+  expect(await page.evaluate(() => localStorage.getItem("belay.weightUnit"))).toBe("lb");
+});
+
+test("the end-of-rest sound row switches to On", async ({ page }) => {
+  await openSettings(page);
+  await expect(row(page, "End-of-rest sound")).toHaveAccessibleName("End-of-rest sound · Off");
+  await row(page, "End-of-rest sound").click();
+  await page.getByRole("option", { name: "On" }).click();
+  await expect(row(page, "End-of-rest sound")).toHaveAccessibleName("End-of-rest sound · On");
+  expect(await page.evaluate(() => localStorage.getItem("belay.restSound"))).toBe("on");
 });
 
 // A weigh-in the server refuses, then Réglages, where it is listed.
@@ -328,9 +350,9 @@ test.describe("on a page taller than the screen", () => {
   });
 });
 
-// Five preference sections outgrow 844 px: the check needs a screen the signed-out page fits.
-test.describe("signed out at 390 × 932", () => {
-  test.use({ viewport: { width: 390, height: 932 }, reducedMotion: "reduce" });
+// Twelve preference rows outgrow 932 px: the check needs a screen the signed-out page fits.
+test.describe("signed out at 390 × 1040", () => {
+  test.use({ viewport: { width: 390, height: 1040 }, reducedMotion: "reduce" });
   test("signed out, the version line sits alone at the bottom", async ({ page }) => {
     await page.route("**/api/me", (r) => r.fulfill({ status: 401 }));
     await page.goto("/settings");
@@ -372,7 +394,7 @@ test.describe("at 360 px", () => {
   test("the preference rows follow the kit at 360 px", async ({ page }) => {
     await openSettings(page);
     await settled(page);
-    for (const name of ["Language", "Theme"] as const) {
+    for (const name of ["Language", "Theme", "Weight unit", "End-of-rest sound"] as const) {
       const trigger = row(page, name);
       const box = (await trigger.boundingBox())!;
       expect(box.height, name).toBeGreaterThanOrEqual(52);
@@ -401,6 +423,7 @@ test.describe("at 360 px", () => {
           [
             ["Language", "English"],
             ["Theme", "System", "Light", "Dark"],
+            ["Weight unit", "Kilograms (kg)", "Pounds (lb)"],
           ],
         ],
         ["Home", [["Trend", "Shown", "Hidden"]]],
@@ -408,6 +431,7 @@ test.describe("at 360 px", () => {
           "Sessions",
           [
             ["Paused", "Everything stops", "Rest continues"],
+            ["End-of-rest sound", "Off", "On"],
             ["History", "With activities", "Sessions only"],
             ["Volume", "Shown", "Hidden"],
           ],
@@ -436,6 +460,7 @@ test.describe("at 360 px", () => {
           [
             ["Langue", "Français"],
             ["Thème", "Système", "Clair", "Sombre"],
+            ["Unité de poids", "Kilos (kg)", "Livres (lb)"],
           ],
         ],
         ["Accueil", [["Tendance", "Affichée", "Masquée"]]],
@@ -443,6 +468,7 @@ test.describe("at 360 px", () => {
           "Séances",
           [
             ["En pause", "Tout s'arrête", "Le repos continue"],
+            ["Son de fin de repos", "Coupé", "Activé"],
             ["Historique", "Avec activités", "Séances seules"],
             ["Volume", "Affiché", "Masqué"],
           ],

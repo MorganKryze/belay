@@ -1,5 +1,6 @@
 import "@/i18n/lazy";
 import { exerciseById } from "@belay/shared/exercises/catalog";
+import { kgToLb } from "@belay/shared/tools/units";
 import { liveSets, loggedByExercise, summary } from "@belay/shared/training/rules";
 import { NOTE_MAX } from "@belay/shared/training/workout";
 import { useNavigate, useParams } from "@tanstack/react-router";
@@ -11,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { readSessionVolume } from "@/lib/display-prefs";
 import { formatNumber, formatWeekday, sessionTitle } from "@/lib/format";
 import { useToday } from "@/lib/today";
+import { readWeightUnit } from "@/lib/units";
 import { cn } from "@/lib/utils";
 import { type OpenAccount, useAccount, useHistory, useRecord } from "@/sync/account";
 import { durationParts, formatLoad, recordText } from "@/workouts/format";
@@ -42,6 +44,7 @@ function Summary({ account }: { account: OpenAccount }) {
   const workout = history.workouts.find((w) => w.id === workoutId);
   if (!workout || workout.removed || workout.endedAt === null) return <NotFound />;
   const stats = summary(workout, liveSets(history), history);
+  const unit = readWeightUnit();
   const n = (v: number, digits = 0) => formatNumber(v, i18n.language, { digits });
   const home = () => void navigate({ to: "/" });
   const save = async () => {
@@ -88,8 +91,8 @@ function Summary({ account }: { account: OpenAccount }) {
         {volumeShown && (
           <Figure
             label={t("summary.volume")}
-            value={n(stats.volumeKg)}
-            unit="kg"
+            value={n(unit === "kg" ? stats.volumeKg : kgToLb(stats.volumeKg))}
+            unit={unit}
             className="col-span-2"
           />
         )}

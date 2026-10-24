@@ -25,8 +25,8 @@ import { useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ExerciseLoop } from "@/components/exercise-loop";
 import { Sheet } from "@/components/sheet";
-import { formatNumber, parseDecimal } from "@/lib/format";
 import { useLoop } from "@/lib/media";
+import { loadNumber, parseLoad, readWeightUnit, type WeightUnit } from "@/lib/units";
 import type { Chrono } from "@/sync/db";
 import { formatLoad, formatRir, formatSets } from "./format";
 import { formatClock } from "./hooks";
@@ -41,6 +41,9 @@ export type Row = {
   // Done with the exercise the slot held before it was replaced: shown, never corrected here.
   foreign: boolean;
 };
+
+// The kg a row holds before anything is typed: what was done, else what is prefilled.
+const storedKg = (row: Row | undefined): number | undefined => (row?.set ?? row?.planned)?.weightKg;
 
 const parseCount = (text: string): number | null =>
   /^\s*\d+\s*$/.test(text) ? Number(text) : null;
@@ -64,6 +67,7 @@ export function rowsOf(
   bar: { barKg: number; platesKg: readonly number[] },
   firstKg: number | null,
   extra = 0,
+  unit: WeightUnit = "kg",
 ): Row[] {
   const measure: Measure = slot.measure ?? "reps";
   const at = (position: number) => sets.find((s) => s.position === position);
@@ -93,7 +97,7 @@ export function rowsOf(
   });
   const first = work.find((r) => !r.foreign);
   const workKg = firstKg ?? first?.set?.weightKg ?? first?.planned?.weightKg ?? null;
-  const computed = measure === "reps" ? warmups(slot, workKg, exercise, bar) : [];
+  const computed = measure === "reps" ? warmups(slot, workKg, exercise, bar, unit) : [];
   // Warm-ups done with the previous exercise keep their place, read only; this exercise's own
   // warm-ups fill the places left.
   const warmSets = sets.filter((s) => s.warmup);
@@ -184,21 +188,30 @@ export function ExerciseCard({
   const { src: loopSrc, failed: loopFailed } = useLoop(open ? exercise.id : "");
   const [loopShown, setLoopShown] = useState(false);
   if (!open && loopShown) setLoopShown(false);
-  const kgText = (kg: number) => formatNumber(kg, i18n.language, { digits: 2, grouping: false });
+  // Frozen while the card lives: a number typed but not logged keeps the unit it was typed in,
+  // even if another tab changes the unit meanwhile. A change shows on the next visit.
+  const [unit] = useState(readWeightUnit);
+  const kgText = (kg: number) => loadNumber(kg, i18n.language, unit);
   const measure: Measure = slot.measure ?? "reps";
   const timed = measure === "seconds";
 
   const firstWork = workPosition(0);
   const firstDraft = drafts[firstWork]?.kg;
-  const rows = rowsOf(
-    slot,
-    exercise,
-    sets,
-    history,
-    bar,
-    firstDraft === undefined ? null : parseDecimal(firstDraft),
-    extra,
-  );
+  // The warm-ups follow a first load being typed; the work rows never depend on it.
+  const planned = rowsOf(slot, exercise, sets, history, bar, null, extra, unit);
+  const rows =
+    firstDraft === undefined
+      ? planned
+      : rowsOf(
+          slot,
+          exercise,
+          sets,
+          history,
+          bar,
+          parseLoad(firstDraft, unit, storedKg(planned.find((r) => r.position === firstWork))),
+          extra,
+          unit,
+        );
   const work = rows.filter((r) => !r.warmup);
   const doneWork = work.filter((r) => r.set).length;
   // The next row: the first still to do after the last one done (the first row if none is).
@@ -224,11 +237,22 @@ export function ExerciseCard({
     return String(countOf(value));
   };
   const loadOf = (row: Row): Load | null => {
+    const draft = drafts[row.position]?.kg;
+    const stored = storedKg(row);
     const kgShown = shown(row, "kg");
-    // A timed exercise may carry no added load: an empty cell is none.
-    const kg = timed && kgShown.trim() === "" ? 0 : parseDecimal(kgShown);
+    // A timed exercise may carry no added load: an empty cell is none. A load not typed is the
+    // stored kg as is; one typed is converted once, and still reads as the stored kg when it
+    // shows the same number (no drift through the pound).
+    const kg =
+      timed && kgShown.trim() === ""
+        ? 0
+        : draft === undefined
+          ? stored !== undefined && isSetKg(stored)
+            ? stored
+            : null
+          : parseLoad(draft, unit, stored);
     const count = parseCount(shown(row, "count"));
-    if (kg === null || count === null || !isSetKg(kg)) return null;
+    if (kg === null || count === null) return null;
     if (!(row.warmup || !timed ? isReps(count) : isSeconds(count))) return null;
     return loadIn(row.warmup ? "reps" : measure, kg, count);
   };
@@ -400,7 +424,7 @@ export function ExerciseCard({
             className="grid grid-cols-[3rem_1fr_1fr_2.75rem] gap-2 px-0.5 pb-1 text-[11px] font-semibold text-muted-foreground"
           >
             <span>{t("session.set")}</span>
-            <span className="text-center">kg</span>
+            <span className="text-center">{unit}</span>
             <span className="text-center">{t(timed ? "session.seconds" : "session.reps")}</span>
           </div>
           {rows.map((row, i) => {
@@ -413,7 +437,7 @@ export function ExerciseCard({
                 ? "border-input font-bold"
                 : "border-dashed border-input font-medium text-muted-foreground";
             const label = (key: string) =>
-              t(`session.${row.warmup ? "warmupField" : "setField"}.${key}`, { n: row.n });
+              t(`session.${row.warmup ? "warmupField" : "setField"}.${key}`, { n: row.n, unit });
             const countKey = row.warmup || !timed ? "reps" : "seconds";
             return (
               <div key={row.position}>
