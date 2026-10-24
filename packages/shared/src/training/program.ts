@@ -77,8 +77,11 @@ export const ALTERNATIVES: Readonly<Record<string, readonly string[]>> = {
 export const alternativesOf = (exerciseId: string): readonly string[] =>
   ALTERNATIVES[exerciseId] ?? [];
 
-export const sessionByCode = (code: string): SessionTemplate | undefined =>
-  starterProgram.find((s) => s.code === code);
+// The constant stays the default until every screen passes the stored program's templates.
+export const sessionByCode = (
+  code: string,
+  program: readonly SessionTemplate[] = starterProgram,
+): SessionTemplate | undefined => program.find((s) => s.code === code);
 
 // The slot indexes of a slot's group (consecutive slots of one groupKey), or the slot alone.
 export function groupOf(plan: readonly Slot[], slotIndex: number): number[] {
@@ -91,7 +94,9 @@ export function groupOf(plan: readonly Slot[], slotIndex: number): number[] {
   return out;
 }
 
-// The next session after the last one finished (D11): A → B → C → A; A with no history.
+// The next session after the last one finished (D11): the one that follows it in the program's
+// order, the first after the last one; the first with no history, or when the last one's letter
+// left the program (PM9).
 export function nextSession(
   workouts: readonly Pick<Workout, "sessionCode" | "startedAt" | "endedAt" | "removed">[],
   program: readonly SessionTemplate[] = starterProgram,
