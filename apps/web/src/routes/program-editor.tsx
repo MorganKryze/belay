@@ -8,20 +8,24 @@ import {
 import type { Slot } from "@belay/shared/training/workout";
 import { Link } from "@tanstack/react-router";
 import type { TFunction } from "i18next";
-import { type KeyboardEvent, useId, useMemo, useState } from "react";
+import { Check } from "lucide-react";
+import { type KeyboardEvent, useEffect, useId, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { BackLink, PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
+import { Toast } from "@/components/weigh-in";
 import {
   EditorContext,
   type EditorState,
+  isMac,
   type PlacedSession,
   placedOf,
   titleOf,
   useEditor,
 } from "@/editor/editor-context";
 import { SessionCard } from "@/editor/session-card";
-import { SlotGrid } from "@/editor/slot-grid";
+import { GridHelp, SlotGrid } from "@/editor/slot-grid";
+import { useEdits } from "@/editor/use-edits";
 import i18n from "@/i18n";
 import en from "@/i18n/editor/en.json";
 import fr from "@/i18n/editor/fr.json";
@@ -33,14 +37,14 @@ i18n.addResourceBundle("en", "translation", en, true, false);
 i18n.addResourceBundle("fr", "translation", fr, true, false);
 
 // The program editor, a computer's page: the active program's sessions as chips, the shown one's
-// card with its table. Read only for now.
+// card with its table, each value saved as soon as it changes.
 export function ProgramEditor() {
   const account = useAccount();
   if (account.kind === "loading") return null;
   return account.kind === "open" ? <WithData account={account} /> : <Header name={null} />;
 }
 
-function Header({ name }: { name: string | null }) {
+function Header({ name, saved = false }: { name: string | null; saved?: boolean }) {
   const { t } = useTranslation();
   return (
     <PageHeader
@@ -55,7 +59,14 @@ function Header({ name }: { name: string | null }) {
           {name && <span className="truncate text-body font-semibold">{name}</span>}
         </div>
       }
-    />
+    >
+      {saved && (
+        <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+          <Check aria-hidden className="size-4" />
+          {t("editor.saved")}
+        </p>
+      )}
+    </PageHeader>
   );
 }
 
@@ -69,6 +80,8 @@ function Editor({ account, programs }: { account: OpenAccount; programs: StoredP
   const [show, setShow] = useState<string | null>(null);
   const [said, announce] = useState("");
   const [searchFor, setSearchFor] = useState<string | null>(null);
+  const edits = useEdits(account, programs);
+  useUndoKey(edits.undo);
   const state = useMemo((): EditorState => {
     const program = programs.programs.find((x) => x.id === programs.activeId && !x.removed);
     const { rotation, aside } = placedOf(programs);
@@ -88,12 +101,13 @@ function Editor({ account, programs }: { account: OpenAccount; programs: StoredP
       show: setShow,
       announce,
       search: { for: searchFor, request: setSearchFor, done: () => setSearchFor(null) },
+      edits,
     };
-  }, [account, programs, show, searchFor]);
+  }, [account, programs, show, searchFor, edits]);
   return (
     <EditorContext.Provider value={state}>
       <section className="flex flex-col gap-4">
-        <Header name={state.program && programName(state.program, t)} />
+        <Header name={state.program && programName(state.program, t)} saved={edits.saved} />
         <p role="status" aria-live="polite" className="sr-only">
           {said}
         </p>
@@ -109,8 +123,27 @@ function Editor({ account, programs }: { account: OpenAccount; programs: StoredP
           <p className="text-body">{t("editor.noActive")}</p>
         )}
       </section>
+      <Toast toast={edits.toast} onDone={edits.dismiss} />
     </EditorContext.Provider>
   );
+}
+
+// ⌘ Z on a Mac, Ctrl Z elsewhere, undoes the last edit of this visit; in a field it is the
+// field's own undo of its typing.
+function useUndoKey(undo: () => Promise<boolean>) {
+  useEffect(() => {
+    const onKey = (e: globalThis.KeyboardEvent) => {
+      const mac = isMac();
+      if (e.key.toLowerCase() !== "z" || e.shiftKey || e.altKey) return;
+      if (!(mac ? e.metaKey && !e.ctrlKey : e.ctrlKey && !e.metaKey)) return;
+      const target = e.target as HTMLElement;
+      if (target.closest("input, textarea, [contenteditable]:not([contenteditable=false])")) return;
+      e.preventDefault();
+      void undo();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [undo]);
 }
 
 const chipBox =
@@ -253,6 +286,7 @@ function Shown({ placed }: { placed: PlacedSession }) {
       >
         <SlotGrid placed={placed} />
       </SessionCard>
+      <GridHelp />
     </div>
   );
 }
