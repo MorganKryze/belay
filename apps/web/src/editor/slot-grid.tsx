@@ -650,23 +650,24 @@ export function SlotGrid({ placed }: { placed: PlacedSession }) {
       />
       {/* While a row is lifted the section shows even empty, as a place to drop it. */}
       {(noClimbing.length > 0 || lift) && (
-        <div role="rowgroup" aria-label={t("editor.grid.noClimbing")}>
-          <div role="row" data-no-climbing className="grid min-w-3xl">
-            <span
-              role="gridcell"
-              className={`${line} min-h-11 border-t border-border pt-2.5 pr-4 pb-1.5 pl-15`}
-            >
-              <Mountain aria-hidden className="size-4" />
-              {t("editor.grid.noClimbing")}
-            </span>
-          </div>
-          <Rows
-            rows={noClimbing}
-            rule="no_climbing"
-            lifted={liftedId}
-            cells={(row, i) => cells(row, normal.length + i, i === noClimbing.length - 1)}
-          />
-        </div>
+        <Rows
+          rows={noClimbing}
+          rule="no_climbing"
+          lifted={liftedId}
+          label={t("editor.grid.noClimbing")}
+          head={
+            <div role="row" data-no-climbing className="grid min-w-3xl">
+              <span
+                role="gridcell"
+                className={`${line} min-h-11 border-t border-border pt-2.5 pr-4 pb-1.5 pl-15`}
+              >
+                <Mountain aria-hidden className="size-4" />
+                {t("editor.grid.noClimbing")}
+              </span>
+            </div>
+          }
+          cells={(row, i) => cells(row, normal.length + i, i === noClimbing.length - 1)}
+        />
       )}
     </div>
   );
@@ -777,17 +778,23 @@ function Rows({
   rows,
   rule,
   lifted,
+  label,
+  head,
   cells,
 }: {
   rows: readonly Row[];
   rule: "normal" | "no_climbing";
   lifted: string | null;
+  label?: string;
+  head?: ReactNode;
   cells: (row: Row, index: number) => RowCells;
 }) {
   const { t } = useTranslation();
   const slots = rows.map((r) => r.slot);
+  // A section's heading row sits in its own row group: a row group holds rows, never another group.
   return (
-    <div role="rowgroup">
+    <div role="rowgroup" aria-label={label}>
+      {head}
       {rows.flatMap((row, i) => {
         const slotRow = (
           <SlotRow
@@ -897,7 +904,9 @@ function RowMenu({
 }) {
   const { t } = useTranslation();
   return (
-    <DropdownMenu.Root>
+    // Not modal: a modal menu hides the page from assistive technology while the page's own controls
+    // stay focusable behind it. Focus still moves into the menu and Escape brings it back.
+    <DropdownMenu.Root modal={false}>
       <DropdownMenu.Trigger asChild>
         <button
           type="button"
