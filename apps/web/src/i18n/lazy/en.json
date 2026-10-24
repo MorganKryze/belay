@@ -520,7 +520,8 @@
     "paused": "Paused",
     "setOf": "set {{n}} of {{total}}",
     "setLead": "Set {{n}} of {{total}}",
-    "session": "Session {{code}}"
+    "session": "Session {{code}}",
+    "label": "Session in progress"
   },
   "loop": {
     "name": "Demonstration of {{name}}",
