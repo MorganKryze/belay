@@ -95,7 +95,7 @@ beforeEach(() => {
 });
 
 describe("the upgrade from version 2", () => {
-  it("keeps every entry, the queue, the refused list and the cursor", async () => {
+  it("keeps every entry, the queue and the refused list", async () => {
     // The database as M2b left it.
     const v2 = await openDB(accountDbName("user-a"), 2, {
       upgrade(db) {
@@ -128,11 +128,11 @@ describe("the upgrade from version 2", () => {
     await v2.put("meta", "12", "cursor");
 
     const db = await openAccountDb("user-a");
-    expect(db.version).toBe(4);
+    expect(db.version).toBe(5);
     expect(await readWeights(db)).toEqual([{ date: "2026-10-07", weightKg: 79.8 }]);
     expect(await readIntake(db)).toEqual([{ date: "2026-10-07", kcal: 2100, proteinG: null }]);
     expect((await readRejected(db)).map((r) => r.reason)).toEqual(["refused"]);
-    expect(await readCursor(db)).toBe("12");
+    expect(await readCursor(db)).toBe("0"); // the next sync fetches everything again
     // The session stores are there, and the queue goes on from where it was.
     await recordChanges(db, [start()], { active: active() });
     expect((await readOutbox(db)).map((e) => [e.id, e.change.kind])).toEqual([

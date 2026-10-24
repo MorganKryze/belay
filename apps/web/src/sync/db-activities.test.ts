@@ -145,13 +145,13 @@ describe("the upgrade from version 3", () => {
 
     const db = await openAccountDb("user-a");
     expect(closedForUpgrade).toBe(true);
-    expect(db.version).toBe(4);
+    expect(db.version).toBe(5);
     expect(await readHistory(db)).toEqual({
       workouts: [{ ...workout, planAt: null, startedAtAt: null }],
       sets: [{ ...set, seconds: null }],
     });
     expect(await readActiveSession(db)).toEqual({ workoutId: W, slotIndex: 0, restEndsAt: null });
-    expect(await readCursor(db)).toBe("40");
+    expect(await readCursor(db)).toBe("0"); // the next sync fetches everything again
     // The new stores are there, and the queue goes on from where it was.
     await recordChanges(db, [steps(8400)]);
     expect((await readOutbox(db)).map((e) => [e.id, e.change.kind])).toEqual([

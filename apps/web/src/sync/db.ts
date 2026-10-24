@@ -5,14 +5,21 @@ import { EMPTY_PROFILE, type Profile } from "@belay/shared/body/profile";
 import { isCreatineName } from "@belay/shared/body/supplements";
 import { DEFAULT_TARGET, type TargetRange } from "@belay/shared/body/target";
 import type { Weighing } from "@belay/shared/body/weighings";
-import { isNewer } from "@belay/shared/sync/merge";
+import { isNewer, mergeSlotChange } from "@belay/shared/sync/merge";
 import type {
+  ActiveProgramRow,
   ActivityRow,
   AnnotationRow,
   Change,
   IntakeRow,
   MeasureRow,
   ProfileRow,
+  ProgramChange,
+  ProgramRow,
+  ProgramSessionChange,
+  ProgramSessionRow,
+  ProgramSlotChange,
+  ProgramSlotRow,
   Rejected,
   SetChange,
   SetRow,
@@ -27,6 +34,15 @@ import type {
 import { isValidChange } from "@belay/shared/sync/valid";
 import type { Activity, StepsLog } from "@belay/shared/training/activities";
 import { autoClose, type History, openWorkout } from "@belay/shared/training/rules";
+import {
+  type Program,
+  type ProgramSession,
+  type ProgramSlot,
+  SEED,
+  SLOT_FIELDS,
+  type StoredPrograms,
+  withSeed,
+} from "@belay/shared/training/stored-program";
 import { type DBSchema, type IDBPDatabase, type IDBPTransaction, openDB } from "idb";
 
 export type OutboxEntry = { id: number; change: Change };
@@ -65,6 +81,12 @@ interface BelaySchema extends DBSchema {
   outbox: { key: number; value: { id?: number; change: Change } };
   meta: { key: "cursor"; value: string };
   rejected: { key: number; value: { id?: number; change: Change; reason: Rejected["reason"] } };
+  // Removed ones stay, as on the server; a starting row this device never wrote is read from the
+  // seed, so these hold only what was written here or received.
+  programs: { key: string; value: ProgramRow };
+  programSessions: { key: string; value: ProgramSessionRow };
+  programSlots: { key: string; value: ProgramSlotRow };
+  activeProgram: { key: "current"; value: ActiveProgramRow };
 }
 export type AccountDb = IDBPDatabase<BelaySchema>;
 type Store =
@@ -82,7 +104,11 @@ type Store =
   | "profile"
   | "outbox"
   | "meta"
-  | "rejected";
+  | "rejected"
+  | "programs"
+  | "programSessions"
+  | "programSlots"
+  | "activeProgram";
 type WriteTx = IDBPTransaction<BelaySchema, Store[], "readwrite">;
 const ALL: Store[] = [
   "weights",
@@ -100,6 +126,10 @@ const ALL: Store[] = [
   "outbox",
   "meta",
   "rejected",
+  "programs",
+  "programSessions",
+  "programSlots",
+  "activeProgram",
 ];
 
 // One database per account (D3): another account on this device never sees it, and nothing in
@@ -112,7 +142,7 @@ export async function openAccountDb(
   userId: string,
   { onLost }: { onLost?: () => void } = {},
 ): Promise<AccountDb> {
-  return openDB<BelaySchema>(accountDbName(userId), 4, {
+  return openDB<BelaySchema>(accountDbName(userId), 5, {
     // Each step adds stores and keeps every value and the queue of the earlier versions. A tab
     // still on an earlier version closes its connection when asked (`blocking` below, since M2a),
     // so the upgrade never waits on it.
@@ -152,6 +182,15 @@ export async function openAccountDb(
           for (const set of await tx.objectStore("sets").getAll())
             await tx.objectStore("sets").put({ ...set, seconds: set.seconds ?? null });
         }
+      }
+      if (oldVersion < 5) {
+        upgradeDb.createObjectStore("programs", { keyPath: "id" });
+        upgradeDb.createObjectStore("programSessions", { keyPath: "id" });
+        upgradeDb.createObjectStore("programSlots", { keyPath: "id" });
+        upgradeDb.createObjectStore("activeProgram");
+        // The earlier versions moved their cursor past program rows and the session each workout
+        // came from without keeping them: the next sync starts over and fetches everything.
+        await tx.objectStore("meta").delete("cursor");
       }
     },
     // A future schema bump in another tab must not hang on this connection.
@@ -219,6 +258,50 @@ const emptyActivity = (
   removedAt: null,
 });
 
+const PROGRAM_STORE = {
+  program: "programs",
+  programSession: "programSessions",
+  programSlot: "programSlots",
+} as const;
+type ProgramKind = keyof typeof PROGRAM_STORE;
+type ProgramRowOf = {
+  program: ProgramRow;
+  programSession: ProgramSessionRow;
+  programSlot: ProgramSlotRow;
+};
+// The fields each kind's changes write one at a time, each with its time (`${field}At`), the
+// removal too.
+const PROGRAM_FIELDS = {
+  program: ["name", "schedule"],
+  programSession: ["name", "place"],
+  programSlot: [...Object.keys(SLOT_FIELDS), "exercise", "rule", "position"],
+};
+const unwritten = (kind: ProgramKind) =>
+  Object.fromEntries([...PROGRAM_FIELDS[kind], "removed"].map((f) => [`${f}At`, null]));
+// A row as the server writes it at its creation or seeds it: every field unwritten until a change
+// of its own, as a session's start; a slot with no measure counts repetitions.
+const created = (kind: ProgramKind, record: { id: string; measure?: "seconds" | null }) => ({
+  removed: false,
+  ...record,
+  ...unwritten(kind),
+  ...(kind === "programSlot" && { measure: record.measure ?? null }),
+});
+function seedRow(kind: ProgramKind, id: string): object | undefined {
+  const seed = { program: SEED.programs, programSession: SEED.sessions, programSlot: SEED.slots };
+  const record = (seed[kind] as readonly { id: string }[]).find((r) => r.id === id);
+  return record && created(kind, record);
+}
+// A program row as this device holds it: written here or received, else the starting row with
+// every field unwritten, as the server seeds it.
+async function programRow<K extends ProgramKind>(
+  tx: WriteTx,
+  kind: K,
+  id: string,
+): Promise<ProgramRowOf[K] | undefined> {
+  const stored = (await tx.objectStore(PROGRAM_STORE[kind]).get(id)) as ProgramRowOf[K] | undefined;
+  return stored ?? (seedRow(kind, id) as ProgramRowOf[K] | undefined);
+}
+
 // The time of the field a change writes, as this device holds it; null: never written here.
 async function localAt(tx: WriteTx, change: Change): Promise<string | null> {
   switch (change.kind) {
@@ -281,11 +364,15 @@ async function localAt(tx: WriteTx, change: Change): Promise<string | null> {
       if (change.field === "create") return row ? change.at : null; // written once
       return (change.field === "values" ? row?.fieldsAt : row?.removedAt) ?? null;
     }
-    case "program":
     case "activeProgram":
+      return (await tx.objectStore("activeProgram").get("current"))?.at ?? null;
+    case "program":
     case "programSession":
-    case "programSlot":
-      return null; // not kept on this device yet
+    case "programSlot": {
+      const row = (await programRow(tx, change.kind, change.id)) as Fields | undefined;
+      if (change.field === "create") return row ? change.at : null; // written once
+      return (row?.[`${change.field}At`] as string | null | undefined) ?? null;
+    }
   }
 }
 
@@ -393,6 +480,8 @@ async function applyLocal(tx: WriteTx, change: Change): Promise<void> {
           await store.put({
             id: change.id,
             sessionCode: change.sessionCode,
+            // Absent from a start that recorded none (an older phone's, still queued).
+            ...(change.sessionId !== undefined && { sessionId: change.sessionId }),
             plan: change.plan,
             planAt: null,
             startedAt: change.startedAt,
@@ -426,7 +515,40 @@ async function applyLocal(tx: WriteTx, change: Change): Promise<void> {
     }
     case "set":
       return applySet(tx, change);
+    case "activeProgram":
+      await tx
+        .objectStore("activeProgram")
+        .put({ programId: change.programId, at: change.at }, "current");
+      return;
+    case "program":
+    case "programSession":
+    case "programSlot":
+      // Built by the editor on the row it shows, it is never refused: if it is, nothing is kept.
+      if (!(await applyProgram(tx, change))) throw new RangeError("invalid change");
   }
+}
+
+// A creation writes its row once; a field change writes its value and time, a slot's merged as on
+// the server (mergeSlotChange). False: the server refuses it, a rep range or warm-ups written for
+// another measure than the slot's. A row this device holds nowhere is left alone.
+async function applyProgram(
+  tx: WriteTx,
+  change: ProgramChange | ProgramSessionChange | ProgramSlotChange,
+): Promise<boolean> {
+  const row = await programRow(tx, change.kind, change.id);
+  const { kind, field, at, ...values } = change;
+  let next: object | null | undefined;
+  if (field === "create") next = row ?? created(kind, values);
+  else if (change.kind === "programSlot")
+    next = row && mergeSlotChange(row as ProgramSlotRow, change);
+  else
+    next = row && {
+      ...row,
+      ...("value" in values ? { [field]: values.value } : values),
+      [`${field}At`]: at,
+    };
+  if (next && next !== row) await tx.objectStore(PROGRAM_STORE[kind]).put(next as never);
+  return next !== null;
 }
 
 async function applySet(tx: WriteTx, change: SetChange): Promise<void> {
@@ -542,6 +664,24 @@ async function revert(tx: WriteTx, change: Change): Promise<void> {
       // A refused correction is replaced by the stored set, which the server sends back.
       if (change.field === "removed")
         await tx.objectStore("sets").put({ ...row, removed: false, removedAt: null });
+      return;
+    }
+    case "activeProgram":
+      return tx.objectStore("activeProgram").delete("current");
+    case "program":
+    case "programSession":
+    case "programSlot": {
+      // A refused creation takes its row away; a refused field goes back to unwritten, its value
+      // shown until the server's row, sent back in the same answer, replaces it; a refused
+      // removal is taken back.
+      const store = tx.objectStore(PROGRAM_STORE[change.kind]);
+      if (change.field === "create") return store.delete(change.id);
+      const row = (await programRow(tx, change.kind, change.id))!;
+      await store.put({
+        ...row,
+        [`${change.field}At`]: null,
+        ...(change.field === "removed" && { removed: false }),
+      });
       return;
     }
   }
@@ -780,6 +920,28 @@ export async function readHistory(db: AccountDb): Promise<History> {
   return { workouts, sets };
 }
 
+// The programs as the screens read them: what this device holds, the starting rows it lacks
+// read from the seed (SD3), every time left out.
+const recordOf = <T>(row: object) =>
+  Object.fromEntries(
+    Object.entries(row).filter(([k, v]) => !k.endsWith("At") && !(k === "measure" && v === null)),
+  ) as T;
+export async function readPrograms(db: AccountDb): Promise<StoredPrograms> {
+  const tx = db.transaction(["programs", "programSessions", "programSlots", "activeProgram"]);
+  const [programs, sessions, slots, active] = await Promise.all([
+    tx.objectStore("programs").getAll(),
+    tx.objectStore("programSessions").getAll(),
+    tx.objectStore("programSlots").getAll(),
+    tx.objectStore("activeProgram").get("current"),
+  ]);
+  return withSeed({
+    ...(active && { activeId: active.programId, activeAt: active.at }),
+    programs: programs.map(recordOf<Program>),
+    sessions: sessions.map(recordOf<ProgramSession>),
+    slots: slots.map(recordOf<ProgramSlot>),
+  });
+}
+
 export async function readActiveSession(db: AccountDb): Promise<ActiveSession | null> {
   return (await db.get("activeSession", "current")) ?? null;
 }
@@ -894,11 +1056,19 @@ export async function applyServer(
     for (const row of response.activities) queue(tx.objectStore("activities").put(row));
     for (const row of response.workouts) queue(tx.objectStore("workouts").put(row));
     for (const row of response.sets) queue(tx.objectStore("sets").put(row));
+    // Absent from an older server's answer: nothing to take.
+    for (const store of ["programs", "programSessions", "programSlots"] as const)
+      for (const row of response[store] ?? []) queue(tx.objectStore(store).put(row as never));
+    if (response.activeProgram)
+      queue(tx.objectStore("activeProgram").put(response.activeProgram, "current"));
     if (response.target) queue(tx.objectStore("profile").put(response.target, "target"));
     if (response.profile) queue(tx.objectStore("profile").put(response.profile, "body"));
     await Promise.all(ops);
+    // A slot change merges as on the server: one written for another measure than the server's
+    // row stays out, as the server will refuse it.
     for (const { change } of await tx.objectStore("outbox").getAll())
-      if (isNewer(change.at, await localAt(tx, change))) await applyLocal(tx, change);
+      if (change.kind === "programSlot") await applyProgram(tx, change);
+      else if (isNewer(change.at, await localAt(tx, change))) await applyLocal(tx, change);
     // The open session was finished or removed on another device: this one lets it go.
     const active = await tx.objectStore("activeSession").get("current");
     const session = active && (await tx.objectStore("workouts").get(active.workoutId));
