@@ -13,6 +13,7 @@ import {
   byPosition,
   DEFAULT_SCHEDULE,
   isProgramSlot,
+  isSessionName,
   MAX_PROGRAMS,
   MAX_ROTATION,
   MAX_SESSIONS,
@@ -23,6 +24,7 @@ import {
   type Schedule,
   SEED,
   SEED_PROGRAM_ID,
+  SESSION_NAME_MAX,
   SLOT_FIELDS,
   type SlotField,
   type StoredPrograms,
@@ -180,13 +182,28 @@ export const groupChange = (id: string, value: string | null, at: string): Progr
   at,
 });
 
-// A group is two rows or more: the one row a group is left with loses the key.
+// A row's group in its section: the consecutive rows sharing its key, as a session reads groups; the
+// row alone when it has no key. The same key further down is another group. None for a row not in it.
+export function runOf(section: readonly ProgramSlot[], id: string): ProgramSlot[] {
+  const at = section.findIndex((s) => s.id === id);
+  if (at < 0) return [];
+  const key = section[at]!.groupKey;
+  if (key === null) return [section[at]!];
+  let first = at;
+  while (first > 0 && section[first - 1]!.groupKey === key) first--;
+  let end = at + 1;
+  while (end < section.length && section[end]!.groupKey === key) end++;
+  return section.slice(first, end);
+}
+
+// A group is two rows or more: when row `id` leaves its group in `section` (the row still in it), the
+// one row the group is left with loses the key.
 export function dissolved(
   section: readonly ProgramSlot[],
-  key: string | null,
+  id: string,
   at: string,
 ): ProgramSlotChange[] {
-  const left = section.filter((s) => key !== null && s.groupKey === key);
+  const left = runOf(section, id).filter((s) => s.id !== id && s.groupKey !== null);
   return left.length === 1 ? [groupChange(left[0]!.id, null, at)] : [];
 }
 
@@ -279,7 +296,7 @@ export function copySlot(
 }
 
 const RULES = [null, "no_climbing"] as const;
-// A key made from a row's id, as a new group takes its first row's: unique within any session.
+// A group key made from a new id (its last 12 hex digits, the random ones): unique within any session.
 const keyOf = (id: string) => id.replace(/-/g, "").slice(-12);
 
 // The live slots of session `sourceId` (in `from`) created after the slots of session `targetId`
@@ -305,9 +322,18 @@ function copiesOf(
   return copies.some((c) => "position" in c && c.position > POSITION_MAX) ? null : copies;
 }
 
+// A name as it is kept: trimmed, cut to max UTF-16 units (never inside a character written in two),
+// trimmed again; empty means no name.
+export function cutName(name: string | null, max: number): string | null {
+  let cut = (name ?? "").trim().slice(0, max);
+  if (/[\uD800-\uDBFF]$/.test(cut)) cut = cut.slice(0, -1);
+  return cut.trim() || null;
+}
+
 // A session copied last into its source's list (its rotation, or the collection) with every live
-// slot, all with new ids. The copy is a new session, so its groups keep their keys.
-// Refused past 200 sessions, 26 in the rotation or 30 slots.
+// slot, all with new ids. The copy is a new session, so its groups keep their keys. Its name is cut
+// to 40 as a typed one. Refused past 200 sessions, 26 in the rotation or 30 slots, or for a name a
+// session cannot carry.
 export function copySession(
   p: StoredPrograms,
   sourceId: string,
@@ -316,16 +342,17 @@ export function copySession(
   at: string,
 ): (ProgramSessionChange | ProgramSlotChange)[] | null {
   const source = live(p.sessions).find((s) => s.id === sourceId);
-  if (!source) return null;
+  const cut = cutName(name, SESSION_NAME_MAX);
+  if (!source || !isSessionName(cut)) return null;
   const id = newId();
-  const created = addSession(p, id, source.programId, at);
-  const slots = created && copiesOf(p, sourceId, p, id, newId, at);
-  return created && slots && [{ ...created[0]!, name } as ProgramSessionChange, ...slots];
+  const create = addSession(p, id, source.programId, at)?.[0];
+  const slots = create && copiesOf(p, sourceId, p, id, newId, at);
+  return create?.field === "create" && slots ? [{ ...create, name: cut }, ...slots] : null;
 }
 
 // The live slots of a session appended to another one, sections and groups kept; each copied group
 // takes a key made from its first row's new id, so it never merges with a group of the target.
-// Refused past 30 slots.
+// Refused past 30 slots, and from a session that is removed, unknown or empty.
 export function copySlotsInto(
   p: StoredPrograms,
   targetId: string,
@@ -333,7 +360,8 @@ export function copySlotsInto(
   newId: () => string,
   at: string,
 ): ProgramSlotChange[] | null {
-  if (!live(p.sessions).some((s) => s.id === targetId)) return null;
+  const known = (id: string) => live(p.sessions).some((s) => s.id === id);
+  if (!known(targetId) || !known(sourceId) || ownSlots(p, sourceId).length === 0) return null;
   const keys = new Map<string, string>();
   return copiesOf(p, sourceId, p, targetId, newId, at, (key, id) => {
     if (key === null) return null;
@@ -461,16 +489,16 @@ export function neighbourOf(p: StoredPrograms, id: string): string | null {
   return (order[i - 1] ?? order[i + 1])?.id ?? null;
 }
 
-// A program removed with its sessions: the active one hands the pointer to its
-// neighbour first, as the server writes a batch's removals after its active choice and the phone
-// applies changes in order. The last live program is never removed.
+// A program removed: the active one hands the pointer to its neighbour first, as the server writes
+// a batch's removals after its active choice and the phone applies changes in order. Its sessions
+// keep their flags: a removed program hides them, and putting it back restores them. The last live
+// program is never removed.
 export function removeProgramFor(p: StoredPrograms, id: string, at: string): Edit[] | null {
   const next = neighbourOf(p, id);
   if (next === null) return null;
   return [
     ...(id === p.activeId ? [{ kind: "activeProgram" as const, programId: next, at }] : []),
     { kind: "program", id, field: "removed", value: true, at },
-    ...siblings(p, id).flatMap((s) => removeSession(s.id, at)),
   ];
 }
 
@@ -511,12 +539,13 @@ export const putBack = (
     ? placeSession(p, id, p.activeId, Infinity, at)
     : null;
 
-// A row and the next one of its section share one key: this row's, else the next row's,
-// else a new one made from this row's id; the next row's whole group follows when both had one.
-// None without a next row; nothing to write when they are already chained.
+// A row's group and the next row's become one, under a key no other row of the section has: the
+// next row's, else this row's, else a new one from `newId()`. None without a next row; nothing to
+// write when they are already chained.
 export function chainWithNext(
   p: StoredPrograms,
   slotId: string,
+  newId: () => string,
   at: string,
 ): ProgramSlotChange[] | null {
   const slot = slotOf(p, slotId);
@@ -524,12 +553,13 @@ export function chainWithNext(
   const section = sectionOf(p, slot.sessionId, slot.rule);
   const next = section[section.findIndex((s) => s.id === slotId) + 1];
   if (!next) return null;
-  const key = slot.groupKey ?? next.groupKey ?? keyOf(slotId);
-  const joining =
-    next.groupKey === null ? [next] : section.filter((s) => s.groupKey === next.groupKey);
-  return [slot, ...joining].flatMap((s) =>
-    s.groupKey === key ? [] : [groupChange(s.id, key, at)],
-  );
+  const mine = runOf(section, slotId);
+  if (mine.includes(next)) return [];
+  const joining = [...mine, ...runOf(section, next.id)];
+  const free = (key: string | null): key is string =>
+    key !== null && !section.some((s) => s.groupKey === key && !joining.includes(s));
+  const key = [next.groupKey, slot.groupKey].find(free) ?? keyOf(newId());
+  return joining.flatMap((s) => (s.groupKey === key ? [] : [groupChange(s.id, key, at)]));
 }
 
 // A row taken out of its group: a middle row moves just below the group so the group stays in
@@ -541,15 +571,14 @@ export function leaveGroup(
 ): ProgramSlotChange[] | null {
   const slot = slotOf(p, slotId);
   if (!slot || slot.groupKey === null) return null;
-  const others = sectionOf(p, slot.sessionId, slot.rule, slotId);
-  const members = sectionOf(p, slot.sessionId, slot.rule).filter(
-    (s) => s.groupKey === slot.groupKey,
-  );
+  const section = sectionOf(p, slot.sessionId, slot.rule);
+  const others = section.filter((s) => s.id !== slotId);
+  const members = runOf(section, slotId);
   const last = members.at(-1)!;
   const middle = members[0]!.id !== slotId && last.id !== slotId;
   return [
     groupChange(slotId, null, at),
-    ...dissolved(others, slot.groupKey, at),
+    ...dissolved(section, slotId, at),
     ...(middle ? renumber(insert(others, slot, others.indexOf(last) + 1), at) : []),
   ];
 }

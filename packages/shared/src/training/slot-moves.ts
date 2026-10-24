@@ -3,7 +3,7 @@
 // no-climbing section's border changes what the row belongs to. Never imported at startup: only
 // the editor needs it.
 import type { ProgramSlotChange } from "../sync/schema";
-import { dissolved, groupChange, renumber, sectionOf } from "./program-edits";
+import { dissolved, groupChange, renumber, runOf, sectionOf } from "./program-edits";
 import type { StoredPrograms } from "./stored-program";
 
 export interface Stop {
@@ -18,19 +18,25 @@ const same = (a: Stop, b: Stop) =>
   a.rule === b.rule && a.index === b.index && a.groupKey === b.groupKey;
 
 // For each gap of the normal section, then of the no-climbing one: inside the group above, outside,
-// inside the group below; a single stop inside when both neighbours share a group, so a first step
-// at a group's edge lands just outside and the next one inside. An empty section offers one stop.
+// inside the group below; a single stop inside when both neighbours are one group (a group is its
+// consecutive rows, the lifted row still in place), so a first step at a group's edge lands just
+// outside and the next one inside. An empty section offers one stop.
 export function slotStops(p: StoredPrograms, slotId: string): Stop[] {
   const slot = slotOf(p, slotId);
   if (!slot) return [];
   return RULES.flatMap((rule) => {
-    const rows = sectionOf(p, slot.sessionId, rule, slotId);
+    const all = sectionOf(p, slot.sessionId, rule);
+    const rows = all.filter((s) => s.id !== slotId);
     return Array.from({ length: rows.length + 1 }, (_, index): Stop[] => {
       const above = rows[index - 1]?.groupKey ?? null;
       const below = rows[index]?.groupKey ?? null;
-      if (above !== null && above === below) return [{ rule, index, groupKey: above }];
+      const oneGroup = above !== null && runOf(all, rows[index - 1]!.id).includes(rows[index]!);
+      if (oneGroup) return [{ rule, index, groupKey: above }];
+      // Two groups of one key on both sides offer their inside stop once.
       return [above, null, below].flatMap((groupKey, i) =>
-        groupKey === null && i !== 1 ? [] : [{ rule, index, groupKey }],
+        (groupKey === null && i !== 1) || (i === 2 && groupKey === above)
+          ? []
+          : [{ rule, index, groupKey }],
       );
     }).flat();
   });
@@ -78,7 +84,7 @@ export function placeSlot(
     ...(keyChanges ? [groupChange(slotId, stop.groupKey, at)] : []),
     ...renumber(into, at),
     ...(slot.rule === stop.rule ? [] : renumber(left, at)),
-    ...(keyChanges ? dissolved(left, slot.groupKey, at) : []),
+    ...(keyChanges ? dissolved(sectionOf(p, slot.sessionId, slot.rule), slotId, at) : []),
   ];
 }
 

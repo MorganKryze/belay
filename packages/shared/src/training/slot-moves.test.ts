@@ -173,6 +173,22 @@ describe("placing a row", () => {
     );
   });
 
+  it("a plain row between two groups of one key stays plain where it is", () => {
+    const state = rows(["K", "K", null, "K", "K"]);
+    expect(slotStops(state, R(2)).filter((s) => s.index === 2)).toEqual([stop(2, "K"), stop(2)]);
+    expect(placed(state, R(2), slotStops(state, R(2))[stopOf(state, R(2))]!)).toEqual([]);
+  });
+
+  it("a row leaving a group of two clears the other even when its key comes back further down", () => {
+    expect(placed(rows(["K", "K", null, "K", "K", "K"]), R(0), stop(2))).toEqual([
+      change(R(0), "group", null),
+      change(R(1), "position", 0),
+      change(R(2), "position", 1),
+      change(R(0), "position", 2),
+      change(R(1), "group", null),
+    ]);
+  });
+
   it("writes nothing for the row's own stop, and refuses a stop it does not offer", () => {
     const state = rows([null, "G", "G"]);
     expect(placed(state, R(1), slotStops(state, R(1))[stopOf(state, R(1))]!)).toEqual([]);

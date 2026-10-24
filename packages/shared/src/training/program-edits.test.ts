@@ -36,6 +36,7 @@ import {
   setAside,
   setSchedule,
 } from "./program-edits";
+import { placeSlot } from "./slot-moves";
 import {
   DEFAULT_SCHEDULE,
   MAX_PROGRAMS,
@@ -661,6 +662,29 @@ describe("copies", () => {
     expect(keyOf("4").groupKey).not.toBe(keyOf("5").groupKey);
   });
 
+  it("copying from a removed, unknown or empty session is no copy", () => {
+    const removed = withSeed({
+      ...two,
+      sessions: two.sessions.map((s) => (s.id === X ? { ...s, removed: true } : s)),
+      slots: [slot(R(0), { sessionId: X })],
+    });
+    expect(copySlotsInto(removed, Y, X, ids(0xf00), AT)).toBeNull();
+    expect(copySlotsInto(two, Y, NEW, ids(0xf00), AT)).toBeNull();
+    expect(copySlotsInto(two, Y, X, ids(0xf00), AT)).toBeNull();
+  });
+
+  it("a copied session's name is trimmed and cut to 40 like a typed one, and checked", () => {
+    const named = (name: string | null) =>
+      (valid(copySession(SEED, C, name, ids(0xf00), AT))[0] as { name: string | null }).name;
+    expect(named(`  ${"x".repeat(45)}`)).toBe("x".repeat(40));
+    expect(named(`${"a".repeat(39)} b`)).toBe("a".repeat(39));
+    expect(named("   ")).toBeNull();
+    expect(named(null)).toBeNull();
+    // A cut never splits a character written in two units.
+    expect(named(`${"a".repeat(39)}😀`)).toBe("a".repeat(39));
+    expect(copySession(SEED, C, "Push\u0007", ids(0xf00), AT)).toBeNull();
+  });
+
   it("a copy past 30 slots, 26 in a rotation or 200 sessions is refused whole", () => {
     const own = SEED.slots.filter((s) => s.sessionId === C).length;
     const nearly = withRows(
@@ -825,11 +849,11 @@ describe("program order and removal", () => {
     expect(neighbourOf(SEED, SEED_PROGRAM_ID)).toBeNull();
   });
 
-  it("removing the active program points at the one listed before it, then flags it and its sessions, pointer first", () => {
+  it("removing the active program points at the one listed before it, then flags it alone, pointer first", () => {
+    // Its sessions keep their flags: a removed program hides them, and putting it back restores them.
     expect(valid(removeProgramFor(three(P2), P2, AT))).toEqual([
       { kind: "activeProgram", programId: SEED_PROGRAM_ID, at: AT },
       { kind: "program", id: P2, field: "removed", value: true, at: AT },
-      { kind: "programSession", id: X, field: "removed", value: true, at: AT },
     ]);
   });
 
@@ -837,20 +861,12 @@ describe("program order and removal", () => {
     expect(valid(removeProgramFor(three(SEED_PROGRAM_ID), SEED_PROGRAM_ID, AT))).toEqual([
       { kind: "activeProgram", programId: P2, at: AT },
       { kind: "program", id: SEED_PROGRAM_ID, field: "removed", value: true, at: AT },
-      ...[A, B, C].map((id) => ({
-        kind: "programSession",
-        id,
-        field: "removed",
-        value: true,
-        at: AT,
-      })),
     ]);
   });
 
   it("removing another program leaves the pointer alone", () => {
     expect(valid(removeProgramFor(three(SEED_PROGRAM_ID), P3, AT))).toEqual([
       { kind: "program", id: P3, field: "removed", value: true, at: AT },
-      { kind: "programSession", id: W, field: "removed", value: true, at: AT },
     ]);
   });
 
@@ -913,25 +929,95 @@ describe("removing and setting sessions aside", () => {
 
 describe("groups", () => {
   it("chaining joins the next row's group, merges two groups, or makes a new key", () => {
-    expect(valid(chainWithNext(grouped, R(0), AT))).toEqual([group(R(0), "G")]);
-    expect(valid(chainWithNext(grouped, R(3), AT))).toEqual([group(R(4), "G")]);
-    expect(valid(chainWithNext(grouped, R(4), AT))).toEqual([group(R(4), "H")]);
+    const fresh = ids(0xf00);
+    expect(valid(chainWithNext(grouped, R(0), fresh, AT))).toEqual([group(R(0), "G")]);
+    expect(valid(chainWithNext(grouped, R(3), fresh, AT))).toEqual([group(R(4), "G")]);
+    expect(valid(chainWithNext(grouped, R(4), fresh, AT))).toEqual([group(R(4), "H")]);
+    // The next row's key first: the whole group above takes it.
     const adjacent = withRows(rowsOf([null, "G", "G", "H", "H"]));
-    expect(valid(chainWithNext(adjacent, R(2), AT))).toEqual([group(R(3), "G"), group(R(4), "G")]);
+    expect(valid(chainWithNext(adjacent, R(2), fresh, AT))).toEqual([
+      group(R(1), "H"),
+      group(R(2), "H"),
+    ]);
     const plain = withRows(rowsOf([null, null]));
-    const key = R(0).replace(/-/g, "").slice(-12);
-    expect(valid(chainWithNext(plain, R(0), AT))).toEqual([group(R(0), key), group(R(1), key)]);
+    const key = seedId(0xf00).replace(/-/g, "").slice(-12);
+    expect(valid(chainWithNext(plain, R(0), ids(0xf00), AT))).toEqual([
+      group(R(0), key),
+      group(R(1), key),
+    ]);
+  });
+
+  it("chaining never takes a key another group of the section has", () => {
+    // R(3) carries K alone while R(0) and R(1) are group K: the pair gets a new key.
+    const shared = withRows(rowsOf(["K", "K", null, "K", null]));
+    const key = seedId(0xf00).replace(/-/g, "").slice(-12);
+    expect(valid(chainWithNext(shared, R(3), ids(0xf00), AT))).toEqual([
+      group(R(3), key),
+      group(R(4), key),
+    ]);
+  });
+
+  it("a row chained, moved out, then chained again makes a second group; leaving the first stays by it", () => {
+    const applied = (p: StoredPrograms, changes: readonly ProgramSlotChange[] | null) =>
+      withSeed({
+        ...p,
+        slots: p.slots.map((s) =>
+          valid(changes).reduce(
+            (row, c) =>
+              c.id !== row.id
+                ? row
+                : c.field === "position"
+                  ? { ...row, position: c.value }
+                  : c.field === "group"
+                    ? { ...row, groupKey: c.value }
+                    : row,
+            s,
+          ),
+        ),
+      });
+    const fresh = ids(0xf00);
+    let state = withRows(rowsOf([null, null, null, null, null, null, null]));
+    for (const i of [1, 2, 3]) state = applied(state, chainWithNext(state, R(i), fresh, AT));
+    // R(1) below R(5): the group keeps R(2) to R(4).
+    state = applied(state, placeSlot(state, R(1), { rule: null, index: 5, groupKey: null }, AT));
+    state = applied(state, chainWithNext(state, R(1), fresh, AT));
+    const keyOf = (i: number) => state.slots.find((s) => s.id === R(i))!.groupKey;
+    expect(keyOf(1)).toBe(keyOf(6));
+    expect(keyOf(1)).not.toBe(keyOf(2));
+    expect(valid(leaveGroup(state, R(3), AT))).toEqual([
+      group(R(3), null),
+      position(R(4), 2),
+      position(R(3), 3),
+    ]);
+  });
+
+  it("a group is its consecutive rows: the same key further down is another group", () => {
+    const twice = withRows(rowsOf(["K", "K", "K", null, "K", "K"]));
+    expect(valid(leaveGroup(twice, R(1), AT))).toEqual([
+      group(R(1), null),
+      position(R(2), 1),
+      position(R(1), 2),
+    ]);
+    expect(valid(leaveGroup(twice, R(4), AT))).toEqual([group(R(4), null), group(R(5), null)]);
+    expect(valid(leaveGroup(twice, R(0), AT))).toEqual([group(R(0), null)]);
+    // Chained with the second, the row would also join the first: the second takes a new key.
+    const key = seedId(0xf00).replace(/-/g, "").slice(-12);
+    expect(valid(chainWithNext(twice, R(3), ids(0xf00), AT))).toEqual([
+      group(R(3), key),
+      group(R(4), key),
+      group(R(5), key),
+    ]);
   });
 
   it("chaining has no next row past the section's last, and nothing to write inside a group", () => {
-    expect(chainWithNext(grouped, R(6), AT)).toBeNull();
+    expect(chainWithNext(grouped, R(6), ids(0xf00), AT)).toBeNull();
     const sections = withRows([
       slot(R(0), { sessionId: X }),
       slot(R(1), { sessionId: X, rule: "no_climbing" }),
     ]);
-    expect(chainWithNext(sections, R(0), AT)).toBeNull();
-    expect(chainWithNext(grouped, R(1), AT)).toEqual([]);
-    expect(chainWithNext(grouped, NEW, AT)).toBeNull();
+    expect(chainWithNext(sections, R(0), ids(0xf00), AT)).toBeNull();
+    expect(chainWithNext(grouped, R(1), ids(0xf00), AT)).toEqual([]);
+    expect(chainWithNext(grouped, NEW, ids(0xf00), AT)).toBeNull();
   });
 
   it("leaving a middle row moves it below the group; a group left with one row is dissolved", () => {
@@ -1062,7 +1148,7 @@ describe("every change built", () => {
         removeProgramFor(two, SEED_PROGRAM_ID, AT),
         removeSessionIn(two, Z, AT),
         setAside(two, A, AT),
-        chainWithNext(grouped, R(4), AT),
+        chainWithNext(grouped, R(4), ids(0xf00), AT),
         leaveGroup(grouped, R(2), AT),
       ] as (readonly Change[] | null)[]
     ).flatMap((changes): (Change | null)[] => (changes ? [...changes] : [null]));
