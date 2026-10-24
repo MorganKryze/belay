@@ -334,6 +334,15 @@ describe("the editor's sessions", () => {
       ),
     );
     await said("Séance D ajoutée");
+    // The empty session as drawn: its size line, the sentence over the starts, and the search's
+    // keys under the card while it is the session just added.
+    expect(screen.getByText("Nouvelle séance · aucun exercice")).toBeTruthy();
+    expect(screen.getByText("Aucun exercice pour l'instant.")).toBeTruthy();
+    const help =
+      "Séance D ajoutée en fin de rotation. Tape pour chercher · Entrée ajoute · Échap ferme · Ctrl Z annuler";
+    const helpShown = () =>
+      screen.queryAllByText((_, el) => el?.tagName === "P" && plain(el.textContent) === help);
+    expect(helpShown()).toHaveLength(1);
     const added = (await stored()).sessions.filter(
       (s) => s.programId === SEED_PROGRAM_ID && !s.removed,
     );
@@ -341,6 +350,12 @@ describe("the editor's sessions", () => {
     expect(added.at(-1)!.name).toBeNull();
     // No toast: the chip and the card say it.
     expect(screen.queryByRole("button", { name: "Annuler" })).toBeNull();
+    // Another session shown, then D again: the line was for the moment of the add.
+    fireEvent.click(within(await rotation()).getByRole("tab", { name: "A · Push" }));
+    await titleIs("Séance A · Push");
+    fireEvent.click(within(await rotation()).getByRole("tab", { name: "D" }));
+    await titleIs("Séance D");
+    expect(helpShown()).toHaveLength(0);
   });
 
   it("the pencil opens the name, Enter saves trimmed, Escape cancels, empty means no name", async () => {
@@ -603,7 +618,7 @@ describe("the editor's sessions", () => {
     expect(screen.queryByRole("grid")).toBeNull();
     expect(
       screen.getByText(
-        "Ajoute un exercice avec le champ ci-dessus, ou pars d'une séance existante :",
+        "Cherche dans la bibliothèque avec le champ ci-dessus, ou pars d'une séance existante :",
       ),
     ).toBeTruthy();
     expect(screen.getByRole("combobox", { name: "Ajouter un exercice" })).toBeTruthy();

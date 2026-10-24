@@ -23,6 +23,7 @@
       "putBack": "Remettre dans la rotation",
       "rename": "Renommer la séance",
       "more": "Autres actions sur la séance",
+      "newSession": "Nouvelle séance · aucun exercice",
       "nameLabel": "Nom de la séance",
       "nameHint": "Nom de la séance · Entrée enregistre · Échap annule"
     },
@@ -54,7 +55,11 @@
       "undo": "annuler",
       "enter": "Entrée",
       "space": "Espace",
-      "on": "sur"
+      "on": "sur",
+      "added": "Séance {{code}} ajoutée en fin de rotation. Tape pour chercher",
+      "adds": "ajoute",
+      "escape": "Échap",
+      "closes": "ferme"
     },
     "cell": {
       "reps": "Entre 1 et 100, par exemple 6-10",
@@ -108,7 +113,8 @@
       "added": "Séance {{code}} ajoutée"
     },
     "empty": {
-      "text": "Ajoute un exercice avec le champ ci-dessus, ou pars d'une séance existante :",
+      "title": "Aucun exercice pour l'instant.",
+      "text": "Cherche dans la bibliothèque avec le champ ci-dessus, ou pars d'une séance existante :",
       "from": "Partir de {{session}}"
     },
     "toast": {

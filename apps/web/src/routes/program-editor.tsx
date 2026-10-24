@@ -44,7 +44,7 @@ import { ProgramSwitcher } from "@/editor/program-switcher";
 import { SessionCard } from "@/editor/session-card";
 import { chipId, chipName, PANEL, SessionChips, spokenName } from "@/editor/session-chips";
 import { SessionMenu } from "@/editor/session-menu";
-import { GridHelp, SlotGrid } from "@/editor/slot-grid";
+import { AddedHelp, GridHelp, SlotGrid } from "@/editor/slot-grid";
 import { useEdits } from "@/editor/use-edits";
 import i18n from "@/i18n";
 import en from "@/i18n/editor/en.json";
@@ -100,6 +100,7 @@ function Editor({ account, programs }: { account: OpenAccount; programs: StoredP
   const [show, setShow] = useState<readonly string[]>([]);
   const [said, announce] = useState("");
   const [searchFor, setSearchFor] = useState<string | null>(null);
+  const [added, setAdded] = useState<string | null>(null);
   const edits = useEdits(account, programs);
   useUndoKey(edits.undo);
   const state = useMemo((): EditorState => {
@@ -119,12 +120,17 @@ function Editor({ account, programs }: { account: OpenAccount; programs: StoredP
       rotation,
       aside,
       shown,
-      show: (id, otherwise) => setShow(otherwise ? [id, otherwise] : [id]),
+      show: (id, otherwise) => {
+        setShow(otherwise ? [id, otherwise] : [id]);
+        setAdded((was) => (was === id ? was : null));
+      },
       announce,
       search: { for: searchFor, request: setSearchFor, done: () => setSearchFor(null) },
+      added,
+      markAdded: setAdded,
       edits,
     };
-  }, [account, programs, show, searchFor, edits]);
+  }, [account, programs, show, searchFor, added, edits]);
   return (
     <EditorContext.Provider value={state}>
       <section className="flex flex-col gap-4">
@@ -170,7 +176,7 @@ function useUndoKey(undo: () => Promise<boolean>) {
 // session with no exercise the sessions it can start from.
 function Shown({ placed }: { placed: PlacedSession }) {
   const { t } = useTranslation();
-  const { programs, rotation, edits } = useEditor();
+  const { programs, rotation, edits, added } = useEditor();
   const id = placed.session.id;
   // The session being named, so another session shown closes the field.
   const [renaming, setRenaming] = useState<string | null>(null);
@@ -190,15 +196,17 @@ function Shown({ placed }: { placed: PlacedSession }) {
   }, [naming]);
   // The size counts the normal section, as the session starts in a week with climbing.
   const plan: Slot[] = placed.slots.map(({ rule, ...s }) => (rule ? { ...s, rule } : s));
-  const size = [
-    t("editor.card.exercises", { count: plan.length }),
-    t("editor.card.sets", { count: plannedWorkSets(plan) }),
-    t("editor.card.minutes", { count: estimatedMinutes({ slots: plan }) }),
-  ].join(" · ");
+  const empty = placed.slots.length === 0 && placed.noClimbing.length === 0;
+  const size = empty
+    ? t("editor.card.newSession")
+    : [
+        t("editor.card.exercises", { count: plan.length }),
+        t("editor.card.sets", { count: plannedWorkSets(plan) }),
+        t("editor.card.minutes", { count: estimatedMinutes({ slots: plan }) }),
+      ].join(" · ");
   // The preview opens a rotation session by its id, as the rotation that starts sessions holds it,
   // which leaves empty ones out.
   const previewed = placed.letter !== null && rotationOf(programs).some((r) => r.sessionId === id);
-  const empty = placed.slots.length === 0 && placed.noClimbing.length === 0;
 
   const save = (value: string) => {
     const name = cutName(value, SESSION_NAME_MAX);
@@ -266,6 +274,8 @@ function Shown({ placed }: { placed: PlacedSession }) {
         <p id={hintId} className="min-h-11 px-1 py-2.5 text-sm text-muted-foreground">
           {t("editor.card.nameHint")}
         </p>
+      ) : added === id && empty && placed.letter !== null ? (
+        <AddedHelp code={placed.letter} />
       ) : (
         <GridHelp />
       )}
@@ -349,7 +359,10 @@ function StartFrom({ placed }: { placed: PlacedSession }) {
     });
   return (
     <div className="flex flex-col gap-4 border-t border-border px-4 pt-5 pb-4">
-      <p className="text-body text-muted-foreground">{t("editor.empty.text")}</p>
+      <div className="flex flex-col gap-0.5">
+        <p className="text-body font-semibold text-foreground">{t("editor.empty.title")}</p>
+        <p className="text-sm text-muted-foreground">{t("editor.empty.text")}</p>
+      </div>
       {sources.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {sources.map((p) => {

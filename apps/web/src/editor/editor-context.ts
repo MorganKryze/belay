@@ -33,6 +33,9 @@ export interface EditorState {
   show(sessionId: string, otherwise?: string): void;
   announce(text: string): void;
   search: { for: string | null; request(sessionId: string): void; done(): void };
+  // The session « + Séance » has just added, until another session is shown.
+  added: string | null;
+  markAdded(sessionId: string): void;
   edits: Edits;
 }
 

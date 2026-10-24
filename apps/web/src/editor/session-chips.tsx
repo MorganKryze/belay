@@ -77,7 +77,7 @@ const arrange = (list: readonly PlacedSession[], ids: readonly string[]) =>
 // or by Space, ← →, Space, Escape cancelling; the chips read as they would after the drop.
 export function SessionChips() {
   const { t } = useTranslation();
-  const { rotation, aside, programs, edits, show, search, announce } = useEditor();
+  const { rotation, aside, programs, edits, show, search, announce, markAdded } = useEditor();
   const asideId = useId();
   const box = useRef<HTMLDivElement>(null);
   const [lift, setLift] = useState<Lift | null>(null);
@@ -256,6 +256,7 @@ export function SessionChips() {
     });
     if (!added) return;
     show(id);
+    markAdded(id);
     search.request(id);
     announce(t("editor.session.added", { code }));
   };

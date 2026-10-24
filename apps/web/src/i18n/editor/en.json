@@ -23,6 +23,7 @@
       "putBack": "Put back in the rotation",
       "rename": "Rename the session",
       "more": "More session actions",
+      "newSession": "New session · no exercise",
       "nameLabel": "Session name",
       "nameHint": "Session name · Enter saves · Esc cancels"
     },
@@ -54,7 +55,11 @@
       "undo": "undo",
       "enter": "Enter",
       "space": "Space",
-      "on": "on"
+      "on": "on",
+      "added": "Session {{code}} added at the end of the rotation. Type to search",
+      "adds": "adds",
+      "escape": "Esc",
+      "closes": "closes"
     },
     "cell": {
       "reps": "Between 1 and 100, for example 6-10",
@@ -108,7 +113,8 @@
       "added": "Session {{code}} added"
     },
     "empty": {
-      "text": "Add an exercise with the field above, or start from an existing session:",
+      "title": "No exercise yet.",
+      "text": "Search the library with the field above, or start from an existing session:",
       "from": "Start from {{session}}"
     },
     "toast": {
