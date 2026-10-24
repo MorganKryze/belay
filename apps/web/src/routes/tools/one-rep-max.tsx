@@ -10,6 +10,7 @@ import { attempt } from "@/lib/attempt";
 import { readBrzycki } from "@/lib/display-prefs";
 import { formatNumber } from "@/lib/format";
 import { useTool } from "@/lib/tool-storage";
+import { loadNumber, readWeightUnit, weightStepper } from "@/lib/units";
 
 export const OneRepMaxInputs = z.object({
   loadKg: z.number().min(1).max(500).catch(100),
@@ -20,7 +21,13 @@ export function OneRepMaxTool() {
   const { t, i18n } = useTranslation();
   const { inputs, setInputs } = useTool("one-rep-max", OneRepMaxInputs);
   const r = attempt(() => oneRepMax(inputs.loadKg, inputs.reps));
-  const kg = (v: number) => formatNumber(roundTo(v, 0.5), i18n.language);
+  const unit = readWeightUnit();
+  const load = weightStepper(inputs.loadKg, { min: 1, max: 500 }, 2.5, unit);
+  // Results to the half kilo, or to the whole pound.
+  const figure = (v: number) =>
+    unit === "kg"
+      ? formatNumber(roundTo(v, 0.5), i18n.language)
+      : loadNumber(v, i18n.language, unit, true);
   // Read once: Réglages is another page, so the choice cannot change while this one is open.
   const [brzycki] = useState(readBrzycki);
   const note = "text-[13.5px] text-muted-foreground";
@@ -32,12 +39,12 @@ export function OneRepMaxTool() {
     >
       <NumberStepper
         label={t("oneRepMax.load")}
-        unit="kg"
-        value={inputs.loadKg}
-        min={1}
-        max={500}
-        step={2.5}
-        onChange={(v) => v !== null && setInputs({ loadKg: v })}
+        unit={unit}
+        value={load.value}
+        min={load.min}
+        max={load.max}
+        step={load.step}
+        onChange={(v) => v !== null && setInputs({ loadKg: load.toKg(v) })}
       />
       <NumberStepper
         label={t("oneRepMax.reps")}
@@ -53,7 +60,7 @@ export function OneRepMaxTool() {
             {brzycki === "hidden" ? (
               <div>
                 <div className="text-[13px] text-muted-foreground">Epley</div>
-                <ResultFigure value={kg(r.epleyKg)} unit="kg" muted={r.lessReliable} />
+                <ResultFigure value={figure(r.epleyKg)} unit={unit} muted={r.lessReliable} />
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-3">
@@ -65,7 +72,12 @@ export function OneRepMaxTool() {
                 ).map(([name, v]) => (
                   <div key={name}>
                     <div className="text-[13px] text-muted-foreground">{name}</div>
-                    <ResultFigure value={kg(v)} unit="kg" size="medium" muted={r.lessReliable} />
+                    <ResultFigure
+                      value={figure(v)}
+                      unit={unit}
+                      size="medium"
+                      muted={r.lessReliable}
+                    />
                   </div>
                 ))}
               </div>
