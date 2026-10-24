@@ -119,12 +119,12 @@ describe("Home's session card (§4.1)", () => {
   it("offers the next session of the program, with its length", async () => {
     renderRoute("/");
     const line = await sessionCard(/^Session A · Push/);
-    expect(line.textContent).toContain("Next up · 6 exercises · about 55 min");
+    expect(line.textContent).toContain("Next up · 6 exercises · about 55 min");
     cleanup();
     await seed(ADA.id, LAST_A);
     renderRoute("/");
     expect((await sessionCard(/^Session B · Legs/)).textContent).toContain(
-      "Next up · 7 exercises · about 60 min",
+      "Next up · 7 exercises · about 60 min",
     );
   });
 

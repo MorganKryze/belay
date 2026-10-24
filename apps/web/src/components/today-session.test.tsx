@@ -89,12 +89,12 @@ const A_THEN_B = [
 const card = (name: RegExp) => screen.findByRole("region", { name });
 
 describe("Accueil's session card", () => {
-  it("the next session's card: title, Next up · 6 exercises · about 55 min, and See the session pushes its preview from Accueil", async () => {
+  it("the next session's card: title, Next up · 6 exercises · about 55 min, and See the session pushes its preview from Accueil", async () => {
     fakeApi({ me: ADA });
     renderRoute("/");
     const region = await card(/^Session A · Push$/);
     expect(within(region).getByRole("heading", { name: "Session A · Push" })).toBeTruthy();
-    expect(region.textContent).toContain("Next up · 6 exercises · about 55 min");
+    expect(region.textContent).toContain("Next up · 6 exercises · about 55 min");
     const see = within(region).getByRole("link", { name: "See the session" });
     expect(see.getAttribute("href")).toBe("/workouts/session/A?from=home");
     expect(within(region).getAllByRole("link")).toHaveLength(1);
@@ -130,7 +130,7 @@ describe("Accueil's session card", () => {
     fakeApi({ me: ADA });
     renderRoute("/");
     const region = await card(/^Session C · /);
-    expect(region.textContent).toMatch(/Next up · 10 exercises · about \d+ min/);
+    expect(region.textContent).toMatch(/Next up · 10 exercises · about \d+\u00A0min/);
   });
 
   it("no card before the history is read", async () => {
@@ -143,12 +143,12 @@ describe("Accueil's session card", () => {
     expect(screen.queryByRole("link", { name: "See the session" })).toBeNull();
   });
 
-  it("in French: « La prochaine · 6 exercices · environ 55 min », « En cours · 1 série sur 19 »", async () => {
+  it("in French: « La prochaine · 6 exercices · environ 55 min », « En cours · 1 série sur 19 »", async () => {
     await i18n.changeLanguage("fr");
     fakeApi({ me: ADA });
     renderRoute("/");
     let region = await card(/^Séance A · Push$/);
-    expect(region.textContent).toContain("La prochaine · 6 exercices · environ 55 min");
+    expect(region.textContent).toContain("La prochaine · 6 exercices · environ 55 min");
     expect(within(region).getByRole("link", { name: "Voir la séance" })).toBeTruthy();
     cleanup();
     await seed(ADA.id, OPEN_A);
@@ -172,12 +172,12 @@ describe("Accueil's session card", () => {
     expect(within(region).getByRole("link").getAttribute("href")).toBe("/workout?start=A");
   });
 
-  it("done today: the check tile, Done today · 48 min · 11 sets, and Next up: Session B · Legs pushes B's preview from Accueil, with no filled button", async () => {
+  it("done today: the check tile, Done today · 48 min · 11 sets, and Next up: Session B · Legs pushes B's preview from Accueil, with no filled button", async () => {
     await seed(ADA.id, DONE_A);
     fakeApi({ me: ADA });
     renderRoute("/");
     const region = await card(/^Session A · Push$/);
-    expect(region.textContent).toContain("Done today · 48 min · 11 sets");
+    expect(region.textContent).toContain("Done today · 48 min · 11 sets");
     expect(region.querySelector("svg.lucide-check")).toBeTruthy();
     const next = within(region).getByRole("link", { name: "Next up: Session B · Legs" });
     expect(next.getAttribute("href")).toBe("/workouts/session/B?from=home");
@@ -194,13 +194,13 @@ describe("Accueil's session card", () => {
     expect(region.textContent).not.toContain("Done today");
   });
 
-  it("in French: « Faite aujourd'hui · 48 min · 11 séries », « La prochaine : Séance B · Legs »", async () => {
+  it("in French: « Faite aujourd'hui · 48 min · 11 séries », « La prochaine : Séance B · Legs »", async () => {
     await i18n.changeLanguage("fr");
     await seed(ADA.id, DONE_A);
     fakeApi({ me: ADA });
     renderRoute("/");
     const region = await card(/^Séance A · Push$/);
-    expect(region.textContent).toContain("Faite aujourd'hui · 48 min · 11 séries");
+    expect(region.textContent).toContain("Faite aujourd'hui · 48 min · 11 séries");
     expect(
       within(region).getByRole("link", { name: "La prochaine\u202f: Séance B · Legs" }),
     ).toBeTruthy();

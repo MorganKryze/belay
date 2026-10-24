@@ -117,7 +117,7 @@ test("the first days read in the figure card", async ({ page }) => {
 
 test("the creatine sentence sits under a hairline in the figure card", async ({ page }) => {
   await openBody(page, flat(21), creatine());
-  const note = figureCard(page).getByText(/rises by 1 to 2 kg of water/);
+  const note = figureCard(page).getByText(/rises by 1 to 2\skg of water/);
   await expect(note).toHaveCSS("border-top-width", "1px");
   await expect(note).toHaveCSS("border-top-style", "solid");
   await expect(note).toHaveCSS("font-size", "13px");

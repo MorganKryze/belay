@@ -101,10 +101,10 @@ describe("Home's activity line (§4.1)", () => {
     let s = await sheet();
     fireEvent.click(within(s).getByRole("radio", { name: "Cardio" }));
     fireEvent.click(within(s).getByRole("radio", { name: "Bike" }));
-    expect(within(s).getByRole("spinbutton", { name: "Duration" }).textContent).toBe("45 min");
+    expect(within(s).getByRole("spinbutton", { name: "Duration" }).textContent).toBe("45 min");
     fireEvent.click(within(s).getByRole("button", { name: "Increase Duration" }));
     fireEvent.click(within(s).getByRole("button", { name: "Save" }));
-    await waitFor(async () => expect((await line()).textContent).toContain("Bike · 50 min"));
+    await waitFor(async () => expect((await line()).textContent).toContain("Bike · 50 min"));
     // Cardio again first, and the session of the day to pick, or another one.
     fireEvent.click(await line());
     s = await sheet();
@@ -112,7 +112,7 @@ describe("Home's activity line (§4.1)", () => {
       "true",
     );
     const day = within(s).getByRole("radiogroup", { name: "On this day" });
-    expect(within(day).getByRole("radio", { name: "Bike · 50 min" })).toBeTruthy();
+    expect(within(day).getByRole("radio", { name: "Bike · 50 min" })).toBeTruthy();
     fireEvent.click(within(day).getByRole("radio", { name: "Another cardio session" }));
     fireEvent.click(within(s).getByRole("radio", { name: "Run" }));
     fireEvent.click(within(s).getByRole("button", { name: "Save" }));
