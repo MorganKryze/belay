@@ -20,4 +20,15 @@ export default defineConfig(
   // Non-null assertions after a check the type system cannot follow (first row of an
   // INSERT … RETURNING, the #root element) read better than a runtime guard that never fires.
   { rules: { "@typescript-eslint/no-non-null-assertion": "off" } },
+  // cn is the project's wrapper (it knows the --text-* steps); the bare package would drop them.
+  {
+    files: ["apps/web/**/*.{ts,tsx}"],
+    ignores: ["apps/web/src/lib/utils.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        { paths: [{ name: "cn", message: "use cn from @/lib/utils" }] },
+      ],
+    },
+  },
 );
