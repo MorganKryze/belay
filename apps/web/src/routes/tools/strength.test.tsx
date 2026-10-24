@@ -177,3 +177,100 @@ describe("robustness", () => {
     expect(await result("Your estimated 1RM")).toBeTruthy();
   });
 });
+
+describe("in pounds", () => {
+  const pounds = () => localStorage.setItem("belay.weightUnit", "lb");
+  const field = (label: string) =>
+    (screen.getByRole("textbox", { name: label }) as HTMLInputElement).value;
+  const saved = () => JSON.parse(localStorage.getItem(TOOL_STATE_KEY)!);
+
+  it("in pounds 1RM takes lb and answers whole pounds", async () => {
+    pounds();
+    renderRoute("/tools/one-rep-max");
+    const card = await result("Your estimated 1RM");
+    // 100 kg stored, read as 220 lb on the 5 lb step.
+    expect(field("Load")).toBe("220");
+    expect(within(card).getByText("Epley").nextElementSibling?.textContent).toBe("257 lb");
+    type("Reps", "6");
+    type("Load", "225");
+    expect(within(card).getByText("Epley").nextElementSibling?.textContent).toBe("270 lb");
+    expect(within(card).getByText("Brzycki").nextElementSibling?.textContent).toBe("261 lb");
+    expect(saved().lastInputs["one-rep-max"].loadKg).toBeCloseTo(102.058, 3);
+    expect(card.textContent).not.toContain("kg");
+  });
+
+  it("in pounds Disques loads 225 as 45 + 45 per side on a 45 lb bar", async () => {
+    pounds();
+    renderRoute("/tools/plates");
+    await result("On each side");
+    type("Target load", "225");
+    const card = await result("On each side");
+    const drawing = within(card).getByRole("img", { name: "45 + 45 lb per side" });
+    expect(within(card).getByText("45 lb bar")).toBeTruthy();
+    // No colour code for pound plates: every plate is drawn grey.
+    for (const plate of drawing.querySelectorAll("g > rect"))
+      expect(plate.getAttribute("class")).toContain("fill-plate-grey");
+    expect(saved().lastInputs.plates.targetKg).toBeCloseTo(102.058, 3);
+    type("Target load", "223");
+    expect(screen.getByText("223 lb can't be loaded with your equipment.")).toBeTruthy();
+    expect(screen.getByText(/^Just below · \d+ lb$/)).toBeTruthy();
+    expect(card.textContent).not.toContain("kg");
+  });
+
+  it("in pounds Échauffement for 225 lists lb loads from the lb set", async () => {
+    pounds();
+    renderRoute("/tools/warmup");
+    await result("Your warm-up");
+    type("Working load", "225");
+    const rows = within(await result("Your warm-up"))
+      .getAllByRole("listitem")
+      .map((li) => li.textContent);
+    // 102 kg asks for two sets, at about half and three quarters, on a 45 lb bar.
+    expect(rows).toEqual([
+      "1110 lb 25 + 5 + 2.5 per side× 5",
+      "2170 lb 35 + 25 + 2.5 per side× 3",
+      "225 lb working setsyour call",
+    ]);
+  });
+
+  it("in pounds Matériel shows the lb set read-only and leaves the kg set stored", async () => {
+    pounds();
+    const stored = {
+      equipment: { preset: "custom", bar: 15, plates: [20, 10, 1.25] },
+      lastInputs: {},
+    };
+    localStorage.setItem(TOOL_STATE_KEY, JSON.stringify(stored));
+    renderRoute("/tools/plates/equipment");
+    expect(await screen.findByRole("heading", { name: "My equipment" })).toBeTruthy();
+    expect(screen.getByText("In pounds, Belay uses a 45 lb bar and standard plates.")).toBeTruthy();
+    expect(screen.getByText("45 lb")).toBeTruthy();
+    for (const plate of ["45", "35", "25", "10", "5", "2.5"])
+      expect(screen.getByText(plate, { exact: true })).toBeTruthy();
+    expect(screen.queryByRole("button")).toBeNull();
+    expect(screen.queryByRole("radiogroup")).toBeNull();
+    expect(JSON.parse(localStorage.getItem(TOOL_STATE_KEY)!).equipment).toEqual(stored.equipment);
+  });
+
+  it("in pounds Disques and Échauffement name the pound set Standard (lb)", async () => {
+    pounds();
+    renderRoute("/tools/plates");
+    expect(await screen.findByRole("link", { name: "My equipment Standard (lb)" })).toBeTruthy();
+    cleanup();
+    renderRoute("/tools/warmup");
+    await result("Your warm-up");
+    expect(screen.getByText(/Standard \(lb\)/)).toBeTruthy();
+    expect(screen.queryByText(/Gym/)).toBeNull();
+  });
+
+  it("in kilos nothing changes", async () => {
+    localStorage.setItem("belay.weightUnit", "kg");
+    renderRoute("/tools/plates");
+    const card = await result("On each side");
+    expect(within(card).getByRole("img", { name: "20 + 20 kg per side" })).toBeTruthy();
+    expect(within(card).getByText("20 kg bar")).toBeTruthy();
+    cleanup();
+    renderRoute("/tools/plates/equipment");
+    expect(await screen.findByRole("button", { name: "Edit this equipment" })).toBeTruthy();
+    expect(screen.queryByText("In pounds, Belay uses a 45 lb bar and standard plates.")).toBeNull();
+  });
+});

@@ -26,9 +26,18 @@ const MIN_WIDTH = 280;
 // Heavier plates draw taller, capped at the bar's full height.
 const plateHeight = (kg: number) => Math.min(96, 20 + kg * 3.2);
 
-// One side is drawn, mirrored for the other. Colour follows the IWF code; each plate also
-// carries its weight in writing, so nothing depends on colour alone.
-export function Barbell({ perSideKg, label }: { perSideKg: readonly number[]; label: string }) {
+// One side is drawn, mirrored for the other. Colour follows the IWF code, which knows kilo plates
+// only: pound plates have no colour standard and draw grey. Each plate also carries its weight in
+// writing, so nothing depends on colour alone.
+export function Barbell({
+  perSideKg,
+  label,
+  unit = "kg",
+}: {
+  perSideKg: readonly number[];
+  label: string;
+  unit?: "kg" | "lb";
+}) {
   const { i18n } = useTranslation();
   const side = perSideKg.length * (PLATE_W + GAP);
   const shaft = 44;
@@ -40,7 +49,7 @@ export function Barbell({ perSideKg, label }: { perSideKg: readonly number[]; la
   const mid = H / 2;
   const plates = (mirror: boolean) =>
     perSideKg.map((kg, i) => {
-      const color = iwfColor(kg) ?? "grey";
+      const color = (unit === "kg" && iwfColor(kg)) || "grey";
       const h = plateHeight(kg);
       // Heaviest against the collar, lighter ones outwards.
       const left = sleeve - (i + 1) * PLATE_W - i * GAP;

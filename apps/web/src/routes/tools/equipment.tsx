@@ -1,4 +1,5 @@
 import {
+  LB_PLATES,
   PLATE_PRESETS,
   type PlatePreset,
   STANDARD_BARS_KG,
@@ -13,6 +14,7 @@ import { ToolPage } from "@/components/tool-page";
 import { Button } from "@/components/ui/button";
 import { formatNumber } from "@/lib/format";
 import { type Equipment as EquipmentState, resolveEquipment, useTool } from "@/lib/tool-storage";
+import { readWeightUnit } from "@/lib/units";
 import { cn } from "@/lib/utils";
 
 export const EquipmentInputs = z.object({});
@@ -38,6 +40,33 @@ export function Equipment() {
         : [...eq.plates, kg].sort((a, b) => b - a),
     });
   const chips = [...new Set([...STANDARD_PLATES_KG, ...eq.plates])].sort((a, b) => b - a);
+
+  // In pounds, the standard pound set, read-only: nothing here writes the kilo equipment, which
+  // stays as the person left it for when they come back to kilos.
+  if (readWeightUnit() === "lb")
+    return (
+      <ToolPage title={t("equipment.title")} lead={t("equipment.lead")} backTo="plates">
+        <div className="flex flex-col gap-1.5">
+          <h2 className="text-[13px] font-semibold">{t("equipment.bar")}</h2>
+          <div className="flex flex-wrap gap-2">
+            <span className={cn(chip, "border-border bg-track")}>
+              {t("equipment.kg", { value: n(LB_PLATES.bar), unit: "lb" })}
+            </span>
+          </div>
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <h2 className="text-[13px] font-semibold">{t("equipment.plates")}</h2>
+          <div className="flex flex-wrap gap-2">
+            {LB_PLATES.plates.map((p) => (
+              <span key={p} className={cn(chip, "border-border bg-track")}>
+                {n(p)}
+              </span>
+            ))}
+          </div>
+        </div>
+        <p className="text-[13px] text-muted-foreground">{t("equipment.lbNote")}</p>
+      </ToolPage>
+    );
 
   return (
     <ToolPage title={t("equipment.title")} lead={t("equipment.lead")} backTo="plates">
@@ -80,7 +109,7 @@ export function Equipment() {
                     "border-input bg-card aria-pressed:border-2 aria-pressed:border-primary aria-pressed:bg-primary-soft aria-pressed:text-primary-ink",
                   )}
                 >
-                  {t("equipment.kg", { value: n(b) })}
+                  {t("equipment.kg", { value: n(b), unit: "kg" })}
                 </button>
               ))}
               <button
@@ -97,7 +126,7 @@ export function Equipment() {
             </>
           ) : (
             <span className={cn(chip, "border-border bg-track")}>
-              {t("equipment.kg", { value: n(barKg) })}
+              {t("equipment.kg", { value: n(barKg), unit: "kg" })}
             </span>
           )}
         </div>
