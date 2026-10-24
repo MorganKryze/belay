@@ -116,6 +116,11 @@ test("+ Séance, a name, two exercises, then Supprimer and Annuler bring D back"
   await expect(search(page)).toBeFocused();
   await expect(page.getByText("pars d'une séance existante")).toBeVisible();
 
+  // The pencil and the menu are 44 px targets.
+  for (const target of [page.getByRole("button", { name: "Renommer la séance" }), more(page)]) {
+    const box = (await target.boundingBox())!;
+    expect(Math.min(box.width, box.height)).toBeGreaterThanOrEqual(44);
+  }
   await page.getByRole("button", { name: "Renommer la séance" }).click();
   await expect(nameField(page)).toBeFocused();
   await expect(page.getByText("Séance D ·", { exact: true })).toBeVisible();
@@ -193,6 +198,20 @@ test("a chip dragged before another takes its letter, said in words", async ({ p
   await page.mouse.move(to.x + 8, to.y + to.height / 2, { steps: 12 });
   // While it moves, the lifted chip already shows its future letter.
   await expect(chip(page, "B · Bas léger")).toBeVisible();
+  // Lifted, it takes the soft tint and a 2 px ring drawn inside, as a lifted row does.
+  const lifted = await chip(page, "B · Bas léger").evaluate((el) => {
+    const style = getComputedStyle(el);
+    const probe = document.createElement("div");
+    probe.style.backgroundColor = "var(--primary-soft)";
+    document.body.append(probe);
+    const soft = getComputedStyle(probe).backgroundColor;
+    probe.remove();
+    return {
+      tinted: style.backgroundColor === soft,
+      ring: `${style.outlineStyle} ${style.outlineWidth} ${style.outlineOffset}`,
+    };
+  });
+  expect(lifted).toEqual({ tinted: true, ring: "solid 2px -2px" });
   await page.mouse.up();
   await expect
     .poll(() => tabNames(page))
