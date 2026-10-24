@@ -83,7 +83,8 @@ function WeighInForm({
   // untouched prefill in pounds saves the weigh-in it came from, never a round trip through lb.
   // The shared conversions rather than weightStepper: lib/units is in the startup bundle (Accueil
   // reads a body weight), so whatever of it a lazy sheet uses would load at startup too.
-  const unit = readWeightUnit();
+  // Frozen while the sheet is open: a number already typed keeps the unit it was typed in.
+  const [unit] = useState(readWeightUnit);
   const step = stepIn(WEIGHING_RANGE_KG.step, unit);
   const bounds = rangeIn(WEIGHING_RANGE_KG, unit, step);
   const shown = start.kg === null ? null : weighingFromKg(start.kg, unit);
