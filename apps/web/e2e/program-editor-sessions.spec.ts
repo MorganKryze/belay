@@ -116,8 +116,12 @@ test("+ Séance, a name, two exercises, then Supprimer and Annuler bring D back"
   await expect(search(page)).toBeFocused();
   await expect(page.getByText("pars d'une séance existante")).toBeVisible();
 
-  // The pencil and the menu are 44 px targets.
-  for (const target of [page.getByRole("button", { name: "Renommer la séance" }), more(page)]) {
+  // The pencil, the menu and the lone letter's chip are 44 px targets.
+  for (const target of [
+    page.getByRole("button", { name: "Renommer la séance" }),
+    more(page),
+    chip(page, "D"),
+  ]) {
     const box = (await target.boundingBox())!;
     expect(Math.min(box.width, box.height)).toBeGreaterThanOrEqual(44);
   }
