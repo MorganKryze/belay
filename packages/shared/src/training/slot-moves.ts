@@ -3,7 +3,7 @@
 // no-climbing section's border changes what the row belongs to. Never imported at startup: only
 // the editor needs it.
 import type { ProgramSlotChange } from "../sync/schema";
-import { dissolved, groupChange, renumber, runOf, sectionOf } from "./program-edits";
+import { dissolved, groupChange, keptApart, renumber, runOf, sectionOf } from "./program-edits";
 import type { ProgramSlot, StoredPrograms } from "./stored-program";
 
 export interface Stop {
@@ -95,6 +95,11 @@ export function placeSlot(
   const into = landing(p, slot, stop);
   const left = sectionOf(p, slot.sessionId, slot.rule, slotId);
   const { leaves, writes } = groupMove(p, slot, stop, into);
+  // A row that kept two runs of one key apart and joins the lower one leaves the key to it.
+  const from = sectionOf(p, slot.sessionId, slot.rule);
+  const at0 = from.findIndex((s) => s.id === slotId);
+  const joinsLower =
+    stop.rule === slot.rule && stop.groupKey === from[at0 + 1]?.groupKey && stop.index > at0;
   return [
     ...(slot.rule === stop.rule
       ? []
@@ -110,7 +115,10 @@ export function placeSlot(
     ...(writes ? [groupChange(slotId, stop.groupKey, at)] : []),
     ...renumber(into, at),
     ...(slot.rule === stop.rule ? [] : renumber(left, at)),
-    ...(leaves ? dissolved(sectionOf(p, slot.sessionId, slot.rule), slotId, at) : []),
+    ...(leaves ? dissolved(from, slotId, at) : []),
+    ...(stop.rule === slot.rule && stop.index === at0
+      ? []
+      : keptApart(from, slotId, at, joinsLower)),
   ];
 }
 

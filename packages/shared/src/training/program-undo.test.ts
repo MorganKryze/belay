@@ -120,7 +120,7 @@ describe("undoOf", () => {
     // Removed since: the removal stays, and a value under it is still put back.
     const removed = withSlot(withSlot(before, BENCH, { sets: 5 }), BENCH, { removed: true });
     expect(
-      undoOf(before, [...edit.slice(0, 1), ...removeSlot(NEW_SLOT, AT)], removed, UNDO),
+      undoOf(before, [...edit.slice(0, 1), ...removeSlot(before, NEW_SLOT, AT)], removed, UNDO),
     ).toEqual([{ kind: "programSlot", id: BENCH, field: "sets", value: bench.sets, at: UNDO }]);
   });
 
@@ -153,7 +153,7 @@ describe("undoOf", () => {
 
     const removals: ProgramEdit[] = [
       ...removeSession(B, AT),
-      ...removeSlot(BENCH, AT),
+      ...removeSlot(before, BENCH, AT),
       { kind: "program", id: P2, field: "removed", value: true, at: AT },
     ];
     const now = withProgram(

@@ -525,6 +525,16 @@ describe("removing a grouped slot", () => {
       { kind: "programSlot", id: R(1), field: "removed", value: true, at: AT },
     ]);
   });
+
+  it("gives the lower of two runs of one key it kept apart a key of its own", () => {
+    const apart = withRows(rowsOf(["G", "G", null, "G", "G"]));
+    const key = R(3).replace(/-/g, "").slice(-12);
+    expect(valid(removeSlot(apart, R(2), AT))).toEqual([
+      { kind: "programSlot", id: R(2), field: "removed", value: true, at: AT },
+      group(R(3), key),
+      group(R(4), key),
+    ]);
+  });
 });
 
 describe("a slot like another", () => {
@@ -592,6 +602,11 @@ describe("copies", () => {
     });
     expect(changes[0]).toMatchObject({ groupKey: "G", sets: 4, isMain: true });
     expect(changes.slice(1)).toEqual([position(R(3), 4), position(R(4), 5)]);
+  });
+
+  it("a row alone with a key is copied with no key, so the two never make a group", () => {
+    const alone = withRows(rowsOf([null, "G", null]));
+    expect(valid(copySlot(alone, NEW, R(1), AT))[0]).toMatchObject({ id: NEW, groupKey: null });
   });
 
   it("a copied slot closes the gaps its section had, so it sorts right below its source", () => {
