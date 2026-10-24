@@ -1146,9 +1146,17 @@ describe("a slot change over its stored row (SY2, ED4)", () => {
     expect(mergeSlotChange(row, change({ field: "warmups", value: 1, measure: "seconds" }))).toBe(
       null,
     );
-    // Older, it simply loses: the row goes back as for any stale write.
-    const old = change({ field: "reps", value: [8, 12], measure: "seconds", at: T0 });
-    expect(mergeSlotChange(row, old)).toBe(row);
+  });
+
+  it("refuses a range or warm-ups made for another measure at an equal or older time too", () => {
+    // Built on a view from before a swap: refused whatever its time, so the phone and the
+    // server always say so instead of dropping it like a plain stale write.
+    for (const at of [T1, T0]) {
+      const reps = change({ field: "reps", value: [8, 12], measure: "seconds", at });
+      const warmups = change({ field: "warmups", value: 0, measure: "seconds", at });
+      expect(mergeSlotChange(row, reps), at).toBe(null);
+      expect(mergeSlotChange(row, warmups), at).toBe(null);
+    }
   });
 
   it("an exercise in another measure brings its range and warm-ups over newer ones", () => {

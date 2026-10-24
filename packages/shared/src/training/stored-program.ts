@@ -186,8 +186,10 @@ export const startedAs = (
   s: { code: string; sessionId: string },
 ): boolean => (w.sessionId ? w.sessionId === s.sessionId : w.sessionCode === s.code);
 
-// The session after the last one finished since the program became active (PM10), found as
-// startedAs says; the first when there is none, or when that session left the rotation.
+// The session after the last one finished, found as startedAs says; the first when there is none,
+// or when that session is not in the rotation. One that recorded its session counts whenever it
+// was started, so switching back to a program resumes where it stopped; one recorded by letter
+// only counts since the program became active, as a letter names another session elsewhere.
 export function nextInRotation(
   workouts: readonly {
     id: string;
@@ -206,7 +208,8 @@ export function nextInRotation(
   const since = activeAt === null ? -Infinity : Date.parse(activeAt);
   let last: (typeof workouts)[number] | null = null;
   for (const w of workouts) {
-    if (w.endedAt === null || w.removed || Date.parse(w.startedAt) < since) continue;
+    if (w.endedAt === null || w.removed || (!w.sessionId && Date.parse(w.startedAt) < since))
+      continue;
     const ahead = last === null ? 1 : Date.parse(w.startedAt) - Date.parse(last.startedAt);
     if (ahead > 0 || (ahead === 0 && byId(w, last!) > 0)) last = w;
   }

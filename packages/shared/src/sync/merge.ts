@@ -112,10 +112,12 @@ export function mergeSlotChange(
         warmupsAt: at,
       };
   } else {
-    const atKey = `${change.field}At` as const;
-    if (!isNewer(at, row[atKey])) return row;
+    // Built on a view from before a change of measure: refused whatever its time, never dropped
+    // as merely stale, so the sender learns its edit did not land.
     if ((change.field === "reps" || change.field === "warmups") && change.measure !== row.measure)
       return null;
+    const atKey = `${change.field}At` as const;
+    if (!isNewer(at, row[atKey])) return row;
     const key = Object.hasOwn(SLOT_FIELDS, change.field)
       ? SLOT_FIELDS[change.field as keyof typeof SLOT_FIELDS]
       : change.field;
