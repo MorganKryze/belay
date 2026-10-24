@@ -273,8 +273,8 @@ function Shown({ placed }: { placed: PlacedSession }) {
   );
 }
 
-// The name in place of the title, « Séance D · » fixed before it: Enter saves it trimmed (empty
-// means no name), Escape leaves it as it was.
+// The name in place of the title, « Séance D · » fixed before it: Enter or a click away saves it
+// trimmed (empty means no name), Escape leaves it as it was.
 function NameField({
   placed,
   hintId,
@@ -290,12 +290,16 @@ function NameField({
   const [value, setValue] = useState(
     placed.letter === null ? sessionName(placed.session, t) : (chipName(placed, t) ?? ""),
   );
+  // Enter and Escape have answered: the blur that follows them saves nothing more.
+  const answered = useRef(false);
   const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       e.preventDefault();
+      answered.current = true;
       onSave(value);
     } else if (e.key === "Escape") {
       e.preventDefault();
+      answered.current = true;
       onCancel();
     }
   };
@@ -317,8 +321,14 @@ function NameField({
         aria-label={t("editor.card.nameLabel")}
         aria-describedby={hintId}
         autoComplete="off"
-        onChange={(e) => setValue(e.target.value)}
+        onChange={(e) => {
+          answered.current = false;
+          setValue(e.target.value);
+        }}
         onKeyDown={onKeyDown}
+        onBlur={() => {
+          if (!answered.current) onSave(value);
+        }}
         className="min-w-0 flex-1 bg-transparent text-foreground outline-none"
       />
     </label>

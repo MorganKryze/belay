@@ -18,7 +18,7 @@ import { IDBFactory } from "fake-indexeddb";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import i18n from "../i18n";
 import { setRestStyle, setThumbs } from "../lib/editor-prefs";
-import { openAccountDb, readPrograms, recordChanges } from "../sync/db";
+import { openAccountDb, readOutbox, readPrograms, recordChanges } from "../sync/db";
 import { writeLastUser } from "../sync/last-user";
 import { fakeApi } from "../test/fake-api";
 import { renderRoute } from "../test/render-route";
@@ -317,6 +317,8 @@ const pick = async (label: string) => {
   await act(async () => fireEvent.click(within(menu).getByRole("menuitem", { name: label })));
 };
 const curl = { id: "ds:0294", measure: "reps" as const };
+// Long enough for a write that should not happen to land.
+const settle = () => new Promise((resolve) => setTimeout(resolve, 100));
 const STARTER = ["A · Push", "B · Legs", "C · Fessiers + tirage léger"];
 
 describe("the editor's sessions", () => {
@@ -375,6 +377,55 @@ describe("the editor's sessions", () => {
     await rotationIs([...STARTER, "D"]);
     await titleIs("Séance D");
     expect((await stored()).sessions.find((s) => s.id === id(1))!.name).toBeNull();
+  });
+
+  it("a click away saves the name; Enter then the click away writes it once; Escape still cancels", async () => {
+    const api = fakeApi({ me: ADA });
+    await edit((p) => addSession(p, id(1), SEED_PROGRAM_ID, AT));
+    await edit(() => renameSession(id(1), "Bras", AT));
+    renderRoute("/workouts/program");
+    fireEvent.click(within(await rotation()).getByRole("tab", { name: "D · Bras" }));
+    await titleIs("Séance D · Bras");
+    const pencil = () => screen.getByRole("button", { name: "Renommer la séance" });
+    const field = () => screen.findByRole("textbox", { name: "Nom de la séance" });
+    // Each name written, sent already or still queued.
+    const names = async () => {
+      const db = await openAccountDb(ADA.id);
+      const queued = (await readOutbox(db)).map((e) => e.change);
+      db.close();
+      return [...api.requests.flatMap((r) => r.changes), ...queued]
+        .filter((c) => c.kind === "programSession" && c.id === id(1) && c.field === "name")
+        .map((c) => (c as { value: unknown }).value);
+    };
+    const before = (await names()).length;
+
+    fireEvent.click(pencil());
+    fireEvent.change(await field(), { target: { value: "Bras et épaules" } });
+    act(() => screen.getByRole("textbox", { name: "Nom de la séance" }).blur());
+    await rotationIs([...STARTER, "D · Bras et épaules"]);
+    expect(screen.queryByRole("textbox", { name: "Nom de la séance" })).toBeNull();
+
+    fireEvent.click(pencil());
+    const typed = await field();
+    fireEvent.change(typed, { target: { value: "Jambes" } });
+    act(() => {
+      fireEvent.keyDown(typed, { key: "Enter" });
+      typed.blur();
+    });
+    await rotationIs([...STARTER, "D · Jambes"]);
+    await settle();
+    expect((await names()).slice(before)).toEqual(["Bras et épaules", "Jambes"]);
+
+    fireEvent.click(pencil());
+    const kept = await field();
+    fireEvent.change(kept, { target: { value: "Autre" } });
+    act(() => {
+      fireEvent.keyDown(kept, { key: "Escape" });
+      kept.blur();
+    });
+    await settle();
+    expect((await names()).slice(before)).toEqual(["Bras et épaules", "Jambes"]);
+    expect((await stored()).sessions.find((s) => s.id === id(1))!.name).toBe("Jambes");
   });
 
   it("Space lifts a chip, → moves it, the lifted chip shows its future letter, Space drops and the letter changes are announced", async () => {
