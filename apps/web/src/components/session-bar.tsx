@@ -8,6 +8,7 @@ import { ChevronRight, Timer } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { readPauseStops } from "@/lib/pause-stops";
+import { armRestSound, restEnded } from "@/lib/rest-sound";
 import { type OpenAccount, useSessionView } from "@/sync/account";
 import { formatClock, useNow } from "@/workouts/hooks";
 
@@ -41,7 +42,9 @@ export function SessionBar({
   const stops = readPauseStops();
   const restNow = restClock(paused, now, stops);
   const resting = end !== null && end > restNow;
-  const announced = useRestOver(end, resting);
+  const announced = useRestOver(active?.restEndsAt ?? null, resting);
+  // The first tap on a screen under the bar unlocks the tone, for whoever turned it on.
+  useEffect(() => armRestSound(), []);
   const { next } = sessionProgress(workout.plan, sets);
   const code = workout.sessionCode;
   const slot = next && workout.plan[next.slotIndex];
@@ -116,23 +119,25 @@ export function SessionBar({
   );
 }
 
-// The rest's end as the session's rest bar marks it: a short vibration where the phone can and a
-// polite « Rest over », once, when the countdown crosses zero while the bar is up. A bar shown
-// after the rest ended, or a rest put away early, says nothing.
-function useRestOver(end: number | null, resting: boolean): boolean {
+// The rest's end as the session's rest bar marks it: a short vibration where the phone can, the
+// tone, and a polite « Rest over », once, when the countdown crosses zero while the bar is up. A
+// bar shown after the rest ended, or a rest put away early, says nothing. Keyed by the stored end,
+// the same string the rest bar hands the tone, so one end never sounds twice.
+function useRestOver(endsAt: string | null, resting: boolean): boolean {
   const [announced, setAnnounced] = useState(false);
-  const running = useRef<number | null>(null);
+  const running = useRef<string | null>(null);
   useEffect(() => {
     if (resting) {
-      running.current = end;
+      running.current = endsAt;
       setAnnounced(false);
       return;
     }
-    if (end !== null && running.current === end) {
+    if (endsAt !== null && running.current === endsAt) {
       navigator.vibrate?.(200);
+      restEnded(endsAt);
       setAnnounced(true);
     }
     running.current = null;
-  }, [end, resting]);
+  }, [endsAt, resting]);
   return announced;
 }
