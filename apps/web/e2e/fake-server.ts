@@ -198,6 +198,8 @@ export async function fakeServer(
               {
                 sessionCode: c.sessionCode,
                 sessionId: c.sessionId ?? null,
+                // As the server: sent back only when the start kept it.
+                ...(c.sessionName !== undefined && { sessionName: c.sessionName }),
                 plan: c.plan,
                 startedAt: c.startedAt,
               },
