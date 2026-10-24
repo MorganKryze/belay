@@ -205,7 +205,11 @@ test("on a computer Minimize returns to the page under the session and no bar sh
   await expect(page.getByRole("region", { name: /^Session B · Legs/ })).toContainText(
     "In progress",
   );
-  await expect(page.getByRole("link", { name: /Set \d+ of \d+ · Session B/ })).toBeHidden();
+  const name = /Set \d+ of \d+ · Session B/;
+  await expect(page.getByRole("link", { name })).toBeHidden();
+  // The same name does find the bar on a phone, so the hidden check above is not a mismatch.
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.getByRole("link", { name })).toBeVisible();
 });
 
 test.describe("reduced motion", () => {
