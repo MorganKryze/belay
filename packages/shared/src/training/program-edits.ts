@@ -423,9 +423,14 @@ export function moveSlot(
   return renumber(insert(sectionOf(p, slot.sessionId, slot.rule, id), slot, toIndex), at);
 }
 
-export const removeSlot = (id: string, at: string): ProgramSlotChange[] => [
-  { kind: "programSlot", id, field: "removed", value: true, at },
-];
+// The slot removed, and the key of the one row its group is left with.
+export function removeSlot(p: StoredPrograms, id: string, at: string): ProgramSlotChange[] {
+  const slot = slotOf(p, id);
+  return [
+    { kind: "programSlot", id, field: "removed", value: true, at },
+    ...(slot ? dissolved(sectionOf(p, slot.sessionId, slot.rule), id, at) : []),
+  ];
+}
 
 export type ProgramStart = { kind: "empty" } | { kind: "starter" } | { kind: "copy"; from: string };
 

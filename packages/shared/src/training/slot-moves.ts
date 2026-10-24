@@ -4,7 +4,7 @@
 // the editor needs it.
 import type { ProgramSlotChange } from "../sync/schema";
 import { dissolved, groupChange, renumber, runOf, sectionOf } from "./program-edits";
-import type { StoredPrograms } from "./stored-program";
+import type { ProgramSlot, StoredPrograms } from "./stored-program";
 
 export interface Stop {
   rule: "no_climbing" | null;
@@ -20,7 +20,8 @@ const same = (a: Stop, b: Stop) =>
 // For each gap of the normal section, then of the no-climbing one: inside the group above, outside,
 // inside the group below; a single stop inside when both neighbours are one group (a group is its
 // consecutive rows, the lifted row still in place), so a first step at a group's edge lands just
-// outside and the next one inside. An empty section offers one stop.
+// outside and the next one inside. Two groups of one key on both sides offer only the outside stop:
+// that key there would merge them. An empty section offers one stop.
 export function slotStops(p: StoredPrograms, slotId: string): Stop[] {
   const slot = slotOf(p, slotId);
   if (!slot) return [];
@@ -32,18 +33,16 @@ export function slotStops(p: StoredPrograms, slotId: string): Stop[] {
       const below = rows[index]?.groupKey ?? null;
       const oneGroup = above !== null && runOf(all, rows[index - 1]!.id).includes(rows[index]!);
       if (oneGroup) return [{ rule, index, groupKey: above }];
-      // Two groups of one key on both sides offer their inside stop once.
+      if (above !== null && above === below) return [{ rule, index, groupKey: null }];
       return [above, null, below].flatMap((groupKey, i) =>
-        (groupKey === null && i !== 1) || (i === 2 && groupKey === above)
-          ? []
-          : [{ rule, index, groupKey }],
+        groupKey === null && i !== 1 ? [] : [{ rule, index, groupKey }],
       );
     }).flat();
   });
 }
 
-// The stop the row sits at now: its section, its place and its group; a row whose group has no
-// neighbour of the same key sits at its place's first stop. -1 for a row the account lacks.
+// The stop the row sits at now: its section, its place and its group; a row alone with its key sits
+// outside at its place. -1 for a row the account lacks.
 export function stopOf(p: StoredPrograms, slotId: string): number {
   const slot = slotOf(p, slotId);
   if (!slot) return -1;
@@ -51,8 +50,36 @@ export function stopOf(p: StoredPrograms, slotId: string): number {
   const stops = slotStops(p, slotId);
   const here = { rule: slot.rule, index, groupKey: slot.groupKey };
   const exact = stops.findIndex((s) => same(s, here));
-  return exact >= 0 ? exact : stops.findIndex((s) => s.rule === slot.rule && s.index === index);
+  return exact >= 0 ? exact : stops.findIndex((s) => same(s, { ...here, groupKey: null }));
 }
+
+// What landing at a stop does to the row's group, read as runs of consecutive rows: a row alone with
+// its key is in no group. It leaves its group unless the stop is inside that same run, and joins the
+// stop's group unless it was already in it. Its key is written when the group it lands in differs,
+// or when a key it keeps would join it to a neighbour.
+function groupMove(p: StoredPrograms, slot: ProgramSlot, stop: Stop, into: readonly ProgramSlot[]) {
+  const mine = runOf(sectionOf(p, slot.sessionId, slot.rule), slot.id);
+  const grouped = mine.length > 1;
+  const near = [into[stop.index - 1], into[stop.index + 1]].filter((s) => s !== undefined);
+  const stays =
+    grouped &&
+    stop.rule === slot.rule &&
+    stop.groupKey === slot.groupKey &&
+    near.some((s) => s.groupKey === slot.groupKey && mine.some((m) => m.id === s.id));
+  const leaves = grouped && !stays;
+  const joins = stop.groupKey !== null && !stays;
+  const writes =
+    stop.groupKey !== null
+      ? slot.groupKey !== stop.groupKey
+      : slot.groupKey !== null && (leaves || near.some((s) => s.groupKey === slot.groupKey));
+  return { leaves, joins, writes };
+}
+
+const landing = (p: StoredPrograms, slot: ProgramSlot, stop: Stop) => {
+  const into = sectionOf(p, slot.sessionId, stop.rule, slot.id);
+  into.splice(stop.index, 0, slot);
+  return into;
+};
 
 // The row at a stop it is offered: its rule and its group key when they change, positions 0..n-1
 // over each section it touches for the rows whose position changes, and no key for the one row a
@@ -65,10 +92,9 @@ export function placeSlot(
 ): ProgramSlotChange[] | null {
   const slot = slotOf(p, slotId);
   if (!slot || !slotStops(p, slotId).some((s) => same(s, stop))) return null;
-  const into = sectionOf(p, slot.sessionId, stop.rule, slotId);
-  into.splice(stop.index, 0, slot);
+  const into = landing(p, slot, stop);
   const left = sectionOf(p, slot.sessionId, slot.rule, slotId);
-  const keyChanges = slot.groupKey !== stop.groupKey;
+  const { leaves, writes } = groupMove(p, slot, stop, into);
   return [
     ...(slot.rule === stop.rule
       ? []
@@ -81,10 +107,10 @@ export function placeSlot(
             at,
           },
         ]),
-    ...(keyChanges ? [groupChange(slotId, stop.groupKey, at)] : []),
+    ...(writes ? [groupChange(slotId, stop.groupKey, at)] : []),
     ...renumber(into, at),
     ...(slot.rule === stop.rule ? [] : renumber(left, at)),
-    ...(keyChanges ? dissolved(sectionOf(p, slot.sessionId, slot.rule), slotId, at) : []),
+    ...(leaves ? dissolved(sectionOf(p, slot.sessionId, slot.rule), slotId, at) : []),
   ];
 }
 
@@ -94,10 +120,10 @@ export type MoveNote = "joinGroup" | "leaveGroup" | "toNoClimbing" | "toPermanen
 export function moveNotes(p: StoredPrograms, slotId: string, stop: Stop): MoveNote[] {
   const slot = slotOf(p, slotId);
   if (!slot) return [];
-  const keyChanges = slot.groupKey !== stop.groupKey;
+  const { leaves, joins } = groupMove(p, slot, stop, landing(p, slot, stop));
   const notes: MoveNote[] = [];
-  if (keyChanges && slot.groupKey !== null) notes.push("leaveGroup");
-  if (keyChanges && stop.groupKey !== null) notes.push("joinGroup");
+  if (leaves) notes.push("leaveGroup");
+  if (joins) notes.push("joinGroup");
   if (slot.rule !== stop.rule) notes.push(stop.rule === null ? "toPermanent" : "toNoClimbing");
   return notes;
 }
