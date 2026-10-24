@@ -29,7 +29,7 @@ test("the figure is 50 px bold with tabular figures and the whole card opens Bod
   await expect(figure).toHaveCSS("font-weight", "700");
   await expect(figure).toHaveCSS("font-variant-numeric", "tabular-nums");
   await expect(figure).toHaveCSS("letter-spacing", "-1.5px");
-  await expect(figure.locator("span")).toHaveCSS("font-size", "17px");
+  await expect(figure.getByText("kg", { exact: true })).toHaveCSS("font-size", "17px");
   // A tap near the card's bottom-right corner, far from the words, still opens Body.
   const box = (await card.boundingBox())!;
   await page.touchscreen.tap(box.x + box.width - 8, box.y + box.height - 6);

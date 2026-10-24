@@ -70,7 +70,7 @@ for (const scheme of ["light", "dark"] as const) {
       await expect(figure).toHaveCSS("font-weight", "700");
       await expect(figure).toHaveCSS("font-variant-numeric", "tabular-nums");
       await expect(figure).toHaveCSS("letter-spacing", "-1.5px");
-      await expect(figure.locator("span")).toHaveCSS("font-size", "17px");
+      await expect(figure.getByText("kg", { exact: true })).toHaveCSS("font-size", "17px");
       await expect(card.getByRole("link")).toHaveCount(0);
       await expectCardSurface(card, scheme === "dark");
     });
