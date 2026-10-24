@@ -1,11 +1,12 @@
 import { type PauseStops, restClock } from "@belay/shared/training/pause";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { restEnded } from "@/lib/rest-sound";
 import { formatClock, useNow } from "./hooks";
 
 // §4.3: the rest, counted down from its end time (right even after the app slept), +30 s and
-// Skip. At zero: a short vibration where the phone can, "Back to it", a polite announcement,
-// and the bar goes at the next tap anywhere. The countdown is a timer never read out each second.
+// Skip. At zero: a short vibration where the phone can, the tone for whoever turned it on,
+// "Back to it", a polite announcement, and the bar goes at the next tap anywhere. The countdown is a timer never read out each second.
 // The line along the bottom is the rest left out of the rest planned: data set on each tick, never
 // an animation. Measured against the plan, not the time since the set, so a resume that moves the
 // end later leaves it where it stood; +30 s past the plan fills it again.
@@ -44,6 +45,7 @@ export function RestBar({
     if (wasRunning.current) {
       wasRunning.current = false;
       navigator.vibrate?.(200);
+      restEnded(endsAt);
       setAnnounced(true);
     }
     // Over: the next tap anywhere puts the bar away.
