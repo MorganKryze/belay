@@ -1,5 +1,4 @@
 import { isToolId, type ToolId } from "@belay/shared/tools/catalog";
-import { sessionByCode } from "@belay/shared/training/program";
 import { isSessionCode } from "@belay/shared/training/workout";
 import {
   createRootRoute,
@@ -54,12 +53,14 @@ const workoutsRoute = createRoute({
   }),
 });
 // A session of the program before it starts. Opened from Accueil it says so (?from=home), so
-// its back chevron and the lit tab stay Accueil's, after a reload too.
+// its back chevron and the lit tab stay Accueil's, after a reload too. Only the letter's shape
+// here: which letters the active rotation holds is read on the phone, so the page says when it
+// lacks one.
 const sessionPreviewRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/workouts/session/$code",
   beforeLoad: ({ params }) => {
-    if (!sessionByCode(params.code)) throw notFound();
+    if (!isSessionCode(params.code)) throw notFound();
   },
   component: lazyRouteComponent(() => import("./routes/session-preview"), "SessionPreview"),
   validateSearch: (search: Record<string, unknown>): { from?: "home" } =>
@@ -112,7 +113,7 @@ const exerciseRoute = createRoute({
   // Accueil), it leads back there.
   validateSearch: (search: Record<string, unknown>): { session?: string; from?: "home" } => {
     const session =
-      typeof search.session === "string" && sessionByCode(search.session)
+      typeof search.session === "string" && isSessionCode(search.session)
         ? search.session
         : undefined;
     return { ...(session && { session }), ...(search.from === "home" && { from: "home" }) };

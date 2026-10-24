@@ -96,13 +96,15 @@ describe("the weigh-in line and its sheet", () => {
       target: { value: "80.5" },
     });
     fireEvent.click(within(sheet).getByRole("button", { name: "Save" }));
-    await waitFor(() =>
-      expect(screen.getByRole("button", { name: /^Weigh-in/, hidden: true }).textContent).toContain(
-        "80.5\u00a0kg",
-      ),
+    // Once the sheet starts leaving, the weight is already on the line under it.
+    const leaving = await waitFor(() => {
+      const dialog = screen.getByRole("dialog", { hidden: true });
+      expect(dialog.getAttribute("data-state")).toBe("closed");
+      return dialog;
+    });
+    expect(screen.getByRole("button", { name: /^Weigh-in/, hidden: true }).textContent).toContain(
+      "80.5\u00a0kg",
     );
-    const leaving = screen.getByRole("dialog", { hidden: true });
-    expect(leaving.getAttribute("data-state")).toBe("closed");
     fireEvent.animationEnd(leaving);
     expect(screen.queryByRole("dialog", { hidden: true })).toBeNull();
   });

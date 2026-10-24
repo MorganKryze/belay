@@ -1,13 +1,32 @@
 import type { Change } from "@belay/shared/sync/schema";
+import {
+  addSession,
+  addSlot,
+  chooseActive,
+  createProgram,
+  placeSession,
+} from "@belay/shared/training/program-edits";
 import { sessionByCode } from "@belay/shared/training/program";
-import { cleanup, fireEvent, screen, within } from "@testing-library/react";
+import {
+  SEED_PROGRAM_ID,
+  seedId,
+  type StoredPrograms,
+} from "@belay/shared/training/stored-program";
+import { act, cleanup, fireEvent, screen, within } from "@testing-library/react";
 import { IDBFactory } from "fake-indexeddb";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import i18n from "../i18n";
+import { openAccountDb, readPrograms, recordChanges } from "../sync/db";
 import { writeLastUser } from "../sync/last-user";
 import { fakeApi } from "../test/fake-api";
 import { renderRoute } from "../test/render-route";
 import { ADA, seed } from "../test/seed";
+
+// The programs' read, watched.
+vi.mock("../sync/db", async (importOriginal) => {
+  const real = await importOriginal<typeof import("../sync/db")>();
+  return { ...real, readPrograms: vi.fn(real.readPrograms) };
+});
 
 // Wednesday 7 October 2026, 18:00 on the phone's clock.
 beforeEach(() => {
@@ -22,12 +41,14 @@ afterEach(async () => {
   localStorage.clear();
   vi.useRealTimers();
   vi.unstubAllGlobals();
+  vi.mocked(readPrograms).mockClear();
   await i18n.changeLanguage("en");
 });
 
 const id = (n: number) => `0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7e${String(n).padStart(2, "0")}`;
-// A finished session of `code` begun on day `d` of October at 18:00 (local time).
-const done = (n: number, code: string, d: number): Change[] => {
+// A finished session of `code` begun on day `d` of October at 18:00 (local time), with the
+// session it came from when given.
+const done = (n: number, code: string, d: number, sessionId?: string): Change[] => {
   const start = new Date(2026, 9, d, 18, 0).toISOString();
   const end = new Date(2026, 9, d, 19, 0).toISOString();
   return [
@@ -36,7 +57,8 @@ const done = (n: number, code: string, d: number): Change[] => {
       id: id(n),
       field: "start",
       sessionCode: code,
-      plan: [...sessionByCode(code)!.slots],
+      ...(sessionId && { sessionId }),
+      plan: [...(sessionByCode(code) ?? sessionByCode("A")!).slots],
       startedAt: start,
       at: start,
     },
@@ -203,5 +225,76 @@ describe("the program as cards (spec D13, §4.5)", () => {
     expect(b.textContent).toContain("La prochaine · 7 exercices · environ 60 min");
     expect(within(b).getByRole("link", { name: "Voir la séance" })).toBeTruthy();
     expect(cardLink("Séance A · Push").textContent).toContain("Il y a 4 jours");
+  });
+});
+
+// Program edits as the editor queues them, built on what the phone holds.
+async function edit(build: (p: StoredPrograms) => Change[] | null) {
+  const db = await openAccountDb(ADA.id);
+  await recordChanges(db, build(await readPrograms(db))!);
+  db.close();
+}
+const EDIT_AT = "2026-10-01T06:00:00.000Z";
+const D = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7f0d";
+const E = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7f0e";
+const OTHER = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7f20";
+// Every read of the programs answered and the screen given its turn.
+async function settled() {
+  await vi.waitFor(() => expect(readPrograms).toHaveBeenCalled());
+  await act(async () => {
+    await Promise.all(vi.mocked(readPrograms).mock.results.map((r) => r.value));
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  });
+}
+// Each card's address, in order: the next one's button, the others' whole card.
+const hrefs = () =>
+  screen
+    .getAllByRole("link")
+    .map((a) => a.getAttribute("href")!)
+    .filter((href) => href.startsWith("/workouts/session/"));
+
+describe("the program cards read the active program", () => {
+  it("list the active rotation from the next session", async () => {
+    for (const [session, slot] of [
+      [D, "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7f1d"],
+      [E, "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7f1e"],
+    ] as const) {
+      await edit((p) => addSession(p, session, SEED_PROGRAM_ID, EDIT_AT));
+      await edit((p) => addSlot(p, slot, session, { id: "ds:0025", measure: "reps" }, EDIT_AT));
+    }
+    await seed(ADA.id, done(1, "C", 3, seedId(3)));
+    renderRoute("/workouts?tab=program");
+    const d = await screen.findByRole("region", { name: /^Session D/ });
+    expect(d.textContent).toMatch(/Next up · 1 exercise · about \d+\u00A0min/);
+    expect(hrefs()).toEqual(["D", "E", "A", "B", "C"].map((c) => `/workouts/session/${c}`));
+  });
+
+  it("leave a set-aside session out", async () => {
+    // Legs set aside: Glutes moves up to B.
+    await edit((p) => placeSession(p, seedId(2), null, 0, EDIT_AT));
+    await seed(ADA.id, done(1, "A", 3, seedId(1)));
+    renderRoute("/workouts?tab=program");
+    const b = await screen.findByRole("region", { name: /^Session B/ });
+    expect(b.textContent).toContain("Next up · 10 exercises · about 60\u00A0min");
+    expect(hrefs()).toEqual(["/workouts/session/B", "/workouts/session/A"]);
+  });
+
+  it("show no card for an empty rotation", async () => {
+    await edit((p) => createProgram(p, OTHER, EDIT_AT));
+    await edit((p) => chooseActive(p, OTHER, EDIT_AT));
+    renderRoute("/workouts?tab=program");
+    await screen.findByText(/^The program is edited on a computer/);
+    await settled();
+    expect(screen.queryAllByRole("heading", { level: 2, name: /^Session / })).toEqual([]);
+  });
+
+  it("show no card when the active program was removed on another device", async () => {
+    await edit((p) => createProgram(p, OTHER, EDIT_AT));
+    await edit((p) => chooseActive(p, OTHER, EDIT_AT));
+    await edit(() => [{ kind: "program", id: OTHER, field: "removed", value: true, at: EDIT_AT }]);
+    renderRoute("/workouts?tab=program");
+    await screen.findByText(/^The program is edited on a computer/);
+    await settled();
+    expect(screen.queryAllByRole("heading", { level: 2, name: /^Session / })).toEqual([]);
   });
 });

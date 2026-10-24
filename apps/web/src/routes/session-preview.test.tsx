@@ -1,11 +1,17 @@
 import type { Change } from "@belay/shared/sync/schema";
 import { sessionByCode } from "@belay/shared/training/program";
+import { addSession, addSlot, placeSession } from "@belay/shared/training/program-edits";
+import {
+  SEED_PROGRAM_ID,
+  seedId,
+  type StoredPrograms,
+} from "@belay/shared/training/stored-program";
 import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { IDBFactory } from "fake-indexeddb";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import i18n from "../i18n";
 import { writeMedia } from "../lib/media-flag";
-import { openAccountDb, readHistory } from "../sync/db";
+import { openAccountDb, readHistory, readPrograms, recordChanges } from "../sync/db";
 import { writeLastUser } from "../sync/last-user";
 import { fakeApi } from "../test/fake-api";
 import { renderRoute } from "../test/render-route";
@@ -90,6 +96,15 @@ const back = (name: string) =>
     expect(link).toBeTruthy();
     return link!;
   });
+// Program edits as the editor queues them, built on what the phone holds.
+async function edit(build: (p: StoredPrograms) => Change[] | null) {
+  const db = await openAccountDb(ADA.id);
+  await recordChanges(db, build(await readPrograms(db))!);
+  db.close();
+}
+const EDIT_AT = "2026-10-01T06:00:00.000Z";
+const D = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7f0d";
+const D_SLOT = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7f1d";
 const WEEKDAY = "(lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche)";
 
 describe("the session preview", () => {
@@ -172,6 +187,34 @@ describe("the session preview", () => {
   it("an unknown code is not found", async () => {
     renderRoute("/workouts/session/Z");
     expect(await screen.findByRole("heading", { name: "Page not found" })).toBeTruthy();
+    cleanup();
+    renderRoute("/workouts/session/a");
+    expect(await screen.findByRole("heading", { name: "Page not found" })).toBeTruthy();
+  });
+
+  it("a letter the active rotation lacks is not found", async () => {
+    await edit((p) => placeSession(p, seedId(3), null, 0, EDIT_AT));
+    renderRoute("/workouts/session/C");
+    expect(await screen.findByRole("heading", { name: "Page not found" })).toBeTruthy();
+    expect(screen.queryByRole("link", { name: "Start the session" })).toBeNull();
+  });
+
+  it("a letter the active rotation gains shows its session, and its exercise leads back", async () => {
+    await edit((p) => addSession(p, D, SEED_PROGRAM_ID, EDIT_AT));
+    await edit((p) => addSlot(p, D_SLOT, D, { id: "ds:0025", measure: "reps" }, EDIT_AT));
+    renderRoute("/workouts/session/D?from=home");
+    const [bench, ...others] = rows(await exercises());
+    expect(others).toEqual([]);
+    expect(bench!.textContent).toContain("Barbell bench press");
+    expect(screen.getByRole("link", { name: "Start the session" }).getAttribute("href")).toBe(
+      "/workout?start=D",
+    );
+    expect(bench!.getAttribute("href")).toBe("/exercises/ds%3A0025?session=D&from=home");
+    cleanup();
+    renderRoute("/exercises/ds:0025?session=D&from=home");
+    expect((await screen.findByRole("link", { name: "Session D" })).getAttribute("href")).toBe(
+      "/workouts/session/D?from=home",
+    );
   });
 
   it("an exercise row carries session and from", async () => {
