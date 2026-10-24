@@ -1,5 +1,5 @@
 import type { Change } from "@belay/shared/sync/schema";
-import { sessionByCode } from "@belay/shared/training/program";
+import { sessionByCode, starterProgram } from "@belay/shared/training/program";
 import { expect, type Page, test } from "@playwright/test";
 import { expectNoAxeViolations } from "./axe";
 import { fakeServer } from "./fake-server";
@@ -31,7 +31,7 @@ const SESSION: Change[] = [
     id: DONE,
     field: "start",
     sessionCode: "A",
-    plan: [...sessionByCode("A")!.slots],
+    plan: [...sessionByCode("A", starterProgram)!.slots],
     startedAt: START,
     at: START,
   },

@@ -1,6 +1,7 @@
 import type { Change, SyncRequest } from "@belay/shared/sync/schema";
 import { resumedStart } from "@belay/shared/training/pause";
-import { sessionByCode } from "@belay/shared/training/program";
+import { sessionByCode, starterProgram } from "@belay/shared/training/program";
+import { DEFAULT_SCHEDULE, SEED_PROGRAM_ID } from "@belay/shared/training/stored-program";
 import { act, cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { IDBFactory } from "fake-indexeddb";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -55,7 +56,7 @@ const LAST_A: Change[] = [
     id: id(1),
     field: "start",
     sessionCode: "A",
-    plan: [...sessionByCode("A")!.slots],
+    plan: [...sessionByCode("A", starterProgram)!.slots],
     startedAt: at(MONDAY),
     at: at(MONDAY),
   },
@@ -513,7 +514,7 @@ describe("fix round 1", () => {
         id: id(2),
         field: "start",
         sessionCode: "A",
-        plan: [...sessionByCode("A")!.slots],
+        plan: [...sessionByCode("A", starterProgram)!.slots],
         startedAt: at(eleven),
         at: at(eleven),
       },
@@ -827,7 +828,7 @@ describe("finish", () => {
   // Session A open on this device, started 40 minutes ago, with the given number of work sets
   // logged in each slot from the first, and a warm-up of the bench press when asked.
   async function openWith(counts: number[], { warmup = false } = {}) {
-    const plan = [...sessionByCode("A")!.slots];
+    const plan = [...sessionByCode("A", starterProgram)!.slots];
     const changes: Change[] = [
       {
         kind: "workout",
@@ -1008,7 +1009,7 @@ describe("finish", () => {
     workoutId: OPEN,
     slotIndex: 0,
     position: 3,
-    exerciseId: sessionByCode("A")!.slots[0]!.exerciseId,
+    exerciseId: sessionByCode("A", starterProgram)!.slots[0]!.exerciseId,
     warmup: false,
     weightKg: 60,
     reps: 8,
@@ -1192,5 +1193,108 @@ describe("finish", () => {
     expect(move.value).toBe(resumedStart(startedAt, pausedAt, ended.at));
     expect(Date.parse(move.value as string) - Date.parse(startedAt)).toBeGreaterThanOrEqual(60);
     expect((await open()).startedAt).toBe(move.value);
+  });
+});
+
+describe("a session of the stored program (§4.2)", () => {
+  const D = id(60); // a session the person added after C, then a program they switched to
+  const STRENGTH = id(61);
+  const slot = (n: number, position: number, exerciseId: string, sets: number): Change => ({
+    kind: "programSlot",
+    id: id(n),
+    field: "create",
+    sessionId: D,
+    position,
+    rule: null,
+    exerciseId,
+    sets,
+    repRange: [6, 10],
+    rirTarget: [1, 2],
+    restSec: 90,
+    warmupSets: 1,
+    isMain: true,
+    groupKey: null,
+    at: at(MONDAY),
+  });
+  const UPPER: Change[] = [
+    {
+      kind: "programSession",
+      id: D,
+      field: "create",
+      name: "Upper",
+      programId: SEED_PROGRAM_ID,
+      position: 3,
+      at: at(MONDAY),
+    },
+    slot(62, 0, "ds:0405", 2), // dumbbell seated shoulder press
+    slot(63, 1, "ds:0025", 3), // barbell bench press
+  ];
+  beforeEach(async () => {
+    // A device that has synced before, holding the program with its fourth session.
+    const db = await openAccountDb(ADA.id);
+    await db.put("meta", "1", "cursor");
+    db.close();
+    await seed(ADA.id, UPPER);
+  });
+  const sentOrQueued = async (requests: SyncRequest[]) => [
+    ...requests.flatMap((r) => r.changes),
+    ...(await stored()).outbox.map((e) => e.change),
+  ];
+  const startD = async () => {
+    renderRoute("/workout?start=D");
+    await screen.findByRole("button", { name: "Finish" });
+    return (await stored()).history.workouts[0]!;
+  };
+
+  it("starting the session lettered D copies its stored slots and records its id", async () => {
+    const { requests } = fakeApi({ me: ADA });
+    const workout = await startD();
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toMatch(/^Session D/);
+    expect(card("Dumbbell seated shoulder press")).toBeTruthy();
+    expect(card("Barbell bench press")).toBeTruthy();
+    expect(workout).toMatchObject({ sessionCode: "D", sessionId: D });
+    expect(workout.plan).toEqual([
+      expect.objectContaining({ exerciseId: "ds:0405", sets: 2, repRange: [6, 10], restSec: 90 }),
+      expect.objectContaining({ exerciseId: "ds:0025", sets: 3, repRange: [6, 10], restSec: 90 }),
+    ]);
+    expect((await stored()).active?.workoutId).toBe(workout.id);
+    const starts = (await sentOrQueued(requests)).filter(
+      (c) => c.kind === "workout" && c.field === "start",
+    );
+    expect(starts).toEqual([expect.objectContaining({ sessionCode: "D", sessionId: D })]);
+  });
+
+  it("a program change, a reorder or a switch after the start leaves the open session's plan, letter and id", async () => {
+    const before = await startD();
+    const edited = at(new Date(NOW.getTime() + 60_000));
+    await seed(ADA.id, [
+      { kind: "programSlot", id: id(62), field: "sets", value: 5, at: edited },
+      { kind: "programSession", id: D, field: "name", value: "Push day", at: edited },
+      {
+        kind: "programSession",
+        id: D,
+        field: "place",
+        programId: SEED_PROGRAM_ID,
+        position: 0,
+        at: edited,
+      },
+      {
+        kind: "program",
+        id: STRENGTH,
+        field: "create",
+        name: "Strength",
+        schedule: DEFAULT_SCHEDULE,
+        at: edited,
+      },
+      { kind: "activeProgram", programId: STRENGTH, at: edited },
+    ]);
+    cleanup();
+    renderRoute("/workout");
+    const press = await screen.findByRole("region", { name: /^Dumbbell seated shoulder press/ });
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toMatch(/^Session D/);
+    expect(within(press).getByRole("button", { name: "Log set 2" })).toBeTruthy();
+    expect(within(press).queryByRole("button", { name: "Log set 3" })).toBeNull();
+    const after = (await stored()).history.workouts;
+    expect(after).toEqual([before]);
   });
 });

@@ -1,4 +1,4 @@
-import { sessionByCode } from "@belay/shared/training/program";
+import { sessionByCode, starterProgram } from "@belay/shared/training/program";
 import { workPosition, type Workout, type WorkoutSet } from "@belay/shared/training/workout";
 import {
   createMemoryHistory,
@@ -47,7 +47,7 @@ afterEach(async () => {
   await i18n.changeLanguage("en");
 });
 
-const C = sessionByCode("C")!;
+const C = sessionByCode("C", starterProgram)!;
 const startedAt = "2026-10-05T17:00:00.000Z";
 const workout: Workout = {
   id: "w1",

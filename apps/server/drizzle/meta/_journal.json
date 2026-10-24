@@ -50,6 +50,13 @@
       "when": 1791744404087,
       "tag": "0006_activities",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792846242155,
+      "tag": "0007_program",
+      "breakpoints": true
     }
   ]
 }

@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Change } from "@belay/shared/sync/schema";
-import { sessionByCode } from "@belay/shared/training/program";
+import { sessionByCode, starterProgram } from "@belay/shared/training/program";
 import { cleanup, screen, within } from "@testing-library/react";
 import { IDBFactory } from "fake-indexeddb";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -36,7 +36,7 @@ const FINISHED: Change[] = [
     id: WORKOUT,
     field: "start",
     sessionCode: "B",
-    plan: [...sessionByCode("B")!.slots],
+    plan: [...sessionByCode("B", starterProgram)!.slots],
     startedAt,
     at: startedAt,
   },

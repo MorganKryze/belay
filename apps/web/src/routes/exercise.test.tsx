@@ -1,12 +1,15 @@
+import type { Change } from "@belay/shared/sync/schema";
+import { DEFAULT_SCHEDULE, SEED_PROGRAM_ID } from "@belay/shared/training/stored-program";
 import { act, cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
 import { IDBFactory } from "fake-indexeddb";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import i18n from "../i18n";
+import { openAccountDb } from "../sync/db";
 import { writeLastUser } from "../sync/last-user";
 import { fakeApi } from "../test/fake-api";
 import { writeMedia } from "../lib/media-flag";
 import { renderRoute } from "../test/render-route";
-import { ADA } from "../test/seed";
+import { ADA, seed } from "../test/seed";
 
 beforeEach(() => {
   indexedDB = new IDBFactory();
@@ -91,5 +94,86 @@ describe("an exercise's sheet", () => {
     await screen.findByRole("img", { name: /Chest/ });
     expect(document.querySelector("video, figure[aria-label]")).toBeNull();
     expect(screen.queryByText(/Demonstration|^Play the demonstration$|^Pause$/)).toBeNull();
+  });
+});
+
+describe("where the program uses an exercise", () => {
+  const id = (n: number) => `0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7e${String(n).padStart(2, "0")}`;
+  const AT = "2026-10-01T08:00:00.000Z";
+  const session = (
+    n: number,
+    name: string,
+    programId: string | null,
+    position: number,
+  ): Change => ({
+    kind: "programSession",
+    id: id(n),
+    field: "create",
+    name,
+    programId,
+    position,
+    at: AT,
+  });
+  // The bench press, 3 × 5, in session n.
+  const bench = (n: number, sessionId: number): Change => ({
+    kind: "programSlot",
+    id: id(n),
+    field: "create",
+    sessionId: id(sessionId),
+    position: 0,
+    rule: null,
+    exerciseId: "ds:0025",
+    sets: 3,
+    repRange: [5, 5],
+    rirTarget: [1, 2],
+    restSec: 180,
+    warmupSets: 2,
+    isMain: true,
+    groupKey: null,
+    at: AT,
+  });
+  const STRENGTH = id(1);
+
+  it("« utilisé dans » lists the live sessions of the active rotation and of the collection by name", async () => {
+    // A device that has synced before.
+    const db = await openAccountDb(ADA.id);
+    await db.put("meta", "1", "cursor");
+    db.close();
+    await seed(ADA.id, [
+      session(10, "Upper", SEED_PROGRAM_ID, 3), // the rotation's fourth session, D
+      bench(11, 10),
+      session(20, "Home bench", null, 0), // set aside
+      bench(21, 20),
+      session(30, "Old bench", null, 1), // set aside, then removed
+      bench(31, 30),
+      { kind: "programSession", id: id(30), field: "removed", value: true, at: AT },
+      // A program that is not the active one.
+      {
+        kind: "program",
+        id: STRENGTH,
+        field: "create",
+        name: "Strength",
+        schedule: DEFAULT_SCHEDULE,
+        at: AT,
+      },
+      session(40, "Heavy", STRENGTH, 0),
+      bench(41, 40),
+    ]);
+    renderRoute("/exercises/ds:0025");
+    const home = await screen.findByText("Home bench");
+    const rotation = screen
+      .getAllByRole("link")
+      .filter((a) => a.getAttribute("href")?.startsWith("/workouts/session/"));
+    expect(rotation.map((a) => a.getAttribute("href"))).toEqual([
+      "/workouts/session/A",
+      "/workouts/session/D",
+    ]);
+    expect(rotation[1]!.textContent).toMatch(/^Session D/);
+    expect(rotation[1]!.textContent).toContain("3\u00a0×\u00a05");
+    // A set-aside session has no letter, so no preview to open: its name, its targets.
+    expect(home.closest("a")).toBeNull();
+    expect(home.parentElement!.textContent).toContain("3\u00a0×\u00a05");
+    expect(screen.queryByText("Old bench")).toBeNull();
+    expect(screen.queryByText("Heavy")).toBeNull();
   });
 });

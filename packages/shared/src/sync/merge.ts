@@ -1,5 +1,6 @@
 import type { ISODate } from "../body/dates";
-import type { TargetChange, WeightChange } from "./schema";
+import { isProgramSlot, SLOT_FIELDS } from "../training/stored-program";
+import type { ProgramSlotChange, ProgramSlotRow, TargetChange, WeightChange } from "./schema";
 
 // Last write wins, field by field. Strictly later wins: on a tie what is stored stays, so
 // replaying a batch that was already applied changes nothing.
@@ -82,4 +83,45 @@ export function staleKeys<C extends { at: string }>(
     if (kept !== null && isNewer(kept, at)) stale.add(k);
   }
   return stale;
+}
+
+// One change over a slot's stored row, field by field, at its clamped time (SY2): the row it
+// leaves; the same row when what is stored is as recent (a creation is written once); null when it
+// is refused, the row going back and the phone reverting. Refused: a rep range or warm-ups written
+// for another measure than the row's, which would be read in the wrong unit (ED4), or a merged
+// slot out of its bounds (decision 7). The server and the phone both merge with it.
+export function mergeSlotChange(
+  row: ProgramSlotRow,
+  change: ProgramSlotChange,
+): ProgramSlotRow | null {
+  if (change.field === "create") return row;
+  const { at } = change;
+  let next: ProgramSlotRow;
+  if (change.field === "exercise") {
+    if (!isNewer(at, row.exerciseAt)) return row;
+    // In another measure the row's range and warm-ups mean nothing: the exercise's replace them,
+    // however recent. In the same one they stay as they are: the change carries the sender's
+    // unedited values, which would overwrite an edit it never saw.
+    next = { ...row, exerciseId: change.exerciseId, measure: change.measure, exerciseAt: at };
+    if (change.measure !== row.measure)
+      next = {
+        ...next,
+        repRange: [...change.repRange] as [number, number],
+        repsAt: at,
+        warmupSets: change.warmupSets,
+        warmupsAt: at,
+      };
+  } else {
+    const atKey = `${change.field}At` as const;
+    if (!isNewer(at, row[atKey])) return row;
+    if ((change.field === "reps" || change.field === "warmups") && change.measure !== row.measure)
+      return null;
+    const key = Object.hasOwn(SLOT_FIELDS, change.field)
+      ? SLOT_FIELDS[change.field as keyof typeof SLOT_FIELDS]
+      : change.field;
+    next = { ...row, [key]: change.value, [atKey]: at };
+  }
+  // A timed slot takes no warm-up (ED4), whichever change brought it.
+  if (next.measure === "seconds" && next.warmupSets > 0) return null;
+  return isProgramSlot({ ...next, measure: next.measure ?? undefined }) ? next : null;
 }

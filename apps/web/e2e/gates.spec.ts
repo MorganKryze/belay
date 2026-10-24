@@ -1,5 +1,5 @@
 import type { Change } from "@belay/shared/sync/schema";
-import { sessionByCode } from "@belay/shared/training/program";
+import { sessionByCode, starterProgram } from "@belay/shared/training/program";
 import { expect, type Page, test } from "@playwright/test";
 import { settled } from "./axe";
 import { fakeServer, refuseChanges, WEEKS } from "./fake-server";
@@ -25,7 +25,7 @@ const LAST_A: Change[] = [
     id: LAST,
     field: "start",
     sessionCode: "A",
-    plan: [...sessionByCode("A")!.slots],
+    plan: [...sessionByCode("A", starterProgram)!.slots],
     startedAt: MONDAY,
     at: MONDAY,
   },
@@ -41,7 +41,7 @@ const RUNNING_C: Change[] = [
     id: RUNNING,
     field: "start",
     sessionCode: "C",
-    plan: [...sessionByCode("C")!.slots],
+    plan: [...sessionByCode("C", starterProgram)!.slots],
     startedAt: TEN_AGO,
     at: TEN_AGO,
   },
@@ -55,7 +55,7 @@ const DONE_A: Change[] = [
     id: DONE,
     field: "start",
     sessionCode: "A",
-    plan: [...sessionByCode("A")!.slots],
+    plan: [...sessionByCode("A", starterProgram)!.slots],
     startedAt: "2026-10-07T14:00:00.000Z",
     at: "2026-10-07T14:00:00.000Z",
   },

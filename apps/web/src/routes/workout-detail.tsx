@@ -20,10 +20,10 @@ import {
 import { BackLink, PageHeader } from "@/components/page-header";
 import { cardSurface } from "@/components/surfaces";
 import { readSessionVolume } from "@/lib/display-prefs";
-import { formatNumber, sessionTitle } from "@/lib/format";
+import { formatNumber, workoutTitle } from "@/lib/format";
 import { readWeightUnit } from "@/lib/units";
 import { useToday } from "@/lib/today";
-import { type OpenAccount, useAccount, useHistory, useRecord } from "@/sync/account";
+import { type OpenAccount, useAccount, useHistory, useProgram, useRecord } from "@/sync/account";
 import {
   durationParts,
   formatLoad,
@@ -47,6 +47,7 @@ function Detail({ account }: { account: OpenAccount }) {
   const today = useToday();
   const { workoutId } = useParams({ from: "/workouts/$workoutId" });
   const history = useHistory(account).data;
+  const sessions = useProgram(account).data?.programs.sessions ?? [];
   const record = useRecord(account);
   const navigate = useNavigate();
   const [confirm, setConfirm] = useState(false);
@@ -85,7 +86,7 @@ function Detail({ account }: { account: OpenAccount }) {
   return (
     <section className="flex flex-col gap-4">
       <PageHeader
-        title={sessionTitle(workout.sessionCode, t)}
+        title={workoutTitle(workout, sessions, t)}
         back={
           // Onto the session's month, wherever it was opened from; the current month goes unsaid.
           <BackLink

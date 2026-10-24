@@ -1,5 +1,12 @@
 import { isCreatineName } from "@belay/shared/body/supplements";
-import type { Change, Rejected, SyncRequest, WeightRow } from "@belay/shared/sync/schema";
+import { mergeSlotChange } from "@belay/shared/sync/merge";
+import type {
+  Change,
+  ProgramSlotRow,
+  Rejected,
+  SyncRequest,
+  WeightRow,
+} from "@belay/shared/sync/schema";
 import type { Page } from "@playwright/test";
 import { fileURLToPath } from "node:url";
 
@@ -14,7 +21,7 @@ const bare = (row: Row) => Object.fromEntries(Object.entries(row).filter(([k]) =
 // The API behind page.route: /api/me answers Ada, /api/sync merges like the real server (the
 // later write wins, field by field) and sends back what changed since the cursor. Flip
 // `offline` to make every call fail, `session` to answer 401. `changes` are entries already on
-// the server, as another device would have sent them. `media` makes the instance serve exercise
+// the server, as another device would have sent them; `push` adds more during a test. `media` makes the instance serve exercise
 // loops (the synthetic clip), except the numbers in `missingLoops`.
 export async function fakeServer(
   page: Page,
@@ -188,7 +195,12 @@ export async function fakeServer(
                 removed: false,
                 removedAt: null,
               },
-              { sessionCode: c.sessionCode, plan: c.plan, startedAt: c.startedAt },
+              {
+                sessionCode: c.sessionCode,
+                sessionId: c.sessionId ?? null,
+                plan: c.plan,
+                startedAt: c.startedAt,
+              },
             );
           return;
         }
@@ -244,11 +256,117 @@ export async function fakeServer(
           write(key, {}, { removed: c.value, removedAt: c.at });
         return;
       }
+      // Programs, their sessions and slots: a creation written once with every time unwritten,
+      // then each field on its own, the later write winning.
+      case "program": {
+        const key = `programs|${c.id}`;
+        if (c.field === "create") {
+          if (!state.other.has(key))
+            write(
+              key,
+              {},
+              {
+                id: c.id,
+                name: c.name,
+                nameAt: null,
+                schedule: c.schedule,
+                scheduleAt: null,
+                removed: false,
+                removedAt: null,
+              },
+            );
+          return;
+        }
+        const a = `${c.field}At`;
+        if (state.other.has(key) && later(key, a))
+          write(key, {}, { [c.field]: c.value, [a]: c.at });
+        return;
+      }
+      case "activeProgram": {
+        if (later("activeProgram", "at"))
+          write("activeProgram", {}, { programId: c.programId, at: c.at });
+        return;
+      }
+      case "programSession": {
+        const key = `programSessions|${c.id}`;
+        if (c.field === "create") {
+          if (!state.other.has(key))
+            write(
+              key,
+              {},
+              {
+                id: c.id,
+                name: c.name,
+                nameAt: null,
+                programId: c.programId,
+                position: c.position,
+                placeAt: null,
+                removed: false,
+                removedAt: null,
+              },
+            );
+          return;
+        }
+        if (!state.other.has(key)) return;
+        if (c.field === "place") {
+          if (later(key, "placeAt"))
+            write(key, {}, { programId: c.programId, position: c.position, placeAt: c.at });
+          return;
+        }
+        const a = `${c.field}At`;
+        if (later(key, a)) write(key, {}, { [c.field]: c.value, [a]: c.at });
+        return;
+      }
+      case "programSlot": {
+        const key = `programSlots|${c.id}`;
+        if (c.field === "create") {
+          if (!state.other.has(key))
+            write(
+              key,
+              {},
+              {
+                id: c.id,
+                sessionId: c.sessionId,
+                position: c.position,
+                exerciseId: c.exerciseId,
+                measure: c.measure ?? null,
+                repRange: c.repRange,
+                sets: c.sets,
+                rirTarget: c.rirTarget,
+                restSec: c.restSec,
+                warmupSets: c.warmupSets,
+                isMain: c.isMain,
+                groupKey: c.groupKey,
+                rule: c.rule,
+                positionAt: null,
+                exerciseAt: null,
+                repsAt: null,
+                setsAt: null,
+                rirAt: null,
+                restAt: null,
+                warmupsAt: null,
+                mainAt: null,
+                groupAt: null,
+                ruleAt: null,
+                removed: false,
+                removedAt: null,
+              },
+            );
+          return;
+        }
+        const stored = state.other.get(key);
+        const merged = stored && mergeSlotChange(bare(stored) as ProgramSlotRow, c);
+        if (merged) write(key, {}, merged);
+        return;
+      }
       default:
         return;
     }
   };
   for (const c of changes) apply(c);
+  const push = (...more: Change[]) => {
+    for (const c of more) apply(c);
+  };
 
   await page.route("**/api/me", (route) =>
     state.offline
@@ -279,6 +397,7 @@ export async function fakeServer(
     const table = (name: string) =>
       other.filter(([k]) => k.startsWith(`${name}|`)).map(([, r]) => bare(r));
     const profile = other.find(([k]) => k === "profile")?.[1];
+    const active = other.find(([k]) => k === "activeProgram")?.[1];
     return route.fulfill({
       json: {
         cursor: String(
@@ -296,12 +415,16 @@ export async function fakeServer(
         sets: table("sets"),
         target: null,
         profile: profile ? bare(profile) : null,
+        activeProgram: active ? bare(active) : null,
+        programs: table("programs"),
+        programSessions: table("programSessions"),
+        programSlots: table("programSlots"),
         rejected: [],
         hasMore: false,
       },
     });
   });
-  return state;
+  return Object.assign(state, { push });
 }
 
 // Four ISO weeks around Wednesday 7 October 2026: insufficient, valid after an insufficient

@@ -1,4 +1,5 @@
 import type { Change } from "@belay/shared/sync/schema";
+import { rotationOf, SEED, type StoredPrograms } from "@belay/shared/training/stored-program";
 import type { Slot } from "@belay/shared/training/workout";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -24,6 +25,7 @@ import {
   readIntake,
   readMeasures,
   readProfile,
+  readPrograms,
   readRejected,
   readSessionView,
   readSteps,
@@ -210,6 +212,15 @@ export const useHistory = (account: OpenAccount | null) =>
     networkMode: "always",
   });
 
+// The programs and the active rotation, lettered; the starting program with no account.
+const programRead = (programs: StoredPrograms) => ({ programs, rotation: rotationOf(programs) });
+export const useProgram = (account: OpenAccount | null) =>
+  useQuery({
+    queryKey: account ? local(account, "program") : ["local", null, "program"],
+    queryFn: async () => programRead(account ? await readPrograms(account.db) : SEED),
+    networkMode: "always",
+  });
+
 // The open session with the history it is judged on, which change together (readSessionView).
 export const useSessionView = (account: OpenAccount) =>
   useQuery({
@@ -258,17 +269,19 @@ export function useRecord({ user, db, engine }: OpenAccount) {
   );
 }
 
-// Starts a session of the program now; the session open on this device, if any, wins.
+// Starts a session of the program now, with the program session it comes from; the session
+// open on this device, if any, wins.
 export function useStartWorkout({ user, db, engine }: OpenAccount) {
   const queryClient = useQueryClient();
   return useCallback(
-    async (id: string, sessionCode: string, plan: Slot[]) => {
+    async (id: string, sessionCode: string, plan: Slot[], sessionId?: string) => {
       const startedAt = new Date().toISOString();
       const open = await startWorkout(db, {
         kind: "workout",
         id,
         field: "start",
         sessionCode,
+        ...(sessionId && { sessionId }),
         plan,
         startedAt,
         at: startedAt,

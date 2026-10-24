@@ -1,5 +1,5 @@
 import type { Change } from "@belay/shared/sync/schema";
-import { sessionByCode } from "@belay/shared/training/program";
+import { sessionByCode, starterProgram } from "@belay/shared/training/program";
 import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { IDBFactory } from "fake-indexeddb";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -43,7 +43,7 @@ function session(n: number, days: number, sets: readonly Logged[], warmup = fals
       id: id(n),
       field: "start",
       sessionCode: "A",
-      plan: [...sessionByCode("A")!.slots],
+      plan: [...sessionByCode("A", starterProgram)!.slots],
       startedAt: start,
       at: start,
     },

@@ -17,10 +17,17 @@ import { Button } from "@/components/ui/button";
 import { type Entry, Toast, useWriter } from "@/components/weigh-in";
 import { activityText } from "@/lib/activities";
 import { readHistoryActivities } from "@/lib/display-prefs";
-import { formatWeekday, sessionTitle } from "@/lib/format";
+import { formatWeekday, workoutTitle } from "@/lib/format";
 import { useToday } from "@/lib/today";
 import { cn } from "@/lib/utils";
-import { type OpenAccount, useAccount, useActivities, useHistory, useSteps } from "@/sync/account";
+import {
+  type OpenAccount,
+  useAccount,
+  useActivities,
+  useHistory,
+  useProgram,
+  useSteps,
+} from "@/sync/account";
 import { formatDuration } from "./format";
 import { LogSessionSheet } from "./log-session-sheet";
 import { MonthCalendar } from "./month-calendar";
@@ -69,6 +76,8 @@ function History({ account }: { account: OpenAccount }) {
   const history = useHistory(account).data;
   const activities = useActivities(account).data;
   const steps = useSteps(account).data ?? [];
+  // Each session done is titled by the session it recorded; until they are read, by its id alone.
+  const sessions = useProgram(account).data?.programs.sessions ?? [];
   const navigate = useNavigate();
   const setMonth = (next: string) =>
     void navigate({
@@ -159,7 +168,7 @@ function History({ account }: { account: OpenAccount }) {
                       Date.parse(item.workout.endedAt!) - Date.parse(item.workout.startedAt),
                       t,
                     )}`}
-                    sub={sessionTitle(item.workout.sessionCode, t)}
+                    sub={workoutTitle(item.workout, sessions, t)}
                     trailing="push"
                   />
                 ) : (

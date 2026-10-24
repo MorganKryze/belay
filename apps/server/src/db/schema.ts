@@ -314,6 +314,10 @@ export const workouts = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     sessionCode: text("session_code").notNull(),
+    // The program session it was started from, written once with the start; null for a start
+    // without it (before programs were stored, or from an older phone). No key: a start is never
+    // refused for it, and it is only read within the same account.
+    sessionId: uuid("session_id"),
     plan: jsonb("plan").$type<Slot[]>().notNull(),
     planAt: ts("plan_at"),
     startedAt: ts("started_at").notNull(),
@@ -387,5 +391,177 @@ export const workoutSets = pgTable(
     check("workout_sets_seconds", sql`${t.seconds} BETWEEN 0 AND 3600`),
     check("workout_sets_one_measure", sql`(${t.reps} IS NULL) <> (${t.seconds} IS NULL)`),
     check("workout_sets_rir", sql`${t.rir} IS NULL OR ${t.rir} BETWEEN 0 AND 4`),
+  ],
+);
+
+// A program of the account: its optional name and its schedule, Monday first, a session id or null
+// per day. Keyed by (account, id): the starting program's id is the same for every account.
+// Removed, never deleted; every field has its own time (null: the starting program's value, never
+// written since).
+export const programs = pgTable(
+  "programs",
+  {
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    id: uuid("id").notNull(),
+    name: text("name"),
+    nameAt: ts("name_at"),
+    schedule: jsonb("schedule")
+      .$type<{ mode: "rotation" | "fixed"; days: (string | null)[] }>()
+      .notNull(),
+    scheduleAt: ts("schedule_at"),
+    removed: boolean("removed").notNull().default(false),
+    removedAt: ts("removed_at"),
+    serverSeq: serverSeq(),
+    createdAt: ts("created_at").notNull().defaultNow(),
+    updatedAt: ts("updated_at").notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.userId, t.id] }),
+    index("programs_user_seq").on(t.userId, t.serverSeq),
+    check("programs_name", sql`${t.name} IS NULL OR char_length(${t.name}) BETWEEN 1 AND 60`),
+    // Seven session ids (about 320 bytes) fit with room to spare; the API checks the shape.
+    check("programs_schedule_size", sql`octet_length(${t.schedule}::text) <= 512`),
+  ],
+);
+
+// Which program the account follows, one row per account; its presence marks an account as given
+// the starting program. The time is when it became active (null: since the start), so the next
+// session counts only the sessions done since.
+export const activePrograms = pgTable(
+  "active_programs",
+  {
+    userId: uuid("user_id")
+      .primaryKey()
+      .references(() => users.id, { onDelete: "cascade" }),
+    programId: uuid("program_id").notNull(),
+    at: ts("at"),
+    serverSeq: serverSeq(),
+    createdAt: ts("created_at").notNull().defaultNow(),
+    updatedAt: ts("updated_at").notNull().defaultNow(),
+  },
+  (t) => [
+    // Never a program of another account: the key holds the account too.
+    foreignKey({
+      name: "active_programs_program_fk",
+      columns: [t.userId, t.programId],
+      foreignColumns: [programs.userId, programs.id],
+    }).onDelete("cascade"),
+  ],
+);
+
+// A session: placed in a program's rotation, or set aside in the account's collection (no
+// program). Keyed by (account, id): the starting program's ids are the same for every account. No
+// stored letter: its letter is its place in the active rotation. Removed, never deleted, so its
+// slots stay.
+export const programSessions = pgTable(
+  "program_sessions",
+  {
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    id: uuid("id").notNull(),
+    name: text("name"),
+    nameAt: ts("name_at"),
+    // Its place: the program and the position in it change together, under one time.
+    programId: uuid("program_id"),
+    position: smallint("position").notNull(),
+    placeAt: ts("place_at"),
+    removed: boolean("removed").notNull().default(false),
+    removedAt: ts("removed_at"),
+    serverSeq: serverSeq(),
+    createdAt: ts("created_at").notNull().defaultNow(),
+    updatedAt: ts("updated_at").notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.userId, t.id] }),
+    // Never a program of another account. MATCH SIMPLE, the default: a session set aside has no
+    // program, and the key is not checked for it.
+    foreignKey({
+      name: "program_sessions_program_fk",
+      columns: [t.userId, t.programId],
+      foreignColumns: [programs.userId, programs.id],
+    }).onDelete("cascade"),
+    index("program_sessions_user_seq").on(t.userId, t.serverSeq),
+    index("program_sessions_program").on(t.userId, t.programId),
+    check(
+      "program_sessions_name",
+      sql`${t.name} IS NULL OR char_length(${t.name}) BETWEEN 1 AND 40`,
+    ),
+    check("program_sessions_position", sql`${t.position} BETWEEN 0 AND 999`),
+  ],
+);
+
+// An exercise slot of a session, with the bounds of a plan's slot (isSlot); a timed slot's range
+// is in seconds. Its session is fixed at creation and is always one of the same account's.
+export const programSlots = pgTable(
+  "program_slots",
+  {
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    id: uuid("id").notNull(),
+    sessionId: uuid("session_id").notNull(),
+    position: smallint("position").notNull(),
+    positionAt: ts("position_at"),
+    // The exercise and its measure change together (a timed exercise counts seconds).
+    exerciseId: text("exercise_id").notNull(),
+    measure: text("measure"),
+    exerciseAt: ts("exercise_at"),
+    repMin: smallint("rep_min").notNull(),
+    repMax: smallint("rep_max").notNull(),
+    repsAt: ts("reps_at"),
+    sets: smallint("sets").notNull(),
+    setsAt: ts("sets_at"),
+    rirMin: smallint("rir_min").notNull(),
+    rirMax: smallint("rir_max").notNull(),
+    rirAt: ts("rir_at"),
+    restSec: smallint("rest_sec").notNull(),
+    restAt: ts("rest_at"),
+    warmupSets: smallint("warmup_sets").notNull(),
+    warmupsAt: ts("warmups_at"),
+    isMain: boolean("is_main").notNull(),
+    mainAt: ts("main_at"),
+    groupKey: text("group_key"),
+    groupAt: ts("group_at"),
+    // The section: null for the normal slots, no_climbing for the week with no climbing.
+    rule: text("rule"),
+    ruleAt: ts("rule_at"),
+    removed: boolean("removed").notNull().default(false),
+    removedAt: ts("removed_at"),
+    serverSeq: serverSeq(),
+    createdAt: ts("created_at").notNull().defaultNow(),
+    updatedAt: ts("updated_at").notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.userId, t.id] }),
+    // Never a session of another account: the key holds the account too.
+    foreignKey({
+      name: "program_slots_session_fk",
+      columns: [t.userId, t.sessionId],
+      foreignColumns: [programSessions.userId, programSessions.id],
+    }).onDelete("cascade"),
+    index("program_slots_user_seq").on(t.userId, t.serverSeq),
+    index("program_slots_session").on(t.userId, t.sessionId),
+    check("program_slots_exercise", sql`${t.exerciseId} ~ '^(ds|belay):[a-z0-9-]{1,40}$'`),
+    check("program_slots_measure", sql`${t.measure} IS NULL OR ${t.measure} = 'seconds'`),
+    check(
+      "program_slots_reps",
+      sql`${t.repMin} >= 1 AND ${t.repMin} <= ${t.repMax} AND ${t.repMax} <= CASE WHEN ${t.measure} = 'seconds' THEN 3600 ELSE 100 END`,
+    ),
+    check("program_slots_sets", sql`${t.sets} BETWEEN 1 AND 10`),
+    check(
+      "program_slots_rir",
+      sql`${t.rirMin} >= 0 AND ${t.rirMin} <= ${t.rirMax} AND ${t.rirMax} <= 4`,
+    ),
+    check("program_slots_rest", sql`${t.restSec} BETWEEN 0 AND 900`),
+    check("program_slots_warmups", sql`${t.warmupSets} BETWEEN 0 AND 3`),
+    check(
+      "program_slots_group_key",
+      sql`${t.groupKey} IS NULL OR ${t.groupKey} ~ '^[A-Za-z0-9]{1,16}$'`,
+    ),
+    check("program_slots_rule", sql`${t.rule} IS NULL OR ${t.rule} = 'no_climbing'`),
+    check("program_slots_position", sql`${t.position} BETWEEN 0 AND 999`),
   ],
 );

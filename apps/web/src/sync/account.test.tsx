@@ -1,10 +1,13 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { IDBFactory } from "fake-indexeddb";
+import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { seedId, SEED_PROGRAM_ID } from "@belay/shared/training/stored-program";
 import { logout } from "@/lib/api";
+import { answer } from "@/test/answer";
 import { fakeApi } from "@/test/fake-api";
-import { type OpenAccount, AccountProvider, useAccount, useWeighings } from "./account";
+import { type OpenAccount, AccountProvider, useAccount, useProgram, useWeighings } from "./account";
 import * as dbModule from "./db";
 import { openAccountDb, readWeights, recordChange } from "./db";
 import { readLastUser, writeLastUser } from "./last-user";
@@ -201,6 +204,50 @@ describe("the current account", () => {
     });
     mount();
     expect(await screen.findByText("unavailable")).toBeTruthy();
+  });
+});
+
+describe("the program", () => {
+  function Rotation({ account }: { account: OpenAccount | null }) {
+    const { data } = useProgram(account);
+    return (
+      <p>{data ? `rotation ${data.rotation.map((t) => t.name ?? t.code).join(",")}` : "reading"}</p>
+    );
+  }
+  function OpenRotation() {
+    const account = useAccount();
+    return account.kind === "open" ? <Rotation account={account} /> : <p>{account.kind}</p>;
+  }
+  const renderWith = (node: ReactNode) =>
+    render(
+      <QueryClientProvider
+        client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+      >
+        <AccountProvider>{node}</AccountProvider>
+      </QueryClientProvider>,
+    );
+
+  it("gives the starting program's rotation with no account", async () => {
+    fakeApi({ me: null });
+    renderWith(<Rotation account={null} />);
+    expect(await screen.findByText("rotation A,B,C")).toBeTruthy();
+  });
+
+  it("gives the stored rotation once a sync brings it", async () => {
+    // The account renamed session A on another device.
+    const renamed = {
+      id: seedId(1),
+      name: "Poussée",
+      nameAt: "2026-10-07T06:30:00.000Z",
+      programId: SEED_PROGRAM_ID,
+      position: 0,
+      placeAt: null,
+      removed: false,
+      removedAt: null,
+    };
+    fakeApi({ me: ADA, sync: () => Response.json(answer({ programSessions: [renamed] })) });
+    renderWith(<OpenRotation />);
+    expect(await screen.findByText("rotation Poussée,B,C")).toBeTruthy();
   });
 });
 

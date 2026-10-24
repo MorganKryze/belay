@@ -1,6 +1,6 @@
 import type { Change } from "@belay/shared/sync/schema";
 import { kgToLb } from "@belay/shared/tools/units";
-import { sessionByCode } from "@belay/shared/training/program";
+import { sessionByCode, starterProgram } from "@belay/shared/training/program";
 import { expect, type Page, test } from "@playwright/test";
 import { expectNoAxeViolations } from "./axe";
 import { fakeServer } from "./fake-server";
@@ -40,7 +40,7 @@ const LAST_A: Change[] = [
     id: LAST,
     field: "start",
     sessionCode: "A",
-    plan: [...sessionByCode("A")!.slots],
+    plan: [...sessionByCode("A", starterProgram)!.slots],
     startedAt: at(0),
     at: at(0),
   },
@@ -61,7 +61,7 @@ function open(code: string): Change[] {
       id: "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7f01",
       field: "start",
       sessionCode: code,
-      plan: [...sessionByCode(code)!.slots],
+      plan: [...sessionByCode(code, starterProgram)!.slots],
       startedAt,
       at: startedAt,
     },

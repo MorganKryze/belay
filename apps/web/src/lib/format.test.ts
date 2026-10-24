@@ -1,4 +1,6 @@
+import { SEED_PROGRAM_ID, seedId } from "@belay/shared/training/stored-program";
 import { describe, expect, it } from "vitest";
+import i18n from "@/i18n";
 import {
   formatDay,
   formatKg,
@@ -9,6 +11,11 @@ import {
   formatWeekRange,
   lossView,
   parseDecimal,
+  programName,
+  rotationTitle,
+  sessionName,
+  sessionTitle,
+  workoutTitle,
 } from "./format";
 
 describe("parseDecimal", () => {
@@ -111,5 +118,75 @@ describe("body formats", () => {
     expect(formatWeekRange("2025-12-29", "2026-01-04", "fr", "2026-01-10")).toBe(
       "29 déc. 2025 – 4 janv.",
     );
+  });
+});
+
+describe("session and program titles", () => {
+  const fr = i18n.getFixedT("fr");
+  const en = i18n.getFixedT("en");
+  const OWN = "0199c3a2-7b1e-7cc0-8f3e-000000000a01";
+
+  it("titles a session by its letter and the name it shows, or by its letter alone", () => {
+    expect(sessionTitle("D", fr, "Haut du corps")).toBe("Séance D · Haut du corps");
+    expect(sessionTitle("D", en, "Upper body")).toBe("Session D · Upper body");
+    expect(sessionTitle("A", fr, null)).toBe("Séance A");
+    expect(sessionTitle("D", en, null)).toBe("Session D");
+  });
+
+  it("names a session started before sessions recorded theirs by its letter's starting session", () => {
+    expect(sessionTitle("A", fr)).toBe("Séance A · Push");
+    expect(sessionTitle("C", en)).toBe("Session C · Glutes + light pull");
+    expect(sessionTitle("D", fr)).toBe("Séance D");
+  });
+
+  it("titles a rotation session by its stored name, a starting session by its own name wherever it sits", () => {
+    expect(rotationTitle({ code: "A", sessionId: seedId(2), name: null }, fr)).toBe(
+      "Séance A · Legs",
+    );
+    expect(rotationTitle({ code: "B", sessionId: seedId(1), name: "Pecs" }, fr)).toBe(
+      "Séance B · Pecs",
+    );
+    expect(rotationTitle({ code: "D", sessionId: OWN, name: "Gainage" }, en)).toBe(
+      "Session D · Gainage",
+    );
+    expect(rotationTitle({ code: "E", sessionId: OWN, name: null }, fr)).toBe("Séance E");
+  });
+
+  it("titles a session done by its letter and the current name of the session it recorded", () => {
+    const sessions = [
+      { id: OWN, name: "Tirage lourd" },
+      { id: seedId(3), name: null },
+    ];
+    expect(workoutTitle({ sessionCode: "C", sessionId: OWN }, sessions, fr)).toBe(
+      "Séance C · Tirage lourd",
+    );
+    expect(workoutTitle({ sessionCode: "A", sessionId: seedId(3) }, sessions, en)).toBe(
+      "Session A · Glutes + light pull",
+    );
+    // A session this device does not hold (yet): its letter alone, or a starting session's name.
+    expect(workoutTitle({ sessionCode: "D", sessionId: seedId(9) }, [], fr)).toBe("Séance D");
+    expect(workoutTitle({ sessionCode: "B", sessionId: seedId(1) }, [], fr)).toBe(
+      "Séance B · Push",
+    );
+    // Recorded before sessions kept their id: its letter's starting session (HF2).
+    expect(workoutTitle({ sessionCode: "B" }, sessions, fr)).toBe("Séance B · Legs");
+    expect(workoutTitle({ sessionCode: "A", sessionId: null }, sessions, en)).toBe(
+      "Session A · Push",
+    );
+  });
+
+  it("names a set-aside session by its name, a starting one by its own, else untitled", () => {
+    expect(sessionName({ id: OWN, name: "Partagée par Lou" }, fr)).toBe("Partagée par Lou");
+    expect(sessionName({ id: seedId(2), name: null }, en)).toBe("Legs");
+    expect(sessionName({ id: OWN, name: null }, fr)).toBe("Séance sans nom");
+    expect(sessionName({ id: OWN, name: null }, en)).toBe("Untitled session");
+  });
+
+  it("names a program by its name, the starting one by default, else untitled", () => {
+    expect(programName({ id: OWN, name: "Haut / bas" }, fr)).toBe("Haut / bas");
+    expect(programName({ id: SEED_PROGRAM_ID, name: null }, fr)).toBe("Programme de départ");
+    expect(programName({ id: SEED_PROGRAM_ID, name: null }, en)).toBe("Starter program");
+    expect(programName({ id: OWN, name: null }, fr)).toBe("Programme sans nom");
+    expect(programName({ id: OWN, name: null }, en)).toBe("Untitled program");
   });
 });

@@ -1,4 +1,4 @@
-import { sessionByCode } from "@belay/shared/training/program";
+import { sessionByCode, starterProgram } from "@belay/shared/training/program";
 import type { Workout, WorkoutSet } from "@belay/shared/training/workout";
 import { describe, expect, it } from "vitest";
 import {
@@ -12,7 +12,7 @@ import {
 } from "./editor";
 import { loadNumber } from "@/lib/units";
 
-const B = [...sessionByCode("B")!.slots];
+const B = [...sessionByCode("B", starterProgram)!.slots];
 const W = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7e01";
 const kgText = (kg: number) => String(kg);
 const lbText = (kg: number) => loadNumber(kg, "en", "lb");

@@ -4,8 +4,13 @@ import { exerciseById } from "@belay/shared/exercises/catalog";
 import type { Measure } from "@belay/shared/exercises/library";
 import type { Activity } from "@belay/shared/training/activities";
 import { planFor } from "@belay/shared/training/plan";
-import { estimatedMinutes, plannedWorkSets, sessionByCode } from "@belay/shared/training/program";
+import { estimatedMinutes, plannedWorkSets } from "@belay/shared/training/program";
 import { type History, lastFinished, lastTopSet, openWorkout } from "@belay/shared/training/rules";
+import {
+  type LetteredTemplate,
+  type ProgramSession,
+  startedAs,
+} from "@belay/shared/training/stored-program";
 import { Link, useParams, useSearch } from "@tanstack/react-router";
 import { Play } from "lucide-react";
 import { useId } from "react";
@@ -14,38 +19,66 @@ import { groupCard, NumberTile, RowLink } from "@/components/grouped-list";
 import { LoopThumb } from "@/components/loop-thumb";
 import { BackLink, PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
-import { formatWeekday, sessionTitle } from "@/lib/format";
+import { formatWeekday, rotationTitle, workoutTitle } from "@/lib/format";
 import { readMedia } from "@/lib/media-flag";
 import { useToday } from "@/lib/today";
-import { type OpenAccount, useAccount, useActivities, useHistory } from "@/sync/account";
+import {
+  type OpenAccount,
+  useAccount,
+  useActivities,
+  useHistory,
+  useProgram,
+} from "@/sync/account";
 import { formatDuration, formatLoad, formatRir, formatSets } from "@/workouts/format";
+import { NotFound } from "./fallbacks";
 
-// A session of the program before it starts: what it holds today, how long it
+// A session of the active program's rotation before it starts: what it holds today, how long it
 // takes, how it went last time, and the one action that starts it. Without an account it reads
-// the same, with nothing to start.
+// the starting program the same way, with nothing to start. A letter the rotation does not hold
+// (a session set aside or removed, or an old link) is not found.
 export function SessionPreview() {
   const account = useAccount();
   if (account.kind === "loading") return null;
-  return account.kind === "open" ? (
-    <WithData account={account} />
-  ) : (
-    <Preview history={null} activities={[]} />
-  );
+  return account.kind === "open" ? <WithData account={account} /> : <WithoutAccount />;
 }
 
 function WithData({ account }: { account: OpenAccount }) {
   const history = useHistory(account).data;
   const activities = useActivities(account).data;
-  if (!history || !activities) return null;
-  return <Preview history={history} activities={activities} />;
+  const program = useProgram(account).data;
+  if (!history || !activities || !program) return null;
+  return (
+    <Preview
+      history={history}
+      activities={activities}
+      rotation={program.rotation}
+      sessions={program.programs.sessions}
+    />
+  );
+}
+
+function WithoutAccount() {
+  const program = useProgram(null).data;
+  return program ? (
+    <Preview
+      history={null}
+      activities={[]}
+      rotation={program.rotation}
+      sessions={program.programs.sessions}
+    />
+  ) : null;
 }
 
 function Preview({
   history,
   activities,
+  rotation,
+  sessions,
 }: {
   history: History | null;
   activities: readonly Activity[];
+  rotation: readonly LetteredTemplate[];
+  sessions: readonly ProgramSession[];
 }) {
   const { t, i18n } = useTranslation();
   const { code } = useParams({ from: "/workouts/session/$code" });
@@ -55,9 +88,10 @@ function Preview({
   // Where the instance serves loops, each row's still takes a 44 px place and the row's padding
   // gives way, so the row stays 56 px; elsewhere the rows are as they were.
   const media = readMedia() === "on";
-  // The route lets only a known code through.
-  const plan = planFor(sessionByCode(code)!, activities, today);
-  const last = history && lastFinished(history.workouts, code);
+  const session = rotation.find((s) => s.code === code);
+  if (!session) return <NotFound />;
+  const plan = planFor(session, activities, today);
+  const last = history && lastFinished(history.workouts, session);
   const open = history && openWorkout(history.workouts, { sets: history.sets, now: new Date() });
   const top = (exerciseId: string, measure: Measure) =>
     history && lastTopSet(history, exerciseId, measure);
@@ -74,7 +108,7 @@ function Preview({
   return (
     <section className="flex flex-col gap-4">
       <PageHeader
-        title={sessionTitle(code, t)}
+        title={rotationTitle(session, t)}
         back={
           from === "home" ? (
             <BackLink to="/">{t("nav.home")}</BackLink>
@@ -105,10 +139,10 @@ function Preview({
         )}
       </PageHeader>
       {history &&
-        (open && open.sessionCode !== code ? (
+        (open && !startedAs(open, session) ? (
           <div className="flex flex-col gap-3">
             <p className="text-body">
-              {t("preview.otherOpen", { title: sessionTitle(open.sessionCode, t) })}
+              {t("preview.otherOpen", { title: workoutTitle(open, sessions, t) })}
             </p>
             {startLink(open.sessionCode, t("preview.resumeOther"))}
           </div>

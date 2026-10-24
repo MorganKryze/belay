@@ -1,5 +1,6 @@
 import type { Change } from "@belay/shared/sync/schema";
-import { nextSession, sessionByCode } from "@belay/shared/training/program";
+import { nextSession, sessionByCode, starterProgram } from "@belay/shared/training/program";
+import { SEED_PROGRAM_ID } from "@belay/shared/training/stored-program";
 import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { IDBFactory } from "fake-indexeddb";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -36,7 +37,7 @@ function session(
 ): Change[] {
   const startedAt = start.toISOString();
   const end = new Date(start.getTime() + minutes * 60_000).toISOString();
-  const plan = [...sessionByCode(code)!.slots];
+  const plan = [...sessionByCode(code, starterProgram)!.slots];
   return [
     {
       kind: "workout",
@@ -196,7 +197,7 @@ describe("a session logged afterwards (spec D10)", () => {
       "Thu, Oct 1 · 1 h 00 Session B · Legs",
     ]);
     // Begun at noon, before Monday's B at 18:00: B stays the last one, C comes next.
-    expect(nextSession((await stored()).history.workouts)).toBe("C");
+    expect(nextSession((await stored()).history.workouts, starterProgram)).toBe("C");
   });
 });
 
@@ -240,9 +241,9 @@ describe("correcting a finished session (spec D9)", () => {
     expect(figures()[0]).toBe("58 min");
     const moved = (await stored()).history.workouts.find((w) => w.id === id(2))!;
     expect(moved.startedAt).toBe(new Date(2026, 8, 28, 18, 0).toISOString());
-    expect(moved.plan).toEqual(sessionByCode("B")!.slots);
+    expect(moved.plan).toEqual(sessionByCode("B", starterProgram)!.slots);
     // Thursday's B is now the last one.
-    expect(nextSession((await stored()).history.workouts)).toBe("C");
+    expect(nextSession((await stored()).history.workouts, starterProgram)).toBe("C");
   });
 
   it("writes nothing when cancelled", async () => {
@@ -282,5 +283,83 @@ describe("correcting a finished session (spec D9)", () => {
     expect(
       within(slot("Barbell full squat")).getByRole("button", { name: "Supprimer la série 1" }),
     ).toBeTruthy();
+  });
+});
+
+describe("a session of the stored program logged afterwards (spec D10)", () => {
+  const D = id(60); // a session the person added after C
+  const AT = new Date(2026, 9, 1, 8, 0).toISOString();
+  const UPPER: Change[] = [
+    {
+      kind: "programSession",
+      id: D,
+      field: "create",
+      name: "Upper",
+      programId: SEED_PROGRAM_ID,
+      position: 3,
+      at: AT,
+    },
+    {
+      kind: "programSlot",
+      id: id(61),
+      field: "create",
+      sessionId: D,
+      position: 0,
+      rule: null,
+      exerciseId: "ds:0405", // dumbbell seated shoulder press
+      sets: 2,
+      repRange: [6, 10],
+      rirTarget: [1, 2],
+      restSec: 90,
+      warmupSets: 1,
+      isMain: true,
+      groupKey: null,
+      at: AT,
+    },
+  ];
+  beforeEach(async () => {
+    // A device that has synced before.
+    const db = await openAccountDb(ADA.id);
+    await db.put("meta", "1", "cursor");
+    db.close();
+  });
+
+  it("logging a past session takes the chosen rotation session's plan and id", async () => {
+    await seed(ADA.id, [...PAST, ...UPPER]);
+    const { requests } = fakeApi({ me: ADA });
+    renderRoute("/workouts?tab=history");
+    fireEvent.click(await screen.findByRole("button", { name: /^Log a session/ }));
+    const sheet = await screen.findByRole("dialog", { name: "Log a session" });
+    expect(
+      within(sheet)
+        .getAllByRole("radio")
+        .map((r) => r.textContent),
+    ).toEqual(["A", "B", "C", "D"]);
+    expect(within(sheet).getByRole("radio", { name: "C" }).getAttribute("aria-checked")).toBe(
+      "true",
+    );
+    fireEvent.click(within(sheet).getByRole("radio", { name: "D" }));
+    fireEvent.click(within(sheet).getByRole("button", { name: "Enter the sets" }));
+    await waitFor(() =>
+      expect(screen.getByRole("heading", { level: 1 }).textContent).toMatch(/^Session D/),
+    );
+    fireEvent.click(screen.getByRole("button", { name: /^Dumbbell seated shoulder press/ }));
+    const press = slot("Dumbbell seated shoulder press");
+    fireEvent.click(within(press).getByRole("button", { name: "+ Set" }));
+    fireEvent.change(cell(press, "Load of set 1, kg"), { target: { value: "20" } });
+    fireEvent.change(cell(press, "Reps of set 1"), { target: { value: "8" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await screen.findByText(/^Wednesday, October 7 · /);
+    const logged = (await stored()).history.workouts.find((w) => w.sessionCode === "D")!;
+    expect(logged.sessionId).toBe(D);
+    expect(logged.plan).toEqual([
+      expect.objectContaining({ exerciseId: "ds:0405", sets: 2, repRange: [6, 10], restSec: 90 }),
+    ]);
+    // Already sent or still queued.
+    const start = [
+      ...requests.flatMap((r) => r.changes),
+      ...(await stored()).outbox.map((e) => e.change),
+    ].find((c) => c.kind === "workout" && c.field === "start" && c.id === logged.id);
+    expect(start).toMatchObject({ sessionCode: "D", sessionId: D });
   });
 });

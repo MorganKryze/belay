@@ -32,6 +32,7 @@ import {
   warmups,
   workOrder,
 } from "./rules";
+import { seedId } from "./stored-program";
 import {
   isExerciseNotes,
   isPlan,
@@ -48,9 +49,9 @@ import {
   workPosition,
 } from "./workout";
 
-const A = sessionByCode("A")!;
-const B = sessionByCode("B")!;
-const C = sessionByCode("C")!;
+const A = sessionByCode("A", starterProgram)!;
+const B = sessionByCode("B", starterProgram)!;
+const C = sessionByCode("C", starterProgram)!;
 const BENCH = "ds:0025";
 
 let n = 0;
@@ -128,26 +129,61 @@ describe("the starter program (§6)", () => {
 
 describe("nextSession", () => {
   it("is A with no history, then follows the last session finished, C going back to A", () => {
-    expect(nextSession([])).toBe("A");
-    expect(nextSession([workout({ sessionCode: "A" })])).toBe("B");
+    expect(nextSession([], starterProgram)).toBe("A");
+    expect(nextSession([workout({ sessionCode: "A" })], starterProgram)).toBe("B");
     expect(
-      nextSession([
-        workout({ sessionCode: "B", startedAt: "2026-10-07T17:00:00.000Z" }),
-        workout({ sessionCode: "A", startedAt: "2026-10-05T17:00:00.000Z" }),
-      ]),
+      nextSession(
+        [
+          workout({ sessionCode: "B", startedAt: "2026-10-07T17:00:00.000Z" }),
+          workout({ sessionCode: "A", startedAt: "2026-10-05T17:00:00.000Z" }),
+        ],
+        starterProgram,
+      ),
     ).toBe("C");
-    expect(nextSession([workout({ sessionCode: "C" })])).toBe("A");
+    expect(nextSession([workout({ sessionCode: "C" })], starterProgram)).toBe("A");
   });
 
   it("ignores a session in progress, a removed one, and a code the program lacks", () => {
     expect(
-      nextSession([
-        workout({ sessionCode: "A" }),
-        workout({ sessionCode: "B", startedAt: "2026-10-06T17:00:00.000Z", endedAt: null }),
-        workout({ sessionCode: "C", startedAt: "2026-10-07T17:00:00.000Z", removed: true }),
-      ]),
+      nextSession(
+        [
+          workout({ sessionCode: "A" }),
+          workout({ sessionCode: "B", startedAt: "2026-10-06T17:00:00.000Z", endedAt: null }),
+          workout({ sessionCode: "C", startedAt: "2026-10-07T17:00:00.000Z", removed: true }),
+        ],
+        starterProgram,
+      ),
     ).toBe("B");
-    expect(nextSession([workout({ sessionCode: "Z" })])).toBe("A");
+    expect(nextSession([workout({ sessionCode: "Z" })], starterProgram)).toBe("A");
+  });
+
+  // A stored program of n sessions in its own order, letters D to G included (PM9).
+  const stored = (codes: string) => [...codes].map((code) => ({ code, slots: A.slots }));
+  const done = (sessionCode: string) => workout({ sessionCode });
+
+  it("the next session follows the stored order for 2 to 7 sessions", () => {
+    for (const codes of ["AB", "BAC", "DACB", "ABCDE", "FEDCBA", "ABCDEFG"]) {
+      const program = stored(codes);
+      expect(nextSession([], program)).toBe(codes[0]);
+      for (let i = 0; i < codes.length; i++) {
+        expect(nextSession([done(codes[i]!)], program)).toBe(codes[(i + 1) % codes.length]);
+      }
+    }
+  });
+
+  it("after G comes A", () => {
+    expect(nextSession([done("F")], stored("ABCDEFG"))).toBe("G");
+    expect(nextSession([done("G")], stored("ABCDEFG"))).toBe("A");
+  });
+
+  it("after a session whose letter left the program comes the first", () => {
+    expect(nextSession([done("B")], stored("DAC"))).toBe("D");
+    expect(nextSession([done("E")], stored("ABCD"))).toBe("A");
+  });
+
+  it("offers none when the program holds no session", () => {
+    expect(nextSession([], [])).toBeNull();
+    expect(nextSession([done("A")], [])).toBeNull();
   });
 });
 
@@ -640,6 +676,7 @@ describe("autoClose (D12)", () => {
 });
 
 describe("lastFinished", () => {
+  const a = { code: "A", sessionId: seedId(1) };
   it("is the latest ended session of the code, the open, removed and other ones left out", () => {
     const early = workout({ startedAt: "2026-10-01T17:00:00.000Z" });
     const late = workout({ startedAt: "2026-10-05T17:00:00.000Z" });
@@ -650,14 +687,24 @@ describe("lastFinished", () => {
       workout({ startedAt: "2026-10-07T17:00:00.000Z", removed: true }),
       workout({ startedAt: "2026-10-08T17:00:00.000Z", sessionCode: "B" }),
     ];
-    expect(lastFinished(workouts, "A")).toBe(late);
-    expect(lastFinished([early, late], "A")).toBe(late);
+    expect(lastFinished(workouts, a)).toBe(late);
+    expect(lastFinished([early, late], a)).toBe(late);
+  });
+
+  it("follows the session each one recorded, not the letter it had", () => {
+    const moved = workout({
+      startedAt: "2026-10-06T17:00:00.000Z",
+      sessionCode: "B",
+      sessionId: a.sessionId,
+    });
+    const other = workout({ startedAt: "2026-10-07T17:00:00.000Z", sessionId: seedId(2) });
+    expect(lastFinished([workout(), moved, other], a)).toBe(moved);
   });
 
   it("is null when no session of the code ended", () => {
-    expect(lastFinished([], "A")).toBeNull();
-    expect(lastFinished([workout({ endedAt: null }), workout({ removed: true })], "A")).toBeNull();
-    expect(lastFinished([workout()], "B")).toBeNull();
+    expect(lastFinished([], a)).toBeNull();
+    expect(lastFinished([workout({ endedAt: null }), workout({ removed: true })], a)).toBeNull();
+    expect(lastFinished([workout()], { code: "B", sessionId: seedId(2) })).toBeNull();
   });
 });
 

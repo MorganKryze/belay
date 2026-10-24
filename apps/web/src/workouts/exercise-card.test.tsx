@@ -1,5 +1,5 @@
 import { exerciseById } from "@belay/shared/exercises/catalog";
-import { sessionByCode } from "@belay/shared/training/program";
+import { sessionByCode, starterProgram } from "@belay/shared/training/program";
 import { type History, type Load, warmups } from "@belay/shared/training/rules";
 import { loadFromKg } from "@belay/shared/tools/units";
 import { workPosition, type Workout, type WorkoutSet } from "@belay/shared/training/workout";
@@ -26,7 +26,7 @@ afterEach(() => {
 const logged: Load[] = [];
 
 // The bench press of session A: 4 work sets, 2 warm-ups.
-const slot = sessionByCode("A")!.slots[0]!;
+const slot = sessionByCode("A", starterProgram)!.slots[0]!;
 const bench = exerciseById(slot.exerciseId)!;
 const BAR = { barKg: 20, platesKg: [25, 20, 15, 10, 5, 2.5, 1.25] };
 

@@ -419,6 +419,11 @@ function describe(
       return change.field === "create"
         ? t("settings.rejected.set", { day: day(toISODate(new Date(change.doneAt))) })
         : t("settings.rejected.setUndated");
+    case "program":
+    case "activeProgram":
+    case "programSession":
+    case "programSlot":
+      return t("workouts.tabs.program");
   }
 }
 

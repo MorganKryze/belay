@@ -1,5 +1,5 @@
 import type { Change } from "@belay/shared/sync/schema";
-import { sessionByCode } from "@belay/shared/training/program";
+import { sessionByCode, starterProgram } from "@belay/shared/training/program";
 import { IDBFactory } from "fake-indexeddb";
 import { openDB } from "idb";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -34,7 +34,7 @@ beforeEach(() => {
 });
 
 describe("the upgrade from version 1", () => {
-  it("keeps the weigh-ins, the range, the queue and the cursor, while a tab still holds version 1", async () => {
+  it("keeps the weigh-ins, the range and the queue, while a tab still holds version 1", async () => {
     // The database as M2a left it, held open by a tab running M2a's code.
     let closedForUpgrade = false;
     const v1 = await openDB(accountDbName("user-a"), 1, {
@@ -59,14 +59,14 @@ describe("the upgrade from version 1", () => {
 
     const db = await openAccountDb("user-a");
     expect(closedForUpgrade).toBe(true);
-    expect(db.version).toBe(4); // straight to the current version
+    expect(db.version).toBe(5); // straight to the current version
     expect((await readWeights(db)).map((w) => w.weightKg)).toEqual([80.2, 79.8]);
     expect(await readTarget(db)).toEqual({ minPct: 0.25, maxPct: 0.75 });
     expect((await readOutbox(db)).map((e) => [e.id, e.change.kind])).toEqual([
       [1, "weight"],
       [2, "target"],
     ]);
-    expect(await readCursor(db)).toBe("12");
+    expect(await readCursor(db)).toBe("0"); // the next sync fetches everything again
     // The new stores are there, and the queue goes on from where it was.
     await recordChange(db, {
       kind: "measure",
@@ -244,7 +244,7 @@ describe("the new entries", () => {
         id: W,
         field: "start",
         sessionCode: "A",
-        plan: [...sessionByCode("A")!.slots],
+        plan: [...sessionByCode("A", starterProgram)!.slots],
         startedAt: AT,
         at: AT,
       },

@@ -1,6 +1,6 @@
 import type { Change } from "@belay/shared/sync/schema";
 import { kgFromLoad, kgToLb } from "@belay/shared/tools/units";
-import { sessionByCode } from "@belay/shared/training/program";
+import { sessionByCode, starterProgram } from "@belay/shared/training/program";
 import { expect, type Page, test } from "@playwright/test";
 import { expectNoAxeViolations } from "./axe";
 import { fakeServer } from "./fake-server";
@@ -21,7 +21,7 @@ function session(id: string, daysAgo: number, loads: [number, number][]): Change
       id,
       field: "start",
       sessionCode: "A",
-      plan: [...sessionByCode("A")!.slots],
+      plan: [...sessionByCode("A", starterProgram)!.slots],
       startedAt: at(0),
       at: at(0),
     },

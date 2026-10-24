@@ -12,7 +12,7 @@ import {
   weekOf,
 } from "./activities";
 import { appendSlot, liveSlots, planFor, replaceSlot, skipSlot } from "./plan";
-import { estimatedMinutes, plannedWorkSets, sessionByCode } from "./program";
+import { estimatedMinutes, plannedWorkSets, sessionByCode, starterProgram } from "./program";
 import { lastTime, nextTurn, prefill, restEndsAt, summary, turnKey, workOrder } from "./rules";
 import {
   isPlan,
@@ -25,9 +25,9 @@ import {
   workPosition,
 } from "./workout";
 
-const A = sessionByCode("A")!;
-const B = sessionByCode("B")!;
-const C = sessionByCode("C")!;
+const A = sessionByCode("A", starterProgram)!;
+const B = sessionByCode("B", starterProgram)!;
+const C = sessionByCode("C", starterProgram)!;
 const SQUAT = "ds:0043";
 const GOBLET = "ds:1760";
 const PLANK = "ds:2135";
@@ -180,6 +180,25 @@ describe("session C's rule (spec D6)", () => {
     expect(planFor(C, [activity({ removed: true })], "2026-10-07")).toHaveLength(10);
     expect(planFor(A, [], "2026-10-07")).toEqual(A.slots);
     expect(planFor(B, [], "2026-10-07")).toEqual(B.slots);
+  });
+
+  it("a plan keeps the first 30 slots of an overfull session", () => {
+    // Two devices adding at once can leave 31 live slots (PM8): the session still starts.
+    const slots = Array.from({ length: MAX_SLOTS + 1 }, (_, i) => ({
+      ...A.slots[0]!,
+      sets: (i % 10) + 1,
+    }));
+    const plan = planFor({ code: "D", slots }, [], "2026-10-07");
+    expect(plan).toHaveLength(MAX_SLOTS);
+    expect(plan).toEqual(slots.slice(0, MAX_SLOTS));
+    expect(isPlan(plan)).toBe(true);
+    const noClimbing = [{ ...A.slots[1]! }];
+    expect(
+      planFor({ code: "D", slots: slots.slice(0, 29), noClimbing }, [], "2026-10-07"),
+    ).toHaveLength(30);
+    expect(planFor({ code: "D", slots: slots.slice(0, 30), noClimbing }, [], "2026-10-07")).toEqual(
+      slots.slice(0, 30),
+    );
   });
 
   it("gives a copy: changing it never changes the program", () => {

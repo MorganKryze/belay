@@ -1,6 +1,6 @@
 import type { Change, SetRow, WorkoutRow } from "@belay/shared/sync/schema";
 import { resumedStart } from "@belay/shared/training/pause";
-import { sessionByCode } from "@belay/shared/training/program";
+import { sessionByCode, starterProgram } from "@belay/shared/training/program";
 import { liveSets } from "@belay/shared/training/rules";
 import { IDBFactory } from "fake-indexeddb";
 import { openDB } from "idb";
@@ -35,7 +35,7 @@ const LATEST = "2026-10-07T17:10:00.000Z";
 const W = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d90";
 const S1 = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d91";
 const S2 = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d92";
-const PLAN = [...sessionByCode("A")!.slots];
+const PLAN = [...sessionByCode("A", starterProgram)!.slots];
 
 const start = (id = W, at = AT): Change => ({
   kind: "workout",
@@ -95,7 +95,7 @@ beforeEach(() => {
 });
 
 describe("the upgrade from version 2", () => {
-  it("keeps every entry, the queue, the refused list and the cursor", async () => {
+  it("keeps every entry, the queue and the refused list", async () => {
     // The database as M2b left it.
     const v2 = await openDB(accountDbName("user-a"), 2, {
       upgrade(db) {
@@ -128,11 +128,11 @@ describe("the upgrade from version 2", () => {
     await v2.put("meta", "12", "cursor");
 
     const db = await openAccountDb("user-a");
-    expect(db.version).toBe(4);
+    expect(db.version).toBe(5);
     expect(await readWeights(db)).toEqual([{ date: "2026-10-07", weightKg: 79.8 }]);
     expect(await readIntake(db)).toEqual([{ date: "2026-10-07", kcal: 2100, proteinG: null }]);
     expect((await readRejected(db)).map((r) => r.reason)).toEqual(["refused"]);
-    expect(await readCursor(db)).toBe("12");
+    expect(await readCursor(db)).toBe("0"); // the next sync fetches everything again
     // The session stores are there, and the queue goes on from where it was.
     await recordChanges(db, [start()], { active: active() });
     expect((await readOutbox(db)).map((e) => [e.id, e.change.kind])).toEqual([

@@ -7,7 +7,7 @@ import {
   type Muscle,
   UPPER_MUSCLES,
 } from "@belay/shared/exercises/muscles";
-import { starterProgram } from "@belay/shared/training/program";
+import type { LetteredTemplate } from "@belay/shared/training/stored-program";
 import { Link } from "@tanstack/react-router";
 import { ChevronDown, ChevronRight, Search, X } from "lucide-react";
 import { RadioGroup } from "radix-ui";
@@ -17,6 +17,7 @@ import { Sheet } from "@/components/sheet";
 import { groupSurface, sectionLabel } from "@/components/surfaces";
 import { Button } from "@/components/ui/button";
 import { formatNumber } from "@/lib/format";
+import { useAccount, useProgram } from "@/sync/account";
 import { BodyThumb } from "./body-map";
 
 // Case, accents and word order aside: "press bench" finds "Barbell bench press".
@@ -35,14 +36,17 @@ export const matches = (name: string, query: string) => {
 const FOLDED = new Map(EXERCISES.map((e) => [e.id, fold(e.name)]));
 const collator = new Intl.Collator("en");
 const ALL = [...EXERCISES].sort((a, b) => collator.compare(a.name, b.name));
-// The sessions of the program each exercise is in: "A", "A · C".
-const SESSIONS = new Map<string, string[]>();
-for (const s of starterProgram)
-  for (const slot of s.slots) {
-    const codes = SESSIONS.get(slot.exerciseId) ?? [];
-    if (!codes.includes(s.code)) SESSIONS.set(slot.exerciseId, [...codes, s.code]);
-  }
-const IN_PROGRAM = [...SESSIONS.keys()].flatMap((id) => EXERCISES.filter((e) => e.id === id));
+// The sessions of the active rotation each exercise is in: "A", "A · C".
+type Sessions = ReadonlyMap<string, readonly string[]>;
+function sessionsOf(rotation: readonly LetteredTemplate[]): Sessions {
+  const sessions = new Map<string, string[]>();
+  for (const s of rotation)
+    for (const slot of s.slots) {
+      const codes = sessions.get(slot.exerciseId) ?? [];
+      if (!codes.includes(s.code)) sessions.set(slot.exerciseId, [...codes, s.code]);
+    }
+  return sessions;
+}
 
 type Filters = { query: string; muscle: Muscle | null; equipment: Equipment | null };
 export const filterExercises = (list: readonly Exercise[], f: Filters) => {
@@ -62,6 +66,17 @@ export function ExercisesPanel() {
   const { t, i18n } = useTranslation();
   const [filters, setFilters] = useState<Filters>({ query: "", muscle: null, equipment: null });
   const [open, setOpen] = useState<"muscle" | "equipment" | null>(null);
+  const account = useAccount();
+  const rotation = useProgram(account.kind === "open" ? account : null).data?.rotation;
+  // While the account opens, none: the starting program would show before the person's own.
+  const sessions = useMemo(
+    () => sessionsOf(account.kind === "loading" ? [] : (rotation ?? [])),
+    [account.kind, rotation],
+  );
+  const inProgram = useMemo(
+    () => [...sessions.keys()].flatMap((id) => EXERCISES.filter((e) => e.id === id)),
+    [sessions],
+  );
   const filtered = useMemo(() => filterExercises(ALL, filters), [filters]);
   const narrowed =
     filters.query.trim() !== "" || filters.muscle !== null || filters.equipment !== null;
@@ -104,20 +119,24 @@ export function ExercisesPanel() {
               ? t("library.found", { count: filtered.length, value: count(filtered.length) })
               : t("library.none")}
           </p>
-          {filtered.length > 0 && <ExerciseList items={filtered} />}
+          {filtered.length > 0 && <ExerciseList items={filtered} sessions={sessions} />}
         </>
       ) : (
         <>
-          <h2 className={sectionLabel}>{t("library.inProgram")}</h2>
-          <ul className={`relative ${groupSurface}`}>
-            {IN_PROGRAM.map((e, i) => (
-              <li key={e.id}>
-                <Row exercise={e} first={i === 0} />
-              </li>
-            ))}
-          </ul>
+          {inProgram.length > 0 && (
+            <>
+              <h2 className={sectionLabel}>{t("library.inProgram")}</h2>
+              <ul className={`relative ${groupSurface}`}>
+                {inProgram.map((e, i) => (
+                  <li key={e.id}>
+                    <Row exercise={e} first={i === 0} sessions={sessions} />
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
           <h2 className={sectionLabel}>{t("library.everything", { value: count(ALL.length) })}</h2>
-          <ExerciseList items={ALL} />
+          <ExerciseList items={ALL} sessions={sessions} />
         </>
       )}
       {open === "muscle" && (
@@ -280,7 +299,13 @@ function useVisibleRange(list: RefObject<HTMLElement | null>, count: number) {
   return range;
 }
 
-export function ExerciseList({ items }: { items: readonly Exercise[] }) {
+export function ExerciseList({
+  items,
+  sessions,
+}: {
+  items: readonly Exercise[];
+  sessions: Sessions;
+}) {
   const list = useRef<HTMLUListElement>(null);
   const { start, end } = useVisibleRange(list, items.length);
   return (
@@ -298,7 +323,7 @@ export function ExerciseList({ items }: { items: readonly Exercise[] }) {
           className="absolute inset-x-0"
           style={{ top: (start + i) * ROW, height: ROW }}
         >
-          <Row exercise={e} first={start + i === 0} />
+          <Row exercise={e} first={start + i === 0} sessions={sessions} />
         </li>
       ))}
     </ul>
@@ -307,9 +332,17 @@ export function ExerciseList({ items }: { items: readonly Exercise[] }) {
 
 // Rows split by a hairline above each but the list's first: the virtual list's rows are absolute,
 // so the card cannot draw them with divide-y.
-function Row({ exercise: e, first }: { exercise: Exercise; first: boolean }) {
+function Row({
+  exercise: e,
+  first,
+  sessions,
+}: {
+  exercise: Exercise;
+  first: boolean;
+  sessions: Sessions;
+}) {
   const { t } = useTranslation();
-  const codes = SESSIONS.get(e.id);
+  const codes = sessions.get(e.id);
   const aside: ReactNode = codes ? (
     <span className="shrink-0 rounded-chip bg-primary-soft px-2 py-0.5 text-xs font-bold text-primary-ink">
       <span className="sr-only">{t("library.inSessions")} </span>
