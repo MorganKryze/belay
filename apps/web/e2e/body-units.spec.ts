@@ -32,8 +32,8 @@ test("Accueil reads the weigh-in and the 7-day average in lb", async ({ page }) 
   await expect(weighInRow(page)).toContainText("177,3 lb");
   const trend = page.getByRole("link", { name: /^Moyenne 7 jours/ });
   const figure = trend.locator("[data-slot=trend-figure]");
-  await expect(figure).toHaveText(/^\d{3},\dlb$/);
-  await expect(figure.locator("span")).toHaveText("lb");
+  await expect(figure).toHaveText(/^\d{3},\d lb$/);
+  await expect(figure.getByText("lb", { exact: true })).toBeVisible();
   await expect(trend).not.toContainText("kg");
   await expect(weighInRow(page)).not.toContainText("kg");
 });
@@ -41,7 +41,7 @@ test("Accueil reads the weigh-in and the 7-day average in lb", async ({ page }) 
 test("Corps reads its figure, weeks and history in lb, the loss still in %", async ({ page }) => {
   await open(page, "/body");
   const figure = page.getByRole("region", { name: "Moyenne 7 jours" });
-  await expect(figure.locator("[data-slot=trend-figure]")).toHaveText(/^\d{3},\dlb$/);
+  await expect(figure.locator("[data-slot=trend-figure]")).toHaveText(/^\d{3},\d lb$/);
   await expect(figure).toContainText("%");
   const weeks = page.getByRole("region", { name: "Tes semaines" });
   await expect(weeks).toContainText(/\d{3},\d\slb/);

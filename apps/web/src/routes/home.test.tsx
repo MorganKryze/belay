@@ -328,7 +328,7 @@ describe("the trend", () => {
     expect(within(trend).getByRole("heading", { level: 2 })).toBeTruthy();
     const link = await card();
     expect(within(trend).getAllByRole("link")).toEqual([link]);
-    await waitFor(() => expect(link.textContent).toContain("80.4kg"));
+    await waitFor(() => expect(link.textContent).toContain("80.4 kg"));
     expect(link.getAttribute("href")).toBe("/body");
   });
 

@@ -129,6 +129,32 @@ test("the still opens the loop in a sheet, which closes back on the still", asyn
   await expect(show(card)).toBeFocused();
 });
 
+test("the still and Note share one top and one height", async ({ page }) => {
+  await start(page);
+  const card = bench(page);
+  await expect(show(card)).toBeVisible();
+  await settled(page);
+  const still = await box(show(card));
+  const note = await box(card.getByRole("button", { name: "Note", exact: true }));
+  expect(Math.abs(still.y - note.y)).toBeLessThanOrEqual(0.5);
+  expect(Math.abs(still.height - note.height)).toBeLessThanOrEqual(0.5);
+});
+
+test.describe("on desktop", () => {
+  test.use({ viewport: { width: 1280, height: 800 } });
+
+  test("the loop sits centred in its sheet", async ({ page }) => {
+    await start(page);
+    await show(bench(page)).click();
+    await expect(loop(page)).toBeVisible();
+    await settled(page);
+    const v = await box(loop(page));
+    const s = await box(sheet(page));
+    expect(v.width).toBeLessThan(s.width - 40);
+    expect(Math.abs(v.x + v.width / 2 - (s.x + s.width / 2))).toBeLessThanOrEqual(1);
+  });
+});
+
 test("with a loop on offer, the set rows sit where they sit without media", async ({
   page,
   browser,

@@ -520,7 +520,8 @@
     "paused": "En pause",
     "setOf": "série {{n}} sur {{total}}",
     "setLead": "Série {{n}} sur {{total}}",
-    "session": "Séance {{code}}"
+    "session": "Séance {{code}}",
+    "label": "Séance en cours"
   },
   "loop": {
     "name": "Démonstration de {{name}}",

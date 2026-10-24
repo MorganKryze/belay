@@ -143,7 +143,7 @@ describe("the Body page", () => {
     expect(value(row).textContent).toBe("0.7%");
     expect(value(row).querySelector("svg")).toBeNull();
     expect(within(list).queryByText("in your range")).toBeNull();
-    expect(figureCard().textContent).toBe("7-day average80.0kgloss 0.7%/wk last week");
+    expect(figureCard().textContent).toBe("7-day average80.0 kgloss 0.7%/wk last week");
     expect(screen.queryByText("in your range")).toBeNull();
   });
 
@@ -192,7 +192,7 @@ describe("the Body page", () => {
   it("opens on the figure card: the 7-day average, last week's loss and the pill", async () => {
     await open();
     const card = figureCard();
-    expect(card.textContent).toBe("7-day average80.0kgloss 0.7%/wk last weekin your range");
+    expect(card.textContent).toBe("7-day average80.0 kgloss 0.7%/wk last weekin your range");
     expect(within(card).queryByRole("link")).toBeNull();
   });
 
@@ -201,7 +201,7 @@ describe("the Body page", () => {
       ...WEEKS,
       { kind: "target", minPct: 0.25, maxPct: 0.5, at: "2026-10-07T06:00:00.000Z" },
     ]);
-    expect(figureCard().textContent).toBe("7-day average80.0kgloss 0.7%/wk last week");
+    expect(figureCard().textContent).toBe("7-day average80.0 kgloss 0.7%/wk last week");
     expect(screen.queryByText("in your range")).toBeNull();
   });
 

@@ -1,7 +1,8 @@
 import type { Change } from "@belay/shared/sync/schema";
 import { sessionByCode } from "@belay/shared/training/program";
+import AxeBuilder from "@axe-core/playwright";
 import { expect, type Locator, type Page, test } from "@playwright/test";
-import { expectNoAxeViolations } from "./axe";
+import { expectNoAxeViolations, settled } from "./axe";
 import { fakeServer } from "./fake-server";
 
 // The real clock: Accueil's date is today's, as Paris has it.
@@ -131,6 +132,15 @@ for (const theme of ["light", "dark"] as const) {
     await expectNoAxeViolations(page);
   });
 }
+
+// Every rule, best practices included: the session bar sits in a landmark like the rest.
+test("Accueil with the session bar up leaves nothing outside a landmark", async ({ page }) => {
+  await openHome(page, runningA());
+  await expect(page.getByRole("region", { name: "Session in progress" })).toBeVisible();
+  await settled(page);
+  const { violations } = await new AxeBuilder({ page }).analyze();
+  expect(violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target).join(", ")}`)).toEqual([]);
+});
 
 // Session A started half a minute ago and ended a second ago: done today, B comes next.
 const DONE = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7f02";

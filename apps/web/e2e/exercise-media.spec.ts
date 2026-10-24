@@ -142,6 +142,20 @@ test("offline, a loop seen before plays and one never seen shows nothing", async
   await expect(page.locator("video, figure[aria-label]")).toHaveCount(0);
 });
 
+test.describe("on desktop", () => {
+  test.use({ viewport: { width: 1280, height: 800 } });
+
+  test("the loop stays on the page's left edge", async ({ page }) => {
+    await fakeServer(page, { media: true });
+    await open(page);
+    await expect(loop(page)).toBeVisible();
+    const v = await box(loop(page));
+    const title = await box(page.getByRole("heading", { level: 1 }));
+    expect(v.width).toBeLessThanOrEqual(360.5);
+    expect(Math.abs(v.x - title.x)).toBeLessThanOrEqual(1);
+  });
+});
+
 test("nothing scrolls sideways at 360 px", async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 780 });
   await fakeServer(page, { media: true });
