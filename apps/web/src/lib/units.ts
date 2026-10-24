@@ -30,9 +30,10 @@ export const [readWeightUnit, setWeightUnit] = preference<WeightUnit>(
 export const bodyWeight = (kg: number, locale: string, unit = readWeightUnit()): string =>
   formatKg(weighingFromKg(kg, unit), locale);
 
-// "80,4 kg", "177,2 lb": the symbol is not translated.
+// "80,4 kg", "177,2 lb": the symbol is not translated. The no-break space keeps it on the line of
+// its number, as the body-weight strings always have.
 export const bodyWeightText = (kg: number, locale: string, unit = readWeightUnit()): string =>
-  `${bodyWeight(kg, locale, unit)} ${unit}`;
+  `${bodyWeight(kg, locale, unit)}\u00a0${unit}`;
 
 // A load as typed and shown: kg to two decimals ("82,5"), lb in whole pounds ("182"). Grouping is
 // for results only, never for an input's value.

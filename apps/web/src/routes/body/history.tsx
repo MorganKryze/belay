@@ -6,7 +6,8 @@ import { ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { groupCard, sectionLabel } from "@/components/surfaces";
 import { dayLabel } from "@/components/weigh-in";
-import { formatKg, formatNumber } from "@/lib/format";
+import { formatNumber } from "@/lib/format";
+import { bodyWeightText } from "@/lib/units";
 
 // Two columns: the day's lines, then the chevron's 16 px, kept empty on a day without a weigh-in so
 // every weight ends at the same right edge.
@@ -71,7 +72,7 @@ export function History({
                 <span>{dayLabel(date, today, t, i18n.language)}</span>
                 {w && (
                   <b className="font-semibold text-foreground tabular-nums">
-                    {t("trend.kg", { value: formatKg(w.weightKg, i18n.language) })}
+                    {bodyWeightText(w.weightKg, i18n.language)}
                   </b>
                 )}
               </span>

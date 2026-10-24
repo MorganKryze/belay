@@ -278,3 +278,55 @@ describe("deleting from the sheet", () => {
     expect(document.activeElement).toBe(await row());
   });
 });
+
+describe("in pounds", () => {
+  beforeEach(() => localStorage.setItem("belay.weightUnit", "lb"));
+
+  it("in pounds the weigh-in is typed in lb and saved in kg on the 0.1 grid", async () => {
+    fakeApi({ me: ADA });
+    renderRoute("/");
+    const sheet = await openSheet();
+    expect(within(sheet).getByText("lb")).toBeTruthy();
+    expect(within(sheet).queryByText("kg")).toBeNull();
+    fireEvent.change(await field(), { target: { value: "180.4" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    // 180.4 lb is 81.83 kg: stored as 81.8, read back as 180.3 lb.
+    await waitFor(async () => expect(await days()).toEqual([["2026-10-07", 81.8]]));
+    await waitFor(async () => expect((await row()).textContent).toBe("Weigh-in 180.3 lb"));
+  });
+
+  it("an untouched prefill in pounds saves the stored kg unchanged", async () => {
+    await seed(ADA.id, [weight("2026-10-06", 80.2)]);
+    fakeApi({ me: ADA });
+    renderRoute("/");
+    await openSheet();
+    // 80.2 kg is 176.81 lb.
+    await waitFor(async () => expect(((await field()) as HTMLInputElement).value).toBe("176.8"));
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(async () =>
+      expect(await days()).toEqual([
+        ["2026-10-06", 80.2],
+        ["2026-10-07", 80.2],
+      ]),
+    );
+  });
+
+  it("the out-of-range sentence says 44,1 and 881,8 lb", async () => {
+    await i18n.changeLanguage("fr");
+    fakeApi({ me: ADA });
+    renderRoute("/");
+    fireEvent.click(await screen.findByRole("button", { name: /^Pesée/ }));
+    const input = await screen.findByRole("textbox", { name: "Poids" });
+    fireEvent.change(input, { target: { value: "900" } });
+    fireEvent.blur(input);
+    expect(await screen.findByText("Saisis un poids entre 44,1 et 881,8 lb.")).toBeTruthy();
+    expect(
+      (screen.getByRole("button", { name: "Enregistrer" }) as HTMLButtonElement).disabled,
+    ).toBe(true);
+    // 44,1 lb is 20.0 kg, inside the bounds; 43,9 lb is 19.9 kg, outside.
+    fireEvent.change(input, { target: { value: "43,9" } });
+    expect(await screen.findByText("Saisis un poids entre 44,1 et 881,8 lb.")).toBeTruthy();
+    fireEvent.change(input, { target: { value: "44,1" } });
+    await waitFor(() => expect(screen.queryByText(/^Saisis un poids/)).toBeNull());
+  });
+});

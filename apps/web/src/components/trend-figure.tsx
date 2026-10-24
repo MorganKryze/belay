@@ -1,11 +1,12 @@
 import { useTranslation } from "react-i18next";
-import { formatKg, formatNumber, lossView } from "@/lib/format";
+import { formatNumber, lossView } from "@/lib/format";
+import { bodyWeight, readWeightUnit } from "@/lib/units";
 
 // The figure of Accueil's trend card, shared with Corps: the 7-day average, the last complete
 // week's loss (« stable » when it rounds to 0.0 %) and the range pill. The caller draws the card
 // and its label, and decides whether the pill applies. Outside the range the number stands alone,
 // with no colour or word that judges. Accueil loads this file at startup: it imports nothing
-// beyond React, i18next and the formatters.
+// beyond React, i18next, the formatters and the weight unit.
 export function TrendFigure({
   averageKg,
   lossPct,
@@ -16,6 +17,7 @@ export function TrendFigure({
   pill: boolean;
 }) {
   const { t, i18n } = useTranslation();
+  const unit = readWeightUnit();
   const loss = lossPct === null ? null : lossView(lossPct);
   const strong = "font-semibold whitespace-nowrap text-foreground tabular-nums";
   return (
@@ -24,10 +26,10 @@ export function TrendFigure({
         data-slot="trend-figure"
         className="mt-2.5 mb-2 text-figure tracking-[-0.03em] text-foreground tabular-nums"
       >
-        {averageKg === null ? "—" : formatKg(averageKg, i18n.language)}
+        {averageKg === null ? "—" : bodyWeight(averageKg, i18n.language, unit)}
         {averageKg !== null && (
           <span className="ml-1.5 text-[17px] font-semibold tracking-normal text-muted-foreground">
-            kg
+            {unit}
           </span>
         )}
       </span>

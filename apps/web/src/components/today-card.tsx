@@ -17,7 +17,8 @@ import { daySummaryText } from "@/lib/activities";
 import { useFirstPull } from "@/lib/first-pull";
 import { groupCard, sectionLabel } from "./surfaces";
 import { preloadWhenIdle } from "@/lib/idle";
-import { formatKg, formatNumber } from "@/lib/format";
+import { formatNumber } from "@/lib/format";
+import { bodyWeightText } from "@/lib/units";
 import {
   type OpenAccount,
   useActivities,
@@ -153,7 +154,7 @@ export function TodayCard({
                 ? null
                 : weighed
                   ? {
-                      text: t("trend.kg", { value: formatKg(weighed.weightKg, i18n.language) }),
+                      text: bodyWeightText(weighed.weightKg, i18n.language),
                       done: true,
                     }
                   : { text: t("today.weighInEmpty"), done: false }

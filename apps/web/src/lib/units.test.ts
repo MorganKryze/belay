@@ -34,19 +34,19 @@ describe("the weight unit", () => {
   });
 
   it("the formatters follow the unit chosen, read at each call", () => {
-    expect(bodyWeightText(80.38, "fr")).toBe("80,4 kg");
+    expect(bodyWeightText(80.38, "fr")).toBe("80,4\u00a0kg");
     expect(loadNumber(82.5, "fr")).toBe("82,5");
     setWeightUnit("lb");
-    expect(bodyWeightText(80.38, "fr")).toBe("177,2 lb");
+    expect(bodyWeightText(80.38, "fr")).toBe("177,2\u00a0lb");
     expect(loadNumber(82.5, "fr")).toBe("182");
   });
 });
 
 describe("body weight", () => {
-  it("bodyWeightText says 177,2 lb in French and 177.2 lb in English", () => {
-    expect(bodyWeightText(80.38, "fr", "lb")).toBe("177,2 lb");
-    expect(bodyWeightText(80.38, "en", "lb")).toBe("177.2 lb");
-    expect(bodyWeightText(80, "fr", "kg")).toBe("80,0 kg");
+  it("bodyWeightText says 177,2 lb in French and 177.2 lb in English, the unit kept on its line", () => {
+    expect(bodyWeightText(80.38, "fr", "lb")).toBe("177,2\u00a0lb");
+    expect(bodyWeightText(80.38, "en", "lb")).toBe("177.2\u00a0lb");
+    expect(bodyWeightText(80, "fr", "kg")).toBe("80,0\u00a0kg");
   });
 
   it("is written to the tenth, with its decimal", () => {

@@ -44,8 +44,8 @@
     "average": "Moyenne 7 jours",
     "summary": "Pesées du {{from}} au {{to}}. Moyenne 7 jours : {{average}}. Perte par semaine : {{loss}}.",
     "hint": "Flèches gauche et droite : jour par jour. Entrée : modifier la pesée.",
-    "weighIn": "Pesée {{value}} kg",
-    "movingAverage": "Moyenne 7 j {{value}} kg"
+    "weighIn": "Pesée {{value}} {{unit}}",
+    "movingAverage": "Moyenne 7 j {{value}} {{unit}}"
   },
   "account": {
     "unavailable": "Ce navigateur ne permet pas à Belay d'enregistrer sur l'appareil : le suivi n'est pas disponible ici. Les outils restent utilisables."
@@ -77,7 +77,6 @@
     "loss": "perte",
     "gain": "prise",
     "perWeek": "{{value}} %/sem",
-    "kg": "{{value}} kg",
     "lastWeek": "la semaine dernière",
     "stable": "stable"
   },
@@ -90,7 +89,7 @@
     "save": "Enregistrer",
     "delete": "Supprimer cette pesée",
     "close": "Fermer",
-    "outOfRange": "Saisis un poids entre 20 et 400 kg.",
+    "outOfRange": "Saisis un poids entre {{min}} et {{max}} {{unit}}.",
     "toastSaved": "Pesée enregistrée",
     "toastDeleted": "Pesée supprimée",
     "saveFailed": "Pas pu enregistrer sur ce téléphone. Réessaie.",
