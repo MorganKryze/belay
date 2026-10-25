@@ -300,7 +300,7 @@
     "rir": "RIR {{range}}",
     "restSec": "{{s}} s",
     "restMin": "{{m}} min",
-    "restMinSec": "{{m}} min {{s}} s",
+    "restMinSec": "{{m}} min {{s}} s",
     "minutes": "{{m}} min",
     "hours": "{{h}} h {{mm}}"
   },
