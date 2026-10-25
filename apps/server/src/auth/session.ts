@@ -55,9 +55,8 @@ export function requestToken(
   c: Context,
   cfg: Config,
 ): { token: string | undefined; from: "bearer" | "cookie" } {
-  const header = c.req.header("authorization");
-  if (!/^bearer(\s|$)/i.test(header ?? ""))
-    return { token: readSessionCookie(c, cfg), from: "cookie" };
+  const header = c.req.header("authorization") ?? "";
+  if (!/^bearer(\s|$)/i.test(header)) return { token: readSessionCookie(c, cfg), from: "cookie" };
   return { token: BEARER.exec(header)?.[1], from: "bearer" };
 }
 
