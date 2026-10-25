@@ -437,6 +437,16 @@ describe("program edits through /api/sync", () => {
     expect((await slotRow(user, SLOT_A1))!.sets).toBe(5);
   });
 
+  it("two edits of a slot at one instant, written with and without milliseconds, keep the later one", async () => {
+    const { user, sync } = await signIn("pg-same-instant");
+    const res = await sync("0", [
+      slotField(SLOT_A1, "sets", 4, "2026-10-07T17:00:00.000Z"),
+      slotField(SLOT_A1, "sets", 5, "2026-10-07T17:00:00Z"),
+    ]);
+    expect(rejected(res)).toEqual([]);
+    expect((await slotRow(user, SLOT_A1))!.sets).toBe(5);
+  });
+
   it("a session set aside and placed back", async () => {
     const { user, sync } = await signIn("pg-aside");
     const aside = await sync("0", [place(SESSION_B, null, 0, AT)]);

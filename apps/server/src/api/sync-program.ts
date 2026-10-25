@@ -668,14 +668,15 @@ export async function writeProgramSlots(
     let row = initial;
     const won: SlotEdit[] = [];
     // Inside one batch a later change wins a tie with an earlier one of the batch, as fold does:
-    // two edits clamped to the same instant still arrive in the order they were made.
+    // two edits clamped to the same instant still arrive in the order they were made. An instant
+    // can be written with or without its milliseconds, so the tie compares instants.
     const written = new Set<string>();
     for (const c of edits) {
       if (c.id !== id || (c.field === "removed" && blocked.has(id))) continue;
       const change = { ...c, at: clampAt(c.at, now) };
       const time = timeOf(c);
-      const base: ProgramSlotRow =
-        written.has(time) && row[time] === change.at ? { ...row, [time]: null } : row;
+      const tie = written.has(time) && Date.parse(row[time]!) === Date.parse(change.at);
+      const base: ProgramSlotRow = tie ? { ...row, [time]: null } : row;
       const next = mergeSlotChange(base, change);
       if (next === null) {
         const measured = c.field === "reps" || c.field === "warmups";
