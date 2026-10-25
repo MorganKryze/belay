@@ -286,7 +286,7 @@ describe("the program cards read the active program", () => {
     await edit((p) => createProgram(p, OTHER, EDIT_AT));
     await edit((p) => chooseActive(p, OTHER, EDIT_AT));
     renderRoute("/workouts?tab=program");
-    await screen.findByText(/^The program is edited on a computer/);
+    await screen.findByText(/^The program's exercises are edited on a computer/);
     await settled();
     expect(screen.queryAllByRole("heading", { level: 2, name: /^Session / })).toEqual([]);
   });
@@ -296,7 +296,7 @@ describe("the program cards read the active program", () => {
     await edit((p) => chooseActive(p, OTHER, EDIT_AT));
     await edit(() => [{ kind: "program", id: OTHER, field: "removed", value: true, at: EDIT_AT }]);
     renderRoute("/workouts?tab=program");
-    await screen.findByText(/^The program is edited on a computer/);
+    await screen.findByText(/^The program's exercises are edited on a computer/);
     await settled();
     expect(screen.queryAllByRole("heading", { level: 2, name: /^Session / })).toEqual([]);
   });
@@ -418,7 +418,7 @@ describe("sessions set aside on Programme", () => {
 describe("the editor's entry on Programme", () => {
   it("from 1 024 px the note becomes « Modifier le programme » to the editor", async () => {
     renderRoute("/workouts?tab=program");
-    const note = await screen.findByText("The program is edited on a computer.");
+    const note = await screen.findByText("The program's exercises are edited on a computer.");
     expect(note.className.split(" ")).toContain("lg:hidden");
     const entry = screen.getByRole("link", { name: "Edit the program" });
     expect(entry.getAttribute("href")).toBe("/workouts/program");

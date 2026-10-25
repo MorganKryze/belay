@@ -189,7 +189,7 @@ describe("the « Rythme » row", () => {
     await edit((p) => createProgram(p, OTHER, EDIT_AT));
     await edit((p) => chooseActive(p, OTHER, EDIT_AT));
     renderRoute("/workouts?tab=program");
-    await screen.findByText(/^Le programme se modifie sur ordinateur/);
+    await screen.findByText(/^Les exercices du programme se modifient sur ordinateur/);
     await settle();
     expect(screen.queryByRole("button", { name: /^Rythme/ })).toBeNull();
     // On a computer the editor's entry stays in its own group.
@@ -210,7 +210,7 @@ describe("the « Rythme » row", () => {
     const r = await row();
     const entry = screen.getByRole("link", { name: "Modifier le programme" });
     expect(entry.closest("div")!.parentElement).toBe(r.parentElement);
-    const note = screen.getByText("Le programme se modifie sur ordinateur.");
+    const note = screen.getByText("Les exercices du programme se modifient sur ordinateur.");
     expect(r.compareDocumentPosition(note) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });

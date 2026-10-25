@@ -14,7 +14,8 @@ training, built for friends who cheer each other on.
   days, syncs when the network is back, usable with one hand.
 - **Your own programs.** Keep as many programs as you like, each with as many
   sessions as you want. Edit them in comfort on a computer, then pick the
-  active one on your phone.
+  active one on your phone. Each program runs its sessions in turn or on fixed
+  weekdays, and a rest day is just a rest day, never a missed one.
 
 > Belay is not medical advice.
 
