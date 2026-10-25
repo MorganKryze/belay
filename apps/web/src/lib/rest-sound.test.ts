@@ -191,6 +191,41 @@ describe("the end-of-rest sound", () => {
     expect(context().resumes).toBe(2);
   });
 
+  it("turned on in Settings while armed, the next tap unlocks it", () => {
+    const disarm = sound.armRestSound();
+    sound.setRestSound("on");
+    document.dispatchEvent(new Event("pointerup"));
+    expect(FakeContext.made).toHaveLength(1);
+    expect(context().state).toBe("running");
+    disarm();
+  });
+
+  it("turned off while armed, a tap makes no audio", () => {
+    sound.setRestSound("on");
+    const disarm = sound.armRestSound();
+    sound.setRestSound("off");
+    document.dispatchEvent(new Event("pointerup"));
+    expect(FakeContext.made).toHaveLength(0);
+    disarm();
+  });
+
+  it("turned on in another tab while armed, the next tap unlocks it", () => {
+    const disarm = sound.armRestSound();
+    localStorage.setItem("belay.restSound", "on");
+    window.dispatchEvent(new StorageEvent("storage", { key: "belay.restSound" }));
+    document.dispatchEvent(new Event("pointerup"));
+    expect(FakeContext.made).toHaveLength(1);
+    disarm();
+  });
+
+  it("put away, it no longer follows the choice", () => {
+    sound.armRestSound()();
+    sound.setRestSound("on");
+    window.dispatchEvent(new StorageEvent("storage", { key: "belay.restSound" }));
+    document.dispatchEvent(new Event("pointerup"));
+    expect(FakeContext.made).toHaveLength(0);
+  });
+
   it("a rest end plays two notes under 400 ms, once", () => {
     unlocked();
     expect(sound.restEnded(END, end + 120)).toBe(true);

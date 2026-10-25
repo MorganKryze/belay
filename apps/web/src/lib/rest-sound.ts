@@ -5,12 +5,17 @@ import { preference } from "./preference";
 // « on » plays with the person's music and keeps quiet when the iPhone is on silent; « over »
 // sounds even on silent, and iOS pauses the music for it.
 export type RestSound = "off" | "on" | "over";
-export const [readRestSound, setRestSound] = preference<RestSound>(
-  "belay.restSound",
-  "off",
-  "on",
-  "over",
-);
+const KEY = "belay.restSound";
+const [readRestSound, writeRestSound] = preference<RestSound>(KEY, "off", "on", "over");
+export { readRestSound };
+
+// Told when the choice changes in this tab: an armed session bar follows a change made in Settings
+// without waiting for its next mount.
+const changed = new Set<() => void>();
+export function setRestSound(choice: RestSound): void {
+  writeRestSound(choice);
+  for (const follow of changed) follow();
+}
 
 // A rest end seen later than this (timers held back in the background, a reload past the end)
 // stays silent: a tone long after the fact would only startle.
@@ -76,11 +81,31 @@ function tone(audio: AudioContext) {
   note(audio, 1320, t + 0.17, t + 0.32);
 }
 
+// Arms the unlock below for the choice of the moment, and arms it again whenever the choice changes,
+// in Settings or in another tab, so turning the sound on mid-session needs no new mount.
+export function armRestSound(): () => void {
+  let disarm = arm();
+  const rearm = () => {
+    disarm();
+    disarm = arm();
+  };
+  const onStorage = (event: StorageEvent) => {
+    if (event.key === KEY || event.key === null) rearm();
+  };
+  changed.add(rearm);
+  window.addEventListener("storage", onStorage);
+  return () => {
+    changed.delete(rearm);
+    window.removeEventListener("storage", onStorage);
+    disarm();
+  };
+}
+
 // While the sound is on, the first tap or key press unlocks the audio. iOS counts a finger's lift,
 // not its press, as the gesture that may start sound: listening on the press alone left the audio
 // locked after a reload or a lock, unless another tap had come within the last few seconds. The listeners go once the
 // context runs and come back when it stops running (iOS interrupts it in the background).
-export function armRestSound(): () => void {
+function arm(): () => void {
   if (readRestSound() === "off") return () => {};
   askSession();
   const options = { capture: true };
