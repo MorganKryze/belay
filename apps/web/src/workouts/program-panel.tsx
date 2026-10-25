@@ -19,12 +19,13 @@ import { useTranslation } from "react-i18next";
 import { GroupedList, RowButton, RowLink } from "@/components/grouped-list";
 import { SessionCard, SessionHeading } from "@/components/session-card";
 import { Sheet } from "@/components/sheet";
-import { cardSurface, groupCard } from "@/components/surfaces";
+import { cardSurface, groupCard, groupSurface } from "@/components/surfaces";
 import { Button } from "@/components/ui/button";
 import { programName, rotationTitle, sessionName } from "@/lib/format";
 import { useToday } from "@/lib/today";
 import { type OpenAccount, useActivities, useHistory, useProgram, useRecord } from "@/sync/account";
 import { dayOf } from "./history-panel";
+import { RhythmRow } from "./rhythm-sheet";
 
 // Program (spec D13, §4.5): the active program's rotation as cards, the next one first with « See
 // the session »; every other card opens its session's preview on a tap anywhere. While a session
@@ -32,11 +33,17 @@ import { dayOf } from "./history-panel";
 // Without an account nothing is next, so every card opens the starting program's preview. A
 // session set aside is not in the rotation, so it has no card: it is listed under the cards; with
 // no active program there is no card at all. Above the cards, a row names the active program and
-// opens the sheet that picks another. The program is edited on a computer, where the note under
-// the list becomes the editor's entry.
+// opens the sheet that picks another; under the cards, a row sets the program's rhythm. The program
+// is edited on a computer, where the note under the list becomes the editor's entry.
 export function ProgramPanel({ account }: { account: OpenAccount | null }) {
   const { t } = useTranslation();
   const program = useProgram(account).data;
+  // The rhythm of a live active program with sessions; on a computer the editor's entry joins
+  // its group, and on a phone the note follows it.
+  const rhythm = account && program && program.rotation.length > 0;
+  const edit = (
+    <RowLink to="/workouts/program" label={t("workouts.program.edit")} trailing="push" />
+  );
   return (
     <div className="flex flex-col gap-3">
       {account && program && <ActiveProgram account={account} programs={program.programs} />}
@@ -47,12 +54,16 @@ export function ProgramPanel({ account }: { account: OpenAccount | null }) {
           <List history={null} activities={[]} {...program} />
         ))}
       {program && <SetAside programs={program.programs} />}
+      {rhythm && (
+        <div className={groupSurface}>
+          <RhythmRow account={account} {...program} />
+          <div className="hidden border-t border-border lg:block">{edit}</div>
+        </div>
+      )}
       <p className="mx-0.5 text-sm text-muted-foreground lg:hidden">
         {t("workouts.program.editNote")}
       </p>
-      <div className={`hidden lg:block ${groupCard}`}>
-        <RowLink to="/workouts/program" label={t("workouts.program.edit")} trailing="push" />
-      </div>
+      {!rhythm && <div className={`hidden lg:block ${groupCard}`}>{edit}</div>}
     </div>
   );
 }
