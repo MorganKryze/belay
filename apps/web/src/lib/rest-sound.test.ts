@@ -105,7 +105,7 @@ afterEach(() => {
 function unlocked() {
   sound.setRestSound("on");
   const disarm = sound.armRestSound();
-  document.dispatchEvent(new Event("pointerdown"));
+  document.dispatchEvent(new Event("pointerup"));
   return disarm;
 }
 
@@ -115,7 +115,7 @@ describe("the end-of-rest sound", () => {
     const audioSession = { type: "auto" };
     Object.defineProperty(navigator, "audioSession", { value: audioSession, configurable: true });
     const disarm = sound.armRestSound();
-    document.dispatchEvent(new Event("pointerdown"));
+    document.dispatchEvent(new Event("pointerup"));
     document.dispatchEvent(new KeyboardEvent("keydown"));
     expect(sound.restEnded(END, end + 100)).toBe(false);
     disarm();
@@ -140,17 +140,21 @@ describe("the end-of-rest sound", () => {
     const remove = vi.spyOn(document, "removeEventListener");
     const disarm = sound.armRestSound();
     expect(add.mock.calls.map((c) => [c[0], c[2]])).toEqual([
-      ["pointerdown", { capture: true }],
+      ["pointerup", { capture: true }],
+      ["touchend", { capture: true }],
+      ["click", { capture: true }],
       ["keydown", { capture: true }],
     ]);
     // Nothing made before the gesture: a context made outside one stays locked on a phone.
     expect(FakeContext.made).toHaveLength(0);
-    document.dispatchEvent(new Event("pointerdown"));
+    document.dispatchEvent(new Event("pointerup"));
     expect(FakeContext.made).toHaveLength(1);
     expect(context().state).toBe("running");
     expect(context().silent).toBe(1);
     expect(remove.mock.calls.map((c) => [c[0], c[2]])).toEqual([
-      ["pointerdown", { capture: true }],
+      ["pointerup", { capture: true }],
+      ["touchend", { capture: true }],
+      ["click", { capture: true }],
       ["keydown", { capture: true }],
     ]);
     // Gone: another tap resumes nothing.
@@ -165,7 +169,7 @@ describe("the end-of-rest sound", () => {
     document.dispatchEvent(new KeyboardEvent("keydown"));
     first();
     const second = sound.armRestSound();
-    document.dispatchEvent(new Event("pointerdown"));
+    document.dispatchEvent(new Event("pointerup"));
     expect(FakeContext.made).toHaveLength(1);
     second();
   });
@@ -175,15 +179,15 @@ describe("the end-of-rest sound", () => {
     expect(context().resumes).toBe(1);
     // Back from the background, iOS hands the context back interrupted.
     context().move("interrupted");
-    document.dispatchEvent(new Event("pointerdown"));
+    document.dispatchEvent(new Event("pointerup"));
     expect(context().resumes).toBe(2);
     expect(context().state).toBe("running");
-    document.dispatchEvent(new Event("pointerdown"));
+    document.dispatchEvent(new Event("pointerup"));
     expect(context().resumes).toBe(2);
     // Put away, it listens no more, interrupted or not.
     disarm();
     context().move("suspended");
-    document.dispatchEvent(new Event("pointerdown"));
+    document.dispatchEvent(new Event("pointerup"));
     expect(context().resumes).toBe(2);
   });
 
@@ -201,7 +205,7 @@ describe("the end-of-rest sound", () => {
     const [rise, peak, fall] = notes[0]!.gain;
     expect(rise).toEqual(["set", 0, t]);
     expect(peak![0]).toBe("linear");
-    expect(peak![1]).toBe(0.25);
+    expect(peak![1]).toBe(0.6);
     expect(peak![2]).toBeCloseTo(t + 0.01);
     expect(fall![0]).toBe("exponential");
     expect(fall![1]).toBe(0.001);
@@ -253,7 +257,7 @@ describe("the end-of-rest sound", () => {
       },
     );
     sound.armRestSound();
-    document.dispatchEvent(new Event("pointerdown"));
+    document.dispatchEvent(new Event("pointerup"));
     expect(context().state).toBe("suspended");
     expect(sound.restEnded(END, end + 10)).toBe(false);
     expect(context().notes).toHaveLength(0);
@@ -272,7 +276,7 @@ describe("the end-of-rest sound", () => {
     sound = await import("./rest-sound");
     sound.setRestSound("on");
     sound.armRestSound();
-    expect(() => document.dispatchEvent(new Event("pointerdown"))).not.toThrow();
+    expect(() => document.dispatchEvent(new Event("pointerup"))).not.toThrow();
     expect(() => sound.previewRestSound()).not.toThrow();
     expect(sound.restEnded(END, end + 10)).toBe(false);
   });

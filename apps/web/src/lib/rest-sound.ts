@@ -54,7 +54,7 @@ function note(audio: AudioContext, frequency: number, start: number, end: number
   oscillator.type = "sine";
   oscillator.frequency.value = frequency;
   gain.gain.setValueAtTime(0, start);
-  gain.gain.linearRampToValueAtTime(0.25, start + 0.01);
+  gain.gain.linearRampToValueAtTime(0.6, start + 0.01);
   gain.gain.exponentialRampToValueAtTime(0.001, end);
   oscillator.connect(gain).connect(audio.destination);
   oscillator.start(start);
@@ -68,7 +68,9 @@ function tone(audio: AudioContext) {
   note(audio, 1320, t + 0.17, t + 0.32);
 }
 
-// While the sound is on, the first tap or key press unlocks the audio. The listeners go once the
+// While the sound is on, the first tap or key press unlocks the audio. iOS counts a finger's lift,
+// not its press, as the gesture that may start sound: listening on the press alone left the audio
+// locked after a reload or a lock, unless another tap had come within the last few seconds. The listeners go once the
 // context runs and come back when it stops running (iOS interrupts it in the background).
 export function armRestSound(): () => void {
   if (readRestSound() !== "on") return () => {};
@@ -79,7 +81,7 @@ export function armRestSound(): () => void {
   const listen = (on: boolean) => {
     if (on === listening) return;
     listening = on;
-    for (const type of ["pointerdown", "keydown"] as const) {
+    for (const type of ["pointerup", "touchend", "click", "keydown"] as const) {
       if (on) document.addEventListener(type, unlock, options);
       else document.removeEventListener(type, unlock, options);
     }
@@ -124,7 +126,8 @@ export function restEnded(endsAt: string, now = Date.now()): boolean {
     tone(context);
     return true;
   } catch {
-    // Locked or failing audio plays nothing and shows nothing; the vibration still comes.
+    // Locked or failing audio plays nothing and shows nothing; where the phone has it (not an
+    // iPhone), the vibration still comes.
     return false;
   }
 }
