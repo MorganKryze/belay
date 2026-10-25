@@ -1,4 +1,4 @@
-import { clampAt, mergeFields, mergeSlotChange, staleKeys } from "@belay/shared/sync/merge";
+import { clampAt, mergeFields, mergeSlotInBatch, staleKeys } from "@belay/shared/sync/merge";
 import type {
   ActiveProgramChange,
   ActiveProgramRow,
@@ -549,25 +549,12 @@ function slotColumns(r: ProgramSlotRow) {
   };
 }
 
-const TIMES = [
-  "positionAt",
-  "exerciseAt",
-  "repsAt",
-  "setsAt",
-  "rirAt",
-  "restAt",
-  "warmupsAt",
-  "mainAt",
-  "groupAt",
-  "ruleAt",
-  "removedAt",
-] as const;
 type SlotEdit = Indexed<Exclude<ProgramSlotChange, { field: "create" }>>;
 const timeOf = (c: SlotEdit) => `${c.field}At` as const;
 
 // Slots: created once in a session of the account, of an exercise of the library in its measure, a
 // timed one with no warm-up, 30 live ones per session (PM11). Each slot's changes then merge over
-// its stored row with mergeSlotChange, as the phone merges them, and the row is written once.
+// its stored row with mergeSlotInBatch, as the phone merges them, and the row is written once.
 export async function writeProgramSlots(
   ctx: Ctx,
   changes: Indexed<ProgramSlotChange>[],
@@ -667,25 +654,19 @@ export async function writeProgramSlots(
   for (const [id, initial] of rows) {
     let row = initial;
     const won: SlotEdit[] = [];
-    // Inside one batch a later change wins a tie with an earlier one of the batch, as fold does:
-    // two edits clamped to the same instant still arrive in the order they were made. An instant
-    // can be written with or without its milliseconds, so the tie compares instants.
+    // Inside one batch a later change wins a tie with an earlier one of the batch, as the phone
+    // replays its queue.
     const written = new Set<string>();
     for (const c of edits) {
       if (c.id !== id || (c.field === "removed" && blocked.has(id))) continue;
-      const change = { ...c, at: clampAt(c.at, now) };
-      const time = timeOf(c);
-      const tie = written.has(time) && Date.parse(row[time]!) === Date.parse(change.at);
-      const base: ProgramSlotRow = tie ? { ...row, [time]: null } : row;
-      const next = mergeSlotChange(base, change);
+      const next = mergeSlotInBatch(row, { ...c, at: clampAt(c.at, now) }, written);
       if (next === null) {
         const measured = c.field === "reps" || c.field === "warmups";
         refuse(out, c, measured && c.measure !== row.measure ? "wrong_measure" : "refused");
         out.slots.add(id);
         continue;
       }
-      if (next === base) continue;
-      for (const t of TIMES) if (next[t] !== row[t]) written.add(t);
+      if (next === row) continue;
       row = next;
       won.push(c);
     }

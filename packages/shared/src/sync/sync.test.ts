@@ -8,6 +8,7 @@ import {
   isNewer,
   mergeFields,
   mergeSlotChange,
+  mergeSlotInBatch,
   mergeTarget,
   mergeWeights,
   staleKeys,
@@ -1229,6 +1230,26 @@ describe("a slot change over its stored row (SY2, ED4)", () => {
     expect(mergeSlotChange(row, change({ field: "reps", value: [1, 101], measure: null }))).toBe(
       null,
     );
+  });
+
+  it("inside a batch, a later change wins a tie with a time the batch wrote, never with a stored one", () => {
+    const toTimed = change({
+      field: "exercise",
+      exerciseId: "ds:2135",
+      measure: "seconds",
+      repRange: [30, 60],
+      warmupSets: 0,
+    });
+    const reps = change({ field: "reps", value: [20, 40], measure: "seconds" });
+    const written = new Set<string>();
+    const timed = mergeSlotInBatch(row, toTimed, written)!;
+    expect(timed).toMatchObject({ repRange: [30, 60], repsAt: T2 });
+    // The same instant written without its milliseconds is the same instant.
+    const sameInstant = { ...reps, at: "2026-10-07T06:20:00Z" };
+    expect(mergeSlotInBatch(timed, sameInstant, written)).toMatchObject({ repRange: [20, 40] });
+    // A tie with what was stored before the batch keeps the stored value.
+    expect(mergeSlotInBatch(timed, reps, new Set())).toBe(timed);
+    expect(mergeSlotInBatch(row, change({ field: "sets", value: 5, at: T1 }), written)).toBe(row);
   });
 });
 

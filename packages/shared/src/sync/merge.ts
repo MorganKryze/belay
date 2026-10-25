@@ -127,3 +127,38 @@ export function mergeSlotChange(
   if (next.measure === "seconds" && next.warmupSets > 0) return null;
   return isProgramSlot({ ...next, measure: next.measure ?? undefined }) ? next : null;
 }
+
+const SLOT_TIMES = [
+  "positionAt",
+  "exerciseAt",
+  "repsAt",
+  "setsAt",
+  "rirAt",
+  "restAt",
+  "warmupsAt",
+  "mainAt",
+  "groupAt",
+  "ruleAt",
+  "removedAt",
+] as const;
+
+// One change of a batch over a slot's row, as mergeSlotChange, but a later change wins a tie with
+// a time an earlier change of the same batch wrote: two edits at one instant, clamped or made
+// together, still arrive in the order they were made. Against what was stored before the batch
+// the rule stays strict. `written` gathers the times the batch wrote on this row; an instant
+// written with or without its milliseconds is the same one. The same row when nothing changes.
+export function mergeSlotInBatch(
+  row: ProgramSlotRow,
+  change: ProgramSlotChange,
+  written: Set<string>,
+): ProgramSlotRow | null {
+  if (change.field === "create") return row;
+  const time = `${change.field}At` as const;
+  const tie = written.has(time) && Date.parse(row[time]!) === Date.parse(change.at);
+  const base: ProgramSlotRow = tie ? { ...row, [time]: null } : row;
+  const next = mergeSlotChange(base, change);
+  if (next === null) return null;
+  if (next === base) return row;
+  for (const t of SLOT_TIMES) if (next[t] !== row[t]) written.add(t);
+  return next;
+}

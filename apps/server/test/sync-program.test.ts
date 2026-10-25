@@ -626,6 +626,20 @@ describe("program edits through /api/sync", () => {
     });
   });
 
+  it("a range sent with a change of measure at one instant is kept, as the phone keeps it", async () => {
+    const { user, sync } = await signIn("pg-measure-tie");
+    const res = await sync("0", [
+      slotExercise(SLOT_A1, TIMED, "seconds", [30, 60], 0, AT),
+      slotReps(SLOT_A1, [20, 40], "seconds", AT),
+    ]);
+    expect(rejected(res)).toEqual([]);
+    expect(await slotRow(user, SLOT_A1)).toMatchObject({
+      measure: "seconds",
+      repMin: 20,
+      repMax: 40,
+    });
+  });
+
   it("a timed exercise with its range is kept; a counted range past 100 refused", async () => {
     const { user, sync } = await signIn("pg-ranges");
     const timed = newId();
