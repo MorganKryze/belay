@@ -225,7 +225,7 @@ describe("the « Rythme » row", () => {
     await settle();
     expect(screen.queryByRole("button", { name: /^Rythme/ })).toBeNull();
     // On a computer the editor's entry stays in its own group.
-    const entry = screen.getByRole("link", { name: "Modifier le programme" });
+    const entry = screen.getByRole("link", { name: /^Modifier le programme / });
     expect(entry.parentElement!.className.split(" ")).toEqual(
       expect.arrayContaining(["hidden", "lg:block"]),
     );
@@ -240,8 +240,11 @@ describe("the « Rythme » row", () => {
   it("from 1 024 px the editor's entry shares the row's group, the note follows the row", async () => {
     renderRoute("/workouts?tab=program");
     const r = await row();
-    const entry = screen.getByRole("link", { name: "Modifier le programme" });
+    const entry = screen.getByRole("link", { name: /^Modifier le programme / });
     expect(entry.closest("div")!.parentElement).toBe(r.parentElement);
+    // A pencil and what is edited there, as the row above it has its icon and line.
+    expect(entry.textContent).toBe("Modifier le programme séances, exercices, séries");
+    expect(entry.querySelector("[data-slot=row-icon] svg.lucide-pen-line")).not.toBeNull();
     const note = screen.getByText("Les exercices du programme se modifient sur ordinateur.");
     expect(r.compareDocumentPosition(note) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });

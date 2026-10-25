@@ -297,7 +297,7 @@ test("on a phone the note follows the row, and the editor's entry is not drawn",
     .getByText("Les exercices du programme se modifient sur ordinateur.")
     .boundingBox())!;
   expect(noteBox.y).toBeGreaterThanOrEqual(rowBox.y + rowBox.height);
-  await expect(page.getByRole("link", { name: "Modifier le programme" })).toBeHidden();
+  await expect(page.getByRole("link", { name: /^Modifier le programme/ })).toBeHidden();
 });
 
 test.describe("on a computer", () => {
@@ -305,8 +305,24 @@ test.describe("on a computer", () => {
 
   test("« Rythme » and « Modifier le programme » share one group", async ({ page }) => {
     await open(page, program(3));
-    const entry = page.getByRole("link", { name: "Modifier le programme" });
+    const entry = page.getByRole("link", { name: /^Modifier le programme / });
     await expect(entry).toBeVisible();
+    // The entry dressed as the row above: its icon square, then « séances, exercices, séries »
+    // under its label, in the same muted ink as the count under « Rythme ».
+    const [icon, rowIcon] = [
+      (await entry.locator("[data-slot=row-icon]").boundingBox())!,
+      (await row(page).locator("[data-slot=row-icon]").boundingBox())!,
+    ];
+    expect([icon.x, icon.width, icon.height]).toEqual([rowIcon.x, rowIcon.width, rowIcon.height]);
+    const label = (await entry.getByText("Modifier le programme", { exact: true }).boundingBox())!;
+    const sub = entry.getByText("séances, exercices, séries", { exact: true });
+    const subBox = (await sub.boundingBox())!;
+    expect(subBox.x).toBe(label.x);
+    expect(subBox.y).toBeGreaterThanOrEqual(label.y + label.height - 1);
+    const ink = (el: Element) => getComputedStyle(el).color;
+    expect(await sub.evaluate(ink)).toBe(
+      await row(page).getByText("A, B, C à la suite", { exact: true }).evaluate(ink),
+    );
     await expect(
       page.getByText("Les exercices du programme se modifient sur ordinateur."),
     ).toBeHidden();
