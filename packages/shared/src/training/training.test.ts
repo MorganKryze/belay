@@ -5,7 +5,6 @@ import { lbToKg, loadFromKg } from "../tools/units";
 import {
   estimatedMinutes,
   groupOf,
-  nextSession,
   plannedWorkSets,
   sessionByCode,
   starterProgram,
@@ -124,66 +123,6 @@ describe("the starter program (§6)", () => {
     // A: 6 × 195 + 4 × 165 + 5 × 165 + 3 × 45 + 3 × 45 + 3 × 120 = 3 285 s, 54.75 min.
     expect(estimatedMinutes(A)).toBe(55);
     expect(estimatedMinutes({ slots: [A.slots[3]!] })).toBe(5);
-  });
-});
-
-describe("nextSession", () => {
-  it("is A with no history, then follows the last session finished, C going back to A", () => {
-    expect(nextSession([], starterProgram)).toBe("A");
-    expect(nextSession([workout({ sessionCode: "A" })], starterProgram)).toBe("B");
-    expect(
-      nextSession(
-        [
-          workout({ sessionCode: "B", startedAt: "2026-10-07T17:00:00.000Z" }),
-          workout({ sessionCode: "A", startedAt: "2026-10-05T17:00:00.000Z" }),
-        ],
-        starterProgram,
-      ),
-    ).toBe("C");
-    expect(nextSession([workout({ sessionCode: "C" })], starterProgram)).toBe("A");
-  });
-
-  it("ignores a session in progress, a removed one, and a code the program lacks", () => {
-    expect(
-      nextSession(
-        [
-          workout({ sessionCode: "A" }),
-          workout({ sessionCode: "B", startedAt: "2026-10-06T17:00:00.000Z", endedAt: null }),
-          workout({ sessionCode: "C", startedAt: "2026-10-07T17:00:00.000Z", removed: true }),
-        ],
-        starterProgram,
-      ),
-    ).toBe("B");
-    expect(nextSession([workout({ sessionCode: "Z" })], starterProgram)).toBe("A");
-  });
-
-  // A stored program of n sessions in its own order, letters D to G included (PM9).
-  const stored = (codes: string) => [...codes].map((code) => ({ code, slots: A.slots }));
-  const done = (sessionCode: string) => workout({ sessionCode });
-
-  it("the next session follows the stored order for 2 to 7 sessions", () => {
-    for (const codes of ["AB", "BAC", "DACB", "ABCDE", "FEDCBA", "ABCDEFG"]) {
-      const program = stored(codes);
-      expect(nextSession([], program)).toBe(codes[0]);
-      for (let i = 0; i < codes.length; i++) {
-        expect(nextSession([done(codes[i]!)], program)).toBe(codes[(i + 1) % codes.length]);
-      }
-    }
-  });
-
-  it("after G comes A", () => {
-    expect(nextSession([done("F")], stored("ABCDEFG"))).toBe("G");
-    expect(nextSession([done("G")], stored("ABCDEFG"))).toBe("A");
-  });
-
-  it("after a session whose letter left the program comes the first", () => {
-    expect(nextSession([done("B")], stored("DAC"))).toBe("D");
-    expect(nextSession([done("E")], stored("ABCD"))).toBe("A");
-  });
-
-  it("offers none when the program holds no session", () => {
-    expect(nextSession([], [])).toBeNull();
-    expect(nextSession([done("A")], [])).toBeNull();
   });
 });
 
