@@ -63,7 +63,7 @@ describe("GET /api/instance", () => {
 
   it("the probe says the same with a session", async () => {
     const { bearer, cookie } = await signIn();
-    for (const headers of [{ authorization: bearer }, { cookie }]) {
+    for (const headers of [{ authorization: bearer }, { cookie }] as Record<string, string>[]) {
       const res = await app.request("/api/instance", { headers });
       expect(res.status).toBe(200);
       expect(await res.json()).toEqual(probe);
