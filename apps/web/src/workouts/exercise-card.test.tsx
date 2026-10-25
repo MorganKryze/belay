@@ -143,6 +143,16 @@ describe("ExerciseCard", () => {
     render(<Card />);
     expect(within(card()).getByText("4 × 6–8 · RIR 1–2 · la dernière fois 80 kg × 8")).toBeTruthy();
   });
+
+  it("the last time keeps the card's unit when the unit changes while it is open", () => {
+    render(<Card />);
+    setWeightUnit("lb");
+    // Any render after the change: a load typed in the card's kg.
+    fireEvent.change(within(card()).getByRole("textbox", { name: "Load of set 1, kg" }), {
+      target: { value: "82,5" },
+    });
+    expect(within(card()).getByText("4 × 6–8 · RIR 1–2 · last time 80 kg × 8")).toBeTruthy();
+  });
 });
 
 // The bench press has a loop wherever the instance serves them (ds:0025).
