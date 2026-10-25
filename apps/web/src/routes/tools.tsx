@@ -1,3 +1,4 @@
+import "@/i18n/lazy";
 import { TOOL_GROUPS, type ToolId } from "@belay/shared/tools/catalog";
 import {
   CalendarRange,

@@ -1,3 +1,4 @@
+import "@/i18n/lazy";
 import { useId } from "react";
 import { useTranslation } from "react-i18next";
 import { groupSurface, sectionLabel } from "@/components/surfaces";

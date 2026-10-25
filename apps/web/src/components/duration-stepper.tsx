@@ -1,3 +1,4 @@
+import "@/i18n/lazy";
 import { Minus, Plus } from "lucide-react";
 import { type KeyboardEvent, useId } from "react";
 import { useTranslation } from "react-i18next";

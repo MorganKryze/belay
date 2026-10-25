@@ -1,3 +1,4 @@
+import "@/i18n/lazy";
 import {
   hasDoi,
   identifierHref,

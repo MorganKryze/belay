@@ -1,3 +1,4 @@
+import "@/i18n/lazy";
 import { roundTo } from "@belay/shared/tools/round";
 import { Minus, Plus } from "lucide-react";
 import { type KeyboardEvent, type ReactNode, useId, useRef, useState } from "react";

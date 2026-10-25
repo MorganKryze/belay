@@ -1,3 +1,4 @@
+import "@/i18n/lazy";
 import type { ToolId } from "@belay/shared/tools/catalog";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";

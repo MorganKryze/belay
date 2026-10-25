@@ -72,4 +72,24 @@ describe("translations", () => {
     const science = Object.values(TOOL_SCIENCE).flatMap((t) => strings(t.content.fr));
     expect([...strings(fr), ...science].filter((s) => /[^\s] [:;?!%»]|« /.test(s))).toEqual([]);
   });
+
+  it("leave the tools' strings to the bundle loaded on demand", () => {
+    // Home never draws a tool; its strings weighed on every start.
+    const tools = [
+      "tools",
+      "science",
+      "stepper",
+      "range",
+      "oneRepMax",
+      "plates",
+      "equipment",
+      "warmup",
+      "energy",
+      "protein",
+      "projection",
+      "bmi",
+      "bodyFat",
+    ];
+    for (const main of [mainEn, mainFr]) expect(tools.filter((g) => g in main)).toEqual([]);
+  });
 });
