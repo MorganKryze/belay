@@ -4,7 +4,8 @@ import { planFor } from "@belay/shared/training/plan";
 import { chooseActive, programOrder } from "@belay/shared/training/program-edits";
 import { estimatedMinutes, plannedWorkSets } from "@belay/shared/training/program";
 import { type History, lastFinished, openWorkout, workSetsOf } from "@belay/shared/training/rules";
-import { type WeekCard, type Weekday, weekdayOf, weekOrder } from "@belay/shared/training/schedule";
+import { type Weekday, weekdayOf } from "@belay/shared/training/schedule";
+import { type WeekCard, weekOrder } from "@belay/shared/training/schedule-week";
 import {
   byPosition,
   type LetteredTemplate,
