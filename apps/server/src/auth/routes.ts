@@ -1,4 +1,5 @@
 import { Hono, type Context } from "hono";
+import { bodyLimit } from "hono/body-limit";
 import { deleteCookie, getSignedCookie, setSignedCookie } from "hono/cookie";
 import * as client from "openid-client";
 import { z } from "zod";
@@ -6,6 +7,7 @@ import type { Config } from "../config";
 import type { Db } from "../db/client";
 import { createSession, deleteSession, upsertUser } from "../db/identity";
 import { describeError } from "../log";
+import { CHALLENGE, NATIVE_STATE, nativeCallback, nativeCodes, type SigninFailure } from "./native";
 import { hasRole, pickDisplayName, type OidcProvider } from "./oidc";
 import { safeReturnTo } from "./return-to";
 import {
@@ -25,7 +27,10 @@ const txSchema = z.object({
   state: z.string(),
   nonce: z.string(),
   returnTo: z.string(),
+  // Present only for the iPhone app: its S256 challenge, checked when it trades the code.
+  native: z.object({ challenge: z.string() }).optional(),
 });
+type Transaction = z.infer<typeof txSchema>;
 
 // Signed, so it is ours, but an older version of the app may have written another shape.
 function parseTransaction(raw: string) {
@@ -36,14 +41,23 @@ function parseTransaction(raw: string) {
   }
 }
 
+// Set on a request that belongs to the iPhone app's sign-in, so a failure goes back to its sheet.
+type AuthEnv = { Variables: { native: boolean } };
+
 // A failed sign-in never answers an error page: it goes back to the app, which shows a localized
 // message and the Sign in link. An installed iOS PWA has no browser chrome to recover from a
-// dead end. Keep the reasons in step with `signin.*` in the web i18n files.
-type SigninFailure = "unavailable" | "expired" | "failed" | "denied";
-const signinFailure = (c: Context, reason: SigninFailure) => c.redirect(`/?signin=${reason}`);
+// dead end, and the iPhone app's sheet only closes on its own address.
+const signinFailure = (c: Context<AuthEnv>, reason: SigninFailure) =>
+  c.redirect(c.get("native") ? nativeCallback({ error: reason }) : `/?signin=${reason}`);
+
+const tokenRequest = z.object({
+  code: z.string().min(1).max(100),
+  verifier: z.string().regex(/^[A-Za-z0-9_-]{43,128}$/),
+});
 
 export function authRoutes(cfg: Config, db: Db, getOidc: OidcProvider) {
-  const auth = new Hono();
+  const auth = new Hono<AuthEnv>();
+  const codes = nativeCodes();
   const redirectUri = new URL("/auth/callback", cfg.publicUrl).href;
   // `__Host-` over https (Secure, Path=/, no Domain): a sibling subdomain cannot plant a
   // transaction cookie of its own, which would allow login CSRF.
@@ -59,12 +73,19 @@ export function authRoutes(cfg: Config, db: Db, getOidc: OidcProvider) {
   // nonce, the ID token claims (e-mail included) and the authorization response.
   auth.onError((err, c) => {
     console.error("auth error:", describeError(err));
-    // Logout is a fetch() that expects JSON; everything else here is a browser navigation.
-    if (c.req.path === "/auth/logout") return c.json({ error: "server_error" }, 500);
+    // Logout and the code exchange are fetch() calls that expect JSON; everything else here is a
+    // browser navigation.
+    if (c.req.path === "/auth/logout" || c.req.path === "/auth/native/token") {
+      return c.json({ error: "server_error" }, 500);
+    }
     return signinFailure(c, "failed");
   });
 
-  auth.get("/login", async (c) => {
+  async function beginLogin(
+    c: Context<AuthEnv>,
+    tx: Pick<Transaction, "state" | "returnTo" | "native">,
+    extra: { prompt?: "login" } = {},
+  ) {
     let oidc: client.Configuration;
     try {
       oidc = await getOidc();
@@ -73,13 +94,11 @@ export function authRoutes(cfg: Config, db: Db, getOidc: OidcProvider) {
       return signinFailure(c, "unavailable");
     }
     const verifier = client.randomPKCECodeVerifier();
-    const state = client.randomState();
     const nonce = client.randomNonce();
-    const returnTo = safeReturnTo(c.req.query("returnTo"));
     await setSignedCookie(
       c,
       TX_COOKIE,
-      JSON.stringify({ verifier, state, nonce, returnTo }),
+      JSON.stringify({ ...tx, verifier, nonce }),
       cfg.sessionSecret,
       { ...txCookieOpts, maxAge: 600 },
     );
@@ -88,16 +107,44 @@ export function authRoutes(cfg: Config, db: Db, getOidc: OidcProvider) {
       scope: "openid profile",
       code_challenge: await client.calculatePKCECodeChallenge(verifier),
       code_challenge_method: "S256",
-      state,
+      state: tx.state,
       nonce,
+      ...extra,
     });
     return c.redirect(url.href);
+  }
+
+  auth.get("/login", (c) =>
+    beginLogin(c, {
+      state: client.randomState(),
+      returnTo: safeReturnTo(c.req.query("returnTo")),
+    }),
+  );
+
+  // The app's sheet opens this with the challenge of a verifier it keeps to itself. The server
+  // stays the provider's client, with the web's redirect URI and its own PKCE.
+  auth.get("/native/start", (c) => {
+    c.set("native", true);
+    const challenge = c.req.query("challenge");
+    if (!challenge || !CHALLENGE.test(challenge)) return signinFailure(c, "failed");
+    // The provider always shows its login: another app holding the scheme could open this
+    // address with its own challenge, and must not ride a session the browser already has.
+    return beginLogin(
+      c,
+      { state: NATIVE_STATE + client.randomState(), returnTo: "/", native: { challenge } },
+      { prompt: "login" },
+    );
   });
 
   auth.get("/callback", async (c) => {
     const raw = await getSignedCookie(c, cfg.sessionSecret, TX_COOKIE, txCookieOpts.prefix);
     deleteCookie(c, TX_COOKIE, txCookieOpts);
     const tx = raw ? parseTransaction(raw) : undefined;
+    // Without its cookie, only the state tells an app sign-in from a web one.
+    c.set(
+      "native",
+      tx ? tx.native !== undefined : (c.req.query("state")?.startsWith(NATIVE_STATE) ?? false),
+    );
     if (!tx) return signinFailure(c, "expired");
     // The provider refused (access_denied, ...): nothing to exchange, and no need to reach it.
     if (c.req.query("error")) return signinFailure(c, "failed");
@@ -124,12 +171,31 @@ export function authRoutes(cfg: Config, db: Db, getOidc: OidcProvider) {
       sub: claims.sub,
       displayName: pickDisplayName(claims, cfg.oidc.nameClaim),
     });
+    // The app gets a one-time code, never a session: the session is created when the app proves
+    // it holds the verifier, and no cookie reaches the sheet.
+    if (tx.native) {
+      return c.redirect(nativeCallback({ code: codes.issue(userId, tx.native.challenge) }));
+    }
     const token = newSessionToken();
     await createSession(db, hashToken(token, cfg.tokenHashKey), userId, cfg.sessionTtlDays);
     setSessionCookie(c, cfg, token);
     // Re-validated: the login side already did it, but the redirect must never rely on that alone.
     return c.redirect(safeReturnTo(tx.returnTo));
   });
+
+  // Every refusal reads the same, so a caller learns nothing about which check failed.
+  auth.post(
+    "/native/token",
+    bodyLimit({ maxSize: 4096, onError: (c) => c.json({ error: "too_large" }, 413) }),
+    async (c) => {
+      const body = tokenRequest.safeParse(await c.req.json().catch(() => undefined));
+      const userId = body.success ? codes.redeem(body.data.code, body.data.verifier) : null;
+      if (!userId) return c.json({ error: "invalid_grant" }, 400);
+      const token = newSessionToken();
+      await createSession(db, hashToken(token, cfg.tokenHashKey), userId, cfg.sessionTtlDays);
+      return c.json({ token });
+    },
+  );
 
   auth.post("/logout", async (c) => {
     const { token, from } = requestToken(c, cfg);
