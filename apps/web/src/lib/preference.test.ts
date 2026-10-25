@@ -26,3 +26,13 @@ it("keeps the choice in memory when storage refuses", () => {
   set("b");
   expect(read()).toBe("b");
 });
+
+it("reads any of several other choices", () => {
+  const [read, set] = preference("t.key", "a", "b", "c");
+  set("c");
+  expect(read()).toBe("c");
+  set("b");
+  expect(read()).toBe("b");
+  localStorage.setItem("t.key", "d");
+  expect(read()).toBe("a");
+});

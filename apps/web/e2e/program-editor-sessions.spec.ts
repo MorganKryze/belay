@@ -286,6 +286,9 @@ test("a session rename the server refuses goes back, with the banner on the edit
   page,
 }) => {
   const server = await open(page, force());
+  // The server's program replaces the starting one at the first sync, and with it the session
+  // shown: a field opened before then would close with the session it named.
+  await expect(title(page)).toHaveText("Séance A · Haut lourd");
   await refuseChanges(page, "refused", server);
   await page.getByRole("button", { name: "Renommer la séance" }).click();
   await expect(nameField(page)).toHaveValue("Haut lourd");
