@@ -900,5 +900,27 @@
     "delete": "Delete this weigh-in",
     "close": "Close",
     "outOfRange": "Enter a weight between {{min}} and {{max}} {{unit}}."
+  },
+  "native": {
+    "instance": {
+      "title": "Your instance",
+      "intro": "The Belay server someone hosts for you, or that you host yourself. Enter its address.",
+      "label": "Instance address",
+      "placeholder": "belay.example.org",
+      "continue": "Continue",
+      "checking": "Checking…",
+      "cancel": "Cancel",
+      "invalid": "This address isn’t valid. Example: belay.example.org",
+      "insecure": "The address must start with https://",
+      "notBelay": "No Belay instance answers at this address. Check it.",
+      "unreachable": "Can’t reach this address. Check it, or check that the instance is up to date.",
+      "offline": "No connection. Try again once you’re online."
+    },
+    "signIn": {
+      "intro": "Sign in to find your sessions and tracking on this phone.",
+      "on": "On {{host}}",
+      "change": "Change instance",
+      "busy": "Signing in…"
+    }
   }
 }

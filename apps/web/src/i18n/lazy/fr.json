@@ -900,5 +900,27 @@
     "delete": "Supprimer cette pesée",
     "close": "Fermer",
     "outOfRange": "Saisis un poids entre {{min}} et {{max}} {{unit}}."
+  },
+  "native": {
+    "instance": {
+      "title": "Ton instance",
+      "intro": "Le serveur Belay que quelqu’un héberge pour toi, ou que tu héberges toi-même. Entre son adresse.",
+      "label": "Adresse de l’instance",
+      "placeholder": "belay.exemple.fr",
+      "continue": "Continuer",
+      "checking": "Vérification…",
+      "cancel": "Annuler",
+      "invalid": "Cette adresse n’est pas valide. Exemple : belay.exemple.fr",
+      "insecure": "L’adresse doit commencer par https://",
+      "notBelay": "Aucune instance Belay ne répond à cette adresse. Vérifie-la.",
+      "unreachable": "Impossible de joindre cette adresse. Vérifie-la, ou vérifie que l’instance est à jour.",
+      "offline": "Pas de connexion. Réessaie une fois en ligne."
+    },
+    "signIn": {
+      "intro": "Connecte-toi pour retrouver tes séances et ton suivi sur ce téléphone.",
+      "on": "Sur {{host}}",
+      "change": "Changer d’instance",
+      "busy": "Connexion…"
+    }
   }
 }
