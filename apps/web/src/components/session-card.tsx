@@ -1,4 +1,4 @@
-import { Check } from "lucide-react";
+import { Check, Leaf } from "lucide-react";
 import { type ReactNode, useId } from "react";
 import { cardSurface } from "./surfaces";
 
@@ -29,29 +29,36 @@ export function SessionHeading({
   );
 }
 
-// A session as a card of its own: a region named by its title, then its action. A session done
-// shows the reference tile with a check before its title.
+// A session as a card of its own: a region named by its title, then its action. A tile before
+// the title shows a session done (a check in the reference green) or a rest day (a leaf on the
+// track, quiet).
 export function SessionCard({
   title,
   lead,
   detail,
-  done = false,
+  tile,
   children,
 }: {
   title: string;
   lead?: string;
   detail: string;
-  done?: boolean;
+  tile?: "done" | "rest";
   children?: ReactNode;
 }) {
   const id = useId();
   const heading = <SessionHeading id={id} title={title} lead={lead} detail={detail} />;
   return (
     <section aria-labelledby={id} className={`${cardSurface} flex flex-col gap-3 px-4 py-3`}>
-      {done ? (
+      {tile ? (
         <div className="flex items-center gap-3">
-          <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-reference text-reference-ink">
-            <Check className="size-5" aria-hidden="true" />
+          <span
+            className={`grid size-9 shrink-0 place-items-center rounded-[10px] ${tile === "done" ? "bg-reference text-reference-ink" : "bg-track text-muted-foreground"}`}
+          >
+            {tile === "done" ? (
+              <Check className="size-5" aria-hidden="true" />
+            ) : (
+              <Leaf className="size-5" aria-hidden="true" />
+            )}
           </span>
           {heading}
         </div>
