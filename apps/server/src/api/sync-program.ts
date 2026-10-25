@@ -149,14 +149,18 @@ export async function writePrograms(
   );
   const key = (c: (typeof fields)[number]) => `${c.id}|${c.field}`;
   for (const k of staleKeys(stored, fields, key, now)) out.programs.add(k.split("|")[0]!);
-  // A program put back counts as a new live one.
+  // A program put back counts as a new live one; one taken out frees its place for the changes
+  // after it, in request order, unless it may still be the active program once the batch's
+  // choices are written, since that removal is then refused.
   const gone = new Set(rows.filter((r) => r.gone).map((r) => r.id));
+  const mayStayActive = await activeCandidates(ctx, choices);
   count = await live();
   const early: typeof fields = [];
   const removals: typeof fields = [];
   for (const c of mergeFields(stored, fields, key, now).sort(byIndex)) {
     if (c.field === "removed" && c.value) {
       removals.push(c);
+      if (!gone.has(c.id) && !mayStayActive.has(c.id)) count--;
       continue;
     }
     if (c.field === "removed" && gone.has(c.id)) {
@@ -184,6 +188,43 @@ export async function writePrograms(
     ctx,
     removals.filter((c) => c.id !== pointer?.programId),
   );
+}
+
+// The programs the pointer may name once the batch's choices are written: every program chosen,
+// and the stored one unless a choice of a live program is newer, which nothing can then refuse.
+async function activeCandidates(
+  { tx, userId, now }: Ctx,
+  choices: Indexed<ActiveProgramChange>[],
+): Promise<Set<string>> {
+  const targets = [...new Set(choices.map((c) => c.programId))];
+  const [pointer] = await tx
+    .select({ programId: activePrograms.programId, at: activePrograms.at })
+    .from(activePrograms)
+    .where(eq(activePrograms.userId, userId));
+  if (!pointer) return new Set(targets);
+  const live = new Set(
+    targets.length === 0
+      ? []
+      : (
+          await tx
+            .select({ id: programs.id })
+            .from(programs)
+            .where(
+              and(
+                eq(programs.userId, userId),
+                inArray(programs.id, targets),
+                eq(programs.removed, false),
+              ),
+            )
+        ).map((r) => r.id),
+  );
+  const replaced = mergeFields(
+    new Map([["active", iso(pointer.at)]]),
+    choices.filter((c) => live.has(c.programId)),
+    () => "active",
+    now,
+  );
+  return new Set(replaced.length > 0 ? targets : [...targets, pointer.programId]);
 }
 
 async function updatePrograms(

@@ -893,4 +893,48 @@ describe("abuse limits", () => {
     expect(await slotRow(l.user, slot31)).toBeUndefined();
     expect((await slotRow(l.user, SLOT_A1))!.sets).toBe(4);
   });
+
+  it("at 20 programs a removal frees its place for a later restore, in request order, but never the active program's", async () => {
+    const { user, sync } = await signIn("pg-limit-swap");
+    const { cursor } = await sync("0");
+    const live = Array.from({ length: MAX_PROGRAMS - 1 }, () => newId());
+    const [one, two] = [newId(), newId()];
+    await owner
+      .insert(programs)
+      .values([
+        ...live.map((id) => ({ userId: user, id, schedule: SCHEDULE })),
+        ...[one, two].map((id) => ({ userId: user, id, schedule: SCHEDULE, removed: true })),
+      ]);
+    // The restore before the removal finds no room; the one after it takes the freed place.
+    const swapped = await sync(cursor, [
+      removeProgram(one, false, LATER),
+      removeProgram(live[0]!, true, LATER),
+      removeProgram(two, false, LATER),
+    ]);
+    expect(rejected(swapped)).toEqual([{ index: 0, reason: "refused" }]);
+    expect((await programRow(user, one))!.removed).toBe(true);
+    expect((await programRow(user, live[0]!))!.removed).toBe(true);
+    expect((await programRow(user, two))!.removed).toBe(false);
+    // The active program's removal is refused, so it frees nothing.
+    const active = await sync(swapped.cursor, [
+      removeProgram(PROGRAM, true, LATEST),
+      removeProgram(one, false, LATEST),
+    ]);
+    expect(rejected(active)).toEqual([
+      { index: 0, reason: "refused" },
+      { index: 1, reason: "refused" },
+    ]);
+    expect((await programRow(user, PROGRAM))!.removed).toBe(false);
+    expect((await programRow(user, one))!.removed).toBe(true);
+    // A switch away from it in the same batch frees its place.
+    const switched = await sync(active.cursor, [
+      choose(live[1]!, LATEST),
+      removeProgram(PROGRAM, true, "2026-10-07T17:15:00.000Z"),
+      removeProgram(one, false, "2026-10-07T17:15:00.000Z"),
+    ]);
+    expect(rejected(switched)).toEqual([]);
+    expect(await pointer(user)).toMatchObject({ programId: live[1] });
+    expect((await programRow(user, PROGRAM))!.removed).toBe(true);
+    expect((await programRow(user, one))!.removed).toBe(false);
+  });
 });
