@@ -191,15 +191,16 @@ describe("signing in through the system sheet", () => {
 });
 
 describe("the page's sign-in links and vibrations", () => {
-  it("a click on a sign-in link runs the native sign-in with its returnTo and shows a failure on Accueil", async () => {
+  it("a click on a sign-in link of this app (none elsewhere) runs the native sign-in with its returnTo and shows a failure on Accueil", async () => {
     document.body.innerHTML = `
       <a id="in" href="/auth/login?returnTo=%2Fworkouts"><span>Se connecter</span></a>
-      <a id="out" href="/settings">Réglages</a>`;
+      <a id="out" href="/settings">Réglages</a>
+      <a id="elsewhere" href="https://other.example/auth/login">Ailleurs</a>`;
     plugin.authenticate.mockResolvedValue({ url: "belay://auth?error=denied" });
     const { install } = await load();
     await install();
 
-    for (const id of ["#out"]) {
+    for (const id of ["#out", "#elsewhere"]) {
       const other = new MouseEvent("click", { bubbles: true, cancelable: true });
       document.querySelector(id)!.dispatchEvent(other);
       expect(other.defaultPrevented).toBe(false);

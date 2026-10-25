@@ -106,7 +106,7 @@ export async function install(): Promise<void> {
       const link = (event.target as Element | null)?.closest?.("a[href]");
       if (!link) return;
       const url = new URL(link.getAttribute("href")!, location.href);
-      if (url.pathname !== "/auth/login") return;
+      if (!inApp(url) || url.pathname !== "/auth/login") return;
       event.preventDefault();
       void signIn(url.searchParams.get("returnTo") ?? "/").then((result) => {
         if (result !== "cancelled") location.assign(`/?signin=${result}`);
