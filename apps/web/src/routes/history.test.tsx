@@ -1,4 +1,5 @@
 import type { Change } from "@belay/shared/sync/schema";
+import { SEED_PROGRAM_ID } from "@belay/shared/training/stored-program";
 import {
   act,
   cleanup,
@@ -11,11 +12,18 @@ import {
 import { IDBFactory } from "fake-indexeddb";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import i18n from "../i18n";
+import { openAccountDb, readPrograms } from "../sync/db";
 import { writeLastUser } from "../sync/last-user";
 import { fakeApi } from "../test/fake-api";
 import { renderRoute } from "../test/render-route";
 import { ADA, seed } from "../test/seed";
-import { MONTH, marked, session } from "../test/workout-fixtures";
+import { id, MONTH, marked, session } from "../test/workout-fixtures";
+
+// The programs' read, held back by a test that checks what shows before it lands.
+vi.mock("../sync/db", async (importOriginal) => {
+  const real = await importOriginal<typeof import("../sync/db")>();
+  return { ...real, readPrograms: vi.fn(real.readPrograms) };
+});
 
 // Wednesday 7 October 2026, 7:30 in the morning, on the phone's clock.
 beforeEach(() => {
@@ -29,6 +37,7 @@ afterEach(async () => {
   localStorage.clear();
   vi.useRealTimers();
   vi.unstubAllGlobals();
+  vi.mocked(readPrograms).mockReset();
   await i18n.changeLanguage("en");
 });
 
@@ -291,6 +300,52 @@ describe("the History segment", () => {
     });
   });
 
+  it("titles a session by its session's name only once the programs are read, never by its letter first", async () => {
+    // A synced device holding a session D named « Arms », and a session done as D before
+    // sessions kept their name, so its title comes from the programs.
+    const db = await openAccountDb(ADA.id);
+    await db.put("meta", "1", "cursor");
+    db.close();
+    const D = id(60);
+    const [start, ended] = session(6, "A", new Date(2026, 9, 6, 18, 0), 45);
+    await seed(ADA.id, [
+      {
+        kind: "programSession",
+        id: D,
+        field: "create",
+        name: "Arms",
+        programId: SEED_PROGRAM_ID,
+        position: 3,
+        at: "2026-10-01T06:00:00.000Z",
+      },
+      { ...start!, sessionCode: "D", sessionId: D } as Change,
+      ended!,
+    ]);
+    // Written before sessions kept their name: the stored row holds none.
+    const stored = await openAccountDb(ADA.id);
+    const unnamed = (await stored.getAll("workouts"))[0]!;
+    delete unnamed.sessionName;
+    await stored.put("workouts", unnamed);
+    stored.close();
+    const real = vi.mocked(readPrograms).getMockImplementation()!;
+    let release!: () => void;
+    const held = new Promise<void>((resolve) => (release = resolve));
+    vi.mocked(readPrograms).mockImplementation(async (db) => {
+      await held;
+      return real(db);
+    });
+    fakeApi({ me: ADA });
+    renderRoute("/workouts?tab=history");
+    await waitFor(() => expect(readPrograms).toHaveBeenCalled());
+    await act(() => new Promise((resolve) => setTimeout(resolve, 100)));
+    expect(screen.queryByText(/Session D/)).toBeNull();
+    release();
+    const list = await screen.findByRole("region", { name: "Recent" });
+    expect((await within(list).findByRole("link")).textContent).toMatch(
+      /^Tue, Oct 6 · 45\smin Session D · Arms$/,
+    );
+  });
+
   it("says it in French", async () => {
     await seed(ADA.id, MONTH);
     await i18n.changeLanguage("fr");
@@ -302,7 +357,7 @@ describe("the History segment", () => {
       "Ven. 2 oct. · 1 h 04 Séance A · Push",
     );
     const row = screen.getByRole("button", { name: /^Saisir une séance/ });
-    expect(row.textContent).toBe("Saisir une séance faite sans l'app, un autre jour");
+    expect(row.textContent).toBe("Saisir une séance faite sans l’app, un autre jour");
   });
 
   it("says in French how the first session gets there", async () => {
@@ -312,7 +367,7 @@ describe("the History segment", () => {
     expect(await screen.findByText("Ta première séance apparaîtra ici.")).toBeTruthy();
     expect(
       screen.getByText(
-        "Elle s'ajoute toute seule quand tu termines une séance, ou avec «\u202fSaisir une séance\u202f».",
+        "Elle s’ajoute toute seule quand tu termines une séance, ou avec «\u202fSaisir une séance\u202f».",
         // Kept as written: the default normalizer would turn the narrow spaces into plain ones.
         { normalizer: getDefaultNormalizer({ collapseWhitespace: false }) },
       ),

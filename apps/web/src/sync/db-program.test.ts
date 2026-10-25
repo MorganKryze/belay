@@ -374,6 +374,45 @@ describe("programs on the phone", () => {
     expect((await sessionA(db)).name).toBe("Push");
   });
 
+  it("keeps a range sent with a change of measure at one instant, as the server does", async () => {
+    const toTimed: Change = {
+      kind: "programSlot",
+      id: BENCH,
+      field: "exercise",
+      exerciseId: "ds:2135",
+      measure: "seconds",
+      repRange: [30, 60],
+      warmupSets: 0,
+      at: LATER,
+    };
+    const reps: Change = {
+      kind: "programSlot",
+      id: BENCH,
+      field: "reps",
+      value: [20, 40],
+      measure: "seconds",
+      at: LATER,
+    };
+    await recordChanges(db, [toTimed, reps]);
+    expect(await bench(db)).toMatchObject({ measure: "seconds", repRange: [20, 40] });
+    // Replayed over an older server row, the queue keeps it too.
+    await applyServer(db, [], answer({ programSlots: [benchRow({ setsAt: AT })] }));
+    expect(await bench(db)).toMatchObject({ measure: "seconds", repRange: [20, 40] });
+    // A tie with a time the server wrote keeps the server's value, as the server will.
+    const stored = benchRow({
+      exerciseId: "ds:2135",
+      measure: "seconds",
+      exerciseAt: LATEST,
+      repRange: [45, 90],
+      repsAt: LATEST,
+      warmupSets: 0,
+      warmupsAt: LATEST,
+    });
+    await applyServer(db, await readOutbox(db), answer({ programSlots: [stored] }));
+    await recordChange(db, { ...reps, value: [10, 20], at: LATEST });
+    expect((await bench(db)).repRange).toEqual([45, 90]);
+  });
+
   it("drops a queued rep range or warm-ups written for another measure than the server row's", async () => {
     await recordChanges(db, [
       { kind: "programSlot", id: BENCH, field: "reps", value: [8, 10], measure: null, at: LATER },

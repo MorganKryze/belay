@@ -25,7 +25,7 @@ export function creatineDay(
 }
 
 // The supplements sheet (§4.2): a native checkbox per supplement of the list; a tick is saved at
-// once, with no button. Belay notes, it never advises (D2).
+// once, with no button. Belay notes, it never advises.
 export function SupplementsSheet({
   onClose,
   open,

@@ -88,7 +88,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
           // The network part loads with the first sync: Zod stays out of the initial bundle.
           send: (request) => import("./transport").then((m) => m.postSync(request)),
           onApplied: () => void queryClient.invalidateQueries({ queryKey: ["local", userId] }),
-          // D12 once a sync has landed: judged on stale sets, a session would be wrongly removed.
+          // Once a sync has landed, forgotten sessions are closed: judged on stale sets, a session would be wrongly removed.
           onSynced: async () => {
             if (!(await closeForgotten(db, new Date()))) return;
             await queryClient.invalidateQueries({ queryKey: ["local", userId] });
@@ -229,7 +229,7 @@ export const useSessionView = (account: OpenAccount) =>
     networkMode: "always",
   });
 
-// D12 again when Home opens: the app may have stayed open in the background since the start.
+// Forgotten sessions are closed again when Home opens: the app may have stayed open in the background since the start.
 // A sync runs first (the one already going, when Home opens with the app); the engine closes
 // forgotten sessions once it has landed.
 export function useCloseForgotten({ engine }: OpenAccount) {

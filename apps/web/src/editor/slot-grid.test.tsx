@@ -232,7 +232,7 @@ describe("the slot grid", () => {
       [BENCH, "sets", "11", "Entre 1 et 10"],
       [BENCH, "reps", "6-101", "Entre 1 et 100, par exemple 6-10"],
       [BENCH, "rir", "5", "Entre 0 et 4, par exemple 1-2"],
-      [BENCH, "rest", "16 min", "Jusqu'à 15 min, par exemple 2:30"],
+      [BENCH, "rest", "16 min", "Jusqu’à 15 min, par exemple 2:30"],
       [BENCH, "warmups", "four", "Entre 0 et 3"],
     ];
     for (const [exercise, column, typed, error] of cases) {
@@ -327,18 +327,21 @@ describe("the slot grid", () => {
     expect(noField()).toBeNull();
   });
 
-  it("⌘ Z on macOS, Ctrl Z elsewhere undoes the last change; inside an open cell it does not", async () => {
+  it("⌘ Z or Ctrl Z on macOS, Ctrl Z elsewhere undoes the last change; inside an open cell it does not", async () => {
     onPlatform("MacIntel");
     await open();
     key(target(PRESS, "sets"), "Enter");
     type("5");
     key(field(), "Enter");
     await waitFor(() => expect(shown(PRESS, "sets")).toBe("5"));
+    key(target(PRESS, "sets"), "Enter");
+    type("4");
+    key(field(), "Enter");
+    await waitFor(() => expect(shown(PRESS, "sets")).toBe("4"));
     await screen.findByText("Enregistré sur cet appareil");
-    // Ctrl Z is not the Mac's undo.
+    // A Mac keyboard used from another system's habits: Ctrl Z undoes too.
     key(target(PRESS, "sets"), "z", { ctrlKey: true });
-    await settle();
-    expect((await stored(PRESS)).sets).toBe(5);
+    await waitFor(() => expect(shown(PRESS, "sets")).toBe("5"));
     key(target(PRESS, "sets"), "z", { metaKey: true });
     await waitFor(() => expect(shown(PRESS, "sets")).toBe("3"));
     expect((await stored(PRESS)).sets).toBe(3);

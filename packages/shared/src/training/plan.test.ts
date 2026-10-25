@@ -183,7 +183,7 @@ describe("session C's rule (spec D6)", () => {
   });
 
   it("a plan keeps the first 30 slots of an overfull session", () => {
-    // Two devices adding at once can leave 31 live slots (PM8): the session still starts.
+    // Two devices adding at once can leave 31 live slots: the session still starts.
     const slots = Array.from({ length: MAX_SLOTS + 1 }, (_, i) => ({
       ...A.slots[0]!,
       sets: (i % 10) + 1,

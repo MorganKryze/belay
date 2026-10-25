@@ -259,21 +259,21 @@ describe("the sheet « Rythme du programme »", () => {
     ).toBe("true");
     expect(
       within(sheet).getByText(
-        "Les séances s'enchaînent dans l'ordre, quel que soit le jour. Pas de jour de repos prévu.",
+        "Les séances s’enchaînent dans l’ordre, quel que soit le jour. Pas de jour de repos prévu.",
       ),
     ).toBeTruthy();
     expect(within(sheet).queryByRole("radiogroup", { name: "Lundi" })).toBeNull();
     expect(within(sheet).getAllByRole("button").at(-1)!.textContent).toBe("Enregistrer");
   });
 
-  it("Jours fixes proposes Monday A, Wednesday B, Friday C from the last weeks with Proposé d'après tes dernières semaines", async () => {
+  it("Jours fixes proposes Monday A, Wednesday B, Friday C from the last weeks with Proposé d’après tes dernières semaines", async () => {
     await seed(ADA.id, FOUR_WEEKS);
     renderRoute("/workouts?tab=program");
     const sheet = await openSheet();
     fireEvent.click(within(sheet).getByRole("radio", { name: "Jours fixes" }));
     expect(
       await within(sheet).findByText(
-        "Proposé d'après tes dernières semaines. Un tap change un jour.",
+        "Proposé d’après tes dernières semaines. Un tap change un jour.",
       ),
     ).toBeTruthy();
     expect(chosen(sheet)).toEqual(["A", "Repos", "B", "Repos", "C", "Repos", "Repos"]);

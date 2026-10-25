@@ -55,7 +55,7 @@ const loadIn = (measure: Measure, weightKg: number, count: number): Load => ({
   seconds: measure === "seconds" ? count : null,
 });
 
-// The rows of a slot: the warm-ups computed from the first work set's load (D7; none for a timed
+// The rows of a slot: the warm-ups computed from the first work set's load (none for a timed
 // exercise), then the work sets, each prefilled from last time (§7) for the exercise the slot
 // holds now, else from the set just done before it in this session. A row already done keeps
 // what was done. « + Série » adds `extra` rows past the plan, up to position 49.
@@ -283,7 +283,7 @@ export function ExerciseCard({
       setBusy(false);
     }
   };
-  // A done set is corrected by its cells, while the session is open (D13).
+  // A done set is corrected by its cells, while the session is open.
   const correct = async (row: Row) => {
     const load = loadOf(row);
     if (!row.set || !load) return clear(row);
@@ -324,7 +324,9 @@ export function ExerciseCard({
   const targets = [
     formatSets(slot),
     ...(timed ? [] : [formatRir(slot, t)]),
-    ...(last ? [t("session.picker.lastTime", { value: formatLoad(last, t, i18n.language) })] : []),
+    ...(last
+      ? [t("session.picker.lastTime", { value: formatLoad(last, t, i18n.language, unit) })]
+      : []),
   ];
 
   if (slot.skipped)
@@ -675,7 +677,7 @@ function ChronoControl({
   );
 }
 
-// D6: optional, one tap, under the set to do; tapping the chosen value empties it.
+// Optional, one tap, under the set to do; tapping the chosen value empties it.
 function RirRow({
   value,
   onChange,

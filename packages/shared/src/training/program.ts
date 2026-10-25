@@ -1,6 +1,6 @@
 // The starter program, a constant until the program editor stores it.
 import type { WarmupCount } from "../tools/warmup";
-import type { Slot, Workout } from "./workout";
+import type { Slot } from "./workout";
 
 export interface SessionTemplate {
   code: string; // "A", "B", "C": the name comes from the translations (program.sessions.A)
@@ -64,7 +64,7 @@ export const starterProgram: readonly SessionTemplate[] = [
   },
 ];
 
-// What the program offers instead of an exercise (spec D14), by exercise id: the squat, the
+// What the program offers instead of an exercise, by exercise id: the squat, the
 // split squat, the push-up and the Romanian deadlift.
 // ponytail: a constant beside the constant program; the stored program (M3b2) gives each slot
 // its own alternatives.
@@ -92,25 +92,6 @@ export function groupOf(plan: readonly Slot[], slotIndex: number): number[] {
   const out: number[] = [];
   for (let i = first; i < plan.length && plan[i]!.groupKey === key; i++) out.push(i);
   return out;
-}
-
-// The next session after the last one finished (D11): the one that follows it in the program's
-// order, the first after the last one; the first with no history, or when the last one's letter
-// left the program (PM9); none when the program holds no session.
-type Done = Pick<Workout, "sessionCode" | "startedAt" | "endedAt" | "removed">;
-export function nextSession(
-  workouts: readonly Done[],
-  program: readonly SessionTemplate[],
-): string | null {
-  if (program.length === 0) return null;
-  const last = workouts
-    .filter((w) => w.endedAt !== null && !w.removed)
-    .reduce<(typeof workouts)[number] | null>(
-      (latest, w) => (latest === null || w.startedAt > latest.startedAt ? w : latest),
-      null,
-    );
-  const at = last ? program.findIndex((s) => s.code === last.sessionCode) : -1;
-  return program[(at + 1) % program.length]!.code;
 }
 
 // Every set, warm-ups included, takes 45 s plus its slot's rest; rounded to 5 minutes. A slot

@@ -85,10 +85,10 @@ export function staleKeys<C extends { at: string }>(
   return stale;
 }
 
-// One change over a slot's stored row, field by field, at its clamped time (SY2): the row it
+// One change over a slot's stored row, field by field, at its clamped time: the row it
 // leaves; the same row when what is stored is as recent (a creation is written once); null when it
 // is refused, the row going back and the phone reverting. Refused: a rep range or warm-ups written
-// for another measure than the row's, which would be read in the wrong unit (ED4), or a merged
+// for another measure than the row's, which would be read in the wrong unit, or a merged
 // slot out of its bounds (decision 7). The server and the phone both merge with it.
 export function mergeSlotChange(
   row: ProgramSlotRow,
@@ -123,7 +123,32 @@ export function mergeSlotChange(
       : change.field;
     next = { ...row, [key]: change.value, [atKey]: at };
   }
-  // A timed slot takes no warm-up (ED4), whichever change brought it.
+  // A timed slot takes no warm-up, whichever change brought it.
   if (next.measure === "seconds" && next.warmupSets > 0) return null;
   return isProgramSlot({ ...next, measure: next.measure ?? undefined }) ? next : null;
+}
+
+// One change of a batch over a slot's row, as mergeSlotChange, but a later change wins a tie with
+// a time an earlier change of the same batch wrote: two edits at one instant, clamped or made
+// together, still arrive in the order they were made. Against what was stored before the batch
+// the rule stays strict. `written` gathers the times the batch wrote, by slot; times compare as
+// instants, with or without their milliseconds. The same row when nothing changes.
+export function mergeSlotInBatch(
+  row: ProgramSlotRow,
+  change: ProgramSlotChange,
+  written: Set<string>,
+): ProgramSlotRow | null {
+  // A creation's "createAt" is never written, so it merges as mergeSlotChange has it.
+  const time = `${change.field}At` as keyof ProgramSlotRow;
+  const base =
+    written.has(row.id + time) && !isNewer(row[time] as string, change.at)
+      ? { ...row, [time]: null }
+      : row;
+  const next = mergeSlotChange(base, change);
+  if (next === base) return row;
+  // A row's times are its keys ending in "At"; an exercise in another measure writes three.
+  if (next)
+    for (const [k, v] of Object.entries(next))
+      if (k.endsWith("At") && v !== row[k as keyof ProgramSlotRow]) written.add(row.id + k);
+  return next;
 }

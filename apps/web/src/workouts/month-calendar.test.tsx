@@ -97,7 +97,7 @@ describe("MonthCalendar", () => {
       within(fr)
         .getAllByRole("listitem")
         .map((li) => li.textContent),
-    ).toEqual(["séance", "activité", "aujourd'hui"]);
+    ).toEqual(["séance", "activité", "aujourd’hui"]);
   });
 
   it("sizes the grid and the legend with the secondary type step, never the secondary colour", () => {

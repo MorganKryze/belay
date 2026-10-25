@@ -19,7 +19,7 @@ import { type OpenAccount, useAccount, useProfile, useRecord, useTarget } from "
 
 const card = `${groupCard} flex flex-col`;
 
-// Settings › Profile: the facts the tools start from (D8), each optional and cleared in one tap,
+// Settings › Profile: the facts the tools start from, each optional and cleared in one tap,
 // and the loss range.
 export function Profile() {
   const { t } = useTranslation();

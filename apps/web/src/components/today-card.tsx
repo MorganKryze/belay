@@ -44,7 +44,7 @@ const SHEETS = [ActivitySheet, WeighInSheet, IntakeSheet, SupplementsSheet];
 
 type Gesture = "activity" | "weighIn" | "intake" | "supplements";
 
-// Home's "Today" card (D1): one line per gesture of the day with where it stands; a tap opens the
+// Home's "Today" card: one line per gesture of the day with where it stands; a tap opens the
 // gesture's sheet.
 export function TodayCard({
   account,

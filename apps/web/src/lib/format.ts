@@ -43,9 +43,10 @@ export function formatDay(date: Date, locale: string, today: Date): string {
     .join("");
 }
 
-// Weights and averages to the tenth, always with their decimal: "80,0", "79,8".
-export const formatKg = (kg: number, locale: string): string =>
-  formatNumber(kg, locale, { digits: 1, minDigits: 1 });
+// Weights and averages to the tenth, always with their decimal: "80,0", "79,8". A body weight in
+// pounds, on the quarter pound, takes two digits: "177,25", "177,5".
+export const formatKg = (kg: number, locale: string, digits = 1): string =>
+  formatNumber(kg, locale, { digits, minDigits: 1 });
 
 // A weekly change as shown: to the tenth, a loss or a gain, never "-0". The size is rounded,
 // not the signed value, so a gain of 0.25 shows 0.3 like a loss of 0.25 does.
@@ -149,9 +150,9 @@ function shownName(id: string, name: string | null, t: TFunction): string | null
   return i < 0 ? null : t(`program.names.${SEED_LETTERS[i]}`);
 }
 
-// "Séance D · Haut du corps" with the name a session shows, "Séance D" when it shows none (RD2).
+// "Séance D · Haut du corps" with the name a session shows, "Séance D" when it shows none.
 // Without a name: a session started before sessions recorded theirs, named after its letter's
-// starting session (HF2).
+// starting session.
 export function sessionTitle(code: string, t: TFunction, name?: string | null): string {
   const shown =
     name === undefined ? (SEED_LETTERS.includes(code) ? t(`program.names.${code}`) : null) : name;
@@ -169,7 +170,7 @@ export const rotationTitle = (
 // A session done keeps the letter it was started under and the name its session held that day:
 // none kept, a starting session's translated name, else the letter alone. One started before
 // names were kept shows the current name of the session it recorded, among the account's sessions
-// (set aside or removed ones included); one that recorded none is named after its letter (HF2).
+// (set aside or removed ones included); one that recorded none is named after its letter.
 export const workoutTitle = (
   w: { sessionCode: string; sessionId?: string | null; sessionName?: string | null },
   sessions: readonly { id: string; name: string | null }[],

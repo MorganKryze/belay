@@ -143,6 +143,16 @@ describe("ExerciseCard", () => {
     render(<Card />);
     expect(within(card()).getByText("4 × 6–8 · RIR 1–2 · la dernière fois 80 kg × 8")).toBeTruthy();
   });
+
+  it("the last time keeps the card's unit when the unit changes while it is open", () => {
+    render(<Card />);
+    setWeightUnit("lb");
+    // Any render after the change: a load typed in the card's kg.
+    fireEvent.change(within(card()).getByRole("textbox", { name: "Load of set 1, kg" }), {
+      target: { value: "82,5" },
+    });
+    expect(within(card()).getByText("4 × 6–8 · RIR 1–2 · last time 80 kg × 8")).toBeTruthy();
+  });
 });
 
 // The bench press has a loop wherever the instance serves them (ds:0025).
@@ -299,6 +309,19 @@ describe("ExerciseCard in pounds", () => {
         String(loadFromKg(w.weightKg, "lb")),
       );
     });
+  });
+
+  it("a load typed in kg is logged in kg after the unit turns to lb while the card is open", async () => {
+    render(<Card />);
+    const kgLoad = () => within(card()).getByRole("textbox", { name: "Load of set 1, kg" });
+    fireEvent.change(kgLoad(), { target: { value: "61" } });
+    setWeightUnit("lb");
+    // The next keystroke renders the card again, with the unit now lb on the device.
+    fireEvent.change(kgLoad(), { target: { value: "61,25" } });
+    expect(within(card()).queryByRole("textbox", { name: "Load of set 1, lb" })).toBeNull();
+    log(1);
+    await waitFor(() => expect(logged).toHaveLength(1));
+    expect(logged[0]).toEqual({ weightKg: 61.25, reps: 8, seconds: null });
   });
 
   it("the same set written in kg and in lb modes writes the same change", async () => {

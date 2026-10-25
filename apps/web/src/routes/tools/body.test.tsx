@@ -31,11 +31,11 @@ describe("BMI", () => {
     renderRoute("/tools/bmi");
     const card = await result("Ton IMC");
     expect(card.textContent).toContain("24,3");
-    expect(card.textContent).toContain("Dans la plage de référence de l'OMS (18,5 à 25).");
+    expect(card.textContent).toContain("Dans la plage de référence de l’OMS (18,5 à 25).");
     const current = screen
-      .getByRole("list", { name: "Plages de l'OMS" })
+      .getByRole("list", { name: "Plages de l’OMS" })
       .querySelector("[aria-current]");
-    expect(current?.textContent).toContain("Plage de référence de l'OMS");
+    expect(current?.textContent).toContain("Plage de référence de l’OMS");
   });
 
   it("the BMI is a large figure with one decimal", async () => {

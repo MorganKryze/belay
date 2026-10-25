@@ -112,7 +112,7 @@ for (const width of [390, 360]) {
         /^Été léger\s*2 séances/,
       ]);
       await expect(choices.nth(1)).toHaveAttribute("aria-current", "true");
-      await expect(sheet(page)).toContainText("Un toucher l'active et ferme.");
+      await expect(sheet(page)).toContainText("Un toucher l’active et ferme.");
       expect(await overflow(page)).toBe(0);
       await choices.nth(2).click();
       await expect(sheet(page)).toBeHidden();

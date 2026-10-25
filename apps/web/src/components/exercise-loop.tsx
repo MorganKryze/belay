@@ -40,7 +40,7 @@ export function ExerciseLoop({
     <figure
       aria-label={t("loop.name", { name })}
       hidden={!ready}
-      className={`${cardSurface} relative aspect-square w-full overflow-hidden lg:max-w-90 ${centred ? "lg:mx-auto" : ""}`}
+      className={`${cardSurface}${centred ? " lg:mx-auto" : ""} relative aspect-square w-full overflow-hidden lg:max-w-90`}
     >
       {/* The fragment makes iOS draw the first frame without playing; it never reaches the
           server or the cache. */}

@@ -1,4 +1,4 @@
-import { clampAt, mergeFields, mergeSlotChange, staleKeys } from "@belay/shared/sync/merge";
+import { clampAt, mergeFields, mergeSlotInBatch, staleKeys } from "@belay/shared/sync/merge";
 import type {
   ActiveProgramChange,
   ActiveProgramRow,
@@ -33,16 +33,16 @@ import {
 } from "./sync";
 
 // The programs of one account, written inside the sync's locked transaction: field by field, the
-// last write winning (SY2); a creation written once; a change naming a program or a session the
-// account lacks refused alone (SY5); creations and restorations past an abuse limit refused alone
-// (PM11), counted on the live rows here, so two devices cannot pass one together.
+// last write winning; a creation written once; a change naming a program or a session the
+// account lacks refused alone; creations and restorations past an abuse limit refused alone
+//, counted on the live rows here, so two devices cannot pass one together.
 
 const at = (value: string | null) => (value === null ? null : new Date(value));
 const byIndex = (a: { index: number }, b: { index: number }) => a.index - b.index;
 const refuse = (out: Ctx["out"], c: { index: number }, reason: Rejected["reason"]) =>
   out.rejected.push({ index: c.index, reason });
 
-// The starting program for an account that has none (SD2), before any change of the sync applies.
+// The starting program for an account that has none, before any change of the sync applies.
 // The pointer's insert is the test: it adds a row only for an account never given the program, and
 // the program row goes in the same statement, its key checked once both exist. Every time stays
 // null, so any edit, made before or after, wins over the seed's values.
@@ -79,7 +79,7 @@ export async function seedProgram({ tx, userId }: Ctx): Promise<void> {
 }
 
 // Programs: created once, then name, schedule and removal merge apart. The active program is never
-// removed (ED2): removals wait until the batch's choice of active program is written, so a switch
+// removed: removals wait until the batch's choice of active program is written, so a switch
 // then a removal in one batch is taken, and a removal racing another device's choice is refused.
 export async function writePrograms(
   ctx: Ctx,
@@ -149,14 +149,18 @@ export async function writePrograms(
   );
   const key = (c: (typeof fields)[number]) => `${c.id}|${c.field}`;
   for (const k of staleKeys(stored, fields, key, now)) out.programs.add(k.split("|")[0]!);
-  // A program put back counts as a new live one.
+  // A program put back counts as a new live one; one taken out frees its place for the changes
+  // after it, in request order, unless it may still be the active program once the batch's
+  // choices are written, since that removal is then refused.
   const gone = new Set(rows.filter((r) => r.gone).map((r) => r.id));
+  const mayStayActive = await activeCandidates(ctx, choices);
   count = await live();
   const early: typeof fields = [];
   const removals: typeof fields = [];
   for (const c of mergeFields(stored, fields, key, now).sort(byIndex)) {
     if (c.field === "removed" && c.value) {
       removals.push(c);
+      if (!gone.has(c.id) && !mayStayActive.has(c.id)) count--;
       continue;
     }
     if (c.field === "removed" && gone.has(c.id)) {
@@ -184,6 +188,43 @@ export async function writePrograms(
     ctx,
     removals.filter((c) => c.id !== pointer?.programId),
   );
+}
+
+// The programs the pointer may name once the batch's choices are written: every program chosen,
+// and the stored one unless a choice of a live program is newer, which nothing can then refuse.
+async function activeCandidates(
+  { tx, userId, now }: Ctx,
+  choices: Indexed<ActiveProgramChange>[],
+): Promise<Set<string>> {
+  const targets = [...new Set(choices.map((c) => c.programId))];
+  const [pointer] = await tx
+    .select({ programId: activePrograms.programId, at: activePrograms.at })
+    .from(activePrograms)
+    .where(eq(activePrograms.userId, userId));
+  if (!pointer) return new Set(targets);
+  const live = new Set(
+    targets.length === 0
+      ? []
+      : (
+          await tx
+            .select({ id: programs.id })
+            .from(programs)
+            .where(
+              and(
+                eq(programs.userId, userId),
+                inArray(programs.id, targets),
+                eq(programs.removed, false),
+              ),
+            )
+        ).map((r) => r.id),
+  );
+  const replaced = mergeFields(
+    new Map([["active", iso(pointer.at)]]),
+    choices.filter((c) => live.has(c.programId)),
+    () => "active",
+    now,
+  );
+  return new Set(replaced.length > 0 ? targets : [...targets, pointer.programId]);
 }
 
 async function updatePrograms(
@@ -286,8 +327,8 @@ function vetCreations<C extends { id: string; index: number }>(
 }
 
 // Sessions: created once, then name, place and removal merge apart. The place (a program and a
-// position, or the collection) is one field, so a move never lands half done (D2). A program
-// named must be one of the account's; 200 live sessions per account, 26 per rotation (PM11).
+// position, or the collection) is one field, so a move never lands half done. A program
+// named must be one of the account's; 200 live sessions per account, 26 per rotation.
 export async function writeProgramSessions(
   ctx: Ctx,
   changes: Indexed<ProgramSessionChange>[],
@@ -508,25 +549,12 @@ function slotColumns(r: ProgramSlotRow) {
   };
 }
 
-const TIMES = [
-  "positionAt",
-  "exerciseAt",
-  "repsAt",
-  "setsAt",
-  "rirAt",
-  "restAt",
-  "warmupsAt",
-  "mainAt",
-  "groupAt",
-  "ruleAt",
-  "removedAt",
-] as const;
 type SlotEdit = Indexed<Exclude<ProgramSlotChange, { field: "create" }>>;
 const timeOf = (c: SlotEdit) => `${c.field}At` as const;
 
 // Slots: created once in a session of the account, of an exercise of the library in its measure, a
-// timed one with no warm-up, 30 live ones per session (PM11). Each slot's changes then merge over
-// its stored row with mergeSlotChange, as the phone merges them, and the row is written once.
+// timed one with no warm-up, 30 live ones per session. Each slot's changes then merge over
+// its stored row with mergeSlotInBatch, as the phone merges them, and the row is written once.
 export async function writeProgramSlots(
   ctx: Ctx,
   changes: Indexed<ProgramSlotChange>[],
@@ -626,24 +654,19 @@ export async function writeProgramSlots(
   for (const [id, initial] of rows) {
     let row = initial;
     const won: SlotEdit[] = [];
-    // Inside one batch a later change wins a tie with an earlier one of the batch, as fold does:
-    // two edits clamped to the same instant still arrive in the order they were made.
+    // Inside one batch a later change wins a tie with an earlier one of the batch, as the phone
+    // replays its queue.
     const written = new Set<string>();
     for (const c of edits) {
       if (c.id !== id || (c.field === "removed" && blocked.has(id))) continue;
-      const change = { ...c, at: clampAt(c.at, now) };
-      const time = timeOf(c);
-      const base: ProgramSlotRow =
-        written.has(time) && row[time] === change.at ? { ...row, [time]: null } : row;
-      const next = mergeSlotChange(base, change);
+      const next = mergeSlotInBatch(row, { ...c, at: clampAt(c.at, now) }, written);
       if (next === null) {
         const measured = c.field === "reps" || c.field === "warmups";
         refuse(out, c, measured && c.measure !== row.measure ? "wrong_measure" : "refused");
         out.slots.add(id);
         continue;
       }
-      if (next === base) continue;
-      for (const t of TIMES) if (next[t] !== row[t]) written.add(t);
+      if (next === row) continue;
       row = next;
       won.push(c);
     }

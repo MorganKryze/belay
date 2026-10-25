@@ -5,7 +5,7 @@ import { EMPTY_PROFILE, type Profile } from "@belay/shared/body/profile";
 import { isCreatineName } from "@belay/shared/body/supplements";
 import { DEFAULT_TARGET, type TargetRange } from "@belay/shared/body/target";
 import type { Weighing } from "@belay/shared/body/weighings";
-import { isNewer, mergeSlotChange } from "@belay/shared/sync/merge";
+import { isNewer, mergeSlotInBatch } from "@belay/shared/sync/merge";
 import type {
   ActiveProgramRow,
   ActivityRow,
@@ -133,7 +133,7 @@ const ALL: Store[] = [
   "activeProgram",
 ];
 
-// One database per account (D3): another account on this device never sees it, and nothing in
+// One database per account: another account on this device never sees it, and nothing in
 // it is ever sent under another identity. Signing out keeps it.
 export const accountDbName = (userId: string) => `belay.${userId}`;
 
@@ -377,8 +377,16 @@ async function localAt(tx: WriteTx, change: Change): Promise<string | null> {
   }
 }
 
+// The slot times written so far in one batch: the changes recorded together, or the queue
+// replayed over the server's rows, which the server receives as one batch.
+type BatchTimes = Set<string>;
+
 // Writes what a change says into the device's copy, the way the server merges it.
-async function applyLocal(tx: WriteTx, change: Change): Promise<void> {
+async function applyLocal(
+  tx: WriteTx,
+  change: Change,
+  batch: BatchTimes = new Set(),
+): Promise<void> {
   switch (change.kind) {
     case "weight":
       await tx
@@ -526,23 +534,24 @@ async function applyLocal(tx: WriteTx, change: Change): Promise<void> {
     case "programSession":
     case "programSlot":
       // Built by the editor on the row it shows, it is never refused: if it is, nothing is kept.
-      if (!(await applyProgram(tx, change))) throw new RangeError("invalid change");
+      if (!(await applyProgram(tx, change, batch))) throw new RangeError("invalid change");
   }
 }
 
 // A creation writes its row once; a field change writes its value and time, a slot's merged as on
-// the server (mergeSlotChange). False: the server refuses it, a rep range or warm-ups written for
+// the server (mergeSlotInBatch). False: the server refuses it, a rep range or warm-ups written for
 // another measure than the slot's. A row this device holds nowhere is left alone.
 async function applyProgram(
   tx: WriteTx,
   change: ProgramChange | ProgramSessionChange | ProgramSlotChange,
+  batch: BatchTimes,
 ): Promise<boolean> {
   const row = await programRow(tx, change.kind, change.id);
   const { kind, field, at, ...values } = change;
   let next: object | null | undefined;
   if (field === "create") next = row ?? created(kind, values);
   else if (change.kind === "programSlot")
-    next = row && mergeSlotChange(row as ProgramSlotRow, change);
+    next = row && mergeSlotInBatch(row as ProgramSlotRow, change, batch);
   else
     next = row && {
       ...row,
@@ -701,12 +710,13 @@ export async function recordChanges(
 ): Promise<void> {
   if (!changes.every(isValidChange)) throw new RangeError("invalid change");
   await write(db, async (tx) => {
+    const batch: BatchTimes = new Set();
     for (const written of changes) {
       const change =
         written.kind === "workout" && written.field === "start"
           ? await withSessionName(tx, written)
           : written;
-      await applyLocal(tx, change);
+      await applyLocal(tx, change, batch);
       await tx.objectStore("outbox").add({ change });
     }
     if (active === null) await tx.objectStore("activeSession").delete("current");
@@ -802,7 +812,7 @@ export async function startWorkout(db: AccountDb, asked: Start): Promise<string>
           .put({ workoutId: open.id, slotIndex: 0, restEndsAt: null }, "current");
       return;
     }
-    // The session left behind is closed in the same go (D12), or nobody would.
+    // The session left behind is closed in the same go, or nobody would.
     const leaving = forgottenChanges(workouts, sets, now, active);
     for (const change of leaving) {
       await applyLocal(tx, change);
@@ -818,7 +828,7 @@ export async function startWorkout(db: AccountDb, asked: Start): Promise<string>
   return id;
 }
 
-// D12: what closes the sessions left open. One is ended at its last set. A session without a
+// What closes the sessions left open. One is ended at its last set. A session without a
 // set is removed only when this device holds it: on another device its sets may simply not
 // have arrived yet, and a removal outranks them all.
 function forgottenChanges(
@@ -936,7 +946,7 @@ export async function readHistory(db: AccountDb): Promise<History> {
 }
 
 // The programs as the screens read them: what this device holds, the starting rows it lacks
-// read from the seed (SD3), every time left out.
+// read from the seed, every time left out.
 const recordOf = <T>(row: object) =>
   Object.fromEntries(
     Object.entries(row).filter(([k, v]) => !k.endsWith("At") && !(k === "measure" && v === null)),
@@ -1081,8 +1091,9 @@ export async function applyServer(
     await Promise.all(ops);
     // A slot change merges as on the server: one written for another measure than the server's
     // row stays out, as the server will refuse it.
+    const batch: BatchTimes = new Set();
     for (const { change } of await tx.objectStore("outbox").getAll())
-      if (change.kind === "programSlot") await applyProgram(tx, change);
+      if (change.kind === "programSlot") await applyProgram(tx, change, batch);
       else if (isNewer(change.at, await localAt(tx, change))) await applyLocal(tx, change);
     // The open session was finished or removed on another device: this one lets it go.
     const active = await tx.objectStore("activeSession").get("current");

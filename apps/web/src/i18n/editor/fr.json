@@ -11,7 +11,7 @@
       "aside": "De côté",
       "named": "{{code}} · {{name}}"
     },
-    "asideHint": "De côté : hors rotation, sans lettre. Elle reste modifiable ; « Remettre dans la rotation » l'ajoute à la fin.",
+    "asideHint": "De côté : hors rotation, sans lettre. Elle reste modifiable ; « Remettre dans la rotation » l’ajoute à la fin.",
     "card": {
       "exercises_one": "{{count}} exercice",
       "exercises_other": "{{count}} exercices",
@@ -66,7 +66,7 @@
       "seconds": "Entre 1 et 3 600 s, par exemple 30-60",
       "rir": "Entre 0 et 4, par exemple 1-2",
       "sets": "Entre 1 et 10",
-      "rest": "Jusqu'à 15 min, par exemple 2:30",
+      "rest": "Jusqu’à 15 min, par exemple 2:30",
       "warmups": "Entre 0 et 3",
       "warmupsTimed": "Pas de montée pour un exercice chronométré"
     },
@@ -113,8 +113,8 @@
       "added": "Séance {{code}} ajoutée"
     },
     "empty": {
-      "title": "Aucun exercice pour l'instant.",
-      "text": "Cherche dans la bibliothèque avec le champ ci-dessus, ou pars d'une séance existante :",
+      "title": "Aucun exercice pour l’instant.",
+      "text": "Cherche dans la bibliothèque avec le champ ci-dessus, ou pars d’une séance existante :",
       "from": "Partir de {{session}}"
     },
     "toast": {
@@ -130,7 +130,7 @@
       "created": "{{program}} créé, il est actif.",
       "undone": "Modification annulée",
       "nothingToUndo": "Rien à annuler",
-      "refused": "Pas enregistré : cette modification n'est pas possible ici.",
+      "refused": "Pas enregistré : cette modification n’est pas possible ici.",
       "stale": "Pas enregistré : ce programme a changé ailleurs entre-temps. Les valeurs à jour sont affichées.",
       "failed": "Pas pu enregistrer sur cet appareil. Réessaie."
     },
@@ -160,10 +160,10 @@
       "newName": "Nouveau programme",
       "copyName": "Copie de {{name}}",
       "removeTitle": "Supprimer le programme « {{name}} » ?",
-      "removeBody_one": "Sa séance part avec lui. {{previous}} redevient actif. L'historique ne change pas.",
-      "removeBody_other": "Ses {{count}} séances partent avec lui. {{previous}} redevient actif. L'historique ne change pas.",
-      "removeBodyInactive_one": "Sa séance part avec lui. L'historique ne change pas.",
-      "removeBodyInactive_other": "Ses {{count}} séances partent avec lui. L'historique ne change pas.",
+      "removeBody_one": "Sa séance part avec lui. {{previous}} redevient actif. L’historique ne change pas.",
+      "removeBody_other": "Ses {{count}} séances partent avec lui. {{previous}} redevient actif. L’historique ne change pas.",
+      "removeBodyInactive_one": "Sa séance part avec lui. L’historique ne change pas.",
+      "removeBodyInactive_other": "Ses {{count}} séances partent avec lui. L’historique ne change pas.",
       "removeConfirm": "Supprimer le programme",
       "cancel": "Annuler"
     }

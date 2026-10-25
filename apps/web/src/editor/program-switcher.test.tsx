@@ -346,6 +346,23 @@ describe("the program switcher", () => {
     );
   });
 
+  it("refuses a name with a control character as a refusal, not as a change made elsewhere", async () => {
+    renderRoute("/workouts/program");
+    await openMenu();
+    await choose("Renommer ce programme");
+    const field = (await nameField()) as HTMLInputElement;
+    fireEvent.change(field, { target: { value: "Force\u0007" } });
+    await act(async () => fireEvent.keyDown(field, { key: "Enter" }));
+    expect(
+      await screen.findByText("Pas enregistré : cette modification n’est pas possible ici."),
+    ).toBeTruthy();
+    expect(screen.queryByText(/a changé ailleurs/)).toBeNull();
+    expect(screen.getByRole("textbox", { name: "Nom du programme" })).toBe(field);
+    expect((await stored()).programs.programs.find((p) => p.id === FORCE)!.name).toBe(
+      "Force 4 jours",
+    );
+  });
+
   it("a click away saves the name; Enter then the click away writes it once; Escape still cancels", async () => {
     const api = fakeApi({ me: ADA });
     // Each name written, sent already or still queued.
@@ -401,7 +418,7 @@ describe("the program switcher", () => {
       "Supprimer le programme « Force 4 jours » ?",
     );
     expect(plain(sheet.textContent)).toContain(
-      "Ses 4 séances partent avec lui. Programme de départ redevient actif. L'historique ne change pas.",
+      "Ses 4 séances partent avec lui. Programme de départ redevient actif. L’historique ne change pas.",
     );
     await act(async () =>
       fireEvent.click(within(sheet).getByRole("button", { name: "Supprimer le programme" })),

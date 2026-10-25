@@ -209,7 +209,7 @@ test("Supprimer asks on the sheet, then Programme de départ becomes active", as
   await menu(page).getByRole("menuitem", { name: "Supprimer ce programme" }).click();
   const sheet = page.getByRole("dialog", { name: /^Supprimer le programme/ });
   await expect(sheet).toContainText(
-    /Ses 4 séances partent avec lui\. Programme de départ redevient actif\. L'historique ne change pas\./,
+    /Ses 4 séances partent avec lui\. Programme de départ redevient actif\. L’historique ne change pas\./,
   );
   await settled(page);
   await sheet.getByRole("button", { name: "Supprimer le programme" }).click();

@@ -536,7 +536,7 @@ function RejectedEntries({ account }: { account: OpenAccount }) {
   );
 }
 
-// Signing out keeps the entries on the device (D3), and always asks first, saying what is still
+// Signing out keeps the entries on the device, and always asks first, saying what is still
 // waiting. The sheet closes as soon as its action is chosen; the row stays disabled while the
 // request runs, so a second tap cannot send it twice, and takes the focus back if it fails.
 function SignOutGroup({ pending }: { pending: number | null }) {

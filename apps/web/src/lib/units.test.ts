@@ -37,21 +37,23 @@ describe("the weight unit", () => {
     expect(bodyWeightText(80.38, "fr")).toBe("80,4\u00a0kg");
     expect(loadNumber(82.5, "fr")).toBe("82,5");
     setWeightUnit("lb");
-    expect(bodyWeightText(80.38, "fr")).toBe("177,2\u00a0lb");
+    expect(bodyWeightText(80.38, "fr")).toBe("177,25\u00a0lb");
     expect(loadNumber(82.5, "fr")).toBe("182");
   });
 });
 
 describe("body weight", () => {
-  it("bodyWeightText says 177,2 lb in French and 177.2 lb in English, the unit kept on its line", () => {
-    expect(bodyWeightText(80.38, "fr", "lb")).toBe("177,2\u00a0lb");
-    expect(bodyWeightText(80.38, "en", "lb")).toBe("177.2\u00a0lb");
+  it("bodyWeightText says 177,25 lb in French and 177.25 lb in English, the unit kept on its line", () => {
+    expect(bodyWeightText(80.38, "fr", "lb")).toBe("177,25\u00a0lb");
+    expect(bodyWeightText(80.38, "en", "lb")).toBe("177.25\u00a0lb");
     expect(bodyWeightText(80, "fr", "kg")).toBe("80,0\u00a0kg");
   });
 
-  it("is written to the tenth, with its decimal", () => {
+  it("is written to the tenth in kg, to the quarter pound in lb, with two decimals only when needed", () => {
     expect(bodyWeight(80.4, "fr", "kg")).toBe("80,4");
-    expect(bodyWeight(80.38, "fr", "lb")).toBe("177,2");
+    expect(bodyWeight(80.38, "fr", "kg")).toBe("80,4");
+    expect(bodyWeight(80.4, "fr", "lb")).toBe("177,25");
+    expect(bodyWeight(80.5, "fr", "lb")).toBe("177,5");
     expect(bodyWeight(90.7, "en", "lb")).toBe("200.0");
   });
 });
@@ -84,6 +86,14 @@ describe("a load", () => {
     }
     // Edited text is converted as usual.
     expect(parseLoad("221", "lb", 100)).toBe(100.25);
+  });
+
+  it("parseLoad never gives back a prefill off the set grid", () => {
+    // 80.1 kg, off the quarter-kilo grid, is shown "177" lb: kept as it is, it would write 80.1
+    // back; it becomes the 80.25 that 177 lb stands for. 600 kg, past the bounds, is refused.
+    expect(parseLoad("177", "lb", 80.1)).toBe(80.25);
+    expect(parseLoad("80,1", "kg", 80.1)).toBeNull();
+    expect(parseLoad("1323", "lb", 600)).toBeNull();
   });
 });
 

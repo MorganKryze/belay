@@ -1,6 +1,6 @@
 import type { Change } from "@belay/shared/sync/schema";
-import { nextSession, sessionByCode, starterProgram } from "@belay/shared/training/program";
-import { SEED_PROGRAM_ID } from "@belay/shared/training/stored-program";
+import { sessionByCode, starterProgram } from "@belay/shared/training/program";
+import { nextInRotation, SEED_PROGRAM_ID } from "@belay/shared/training/stored-program";
 import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { IDBFactory } from "fake-indexeddb";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -89,6 +89,8 @@ const climb: Change = {
   climbColor: null,
   at: "2026-10-03T18:00:00.000Z",
 };
+// The seed rotation, A to C; the seeded sessions name theirs by letter only.
+const rotation = starterProgram.map((t) => ({ ...t, sessionId: "", name: null }));
 const stored = async () => {
   const db = await openAccountDb(ADA.id);
   const result = { history: await readHistory(db), outbox: await readOutbox(db) };
@@ -197,7 +199,7 @@ describe("a session logged afterwards (spec D10)", () => {
       "Thu, Oct 1 · 1 h 00 Session B · Legs",
     ]);
     // Begun at noon, before Monday's B at 18:00: B stays the last one, C comes next.
-    expect(nextSession((await stored()).history.workouts, starterProgram)).toBe("C");
+    expect(nextInRotation((await stored()).history.workouts, rotation, null)?.code).toBe("C");
   });
 });
 
@@ -243,7 +245,7 @@ describe("correcting a finished session (spec D9)", () => {
     expect(moved.startedAt).toBe(new Date(2026, 8, 28, 18, 0).toISOString());
     expect(moved.plan).toEqual(sessionByCode("B", starterProgram)!.slots);
     // Thursday's B is now the last one.
-    expect(nextSession((await stored()).history.workouts, starterProgram)).toBe("C");
+    expect(nextInRotation((await stored()).history.workouts, rotation, null)?.code).toBe("C");
   });
 
   it("writes nothing when cancelled", async () => {

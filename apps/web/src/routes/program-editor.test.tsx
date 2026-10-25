@@ -348,7 +348,7 @@ describe("the editor's sessions", () => {
     // The empty session as drawn: its size line, the sentence over the starts, and the search's
     // keys under the card while it is the session just added.
     expect(screen.getByText("Nouvelle séance · aucun exercice")).toBeTruthy();
-    expect(screen.getByText("Aucun exercice pour l'instant.")).toBeTruthy();
+    expect(screen.getByText("Aucun exercice pour l’instant.")).toBeTruthy();
     const help =
       "Séance D ajoutée en fin de rotation. Tape pour chercher · Entrée ajoute · Échap ferme · Ctrl Z annuler";
     const helpShown = () =>
@@ -633,7 +633,7 @@ describe("the editor's sessions", () => {
     expect(screen.queryByRole("grid")).toBeNull();
     expect(
       screen.getByText(
-        "Cherche dans la bibliothèque avec le champ ci-dessus, ou pars d'une séance existante :",
+        "Cherche dans la bibliothèque avec le champ ci-dessus, ou pars d’une séance existante :",
       ),
     ).toBeTruthy();
     expect(screen.getByRole("combobox", { name: "Ajouter un exercice" })).toBeTruthy();

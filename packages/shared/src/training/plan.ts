@@ -1,4 +1,4 @@
-// A session's own copy of the plan (spec D6, D7): what session C adds in a week with no
+// A session's own copy of the plan: what session C adds in a week with no
 // climbing, and the changes a session may make to its copy. Each returns a new plan; a slot is
 // never taken out, so the sets stay attached to their slot index. The program never changes.
 import type { ISODate } from "../body/dates";
@@ -10,7 +10,7 @@ import { MAX_SLOTS, type Slot } from "./workout";
 // The day's plan: the session's slots, then its no-climbing slots, marked, when no climb is
 // recorded in the week of `date` (Monday to Sunday). Judged once, at the start: a session
 // already started never changes when a climb is recorded later. Two devices adding slots at once
-// can leave a stored session past MAX_SLOTS: the plan keeps the first ones so it always starts (PM8).
+// can leave a stored session past MAX_SLOTS: the plan keeps the first ones so it always starts.
 export function planFor(
   session: SessionTemplate,
   activities: readonly Pick<Activity, "date" | "kind" | "removed">[],

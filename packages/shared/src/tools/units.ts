@@ -18,16 +18,18 @@ export const kgFromLoad = (value: number, unit: WeightUnit): number =>
 export const loadFromKg = (kg: number, unit: WeightUnit): number =>
   unit === "kg" ? kg : Math.round(kgToLb(kg));
 
-// A weigh-in. lb: tenths of a pound, stored on the 0.1 kg grid of WEIGHING_RANGE_KG; a value read
-// back is within 0.1 lb of the one typed.
+// A weigh-in. lb: quarter pounds, stored on the 0.1 kg grid of WEIGHING_RANGE_KG. The 0.1 kg grid
+// is 0.22 lb wide, so a tenth of a pound often lands on the same stored kg; each quarter pound lands on
+// a different one, and reads back exactly.
 export const kgFromWeighing = (value: number, unit: WeightUnit): number =>
   unit === "kg" ? value : roundTo(lbToKg(value), 0.1);
 export const weighingFromKg = (kg: number, unit: WeightUnit): number =>
-  unit === "kg" ? kg : roundTo(kgToLb(kg), 0.1);
+  unit === "kg" ? kg : roundTo(kgToLb(kg), 0.25);
 
-// A kg step's lb counterpart, a round number of pounds near twice the step.
+// A kg step's lb counterpart, a round number of pounds near twice the step; the weigh-in's 0.1 kg
+// takes the quarter pound, the finest step that never lands twice on the same stored kg.
 const LB_STEPS: readonly (readonly [kg: number, lb: number])[] = [
-  [0.1, 0.1],
+  [0.1, 0.25],
   [0.25, 0.5],
   [0.5, 1],
   [1, 2],
@@ -39,7 +41,7 @@ export function stepIn(stepKg: number, unit: WeightUnit): number {
 }
 
 // kg bounds in the unit, rounded inward to the step so a value inside them converts back inside
-// the kg bounds: ({20, 400}, lb, 0.1) → {44.1, 881.8}.
+// the kg bounds: ({20, 400}, lb, 0.25) → {44.25, 881.75}.
 export function rangeIn(
   range: { min: number; max: number },
   unit: WeightUnit,

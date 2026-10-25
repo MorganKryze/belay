@@ -7,7 +7,7 @@ export type Measure = "reps" | "seconds";
 // the exercises of exercises-dataset, `belay:<slug>` for the ones Belay adds.
 export interface Exercise {
   id: string;
-  name: string; // English, in sentence case ("Barbell bench press"), in both languages (D4)
+  name: string; // English, in sentence case ("Barbell bench press"), in both languages
   primary: Muscle[];
   secondary: Muscle[];
   equipment: Equipment;

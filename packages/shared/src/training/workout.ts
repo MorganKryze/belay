@@ -73,7 +73,7 @@ export const PLAN_MAX_BYTES = 16 * 1024;
 // Positions 0 to 2 are the warm-ups, so a work set keeps its position whatever their number.
 export const MAX_WARMUPS = 3;
 export const workPosition = (round: number) => MAX_WARMUPS + round;
-// « + Série » goes past the planned sets, up to 50 positions per slot (spec D8).
+// « + Série » goes past the planned sets, up to 50 positions per slot.
 export const MAX_POSITION = 49;
 // The bounds of a slot of the plan (the spec leaves them to the plan); a timed slot's target is
 // in seconds.

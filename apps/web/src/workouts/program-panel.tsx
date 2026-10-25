@@ -11,6 +11,7 @@ import {
   type LetteredTemplate,
   nextInRotation,
   type Program,
+  rotationOf,
   startedAs,
   type StoredPrograms,
 } from "@belay/shared/training/stored-program";
@@ -18,6 +19,7 @@ import { Link } from "@tanstack/react-router";
 import { Check, PenLine } from "lucide-react";
 import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { FieldError } from "@/components/field-error";
 import { GroupedList, RowButton, RowLink } from "@/components/grouped-list";
 import { SessionCard, SessionHeading } from "@/components/session-card";
 import { Sheet } from "@/components/sheet";
@@ -29,7 +31,7 @@ import { type OpenAccount, useActivities, useHistory, useProgram, useRecord } fr
 import { dayOf } from "./history-panel";
 import { RhythmRow } from "./rhythm-sheet";
 
-// Program (spec D13, §4.5): the active program's rotation as cards, the next one first with « See
+// Program: the active program's rotation as cards, the next one first with « See
 // the session »; every other card opens its session's preview on a tap anywhere. While a session
 // is open, its card resumes it and the others open their preview, which says what is open.
 // Without an account nothing is next, so every card opens the starting program's preview. A
@@ -76,9 +78,10 @@ export function ProgramPanel({ account }: { account: OpenAccount | null }) {
   );
 }
 
-// A program's live sessions, the ones its rotation letters.
+// A program's sessions as its rotation letters them, the ones the cards show once it is active:
+// a session with no exercise is left out.
 const sessionsOf = (programs: StoredPrograms, programId: string) =>
-  programs.sessions.filter((s) => s.programId === programId && !s.removed).length;
+  rotationOf({ ...programs, activeId: programId }).length;
 
 // The row naming the active program, and its sheet: one tap on another program makes it active
 // (one change, written at once) and closes; on the active one it only closes. With no live
@@ -106,10 +109,9 @@ function ActiveProgram({ account, programs }: { account: OpenAccount; programs: 
         <ProgramSheet
           programs={programs}
           activeId={active?.id ?? null}
-          onPick={async (id, close) => {
+          onPick={async (id) => {
             const changes = chooseActive(programs, id, new Date().toISOString());
             if (changes) await write(changes);
-            close();
           }}
           onClose={() => setSheet(false)}
         />
@@ -126,13 +128,20 @@ function ProgramSheet({
 }: {
   programs: StoredPrograms;
   activeId: string | null;
-  onPick: (id: string, close: () => void) => Promise<void>;
+  onPick: (id: string) => Promise<void>;
   onClose: () => void;
 }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(true);
+  const [failed, setFailed] = useState(false);
+  const failedId = useId();
   const close = () => setOpen(false);
-  const pick = (p: Program) => (p.id === activeId ? close() : void onPick(p.id, close));
+  // A refused write (a lost connection, a full disk) keeps the sheet open to try again.
+  const pick = (p: Program) => {
+    if (p.id === activeId) return close();
+    setFailed(false);
+    onPick(p.id).then(close, () => setFailed(true));
+  };
   return (
     <Sheet title={t("workouts.program.sheetTitle")} open={open} onClose={onClose}>
       <ul className={groupCard}>
@@ -152,6 +161,7 @@ function ProgramSheet({
           </li>
         ))}
       </ul>
+      {failed && <FieldError id={failedId}>{t("weighIn.saveFailed")}</FieldError>}
       <p className="px-1 text-(length:--text-secondary) leading-(--text-secondary--line-height) text-muted-foreground">
         {t("workouts.program.sheetNote")}
       </p>
