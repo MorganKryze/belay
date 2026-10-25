@@ -58,12 +58,12 @@ test("the weight unit row reads Weight unit · Kilograms (kg) and switches to Po
   expect(await page.evaluate(() => localStorage.getItem("belay.weightUnit"))).toBe("lb");
 });
 
-test("the end-of-rest sound row switches to On", async ({ page }) => {
+test("the end-of-rest sound row switches to Discreet", async ({ page }) => {
   await openSettings(page);
   await expect(row(page, "End-of-rest sound")).toHaveAccessibleName("End-of-rest sound · Off");
   await row(page, "End-of-rest sound").click();
-  await page.getByRole("option", { name: "On" }).click();
-  await expect(row(page, "End-of-rest sound")).toHaveAccessibleName("End-of-rest sound · On");
+  await page.getByRole("option", { name: "Discreet" }).click();
+  await expect(row(page, "End-of-rest sound")).toHaveAccessibleName("End-of-rest sound · Discreet");
   expect(await page.evaluate(() => localStorage.getItem("belay.restSound"))).toBe("on");
 });
 
@@ -431,7 +431,7 @@ test.describe("at 360 px", () => {
           "Sessions",
           [
             ["Paused", "Everything stops", "Rest continues"],
-            ["End-of-rest sound", "Off", "On"],
+            ["End-of-rest sound", "Off", "Discreet", "Always"],
             ["History", "With activities", "Sessions only"],
             ["Volume", "Shown", "Hidden"],
           ],
@@ -468,7 +468,7 @@ test.describe("at 360 px", () => {
           "Séances",
           [
             ["En pause", "Tout s'arrête", "Le repos continue"],
-            ["Son de fin de repos", "Coupé", "Avec ma musique", "Même en silencieux"],
+            ["Son de fin de repos", "Coupé", "Discret", "Toujours"],
             ["Historique", "Avec activités", "Séances seules"],
             ["Volume", "Affiché", "Masqué"],
           ],
@@ -522,7 +522,7 @@ test.describe("at 360 px", () => {
             for (const v of values) {
               if (v !== values[0]) {
                 await trigger.click();
-                await page.getByRole("option", { name: v }).click();
+                await page.getByRole("option", { name: v, exact: true }).click();
                 await expect(page.getByRole("listbox")).toBeHidden();
               }
               const what = `${section} · ${label} · ${v}`;

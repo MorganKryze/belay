@@ -165,10 +165,10 @@ describe("Settings preferences", () => {
     renderRoute("/settings");
     expect(await screen.findByRole("combobox", { name: "End-of-rest sound · Off" })).toBeTruthy();
     vi.mocked(previewRestSound).mockClear();
-    await choose(/^End-of-rest sound/, "With my music");
+    await choose(/^End-of-rest sound/, "Discreet");
     expect(localStorage.getItem("belay.restSound")).toBe("on");
     expect(previewRestSound).toHaveBeenCalledTimes(1);
-    await choose(/^End-of-rest sound/, "Even on silent");
+    await choose(/^End-of-rest sound/, "Always");
     expect(localStorage.getItem("belay.restSound")).toBe("over");
     expect(previewRestSound).toHaveBeenCalledTimes(2);
     await choose(/^End-of-rest sound/, "Off");
@@ -184,9 +184,9 @@ describe("Settings preferences", () => {
     expect(
       await screen.findByRole("combobox", { name: "Unité de poids · Livres (lb)" }),
     ).toBeTruthy();
-    await choose(/^Son de fin de repos/, "Même en silencieux");
+    await choose(/^Son de fin de repos/, "Toujours");
     expect(
-      await screen.findByRole("combobox", { name: "Son de fin de repos · Même en silencieux" }),
+      await screen.findByRole("combobox", { name: "Son de fin de repos · Toujours" }),
     ).toBeTruthy();
   });
 
