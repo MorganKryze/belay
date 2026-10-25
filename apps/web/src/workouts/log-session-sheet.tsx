@@ -43,7 +43,9 @@ export function LogSessionSheet(props: SheetProps) {
   useEffect(() => {
     if (none) onClose();
   }, [none, onClose]);
-  if (!program || none) return null;
+  // While the account opens, the programs read are the starting ones: the first choice, taken once,
+  // would come from them.
+  if (account.kind === "loading" || !program || none) return null;
   return <LogSession {...props} programs={program.programs} rotation={program.rotation} />;
 }
 
