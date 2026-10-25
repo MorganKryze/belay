@@ -19,6 +19,7 @@ import { Link } from "@tanstack/react-router";
 import { Check, PenLine } from "lucide-react";
 import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { FieldError } from "@/components/field-error";
 import { GroupedList, RowButton, RowLink } from "@/components/grouped-list";
 import { SessionCard, SessionHeading } from "@/components/session-card";
 import { Sheet } from "@/components/sheet";
@@ -108,10 +109,9 @@ function ActiveProgram({ account, programs }: { account: OpenAccount; programs: 
         <ProgramSheet
           programs={programs}
           activeId={active?.id ?? null}
-          onPick={async (id, close) => {
+          onPick={async (id) => {
             const changes = chooseActive(programs, id, new Date().toISOString());
             if (changes) await write(changes);
-            close();
           }}
           onClose={() => setSheet(false)}
         />
@@ -128,13 +128,20 @@ function ProgramSheet({
 }: {
   programs: StoredPrograms;
   activeId: string | null;
-  onPick: (id: string, close: () => void) => Promise<void>;
+  onPick: (id: string) => Promise<void>;
   onClose: () => void;
 }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(true);
+  const [failed, setFailed] = useState(false);
+  const failedId = useId();
   const close = () => setOpen(false);
-  const pick = (p: Program) => (p.id === activeId ? close() : void onPick(p.id, close));
+  // A refused write (a lost connection, a full disk) keeps the sheet open to try again.
+  const pick = (p: Program) => {
+    if (p.id === activeId) return close();
+    setFailed(false);
+    onPick(p.id).then(close, () => setFailed(true));
+  };
   return (
     <Sheet title={t("workouts.program.sheetTitle")} open={open} onClose={onClose}>
       <ul className={groupCard}>
@@ -154,6 +161,7 @@ function ProgramSheet({
           </li>
         ))}
       </ul>
+      {failed && <FieldError id={failedId}>{t("weighIn.saveFailed")}</FieldError>}
       <p className="px-1 text-(length:--text-secondary) leading-(--text-secondary--line-height) text-muted-foreground">
         {t("workouts.program.sheetNote")}
       </p>
