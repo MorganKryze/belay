@@ -33,10 +33,41 @@ const startupImages: Plugin = {
   ],
 };
 
+// The iPhone app loads this page from its own bundle, where no server sends the policy header,
+// so the page carries it. In a browser the server's stricter header applies as well. The app
+// talks to an instance at any https address, or to this machine during development. Build only:
+// the dev server injects inline scripts. First in the head: a policy in a meta tag only covers
+// what comes after it.
+const contentSecurityPolicy: Plugin = {
+  name: "content-security-policy",
+  apply: "build",
+  transformIndexHtml: () => [
+    {
+      tag: "meta",
+      attrs: {
+        "http-equiv": "Content-Security-Policy",
+        content: [
+          "default-src 'self'",
+          "script-src 'self'",
+          "style-src 'self' 'unsafe-inline'",
+          "img-src 'self' data: blob:",
+          "media-src 'self' blob:",
+          "connect-src 'self' https: http://localhost:* http://127.0.0.1:*",
+          "worker-src 'self'",
+          "base-uri 'self'",
+          "form-action 'self'",
+        ].join("; "),
+      },
+      injectTo: "head-prepend",
+    },
+  ],
+};
+
 export default defineConfig({
   plugins: [
     react(),
     startupImages,
+    contentSecurityPolicy,
     tailwindcss(),
     VitePWA({
       registerType: "prompt",
