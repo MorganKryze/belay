@@ -48,24 +48,31 @@ describe("a set's load", () => {
 });
 
 describe("a weigh-in", () => {
-  it("a weigh-in typed to the tenth of a pound reads back within 0.1 lb and passes isWeighingKg", () => {
-    for (let tenths = 441; tenths <= 8818; tenths++) {
-      const lb = tenths / 10;
+  it("a weigh-in typed on the quarter pound reads back exactly and passes isWeighingKg", () => {
+    for (let quarters = 177; quarters <= 3527; quarters++) {
+      const lb = quarters / 4;
       const kg = kgFromWeighing(lb, "lb");
       expect(isWeighingKg(kg), `${lb} lb → ${kg} kg`).toBe(true);
-      expect(Math.abs(weighingFromKg(kg, "lb") - lb)).toBeLessThanOrEqual(0.1 + 1e-9);
+      expect(weighingFromKg(kg, "lb"), `${lb} lb → ${kg} kg`).toBe(lb);
+    }
+  });
+
+  it("each quarter-pound step lands on a different stored 0.1 kg", () => {
+    for (let quarters = 177; quarters < 3527; quarters++) {
+      const kg = kgFromWeighing(quarters / 4, "lb");
+      expect(kgFromWeighing((quarters + 1) / 4, "lb"), `${quarters / 4} lb`).not.toBe(kg);
     }
   });
 
   it("kg weigh-ins pass through untouched", () => {
     expect(kgFromWeighing(80.4, "kg")).toBe(80.4);
     expect(weighingFromKg(80.4, "kg")).toBe(80.4);
-    expect(weighingFromKg(80.4, "lb")).toBe(177.3); // 177.25 lb
-    expect(weighingFromKg(80.38, "lb")).toBe(177.2);
+    expect(weighingFromKg(80.4, "lb")).toBe(177.25); // 177.25 lb
+    expect(weighingFromKg(80.2, "lb")).toBe(176.75); // 176.81 lb
   });
 
-  it("rangeIn rounds the weigh-in bounds inward to 44.1 and 881.8", () => {
-    expect(rangeIn(WEIGHING_RANGE_KG, "lb", 0.1)).toEqual({ min: 44.1, max: 881.8 });
+  it("rangeIn rounds the weigh-in bounds inward to 44.25 and 881.75", () => {
+    expect(rangeIn(WEIGHING_RANGE_KG, "lb", 0.25)).toEqual({ min: 44.25, max: 881.75 });
     expect(rangeIn({ min: 30, max: 300 }, "lb", 1)).toEqual({ min: 67, max: 661 });
     expect(rangeIn(WEIGHING_RANGE_KG, "kg", 0.1)).toEqual({ min: 20, max: 400 });
   });
@@ -74,7 +81,7 @@ describe("a weigh-in", () => {
 describe("steps and increments", () => {
   it("stepIn maps 0.1, 0.25, 0.5, 1, 2.5, 5", () => {
     expect([0.1, 0.25, 0.5, 1, 2.5, 5].map((s) => stepIn(s, "lb"))).toEqual([
-      0.1, 0.5, 1, 2, 5, 10,
+      0.25, 0.5, 1, 2, 5, 10,
     ]);
     expect(stepIn(2.5, "kg")).toBe(2.5);
   });

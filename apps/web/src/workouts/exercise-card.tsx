@@ -324,7 +324,9 @@ export function ExerciseCard({
   const targets = [
     formatSets(slot),
     ...(timed ? [] : [formatRir(slot, t)]),
-    ...(last ? [t("session.picker.lastTime", { value: formatLoad(last, t, i18n.language) })] : []),
+    ...(last
+      ? [t("session.picker.lastTime", { value: formatLoad(last, t, i18n.language, unit) })]
+      : []),
   ];
 
   if (slot.skipped)

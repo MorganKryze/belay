@@ -26,11 +26,14 @@ export const [readWeightUnit, setWeightUnit] = preference<WeightUnit>(
   "lb",
 );
 
-// Body weight to the tenth, always with its decimal: "80,4" in kg, "177,2" in lb.
-export const bodyWeight = (kg: number, locale: string, unit = readWeightUnit()): string =>
-  formatKg(weighingFromKg(kg, unit), locale);
+// The decimals of a body weight: the tenth in kg, the quarter pound in lb.
+export const weighingDigits = (unit: WeightUnit): number => (unit === "kg" ? 1 : 2);
 
-// "80,4 kg", "177,2 lb": the symbol is not translated. The no-break space keeps it on the line of
+// Body weight, always with its decimal: "80,4" in kg, "177,25" or "177,5" in lb.
+export const bodyWeight = (kg: number, locale: string, unit = readWeightUnit()): string =>
+  formatKg(weighingFromKg(kg, unit), locale, weighingDigits(unit));
+
+// "80,4 kg", "177,25 lb": the symbol is not translated. The no-break space keeps it on the line of
 // its number, as the body-weight strings always have.
 export const bodyWeightText = (kg: number, locale: string, unit = readWeightUnit()): string =>
   `${bodyWeight(kg, locale, unit)}\u00a0${unit}`;
