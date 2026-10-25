@@ -354,7 +354,7 @@ describe("the program switcher", () => {
     fireEvent.change(field, { target: { value: "Force\u0007" } });
     await act(async () => fireEvent.keyDown(field, { key: "Enter" }));
     expect(
-      await screen.findByText("Pas enregistré : cette modification n'est pas possible ici."),
+      await screen.findByText("Pas enregistré : cette modification n’est pas possible ici."),
     ).toBeTruthy();
     expect(screen.queryByText(/a changé ailleurs/)).toBeNull();
     expect(screen.getByRole("textbox", { name: "Nom du programme" })).toBe(field);
@@ -418,7 +418,7 @@ describe("the program switcher", () => {
       "Supprimer le programme « Force 4 jours » ?",
     );
     expect(plain(sheet.textContent)).toContain(
-      "Ses 4 séances partent avec lui. Programme de départ redevient actif. L'historique ne change pas.",
+      "Ses 4 séances partent avec lui. Programme de départ redevient actif. L’historique ne change pas.",
     );
     await act(async () =>
       fireEvent.click(within(sheet).getByRole("button", { name: "Supprimer le programme" })),

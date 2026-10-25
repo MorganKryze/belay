@@ -209,13 +209,13 @@ describe("Accueil's session card", () => {
     expect(region.textContent).not.toContain("Done today");
   });
 
-  it("in French: « Faite aujourd'hui · 48 min · 11 séries », « La prochaine : Séance B · Legs »", async () => {
+  it("in French: « Faite aujourd’hui · 48 min · 11 séries », « La prochaine : Séance B · Legs »", async () => {
     await i18n.changeLanguage("fr");
     await seed(ADA.id, DONE_A);
     fakeApi({ me: ADA });
     renderRoute("/");
     const region = await card(/^Séance A · Push$/);
-    expect(region.textContent).toContain("Faite aujourd'hui · 48 min · 11 séries");
+    expect(region.textContent).toContain("Faite aujourd’hui · 48 min · 11 séries");
     expect(
       within(region).getByRole("link", { name: "La prochaine\u202f: Séance B · Legs" }),
     ).toBeTruthy();
@@ -491,7 +491,7 @@ describe("Accueil on fixed days", () => {
     fakeApi({ me: ADA });
     renderRoute("/");
     const region = await card(/^Séance A · Push$/);
-    expect(region.textContent).toContain("Faite aujourd'hui · 48\u00A0min · 11 séries");
+    expect(region.textContent).toContain("Faite aujourd’hui · 48\u00A0min · 11 séries");
     expect(region.querySelector("svg.lucide-check")).toBeTruthy();
     const next = within(region).getByRole("link", { name: "Mercredi\u202f: Séance B · Legs" });
     expect(next.getAttribute("href")).toBe("/workouts/session/B?from=home");
@@ -505,9 +505,9 @@ describe("Accueil on fixed days", () => {
     fakeApi({ me: ADA });
     renderRoute("/");
     const region = await card(/^Séance A · Push$/);
-    expect(region.textContent).toContain("Faite aujourd'hui");
+    expect(region.textContent).toContain("Faite aujourd’hui");
     expect(
-      within(region).getByRole("link", { name: "Aujourd'hui\u202f: Séance B · Legs" }),
+      within(region).getByRole("link", { name: "Aujourd’hui\u202f: Séance B · Legs" }),
     ).toBeTruthy();
   });
 

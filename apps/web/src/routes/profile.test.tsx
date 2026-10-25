@@ -116,10 +116,10 @@ describe("Settings › Profile", () => {
     writeLastUser(ADA);
     fakeApi({ me: "down" });
     renderRoute("/settings/profile");
-    expect(await screen.findByText("Comment c'est choisi")).toBeTruthy();
+    expect(await screen.findByText("Comment c’est choisi")).toBeTruthy();
     expect(
       screen.getByText(
-        "Réglable de 0,25 à 1 %. Les recommandations publiées s'arrêtent à 1 % : l'app ne propose pas plus.",
+        "Réglable de 0,25 à 1 %. Les recommandations publiées s’arrêtent à 1 % : l’app ne propose pas plus.",
         { normalizer: (s) => s },
       ),
     ).toBeTruthy();

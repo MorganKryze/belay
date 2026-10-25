@@ -28,7 +28,7 @@ async function type(page: Page, label: string, value: string, prefilled: string)
 const main = (page: Page) => page.getByRole("main");
 // The screen above "Comment c'est calculé": the science text stays metric, as the spec keeps it.
 const tool = async (page: Page) =>
-  (await main(page).innerText()).split("Comment c'est calculé")[0]!;
+  (await main(page).innerText()).split("Comment c’est calculé")[0]!;
 
 test("1RM takes 225 lb and answers whole pounds", async ({ page }) => {
   await open(page, "/tools/one-rep-max");

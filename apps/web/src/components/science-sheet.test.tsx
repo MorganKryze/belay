@@ -74,7 +74,7 @@ describe("ScienceSheet", () => {
   it("speaks French", async () => {
     await i18n.changeLanguage("fr");
     render(<ScienceSheet toolId="one-rep-max" />);
-    expect(screen.getByText("Comment c'est calculé")).toBeTruthy();
+    expect(screen.getByText("Comment c’est calculé")).toBeTruthy();
     expect(screen.getByText("C'est une estimation, pas un test.")).toBeTruthy();
   });
 

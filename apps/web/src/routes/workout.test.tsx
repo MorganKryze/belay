@@ -1119,7 +1119,7 @@ describe("finish", () => {
   it("the nothing-logged sheet says it in French", async () => {
     await i18n.changeLanguage("fr");
     await openWith([]);
-    const sheet = await finish("Rien n'est noté pour l'instant");
+    const sheet = await finish("Rien n’est noté pour l’instant");
     expect(description(sheet)).toBe(
       "Si tu quittes, cette séance ne sera pas gardée. Tu pourras la commencer plus tard.",
     );
