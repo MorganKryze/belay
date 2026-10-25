@@ -1,5 +1,6 @@
 import { setSchedule } from "@belay/shared/training/program-edits";
-import { fixedWeek, proposeWeek, sessionDays } from "@belay/shared/training/schedule";
+import { fixedWeek, sessionDays } from "@belay/shared/training/schedule";
+import { proposeWeek } from "@belay/shared/training/schedule-week";
 import type {
   LetteredTemplate,
   Program,
@@ -77,6 +78,7 @@ export function RhythmRow({
         }
         value={t(week ? "workouts.program.rhythm.fixed" : "workouts.program.rhythm.rotation")}
         trailing="push"
+        valueBeside
         onClick={() => setSheet(true)}
       />
       {sheet && (

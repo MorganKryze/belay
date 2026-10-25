@@ -2,7 +2,7 @@ import type { Change } from "@belay/shared/sync/schema";
 import type { Schedule } from "@belay/shared/training/stored-program";
 import type { Slot } from "@belay/shared/training/workout";
 import { expect, type Page, test } from "@playwright/test";
-import { expectNoAxeViolations } from "./axe";
+import { expectNoAxeViolations, settled } from "./axe";
 import { ADA, fakeServer } from "./fake-server";
 
 // The program's rhythm on Programme: the « Rythme » row and its sheet, from rotation to fixed
@@ -86,6 +86,8 @@ async function open(page: Page, changes: Change[], theme?: "light" | "dark") {
   const server = await fakeServer(page, { changes });
   await page.goto("/workouts?tab=program");
   await expect(page.locator(".launch")).toBeHidden();
+  // The phone first draws its own starter program; nothing is checked before the server's lands.
+  await expect(page.getByRole("button", { name: /^Ma semaine / })).toBeVisible();
   if (theme === "dark") await expect(page.locator("html")).toHaveClass(/dark/);
   return server;
 }
@@ -198,14 +200,40 @@ test("Jours fixes proposed from the last weeks, Friday on Repos and Saturday C, 
 test.describe("at 360 px", () => {
   test.use({ viewport: { width: 360, height: 800 } });
 
-  test("a 6-day week shows the row's two lines whole", async ({ page }) => {
-    const week = [S[0], S[1], S[2], S[0], S[1], S[2], null];
-    await open(page, program(3, { mode: "fixed", days: week }));
-    await expect(row(page)).toBeVisible();
-    for (const text of ["Rythme", "6 séances par semaine", "Jours fixes"])
-      expect(await whole(page, text)).toBe(true);
-    expect(await overflow(page)).toBe(0);
-  });
+  // Decision 1: the value stays on the label's line at the right, the count on a second line,
+  // from 1 to 6 days, in both themes.
+  const week = [S[0], S[1], S[2], S[0], S[1], S[2], null];
+  for (const theme of ["light", "dark"] as const)
+    for (const n of [1, 2, 3, 4, 5, 6]) {
+      const count = n === 1 ? "1 séance par semaine" : `${n} séances par semaine`;
+      test(`${count}: Jours fixes beside Rythme, the count under it, ${theme}`, async ({
+        page,
+      }) => {
+        const days = week.map((d, i) => (i < n ? d : null));
+        await open(page, program(3, { mode: "fixed", days }), theme);
+        await expect(row(page)).toHaveText(new RegExp(`^Rythme\\s*${count}\\s*Jours fixes$`));
+        const box = async (text: string) =>
+          (await row(page).getByText(text, { exact: true }).boundingBox())!;
+        const [label, sub, value, r] = [
+          await box("Rythme"),
+          await box(count),
+          await box("Jours fixes"),
+          (await row(page).boundingBox())!,
+        ];
+        // The value on the label's line, at the right of the row, on one line.
+        expect(Math.abs(value.y - label.y)).toBeLessThanOrEqual(2);
+        expect(value.height).toBeLessThanOrEqual(label.height + 2);
+        expect(value.x).toBeGreaterThan(label.x + label.width);
+        expect(r.x + r.width - (value.x + value.width)).toBeLessThan(48);
+        // The count alone on the second line: two lines in all.
+        expect(sub.y).toBeGreaterThanOrEqual(label.y + label.height - 1);
+        expect(sub.height).toBeLessThan(label.height + 2);
+        expect(sub.y + sub.height).toBeLessThanOrEqual(r.y + r.height);
+        for (const text of ["Rythme", count, "Jours fixes"])
+          expect(await whole(page, text)).toBe(true);
+        expect(await overflow(page)).toBe(0);
+      });
+    }
 
   test("the chips fit, 44 px each, and arrows move between a day's chips", async ({ page }) => {
     await open(
@@ -214,6 +242,8 @@ test.describe("at 360 px", () => {
     );
     await row(page).click();
     await expect(day(page, "Mercredi")).toBeVisible();
+    // Measured once the sheet has risen: mid-slide a chip sits between pixels and reads 43.9999.
+    await settled(page);
     for (const chip of await sheet(page).getByRole("radio").all()) {
       const box = (await chip.boundingBox())!;
       expect(box.width).toBeGreaterThanOrEqual(44);
@@ -267,7 +297,7 @@ test("on a phone the note follows the row, and the editor's entry is not drawn",
     .getByText("Les exercices du programme se modifient sur ordinateur.")
     .boundingBox())!;
   expect(noteBox.y).toBeGreaterThanOrEqual(rowBox.y + rowBox.height);
-  await expect(page.getByRole("link", { name: "Modifier le programme" })).toBeHidden();
+  await expect(page.getByRole("link", { name: /^Modifier le programme/ })).toBeHidden();
 });
 
 test.describe("on a computer", () => {
@@ -275,8 +305,24 @@ test.describe("on a computer", () => {
 
   test("« Rythme » and « Modifier le programme » share one group", async ({ page }) => {
     await open(page, program(3));
-    const entry = page.getByRole("link", { name: "Modifier le programme" });
+    const entry = page.getByRole("link", { name: /^Modifier le programme / });
     await expect(entry).toBeVisible();
+    // The entry dressed as the row above: its icon square, then « séances, exercices, séries »
+    // under its label, in the same muted ink as the count under « Rythme ».
+    const [icon, rowIcon] = [
+      (await entry.locator("[data-slot=row-icon]").boundingBox())!,
+      (await row(page).locator("[data-slot=row-icon]").boundingBox())!,
+    ];
+    expect([icon.x, icon.width, icon.height]).toEqual([rowIcon.x, rowIcon.width, rowIcon.height]);
+    const label = (await entry.getByText("Modifier le programme", { exact: true }).boundingBox())!;
+    const sub = entry.getByText("séances, exercices, séries", { exact: true });
+    const subBox = (await sub.boundingBox())!;
+    expect(subBox.x).toBe(label.x);
+    expect(subBox.y).toBeGreaterThanOrEqual(label.y + label.height - 1);
+    const ink = (el: Element) => getComputedStyle(el).color;
+    expect(await sub.evaluate(ink)).toBe(
+      await row(page).getByText("A, B, C à la suite", { exact: true }).evaluate(ink),
+    );
     await expect(
       page.getByText("Les exercices du programme se modifient sur ordinateur."),
     ).toBeHidden();

@@ -4,7 +4,8 @@ import { planFor } from "@belay/shared/training/plan";
 import { chooseActive, programOrder } from "@belay/shared/training/program-edits";
 import { estimatedMinutes, plannedWorkSets } from "@belay/shared/training/program";
 import { type History, lastFinished, openWorkout, workSetsOf } from "@belay/shared/training/rules";
-import { type WeekCard, type Weekday, weekdayOf, weekOrder } from "@belay/shared/training/schedule";
+import { type Weekday, weekdayOf } from "@belay/shared/training/schedule";
+import { type WeekCard, weekOrder } from "@belay/shared/training/schedule-week";
 import {
   byPosition,
   type LetteredTemplate,
@@ -14,7 +15,7 @@ import {
   type StoredPrograms,
 } from "@belay/shared/training/stored-program";
 import { Link } from "@tanstack/react-router";
-import { Check } from "lucide-react";
+import { Check, PenLine } from "lucide-react";
 import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { GroupedList, RowButton, RowLink } from "@/components/grouped-list";
@@ -43,7 +44,13 @@ export function ProgramPanel({ account }: { account: OpenAccount | null }) {
   // its group, and on a phone the note follows it.
   const rhythm = account && program && program.rotation.length > 0;
   const edit = (
-    <RowLink to="/workouts/program" label={t("workouts.program.edit")} trailing="push" />
+    <RowLink
+      to="/workouts/program"
+      icon={PenLine}
+      label={t("workouts.program.edit")}
+      sub={t("workouts.program.editSub")}
+      trailing="push"
+    />
   );
   return (
     <div className="flex flex-col gap-3">

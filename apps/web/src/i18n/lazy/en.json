@@ -268,6 +268,7 @@
       "daysAgo_one": "{{count}} day ago",
       "daysAgo_other": "{{count}} days ago",
       "edit": "Edit the program",
+      "editSub": "sessions, exercises, sets",
       "active_one": "Active program · {{count}} session",
       "active_other": "Active program · {{count}} sessions",
       "sheetTitle": "Active program",

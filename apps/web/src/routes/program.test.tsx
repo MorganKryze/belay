@@ -420,7 +420,7 @@ describe("the editor's entry on Programme", () => {
     renderRoute("/workouts?tab=program");
     const note = await screen.findByText("The program's exercises are edited on a computer.");
     expect(note.className.split(" ")).toContain("lg:hidden");
-    const entry = screen.getByRole("link", { name: "Edit the program" });
+    const entry = screen.getByRole("link", { name: "Edit the program sessions, exercises, sets" });
     expect(entry.getAttribute("href")).toBe("/workouts/program");
     expect(entry.parentElement!.className.split(" ")).toEqual(
       expect.arrayContaining(["hidden", "lg:block"]),

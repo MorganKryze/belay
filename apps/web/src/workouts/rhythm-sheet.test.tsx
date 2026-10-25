@@ -115,6 +115,22 @@ async function edit(build: (p: StoredPrograms) => Change[] | null) {
   db.close();
 }
 const fixed = (days: (string | null)[]): Schedule => ({ mode: "fixed", days });
+// D · Bras, then E · Mollets, after the seeded A, B, C.
+const EXTRA = [
+  ["0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7f0d", "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7f1d", "Bras"],
+  ["0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7f0e", "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7f1e", "Mollets"],
+] as const;
+async function addExtra(which: 0 | 1) {
+  const [session, slot, name] = EXTRA[which];
+  await edit((p) => addSession(p, session, SEED_PROGRAM_ID, EDIT_AT));
+  await edit(() => renameSession(session, name, EDIT_AT));
+  await edit((p) => addSlot(p, slot, session, { id: "ds:0025", measure: "reps" }, EDIT_AT));
+}
+// Legs and Glutes set aside: A · Push alone.
+async function pushAlone() {
+  await edit((p) => placeSession(p, LEGS, null, 0, EDIT_AT));
+  await edit((p) => placeSession(p, GLUTES, null, 0, EDIT_AT));
+}
 const stored = async () => {
   const db = await openAccountDb(ADA.id);
   const p = await readPrograms(db);
@@ -176,6 +192,22 @@ describe("the « Rythme » row", () => {
     expect((await row()).textContent).toBe("Rythme 3 séances par semaine Jours fixes");
   });
 
+  it("one session alone reads A à chaque fois", async () => {
+    await pushAlone();
+    renderRoute("/workouts?tab=program");
+    expect((await row()).textContent).toBe("Rythme A à chaque fois En rotation");
+  });
+
+  it("four sessions read A, B, C, D à la suite, five A à E à la suite", async () => {
+    await addExtra(0);
+    renderRoute("/workouts?tab=program");
+    expect((await row()).textContent).toBe("Rythme A, B, C, D à la suite En rotation");
+    cleanup();
+    await addExtra(1);
+    renderRoute("/workouts?tab=program");
+    expect((await row()).textContent).toBe("Rythme A à E à la suite En rotation");
+  });
+
   it("a fixed week naming no session of the rotation reads En rotation", async () => {
     await edit((p) => placeSession(p, LEGS, null, 0, EDIT_AT));
     await edit(() =>
@@ -193,7 +225,7 @@ describe("the « Rythme » row", () => {
     await settle();
     expect(screen.queryByRole("button", { name: /^Rythme/ })).toBeNull();
     // On a computer the editor's entry stays in its own group.
-    const entry = screen.getByRole("link", { name: "Modifier le programme" });
+    const entry = screen.getByRole("link", { name: /^Modifier le programme / });
     expect(entry.parentElement!.className.split(" ")).toEqual(
       expect.arrayContaining(["hidden", "lg:block"]),
     );
@@ -208,8 +240,11 @@ describe("the « Rythme » row", () => {
   it("from 1 024 px the editor's entry shares the row's group, the note follows the row", async () => {
     renderRoute("/workouts?tab=program");
     const r = await row();
-    const entry = screen.getByRole("link", { name: "Modifier le programme" });
+    const entry = screen.getByRole("link", { name: /^Modifier le programme / });
     expect(entry.closest("div")!.parentElement).toBe(r.parentElement);
+    // A pencil and what is edited there, as the row above it has its icon and line.
+    expect(entry.textContent).toBe("Modifier le programme séances, exercices, séries");
+    expect(entry.querySelector("[data-slot=row-icon] svg.lucide-pen-line")).not.toBeNull();
     const note = screen.getByText("Les exercices du programme se modifient sur ordinateur.");
     expect(r.compareDocumentPosition(note) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
@@ -300,15 +335,42 @@ describe("the sheet « Rythme du programme »", () => {
     expect(chosen(sheet)).toEqual(["B", "C", "Repos", "Repos", "Repos", "Repos", "Repos"]);
   });
 
+  it("one session gets the chips A and Repos", async () => {
+    await pushAlone();
+    renderRoute("/workouts?tab=program");
+    const sheet = await openSheet();
+    fireEvent.click(within(sheet).getByRole("radio", { name: "Jours fixes" }));
+    const monday = await within(sheet).findByRole("radiogroup", { name: "Lundi" });
+    expect(
+      within(monday)
+        .getAllByRole("radio")
+        .map((r) => r.textContent),
+    ).toEqual(["A", "Repos"]);
+    expect(within(sheet).getByText("A · Push")).toBeTruthy();
+  });
+
+  it("from 4 sessions each day is a menu row, the starting week Monday, Tuesday, Thursday, Friday", async () => {
+    await addExtra(0);
+    renderRoute("/workouts?tab=program");
+    const sheet = await openSheet();
+    fireEvent.click(within(sheet).getByRole("radio", { name: "Jours fixes" }));
+    expect(
+      (await within(sheet).findAllByRole("combobox")).map((r) => r.getAttribute("aria-label")),
+    ).toEqual([
+      "Lundi · A · Push",
+      "Mardi · B · Legs",
+      "Mercredi · Repos",
+      "Jeudi · C · Fessiers + tirage léger",
+      "Vendredi · D · Bras",
+      "Samedi · Repos",
+      "Dimanche · Repos",
+    ]);
+    expect(within(sheet).queryByRole("radiogroup", { name: "Lundi" })).toBeNull();
+  });
+
   it("with 5 sessions each day is a menu row listing Repos then A to E", async () => {
-    for (const [session, slot, name] of [
-      ["0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7f0d", "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7f1d", "Bras"],
-      ["0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7f0e", "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7f1e", "Mollets"],
-    ] as const) {
-      await edit((p) => addSession(p, session, SEED_PROGRAM_ID, EDIT_AT));
-      await edit(() => renameSession(session, name, EDIT_AT));
-      await edit((p) => addSlot(p, slot, session, { id: "ds:0025", measure: "reps" }, EDIT_AT));
-    }
+    await addExtra(0);
+    await addExtra(1);
     await edit(() =>
       setSchedule(SEED_PROGRAM_ID, fixed([PUSH, null, null, null, null, null, null]), EDIT_AT),
     );

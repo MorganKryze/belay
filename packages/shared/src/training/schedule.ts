@@ -1,6 +1,6 @@
-// A program's week on fixed days: the session each weekday holds, what today asks for, the next
-// session, and a first week to propose. Zod-free: Accueil reads it at startup.
-import { addDays, type ISODate, isoWeekStart, toISODate } from "../body/dates";
+// A program's week on fixed days: the session each weekday holds, what today asks for and the next
+// session. Zod-free: Accueil reads it at startup, so what only Programme needs is in schedule-week.
+import { addDays, type ISODate, toISODate } from "../body/dates";
 import {
   DAYS,
   type LetteredTemplate,
@@ -54,13 +54,14 @@ export type DayPlan<W extends Done = Done> =
   | { kind: "rest"; next: Planned };
 
 // A session counts on the calendar day it started, where the person is.
-const dayOf = (w: Done): ISODate => toISODate(new Date(w.startedAt));
+export const dayOf = (w: Done): ISODate => toISODate(new Date(w.startedAt));
 
 // Finished and kept; one recorded by letter only counts since the program became active, as a
 // letter names another session elsewhere.
-const counts = (w: Done, since: number): boolean =>
+export const counts = (w: Done, since: number): boolean =>
   w.endedAt !== null && !w.removed && (!!w.sessionId || Date.parse(w.startedAt) >= since);
-const sinceOf = (activeAt: string | null) => (activeAt === null ? -Infinity : Date.parse(activeAt));
+export const sinceOf = (activeAt: string | null) =>
+  activeAt === null ? -Infinity : Date.parse(activeAt);
 
 // The nearest session day 1 to 7 days from `day`, forward or back; a fixed week holds one.
 const sessionDay = (week: Week, day: ISODate, step: 1 | -1): ISODate =>
@@ -107,86 +108,4 @@ export function plannedNext(
     : plan.kind === "due"
       ? plan.session
       : plan.next.session;
-}
-
-export interface WeekCard {
-  session: LetteredTemplate;
-  next: ISODate | null;
-  days: readonly Weekday[];
-}
-
-// The rotation by each session's next day, from today (skipped once today's session is done), so
-// the first card is plannedNext's; sessions with no day follow in rotation order.
-export function weekOrder(
-  workouts: readonly Done[],
-  p: StoredPrograms,
-  rotation: readonly LetteredTemplate[],
-  today: ISODate,
-): WeekCard[] | null {
-  const week = fixedWeek(p, rotation);
-  if (!week) return null;
-  const plan = dayPlan(workouts, p, rotation, today);
-  const doneToday = plan.kind === "done" ? plan.session.sessionId : null;
-  const cards = rotation.map((session) => {
-    const from = session.sessionId === doneToday ? 1 : 0;
-    const k = [0, 1, 2, 3, 4, 5, 6, 7].find(
-      (k) => k >= from && week[weekdayOf(addDays(today, k))]?.sessionId === session.sessionId,
-    );
-    return {
-      session,
-      next: k === undefined ? null : addDays(today, k),
-      days: daysOf(week, session.sessionId),
-    };
-  });
-  // A stable sort keeps the rotation order among sessions with no day.
-  return cards.sort((a, b) =>
-    a.next === b.next ? 0 : a.next === null ? 1 : b.next === null || a.next < b.next ? -1 : 1,
-  );
-}
-
-// The first week offered with no history, index = sessions - 1: spread over the week, Monday first.
-export const STARTING_DAYS: readonly (readonly Weekday[])[] = [
-  [0],
-  [0, 3],
-  [0, 2, 4],
-  [0, 1, 3, 4],
-  [0, 1, 2, 4, 5],
-  [0, 1, 2, 3, 4, 5],
-  [0, 1, 2, 3, 4, 5, 6],
-];
-
-// A weekday takes the session done on it in at least 2 of the last 4 weeks (distinct weeks, so a
-// second start on one day adds nothing), the most often, a tie to the earlier letter. With no
-// weekday learned, the starting pattern, sessions in rotation order; past 7, the first 7.
-export function proposeWeek(
-  workouts: readonly Done[],
-  rotation: readonly LetteredTemplate[],
-  today: ISODate,
-  activeAt: string | null,
-): { days: (string | null)[]; learned: boolean } {
-  const days: (string | null)[] = Array<string | null>(DAYS).fill(null);
-  if (rotation.length === 0) return { days, learned: false };
-  const from = addDays(today, -28);
-  const since = sinceOf(activeAt);
-  const weeks = Array.from({ length: DAYS }, () => rotation.map(() => new Set<ISODate>()));
-  for (const w of workouts) {
-    const on = dayOf(w);
-    if (!counts(w, since) || on < from || on >= today) continue;
-    const at = rotation.findIndex((t) => startedAs(w, t));
-    if (at >= 0) weeks[weekdayOf(on)]![at]!.add(isoWeekStart(on));
-  }
-  weeks.forEach((bySession, day) => {
-    let most = 1;
-    bySession.forEach((seen, at) => {
-      if (seen.size > most) {
-        most = seen.size;
-        days[day] = rotation[at]!.sessionId;
-      }
-    });
-  });
-  if (days.some((d) => d !== null)) return { days, learned: true };
-  STARTING_DAYS[Math.min(rotation.length, DAYS) - 1]!.forEach(
-    (day, at) => (days[day] = rotation[at]!.sessionId),
-  );
-  return { days, learned: false };
 }
