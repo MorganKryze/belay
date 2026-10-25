@@ -1,3 +1,4 @@
+import "@/i18n/lazy";
 import type { ISODate } from "@belay/shared/body/dates";
 import type { IntakeLog } from "@belay/shared/body/intake";
 import { MEASURE_FIELDS, type Measure, measureOf } from "@belay/shared/body/measures";

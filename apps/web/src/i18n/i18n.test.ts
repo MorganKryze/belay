@@ -92,4 +92,20 @@ describe("translations", () => {
     ];
     for (const main of [mainEn, mainFr]) expect(tools.filter((g) => g in main)).toEqual([]);
   });
+
+  it("start with only Home's share of Body, Settings and the weigh-in sheet", () => {
+    for (const main of [mainEn, mainFr]) {
+      expect(["chart", "settings", "profile"].filter((g) => g in main)).toEqual([]);
+      expect(Object.keys(main.body)).toEqual(["inRange"]);
+      expect(Object.keys(main.weighIn).sort()).toEqual([
+        "retry",
+        "saveFailed",
+        "toastDeleted",
+        "toastSaved",
+        "today",
+        "undo",
+        "yesterday",
+      ]);
+    }
+  });
 });

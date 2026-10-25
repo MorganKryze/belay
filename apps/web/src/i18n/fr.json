@@ -16,36 +16,7 @@
   },
   "offline": "Tu es hors ligne.",
   "body": {
-    "title": "Corps",
-    "signedOut": "Le suivi de tes pesées demande un compte. Les outils restent utilisables sans compte.",
-    "period": "Période",
-    "periods": {
-      "month": "1 mois",
-      "quarter": "3 mois",
-      "all": "Tout"
-    },
-    "inRange": "dans ta fourchette",
-    "weeks": "Tes semaines",
-    "thisWeek": "Cette semaine",
-    "toFollow": "à suivre",
-    "previousInsufficient": "semaine d'avant insuffisante",
-    "firstWeek": "première semaine",
-    "tooFew_one": "{{count}} pesée, 4 minimum",
-    "tooFew_other": "{{count}} pesées, 4 minimum",
-    "history": "Historique",
-    "firstDays_one": "Encore {{count}} pesée cette semaine",
-    "firstDays_other": "Encore {{count}} pesées cette semaine",
-    "firstDaysBody": "La moyenne 7 jours apparaît dès 4 pesées sur 7 jours, et la perte par semaine après deux semaines complètes. Le poids d'un jour seul varie trop pour dire quelque chose.",
-    "lossText": "{{value}} %",
-    "gainText": "{{value}} % de prise"
-  },
-  "chart": {
-    "daily": "Pesée du jour",
-    "average": "Moyenne 7 jours",
-    "summary": "Pesées du {{from}} au {{to}}. Moyenne 7 jours : {{average}}. Perte par semaine : {{loss}}.",
-    "hint": "Flèches gauche et droite : jour par jour. Entrée : modifier la pesée.",
-    "weighIn": "Pesée {{value}} {{unit}}",
-    "movingAverage": "Moyenne 7 j {{value}} {{unit}}"
+    "inRange": "dans ta fourchette"
   },
   "account": {
     "unavailable": "Ce navigateur ne permet pas à Belay d'enregistrer sur l'appareil : le suivi n'est pas disponible ici. Les outils restent utilisables."
@@ -81,15 +52,8 @@
     "stable": "stable"
   },
   "weighIn": {
-    "weight": "Poids",
     "today": "Aujourd'hui",
     "yesterday": "Hier",
-    "date": "Date de la pesée",
-    "prefilled": "pré-rempli avec ta dernière pesée",
-    "save": "Enregistrer",
-    "delete": "Supprimer cette pesée",
-    "close": "Fermer",
-    "outOfRange": "Saisis un poids entre {{min}} et {{max}} {{unit}}.",
     "toastSaved": "Pesée enregistrée",
     "toastDeleted": "Pesée supprimée",
     "saveFailed": "Pas pu enregistrer sur ce téléphone. Réessaie.",
@@ -103,33 +67,6 @@
     "body": "Corps",
     "tools": "Outils",
     "settings": "Réglages"
-  },
-  "settings": {
-    "title": "Réglages",
-    "language": "Langue",
-    "theme": "Thème",
-    "themes": {
-      "light": "Clair",
-      "dark": "Sombre",
-      "system": "Système"
-    },
-    "version": "Belay {{version}}",
-    "signOut": "Se déconnecter",
-    "signOutFailed": "Déconnexion impossible pour le moment. Vérifie ta connexion et réessaie.",
-    "signOutPending_one": "{{count}} saisie pas encore envoyée : elle partira à ta prochaine connexion sur cet appareil.",
-    "signOutPending_other": "{{count}} saisies pas encore envoyées : elles partiront à ta prochaine connexion sur cet appareil.",
-    "signOutUnknown": "Des saisies n'ont peut-être pas encore été envoyées : elles partiront à ta prochaine connexion sur cet appareil.",
-    "signOutAnyway": "Se déconnecter quand même",
-    "cancel": "Annuler"
-  },
-  "profile": {
-    "title": "Profil",
-    "range": "Ta fourchette de perte",
-    "rangeLead": "Par semaine, en % de ton poids moyen. Sert à dire « dans ta fourchette » sur Corps.",
-    "min": "Au moins",
-    "max": "Au plus",
-    "rangeNote": "Réglable de 0,25 à 1 %. Les recommandations publiées s'arrêtent à 1 % : l'app ne propose pas plus.",
-    "howChosen": "Comment c'est choisi"
   },
   "fallback": {
     "notFoundTitle": "Page introuvable",

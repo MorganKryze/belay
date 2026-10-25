@@ -16,36 +16,7 @@
   },
   "offline": "You're offline.",
   "body": {
-    "title": "Body",
-    "signedOut": "Tracking your weigh-ins needs an account. The tools work without one.",
-    "period": "Period",
-    "periods": {
-      "month": "1 month",
-      "quarter": "3 months",
-      "all": "All"
-    },
-    "inRange": "in your range",
-    "weeks": "Your weeks",
-    "thisWeek": "This week",
-    "toFollow": "ongoing",
-    "previousInsufficient": "week before insufficient",
-    "firstWeek": "first week",
-    "tooFew_one": "{{count}} weigh-in, 4 minimum",
-    "tooFew_other": "{{count}} weigh-ins, 4 minimum",
-    "history": "History",
-    "firstDays_one": "{{count}} more weigh-in this week",
-    "firstDays_other": "{{count}} more weigh-ins this week",
-    "firstDaysBody": "The 7-day average appears from 4 weigh-ins in 7 days, and the loss per week after two complete weeks. A single day's weight varies too much to say anything.",
-    "lossText": "{{value}}%",
-    "gainText": "{{value}}% gain"
-  },
-  "chart": {
-    "daily": "Daily weigh-in",
-    "average": "7-day average",
-    "summary": "Weigh-ins from {{from}} to {{to}}. 7-day average: {{average}}. Loss per week: {{loss}}.",
-    "hint": "Left and right arrows: day by day. Enter: edit the weigh-in.",
-    "weighIn": "Weigh-in {{value}} {{unit}}",
-    "movingAverage": "7-day avg {{value}} {{unit}}"
+    "inRange": "in your range"
   },
   "account": {
     "unavailable": "This browser won't let Belay save on the device, so tracking isn't available here. The tools still work."
@@ -81,15 +52,8 @@
     "stable": "stable"
   },
   "weighIn": {
-    "weight": "Weight",
     "today": "Today",
     "yesterday": "Yesterday",
-    "date": "Date of the weigh-in",
-    "prefilled": "prefilled with your last weigh-in",
-    "save": "Save",
-    "delete": "Delete this weigh-in",
-    "close": "Close",
-    "outOfRange": "Enter a weight between {{min}} and {{max}} {{unit}}.",
     "toastSaved": "Weigh-in saved",
     "toastDeleted": "Weigh-in deleted",
     "saveFailed": "Couldn't save on this phone. Try again.",
@@ -103,33 +67,6 @@
     "body": "Body",
     "tools": "Tools",
     "settings": "Settings"
-  },
-  "settings": {
-    "title": "Settings",
-    "language": "Language",
-    "theme": "Theme",
-    "themes": {
-      "light": "Light",
-      "dark": "Dark",
-      "system": "System"
-    },
-    "version": "Belay {{version}}",
-    "signOut": "Sign out",
-    "signOutFailed": "Couldn't sign you out. Check your connection and try again.",
-    "signOutPending_one": "{{count}} entry not sent yet: it will go at your next sign-in on this device.",
-    "signOutPending_other": "{{count}} entries not sent yet: they will go at your next sign-in on this device.",
-    "signOutUnknown": "Some entries may not have been sent yet: they will go at your next sign-in on this device.",
-    "signOutAnyway": "Sign out anyway",
-    "cancel": "Cancel"
-  },
-  "profile": {
-    "title": "Profile",
-    "range": "Your loss range",
-    "rangeLead": "Per week, as a % of your average weight. Used to say “in your range” on Body.",
-    "min": "At least",
-    "max": "At most",
-    "rangeNote": "Adjustable from 0.25 to 1%. Published recommendations stop at 1%: the app offers no more.",
-    "howChosen": "How it's chosen"
   },
   "fallback": {
     "notFoundTitle": "Page not found",
