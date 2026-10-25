@@ -85,10 +85,10 @@ export function staleKeys<C extends { at: string }>(
   return stale;
 }
 
-// One change over a slot's stored row, field by field, at its clamped time (SY2): the row it
+// One change over a slot's stored row, field by field, at its clamped time: the row it
 // leaves; the same row when what is stored is as recent (a creation is written once); null when it
 // is refused, the row going back and the phone reverting. Refused: a rep range or warm-ups written
-// for another measure than the row's, which would be read in the wrong unit (ED4), or a merged
+// for another measure than the row's, which would be read in the wrong unit, or a merged
 // slot out of its bounds (decision 7). The server and the phone both merge with it.
 export function mergeSlotChange(
   row: ProgramSlotRow,
@@ -123,7 +123,7 @@ export function mergeSlotChange(
       : change.field;
     next = { ...row, [key]: change.value, [atKey]: at };
   }
-  // A timed slot takes no warm-up (ED4), whichever change brought it.
+  // A timed slot takes no warm-up, whichever change brought it.
   if (next.measure === "seconds" && next.warmupSets > 0) return null;
   return isProgramSlot({ ...next, measure: next.measure ?? undefined }) ? next : null;
 }

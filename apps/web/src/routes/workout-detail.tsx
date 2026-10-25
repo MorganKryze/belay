@@ -35,7 +35,7 @@ import {
 import { NotFound } from "./fallbacks";
 
 // A finished session (§4.4): its exercises and sets as they were done, its records and notes;
-// « Modifier », up in the bar, opens the editor (spec D9), and it can still be removed whole.
+// « Modifier », up in the bar, opens the editor, and it can still be removed whole.
 export function WorkoutDetail() {
   const account = useAccount();
   if (account.kind !== "open") return <NotFound />;

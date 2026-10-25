@@ -39,7 +39,7 @@ test("a new device never says pas encore saisie before its first sync lands", as
   await weighIn.waitFor({ state: "attached" });
   await expect.poll(() => asked).toBe(true);
   const blank = (await weighIn.boundingBox())!.height;
-  await expect(page.getByRole("region", { name: "Aujourd'hui" })).toHaveAttribute(
+  await expect(page.getByRole("region", { name: "Aujourd’hui" })).toHaveAttribute(
     "aria-busy",
     "true",
   );
@@ -68,13 +68,13 @@ const tokenColour = (page: import("@playwright/test").Page, name: string) =>
 const colour = (l: import("@playwright/test").Locator) =>
   l.evaluate((e) => getComputedStyle(e).color);
 
-test("« Aujourd'hui » heads one grouped list of 56 px rows with 28 px icon squares and 16 px chevrons", async ({
+test("« Aujourd’hui » heads one grouped list of 56 px rows with 28 px icon squares and 16 px chevrons", async ({
   page,
 }) => {
   await fakeServer(page);
   await page.goto("/");
-  const region = page.getByRole("region", { name: "Aujourd'hui" });
-  await expect(region.getByRole("heading", { name: "Aujourd'hui" })).toHaveAttribute("id", "today");
+  const region = page.getByRole("region", { name: "Aujourd’hui" });
+  await expect(region.getByRole("heading", { name: "Aujourd’hui" })).toHaveAttribute("id", "today");
   await expect(region.getByRole("link", { name: /^Compléments/ })).toBeVisible();
   const rows = region.locator("button, a");
   await expect(rows).toHaveCount(4);
@@ -118,10 +118,10 @@ test("the empty supplements row is muted, never orange", async ({ page }) => {
   await fakeServer(page);
   await page.goto("/");
   const link = page.getByRole("link", { name: /^Compléments/ });
-  await expect(link).toContainText("aucun pour l'instant");
+  await expect(link).toContainText("aucun pour l’instant");
   await expect(link).toHaveAttribute("href", "/settings/supplements");
   const muted = await tokenColour(page, "--muted-foreground");
-  expect(await colour(link.getByText("aucun pour l'instant"))).toBe(muted);
+  expect(await colour(link.getByText("aucun pour l’instant"))).toBe(muted);
   const primary = await tokenColour(page, "--primary");
   const inks = await link.evaluate((root) =>
     [root, ...root.querySelectorAll("*")].map((e) => getComputedStyle(e).color),

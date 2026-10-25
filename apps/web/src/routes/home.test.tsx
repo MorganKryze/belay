@@ -161,7 +161,7 @@ describe("Home sign-in failure", () => {
     fakeApi({ me: null });
     renderRoute("/?signin=denied");
     expect((await screen.findByRole("alert")).textContent).toBe(
-      "Ton compte n'a pas accès à Belay. Demande l'accès à la personne qui gère cette instance.",
+      "Ton compte n’a pas accès à Belay. Demande l’accès à la personne qui gère cette instance.",
     );
   });
 

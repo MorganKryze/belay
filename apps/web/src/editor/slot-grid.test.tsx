@@ -232,7 +232,7 @@ describe("the slot grid", () => {
       [BENCH, "sets", "11", "Entre 1 et 10"],
       [BENCH, "reps", "6-101", "Entre 1 et 100, par exemple 6-10"],
       [BENCH, "rir", "5", "Entre 0 et 4, par exemple 1-2"],
-      [BENCH, "rest", "16 min", "Jusqu'à 15 min, par exemple 2:30"],
+      [BENCH, "rest", "16 min", "Jusqu’à 15 min, par exemple 2:30"],
       [BENCH, "warmups", "four", "Entre 0 et 3"],
     ];
     for (const [exercise, column, typed, error] of cases) {

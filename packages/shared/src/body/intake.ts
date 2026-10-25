@@ -23,7 +23,7 @@ const mean = (values: number[]) =>
 
 // The week from Monday `weekStart`: the calorie average over the days that have one (their
 // count is `days`), the protein average over the days that have protein. No threshold, no
-// verdict (D6): the analysis waits for M5.
+// verdict: the analysis waits for M5.
 export function weeklyIntake(
   logs: readonly IntakeLog[],
   weekStart: ISODate,

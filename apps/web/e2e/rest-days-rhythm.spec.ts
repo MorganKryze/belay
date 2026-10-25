@@ -140,7 +140,7 @@ test("Jours fixes proposed from the last weeks, Friday on Repos and Saturday C, 
   await expect(sheet(page).getByRole("radio", { name: "En rotation" })).toBeChecked();
   await sheet(page).getByRole("radio", { name: "Jours fixes" }).click();
   await expect(
-    sheet(page).getByText("Proposé d'après tes dernières semaines. Un tap change un jour."),
+    sheet(page).getByText("Proposé d’après tes dernières semaines. Un tap change un jour."),
   ).toBeVisible();
   const picked = ["A", "Repos", "B", "Repos", "C", "Repos", "Repos"];
   for (const [i, name] of DAYS.entries())
@@ -354,7 +354,7 @@ test.describe("accessibility", () => {
     test(`the rhythm sheet in rotation has no axe violation, ${theme}`, async ({ page }) => {
       await open(page, program(3), theme);
       await row(page).click();
-      await expect(sheet(page).getByText(/^Les séances s'enchaînent/)).toBeVisible();
+      await expect(sheet(page).getByText(/^Les séances s’enchaînent/)).toBeVisible();
       await expectNoAxeViolations(page);
     });
 

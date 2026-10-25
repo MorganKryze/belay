@@ -88,7 +88,7 @@ export function Home() {
   );
 }
 
-// Home opens on the day's date and its session, then the gestures of the day (D1) and the trend;
+// Home opens on the day's date and its session, then the gestures of the day and the trend;
 // Body holds the rest.
 function SignedInHome({ account }: { account: OpenAccount }) {
   const { t, i18n } = useTranslation();

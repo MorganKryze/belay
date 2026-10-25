@@ -33,16 +33,16 @@ import {
 } from "./sync";
 
 // The programs of one account, written inside the sync's locked transaction: field by field, the
-// last write winning (SY2); a creation written once; a change naming a program or a session the
-// account lacks refused alone (SY5); creations and restorations past an abuse limit refused alone
-// (PM11), counted on the live rows here, so two devices cannot pass one together.
+// last write winning; a creation written once; a change naming a program or a session the
+// account lacks refused alone; creations and restorations past an abuse limit refused alone
+//, counted on the live rows here, so two devices cannot pass one together.
 
 const at = (value: string | null) => (value === null ? null : new Date(value));
 const byIndex = (a: { index: number }, b: { index: number }) => a.index - b.index;
 const refuse = (out: Ctx["out"], c: { index: number }, reason: Rejected["reason"]) =>
   out.rejected.push({ index: c.index, reason });
 
-// The starting program for an account that has none (SD2), before any change of the sync applies.
+// The starting program for an account that has none, before any change of the sync applies.
 // The pointer's insert is the test: it adds a row only for an account never given the program, and
 // the program row goes in the same statement, its key checked once both exist. Every time stays
 // null, so any edit, made before or after, wins over the seed's values.
@@ -79,7 +79,7 @@ export async function seedProgram({ tx, userId }: Ctx): Promise<void> {
 }
 
 // Programs: created once, then name, schedule and removal merge apart. The active program is never
-// removed (ED2): removals wait until the batch's choice of active program is written, so a switch
+// removed: removals wait until the batch's choice of active program is written, so a switch
 // then a removal in one batch is taken, and a removal racing another device's choice is refused.
 export async function writePrograms(
   ctx: Ctx,
@@ -327,8 +327,8 @@ function vetCreations<C extends { id: string; index: number }>(
 }
 
 // Sessions: created once, then name, place and removal merge apart. The place (a program and a
-// position, or the collection) is one field, so a move never lands half done (D2). A program
-// named must be one of the account's; 200 live sessions per account, 26 per rotation (PM11).
+// position, or the collection) is one field, so a move never lands half done. A program
+// named must be one of the account's; 200 live sessions per account, 26 per rotation.
 export async function writeProgramSessions(
   ctx: Ctx,
   changes: Indexed<ProgramSessionChange>[],
@@ -553,7 +553,7 @@ type SlotEdit = Indexed<Exclude<ProgramSlotChange, { field: "create" }>>;
 const timeOf = (c: SlotEdit) => `${c.field}At` as const;
 
 // Slots: created once in a session of the account, of an exercise of the library in its measure, a
-// timed one with no warm-up, 30 live ones per session (PM11). Each slot's changes then merge over
+// timed one with no warm-up, 30 live ones per session. Each slot's changes then merge over
 // its stored row with mergeSlotInBatch, as the phone merges them, and the row is written once.
 export async function writeProgramSlots(
   ctx: Ctx,

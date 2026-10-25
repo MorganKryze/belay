@@ -32,7 +32,7 @@ type SheetProps = {
   onOpen: (code: string, date: ISODate, minutes: number) => void;
 };
 
-// « + Saisir une séance » (spec D10): the day, the session of the active rotation and its
+// « + Saisir une séance »: the day, the session of the active rotation and its
 // duration, estimated until the person changes it; then the editor, to enter the sets. With no
 // rotation there is nothing to log: the sheet closes at once.
 export function LogSessionSheet(props: SheetProps) {

@@ -14,7 +14,7 @@
     },
     "pauseStops": "En pause",
     "pauseStopsOptions": {
-      "all": "Tout s'arrête",
+      "all": "Tout s’arrête",
       "session": "Le repos continue"
     },
     "homeTrend": "Tendance",
@@ -59,7 +59,7 @@
     "supplementsCount": "{{count}} dans ta liste",
     "profileSub": "Profil · taille, âge, fourchette de perte",
     "signOutTitle": "Se déconnecter ?",
-    "signOutNothing": "Rien n'attend d'être envoyé.",
+    "signOutNothing": "Rien n’attend d’être envoyé.",
     "rejected": {
       "title": "Saisies refusées",
       "note": "Le serveur les a refusées : elles ne sont plus en attente. Saisis-les à nouveau si besoin.",
@@ -95,8 +95,8 @@
         "refused": "Refusée par le serveur",
         "unknown_exercise": "Exercice inconnu du serveur",
         "too_many_sets": "Plus de 150 séries dans la séance",
-        "wrong_measure": "Compté en répétitions pour un exercice chronométré, ou l'inverse",
-        "plan_shrank": "Moins d'exercices que la séance enregistrée (un exercice n'est jamais retiré)"
+        "wrong_measure": "Compté en répétitions pour un exercice chronométré, ou l’inverse",
+        "plan_shrank": "Moins d’exercices que la séance enregistrée (un exercice n’est jamais retiré)"
       }
     },
     "editor": "Éditeur du programme",
@@ -133,12 +133,12 @@
     "signOutFailed": "Déconnexion impossible pour le moment. Vérifie ta connexion et réessaie.",
     "signOutPending_one": "{{count}} saisie pas encore envoyée : elle partira à ta prochaine connexion sur cet appareil.",
     "signOutPending_other": "{{count}} saisies pas encore envoyées : elles partiront à ta prochaine connexion sur cet appareil.",
-    "signOutUnknown": "Des saisies n'ont peut-être pas encore été envoyées : elles partiront à ta prochaine connexion sur cet appareil.",
+    "signOutUnknown": "Des saisies n’ont peut-être pas encore été envoyées : elles partiront à ta prochaine connexion sur cet appareil.",
     "signOutAnyway": "Se déconnecter quand même",
     "cancel": "Annuler"
   },
   "profile": {
-    "lead": "Tout est facultatif. Chaque information ne sert qu'aux outils indiqués dessous.",
+    "lead": "Tout est facultatif. Chaque information ne sert qu’aux outils indiqués dessous.",
     "body": "Ton corps",
     "birthYear": "Année de naissance",
     "height": "Taille",
@@ -152,8 +152,8 @@
     "rangeLead": "Par semaine, en % de ton poids moyen. Sert à dire « dans ta fourchette » sur Corps.",
     "min": "Au moins",
     "max": "Au plus",
-    "rangeNote": "Réglable de 0,25 à 1 %. Les recommandations publiées s'arrêtent à 1 % : l'app ne propose pas plus.",
-    "howChosen": "Comment c'est choisi"
+    "rangeNote": "Réglable de 0,25 à 1 %. Les recommandations publiées s’arrêtent à 1 % : l’app ne propose pas plus.",
+    "howChosen": "Comment c’est choisi"
   },
   "supplementsPage": {
     "title": "Mes compléments",
@@ -169,7 +169,7 @@
     "nameError": "De 1 à 40 caractères, sur une ligne.",
     "duplicate": "Ce complément est déjà dans ta liste.",
     "suggestionsTitle": "Suggestions",
-    "empty": "Aucun complément dans ta liste pour l'instant.",
+    "empty": "Aucun complément dans ta liste pour l’instant.",
     "note": "Belay note ce que tu prends, sans conseil de dose. Les rappels quotidiens arriveront avec les notifications.",
     "toastAdded": "Complément ajouté",
     "toastRenamed": "Complément renommé",
@@ -221,7 +221,7 @@
     "neck": "Cou (option)",
     "hip": "Hanches (option)",
     "waistHint": "Au nombril pour la formule homme, au plus fin pour la formule femme.",
-    "neckHipHint": "Cou et hanches servent à l'outil Masse grasse.",
+    "neckHipHint": "Cou et hanches servent à l’outil Masse grasse.",
     "outOfRange": "Saisis entre {{min}} et {{max}} cm, au dixième près.",
     "delete": "Supprimer les mensurations de ce jour",
     "toastSaved": "Mensurations enregistrées",
@@ -231,8 +231,8 @@
     "button": "Annotation",
     "titleNew": "Nouvelle annotation",
     "title": "Annotation",
-    "date": "Date de l'annotation",
-    "type": "Type d'annotation",
+    "date": "Date de l’annotation",
+    "type": "Type d’annotation",
     "kinds": {
       "deload": "Allégée",
       "diet_break": "Pause",
@@ -243,13 +243,13 @@
     "placeholder": "Texte (option), ex. « voyage »",
     "add": "Ajouter",
     "delete": "Supprimer cette annotation",
-    "creatineNote": "La créatine n'a pas besoin d'annotation : elle se déduit de tes compléments cochés.",
+    "creatineNote": "La créatine n’a pas besoin d’annotation : elle se déduit de tes compléments cochés.",
     "toastSaved": "Annotation enregistrée",
     "toastDeleted": "Annotation supprimée",
     "row": "Annotations"
   },
   "body": {
-    "creatineNote": "Pendant les 14 jours de créatine, le poids monte souvent d'1 à 2 kg d'eau : ce n'est pas du gras.",
+    "creatineNote": "Pendant les 14 jours de créatine, le poids monte souvent d’1 à 2 kg d’eau : ce n’est pas du gras.",
     "creatinePill": "créatine",
     "entries": {
       "title": "Saisir",
@@ -276,14 +276,14 @@
     "weeks": "Tes semaines",
     "thisWeek": "Cette semaine",
     "toFollow": "à suivre",
-    "previousInsufficient": "semaine d'avant insuffisante",
+    "previousInsufficient": "semaine d’avant insuffisante",
     "firstWeek": "première semaine",
     "tooFew_one": "{{count}} pesée, 4 minimum",
     "tooFew_other": "{{count}} pesées, 4 minimum",
     "history": "Historique",
     "firstDays_one": "Encore {{count}} pesée cette semaine",
     "firstDays_other": "Encore {{count}} pesées cette semaine",
-    "firstDaysBody": "La moyenne 7 jours apparaît dès 4 pesées sur 7 jours, et la perte par semaine après deux semaines complètes. Le poids d'un jour seul varie trop pour dire quelque chose.",
+    "firstDaysBody": "La moyenne 7 jours apparaît dès 4 pesées sur 7 jours, et la perte par semaine après deux semaines complètes. Le poids d’un jour seul varie trop pour dire quelque chose.",
     "lossText": "{{value}} %",
     "gainText": "{{value}} % de prise"
   },
@@ -324,7 +324,7 @@
       "sheetTitle": "Programme actif",
       "sessions_one": "{{count}} séance",
       "sessions_other": "{{count}} séances",
-      "sheetNote": "Un toucher l'active et ferme. Créer, renommer ou supprimer un programme se fait sur ordinateur.",
+      "sheetNote": "Un toucher l’active et ferme. Créer, renommer ou supprimer un programme se fait sur ordinateur.",
       "aside": "De côté · hors rotation",
       "rhythm": {
         "row": "Rythme",
@@ -337,8 +337,8 @@
         "single": "{{letter}} à chaque fois",
         "title": "Rythme du programme",
         "mode": "Rythme du programme",
-        "rotationNote": "Les séances s'enchaînent dans l'ordre, quel que soit le jour. Pas de jour de repos prévu.",
-        "proposed": "Proposé d'après tes dernières semaines. Un tap change un jour.",
+        "rotationNote": "Les séances s’enchaînent dans l’ordre, quel que soit le jour. Pas de jour de repos prévu.",
+        "proposed": "Proposé d’après tes dernières semaines. Un tap change un jour.",
         "tapHint": "Un tap change un jour.",
         "rest": "Repos",
         "save": "Enregistrer",
@@ -412,16 +412,16 @@
     "credit": "Texte : exercises-dataset (MIT)"
   },
   "history": {
-    "signedOut": "Tes séances s'enregistrent avec un compte. Le programme et les exercices restent consultables sans compte.",
+    "signedOut": "Tes séances s’enregistrent avec un compte. Le programme et les exercices restent consultables sans compte.",
     "previousMonth": "Mois précédent",
     "nextMonth": "Mois suivant",
     "sessionDay": "séance",
     "activityDay": "activité",
-    "today": "aujourd'hui",
+    "today": "aujourd’hui",
     "legendLabel": "Légende",
     "recent": "Récentes",
     "first": "Ta première séance apparaîtra ici.",
-    "firstHow": "Elle s'ajoute toute seule quand tu termines une séance, ou avec « Saisir une séance ».",
+    "firstHow": "Elle s’ajoute toute seule quand tu termines une séance, ou avec « Saisir une séance ».",
     "none": "Aucune séance ce mois-ci.",
     "workSets_one": "{{count}} série de travail",
     "workSets_other": "{{count}} séries de travail",
@@ -435,12 +435,12 @@
     "edit": "Modifier",
     "remove": "Supprimer cette séance",
     "removeTitle": "Supprimer cette séance ?",
-    "removeBody": "Ses séries disparaîtront de l'historique et des statistiques, sur tous tes appareils.",
+    "removeBody": "Ses séries disparaîtront de l’historique et des statistiques, sur tous tes appareils.",
     "removeConfirm": "Supprimer",
     "cancel": "Annuler",
     "log": {
       "button": "Saisir une séance",
-      "sub": "faite sans l'app, un autre jour",
+      "sub": "faite sans l’app, un autre jour",
       "title": "Saisir une séance",
       "date": "Date de la séance",
       "session": "Séance",
@@ -491,7 +491,7 @@
     "restLast": "Repos",
     "plus30": "+30 s",
     "skip": "Passer",
-    "backToIt": "C'est reparti",
+    "backToIt": "C’est reparti",
     "restOver": "Repos terminé",
     "finishTitle": "Terminer la séance ?",
     "finishCount_one": "{{count}} série notée sur {{total}}.",
@@ -507,15 +507,15 @@
     "deleteBody_one": "La série notée ne sera pas gardée ; ton programme ne change pas.",
     "deleteBody_other": "Les {{count}} séries notées ne seront pas gardées ; ton programme ne change pas.",
     "delete": "Supprimer la séance",
-    "emptyTitle": "Rien n'est noté pour l'instant",
+    "emptyTitle": "Rien n’est noté pour l’instant",
     "emptyBody": "Si tu quittes, cette séance ne sera pas gardée. Tu pourras la commencer plus tard.",
     "leave": "Quitter sans enregistrer",
     "keepGoing": "Continuer la séance",
-    "noClimbing": "Pas d'escalade cette semaine : tirage vertical et curl ajoutés en fin de séance.",
+    "noClimbing": "Pas d’escalade cette semaine : tirage vertical et curl ajoutés en fin de séance.",
     "addedNoClimbing": "ajouté, sans escalade",
     "added": "ajouté",
     "leaveOut": "Retirer",
-    "leftOut": "retiré pour aujourd'hui",
+    "leftOut": "retiré pour aujourd’hui",
     "putBack": "Remettre",
     "replace": "Remplacer",
     "addSet": "+ Série",
@@ -570,8 +570,8 @@
   },
   "activitySheet": {
     "title": "Activité",
-    "date": "Date de l'activité",
-    "kind": "Type d'activité",
+    "date": "Date de l’activité",
+    "kind": "Type d’activité",
     "tabs": {
       "cardio": "Cardio",
       "climbing": "Escalade",
@@ -633,7 +633,7 @@
   },
   "tools": {
     "title": "Outils",
-    "lead": "Tout est calculé sur ton appareil. Rien n'est envoyé.",
+    "lead": "Tout est calculé sur ton appareil. Rien n’est envoyé.",
     "back": "Outils",
     "groups": {
       "strength": "Force",
@@ -643,7 +643,7 @@
     "items": {
       "one-rep-max": {
         "name": "1RM estimé",
-        "hint": "Ton max à partir d'une série"
+        "hint": "Ton max à partir d’une série"
       },
       "plates": {
         "name": "Disques",
@@ -651,7 +651,7 @@
       },
       "warmup": {
         "name": "Montée en charge",
-        "hint": "Tes séries d'échauffement"
+        "hint": "Tes séries d’échauffement"
       },
       "energy": {
         "name": "Dépense énergétique",
@@ -667,7 +667,7 @@
       },
       "bmi": {
         "name": "IMC",
-        "hint": "Ta place sur les plages de l'OMS"
+        "hint": "Ta place sur les plages de l’OMS"
       },
       "body-fat": {
         "name": "Masse grasse",
@@ -686,7 +686,7 @@
     }
   },
   "science": {
-    "title": "Comment c'est calculé",
+    "title": "Comment c’est calculé",
     "labels": {
       "source": "Source scientifique",
       "heuristic": "Heuristique Belay",
@@ -717,12 +717,12 @@
     "percent": "{{value}} %"
   },
   "oneRepMax": {
-    "lead": "Ton max à partir d'une série menée près de l'échec.",
+    "lead": "Ton max à partir d’une série menée près de l’échec.",
     "load": "Charge",
     "reps": "Répétitions",
     "result": "Ton 1RM estimé",
     "oneRep": "Avec 1 répétition, ton 1RM est la charge soulevée.",
-    "lessReliable": "Au-delà de 10 répétitions, l'estimation est moins fiable."
+    "lessReliable": "Au-delà de 10 répétitions, l’estimation est moins fiable."
   },
   "plates": {
     "lead": "Quoi mettre de chaque côté de la barre.",
@@ -731,7 +731,7 @@
     "perSide": "{{plates}} {{unit}} par côté",
     "barOnly": "Barre seule",
     "bar": "Barre de {{bar}} {{unit}}",
-    "unreachable": "{{target}} {{unit}} n'est pas faisable avec ton matériel.",
+    "unreachable": "{{target}} {{unit}} n’est pas faisable avec ton matériel.",
     "below": "Juste en dessous · {{total}} {{unit}}",
     "above": "Juste au-dessus · {{total}} {{unit}}",
     "underBar": "La barre seule pèse déjà {{bar}} {{unit}}.",
@@ -755,13 +755,13 @@
     "edit": "Modifier ce matériel",
     "presetNote": "« Modifier » copie ce préréglage dans « Sur mesure » : les préréglages ne changent jamais.",
     "lbNote": "En livres, Belay prend la barre de 45 lb et les disques standard.",
-    "copied": "Copié depuis « {{preset}} ». Touche un disque pour l'ajouter ou le retirer.",
-    "customNote": "Touche un disque pour l'ajouter ou le retirer.",
+    "copied": "Copié depuis « {{preset}} ». Touche un disque pour l’ajouter ou le retirer.",
+    "customNote": "Touche un disque pour l’ajouter ou le retirer.",
     "newPlate": "Nouveau disque",
     "add": "Ajouter"
   },
   "warmup": {
-    "lead": "Tes séries d'échauffement, arrondies à ton matériel.",
+    "lead": "Tes séries d’échauffement, arrondies à ton matériel.",
     "work": "Charge de travail",
     "count": "Échauffement",
     "result": "Ton échauffement",
@@ -770,8 +770,8 @@
     "reps": "× {{reps}}",
     "workSets": "séries de travail",
     "yours": "à toi",
-    "lightWork": "Ta charge de travail est la barre seule ou plus légère : il n'y a pas d'échauffement à calculer.",
-    "note": "Les charges sont arrondies à ton matériel (« {{preset}} »). Aucune étude ne fixe un schéma unique : c'est une progression courante, à ajuster comme tu veux."
+    "lightWork": "Ta charge de travail est la barre seule ou plus légère : il n’y a pas d’échauffement à calculer.",
+    "note": "Les charges sont arrondies à ton matériel (« {{preset}} »). Aucune étude ne fixe un schéma unique : c’est une progression courante, à ajuster comme tu veux."
   },
   "energy": {
     "lead": "Ton métabolisme au repos et ce que tu dépenses dans la journée.",
@@ -787,7 +787,7 @@
       },
       "active": {
         "name": "Actif",
-        "description": "Sédentaire, plus environ une heure d'exercice modéré à soutenu par jour."
+        "description": "Sédentaire, plus environ une heure d’exercice modéré à soutenu par jour."
       },
       "very-active": {
         "name": "Très actif",
@@ -797,7 +797,7 @@
     "result": "Dépense du jour",
     "range": "entre {{low}} et {{high}} environ",
     "bmr": "Dépense au repos",
-    "note": "Une estimation à ±10 % : environ 1 personne sur 5 est à plus de 10 % de sa mesure réelle. C'est un point de départ, que tes pesées et tes apports affineront plus tard."
+    "note": "Une estimation à ±10 % : environ 1 personne sur 5 est à plus de 10 % de sa mesure réelle. C’est un point de départ, que tes pesées et tes apports affineront plus tard."
   },
   "protein": {
     "lead": "Une fourchette par jour et par repas, selon ton objectif.",
@@ -834,30 +834,30 @@
     "fineLabel": "Rythme (% par semaine)",
     "result": "Objectif atteint",
     "between": "Entre le {{low}} et le {{high}}",
-    "weeks": "Dans {{low}} à {{high}} semaines. La perte ralentit à mesure que tu perds du poids, d'où une fourchette.",
-    "strip": "Fenêtre d'arrivée : de {{from}} à {{to}}",
+    "weeks": "Dans {{low}} à {{high}} semaines. La perte ralentit à mesure que tu perds du poids, d’où une fourchette.",
+    "strip": "Fenêtre d’arrivée : de {{from}} à {{to}}",
     "notBelow": "La projection calcule une perte de poids ; ton objectif est déjà atteint ou au-dessus.",
-    "above1": "Chez des athlètes, un rythme d'environ 1 % par semaine s'est accompagné de moins de gain de masse maigre (Garthe 2011). Source dans la fiche.",
+    "above1": "Chez des athlètes, un rythme d’environ 1 % par semaine s’est accompagné de moins de gain de masse maigre (Garthe 2011). Source dans la fiche.",
     "above15": "À ce rythme, Belay te conseille de te faire suivre par un médecin ou un diététicien."
   },
   "bmi": {
-    "lead": "Ton indice de masse corporelle, placé sur les plages de l'OMS.",
+    "lead": "Ton indice de masse corporelle, placé sur les plages de l’OMS.",
     "result": "Ton IMC",
-    "rangesLabel": "Plages de l'OMS",
+    "rangesLabel": "Plages de l’OMS",
     "bands": {
       "below": "En dessous",
-      "reference": "Plage de référence de l'OMS",
+      "reference": "Plage de référence de l’OMS",
       "above": "Au-dessus",
       "well-above": "Nettement au-dessus"
     },
     "sentence": {
-      "below": "En dessous de la plage de référence de l'OMS (moins de {{low}}).",
-      "reference": "Dans la plage de référence de l'OMS ({{low}} à {{high}}).",
-      "above": "Au-dessus de la plage de référence de l'OMS ({{low}} à {{high}}).",
-      "well-above": "Nettement au-dessus de la plage de référence de l'OMS ({{low}} et plus)."
+      "below": "En dessous de la plage de référence de l’OMS (moins de {{low}}).",
+      "reference": "Dans la plage de référence de l’OMS ({{low}} à {{high}}).",
+      "above": "Au-dessus de la plage de référence de l’OMS ({{low}} à {{high}}).",
+      "well-above": "Nettement au-dessus de la plage de référence de l’OMS ({{low}} et plus)."
     },
     "professional": "Si tu te poses des questions sur ton poids, parles-en à un professionnel de santé.",
-    "note": "L'IMC ne distingue pas le muscle de la graisse : c'est un repère de population, pas un diagnostic."
+    "note": "L’IMC ne distingue pas le muscle de la graisse : c’est un repère de population, pas un diagnostic."
   },
   "bodyFat": {
     "lead": "Une estimation au mètre ruban, avec des repères publiés.",
@@ -882,9 +882,9 @@
     },
     "caption": {
       "standard": "Pour la formule {{formula}}, de {{from}} à {{to}} ans (Gallagher 2000, tableau 4).",
-      "asian": "Pour la formule {{formula}}, de {{from}} à {{to}} ans, personnes d'origine asiatique (Gallagher 2000, tableau 5)."
+      "asian": "Pour la formule {{formula}}, de {{from}} à {{to}} ans, personnes d’origine asiatique (Gallagher 2000, tableau 5)."
     },
-    "noReferences": "Les repères publiés couvrent 20 à 79 ans : pour ton âge, seule l'estimation s'affiche.",
+    "noReferences": "Les repères publiés couvrent 20 à 79 ans : pour ton âge, seule l’estimation s’affiche.",
     "reference": "Jeu de repères",
     "references": {
       "standard": "Standard",

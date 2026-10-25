@@ -11,15 +11,15 @@
   "signin": {
     "unavailable": "La connexion est indisponible pour le moment. Réessaie dans un instant.",
     "expired": "La connexion a pris trop de temps. Réessaie.",
-    "failed": "La connexion n'a pas abouti. Réessaie.",
-    "denied": "Ton compte n'a pas accès à Belay. Demande l'accès à la personne qui gère cette instance."
+    "failed": "La connexion n’a pas abouti. Réessaie.",
+    "denied": "Ton compte n’a pas accès à Belay. Demande l’accès à la personne qui gère cette instance."
   },
   "offline": "Tu es hors ligne.",
   "body": {
     "inRange": "dans ta fourchette"
   },
   "account": {
-    "unavailable": "Ce navigateur ne permet pas à Belay d'enregistrer sur l'appareil : le suivi n'est pas disponible ici. Les outils restent utilisables."
+    "unavailable": "Ce navigateur ne permet pas à Belay d’enregistrer sur l’appareil : le suivi n’est pas disponible ici. Les outils restent utilisables."
   },
   "update": {
     "available": "Nouvelle version disponible",
@@ -30,17 +30,17 @@
     "offline_one": "{{count}} pesée en attente, envoyée dès le retour du réseau. Tout est gardé sur ce téléphone.",
     "offline_other": "{{count}} pesées en attente, envoyées dès le retour du réseau. Tout est gardé sur ce téléphone.",
     "expiredTitle": "Ta session a expiré.",
-    "expired_one": "{{count}} pesée attend d'être envoyée.",
-    "expired_other": "{{count}} pesées attendent d'être envoyées.",
+    "expired_one": "{{count}} pesée attend d’être envoyée.",
+    "expired_other": "{{count}} pesées attendent d’être envoyées.",
     "reconnect": "Se reconnecter",
-    "failed": "Une saisie n'a pas pu être envoyée.",
+    "failed": "Une saisie n’a pas pu être envoyée.",
     "retry": "Réessayer",
     "rejected": "Une saisie a été refusée.",
     "rejectedLink": "Voir le détail",
     "offlineEntries_one": "{{count}} saisie en attente, envoyée dès le retour du réseau. Tout est gardé sur ce téléphone.",
     "offlineEntries_other": "{{count}} saisies en attente, envoyées dès le retour du réseau. Tout est gardé sur ce téléphone.",
-    "expiredEntries_one": "{{count}} saisie attend d'être envoyée.",
-    "expiredEntries_other": "{{count}} saisies attendent d'être envoyées."
+    "expiredEntries_one": "{{count}} saisie attend d’être envoyée.",
+    "expiredEntries_other": "{{count}} saisies attendent d’être envoyées."
   },
   "trend": {
     "title": "Ta tendance",
@@ -52,7 +52,7 @@
     "stable": "stable"
   },
   "weighIn": {
-    "today": "Aujourd'hui",
+    "today": "Aujourd’hui",
     "yesterday": "Hier",
     "toastSaved": "Pesée enregistrée",
     "toastDeleted": "Pesée supprimée",
@@ -71,14 +71,14 @@
   "fallback": {
     "notFoundTitle": "Page introuvable",
     "notFoundBody": "Cette adresse ne mène nulle part dans Belay.",
-    "backHome": "Retour à l'accueil",
+    "backHome": "Retour à l’accueil",
     "loading": "Chargement…",
     "errorTitle": "Quelque chose a coincé",
-    "errorBody": "Cette page n'a pas pu s'afficher. Si l'app vient d'être mise à jour, la recharger suffit en général.",
+    "errorBody": "Cette page n’a pas pu s’afficher. Si l’app vient d’être mise à jour, la recharger suffit en général.",
     "reload": "Recharger"
   },
   "today": {
-    "title": "Aujourd'hui",
+    "title": "Aujourd’hui",
     "activity": "Activité",
     "activityEmpty": "pas encore saisie",
     "activityMany_one": "{{count}} activité",
@@ -97,7 +97,7 @@
     "intakeDeleted": "Apports supprimés",
     "supplements": "Compléments",
     "supplementsDone": "{{taken}} sur {{count}}",
-    "supplementsNone": "aucun pour l'instant"
+    "supplementsNone": "aucun pour l’instant"
   },
   "sessionCard": {
     "next": "La prochaine",
@@ -108,11 +108,11 @@
     "sets_other": "{{count}} séries sur {{total}}",
     "see": "Voir la séance",
     "resume": "Reprendre",
-    "doneToday": "Faite aujourd'hui",
+    "doneToday": "Faite aujourd’hui",
     "doneLine_one": "{{duration}} · {{count}} série",
     "doneLine_other": "{{duration}} · {{count}} séries",
     "nextLink": "La prochaine :",
-    "today": "Aujourd'hui",
+    "today": "Aujourd’hui",
     "tomorrow": "Demain",
     "rest": "Jour de repos",
     "restLine": "Prévu par ton programme",

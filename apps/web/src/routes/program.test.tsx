@@ -526,7 +526,7 @@ describe("the program cards on fixed days", () => {
     );
   });
 
-  it("today's session leads Aujourd'hui", async () => {
+  it("today's session leads Aujourd’hui", async () => {
     await fixedDays([1, null, 2, null, null, 3, null]);
     await onDay(7); // Wednesday
     renderRoute("/workouts?tab=program");
@@ -536,7 +536,7 @@ describe("the program cards on fixed days", () => {
       "Séance A · Push",
     ]);
     const b = screen.getByRole("region", { name: "Séance B · Legs" });
-    expect(b.textContent).toContain("Aujourd'hui · 7 exercices");
+    expect(b.textContent).toContain("Aujourd’hui · 7 exercices");
   });
 
   it("the others say Mercredi, Samedi in bold, no il y a N jours", async () => {
@@ -617,7 +617,7 @@ describe("the program cards on fixed days", () => {
       "/workout?start=A",
     );
     expect(screen.queryByRole("link", { name: "Voir la séance" })).toBeNull();
-    expect(cardLink("Séance B · Legs").textContent).toContain("Aujourd'hui · 7 exercices");
+    expect(cardLink("Séance B · Legs").textContent).toContain("Aujourd’hui · 7 exercices");
   });
 
   it("rotation cards unchanged", async () => {
@@ -652,7 +652,7 @@ describe("the program cards on fixed days", () => {
       "Séance A · Push",
       "Séance B · Legs",
     ]);
-    expect(screen.getByRole("main").textContent).not.toMatch(/retard|manqu|Il y a|Aujourd'hui/);
+    expect(screen.getByRole("main").textContent).not.toMatch(/retard|manqu|Il y a|Aujourd’hui/);
     expect(cardLink("Séance B · Legs").textContent).toContain("Mercredi · 7 exercices");
   });
 });

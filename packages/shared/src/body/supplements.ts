@@ -29,7 +29,7 @@ export function isCreatineName(name: string): boolean {
   return /(^|[^a-z])creatine([^a-z]|$)/.test(plain);
 }
 
-// Belay heuristic (D3): a course of creatine starts on a day ticked after at least 14 days
+// Belay heuristic: a course of creatine starts on a day ticked after at least 14 days
 // without; its first 14 days are marked, when the weight often rises by 1 to 2 kg of water.
 export const CREATINE_DAYS = 14;
 

@@ -357,7 +357,7 @@ describe("the History segment", () => {
       "Ven. 2 oct. · 1 h 04 Séance A · Push",
     );
     const row = screen.getByRole("button", { name: /^Saisir une séance/ });
-    expect(row.textContent).toBe("Saisir une séance faite sans l'app, un autre jour");
+    expect(row.textContent).toBe("Saisir une séance faite sans l’app, un autre jour");
   });
 
   it("says in French how the first session gets there", async () => {
@@ -367,7 +367,7 @@ describe("the History segment", () => {
     expect(await screen.findByText("Ta première séance apparaîtra ici.")).toBeTruthy();
     expect(
       screen.getByText(
-        "Elle s'ajoute toute seule quand tu termines une séance, ou avec «\u202fSaisir une séance\u202f».",
+        "Elle s’ajoute toute seule quand tu termines une séance, ou avec «\u202fSaisir une séance\u202f».",
         // Kept as written: the default normalizer would turn the narrow spaces into plain ones.
         { normalizer: getDefaultNormalizer({ collapseWhitespace: false }) },
       ),

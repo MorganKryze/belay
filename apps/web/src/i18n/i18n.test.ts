@@ -73,6 +73,14 @@ describe("translations", () => {
     expect([...strings(fr), ...science].filter((s) => /[^\s] [:;?!%»]|« /.test(s))).toEqual([]);
   });
 
+  it("sets French apostrophes curly, never straight", () => {
+    const strings = (o: object): string[] =>
+      Object.values(o).flatMap((v) =>
+        typeof v === "object" && v !== null ? strings(v) : [String(v)],
+      );
+    expect(strings(fr).filter((s) => s.includes("'"))).toEqual([]);
+  });
+
   it("leave the tools' strings to the bundle loaded on demand", () => {
     // Home never draws a tool; its strings weighed on every start.
     const tools = [

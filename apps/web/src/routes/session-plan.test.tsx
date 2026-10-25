@@ -402,7 +402,7 @@ describe("a timed exercise and its chrono (spec D11, §4.3)", () => {
     renderRoute("/workout?start=C");
     expect(
       await screen.findByText(
-        "Pas d'escalade cette semaine\u202f: tirage vertical et curl ajoutés en fin de séance.",
+        "Pas d’escalade cette semaine\u202f: tirage vertical et curl ajoutés en fin de séance.",
         { normalizer: (s) => s },
       ),
     ).toBeTruthy();

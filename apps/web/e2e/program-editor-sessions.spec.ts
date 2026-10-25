@@ -118,7 +118,7 @@ test("+ Séance, a name, two exercises, then Supprimer and Annuler bring D back"
   await expect(chip(page, "D")).toHaveAttribute("aria-selected", "true");
   await expect(title(page)).toHaveText("Séance D");
   await expect(search(page)).toBeFocused();
-  await expect(page.getByText("pars d'une séance existante")).toBeVisible();
+  await expect(page.getByText("pars d’une séance existante")).toBeVisible();
 
   // The pencil, the menu and the lone letter's chip are 44 px targets.
   for (const target of [
@@ -229,7 +229,7 @@ for (const width of [1280, 1024]) {
       );
     expect(Math.round(lines)).toBe(1);
     const note = page.getByText(
-      "De côté : hors rotation, sans lettre. Elle reste modifiable ; « Remettre dans la rotation » l'ajoute à la fin.",
+      "De côté : hors rotation, sans lettre. Elle reste modifiable ; « Remettre dans la rotation » l’ajoute à la fin.",
     );
     await expect(note).toBeVisible();
     const card = (await page.getByRole("tabpanel").locator("section").first().boundingBox())!;

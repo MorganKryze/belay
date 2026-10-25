@@ -114,7 +114,7 @@ describe("Settings preferences", () => {
       ["Accueil", ["Tendance · Affichée"]],
       [
         "Séances",
-        ["En pause · Tout s'arrête", "Son de fin de repos · Coupé", "Historique · Avec activités"],
+        ["En pause · Tout s’arrête", "Son de fin de repos · Coupé", "Historique · Avec activités"],
       ],
       ["Corps", ["Pastille · Affichée", "Apports · Affichés"]],
       ["Outils", ["1RM · Deux formules", "Origine des champs · Affichée"]],
@@ -145,7 +145,7 @@ describe("Settings preferences", () => {
     expect(
       await screen.findByRole("combobox", { name: "En pause · Le repos continue" }),
     ).toBeTruthy();
-    await choose(/^En pause/, "Tout s'arrête");
+    await choose(/^En pause/, "Tout s’arrête");
     expect(localStorage.getItem("belay.pauseStops")).toBe("all");
   });
 
@@ -693,7 +693,7 @@ describe("Settings sign-out", () => {
     signedIn(async () => Response.json({ redirectTo: idp }));
     const { sheet } = await openSheet("Se déconnecter", "Se déconnecter\u202f?");
     expect(sheet.textContent).toContain(
-      "Des saisies n'ont peut-être pas encore été envoyées\u202f: elles partiront à ta prochaine connexion sur cet appareil.",
+      "Des saisies n’ont peut-être pas encore été envoyées\u202f: elles partiront à ta prochaine connexion sur cet appareil.",
     );
     expect(within(sheet).getByRole("button", { name: "Se déconnecter quand même" })).toBeTruthy();
   });
@@ -994,7 +994,7 @@ describe("refused entries", () => {
     renderRoute("/settings");
     const liste = await screen.findByRole("region", { name: "Saisies refusées" });
     expect(liste.textContent).toContain(
-      "Moins d'exercices que la séance enregistrée (un exercice n'est jamais retiré)",
+      "Moins d’exercices que la séance enregistrée (un exercice n’est jamais retiré)",
     );
   });
 

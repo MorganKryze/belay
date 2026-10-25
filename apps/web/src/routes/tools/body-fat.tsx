@@ -111,7 +111,7 @@ export function BodyFatTool() {
         proposal={prefill.proposal("formula", formula)}
         show={(f) => t(`tools.formula.${f as "female" | "male"}`)}
       />
-      {/* One field per line (D9): each one may carry where its value comes from. */}
+      {/* One field per line: each one may carry where its value comes from. */}
       <NumberStepper
         label={t("tools.fields.age")}
         value={inputs.ageYears}

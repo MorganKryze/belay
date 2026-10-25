@@ -37,7 +37,7 @@ export function navyBodyFat({ formula, heightCm, neckCm, waistCm, hipCm }: NavyI
 }
 
 // Gallagher 2000: % body fat at BMI 18.5, 25 and 30. Table 4 (African American and white,
-// combined) is the standard set; table 5 is the Asian set (D14).
+// combined) is the standard set; table 5 is the Asian set.
 export type BodyFatReference = "standard" | "asian";
 export type AgeGroup = "20-39" | "40-59" | "60-79";
 export type GallagherThresholds = { at18_5: number; at25: number; at30: number };

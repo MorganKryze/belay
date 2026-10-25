@@ -50,7 +50,7 @@ export const users = pgTable(
       .notNull()
       .default(1),
     targetAt: ts("target_at"),
-    // The profile (D8): each fact optional, with its own timestamp; the age is never stored.
+    // The profile: each fact optional, with its own timestamp; the age is never stored.
     formula: text("formula"),
     formulaAt: ts("formula_at"),
     birthYear: smallint("birth_year"),

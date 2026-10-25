@@ -2,7 +2,7 @@ import { RadioGroup } from "radix-ui";
 import { useId, type CSSProperties } from "react";
 
 export type ChoiceOption<T extends string> = { value: T; label: string };
-// D11: two or three options of one word each. Beyond that, use ChoiceList.
+// Two or three options of one word each. Beyond that, use ChoiceList.
 export type SegmentedOptions<T extends string> =
   | readonly [ChoiceOption<T>, ChoiceOption<T>]
   | readonly [ChoiceOption<T>, ChoiceOption<T>, ChoiceOption<T>];
