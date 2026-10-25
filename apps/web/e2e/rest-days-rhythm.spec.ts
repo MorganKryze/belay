@@ -222,7 +222,9 @@ test("on a phone the note follows the row, and the editor's entry is not drawn",
 }) => {
   await open(page, program(3));
   const rowBox = (await row(page).boundingBox())!;
-  const noteBox = (await page.getByText("Le programme se modifie sur ordinateur.").boundingBox())!;
+  const noteBox = (await page
+    .getByText("Les exercices du programme se modifient sur ordinateur.")
+    .boundingBox())!;
   expect(noteBox.y).toBeGreaterThanOrEqual(rowBox.y + rowBox.height);
   await expect(page.getByRole("link", { name: "Modifier le programme" })).toBeHidden();
 });
@@ -234,7 +236,9 @@ test.describe("on a computer", () => {
     await open(page, program(3));
     const entry = page.getByRole("link", { name: "Modifier le programme" });
     await expect(entry).toBeVisible();
-    await expect(page.getByText("Le programme se modifie sur ordinateur.")).toBeHidden();
+    await expect(
+      page.getByText("Les exercices du programme se modifient sur ordinateur."),
+    ).toBeHidden();
     const r = (await row(page).boundingBox())!;
     const e = (await entry.boundingBox())!;
     // One card: the same column, the entry right under the row past a 1 px hairline.

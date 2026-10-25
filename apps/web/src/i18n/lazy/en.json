@@ -263,7 +263,7 @@
     "program": {
       "superset": "superset",
       "triset": "tri-set",
-      "editNote": "The program is edited on a computer.",
+      "editNote": "The program's exercises are edited on a computer.",
       "never": "Never done",
       "daysAgo_one": "{{count}} day ago",
       "daysAgo_other": "{{count}} days ago",

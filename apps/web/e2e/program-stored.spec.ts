@@ -329,7 +329,9 @@ test("no active program shows no card", async ({ page }) => {
   await syncNow(page);
   await expect(page.getByRole("region", { name: /^Séance / })).toHaveCount(0);
   await open(page, "/workouts?tab=program");
-  await expect(page.getByText("Le programme se modifie sur ordinateur.")).toBeVisible();
+  await expect(
+    page.getByText("Les exercices du programme se modifient sur ordinateur."),
+  ).toBeVisible();
   await expect(programTitles(page)).toHaveCount(0);
 });
 

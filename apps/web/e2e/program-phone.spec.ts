@@ -143,7 +143,9 @@ for (const width of [390, 360]) {
 
     test("the note stays and the editor's entry is not drawn", async ({ page }) => {
       await open(page, "/workouts?tab=program");
-      await expect(page.getByText("Le programme se modifie sur ordinateur.")).toBeVisible();
+      await expect(
+        page.getByText("Les exercices du programme se modifient sur ordinateur."),
+      ).toBeVisible();
       await expect(page.getByRole("link", { name: "Modifier le programme" })).toBeHidden();
     });
   });
@@ -155,7 +157,9 @@ test.describe("on a computer", () => {
   test("the entry row replaces the note and pushes the editor", async ({ page }) => {
     await open(page, "/workouts?tab=program");
     await expect(titles(page)).toHaveText(FORCE_CARDS);
-    expect(await display(page, "Le programme se modifie sur ordinateur.")).toBe("none");
+    expect(await display(page, "Les exercices du programme se modifient sur ordinateur.")).toBe(
+      "none",
+    );
     const entry = page.getByRole("link", { name: "Modifier le programme" });
     const box = (await entry.boundingBox())!;
     expect(box.height).toBeGreaterThanOrEqual(44);

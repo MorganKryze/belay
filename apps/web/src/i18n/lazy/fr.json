@@ -263,7 +263,7 @@
     "program": {
       "superset": "superset",
       "triset": "tri-set",
-      "editNote": "Le programme se modifie sur ordinateur.",
+      "editNote": "Les exercices du programme se modifient sur ordinateur.",
       "never": "Jamais faite",
       "daysAgo_one": "Il y a {{count}} jour",
       "daysAgo_other": "Il y a {{count}} jours",
