@@ -78,6 +78,7 @@ export function RhythmRow({
         }
         value={t(week ? "workouts.program.rhythm.fixed" : "workouts.program.rhythm.rotation")}
         trailing="push"
+        valueBeside
         onClick={() => setSheet(true)}
       />
       {sheet && (

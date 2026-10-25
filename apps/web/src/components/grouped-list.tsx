@@ -16,6 +16,9 @@ export type RowProps = {
   // The 17 px label of a row that heads the page, at least 72 px high.
   prominent?: boolean;
   destructive?: boolean;
+  // The value stays on the label's line and the sub runs under both, rather than the value
+  // wrapping under a sub too wide to share the line (the rhythm row's count at 360 px).
+  valueBeside?: boolean;
 };
 
 // Also exported here, so a screen that lists rows imports one module.
@@ -38,6 +41,7 @@ function RowContent({
   trailing = "none",
   prominent,
   destructive,
+  valueBeside,
 }: RowProps) {
   // A destructive row is red text alone, centred: no icon, no value, no chevron to dress it up.
   if (destructive) {
@@ -64,25 +68,38 @@ function RowContent({
           </span>
         )
       )}
-      <span className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-x-3">
-        {sub ? (
-          <span className="flex min-w-0 flex-1 basis-auto flex-col">
-            <span className={labelClass(prominent)}>{label}</span>{" "}
-            {/* The summary wraps rather than ends in an ellipsis: two lines at most. */}
-            <span className="line-clamp-2 break-words text-(length:--text-secondary) leading-(--text-secondary--line-height) text-muted-foreground">
-              {sub}
-            </span>
+      {valueBeside && sub ? (
+        // Read in the same order as the other rows: label, sub, value.
+        <span className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto] gap-x-3">
+          <span className={labelClass(prominent)}>{label}</span>{" "}
+          <span className="col-span-2 row-start-2 line-clamp-2 break-words text-(length:--text-secondary) leading-(--text-secondary--line-height) text-muted-foreground">
+            {sub}
+          </span>{" "}
+          <span className="col-start-2 row-start-1 text-body whitespace-nowrap text-muted-foreground">
+            {value}
           </span>
-        ) : (
-          <span className={cn("flex-1 basis-auto", labelClass(prominent))}>{label}</span>
-        )}
-        {value != null && (
-          <>
-            {" "}
-            <span className="min-w-0 text-body break-words text-muted-foreground">{value}</span>
-          </>
-        )}
-      </span>
+        </span>
+      ) : (
+        <span className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-x-3">
+          {sub ? (
+            <span className="flex min-w-0 flex-1 basis-auto flex-col">
+              <span className={labelClass(prominent)}>{label}</span>{" "}
+              {/* The summary wraps rather than ends in an ellipsis: two lines at most. */}
+              <span className="line-clamp-2 break-words text-(length:--text-secondary) leading-(--text-secondary--line-height) text-muted-foreground">
+                {sub}
+              </span>
+            </span>
+          ) : (
+            <span className={cn("flex-1 basis-auto", labelClass(prominent))}>{label}</span>
+          )}
+          {value != null && (
+            <>
+              {" "}
+              <span className="min-w-0 text-body break-words text-muted-foreground">{value}</span>
+            </>
+          )}
+        </span>
+      )}
       {Chevron && (
         <Chevron
           data-slot="row-chevron"
@@ -104,10 +121,22 @@ const rowClass = ({ prominent, destructive }: RowProps, className?: string) =>
 type AnchorRowProps = RowProps & Omit<ComponentProps<"a">, keyof RowProps>;
 
 const RowAnchor = forwardRef<HTMLAnchorElement, AnchorRowProps>(function RowAnchor(
-  { icon, leading, label, sub, value, trailing, prominent, destructive, className, ...rest },
+  {
+    icon,
+    leading,
+    label,
+    sub,
+    value,
+    trailing,
+    prominent,
+    destructive,
+    valueBeside,
+    className,
+    ...rest
+  },
   ref,
 ) {
-  const props = { icon, leading, label, sub, value, trailing, prominent, destructive };
+  const props = { icon, leading, label, sub, value, trailing, prominent, destructive, valueBeside };
   return (
     <a ref={ref} {...rest} className={rowClass(props, className)}>
       <RowContent {...props} />
@@ -126,11 +155,12 @@ export function RowButton({
   trailing,
   prominent,
   destructive,
+  valueBeside,
   className,
   type = "button",
   ...rest
 }: RowProps & Omit<ComponentProps<"button">, keyof RowProps>) {
-  const props = { icon, leading, label, sub, value, trailing, prominent, destructive };
+  const props = { icon, leading, label, sub, value, trailing, prominent, destructive, valueBeside };
   return (
     <button type={type} {...rest} className={rowClass(props, className)}>
       <RowContent {...props} />

@@ -200,14 +200,40 @@ test("Jours fixes proposed from the last weeks, Friday on Repos and Saturday C, 
 test.describe("at 360 px", () => {
   test.use({ viewport: { width: 360, height: 800 } });
 
-  test("a 6-day week shows the row's two lines whole", async ({ page }) => {
-    const week = [S[0], S[1], S[2], S[0], S[1], S[2], null];
-    await open(page, program(3, { mode: "fixed", days: week }));
-    await expect(row(page)).toBeVisible();
-    for (const text of ["Rythme", "6 séances par semaine", "Jours fixes"])
-      expect(await whole(page, text)).toBe(true);
-    expect(await overflow(page)).toBe(0);
-  });
+  // Decision 1: the value stays on the label's line at the right, the count on a second line,
+  // from 1 to 6 days, in both themes.
+  const week = [S[0], S[1], S[2], S[0], S[1], S[2], null];
+  for (const theme of ["light", "dark"] as const)
+    for (const n of [1, 2, 3, 4, 5, 6]) {
+      const count = n === 1 ? "1 séance par semaine" : `${n} séances par semaine`;
+      test(`${count}: Jours fixes beside Rythme, the count under it, ${theme}`, async ({
+        page,
+      }) => {
+        const days = week.map((d, i) => (i < n ? d : null));
+        await open(page, program(3, { mode: "fixed", days }), theme);
+        await expect(row(page)).toHaveText(new RegExp(`^Rythme\\s*${count}\\s*Jours fixes$`));
+        const box = async (text: string) =>
+          (await row(page).getByText(text, { exact: true }).boundingBox())!;
+        const [label, sub, value, r] = [
+          await box("Rythme"),
+          await box(count),
+          await box("Jours fixes"),
+          (await row(page).boundingBox())!,
+        ];
+        // The value on the label's line, at the right of the row, on one line.
+        expect(Math.abs(value.y - label.y)).toBeLessThanOrEqual(2);
+        expect(value.height).toBeLessThanOrEqual(label.height + 2);
+        expect(value.x).toBeGreaterThan(label.x + label.width);
+        expect(r.x + r.width - (value.x + value.width)).toBeLessThan(48);
+        // The count alone on the second line: two lines in all.
+        expect(sub.y).toBeGreaterThanOrEqual(label.y + label.height - 1);
+        expect(sub.height).toBeLessThan(label.height + 2);
+        expect(sub.y + sub.height).toBeLessThanOrEqual(r.y + r.height);
+        for (const text of ["Rythme", count, "Jours fixes"])
+          expect(await whole(page, text)).toBe(true);
+        expect(await overflow(page)).toBe(0);
+      });
+    }
 
   test("the chips fit, 44 px each, and arrows move between a day's chips", async ({ page }) => {
     await open(
