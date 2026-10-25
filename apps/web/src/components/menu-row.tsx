@@ -10,7 +10,8 @@ export type MenuOption<T extends string> = { value: T; label: string; lang?: str
 // behind the menu. Marking the app's root inert takes them out of reach too.
 const root = () => document.getElementById("root");
 
-// A grouped row that shows its current value and opens an anchored menu of the choices.
+// A grouped row that shows its current value and opens an anchored menu of the choices; without
+// an icon its label starts the row.
 export function MenuRow<T extends string>({
   icon,
   label,
@@ -18,7 +19,7 @@ export function MenuRow<T extends string>({
   options,
   onChange,
 }: {
-  icon: LucideIcon;
+  icon?: LucideIcon;
   label: string;
   value: T;
   options: readonly MenuOption<T>[];

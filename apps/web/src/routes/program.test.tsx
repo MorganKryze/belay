@@ -7,6 +7,7 @@ import {
   placeSession,
   renameProgram,
   renameSession,
+  setSchedule,
 } from "@belay/shared/training/program-edits";
 import { sessionByCode, starterProgram } from "@belay/shared/training/program";
 import {
@@ -285,7 +286,7 @@ describe("the program cards read the active program", () => {
     await edit((p) => createProgram(p, OTHER, EDIT_AT));
     await edit((p) => chooseActive(p, OTHER, EDIT_AT));
     renderRoute("/workouts?tab=program");
-    await screen.findByText(/^The program is edited on a computer/);
+    await screen.findByText(/^The program's exercises are edited on a computer/);
     await settled();
     expect(screen.queryAllByRole("heading", { level: 2, name: /^Session / })).toEqual([]);
   });
@@ -295,7 +296,7 @@ describe("the program cards read the active program", () => {
     await edit((p) => chooseActive(p, OTHER, EDIT_AT));
     await edit(() => [{ kind: "program", id: OTHER, field: "removed", value: true, at: EDIT_AT }]);
     renderRoute("/workouts?tab=program");
-    await screen.findByText(/^The program is edited on a computer/);
+    await screen.findByText(/^The program's exercises are edited on a computer/);
     await settled();
     expect(screen.queryAllByRole("heading", { level: 2, name: /^Session / })).toEqual([]);
   });
@@ -417,9 +418,9 @@ describe("sessions set aside on Programme", () => {
 describe("the editor's entry on Programme", () => {
   it("from 1 024 px the note becomes « Modifier le programme » to the editor", async () => {
     renderRoute("/workouts?tab=program");
-    const note = await screen.findByText("The program is edited on a computer.");
+    const note = await screen.findByText("The program's exercises are edited on a computer.");
     expect(note.className.split(" ")).toContain("lg:hidden");
-    const entry = screen.getByRole("link", { name: "Edit the program" });
+    const entry = screen.getByRole("link", { name: "Edit the program sessions, exercises, sets" });
     expect(entry.getAttribute("href")).toBe("/workouts/program");
     expect(entry.parentElement!.className.split(" ")).toEqual(
       expect.arrayContaining(["hidden", "lg:block"]),
@@ -456,3 +457,166 @@ describe("the open session's card", () => {
 // Waits until the query finds nothing.
 const waitForGone = (query: () => HTMLElement | null) =>
   vi.waitFor(() => expect(query()).toBeNull());
+
+// The seed rotation on fixed days, Monday first: A · Push, B · Legs, C · Glutes by their ids.
+const fixedDays = (days: (1 | 2 | 3 | null)[]) =>
+  edit(() =>
+    setSchedule(
+      SEED_PROGRAM_ID,
+      { mode: "fixed", days: days.map((n) => (n === null ? null : seedId(n))) },
+      EDIT_AT,
+    ),
+  );
+// The phone's clock on day `d` of October 2026 at 18:00, in French.
+async function onDay(d: number) {
+  vi.setSystemTime(new Date(2026, 9, d, 18, 0));
+  await i18n.changeLanguage("fr");
+}
+
+describe("the program cards on fixed days", () => {
+  it("on fixed days the cards follow the week from today, the first leads Demain, lundi with Voir la séance", async () => {
+    await fixedDays([1, null, 2, null, null, 3, null]);
+    await onDay(11); // Sunday
+    renderRoute("/workouts?tab=program");
+    expect(await cards()).toEqual([
+      "Séance A · Push",
+      "Séance B · Legs",
+      "Séance C · Fessiers + tirage léger",
+    ]);
+    const a = screen.getByRole("region", { name: "Séance A · Push" });
+    expect(a.textContent).toContain("Demain, lundi · 6 exercices");
+    expect(within(a).getByRole("link", { name: "Voir la séance" }).getAttribute("href")).toBe(
+      "/workouts/session/A",
+    );
+  });
+
+  it("today's session leads Aujourd'hui", async () => {
+    await fixedDays([1, null, 2, null, null, 3, null]);
+    await onDay(7); // Wednesday
+    renderRoute("/workouts?tab=program");
+    expect(await cards()).toEqual([
+      "Séance B · Legs",
+      "Séance C · Fessiers + tirage léger",
+      "Séance A · Push",
+    ]);
+    const b = screen.getByRole("region", { name: "Séance B · Legs" });
+    expect(b.textContent).toContain("Aujourd'hui · 7 exercices");
+  });
+
+  it("the others say Mercredi, Samedi in bold, no il y a N jours", async () => {
+    await seed(ADA.id, [...done(1, "A", 5, seedId(1)), ...done(2, "B", 7, seedId(2))]);
+    await fixedDays([1, null, 2, null, null, 3, null]);
+    await onDay(11);
+    renderRoute("/workouts?tab=program");
+    await cards();
+    const b = cardLink("Séance B · Legs");
+    expect(b.textContent).toContain("Mercredi · 7 exercices");
+    expect(within(b).getByText("Mercredi").tagName).toBe("B");
+    expect(cardLink("Séance C").textContent).toMatch(/Samedi · \d+ exercices/);
+    expect(screen.getByRole("main").textContent).not.toMatch(/Il y a|Jamais faite/);
+  });
+
+  it("a session on two days says Lundi, jeudi", async () => {
+    await fixedDays([1, null, 2, 1, null, 3, null]);
+    await onDay(13); // Tuesday
+    renderRoute("/workouts?tab=program");
+    expect(await cards()).toEqual([
+      "Séance B · Legs",
+      "Séance A · Push",
+      "Séance C · Fessiers + tirage léger",
+    ]);
+    expect(cardLink("Séance A · Push").textContent).toContain("Lundi, jeudi · 6 exercices");
+  });
+
+  it("a session with no day comes last with its size alone", async () => {
+    await seed(ADA.id, done(1, "A", 5, seedId(1)));
+    await fixedDays([1, null, null, null, null, 3, null]);
+    await onDay(7);
+    renderRoute("/workouts?tab=program");
+    expect(await cards()).toEqual([
+      "Séance C · Fessiers + tirage léger",
+      "Séance A · Push",
+      "Séance B · Legs",
+    ]);
+    const line = within(cardLink("Séance B · Legs")).getByText(/exercices/);
+    expect(line.textContent).toMatch(/^7 exercices · environ 60\u00A0min$/);
+  });
+
+  it("today's session done early moves to its next week", async () => {
+    // Legs done on Tuesday, after Monday's Push: Wednesday's Legs is done.
+    await seed(ADA.id, done(1, "B", 6, seedId(2)));
+    await fixedDays([1, null, 2, null, null, 3, null]);
+    await onDay(7);
+    renderRoute("/workouts?tab=program");
+    expect(await cards()).toEqual([
+      "Séance C · Fessiers + tirage léger",
+      "Séance A · Push",
+      "Séance B · Legs",
+    ]);
+    const c = screen.getByRole("region", { name: "Séance C · Fessiers + tirage léger" });
+    expect(c.textContent).toContain("Samedi · ");
+    expect(cardLink("Séance B · Legs").textContent).toContain("Mercredi · 7 exercices");
+  });
+
+  it("an open session's card resumes it on fixed days", async () => {
+    const begun = new Date(2026, 9, 7, 17, 30).toISOString();
+    await seed(ADA.id, [
+      {
+        kind: "workout",
+        id: id(1),
+        field: "start",
+        sessionCode: "A",
+        sessionId: seedId(1),
+        plan: [...sessionByCode("A", starterProgram)!.slots],
+        startedAt: begun,
+        at: begun,
+      },
+    ]);
+    await fixedDays([1, null, 2, null, null, 3, null]);
+    await onDay(7);
+    renderRoute("/workouts?tab=program");
+    const a = await screen.findByRole("region", { name: "Séance A · Push" });
+    expect(a.textContent).toContain("En cours");
+    expect(within(a).getByRole("link", { name: "Reprendre" }).getAttribute("href")).toBe(
+      "/workout?start=A",
+    );
+    expect(screen.queryByRole("link", { name: "Voir la séance" })).toBeNull();
+    expect(cardLink("Séance B · Legs").textContent).toContain("Aujourd'hui · 7 exercices");
+  });
+
+  it("rotation cards unchanged", async () => {
+    // Days kept from an earlier fixed week do not count in rotation.
+    await edit(() =>
+      setSchedule(
+        SEED_PROGRAM_ID,
+        { mode: "rotation", days: [seedId(1), null, seedId(2), null, null, seedId(3), null] },
+        EDIT_AT,
+      ),
+    );
+    await seed(ADA.id, [...done(1, "A", 3), ...done(2, "B", 4)]);
+    renderRoute("/workouts?tab=program");
+    expect(await cards()).toEqual([
+      "Session C · Glutes + light pull",
+      "Session A · Push",
+      "Session B · Legs",
+    ]);
+    const c = screen.getByRole("region", { name: "Session C · Glutes + light pull" });
+    expect(c.textContent).toContain("Next up · 10 exercises");
+    expect(cardLink("Session A · Push").textContent).toContain("4 days ago · 6 exercises");
+  });
+
+  it("after a missed day nothing says late", async () => {
+    // Monday's Push done, Wednesday's Legs missed; on Thursday Legs waits for next Wednesday.
+    await seed(ADA.id, done(1, "A", 5, seedId(1)));
+    await fixedDays([1, null, 2, null, null, 3, null]);
+    await onDay(8);
+    renderRoute("/workouts?tab=program");
+    expect(await cards()).toEqual([
+      "Séance C · Fessiers + tirage léger",
+      "Séance A · Push",
+      "Séance B · Legs",
+    ]);
+    expect(screen.getByRole("main").textContent).not.toMatch(/retard|manqu|Il y a|Aujourd'hui/);
+    expect(cardLink("Séance B · Legs").textContent).toContain("Mercredi · 7 exercices");
+  });
+});

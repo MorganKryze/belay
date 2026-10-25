@@ -45,7 +45,7 @@ describe("the Sessions tab", () => {
     expect(screen.getAllByRole("link", { name: /^Session [ABC] · / })).toHaveLength(3);
     expect(screen.queryByRole("link", { name: /^(Start|See the session|Resume)$/ })).toBeNull();
     expect(screen.queryByRole("button", { name: /^(See|Hide)$/ })).toBeNull();
-    expect(screen.getByText("The program is edited on a computer.")).toBeTruthy();
+    expect(screen.getByText("The program's exercises are edited on a computer.")).toBeTruthy();
   });
 
   it("says it in French", async () => {
@@ -54,6 +54,8 @@ describe("the Sessions tab", () => {
     expect(
       await screen.findByRole("link", { name: /^Séance C · Fessiers \+ tirage léger/ }),
     ).toBeTruthy();
-    expect(screen.getByText("Le programme se modifie sur ordinateur.")).toBeTruthy();
+    expect(
+      screen.getByText("Les exercices du programme se modifient sur ordinateur."),
+    ).toBeTruthy();
   });
 });

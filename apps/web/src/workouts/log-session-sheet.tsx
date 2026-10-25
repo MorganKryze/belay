@@ -2,11 +2,8 @@ import type { ISODate } from "@belay/shared/body/dates";
 import type { Activity } from "@belay/shared/training/activities";
 import { planFor } from "@belay/shared/training/plan";
 import { estimatedMinutes } from "@belay/shared/training/program";
-import {
-  type LetteredTemplate,
-  nextInRotation,
-  type StoredPrograms,
-} from "@belay/shared/training/stored-program";
+import { plannedNext } from "@belay/shared/training/schedule";
+import type { LetteredTemplate, StoredPrograms } from "@belay/shared/training/stored-program";
 import type { Workout } from "@belay/shared/training/workout";
 import { Dumbbell } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -46,7 +43,9 @@ export function LogSessionSheet(props: SheetProps) {
   useEffect(() => {
     if (none) onClose();
   }, [none, onClose]);
-  if (!program || none) return null;
+  // While the account opens, the programs read are the starting ones: the first choice, taken once,
+  // would come from them.
+  if (account.kind === "loading" || !program || none) return null;
   return <LogSession {...props} programs={program.programs} rotation={program.rotation} />;
 }
 
@@ -62,7 +61,9 @@ function LogSession({
 }: SheetProps & { programs: StoredPrograms; rotation: readonly LetteredTemplate[] }) {
   const { t } = useTranslation();
   const [date, setDate] = useState(today);
-  const [next] = useState(() => nextInRotation(workouts, rotation, programs.activeAt)!.code);
+  // Today's plan comes first, whatever day is picked after: the rotation's next, or on fixed days
+  // today's session, else the next session day's.
+  const [next] = useState(() => plannedNext(workouts, programs, rotation, today)!.code);
   const [chosen, setCode] = useState(next);
   // A sync may reorder the rotation while the sheet is open: a letter gone falls back to the first.
   const session = rotation.find((s) => s.code === chosen) ?? rotation[0]!;
