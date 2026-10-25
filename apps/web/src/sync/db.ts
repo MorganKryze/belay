@@ -377,15 +377,15 @@ async function localAt(tx: WriteTx, change: Change): Promise<string | null> {
   }
 }
 
-// The times each slot's changes wrote so far in one batch: the changes recorded together, or the
-// queue replayed over the server's rows, which the server receives as one batch.
-type BatchTimes = Map<string, Set<string>>;
+// The slot times written so far in one batch: the changes recorded together, or the queue
+// replayed over the server's rows, which the server receives as one batch.
+type BatchTimes = Set<string>;
 
 // Writes what a change says into the device's copy, the way the server merges it.
 async function applyLocal(
   tx: WriteTx,
   change: Change,
-  batch: BatchTimes = new Map(),
+  batch: BatchTimes = new Set(),
 ): Promise<void> {
   switch (change.kind) {
     case "weight":
@@ -550,11 +550,9 @@ async function applyProgram(
   const { kind, field, at, ...values } = change;
   let next: object | null | undefined;
   if (field === "create") next = row ?? created(kind, values);
-  else if (change.kind === "programSlot") {
-    const written = batch.get(change.id) ?? new Set<string>();
-    batch.set(change.id, written);
-    next = row && mergeSlotInBatch(row as ProgramSlotRow, change, written);
-  } else
+  else if (change.kind === "programSlot")
+    next = row && mergeSlotInBatch(row as ProgramSlotRow, change, batch);
+  else
     next = row && {
       ...row,
       ...("value" in values ? { [field]: values.value } : values),
@@ -712,7 +710,7 @@ export async function recordChanges(
 ): Promise<void> {
   if (!changes.every(isValidChange)) throw new RangeError("invalid change");
   await write(db, async (tx) => {
-    const batch: BatchTimes = new Map();
+    const batch: BatchTimes = new Set();
     for (const written of changes) {
       const change =
         written.kind === "workout" && written.field === "start"
@@ -1093,7 +1091,7 @@ export async function applyServer(
     await Promise.all(ops);
     // A slot change merges as on the server: one written for another measure than the server's
     // row stays out, as the server will refuse it.
-    const batch: BatchTimes = new Map();
+    const batch: BatchTimes = new Set();
     for (const { change } of await tx.objectStore("outbox").getAll())
       if (change.kind === "programSlot") await applyProgram(tx, change, batch);
       else if (isNewer(change.at, await localAt(tx, change))) await applyLocal(tx, change);
