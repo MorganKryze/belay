@@ -118,6 +118,7 @@ function RhythmSheet({
   const workouts = useHistory(account).data?.workouts;
   const today = useToday();
   const noteId = useId();
+  const failedId = useId();
   const [open, setOpen] = useState(true);
   // The schedule as the sheet opened: a newer one syncing in meanwhile is not the draft's doing,
   // so an untouched sheet leaves it be.
@@ -126,6 +127,7 @@ function RhythmSheet({
   const [days, setDays] = useState<(string | null)[]>(start.days);
   const [learned, setLearned] = useState(false);
   const [needOne, setNeedOne] = useState(false);
+  const [failed, setFailed] = useState(false);
   const saving = useRef(false);
   const inRotation = (day: string | null) => rotation.some((s) => s.sessionId === day);
   const shown = (day: string | null) => (inRotation(day) ? day! : REST);
@@ -157,7 +159,16 @@ function RhythmSheet({
       mode === start.mode && (mode === "rotation" || days.every((d, i) => d === start.days[i]));
     if (!same) {
       saving.current = true;
-      await write(setSchedule(program.id, schedule, new Date().toISOString()));
+      setFailed(false);
+      // A refused write (a lost connection, a full disk) keeps the draft open to try again.
+      try {
+        await write(setSchedule(program.id, schedule, new Date().toISOString()));
+      } catch {
+        setFailed(true);
+        return;
+      } finally {
+        saving.current = false;
+      }
     }
     setOpen(false);
   };
@@ -231,7 +242,13 @@ function RhythmSheet({
           {needOne && <FieldError id={noteId}>{t("workouts.program.rhythm.needOne")}</FieldError>}
         </>
       )}
-      <Button variant="primary" className="w-full" onClick={() => void save()}>
+      {failed && <FieldError id={failedId}>{t("weighIn.saveFailed")}</FieldError>}
+      <Button
+        variant="primary"
+        className="w-full"
+        aria-describedby={failed ? failedId : undefined}
+        onClick={() => void save()}
+      >
         {t("workouts.program.rhythm.save")}
       </Button>
     </Sheet>

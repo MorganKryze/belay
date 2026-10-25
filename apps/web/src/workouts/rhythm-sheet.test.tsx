@@ -27,6 +27,14 @@ import { fakeApi } from "../test/fake-api";
 import { renderRoute } from "../test/render-route";
 import { ADA, seed } from "../test/seed";
 
+// Passes through, until a test makes the device refuse a write (a lost connection, a full disk).
+vi.mock("../sync/db", async (importOriginal) => {
+  const real = await importOriginal<typeof import("../sync/db")>();
+  return { ...real, recordChanges: vi.fn(real.recordChanges) };
+});
+const refuseWrite = () =>
+  vi.mocked(recordChanges).mockRejectedValueOnce(new DOMException("lost", "InvalidStateError"));
+
 // Radix Select calls pointer-capture and scrolling APIs jsdom does not implement.
 beforeAll(() => {
   Element.prototype.hasPointerCapture ??= () => false;
@@ -415,6 +423,24 @@ describe("the sheet « Rythme du programme »", () => {
     await settle();
     expect(await written()).toEqual([]);
     expect(await stored()).toEqual(newer);
+  });
+
+  it("a refused write keeps the sheet open with Pas pu enregistrer, and Enregistrer tries again", async () => {
+    renderRoute("/workouts?tab=program");
+    const sheet = await openSheet();
+    fireEvent.click(within(sheet).getByRole("radio", { name: "Jours fixes" }));
+    refuseWrite();
+    fireEvent.click(within(sheet).getByRole("button", { name: "Enregistrer" }));
+    expect((await within(sheet).findByRole("alert")).textContent).toBe(
+      "Pas pu enregistrer sur ce téléphone. Réessaie.",
+    );
+    await settle();
+    expect(screen.getByRole("dialog", { name: "Rythme du programme" })).toBe(sheet);
+    expect(await written()).toEqual([]);
+    fireEvent.click(within(sheet).getByRole("button", { name: "Enregistrer" }));
+    await gone();
+    expect(await written()).toHaveLength(1);
+    expect((await stored()).mode).toBe("fixed");
   });
 
   it("every day on Repos keeps the sheet open with Choisis au moins un jour de séance and writes nothing", async () => {
