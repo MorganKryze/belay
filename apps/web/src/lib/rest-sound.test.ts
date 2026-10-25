@@ -290,6 +290,15 @@ describe("the end-of-rest sound", () => {
     expect(audioSession.type).toBe("ambient");
   });
 
+  it("asks for a playback session, through the silent switch, when the sound plays over all", () => {
+    sound.setRestSound("over");
+    const audioSession = { type: "auto" };
+    Object.defineProperty(navigator, "audioSession", { value: audioSession, configurable: true });
+    sound.armRestSound()();
+    expect(audioSession.type).toBe("playback");
+    expect(sound.restEnded(new Date(Date.now() - 100).toISOString())).toBe(false); // still locked
+  });
+
   it("previewRestSound plays at once", () => {
     sound.previewRestSound();
     expect(FakeContext.made).toHaveLength(1);

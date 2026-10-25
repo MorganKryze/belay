@@ -9,7 +9,8 @@
     "restSound": "Son de fin de repos",
     "restSoundOptions": {
       "off": "Coupé",
-      "on": "Activé"
+      "on": "Avec ma musique",
+      "over": "Même en silencieux"
     },
     "pauseStops": "En pause",
     "pauseStopsOptions": {

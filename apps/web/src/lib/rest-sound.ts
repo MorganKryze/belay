@@ -2,8 +2,15 @@ import { preference } from "./preference";
 
 // A short tone when a rest runs out, for whoever turns it on in Settings. Only lazy screens import
 // this module: the session screen, the session bar and Settings, never the startup bundle.
-export type RestSound = "off" | "on";
-export const [readRestSound, setRestSound] = preference<RestSound>("belay.restSound", "off", "on");
+// « on » plays with the person's music and keeps quiet when the iPhone is on silent; « over »
+// sounds even on silent, and iOS pauses the music for it.
+export type RestSound = "off" | "on" | "over";
+export const [readRestSound, setRestSound] = preference<RestSound>(
+  "belay.restSound",
+  "off",
+  "on",
+  "over",
+);
 
 // A rest end seen later than this (timers held back in the background, a reload past the end)
 // stays silent: a tone long after the fact would only startle.
@@ -20,17 +27,18 @@ let context: AudioContext | null = null;
 // Not in TypeScript's DOM types yet; Safari has it, other browsers leave it out.
 type WithAudioSession = Navigator & { audioSession?: { type: string } };
 
-// « ambient » mixes with the person's music and follows the iPhone's silent switch.
-function askAmbient() {
+// « ambient » mixes with the person's music and follows the iPhone's silent switch; « playback »
+// sounds through it, and iOS gives it the speaker alone, pausing the music.
+function askSession() {
   const session = (navigator as WithAudioSession).audioSession;
-  if (session) session.type = "ambient";
+  if (session) session.type = readRestSound() === "over" ? "playback" : "ambient";
 }
 
 // Makes or resumes the context. Audio is a nicety here: a browser that refuses it gets silence,
 // never an error in the person's way, so a failure is left as no context.
 function wake(): AudioContext | null {
   try {
-    askAmbient();
+    askSession();
     context ??= new AudioContext();
     if (context.state !== "running") context.resume().catch(() => {});
     return context;
@@ -73,8 +81,8 @@ function tone(audio: AudioContext) {
 // locked after a reload or a lock, unless another tap had come within the last few seconds. The listeners go once the
 // context runs and come back when it stops running (iOS interrupts it in the background).
 export function armRestSound(): () => void {
-  if (readRestSound() !== "on") return () => {};
-  askAmbient();
+  if (readRestSound() === "off") return () => {};
+  askSession();
   const options = { capture: true };
   let listening = false;
   let watched: AudioContext | null = null;
@@ -117,7 +125,7 @@ export function armRestSound(): () => void {
 // played.
 export function restEnded(endsAt: string, now = Date.now()): boolean {
   try {
-    if (readRestSound() !== "on" || document.visibilityState !== "visible") return false;
+    if (readRestSound() === "off" || document.visibilityState !== "visible") return false;
     const late = now - Date.parse(endsAt);
     if (!(late >= 0 && late <= FRESH_MS)) return false;
     if (context?.state !== "running" || played.includes(endsAt)) return false;

@@ -468,7 +468,7 @@ test.describe("at 360 px", () => {
           "Séances",
           [
             ["En pause", "Tout s'arrête", "Le repos continue"],
-            ["Son de fin de repos", "Coupé", "Activé"],
+            ["Son de fin de repos", "Coupé", "Avec ma musique", "Même en silencieux"],
             ["Historique", "Avec activités", "Séances seules"],
             ["Volume", "Affiché", "Masqué"],
           ],
