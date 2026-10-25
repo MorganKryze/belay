@@ -21,6 +21,11 @@ const { notes, pending, view, unschedule } = vi.hoisted(() => {
     cancel: vi.fn(unschedule),
     checkPermissions: vi.fn(async (): Promise<{ display: Display }> => ({ display: "granted" })),
     requestPermissions: vi.fn(async (): Promise<{ display: Display }> => ({ display: "granted" })),
+    // Capacitor's plugin proxy answers any other name with a method that throws, then included:
+    // a promise resolved with the plugin would call it and never settle.
+    then: () => {
+      throw new Error('"LocalNotifications.then()" is not implemented on ios');
+    },
   };
   return { notes, pending, unschedule, view: { active: null as ActiveSession | null } };
 });

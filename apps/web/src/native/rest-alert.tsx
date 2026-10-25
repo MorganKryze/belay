@@ -15,16 +15,17 @@ const ID = 1;
 
 type Notifications = typeof import("@capacitor/local-notifications").LocalNotifications;
 // Loaded with the first call rather than with this module, so the startup bundle's list of what
-// this module needs stays one file shorter.
-const plugin = (): Promise<Notifications> =>
-  import("@capacitor/local-notifications").then((m) => m.LocalNotifications);
+// this module needs stays one file shorter. Wrapped: Capacitor's plugin proxy answers « then » too,
+// so a promise resolved with the plugin itself would call it and never settle.
+const plugin = (): Promise<{ notes: Notifications }> =>
+  import("@capacitor/local-notifications").then((m) => ({ notes: m.LocalNotifications }));
 
 // Calls run one after the other, so a cancel never lands after the schedule that follows it.
 let queue: Promise<unknown> = Promise.resolve();
 function run(step: (notes: Notifications) => Promise<unknown>): void {
   queue = queue
     .then(plugin)
-    .then(step)
+    .then(({ notes }) => step(notes))
     .catch(() => {
       // A refused permission or a missing plugin leaves notifications off and changes nothing
       // else: the rest bar, the tone and the haptic still tell the end of a rest in the app.
