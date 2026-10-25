@@ -84,7 +84,7 @@ const LANGUAGE_NAMES: Record<Locale, string> = { en: "English", fr: "Français" 
 const THEMES = ["light", "dark", "system"] as const satisfies readonly Theme[];
 const PAUSE_STOPS = ["all", "session"] as const satisfies readonly PauseStops[];
 const WEIGHT_UNITS = ["kg", "lb"] as const satisfies readonly WeightUnit[];
-const REST_SOUNDS = ["off", "on"] as const satisfies readonly RestSound[];
+const REST_SOUNDS = ["off", "on", "over"] as const satisfies readonly RestSound[];
 const SHOWN = ["shown", "hidden"] as const satisfies readonly Shown[];
 
 export function Settings() {
@@ -187,7 +187,7 @@ export function Settings() {
           onChange={(v) => {
             setRestSound(v);
             setRestSoundState(v);
-            if (v === "on") previewRestSound();
+            if (v !== "off") previewRestSound();
           }}
         />
         <MenuRow

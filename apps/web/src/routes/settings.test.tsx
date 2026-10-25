@@ -160,17 +160,20 @@ describe("Settings preferences", () => {
     expect(await screen.findByRole("combobox", { name: "Weight unit · Pounds (lb)" })).toBeTruthy();
   });
 
-  it("Sessions offers the end-of-rest sound, off first, and plays the tone once on choosing on", async () => {
+  it("Sessions offers the end-of-rest sound, off first, and plays the tone on choosing a sound", async () => {
     fakeApi({ me: ADA });
     renderRoute("/settings");
     expect(await screen.findByRole("combobox", { name: "End-of-rest sound · Off" })).toBeTruthy();
     vi.mocked(previewRestSound).mockClear();
-    await choose(/^End-of-rest sound/, "On");
+    await choose(/^End-of-rest sound/, "Discreet");
     expect(localStorage.getItem("belay.restSound")).toBe("on");
     expect(previewRestSound).toHaveBeenCalledTimes(1);
+    await choose(/^End-of-rest sound/, "Always");
+    expect(localStorage.getItem("belay.restSound")).toBe("over");
+    expect(previewRestSound).toHaveBeenCalledTimes(2);
     await choose(/^End-of-rest sound/, "Off");
     expect(localStorage.getItem("belay.restSound")).toBe("off");
-    expect(previewRestSound).toHaveBeenCalledTimes(1);
+    expect(previewRestSound).toHaveBeenCalledTimes(2);
   });
 
   it("says the unit and sound rows in French", async () => {
@@ -181,9 +184,9 @@ describe("Settings preferences", () => {
     expect(
       await screen.findByRole("combobox", { name: "Unité de poids · Livres (lb)" }),
     ).toBeTruthy();
-    await choose(/^Son de fin de repos/, "Activé");
+    await choose(/^Son de fin de repos/, "Toujours");
     expect(
-      await screen.findByRole("combobox", { name: "Son de fin de repos · Activé" }),
+      await screen.findByRole("combobox", { name: "Son de fin de repos · Toujours" }),
     ).toBeTruthy();
   });
 

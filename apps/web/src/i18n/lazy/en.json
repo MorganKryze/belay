@@ -9,7 +9,8 @@
     "restSound": "End-of-rest sound",
     "restSoundOptions": {
       "off": "Off",
-      "on": "On"
+      "on": "Discreet",
+      "over": "Always"
     },
     "pauseStops": "Paused",
     "pauseStopsOptions": {
