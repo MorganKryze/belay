@@ -12,7 +12,7 @@ import {
   clearSessionCookie,
   hashToken,
   newSessionToken,
-  readSessionCookie,
+  requestToken,
   setSessionCookie,
 } from "./session";
 
@@ -132,15 +132,16 @@ export function authRoutes(cfg: Config, db: Db, getOidc: OidcProvider) {
   });
 
   auth.post("/logout", async (c) => {
-    const token = readSessionCookie(c, cfg);
-    // Cleared first: if the database fails, the browser is still logged out.
-    clearSessionCookie(c, cfg);
+    const { token, from } = requestToken(c, cfg);
+    // Cleared first: if the database fails, the browser is still logged out. A bearer request
+    // comes from the app, which holds no cookie and drops its token itself.
+    if (from === "cookie") clearSessionCookie(c, cfg);
     if (token) {
       try {
         await deleteSession(db, hashToken(token, cfg.tokenHashKey));
       } catch (err) {
-        // The cookie is already gone: the browser is logged out, and the server-side row
-        // lapses with the session lifetime.
+        // The cookie is already gone, or the app drops its token: the device is logged out, and
+        // the server-side row lapses with the session lifetime.
         console.error("logout: session not deleted:", describeError(err));
       }
     }

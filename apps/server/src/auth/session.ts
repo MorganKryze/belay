@@ -43,11 +43,27 @@ export function clearSessionCookie(c: Context, cfg: Config) {
   deleteCookie(c, SESSION_COOKIE, { path: "/", secure: cfg.secureCookies, ...prefix(cfg) });
 }
 
+// The iPhone app's web view runs from this origin; it is the only one CORS answers.
+export const NATIVE_ORIGIN = "capacitor://localhost";
+
+// 32 random bytes in base64url, as newSessionToken writes them.
+const BEARER = /^Bearer ([A-Za-z0-9_-]{43})$/;
+
+// The header decides when present, so a cookie never rescues a malformed or dead bearer token.
+export function requestToken(
+  c: Context,
+  cfg: Config,
+): { token: string | undefined; from: "bearer" | "cookie" } {
+  const header = c.req.header("authorization");
+  if (header === undefined) return { token: readSessionCookie(c, cfg), from: "cookie" };
+  return { token: BEARER.exec(header)?.[1], from: "bearer" };
+}
+
 export type AuthEnv = { Variables: { userId: string } };
 
 export function requireUser(cfg: Config, db: Db): MiddlewareHandler<AuthEnv> {
   return async (c, next) => {
-    const token = readSessionCookie(c, cfg);
+    const { token, from } = requestToken(c, cfg);
     const session = token
       ? await sessionUser(
           db,
@@ -57,11 +73,12 @@ export function requireUser(cfg: Config, db: Db): MiddlewareHandler<AuthEnv> {
         )
       : null;
     if (!token || !session) {
-      if (token) clearSessionCookie(c, cfg);
+      if (token && from === "cookie") clearSessionCookie(c, cfg);
       return c.json({ error: "unauthenticated" }, 401);
     }
-    // The DB expiry slides on every lookup, up to the absolute cap; the cookie's Max-Age follows it.
-    setSessionCookie(c, cfg, token, session.maxAge);
+    // The DB expiry slides on every lookup, up to the absolute cap; a cookie's Max-Age follows it.
+    // The app keeps its bearer token itself, so it gets no cookie.
+    if (from === "cookie") setSessionCookie(c, cfg, token, session.maxAge);
     c.set("userId", session.userId);
     await next();
   };
