@@ -74,6 +74,19 @@ test("the first launch asks for the instance and sends nothing before an address
   expect(sent.map((r) => r.url())).toEqual([]);
 });
 
+test("offline, the first screen says it once, in its field, with no banner above", async ({
+  page,
+  context,
+}) => {
+  await instance(page);
+  await launch(page);
+  await context.setOffline(true);
+  await submit(page, "belay.test");
+  await expect(page.getByRole("alert")).toHaveText("Pas de connexion. Réessaie une fois en ligne.");
+  await expect(page.getByText("Tu es hors ligne.")).toHaveCount(0);
+  await context.setOffline(false);
+});
+
 test("an address where no Belay answers says so", async ({ page }) => {
   await instance(page, "html");
   await launch(page);

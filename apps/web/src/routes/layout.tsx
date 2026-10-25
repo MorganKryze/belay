@@ -7,7 +7,7 @@ import { TopBar } from "@/components/top-bar";
 import { UpdateBanner } from "@/components/update-banner";
 import { holdLaunch } from "@/lib/launch";
 import { useOnline } from "@/lib/online";
-import { isNative } from "@/lib/platform";
+import { isNative, readInstance } from "@/lib/platform";
 import { usePresence } from "@/lib/presence";
 import { type Account, AccountProvider, useAccount, useHistory } from "@/sync/account";
 
@@ -66,6 +66,7 @@ function Shell() {
   // Signed in, the sync banner of Home and Body speaks instead: offline with nothing waiting
   // needs no banner at all (§4.6).
   const offline = !online && account.kind !== "open";
+  const banner = offline && !(isNative() && readInstance() === null);
   const router = useRouter();
   // The page on screen, not the one loading: the router announces a navigation before it starts
   // the page transition, and the chrome must still show the old page's dock and bars when the
@@ -152,12 +153,13 @@ function Shell() {
             : "pb-[max(1rem,env(safe-area-inset-bottom))]"
         }`}
       >
-        {/* Mounted for good and filled when offline, so the change is announced. */}
+        {/* Mounted for good and filled when offline, so the change is announced. The app's first
+            screen, before any instance, says it in its own field instead. */}
         <p
           role="status"
-          className={offline ? "animate-drop-in rounded-chip bg-track p-3 text-sm" : "sr-only"}
+          className={banner ? "animate-drop-in rounded-chip bg-track p-3 text-sm" : "sr-only"}
         >
-          {offline ? t("offline") : ""}
+          {banner ? t("offline") : ""}
         </p>
         <UpdateBanner />
         {isNative() && (

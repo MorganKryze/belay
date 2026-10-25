@@ -8,7 +8,7 @@ the instance needs no setting. A free install lasts 7 days, then you run it agai
 
 - A Mac with Xcode 26 or later.
 - Node 24 and pnpm.
-- An iPhone on iOS 15 or later, and its cable.
+- An iPhone on iOS 16.4 or later, and its cable.
 - A free Apple ID. No paid developer account is needed.
 
 ## Build

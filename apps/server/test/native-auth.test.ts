@@ -322,6 +322,8 @@ describe("nativeCodes", () => {
   it("refuses a code at its expiry and keeps it until then", () => {
     const codes = nativeCodes();
     const now = 1_000_000;
+    // A code lives one minute, no more.
+    expect(CODE_TTL_MS).toBe(60_000);
     expect(codes.redeem(codes.issue("u1", CHALLENGE, now), VERIFIER, now + CODE_TTL_MS)).toBeNull();
     expect(codes.redeem(codes.issue("u1", CHALLENGE, now), VERIFIER, now + CODE_TTL_MS - 1)).toBe(
       "u1",
