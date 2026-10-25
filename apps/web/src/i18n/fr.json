@@ -435,7 +435,15 @@
     "doneToday": "Faite aujourd'hui",
     "doneLine_one": "{{duration}} · {{count}} série",
     "doneLine_other": "{{duration}} · {{count}} séries",
-    "nextLink": "La prochaine :"
+    "nextLink": "La prochaine :",
+    "today": "Aujourd'hui",
+    "tomorrow": "Demain",
+    "rest": "Jour de repos",
+    "restLine": "Prévu par ton programme",
+    "due": "Prévue ce {{day}}",
+    "doneYesterday": "Faite hier",
+    "doneOn": "Faite {{day}}",
+    "whenLink": "{{when}} :"
   },
   "program": {
     "session": "Séance {{code}} · {{name}}",

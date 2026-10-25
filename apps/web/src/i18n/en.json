@@ -435,7 +435,15 @@
     "doneToday": "Done today",
     "doneLine_one": "{{duration}} · {{count}} set",
     "doneLine_other": "{{duration}} · {{count}} sets",
-    "nextLink": "Next up:"
+    "nextLink": "Next up:",
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "rest": "Rest day",
+    "restLine": "Planned by your program",
+    "due": "Planned for {{day}}",
+    "doneYesterday": "Done yesterday",
+    "doneOn": "Done on {{day}}",
+    "whenLink": "{{when}}:"
   },
   "program": {
     "session": "Session {{code}} · {{name}}",

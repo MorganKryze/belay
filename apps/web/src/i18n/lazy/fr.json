@@ -273,7 +273,27 @@
       "sessions_one": "{{count}} séance",
       "sessions_other": "{{count}} séances",
       "sheetNote": "Un toucher l'active et ferme. Créer, renommer ou supprimer un programme se fait sur ordinateur.",
-      "aside": "De côté · hors rotation"
+      "aside": "De côté · hors rotation",
+      "rhythm": {
+        "row": "Rythme",
+        "rotation": "En rotation",
+        "fixed": "Jours fixes",
+        "perWeek_one": "{{count}} séance par semaine",
+        "perWeek_other": "{{count}} séances par semaine",
+        "inTurn": "{{letters}} à la suite",
+        "span": "{{first}} à {{last}} à la suite",
+        "single": "{{letter}} à chaque fois",
+        "title": "Rythme du programme",
+        "mode": "Rythme du programme",
+        "rotationNote": "Les séances s'enchaînent dans l'ordre, quel que soit le jour. Pas de jour de repos prévu.",
+        "proposed": "Proposé d'après tes dernières semaines. Un tap change un jour.",
+        "tapHint": "Un tap change un jour.",
+        "rest": "Repos",
+        "save": "Enregistrer",
+        "needOne": "Choisis au moins un jour de séance.",
+        "tomorrowOn": "Demain, {{day}}",
+        "named": "{{code}} · {{name}}"
+      }
     },
     "rir": "RIR {{range}}",
     "restSec": "{{s}} s",
