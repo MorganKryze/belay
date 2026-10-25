@@ -2,7 +2,7 @@ import type { Change } from "@belay/shared/sync/schema";
 import type { Schedule } from "@belay/shared/training/stored-program";
 import type { Slot } from "@belay/shared/training/workout";
 import { expect, type Page, test } from "@playwright/test";
-import { expectNoAxeViolations } from "./axe";
+import { expectNoAxeViolations, settled } from "./axe";
 import { ADA, fakeServer } from "./fake-server";
 
 // The program's rhythm on Programme: the « Rythme » row and its sheet, from rotation to fixed
@@ -242,6 +242,8 @@ test.describe("at 360 px", () => {
     );
     await row(page).click();
     await expect(day(page, "Mercredi")).toBeVisible();
+    // Measured once the sheet has risen: mid-slide a chip sits between pixels and reads 43.9999.
+    await settled(page);
     for (const chip of await sheet(page).getByRole("radio").all()) {
       const box = (await chip.boundingBox())!;
       expect(box.width).toBeGreaterThanOrEqual(44);
