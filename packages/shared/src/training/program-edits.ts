@@ -14,6 +14,7 @@ import {
   DEFAULT_SCHEDULE,
   isProgramSlot,
   isSessionName,
+  LETTERS,
   MAX_PROGRAMS,
   MAX_ROTATION,
   MAX_SESSIONS,
@@ -624,8 +625,6 @@ export function leaveGroup(
     ...(middle ? renumber(insert(others, slot, others.indexOf(last) + 1), at) : []),
   ];
 }
-
-const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 // The letters an edit changes, given the rotation's session ids before and after it, in the after
 // order; a session only in one of the two has no letter change to say.
