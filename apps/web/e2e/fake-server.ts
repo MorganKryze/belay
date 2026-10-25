@@ -198,6 +198,8 @@ export async function fakeServer(
               {
                 sessionCode: c.sessionCode,
                 sessionId: c.sessionId ?? null,
+                // As the server: sent back only when the start kept it.
+                ...(c.sessionName !== undefined && { sessionName: c.sessionName }),
                 plan: c.plan,
                 startedAt: c.startedAt,
               },
@@ -443,11 +445,38 @@ export const WEEKS = [
   { date: "2026-10-06", weightKg: 79.9 },
 ];
 
-// The server refuses whatever the phone sends; with nothing sent, the fake answers as usual.
-export async function refuseChanges(page: Page, reason: Rejected["reason"] = "refused") {
+const PROGRAM_TABLES = {
+  program: "programs",
+  programSession: "programSessions",
+  programSlot: "programSlots",
+} as const;
+
+// The server refuses whatever the phone sends; with nothing sent, the fake answers as usual. Given
+// the fake server, it sends back, as the real one does, the rows it holds for the programs,
+// sessions and slots it refused, so a refused field shows the stored value again.
+export async function refuseChanges(
+  page: Page,
+  reason: Rejected["reason"] = "refused",
+  server?: { other: ReadonlyMap<string, Row> },
+) {
   await page.route("**/api/sync", (route) => {
     const request = route.request().postDataJSON() as SyncRequest;
     if (request.changes.length === 0) return route.fallback();
+    const held = (table: (typeof PROGRAM_TABLES)[keyof typeof PROGRAM_TABLES]) => {
+      const keys = new Set(
+        request.changes.flatMap((c) =>
+          c.kind in PROGRAM_TABLES &&
+          PROGRAM_TABLES[c.kind as keyof typeof PROGRAM_TABLES] === table &&
+          "id" in c
+            ? [`${table}|${c.id}`]
+            : [],
+        ),
+      );
+      return [...keys].flatMap((key) => {
+        const row = server?.other.get(key);
+        return row ? [bare(row)] : [];
+      });
+    };
     return route.fulfill({
       json: {
         cursor: request.cursor,
@@ -463,6 +492,9 @@ export async function refuseChanges(page: Page, reason: Rejected["reason"] = "re
         sets: [],
         target: null,
         profile: null,
+        programs: held("programs"),
+        programSessions: held("programSessions"),
+        programSlots: held("programSlots"),
         rejected: request.changes.map((_, index) => ({ index, reason })),
         hasMore: false,
       },

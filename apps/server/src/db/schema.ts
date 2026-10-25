@@ -318,6 +318,12 @@ export const workouts = pgTable(
     // without it (before programs were stored, or from an older phone). No key: a start is never
     // refused for it, and it is only read within the same account.
     sessionId: uuid("session_id"),
+    // That session's name on the day, written once with the start so history never follows a
+    // rename. A start that kept it sets session_name_kept, its name null when the session had
+    // none; a start that did not (before names were kept, or from an older phone) leaves both
+    // unset and shows the session's current name.
+    sessionName: text("session_name"),
+    sessionNameKept: boolean("session_name_kept").notNull().default(false),
     plan: jsonb("plan").$type<Slot[]>().notNull(),
     planAt: ts("plan_at"),
     startedAt: ts("started_at").notNull(),
@@ -339,6 +345,10 @@ export const workouts = pgTable(
     unique("workouts_id_user").on(t.id, t.userId),
     index("workouts_user_seq").on(t.userId, t.serverSeq),
     check("workouts_session_code", sql`${t.sessionCode} ~ '^[A-Z]$'`),
+    check(
+      "workouts_session_name",
+      sql`${t.sessionName} IS NULL OR (${t.sessionNameKept} AND char_length(${t.sessionName}) BETWEEN 1 AND 40)`,
+    ),
     check("workouts_plan_size", sql`octet_length(${t.plan}::text) <= 16384`),
     check("workouts_note", sql`${t.note} IS NULL OR char_length(${t.note}) <= 500`),
     check(

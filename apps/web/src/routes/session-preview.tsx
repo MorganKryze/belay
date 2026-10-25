@@ -7,10 +7,13 @@ import { planFor } from "@belay/shared/training/plan";
 import { estimatedMinutes, plannedWorkSets } from "@belay/shared/training/program";
 import { type History, lastFinished, lastTopSet, openWorkout } from "@belay/shared/training/rules";
 import {
+  byPosition,
   type LetteredTemplate,
-  type ProgramSession,
+  type ProgramSlot,
   startedAs,
+  type StoredPrograms,
 } from "@belay/shared/training/stored-program";
+import { isSessionCode, type Slot } from "@belay/shared/training/workout";
 import { Link, useParams, useSearch } from "@tanstack/react-router";
 import { Play } from "lucide-react";
 import { useId } from "react";
@@ -19,7 +22,7 @@ import { groupCard, NumberTile, RowLink } from "@/components/grouped-list";
 import { LoopThumb } from "@/components/loop-thumb";
 import { BackLink, PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
-import { formatWeekday, rotationTitle, workoutTitle } from "@/lib/format";
+import { formatWeekday, rotationTitle, sessionName, workoutTitle } from "@/lib/format";
 import { readMedia } from "@/lib/media-flag";
 import { useToday } from "@/lib/today";
 import {
@@ -34,8 +37,10 @@ import { NotFound } from "./fallbacks";
 
 // A session of the active program's rotation before it starts: what it holds today, how long it
 // takes, how it went last time, and the one action that starts it. Without an account it reads
-// the starting program the same way, with nothing to start. A letter the rotation does not hold
-// (a session set aside or removed, or an old link) is not found.
+// the starting program the same way, with nothing to start. The address names it by its letter or
+// by its id; a session set aside, named by its id, reads the same way under its name, with nothing
+// to start. A letter the rotation does not hold, or an id of no live session there or set aside
+// (an old link), is not found.
 export function SessionPreview() {
   const account = useAccount();
   if (account.kind === "loading") return null;
@@ -52,7 +57,7 @@ function WithData({ account }: { account: OpenAccount }) {
       history={history}
       activities={activities}
       rotation={program.rotation}
-      sessions={program.programs.sessions}
+      programs={program.programs}
     />
   );
 }
@@ -64,21 +69,49 @@ function WithoutAccount() {
       history={null}
       activities={[]}
       rotation={program.rotation}
-      sessions={program.programs.sessions}
+      programs={program.programs}
     />
   ) : null;
+}
+
+// A program slot as a plan reads it: the no-climbing rule is the template's to mark.
+const asSlot = (s: ProgramSlot): Slot => ({ ...s, rule: undefined });
+
+// What the address names: the rotation session of that letter or id, or the set-aside session of
+// that id as a template with no letter; null for anything else.
+function shownOf(
+  code: string,
+  rotation: readonly LetteredTemplate[],
+  programs: StoredPrograms,
+): { session: LetteredTemplate; aside: boolean } | null {
+  const inRotation = rotation.find((s) => (isSessionCode(code) ? s.code : s.sessionId) === code);
+  if (inRotation) return { session: inRotation, aside: false };
+  const aside = programs.sessions.find((s) => s.id === code && s.programId === null && !s.removed);
+  if (!aside) return null;
+  const own = programs.slots.filter((s) => s.sessionId === code && !s.removed).sort(byPosition);
+  const section = (rule: ProgramSlot["rule"]) => own.filter((s) => s.rule === rule).map(asSlot);
+  return {
+    session: {
+      code: "",
+      sessionId: aside.id,
+      name: aside.name,
+      slots: section(null),
+      noClimbing: section("no_climbing"),
+    },
+    aside: true,
+  };
 }
 
 function Preview({
   history,
   activities,
   rotation,
-  sessions,
+  programs,
 }: {
   history: History | null;
   activities: readonly Activity[];
   rotation: readonly LetteredTemplate[];
-  sessions: readonly ProgramSession[];
+  programs: StoredPrograms;
 }) {
   const { t, i18n } = useTranslation();
   const { code } = useParams({ from: "/workouts/session/$code" });
@@ -88,8 +121,9 @@ function Preview({
   // Where the instance serves loops, each row's still takes a 44 px place and the row's padding
   // gives way, so the row stays 56 px; elsewhere the rows are as they were.
   const media = readMedia() === "on";
-  const session = rotation.find((s) => s.code === code);
-  if (!session) return <NotFound />;
+  const shown = shownOf(code, rotation, programs);
+  if (!shown) return <NotFound />;
+  const { session, aside } = shown;
   const plan = planFor(session, activities, today);
   const last = history && lastFinished(history.workouts, session);
   const open = history && openWorkout(history.workouts, { sets: history.sets, now: new Date() });
@@ -108,7 +142,11 @@ function Preview({
   return (
     <section className="flex flex-col gap-4">
       <PageHeader
-        title={rotationTitle(session, t)}
+        title={
+          aside
+            ? sessionName({ id: session.sessionId, name: session.name }, t)
+            : rotationTitle(session, t)
+        }
         back={
           from === "home" ? (
             <BackLink to="/">{t("nav.home")}</BackLink>
@@ -119,6 +157,9 @@ function Preview({
           )
         }
       >
+        {aside && (
+          <p className="text-body font-semibold text-muted-foreground">{t("preview.aside")}</p>
+        )}
         <p className="text-body text-muted-foreground">
           {t("preview.size", {
             count: plan.length,
@@ -139,15 +180,16 @@ function Preview({
         )}
       </PageHeader>
       {history &&
+        !aside &&
         (open && !startedAs(open, session) ? (
           <div className="flex flex-col gap-3">
             <p className="text-body">
-              {t("preview.otherOpen", { title: workoutTitle(open, sessions, t) })}
+              {t("preview.otherOpen", { title: workoutTitle(open, programs.sessions, t) })}
             </p>
             {startLink(open.sessionCode, t("preview.resumeOther"))}
           </div>
         ) : (
-          startLink(code, t(open ? "preview.resume" : "preview.start"))
+          startLink(session.code, t(open ? "preview.resume" : "preview.start"))
         ))}
       <section aria-labelledby={listId} className="flex flex-col gap-2">
         <div className="flex items-baseline justify-between gap-3 px-4">
@@ -166,7 +208,7 @@ function Preview({
                 <RowLink
                   to="/exercises/$exerciseId"
                   params={{ exerciseId: slot.exerciseId }}
-                  search={{ session: code, ...(from && { from }) }}
+                  search={{ ...(!aside && { session: session.code }), ...(from && { from }) }}
                   className={media ? "py-1.5" : undefined}
                   leading={
                     media ? (

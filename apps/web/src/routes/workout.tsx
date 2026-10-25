@@ -103,9 +103,9 @@ function Session({ account }: { account: OpenAccount }) {
   // ?start=B: start the active rotation's session B (or take up the one already open), then drop
   // the parameter so a reload never starts another. The session copies the rotation as it stands
   // now and records the session it came from; a later program change never reaches it (HF1).
-  // Session C's rule reads the week's activities now, once (D6). A letter the rotation lacks still
-  // takes up the session open, whose letter may have left it since; with none open, it is not
-  // found (RD3).
+  // Session C's rule reads the week's activities now, once. A letter the rotation lacks is
+  // not found, even with a session open, unless it is that session's own letter: Home's resume
+  // row and the session bar ask for it, and it may have left the rotation since.
   useEffect(() => {
     if (!start || started.current) return;
     started.current = true;
@@ -117,7 +117,7 @@ function Session({ account }: { account: OpenAccount }) {
     ]).then(([programs, activities, history]) => {
       const session = rotationOf(programs).find((s) => s.code === start);
       const open = openWorkout(history.workouts, { sets: history.sets, now: new Date() });
-      if (!session && !open) return setMissing(true);
+      if (!session && open?.sessionCode !== start) return setMissing(true);
       return (
         session
           ? startWorkout(

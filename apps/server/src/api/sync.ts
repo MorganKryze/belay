@@ -687,6 +687,10 @@ async function writeWorkouts(ctx: Ctx, all: Indexed<WorkoutChange>[]) {
               // Written once with the start, never checked: a start is never refused for it, and
               // it is only read within this account.
               sessionId: c.sessionId ?? null,
+              // The session's name on the day, kept once like the rest of the start: an older
+              // phone's start keeps none, and a later start of the same id changes nothing.
+              sessionName: c.sessionName ?? null,
+              sessionNameKept: c.sessionName !== undefined,
               plan: c.plan,
               startedAt: new Date(clampWorkoutTime(c.startedAt, now)),
             })
@@ -1206,6 +1210,8 @@ function rowsOf(items: Item[]) {
         sessionCode: r.sessionCode,
         // Only when it recorded one: an older phone reads the row as before.
         ...(r.sessionId !== null && { sessionId: r.sessionId }),
+        // Only when its start kept it: absent, the phone shows the session's current name.
+        ...(r.sessionNameKept && { sessionName: r.sessionName }),
         plan: r.plan,
         planAt: iso(r.planAt),
         startedAt: r.startedAt.toISOString(),

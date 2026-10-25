@@ -12,6 +12,9 @@ training, built for friends who cheer each other on.
   mentioned; nobody gets ranked.
 - **Built for the gym floor.** Installs as an app, works offline for hours or
   days, syncs when the network is back, usable with one hand.
+- **Your own programs.** Keep as many programs as you like, each with as many
+  sessions as you want. Edit them in comfort on a computer, then pick the
+  active one on your phone.
 
 > Belay is not medical advice.
 

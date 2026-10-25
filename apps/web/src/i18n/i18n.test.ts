@@ -1,5 +1,7 @@
 import { TOOL_SCIENCE } from "@belay/shared/science/tools";
 import { describe, expect, it } from "vitest";
+import editorEn from "./editor/en.json";
+import editorFr from "./editor/fr.json";
 import mainEn from "./en.json";
 import mainFr from "./fr.json";
 import { detectLocale } from "./index";
@@ -10,15 +12,16 @@ const keys = (o: object, p = ""): string[] =>
   Object.entries(o).flatMap(([k, v]) =>
     typeof v === "object" && v !== null ? keys(v, `${p}${k}.`) : [`${p}${k}`],
   );
-// Each language as the app ends up with it: the initial strings, then those loaded on demand.
+// Each language as the app ends up with it: the initial strings, then those loaded on demand,
+// the lazy screens' and the editor's.
 const merge = (a: object, b: object): object => {
   const out: Record<string, unknown> = { ...a };
   for (const [k, v] of Object.entries(b))
     out[k] = typeof v === "object" && v !== null && k in out ? merge(out[k] as object, v) : v;
   return out;
 };
-const en = merge(mainEn, lazyEn);
-const fr = merge(mainFr, lazyFr);
+const en = merge(merge(mainEn, lazyEn), editorEn);
+const fr = merge(merge(mainFr, lazyFr), editorFr);
 
 describe("detectLocale", () => {
   it.each([
@@ -47,6 +50,8 @@ describe("translations", () => {
       keys(lazy).filter((k) => keys(main).some((m) => clash(k, m)));
     expect(clashes(lazyEn, mainEn)).toEqual([]);
     expect(clashes(lazyFr, mainFr)).toEqual([]);
+    expect(clashes(editorEn, merge(mainEn, lazyEn))).toEqual([]);
+    expect(clashes(editorFr, merge(mainFr, lazyFr))).toEqual([]);
   });
 
   it("never judges a body, nor a session cut short or deleted", () => {

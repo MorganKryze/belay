@@ -6,11 +6,15 @@ import {
   Check,
   CirclePause,
   Dumbbell,
+  ImageIcon,
   Info,
+  Keyboard,
   Languages,
+  ListPlus,
   Pill,
   Scale,
   SunMoon,
+  Timer,
   UserRound,
   Utensils,
   Weight,
@@ -48,6 +52,16 @@ import {
   setHomeTrend,
   setRangePill,
 } from "@/lib/home-trend";
+import {
+  readAdded,
+  readHelp,
+  readRestStyle,
+  readThumbs,
+  setAdded,
+  setHelp,
+  setRestStyle,
+  setThumbs,
+} from "@/lib/editor-prefs";
 import { readPauseStops, setPauseStops } from "@/lib/pause-stops";
 import { previewRestSound, readRestSound, setRestSound, type RestSound } from "@/lib/rest-sound";
 import { readTheme, setTheme, type Theme } from "@/lib/theme";
@@ -203,6 +217,7 @@ export function Settings() {
           }}
         />
       </GroupedList>
+      <EditorPreferences />
       <GroupedList label={body}>
         <MenuRow
           icon={Check}
@@ -272,6 +287,74 @@ export function Settings() {
         <VersionLine />
       </div>
     </section>
+  );
+}
+
+// The program editor's tastes, kept on this device and read by the editor when it draws. The
+// editor opens on a computer only, so its group shows from the large breakpoint.
+function EditorPreferences() {
+  const { t } = useTranslation();
+  const [rest, setRestState] = useState(readRestStyle);
+  const [thumbs, setThumbsState] = useState(readThumbs);
+  const [help, setHelpState] = useState(readHelp);
+  const [added, setAddedState] = useState(readAdded);
+  return (
+    <div className="hidden lg:block">
+      <GroupedList label={t("settings.editor")}>
+        <MenuRow
+          icon={Timer}
+          label={t("settings.editorRest")}
+          value={rest}
+          options={(["words", "clock"] as const).map((v) => ({
+            value: v,
+            label: t(`settings.editorRestOptions.${v}`),
+          }))}
+          onChange={(v) => {
+            setRestStyle(v);
+            setRestState(v);
+          }}
+        />
+        <MenuRow
+          icon={ImageIcon}
+          label={t("settings.editorThumbs")}
+          value={thumbs}
+          options={(["shown", "hidden"] as const).map((v) => ({
+            value: v,
+            label: t(`settings.editorThumbsOptions.${v}`),
+          }))}
+          onChange={(v) => {
+            setThumbs(v);
+            setThumbsState(v);
+          }}
+        />
+        <MenuRow
+          icon={Keyboard}
+          label={t("settings.editorHelp")}
+          value={help}
+          options={(["always", "focus"] as const).map((v) => ({
+            value: v,
+            label: t(`settings.editorHelpOptions.${v}`),
+          }))}
+          onChange={(v) => {
+            setHelp(v);
+            setHelpState(v);
+          }}
+        />
+        <MenuRow
+          icon={ListPlus}
+          label={t("settings.editorAdded")}
+          value={added}
+          options={(["defaults", "above"] as const).map((v) => ({
+            value: v,
+            label: t(`settings.editorAddedOptions.${v}`),
+          }))}
+          onChange={(v) => {
+            setAdded(v);
+            setAddedState(v);
+          }}
+        />
+      </GroupedList>
+    </div>
   );
 }
 

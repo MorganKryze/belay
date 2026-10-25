@@ -135,6 +135,7 @@ export function isValidChange(change: Change): boolean {
           return (
             isSessionCode(change.sessionCode) &&
             (change.sessionId == null || isId(change.sessionId)) &&
+            (change.sessionName === undefined || isSessionName(change.sessionName)) &&
             isPlan(change.plan) &&
             isTimeOf(change.startedAt, change.at)
           );

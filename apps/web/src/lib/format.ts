@@ -133,21 +133,28 @@ export const rotationTitle = (
   t: TFunction,
 ): string => sessionTitle(s.code, t, shownName(s.sessionId, s.name, t));
 
-// A session done keeps the letter it was started under and shows the current name of the session
-// it recorded, among the account's sessions (set aside or removed ones included); one that recorded
-// none is named after its letter (HF2).
+// A session done keeps the letter it was started under and the name its session held that day:
+// none kept, a starting session's translated name, else the letter alone. One started before
+// names were kept shows the current name of the session it recorded, among the account's sessions
+// (set aside or removed ones included); one that recorded none is named after its letter (HF2).
 export const workoutTitle = (
-  w: { sessionCode: string; sessionId?: string | null },
+  w: { sessionCode: string; sessionId?: string | null; sessionName?: string | null },
   sessions: readonly { id: string; name: string | null }[],
   t: TFunction,
 ): string =>
-  w.sessionId
+  w.sessionName !== undefined
     ? sessionTitle(
         w.sessionCode,
         t,
-        shownName(w.sessionId, sessions.find((s) => s.id === w.sessionId)?.name ?? null, t),
+        w.sessionName ?? (w.sessionId ? shownName(w.sessionId, null, t) : null),
       )
-    : sessionTitle(w.sessionCode, t);
+    : w.sessionId
+      ? sessionTitle(
+          w.sessionCode,
+          t,
+          shownName(w.sessionId, sessions.find((s) => s.id === w.sessionId)?.name ?? null, t),
+        )
+      : sessionTitle(w.sessionCode, t);
 
 // A session with no letter (set aside): its name, else « Séance sans nom ».
 export const sessionName = (s: { id: string; name: string | null }, t: TFunction): string =>

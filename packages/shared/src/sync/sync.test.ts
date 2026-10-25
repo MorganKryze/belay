@@ -1146,9 +1146,17 @@ describe("a slot change over its stored row (SY2, ED4)", () => {
     expect(mergeSlotChange(row, change({ field: "warmups", value: 1, measure: "seconds" }))).toBe(
       null,
     );
-    // Older, it simply loses: the row goes back as for any stale write.
-    const old = change({ field: "reps", value: [8, 12], measure: "seconds", at: T0 });
-    expect(mergeSlotChange(row, old)).toBe(row);
+  });
+
+  it("refuses a range or warm-ups made for another measure at an equal or older time too", () => {
+    // Built on a view from before a swap: refused whatever its time, so the phone and the
+    // server always say so instead of dropping it like a plain stale write.
+    for (const at of [T1, T0]) {
+      const reps = change({ field: "reps", value: [8, 12], measure: "seconds", at });
+      const warmups = change({ field: "warmups", value: 0, measure: "seconds", at });
+      expect(mergeSlotChange(row, reps), at).toBe(null);
+      expect(mergeSlotChange(row, warmups), at).toBe(null);
+    }
   });
 
   it("an exercise in another measure brings its range and warm-ups over newer ones", () => {
@@ -1221,5 +1229,65 @@ describe("a slot change over its stored row (SY2, ED4)", () => {
     expect(mergeSlotChange(row, change({ field: "reps", value: [1, 101], measure: null }))).toBe(
       null,
     );
+  });
+});
+
+describe("a session's name of the day, kept with its start (HN1, HN2, HN7)", () => {
+  const PSESSION = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d93";
+  const start = { ...SESSION[0]!, sessionId: PSESSION } as Change;
+  const named = (sessionName: unknown) => ({ ...start, sessionName }) as Change;
+  const row = {
+    id: WORKOUT,
+    sessionCode: "B",
+    plan: PLAN,
+    planAt: null,
+    startedAt: AT,
+    startedAtAt: null,
+    endedAt: null,
+    endedAtAt: null,
+    note: null,
+    noteAt: null,
+    exerciseNotes: {},
+    exerciseNotesAt: null,
+    removed: false,
+    removedAt: null,
+  };
+
+  it("accepts a start with the name of the day, with none (null) and without the field", () => {
+    for (const c of [start, named("Legs"), named(null), named("x".repeat(40))]) {
+      expect(isValidChange(c), JSON.stringify(c).slice(0, 80)).toBe(true);
+      expect(request([c]).success).toBe(true);
+    }
+    expect(ChangeSchema.parse(named("Legs"))).toMatchObject({ sessionName: "Legs" });
+    expect(ChangeSchema.parse(named(null))).toMatchObject({ sessionName: null });
+    expect(ChangeSchema.parse(start)).not.toHaveProperty("sessionName");
+  });
+
+  it("refuses a name a session could not hold, on both sides alike", () => {
+    for (const bad of ["", " Legs", "Legs ", "x".repeat(41), "Le\u0000gs", "Le\ngs", 3]) {
+      expect(isValidChange(named(bad)), JSON.stringify(bad)).toBe(false);
+      expect(request([named(bad)]).success, JSON.stringify(bad)).toBe(false);
+    }
+  });
+
+  it("reads a session's name of the day from an answer, absent from an older server", () => {
+    const parsed = SyncResponseSchema.parse({
+      cursor: "0",
+      weights: [],
+      measures: [],
+      intake: [],
+      supplements: [],
+      supplementLogs: [],
+      annotations: [],
+      steps: [],
+      activities: [],
+      workouts: [row, { ...row, sessionName: "Legs" }, { ...row, sessionName: null }],
+      sets: [],
+      target: null,
+      profile: null,
+      rejected: [],
+      hasMore: false,
+    });
+    expect(parsed.workouts.map((w) => w.sessionName)).toEqual([undefined, "Legs", null]);
   });
 });

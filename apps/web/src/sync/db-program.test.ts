@@ -446,11 +446,108 @@ describe("programs on the phone", () => {
     await startWorkout(db, { ...start, sessionId: A });
     const [workout] = (await readHistory(db)).workouts;
     expect(workout!.sessionId).toBe(A);
-    expect((await readOutbox(db)).map((e) => e.change)).toEqual([{ ...start, sessionId: A }]);
+    // With the name session A held then: none, a starting session never renamed.
+    expect((await readOutbox(db)).map((e) => e.change)).toEqual([
+      { ...start, sessionId: A, sessionName: null },
+    ]);
 
     const other = await openAccountDb("user-b");
     await startWorkout(other, start);
     expect("sessionId" in (await readHistory(other)).workouts[0]!).toBe(false);
     other.close();
+  });
+});
+
+describe("a session's name of the day on the phone (HN1, HN4, HN5)", () => {
+  let db: AccountDb;
+  beforeEach(async () => {
+    db = await openAccountDb("user-a");
+  });
+  const start = (sessionId?: string): Extract<Change, { kind: "workout"; field: "start" }> => ({
+    kind: "workout",
+    id: W,
+    field: "start",
+    sessionCode: "A",
+    ...(sessionId !== undefined && { sessionId }),
+    plan: PLAN,
+    startedAt: AT,
+    at: AT,
+  });
+  const done = async () => (await readHistory(db)).workouts[0]!;
+  const queued = async () => (await readOutbox(db)).map((e) => e.change).at(-1);
+
+  it("a start keeps the name its session holds on this device, in the same write", async () => {
+    await recordChanges(db, [rename("Haut du corps")]);
+    await startWorkout(db, start(A));
+    expect((await done()).sessionName).toBe("Haut du corps");
+    expect(await queued()).toEqual({ ...start(A), sessionName: "Haut du corps" });
+  });
+
+  it("a starting session never renamed keeps null, a start with no session keeps nothing", async () => {
+    await startWorkout(db, start(A));
+    expect((await done()).sessionName).toBeNull();
+    expect(await queued()).toEqual({ ...start(A), sessionName: null });
+    const other = await openAccountDb("user-b");
+    await startWorkout(other, start());
+    expect("sessionName" in (await readHistory(other)).workouts[0]!).toBe(false);
+    other.close();
+  });
+
+  it("a session logged afterwards keeps it too", async () => {
+    await recordChanges(db, [...secondProgram]);
+    await recordChanges(db, [
+      { kind: "programSession", id: S2, field: "name", value: "Gainage", at: LATER },
+    ]);
+    await recordChanges(db, [start(S2)]);
+    expect((await done()).sessionName).toBe("Gainage");
+    expect(await queued()).toMatchObject({ field: "start", sessionName: "Gainage" });
+  });
+
+  it("a rename, a removal or an edit of the session done afterwards leave its name", async () => {
+    await recordChanges(db, [rename("Haut du corps")]);
+    await startWorkout(db, start(A));
+    await recordChanges(db, [
+      rename("Pecs", LATER),
+      removeA(LATEST),
+      { kind: "workout", id: W, field: "plan", value: PLAN.slice(1), at: LATER },
+      { kind: "workout", id: W, field: "ended", value: LATER, at: LATER },
+      // A second start of the same id, as a replay: written once, it changes nothing.
+      { ...start(A), at: LATEST },
+    ]);
+    expect((await done()).sessionName).toBe("Haut du corps");
+  });
+
+  it("keeps an invalid stored name as null rather than refusing the start", async () => {
+    await recordChanges(db, [rename("Haut du corps")]);
+    const raw = await openDB(accountDbName("user-a"));
+    const row = await raw.get("programSessions", A);
+    await raw.put("programSessions", { ...row, name: "x".repeat(41) });
+    raw.close();
+    await startWorkout(db, start(A));
+    expect((await done()).sessionName).toBeNull();
+  });
+
+  it("takes the name back from the server's row, and keeps none when the row has none", async () => {
+    const row = {
+      id: W,
+      sessionCode: "A",
+      sessionId: A,
+      plan: PLAN,
+      planAt: null,
+      startedAt: AT,
+      startedAtAt: null,
+      endedAt: LATER,
+      endedAtAt: LATER,
+      note: null,
+      noteAt: null,
+      exerciseNotes: {},
+      exerciseNotesAt: null,
+      removed: false,
+      removedAt: null,
+    };
+    await applyServer(db, [], answer({ workouts: [{ ...row, sessionName: "Legs" }] }));
+    expect((await done()).sessionName).toBe("Legs");
+    await applyServer(db, [], answer({ workouts: [row] }));
+    expect("sessionName" in (await done())).toBe(false);
   });
 });

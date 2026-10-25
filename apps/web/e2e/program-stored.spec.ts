@@ -132,7 +132,9 @@ const row = (page: Page, title: string) =>
     .filter({ has: page.getByRole("heading", { level: 2, name: title, exact: true }) });
 const heading = (page: Page, name: string) =>
   page.getByRole("heading", { level: 1, name, exact: true });
-const programTitles = (page: Page) => page.getByRole("main").getByRole("heading", { level: 2 });
+// The cards' titles, not the section of the sessions set aside.
+const programTitles = (page: Page) =>
+  page.getByRole("main").getByRole("heading", { level: 2, name: /^Séance / });
 const FIVE = [
   "Séance D · Dos et abdos",
   "Séance E",
@@ -159,7 +161,8 @@ test("Programme lists the active rotation with letters by position and no set-as
   await open(page, "/workouts?tab=program");
   await expect(programTitles(page)).toHaveText(FIVE);
   await expect(row(page, "Séance C · Tirage")).toContainText("Il y a 2 jours");
-  await expect(page.getByText("Partagée par Lou")).toHaveCount(0);
+  // Set aside, it has no card: it is listed under them.
+  await expect(row(page, "Partagée par Lou")).toHaveCount(0);
 });
 
 test("the preview of D shows its exercises, and a letter the rotation lacks is not found", async ({
@@ -269,11 +272,19 @@ test("« Saisir une séance » offers the rotation, next first", async ({ page }
   );
   await page.getByRole("button", { name: /^Saisir une séance/ }).click();
   const sheet = page.getByRole("dialog", { name: "Saisir une séance" });
-  await expect(sheet.getByRole("radio")).toHaveText(["A", "B", "C", "D", "E"]);
-  await expect(sheet.getByRole("radio", { name: "D" })).toBeChecked();
-  await expect(sheet.getByText("Séance D · Dos et abdos", { exact: true })).toBeVisible();
-  await sheet.getByRole("radio", { name: "E" }).click();
-  await expect(sheet.getByText("Séance E", { exact: true })).toBeVisible();
+  // Five sessions no longer fit the letters: a menu row lists them from the next one.
+  const row = sheet.getByRole("combobox", { name: /^Séance · / });
+  await expect(row).toHaveAccessibleName("Séance · Séance D · Dos et abdos");
+  await row.click();
+  await expect(page.getByRole("option")).toHaveText([
+    /^Séance D/,
+    /^Séance E/,
+    /^Séance A/,
+    /^Séance B/,
+    /^Séance C/,
+  ]);
+  await page.getByRole("option", { name: "Séance E", exact: true }).click();
+  await expect(row).toHaveAccessibleName("Séance · Séance E");
   await sheet.getByRole("button", { name: "Saisir les séries" }).click();
   await expect(heading(page, "Séance E")).toBeVisible();
   await expect(page.getByRole("button", { name: /^Barbell incline bench press/ })).toBeVisible();
@@ -349,7 +360,9 @@ const STATES: [string, (page: Page) => Promise<void>][] = [
         page.getByRole("region", { name: "Récentes" }).getByRole("link").first(),
       ).toHaveText(/Séance C · Tirage$/);
       await page.getByRole("button", { name: /^Saisir une séance/ }).click();
-      await expect(page.getByRole("dialog").getByRole("radio")).toHaveCount(5);
+      await expect(
+        page.getByRole("dialog").getByRole("combobox", { name: /^Séance · / }),
+      ).toBeVisible();
     },
   ],
   [
