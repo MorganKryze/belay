@@ -11,6 +11,7 @@ import {
   type LetteredTemplate,
   nextInRotation,
   type Program,
+  rotationOf,
   startedAs,
   type StoredPrograms,
 } from "@belay/shared/training/stored-program";
@@ -76,9 +77,10 @@ export function ProgramPanel({ account }: { account: OpenAccount | null }) {
   );
 }
 
-// A program's live sessions, the ones its rotation letters.
+// A program's sessions as its rotation letters them, the ones the cards show once it is active:
+// a session with no exercise is left out.
 const sessionsOf = (programs: StoredPrograms, programId: string) =>
-  programs.sessions.filter((s) => s.programId === programId && !s.removed).length;
+  rotationOf({ ...programs, activeId: programId }).length;
 
 // The row naming the active program, and its sheet: one tap on another program makes it active
 // (one change, written at once) and closes; on the active one it only closes. With no live

@@ -328,6 +328,22 @@ describe("the active program on Programme", () => {
     expect(row.compareDocumentPosition(first!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
+  it("counts the sessions the cards show, leaving out one with no exercise", async () => {
+    await edit((p) => addSession(p, D, SEED_PROGRAM_ID, EDIT_AT));
+    renderRoute("/workouts?tab=program");
+    const row = await activeRow(/^Starter program/);
+    await settled();
+    expect(await cards()).toHaveLength(3);
+    expect(row.textContent).toContain("Active program · 3 sessions");
+    fireEvent.click(row);
+    const sheet = await screen.findByRole("dialog", { name: "Active program" });
+    expect(
+      within(sheet)
+        .getByRole("button", { name: /^Starter program/ })
+        .textContent!.trim(),
+    ).toBe("Starter program 3 sessions");
+  });
+
   it("says it in French", async () => {
     await i18n.changeLanguage("fr");
     renderRoute("/workouts?tab=program");
