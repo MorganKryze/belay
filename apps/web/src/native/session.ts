@@ -32,9 +32,17 @@ export async function challengeOf(verifier: string): Promise<string> {
   return base64url(new Uint8Array(digest));
 }
 
-// Only a path of this app: "//host" or "/\host" would leave it.
-const safe = (path: string): string =>
-  path.startsWith("/") && !path.startsWith("//") && !path.startsWith("/\\") ? path : "/";
+// Only a path of this app: "//host" or "/\host" would leave it, and so would "/\t/host", since
+// the URL parser drops tabs and newlines. No control character, no backslash, and the resolved
+// URL still on this app. Scheme and host, not origin: capacitor:// has an opaque origin ("null").
+const inApp = (url: URL): boolean => {
+  const here = new URL(location.href);
+  return url.protocol === here.protocol && url.host === here.host;
+};
+const safe = (path: string): string => {
+  if (!path.startsWith("/") || path.startsWith("//") || /[\p{Cc}\\]/u.test(path)) return "/";
+  return inApp(new URL(path, location.href)) ? path : "/";
+};
 
 export async function signIn(returnTo: string): Promise<SignInResult> {
   const origin = readInstance();

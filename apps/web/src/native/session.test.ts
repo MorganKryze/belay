@@ -166,7 +166,16 @@ describe("signing in through the system sheet", () => {
     plugin.authenticate.mockResolvedValue({ url: "belay://auth?code=one-time" });
     fetchMock.mockImplementation(async () => Response.json({ token: TOKEN }));
     const { signIn } = await load();
-    for (const returnTo of ["//evil.example/x", "/\\evil.example", "https://evil.example", ""]) {
+    for (const returnTo of [
+      "//evil.example/x",
+      "/\\evil.example",
+      "https://evil.example",
+      "",
+      "/\t/evil.example",
+      "/\n/evil.example",
+      "/a\\b",
+      "/\u0000x",
+    ]) {
       replace.mockClear();
       void signIn(returnTo);
       await vi.waitFor(() => expect(replace).toHaveBeenCalledWith("/"));
@@ -190,9 +199,11 @@ describe("the page's sign-in links and vibrations", () => {
     const { install } = await load();
     await install();
 
-    const other = new MouseEvent("click", { bubbles: true, cancelable: true });
-    document.querySelector("#out")!.dispatchEvent(other);
-    expect(other.defaultPrevented).toBe(false);
+    for (const id of ["#out"]) {
+      const other = new MouseEvent("click", { bubbles: true, cancelable: true });
+      document.querySelector(id)!.dispatchEvent(other);
+      expect(other.defaultPrevented).toBe(false);
+    }
     expect(plugin.authenticate).not.toHaveBeenCalled();
 
     const click = new MouseEvent("click", { bubbles: true, cancelable: true });
