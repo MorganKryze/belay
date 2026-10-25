@@ -96,7 +96,8 @@ export function RhythmRow({
 // The draft starts from the stored days; a day whose session left the rotation shows as a rest
 // day but keeps its session, so it comes back with it unless the day is changed. Switching to
 // fixed days with no session day proposes a week from the history. Saving writes one schedule
-// change, or nothing when the result is what is stored; closing any other way drops the draft.
+// change, or nothing when the result is what the sheet opened on; closing any other way drops
+// the draft.
 function RhythmSheet({
   account,
   program,
@@ -118,8 +119,11 @@ function RhythmSheet({
   const today = useToday();
   const noteId = useId();
   const [open, setOpen] = useState(true);
-  const [mode, setMode] = useState<Mode>(opened);
-  const [days, setDays] = useState<(string | null)[]>(() => [...program.schedule.days]);
+  // The schedule as the sheet opened: a newer one syncing in meanwhile is not the draft's doing,
+  // so an untouched sheet leaves it be.
+  const [start] = useState(() => ({ mode: opened, days: [...program.schedule.days] }));
+  const [mode, setMode] = useState<Mode>(start.mode);
+  const [days, setDays] = useState<(string | null)[]>(start.days);
   const [learned, setLearned] = useState(false);
   const [needOne, setNeedOne] = useState(false);
   const saving = useRef(false);
@@ -145,13 +149,12 @@ function RhythmSheet({
       setNeedOne(true);
       return;
     }
-    const stored = program.schedule;
     // Back to rotation, the days stay as stored, to be offered again.
-    const schedule: Schedule = { mode, days: mode === "fixed" ? days : stored.days };
-    // A stored fixed week that names no session already runs in rotation: nothing changed.
+    const schedule: Schedule = { mode, days: mode === "fixed" ? days : program.schedule.days };
+    // Against the opening state: in rotation both ways (a stored fixed week naming no session
+    // already runs in rotation), or the same fixed days.
     const same =
-      (mode === "rotation" && opened === "rotation") ||
-      (schedule.mode === stored.mode && schedule.days.every((d, i) => d === stored.days[i]));
+      mode === start.mode && (mode === "rotation" || days.every((d, i) => d === start.days[i]));
     if (!same) {
       saving.current = true;
       await write(setSchedule(program.id, schedule, new Date().toISOString()));

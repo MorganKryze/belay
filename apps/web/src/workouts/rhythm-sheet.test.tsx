@@ -141,6 +141,12 @@ const chosen = (sheet: HTMLElement) =>
   );
 const chip = (sheet: HTMLElement, day: string, name: string) =>
   within(within(sheet).getByRole("radiogroup", { name: day })).getByRole("radio", { name });
+// A change from another device lands: queued here, then a sync round re-reads the screen.
+async function lands(build: (p: StoredPrograms) => Change[] | null) {
+  await edit(build);
+  window.dispatchEvent(new Event("online"));
+}
+const rowText = () => screen.getByRole("button", { name: /^Rythme /, hidden: true }).textContent;
 const gone = () => waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
 // Every write and the screen's reads given their turn.
 const settle = () => act(() => new Promise((resolve) => setTimeout(resolve, 50)));
@@ -380,6 +386,35 @@ describe("the sheet « Rythme du programme »", () => {
     await gone();
     await settle();
     expect(await written()).toEqual([]);
+  });
+
+  it("an untouched sheet saved after a newer fixed week landed writes nothing", async () => {
+    await edit(() =>
+      setSchedule(SEED_PROGRAM_ID, fixed([PUSH, null, LEGS, null, GLUTES, null, null]), EDIT_AT),
+    );
+    renderRoute("/workouts?tab=program");
+    const sheet = await openSheet();
+    const newer = fixed([null, PUSH, null, LEGS, null, null, null]);
+    await lands(() => setSchedule(SEED_PROGRAM_ID, newer, "2026-10-20T06:00:00.000Z"));
+    await waitFor(() => expect(rowText()).toBe("Rythme 2 séances par semaine Jours fixes"));
+    fireEvent.click(within(sheet).getByRole("button", { name: "Enregistrer" }));
+    await gone();
+    await settle();
+    expect(await written()).toEqual([]);
+    expect(await stored()).toEqual(newer);
+  });
+
+  it("an untouched sheet in rotation saved after another device's fixed week landed writes nothing", async () => {
+    renderRoute("/workouts?tab=program");
+    const sheet = await openSheet();
+    const newer = fixed([PUSH, null, LEGS, null, GLUTES, null, null]);
+    await lands(() => setSchedule(SEED_PROGRAM_ID, newer, "2026-10-20T06:00:00.000Z"));
+    await waitFor(() => expect(rowText()).toBe("Rythme 3 séances par semaine Jours fixes"));
+    fireEvent.click(within(sheet).getByRole("button", { name: "Enregistrer" }));
+    await gone();
+    await settle();
+    expect(await written()).toEqual([]);
+    expect(await stored()).toEqual(newer);
   });
 
   it("every day on Repos keeps the sheet open with Choisis au moins un jour de séance and writes nothing", async () => {
