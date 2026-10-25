@@ -183,7 +183,8 @@ describe("the session screen (§4.2, §4.3)", () => {
       },
     ]);
     const db = await openAccountDb(ADA.id);
-    const { sessionName: _, ...unnamed } = (await db.get("workouts", id(61)))!;
+    const unnamed = (await db.get("workouts", id(61)))!;
+    delete unnamed.sessionName;
     await db.put("workouts", unnamed);
     await db.put("activeSession", { workoutId: id(61), slotIndex: 0, restEndsAt: null }, "current");
     db.close();

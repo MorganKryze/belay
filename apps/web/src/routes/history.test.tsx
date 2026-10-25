@@ -323,7 +323,8 @@ describe("the History segment", () => {
     ]);
     // Written before sessions kept their name: the stored row holds none.
     const stored = await openAccountDb(ADA.id);
-    const { sessionName: _, ...unnamed } = (await stored.getAll("workouts"))[0]!;
+    const unnamed = (await stored.getAll("workouts"))[0]!;
+    delete unnamed.sessionName;
     await stored.put("workouts", unnamed);
     stored.close();
     const real = vi.mocked(readPrograms).getMockImplementation()!;
