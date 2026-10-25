@@ -84,6 +84,7 @@ export function authRoutes(cfg: Config, db: Db, getOidc: OidcProvider) {
   async function beginLogin(
     c: Context<AuthEnv>,
     tx: Pick<Transaction, "state" | "returnTo" | "native">,
+    extra: { prompt?: "login" } = {},
   ) {
     let oidc: client.Configuration;
     try {
@@ -108,6 +109,7 @@ export function authRoutes(cfg: Config, db: Db, getOidc: OidcProvider) {
       code_challenge_method: "S256",
       state: tx.state,
       nonce,
+      ...extra,
     });
     return c.redirect(url.href);
   }
@@ -125,11 +127,13 @@ export function authRoutes(cfg: Config, db: Db, getOidc: OidcProvider) {
     c.set("native", true);
     const challenge = c.req.query("challenge");
     if (!challenge || !CHALLENGE.test(challenge)) return signinFailure(c, "failed");
-    return beginLogin(c, {
-      state: NATIVE_STATE + client.randomState(),
-      returnTo: "/",
-      native: { challenge },
-    });
+    // The provider always shows its login: another app holding the scheme could open this
+    // address with its own challenge, and must not ride a session the browser already has.
+    return beginLogin(
+      c,
+      { state: NATIVE_STATE + client.randomState(), returnTo: "/", native: { challenge } },
+      { prompt: "login" },
+    );
   });
 
   auth.get("/callback", async (c) => {

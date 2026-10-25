@@ -1,7 +1,9 @@
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 
 // The iPhone app signs in through a system sheet that ends on this address; the sheet hands the
-// URL to the app, and no other app can receive it (iOS registers no scheme for it).
+// URL back to the app that opened it, so no other app receives the code of a sheet the real app
+// opened. Any app can open its own sheet on /auth/native/start, with its own challenge, and get
+// its own code: that is why the start always asks the provider to show its login.
 export const NATIVE_CALLBACK = "belay://auth";
 // Marks the provider's state as the app's, so a callback that lost its transaction cookie still
 // knows where to send the failure.

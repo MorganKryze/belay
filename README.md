@@ -170,8 +170,16 @@ Read this before hosting Belay for anyone else.
   runs until that deadline, at most `SESSION_MAX_DAYS` days.
 - **The iPhone app** keeps its session token in the iOS Keychain, on this
   device only and outside backups, and sends it as an `Authorization: Bearer`
-  header. Another website cannot make a browser send that header, so the
-  bearer API is not open to cross-site request forgery. Any app on the phone
+  header. It signs in through a system sheet with a PKCE challenge of its own:
+  the one-time code the sheet brings back is worth nothing without the
+  verifier the app kept, so an app that catches the code cannot spend it.
+  PKCE does not stop another app from opening a sheet of its own on your
+  instance and getting its own code, so the app's sign-in always asks your
+  provider to show its login, even when you are already signed in there. What
+  remains: if you type your password into a sign-in sheet that another app
+  opened, that app gets a session. Another website cannot make a browser send
+  the bearer header, so the bearer API is not open to cross-site request
+  forgery. Any app on the phone
   can call the API from the same origin, but without the token it gets what a
   stranger gets. Signing out deletes the token on the phone and the session on
   the server. A token lives as long as a session (`SESSION_TTL_DAYS` after its

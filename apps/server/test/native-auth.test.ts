@@ -112,6 +112,14 @@ describe("GET /auth/native/start", () => {
     expect(res.headers.get("set-cookie")).toMatch(/^belay_oidc=.*HttpOnly/i);
   });
 
+  it("start asks the provider to show its login, the web sign-in does not", async () => {
+    const { authUrl } = await start();
+    expect(authUrl.searchParams.get("prompt")).toBe("login");
+
+    const web = await app.request("/auth/login");
+    expect(new URL(location(web)!).searchParams.has("prompt")).toBe(false);
+  });
+
   it.each([
     ["without", ""],
     ["with a malformed", "?challenge=short"],
