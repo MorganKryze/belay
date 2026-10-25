@@ -748,6 +748,22 @@ describe("program edits through /api/sync", () => {
     expect(storedOf(again).programs.map((p) => [p.id, p.name])).toEqual([[own, null]]);
   });
 
+  it("isolation: a slot created in another account's session is unknown and stored nowhere", async () => {
+    const a = await signIn("pg-iso-slot-a");
+    const b = await signIn("pg-iso-slot-b");
+    const theirs = newId();
+    await a.sync("0", [createSessionChange(theirs, null, 0)]);
+    const slot = newId();
+    const res = await b.sync("0", [createSlot(slot, theirs), slotField(slot, "sets", 4)]);
+    expect(rejected(res)).toEqual([
+      { index: 0, reason: "unknown" },
+      { index: 1, reason: "unknown" },
+    ]);
+    expect(await slotRow(a.user, slot)).toBeUndefined();
+    expect(await slotRow(b.user, slot)).toBeUndefined();
+    expect(await sessionRow(b.user, theirs)).toBeUndefined();
+  });
+
   it("program rows page with hasMore", async () => {
     const { user, sync } = await signIn("pg-paging");
     const start = await sync("0");
@@ -902,6 +918,46 @@ describe("abuse limits", () => {
     expect(rejected(slots31)).toEqual([{ index: 0, reason: "refused" }]);
     expect(await slotRow(l.user, slot31)).toBeUndefined();
     expect((await slotRow(l.user, SLOT_A1))!.sets).toBe(4);
+  });
+
+  it("a slot put back past 30 live in its session is refused; one taken out first frees its place", async () => {
+    const { user, sync } = await signIn("pg-limit-slot-restore");
+    const { cursor } = await sync("0");
+    const inA = SEED.slots.filter((x) => x.sessionId === SESSION_A).length;
+    const aside = newId();
+    const slot = (id: string, position: number, removed = false) => ({
+      userId: user,
+      id,
+      sessionId: SESSION_A,
+      position,
+      exerciseId: COUNTED,
+      repMin: 8,
+      repMax: 12,
+      sets: 3,
+      rirMin: 1,
+      rirMax: 2,
+      restSec: 120,
+      warmupSets: 0,
+      isMain: false,
+      removed,
+    });
+    await owner
+      .insert(programSlots)
+      .values([
+        ...Array.from({ length: MAX_SLOTS - inA }, (_, i) => slot(newId(), 100 + i)),
+        slot(aside, 99, true),
+      ]);
+    const full = await sync(cursor, [slotField(aside, "removed", false, LATER)]);
+    expect(rejected(full)).toEqual([{ index: 0, reason: "refused" }]);
+    expect((await slotRow(user, aside))!.removed).toBe(true);
+    expect(full.programSlots!.find((r) => r.id === aside)).toMatchObject({ removed: true });
+    const swapped = await sync(full.cursor, [
+      slotField(SLOT_A1, "removed", true, LATEST),
+      slotField(aside, "removed", false, LATEST),
+    ]);
+    expect(rejected(swapped)).toEqual([]);
+    expect((await slotRow(user, aside))!.removed).toBe(false);
+    expect((await slotRow(user, SLOT_A1))!.removed).toBe(true);
   });
 
   it("at 20 programs a removal frees its place for a later restore, in request order, but never the active program's", async () => {
