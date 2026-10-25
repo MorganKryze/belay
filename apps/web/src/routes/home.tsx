@@ -28,6 +28,8 @@ import { Pending } from "./fallbacks";
 
 // The iPhone app's first launch, before any instance is known; the browser never loads it.
 const InstanceSetup = lazyRouteComponent(() => import("@/native/instance-setup"), "InstanceSetup");
+// Its sign-in once the instance is known.
+const SignInStep = lazyRouteComponent(() => import("@/native/sign-in-step"), "SignInStep");
 
 // What the server puts in `/?signin=` when a sign-in fails (apps/server/src/auth/routes.ts).
 const SIGNIN_FAILURES = ["unavailable", "expired", "failed", "denied"] as const;
@@ -61,6 +63,13 @@ export function Home() {
   // The launch screen covers this wait; past it, the loader. A header now would name the app and a
   // blank avatar, then change to the greeting a moment later.
   if (account.kind === "loading") return <Pending title={false} />;
+  if (isNative() && account.kind === "signed-out") {
+    return (
+      <Suspense fallback={<Pending title={false} />}>
+        <SignInStep failure={failure} unreachable={account.unreachable} />
+      </Suspense>
+    );
+  }
   return (
     <section className="flex flex-col gap-4">
       <PageHeader
