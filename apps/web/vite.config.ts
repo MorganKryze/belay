@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import type { Plugin } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
 import { defineConfig } from "vitest/config";
+import { contentSecurityPolicy } from "./content-security-policy";
 import { mediaRuntimeCaching } from "./src/lib/media-cache";
 import { SCREENS, startupFile, startupMedia } from "./startup-images";
 
@@ -37,6 +38,7 @@ export default defineConfig({
   plugins: [
     react(),
     startupImages,
+    contentSecurityPolicy(process.env.BELAY_LOOPBACK === "1"),
     tailwindcss(),
     VitePWA({
       registerType: "prompt",

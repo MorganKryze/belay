@@ -13,6 +13,8 @@ export default defineConfig(
       "apps/server/drizzle/**",
       "apps/web/src/components/ui/**",
       "apps/web/public/**",
+      // The Xcode project holds a copy of the built web app and Swift package checkouts.
+      "apps/ios/ios/**",
     ],
   },
   js.configs.recommended,

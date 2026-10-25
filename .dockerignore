@@ -19,3 +19,5 @@
 **/.env*
 # Exercise loops belong to the operator and never enter an image.
 **/*.mp4
+# The iPhone project: only its package.json is needed, for the lockfile.
+apps/ios/ios

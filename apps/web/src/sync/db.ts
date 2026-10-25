@@ -45,6 +45,7 @@ import {
   withSeed,
 } from "@belay/shared/training/stored-program";
 import { type DBSchema, type IDBPDatabase, type IDBPTransaction, openDB } from "idb";
+import { isNative, readInstance } from "@/lib/platform";
 
 export type OutboxEntry = { id: number; change: Change };
 // A change the server refused: out of the queue, kept until the person has read about it.
@@ -134,8 +135,12 @@ const ALL: Store[] = [
 ];
 
 // One database per account: another account on this device never sees it, and nothing in
-// it is ever sent under another identity. Signing out keeps it.
-export const accountDbName = (userId: string) => `belay.${userId}`;
+// it is ever sent under another identity. Signing out keeps it. In the iPhone app every instance
+// shares the app's own origin, so the name also carries the instance: a cloned or restored server
+// keeps its account ids, and one queue or pull cursor must never serve both. A browser keeps the
+// name it always had, its origin being the instance's.
+export const accountDbName = (userId: string) =>
+  isNative() ? `belay.${userId}@${readInstance() ?? ""}` : `belay.${userId}`;
 
 // `onLost` fires when this connection is gone for good (closed for another tab's schema upgrade,
 // or terminated by the browser): every call on the handle would throw, so the caller reopens.

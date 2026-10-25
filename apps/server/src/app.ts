@@ -1,12 +1,14 @@
 import { serveStatic } from "@hono/node-server/serve-static";
 import { sql } from "drizzle-orm";
 import { Hono, type MiddlewareHandler } from "hono";
+import { cors } from "hono/cors";
 import { csrf } from "hono/csrf";
 import { HTTPException } from "hono/http-exception";
 import { secureHeaders } from "hono/secure-headers";
 import { apiRoutes } from "./api/routes";
 import type { OidcProvider } from "./auth/oidc";
 import { authRoutes } from "./auth/routes";
+import { NATIVE_ORIGIN } from "./auth/session";
 import type { Config } from "./config";
 import type { Db } from "./db/client";
 import { describeError } from "./log";
@@ -42,6 +44,17 @@ export function createApp({ cfg, db, getOidc }: { cfg: Config; db: Db; getOidc: 
       strictTransportSecurity: cfg.secureCookies ? "max-age=31536000" : false,
     }),
   );
+  // The iPhone app calls from its own origin with a bearer token, never a cookie, so no
+  // credentials. Any other origin gets no Access-Control-Allow-Origin and its browser refuses.
+  const native = cors({
+    origin: (origin) => (origin === NATIVE_ORIGIN ? origin : null),
+    allowMethods: ["GET", "HEAD", "POST"],
+    allowHeaders: ["Authorization", "Content-Type"],
+    maxAge: 600,
+  });
+  for (const path of ["/api/*", "/media/*", "/auth/native/*", "/auth/logout"]) {
+    app.use(path, native);
+  }
   app.use(csrf({ origin: cfg.publicUrl.origin }));
   app.use("/api/*", noStore);
   app.use("/auth/*", noStore);
@@ -64,6 +77,9 @@ export function createApp({ cfg, db, getOidc }: { cfg: Config; db: Db; getOidc: 
     }
   });
 
+  // Public on purpose: the web app already tells anyone it is Belay, and the iPhone app needs the
+  // origin where sign-in lives before it has a session.
+  app.get("/api/instance", (c) => c.json({ app: "belay", api: 1, origin: cfg.publicUrl.origin }));
   app.route("/auth", authRoutes(cfg, db, getOidc));
   app.route("/api", apiRoutes(cfg, db));
   app.all("/auth/*", (c) => c.text("Not found", 404));

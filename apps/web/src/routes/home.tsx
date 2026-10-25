@@ -1,9 +1,9 @@
 import type { ISODate } from "@belay/shared/body/dates";
 import { inTargetRange } from "@belay/shared/body/target";
 import { latestMovingAverage, type Weighing, weeklySummaries } from "@belay/shared/body/weighings";
-import { Link, useNavigate, useSearch } from "@tanstack/react-router";
+import { Link, lazyRouteComponent, useNavigate, useSearch } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AvatarLink } from "@/components/avatar";
 import { PageHeader } from "@/components/page-header";
@@ -15,6 +15,7 @@ import { TrendFigure } from "@/components/trend-figure";
 import { Button } from "@/components/ui/button";
 import { formatWeekday } from "@/lib/format";
 import { readHomeTrend, readRangePill } from "@/lib/home-trend";
+import { isNative, readInstance } from "@/lib/platform";
 import { useToday } from "@/lib/today";
 import {
   type OpenAccount,
@@ -24,6 +25,11 @@ import {
   useWeighings,
 } from "@/sync/account";
 import { Pending } from "./fallbacks";
+
+// The iPhone app's first launch, before any instance is known; the browser never loads it.
+const InstanceSetup = lazyRouteComponent(() => import("@/native/instance-setup"), "InstanceSetup");
+// Its sign-in once the instance is known.
+const SignInStep = lazyRouteComponent(() => import("@/native/sign-in-step"), "SignInStep");
 
 // What the server puts in `/?signin=` when a sign-in fails (apps/server/src/auth/routes.ts).
 const SIGNIN_FAILURES = ["unavailable", "expired", "failed", "denied"] as const;
@@ -47,9 +53,23 @@ export function Home() {
   const account = useAccount();
 
   if (account.kind === "open") return <SignedInHome account={account} />;
+  if (isNative() && readInstance() === null) {
+    return (
+      <Suspense fallback={<Pending title={false} />}>
+        <InstanceSetup />
+      </Suspense>
+    );
+  }
   // The launch screen covers this wait; past it, the loader. A header now would name the app and a
   // blank avatar, then change to the greeting a moment later.
   if (account.kind === "loading") return <Pending title={false} />;
+  if (isNative() && account.kind === "signed-out") {
+    return (
+      <Suspense fallback={<Pending title={false} />}>
+        <SignInStep failure={failure} unreachable={account.unreachable} />
+      </Suspense>
+    );
+  }
   return (
     <section className="flex flex-col gap-4">
       <PageHeader

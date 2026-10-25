@@ -7,11 +7,14 @@ import { TopBar } from "@/components/top-bar";
 import { UpdateBanner } from "@/components/update-banner";
 import { holdLaunch } from "@/lib/launch";
 import { useOnline } from "@/lib/online";
+import { isNative, readInstance } from "@/lib/platform";
 import { usePresence } from "@/lib/presence";
 import { type Account, AccountProvider, useAccount, useHistory } from "@/sync/account";
 
 // The bar names exercises: it loads on demand, so the catalogue stays out of the shell.
 const SessionBar = lazyRouteComponent(() => import("@/components/session-bar"), "SessionBar");
+// The iPhone app's notification at the rest's end; the browser never loads it.
+const NativeRestAlert = lazyRouteComponent(() => import("@/native/rest-alert"), "NativeRestAlert");
 
 const TAB_ROOTS = ["/", "/workouts", "/body", "/tools"];
 
@@ -63,6 +66,7 @@ function Shell() {
   // Signed in, the sync banner of Home and Body speaks instead: offline with nothing waiting
   // needs no banner at all (§4.6).
   const offline = !online && account.kind !== "open";
+  const banner = offline && !(isNative() && readInstance() === null);
   const router = useRouter();
   // The page on screen, not the one loading: the router announces a navigation before it starts
   // the page transition, and the chrome must still show the old page's dock and bars when the
@@ -149,14 +153,20 @@ function Shell() {
             : "pb-[max(1rem,env(safe-area-inset-bottom))]"
         }`}
       >
-        {/* Mounted for good and filled when offline, so the change is announced. */}
+        {/* Mounted for good and filled when offline, so the change is announced. The app's first
+            screen, before any instance, says it in its own field instead. */}
         <p
           role="status"
-          className={offline ? "animate-drop-in rounded-chip bg-track p-3 text-sm" : "sr-only"}
+          className={banner ? "animate-drop-in rounded-chip bg-track p-3 text-sm" : "sr-only"}
         >
-          {offline ? t("offline") : ""}
+          {banner ? t("offline") : ""}
         </p>
         <UpdateBanner />
+        {isNative() && (
+          <Suspense fallback={null}>
+            <NativeRestAlert account={account} />
+          </Suspense>
+        )}
         {/* Grows to the tab bar, so a screen can pin a line to its bottom (Settings' version). */}
         <main className="flex flex-1 flex-col">
           <Outlet />

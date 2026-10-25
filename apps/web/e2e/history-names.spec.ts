@@ -125,11 +125,12 @@ test("a session started on this device keeps the name its session held at the st
   await expect(
     page.getByRole("heading", { level: 1, name: "Séance A · Haut lourd" }),
   ).toBeVisible();
-  const sent = [...server.requests.flatMap((r) => r.changes), ...(await queued(page))];
-  expect(sent.find((c) => c.kind === "workout" && c.field === "start")).toMatchObject({
-    sessionId: HAUT,
-    sessionName: "Haut lourd",
-  });
+  // The heading can show before the start is written: wait for it, queued or sent.
+  const start = async () =>
+    [...server.requests.flatMap((r) => r.changes), ...(await queued(page))].find(
+      (c) => c.kind === "workout" && c.field === "start",
+    );
+  await expect.poll(start).toMatchObject({ sessionId: HAUT, sessionName: "Haut lourd" });
   await rename(page, "Haut lourd", "Haut du corps");
   await page.goto("/");
   await expect(page.locator(".launch")).toBeHidden();
