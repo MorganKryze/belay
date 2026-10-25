@@ -1,7 +1,9 @@
 import { SEED_PROGRAM_ID, seedId } from "@belay/shared/training/stored-program";
 import { describe, expect, it } from "vitest";
 import i18n from "@/i18n";
+import "@/i18n/lazy";
 import {
+  dayName,
   formatDay,
   formatKg,
   formatNumber,
@@ -15,6 +17,8 @@ import {
   rotationTitle,
   sessionName,
   sessionTitle,
+  weekdayName,
+  whenText,
   workoutTitle,
 } from "./format";
 
@@ -217,5 +221,53 @@ describe("session and program titles", () => {
     expect(programName({ id: SEED_PROGRAM_ID, name: null }, en)).toBe("Starter program");
     expect(programName({ id: OWN, name: null }, fr)).toBe("Programme sans nom");
     expect(programName({ id: OWN, name: null }, en)).toBe("Untitled program");
+  });
+});
+
+describe("the words of the week", () => {
+  const fr = i18n.getFixedT("fr");
+  const en = i18n.getFixedT("en");
+
+  it("raises the weekday at a line start, keeps French lower case inside a sentence", () => {
+    expect(weekdayName("2026-10-28", "fr")).toBe("Mercredi");
+    expect(weekdayName("2026-10-28", "fr", { startOfLine: false })).toBe("mercredi");
+    expect(weekdayName("2026-10-28", "en")).toBe("Wednesday");
+    expect(weekdayName("2026-10-28", "en", { startOfLine: false })).toBe("Wednesday");
+  });
+
+  it("names the week from Monday", () => {
+    expect([0, 1, 2, 3, 4, 5, 6].map((i) => dayName(i, "fr"))).toEqual([
+      "Lundi",
+      "Mardi",
+      "Mercredi",
+      "Jeudi",
+      "Vendredi",
+      "Samedi",
+      "Dimanche",
+    ]);
+    expect(dayName(0, "en")).toBe("Monday");
+    expect(dayName(6, "en")).toBe("Sunday");
+  });
+
+  it("says when a day is: today, tomorrow, a weekday, then the date at 7 days", () => {
+    const today = "2026-10-26"; // a Monday
+    expect(whenText("2026-10-26", today, "fr", fr)).toBe("Aujourd'hui");
+    expect(whenText("2026-10-27", today, "fr", fr)).toBe("Demain");
+    expect(whenText("2026-10-27", today, "fr", fr, { tomorrowDay: true })).toBe("Demain, mardi");
+    expect(whenText("2026-10-27", today, "en", en, { tomorrowDay: true })).toBe(
+      "Tomorrow, Tuesday",
+    );
+    expect(whenText("2026-10-28", today, "fr", fr)).toBe("Mercredi");
+    expect(whenText("2026-11-01", today, "fr", fr)).toBe("Dimanche");
+    expect(whenText("2026-11-02", today, "fr", fr)).toBe("Lundi 2 novembre");
+    expect(whenText("2026-11-02", today, "en", en)).toBe("Monday, November 2");
+  });
+
+  it("counts the days across a month end and a year end", () => {
+    expect(whenText("2026-11-01", "2026-10-31", "fr", fr)).toBe("Demain");
+    expect(whenText("2026-11-02", "2026-10-31", "fr", fr)).toBe("Lundi");
+    expect(whenText("2027-01-01", "2026-12-31", "fr", fr)).toBe("Demain");
+    expect(whenText("2027-01-02", "2026-12-31", "fr", fr)).toBe("Samedi");
+    expect(whenText("2027-01-07", "2026-12-31", "fr", fr)).toBe("Jeudi 7 janvier 2027");
   });
 });

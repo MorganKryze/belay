@@ -273,7 +273,27 @@
       "sessions_one": "{{count}} session",
       "sessions_other": "{{count}} sessions",
       "sheetNote": "One tap makes it active and closes. Creating, renaming or deleting a program happens on a computer.",
-      "aside": "Set aside · out of the rotation"
+      "aside": "Set aside · out of the rotation",
+      "rhythm": {
+        "row": "Rhythm",
+        "rotation": "In rotation",
+        "fixed": "Fixed days",
+        "perWeek_one": "{{count}} session a week",
+        "perWeek_other": "{{count}} sessions a week",
+        "inTurn": "{{letters}} in turn",
+        "span": "{{first}} to {{last}} in turn",
+        "single": "{{letter}} every time",
+        "title": "Program rhythm",
+        "mode": "Program rhythm",
+        "rotationNote": "Sessions follow one another in order, whatever the day. No rest day planned.",
+        "proposed": "Suggested from your last weeks. One tap changes a day.",
+        "tapHint": "One tap changes a day.",
+        "rest": "Rest",
+        "save": "Save",
+        "needOne": "Pick at least one session day.",
+        "tomorrowOn": "Tomorrow, {{day}}",
+        "named": "{{code}} · {{name}}"
+      }
     },
     "rir": "RIR {{range}}",
     "restSec": "{{s}} s",

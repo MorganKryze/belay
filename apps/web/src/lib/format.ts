@@ -1,4 +1,4 @@
-import type { ISODate } from "@belay/shared/body/dates";
+import { addDays, type ISODate } from "@belay/shared/body/dates";
 import { decimalsOf, roundTo } from "@belay/shared/tools/round";
 import { SEED, SEED_PROGRAM_ID } from "@belay/shared/training/stored-program";
 import type { TFunction } from "i18next";
@@ -89,6 +89,39 @@ export function formatWeekday(
 ): string {
   const text = dayText(date, locale, today, true, long);
   return startOfLine ? text.charAt(0).toUpperCase() + text.slice(1) : text;
+}
+
+// "Mercredi" starting a line, "mercredi" inside a French sentence, "Wednesday" in English.
+export function weekdayName(day: ISODate, locale: string, { startOfLine = true } = {}): string {
+  const text = new Intl.DateTimeFormat(locale, { weekday: "long", timeZone: "UTC" }).format(
+    new Date(`${day}T00:00:00Z`),
+  );
+  return startOfLine ? text.charAt(0).toUpperCase() + text.slice(1) : text;
+}
+
+// The days of a program's week, Monday 0 to Sunday 6.
+export const dayName = (index: number, locale: string): string =>
+  weekdayName(addDays("2024-01-01", index), locale);
+
+// When a day is: "Aujourd'hui", "Demain", a weekday within the week, the full date from 7 days.
+export function whenText(
+  day: ISODate,
+  today: ISODate,
+  locale: string,
+  t: TFunction,
+  { tomorrowDay = false } = {},
+): string {
+  const apart = Math.round(
+    (Date.parse(`${day}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / 864e5,
+  );
+  if (apart <= 0) return t("sessionCard.today");
+  if (apart === 1)
+    return tomorrowDay
+      ? t("workouts.program.rhythm.tomorrowOn", {
+          day: weekdayName(day, locale, { startOfLine: false }),
+        })
+      : t("sessionCard.tomorrow");
+  return apart < 7 ? weekdayName(day, locale) : formatWeekday(day, locale, today, { long: true });
 }
 
 // "22 – 28 sept.", "29 sept. – 5 oct.", "Sep 22 – 28": the month once when the week shares it.
