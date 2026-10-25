@@ -260,6 +260,15 @@ importers:
       '@belay/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      '@capacitor/core':
+        specifier: 8.5.3
+        version: 8.5.3
+      '@capacitor/haptics':
+        specifier: 8.0.2
+        version: 8.0.2(@capacitor/core@8.5.3)
+      '@capacitor/local-notifications':
+        specifier: 8.3.1
+        version: 8.3.1(@capacitor/core@8.5.3)
       '@fontsource-variable/inter':
         specifier: ^5.3.0
         version: 5.3.0
