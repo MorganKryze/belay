@@ -87,6 +87,14 @@ describe("a load", () => {
     // Edited text is converted as usual.
     expect(parseLoad("221", "lb", 100)).toBe(100.25);
   });
+
+  it("parseLoad never gives back a prefill off the set grid", () => {
+    // 80.1 kg, off the quarter-kilo grid, is shown "177" lb: kept as it is, it would write 80.1
+    // back; it becomes the 80.25 that 177 lb stands for. 600 kg, past the bounds, is refused.
+    expect(parseLoad("177", "lb", 80.1)).toBe(80.25);
+    expect(parseLoad("80,1", "kg", 80.1)).toBeNull();
+    expect(parseLoad("1323", "lb", 600)).toBeNull();
+  });
 });
 
 describe("a weight stepper", () => {

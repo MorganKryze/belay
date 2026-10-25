@@ -311,6 +311,19 @@ describe("in pounds", () => {
     );
   });
 
+  it("a weight typed in lb is saved in lb after the unit turns to kg while the sheet is open", async () => {
+    fakeApi({ me: ADA });
+    renderRoute("/");
+    const sheet = await openSheet();
+    fireEvent.change(await field(), { target: { value: "180" } });
+    localStorage.setItem("belay.weightUnit", "kg");
+    // The next keystroke renders the sheet again, with the unit now kg on the device.
+    fireEvent.change(await field(), { target: { value: "180.4" } });
+    expect(within(sheet).getByText("lb")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(async () => expect(await days()).toEqual([["2026-10-07", 81.8]]));
+  });
+
   it("each tap of the stepper in pounds saves a different weigh-in", async () => {
     await seed(ADA.id, [weight("2026-10-06", 80.2)]);
     fakeApi({ me: ADA });

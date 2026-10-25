@@ -311,6 +311,19 @@ describe("ExerciseCard in pounds", () => {
     });
   });
 
+  it("a load typed in kg is logged in kg after the unit turns to lb while the card is open", async () => {
+    render(<Card />);
+    const kgLoad = () => within(card()).getByRole("textbox", { name: "Load of set 1, kg" });
+    fireEvent.change(kgLoad(), { target: { value: "61" } });
+    setWeightUnit("lb");
+    // The next keystroke renders the card again, with the unit now lb on the device.
+    fireEvent.change(kgLoad(), { target: { value: "61,25" } });
+    expect(within(card()).queryByRole("textbox", { name: "Load of set 1, lb" })).toBeNull();
+    log(1);
+    await waitFor(() => expect(logged).toHaveLength(1));
+    expect(logged[0]).toEqual({ weightKg: 61.25, reps: 8, seconds: null });
+  });
+
   it("the same set written in kg and in lb modes writes the same change", async () => {
     render(<Card />);
     fireEvent.change(within(card()).getByRole("textbox", { name: "Load of set 1, kg" }), {
