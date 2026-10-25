@@ -1,4 +1,5 @@
 import type { Change } from "@belay/shared/sync/schema";
+import { setSchedule } from "@belay/shared/training/program-edits";
 import {
   DEFAULT_SCHEDULE,
   nextInRotation,
@@ -8,7 +9,7 @@ import {
 } from "@belay/shared/training/stored-program";
 import { act, cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { IDBFactory } from "fake-indexeddb";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import i18n from "../i18n";
 import { openAccountDb, readHistory, readOutbox, readPrograms, recordChanges } from "../sync/db";
 import { writeLastUser } from "../sync/last-user";
@@ -156,6 +157,25 @@ describe("the program switcher", () => {
     await toastText(/^Été léger est actif : la prochaine séance est A · Jambes\.Annuler$/);
     await waitFor(async () => expect(await chips()).toEqual(["A · Jambes", "B · Dos"]));
     expect(await selector("Été léger")).toBeTruthy();
+  });
+
+  it("switching to a program on fixed days names its planned session in the toast", async () => {
+    // Été léger holds Jambes on Mondays and Dos on Wednesdays; today is a Wednesday, so Dos comes
+    // first where the rotation would offer Jambes.
+    const days = [id(0x21), null, id(0x22), null, null, null, null];
+    await seed(setSchedule(SUMMER, { mode: "fixed", days }, "2026-10-02T06:00:00.000Z"));
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(2026, 9, 21, 8, 0));
+    try {
+      renderRoute("/workouts/program");
+      const menu = await openMenu();
+      await act(async () =>
+        fireEvent.click(within(menu).getByRole("menuitemradio", { name: /^Été léger/ })),
+      );
+      await toastText(/^Été léger est actif : la prochaine séance est B · Dos\.Annuler$/);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("Annuler makes the previous one active with the same next session", async () => {

@@ -1,4 +1,5 @@
 import { newId } from "@belay/shared";
+import { toISODate } from "@belay/shared/body/dates";
 import {
   chooseActive,
   cutName,
@@ -9,10 +10,10 @@ import {
   removeProgramFor,
   renameProgram,
 } from "@belay/shared/training/program-edits";
+import { plannedNext } from "@belay/shared/training/schedule";
 import {
   byPosition,
   MAX_PROGRAMS,
-  nextInRotation,
   type Program,
   PROGRAM_NAME_MAX,
   rotationOf,
@@ -101,10 +102,11 @@ export function ProgramSwitcher() {
     if (id === programs.activeId) return;
     const chosen = order.find((p) => p.id === id);
     if (!chosen) return;
-    // The next session as the new rotation offers it from now, as Accueil will.
-    const at = new Date().toISOString();
-    const rotation = rotationOf({ ...programs, activeId: id, activeAt: at });
-    const next = nextInRotation(workouts, rotation, at);
+    // The next session as the new program plans it from now, as Accueil will.
+    const now = new Date();
+    const at = now.toISOString();
+    const chosenPrograms = { ...programs, activeId: id, activeAt: at };
+    const next = plannedNext(workouts, chosenPrograms, rotationOf(chosenPrograms), toISODate(now));
     const toast = next
       ? t("editor.toast.switched", {
           program: programName(chosen, t),
