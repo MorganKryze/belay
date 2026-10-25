@@ -290,9 +290,9 @@ describe("in pounds", () => {
     expect(within(sheet).queryByText("kg")).toBeNull();
     fireEvent.change(await field(), { target: { value: "180.4" } });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
-    // 180.4 lb is 81.83 kg: stored as 81.8, read back as 180.3 lb.
+    // 180.4 lb is 81.83 kg: stored as 81.8, read back as 180.25 lb.
     await waitFor(async () => expect(await days()).toEqual([["2026-10-07", 81.8]]));
-    await waitFor(async () => expect((await row()).textContent).toBe("Weigh-in 180.3 lb"));
+    await waitFor(async () => expect((await row()).textContent).toBe("Weigh-in 180.25 lb"));
   });
 
   it("an untouched prefill in pounds saves the stored kg unchanged", async () => {
@@ -300,8 +300,8 @@ describe("in pounds", () => {
     fakeApi({ me: ADA });
     renderRoute("/");
     await openSheet();
-    // 80.2 kg is 176.81 lb.
-    await waitFor(async () => expect(((await field()) as HTMLInputElement).value).toBe("176.8"));
+    // 80.2 kg is 176.81 lb, shown on the quarter pound.
+    await waitFor(async () => expect(((await field()) as HTMLInputElement).value).toBe("176.75"));
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(async () =>
       expect(await days()).toEqual([
@@ -311,7 +311,26 @@ describe("in pounds", () => {
     );
   });
 
-  it("the out-of-range sentence says 44,1 and 881,8 lb", async () => {
+  it("each tap of the stepper in pounds saves a different weigh-in", async () => {
+    await seed(ADA.id, [weight("2026-10-06", 80.2)]);
+    fakeApi({ me: ADA });
+    renderRoute("/");
+    const sheet = await openSheet();
+    await waitFor(async () => expect(((await field()) as HTMLInputElement).value).toBe("176.75"));
+    // A tenth of a pound would give 176.85 lb, 80.22 kg: back on the stored 80.2.
+    fireEvent.click(within(sheet).getByRole("button", { name: "Increase Weight" }));
+    expect(((await field()) as HTMLInputElement).value).toBe("177");
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    // 177 lb is 80.29 kg.
+    await waitFor(async () =>
+      expect(await days()).toEqual([
+        ["2026-10-06", 80.2],
+        ["2026-10-07", 80.3],
+      ]),
+    );
+  });
+
+  it("the out-of-range sentence says 44,25 and 881,75 lb", async () => {
     await i18n.changeLanguage("fr");
     fakeApi({ me: ADA });
     renderRoute("/");
@@ -319,14 +338,14 @@ describe("in pounds", () => {
     const input = await screen.findByRole("textbox", { name: "Poids" });
     fireEvent.change(input, { target: { value: "900" } });
     fireEvent.blur(input);
-    expect(await screen.findByText("Saisis un poids entre 44,1 et 881,8 lb.")).toBeTruthy();
+    expect(await screen.findByText("Saisis un poids entre 44,25 et 881,75 lb.")).toBeTruthy();
     expect(
       (screen.getByRole("button", { name: "Enregistrer" }) as HTMLButtonElement).disabled,
     ).toBe(true);
-    // 44,1 lb is 20.0 kg, inside the bounds; 43,9 lb is 19.9 kg, outside.
+    // 44,25 lb is 20.1 kg, inside the bounds; 43,9 lb is 19.9 kg, outside.
     fireEvent.change(input, { target: { value: "43,9" } });
-    expect(await screen.findByText("Saisis un poids entre 44,1 et 881,8 lb.")).toBeTruthy();
-    fireEvent.change(input, { target: { value: "44,1" } });
+    expect(await screen.findByText("Saisis un poids entre 44,25 et 881,75 lb.")).toBeTruthy();
+    fireEvent.change(input, { target: { value: "44,25" } });
     await waitFor(() => expect(screen.queryByText(/^Saisis un poids/)).toBeNull());
   });
 });

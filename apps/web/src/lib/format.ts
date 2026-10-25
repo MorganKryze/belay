@@ -43,9 +43,10 @@ export function formatDay(date: Date, locale: string, today: Date): string {
     .join("");
 }
 
-// Weights and averages to the tenth, always with their decimal: "80,0", "79,8".
-export const formatKg = (kg: number, locale: string): string =>
-  formatNumber(kg, locale, { digits: 1, minDigits: 1 });
+// Weights and averages to the tenth, always with their decimal: "80,0", "79,8". A body weight in
+// pounds, on the quarter pound, takes two digits: "177,25", "177,5".
+export const formatKg = (kg: number, locale: string, digits = 1): string =>
+  formatNumber(kg, locale, { digits, minDigits: 1 });
 
 // A weekly change as shown: to the tenth, a loss or a gain, never "-0". The size is rounded,
 // not the signed value, so a gain of 0.25 shows 0.3 like a loss of 0.25 does.

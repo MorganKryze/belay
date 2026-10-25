@@ -11,7 +11,7 @@ import {
 } from "react";
 import { useTranslation } from "react-i18next";
 import { formatKg, formatShortDay, formatWeekday } from "@/lib/format";
-import type { WeightUnit } from "@/lib/units";
+import { weighingDigits, type WeightUnit } from "@/lib/units";
 
 // The drawing is as wide as the card, in screen pixels, so its text renders at its true size;
 // 320 where nothing is laid out (unit tests). The right padding leaves room for the last average,
@@ -185,7 +185,7 @@ export function WeightChart({
     );
     return { x0, x1: x0 + bandLabel.length * LABEL_EM };
   });
-  const kg = (v: number) => formatKg(v, i18n.language);
+  const kg = (v: number) => formatKg(v, i18n.language, weighingDigits(unit));
   // The last 7-day average of the period, written at the end of its line.
   const last = averages.at(-1);
   const lastBox =

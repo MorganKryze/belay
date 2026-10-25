@@ -6,7 +6,7 @@ import { kgFromWeighing, rangeIn, stepIn, weighingFromKg } from "@belay/shared/t
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { formatNumber } from "@/lib/format";
-import { readWeightUnit } from "@/lib/units";
+import { readWeightUnit, weighingDigits } from "@/lib/units";
 import { DayChip } from "./day-chip";
 import { NumberStepper } from "./number-stepper";
 import { Sheet } from "./sheet";
@@ -96,7 +96,8 @@ function WeighInForm({
         ? start.kg
         : roundTo(kgFromWeighing(value, unit), WEIGHING_RANGE_KG.step);
   const invalid = kg !== null && !isWeighingKg(kg);
-  const bound = (v: number) => formatNumber(v, i18n.language, { digits: 1, grouping: false });
+  const bound = (v: number) =>
+    formatNumber(v, i18n.language, { digits: weighingDigits(unit), grouping: false });
   return (
     <div className="flex flex-col gap-2.5">
       <NumberStepper
