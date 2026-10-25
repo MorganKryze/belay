@@ -110,6 +110,16 @@ const row = (page: Page) => page.getByRole("button", { name: /^Rythme / });
 const sheet = (page: Page) => page.getByRole("dialog", { name: "Rythme du programme" });
 const day = (page: Page, name: string) => sheet(page).getByRole("radiogroup", { name });
 const DAYS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
+// Programme's cards: their titles in order, and each one's line under its title.
+const titles = (page: Page) => page.getByRole("heading", { level: 2, name: /^Séance / });
+const lines = (page: Page) =>
+  titles(page).evaluateAll((hs) => hs.map((h) => h.nextElementSibling?.textContent ?? ""));
+const TITLES = [
+  "Séance A · Push",
+  "Séance B · Legs",
+  "Séance C · Fessiers + tirage léger",
+] as const;
+const FIXED: Schedule = { mode: "fixed", days: [S[0], null, S[1], null, null, S[2], null] };
 const overflow = (page: Page) =>
   page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
 // Whether an element shows its whole text: nothing cut across nor clamped down.
@@ -152,6 +162,37 @@ test("Jours fixes proposed from the last weeks, Friday on Repos and Saturday C, 
     field: "schedule",
     value: { mode: "fixed", days: [S[0], null, S[1], null, null, S[2], null] },
   });
+  // The cards now follow the week from this Sunday: A tomorrow, then B and C on their days.
+  await expect(titles(page)).toHaveText(TITLES);
+  expect(await lines(page)).toEqual([
+    "Demain, lundi · 1 exercice · environ 5\u00A0min",
+    "Mercredi · 1 exercice · environ 5\u00A0min",
+    "Samedi · 1 exercice · environ 5\u00A0min",
+  ]);
+  const a = page.getByRole("region", { name: TITLES[0] });
+  await expect(a.getByRole("link", { name: "Voir la séance" })).toBeVisible();
+  // The days in bold, in the title's ink; the rest of the line stays muted.
+  expect(
+    await page.getByRole("link", { name: /^Séance B/ }).evaluate((card) => {
+      const days = getComputedStyle(card.querySelector("b")!);
+      const title = getComputedStyle(card.querySelector("h2")!);
+      const line = getComputedStyle(card.querySelector("p")!);
+      return [
+        Number(days.fontWeight) >= 600,
+        days.color === title.color,
+        line.color !== title.color,
+      ];
+    }),
+  ).toEqual([true, true, true]);
+  // On Tuesday, a rest day, Accueil and Programme name the same next session: B on Wednesday.
+  await page.clock.setFixedTime(new Date("2026-10-27T08:00:00+01:00"));
+  await page.goto("/");
+  await expect(page.locator(".launch")).toBeHidden();
+  await expect(page.getByRole("link", { name: "Demain : Séance B · Legs" })).toBeVisible();
+  await page.goto("/workouts?tab=program");
+  await expect(page.locator(".launch")).toBeHidden();
+  await expect(titles(page).first()).toHaveText(TITLES[1]);
+  expect((await lines(page))[0]).toMatch(/^Demain, mercredi · /);
 });
 
 test.describe("at 360 px", () => {
@@ -283,4 +324,31 @@ test.describe("accessibility", () => {
       await expectNoAxeViolations(page);
     });
   }
+});
+
+// Programme on fixed days: the cards in the week's order, each with its day.
+test.describe("Programme's cards on fixed days", () => {
+  test.use({ reducedMotion: "reduce" });
+  for (const theme of ["light", "dark"] as const) {
+    test(`Programme on fixed days has no axe violation, ${theme}`, async ({ page }) => {
+      await open(page, program(3, FIXED), theme);
+      await expect(titles(page)).toHaveText(TITLES);
+      await expectNoAxeViolations(page);
+    });
+  }
+
+  test.describe("on a computer", () => {
+    test.use({ viewport: { width: 1280, height: 900 } });
+
+    test("the cards and the rhythm group share one column, nothing overflows", async ({ page }) => {
+      await open(page, program(3, FIXED));
+      await expect(titles(page)).toHaveText(TITLES);
+      expect((await lines(page))[0]).toMatch(/^Demain, lundi · /);
+      const card = (await page.getByRole("region", { name: TITLES[0] }).boundingBox())!;
+      const r = (await row(page).boundingBox())!;
+      expect(r.x).toBe(card.x);
+      expect(r.width).toBe(card.width);
+      expect(await overflow(page)).toBe(0);
+    });
+  });
 });
