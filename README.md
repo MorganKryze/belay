@@ -130,6 +130,18 @@ shows none.
 - Someone without an account learns nothing: without a session, an instance
   with loops answers exactly like one without, for every address.
 
+### The iPhone app
+
+Anyone can build an iPhone app that talks to any Belay instance: the steps are
+in [`apps/ios/README.md`](apps/ios/README.md). There is nothing to set on the
+instance, but it needs this release of Belay or a later one.
+
+- The app's requests come from the origin `capacitor://localhost`. The server
+  accepts that origin for `/api`, `/media`, `/auth/native` and `/auth/logout`
+  only, and never with cookies: the app sends its own token instead.
+- The identity provider's client and its redirect URI do not change. The app
+  signs in through the server, which stays the provider's only client.
+
 ## Threat model
 
 Read this before hosting Belay for anyone else.
@@ -156,6 +168,15 @@ Read this before hosting Belay for anyone else.
   use and never more than `SESSION_MAX_DAYS` (90) after sign-in. Disabling
   someone at your identity provider does not end an active Belay session: it
   runs until that deadline, at most `SESSION_MAX_DAYS` days.
+- **The iPhone app** keeps its session token in the iOS Keychain, on this
+  device only and outside backups, and sends it as an `Authorization: Bearer`
+  header. Another website cannot make a browser send that header, so the
+  bearer API is not open to cross-site request forgery. Any app on the phone
+  can call the API from the same origin, but without the token it gets what a
+  stranger gets. Signing out deletes the token on the phone and the session on
+  the server. A token lives as long as a session (`SESSION_TTL_DAYS` after its
+  last use, `SESSION_MAX_DAYS` at most), and a stolen, unlocked phone holds the
+  session just as it would hold a browser's cookie.
 - **Media**: with `BELAY_MEDIA_DIR` set, `/media/exercises/<number>` serves
   files of that folder to signed-in people only: four digits, regular files
   of 8 MiB at most, inside the folder (links leaving it are refused).
