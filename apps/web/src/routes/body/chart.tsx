@@ -1,3 +1,4 @@
+import "@/i18n/lazy";
 import { addDays, type ISODate } from "@belay/shared/body/dates";
 import type { Weighing } from "@belay/shared/body/weighings";
 import {

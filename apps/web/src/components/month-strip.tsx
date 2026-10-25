@@ -1,3 +1,4 @@
+import "@/i18n/lazy";
 import { useTranslation } from "react-i18next";
 
 export type MonthCell = {

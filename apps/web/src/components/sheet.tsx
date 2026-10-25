@@ -1,3 +1,4 @@
+import "@/i18n/lazy";
 import { X } from "lucide-react";
 import { Dialog } from "radix-ui";
 import {
