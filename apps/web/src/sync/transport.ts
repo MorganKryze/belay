@@ -1,4 +1,5 @@
 import { type SyncRequest, SyncResponseSchema } from "@belay/shared/sync/schema";
+import { apiFetch } from "@/lib/platform";
 import type { SendResult } from "./engine";
 
 // A request that hangs (a captive portal at the gym) would hold the sync lock for good.
@@ -7,9 +8,10 @@ const TIMEOUT_MS = 20_000;
 export async function postSync(request: SyncRequest): Promise<SendResult> {
   let res: Response;
   try {
-    res = await fetch("/api/sync", {
+    // In a browser the page's own server with the cookie; in the app the stored instance with the
+    // token, and no request at all before an address is known.
+    res = await apiFetch("/api/sync", {
       method: "POST",
-      credentials: "same-origin",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(request),
       signal: AbortSignal.timeout(TIMEOUT_MS),

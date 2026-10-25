@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from "react";
 import { registerSW } from "virtual:pwa-register";
+import { isNative } from "./platform";
 
 const hour = 60 * 60 * 1000;
 
@@ -24,7 +25,10 @@ export function scheduleUpdateChecks(registration: ServiceWorkerRegistration) {
 
 // Registers the service worker. A new version waits until the user taps "Reload": activating it
 // under a live page would let its precache drop the old lazy chunks that page still needs.
+// The iPhone app carries its own copy of the web app and updates with the app: no service worker
+// there (WebKit in an app runs one only for domains listed when the app is built).
 export function startUpdates() {
+  if (isNative()) return;
   ready = false;
   applyUpdate = registerSW({
     onNeedRefresh() {
