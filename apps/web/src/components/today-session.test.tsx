@@ -5,6 +5,8 @@ import {
   chooseActive,
   createProgram,
   placeSession,
+  setAside,
+  setSchedule,
 } from "@belay/shared/training/program-edits";
 import { sessionByCode, starterProgram } from "@belay/shared/training/program";
 import {
@@ -347,5 +349,232 @@ describe("Accueil reads the active program", () => {
     renderRoute("/");
     const region = await card(/^Session A · Push$/);
     expect(region.textContent).toContain("In progress · 1 of 19 sets");
+  });
+});
+
+// The starting program on fixed days: Monday A, Wednesday B, Saturday C, unless a test gives its
+// own week. October 2026: Monday 5, Wednesday 7, Saturday 10, Monday 12.
+const [PUSH, LEGS, GLUTES] = [seedId(1), seedId(2), seedId(3)];
+const WEEK = [PUSH, null, LEGS, null, null, GLUTES, null];
+const fixedDays = (days: (string | null)[] = WEEK) =>
+  edit(() => setSchedule(SEED_PROGRAM_ID, { mode: "fixed", days }, EDIT_AT));
+// The phone's clock at 7:30 on a day of October 2026.
+const morningOf = (day: number) => vi.setSystemTime(new Date(2026, 9, day, 7, 30));
+const uid = (n: number) => `0199c3a2-7b1e-7cc0-8f3e-${n.toString(16).padStart(12, "0")}`;
+// A session done on a day of October from 6:00, `minutes` long, with `sets` work sets after a
+// warm-up, recorded with the session it came from.
+const doneOn = (
+  n: number,
+  code: string,
+  sessionId: string,
+  day: number,
+  minutes = 52,
+  sets = 19,
+) => {
+  const id = uid(n);
+  const from = new Date(2026, 9, day, 6, 0).toISOString();
+  const to = new Date(2026, 9, day, 6, minutes).toISOString();
+  return [
+    {
+      kind: "workout",
+      id,
+      field: "start",
+      sessionCode: code,
+      sessionId,
+      plan: [...sessionByCode(code, starterProgram)!.slots],
+      startedAt: from,
+      at: from,
+    },
+    ...Array.from({ length: sets + 1 }, (_, k): Change => ({
+      kind: "set",
+      id: uid(n * 0x100 + k),
+      workoutId: id,
+      field: "create",
+      slotIndex: k === 0 ? 0 : (k - 1) % 6,
+      position: k === 0 ? 1 : 3 + Math.floor((k - 1) / 6),
+      exerciseId: "ds:0025",
+      warmup: k === 0,
+      weightKg: 60,
+      reps: 8,
+      rir: k === 0 ? null : 2,
+      doneAt: from,
+      at: from,
+    })),
+    { kind: "workout", id, field: "ended", value: to, at: to },
+  ] satisfies Change[];
+};
+
+describe("Accueil on fixed days", () => {
+  beforeEach(() => i18n.changeLanguage("fr"));
+
+  it("a rest day shows Jour de repos, Prévu par ton programme and Demain : Séance B · Legs to B's preview from Accueil", async () => {
+    morningOf(6);
+    await fixedDays();
+    fakeApi({ me: ADA });
+    renderRoute("/");
+    const region = await card(/^Jour de repos$/);
+    expect(within(region).getByRole("heading", { name: "Jour de repos" })).toBeTruthy();
+    expect(region.textContent).toContain("Prévu par ton programme");
+    expect(region.querySelector("svg.lucide-leaf")!.getAttribute("aria-hidden")).toBe("true");
+    const next = within(region).getByRole("link", { name: "Demain\u202f: Séance B · Legs" });
+    expect(next.getAttribute("href")).toBe("/workouts/session/B?from=home");
+    expect(within(region).getAllByRole("link")).toHaveLength(1);
+    expect(within(region).queryByRole("link", { name: "Voir la séance" })).toBeNull();
+  });
+
+  it("the link says Samedi 2 to 6 days on, Lundi 2 novembre 7 days on", async () => {
+    morningOf(8);
+    await fixedDays();
+    fakeApi({ me: ADA });
+    renderRoute("/");
+    let region = await card(/^Jour de repos$/);
+    expect(
+      within(region).getByRole("link", {
+        name: "Samedi\u202f: Séance C · Fessiers + tirage léger",
+      }),
+    ).toBeTruthy();
+    cleanup();
+    // Monday only, A done this morning: the next Monday is a week on.
+    morningOf(26);
+    await fixedDays([PUSH, null, null, null, null, null, null]);
+    await seed(ADA.id, doneOn(0x50, "A", PUSH, 26));
+    renderRoute("/");
+    region = await card(/^Séance A · Push$/);
+    expect(
+      within(region).getByRole("link", { name: "Lundi 2 novembre\u202f: Séance A · Push" }),
+    ).toBeTruthy();
+  });
+
+  it("a session day shows Prévue ce mercredi with Voir la séance", async () => {
+    morningOf(7);
+    await fixedDays();
+    fakeApi({ me: ADA });
+    renderRoute("/");
+    const region = await card(/^Séance B · Legs$/);
+    expect(region.textContent).toContain("Prévue ce mercredi · 7 exercices · environ 60\u00A0min");
+    expect(region.textContent).not.toContain("La prochaine");
+    const see = within(region).getByRole("link", { name: "Voir la séance" });
+    expect(see.getAttribute("href")).toBe("/workouts/session/B?from=home");
+    expect(within(region).getAllByRole("link")).toHaveLength(1);
+  });
+
+  it("today's session done yesterday shows the check, Faite hier · 52 min · 19 séries and the next day's link", async () => {
+    morningOf(12);
+    await fixedDays();
+    await seed(ADA.id, doneOn(0x51, "A", PUSH, 11));
+    fakeApi({ me: ADA });
+    renderRoute("/");
+    const region = await card(/^Séance A · Push$/);
+    expect(region.querySelector("svg.lucide-check")).toBeTruthy();
+    expect(region.textContent).toContain("Faite hier · 52\u00A0min · 19 séries");
+    const next = within(region).getByRole("link", { name: "Mercredi\u202f: Séance B · Legs" });
+    expect(next.getAttribute("href")).toBe("/workouts/session/B?from=home");
+    expect(within(region).getAllByRole("link")).toHaveLength(1);
+    expect(region.querySelector(".bg-primary")).toBeNull();
+  });
+
+  it("done two days before: Faite jeudi", async () => {
+    morningOf(10);
+    await fixedDays();
+    await seed(ADA.id, doneOn(0x52, "C", GLUTES, 8, 40, 12));
+    fakeApi({ me: ADA });
+    renderRoute("/");
+    const region = await card(/^Séance C · /);
+    expect(region.textContent).toContain("Faite jeudi · 40\u00A0min · 12 séries");
+    expect(within(region).getByRole("link", { name: "Lundi\u202f: Séance A · Push" })).toBeTruthy();
+  });
+
+  it("done today on fixed days: the shipped card, its link Mercredi : Séance B · Legs", async () => {
+    morningOf(12);
+    await fixedDays();
+    await seed(ADA.id, doneOn(0x53, "A", PUSH, 12, 48, 11));
+    fakeApi({ me: ADA });
+    renderRoute("/");
+    const region = await card(/^Séance A · Push$/);
+    expect(region.textContent).toContain("Faite aujourd'hui · 48\u00A0min · 11 séries");
+    expect(region.querySelector("svg.lucide-check")).toBeTruthy();
+    const next = within(region).getByRole("link", { name: "Mercredi\u202f: Séance B · Legs" });
+    expect(next.getAttribute("href")).toBe("/workouts/session/B?from=home");
+    expect(region.textContent).not.toContain("La prochaine");
+  });
+
+  it("another session done on a session day: today's session stays next, and the link says so", async () => {
+    morningOf(7);
+    await fixedDays();
+    await seed(ADA.id, doneOn(0x54, "A", PUSH, 7, 48, 11));
+    fakeApi({ me: ADA });
+    renderRoute("/");
+    const region = await card(/^Séance A · Push$/);
+    expect(region.textContent).toContain("Faite aujourd'hui");
+    expect(
+      within(region).getByRole("link", { name: "Aujourd'hui\u202f: Séance B · Legs" }),
+    ).toBeTruthy();
+  });
+
+  it("an open session wins on a rest day", async () => {
+    // Monday A, Tuesday B, Saturday C: Wednesday 7 is a rest day, with A open this morning.
+    await fixedDays([PUSH, LEGS, null, null, null, GLUTES, null]);
+    await seed(ADA.id, OPEN_A);
+    fakeApi({ me: ADA });
+    renderRoute("/");
+    const region = await card(/^Séance A · Push$/);
+    expect(region.textContent).toContain("En cours · 1 série sur 19");
+    expect(screen.queryByRole("region", { name: "Jour de repos" })).toBeNull();
+  });
+
+  it("the day after a missed session day shows the same as any day", async () => {
+    // B was not done on Wednesday: Thursday reads as it would had it been.
+    morningOf(8);
+    await fixedDays();
+    fakeApi({ me: ADA });
+    renderRoute("/");
+    const missed = (await card(/^Jour de repos$/)).textContent;
+    cleanup();
+    await seed(ADA.id, doneOn(0x55, "B", LEGS, 7));
+    renderRoute("/");
+    const kept = (await card(/^Jour de repos$/)).textContent;
+    expect(missed).toBe(kept);
+    expect(missed).toBe(
+      "Jour de repos Prévu par ton programmeSamedi\u202f: Séance C · Fessiers + tirage léger",
+    );
+    expect(missed).not.toMatch(/retard|manqu|Séance B/);
+  });
+
+  it("a set-aside session's day is a rest day", async () => {
+    morningOf(7);
+    await fixedDays();
+    await edit((p) => setAside(p, LEGS, EDIT_AT));
+    fakeApi({ me: ADA });
+    renderRoute("/");
+    const region = await card(/^Jour de repos$/);
+    // C is lettered B once Legs leaves the rotation; its day stays Saturday.
+    expect(
+      within(region).getByRole("link", {
+        name: "Samedi\u202f: Séance B · Fessiers + tirage léger",
+      }),
+    ).toBeTruthy();
+  });
+
+  it("in English: Rest day, Planned for Wednesday, Done yesterday, Tomorrow: Session B · Legs", async () => {
+    await i18n.changeLanguage("en");
+    morningOf(6);
+    await fixedDays();
+    fakeApi({ me: ADA });
+    renderRoute("/");
+    let region = await card(/^Rest day$/);
+    expect(region.textContent).toContain("Planned by your program");
+    expect(within(region).getByRole("link", { name: "Tomorrow: Session B · Legs" })).toBeTruthy();
+    cleanup();
+    morningOf(7);
+    renderRoute("/");
+    region = await card(/^Session B · Legs$/);
+    expect(region.textContent).toContain("Planned for Wednesday · 7 exercises");
+    cleanup();
+    morningOf(12);
+    await seed(ADA.id, doneOn(0x56, "A", PUSH, 11));
+    renderRoute("/");
+    region = await card(/^Session A · Push$/);
+    expect(region.textContent).toContain("Done yesterday · 52\u00A0min · 19 sets");
+    expect(within(region).getByRole("link", { name: "Wednesday: Session B · Legs" })).toBeTruthy();
   });
 });
