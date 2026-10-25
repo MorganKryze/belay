@@ -11,7 +11,7 @@ import { formatNumber, formatPlates } from "@/lib/format";
 import { resolveEquipment, useTool } from "@/lib/tool-storage";
 import { readWeightUnit, weightStepper } from "@/lib/units";
 
-// `count` null = follow the load (D12). Changing the load resets it.
+// `count` null = follow the load. Changing the load resets it.
 export const WarmupInputs = z.object({
   workKg: z.number().min(1).max(500).catch(100),
   count: z.number().int().min(0).max(3).nullable().catch(null),

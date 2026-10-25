@@ -14,7 +14,7 @@ import {
 } from "@belay/shared/training/workout";
 import { parseLoad, type WeightUnit } from "@/lib/units";
 
-// The editor of a finished session, or of one logged afterwards (spec D9, D10): every set as
+// The editor of a finished session, or of one logged afterwards: every set as
 // text cells, nothing written until Save, then only what changed.
 
 export type EditRow = {

@@ -133,7 +133,7 @@ const ALL: Store[] = [
   "activeProgram",
 ];
 
-// One database per account (D3): another account on this device never sees it, and nothing in
+// One database per account: another account on this device never sees it, and nothing in
 // it is ever sent under another identity. Signing out keeps it.
 export const accountDbName = (userId: string) => `belay.${userId}`;
 
@@ -812,7 +812,7 @@ export async function startWorkout(db: AccountDb, asked: Start): Promise<string>
           .put({ workoutId: open.id, slotIndex: 0, restEndsAt: null }, "current");
       return;
     }
-    // The session left behind is closed in the same go (D12), or nobody would.
+    // The session left behind is closed in the same go, or nobody would.
     const leaving = forgottenChanges(workouts, sets, now, active);
     for (const change of leaving) {
       await applyLocal(tx, change);
@@ -828,7 +828,7 @@ export async function startWorkout(db: AccountDb, asked: Start): Promise<string>
   return id;
 }
 
-// D12: what closes the sessions left open. One is ended at its last set. A session without a
+// What closes the sessions left open. One is ended at its last set. A session without a
 // set is removed only when this device holds it: on another device its sets may simply not
 // have arrived yet, and a removal outranks them all.
 function forgottenChanges(
@@ -946,7 +946,7 @@ export async function readHistory(db: AccountDb): Promise<History> {
 }
 
 // The programs as the screens read them: what this device holds, the starting rows it lacks
-// read from the seed (SD3), every time left out.
+// read from the seed, every time left out.
 const recordOf = <T>(row: object) =>
   Object.fromEntries(
     Object.entries(row).filter(([k, v]) => !k.endsWith("At") && !(k === "measure" && v === null)),

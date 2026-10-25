@@ -2,7 +2,7 @@ import { AGE_RANGE_YEARS, HEIGHT_RANGE_CM } from "../tools/bounds";
 import type { Formula } from "../tools/catalog";
 import type { ISODate } from "./dates";
 
-// The three optional facts of Settings › Profile (D8), each for the tools that use it. The age
+// The three optional facts of Settings › Profile, each for the tools that use it. The age
 // is never stored: it comes from the birth year and today.
 export interface Profile {
   formula: Formula | null;

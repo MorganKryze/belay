@@ -323,7 +323,7 @@ export const SetChangeSchema = z.discriminatedUnion("field", [
   }),
 ]);
 
-// Programs, their sessions and slots: one field per change, each merged on its own (D2); a
+// Programs, their sessions and slots: one field per change, each merged on its own; a
 // creation carries every field and is written once. The bounds are the phone's (stored-program.ts).
 const fieldChange = <K extends string, F extends string, V extends z.ZodMiniType>(
   kind: K,
@@ -382,7 +382,7 @@ const rule = z.nullable(z.literal("no_climbing"));
 // null: counted in repetitions.
 const measure = z.nullable(z.literal("seconds"));
 // A rep range or warm-ups carry the measure they were written for: merged on a slot now in another
-// measure, they are refused rather than read in the wrong unit (ED4).
+// measure, they are refused rather than read in the wrong unit.
 const measured = <F extends "reps" | "warmups", T>(field: F) =>
   z
     .object({
@@ -394,7 +394,7 @@ const measured = <F extends "reps" | "warmups", T>(field: F) =>
       at,
     })
     .check(z.refine((c) => isSlotValue(field, c.value, c.measure)));
-// A slot's exercise, its measure, its rep range and warm-ups travel together, one write (ED4).
+// A slot's exercise, its measure, its rep range and warm-ups travel together, one write.
 export const ProgramSlotChangeSchema = z.discriminatedUnion("field", [
   z
     .object({

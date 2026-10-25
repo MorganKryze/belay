@@ -164,7 +164,7 @@ const EQUIPMENT_OF: Readonly<Record<string, Equipment>> = {
 };
 export const equipmentOf = (name: string): Equipment => EQUIPMENT_OF[name] ?? "other";
 
-// Spec D12: an exercise held rather than repeated is counted in seconds, as its name says (a
+// An exercise held rather than repeated is counted in seconds, as its name says (a
 // plank, a hold, a hang, a wall sit, an isometric or static exercise)…
 const TIMED = /\b(?:plank|hold|hang|wall sit|isometric|static)\b/;
 // …except where the name misleads, checked by hand one by one: these move through a plank or a
@@ -221,7 +221,7 @@ export const OVERRIDES: Readonly<Record<string, { primary: Muscle; secondary: Mu
 
 type Entry = { exercise: Exercise; steps: { en: readonly string[]; fr: readonly string[] } };
 
-// D15: two exercises of the starter program the dataset lacks, and the dead hang (spec D12),
+// Two exercises of the starter program the dataset lacks, and the dead hang,
 // with Belay's own text.
 export const BELAY_EXERCISES: readonly Entry[] = [
   {

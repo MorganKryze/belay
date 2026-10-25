@@ -1,5 +1,5 @@
 // The editor's rules: each edit of a program, a session or a slot as the sync changes it queues,
-// or null when the phone refuses it (ED1 to ED4, PM11). Never imported at startup: only the
+// or null when the phone refuses it. Never imported at startup: only the
 // editing screens need it.
 import type { Measure } from "../exercises/library";
 import type {
@@ -47,7 +47,7 @@ const after = (rows: readonly { position: number }[]) =>
 const liveProgram = (p: StoredPrograms, id: string) =>
   p.programs.some((x) => x.id === id && !x.removed);
 
-// A program with no name and the rotation schedule; refused past 20 live programs (PM11).
+// A program with no name and the rotation schedule; refused past 20 live programs.
 export function createProgram(p: StoredPrograms, id: string, at: string): ProgramChange[] | null {
   if (live(p.programs).length >= MAX_PROGRAMS) return null;
   return [{ kind: "program", id, field: "create", name: null, schedule: DEFAULT_SCHEDULE, at }];
@@ -61,7 +61,7 @@ export const setSchedule = (id: string, schedule: Schedule, at: string): Program
   { kind: "program", id, field: "schedule", value: schedule, at },
 ];
 
-// The active program is never removed: another one is chosen first (ED2).
+// The active program is never removed: another one is chosen first.
 export const removeProgram = (p: StoredPrograms, id: string, at: string): ProgramChange[] | null =>
   id === p.activeId ? null : [{ kind: "program", id, field: "removed", value: true, at }];
 
@@ -79,7 +79,7 @@ const siblings = (p: StoredPrograms, programId: string | null, but?: string) =>
     .sort(byPosition);
 
 // A session with no name at the end of a rotation, or of the collection; refused past 200
-// sessions in the account or 26 in the rotation (PM11), in a program the account lacks, or past
+// sessions in the account or 26 in the rotation, in a program the account lacks, or past
 // position 999 (a reorder writes the list's positions back to 0..n-1).
 export function addSession(
   p: StoredPrograms,
@@ -125,7 +125,7 @@ const insert = <T>(list: T[], row: T, toIndex: number): T[] => {
 // A session moved to index toIndex of a rotation or of the collection (null). Positions are
 // written 0..n-1 over the live sessions of the list it joins and of the list it leaves, and only
 // the sessions whose place changes get a change (decision 5). Refused into a rotation already
-// holding 26 (PM11) or a program the account lacks.
+// holding 26 or a program the account lacks.
 export function placeSession(
   p: StoredPrograms,
   sessionId: string,
@@ -237,7 +237,7 @@ export function keptApart(
 // A slot at the end of its section with the default targets of « + Exercice », or the values of
 // the slot `like` (the row above, as a setting chooses): its sets, RIR, rest and warm-ups (none for
 // a timed exercise) and, in the same measure, its range; never its main mark nor its group. Refused
-// at 30 live slots in the session (ED3), in a session the account lacks, or past position 999.
+// at 30 live slots in the session, in a session the account lacks, or past position 999.
 export function addSlot(
   p: StoredPrograms,
   id: string,
@@ -406,7 +406,7 @@ export function copySlotsInto(
 }
 
 // One value of a slot; refused when the slot would leave its bounds with it (a counted range past
-// 100), or for a slot the account lacks. A rep range or warm-ups carry the slot's measure (ED4).
+// 100), or for a slot the account lacks. A rep range or warm-ups carry the slot's measure.
 export function editSlot(
   p: StoredPrograms,
   id: string,
@@ -421,7 +421,7 @@ export function editSlot(
   return [{ kind: "programSlot", id, ...edit, ...measure, at } as ProgramSlotChange];
 }
 
-// Another exercise, as replaceSlot does in a session (ED4): in another measure, its default target
+// Another exercise, as replaceSlot does in a session: in another measure, its default target
 // and, timed, no warm-up. One change carries the four, so no merge splits them.
 export function replaceExercise(
   p: StoredPrograms,

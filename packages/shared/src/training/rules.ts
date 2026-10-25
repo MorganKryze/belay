@@ -102,7 +102,7 @@ export function topSet(sets: readonly WorkoutSet[]): Load | null {
 export const lastTopSet = (history: History, exerciseId: string, measure: Measure): Load | null =>
   topSet(lastWorkSets(history, exerciseId, measure));
 
-// The warm-up sets of a slot (D7). A barbell is loaded as the Plates tool says (the person's bar
+// The warm-up sets of a slot. A barbell is loaded as the Plates tool says (the person's bar
 // and plates); anything else takes the same fractions and reps, rounded to the exercise's step,
 // never 0 or less, never the working load or more. No working load yet, or one past what the
 // plate table handles (a typo like 8000): no warm-up, so the set stays as typed. In lb the bound
@@ -255,7 +255,7 @@ const best = (sets: readonly WorkoutSet[], measure: Measure) =>
       null,
     );
 
-// D14 and spec D11: a record is the best Epley estimate of a work set of 10 reps or fewer, or
+// A record is the best Epley estimate of a work set of 10 reps or fewer, or
 // the longest timed set, above every earlier finished session's; never on an exercise's first
 // time in that measure.
 export function summary(workout: Workout, sets: readonly WorkoutSet[], history: History): Summary {
@@ -378,7 +378,7 @@ export function openWorkout<W extends Workout>(
     );
 }
 
-// D12: a session left open is closed at its last set once that set is more than 6 hours old;
+// A session left open is closed at its last set once that set is more than 6 hours old;
 // one without a set is removed after 6 hours.
 // A resume moves the start later by the time paused, and its change is written at the resume
 // (`startedAtAt`). When that came after the last set, the session ends at the resume instead:

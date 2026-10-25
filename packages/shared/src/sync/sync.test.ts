@@ -896,7 +896,7 @@ describe("programs, the active one, their sessions and slots (SY1, SY7, SY9, SY1
     broken(timed, { measure: "minutes" }),
     broken(VALID[16]!, { exerciseId: "bench" }),
     broken(VALID[16]!, { measure: "reps" }),
-    // The exercise brings its range and warm-ups, bounded by its measure (ED4).
+    // The exercise brings its range and warm-ups, bounded by its measure.
     broken(VALID[16]!, { repRange: [1, 3601] }),
     broken(VALID[16]!, { repRange: undefined }),
     broken(VALID[16]!, { warmupSets: 4 }),

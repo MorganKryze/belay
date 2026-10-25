@@ -4,7 +4,7 @@
 import { type SessionTemplate, starterProgram } from "./program";
 import { isSlot, type Slot } from "./workout";
 
-// Limits against abuse only, never a product cap (PM11): the storage one account may hold. A
+// Limits against abuse only, never a product cap: the storage one account may hold. A
 // rotation stops at 26 because a session done stores its letter as one capital (isSessionCode).
 export const MAX_PROGRAMS = 20;
 export const MAX_SESSIONS = 200;
@@ -30,7 +30,7 @@ export interface Program {
   removed: boolean;
 }
 
-// No stored letter: a session's letter is its place in the active rotation (PM9).
+// No stored letter: a session's letter is its place in the active rotation.
 export interface ProgramSession {
   id: string;
   name: string | null;
@@ -48,7 +48,7 @@ export interface ProgramSlot extends Omit<Slot, "rule" | "added" | "skipped"> {
 }
 
 export interface StoredPrograms {
-  activeId: string | null; // null, or a removed program: no rotation offered (RD4)
+  activeId: string | null; // null, or a removed program: no rotation offered
   activeAt: string | null; // when it became active; null: since the start
   programs: readonly Program[];
   sessions: readonly ProgramSession[];
@@ -99,12 +99,12 @@ function seedOf(templates: readonly SessionTemplate[]): StoredPrograms {
   };
 }
 
-// Built from the constant, so the two can never drift apart (SD1).
+// Built from the constant, so the two can never drift apart.
 export const SEED: StoredPrograms = /* @__PURE__ */ seedOf(starterProgram);
 
 export const isSeedSession = (id: string): boolean => SEED.sessions.some((s) => s.id === id);
 
-// Stored rows win by id; every seed row the device lacks is read from SEED (SD3).
+// Stored rows win by id; every seed row the device lacks is read from SEED.
 function overlay<T extends { id: string }>(seed: readonly T[], stored: readonly T[]): T[] {
   const byId = new Map(stored.map((r) => [r.id, r]));
   const seedIds = new Set(seed.map((r) => r.id));
@@ -121,7 +121,7 @@ export const withSeed = (stored: Partial<StoredPrograms>): StoredPrograms => ({
   slots: overlay(SEED.slots, stored.slots ?? []),
 });
 
-// By position, then by id so every device reads two equal positions in the same order (PM4).
+// By position, then by id so every device reads two equal positions in the same order.
 const byId = (a: { id: string }, b: { id: string }) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
 export const byPosition = (
   a: { position: number; id: string },
@@ -155,8 +155,8 @@ export const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 // The active program's live sessions in order, each with its normal slots, then its no-climbing
 // slots as the template's conditional rule (planFor marks them). A session with no live normal slot
-// cannot be started, so it is left out and the letters close up (PM6, PM7); letters follow the
-// place, A first, up to Z (PM9). No active program, or a removed one, offers none (RD4).
+// cannot be started, so it is left out and the letters close up; letters follow the
+// place, A first, up to Z. No active program, or a removed one, offers none.
 export function rotationOf(p: StoredPrograms): LetteredTemplate[] {
   const active = p.programs.find((x) => x.id === p.activeId && !x.removed);
   if (!active) return [];
@@ -181,7 +181,7 @@ export function rotationOf(p: StoredPrograms): LetteredTemplate[] {
 
 // Whether a session done (or open) is this rotation session: by the session it recorded, or by its
 // letter when it recorded none (started before sessions recorded theirs). Letters follow the
-// rotation, so a recorded id is the only thing that survives a reorder (D7).
+// rotation, so a recorded id is the only thing that survives a reorder.
 export const startedAs = (
   w: { sessionCode: string; sessionId?: string | null },
   s: { code: string; sessionId: string },
@@ -258,7 +258,7 @@ export function isProgramSlot(v: unknown): boolean {
   return isSlot({ ...s, rule: undefined });
 }
 
-// The slot values a change sets one at a time, by the change's field (SY1); the exercise, the
+// The slot values a change sets one at a time, by the change's field; the exercise, the
 // section, the position and the removal travel in changes of their own.
 export const SLOT_FIELDS = {
   reps: "repRange",
@@ -273,7 +273,7 @@ export type SlotField = keyof typeof SLOT_FIELDS;
 
 // One value within isSlot's bounds, judged on a valid slot that differs by that value alone, in
 // the measure given (null: counted in repetitions). A rep range and warm-ups travel with the
-// measure they were written for (ED4); the other values are bounded alike in either measure.
+// measure they were written for; the other values are bounded alike in either measure.
 const BASE: Slot = {
   exerciseId: "ds:0001",
   measure: "seconds",

@@ -64,7 +64,7 @@ export const starterProgram: readonly SessionTemplate[] = [
   },
 ];
 
-// What the program offers instead of an exercise (spec D14), by exercise id: the squat, the
+// What the program offers instead of an exercise, by exercise id: the squat, the
 // split squat, the push-up and the Romanian deadlift.
 // ponytail: a constant beside the constant program; the stored program (M3b2) gives each slot
 // its own alternatives.

@@ -19,7 +19,7 @@ import { useAccount } from "@/sync/account";
 import { readMeasures, readProfile, readWeights, recordChange } from "@/sync/db";
 import { Button } from "./ui/button";
 
-// The profile facts a tool may offer to update (D9): the formula and the height, never the age
+// The profile facts a tool may offer to update: the formula and the height, never the age
 // or the weight, which stay a calculation.
 type ProfileField = "formula" | "heightCm";
 
@@ -27,7 +27,7 @@ type Proposal = { profile: unknown; value: unknown; accept: () => void; decline:
 
 // A connected tool opens from the profile and the tracking (§4.5): each prefilled field says
 // where its value comes from until the person changes it; "Back to my last entries" returns to
-// the device's values (M1). Signed out, or with nothing to offer, the tool is as in M1.
+// the device's values. Signed out, or with nothing to offer, the tool is as in M1.
 export function usePrefill(fields: readonly ToolField[]) {
   const account = useAccount();
   const today = useToday();
@@ -161,7 +161,7 @@ export function ProfileProposal({
   );
 }
 
-// Back to the values entered on this device (M1), shown while a field is still prefilled.
+// Back to the values entered on this device, shown while a field is still prefilled.
 export function RestoreButton({ prefill }: { prefill: { any: boolean; restore: () => void } }) {
   const { t } = useTranslation();
   if (!prefill.any) return null;

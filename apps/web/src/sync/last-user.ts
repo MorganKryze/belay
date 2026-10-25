@@ -1,5 +1,5 @@
 // The account this device last signed in with, so the app opens it offline. Signing out clears
-// it; the account's database stays (D3) and comes back with the next sign-in to that account.
+// it; the account's database stays and comes back with the next sign-in to that account.
 export type LastUser = { id: string; displayName: string };
 const KEY = "belay.lastUser";
 

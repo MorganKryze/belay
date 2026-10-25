@@ -172,7 +172,7 @@ describe("session and program titles", () => {
     expect(workoutTitle({ sessionCode: "B", sessionId: seedId(1) }, [], fr)).toBe(
       "Séance B · Push",
     );
-    // Recorded before sessions kept their id: its letter's starting session (HF2).
+    // Recorded before sessions kept their id: its letter's starting session.
     expect(workoutTitle({ sessionCode: "B" }, sessions, fr)).toBe("Séance B · Legs");
     expect(workoutTitle({ sessionCode: "A", sessionId: null }, sessions, en)).toBe(
       "Session A · Push",

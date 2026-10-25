@@ -104,7 +104,7 @@ function Session({ account }: { account: OpenAccount }) {
 
   // ?start=B: start the active rotation's session B (or take up the one already open), then drop
   // the parameter so a reload never starts another. The session copies the rotation as it stands
-  // now and records the session it came from; a later program change never reaches it (HF1).
+  // now and records the session it came from; a later program change never reaches it.
   // Session C's rule reads the week's activities now, once. A letter the rotation lacks is
   // not found, even with a session open, unless it is that session's own letter: Home's resume
   // row and the session bar ask for it, and it may have left the rotation since.
@@ -214,7 +214,7 @@ function Screen({
   if (sheet === "empty" && sets.length > 0) setSheet("finish");
   // The planned work sets done (« + Série » past the plan aside), and what comes next.
   const { done, left, last: lastTurn, next } = sessionProgress(plan, sets);
-  // The person's own bar and plates, from the Plates tool (D7).
+  // The person's own bar and plates, from the Plates tool.
   const bar = resolveEquipment(readToolState().equipment);
 
   const save = useCallback(
@@ -334,7 +334,7 @@ function Screen({
     ended.current = paused;
     void resume(endedBy);
   }, [paused, endedBy, resume]);
-  // The session's own copy of the plan (D7): the program never changes. Each edit is built from
+  // The session's own copy of the plan: the program never changes. Each edit is built from
   // the plan stored when its turn comes, edits one after the other, so quick taps compose.
   const edits = useRef<Promise<void>>(Promise.resolve());
   // `leaving` is a slot being left out: if it is the one up next, the open session moves on to

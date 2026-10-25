@@ -66,7 +66,7 @@ type Open =
   | { sheet: "measures"; date: ISODate }
   | { sheet: "annotation"; annotation: AnnotationRow | null };
 
-// The Body tab: always in the bar; tracking needs an account (D5), the tools do not.
+// The Body tab: always in the bar; tracking needs an account, the tools do not.
 export function Body() {
   const account = useAccount();
   return account.kind === "open" ? <BodyPage account={account} /> : <NoAccount account={account} />;
@@ -187,7 +187,7 @@ function BodyContent({
   const average = latestMovingAverage(weighings, today);
   const lastWeek = weeks.find((w) => w.status !== "in_progress");
   const lossPct = lastWeek?.lossPct ?? null;
-  // The courses come from the boxes of creatine ticked, removed supplements included (D3).
+  // The courses come from the boxes of creatine ticked, removed supplements included.
   const creatine = new Set(supplements.filter((s) => s.kind === "creatine").map((s) => s.id));
   const courses = creatineWindows(
     logs.filter((l) => creatine.has(l.supplementId)).map((l) => l.date),

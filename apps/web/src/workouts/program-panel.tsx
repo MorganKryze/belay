@@ -31,7 +31,7 @@ import { type OpenAccount, useActivities, useHistory, useProgram, useRecord } fr
 import { dayOf } from "./history-panel";
 import { RhythmRow } from "./rhythm-sheet";
 
-// Program (spec D13, §4.5): the active program's rotation as cards, the next one first with « See
+// Program: the active program's rotation as cards, the next one first with « See
 // the session »; every other card opens its session's preview on a tap anywhere. While a session
 // is open, its card resumes it and the others open their preview, which says what is open.
 // Without an account nothing is next, so every card opens the starting program's preview. A

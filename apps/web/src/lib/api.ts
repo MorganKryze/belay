@@ -13,7 +13,7 @@ export async function fetchMe(): Promise<Me | null> {
 }
 
 // Throws (and never navigates) on any failure, so the caller can tell the user. Once signed out,
-// the device forgets which account to open; that account's data stays on it (D3).
+// the device forgets which account to open; that account's data stays on it.
 export async function logout(): Promise<void> {
   const res = await fetch("/auth/logout", { method: "POST", credentials: "same-origin" });
   if (!res.ok) throw new Error(`POST /auth/logout: ${res.status}`);
