@@ -86,6 +86,8 @@ async function open(page: Page, changes: Change[], theme?: "light" | "dark") {
   const server = await fakeServer(page, { changes });
   await page.goto("/workouts?tab=program");
   await expect(page.locator(".launch")).toBeHidden();
+  // The phone first draws its own starter program; nothing is checked before the server's lands.
+  await expect(page.getByRole("button", { name: /^Ma semaine / })).toBeVisible();
   if (theme === "dark") await expect(page.locator("html")).toHaveClass(/dark/);
   return server;
 }
