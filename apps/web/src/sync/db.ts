@@ -5,7 +5,7 @@ import { EMPTY_PROFILE, type Profile } from "@belay/shared/body/profile";
 import { isCreatineName } from "@belay/shared/body/supplements";
 import { DEFAULT_TARGET, type TargetRange } from "@belay/shared/body/target";
 import type { Weighing } from "@belay/shared/body/weighings";
-import { isNewer, mergeSlotChange } from "@belay/shared/sync/merge";
+import { isNewer, mergeSlotInBatch } from "@belay/shared/sync/merge";
 import type {
   ActiveProgramRow,
   ActivityRow,
@@ -377,8 +377,16 @@ async function localAt(tx: WriteTx, change: Change): Promise<string | null> {
   }
 }
 
+// The slot times written so far in one batch: the changes recorded together, or the queue
+// replayed over the server's rows, which the server receives as one batch.
+type BatchTimes = Set<string>;
+
 // Writes what a change says into the device's copy, the way the server merges it.
-async function applyLocal(tx: WriteTx, change: Change): Promise<void> {
+async function applyLocal(
+  tx: WriteTx,
+  change: Change,
+  batch: BatchTimes = new Set(),
+): Promise<void> {
   switch (change.kind) {
     case "weight":
       await tx
@@ -526,23 +534,24 @@ async function applyLocal(tx: WriteTx, change: Change): Promise<void> {
     case "programSession":
     case "programSlot":
       // Built by the editor on the row it shows, it is never refused: if it is, nothing is kept.
-      if (!(await applyProgram(tx, change))) throw new RangeError("invalid change");
+      if (!(await applyProgram(tx, change, batch))) throw new RangeError("invalid change");
   }
 }
 
 // A creation writes its row once; a field change writes its value and time, a slot's merged as on
-// the server (mergeSlotChange). False: the server refuses it, a rep range or warm-ups written for
+// the server (mergeSlotInBatch). False: the server refuses it, a rep range or warm-ups written for
 // another measure than the slot's. A row this device holds nowhere is left alone.
 async function applyProgram(
   tx: WriteTx,
   change: ProgramChange | ProgramSessionChange | ProgramSlotChange,
+  batch: BatchTimes,
 ): Promise<boolean> {
   const row = await programRow(tx, change.kind, change.id);
   const { kind, field, at, ...values } = change;
   let next: object | null | undefined;
   if (field === "create") next = row ?? created(kind, values);
   else if (change.kind === "programSlot")
-    next = row && mergeSlotChange(row as ProgramSlotRow, change);
+    next = row && mergeSlotInBatch(row as ProgramSlotRow, change, batch);
   else
     next = row && {
       ...row,
@@ -701,12 +710,13 @@ export async function recordChanges(
 ): Promise<void> {
   if (!changes.every(isValidChange)) throw new RangeError("invalid change");
   await write(db, async (tx) => {
+    const batch: BatchTimes = new Set();
     for (const written of changes) {
       const change =
         written.kind === "workout" && written.field === "start"
           ? await withSessionName(tx, written)
           : written;
-      await applyLocal(tx, change);
+      await applyLocal(tx, change, batch);
       await tx.objectStore("outbox").add({ change });
     }
     if (active === null) await tx.objectStore("activeSession").delete("current");
@@ -1081,8 +1091,9 @@ export async function applyServer(
     await Promise.all(ops);
     // A slot change merges as on the server: one written for another measure than the server's
     // row stays out, as the server will refuse it.
+    const batch: BatchTimes = new Set();
     for (const { change } of await tx.objectStore("outbox").getAll())
-      if (change.kind === "programSlot") await applyProgram(tx, change);
+      if (change.kind === "programSlot") await applyProgram(tx, change, batch);
       else if (isNewer(change.at, await localAt(tx, change))) await applyLocal(tx, change);
     // The open session was finished or removed on another device: this one lets it go.
     const active = await tx.objectStore("activeSession").get("current");

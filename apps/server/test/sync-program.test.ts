@@ -437,6 +437,16 @@ describe("program edits through /api/sync", () => {
     expect((await slotRow(user, SLOT_A1))!.sets).toBe(5);
   });
 
+  it("two edits of a slot at one instant, written with and without milliseconds, keep the later one", async () => {
+    const { user, sync } = await signIn("pg-same-instant");
+    const res = await sync("0", [
+      slotField(SLOT_A1, "sets", 4, "2026-10-07T17:00:00.000Z"),
+      slotField(SLOT_A1, "sets", 5, "2026-10-07T17:00:00Z"),
+    ]);
+    expect(rejected(res)).toEqual([]);
+    expect((await slotRow(user, SLOT_A1))!.sets).toBe(5);
+  });
+
   it("a session set aside and placed back", async () => {
     const { user, sync } = await signIn("pg-aside");
     const aside = await sync("0", [place(SESSION_B, null, 0, AT)]);
@@ -616,6 +626,20 @@ describe("program edits through /api/sync", () => {
     });
   });
 
+  it("a range sent with a change of measure at one instant is kept, as the phone keeps it", async () => {
+    const { user, sync } = await signIn("pg-measure-tie");
+    const res = await sync("0", [
+      slotExercise(SLOT_A1, TIMED, "seconds", [30, 60], 0, AT),
+      slotReps(SLOT_A1, [20, 40], "seconds", AT),
+    ]);
+    expect(rejected(res)).toEqual([]);
+    expect(await slotRow(user, SLOT_A1)).toMatchObject({
+      measure: "seconds",
+      repMin: 20,
+      repMax: 40,
+    });
+  });
+
   it("a timed exercise with its range is kept; a counted range past 100 refused", async () => {
     const { user, sync } = await signIn("pg-ranges");
     const timed = newId();
@@ -736,6 +760,22 @@ describe("program edits through /api/sync", () => {
     expect(storedOf(res).programs.map((p) => p.id)).toEqual([PROGRAM]);
     const again = await a.sync(first.cursor);
     expect(storedOf(again).programs.map((p) => [p.id, p.name])).toEqual([[own, null]]);
+  });
+
+  it("isolation: a slot created in another account's session is unknown and stored nowhere", async () => {
+    const a = await signIn("pg-iso-slot-a");
+    const b = await signIn("pg-iso-slot-b");
+    const theirs = newId();
+    await a.sync("0", [createSessionChange(theirs, null, 0)]);
+    const slot = newId();
+    const res = await b.sync("0", [createSlot(slot, theirs), slotField(slot, "sets", 4)]);
+    expect(rejected(res)).toEqual([
+      { index: 0, reason: "unknown" },
+      { index: 1, reason: "unknown" },
+    ]);
+    expect(await slotRow(a.user, slot)).toBeUndefined();
+    expect(await slotRow(b.user, slot)).toBeUndefined();
+    expect(await sessionRow(b.user, theirs)).toBeUndefined();
   });
 
   it("program rows page with hasMore", async () => {
@@ -892,5 +932,89 @@ describe("abuse limits", () => {
     expect(rejected(slots31)).toEqual([{ index: 0, reason: "refused" }]);
     expect(await slotRow(l.user, slot31)).toBeUndefined();
     expect((await slotRow(l.user, SLOT_A1))!.sets).toBe(4);
+  });
+
+  it("a slot put back past 30 live in its session is refused; one taken out first frees its place", async () => {
+    const { user, sync } = await signIn("pg-limit-slot-restore");
+    const { cursor } = await sync("0");
+    const inA = SEED.slots.filter((x) => x.sessionId === SESSION_A).length;
+    const aside = newId();
+    const slot = (id: string, position: number, removed = false) => ({
+      userId: user,
+      id,
+      sessionId: SESSION_A,
+      position,
+      exerciseId: COUNTED,
+      repMin: 8,
+      repMax: 12,
+      sets: 3,
+      rirMin: 1,
+      rirMax: 2,
+      restSec: 120,
+      warmupSets: 0,
+      isMain: false,
+      removed,
+    });
+    await owner
+      .insert(programSlots)
+      .values([
+        ...Array.from({ length: MAX_SLOTS - inA }, (_, i) => slot(newId(), 100 + i)),
+        slot(aside, 99, true),
+      ]);
+    const full = await sync(cursor, [slotField(aside, "removed", false, LATER)]);
+    expect(rejected(full)).toEqual([{ index: 0, reason: "refused" }]);
+    expect((await slotRow(user, aside))!.removed).toBe(true);
+    expect(full.programSlots!.find((r) => r.id === aside)).toMatchObject({ removed: true });
+    const swapped = await sync(full.cursor, [
+      slotField(SLOT_A1, "removed", true, LATEST),
+      slotField(aside, "removed", false, LATEST),
+    ]);
+    expect(rejected(swapped)).toEqual([]);
+    expect((await slotRow(user, aside))!.removed).toBe(false);
+    expect((await slotRow(user, SLOT_A1))!.removed).toBe(true);
+  });
+
+  it("at 20 programs a removal frees its place for a later restore, in request order, but never the active program's", async () => {
+    const { user, sync } = await signIn("pg-limit-swap");
+    const { cursor } = await sync("0");
+    const live = Array.from({ length: MAX_PROGRAMS - 1 }, () => newId());
+    const [one, two] = [newId(), newId()];
+    await owner
+      .insert(programs)
+      .values([
+        ...live.map((id) => ({ userId: user, id, schedule: SCHEDULE })),
+        ...[one, two].map((id) => ({ userId: user, id, schedule: SCHEDULE, removed: true })),
+      ]);
+    // The restore before the removal finds no room; the one after it takes the freed place.
+    const swapped = await sync(cursor, [
+      removeProgram(one, false, LATER),
+      removeProgram(live[0]!, true, LATER),
+      removeProgram(two, false, LATER),
+    ]);
+    expect(rejected(swapped)).toEqual([{ index: 0, reason: "refused" }]);
+    expect((await programRow(user, one))!.removed).toBe(true);
+    expect((await programRow(user, live[0]!))!.removed).toBe(true);
+    expect((await programRow(user, two))!.removed).toBe(false);
+    // The active program's removal is refused, so it frees nothing.
+    const active = await sync(swapped.cursor, [
+      removeProgram(PROGRAM, true, LATEST),
+      removeProgram(one, false, LATEST),
+    ]);
+    expect(rejected(active)).toEqual([
+      { index: 0, reason: "refused" },
+      { index: 1, reason: "refused" },
+    ]);
+    expect((await programRow(user, PROGRAM))!.removed).toBe(false);
+    expect((await programRow(user, one))!.removed).toBe(true);
+    // A switch away from it in the same batch frees its place.
+    const switched = await sync(active.cursor, [
+      choose(live[1]!, LATEST),
+      removeProgram(PROGRAM, true, "2026-10-07T17:15:00.000Z"),
+      removeProgram(one, false, "2026-10-07T17:15:00.000Z"),
+    ]);
+    expect(rejected(switched)).toEqual([]);
+    expect(await pointer(user)).toMatchObject({ programId: live[1] });
+    expect((await programRow(user, PROGRAM))!.removed).toBe(true);
+    expect((await programRow(user, one))!.removed).toBe(false);
   });
 });
