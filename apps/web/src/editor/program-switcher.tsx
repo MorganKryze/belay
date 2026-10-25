@@ -13,6 +13,7 @@ import {
 import { plannedNext } from "@belay/shared/training/schedule";
 import {
   byPosition,
+  isProgramName,
   MAX_PROGRAMS,
   type Program,
   PROGRAM_NAME_MAX,
@@ -151,9 +152,12 @@ export function ProgramSwitcher() {
           onSave={(value) => {
             const id = renaming.id;
             void edits
-              .record((_, at) =>
-                value.length > PROGRAM_NAME_MAX ? null : renameProgram(id, value || null, at),
-              )
+              .record((_, at) => {
+                // Refused here, as the rules would, so a control character reads as a refusal
+                // rather than as the program having changed elsewhere.
+                const name = value || null;
+                return isProgramName(name) ? renameProgram(id, name, at) : null;
+              })
               .then((ok) => ok && setRenaming(null));
           }}
           onCancel={() => setRenaming(null)}

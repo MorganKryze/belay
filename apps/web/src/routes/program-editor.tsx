@@ -155,14 +155,14 @@ function Editor({ account, programs }: { account: OpenAccount; programs: StoredP
   );
 }
 
-// ⌘ Z on a Mac, Ctrl Z elsewhere, undoes the last edit of this visit; in a field it is the
-// field's own undo of its typing.
+// ⌘ Z or Ctrl Z on a Mac (a keyboard plugged in from another system keeps its habit), Ctrl Z
+// elsewhere, undoes the last edit of this visit; in a field it is the field's own undo of its
+// typing.
 function useUndoKey(undo: () => Promise<boolean>) {
   useEffect(() => {
     const onKey = (e: globalThis.KeyboardEvent) => {
-      const mac = isMac();
       if (e.key.toLowerCase() !== "z" || e.shiftKey || e.altKey) return;
-      if (!(mac ? e.metaKey && !e.ctrlKey : e.ctrlKey && !e.metaKey)) return;
+      if (e.metaKey === e.ctrlKey || (e.metaKey && !isMac())) return;
       const target = e.target as HTMLElement;
       if (target.closest("input, textarea, [contenteditable]:not([contenteditable=false])")) return;
       e.preventDefault();

@@ -11,6 +11,7 @@ import {
   readActiveSession,
   readHistory,
   readOutbox,
+  readPrograms,
   recordChanges,
 } from "../sync/db";
 import { writeLastUser } from "../sync/last-user";
@@ -19,10 +20,15 @@ import { fakeApi } from "../test/fake-api";
 import { renderRoute } from "../test/render-route";
 import { ADA, seed } from "../test/seed";
 
-// Passes through, until a test makes the device refuse a write (a lost connection, a full disk).
+// Passes through, until a test makes the device refuse a write (a lost connection, a full disk)
+// or holds the programs' read back.
 vi.mock("../sync/db", async (importOriginal) => {
   const real = await importOriginal<typeof import("../sync/db")>();
-  return { ...real, recordChanges: vi.fn(real.recordChanges) };
+  return {
+    ...real,
+    recordChanges: vi.fn(real.recordChanges),
+    readPrograms: vi.fn(real.readPrograms),
+  };
 });
 
 // Wednesday 7 October 2026, 18:00 on the phone's clock.
@@ -43,6 +49,7 @@ afterEach(async () => {
   localStorage.clear();
   vi.useRealTimers();
   vi.unstubAllGlobals();
+  vi.mocked(readPrograms).mockReset();
   await i18n.changeLanguage("en");
 });
 
@@ -150,6 +157,52 @@ describe("Home's session card (§4.1)", () => {
 });
 
 describe("the session screen (§4.2, §4.3)", () => {
+  it("titles the session by its session's name only once the programs are read, never by its letter first", async () => {
+    // A session D named « Arms », open since another device started it before sessions kept
+    // their name: its title comes from the programs.
+    const D = id(60);
+    await seed(ADA.id, [
+      {
+        kind: "programSession",
+        id: D,
+        field: "create",
+        name: "Arms",
+        programId: SEED_PROGRAM_ID,
+        position: 3,
+        at: at(MONDAY),
+      },
+      {
+        kind: "workout",
+        id: id(61),
+        field: "start",
+        sessionCode: "D",
+        sessionId: D,
+        plan: [...sessionByCode("A", starterProgram)!.slots],
+        startedAt: at(new Date(2026, 9, 7, 17, 30)),
+        at: at(new Date(2026, 9, 7, 17, 30)),
+      },
+    ]);
+    const db = await openAccountDb(ADA.id);
+    const unnamed = (await db.get("workouts", id(61)))!;
+    delete unnamed.sessionName;
+    await db.put("workouts", unnamed);
+    await db.put("activeSession", { workoutId: id(61), slotIndex: 0, restEndsAt: null }, "current");
+    db.close();
+    const real = vi.mocked(readPrograms).getMockImplementation()!;
+    let release!: () => void;
+    const held = new Promise<void>((resolve) => (release = resolve));
+    vi.mocked(readPrograms).mockImplementation(async (db) => {
+      await held;
+      return real(db);
+    });
+    renderRoute("/workout");
+    await waitFor(() => expect(readPrograms).toHaveBeenCalled());
+    await act(() => new Promise((resolve) => setTimeout(resolve, 100)));
+    expect(screen.queryByText(/Session D/)).toBeNull();
+    release();
+    expect(await screen.findByRole("heading", { name: "Session D · Arms", level: 1 })).toBeTruthy();
+  });
+
   it("prefills from last time, logs the set as shown, and starts the rest", async () => {
     await seed(ADA.id, LAST_A);
     await startSession("A");

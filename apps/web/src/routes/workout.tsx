@@ -26,7 +26,7 @@ import {
   type Turn,
   turnKey,
 } from "@belay/shared/training/rules";
-import { rotationOf } from "@belay/shared/training/stored-program";
+import { rotationOf, type StoredPrograms } from "@belay/shared/training/stored-program";
 import {
   MAX_SLOTS,
   MAX_WARMUPS,
@@ -90,6 +90,8 @@ function Session({ account }: { account: OpenAccount }) {
   const startWorkout = useStartWorkout(account);
   const record = useRecord(account);
   const view = useSessionView(account).data;
+  // The title waits for the programs: before, a custom name would show as its bare letter.
+  const sessions = useProgram(account).data?.programs.sessions;
   const started = useRef(false);
   // While the end is written, the screen holds the session as it was: it neither redirects nor
   // shows a session already over, and the page that leaves is the one the person saw.
@@ -153,7 +155,7 @@ function Session({ account }: { account: OpenAccount }) {
 
   const shown = leaving ?? view;
   if (missing) return <NotFound />;
-  if (start || !shown) return null;
+  if (start || !shown || !sessions) return null;
   const { active, history } = shown;
   const workout = active && history.workouts.find((w) => w.id === active.workoutId);
   if (!active || !workout || workout.endedAt !== null || workout.removed)
@@ -164,6 +166,7 @@ function Session({ account }: { account: OpenAccount }) {
       active={active}
       workout={workout}
       history={history}
+      sessions={sessions}
       failed={failed}
       onLeave={(changes, kept) => void leave(workout, changes, kept)}
     />
@@ -175,6 +178,7 @@ function Screen({
   active,
   workout,
   history,
+  sessions,
   failed,
   onLeave,
 }: {
@@ -182,6 +186,7 @@ function Screen({
   active: ActiveSession;
   workout: Workout;
   history: History;
+  sessions: StoredPrograms["sessions"];
   failed: string | undefined;
   onLeave: (changes: Change[], kept: boolean) => void;
 }) {
@@ -191,7 +196,6 @@ function Screen({
   const queryClient = useQueryClient();
   const record = useRecord(account);
   const recordSet = useRecordSet(account);
-  const sessions = useProgram(account).data?.programs.sessions ?? [];
   const now = useNow();
   const [toggled, setToggled] = useState<ReadonlyMap<number, boolean>>(new Map());
   const [sheet, setSheet] = useState<FinishSheet>(null);

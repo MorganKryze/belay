@@ -76,8 +76,9 @@ function History({ account }: { account: OpenAccount }) {
   const history = useHistory(account).data;
   const activities = useActivities(account).data;
   const steps = useSteps(account).data ?? [];
-  // Each session done is titled by the session it recorded; until they are read, by its id alone.
-  const sessions = useProgram(account).data?.programs.sessions ?? [];
+  // Each session done is titled by the session it recorded: the list waits for the programs, or
+  // a custom name would show as its bare letter for an instant.
+  const sessions = useProgram(account).data?.programs.sessions;
   const navigate = useNavigate();
   const setMonth = (next: string) =>
     void navigate({
@@ -90,7 +91,7 @@ function History({ account }: { account: OpenAccount }) {
   const [opened, setOpened] = useState<ISODate | null>(null); // the day of the activity sheet
   // A saved sheet plays its exit over the screen that already shows the record.
   const [leaving, setLeaving] = useState(false);
-  if (!history || !activities) return null;
+  if (!history || !activities || !sessions) return null;
   const listed = withActivities ? activities : [];
   const finished = history.workouts
     .filter((w) => !w.removed && w.endedAt !== null)

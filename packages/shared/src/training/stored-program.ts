@@ -150,7 +150,8 @@ export interface LetteredTemplate extends SessionTemplate {
   name: string | null;
 }
 
-const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+// The rotation's letters, by place.
+export const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 // The active program's live sessions in order, each with its normal slots, then its no-climbing
 // slots as the template's conditional rule (planFor marks them). A session with no live normal slot

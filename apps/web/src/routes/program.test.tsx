@@ -25,10 +25,14 @@ import { fakeApi } from "../test/fake-api";
 import { renderRoute } from "../test/render-route";
 import { ADA, seed } from "../test/seed";
 
-// The programs' read, watched.
+// The programs' read, watched; writes pass through until a test makes the device refuse one.
 vi.mock("../sync/db", async (importOriginal) => {
   const real = await importOriginal<typeof import("../sync/db")>();
-  return { ...real, readPrograms: vi.fn(real.readPrograms) };
+  return {
+    ...real,
+    readPrograms: vi.fn(real.readPrograms),
+    recordChanges: vi.fn(real.recordChanges),
+  };
 });
 
 // Wednesday 7 October 2026, 18:00 on the phone's clock.
@@ -328,6 +332,22 @@ describe("the active program on Programme", () => {
     expect(row.compareDocumentPosition(first!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
+  it("counts the sessions the cards show, leaving out one with no exercise", async () => {
+    await edit((p) => addSession(p, D, SEED_PROGRAM_ID, EDIT_AT));
+    renderRoute("/workouts?tab=program");
+    const row = await activeRow(/^Starter program/);
+    await settled();
+    expect(await cards()).toHaveLength(3);
+    expect(row.textContent).toContain("Active program · 3 sessions");
+    fireEvent.click(row);
+    const sheet = await screen.findByRole("dialog", { name: "Active program" });
+    expect(
+      within(sheet)
+        .getByRole("button", { name: /^Starter program/ })
+        .textContent!.trim(),
+    ).toBe("Starter program 3 sessions");
+  });
+
   it("says it in French", async () => {
     await i18n.changeLanguage("fr");
     renderRoute("/workouts?tab=program");
@@ -360,6 +380,22 @@ describe("the active program on Programme", () => {
     const db = await openAccountDb(ADA.id);
     expect((await readPrograms(db)).activeId).toBe(OTHER);
     db.close();
+  });
+
+  it("a refused switch says so and keeps the sheet open to try again", async () => {
+    await summer();
+    renderRoute("/workouts?tab=program");
+    fireEvent.click(await activeRow(/^Starter program/));
+    const sheet = await screen.findByRole("dialog", { name: "Active program" });
+    vi.mocked(recordChanges).mockRejectedValueOnce(new DOMException("lost", "InvalidStateError"));
+    fireEvent.click(within(sheet).getByRole("button", { name: /^Summer/ }));
+    expect((await within(sheet).findByRole("alert")).textContent).toBe(
+      "Couldn't save on this phone. Try again.",
+    );
+    expect(screen.getByRole("dialog", { name: "Active program" })).toBe(sheet);
+    fireEvent.click(within(sheet).getByRole("button", { name: /^Summer/ }));
+    await waitForGone(() => screen.queryByRole("dialog"));
+    expect((await activeRow(/^Summer/)).textContent).toContain("Active program · 1 session");
   });
 
   it("a tap on the active program just closes the sheet", async () => {

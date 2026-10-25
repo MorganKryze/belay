@@ -1,5 +1,6 @@
 import {
   byPosition,
+  LETTERS,
   type Program,
   type ProgramSession,
   type ProgramSlot,
@@ -47,7 +48,7 @@ export function useEditor(): EditorState {
   return editor;
 }
 
-export const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+export { LETTERS };
 
 // The active program's live sessions lettered by place, A first, and the collection in its order.
 // No active program, or a removed one, has no rotation; the collection is every program's.
