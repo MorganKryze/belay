@@ -1,47 +1,21 @@
-import { expect, type Page, type Request, type Route, test } from "@playwright/test";
+import { expect, type Page, type Request, test } from "@playwright/test";
 import { expectNoAxeViolations } from "./axe";
-
-// The page as the iPhone app runs it: Capacitor's custom platform hook hands it fakes of the
-// app's native side, with no token kept and a sign-in sheet the person closes.
-async function asIPhone(page: Page) {
-  await page.addInitScript(() => {
-    const w = window as unknown as Record<string, unknown>;
-    w.CapacitorCustomPlatform = {
-      name: "ios",
-      plugins: {
-        BelayNative: {
-          readToken: async () => ({ token: null }),
-          writeToken: async () => {},
-          clearToken: async () => {},
-          authenticate: async () => {
-            throw Object.assign(new Error("cancelled"), { code: "cancelled" });
-          },
-        },
-      },
-    };
-    w.Capacitor = { isNativePlatform: () => true };
-  });
-}
+import { asIPhone, INSTANCE, routeInstance } from "./native";
 
 test.use({ locale: "fr-FR" });
 
-const INSTANCE = "https://belay.test";
 const LONG = "belay.une-association-sportive-de-quartier.example.org";
-const cors = { "access-control-allow-origin": "*" };
 
 // The instance at https://belay.test: its probe answered as `probe` says, nobody signed in.
 async function instance(page: Page, probe: "belay" | "html" | "down" = "belay") {
-  await page.route(`${INSTANCE}/**`, (route: Route) => {
-    const { pathname } = new URL(route.request().url());
-    if (pathname === "/api/instance") {
-      if (probe === "down") return route.abort();
-      if (probe === "html") {
-        return route.fulfill({ contentType: "text/html", headers: cors, body: "<!doctype html>" });
-      }
-      return route.fulfill({ headers: cors, json: { app: "belay", api: 1, origin: INSTANCE } });
-    }
-    if (pathname === "/api/me") return route.fulfill({ status: 401, headers: cors });
-    return route.fulfill({ status: 404, headers: cors });
+  await routeInstance(page, {
+    "/api/instance":
+      probe === "down"
+        ? "abort"
+        : probe === "html"
+          ? { contentType: "text/html", body: "<!doctype html>" }
+          : { json: { app: "belay", api: 1, origin: INSTANCE } },
+    "/api/me": { status: 401 },
   });
 }
 
@@ -55,7 +29,8 @@ function outside(page: Page): Request[] {
 }
 
 async function launch(page: Page) {
-  await asIPhone(page);
+  // The first launch: no instance stored yet, no token kept.
+  await asIPhone(page, { instance: null });
   await page.goto("/");
   await expect(page.locator(".launch")).toBeHidden();
   await expect(page.getByRole("heading", { level: 1, name: "Ton instance" })).toBeVisible();
@@ -136,10 +111,12 @@ test("a found instance is kept and asked who is signed in, without a cookie", as
   expect(headers.cookie).toBeUndefined();
   expect(headers.authorization).toBeUndefined();
   expect(await page.evaluate(() => localStorage.getItem("belay.instance"))).toBe(INSTANCE);
-  // The app started again on the stored instance: signed out, the instance screen is gone.
+  // The app started again on the stored instance: signed out, on the sign-in step.
   await expect(page.locator(".launch")).toBeHidden();
   await expect(page.getByRole("heading", { level: 1, name: "Ton instance" })).toHaveCount(0);
-  await expect(page.getByRole("link", { name: "Se connecter" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Belay" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Se connecter" })).toBeVisible();
+  await expect(page.getByText(/^Sur /)).toHaveText("Sur belay.test");
 });
 
 test("a long address scrolls in its field and its error wraps at 360 px", async ({ page }) => {
