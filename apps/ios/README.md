@@ -80,3 +80,7 @@ the newest web app at the same time.
   pass, or reuse an identifier you already registered.
 - **No iPhone at hand**: `pnpm ios:sim` builds the app for the simulator,
   without signing.
+- **A server on this Mac**: the app only reaches instances over https. To
+  try it against a local server at `http://localhost`, build with
+  `BELAY_LOOPBACK=1 pnpm ios:build`, and never install that build anywhere
+  else.
