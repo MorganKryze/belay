@@ -46,16 +46,18 @@ export function clearSessionCookie(c: Context, cfg: Config) {
 // The iPhone app's web view runs from this origin; it is the only one CORS answers.
 export const NATIVE_ORIGIN = "capacitor://localhost";
 
-// 32 random bytes in base64url, as newSessionToken writes them.
-const BEARER = /^Bearer ([A-Za-z0-9_-]{43})$/;
+// 32 random bytes in base64url, as newSessionToken writes them; the scheme is case-insensitive.
+const BEARER = /^bearer ([A-Za-z0-9_-]{43})$/i;
 
-// The header decides when present, so a cookie never rescues a malformed or dead bearer token.
+// A Bearer header decides, so a cookie never rescues a malformed or dead bearer token. Any other
+// scheme (a proxy's Basic auth, sent by the browser on every request) leaves the cookie in charge.
 export function requestToken(
   c: Context,
   cfg: Config,
 ): { token: string | undefined; from: "bearer" | "cookie" } {
   const header = c.req.header("authorization");
-  if (header === undefined) return { token: readSessionCookie(c, cfg), from: "cookie" };
+  if (!/^bearer(\s|$)/i.test(header ?? ""))
+    return { token: readSessionCookie(c, cfg), from: "cookie" };
   return { token: BEARER.exec(header)?.[1], from: "bearer" };
 }
 

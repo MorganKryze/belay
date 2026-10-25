@@ -159,14 +159,12 @@ describe("bearer sessions", () => {
     );
   });
 
-  it("a malformed Authorization header is a 401 even with a valid cookie", async () => {
+  it("a malformed Bearer header is a 401 even with a valid cookie", async () => {
     const { token, cookie } = await signIn();
     for (const authorization of [
-      "",
+      "Bearer",
       `Bearer ${token}x`,
       `Bearer ${token.slice(1)}`,
-      `bearer ${token}`,
-      `Basic ${token}`,
       `Bearer ${token.slice(1)}=`,
       `Bearer  ${token}`,
     ]) {
@@ -177,6 +175,25 @@ describe("bearer sessions", () => {
     }
     // The cookie's session was neither used nor ended.
     expect((await me({ cookie })).status).toBe(200);
+  });
+
+  it("another scheme, as a proxy's Basic auth sends, leaves the cookie in charge, logout included", async () => {
+    const { token, cookie } = await signIn();
+    for (const authorization of ["", "Basic dXNlcjpwYXNz", `Basic ${token}`]) {
+      expect((await me({ authorization, cookie })).status, authorization).toBe(200);
+    }
+    const out = await app.request("/auth/logout", {
+      method: "POST",
+      headers: { authorization: "Basic dXNlcjpwYXNz", cookie, "content-type": "application/json" },
+    });
+    expect(out.status).toBe(200);
+    expect(out.headers.getSetCookie().join()).toMatch(/Max-Age=0/i);
+    expect((await me({ cookie })).status).toBe(401);
+  });
+
+  it("the Bearer scheme is read whatever its case", async () => {
+    const { token } = await signIn();
+    expect((await me({ authorization: `bearer ${token}` })).status).toBe(200);
   });
 
   it("a dead or unknown bearer token is a 401 even with a valid cookie", async () => {
