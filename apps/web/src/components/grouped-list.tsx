@@ -9,7 +9,7 @@ export type RowProps = {
   // Drawn in place of the icon square, as the profile row's avatar.
   leading?: ReactNode;
   label: string;
-  // A muted second line under the label, cut to one line.
+  // A muted second line under the label, cut after two lines.
   sub?: string;
   value?: ReactNode;
   trailing?: "push" | "menu" | "none";
@@ -19,6 +19,8 @@ export type RowProps = {
   // The value stays on the label's line and the sub runs under both, rather than the value
   // wrapping under a sub too wide to share the line (the rhythm row's count at 360 px).
   valueBeside?: boolean;
+  // The label and the sub wrap whole, never cut: for a row whose words must be read to choose.
+  wrap?: boolean;
 };
 
 // Also exported here, so a screen that lists rows imports one module.
@@ -42,6 +44,7 @@ function RowContent({
   prominent,
   destructive,
   valueBeside,
+  wrap,
 }: RowProps) {
   // A destructive row is red text alone, centred: no icon, no value, no chevron to dress it up.
   if (destructive) {
@@ -71,10 +74,8 @@ function RowContent({
       {valueBeside && sub ? (
         // Read in the same order as the other rows: label, sub, value.
         <span className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto] gap-x-3">
-          <span className={labelClass(prominent)}>{label}</span>{" "}
-          <span className="col-span-2 row-start-2 line-clamp-2 break-words text-(length:--text-secondary) leading-(--text-secondary--line-height) text-muted-foreground">
-            {sub}
-          </span>{" "}
+          <span className={labelClass(prominent, wrap)}>{label}</span>{" "}
+          <span className={cn("col-span-2 row-start-2", subClass(wrap))}>{sub}</span>{" "}
           <span className="col-start-2 row-start-1 text-body whitespace-nowrap text-muted-foreground">
             {value}
           </span>
@@ -83,14 +84,12 @@ function RowContent({
         <span className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-x-3">
           {sub ? (
             <span className="flex min-w-0 flex-1 basis-auto flex-col">
-              <span className={labelClass(prominent)}>{label}</span>{" "}
+              <span className={labelClass(prominent, wrap)}>{label}</span>{" "}
               {/* The summary wraps rather than ends in an ellipsis: two lines at most. */}
-              <span className="line-clamp-2 break-words text-(length:--text-secondary) leading-(--text-secondary--line-height) text-muted-foreground">
-                {sub}
-              </span>
+              <span className={subClass(wrap)}>{sub}</span>
             </span>
           ) : (
-            <span className={cn("flex-1 basis-auto", labelClass(prominent))}>{label}</span>
+            <span className={cn("flex-1 basis-auto", labelClass(prominent, wrap))}>{label}</span>
           )}
           {value != null && (
             <>
@@ -111,8 +110,18 @@ function RowContent({
   );
 }
 
-const labelClass = (prominent?: boolean) =>
-  cn("min-w-0 truncate", prominent ? "text-title-compact" : "text-body font-semibold");
+const labelClass = (prominent?: boolean, wrap?: boolean) =>
+  cn(
+    "min-w-0",
+    wrap ? "break-words" : "truncate",
+    prominent ? "text-title-compact" : "text-body font-semibold",
+  );
+
+const subClass = (wrap?: boolean) =>
+  cn(
+    "break-words text-(length:--text-secondary) leading-(--text-secondary--line-height) text-muted-foreground",
+    !wrap && "line-clamp-2",
+  );
 
 // A destructive label sits alone in the middle of its row; a prominent row is taller.
 const rowClass = ({ prominent, destructive }: RowProps, className?: string) =>
@@ -131,12 +140,24 @@ const RowAnchor = forwardRef<HTMLAnchorElement, AnchorRowProps>(function RowAnch
     prominent,
     destructive,
     valueBeside,
+    wrap,
     className,
     ...rest
   },
   ref,
 ) {
-  const props = { icon, leading, label, sub, value, trailing, prominent, destructive, valueBeside };
+  const props = {
+    icon,
+    leading,
+    label,
+    sub,
+    value,
+    trailing,
+    prominent,
+    destructive,
+    valueBeside,
+    wrap,
+  };
   return (
     <a ref={ref} {...rest} className={rowClass(props, className)}>
       <RowContent {...props} />
@@ -156,14 +177,81 @@ export function RowButton({
   prominent,
   destructive,
   valueBeside,
+  wrap,
   className,
   type = "button",
   ...rest
 }: RowProps & Omit<ComponentProps<"button">, keyof RowProps>) {
-  const props = { icon, leading, label, sub, value, trailing, prominent, destructive, valueBeside };
+  const props = {
+    icon,
+    leading,
+    label,
+    sub,
+    value,
+    trailing,
+    prominent,
+    destructive,
+    valueBeside,
+    wrap,
+  };
   return (
     <button type={type} {...rest} className={rowClass(props, className)}>
       <RowContent {...props} />
+    </button>
+  );
+}
+
+// An on/off row: the whole row is the switch, named by its label then its sub, so what a screen
+// reader says starts with what the eye reads. The off track is the input token, which keeps 3:1 on
+// the card in both themes; the knob slides only when motion is allowed.
+export function RowSwitch({
+  icon,
+  label,
+  sub,
+  wrap,
+  checked,
+  onCheckedChange,
+  className,
+  onClick,
+  ...rest
+}: {
+  icon?: LucideIcon;
+  label: string;
+  sub?: string;
+  wrap?: boolean;
+  checked: boolean;
+  onCheckedChange: (next: boolean) => void;
+} & Omit<ComponentProps<"button">, "onChange" | "role">) {
+  return (
+    <button
+      {...rest}
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      className={cn(row, className)}
+      onClick={(e) => {
+        onClick?.(e);
+        onCheckedChange(!checked);
+      }}
+    >
+      <RowContent icon={icon} label={label} sub={sub} wrap={wrap} />
+      <span
+        data-slot="switch-track"
+        aria-hidden="true"
+        className={cn(
+          "flex h-[31px] w-[51px] shrink-0 items-center rounded-round p-0.5 motion-safe:transition-colors duration-(--tint-duration)",
+          checked ? "bg-primary" : "bg-input",
+        )}
+      >
+        {/* A white knob, except on the dark theme's light accent, where it takes the card's colour. */}
+        <span
+          data-slot="switch-knob"
+          className={cn(
+            "size-[27px] rounded-round shadow-xs motion-safe:transition-transform duration-(--slide-duration) ease-nav",
+            checked ? "translate-x-5 bg-surface" : "bg-surface dark:bg-foreground",
+          )}
+        />
+      </span>
     </button>
   );
 }

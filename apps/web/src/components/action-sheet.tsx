@@ -1,6 +1,6 @@
 import "@/i18n/lazy";
 import { Dialog } from "radix-ui";
-import { useRef, useState } from "react";
+import { type ReactNode, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { focusBack, useSheetExit } from "@/components/sheet";
 
@@ -12,8 +12,9 @@ const row =
 
 // A question before something that cannot be taken back: a card with the question, what goes and
 // the action in red, and a separate Cancel. A primary action, when there is one, sits in accent
-// above the red one. It rises and leaves like a sheet and keeps its close contract; the action is
-// written before the exit starts.
+// above the red one. A consent before something that is not destructive uses the primary row
+// alone, with no red row. It rises and leaves like a sheet and keeps its close contract; the
+// action is written before the exit starts.
 export function ActionSheet({
   title,
   body,
@@ -26,9 +27,9 @@ export function ActionSheet({
   busy = false,
 }: {
   title: string;
-  body: string;
-  confirm: string;
-  onConfirm: () => void;
+  body: ReactNode;
+  confirm?: string;
+  onConfirm?: () => void;
   onClose: () => void;
   primary?: { label: string; onSelect: () => void };
   cancel?: string;
@@ -93,17 +94,19 @@ export function ActionSheet({
               )}
               {/* While the removal is written the row reads as the charter's disabled control, track
                   fill and muted text, so the word stays legible. */}
-              <button
-                type="button"
-                disabled={busy}
-                className={`${row} text-destructive disabled:bg-track disabled:text-muted-foreground`}
-                onClick={() => {
-                  onConfirm();
-                  exit.request();
-                }}
-              >
-                {confirm}
-              </button>
+              {confirm != null && (
+                <button
+                  type="button"
+                  disabled={busy}
+                  className={`${row} text-destructive disabled:bg-track disabled:text-muted-foreground`}
+                  onClick={() => {
+                    onConfirm?.();
+                    exit.request();
+                  }}
+                >
+                  {confirm}
+                </button>
+              )}
             </div>
             <div data-action-card className={`${card} shadow-sheet dark:border dark:border-border`}>
               <Dialog.Close asChild>
