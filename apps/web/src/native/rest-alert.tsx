@@ -1,6 +1,8 @@
-// The iPhone app keeps the locked phone in step with the open session: a notification at the
-// rest's end says when to get back to it, and the lock screen shows the session itself. Mounted
-// once by the shell on the phone.
+// The iPhone app keeps the locked phone and Apple Health in step with the open account: a
+// notification at the rest's end says when to get back to it, the lock screen shows the session
+// itself, and Health holds the finished sessions and weigh-ins. Mounted once by the shell on the
+// phone. Health's part comes with this module, itself loaded on the phone only: a lazy import of
+// it from here made the build move React into a startup file of its own.
 import "@/i18n/lazy";
 import type { PauseStops } from "@belay/shared/training/pause";
 import type { PermissionStatus } from "@capacitor/local-notifications";
@@ -10,6 +12,7 @@ import { readPauseStops } from "@/lib/pause-stops";
 import { readRestSound } from "@/lib/rest-sound";
 import { type Account, type OpenAccount, useHistory, useSessionView } from "@/sync/account";
 import type { ActiveSession } from "@/sync/db";
+import { HealthMirror } from "./health-mirror";
 import { liveActivityOf, type OpenSession, showLiveActivity } from "./live-activity";
 
 // One notification at a time: scheduling under the same id replaces the pending one.
@@ -67,7 +70,12 @@ export function NativeRestAlert({
   useEffect(() => {
     if (account.kind === "signed-out" || account.kind === "unavailable") showLiveActivity(null);
   }, [account.kind]);
-  return account.kind === "open" ? <RestAlert account={account} session={session} /> : null;
+  return account.kind === "open" ? (
+    <>
+      <RestAlert account={account} session={session} />
+      <HealthMirror account={account} />
+    </>
+  ) : null;
 }
 
 function RestAlert({
