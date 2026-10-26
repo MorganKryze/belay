@@ -82,6 +82,12 @@ private func isDay(_ date: String) -> Bool {
     date.range(of: #"^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$"#, options: .regularExpression) != nil
 }
 
+// The id becomes part of a sync identifier, so only the form the page writes: a UUID parser alone
+// would accept the same id in capitals (a second identifier for one session) or followed by a NUL.
+private func isSessionID(_ id: String) -> Bool {
+    UUID(uuidString: id)?.uuidString.lowercased() == id
+}
+
 extension HealthObject: Decodable {
     private enum Keys: String, CodingKey { case kind }
 
@@ -90,14 +96,14 @@ extension HealthObject: Decodable {
         case .workout:
             try expectKeys(decoder, ["kind", "id", "startedAt", "endedAt", "version"])
             let w = try HealthWorkout(from: decoder)
-            guard UUID(uuidString: w.id) != nil, w.endedAt > w.startedAt, w.version > 0 else {
+            guard isSessionID(w.id), w.endedAt > w.startedAt, w.version > 0 else {
                 throw refuse(decoder, "workout out of range")
             }
             self = .workout(w)
         case .workoutRemoved:
             try expectKeys(decoder, ["kind", "id"])
             let w = try HealthWorkoutRemoved(from: decoder)
-            guard UUID(uuidString: w.id) != nil else { throw refuse(decoder, "id invalid") }
+            guard isSessionID(w.id) else { throw refuse(decoder, "id invalid") }
             self = .workoutRemoved(w)
         case .weighing:
             try expectKeys(decoder, ["kind", "date", "kg", "at", "version"])

@@ -41,6 +41,16 @@ struct HealthRequestCheck {
         check("an id that is no session id is refused",
               decodes(#"{"op":"apply","objects":[{"kind":"workoutRemoved","id":"../x"}]}"#) == nil)
 
+        // A NUL as JSON escapes it: UUID(uuidString:) stops reading there.
+        check("an id followed by a NUL and more text is refused",
+              decodes(#"{"op":"apply","objects":[{"kind":"workoutRemoved","id":"\#(id)\u0000../x"}]}"#) == nil)
+        check("an uppercase id is refused",
+              decodes(#"{"op":"apply","objects":[{"kind":"workoutRemoved","id":"\#(id.uppercased())"}]}"#) == nil)
+        check("a workout with an uppercase id is refused",
+              decodes(#"{"op":"apply","objects":[\#(workout().replacingOccurrences(of: id, with: id.uppercased()))]}"#) == nil)
+        check("a removal with a lowercase id decodes",
+              decodes(#"{"op":"apply","objects":[{"kind":"workoutRemoved","id":"\#(id)"}]}"#) != nil)
+
         let hundred = Array(repeating: workout(), count: 100).joined(separator: ",")
         check("100 objects decode", decodes(#"{"op":"apply","objects":[\#(hundred)]}"#) != nil)
         check("101 objects are refused",
