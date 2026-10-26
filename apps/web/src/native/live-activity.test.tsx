@@ -32,6 +32,8 @@ vi.mock("@capacitor/local-notifications", () => ({
     checkPermissions: async () => ({ display: "denied" }),
   },
 }));
+// The Health half too, with its own tests.
+vi.mock("@/native/health-mirror", () => ({ HealthMirror: () => null }));
 
 import { type LiveActivity, liveActivityOf, showLiveActivity } from "./live-activity";
 import { NativeRestAlert } from "./rest-alert";

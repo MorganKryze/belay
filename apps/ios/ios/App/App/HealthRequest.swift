@@ -23,6 +23,7 @@ struct HealthWorkoutRemoved: Decodable, Equatable {
 }
 struct HealthWeighing: Decodable, Equatable {
     let kind: HealthKind
+    let owner: String
     let date: String
     let kg: Double
     let at: Date
@@ -30,7 +31,16 @@ struct HealthWeighing: Decodable, Equatable {
 }
 struct HealthWeighingRemoved: Decodable, Equatable {
     let kind: HealthKind
+    let owner: String
     let date: String
+}
+
+// Health keeps one store for the whole phone, so a weigh-in's sync identifier carries the tag of
+// the account and instance that wrote it: two accounts never replace or delete each other's day.
+extension HealthWeighing { var syncID: String { weighingSyncID(owner, date) } }
+extension HealthWeighingRemoved { var syncID: String { weighingSyncID(owner, date) } }
+private func weighingSyncID(_ owner: String, _ date: String) -> String {
+    "belay-weighing-\(owner)-\(date)"
 }
 
 enum HealthObject: Equatable {
@@ -85,6 +95,11 @@ private func isDay(_ date: String) -> Bool {
     date.range(of: #"^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$"#, options: .regularExpression) != nil
 }
 
+// The owner becomes part of a sync identifier too: the page's 8 lowercase hex digits only.
+private func isOwner(_ owner: String) -> Bool {
+    owner.range(of: #"^[0-9a-f]{8}$"#, options: .regularExpression) != nil
+}
+
 // The id becomes part of a sync identifier, so only the form the page writes: a UUID parser alone
 // would accept the same id in capitals (a second identifier for one session) or followed by a NUL.
 private func isSessionID(_ id: String) -> Bool {
@@ -121,16 +136,16 @@ extension HealthObject: Decodable {
             guard isSessionID(w.id) else { throw refuse(decoder, "id invalid") }
             self = .workoutRemoved(w)
         case .weighing:
-            try expectKeys(decoder, ["kind", "date", "kg", "at", "version"])
+            try expectKeys(decoder, ["kind", "owner", "date", "kg", "at", "version"])
             let w = try HealthWeighing(from: decoder)
-            guard isDay(w.date), w.kg.isFinite, (20...400).contains(w.kg), isTime(w.at), w.version > 0 else {
+            guard isOwner(w.owner), isDay(w.date), w.kg.isFinite, (20...400).contains(w.kg), isTime(w.at), w.version > 0 else {
                 throw refuse(decoder, "weighing out of range")
             }
             self = .weighing(w)
         case .weighingRemoved:
-            try expectKeys(decoder, ["kind", "date"])
+            try expectKeys(decoder, ["kind", "owner", "date"])
             let w = try HealthWeighingRemoved(from: decoder)
-            guard isDay(w.date) else { throw refuse(decoder, "date invalid") }
+            guard isOwner(w.owner), isDay(w.date) else { throw refuse(decoder, "date invalid") }
             self = .weighingRemoved(w)
         }
     }
