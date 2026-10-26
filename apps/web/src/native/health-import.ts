@@ -13,6 +13,7 @@ import {
   type HealthSample,
   type HealthSettings,
   IMPORT_KEY,
+  localDayStart,
   readHealth,
   SETTINGS_KEY,
 } from "./health";
@@ -47,7 +48,6 @@ export async function importWeighings(
   from: { anchor: string | null; since: number },
 ): Promise<number> {
   if (samples.length === 0) return 0; // nothing new: nothing written, nothing to send
-  const at = now.toISOString();
   const today = toISODate(now);
   let count = 0;
   const tx = db.transaction(["weights", "outbox", "meta"], "readwrite");
@@ -88,6 +88,11 @@ export async function importWeighings(
       mine.at === row.at &&
       reading.startedAt < mine.startedAt;
     if (row !== undefined && !replaces) continue;
+    // Stamped at the start of its day, or just after the import's own stamp it replaces: a
+    // weigh-in typed for that day, here or on a device still offline, is later and wins the merge.
+    const at = new Date(
+      replaces ? Date.parse(mine!.at) + 1 : localDayStart(reading.startedAt),
+    ).toISOString();
     const change: Change = { kind: "weight", date, weightKg: reading.kg, at };
     if (!isRecordable(change, today)) continue;
     // The row a weigh-in change writes, as the phone's own write path does.
