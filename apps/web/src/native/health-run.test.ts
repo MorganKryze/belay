@@ -1,6 +1,7 @@
 import { toISODate } from "@belay/shared/body/dates";
 import { IDBFactory } from "fake-indexeddb";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { writeInstance } from "@/lib/platform";
 import { type AccountDb, openAccountDb, recordChange } from "@/sync/db";
 
 // Capacitor's proxy answers every property, `then` included: a promise resolved with it would
@@ -73,8 +74,8 @@ async function weighIns(count: number, first = 0) {
     await tx.store.put({ date: dayAfter(n), weightKg: 80, at: "2026-10-01T06:00:00.000Z" });
   await tx.done;
 }
-function runner(changed = vi.fn()) {
-  const r = createHealthRunner(db, changed, () => NOW);
+function runner(changed = vi.fn(), on = db) {
+  const r = createHealthRunner(on, "user-a", changed, () => NOW);
   runners.push(r);
   return { r, changed };
 }
@@ -130,8 +131,34 @@ describe("the run", () => {
     r.request();
     await ran(changed);
     expect(applied()[0]).toEqual([
-      expect.objectContaining({ kind: "weighing", owner: ownerOf(db.name), date: dayAfter(0) }),
+      expect.objectContaining({ kind: "weighing", owner: ownerOf("user-a"), date: dayAfter(0) }),
     ]);
+  });
+
+  it("one account reached at two addresses of its server sends its weigh-ins as one owner", async () => {
+    vi.stubGlobal("Capacitor", { isNativePlatform: () => true });
+    const owners: string[] = [];
+    try {
+      for (const instance of ["https://belay.example", "https://gym.example"]) {
+        writeInstance(instance);
+        const at = await openAccountDb("user-a");
+        await setHealthOn(at, true, ON);
+        const tx = at.transaction("weights", "readwrite");
+        await tx.store.put({ date: dayAfter(0), weightKg: 80, at: "2026-10-01T06:00:00.000Z" });
+        await tx.done;
+        native.health.mockReset();
+        health();
+        const { r, changed } = runner(vi.fn(), at);
+        r.request();
+        await ran(changed);
+        owners.push((applied()[0]![0] as { owner: string }).owner);
+        at.close();
+      }
+    } finally {
+      vi.unstubAllGlobals();
+      localStorage.clear();
+    }
+    expect(owners).toEqual([ownerOf("user-a"), ownerOf("user-a")]);
   });
 
   it("a request during a run gives exactly one more run", async () => {

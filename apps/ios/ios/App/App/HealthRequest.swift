@@ -36,7 +36,7 @@ struct HealthWeighingRemoved: Decodable, Equatable {
 }
 
 // Health keeps one store for the whole phone, so a weigh-in's sync identifier carries the tag of
-// the account and instance that wrote it: two accounts never replace or delete each other's day.
+// the account that wrote it: two accounts never replace or delete each other's day.
 extension HealthWeighing { var syncID: String { weighingSyncID(owner, date) } }
 extension HealthWeighingRemoved { var syncID: String { weighingSyncID(owner, date) } }
 private func weighingSyncID(_ owner: String, _ date: String) -> String {

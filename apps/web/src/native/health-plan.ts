@@ -7,14 +7,15 @@ import type { HealthObject, HealthOutcome, HealthSettings, Written } from "./hea
 export const sessionKey = (id: string): string => `belay-session-${id}`;
 export const weighingKey = (date: string): string => `belay-weighing-${date}`;
 // Health keeps one store for every app on the phone, and a weigh-in's sync identifier is its day:
-// two accounts (or one account on two instances) with Health on would replace and delete each
-// other's samples. The identifier also carries this tag of the account database's name, which
-// names both. FNV-1a on 32 bits: a clash between the few accounts of one phone is a one in four
-// billion chance, and the tag stays the same across launches.
-export function ownerOf(name: string): string {
+// two accounts with Health on would replace and delete each other's samples. The identifier also
+// carries this tag of the account's id, which the server gives: the same account reached at
+// another address of its server, or from a second device, keeps its tag. FNV-1a on 32 bits: a
+// clash between the few accounts of one phone is a one in four billion chance, and the tag stays
+// the same across launches.
+export function ownerOf(userId: string): string {
   let hash = 0x811c9dc5;
-  for (let i = 0; i < name.length; i++) {
-    hash ^= name.charCodeAt(i);
+  for (let i = 0; i < userId.length; i++) {
+    hash ^= userId.charCodeAt(i);
     hash = Math.imul(hash, 0x01000193);
   }
   return (hash >>> 0).toString(16).padStart(8, "0");
@@ -32,7 +33,7 @@ export type HealthPlanInput = {
   filled: Readonly<Record<string, unknown>>; // the days the import wrote
   allowed: { workouts: boolean; weighings: boolean };
   now: number;
-  owner: string; // ownerOf the account database's name
+  owner: string; // ownerOf the account's id
 };
 
 const ms = (iso: string | null) => (iso === null ? -Infinity : Date.parse(iso));

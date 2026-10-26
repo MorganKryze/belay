@@ -20,6 +20,7 @@ export function HealthMirror({ account }: { account: OpenAccount }): null {
     // it again for its own writes.
     const run = createHealthRunner(
       db,
+      userId,
       () => void queryClient.invalidateQueries({ queryKey: ["local", userId, "health"] }),
     );
     runner.current = run;

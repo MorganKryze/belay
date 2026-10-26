@@ -23,11 +23,12 @@ const typeOf = (o: HealthObject): Type =>
 
 export function createHealthRunner(
   db: AccountDb,
+  userId: string,
   // Told when a run is over, so the page reads the stored state again.
   changed: () => void,
   now: () => number = Date.now,
 ): HealthRunner {
-  const owner = ownerOf(db.name);
+  const owner = ownerOf(userId);
   let running = false;
   let again = false;
   let stopped = false;

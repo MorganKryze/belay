@@ -5,7 +5,7 @@ import type { AccountDb } from "@/sync/db";
 import { BelayNative } from "./plugin";
 
 // Times are epoch milliseconds, dates YYYY-MM-DD, weights kilograms; a weigh-in's owner tags the
-// account and instance in its sync identifier (8 hex digits).
+// account in its sync identifier (8 hex digits).
 export type HealthAccess = "allowed" | "denied" | "undetermined";
 export type HealthStatus = { available: boolean; workouts: HealthAccess; weighings: HealthAccess };
 export type HealthObject =
