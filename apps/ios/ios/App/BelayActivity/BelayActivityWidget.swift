@@ -10,68 +10,34 @@ struct BelayActivityBundle: WidgetBundle {
     }
 }
 
-// A plain layout that already reads the whole description; every word on screen comes from it.
+// The open session on the lock screen and in the Dynamic Island. The views live beside the shared
+// type; every word on screen comes from the description.
 struct SessionActivityWidget: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: SessionActivityAttributes.self) { context in
-            HStack {
-                VStack(alignment: .leading) {
-                    Text(context.state.title).font(.headline)
-                    Text(context.state.detail).font(.subheadline)
-                    Text(context.state.statusLabel).font(.caption)
-                }
-                Spacer()
-                SessionClock(state: context.state)
-            }
-            .padding()
+            SessionLockScreenView(state: context.state, isStale: context.isStale)
+                // The dark card's hairline, as on Belay's dark cards; none in light.
+                .overlay(ContainerRelativeShape().strokeBorder(SessionPalette.edge, lineWidth: 1))
+                .activityBackgroundTint(SessionPalette.background)
+                .activitySystemActionForegroundColor(SessionPalette.ink)
         } dynamicIsland: { context in
             DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
-                    VStack(alignment: .leading) {
-                        Text(context.state.title)
-                        Text(context.state.detail).font(.caption)
-                    }
+                    SessionExpandedLeading(state: context.state, isStale: context.isStale)
                 }
                 DynamicIslandExpandedRegion(.trailing) {
-                    SessionClock(state: context.state)
+                    SessionExpandedTrailing(state: context.state, isStale: context.isStale)
+                }
+                DynamicIslandExpandedRegion(.bottom) {
+                    SessionExpandedBottom(state: context.state, isStale: context.isStale)
                 }
             } compactLeading: {
-                Image(systemName: "timer")
+                SessionCompactLeading(state: context.state, isStale: context.isStale)
             } compactTrailing: {
-                SessionClock(state: context.state)
+                SessionCompactTrailing(state: context.state, isStale: context.isStale)
             } minimal: {
-                SessionClock(state: context.state)
+                SessionMinimalView(state: context.state, isStale: context.isStale)
             }
-        }
-    }
-}
-
-// Counts the rest down while one runs, else the session's time up; both stand still in a pause.
-// The fixed width keeps the ticking digits from pushing their neighbors around.
-private struct SessionClock: View {
-    let state: SessionActivityAttributes.ContentState
-
-    var body: some View {
-        clock
-            .monospacedDigit()
-            .multilineTextAlignment(.trailing)
-            .frame(width: 56)
-    }
-
-    @ViewBuilder private var clock: some View {
-        if let restEnd = state.restEnd {
-            let restStart = min(state.restStart ?? restEnd, restEnd)
-            Text(
-                timerInterval: restStart...restEnd,
-                pauseTime: state.restFrozen ? state.pausedAt : nil,
-                countsDown: true
-            )
-        } else {
-            Text(
-                timerInterval: state.startedAt...state.startedAt.addingTimeInterval(12 * 3600),
-                pauseTime: state.pausedAt,
-                countsDown: false
-            )
         }
     }
 }
