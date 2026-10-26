@@ -172,6 +172,33 @@ describe("checkAddress", () => {
   it("asks for https anywhere but this machine", () =>
     expect(checkAddress("http://belay.example.org")).toEqual({ error: "insecure" }));
 
+  // A release's content security policy blocks plain http everywhere, this machine included.
+  describe("in a release build", () => {
+    beforeEach(() => vi.stubEnv("DEV", false));
+    afterEach(() => vi.unstubAllEnvs());
+
+    it.each(["http://localhost:3000", "http://127.0.0.1:3000"])("asks for https at %j", (input) =>
+      expect(checkAddress(input)).toEqual({ error: "insecure" }),
+    );
+
+    it("still reads an https address", () =>
+      expect(checkAddress("belay.example.org")).toEqual({ origin: ORIGIN }));
+
+    it("reaches this machine when built for it", () => {
+      vi.stubEnv("BELAY_LOOPBACK", "1");
+      expect(checkAddress("http://localhost:3000")).toEqual({ origin: "http://localhost:3000" });
+    });
+
+    it("says a server answering with a plain http origin is not a Belay instance", async () => {
+      fetchMock.mockResolvedValue(
+        Response.json({ app: "belay", api: 1, origin: "http://localhost:3000" }),
+      );
+      await expect(probeInstance("http://localhost:3000")).resolves.toEqual({
+        error: "not-belay",
+      });
+    });
+  });
+
   // URL.parse arrived with iOS 18; the app also runs on older iPhones.
   it("reads an address where URL.parse does not exist", () => {
     vi.spyOn(URL, "parse").mockImplementation(() => {

@@ -35,6 +35,7 @@ afterEach(async () => {
   localStorage.clear();
   vi.clearAllMocks();
   vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
   await i18n.changeLanguage("en");
 });
 
@@ -109,6 +110,18 @@ describe("InstanceSetup", () => {
       "L’adresse doit commencer par https://",
     );
     expect(document.activeElement).toBe(field());
+    expect(probe).not.toHaveBeenCalled();
+  });
+
+  it("a release build asks for https even on this machine", async () => {
+    vi.stubEnv("DEV", false);
+    show();
+    await screen.findByRole("heading", { level: 1, name: "Ton instance" });
+    type("http://localhost:3000");
+    fireEvent.submit(field());
+    expect((await screen.findByRole("alert")).textContent).toBe(
+      "L’adresse doit commencer par https://",
+    );
     expect(probe).not.toHaveBeenCalled();
   });
 
