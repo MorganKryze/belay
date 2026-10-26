@@ -47,6 +47,9 @@ enum HealthRequest: Equatable {
     case readWeighings(anchor: String?, since: Date)
 
     static let maxObjects = 100
+    // The anchor is an archived HKQueryAnchor this side handed out, in base64: a fixed ceiling
+    // keeps any other string from reaching the unarchiver at whatever size.
+    static let maxAnchor = 4_096
 
     static func from(_ value: Any?) throws -> HealthRequest {
         // JSONSerialization raises an Objective-C exception, not a Swift error, on a value it
@@ -147,14 +150,21 @@ extension HealthRequest: Decodable {
             self = .authorize(try c.decode(HealthScope.self, forKey: .scope))
         case .apply:
             try expectKeys(decoder, ["op", "objects"])
-            let objects = try c.decode([HealthObject].self, forKey: .objects)
-            guard objects.count <= Self.maxObjects else { throw refuse(decoder, "too many objects") }
+            // Counted before any object is decoded, so an oversized batch costs nothing.
+            var list = try c.nestedUnkeyedContainer(forKey: .objects)
+            guard let count = list.count, count <= Self.maxObjects else {
+                throw refuse(decoder, "too many objects")
+            }
+            var objects: [HealthObject] = []
+            while !list.isAtEnd { objects.append(try list.decode(HealthObject.self)) }
             self = .apply(objects)
         case .readWeighings:
             try expectKeys(decoder, ["op", "anchor", "since"])
             let since = try c.decode(Date.self, forKey: .since)
             guard isTime(since) else { throw refuse(decoder, "since out of range") }
-            self = .readWeighings(anchor: try c.decodeIfPresent(String.self, forKey: .anchor), since: since)
+            let anchor = try c.decodeIfPresent(String.self, forKey: .anchor)
+            guard (anchor?.count ?? 0) <= Self.maxAnchor else { throw refuse(decoder, "anchor too long") }
+            self = .readWeighings(anchor: anchor, since: since)
         }
     }
 }

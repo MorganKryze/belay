@@ -16,6 +16,15 @@ struct HealthRequestCheck {
         return try? HealthRequest.from(value)
     }
 
+    // Why a request was refused, as the decoder words it.
+    static func refusal(_ json: String) -> String? {
+        let value = try? JSONSerialization.jsonObject(with: Data(json.utf8))
+        do { _ = try HealthRequest.from(value) } catch let DecodingError.dataCorrupted(context) {
+            return context.debugDescription
+        } catch { return "\(error)" }
+        return nil
+    }
+
     static let id = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d01"
     static func workout(
         _ extra: String = "", started: Int64 = 0, ended: Int64 = 3_600_000, version: Int = 5
@@ -84,6 +93,16 @@ struct HealthRequestCheck {
         check("100 objects decode", decodes(#"{"op":"apply","objects":[\#(hundred)]}"#) != nil)
         check("101 objects are refused",
               decodes(#"{"op":"apply","objects":[\#(hundred),\#(workout())]}"#) == nil)
+
+        let broken = Array(repeating: "{}", count: 101).joined(separator: ",")
+        check("101 objects are counted before any is decoded",
+              refusal(#"{"op":"apply","objects":[\#(broken)]}"#) == "too many objects")
+
+        let anchor = { (length: Int) in
+            #"{"op":"readWeighings","anchor":"\#(String(repeating: "A", count: length))","since":0}"#
+        }
+        check("an anchor of 4096 characters decodes", decodes(anchor(4096)) != nil)
+        check("an anchor of 4097 characters is refused", decodes(anchor(4097)) == nil)
 
         let weighing = #"{"kind":"weighing","date":"2026-10-26","kg":80.4,"at":0,"version":1}"#
         check("a weighing decodes", decodes(#"{"op":"apply","objects":[\#(weighing)]}"#) != nil)
