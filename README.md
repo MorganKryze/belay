@@ -142,6 +142,11 @@ instance, but it needs this release of Belay or a later one.
 - The identity provider's client and its redirect URI do not change. The app
   signs in through the server, which stays the provider's only client.
 
+While a session is open, the iPhone's lock screen (and the Dynamic Island)
+shows its exercise, its set and its timers, never a load or a body figure.
+Nothing leaves the phone for it: the app draws it from what it already holds.
+iOS's own switch turns it off, in **Settings › Belay › Live Activities**.
+
 ## Threat model
 
 Read this before hosting Belay for anyone else.
