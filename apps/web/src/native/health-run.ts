@@ -8,9 +8,9 @@ import {
   type HealthOutcome,
   health,
   healthProgress,
+  markHistorySent,
   readHealth,
   recordWritten,
-  setHistory,
   type Written,
 } from "./health";
 import { afterOutcome, keyOf, ownerOf, planHealth } from "./health-plan";
@@ -97,11 +97,8 @@ export function createHealthRunner(
     }
     // The history is sent once every object of it was taken, and only for the turn-on that
     // asked for it: turned off and on again meanwhile, it is offered anew.
-    if (history && !off && pending === 0 && !blocked.workouts && !blocked.weighings) {
-      const current = (await readHealth(db)).settings;
-      if (current.history === "asked" && current.turnedOnAt === settings.turnedOnAt)
-        await setHistory(db, "sent");
-    }
+    if (history && !off && pending === 0 && !blocked.workouts && !blocked.weighings)
+      await markHistorySent(db, settings.turnedOnAt);
     healthProgress.set({ sending: null, pending: off ? 0 : pending });
     changed();
   }
