@@ -4,6 +4,7 @@
 import { registerPlugin } from "@capacitor/core";
 import { Haptics, NotificationType } from "@capacitor/haptics";
 import { readInstance, setNativeSession } from "@/lib/platform";
+import type { LiveActivity } from "./live-activity";
 
 export interface BelayNativePlugin {
   readToken(o: { origin: string }): Promise<{ token: string | null }>;
@@ -11,9 +12,11 @@ export interface BelayNativePlugin {
   clearToken(): Promise<void>;
   // Rejects with code "cancelled" when the person closes the sheet.
   authenticate(o: { url: string; callbackScheme: string }): Promise<{ url: string }>;
+  // Shows, updates or ends the open session on the lock screen; resolves once iOS has applied it.
+  setLiveActivity(o: { activity: LiveActivity | null }): Promise<void>;
 }
 
-const BelayNative = registerPlugin<BelayNativePlugin>("BelayNative");
+export const BelayNative = registerPlugin<BelayNativePlugin>("BelayNative");
 
 export type SignInResult = "cancelled" | "unavailable" | "expired" | "failed" | "denied";
 // The reasons the server puts in the app's callback, the same Accueil shows after a web sign-in.
