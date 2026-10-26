@@ -15,6 +15,7 @@ public class BelayNativePlugin: CAPPlugin, CAPBridgedPlugin, ASWebAuthentication
         CAPPluginMethod(name: "clearToken", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "authenticate", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "setLiveActivity", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "health", returnType: CAPPluginReturnPromise),
     ]
 
     private static let service = "cloud.libresoftware.belay.session"
@@ -112,6 +113,24 @@ public class BelayNativePlugin: CAPPlugin, CAPBridgedPlugin, ASWebAuthentication
         Task {
             await LiveActivity.show(payload)
             call.resolve()
+        }
+    }
+
+    // One entry point for every Health operation. The request is decoded against fixed shapes
+    // before anything runs; what to write and when are Belay's rules, and they stay in the page.
+    @objc func health(_ call: CAPPluginCall) {
+        let request: HealthRequest
+        do {
+            request = try HealthRequest.from(call.options)
+        } catch {
+            return call.reject("health request invalid")
+        }
+        Task {
+            do {
+                call.resolve(try await Health.handle(request))
+            } catch {
+                call.reject("health unavailable")
+            }
         }
     }
 
