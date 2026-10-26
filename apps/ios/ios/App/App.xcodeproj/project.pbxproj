@@ -23,6 +23,8 @@
 		B3E57C052FF1C0DE00A1B2C3 /* BelayActivityWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3E57C022FF1C0DE00A1B2C3 /* BelayActivityWidget.swift */; };
 		B3E57C062FF1C0DE00A1B2C3 /* SessionActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3E57C032FF1C0DE00A1B2C3 /* SessionActivity.swift */; };
 		B3E57C072FF1C0DE00A1B2C3 /* SessionActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3E57C032FF1C0DE00A1B2C3 /* SessionActivity.swift */; };
+		B3E57E022FF1C0DE00A1B2C3 /* SessionActivityViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3E57E012FF1C0DE00A1B2C3 /* SessionActivityViews.swift */; };
+		B3E57E032FF1C0DE00A1B2C3 /* SessionActivityViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3E57E012FF1C0DE00A1B2C3 /* SessionActivityViews.swift */; };
 		B3E57C082FF1C0DE00A1B2C3 /* BelayActivity.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = B3E57C012FF1C0DE00A1B2C3 /* BelayActivity.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
@@ -69,6 +71,7 @@
 		B3E57C012FF1C0DE00A1B2C3 /* BelayActivity.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = BelayActivity.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		B3E57C022FF1C0DE00A1B2C3 /* BelayActivityWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BelayActivityWidget.swift; sourceTree = "<group>"; };
 		B3E57C042FF1C0DE00A1B2C3 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		B3E57E012FF1C0DE00A1B2C3 /* SessionActivityViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionActivityViews.swift; sourceTree = "<group>"; };
 		B3E57C032FF1C0DE00A1B2C3 /* SessionActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionActivity.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -144,6 +147,7 @@
 			isa = PBXGroup;
 			children = (
 				B3E57C032FF1C0DE00A1B2C3 /* SessionActivity.swift */,
+				B3E57E012FF1C0DE00A1B2C3 /* SessionActivityViews.swift */,
 			);
 			path = Shared;
 			sourceTree = "<group>";
@@ -266,6 +270,7 @@
 				B3E57C072FF1C0DE00A1B2C3 /* SessionActivity.swift in Sources */,
 				B3E57D032FF1C0DE00A1B2C3 /* LiveActivity.swift in Sources */,
 				B3E57D042FF1C0DE00A1B2C3 /* ActivityDemo.swift in Sources */,
+				B3E57E022FF1C0DE00A1B2C3 /* SessionActivityViews.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -275,6 +280,7 @@
 			files = (
 				B3E57C052FF1C0DE00A1B2C3 /* BelayActivityWidget.swift in Sources */,
 				B3E57C062FF1C0DE00A1B2C3 /* SessionActivity.swift in Sources */,
+				B3E57E032FF1C0DE00A1B2C3 /* SessionActivityViews.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -446,7 +452,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				EXCLUDED_SOURCE_FILE_NAMES = ActivityDemo.swift;
+				EXCLUDED_SOURCE_FILE_NAMES = "ActivityDemo.swift SessionActivityViews.swift";
 				INFOPLIST_FILE = App/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.4;
 				LD_RUNPATH_SEARCH_PATHS = (
