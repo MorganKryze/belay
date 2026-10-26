@@ -7,7 +7,7 @@ import { FORGOTTEN_MS, restSecAfter, sessionProgress } from "@belay/shared/train
 import type { Workout, WorkoutSet } from "@belay/shared/training/workout";
 import type { TFunction } from "i18next";
 import type { ActiveSession } from "@/sync/db";
-import { BelayNative } from "./session";
+import { BelayNative } from "./plugin";
 
 export type OpenSession = { workout: Workout; sets: readonly WorkoutSet[] };
 export type ActivityStatus = "due" | "rest" | "paused" | "done";

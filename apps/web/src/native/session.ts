@@ -1,22 +1,9 @@
 // The iPhone app's session: the token its native side keeps in the Keychain for the stored
 // instance, and the sign-in that earns it through the system sheet. Loaded on the phone only,
 // before the first render (main.tsx), so the first request already carries the token.
-import { registerPlugin } from "@capacitor/core";
 import { Haptics, NotificationType } from "@capacitor/haptics";
 import { readInstance, setNativeSession } from "@/lib/platform";
-import type { LiveActivity } from "./live-activity";
-
-export interface BelayNativePlugin {
-  readToken(o: { origin: string }): Promise<{ token: string | null }>;
-  writeToken(o: { origin: string; token: string }): Promise<void>;
-  clearToken(): Promise<void>;
-  // Rejects with code "cancelled" when the person closes the sheet.
-  authenticate(o: { url: string; callbackScheme: string }): Promise<{ url: string }>;
-  // Shows, updates or ends the open session on the lock screen; resolves once iOS has applied it.
-  setLiveActivity(o: { activity: LiveActivity | null }): Promise<void>;
-}
-
-export const BelayNative = registerPlugin<BelayNativePlugin>("BelayNative");
+import { BelayNative } from "./plugin";
 
 export type SignInResult = "cancelled" | "unavailable" | "expired" | "failed" | "denied";
 // The reasons the server puts in the app's callback, the same Accueil shows after a web sign-in.

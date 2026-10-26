@@ -1,25 +1,40 @@
 import { FORGOTTEN_MS } from "@belay/shared/training/rules";
 import { sessionByCode, starterProgram } from "@belay/shared/training/program";
 import { workPosition, type Workout, type WorkoutSet } from "@belay/shared/training/workout";
+import { cleanup, render } from "@testing-library/react";
 import type { TFunction } from "i18next";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import i18n from "@/i18n";
 import "@/i18n/lazy";
+import type { Account, OpenAccount } from "@/sync/account";
 import type { ActiveSession } from "@/sync/db";
 
 // The plugin as Capacitor's proxy hands it out: any name it does not know, « then » included,
 // is a method that throws, so a promise resolved with the plugin itself would never settle.
-const { native } = vi.hoisted(() => ({
+const { native, view } = vi.hoisted(() => ({
   native: {
     setLiveActivity: vi.fn<(o: { activity: unknown }) => Promise<void>>(async () => {}),
     then: () => {
       throw new Error('"BelayNative.then()" is not implemented on ios');
     },
   },
+  view: { active: null as ActiveSession | null, reading: false },
 }));
-vi.mock("@/native/session", () => ({ BelayNative: native }));
+vi.mock("@/native/plugin", () => ({ BelayNative: native }));
+vi.mock("@/sync/account", () => ({
+  useSessionView: () => ({ data: view.reading ? undefined : { active: view.active } }),
+  useHistory: () => ({ data: view.reading ? undefined : {} }),
+}));
+// The notification half of the module is tested on its own: here it only has to stay quiet.
+vi.mock("@capacitor/local-notifications", () => ({
+  LocalNotifications: {
+    cancel: async () => {},
+    checkPermissions: async () => ({ display: "denied" }),
+  },
+}));
 
 import { type LiveActivity, liveActivityOf, showLiveActivity } from "./live-activity";
+import { NativeRestAlert } from "./rest-alert";
 
 const NOW = Date.parse("2026-10-28T18:00:00.000Z");
 const at = (s: number) => new Date(NOW + s * 1000).toISOString();
@@ -64,11 +79,15 @@ const describeIt = (
 // The bench press's first set done 30 s ago: its planned 150 s rest runs until +120 s.
 const firstSet = [set(0, 0, -30)];
 
+const open = { kind: "open" } as OpenAccount;
+const shown = (n: number) => native.setLiveActivity.mock.calls[n - 1]?.[0].activity;
 const quiet = () => new Promise((r) => setTimeout(r, 20));
 let reset = 0;
 
 beforeEach(async () => {
   localStorage.clear();
+  view.active = null;
+  view.reading = false;
   native.setLiveActivity.mockReset();
   native.setLiveActivity.mockResolvedValue(undefined);
   vi.useFakeTimers({ now: NOW, toFake: ["Date"] });
@@ -79,6 +98,7 @@ beforeEach(async () => {
   native.setLiveActivity.mockClear();
 });
 afterEach(() => {
+  cleanup();
   vi.useRealTimers();
 });
 
@@ -252,5 +272,93 @@ describe("showLiveActivity", () => {
     expect(native.setLiveActivity).toHaveBeenLastCalledWith({ activity: null });
     await quiet();
     expect(native.setLiveActivity).toHaveBeenCalledTimes(3);
+  });
+});
+
+describe("NativeRestAlert and the Activity", () => {
+  const show = (sets: WorkoutSet[] | null, account: Account = open) => (
+    <NativeRestAlert account={account} session={sets && { workout, sets }} />
+  );
+
+  it("one call when a set is logged, none while the clock runs", async () => {
+    view.active = active();
+    const { rerender } = render(show([]));
+    await vi.waitFor(() => expect(native.setLiveActivity).toHaveBeenCalledTimes(1));
+    expect(shown(1)).toMatchObject({ workoutId: W, state: { status: "due" } });
+
+    view.active = active({ restEndsAt: at(120) });
+    rerender(show(firstSet));
+    await vi.waitFor(() => expect(native.setLiveActivity).toHaveBeenCalledTimes(2));
+    expect(shown(2)).toMatchObject({ state: { status: "rest", restEnd: NOW + 120_000 } });
+
+    // The screen draws again while the rest counts down: its clocks run on the phone.
+    for (const s of [1, 30, 90]) {
+      vi.setSystemTime(NOW + s * 1000);
+      rerender(show(firstSet));
+    }
+    await quiet();
+    expect(native.setLiveActivity).toHaveBeenCalledTimes(2);
+  });
+
+  it("finishing or deleting the session sends nothing to show", async () => {
+    view.active = active();
+    const { rerender } = render(show(firstSet));
+    await vi.waitFor(() => expect(native.setLiveActivity).toHaveBeenCalledTimes(1));
+    view.active = null;
+    rerender(show(null));
+    await vi.waitFor(() => expect(native.setLiveActivity).toHaveBeenCalledTimes(2));
+    expect(native.setLiveActivity).toHaveBeenLastCalledWith({ activity: null });
+  });
+
+  it("a signed-out account ends the Activity, a loading one leaves it", async () => {
+    const { rerender } = render(show(null, { kind: "loading" }));
+    await quiet();
+    expect(native.setLiveActivity).not.toHaveBeenCalled();
+    rerender(show(null, { kind: "signed-out", unreachable: false }));
+    await vi.waitFor(() =>
+      expect(native.setLiveActivity).toHaveBeenCalledExactlyOnceWith({ activity: null }),
+    );
+    cleanup();
+
+    // An account whose local data cannot be opened ends it too.
+    showLiveActivity({ workoutId: "again" } as LiveActivity);
+    await vi.waitFor(() => expect(native.setLiveActivity).toHaveBeenCalledTimes(2));
+    render(show(null, { kind: "unavailable" } as Account));
+    await vi.waitFor(() => expect(native.setLiveActivity).toHaveBeenCalledTimes(3));
+    expect(native.setLiveActivity).toHaveBeenLastCalledWith({ activity: null });
+  });
+
+  it("nothing is sent while this phone's records are still being read", async () => {
+    // At launch an Activity left by the last run is still the open session's: an empty first
+    // read must not end it.
+    view.reading = true;
+    view.active = active();
+    const { rerender } = render(show(null));
+    await quiet();
+    expect(native.setLiveActivity).not.toHaveBeenCalled();
+    view.reading = false;
+    rerender(show([]));
+    await vi.waitFor(() => expect(native.setLiveActivity).toHaveBeenCalledTimes(1));
+    expect(shown(1)).toMatchObject({ workoutId: W, state: { status: "due" } });
+  });
+
+  it("leaving the account ends it", async () => {
+    view.active = active();
+    const { unmount } = render(show([]));
+    await vi.waitFor(() => expect(native.setLiveActivity).toHaveBeenCalledTimes(1));
+    unmount();
+    await vi.waitFor(() => expect(native.setLiveActivity).toHaveBeenCalledTimes(2));
+    expect(native.setLiveActivity).toHaveBeenLastCalledWith({ activity: null });
+  });
+
+  it("a rejected call changes nothing and the next change is still sent", async () => {
+    native.setLiveActivity.mockRejectedValueOnce(new Error("Activities are off"));
+    view.active = active();
+    const { rerender } = render(show([]));
+    await vi.waitFor(() => expect(native.setLiveActivity).toHaveBeenCalledTimes(1));
+    view.active = active({ restEndsAt: at(120) });
+    rerender(show(firstSet));
+    await vi.waitFor(() => expect(native.setLiveActivity).toHaveBeenCalledTimes(2));
+    expect(shown(2)).toMatchObject({ state: { status: "rest" } });
   });
 });
