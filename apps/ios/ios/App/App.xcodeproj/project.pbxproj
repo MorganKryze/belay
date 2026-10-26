@@ -18,6 +18,7 @@
 		B3E57A022FF1C0DE00A1B2C3 /* rest.wav in Resources */ = {isa = PBXBuildFile; fileRef = B3E57A012FF1C0DE00A1B2C3 /* rest.wav */; };
 		B3E57A052FF1C0DE00A1B2C3 /* BelayNative.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3E57A042FF1C0DE00A1B2C3 /* BelayNative.swift */; };
 		B3E58A022FF1C0DE00A1B2C3 /* HealthRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3E58A012FF1C0DE00A1B2C3 /* HealthRequest.swift */; };
+		B3E58A042FF1C0DE00A1B2C3 /* Health.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3E58A032FF1C0DE00A1B2C3 /* Health.swift */; };
 		B3E57D032FF1C0DE00A1B2C3 /* LiveActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3E57D012FF1C0DE00A1B2C3 /* LiveActivity.swift */; };
 		B3E57D042FF1C0DE00A1B2C3 /* ActivityDemo.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3E57D022FF1C0DE00A1B2C3 /* ActivityDemo.swift */; };
 		9582B6832FE993A70072D4E8 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9582B6822FE993A50072D4E8 /* SceneDelegate.swift */; };
@@ -67,6 +68,7 @@
 		50B271D01FEDC1A000F3C39B /* public */ = {isa = PBXFileReference; lastKnownFileType = folder; path = public; sourceTree = "<group>"; };
 		B3E57A042FF1C0DE00A1B2C3 /* BelayNative.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BelayNative.swift; sourceTree = "<group>"; };
 		B3E58A012FF1C0DE00A1B2C3 /* HealthRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthRequest.swift; sourceTree = "<group>"; };
+		B3E58A032FF1C0DE00A1B2C3 /* Health.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Health.swift; sourceTree = "<group>"; };
 		B3E57D012FF1C0DE00A1B2C3 /* LiveActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivity.swift; sourceTree = "<group>"; };
 		B3E57D022FF1C0DE00A1B2C3 /* ActivityDemo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityDemo.swift; sourceTree = "<group>"; };
 		9582B6822FE993A50072D4E8 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
@@ -125,6 +127,7 @@
 				9582B6822FE993A50072D4E8 /* SceneDelegate.swift */,
 				B3E57A042FF1C0DE00A1B2C3 /* BelayNative.swift */,
 				B3E58A012FF1C0DE00A1B2C3 /* HealthRequest.swift */,
+				B3E58A032FF1C0DE00A1B2C3 /* Health.swift */,
 				B3E57D012FF1C0DE00A1B2C3 /* LiveActivity.swift */,
 				B3E57D022FF1C0DE00A1B2C3 /* ActivityDemo.swift */,
 				50379B222058CBB4000EE86E /* capacitor.config.json */,
@@ -278,6 +281,7 @@
 				9582B6832FE993A70072D4E8 /* SceneDelegate.swift in Sources */,
 				B3E57A052FF1C0DE00A1B2C3 /* BelayNative.swift in Sources */,
 				B3E58A022FF1C0DE00A1B2C3 /* HealthRequest.swift in Sources */,
+				B3E58A042FF1C0DE00A1B2C3 /* Health.swift in Sources */,
 				B3E57C072FF1C0DE00A1B2C3 /* SessionActivity.swift in Sources */,
 				B3E57D032FF1C0DE00A1B2C3 /* LiveActivity.swift in Sources */,
 				B3E57D042FF1C0DE00A1B2C3 /* ActivityDemo.swift in Sources */,
