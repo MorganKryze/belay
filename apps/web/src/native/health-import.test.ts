@@ -128,6 +128,21 @@ describe("a day and its record", () => {
     expect((await day("2026-10-26"))?.weightKg).toBe(80);
   });
 
+  it("a reading dated after today waits for its day: the anchor stays before it", async () => {
+    const tomorrow = { startedAt: new Date(2026, 9, 27, 7).getTime(), kg: 79.8 };
+    const samples = [{ startedAt: at(7, 5), kg: 80.4 }, tomorrow];
+    expect(await take(samples, "A1", NOW)).toBe(1);
+    expect(await day("2026-10-27")).toBeUndefined();
+    expect((await readHealth(db)).imported.anchor).toBeNull();
+
+    // Health read again from the same place on the 27th: that reading is taken, once.
+    expect(await take(samples, "A1", new Date(2026, 9, 27, 9))).toBe(1);
+    expect((await day("2026-10-27"))?.weightKg).toBe(79.8);
+    expect((await day("2026-10-26"))?.weightKg).toBe(80.4);
+    expect((await readHealth(db)).imported.anchor).toBe("A1");
+    expect(await queued()).toHaveLength(2);
+  });
+
   it("nothing new writes nothing", async () => {
     const before = await db.get("meta", IMPORT_KEY);
     expect(await take([], "A1", NOW)).toBe(0);

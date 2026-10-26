@@ -68,10 +68,17 @@ export async function importWeighings(
     return 0;
   }
   const filled = { ...imported.filled };
+  let waits = false;
   for (const [date, reading] of earliestPerDay(
     samples,
     toISODate(new Date(settings.importSince)),
   )) {
+    // A reading dated after today (a clock set ahead) waits for its day: Health is read again
+    // from the old anchor until then.
+    if (date > today) {
+      waits = true;
+      continue;
+    }
     const row = await tx.objectStore("weights").get(date);
     const mine = filled[date];
     const replaces =
@@ -89,7 +96,8 @@ export async function importWeighings(
     filled[date] = { at, startedAt: reading.startedAt };
     count++;
   }
-  await tx.objectStore("meta").put({ anchor, filled } satisfies HealthImport, IMPORT_KEY);
+  const next: HealthImport = { anchor: waits ? imported.anchor : anchor, filled };
+  await tx.objectStore("meta").put(next, IMPORT_KEY);
   await tx.done;
   return count;
 }
