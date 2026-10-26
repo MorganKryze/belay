@@ -1,7 +1,8 @@
-import type { Change, SyncRequest } from "@belay/shared/sync/schema";
+import { mergeWeights } from "@belay/shared/sync/merge";
+import type { Change, SyncRequest, WeightChange } from "@belay/shared/sync/schema";
 import { IDBFactory } from "fake-indexeddb";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { type AccountDb, openAccountDb, readOutbox, recordChange } from "@/sync/db";
+import { type AccountDb, applyServer, openAccountDb, readOutbox, recordChange } from "@/sync/db";
 import { createSyncEngine, type Send } from "@/sync/engine";
 import { answer } from "@/test/answer";
 
@@ -20,6 +21,8 @@ import { earliestPerDay, importAfterSync, importWeighings } from "./health-impor
 const ON = new Date(2026, 9, 26, 7, 0);
 const NOW = new Date(2026, 9, 26, 9, 30);
 const at = (h: number, mi = 0) => new Date(2026, 9, 26, h, mi).getTime();
+// The stamp of a weigh-in imported for the 26th: the start of that day.
+const MIDNIGHT = new Date(2026, 9, 26).toISOString();
 const weight = (
   date: string,
   weightKg: number | null,
@@ -86,12 +89,12 @@ describe("a day and its record", () => {
     expect(await day("2026-10-26")).toEqual({
       date: "2026-10-26",
       weightKg: 80.4,
-      at: NOW.toISOString(),
+      at: MIDNIGHT,
     });
-    expect(await queued()).toEqual([weight("2026-10-26", 80.4, NOW.toISOString())]);
+    expect(await queued()).toEqual([weight("2026-10-26", 80.4, MIDNIGHT)]);
     expect((await readHealth(db)).imported).toEqual({
       anchor: "A1",
-      filled: { "2026-10-26": { at: NOW.toISOString(), startedAt: at(7, 5) } },
+      filled: { "2026-10-26": { at: MIDNIGHT, startedAt: at(7, 5) } },
     });
   });
 
@@ -128,6 +131,21 @@ describe("a day and its record", () => {
     expect((await day("2026-10-26"))?.weightKg).toBe(80);
   });
 
+  it("a reading dated after today waits for its day: the anchor stays before it", async () => {
+    const tomorrow = { startedAt: new Date(2026, 9, 27, 7).getTime(), kg: 79.8 };
+    const samples = [{ startedAt: at(7, 5), kg: 80.4 }, tomorrow];
+    expect(await take(samples, "A1", NOW)).toBe(1);
+    expect(await day("2026-10-27")).toBeUndefined();
+    expect((await readHealth(db)).imported.anchor).toBeNull();
+
+    // Health read again from the same place on the 27th: that reading is taken, once.
+    expect(await take(samples, "A1", new Date(2026, 9, 27, 9))).toBe(1);
+    expect((await day("2026-10-27"))?.weightKg).toBe(79.8);
+    expect((await day("2026-10-26"))?.weightKg).toBe(80.4);
+    expect((await readHealth(db)).imported.anchor).toBe("A1");
+    expect(await queued()).toHaveLength(2);
+  });
+
   it("nothing new writes nothing", async () => {
     const before = await db.get("meta", IMPORT_KEY);
     expect(await take([], "A1", NOW)).toBe(0);
@@ -159,6 +177,50 @@ describe("a day and its record", () => {
     expect((await readHealth(db)).imported.anchor).toBe("A1");
     await setImportOn(db, true, NOW.getTime());
     expect((await readHealth(db)).imported.anchor).toBeNull();
+  });
+});
+
+describe("across devices", () => {
+  // Typed on a computer at 08:00 while offline, before the phone imported the day at 09:30.
+  const typed: WeightChange = {
+    kind: "weight",
+    date: "2026-10-26",
+    weightKg: 82.1,
+    at: new Date(2026, 9, 26, 8).toISOString(),
+  };
+  const serverNow = new Date(2026, 9, 26, 10);
+  const weighIns = async () =>
+    (await queued()).filter((c): c is WeightChange => c.kind === "weight");
+
+  it("a weigh-in typed for the day, even before the import ran, wins on the server and the phone", async () => {
+    await take([{ startedAt: at(7, 5), kg: 80.4 }], "A1", NOW);
+    const [imported] = await weighIns();
+    expect(imported).toEqual(weight("2026-10-26", 80.4, MIDNIGHT));
+    // On the server, whichever of the two arrives first.
+    expect(mergeWeights(new Map([["2026-10-26", imported!.at]]), [typed], serverNow)).toEqual([
+      typed,
+    ]);
+    expect(mergeWeights(new Map([["2026-10-26", typed.at]]), [imported!], serverNow)).toEqual([]);
+    // On the phone, the typed day landing while the import is still queued.
+    const row = { date: "2026-10-26", weightKg: 82.1, at: typed.at };
+    await applyServer(db, [], answer({ weights: [row] }));
+    expect(await day("2026-10-26")).toEqual(row);
+  });
+
+  it("an earlier reading still replaces the import's own, stamped just after it", async () => {
+    await take([{ startedAt: at(7, 5), kg: 80.4 }], "A1", NOW);
+    expect(await take([{ startedAt: at(6, 40), kg: 80.9 }], "A2", NOW)).toBe(1);
+    const after = new Date(Date.parse(MIDNIGHT) + 1).toISOString();
+    expect(await day("2026-10-26")).toEqual({ date: "2026-10-26", weightKg: 80.9, at: after });
+    const [first, second] = await weighIns();
+    expect(second).toEqual(weight("2026-10-26", 80.9, after));
+    // The server holds the first: the second replaces it, and a typed weigh-in beats both.
+    expect(mergeWeights(new Map([["2026-10-26", first!.at]]), [second!], serverNow)).toEqual([
+      second,
+    ]);
+    expect(mergeWeights(new Map([["2026-10-26", second!.at]]), [typed], serverNow)).toEqual([
+      typed,
+    ]);
   });
 });
 
@@ -197,7 +259,7 @@ describe("after a landed sync", () => {
     await imports;
     const sent = requests.flatMap((r) => r.changes);
     expect([...new Set([...sent, ...(await queued())].map((c) => JSON.stringify(c)))]).toEqual([
-      JSON.stringify(weight("2026-10-26", 80.4, NOW.toISOString())),
+      JSON.stringify(weight("2026-10-26", 80.4, MIDNIGHT)),
     ]);
     // Nothing new in Health: no second write, no sync asked.
     expect(schedule).toHaveBeenCalledOnce();
@@ -212,6 +274,17 @@ describe("after a landed sync", () => {
     await setImportOn(db, false, NOW.getTime());
     await importAfterSync({ db, engine: { schedule: vi.fn() } }, async () => {});
     expect(native.health).not.toHaveBeenCalled();
+  });
+
+  it("asks for a sync even when showing the new weigh-ins fails", async () => {
+    native.health.mockResolvedValue({ samples: [{ startedAt: at(7, 5), kg: 80.4 }], anchor: "A1" });
+    const schedule = vi.fn();
+    const refresh = vi.fn(async () => {
+      throw new Error("the screen went away");
+    });
+    await importAfterSync({ db, engine: { schedule } }, refresh, () => NOW);
+    expect(refresh).toHaveBeenCalledOnce();
+    expect(schedule).toHaveBeenCalledOnce();
   });
 
   it("Health unavailable leaves everything as it was, for the next landed sync", async () => {

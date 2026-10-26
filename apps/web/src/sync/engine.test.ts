@@ -178,6 +178,17 @@ describe("a long queue or a long history", () => {
     engine.onLanded(late);
     await vi.waitFor(() => expect(late).toHaveBeenCalledOnce());
   });
+
+  it("once stopped, never calls a listener added afterwards", async () => {
+    const engine = engineWith(vi.fn<Send>(async () => ok(empty("9"))));
+    await engine.sync();
+    const stop = engine.start();
+    stop();
+    const late = vi.fn();
+    engine.onLanded(late);
+    await new Promise((r) => setTimeout(r, 10));
+    expect(late).not.toHaveBeenCalled();
+  });
 });
 
 describe("a change the server refuses", () => {

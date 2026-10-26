@@ -144,6 +144,7 @@ export function createSyncEngine({
       document.removeEventListener("visibilitychange", onVisible);
       clearTimeout(timer);
       stopped = true;
+      hasLanded = false; // a listener added later would run against a closed database
     };
   }
 

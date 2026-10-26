@@ -13,6 +13,7 @@ import {
   type HealthSample,
   type HealthSettings,
   IMPORT_KEY,
+  localDayStart,
   readHealth,
   SETTINGS_KEY,
 } from "./health";
@@ -47,7 +48,6 @@ export async function importWeighings(
   from: { anchor: string | null; since: number },
 ): Promise<number> {
   if (samples.length === 0) return 0; // nothing new: nothing written, nothing to send
-  const at = now.toISOString();
   const today = toISODate(now);
   let count = 0;
   const tx = db.transaction(["weights", "outbox", "meta"], "readwrite");
@@ -68,10 +68,17 @@ export async function importWeighings(
     return 0;
   }
   const filled = { ...imported.filled };
+  let waits = false;
   for (const [date, reading] of earliestPerDay(
     samples,
     toISODate(new Date(settings.importSince)),
   )) {
+    // A reading dated after today (a clock set ahead) waits for its day: Health is read again
+    // from the old anchor until then.
+    if (date > today) {
+      waits = true;
+      continue;
+    }
     const row = await tx.objectStore("weights").get(date);
     const mine = filled[date];
     const replaces =
@@ -81,6 +88,11 @@ export async function importWeighings(
       mine.at === row.at &&
       reading.startedAt < mine.startedAt;
     if (row !== undefined && !replaces) continue;
+    // Stamped at the start of its day, or just after the import's own stamp it replaces: a
+    // weigh-in typed for that day, here or on a device still offline, is later and wins the merge.
+    const at = new Date(
+      replaces ? Date.parse(mine!.at) + 1 : localDayStart(reading.startedAt),
+    ).toISOString();
     const change: Change = { kind: "weight", date, weightKg: reading.kg, at };
     if (!isRecordable(change, today)) continue;
     // The row a weigh-in change writes, as the phone's own write path does.
@@ -89,7 +101,8 @@ export async function importWeighings(
     filled[date] = { at, startedAt: reading.startedAt };
     count++;
   }
-  await tx.objectStore("meta").put({ anchor, filled } satisfies HealthImport, IMPORT_KEY);
+  const next: HealthImport = { anchor: waits ? imported.anchor : anchor, filled };
+  await tx.objectStore("meta").put(next, IMPORT_KEY);
   await tx.done;
   return count;
 }
@@ -112,8 +125,9 @@ export function importAfterSync(
       });
       const from = { anchor: imported.anchor, since: settings.importSince };
       if ((await importWeighings(account.db, samples, anchor, now(), from)) === 0) return;
-      await refresh();
+      // Queued first: what was written still goes if the screen fails to show it.
       account.engine.schedule();
+      await refresh();
     })
     .catch(() => {
       // Health unavailable (a locked phone) or the database closing: the next landed sync tries again.
