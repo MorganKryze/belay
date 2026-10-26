@@ -141,6 +141,43 @@ describe("a long queue or a long history", () => {
     await engineWith(done, { onSynced }).sync();
     expect(onSynced).toHaveBeenCalledTimes(1);
   });
+
+  it("tells its landed listeners after onSynced, never after an offline run or the round cap", async () => {
+    const order: string[] = [];
+    const onSynced = vi.fn(async () => void order.push("onSynced"));
+    const offline = engineWith(
+      vi.fn<Send>(async () => ({ kind: "offline" })),
+      { onSynced },
+    );
+    const heard = vi.fn(() => void order.push("landed"));
+    offline.onLanded(heard);
+    await offline.sync();
+    const capped = engineWith(vi.fn<Send>(async () => ok(answer({ cursor: "9", hasMore: true }))));
+    capped.onLanded(heard);
+    await capped.sync();
+    await Promise.resolve();
+    expect(heard).not.toHaveBeenCalled();
+
+    const engine = engineWith(
+      vi.fn<Send>(async () => ok(empty("9"))),
+      { onSynced },
+    );
+    const off = engine.onLanded(heard);
+    await engine.sync();
+    await vi.waitFor(() => expect(order).toEqual(["onSynced", "landed"]));
+    off();
+    await engine.sync();
+    await Promise.resolve();
+    expect(heard).toHaveBeenCalledOnce();
+  });
+
+  it("calls a listener added after a landed sync at once", async () => {
+    const engine = engineWith(vi.fn<Send>(async () => ok(empty("9"))));
+    await engine.sync();
+    const late = vi.fn();
+    engine.onLanded(late);
+    await vi.waitFor(() => expect(late).toHaveBeenCalledOnce());
+  });
 });
 
 describe("a change the server refuses", () => {
