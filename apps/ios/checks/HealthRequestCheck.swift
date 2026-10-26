@@ -31,8 +31,9 @@ struct HealthRequestCheck {
     ) -> String {
         #"{"kind":"workout","id":"\#(id)","startedAt":\#(started),"endedAt":\#(ended),"version":\#(version)\#(extra)}"#
     }
+    static let owner = "0a1b2c3d"
     static func weighing(at: Int64) -> String {
-        #"{"kind":"weighing","date":"1900-01-01","kg":80,"at":\#(at),"version":1}"#
+        #"{"kind":"weighing","owner":"\#(owner)","date":"1900-01-01","kg":80,"at":\#(at),"version":1}"#
     }
     static func apply(_ objects: String...) -> HealthRequest? {
         decodes(#"{"op":"apply","objects":[\#(objects.joined(separator: ","))]}"#)
@@ -104,12 +105,38 @@ struct HealthRequestCheck {
         check("an anchor of 4096 characters decodes", decodes(anchor(4096)) != nil)
         check("an anchor of 4097 characters is refused", decodes(anchor(4097)) == nil)
 
-        let weighing = #"{"kind":"weighing","date":"2026-10-26","kg":80.4,"at":0,"version":1}"#
+        let weighing = #"{"kind":"weighing","owner":"\#(owner)","date":"2026-10-26","kg":80.4,"at":0,"version":1}"#
         check("a weighing decodes", decodes(#"{"op":"apply","objects":[\#(weighing)]}"#) != nil)
-        check("19.9 kg is refused", decodes(#"{"op":"apply","objects":[{"kind":"weighing","date":"2026-10-26","kg":19.9,"at":0,"version":1}]}"#) == nil)
-        check("month 13 is refused", decodes(#"{"op":"apply","objects":[{"kind":"weighingRemoved","date":"2026-13-01"}]}"#) == nil)
-        check("a day followed by a line break is refused", decodes(#"{"op":"apply","objects":[{"kind":"weighingRemoved","date":"2026-10-26\n"}]}"#) == nil)
-        check("a day in other digits is refused", decodes(#"{"op":"apply","objects":[{"kind":"weighingRemoved","date":"٢٠٢٦-10-26"}]}"#) == nil)
+        check("19.9 kg is refused", decodes(#"{"op":"apply","objects":[\#(weighing.replacingOccurrences(of: "80.4", with: "19.9"))]}"#) == nil)
+        let removal = { (owner: String, date: String) in
+            #"{"op":"apply","objects":[{"kind":"weighingRemoved","owner":"\#(owner)","date":"\#(date)"}]}"#
+        }
+        check("a removal decodes", decodes(removal(owner, "2026-10-26")) != nil)
+        check("month 13 is refused", decodes(removal(owner, "2026-13-01")) == nil)
+        check("a day followed by a line break is refused", decodes(removal(owner, "2026-10-26\\n")) == nil)
+        check("a day in other digits is refused", decodes(removal(owner, "٢٠٢٦-10-26")) == nil)
+
+        // Health keeps one store for the whole phone: each account's weigh-ins carry its own tag.
+        check("a weighing without its owner is refused",
+              decodes(#"{"op":"apply","objects":[{"kind":"weighing","date":"2026-10-26","kg":80.4,"at":0,"version":1}]}"#) == nil)
+        check("a removal without its owner is refused",
+              decodes(#"{"op":"apply","objects":[{"kind":"weighingRemoved","date":"2026-10-26"}]}"#) == nil)
+        for bad in ["0A1B2C3D", "0a1b2c3", "0a1b2c3d4", "../x/../", ""] {
+            check("the owner \"\(bad)\" is refused", decodes(removal(bad, "2026-10-26")) == nil)
+        }
+        let ids = ["0a1b2c3d", "ffff0000"].compactMap { tag -> String? in
+            guard case .apply(let objects)? = decodes(removal(tag, "2026-10-26")),
+                  case .weighingRemoved(let w)? = objects.first else { return nil }
+            return w.syncID
+        }
+        check("two accounts get two sync identifiers for one day, under Belay's prefix",
+              ids == ["belay-weighing-0a1b2c3d-2026-10-26", "belay-weighing-ffff0000-2026-10-26"])
+        if case .apply(let objects)? = decodes(#"{"op":"apply","objects":[\#(weighing)]}"#),
+           case .weighing(let w)? = objects.first {
+            check("a weighing and its removal share one sync identifier", w.syncID == ids.first)
+        } else {
+            check("a weighing and its removal share one sync identifier", false)
+        }
 
         check("readWeighings with no anchor decodes",
               decodes(#"{"op":"readWeighings","anchor":null,"since":1000}"#)

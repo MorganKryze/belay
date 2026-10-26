@@ -4,14 +4,15 @@
 import type { AccountDb } from "@/sync/db";
 import { BelayNative } from "./plugin";
 
-// Times are epoch milliseconds, dates YYYY-MM-DD, weights kilograms.
+// Times are epoch milliseconds, dates YYYY-MM-DD, weights kilograms; a weigh-in's owner tags the
+// account and instance in its sync identifier (8 hex digits).
 export type HealthAccess = "allowed" | "denied" | "undetermined";
 export type HealthStatus = { available: boolean; workouts: HealthAccess; weighings: HealthAccess };
 export type HealthObject =
   | { kind: "workout"; id: string; startedAt: number; endedAt: number; version: number }
   | { kind: "workoutRemoved"; id: string }
-  | { kind: "weighing"; date: string; kg: number; at: number; version: number }
-  | { kind: "weighingRemoved"; date: string };
+  | { kind: "weighing"; owner: string; date: string; kg: number; at: number; version: number }
+  | { kind: "weighingRemoved"; owner: string; date: string };
 export type HealthOutcome = "written" | "removed" | "overlap" | "denied" | "unavailable" | "failed";
 export type HealthSample = { startedAt: number; kg: number };
 export type HealthRequest =

@@ -6,6 +6,20 @@ import type { HealthObject, HealthOutcome, HealthSettings, Written } from "./hea
 
 export const sessionKey = (id: string): string => `belay-session-${id}`;
 export const weighingKey = (date: string): string => `belay-weighing-${date}`;
+// Health keeps one store for every app on the phone, and a weigh-in's sync identifier is its day:
+// two accounts (or one account on two instances) with Health on would replace and delete each
+// other's samples. The identifier also carries this tag of the account database's name, which
+// names both. FNV-1a on 32 bits: a clash between the few accounts of one phone is a one in four
+// billion chance, and the tag stays the same across launches.
+export function ownerOf(name: string): string {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < name.length; i++) {
+    hash ^= name.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return (hash >>> 0).toString(16).padStart(8, "0");
+}
+// The record is the account database's own, so its keys need no owner.
 export const keyOf = (o: HealthObject): string =>
   o.kind === "workout" || o.kind === "workoutRemoved" ? sessionKey(o.id) : weighingKey(o.date);
 
@@ -18,6 +32,7 @@ export type HealthPlanInput = {
   filled: Readonly<Record<string, unknown>>; // the days the import wrote
   allowed: { workouts: boolean; weighings: boolean };
   now: number;
+  owner: string; // ownerOf the account database's name
 };
 
 const ms = (iso: string | null) => (iso === null ? -Infinity : Date.parse(iso));
@@ -60,7 +75,7 @@ export function sampleTime(date: string, now: number): number {
 // What Health is asked to do, in the order the rows come: every write and removal that would
 // bring it in line with the phone's data, the types it refuses left out.
 export function planHealth(input: HealthPlanInput): HealthObject[] {
-  const { settings, written, filled, allowed } = input;
+  const { settings, written, filled, allowed, owner } = input;
   if (!settings.on) return [];
   const everything = settings.history !== "no";
   const from = settings.turnedOnAt ?? Infinity;
@@ -114,13 +129,14 @@ export function planHealth(input: HealthPlanInput): HealthObject[] {
         if (kept?.state === "weighing" && kept.kg === r.weightKg) continue;
         objects.push({
           kind: "weighing",
+          owner,
           date: r.date,
           kg: r.weightKg,
           at,
           version: versionOf(Date.parse(r.at), kept?.version),
         });
       } else if (kept?.state === "weighing") {
-        objects.push({ kind: "weighingRemoved", date: r.date });
+        objects.push({ kind: "weighingRemoved", owner, date: r.date });
       }
     }
   }
@@ -162,6 +178,7 @@ export function historyCounts(
     allowed: { workouts: true, weighings: true },
     // A sample's time does not count here, and the phone records nothing ahead of its clock.
     now: Infinity,
+    owner: "", // nor does whose it is: the record's keys carry none
   });
   const from = input.settings.turnedOnAt ?? Infinity;
   const fromDay = input.settings.turnedOnAt === null ? "9999-12-31" : toISODate(new Date(from));

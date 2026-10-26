@@ -78,7 +78,7 @@ enum Health {
                 return .written
             case .weighingRemoved(let w):
                 guard allowed(bodyMass) else { return .denied }
-                try await delete(bodyMass, "belay-weighing-\(w.date)")
+                try await delete(bodyMass, w.syncID)
                 return .removed
             }
         } catch {
@@ -122,7 +122,7 @@ enum Health {
             start: w.at,
             end: w.at,
             metadata: [
-                HKMetadataKeySyncIdentifier: "belay-weighing-\(w.date)",
+                HKMetadataKeySyncIdentifier: w.syncID,
                 HKMetadataKeySyncVersion: NSNumber(value: w.version),
                 HKMetadataKeyWasUserEntered: true,
             ]

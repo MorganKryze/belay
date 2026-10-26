@@ -6,6 +6,7 @@ import {
   finishedSpan,
   type HealthPlanInput,
   historyCounts,
+  ownerOf,
   planHealth,
   sampleTime,
   sessionKey,
@@ -71,6 +72,7 @@ const weight = (
   at,
 });
 const SETTINGS: HealthSettings = { ...HEALTH_OFF, on: true, turnedOnAt: ON };
+const OWNER = "0a1b2c3d";
 
 const input = (over: Partial<HealthPlanInput> = {}): HealthPlanInput => ({
   workouts: [],
@@ -81,6 +83,7 @@ const input = (over: Partial<HealthPlanInput> = {}): HealthPlanInput => ({
   filled: {},
   allowed: { workouts: true, weighings: true },
   now: NOW,
+  owner: OWNER,
   ...over,
 });
 // A session on the 24th, 18:00 to 19:00, with one set.
@@ -205,6 +208,7 @@ describe("which weigh-ins Health holds", () => {
     expect(planHealth(input({ weights: [weight("2026-10-20", 80.4)] }))).toEqual([
       {
         kind: "weighing",
+        owner: OWNER,
         date: "2026-10-20",
         kg: 80.4,
         at: new Date(2026, 9, 20, 8).getTime(),
@@ -231,7 +235,7 @@ describe("which weigh-ins Health holds", () => {
       ),
     ).toEqual([expect.objectContaining({ kind: "weighing", kg: 80.1, version: 8 })]);
     expect(planHealth(input({ weights: [weight("2026-10-25", null)], written }))).toEqual([
-      { kind: "weighingRemoved", date: "2026-10-25" },
+      { kind: "weighingRemoved", owner: OWNER, date: "2026-10-25" },
     ]);
   });
 
@@ -247,8 +251,22 @@ describe("which weigh-ins Health holds", () => {
       [weighingKey("2026-10-25")]: { state: "weighing", version: 7, kg: 80.4 } as Written,
     };
     expect(plan([weight("2026-10-25", 401)], written)).toEqual([
-      { kind: "weighingRemoved", date: "2026-10-25" },
+      { kind: "weighingRemoved", owner: OWNER, date: "2026-10-25" },
     ]);
+  });
+
+  it("two accounts, or one account on two instances, write a day under distinct identifiers", () => {
+    const a = ownerOf("belay.0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d01@https://belay.example");
+    const b = ownerOf("belay.0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d02@https://belay.example");
+    const elsewhere = ownerOf("belay.0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d01@https://gym.example");
+    for (const owner of [a, b, elsewhere]) expect(owner).toMatch(/^[0-9a-f]{8}$/);
+    expect(new Set([a, b, elsewhere]).size).toBe(3);
+    // Stable across launches: the same name always gives the same tag.
+    expect(ownerOf("belay.user-a")).toBe(ownerOf("belay.user-a"));
+    const day = (owner: string) =>
+      planHealth(input({ weights: [weight("2026-10-25", 80.4)], owner }))[0];
+    expect(day(a)).toMatchObject({ kind: "weighing", owner: a, date: "2026-10-25" });
+    expect(day(b)).toMatchObject({ kind: "weighing", owner: b, date: "2026-10-25" });
   });
 
   it("a day the import filled is never written back, even edited", () => {
