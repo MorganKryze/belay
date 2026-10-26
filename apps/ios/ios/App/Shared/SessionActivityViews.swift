@@ -271,45 +271,23 @@ struct SessionLockScreenView: View {
                     .fill(accent)
                     .frame(width: 22, height: 22 * BelayMark.aspect)
                     .accessibilityHidden(true)
-                VStack(alignment: .leading, spacing: 0) {
-                    Text(look.title)
-                        .font(.system(size: 17 * k, weight: .semibold))
-                        .foregroundStyle(SessionPalette.ink)
-                    // One line at any text size: the session's name gives way first.
-                    Text(look.detail)
-                        .font(.system(size: 15 * k, weight: .medium))
-                        .foregroundStyle(muted)
-                    if let line = look.staleLine {
+                if let line = look.staleLine {
+                    // The line asking to open the app runs under the status word too, so it stays
+                    // whole at large text sizes.
+                    VStack(alignment: .leading, spacing: 0) {
+                        HStack(alignment: .lastTextBaseline, spacing: 12) {
+                            names(look)
+                            status(look)
+                        }
                         Text(line)
                             .font(.system(size: 14 * k, weight: .semibold))
                             .foregroundStyle(SessionPalette.ink)
+                            .lineLimit(1)
                             .padding(.top, 3)
                     }
-                }
-                .lineLimit(1)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .accessibilityElement(children: .combine)
-                if look.word != nil || look.showsClock {
-                    VStack(alignment: .trailing, spacing: 0) {
-                        if let word = look.word {
-                            HStack(spacing: 4) {
-                                if look.glyph == .pause {
-                                    Image(systemName: "pause.fill")
-                                        .font(.system(size: 11 * k, weight: .bold))
-                                        .accessibilityHidden(true)
-                                }
-                                Text(word).lineLimit(1)
-                            }
-                            .font(.system(size: 13 * k, weight: .semibold))
-                            .foregroundStyle(color(look.wordTone))
-                        }
-                        if look.showsClock {
-                            SessionClock(look: look, size: (look.restWindow != nil ? 34 : 28) * k)
-                                .foregroundStyle(color(look.clockTone))
-                        }
-                    }
-                    .fixedSize()
-                    .accessibilityElement(children: .combine)
+                } else {
+                    names(look)
+                    status(look)
                 }
             }
             if look.showsClock && look.restWindow != nil {
@@ -319,6 +297,46 @@ struct SessionLockScreenView: View {
         .padding(14)
         // Every state keeps the same height: only the content changes, so nothing jumps.
         .frame(maxWidth: .infinity, minHeight: 98)
+    }
+
+    // One line at any text size: the session's name gives way first.
+    private func names(_ look: SessionLook) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(look.title)
+                .font(.system(size: 17 * k, weight: .semibold))
+                .foregroundStyle(SessionPalette.ink)
+            Text(look.detail)
+                .font(.system(size: 15 * k, weight: .medium))
+                .foregroundStyle(muted)
+        }
+        .lineLimit(1)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
+    }
+
+    @ViewBuilder private func status(_ look: SessionLook) -> some View {
+        if look.word != nil || look.showsClock {
+            VStack(alignment: .trailing, spacing: 0) {
+                if let word = look.word {
+                    HStack(spacing: 4) {
+                        if look.glyph == .pause {
+                            Image(systemName: "pause.fill")
+                                .font(.system(size: 11 * k, weight: .bold))
+                                .accessibilityHidden(true)
+                        }
+                        Text(word).lineLimit(1)
+                    }
+                    .font(.system(size: 13 * k, weight: .semibold))
+                    .foregroundStyle(color(look.wordTone))
+                }
+                if look.showsClock {
+                    SessionClock(look: look, size: (look.restWindow != nil ? 34 : 28) * k)
+                        .foregroundStyle(color(look.clockTone))
+                }
+            }
+            .fixedSize()
+            .accessibilityElement(children: .combine)
+        }
     }
 
     private var raised: Bool { dimmed && scheme == .dark }
