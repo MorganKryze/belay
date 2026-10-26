@@ -90,6 +90,9 @@ export function planHealth(input: HealthPlanInput): HealthObject[] {
       const key = sessionKey(w.id);
       const kept = written[key];
       const finished = finishedSpan(w, live.get(w.id) ?? 0);
+      // Ahead of the phone's clock, most likely a clock set back: it waits for the clock, and the
+      // one Health holds stays as it is.
+      if (finished && finished.endedAt > input.now + DAY) continue;
       // One Health would refuse is no session for it: left out, or removed if it was written.
       const span = finished && healthTakesSpan(finished, input.now) ? finished : null;
       if (span) {
