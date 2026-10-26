@@ -88,6 +88,16 @@ private func isSessionID(_ id: String) -> Bool {
     UUID(uuidString: id)?.uuidString.lowercased() == id
 }
 
+// The page dates sessions and weigh-ins from 1900-01-01, and 08:00 on that day east of UTC is still
+// 1899-12-31 in UTC. Nothing is more than a day ahead of this phone's clock, and a workout lasts a
+// day at most.
+private let earliest = Date(timeIntervalSince1970: -2_209_161_600) // 1899-12-31T00:00:00Z
+private let day: TimeInterval = 86_400
+
+private func isTime(_ date: Date) -> Bool {
+    date >= earliest && date <= Date().addingTimeInterval(day)
+}
+
 extension HealthObject: Decodable {
     private enum Keys: String, CodingKey { case kind }
 
@@ -96,7 +106,9 @@ extension HealthObject: Decodable {
         case .workout:
             try expectKeys(decoder, ["kind", "id", "startedAt", "endedAt", "version"])
             let w = try HealthWorkout(from: decoder)
-            guard isSessionID(w.id), w.endedAt > w.startedAt, w.version > 0 else {
+            guard isSessionID(w.id), isTime(w.startedAt), isTime(w.endedAt), w.endedAt > w.startedAt,
+                  w.endedAt.timeIntervalSince(w.startedAt) <= day, w.version > 0
+            else {
                 throw refuse(decoder, "workout out of range")
             }
             self = .workout(w)
@@ -108,7 +120,7 @@ extension HealthObject: Decodable {
         case .weighing:
             try expectKeys(decoder, ["kind", "date", "kg", "at", "version"])
             let w = try HealthWeighing(from: decoder)
-            guard isDay(w.date), w.kg.isFinite, (20...400).contains(w.kg), w.version > 0 else {
+            guard isDay(w.date), w.kg.isFinite, (20...400).contains(w.kg), isTime(w.at), w.version > 0 else {
                 throw refuse(decoder, "weighing out of range")
             }
             self = .weighing(w)
@@ -140,10 +152,9 @@ extension HealthRequest: Decodable {
             self = .apply(objects)
         case .readWeighings:
             try expectKeys(decoder, ["op", "anchor", "since"])
-            self = .readWeighings(
-                anchor: try c.decodeIfPresent(String.self, forKey: .anchor),
-                since: try c.decode(Date.self, forKey: .since)
-            )
+            let since = try c.decode(Date.self, forKey: .since)
+            guard isTime(since) else { throw refuse(decoder, "since out of range") }
+            self = .readWeighings(anchor: try c.decodeIfPresent(String.self, forKey: .anchor), since: since)
         }
     }
 }
