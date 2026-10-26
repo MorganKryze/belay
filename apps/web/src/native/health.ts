@@ -5,7 +5,7 @@ import type { AccountDb } from "@/sync/db";
 import { BelayNative } from "./plugin";
 
 // Times are epoch milliseconds, dates YYYY-MM-DD, weights kilograms; a weigh-in's owner tags the
-// account and instance in its sync identifier (8 hex digits).
+// account in its sync identifier (8 hex digits).
 export type HealthAccess = "allowed" | "denied" | "undetermined";
 export type HealthStatus = { available: boolean; workouts: HealthAccess; weighings: HealthAccess };
 export type HealthObject =
@@ -144,6 +144,13 @@ export const setImportOn = (db: AccountDb, on: boolean, now: number) =>
 
 export const setHistory = (db: AccountDb, history: HealthSettings["history"]) =>
   changeSettings(db, (s) => (s.on ? { ...s, history } : s));
+
+// The run's end: checked and written in one transaction, so a turn-off and on again in between
+// never marks the new turn-on's history sent.
+export const markHistorySent = (db: AccountDb, turnedOnAt: number | null) =>
+  changeSettings(db, (s) =>
+    s.on && s.history === "asked" && s.turnedOnAt === turnedOnAt ? { ...s, history: "sent" } : s,
+  );
 
 // Merges what Health confirmed into the record, in one transaction.
 export async function recordWritten(

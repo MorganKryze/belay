@@ -19,6 +19,7 @@ import {
   healthProgress,
   IMPORT_KEY,
   localDayStart,
+  markHistorySent,
   readHealth,
   recordWritten,
   requestHealthRun,
@@ -62,6 +63,24 @@ describe("the Health state", () => {
       turnedOnAt: NOW,
       history: "sent",
     });
+  });
+
+  it("the history is marked sent only for the turn-on that asked for it", async () => {
+    await setHealthOn(db, true, NOW);
+    await setHistory(db, "asked");
+    await setHealthOn(db, false, NOW);
+    await setHealthOn(db, true, NOW + 60_000);
+    await setHistory(db, "asked");
+    await markHistorySent(db, NOW);
+    expect((await readHealth(db)).settings.history).toBe("asked");
+    await markHistorySent(db, NOW + 60_000);
+    expect((await readHealth(db)).settings.history).toBe("sent");
+  });
+
+  it("the history is never marked sent while it was not asked", async () => {
+    await setHealthOn(db, true, NOW);
+    await markHistorySent(db, NOW);
+    expect((await readHealth(db)).settings.history).toBe("no");
   });
 
   it("turning off turns the import off and keeps the record of what was written", async () => {

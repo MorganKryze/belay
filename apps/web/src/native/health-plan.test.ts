@@ -187,6 +187,22 @@ describe("which sessions Health holds", () => {
     ]);
   });
 
+  it("a session ahead of the phone's clock waits, and one Health holds stays there", () => {
+    const all = { ...SETTINGS, history: "asked" } as const;
+    const written = { [sessionKey(W1)]: { state: "workout", version: 5, ...SPAN } as Written };
+    // The phone's clock set back two days: the session, edited since, now ends in its future.
+    const moved = { ...DONE, endedAt: iso(2026, 10, 24, 19, 30) };
+    const now = SPAN.endedAt - 2 * 86_400_000;
+    const plan = (w: WorkoutRow) =>
+      planHealth(input({ workouts: [w], sets: [set(W1, 0)], settings: all, written, now }));
+    expect(plan(moved)).toEqual([]);
+    expect(plan(DONE)).toEqual([]);
+    // Back on time, the edit goes.
+    expect(
+      planHealth(input({ workouts: [moved], sets: [set(W1, 0)], settings: all, written })),
+    ).toHaveLength(1);
+  });
+
   it("nothing is planned while the setting is off, and a refused type is left out", () => {
     const data = { workouts: [DONE], sets: [set(W1, 0)], weights: [weight("2026-10-25", 80.4)] };
     expect(planHealth(input({ ...data, settings: { ...SETTINGS, on: false } }))).toEqual([]);
@@ -255,14 +271,14 @@ describe("which weigh-ins Health holds", () => {
     ]);
   });
 
-  it("two accounts, or one account on two instances, write a day under distinct identifiers", () => {
-    const a = ownerOf("belay.0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d01@https://belay.example");
-    const b = ownerOf("belay.0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d02@https://belay.example");
-    const elsewhere = ownerOf("belay.0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d01@https://gym.example");
-    for (const owner of [a, b, elsewhere]) expect(owner).toMatch(/^[0-9a-f]{8}$/);
-    expect(new Set([a, b, elsewhere]).size).toBe(3);
-    // Stable across launches: the same name always gives the same tag.
-    expect(ownerOf("belay.user-a")).toBe(ownerOf("belay.user-a"));
+  it("two accounts write a day under distinct identifiers; one account under one, on any instance", () => {
+    // The server's id for the account: the same at every address of that server.
+    const a = ownerOf("0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d01");
+    const b = ownerOf("0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d02");
+    for (const owner of [a, b]) expect(owner).toMatch(/^[0-9a-f]{8}$/);
+    expect(a).not.toBe(b);
+    // Stable across launches: the same id always gives the same tag.
+    expect(ownerOf("0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d01")).toBe(a);
     const day = (owner: string) =>
       planHealth(input({ weights: [weight("2026-10-25", 80.4)], owner }))[0];
     expect(day(a)).toMatchObject({ kind: "weighing", owner: a, date: "2026-10-25" });

@@ -1,6 +1,7 @@
 import { toISODate } from "@belay/shared/body/dates";
 import { IDBFactory } from "fake-indexeddb";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { writeInstance } from "@/lib/platform";
 import { type AccountDb, openAccountDb, recordChange } from "@/sync/db";
 
 // Capacitor's proxy answers every property, `then` included: a promise resolved with it would
@@ -73,8 +74,8 @@ async function weighIns(count: number, first = 0) {
     await tx.store.put({ date: dayAfter(n), weightKg: 80, at: "2026-10-01T06:00:00.000Z" });
   await tx.done;
 }
-function runner(changed = vi.fn()) {
-  const r = createHealthRunner(db, changed, () => NOW);
+function runner(changed = vi.fn(), on = db) {
+  const r = createHealthRunner(on, "user-a", changed, () => NOW);
   runners.push(r);
   return { r, changed };
 }
@@ -106,6 +107,37 @@ describe("the run", () => {
     expect(applied()).toEqual([]);
   });
 
+  it("unavailable: the last account's « n sur N » and pending count go", async () => {
+    await setHealthOn(db, true, ON);
+    healthProgress.set({ sending: { done: 100, total: 150 }, pending: 4 });
+    health(undefined, { available: false, workouts: "undetermined", weighings: "undetermined" });
+    const { r } = runner();
+    r.request();
+    await vi.waitFor(() => expect(statusCalls()).toBe(1));
+    await settle();
+    expect(healthProgress.get()).toEqual({ sending: null, pending: 0 });
+  });
+
+  it("stopped between two batches, its « n sur N » goes", async () => {
+    await weighIns(150, -200);
+    await setHealthOn(db, true, ON);
+    await setHistory(db, "asked");
+    let stop = () => {};
+    native.health.mockImplementation(async (req: HealthRequest) => {
+      if (req.op === "status") return ALLOWED;
+      if (req.op !== "apply") throw new Error(req.op);
+      stop();
+      return { outcomes: req.objects.map(() => "written") };
+    });
+    const { r } = runner();
+    stop = () => r.stop();
+    r.request();
+    await vi.waitFor(() => expect(applied()).toHaveLength(1));
+    await settle();
+    expect(applied()).toHaveLength(1);
+    expect(healthProgress.get()).toEqual({ sending: null, pending: 0 });
+  });
+
   it("writes in batches of 100 and records only what Health confirmed", async () => {
     await setHealthOn(db, true, ON);
     await weighIns(250);
@@ -130,8 +162,34 @@ describe("the run", () => {
     r.request();
     await ran(changed);
     expect(applied()[0]).toEqual([
-      expect.objectContaining({ kind: "weighing", owner: ownerOf(db.name), date: dayAfter(0) }),
+      expect.objectContaining({ kind: "weighing", owner: ownerOf("user-a"), date: dayAfter(0) }),
     ]);
+  });
+
+  it("one account reached at two addresses of its server sends its weigh-ins as one owner", async () => {
+    vi.stubGlobal("Capacitor", { isNativePlatform: () => true });
+    const owners: string[] = [];
+    try {
+      for (const instance of ["https://belay.example", "https://gym.example"]) {
+        writeInstance(instance);
+        const at = await openAccountDb("user-a");
+        await setHealthOn(at, true, ON);
+        const tx = at.transaction("weights", "readwrite");
+        await tx.store.put({ date: dayAfter(0), weightKg: 80, at: "2026-10-01T06:00:00.000Z" });
+        await tx.done;
+        native.health.mockReset();
+        health();
+        const { r, changed } = runner(vi.fn(), at);
+        r.request();
+        await ran(changed);
+        owners.push((applied()[0]![0] as { owner: string }).owner);
+        at.close();
+      }
+    } finally {
+      vi.unstubAllGlobals();
+      localStorage.clear();
+    }
+    expect(owners).toEqual([ownerOf("user-a"), ownerOf("user-a")]);
   });
 
   it("a request during a run gives exactly one more run", async () => {
@@ -188,6 +246,24 @@ describe("the run", () => {
     r.request();
     await ran(changed);
     expect((await readHealth(db)).settings).toMatchObject({ on: true, history: "no" });
+  });
+
+  it("turned off and on again between two batches, the old history stops going", async () => {
+    await weighIns(150, -200);
+    await setHealthOn(db, true, ON);
+    await setHistory(db, "asked");
+    native.health.mockImplementation(async (req: HealthRequest) => {
+      if (req.op === "status") return ALLOWED;
+      if (req.op !== "apply") throw new Error(req.op);
+      await setHealthOn(db, false, NOW);
+      await setHealthOn(db, true, NOW);
+      return { outcomes: req.objects.map(() => "written") };
+    });
+    const { r, changed } = runner();
+    r.request();
+    await ran(changed);
+    expect(applied()).toHaveLength(1);
+    expect(healthProgress.get()).toEqual({ sending: null, pending: 0 });
   });
 
   it("a run cut short by the database closing leaves no « n sur N » on screen", async () => {

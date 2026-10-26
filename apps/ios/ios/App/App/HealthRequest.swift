@@ -36,7 +36,7 @@ struct HealthWeighingRemoved: Decodable, Equatable {
 }
 
 // Health keeps one store for the whole phone, so a weigh-in's sync identifier carries the tag of
-// the account and instance that wrote it: two accounts never replace or delete each other's day.
+// the account that wrote it: two accounts never replace or delete each other's day.
 extension HealthWeighing { var syncID: String { weighingSyncID(owner, date) } }
 extension HealthWeighingRemoved { var syncID: String { weighingSyncID(owner, date) } }
 private func weighingSyncID(_ owner: String, _ date: String) -> String {
@@ -109,7 +109,8 @@ private func isSessionID(_ id: String) -> Bool {
 // The page dates sessions and weigh-ins from 1900-01-01, and 08:00 on that day east of UTC is still
 // 1899-12-31 in UTC. Nothing is more than a day ahead of this phone's clock, and a workout lasts a
 // day at most.
-private let earliest = Date(timeIntervalSince1970: -2_209_161_600) // 1899-12-31T00:00:00Z
+// The page's floor is Date.UTC(1899, 11, 31): the same instant, so both refuse the same times.
+private let earliest = Date(timeIntervalSince1970: -2_209_075_200) // 1899-12-31T00:00:00Z
 private let day: TimeInterval = 86_400
 
 private func isTime(_ date: Date) -> Bool {
