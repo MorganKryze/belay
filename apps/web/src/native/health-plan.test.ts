@@ -164,6 +164,26 @@ describe("which sessions Health holds", () => {
     expect(planHealth(input({ workouts: [later], sets: [set(W1, 0)], written }))).toHaveLength(1);
   });
 
+  it("a session Health would refuse is left out, and one it holds is removed from it", () => {
+    const all = { ...SETTINGS, history: "asked" } as const;
+    const plan = (w: WorkoutRow, written: Record<string, Written> = {}) =>
+      planHealth(input({ workouts: [w], sets: [set(W1, 0)], settings: all, written }));
+    // Exactly a day is the longest workout Health takes.
+    expect(plan(workout(W1, iso(2026, 10, 23, 18), iso(2026, 10, 24, 18)))).toHaveLength(1);
+    expect(plan(workout(W1, iso(2026, 10, 23, 18), iso(2026, 10, 24, 18, 1)))).toEqual([]);
+    // Before 1899-12-31 in UTC, or ending more than a day after the phone's clock.
+    expect(plan(workout(W1, "1899-12-30T23:00:00.000Z", "1899-12-31T01:00:00.000Z"))).toEqual([]);
+    expect(plan(workout(W1, "1899-12-31T00:00:00.000Z", "1899-12-31T01:00:00.000Z"))).toHaveLength(
+      1,
+    );
+    const ahead = new Date(NOW + 86_400_000 + 60_000).toISOString();
+    expect(plan(workout(W1, new Date(NOW).toISOString(), ahead))).toEqual([]);
+    const written = { [sessionKey(W1)]: { state: "workout", version: 5, ...SPAN } as Written };
+    expect(plan({ ...DONE, endedAt: iso(2026, 10, 26, 19) }, written)).toEqual([
+      { kind: "workoutRemoved", id: W1 },
+    ]);
+  });
+
   it("nothing is planned while the setting is off, and a refused type is left out", () => {
     const data = { workouts: [DONE], sets: [set(W1, 0)], weights: [weight("2026-10-25", 80.4)] };
     expect(planHealth(input({ ...data, settings: { ...SETTINGS, on: false } }))).toEqual([]);
@@ -211,6 +231,22 @@ describe("which weigh-ins Health holds", () => {
       ),
     ).toEqual([expect.objectContaining({ kind: "weighing", kg: 80.1, version: 8 })]);
     expect(planHealth(input({ weights: [weight("2026-10-25", null)], written }))).toEqual([
+      { kind: "weighingRemoved", date: "2026-10-25" },
+    ]);
+  });
+
+  it("a weigh-in Health would refuse is left out, and one it holds is removed from it", () => {
+    const all = { ...SETTINGS, history: "asked" } as const;
+    const plan = (rows: WeightRow[], written: Record<string, Written> = {}) =>
+      planHealth(input({ weights: rows, settings: all, written }));
+    expect(plan([weight("2026-10-25", 20), weight("2026-10-24", 400)])).toHaveLength(2);
+    expect(plan([weight("2026-10-25", 19.9), weight("2026-10-24", 400.1)])).toEqual([]);
+    // 08:00 on that day is before 1899-12-31 in UTC in every time zone.
+    expect(plan([weight("1899-12-29", 80)])).toEqual([]);
+    const written = {
+      [weighingKey("2026-10-25")]: { state: "weighing", version: 7, kg: 80.4 } as Written,
+    };
+    expect(plan([weight("2026-10-25", 401)], written)).toEqual([
       { kind: "weighingRemoved", date: "2026-10-25" },
     ]);
   });

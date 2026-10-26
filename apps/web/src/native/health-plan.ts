@@ -34,6 +34,17 @@ export function finishedSpan(
   return endedAt > startedAt ? { startedAt, endedAt } : null;
 }
 
+// What the native side takes, as it checks it: a batch with one object outside these bounds is
+// refused whole, so such an object is never sent. Times from 1899-12-31 in UTC (08:00 on
+// 1900-01-01, the earliest day Belay keeps, east of UTC) to a day past the phone's clock, a
+// workout of a day at most, a weigh-in of 20 to 400 kg.
+const EARLIEST = Date.UTC(1899, 11, 31);
+const DAY = 86_400_000;
+const isTime = (t: number, now: number) => t >= EARLIEST && t <= now + DAY;
+const healthTakesSpan = (s: { startedAt: number; endedAt: number }, now: number) =>
+  isTime(s.startedAt, now) && isTime(s.endedAt, now) && s.endedAt - s.startedAt <= DAY;
+const healthTakesKg = (kg: number) => kg >= 20 && kg <= 400;
+
 // Always above the last version this phone wrote, even with a clock set back; otherwise the
 // latest time written on the row, which every device derives alike from the merged data.
 export const versionOf = (latest: number, last: number | undefined): number =>
@@ -63,7 +74,9 @@ export function planHealth(input: HealthPlanInput): HealthObject[] {
     for (const w of input.workouts) {
       const key = sessionKey(w.id);
       const kept = written[key];
-      const span = finishedSpan(w, live.get(w.id) ?? 0);
+      const finished = finishedSpan(w, live.get(w.id) ?? 0);
+      // One Health would refuse is no session for it: left out, or removed if it was written.
+      const span = finished && healthTakesSpan(finished, input.now) ? finished : null;
       if (span) {
         // Eligible: new since the setting went on, everything after the history action, and
         // always what this phone already wrote, so its edits follow.
@@ -95,14 +108,15 @@ export function planHealth(input: HealthPlanInput): HealthObject[] {
       if (r.date in filled) continue;
       const key = weighingKey(r.date);
       const kept = written[key];
-      if (r.weightKg !== null) {
+      const at = sampleTime(r.date, input.now);
+      if (r.weightKg !== null && healthTakesKg(r.weightKg) && isTime(at, input.now)) {
         if (!everything && r.date < fromDay && !kept) continue;
         if (kept?.state === "weighing" && kept.kg === r.weightKg) continue;
         objects.push({
           kind: "weighing",
           date: r.date,
           kg: r.weightKg,
-          at: sampleTime(r.date, input.now),
+          at,
           version: versionOf(Date.parse(r.at), kept?.version),
         });
       } else if (kept?.state === "weighing") {
@@ -146,7 +160,8 @@ export function historyCounts(
     ...input,
     settings: { ...input.settings, on: true, history: "asked" },
     allowed: { workouts: true, weighings: true },
-    now: 0, // a sample's time does not count here
+    // A sample's time does not count here, and the phone records nothing ahead of its clock.
+    now: Infinity,
   });
   const from = input.settings.turnedOnAt ?? Infinity;
   const fromDay = input.settings.turnedOnAt === null ? "9999-12-31" : toISODate(new Date(from));
