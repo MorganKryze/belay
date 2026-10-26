@@ -190,6 +190,24 @@ describe("the run", () => {
     expect((await readHealth(db)).settings).toMatchObject({ on: true, history: "no" });
   });
 
+  it("turned off and on again between two batches, the old history stops going", async () => {
+    await weighIns(150, -200);
+    await setHealthOn(db, true, ON);
+    await setHistory(db, "asked");
+    native.health.mockImplementation(async (req: HealthRequest) => {
+      if (req.op === "status") return ALLOWED;
+      if (req.op !== "apply") throw new Error(req.op);
+      await setHealthOn(db, false, NOW);
+      await setHealthOn(db, true, NOW);
+      return { outcomes: req.objects.map(() => "written") };
+    });
+    const { r, changed } = runner();
+    r.request();
+    await ran(changed);
+    expect(applied()).toHaveLength(1);
+    expect(healthProgress.get()).toEqual({ sending: null, pending: 0 });
+  });
+
   it("a run cut short by the database closing leaves no « n sur N » on screen", async () => {
     await weighIns(3, -10);
     await setHealthOn(db, true, ON);

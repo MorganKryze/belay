@@ -67,8 +67,10 @@ export function createHealthRunner(
     healthProgress.set({ sending: history && total > 0 ? { done: 0, total } : null, pending: 0 });
     for (let i = 0; i < total; i += HEALTH_BATCH) {
       if (stopped) return;
-      // Turned off meanwhile: nothing more goes. A batch already handed to iOS completes.
-      if (!(await readHealth(db)).settings.on) {
+      // Turned off meanwhile, or off and on again (a new turn-on with its own history choice):
+      // nothing more of this plan goes. A batch already handed to iOS completes.
+      const current = (await readHealth(db)).settings;
+      if (!current.on || current.turnedOnAt !== settings.turnedOnAt) {
         off = true;
         break;
       }
