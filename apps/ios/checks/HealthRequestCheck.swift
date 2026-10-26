@@ -71,10 +71,11 @@ struct HealthRequestCheck {
 
         // The page dates weigh-ins and sessions from 1900-01-01; 08:00 that day east of UTC is
         // still 1899-12-31 in UTC.
-        let floor: Int64 = -2_209_161_600_000 // 1899-12-31T00:00:00Z
+        let floor: Int64 = -2_209_075_200_000 // 1899-12-31T00:00:00Z, the page's Date.UTC(1899, 11, 31)
         let now = Int64(Date().timeIntervalSince1970 * 1000)
         let hour: Int64 = 3_600_000
         check("a weigh-in at 08:00 on 1900-01-01 in Tokyo decodes", apply(weighing(at: floor + 23 * hour)) != nil)
+        check("a weigh-in at 1899-12-31T00:00Z exactly decodes", apply(weighing(at: floor)) != nil)
         check("a weigh-in before 1899-12-31 is refused", apply(weighing(at: floor - 1)) == nil)
         check("a weigh-in two days ahead is refused", apply(weighing(at: now + 48 * hour)) == nil)
         check("a weigh-in an hour ahead decodes", apply(weighing(at: now + hour)) != nil)
