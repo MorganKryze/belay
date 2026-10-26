@@ -6,6 +6,7 @@ import {
   HEALTH_BATCH,
   type HealthObject,
   type HealthOutcome,
+  type HealthProgress,
   health,
   healthProgress,
   markHistorySent,
@@ -16,6 +17,8 @@ import {
 import { afterOutcome, keyOf, ownerOf, planHealth } from "./health-plan";
 
 export type HealthRunner = { request(): void; foreground(): void; stop(): void };
+
+const IDLE: HealthProgress = { sending: null, pending: 0 };
 
 type Type = "workouts" | "weighings";
 const typeOf = (o: HealthObject): Type =>
@@ -37,10 +40,11 @@ export function createHealthRunner(
 
   async function once(): Promise<void> {
     const { settings, written, imported } = await readHealth(db);
-    // Off: not one call to Health.
-    if (!settings.on) return healthProgress.set({ sending: null, pending: 0 });
+    // Off: not one call to Health. Off, unavailable or stopped, no earlier run's progress (perhaps
+    // another account's) stays on screen.
+    if (!settings.on) return healthProgress.set(IDLE);
     const status = await health({ op: "status" });
-    if (!status.available) return;
+    if (!status.available) return healthProgress.set(IDLE);
     const tx = db.transaction(["workouts", "sets", "weights"]);
     const [workouts, sets, weights] = await Promise.all([
       tx.objectStore("workouts").getAll(),
@@ -67,7 +71,7 @@ export function createHealthRunner(
     let off = false;
     healthProgress.set({ sending: history && total > 0 ? { done: 0, total } : null, pending: 0 });
     for (let i = 0; i < total; i += HEALTH_BATCH) {
-      if (stopped) return;
+      if (stopped) return healthProgress.set(IDLE);
       // Turned off meanwhile, or off and on again (a new turn-on with its own history choice):
       // nothing more of this plan goes. A batch already handed to iOS completes.
       const current = (await readHealth(db)).settings;

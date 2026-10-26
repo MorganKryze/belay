@@ -107,6 +107,37 @@ describe("the run", () => {
     expect(applied()).toEqual([]);
   });
 
+  it("unavailable: the last account's « n sur N » and pending count go", async () => {
+    await setHealthOn(db, true, ON);
+    healthProgress.set({ sending: { done: 100, total: 150 }, pending: 4 });
+    health(undefined, { available: false, workouts: "undetermined", weighings: "undetermined" });
+    const { r } = runner();
+    r.request();
+    await vi.waitFor(() => expect(statusCalls()).toBe(1));
+    await settle();
+    expect(healthProgress.get()).toEqual({ sending: null, pending: 0 });
+  });
+
+  it("stopped between two batches, its « n sur N » goes", async () => {
+    await weighIns(150, -200);
+    await setHealthOn(db, true, ON);
+    await setHistory(db, "asked");
+    let stop = () => {};
+    native.health.mockImplementation(async (req: HealthRequest) => {
+      if (req.op === "status") return ALLOWED;
+      if (req.op !== "apply") throw new Error(req.op);
+      stop();
+      return { outcomes: req.objects.map(() => "written") };
+    });
+    const { r } = runner();
+    stop = () => r.stop();
+    r.request();
+    await vi.waitFor(() => expect(applied()).toHaveLength(1));
+    await settle();
+    expect(applied()).toHaveLength(1);
+    expect(healthProgress.get()).toEqual({ sending: null, pending: 0 });
+  });
+
   it("writes in batches of 100 and records only what Health confirmed", async () => {
     await setHealthOn(db, true, ON);
     await weighIns(250);
