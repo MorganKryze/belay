@@ -139,6 +139,10 @@ private struct SessionClock: View {
     let size: CGFloat
     var showsHours = true
 
+    // « 102:00 » at 15 pt is 52.7 pt wide, beside the camera's 52.33; « 12:00 » at 12.5 pt is 36.7,
+    // in the minimal's 36.67. A fifth of a point less between characters makes room for both.
+    static let islandTracking: CGFloat = -0.2
+
     var body: some View {
         // A timer text fills the width it is given, so it sits over an invisible copy of its widest
         // value: the digits never push their neighbours or clip.
@@ -150,9 +154,24 @@ private struct SessionClock: View {
             .lineLimit(1)
     }
 
+    // Every digit a zero: with monospaced digits a zero is as wide as any other, so « 12:00 »
+    // gives « 00:00 ».
     private var widest: String {
-        if look.restWindow != nil { return "0:00" }
-        return showsHours ? "0:00:00" : "00:00"
+        String(Self.written(reach, showsHours: showsHours).map { $0.isNumber ? "0" : $0 })
+    }
+
+    // The most this clock can show before the app describes the session again.
+    private var reach: TimeInterval {
+        let state = look.state
+        if let window = look.restWindow {
+            return window.upperBound.timeIntervalSince(window.lowerBound)
+        }
+        if let pausedAt = state.pausedAt {
+            return pausedAt.timeIntervalSince(state.startedAt)
+        }
+        // The session's time runs until the description goes stale, which the page sets at most
+        // six hours after the last set (its forgotten-session mark); the clock goes then.
+        return Date().addingTimeInterval(6 * 3600).timeIntervalSince(state.startedAt)
     }
 
     // A clock a pause holds never moves, so it is written out rather than timed: the timer's own
@@ -161,9 +180,9 @@ private struct SessionClock: View {
         let state = look.state
         if let window = look.restWindow {
             if state.restFrozen, let pausedAt = state.pausedAt {
-                Text(verbatim: Self.written(window.upperBound.timeIntervalSince(max(pausedAt, window.lowerBound)), showsHours: false))
+                Text(verbatim: Self.written(window.upperBound.timeIntervalSince(max(pausedAt, window.lowerBound)), showsHours: showsHours))
             } else {
-                Text(timerInterval: window, countsDown: true)
+                Text(timerInterval: window, countsDown: true, showsHours: showsHours)
             }
         } else if let pausedAt = state.pausedAt {
             Text(verbatim: Self.written(pausedAt.timeIntervalSince(state.startedAt), showsHours: showsHours))
@@ -426,6 +445,7 @@ struct SessionCompactTrailing: View {
         case .live:
             // Minutes past the hour (« 62:10 »): an hour's digits do not fit beside the camera.
             SessionClock(look: look, size: 15, showsHours: false)
+                .tracking(SessionClock.islandTracking)
                 .foregroundStyle(islandColor(look.clockTone))
         case .restOver:
             Image(systemName: "checkmark")
@@ -451,6 +471,7 @@ struct SessionMinimalView: View {
         let look = SessionLook(state, isStale: isStale)
         if look.restRunning {
             SessionClock(look: look, size: 12.5)
+                .tracking(SessionClock.islandTracking)
                 .foregroundStyle(SessionPalette.islandAccent)
                 .accessibilityElement(children: .combine)
         } else {

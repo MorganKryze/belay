@@ -93,15 +93,34 @@ enum ActivityDemo {
         )
     }
 
-    // Every state the Activity can show: the rest over is the rest gone stale at its end.
-    private static let renderStates: [(name: String, fixture: Fixture, isStale: Bool)] = [
-        ("due", .due, false),
-        ("rest", .rest, false),
-        ("rest-over", .rest, true),
-        ("paused-frozen", .paused, false),
-        ("paused-running", .pausedRunning, false),
-        ("done", .done, false),
-        ("stale", .stale, true),
+    private struct RenderState {
+        let name: String
+        let fixture: Fixture
+        var isStale = false
+        var change: (inout SessionActivityAttributes.ContentState, Date) -> Void = { _, _ in }
+    }
+
+    // Every state the Activity can show: the rest over is the rest gone stale at its end. Then the
+    // widest clocks: a 12-minute rest, running and held, and a session past 100 minutes.
+    private static let renderStates: [RenderState] = [
+        RenderState(name: "due", fixture: .due),
+        RenderState(name: "rest", fixture: .rest),
+        RenderState(name: "rest-over", fixture: .rest, isStale: true),
+        RenderState(name: "paused-frozen", fixture: .paused),
+        RenderState(name: "paused-running", fixture: .pausedRunning),
+        RenderState(name: "done", fixture: .done),
+        RenderState(name: "stale", fixture: .stale, isStale: true),
+        RenderState(name: "rest-long", fixture: .rest) { state, now in
+            state.restStart = now
+            state.restEnd = now.addingTimeInterval(720)
+        },
+        RenderState(name: "paused-frozen-long", fixture: .paused) { state, _ in
+            state.restEnd = state.pausedAt?.addingTimeInterval(720)
+            state.restStart = state.pausedAt
+        },
+        RenderState(name: "due-long", fixture: .due) { state, now in
+            state.startedAt = now.addingTimeInterval(-102 * 60)
+        },
     ]
 
     // Drawn in a window of the app's scene, behind the page, rather than by ImageRenderer: that
@@ -124,7 +143,8 @@ enum ActivityDemo {
             window.isHidden = false
             let now = Date()
             for item in renderStates {
-                guard let state = payload(item.fixture, now: now)?.state else { continue }
+                guard var state = payload(item.fixture, now: now)?.state else { continue }
+                item.change(&state, now)
                 for (scheme, schemeName) in [(ColorScheme.light, "light"), (.dark, "dark")] {
                     for (presentation, view) in presentations(state, isStale: item.isStale) {
                         let url = folder.appendingPathComponent("\(presentation)-\(item.name)-\(schemeName).png")
