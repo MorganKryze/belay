@@ -51,7 +51,6 @@ enum SessionPalette {
     static let ink = pair(0x1C1917, 0xF5F5F4)
     static let muted = pair(0x57534E, 0xA8A29E)
     static let accent = pair(0xC2410C, 0xFB923C)
-    static let track = pair(0xEDEBE8, 0x2A2724)
     static let edge = Color(UIColor { $0.userInterfaceStyle == .dark ? rgb(0x2E2B28) : .clear })
     // The always-on display dims the screen: the muted and orange words are raised to stay legible.
     static let dimmedMuted = Color(rgb(0xD6D3D1))
@@ -61,7 +60,6 @@ enum SessionPalette {
     static let islandInk = Color.white
     static let islandMuted = Color(rgb(0xA8A29E))
     static let islandAccent = Color(rgb(0xFB923C))
-    static let islandTrack = Color(rgb(0x3A3633))
 
     private static func pair(_ light: UInt32, _ dark: UInt32) -> Color {
         Color(UIColor { $0.userInterfaceStyle == .dark ? rgb(dark) : rgb(light) })
