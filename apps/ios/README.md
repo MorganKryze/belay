@@ -28,9 +28,9 @@ pnpm ios:open
 
 1. In Xcode, open **Settings › Accounts** and add your Apple ID.
 2. Keep your team out of git: copy `ios/local.example.xcconfig` to `ios/local.xcconfig`
-   (ignored) and put your Team ID there; Xcode then reads it. Or, the first time,
-   select the **App** target, then **Signing & Capabilities**. Under **Team**,
-   choose "<your name> (Personal Team)". Keep the bundle identifier
+   (ignored) and put your Team ID there; both targets read it. Your Team ID is the
+   Organizational Unit of your "Apple Development" certificate in Keychain Access. Don't pick the team under
+   **Signing & Capabilities**: Xcode writes it into the tracked project. Keep the bundle identifier
    `cloud.libresoftware.belay`; if Xcode says it is taken, add a suffix of your
    own (`cloud.libresoftware.belay.yourname`), and give the lock screen
    extension the same one (see [its identifier](#the-extensions-identifier)).
