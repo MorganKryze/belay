@@ -7,7 +7,14 @@ import type { Config } from "../config";
 import type { Db } from "../db/client";
 import { createSession, deleteSession, upsertUser } from "../db/identity";
 import { describeError } from "../log";
-import { CHALLENGE, NATIVE_STATE, nativeCallback, nativeCodes, type SigninFailure } from "./native";
+import {
+  CHALLENGE,
+  loggedInSince,
+  NATIVE_STATE,
+  nativeCallback,
+  nativeCodes,
+  type SigninFailure,
+} from "./native";
 import { hasRole, pickDisplayName, type OidcProvider } from "./oidc";
 import { safeReturnTo } from "./return-to";
 import {
@@ -27,8 +34,9 @@ const txSchema = z.object({
   state: z.string(),
   nonce: z.string(),
   returnTo: z.string(),
-  // Present only for the iPhone app: its S256 challenge, checked when it trades the code.
-  native: z.object({ challenge: z.string() }).optional(),
+  // Present only for the iPhone app: its S256 challenge, checked when it trades the code, and
+  // when its sign-in started (ms), which the provider's login must not predate.
+  native: z.object({ challenge: z.string(), started: z.number() }).optional(),
 });
 type Transaction = z.infer<typeof txSchema>;
 
@@ -131,7 +139,11 @@ export function authRoutes(cfg: Config, db: Db, getOidc: OidcProvider) {
     // address with its own challenge, and must not ride a session the browser already has.
     return beginLogin(
       c,
-      { state: NATIVE_STATE + client.randomState(), returnTo: "/", native: { challenge } },
+      {
+        state: NATIVE_STATE + client.randomState(),
+        returnTo: "/",
+        native: { challenge, started: Date.now() },
+      },
       { prompt: "login" },
     );
   });
@@ -161,6 +173,10 @@ export function authRoutes(cfg: Config, db: Db, getOidc: OidcProvider) {
     if (!claims) throw new Error("the token response carries no ID token claims");
 
     // Before anything is written, and nothing about the claims is logged.
+    if (tx.native && !loggedInSince(claims.auth_time, tx.native.started)) {
+      console.error("native sign-in refused: the ID token shows no login since the start");
+      return signinFailure(c, "failed");
+    }
     const { requiredRole, rolesClaim } = cfg.oidc;
     if (requiredRole && !hasRole(claims, rolesClaim, requiredRole)) {
       return signinFailure(c, "denied");

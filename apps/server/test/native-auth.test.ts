@@ -3,7 +3,13 @@ import { sql } from "drizzle-orm";
 import type { Hono } from "hono";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { createApp } from "../src/app";
-import { CODE_TTL_MS, MAX_PENDING, nativeCodes } from "../src/auth/native";
+import {
+  AUTH_TIME_SKEW_MS,
+  CODE_TTL_MS,
+  loggedInSince,
+  MAX_PENDING,
+  nativeCodes,
+} from "../src/auth/native";
 import { oidcProvider } from "../src/auth/oidc";
 import { SESSION_COOKIE } from "../src/auth/session";
 import { loadConfig } from "../src/config";
@@ -56,8 +62,15 @@ async function start(target: Hono = app, challenge = CHALLENGE) {
   };
 }
 
+// A login the provider has just shown, unless the test says otherwise.
+const seconds = (ms: number) => Math.floor(ms / 1000);
+
 async function idpRedirect(authUrl: URL, claims: Record<string, unknown>) {
-  nextClaims = { ...claims, nonce: authUrl.searchParams.get("nonce") };
+  nextClaims = {
+    auth_time: seconds(Date.now()),
+    ...claims,
+    nonce: authUrl.searchParams.get("nonce"),
+  };
   const res = await fetch(authUrl, { redirect: "manual" });
   return new URL(res.headers.get("location")!);
 }
@@ -172,6 +185,39 @@ describe("GET /auth/callback for the app", () => {
     expect(sessionCookies(res)).toEqual([]);
     expect(await counts(who)).toEqual({ users: 0, sessions: 0 });
     expect(printed(spy)).not.toContain(who);
+  });
+
+  // prompt=login only asks; the ID token's auth_time shows the provider did show its login.
+  it.each([
+    ["without auth_time", { auth_time: undefined }],
+    ["with an auth_time that is not a time", { auth_time: "now" }],
+    ["with a login from before the start, past a minute of clock drift", { auth_time: -61 }],
+  ])("an ID token %s comes back with failed and stores no one", async (_, claims) => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const who = sub();
+    const before = seconds(Date.now());
+    const { auth_time } = claims;
+    const res = await signIn({
+      sub: who,
+      auth_time: typeof auth_time === "number" ? before + auth_time : auth_time,
+    });
+    expect(location(res)).toBe("belay://auth?error=failed");
+    expect(sessionCookies(res)).toEqual([]);
+    expect(await counts(who)).toEqual({ users: 0, sessions: 0 });
+    expect(printed(spy)).not.toContain(who);
+  });
+
+  it("a login stamped up to a minute before the start, clocks apart, still signs in", async () => {
+    const res = await signIn({ sub: sub(), auth_time: seconds(Date.now()) - 59 });
+    expect(location(res)).toMatch(/^belay:\/\/auth\?code=[\w-]{43}$/);
+  });
+
+  it("the web sign-in does not ask for auth_time", async () => {
+    const web = await app.request("/auth/login");
+    const txCookie = cookiePair(web.headers.get("set-cookie")!);
+    const cb = await idpRedirect(new URL(location(web)!), { sub: sub(), auth_time: undefined });
+    const res = await app.request(cb.pathname + cb.search, { headers: { cookie: txCookie } });
+    expect(location(res)).toBe("/");
   });
 
   it("a provider error comes back with failed", async () => {
@@ -338,5 +384,21 @@ describe("nativeCodes", () => {
     codes.issue("last", CHALLENGE);
     expect(codes.redeem(first, VERIFIER)).toBeNull();
     expect(codes.redeem(second, VERIFIER)).toBe("second");
+  });
+});
+
+describe("loggedInSince", () => {
+  const started = 1_000_000_000_000;
+
+  it("takes a login up to a minute before the start, in seconds, and none older", () => {
+    expect(AUTH_TIME_SKEW_MS).toBe(60_000);
+    expect(loggedInSince(started / 1000 - 60, started)).toBe(true);
+    expect(loggedInSince(started / 1000 - 61, started)).toBe(false);
+    expect(loggedInSince(started / 1000 + 5, started)).toBe(true);
+  });
+
+  it("refuses a missing or unreadable auth_time", () => {
+    expect(loggedInSince(undefined, started)).toBe(false);
+    expect(loggedInSince(String(started / 1000), started)).toBe(false);
   });
 });
