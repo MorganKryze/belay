@@ -1,0 +1,161 @@
+// Which sessions and weigh-ins Health should hold, from the phone's own data: Belay's rules for
+// Apple Health, kept here so the native side only carries them out. No clock, no storage.
+import { toISODate } from "@belay/shared/body/dates";
+import type { SetRow, WeightRow, WorkoutRow } from "@belay/shared/sync/schema";
+import type { HealthObject, HealthOutcome, HealthSettings, Written } from "./health";
+
+export const sessionKey = (id: string): string => `belay-session-${id}`;
+export const weighingKey = (date: string): string => `belay-weighing-${date}`;
+export const keyOf = (o: HealthObject): string =>
+  o.kind === "workout" || o.kind === "workoutRemoved" ? sessionKey(o.id) : weighingKey(o.date);
+
+export type HealthPlanInput = {
+  workouts: readonly WorkoutRow[];
+  sets: readonly SetRow[];
+  weights: readonly WeightRow[]; // a null weight is a deleted day
+  settings: HealthSettings;
+  written: Readonly<Record<string, Written>>;
+  filled: Readonly<Record<string, unknown>>; // the days the import wrote
+  allowed: { workouts: boolean; weighings: boolean };
+  now: number;
+};
+
+const ms = (iso: string | null) => (iso === null ? -Infinity : Date.parse(iso));
+
+// A session Health can hold: ended, still there, at least one set still there, and ending after
+// it starts (a workout needs a span). Null for one in progress, removed or empty.
+export function finishedSpan(
+  w: WorkoutRow,
+  liveSets: number,
+): { startedAt: number; endedAt: number } | null {
+  if (w.endedAt === null || w.removed || liveSets === 0) return null;
+  const startedAt = Date.parse(w.startedAt);
+  const endedAt = Date.parse(w.endedAt);
+  return endedAt > startedAt ? { startedAt, endedAt } : null;
+}
+
+// Always above the last version this phone wrote, even with a clock set back; otherwise the
+// latest time written on the row, which every device derives alike from the merged data.
+export const versionOf = (latest: number, last: number | undefined): number =>
+  Math.max(Math.floor(latest), (last ?? 0) + 1);
+
+// A weigh-in has a day and no time: 08:00 local on that day, or now when that is earlier, so no
+// sample is ever in the future.
+export function sampleTime(date: string, now: number): number {
+  const [y, m, d] = date.split("-").map(Number) as [number, number, number];
+  return Math.min(new Date(y, m - 1, d, 8).getTime(), now);
+}
+
+// What Health is asked to do, in the order the rows come: every write and removal that would
+// bring it in line with the phone's data, the types it refuses left out.
+export function planHealth(input: HealthPlanInput): HealthObject[] {
+  const { settings, written, filled, allowed } = input;
+  if (!settings.on) return [];
+  const everything = settings.history !== "no";
+  const from = settings.turnedOnAt ?? Infinity;
+  const fromDay = settings.turnedOnAt === null ? "9999-12-31" : toISODate(new Date(from));
+  const objects: HealthObject[] = [];
+
+  if (allowed.workouts) {
+    const live = new Map<string, number>();
+    for (const s of input.sets)
+      if (!s.removed) live.set(s.workoutId, (live.get(s.workoutId) ?? 0) + 1);
+    for (const w of input.workouts) {
+      const key = sessionKey(w.id);
+      const kept = written[key];
+      const span = finishedSpan(w, live.get(w.id) ?? 0);
+      if (span) {
+        // Eligible: new since the setting went on, everything after the history action, and
+        // always what this phone already wrote, so its edits follow.
+        if (!everything && span.endedAt < from && !kept) continue;
+        if (
+          (kept?.state === "workout" || kept?.state === "skipped") &&
+          kept.startedAt === span.startedAt &&
+          kept.endedAt === span.endedAt
+        )
+          continue;
+        const latest = Math.max(
+          ...[w.startedAt, w.startedAtAt, w.endedAt, w.endedAtAt, w.removedAt].map(ms),
+        );
+        objects.push({
+          kind: "workout",
+          id: w.id,
+          ...span,
+          version: versionOf(latest, kept?.version),
+        });
+      } else if (kept?.state === "workout") {
+        objects.push({ kind: "workoutRemoved", id: w.id });
+      }
+    }
+  }
+
+  if (allowed.weighings) {
+    for (const r of input.weights) {
+      // A day the import filled is already in Health, as the scale's reading.
+      if (r.date in filled) continue;
+      const key = weighingKey(r.date);
+      const kept = written[key];
+      if (r.weightKg !== null) {
+        if (!everything && r.date < fromDay && !kept) continue;
+        if (kept?.state === "weighing" && kept.kg === r.weightKg) continue;
+        objects.push({
+          kind: "weighing",
+          date: r.date,
+          kg: r.weightKg,
+          at: sampleTime(r.date, input.now),
+          version: versionOf(Date.parse(r.at), kept?.version),
+        });
+      } else if (kept?.state === "weighing") {
+        objects.push({ kind: "weighingRemoved", date: r.date });
+      }
+    }
+  }
+  return objects;
+}
+
+// What the record keeps once Health answered; null leaves the object pending for the next run.
+export function afterOutcome(
+  o: HealthObject,
+  outcome: HealthOutcome,
+  kept: Written | undefined,
+): Written | null {
+  const version = kept?.version ?? 0;
+  switch (outcome) {
+    case "written":
+      if (o.kind === "workout")
+        return { state: "workout", version: o.version, startedAt: o.startedAt, endedAt: o.endedAt };
+      if (o.kind === "weighing") return { state: "weighing", version: o.version, kg: o.kg };
+      return null;
+    case "removed":
+      return { state: "removed", version };
+    case "overlap":
+      return o.kind === "workout"
+        ? { state: "skipped", version, startedAt: o.startedAt, endedAt: o.endedAt }
+        : null;
+    default:
+      return null;
+  }
+}
+
+// What « Envoyer l’historique » would add: the finished sessions and weigh-ins from before the
+// setting went on that this phone has not written.
+export function historyCounts(
+  input: Pick<HealthPlanInput, "workouts" | "sets" | "weights" | "settings" | "written" | "filled">,
+): { sessions: number; weighings: number } {
+  const plan = planHealth({
+    ...input,
+    settings: { ...input.settings, on: true, history: "asked" },
+    allowed: { workouts: true, weighings: true },
+    now: 0, // a sample's time does not count here
+  });
+  const from = input.settings.turnedOnAt ?? Infinity;
+  const fromDay = input.settings.turnedOnAt === null ? "9999-12-31" : toISODate(new Date(from));
+  return {
+    sessions: plan.filter(
+      (o) => o.kind === "workout" && o.endedAt < from && !input.written[keyOf(o)],
+    ).length,
+    weighings: plan.filter(
+      (o) => o.kind === "weighing" && o.date < fromDay && !input.written[keyOf(o)],
+    ).length,
+  };
+}

@@ -81,7 +81,8 @@ interface BelaySchema extends DBSchema {
   profile: { key: "target" | "body"; value: TargetRow | ProfileRow };
   // In the order the person entered things; the id is given by the store.
   outbox: { key: number; value: { id?: number; change: Change } };
-  meta: { key: "cursor"; value: string };
+  // "cursor": where the pull stands; "health.*": the iPhone app's Apple Health state.
+  meta: { key: string; value: unknown };
   rejected: { key: number; value: { id?: number; change: Change; reason: Rejected["reason"] } };
   // Removed ones stay, as on the server; a starting row this device never wrote is read from the
   // seed, so these hold only what was written here or received.
@@ -995,7 +996,7 @@ export async function readOutbox(db: AccountDb, limit?: number): Promise<OutboxE
 }
 
 export async function readCursor(db: AccountDb): Promise<string> {
-  return (await db.get("meta", "cursor")) ?? "0";
+  return ((await db.get("meta", "cursor")) as string | undefined) ?? "0";
 }
 
 // The thing an entry is about, as a person counts entries: one weigh-in per day however many
