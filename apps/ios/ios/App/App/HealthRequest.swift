@@ -47,6 +47,9 @@ enum HealthRequest: Equatable {
     case readWeighings(anchor: String?, since: Date)
 
     static let maxObjects = 100
+    // The anchor is an archived HKQueryAnchor this side handed out, in base64: a fixed ceiling
+    // keeps any other string from reaching the unarchiver at whatever size.
+    static let maxAnchor = 4_096
 
     static func from(_ value: Any?) throws -> HealthRequest {
         // JSONSerialization raises an Objective-C exception, not a Swift error, on a value it
@@ -82,6 +85,22 @@ private func isDay(_ date: String) -> Bool {
     date.range(of: #"^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$"#, options: .regularExpression) != nil
 }
 
+// The id becomes part of a sync identifier, so only the form the page writes: a UUID parser alone
+// would accept the same id in capitals (a second identifier for one session) or followed by a NUL.
+private func isSessionID(_ id: String) -> Bool {
+    UUID(uuidString: id)?.uuidString.lowercased() == id
+}
+
+// The page dates sessions and weigh-ins from 1900-01-01, and 08:00 on that day east of UTC is still
+// 1899-12-31 in UTC. Nothing is more than a day ahead of this phone's clock, and a workout lasts a
+// day at most.
+private let earliest = Date(timeIntervalSince1970: -2_209_161_600) // 1899-12-31T00:00:00Z
+private let day: TimeInterval = 86_400
+
+private func isTime(_ date: Date) -> Bool {
+    date >= earliest && date <= Date().addingTimeInterval(day)
+}
+
 extension HealthObject: Decodable {
     private enum Keys: String, CodingKey { case kind }
 
@@ -90,19 +109,21 @@ extension HealthObject: Decodable {
         case .workout:
             try expectKeys(decoder, ["kind", "id", "startedAt", "endedAt", "version"])
             let w = try HealthWorkout(from: decoder)
-            guard UUID(uuidString: w.id) != nil, w.endedAt > w.startedAt, w.version > 0 else {
+            guard isSessionID(w.id), isTime(w.startedAt), isTime(w.endedAt), w.endedAt > w.startedAt,
+                  w.endedAt.timeIntervalSince(w.startedAt) <= day, w.version > 0
+            else {
                 throw refuse(decoder, "workout out of range")
             }
             self = .workout(w)
         case .workoutRemoved:
             try expectKeys(decoder, ["kind", "id"])
             let w = try HealthWorkoutRemoved(from: decoder)
-            guard UUID(uuidString: w.id) != nil else { throw refuse(decoder, "id invalid") }
+            guard isSessionID(w.id) else { throw refuse(decoder, "id invalid") }
             self = .workoutRemoved(w)
         case .weighing:
             try expectKeys(decoder, ["kind", "date", "kg", "at", "version"])
             let w = try HealthWeighing(from: decoder)
-            guard isDay(w.date), w.kg.isFinite, (20...400).contains(w.kg), w.version > 0 else {
+            guard isDay(w.date), w.kg.isFinite, (20...400).contains(w.kg), isTime(w.at), w.version > 0 else {
                 throw refuse(decoder, "weighing out of range")
             }
             self = .weighing(w)
@@ -129,15 +150,21 @@ extension HealthRequest: Decodable {
             self = .authorize(try c.decode(HealthScope.self, forKey: .scope))
         case .apply:
             try expectKeys(decoder, ["op", "objects"])
-            let objects = try c.decode([HealthObject].self, forKey: .objects)
-            guard objects.count <= Self.maxObjects else { throw refuse(decoder, "too many objects") }
+            // Counted before any object is decoded, so an oversized batch costs nothing.
+            var list = try c.nestedUnkeyedContainer(forKey: .objects)
+            guard let count = list.count, count <= Self.maxObjects else {
+                throw refuse(decoder, "too many objects")
+            }
+            var objects: [HealthObject] = []
+            while !list.isAtEnd { objects.append(try list.decode(HealthObject.self)) }
             self = .apply(objects)
         case .readWeighings:
             try expectKeys(decoder, ["op", "anchor", "since"])
-            self = .readWeighings(
-                anchor: try c.decodeIfPresent(String.self, forKey: .anchor),
-                since: try c.decode(Date.self, forKey: .since)
-            )
+            let since = try c.decode(Date.self, forKey: .since)
+            guard isTime(since) else { throw refuse(decoder, "since out of range") }
+            let anchor = try c.decodeIfPresent(String.self, forKey: .anchor)
+            guard (anchor?.count ?? 0) <= Self.maxAnchor else { throw refuse(decoder, "anchor too long") }
+            self = .readWeighings(anchor: anchor, since: since)
         }
     }
 }

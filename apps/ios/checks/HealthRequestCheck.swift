@@ -16,9 +16,26 @@ struct HealthRequestCheck {
         return try? HealthRequest.from(value)
     }
 
+    // Why a request was refused, as the decoder words it.
+    static func refusal(_ json: String) -> String? {
+        let value = try? JSONSerialization.jsonObject(with: Data(json.utf8))
+        do { _ = try HealthRequest.from(value) } catch let DecodingError.dataCorrupted(context) {
+            return context.debugDescription
+        } catch { return "\(error)" }
+        return nil
+    }
+
     static let id = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d01"
-    static func workout(_ extra: String = "", ended: Int = 3_600_000, version: Int = 5) -> String {
-        #"{"kind":"workout","id":"\#(id)","startedAt":0,"endedAt":\#(ended),"version":\#(version)\#(extra)}"#
+    static func workout(
+        _ extra: String = "", started: Int64 = 0, ended: Int64 = 3_600_000, version: Int = 5
+    ) -> String {
+        #"{"kind":"workout","id":"\#(id)","startedAt":\#(started),"endedAt":\#(ended),"version":\#(version)\#(extra)}"#
+    }
+    static func weighing(at: Int64) -> String {
+        #"{"kind":"weighing","date":"1900-01-01","kg":80,"at":\#(at),"version":1}"#
+    }
+    static func apply(_ objects: String...) -> HealthRequest? {
+        decodes(#"{"op":"apply","objects":[\#(objects.joined(separator: ","))]}"#)
     }
 
     static func main() {
@@ -41,10 +58,51 @@ struct HealthRequestCheck {
         check("an id that is no session id is refused",
               decodes(#"{"op":"apply","objects":[{"kind":"workoutRemoved","id":"../x"}]}"#) == nil)
 
+        // A NUL as JSON escapes it: UUID(uuidString:) stops reading there.
+        check("an id followed by a NUL and more text is refused",
+              decodes(#"{"op":"apply","objects":[{"kind":"workoutRemoved","id":"\#(id)\u0000../x"}]}"#) == nil)
+        check("an uppercase id is refused",
+              decodes(#"{"op":"apply","objects":[{"kind":"workoutRemoved","id":"\#(id.uppercased())"}]}"#) == nil)
+        check("a workout with an uppercase id is refused",
+              decodes(#"{"op":"apply","objects":[\#(workout().replacingOccurrences(of: id, with: id.uppercased()))]}"#) == nil)
+        check("a removal with a lowercase id decodes",
+              decodes(#"{"op":"apply","objects":[{"kind":"workoutRemoved","id":"\#(id)"}]}"#) != nil)
+
+        // The page dates weigh-ins and sessions from 1900-01-01; 08:00 that day east of UTC is
+        // still 1899-12-31 in UTC.
+        let floor: Int64 = -2_209_161_600_000 // 1899-12-31T00:00:00Z
+        let now = Int64(Date().timeIntervalSince1970 * 1000)
+        let hour: Int64 = 3_600_000
+        check("a weigh-in at 08:00 on 1900-01-01 in Tokyo decodes", apply(weighing(at: floor + 23 * hour)) != nil)
+        check("a weigh-in before 1899-12-31 is refused", apply(weighing(at: floor - 1)) == nil)
+        check("a weigh-in two days ahead is refused", apply(weighing(at: now + 48 * hour)) == nil)
+        check("a weigh-in an hour ahead decodes", apply(weighing(at: now + hour)) != nil)
+        check("a workout starting before 1899-12-31 is refused",
+              apply(workout(started: floor - 1, ended: floor + hour)) == nil)
+        check("a workout ending two days ahead is refused",
+              apply(workout(started: now, ended: now + 48 * hour)) == nil)
+        check("a workout ending an hour ahead decodes", apply(workout(started: now, ended: now + hour)) != nil)
+        check("a workout of 24 hours decodes", apply(workout(ended: 24 * hour)) != nil)
+        check("a workout of more than 24 hours is refused", apply(workout(ended: 24 * hour + 1)) == nil)
+        check("readWeighings since before 1899-12-31 is refused",
+              decodes(#"{"op":"readWeighings","anchor":null,"since":\#(floor - 1)}"#) == nil)
+        check("readWeighings since two days ahead is refused",
+              decodes(#"{"op":"readWeighings","anchor":null,"since":\#(now + 48 * hour)}"#) == nil)
+
         let hundred = Array(repeating: workout(), count: 100).joined(separator: ",")
         check("100 objects decode", decodes(#"{"op":"apply","objects":[\#(hundred)]}"#) != nil)
         check("101 objects are refused",
               decodes(#"{"op":"apply","objects":[\#(hundred),\#(workout())]}"#) == nil)
+
+        let broken = Array(repeating: "{}", count: 101).joined(separator: ",")
+        check("101 objects are counted before any is decoded",
+              refusal(#"{"op":"apply","objects":[\#(broken)]}"#) == "too many objects")
+
+        let anchor = { (length: Int) in
+            #"{"op":"readWeighings","anchor":"\#(String(repeating: "A", count: length))","since":0}"#
+        }
+        check("an anchor of 4096 characters decodes", decodes(anchor(4096)) != nil)
+        check("an anchor of 4097 characters is refused", decodes(anchor(4097)) == nil)
 
         let weighing = #"{"kind":"weighing","date":"2026-10-26","kg":80.4,"at":0,"version":1}"#
         check("a weighing decodes", decodes(#"{"op":"apply","objects":[\#(weighing)]}"#) != nil)

@@ -1,5 +1,6 @@
 {
   "appId": "cloud.libresoftware.belay",
   "appName": "Belay",
-  "webDir": "../web/dist"
+  "webDir": "../web/dist",
+  "loggingBehavior": "none"
 }
