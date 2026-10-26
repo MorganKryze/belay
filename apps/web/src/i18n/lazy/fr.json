@@ -921,6 +921,10 @@
       "on": "Sur {{host}}",
       "change": "Changer d’instance",
       "busy": "Connexion…"
+    },
+    "activity": {
+      "done": "Toutes les séries faites",
+      "stale": "Ouvre Belay pour continuer"
     }
   }
 }

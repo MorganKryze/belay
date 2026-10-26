@@ -164,7 +164,7 @@ function Shell() {
         <UpdateBanner />
         {isNative() && (
           <Suspense fallback={null}>
-            <NativeRestAlert account={account} />
+            <NativeRestAlert account={account} session={session} />
           </Suspense>
         )}
         {/* Grows to the tab bar, so a screen can pin a line to its bottom (Settings' version). */}

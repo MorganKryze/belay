@@ -1,5 +1,6 @@
-// The rest's end as a notification in the iPhone app, so a locked phone still says when to get
-// back to it. Mounted once by the shell on the phone.
+// The iPhone app keeps the locked phone in step with the open session: a notification at the
+// rest's end says when to get back to it, and the lock screen shows the session itself. Mounted
+// once by the shell on the phone.
 import "@/i18n/lazy";
 import type { PauseStops } from "@belay/shared/training/pause";
 import type { PermissionStatus } from "@capacitor/local-notifications";
@@ -7,8 +8,9 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { readPauseStops } from "@/lib/pause-stops";
 import { readRestSound } from "@/lib/rest-sound";
-import { type Account, type OpenAccount, useSessionView } from "@/sync/account";
+import { type Account, type OpenAccount, useHistory, useSessionView } from "@/sync/account";
 import type { ActiveSession } from "@/sync/db";
+import { liveActivityOf, type OpenSession, showLiveActivity } from "./live-activity";
 
 // One notification at a time: scheduling under the same id replaces the pending one.
 const ID = 1;
@@ -47,19 +49,40 @@ export function restAlertAt(
   return Date.parse(end) <= now ? null : end;
 }
 
-export function NativeRestAlert({ account }: { account: Account }) {
+export function NativeRestAlert({
+  account,
+  session,
+}: {
+  account: Account;
+  session: OpenSession | null;
+}) {
   // Signing out reloads the page, so nothing unmounts there: the first page without an open
   // account clears what the last session left pending.
   const open = account.kind === "open";
   useEffect(() => {
     if (!open) run(cancel);
   }, [open]);
-  return account.kind === "open" ? <RestAlert account={account} /> : null;
+  // The same for the lock screen, but not while the account is still loading: an Activity left
+  // by the last run may still be the open session's, and ending it would keep it away for good.
+  useEffect(() => {
+    if (account.kind === "signed-out" || account.kind === "unavailable") showLiveActivity(null);
+  }, [account.kind]);
+  return account.kind === "open" ? <RestAlert account={account} session={session} /> : null;
 }
 
-function RestAlert({ account }: { account: OpenAccount }): null {
+function RestAlert({
+  account,
+  session,
+}: {
+  account: OpenAccount;
+  session: OpenSession | null;
+}): null {
   const { t } = useTranslation();
-  const active = useSessionView(account).data?.active;
+  const view = useSessionView(account).data;
+  const history = useHistory(account).data;
+  const active = view?.active;
+  // Until this phone's records are read, no session looks open: nothing is described yet.
+  const read = view !== undefined && history !== undefined;
   const at = restAlertAt(active, readPauseStops(), Date.now());
   const workoutId = active?.workoutId;
 
@@ -101,5 +124,13 @@ function RestAlert({ account }: { account: OpenAccount }): null {
   }, [at, display, t]);
   // Leaving the account unmounts this: nothing rings for a person who left.
   useEffect(() => () => run(cancel), []);
+
+  // Described on every render: the queue drops a description it already sent, so iOS hears of a
+  // change once. The pause setting is read here too, so a change shows at the next render.
+  useEffect(() => {
+    if (read) showLiveActivity(liveActivityOf(session, active, readPauseStops(), Date.now(), t));
+  });
+  // Nothing stays on the lock screen for a person who left.
+  useEffect(() => () => showLiveActivity(null), []);
   return null;
 }

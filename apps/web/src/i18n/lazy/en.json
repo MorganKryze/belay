@@ -921,6 +921,10 @@
       "on": "On {{host}}",
       "change": "Change instance",
       "busy": "Signing in…"
+    },
+    "activity": {
+      "done": "Every set done",
+      "stale": "Open Belay to carry on"
     }
   }
 }

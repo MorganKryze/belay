@@ -30,7 +30,10 @@ const { notes, pending, view, unschedule } = vi.hoisted(() => {
   return { notes, pending, unschedule, view: { active: null as ActiveSession | null } };
 });
 vi.mock("@capacitor/local-notifications", () => ({ LocalNotifications: notes }));
-vi.mock("@/sync/account", () => ({ useSessionView: () => ({ data: { active: view.active } }) }));
+vi.mock("@/sync/account", () => ({
+  useSessionView: () => ({ data: { active: view.active } }),
+  useHistory: () => ({ data: {} }),
+}));
 
 import { NativeRestAlert, restAlertAt } from "./rest-alert";
 
@@ -46,7 +49,7 @@ const rest = (endsIn: number | null, more: Partial<ActiveSession> = {}): ActiveS
 const account = { kind: "open" } as OpenAccount;
 const show = (active: ActiveSession | null) => {
   view.active = active;
-  return <NativeRestAlert account={account} />;
+  return <NativeRestAlert account={account} session={null} />;
 };
 const only = () => {
   expect(pending.size).toBe(1);
@@ -156,7 +159,7 @@ describe("NativeRestAlert", () => {
   it("the page after a sign-out, with no open account, cancels what the last one left pending", async () => {
     // The reload leaves nothing to unmount: iOS still holds the last schedule.
     pending.set(1, { id: 1, schedule: { at: new Date(at(90)) } });
-    render(<NativeRestAlert account={{ kind: "signed-out", unreachable: false }} />);
+    render(<NativeRestAlert account={{ kind: "signed-out", unreachable: false }} session={null} />);
     await waitFor(() => expect(pending.size).toBe(0));
     expect(notes.checkPermissions).not.toHaveBeenCalled();
   });
