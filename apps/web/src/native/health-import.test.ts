@@ -214,6 +214,17 @@ describe("after a landed sync", () => {
     expect(native.health).not.toHaveBeenCalled();
   });
 
+  it("asks for a sync even when showing the new weigh-ins fails", async () => {
+    native.health.mockResolvedValue({ samples: [{ startedAt: at(7, 5), kg: 80.4 }], anchor: "A1" });
+    const schedule = vi.fn();
+    const refresh = vi.fn(async () => {
+      throw new Error("the screen went away");
+    });
+    await importAfterSync({ db, engine: { schedule } }, refresh, () => NOW);
+    expect(refresh).toHaveBeenCalledOnce();
+    expect(schedule).toHaveBeenCalledOnce();
+  });
+
   it("Health unavailable leaves everything as it was, for the next landed sync", async () => {
     native.health.mockRejectedValue(new Error("health unavailable"));
     await importAfterSync({ db, engine: { schedule: vi.fn() } }, async () => {});

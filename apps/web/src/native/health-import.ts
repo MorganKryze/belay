@@ -112,8 +112,9 @@ export function importAfterSync(
       });
       const from = { anchor: imported.anchor, since: settings.importSince };
       if ((await importWeighings(account.db, samples, anchor, now(), from)) === 0) return;
-      await refresh();
+      // Queued first: what was written still goes if the screen fails to show it.
       account.engine.schedule();
+      await refresh();
     })
     .catch(() => {
       // Health unavailable (a locked phone) or the database closing: the next landed sync tries again.
