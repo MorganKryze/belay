@@ -71,7 +71,7 @@ iOS asks once whether Belay may show Live Activities, and
 | The rest is over                      | "Rest over" and "Back to it" with the next set, even with the app closed                    |
 | The session is paused                 | "Paused" with the times standing still; under "Rest continues" the rest keeps counting down |
 | Every set is done                     | "Every set done", the session and its time, until you finish it                             |
-| Six hours without a word from the app | The last content and "Open Belay to carry on"                                               |
+| Six hours without a word from the app | The last content and "Open Belay to carry on"; after a rest that ran out, "Rest over" stays |
 
 Every word comes in the app's language. The lock screen shows the exercise and
 the set, never a load, a weight or a body figure. Tapping it opens the app
@@ -93,7 +93,7 @@ Never run `cap add ios`: it renames every identifier in the Xcode project.
 
 `pnpm ios:sim` builds the app with its extension. To see a state without a
 session, add `-BelayActivityDemo rest` (or `due`, `paused`, `paused-running`,
-`done`, `stale`, `end`) to the scheme's launch arguments, under
+`paused-no-rest`, `done`, `stale`, `end`) to the scheme's launch arguments, under
 **Product › Scheme › Edit Scheme › Run › Arguments**, or from this folder:
 
 ```bash
@@ -112,7 +112,10 @@ argument works in Debug builds only.
 3. Wait for the end of the rest: "Rest over" shows without opening the app.
 4. Pause the session: the times stand still, or the rest goes on under
    "Rest continues".
-5. Finish the session: the lock screen lets it go.
+5. Switch to another session: the lock screen moves to the new one.
+6. Swipe the session away on the lock screen, then log a set: it does not come
+   back for that session.
+7. Finish the session: the lock screen lets it go.
 
 ## Limits of a free team
 
@@ -139,9 +142,9 @@ argument works in Debug builds only.
   give the bundle identifier a suffix of your own if it is taken. "Maximum
   number of apps" means the free team's limits above: wait for the 7 days to
   pass, or reuse an identifier you already registered.
-- **Signing error on "BelayActivity"**: select the **BelayActivity** target
-  once, open **Signing & Capabilities** and choose your Personal Team under
-  **Team**.
+- **Signing error on "BelayActivity"**: put your Team ID in
+  `ios/local.xcconfig` (step 2), which both targets read. Choosing the team
+  under **Signing & Capabilities** writes it into the tracked Xcode project.
 - **No iPhone at hand**: `pnpm ios:sim` builds the app for the simulator,
   without signing.
 - **A server on this Mac**: the app only reaches instances over https. To
