@@ -13,7 +13,7 @@ enum ActivityDemo {
     private(set) static var isRunning = false
 
     private enum Fixture: String {
-        case due, rest, paused, pausedRunning = "paused-running", done, stale, end
+        case due, rest, paused, pausedRunning = "paused-running", pausedNoRest = "paused-no-rest", done, stale, end
     }
 
     static func runIfAsked() {
@@ -77,6 +77,13 @@ enum ActivityDemo {
             state.restEnd = pausedAt.addingTimeInterval(72)
             state.restFrozen = fixture == .paused
             if fixture == .pausedRunning { staleAt = pausedAt.addingTimeInterval(72) }
+        case .pausedNoRest:
+            // Paused during a set, 24 minutes 10 seconds into the session.
+            let pausedAt = now.addingTimeInterval(-5)
+            state.status = .paused
+            state.statusLabel = "En pause"
+            state.pausedAt = pausedAt
+            state.startedAt = pausedAt.addingTimeInterval(-(24 * 60 + 10))
         case .done:
             state.status = .done
             state.title = "Toutes les séries faites"
@@ -97,17 +104,23 @@ enum ActivityDemo {
         let name: String
         let fixture: Fixture
         var isStale = false
+        var textSize = DynamicTypeSize.large
         var change: (inout SessionActivityAttributes.ContentState, Date) -> Void = { _, _ in }
     }
 
+    private static let longTitle = "Barbell incline bench press with pause"
+
     // Every state the Activity can show: the rest over is the rest gone stale at its end. Then the
-    // widest clocks: a 12-minute rest, running and held, and a session past 100 minutes.
+    // widest clocks: a 12-minute rest, running and held, and a session past 100 minutes. Then the
+    // longest name at the largest text size before the accessibility sizes, the body's 17 points
+    // drawn at 23.
     private static let renderStates: [RenderState] = [
         RenderState(name: "due", fixture: .due),
         RenderState(name: "rest", fixture: .rest),
         RenderState(name: "rest-over", fixture: .rest, isStale: true),
         RenderState(name: "paused-frozen", fixture: .paused),
         RenderState(name: "paused-running", fixture: .pausedRunning),
+        RenderState(name: "paused-no-rest", fixture: .pausedNoRest),
         RenderState(name: "done", fixture: .done),
         RenderState(name: "stale", fixture: .stale, isStale: true),
         RenderState(name: "rest-long", fixture: .rest) { state, now in
@@ -120,6 +133,12 @@ enum ActivityDemo {
         },
         RenderState(name: "due-long", fixture: .due) { state, now in
             state.startedAt = now.addingTimeInterval(-102 * 60)
+        },
+        RenderState(name: "rest-worst-dt", fixture: .rest, textSize: .xxxLarge) { state, _ in
+            state.title = longTitle
+        },
+        RenderState(name: "stale-worst-dt", fixture: .stale, isStale: true, textSize: .xxxLarge) { state, _ in
+            state.title = longTitle
         },
     ]
 
@@ -148,7 +167,11 @@ enum ActivityDemo {
                 for (scheme, schemeName) in [(ColorScheme.light, "light"), (.dark, "dark")] {
                     for (presentation, view) in presentations(state, isStale: item.isStale) {
                         let url = folder.appendingPathComponent("\(presentation)-\(item.name)-\(schemeName).png")
-                        let image = await snapshot(view.environment(\.colorScheme, scheme), scheme: scheme, in: window)
+                        let image = await snapshot(
+                            view.environment(\.colorScheme, scheme).environment(\.dynamicTypeSize, item.textSize),
+                            scheme: scheme,
+                            in: window
+                        )
                         guard let data = image.pngData(), (try? data.write(to: url)) != nil else { continue }
                         count += 1
                     }
