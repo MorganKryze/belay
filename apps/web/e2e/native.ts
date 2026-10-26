@@ -49,6 +49,14 @@ export async function asIPhone(
             }
             return authenticate;
           },
+          // What the lock screen shows: the last description, and how many times the app asked.
+          setLiveActivity: async ({ activity }: { activity: unknown }) => {
+            sessionStorage.setItem("belay.fake.activity", JSON.stringify(activity));
+            sessionStorage.setItem(
+              "belay.fake.activityCalls",
+              String(Number(sessionStorage.getItem("belay.fake.activityCalls") ?? "0") + 1),
+            );
+          },
         },
         Haptics: { notification: async () => {} },
         LocalNotifications: {
@@ -77,6 +85,22 @@ export async function asIPhone(
 // The address the sign-in sheet was last opened at, or null.
 export const sheetOpenedAt = (page: Page): Promise<string | null> =>
   page.evaluate(() => sessionStorage.getItem("belay.fake.sheet"));
+
+// What iOS would show on the lock screen: the last description the app sent, null once it asked
+// for none, undefined when it never asked.
+export const shownActivity = (
+  page: Page,
+): Promise<
+  { workoutId: string; staleAt: number; state: Record<string, unknown> } | null | undefined
+> =>
+  page.evaluate(() => {
+    const kept = sessionStorage.getItem("belay.fake.activity");
+    return kept === null ? undefined : JSON.parse(kept);
+  });
+
+// How many times the app has asked iOS to show, update or end the Activity.
+export const activityCalls = (page: Page): Promise<number> =>
+  page.evaluate(() => Number(sessionStorage.getItem("belay.fake.activityCalls") ?? "0"));
 
 type Answer = { status?: number; json?: unknown; body?: string; contentType?: string } | "abort";
 type Handler = Answer | ((request: Request) => Answer | Promise<Answer>);
