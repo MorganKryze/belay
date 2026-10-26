@@ -27,6 +27,8 @@ database and an installable offline shell.
 Requirements: Docker with Compose, an OpenID Connect provider (Keycloak,
 Authentik, Pocket ID or any other standard one) and a reverse proxy that
 terminates TLS on the same host. Belay has no accounts of its own.
+The iPhone app's sign-in needs the provider to put `auth_time` in the ID token
+(the providers above do).
 
 1. Register a **confidential** OIDC client:
    - redirect URI: `https://<your-domain>/auth/callback`
