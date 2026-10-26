@@ -130,11 +130,13 @@ enum Health {
     }
 
     // Only Belay's own objects carry its sync identifiers, and iOS lets an app delete only what it
-    // wrote. Nothing left to match (the person already deleted it in Health) is the same outcome,
-    // not a failure retried at every run.
+    // wrote; the source is matched too, so neither rule alone decides. Nothing left to match (the
+    // person already deleted it in Health) is the same outcome, not a failure retried at every run.
     private static func delete(_ type: HKObjectType, _ syncIdentifier: String) async throws {
-        let predicate = HKQuery.predicateForObjects(
-            withMetadataKey: HKMetadataKeySyncIdentifier, allowedValues: [syncIdentifier])
+        let predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
+            HKQuery.predicateForObjects(withMetadataKey: HKMetadataKeySyncIdentifier, allowedValues: [syncIdentifier]),
+            HKQuery.predicateForObjects(from: HKSource.default()),
+        ])
         do {
             _ = try await store.deleteObjects(of: type, predicate: predicate)
         } catch let error as HKError where error.code == .errorNoData {
