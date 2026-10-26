@@ -92,7 +92,7 @@ export function authRoutes(cfg: Config, db: Db, getOidc: OidcProvider) {
   async function beginLogin(
     c: Context<AuthEnv>,
     tx: Pick<Transaction, "state" | "returnTo" | "native">,
-    extra: { prompt?: "login" } = {},
+    extra: { prompt?: "login"; max_age?: string } = {},
   ) {
     let oidc: client.Configuration;
     try {
@@ -144,7 +144,8 @@ export function authRoutes(cfg: Config, db: Db, getOidc: OidcProvider) {
         returnTo: "/",
         native: { challenge, started: Date.now() },
       },
-      { prompt: "login" },
+      // max_age makes auth_time a required claim (OIDC Core 3.1.2.1), which the callback checks.
+      { prompt: "login", max_age: "60" },
     );
   });
 

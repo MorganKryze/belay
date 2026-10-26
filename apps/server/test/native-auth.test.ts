@@ -128,9 +128,12 @@ describe("GET /auth/native/start", () => {
   it("start asks the provider to show its login, the web sign-in does not", async () => {
     const { authUrl } = await start();
     expect(authUrl.searchParams.get("prompt")).toBe("login");
+    expect(authUrl.searchParams.get("max_age")).toBe("60");
 
     const web = await app.request("/auth/login");
-    expect(new URL(location(web)!).searchParams.has("prompt")).toBe(false);
+    const webUrl = new URL(location(web)!);
+    expect(webUrl.searchParams.has("prompt")).toBe(false);
+    expect(webUrl.searchParams.has("max_age")).toBe(false);
   });
 
   it.each([
