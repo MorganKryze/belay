@@ -1,1 +1,4 @@
 CAPACITOR_DEBUG = true
+
+// Your own signing team, kept out of git: copy local.example.xcconfig to local.xcconfig.
+#include? "local.xcconfig"

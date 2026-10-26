@@ -27,7 +27,9 @@ pnpm ios:open
 ## Install with a free Personal Team
 
 1. In Xcode, open **Settings › Accounts** and add your Apple ID.
-2. Select the **App** target, then **Signing & Capabilities**. Under **Team**,
+2. Keep your team out of git: copy `ios/local.example.xcconfig` to `ios/local.xcconfig`
+   (ignored) and put your Team ID there; Xcode then reads it. Or, the first time,
+   select the **App** target, then **Signing & Capabilities**. Under **Team**,
    choose "<your name> (Personal Team)". Keep the bundle identifier
    `cloud.libresoftware.belay`; if Xcode says it is taken, add a suffix of your
    own (`cloud.libresoftware.belay.yourname`).
