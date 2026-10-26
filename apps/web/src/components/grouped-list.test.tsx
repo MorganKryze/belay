@@ -8,7 +8,7 @@ import {
 } from "@tanstack/react-router";
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { Settings } from "lucide-react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { expectTokensOnly } from "@/test/design-rules";
 import {
   EmptyState,
@@ -17,6 +17,7 @@ import {
   NumberTile,
   RowButton,
   RowLink,
+  RowSwitch,
   RowText,
   sectionLabel,
   SkeletonRows,
@@ -302,5 +303,114 @@ describe("GroupedList", () => {
 
   it("uses tokens only", () => {
     expectTokensOnly("components/grouped-list.tsx");
+  });
+});
+
+describe("RowSwitch", () => {
+  const sub = "Tes séances terminées et tes pesées vont dans Santé.";
+
+  it("a switch row is a switch whose name holds its label and its sub", () => {
+    render(
+      <RowSwitch label="Séances et pesées" sub={sub} checked={false} onCheckedChange={vi.fn()} />,
+    );
+    const row = screen.getByRole("switch", { name: /Séances et pesées/ });
+    expect(row.getAttribute("aria-checked")).toBe("false");
+    // Label in name: the visible label opens the name, the sub follows it.
+    expect(row).toHaveProperty(
+      "textContent",
+      expect.stringMatching(/^Séances et pesées\s*Tes séances/),
+    );
+    expect(screen.getByRole("switch", { name: `Séances et pesées ${sub}` })).toBe(row);
+    // The whole row is the target, at the row's height, with no chevron.
+    expect(classes(row)).toEqual(expect.arrayContaining(["min-h-14", "w-full", "press-tint"]));
+    expect(row.querySelector("[data-slot=row-chevron]")).toBeNull();
+  });
+
+  it("the track is hidden from the name and says on in the accent", () => {
+    const { rerender } = render(
+      <RowSwitch label="Importer les pesées" checked={false} onCheckedChange={vi.fn()} />,
+    );
+    const track = screen.getByRole("switch").querySelector("[data-slot=switch-track]")!;
+    expect(track.getAttribute("aria-hidden")).toBe("true");
+    expect(classes(track)).toContain("bg-input");
+    rerender(<RowSwitch label="Importer les pesées" checked onCheckedChange={vi.fn()} />);
+    expect(screen.getByRole("switch").getAttribute("aria-checked")).toBe("true");
+    expect(classes(track)).toContain("bg-primary");
+    expect(classes(track)).not.toContain("bg-input");
+  });
+
+  it("a tap or Space turns it on and says so", () => {
+    const onCheckedChange = vi.fn();
+    render(
+      <RowSwitch label="Importer les pesées" checked={false} onCheckedChange={onCheckedChange} />,
+    );
+    const row = screen.getByRole("switch", { name: "Importer les pesées" });
+    // A native button: Space and Enter press it like a tap.
+    expect(row.tagName).toBe("BUTTON");
+    expect(row.getAttribute("type")).toBe("button");
+    fireEvent.click(row);
+    expect(onCheckedChange).toHaveBeenCalledExactlyOnceWith(true);
+  });
+
+  it("a tap on a switch that is on turns it off", () => {
+    const onCheckedChange = vi.fn();
+    render(<RowSwitch label="Importer les pesées" checked onCheckedChange={onCheckedChange} />);
+    fireEvent.click(screen.getByRole("switch"));
+    expect(onCheckedChange).toHaveBeenCalledExactlyOnceWith(false);
+  });
+
+  it("a disabled switch does nothing", () => {
+    const onCheckedChange = vi.fn();
+    render(
+      <RowSwitch
+        label="Importer les pesées"
+        checked={false}
+        disabled
+        onCheckedChange={onCheckedChange}
+      />,
+    );
+    const row = screen.getByRole("switch");
+    expect((row as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.click(row);
+    expect(onCheckedChange).not.toHaveBeenCalled();
+  });
+
+  it("its motion stops when reduced motion is asked for", () => {
+    render(<RowSwitch label="Importer les pesées" checked onCheckedChange={vi.fn()} />);
+    const knob = screen.getByRole("switch").querySelector("[data-slot=switch-knob]")!;
+    expect(classes(knob).some((c) => c.startsWith("motion-safe:transition"))).toBe(true);
+    expect(classes(knob).filter((c) => /^transition/.test(c))).toEqual([]);
+  });
+
+  it("wrap lets the label and the sub run on", () => {
+    render(
+      <>
+        <RowSwitch
+          wrap
+          label={"Séances et pesées ".repeat(6)}
+          sub={"Une longue ligne ".repeat(12)}
+          checked={false}
+          onCheckedChange={vi.fn()}
+        />
+        <RowButton wrap label={"Historique ".repeat(8)} sub={"Une autre ligne ".repeat(12)} />
+      </>,
+    );
+    for (const text of [
+      /^(Séances et pesées )+$/,
+      /^(Une longue ligne )+$/,
+      /^(Historique )+$/,
+      /^(Une autre ligne )+$/,
+    ]) {
+      const el = screen.getByText(text, { normalizer: (s) => s });
+      expect(classes(el)).not.toContain("truncate");
+      expect(classes(el)).not.toContain("line-clamp-2");
+      expect(classes(el)).toContain("break-words");
+    }
+  });
+
+  it("without wrap a row still cuts its label and clamps its sub", () => {
+    render(<RowButton label="Units" sub="Kilograms and centimetres" />);
+    expect(classes(screen.getByText("Units"))).toContain("truncate");
+    expect(classes(screen.getByText("Kilograms and centimetres"))).toContain("line-clamp-2");
   });
 });
