@@ -178,9 +178,11 @@ private struct SessionClock: View {
         let state = look.state
         if let window = look.restWindow {
             if state.restFrozen, let pausedAt = state.pausedAt {
-                Text(verbatim: Self.written(window.upperBound.timeIntervalSince(max(pausedAt, window.lowerBound)), showsHours: showsHours))
+                Text(verbatim: Self.written(window.upperBound.timeIntervalSince(min(pausedAt, window.upperBound)), showsHours: showsHours))
             } else {
-                Text(timerInterval: window, countsDown: true, showsHours: showsHours)
+                // The window starts in the future once +30 s pushes the rest past its plan; a
+                // timer whose range has not begun stands still, so the count starts no later than now.
+                Text(timerInterval: min(window.lowerBound, .now)...window.upperBound, countsDown: true, showsHours: showsHours)
             }
         } else if let pausedAt = state.pausedAt {
             Text(verbatim: Self.written(pausedAt.timeIntervalSince(state.startedAt), showsHours: showsHours))
