@@ -6,7 +6,12 @@ export type NavKind = "push" | "pop" | "cover" | "uncover";
 const TABS = new Set(["/", "/workouts", "/body", "/tools"]);
 const COVER = /^\/workout(?:\/edit|\/summary\/[^/]+)?$/;
 const SUMMARY = /^\/workout\/summary\/[^/]+\/?$/;
-const DEEP = new Set(["/settings/profile", "/settings/supplements", "/tools/plates/equipment"]);
+const DEEP = new Set([
+  "/settings/profile",
+  "/settings/supplements",
+  "/settings/health",
+  "/tools/plates/equipment",
+]);
 
 // The depth of a page, from the route table. Anything not listed (a detail page, a tool, an
 // unknown path) sits one level under the tabs.

@@ -12,6 +12,7 @@ import {
 // handles that popstate.
 import { navKind, viewTransition } from "./lib/transitions";
 import { trackEntries } from "./lib/back";
+import { isNative } from "./lib/platform";
 import { NotFound, Pending, RouteError } from "./routes/fallbacks";
 import { Home } from "./routes/home";
 import { Layout } from "./routes/layout";
@@ -145,6 +146,15 @@ const supplementsRoute = createRoute({
   path: "/settings/supplements",
   component: lazyRouteComponent(() => import("./routes/supplements"), "Supplements"),
 });
+// Apple Health exists in the iPhone app only: in a browser the page is not found.
+const healthRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/settings/health",
+  beforeLoad: () => {
+    if (!isNative()) throw notFound();
+  },
+  component: lazyRouteComponent(() => import("./routes/health"), "HealthPage"),
+});
 const toolsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/tools",
@@ -181,6 +191,7 @@ export const routeTree = rootRoute.addChildren([
   settingsRoute,
   profileRoute,
   supplementsRoute,
+  healthRoute,
   toolsRoute,
   equipmentRoute,
   toolRoute,

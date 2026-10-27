@@ -16,6 +16,7 @@ const LEVELS = [
   ["/tools/$toolId", "/tools/plates", 1],
   ["/settings/profile", "/settings/profile", 2],
   ["/settings/supplements", "/settings/supplements", 2],
+  ["/settings/health", "/settings/health", 2],
   ["/tools/plates/equipment", "/tools/plates/equipment", 2],
   ["/workout", "/workout", "cover"],
   ["/workout/edit", "/workout/edit", "cover"],

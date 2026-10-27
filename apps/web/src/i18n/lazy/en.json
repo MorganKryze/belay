@@ -926,5 +926,35 @@
       "done": "Every set done",
       "stale": "Open Belay to carry on"
     }
+  },
+  "health": {
+    "title": "Apple Health",
+    "refused": "Access denied",
+    "intro": "Belay adds your finished sessions and your weigh-ins to the Health app on this iPhone.",
+    "switch": "Sessions and weigh-ins",
+    "switchSub": "Sent to Health as soon as they are saved",
+    "toHealth": "To Health",
+    "fromHealth": "From Health",
+    "upToDate": "Up to date with Health",
+    "pending_one": "{{count}} item waiting",
+    "pending_other": "{{count}} items waiting",
+    "pendingDetail": "Health was not available. Trying again next time you open Belay.",
+    "refusesWeighings": "Health refuses weigh-ins",
+    "onlySessions": "Only sessions are sent.",
+    "refusesWorkouts": "Health refuses workouts",
+    "onlyWeighings": "Only weigh-ins are sent.",
+    "refusedDetail": "Health does not let Belay write.",
+    "refusedHelp": "Allow it in Settings › Health › Data Access & Devices › Belay, then try again.",
+    "history": "Send history to Health",
+    "historySub": "Your {{sessions}} and {{weighings}} from before you turned this on. Nothing is sent twice.",
+    "sessions_one": "{{count}} session",
+    "sessions_other": "{{count}} sessions",
+    "weighings_one": "{{count}} weigh-in",
+    "weighings_other": "{{count}} weigh-ins",
+    "sending": "Sending… {{done}} of {{total}}",
+    "sent": "History sent",
+    "footerSets": "Sets, loads and reps stay in Belay: Health has no place for them.",
+    "footerWatch": "If another app (your watch, for instance) already recorded the workout, Belay does not add a second one.",
+    "footerOff": "Turning this off removes nothing from Health: delete what is there in the Health app."
   }
 }
