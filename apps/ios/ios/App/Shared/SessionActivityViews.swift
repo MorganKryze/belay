@@ -162,7 +162,8 @@ private struct SessionClock: View {
     private var reach: TimeInterval {
         let state = look.state
         if let window = look.restWindow {
-            return window.upperBound.timeIntervalSince(window.lowerBound)
+            // +30 s past the plan leaves more time than the window holds.
+            return window.upperBound.timeIntervalSince(min(window.lowerBound, Date()))
         }
         if let pausedAt = state.pausedAt {
             return pausedAt.timeIntervalSince(state.startedAt)
