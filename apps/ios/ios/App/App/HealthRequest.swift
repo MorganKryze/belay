@@ -196,4 +196,15 @@ enum HealthRules {
             (session.intersection(with: other)?.duration ?? 0) >= overlapShare * session.duration
         }
     }
+
+    // What each scope asks iOS for. A request naming a type to read only takes back the right to
+    // write it, so every request repeats both written types; reading weigh-ins waits for the import.
+    static func requested(_ scope: HealthScope) -> (share: Set<HealthType>, read: Set<HealthType>) {
+        switch scope {
+        case .write: return ([.workouts, .weighings], [.workouts])
+        case .import: return ([.workouts, .weighings], [.workouts, .weighings])
+        }
+    }
 }
+
+enum HealthType { case workouts, weighings }

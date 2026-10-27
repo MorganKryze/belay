@@ -45,14 +45,19 @@ enum Health {
     }
 
     // iOS shows its sheet only for the types never asked: writing both, reading workouts for the
-    // overlap check; the import asks to read body mass on its own, after the page's consent.
+    // overlap check; the import adds reading body mass, after the page's consent.
     private static func authorize(_ scope: HealthScope) async throws {
         guard HKHealthStore.isHealthDataAvailable() else { return }
-        switch scope {
-        case .write:
-            try await store.requestAuthorization(toShare: [workouts, bodyMass], read: [workouts])
-        case .import:
-            try await store.requestAuthorization(toShare: [], read: [bodyMass])
+        let (share, read) = HealthRules.requested(scope)
+        try await store.requestAuthorization(
+            toShare: Set(share.map(sampleType)), read: Set(read.map(sampleType))
+        )
+    }
+
+    private static func sampleType(_ type: HealthType) -> HKSampleType {
+        switch type {
+        case .workouts: return workouts
+        case .weighings: return bodyMass
         }
     }
 

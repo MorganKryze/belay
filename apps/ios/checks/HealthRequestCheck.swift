@@ -152,6 +152,12 @@ struct HealthRequestCheck {
         check("one ending as the session starts does not", !HealthRules.overlaps(session, [other(-600, 0)]))
         check("no other workout, no overlap", !HealthRules.overlaps(session, []))
 
+        let write = HealthRules.requested(.write), imports = HealthRules.requested(.import)
+        check("both scopes ask to write sessions and weigh-ins",
+              write.share == [.workouts, .weighings] && imports.share == write.share)
+        check("weigh-ins are read only once the import asks", !write.read.contains(.weighings)
+              && imports.read == [.workouts, .weighings])
+
         print(failures == 0 ? "health request check passed" : "\(failures) failed")
         exit(failures == 0 ? 0 : 1)
     }
