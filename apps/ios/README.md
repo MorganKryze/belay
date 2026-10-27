@@ -60,7 +60,8 @@ the newest web app at the same time.
 ## The session on the lock screen
 
 While a session is open in the app, the iPhone's lock screen shows it, and so
-does the Dynamic Island on phones that have one. There is nothing to set up:
+does the Dynamic Island on phones that have one. A paired Apple Watch shows it
+too, in its Smart Stack. There is nothing to set up:
 iOS asks once whether Belay may show Live Activities, and
 **Settings › Belay › Live Activities** turns them off.
 
