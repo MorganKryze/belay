@@ -189,7 +189,9 @@ describe("Réglages › Apple Santé, the setting", () => {
     fireEvent.click(main);
     expect(await screen.findByText("Accès refusé")).toBeTruthy();
     expect(screen.getByText("Santé n’autorise pas Belay à écrire.")).toBeTruthy();
-    expect(screen.getByText(/Autorise-le dans l’app Santé › ta photo › Confidentialité › Apps › Belay/)).toBeTruthy();
+    expect(
+      screen.getByText(/Autorise-le dans l’app Santé › ta photo › Confidentialité › Apps › Belay/),
+    ).toBeTruthy();
     expect(main.getAttribute("aria-checked")).toBe("false");
     expect((await settingsNow()).on).toBe(false);
     expect(run).not.toHaveBeenCalled();
