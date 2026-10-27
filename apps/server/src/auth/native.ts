@@ -12,6 +12,13 @@ export const NATIVE_STATE = "n.";
 export const CHALLENGE = /^[A-Za-z0-9_-]{43}$/;
 export const CODE_TTL_MS = 60_000;
 export const MAX_PENDING = 1_000;
+// The provider's clock and ours may disagree by this much.
+export const AUTH_TIME_SKEW_MS = 60_000;
+
+// prompt=login only asks the provider to show its login. The ID token's auth_time (in seconds)
+// shows it did: a login no older than the start of this sign-in, give or take the clock drift.
+export const loggedInSince = (authTime: unknown, started: number) =>
+  typeof authTime === "number" && authTime * 1000 >= started - AUTH_TIME_SKEW_MS;
 
 // Keep the reasons in step with `signin.*` in the web i18n files.
 export type SigninFailure = "unavailable" | "expired" | "failed" | "denied";

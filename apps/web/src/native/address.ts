@@ -1,7 +1,12 @@
 // What the person types on the instance screen, and the question asked to the address. Loaded
 // with that screen only.
 
-const LOCAL = new Set(["localhost", "127.0.0.1", "[::1]"]);
+// The hosts a development build's content security policy lets the app reach over plain http.
+const LOCAL = new Set(["localhost", "127.0.0.1"]);
+
+// A release's policy blocks plain http everywhere, so it only ever reaches an instance over https.
+// The dev server sends no policy, and a build made with BELAY_LOOPBACK=1 allows this machine.
+const reachesThisMachine = () => import.meta.env.DEV || import.meta.env.BELAY_LOOPBACK === "1";
 
 // The constructor rather than URL.parse, which iPhones before iOS 18 lack.
 function parseUrl(text: string): URL | null {
@@ -16,7 +21,7 @@ export type AddressCheck = { origin: string } | { error: "invalid" | "insecure" 
 
 // What the person typed, as an instance origin: https added when no scheme is given, any path
 // dropped (Belay is served at the root of its address). Plain http only reaches this machine, for
-// a server run on the developer's own computer.
+// a server run on the developer's own computer, and only from a build made for it.
 export function checkAddress(input: string): AddressCheck {
   const text = input.trim();
   if (text === "") return { error: "invalid" };
@@ -26,7 +31,9 @@ export function checkAddress(input: string): AddressCheck {
   }
   if (url.protocol === "https:") return { origin: url.origin };
   if (url.protocol !== "http:") return { error: "invalid" };
-  return LOCAL.has(url.hostname) ? { origin: url.origin } : { error: "insecure" };
+  return reachesThisMachine() && LOCAL.has(url.hostname)
+    ? { origin: url.origin }
+    : { error: "insecure" };
 }
 
 export type Probe = { origin: string } | { error: "offline" | "unreachable" | "not-belay" };

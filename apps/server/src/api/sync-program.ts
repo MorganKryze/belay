@@ -190,8 +190,10 @@ export async function writePrograms(
   );
 }
 
-// The programs the pointer may name once the batch's choices are written: every program chosen,
-// and the stored one unless a choice of a live program is newer, which nothing can then refuse.
+// The programs the pointer may name once the batch's choices are written. Among the choices of
+// live programs one wins over the stored pointer, folded as writeActiveProgram folds them (the
+// newest, a later one winning a tie), or none does and the stored pointer stays. A choice of a
+// removed program may still win if a restore earlier in the batch is taken, so it counts too.
 async function activeCandidates(
   { tx, userId, now }: Ctx,
   choices: Indexed<ActiveProgramChange>[],
@@ -202,29 +204,26 @@ async function activeCandidates(
     .from(activePrograms)
     .where(eq(activePrograms.userId, userId));
   if (!pointer) return new Set(targets);
-  const live = new Set(
+  const removed = new Map(
     targets.length === 0
       ? []
       : (
           await tx
-            .select({ id: programs.id })
+            .select({ id: programs.id, removed: programs.removed })
             .from(programs)
-            .where(
-              and(
-                eq(programs.userId, userId),
-                inArray(programs.id, targets),
-                eq(programs.removed, false),
-              ),
-            )
-        ).map((r) => r.id),
+            .where(and(eq(programs.userId, userId), inArray(programs.id, targets)))
+        ).map((r) => [r.id, r.removed]),
   );
-  const replaced = mergeFields(
+  const [winner] = mergeFields(
     new Map([["active", iso(pointer.at)]]),
-    choices.filter((c) => live.has(c.programId)),
+    choices.filter((c) => removed.get(c.programId) === false),
     () => "active",
     now,
   );
-  return new Set(replaced.length > 0 ? targets : [...targets, pointer.programId]);
+  return new Set([
+    winner?.programId ?? pointer.programId,
+    ...targets.filter((id) => removed.get(id) === true),
+  ]);
 }
 
 async function updatePrograms(
