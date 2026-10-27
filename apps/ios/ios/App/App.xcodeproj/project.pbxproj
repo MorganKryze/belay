@@ -17,8 +17,40 @@
 		50B271D11FEDC1A000F3C39B /* public in Resources */ = {isa = PBXBuildFile; fileRef = 50B271D01FEDC1A000F3C39B /* public */; };
 		B3E57A022FF1C0DE00A1B2C3 /* rest.wav in Resources */ = {isa = PBXBuildFile; fileRef = B3E57A012FF1C0DE00A1B2C3 /* rest.wav */; };
 		B3E57A052FF1C0DE00A1B2C3 /* BelayNative.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3E57A042FF1C0DE00A1B2C3 /* BelayNative.swift */; };
+		B3E57D032FF1C0DE00A1B2C3 /* LiveActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3E57D012FF1C0DE00A1B2C3 /* LiveActivity.swift */; };
+		B3E57D042FF1C0DE00A1B2C3 /* ActivityDemo.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3E57D022FF1C0DE00A1B2C3 /* ActivityDemo.swift */; };
 		9582B6832FE993A70072D4E8 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9582B6822FE993A50072D4E8 /* SceneDelegate.swift */; };
+		B3E57C052FF1C0DE00A1B2C3 /* BelayActivityWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3E57C022FF1C0DE00A1B2C3 /* BelayActivityWidget.swift */; };
+		B3E57C062FF1C0DE00A1B2C3 /* SessionActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3E57C032FF1C0DE00A1B2C3 /* SessionActivity.swift */; };
+		B3E57C072FF1C0DE00A1B2C3 /* SessionActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3E57C032FF1C0DE00A1B2C3 /* SessionActivity.swift */; };
+		B3E57E022FF1C0DE00A1B2C3 /* SessionActivityViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3E57E012FF1C0DE00A1B2C3 /* SessionActivityViews.swift */; };
+		B3E57E032FF1C0DE00A1B2C3 /* SessionActivityViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3E57E012FF1C0DE00A1B2C3 /* SessionActivityViews.swift */; };
+		B3E57C082FF1C0DE00A1B2C3 /* BelayActivity.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = B3E57C012FF1C0DE00A1B2C3 /* BelayActivity.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		B3E57C102FF1C0DE00A1B2C3 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 504EC2FC1FED79650016851F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = B3E57C0F2FF1C0DE00A1B2C3;
+			remoteInfo = BelayActivity;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		B3E57C0E2FF1C0DE00A1B2C3 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				B3E57C082FF1C0DE00A1B2C3 /* BelayActivity.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		2FAD9762203C412B000D30F8 /* config.xml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = config.xml; sourceTree = "<group>"; };
@@ -32,8 +64,15 @@
 		B3E57A012FF1C0DE00A1B2C3 /* rest.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = rest.wav; sourceTree = "<group>"; };
 		50B271D01FEDC1A000F3C39B /* public */ = {isa = PBXFileReference; lastKnownFileType = folder; path = public; sourceTree = "<group>"; };
 		B3E57A042FF1C0DE00A1B2C3 /* BelayNative.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BelayNative.swift; sourceTree = "<group>"; };
+		B3E57D012FF1C0DE00A1B2C3 /* LiveActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivity.swift; sourceTree = "<group>"; };
+		B3E57D022FF1C0DE00A1B2C3 /* ActivityDemo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityDemo.swift; sourceTree = "<group>"; };
 		9582B6822FE993A50072D4E8 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
 		958DCC722DB07C7200EA8C5F /* debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = debug.xcconfig; path = ../debug.xcconfig; sourceTree = SOURCE_ROOT; };
+		B3E57C012FF1C0DE00A1B2C3 /* BelayActivity.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = BelayActivity.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		B3E57C022FF1C0DE00A1B2C3 /* BelayActivityWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BelayActivityWidget.swift; sourceTree = "<group>"; };
+		B3E57C042FF1C0DE00A1B2C3 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		B3E57E012FF1C0DE00A1B2C3 /* SessionActivityViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionActivityViews.swift; sourceTree = "<group>"; };
+		B3E57C032FF1C0DE00A1B2C3 /* SessionActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionActivity.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -45,6 +84,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		B3E57C0C2FF1C0DE00A1B2C3 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -53,6 +99,8 @@
 			children = (
 				958DCC722DB07C7200EA8C5F /* debug.xcconfig */,
 				504EC3061FED79650016851F /* App */,
+				B3E57C092FF1C0DE00A1B2C3 /* BelayActivity */,
+				B3E57C0A2FF1C0DE00A1B2C3 /* Shared */,
 				504EC3051FED79650016851F /* Products */,
 			);
 			sourceTree = "<group>";
@@ -61,6 +109,7 @@
 			isa = PBXGroup;
 			children = (
 				504EC3041FED79650016851F /* App.app */,
+				B3E57C012FF1C0DE00A1B2C3 /* BelayActivity.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -70,6 +119,8 @@
 			children = (
 				9582B6822FE993A50072D4E8 /* SceneDelegate.swift */,
 				B3E57A042FF1C0DE00A1B2C3 /* BelayNative.swift */,
+				B3E57D012FF1C0DE00A1B2C3 /* LiveActivity.swift */,
+				B3E57D022FF1C0DE00A1B2C3 /* ActivityDemo.swift */,
 				50379B222058CBB4000EE86E /* capacitor.config.json */,
 				504EC3071FED79650016851F /* AppDelegate.swift */,
 				504EC30B1FED79650016851F /* Main.storyboard */,
@@ -83,9 +134,44 @@
 			path = App;
 			sourceTree = "<group>";
 		};
+		B3E57C092FF1C0DE00A1B2C3 /* BelayActivity */ = {
+			isa = PBXGroup;
+			children = (
+				B3E57C022FF1C0DE00A1B2C3 /* BelayActivityWidget.swift */,
+				B3E57C042FF1C0DE00A1B2C3 /* Info.plist */,
+			);
+			path = BelayActivity;
+			sourceTree = "<group>";
+		};
+		B3E57C0A2FF1C0DE00A1B2C3 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				B3E57C032FF1C0DE00A1B2C3 /* SessionActivity.swift */,
+				B3E57E012FF1C0DE00A1B2C3 /* SessionActivityViews.swift */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		B3E57C0F2FF1C0DE00A1B2C3 /* BelayActivity */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B3E57C122FF1C0DE00A1B2C3 /* Build configuration list for PBXNativeTarget "BelayActivity" */;
+			buildPhases = (
+				B3E57C0B2FF1C0DE00A1B2C3 /* Sources */,
+				B3E57C0C2FF1C0DE00A1B2C3 /* Frameworks */,
+				B3E57C0D2FF1C0DE00A1B2C3 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = BelayActivity;
+			productName = BelayActivity;
+			productReference = B3E57C012FF1C0DE00A1B2C3 /* BelayActivity.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		504EC3031FED79650016851F /* App */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 504EC3161FED79650016851F /* Build configuration list for PBXNativeTarget "App" */;
@@ -93,10 +179,12 @@
 				504EC3001FED79650016851F /* Sources */,
 				504EC3011FED79650016851F /* Frameworks */,
 				504EC3021FED79650016851F /* Resources */,
+				B3E57C0E2FF1C0DE00A1B2C3 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				B3E57C112FF1C0DE00A1B2C3 /* PBXTargetDependency */,
 			);
 			name = App;
 			packageProductDependencies = (
@@ -115,6 +203,9 @@
 				LastSwiftUpdateCheck = 0920;
 				LastUpgradeCheck = 0920;
 				TargetAttributes = {
+					B3E57C0F2FF1C0DE00A1B2C3 = {
+						CreatedOnToolsVersion = 26.5;
+					};
 					504EC3031FED79650016851F = {
 						CreatedOnToolsVersion = 9.2;
 						LastSwiftMigration = 1100;
@@ -139,6 +230,7 @@
 			projectRoot = "";
 			targets = (
 				504EC3031FED79650016851F /* App */,
+				B3E57C0F2FF1C0DE00A1B2C3 /* BelayActivity */,
 			);
 		};
 /* End PBXProject section */
@@ -158,6 +250,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		B3E57C0D2FF1C0DE00A1B2C3 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -168,10 +267,32 @@
 				504EC3081FED79650016851F /* AppDelegate.swift in Sources */,
 				9582B6832FE993A70072D4E8 /* SceneDelegate.swift in Sources */,
 				B3E57A052FF1C0DE00A1B2C3 /* BelayNative.swift in Sources */,
+				B3E57C072FF1C0DE00A1B2C3 /* SessionActivity.swift in Sources */,
+				B3E57D032FF1C0DE00A1B2C3 /* LiveActivity.swift in Sources */,
+				B3E57D042FF1C0DE00A1B2C3 /* ActivityDemo.swift in Sources */,
+				B3E57E022FF1C0DE00A1B2C3 /* SessionActivityViews.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B3E57C0B2FF1C0DE00A1B2C3 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B3E57C052FF1C0DE00A1B2C3 /* BelayActivityWidget.swift in Sources */,
+				B3E57C062FF1C0DE00A1B2C3 /* SessionActivity.swift in Sources */,
+				B3E57E032FF1C0DE00A1B2C3 /* SessionActivityViews.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		B3E57C112FF1C0DE00A1B2C3 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = B3E57C0F2FF1C0DE00A1B2C3 /* BelayActivity */;
+			targetProxy = B3E57C102FF1C0DE00A1B2C3 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin PBXVariantGroup section */
 		504EC30B1FED79650016851F /* Main.storyboard */ = {
@@ -331,6 +452,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				EXCLUDED_SOURCE_FILE_NAMES = "ActivityDemo.swift SessionActivityViews.swift";
 				INFOPLIST_FILE = App/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.4;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -341,6 +463,51 @@
 				PRODUCT_BUNDLE_IDENTIFIER = cloud.libresoftware.belay;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		B3E57C132FF1C0DE00A1B2C3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 958DCC722DB07C7200EA8C5F /* debug.xcconfig */;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = BelayActivity/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.4;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = cloud.libresoftware.belay.activity;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		B3E57C142FF1C0DE00A1B2C3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = BelayActivity/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.4;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = cloud.libresoftware.belay.activity;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 1;
 			};
@@ -363,6 +530,15 @@
 			buildConfigurations = (
 				504EC3171FED79650016851F /* Debug */,
 				504EC3181FED79650016851F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		B3E57C122FF1C0DE00A1B2C3 /* Build configuration list for PBXNativeTarget "BelayActivity" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B3E57C132FF1C0DE00A1B2C3 /* Debug */,
+				B3E57C142FF1C0DE00A1B2C3 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

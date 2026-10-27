@@ -14,6 +14,7 @@ public class BelayNativePlugin: CAPPlugin, CAPBridgedPlugin, ASWebAuthentication
         CAPPluginMethod(name: "writeToken", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "clearToken", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "authenticate", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "setLiveActivity", returnType: CAPPluginReturnPromise),
     ]
 
     private static let service = "cloud.libresoftware.belay.session"
@@ -92,6 +93,25 @@ public class BelayNativePlugin: CAPPlugin, CAPBridgedPlugin, ASWebAuthentication
                 self.signIn = nil
                 call.reject("sign-in sheet did not open")
             }
+        }
+    }
+
+    // The page says which session it wants on the lock screen, never "start" or "stop": a page
+    // that starts again describes the same session, finds its Activity and takes it over. The
+    // promise settles once iOS has applied the change, so the page sends one description at a time.
+    @objc func setLiveActivity(_ call: CAPPluginCall) {
+        let payload: SessionActivityPayload?
+        do {
+            payload = try SessionActivityPayload.from(call.options["activity"])
+        } catch {
+            return call.reject("activity invalid")
+        }
+        #if DEBUG
+        if ActivityDemo.isRunning { return call.resolve() }
+        #endif
+        Task {
+            await LiveActivity.show(payload)
+            call.resolve()
         }
     }
 
