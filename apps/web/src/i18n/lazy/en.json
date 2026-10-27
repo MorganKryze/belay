@@ -945,6 +945,9 @@
     "onlyWeighings": "Only weigh-ins are sent.",
     "refusedDetail": "Health does not let Belay write.",
     "refusedHelp": "Allow it in Settings › Health › Data Access & Devices › Belay, then try again.",
+    "import": "Import weigh-ins",
+    "importSub": "From a connected scale or entered in Health",
+    "importNote": "If no weigh-in arrives, check that Belay can read weight in Settings › Health › Data Access & Devices › Belay.",
     "history": "Send history to Health",
     "historySub": "Your {{sessions}} and {{weighings}} from before you turned this on. Nothing is sent twice.",
     "sessions_one": "{{count}} session",
@@ -955,6 +958,9 @@
     "sent": "History sent",
     "footerSets": "Sets, loads and reps stay in Belay: Health has no place for them.",
     "footerWatch": "If another app (your watch, for instance) already recorded the workout, Belay does not add a second one.",
-    "footerOff": "Turning this off removes nothing from Health: delete what is there in the Health app."
+    "footerOff": "Turning this off removes nothing from Health: delete what is there in the Health app.",
+    "consentTitle": "Import your weigh-ins from Health?",
+    "consentBody": "Weigh-ins Health receives from other apps and devices will be added to Belay and synced with <host>{{host}}</host>. Only the first weigh-in of each day is kept, and a weigh-in already in Belay is never replaced.",
+    "consentConfirm": "Import"
   }
 }

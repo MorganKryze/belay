@@ -2,7 +2,8 @@ import "@/i18n/lazy";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, CircleAlert, CircleCheck, Clock, type LucideIcon, Send } from "lucide-react";
 import { useEffect, useId, useState, useSyncExternalStore } from "react";
-import { useTranslation } from "react-i18next";
+import { Trans, useTranslation } from "react-i18next";
+import { ActionSheet } from "@/components/action-sheet";
 import { BackLink, PageHeader } from "@/components/page-header";
 import { GroupedList, RowButton, RowSwitch } from "@/components/grouped-list";
 import {
@@ -13,8 +14,10 @@ import {
   requestHealthRun,
   setHealthOn,
   setHistory,
+  setImportOn,
 } from "@/native/health";
 import { historyCounts } from "@/native/health-plan";
+import { readInstance } from "@/lib/platform";
 import { type OpenAccount, useAccount } from "@/sync/account";
 import { NotFound } from "./fallbacks";
 
@@ -151,6 +154,69 @@ function HealthSettings({ account, status }: { account: OpenAccount; status: Hea
             <InfoRow icon={Check} tone="reference" label={t("health.sent")} />
           )}
         </GroupedList>
+      )}
+      {settings.on && <ImportGroup account={account} on={settings.importOn} onChange={changed} />}
+    </>
+  );
+}
+
+// Weigh-ins from Health, asked only after a consent that names the server they will be synced
+// with. « Importer » alone turns it on; Annuler, a swipe or a tap outside leaves it off, and the
+// sheet gives the focus back to the switch.
+function ImportGroup({
+  account,
+  on,
+  onChange,
+}: {
+  account: OpenAccount;
+  on: boolean;
+  onChange: () => Promise<void>;
+}) {
+  const { t } = useTranslation();
+  const [asking, setAsking] = useState(false);
+  // The iPhone app always has its instance once an account is open.
+  const host = new URL(readInstance()!).host;
+  // iOS never says whether a read is allowed, so the answer changes nothing here; a rejected call
+  // (a build without the entitlement) leaves the import off.
+  const turnOn = async () => {
+    try {
+      await health({ op: "authorize", scope: "import" });
+    } catch {
+      return;
+    }
+    await setImportOn(account.db, true, Date.now());
+    await onChange();
+    // The first import follows the sync this starts, or the one already going.
+    void account.engine.refresh();
+  };
+  const turnOff = async () => {
+    await setImportOn(account.db, false, Date.now());
+    await onChange();
+  };
+  return (
+    <>
+      <GroupedList label={t("health.fromHealth")} footer={on ? t("health.importNote") : undefined}>
+        <RowSwitch
+          label={t("health.import")}
+          sub={t("health.importSub")}
+          wrap
+          checked={on}
+          onCheckedChange={(next) => (next ? setAsking(true) : void turnOff())}
+        />
+      </GroupedList>
+      {asking && (
+        <ActionSheet
+          title={t("health.consentTitle")}
+          body={
+            <Trans
+              i18nKey="health.consentBody"
+              values={{ host }}
+              components={{ host: <strong className="font-semibold break-all text-foreground" /> }}
+            />
+          }
+          primary={{ label: t("health.consentConfirm"), onSelect: () => void turnOn() }}
+          onClose={() => setAsking(false)}
+        />
       )}
     </>
   );

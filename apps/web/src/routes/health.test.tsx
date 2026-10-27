@@ -26,6 +26,7 @@ import {
   readHealth,
   setHealthOn,
   setHealthRunner,
+  setImportOn,
 } from "../native/health";
 
 type Access = "allowed" | "denied" | "undetermined";
@@ -77,6 +78,7 @@ function onIPhone(...answers: ReturnType<typeof status>[]) {
 const calls = (op: string) =>
   native.health.mock.calls.filter(([r]) => (r as { op: string }).op === op);
 const mainSwitch = () => screen.findByRole("switch", { name: /^Séances et pesées/ });
+const importSwitch = () => screen.findByRole("switch", { name: /^Importer les pesées/ });
 const settingsNow = async () => {
   const db = await openAccountDb(ADA.id);
   const { settings } = await readHealth(db);
@@ -253,5 +255,67 @@ describe("Réglages › Apple Santé, what goes to Health", () => {
     renderRoute("/settings/health");
     expect(await screen.findByText("Historique envoyé")).toBeTruthy();
     expect(screen.queryByRole("button", { name: /Envoyer l’historique/ })).toBeNull();
+  });
+});
+
+describe("Réglages › Apple Santé, weigh-ins from Health", () => {
+  it("the import's sheet names the instance's host; Annuler leaves it off and gives the switch its focus back", async () => {
+    onIPhone(status("allowed", "allowed"));
+    await turnedOn();
+    renderRoute("/settings/health");
+    const from = await screen.findByRole("region", { name: "Depuis Santé" });
+    const toggle = await importSwitch();
+    expect(from.contains(toggle)).toBe(true);
+    expect(screen.queryByText(/Si aucune pesée n’arrive/)).toBeNull();
+    act(() => toggle.focus());
+    fireEvent.click(toggle);
+    const sheet = await screen.findByRole("dialog", {
+      name: "Importer tes pesées de Santé\u202f?",
+    });
+    const host = within(sheet).getByText("belay.example.org");
+    expect(host.tagName).toBe("STRONG");
+    expect(sheet.textContent).toContain("seront ajoutées à Belay et synchronisées avec");
+    const cancel = within(sheet).getByRole("button", { name: "Annuler" });
+    expect(document.activeElement).toBe(cancel);
+    expect(within(sheet).queryByRole("button", { name: /Supprimer|Désactiver/ })).toBeNull();
+    fireEvent.click(cancel);
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    await waitFor(() => expect(document.activeElement).toBe(toggle));
+    expect(toggle.getAttribute("aria-checked")).toBe("false");
+    expect(calls("authorize")).toHaveLength(0);
+    expect((await settingsNow()).importOn).toBe(false);
+  });
+
+  it("Importer asks to read weight, turns the import on and syncs", async () => {
+    onIPhone(status("allowed", "allowed"));
+    await turnedOn();
+    renderRoute("/settings/health");
+    fireEvent.click(await importSwitch());
+    const sheet = await screen.findByRole("dialog");
+    await waitFor(() => expect(api.requests.length).toBeGreaterThan(0));
+    const before = api.requests.length;
+    fireEvent.click(within(sheet).getByRole("button", { name: "Importer" }));
+    await waitFor(async () => expect((await settingsNow()).importOn).toBe(true));
+    expect(calls("authorize")).toEqual([[{ op: "authorize", scope: "import" }]]);
+    await waitFor(async () =>
+      expect((await importSwitch()).getAttribute("aria-checked")).toBe("true"),
+    );
+    expect(await screen.findByText(/Si aucune pesée n’arrive, vérifie que Belay/)).toBeTruthy();
+    await waitFor(() => expect(api.requests.length).toBeGreaterThan(before));
+  });
+
+  it("the import turned off writes it off without asking iOS", async () => {
+    onIPhone(status("allowed", "allowed"));
+    await turnedOn();
+    const db = await openAccountDb(ADA.id);
+    await setImportOn(db, true, Date.now());
+    db.close();
+    renderRoute("/settings/health");
+    const toggle = await importSwitch();
+    await waitFor(() => expect(toggle.getAttribute("aria-checked")).toBe("true"));
+    fireEvent.click(toggle);
+    await waitFor(async () => expect((await settingsNow()).importOn).toBe(false));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(calls("authorize")).toHaveLength(0);
   });
 });
