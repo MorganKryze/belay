@@ -140,9 +140,9 @@ at the next **Run**; there is nothing to tick. `pnpm ios:sim` builds unsigned,
 without the entitlement, so Health refuses that build: to see Health at work,
 **Run** from Xcode, on a simulator or on the phone.
 
-iOS keeps the permissions in **Settings › Health › Data Access & Devices ›
-Belay**. That path is still to be confirmed on iOS 18, where Health sits under
-**Settings › Apps › Health**. Turning the setting off, or deleting the
+iOS keeps the permissions in the Health app: tap your picture, then **Privacy ›
+Apps › Belay**. The page shows what Belay may write and read, and **Data from
+"Belay"** lists what it wrote there. Turning the setting off, or deleting the
 account, removes nothing from Health: delete what is there in the Health app.
 
 ### Check on the phone
@@ -154,17 +154,18 @@ account, removes nothing from Health: delete what is there in the Health app.
 3. Finish a session: it shows in Health and Fitness as a traditional strength
    training workout ("Musculation traditionnelle" in French), source Belay, no
    energy.
-4. Edit that session's end in Belay: Health shows the new end. Delete the
-   session: it leaves Health.
+4. Move that session to another day in Belay: Health shows it on that day,
+   once. Delete the session: it leaves Health.
 5. Log a weigh-in: Health's weight shows it at 08:00. Edit it, then delete it:
    Health follows both.
-6. Turn on **Import weigh-ins**, add a weight in the Health app, then bring
-   Belay back to the foreground: the weigh-in arrives in Belay.
+6. Turn on **Import weigh-ins**, then, on a day with no weigh-in typed,
+   edited or deleted in Belay, add a weight in the Health app and bring Belay
+   back to the foreground: the weigh-in arrives in Belay. Health still lists
+   Weight under what Belay may write.
 7. With a watch or a workout app at hand, record a workout over the span of a
    session: Belay does not add a second one. Without one, note this line as
    not checked on a device.
-8. Find where iOS 18 keeps Belay's Health permissions, for the page's help
-   text.
+8. Open the permissions page above: its path matches the page's help text.
 
 ## Limits of a free team
 
@@ -191,6 +192,9 @@ account, removes nothing from Health: delete what is there in the Health app.
   give the bundle identifier a suffix of your own if it is taken. "Maximum
   number of apps" means the free team's limits above: wait for the 7 days to
   pass, or reuse an identifier you already registered.
+- **"Failed to show Widget 'cloud.libresoftware.belay.activity'"**: Xcode ran the
+  extension's scheme. Choose the **App** scheme next to the run destination,
+  then **Run**; it installs the extension with the app.
 - **Signing error on "BelayActivity"**: put your Team ID in
   `ios/local.xcconfig` (step 2), which both targets read. Choosing the team
   under **Signing & Capabilities** writes it into the tracked Xcode project.
