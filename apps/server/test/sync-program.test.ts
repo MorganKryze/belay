@@ -1017,4 +1017,44 @@ describe("abuse limits", () => {
     expect((await programRow(user, PROGRAM))!.removed).toBe(true);
     expect((await programRow(user, one))!.removed).toBe(false);
   });
+
+  it("at 20 programs a program chosen then left by a newer choice in the batch frees its place", async () => {
+    const { user, sync } = await signIn("pg-limit-choices");
+    const { cursor } = await sync("0");
+    const live = Array.from({ length: MAX_PROGRAMS - 1 }, () => newId());
+    const [one, two] = [newId(), newId()];
+    await owner
+      .insert(programs)
+      .values([
+        ...live.map((id) => ({ userId: user, id, schedule: SCHEDULE })),
+        ...[one, two].map((id) => ({ userId: user, id, schedule: SCHEDULE, removed: true })),
+      ]);
+    const left = await sync(cursor, [
+      choose(live[0]!, LATER),
+      choose(live[1]!, LATEST),
+      removeProgram(live[0]!, true, LATEST),
+      removeProgram(one, false, LATEST),
+    ]);
+    expect(rejected(left)).toEqual([]);
+    expect(await pointer(user)).toMatchObject({ programId: live[1] });
+    expect((await programRow(user, live[0]!))!.removed).toBe(true);
+    expect((await programRow(user, one))!.removed).toBe(false);
+
+    // The newer choice wins wherever it sits in the batch: the one sent after it, older, frees
+    // its place, and the winner's removal is refused.
+    const T15 = "2026-10-07T17:15:00.000Z";
+    const T20 = "2026-10-07T17:20:00.000Z";
+    const older = await sync(left.cursor, [
+      choose(live[2]!, T20),
+      choose(live[3]!, T15),
+      removeProgram(live[2]!, true, T20),
+      removeProgram(live[3]!, true, T20),
+      removeProgram(two, false, T20),
+    ]);
+    expect(rejected(older)).toEqual([{ index: 2, reason: "refused" }]);
+    expect(await pointer(user)).toMatchObject({ programId: live[2] });
+    expect((await programRow(user, live[2]!))!.removed).toBe(false);
+    expect((await programRow(user, live[3]!))!.removed).toBe(true);
+    expect((await programRow(user, two))!.removed).toBe(false);
+  });
 });
