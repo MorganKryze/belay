@@ -1,11 +1,19 @@
 import "@/i18n/lazy";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, CircleAlert, CircleCheck, Clock, type LucideIcon, Send } from "lucide-react";
+import {
+  Check,
+  CircleAlert,
+  CircleCheck,
+  Clock,
+  HeartPulse,
+  type LucideIcon,
+  Send,
+} from "lucide-react";
 import { useEffect, useId, useState, useSyncExternalStore } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { ActionSheet } from "@/components/action-sheet";
 import { BackLink, PageHeader } from "@/components/page-header";
-import { GroupedList, RowButton, RowSwitch } from "@/components/grouped-list";
+import { GroupedList, RowButton, RowLink, RowSwitch } from "@/components/grouped-list";
 import {
   health,
   type HealthStatus,
@@ -66,6 +74,34 @@ function useHealthState(account: OpenAccount) {
   const progress = useSyncExternalStore(healthProgress.subscribe, healthProgress.get);
   const changed = () => queryClient.invalidateQueries({ queryKey: key });
   return { state, progress, changed };
+}
+
+// Réglages' « Sur cet iPhone » group: the row to the page, saying whether the setting is on, or
+// that iOS refuses both writes (icon and word, never red). Nothing until iOS says Health is there.
+export function HealthGroup({ account }: { account: OpenAccount }) {
+  const { t } = useTranslation();
+  const status = useHealthStatus();
+  const { state } = useHealthState(account);
+  if (!status?.available || !state) return null;
+  const value = bothRefused(status) ? (
+    <span className="inline-flex items-center gap-1">
+      <CircleAlert aria-hidden="true" className="size-4 shrink-0 text-primary-ink" />
+      {t("health.refused")}
+    </span>
+  ) : (
+    t(state.settings.on ? "health.on" : "health.off")
+  );
+  return (
+    <GroupedList label={t("settings.onThisPhone")}>
+      <RowLink
+        to="/settings/health"
+        icon={HeartPulse}
+        label={t("health.title")}
+        value={value}
+        trailing="push"
+      />
+    </GroupedList>
+  );
 }
 
 // Réglages › Apple Santé, in the iPhone app only (the route is not found in a browser), and only

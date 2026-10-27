@@ -55,6 +55,7 @@
     "versionNotes": "Belay {{version}} · notes de version",
     "newTab": "(nouvel onglet)",
     "tracking": "Suivi",
+    "onThisPhone": "Sur cet iPhone",
     "supplements": "Compléments",
     "supplementsCount": "{{count}} dans ta liste",
     "profileSub": "Profil · taille, âge, fourchette de perte",
@@ -929,6 +930,8 @@
   },
   "health": {
     "title": "Apple Santé",
+    "off": "Désactivé",
+    "on": "Activé",
     "refused": "Accès refusé",
     "intro": "Belay ajoute tes séances terminées et tes pesées à l’app Santé de cet iPhone.",
     "switch": "Séances et pesées",

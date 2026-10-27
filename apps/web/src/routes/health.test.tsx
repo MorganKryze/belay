@@ -102,6 +102,43 @@ describe("Réglages › Apple Santé, where it shows", () => {
     expect(await screen.findByRole("heading", { name: "Page introuvable" })).toBeTruthy();
     expect(native.health).not.toHaveBeenCalled();
   });
+
+  it("on an iPhone without Health data neither shows", async () => {
+    onIPhone(status("undetermined", "undetermined", false));
+    renderRoute("/settings");
+    await screen.findByRole("region", { name: "Suivi" });
+    await waitFor(() => expect(calls("status")).not.toHaveLength(0));
+    expect(screen.queryByRole("region", { name: "Sur cet iPhone" })).toBeNull();
+    cleanup();
+    renderRoute("/settings/health");
+    expect(await screen.findByRole("heading", { name: "Page introuvable" })).toBeTruthy();
+    expect(screen.queryByRole("switch")).toBeNull();
+  });
+
+  it("Réglages shows Apple Santé, Désactivé, after Suivi, and never asks iOS for access", async () => {
+    onIPhone(status("undetermined", "undetermined"));
+    renderRoute("/settings");
+    const group = await screen.findByRole("region", { name: "Sur cet iPhone" });
+    const tracking = screen.getByRole("region", { name: "Suivi" });
+    expect(tracking.compareDocumentPosition(group) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const row = await within(group).findByRole("link", { name: /Apple Santé/ });
+    expect(row.getAttribute("href")).toBe("/settings/health");
+    await within(row).findByText("Désactivé");
+    expect(calls("authorize")).toHaveLength(0);
+  });
+
+  it("Réglages says Activé once on, and Accès refusé whenever iOS refuses both writes", async () => {
+    onIPhone(status("allowed", "allowed"));
+    await turnedOn();
+    renderRoute("/settings");
+    const group = await screen.findByRole("region", { name: "Sur cet iPhone" });
+    await within(group).findByText("Activé");
+    cleanup();
+    native.health.mockResolvedValue(status("denied", "denied"));
+    renderRoute("/settings");
+    const again = await screen.findByRole("region", { name: "Sur cet iPhone" });
+    await within(again).findByText("Accès refusé");
+  });
 });
 
 describe("Réglages › Apple Santé, the setting", () => {

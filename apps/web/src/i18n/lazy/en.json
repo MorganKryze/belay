@@ -55,6 +55,7 @@
     "versionNotes": "Belay {{version}} · release notes",
     "newTab": "(new tab)",
     "tracking": "Tracking",
+    "onThisPhone": "On this iPhone",
     "supplements": "Supplements",
     "supplementsCount": "{{count}} on your list",
     "profileSub": "Profile · height, age, loss range",
@@ -929,6 +930,8 @@
   },
   "health": {
     "title": "Apple Health",
+    "off": "Off",
+    "on": "On",
     "refused": "Access denied",
     "intro": "Belay adds your finished sessions and your weigh-ins to the Health app on this iPhone.",
     "switch": "Sessions and weigh-ins",
