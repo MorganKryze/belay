@@ -11,29 +11,34 @@ export const INSTANCE = "https://belay.test";
 // outlasts a restart. The stored instance and the token are seeded once per tab, so what the app
 // writes later is what the next load finds. Given `health`, the app has Apple Health, whose store
 // lives in sessionStorage too, as Health outlasts a restart.
-export async function asIPhone(
+export const asIPhone = (page: Page, options: PhoneOptions = {}): Promise<void> =>
+  asPhone(page, "ios", options);
+
+// The page as the Android app runs it: the same fakes, the platform named "android".
+export const asAndroid = (page: Page, options: PhoneOptions = {}): Promise<void> =>
+  asPhone(page, "android", options);
+
+type PhoneOptions = {
+  instance?: string | null;
+  token?: string | null;
+  // The sign-in sheet: closed by the person, or coming back to this address.
+  authenticate?: "cancel" | { url: string };
+  // Health on this phone: there or not, the write access the system grants once asked (both
+  // allowed by default), and the body-mass readings other apps wrote.
+  health?: {
+    available?: boolean;
+    grant?: { workouts: HealthAccess; weighings: HealthAccess };
+    samples?: HealthSample[];
+  };
+};
+
+async function asPhone(
   page: Page,
-  {
-    instance = INSTANCE,
-    token = null,
-    authenticate = "cancel",
-    health,
-  }: {
-    instance?: string | null;
-    token?: string | null;
-    // The sign-in sheet: closed by the person, or coming back to this address.
-    authenticate?: "cancel" | { url: string };
-    // Health on this phone: there or not, the write access iOS grants once asked (both allowed
-    // by default), and the body-mass readings other apps wrote.
-    health?: {
-      available?: boolean;
-      grant?: { workouts: HealthAccess; weighings: HealthAccess };
-      samples?: HealthSample[];
-    };
-  } = {},
+  platform: "ios" | "android",
+  { instance = INSTANCE, token = null, authenticate = "cancel", health }: PhoneOptions,
 ): Promise<void> {
   await page.addInitScript(
-    ({ instance, token, authenticate, health }) => {
+    ({ platform, instance, token, authenticate, health }) => {
       type Kept = { origin: string; token: string };
       const TOKEN = "belay.fake.token";
       if (sessionStorage.getItem("belay.fake.seeded") === null) {
@@ -142,9 +147,10 @@ export async function asIPhone(
         },
       };
       const w = window as unknown as Record<string, unknown>;
-      w.CapacitorCustomPlatform = { name: "ios", plugins };
+      w.CapacitorCustomPlatform = { name: platform, plugins };
       w.Capacitor = {
         isNativePlatform: () => true,
+        getPlatform: () => platform,
         PluginHeaders: Object.entries(plugins).map(([name, methods]) => ({
           name,
           methods: Object.keys(methods).map((m) => ({ name: m, rtype: "promise" })),
@@ -153,7 +159,7 @@ export async function asIPhone(
           plugins[plugin]![method]!(options),
       };
     },
-    { instance, token, authenticate, health },
+    { platform, instance, token, authenticate, health },
   );
 }
 
