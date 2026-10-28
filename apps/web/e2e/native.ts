@@ -14,7 +14,8 @@ export const INSTANCE = "https://belay.test";
 export const asIPhone = (page: Page, options: PhoneOptions = {}): Promise<void> =>
   asPhone(page, "ios", options);
 
-// The page as the Android app runs it: the same fakes, the platform named "android".
+// The page as the Android app runs it: the same fakes, the platform named "android", and the
+// system bars, whose every style the app asks for is kept in order.
 export const asAndroid = (page: Page, options: PhoneOptions = {}): Promise<void> =>
   asPhone(page, "android", options);
 
@@ -145,6 +146,10 @@ async function asPhone(
           schedule: async () => ({ notifications: [] }),
           cancel: async () => {},
         },
+        SystemBars: {
+          setStyle: async ({ style }: { style: string }) =>
+            write("belay.fake.barStyles", [...read<string[]>("belay.fake.barStyles", []), style]),
+        },
       };
       const w = window as unknown as Record<string, unknown>;
       w.CapacitorCustomPlatform = { name: platform, plugins };
@@ -162,6 +167,10 @@ async function asPhone(
     { platform, instance, token, authenticate, health },
   );
 }
+
+// Every style the Android app asked of its system bars, in order.
+export const barStyles = (page: Page): Promise<string[]> =>
+  page.evaluate(() => JSON.parse(sessionStorage.getItem("belay.fake.barStyles") ?? "[]"));
 
 // The address the sign-in sheet was last opened at, or null.
 export const sheetOpenedAt = (page: Page): Promise<string | null> =>

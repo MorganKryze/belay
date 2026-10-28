@@ -1,8 +1,9 @@
 // The iPhone app's session: the token its native side keeps in the Keychain for the stored
 // instance, and the sign-in that earns it through the system sheet. Loaded on the phone only,
 // before the first render (main.tsx), so the first request already carries the token.
+import { SystemBars, SystemBarsStyle } from "@capacitor/core";
 import { Haptics, NotificationType } from "@capacitor/haptics";
-import { readInstance, setNativeSession } from "@/lib/platform";
+import { nativePlatform, readInstance, setNativeSession } from "@/lib/platform";
 import { BelayNative } from "./plugin";
 
 export type SignInResult = "cancelled" | "unavailable" | "expired" | "failed" | "denied";
@@ -105,6 +106,8 @@ export async function install(): Promise<void> {
     { capture: true },
   );
 
+  if (nativePlatform() === "android") keepAndroidReadable();
+
   // WebKit has no vibration API, so the rest's end would be silent in the hand: a success haptic
   // stands in for it. A device without a haptic engine just stays still.
   Object.defineProperty(navigator, "vibrate", {
@@ -114,4 +117,19 @@ export async function install(): Promise<void> {
       return true;
     },
   });
+}
+
+// Android draws the page under its status and navigation bars, so their icons follow the theme:
+// light on the dark one, dark on the light one, at once and on every change of the `dark` class.
+// Android may also clear a web view's storage when space runs low, the outbox included, unless the
+// page asks to keep it. A refusal changes nothing the person can act on, so neither waits.
+function keepAndroidReadable(): void {
+  const root = document.documentElement;
+  const follow = () => {
+    const style = root.classList.contains("dark") ? SystemBarsStyle.Dark : SystemBarsStyle.Light;
+    SystemBars.setStyle({ style }).catch(() => {});
+  };
+  follow();
+  new MutationObserver(follow).observe(root, { attributes: true, attributeFilter: ["class"] });
+  navigator.storage?.persist?.().catch(() => {});
 }

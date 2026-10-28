@@ -2,7 +2,7 @@ import { addDays, toISODate } from "@belay/shared/body/dates";
 import { expect, type Page, test } from "@playwright/test";
 import { expectNoAxeViolations, settled } from "./axe";
 import { fakeServer } from "./fake-server";
-import { asAndroid } from "./native";
+import { asAndroid, barStyles } from "./native";
 
 // The Android app: the same pages as on the iPhone, worded for Health Connect and the phone.
 test.use({ locale: "fr-FR" });
@@ -77,6 +77,16 @@ test("the Santé Connect page has no horizontal scroll at 360 px", async ({ page
   expect(
     await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth),
   ).toBeLessThanOrEqual(0);
+});
+
+test("the system bars follow the theme, the phone's own included", async ({ page, baseURL }) => {
+  await page.emulateMedia({ colorScheme: "dark" });
+  await signedIn(page, baseURL!);
+  await page.goto("/settings");
+  await expect(page.locator(".launch")).toBeHidden();
+  await expect.poll(async () => (await barStyles(page)).at(-1)).toBe("DARK");
+  await page.emulateMedia({ colorScheme: "light" });
+  await expect.poll(async () => (await barStyles(page)).at(-1)).toBe("LIGHT");
 });
 
 for (const scheme of ["light", "dark"] as const) {
