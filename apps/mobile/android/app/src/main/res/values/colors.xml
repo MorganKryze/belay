@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The web app's chalk background and accent, so the launch screen and the page match. -->
+    <color name="launch">#FAFAF7</color>
+    <color name="accent">#C2410C</color>
+</resources>

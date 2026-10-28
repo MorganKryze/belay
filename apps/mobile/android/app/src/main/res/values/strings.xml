@@ -1,7 +1,15 @@
-<?xml version='1.0' encoding='utf-8'?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Belay</string>
     <string name="title_activity_main">Belay</string>
     <string name="package_name">cloud.libresoftware.belay</string>
     <string name="custom_url_scheme">cloud.libresoftware.belay</string>
+    <string name="channel_rest">Rest over</string>
+    <string name="channel_rest_desc">Rings at the end of a rest while Belay is not on screen</string>
+    <string name="channel_rest_quiet">Rest over (silent)</string>
+    <string name="channel_session">Session in progress</string>
+    <string name="channel_session_desc">Exercise, set and timers of the open session</string>
+    <string name="privacy_title">Belay and Health Connect</string>
+    <string name="privacy_body">If you turn it on in Settings › Health Connect, Belay adds your finished sessions (start and end) and your weigh-ins to Health Connect. It reads other apps’ workouts only so a session is not counted twice, and your weigh-ins only if you turn on their import: they then sync with your Belay instance. No other Health Connect data leaves this phone.</string>
+    <string name="privacy_ok">OK</string>
 </resources>
