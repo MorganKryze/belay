@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- The session token, the stored records and the settings stay on this phone: nothing goes to a
-     cloud backup or to a new phone. Signing in again brings everything back from the instance. -->
+     cloud backup or to a new phone. Signing in again brings back what reached the instance; changes
+     not yet sent stay on the old phone until it syncs. -->
 <data-extraction-rules>
     <cloud-backup>
         <exclude domain="root" path="." />

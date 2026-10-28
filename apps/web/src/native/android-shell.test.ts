@@ -48,6 +48,13 @@ describe("the Android shell", () => {
     }
   });
 
+  // The phone's records live under the web view's origin: a default that moved in a later
+  // Capacitor would open the app on an empty database, its unsent changes left behind.
+  it("the web view's origin is pinned to the one the server allows", () => {
+    const config = JSON.parse(readFileSync(join(app, "../../../capacitor.config.json"), "utf8"));
+    expect(config.server).toEqual({ androidScheme: "https", hostname: "localhost" });
+  });
+
   it("release allows no plain http", () => {
     const release = read("main/res/xml/network_security_config.xml");
     expect(release).toContain('cleartextTrafficPermitted="false"');
