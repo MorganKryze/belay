@@ -24,6 +24,16 @@ object HealthRules {
             else -> "undetermined"
         }
 
+    const val ASKED_WRITE = "asked.write"
+    const val ASKED_IMPORT = "asked.import"
+
+    // Marked asked only once the screen is launched: a launch that fails never turns the status
+    // into a refusal for a screen nobody saw.
+    fun launchAsking(asked: PrefsStore, scope: String, launch: () -> Unit) {
+        launch()
+        asked.put(if (scope == "import") ASKED_IMPORT else ASKED_WRITE, "1")
+    }
+
     // What each scope asks for. A request leaving out a type may take back its grant, so every
     // request repeats the write set (with reading sessions, for the overlap); reading weigh-ins
     // waits for the import.

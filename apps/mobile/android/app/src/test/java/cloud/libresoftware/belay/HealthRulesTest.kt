@@ -5,6 +5,7 @@ import java.io.IOException
 import kotlin.coroutines.cancellation.CancellationException
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -14,6 +15,30 @@ class HealthRulesTest {
         assertEquals("allowed", HealthRules.access(granted = true, asked = false))
         assertEquals("denied", HealthRules.access(granted = false, asked = true))
         assertEquals("undetermined", HealthRules.access(granted = false, asked = false))
+    }
+
+    private class MapStore : PrefsStore {
+        val values = mutableMapOf<String, String>()
+
+        override fun get(key: String): String? = values[key]
+
+        override fun put(key: String, value: String?) {
+            if (value == null) values.remove(key) else values[key] = value
+        }
+    }
+
+    @Test fun `a scope counts as asked once its screen is launched`() {
+        val asked = MapStore()
+        HealthRules.launchAsking(asked, "import") {}
+        assertEquals(mapOf("asked.import" to "1"), asked.values)
+    }
+
+    @Test fun `a screen that never launched leaves the scope unasked`() {
+        val asked = MapStore()
+        assertThrows(IllegalStateException::class.java) {
+            HealthRules.launchAsking(asked, "write") { throw IllegalStateException("no activity") }
+        }
+        assertTrue(asked.values.isEmpty())
     }
 
     // A session from 0 to 100 seconds' worth of milliseconds.

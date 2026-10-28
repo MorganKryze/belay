@@ -86,7 +86,7 @@ class HealthBridge(private val plugin: Plugin) {
         }
         val granted = client.permissionController.getGrantedPermissions()
         // Both scopes ask for the write set, so either one counts as asked.
-        val wasAsked = asked.get(ASKED_WRITE) != null || asked.get(ASKED_IMPORT) != null
+        val wasAsked = asked.get(HealthRules.ASKED_WRITE) != null || asked.get(HealthRules.ASKED_IMPORT) != null
         return JSObject()
             .put("available", true)
             .put("workouts", HealthRules.access(HealthRules.WRITE_EXERCISE in granted, wasAsked))
@@ -100,9 +100,8 @@ class HealthBridge(private val plugin: Plugin) {
         if (!available() || launcher == null) return answer(call) { status() }
         if (waiting != null) return call.reject("health unavailable")
         try {
-            asked.put(if (scopeName == "import") ASKED_IMPORT else ASKED_WRITE, "1")
             waiting = call
-            launcher.launch(HealthRules.requested(scopeName))
+            HealthRules.launchAsking(asked, scopeName) { launcher.launch(HealthRules.requested(scopeName)) }
         } catch (e: Exception) {
             waiting = null
             call.reject("health unavailable", e)
@@ -252,10 +251,5 @@ class HealthBridge(private val plugin: Plugin) {
             current = response.nextChangesToken
         } while (response.hasMore)
         return current
-    }
-
-    private companion object {
-        const val ASKED_WRITE = "asked.write"
-        const val ASKED_IMPORT = "asked.import"
     }
 }
