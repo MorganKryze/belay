@@ -2,6 +2,7 @@ package cloud.libresoftware.belay
 
 import android.os.RemoteException
 import java.io.IOException
+import kotlin.coroutines.cancellation.CancellationException
 
 // Belay's few rules on this side of Health Connect, apart from its I/O so the JVM tests reach them.
 object HealthRules {
@@ -23,6 +24,16 @@ object HealthRules {
             else -> "undetermined"
         }
 
+    const val ASKED_WRITE = "asked.write"
+    const val ASKED_IMPORT = "asked.import"
+
+    // Marked asked only once the screen is launched: a launch that fails never turns the status
+    // into a refusal for a screen nobody saw.
+    fun launchAsking(asked: PrefsStore, scope: String, launch: () -> Unit) {
+        launch()
+        asked.put(if (scope == "import") ASKED_IMPORT else ASKED_WRITE, "1")
+    }
+
     // What each scope asks for. A request leaving out a type may take back its grant, so every
     // request repeats the write set (with reading sessions, for the overlap); reading weigh-ins
     // waits for the import.
@@ -37,6 +48,11 @@ object HealthRules {
     fun covers(start: Long, end: Long, others: List<Pair<Long, Long>>): Boolean =
         others.any { (from, to) -> 2 * (minOf(end, to) - maxOf(start, from)) >= end - start }
 
+    // Health Connect returns the sessions that start inside the read range, so it opens a day
+    // (the page's longest workout) before Belay's start: a watch started first is still read, and
+    // covers() keeps only what lies inside Belay's session.
+    fun overlapReadFrom(start: Long): Long = start - HealthRequest.DAY
+
     // How the page should take a refusal: a permission, a Health Connect it cannot reach right now
     // (a lost binding, its storage, its rate limit), or anything else.
     fun outcomeOf(error: Throwable): String =
@@ -45,6 +61,11 @@ object HealthRules {
             is RemoteException, is IOException, is IllegalStateException -> "unavailable"
             else -> "failed"
         }
+
+    // A changes token Health Connect no longer takes, for whatever reason, is read again from
+    // `since`, as an expired one is: the page keeps one weigh-in per day, so nothing doubles. A
+    // missing permission or a cancelled call is not the token's fault and stays a failure.
+    fun readsAgain(error: Throwable): Boolean = error !is SecurityException && error !is CancellationException
 
     // A weigh-in Belay wrote, known by this app's package or by Belay's own id: the import never
     // reads Belay's weigh-ins back as a scale's.

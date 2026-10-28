@@ -8,6 +8,7 @@ import com.getcapacitor.JSObject
 import com.getcapacitor.PluginCall
 import java.security.KeyStore
 import java.util.Base64
+import javax.crypto.AEADBadTagException
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
@@ -22,6 +23,9 @@ interface TokenCrypto {
     fun open(sealed: ByteArray): ByteArray
 }
 
+// The Keystore no longer holds the key the token was sealed with: it is gone for good.
+class TokenKeyGoneException : IllegalStateException("token key gone")
+
 // One token at a time, bound to the instance origin it was written for: a new instance never
 // inherits the old one's session, and another origin never reads it.
 class TokenVault(private val store: PrefsStore, private val crypto: TokenCrypto) {
@@ -31,18 +35,26 @@ class TokenVault(private val store: PrefsStore, private val crypto: TokenCrypto)
         val plain =
             try {
                 crypto.open(Base64.getDecoder().decode(sealed))
-            } catch (_: Exception) {
+            } catch (e: Exception) {
                 // A token nobody can read again is worth nothing: erased, the page asks to sign in.
+                // A Keystore that only fails now (busy, locked) throws, and the session stays.
+                if (!unreadableForGood(e)) throw e
                 clear()
                 return null
             }
         return String(plain, Charsets.UTF_8)
     }
 
+    // A value that was damaged or does not decode (bad base64, too short), or a key that is gone.
+    private fun unreadableForGood(e: Exception) =
+        e is AEADBadTagException || e is IllegalArgumentException || e is TokenKeyGoneException
+
+    // Sealed before anything is erased: a Keystore that fails here leaves the previous session.
     fun write(origin: String, token: String) {
+        val sealed = Base64.getEncoder().encodeToString(crypto.seal(token.toByteArray(Charsets.UTF_8)))
         clear()
         store.put(ORIGIN, origin)
-        store.put(SEALED, Base64.getEncoder().encodeToString(crypto.seal(token.toByteArray(Charsets.UTF_8))))
+        store.put(SEALED, sealed)
     }
 
     fun clear() {
@@ -68,7 +80,7 @@ private class KeystoreCrypto : TokenCrypto {
     override fun open(sealed: ByteArray): ByteArray {
         require(sealed.size > IV_BYTES) { "sealed token too short" }
         // Never a new key here: one made now could not open what an older key sealed.
-        val key = existingKey() ?: throw IllegalStateException("token key gone")
+        val key = existingKey() ?: throw TokenKeyGoneException()
         val cipher = Cipher.getInstance(TRANSFORMATION)
         cipher.init(Cipher.DECRYPT_MODE, key, GCMParameterSpec(TAG_BITS, sealed, 0, IV_BYTES))
         return cipher.doFinal(sealed, IV_BYTES, sealed.size - IV_BYTES)
