@@ -25,6 +25,20 @@ describe("the Android shell", () => {
     expect(start).toBeGreaterThan(register);
   });
 
+  it("system back goes to the previous page, and with none sends the app to the background", () => {
+    const source = kotlin("MainActivity.kt");
+    const start = source.indexOf("super.onCreate");
+    const added = source.indexOf(
+      "onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true)",
+    );
+    expect(start).toBeGreaterThan(-1);
+    expect(added).toBeGreaterThan(start);
+    const handler = /fun handleOnBackPressed\(\) \{([\s\S]*?)\n\s*\}/.exec(source)?.[1] ?? "";
+    expect(handler.replace(/\s+/g, " ").trim()).toBe(
+      "val webView = bridge.webView if (webView.canGoBack()) webView.goBack() else moveTaskToBack(true)",
+    );
+  });
+
   it("the plugin answers to BelayNative with the page's six methods", () => {
     const source = kotlin("BelayNativePlugin.kt");
     expect(source).toContain('@CapacitorPlugin(name = "BelayNative")');
