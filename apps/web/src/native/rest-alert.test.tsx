@@ -8,13 +8,17 @@ type Note = { id: number; schedule?: { at: Date }; [field: string]: unknown };
 type Display = "granted" | "denied" | "prompt";
 
 // The phone's pending notifications as iOS keeps them: one per id, a new one replacing the old.
-const { notes, pending, view, unschedule } = vi.hoisted(() => {
+// `calls` keeps the order the plugin heard cancels and schedules in.
+const { notes, pending, view, unschedule, calls, phone } = vi.hoisted(() => {
   const pending = new Map<number, Note>();
+  const calls: string[] = [];
   const unschedule = async ({ notifications }: { notifications: { id: number }[] }) => {
+    calls.push("cancel");
     for (const n of notifications) pending.delete(n.id);
   };
   const notes = {
     schedule: vi.fn(async ({ notifications }: { notifications: Note[] }) => {
+      calls.push("schedule");
       for (const n of notifications) pending.set(n.id, n);
       return { notifications: notifications.map((n) => ({ id: n.id })) };
     }),
@@ -27,11 +31,22 @@ const { notes, pending, view, unschedule } = vi.hoisted(() => {
       throw new Error('"LocalNotifications.then()" is not implemented on ios');
     },
   };
-  return { notes, pending, unschedule, view: { active: null as ActiveSession | null } };
+  return {
+    notes,
+    pending,
+    unschedule,
+    calls,
+    view: { active: null as ActiveSession | null },
+    phone: { platform: "ios" as "ios" | "android" },
+  };
 });
 vi.mock("@capacitor/local-notifications", () => ({ LocalNotifications: notes }));
 // The Health link has its own tests; here only whether it is there.
 vi.mock("./health-mirror", () => ({ HealthMirror: () => <i data-testid="health-mirror" /> }));
+vi.mock("@/lib/platform", async (original) => ({
+  ...(await original<typeof import("@/lib/platform")>()),
+  nativePlatform: () => phone.platform,
+}));
 vi.mock("@/sync/account", () => ({
   useSessionView: () => ({ data: { active: view.active } }),
   useHistory: () => ({ data: {} }),
@@ -58,9 +73,21 @@ const only = () => {
   return pending.get(1)!;
 };
 
+// Whether the app is on screen, as the web view reports it to the page.
+let visibility: DocumentVisibilityState = "visible";
+Object.defineProperty(document, "visibilityState", { configurable: true, get: () => visibility });
+const setVisible = (shown: boolean) => {
+  visibility = shown ? "visible" : "hidden";
+  document.dispatchEvent(new Event("visibilitychange"));
+};
+const settle = () => new Promise((r) => setTimeout(r, 20));
+
 beforeEach(async () => {
   localStorage.clear();
   pending.clear();
+  calls.length = 0;
+  phone.platform = "ios";
+  visibility = "visible";
   vi.clearAllMocks();
   notes.checkPermissions.mockResolvedValue({ display: "granted" });
   notes.requestPermissions.mockResolvedValue({ display: "granted" });
@@ -215,5 +242,84 @@ describe("NativeRestAlert", () => {
     await new Promise((r) => setTimeout(r, 20));
     expect(notes.schedule).not.toHaveBeenCalled();
     unmount();
+  });
+});
+
+describe("NativeRestAlert on Android", () => {
+  beforeEach(() => {
+    phone.platform = "android";
+  });
+
+  it("android: nothing pending while shown", async () => {
+    render(show(rest(90)));
+    await waitFor(() => expect(notes.checkPermissions).toHaveBeenCalledTimes(1));
+    await settle();
+    expect(notes.cancel).toHaveBeenCalled();
+    expect(notes.schedule).not.toHaveBeenCalled();
+    expect(pending.size).toBe(0);
+  });
+
+  it("android: hiding schedules the end on the rest channel", async () => {
+    localStorage.setItem("belay.restSound", "on");
+    render(show(rest(90)));
+    await waitFor(() => expect(notes.checkPermissions).toHaveBeenCalledTimes(1));
+    await settle();
+    setVisible(false);
+    await waitFor(() => expect(notes.schedule).toHaveBeenCalledTimes(1));
+    expect(only()).toMatchObject({
+      id: 1,
+      title: "Repos terminé",
+      body: "C’est reparti",
+      channelId: "rest",
+      schedule: { at: new Date(at(90)), allowWhileIdle: true },
+    });
+  });
+
+  it("android: sound off uses the quiet channel", async () => {
+    localStorage.setItem("belay.restSound", "off");
+    render(show(rest(90)));
+    await waitFor(() => expect(notes.checkPermissions).toHaveBeenCalledTimes(1));
+    await settle();
+    setVisible(false);
+    await waitFor(() => expect(pending.size).toBe(1));
+    expect(only().channelId).toBe("rest-quiet");
+  });
+
+  it("android: showing again cancels", async () => {
+    render(show(rest(90)));
+    await waitFor(() => expect(notes.checkPermissions).toHaveBeenCalledTimes(1));
+    await settle();
+    setVisible(false);
+    await waitFor(() => expect(pending.size).toBe(1));
+    setVisible(true);
+    await waitFor(() => expect(pending.size).toBe(0));
+  });
+
+  it("android: hide, show, hide leaves one pending", async () => {
+    render(show(rest(90)));
+    await waitFor(() => expect(notes.checkPermissions).toHaveBeenCalledTimes(1));
+    await settle();
+    calls.length = 0;
+    setVisible(false);
+    await settle();
+    setVisible(true);
+    await settle();
+    setVisible(false);
+    await waitFor(() =>
+      expect(calls).toEqual(["cancel", "schedule", "cancel", "cancel", "schedule"]),
+    );
+    expect(only().schedule).toEqual({ at: new Date(at(90)), allowWhileIdle: true });
+  });
+
+  it("android: no schedule for a rest already over", async () => {
+    const { rerender } = render(show(rest(90)));
+    await waitFor(() => expect(notes.checkPermissions).toHaveBeenCalledTimes(1));
+    await settle();
+    vi.setSystemTime(NOW + 120_000);
+    rerender(show(rest(90)));
+    setVisible(false);
+    await settle();
+    expect(notes.schedule).not.toHaveBeenCalled();
+    expect(pending.size).toBe(0);
   });
 });
