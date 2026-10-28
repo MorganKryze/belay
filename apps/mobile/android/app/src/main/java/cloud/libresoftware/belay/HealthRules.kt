@@ -2,6 +2,7 @@ package cloud.libresoftware.belay
 
 import android.os.RemoteException
 import java.io.IOException
+import kotlin.coroutines.cancellation.CancellationException
 
 // Belay's few rules on this side of Health Connect, apart from its I/O so the JVM tests reach them.
 object HealthRules {
@@ -45,6 +46,11 @@ object HealthRules {
             is RemoteException, is IOException, is IllegalStateException -> "unavailable"
             else -> "failed"
         }
+
+    // A changes token Health Connect no longer takes, for whatever reason, is read again from
+    // `since`, as an expired one is: the page keeps one weigh-in per day, so nothing doubles. A
+    // missing permission or a cancelled call is not the token's fault and stays a failure.
+    fun readsAgain(error: Throwable): Boolean = error !is SecurityException && error !is CancellationException
 
     // A weigh-in Belay wrote, known by this app's package or by Belay's own id: the import never
     // reads Belay's weigh-ins back as a scale's.

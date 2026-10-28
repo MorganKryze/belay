@@ -215,7 +215,7 @@ class HealthBridge(private val plugin: Plugin) {
 
     // Weight records from `since` that Health Connect received after the anchor, Belay's own left
     // out. Deletions are not followed: a weigh-in once in Belay stays the person's there. With no
-    // anchor, or an expired one, everything from `since` is read again; the token is taken first,
+    // anchor, or an expired or refused one, everything from `since` is read again; the token is taken first,
     // so a record written during the read comes back next time rather than never.
     private suspend fun readWeighings(anchor: String?, since: Long): JSObject {
         val records = mutableListOf<WeightRecord>()
@@ -237,11 +237,16 @@ class HealthBridge(private val plugin: Plugin) {
     }
 
     // The weight records added or changed after the token, until none is left; null once the token
-    // expired.
+    // expired or Health Connect refuses it.
     private suspend fun changesAfter(token: String, into: MutableList<WeightRecord>): String? {
         var current = token
         do {
-            val response = client.getChanges(current)
+            val response = try {
+                client.getChanges(current)
+            } catch (e: Exception) {
+                if (!HealthRules.readsAgain(e)) throw e
+                return null
+            }
             if (response.changesTokenExpired) return null
             response.changes.filterIsInstance<UpsertionChange>().mapNotNullTo(into) { it.record as? WeightRecord }
             current = response.nextChangesToken

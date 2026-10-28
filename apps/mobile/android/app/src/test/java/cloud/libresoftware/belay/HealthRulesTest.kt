@@ -2,6 +2,7 @@ package cloud.libresoftware.belay
 
 import android.os.RemoteException
 import java.io.IOException
+import kotlin.coroutines.cancellation.CancellationException
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -44,6 +45,14 @@ class HealthRulesTest {
 
     @Test fun `any other refusal reads failed`() =
         assertEquals("failed", HealthRules.outcomeOf(IllegalArgumentException("bad record")))
+
+    @Test fun `a changes token that fails reads everything again, unless refused or cancelled`() {
+        assertTrue(HealthRules.readsAgain(IllegalArgumentException("invalid token")))
+        assertTrue(HealthRules.readsAgain(IllegalStateException("token unknown")))
+        assertTrue(HealthRules.readsAgain(RemoteException()))
+        assertFalse(HealthRules.readsAgain(SecurityException("no")))
+        assertFalse(HealthRules.readsAgain(CancellationException("left")))
+    }
 
     @Test fun `the outcomes are the page's`() =
         assertEquals(setOf("written", "removed", "overlap", "denied", "unavailable", "failed"), HealthRules.OUTCOMES)
