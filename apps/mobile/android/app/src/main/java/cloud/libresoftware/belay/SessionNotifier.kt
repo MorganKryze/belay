@@ -9,7 +9,6 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import com.getcapacitor.PluginCall
-import org.json.JSONException
 
 // The open session as an ongoing notification, Android's counterpart of the iPhone's Live
 // Activity. One notification at a time: a description for another session replaces it in place.
@@ -23,14 +22,12 @@ class SessionNotifier(private val context: Context) {
                 ActivityPayload.from(call.data.optJSONObject("activity"))
             } catch (e: IllegalArgumentException) {
                 return call.reject("activity invalid", "invalid", e)
-            } catch (e: JSONException) {
-                return call.reject("activity invalid", "invalid", e)
             }
         try {
             if (payload == null) end() else post(payload, System.currentTimeMillis())
         } catch (e: Exception) {
             // The page carries on without the notification and tries again on its next change.
-            return call.reject(e.message ?: "unavailable", "unavailable", e)
+            return call.reject("unavailable", "unavailable", e)
         }
         call.resolve()
     }
