@@ -34,7 +34,9 @@ export interface LiveActivity {
 }
 
 // ActivityKit refuses an update above 4 KB: 80 characters a text keeps the whole far below it.
-const cap = (text: string) => text.slice(0, 80);
+// The Android app refuses a longer text; a test holds its decoder to this value.
+export const ACTIVITY_TEXT_MAX = 80;
+const cap = (text: string) => text.slice(0, ACTIVITY_TEXT_MAX);
 const latest = (sets: readonly WorkoutSet[]) =>
   sets.reduce<WorkoutSet | null>((last, s) => (last && last.doneAt >= s.doneAt ? last : s), null);
 

@@ -4,8 +4,9 @@ import type { TFunction } from "i18next";
 import { describe, expect, it } from "vitest";
 import i18n from "@/i18n";
 import "@/i18n/lazy";
+import { kotlin, longConst, stringSet } from "@/test/kotlin";
 import { body, cases, fields, swift } from "@/test/swift";
-import { type ActivityStatus, liveActivityOf } from "./live-activity";
+import { ACTIVITY_TEXT_MAX, type ActivityStatus, liveActivityOf } from "./live-activity";
 
 // The page describes the open session as JSON and the iPhone app decodes it into Swift types by
 // their field names: a key renamed, added or dropped on one side alone would make every update
@@ -92,5 +93,33 @@ describe("the lock screen description and the iPhone app's types", () => {
     for (const activity of [due(), resting()]) {
       expect(Object.keys(activity).sort()).toEqual(payload);
     }
+  });
+});
+
+// The Android app decodes the same description against a fixed shape and refuses anything else, so
+// the page and its Kotlin decoder are held to the same keys, statuses and text bound.
+describe("the lock screen description and the Android app's decoder", () => {
+  const decoder = () => kotlin("ActivityPayload.kt");
+
+  it("the decoder's top keys are the description's", () => {
+    for (const activity of [due(), resting()]) {
+      expect(stringSet(decoder(), "ACTIVITY_KEYS").sort()).toEqual(Object.keys(activity).sort());
+    }
+    expect(stringSet(decoder(), "ACTIVITY_KEYS").sort()).toEqual(payload);
+  });
+
+  it("the decoder's state keys are the description's state keys", () => {
+    for (const activity of [due(), resting()]) {
+      expect(stringSet(decoder(), "STATE_KEYS").sort()).toEqual(Object.keys(activity.state).sort());
+    }
+    expect(stringSet(decoder(), "STATE_KEYS").sort()).toEqual(contentState);
+  });
+
+  it("the decoder's statuses are the Swift Status cases", () => {
+    expect(stringSet(decoder(), "STATUSES").sort()).toEqual(statuses);
+  });
+
+  it("the decoder refuses a text past the length the page cuts it to", () => {
+    expect(longConst(decoder(), "TEXT_MAX")).toBe(ACTIVITY_TEXT_MAX);
   });
 });
