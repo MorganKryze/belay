@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { plugin, haptics } = vi.hoisted(() => ({
+const { plugin, haptics, bars } = vi.hoisted(() => ({
   plugin: {
     readToken: vi.fn<(o: { origin: string }) => Promise<{ token: string | null }>>(),
     writeToken: vi.fn<(o: { origin: string; token: string }) => Promise<void>>(),
@@ -8,8 +8,13 @@ const { plugin, haptics } = vi.hoisted(() => ({
     authenticate: vi.fn<(o: { url: string; callbackScheme: string }) => Promise<{ url: string }>>(),
   },
   haptics: { notification: vi.fn<(o: { type: string }) => Promise<void>>() },
+  bars: { setStyle: vi.fn<(o: { style: string }) => Promise<void>>() },
 }));
-vi.mock("@capacitor/core", () => ({ registerPlugin: () => plugin }));
+vi.mock("@capacitor/core", () => ({
+  registerPlugin: () => plugin,
+  SystemBars: bars,
+  SystemBarsStyle: { Dark: "DARK", Light: "LIGHT" },
+}));
 vi.mock("@capacitor/haptics", () => ({
   Haptics: haptics,
   NotificationType: { Success: "SUCCESS" },
@@ -21,6 +26,9 @@ const fetchMock = vi.fn<typeof fetch>();
 const replace = vi.fn();
 const assign = vi.fn();
 const listeners: Parameters<typeof document.addEventListener>[] = [];
+const persist = vi.fn<() => Promise<boolean>>();
+// Every observer install() sets up, disconnected after each test so none outlives its own.
+const observers: MutationObserver[] = [];
 
 // Fresh modules each time: the platform's session is module state, and install() sets it.
 const load = async () => ({
@@ -37,8 +45,28 @@ beforeEach(() => {
   vi.resetModules();
   localStorage.clear();
   localStorage.setItem("belay.instance", ORIGIN);
-  for (const fn of [...Object.values(plugin), haptics.notification, fetchMock, replace, assign])
+  for (const fn of [
+    ...Object.values(plugin),
+    haptics.notification,
+    bars.setStyle,
+    persist,
+    fetchMock,
+    replace,
+    assign,
+  ])
     fn.mockReset();
+  bars.setStyle.mockResolvedValue();
+  persist.mockResolvedValue(true);
+  Object.defineProperty(navigator, "storage", { configurable: true, value: { persist } });
+  vi.stubGlobal(
+    "MutationObserver",
+    class extends MutationObserver {
+      constructor(callback: MutationCallback) {
+        super(callback);
+        observers.push(this);
+      }
+    },
+  );
   plugin.readToken.mockResolvedValue({ token: TOKEN });
   plugin.writeToken.mockResolvedValue();
   plugin.clearToken.mockResolvedValue();
@@ -54,7 +82,10 @@ beforeEach(() => {
 });
 afterEach(() => {
   for (const args of listeners.splice(0)) document.removeEventListener(...args);
+  for (const observer of observers.splice(0)) observer.disconnect();
+  document.documentElement.classList.remove("dark");
   Reflect.deleteProperty(navigator, "vibrate");
+  Reflect.deleteProperty(navigator, "storage");
   document.body.innerHTML = "";
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
@@ -232,5 +263,48 @@ describe("the page's sign-in links and vibrations", () => {
     await install();
     expect(navigator.vibrate(200)).toBe(true);
     expect(haptics.notification).toHaveBeenCalledWith({ type: "SUCCESS" });
+  });
+});
+
+describe("Android's system bars and storage", () => {
+  const onAndroid = () =>
+    vi.stubGlobal("Capacitor", { isNativePlatform: () => true, getPlatform: () => "android" });
+  const lastStyle = () => bars.setStyle.mock.calls.at(-1)?.[0].style;
+
+  it("android asks for persistent storage", async () => {
+    onAndroid();
+    const { install } = await load();
+    await install();
+    expect(persist).toHaveBeenCalledOnce();
+  });
+
+  it("android sets light bar icons on the dark theme and dark ones on the light theme", async () => {
+    onAndroid();
+    document.documentElement.classList.add("dark");
+    const { install } = await load();
+    await install();
+    expect(lastStyle()).toBe("DARK");
+    document.documentElement.classList.remove("dark");
+    await vi.waitFor(() => expect(lastStyle()).toBe("LIGHT"));
+    document.documentElement.classList.add("dark");
+    await vi.waitFor(() => expect(lastStyle()).toBe("DARK"));
+  });
+
+  it("the bars refusing a style throws nothing", async () => {
+    onAndroid();
+    bars.setStyle.mockRejectedValue(new Error("not implemented"));
+    persist.mockRejectedValue(new Error("refused"));
+    const { install } = await load();
+    await expect(install()).resolves.toBeUndefined();
+  });
+
+  it("the iPhone does neither", async () => {
+    vi.stubGlobal("Capacitor", { isNativePlatform: () => true, getPlatform: () => "ios" });
+    const { install } = await load();
+    await install();
+    document.documentElement.classList.add("dark");
+    await new Promise((settle) => setTimeout(settle, 10));
+    expect(bars.setStyle).not.toHaveBeenCalled();
+    expect(persist).not.toHaveBeenCalled();
   });
 });
