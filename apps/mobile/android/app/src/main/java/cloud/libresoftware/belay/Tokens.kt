@@ -39,10 +39,12 @@ class TokenVault(private val store: PrefsStore, private val crypto: TokenCrypto)
         return String(plain, Charsets.UTF_8)
     }
 
+    // Sealed before anything is erased: a Keystore that fails here leaves the previous session.
     fun write(origin: String, token: String) {
+        val sealed = Base64.getEncoder().encodeToString(crypto.seal(token.toByteArray(Charsets.UTF_8)))
         clear()
         store.put(ORIGIN, origin)
-        store.put(SEALED, Base64.getEncoder().encodeToString(crypto.seal(token.toByteArray(Charsets.UTF_8))))
+        store.put(SEALED, sealed)
     }
 
     fun clear() {

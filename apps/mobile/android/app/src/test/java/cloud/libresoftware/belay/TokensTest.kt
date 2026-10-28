@@ -2,6 +2,7 @@ package cloud.libresoftware.belay
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertThrows
 import org.junit.Test
 
 class TokensTest {
@@ -18,7 +19,13 @@ class TokensTest {
     // Seals by XOR, so a test can tell a sealed value from the token; refuses anything that starts
     // with REFUSED, as a key that is gone or a damaged value would.
     private class XorCrypto : TokenCrypto {
-        override fun seal(plain: ByteArray) = byteArrayOf(SEALED) + plain.map { (it.toInt() xor 0x5a).toByte() }
+        // Set to make the next seal fail, as a Keystore that cannot make or use its key would.
+        var sealFails = false
+
+        override fun seal(plain: ByteArray): ByteArray {
+            if (sealFails) throw IllegalStateException("cannot seal")
+            return byteArrayOf(SEALED) + plain.map { (it.toInt() xor 0x5a).toByte() }
+        }
 
         override fun open(sealed: ByteArray): ByteArray {
             if (sealed.isEmpty() || sealed[0] != SEALED) throw IllegalStateException("cannot open")
@@ -32,7 +39,8 @@ class TokensTest {
     }
 
     private val store = MapStore()
-    private val vault = TokenVault(store, XorCrypto())
+    private val crypto = XorCrypto()
+    private val vault = TokenVault(store, crypto)
 
     @Test
     fun `reads the token for its origin`() {
@@ -54,6 +62,14 @@ class TokensTest {
         vault.write("https://b.example", "token-b")
         assertNull(vault.read("https://a.example"))
         assertEquals("token-b", vault.read("https://b.example"))
+    }
+
+    @Test
+    fun `a write that cannot seal keeps the previous session`() {
+        vault.write("https://a.example", "token-a")
+        crypto.sealFails = true
+        assertThrows(IllegalStateException::class.java) { vault.write("https://b.example", "token-b") }
+        assertEquals("token-a", vault.read("https://a.example"))
     }
 
     @Test
