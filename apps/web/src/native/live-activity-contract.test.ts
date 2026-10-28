@@ -1,48 +1,18 @@
-import { readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
 import { sessionByCode, starterProgram } from "@belay/shared/training/program";
 import { workPosition, type Workout } from "@belay/shared/training/workout";
 import type { TFunction } from "i18next";
 import { describe, expect, it } from "vitest";
 import i18n from "@/i18n";
 import "@/i18n/lazy";
+import { body, cases, fields, swift } from "@/test/swift";
 import { type ActivityStatus, liveActivityOf } from "./live-activity";
 
 // The page describes the open session as JSON and the iPhone app decodes it into Swift types by
 // their field names: a key renamed, added or dropped on one side alone would make every update
 // fail to decode. Both sides are read here, so such a drift fails before it reaches a phone.
-const app = join(dirname(fileURLToPath(import.meta.url)), "../../../ios/ios/App");
-const swift = (path: string) => readFileSync(join(app, path), "utf8");
-
-// The body of `struct <name>` or `enum <name>`, between its brace and the one that closes it.
-function body(source: string, kind: "struct" | "enum", name: string): string {
-  const start = new RegExp(`\\b${kind} ${name}\\b[^{]*\\{`).exec(source);
-  if (!start) throw new Error(`${kind} ${name} not found`);
-  const from = start.index + start[0].length;
-  let depth = 1;
-  for (let i = from; i < source.length; i++) {
-    if (source[i] === "{") depth++;
-    if (source[i] === "}" && --depth === 0) return source.slice(from, i);
-  }
-  throw new Error(`${kind} ${name} is not closed`);
-}
-// The stored properties declared right in a body: what a nested function or type declares inside
-// its own braces is left out.
-function fields(block: string, keyword: "var" | "let"): string[] {
-  const nested = /\{[^{}]*\}/g;
-  let outer = block;
-  while (nested.test(outer)) outer = outer.replace(nested, "");
-  return [...outer.matchAll(new RegExp(`^\\s*${keyword} (\\w+):`, "gm"))].map((m) => m[1]!).sort();
-}
-
 const shared = swift("Shared/SessionActivity.swift");
 const contentState = fields(body(shared, "struct", "ContentState"), "var");
-const statuses = /\bcase ([\w, ]+)/
-  .exec(body(shared, "enum", "Status"))![1]!
-  .split(",")
-  .map((s) => s.trim())
-  .sort();
+const statuses = cases(body(shared, "enum", "Status"));
 const payload = fields(
   body(swift("App/LiveActivity.swift"), "struct", "SessionActivityPayload"),
   "let",

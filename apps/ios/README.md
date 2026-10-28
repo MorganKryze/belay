@@ -60,7 +60,8 @@ the newest web app at the same time.
 ## The session on the lock screen
 
 While a session is open in the app, the iPhone's lock screen shows it, and so
-does the Dynamic Island on phones that have one. There is nothing to set up:
+does the Dynamic Island on phones that have one. A paired Apple Watch shows it
+too, in its Smart Stack. There is nothing to set up:
 iOS asks once whether Belay may show Live Activities, and
 **Settings › Belay › Live Activities** turns them off.
 
@@ -117,6 +118,55 @@ argument works in Debug builds only.
    back for that session.
 7. Finish the session: the lock screen lets it go.
 
+## Apple Health
+
+With **Settings › Apple Health** turned on in the app, Belay writes to the
+iPhone's Health app:
+
+- a traditional strength training workout for each finished session, with its
+  start and end, marked indoor, without energy, sets or loads;
+- a body mass sample for each weigh-in, timed 08:00 on its day (or the moment
+  it is written, when that is earlier).
+
+It reads two things. Workouts from other apps, only to check whether one
+already covers a session, so a session your watch recorded is not added twice;
+those are neither kept nor sent anywhere. And body mass, only once you turn on
+**Import weigh-ins** and accept the sheet that names your instance: those
+weigh-ins then sync to your instance like typed ones.
+
+The project carries the HealthKit entitlement (`App/App.entitlements`), with no
+team in it. Xcode's automatic signing adds HealthKit to your free team's App ID
+at the next **Run**; there is nothing to tick. `pnpm ios:sim` builds unsigned,
+without the entitlement, so Health refuses that build: to see Health at work,
+**Run** from Xcode, on a simulator or on the phone.
+
+iOS keeps the permissions in the Health app: tap your picture, then **Privacy ›
+Apps › Belay**. The page shows what Belay may write and read, and **Data from
+"Belay"** lists what it wrote there. Turning the setting off, or deleting the
+account, removes nothing from Health: delete what is there in the Health app.
+
+### Check on the phone
+
+1. Open **Settings › Apple Health** in the app: the page answers with the
+   status of Health.
+2. Turn the setting on with the phone in French, then in English: the iOS
+   sheet asks in that language.
+3. Finish a session: it shows in Health and Fitness as a traditional strength
+   training workout ("Musculation traditionnelle" in French), source Belay, no
+   energy.
+4. Move that session to another day in Belay: Health shows it on that day,
+   once. Delete the session: it leaves Health.
+5. Log a weigh-in: Health's weight shows it at 08:00. Edit it, then delete it:
+   Health follows both.
+6. Turn on **Import weigh-ins**, then, on a day with no weigh-in typed,
+   edited or deleted in Belay, add a weight in the Health app and bring Belay
+   back to the foreground: the weigh-in arrives in Belay. Health still lists
+   Weight under what Belay may write.
+7. With a watch or a workout app at hand, record a workout over the span of a
+   session: Belay does not add a second one. Without one, note this line as
+   not checked on a device.
+8. Open the permissions page above: its path matches the page's help text.
+
 ## Limits of a free team
 
 - 7 days per install, as above.
@@ -142,9 +192,15 @@ argument works in Debug builds only.
   give the bundle identifier a suffix of your own if it is taken. "Maximum
   number of apps" means the free team's limits above: wait for the 7 days to
   pass, or reuse an identifier you already registered.
+- **"Failed to show Widget 'cloud.libresoftware.belay.activity'"**: Xcode ran the
+  extension's scheme. Choose the **App** scheme next to the run destination,
+  then **Run**; it installs the extension with the app.
 - **Signing error on "BelayActivity"**: put your Team ID in
   `ios/local.xcconfig` (step 2), which both targets read. Choosing the team
   under **Signing & Capabilities** writes it into the tracked Xcode project.
+- **A Run fails on the HealthKit capability**: open **Signing &
+  Capabilities** once, without changing the team, and Xcode regenerates the
+  profile with HealthKit; then **Run** again.
 - **No iPhone at hand**: `pnpm ios:sim` builds the app for the simulator,
   without signing.
 - **A server on this Mac**: the app only reaches instances over https. To

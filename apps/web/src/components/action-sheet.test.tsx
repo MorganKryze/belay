@@ -167,4 +167,58 @@ describe("ActionSheet", () => {
     ).toEqual(["Delete"]);
     expect(screen.getByRole("button", { name: "Cancel" })).toBeTruthy();
   });
+  it("without confirm, no red row: the primary action confirms", () => {
+    vi.spyOn(motion, "exitWillAnimate").mockReturnValue(false);
+    const onSelect = vi.fn();
+    const onClose = vi.fn();
+    render(
+      <ActionSheet
+        title="Importer tes pesées ?"
+        body="Elles iront sur ton instance."
+        primary={{ label: "Importer", onSelect }}
+        onClose={onClose}
+      />,
+    );
+    expect(document.querySelector(".text-destructive")).toBeNull();
+    const card = screen.getByRole("heading").closest("[data-action-card]")!;
+    expect(
+      within(card as HTMLElement)
+        .getAllByRole("button")
+        .map((b) => b.textContent),
+    ).toEqual(["Importer"]);
+    fireEvent.click(screen.getByRole("button", { name: "Importer" }));
+    expect(onSelect).toHaveBeenCalledTimes(1);
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("Annuler takes the first focus, so Enter right after opening grants nothing", async () => {
+    const onSelect = vi.fn();
+    render(
+      <ActionSheet
+        title="Importer tes pesées ?"
+        body="Elles iront sur ton instance."
+        primary={{ label: "Importer", onSelect }}
+        onClose={vi.fn()}
+      />,
+    );
+    await act(() => new Promise((r) => setTimeout(r, 0)));
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Cancel" }));
+    fireEvent.keyDown(document.activeElement!, { key: "Enter" });
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
+  it("a body can carry a bold part", () => {
+    renderSheet({
+      body: (
+        <>
+          Tes pesées iront sur <strong>belay.example.org</strong>.
+        </>
+      ),
+    });
+    const host = screen.getByText("belay.example.org");
+    expect(host.tagName).toBe("STRONG");
+    const dialog = screen.getByRole("dialog");
+    const description = document.getElementById(dialog.getAttribute("aria-describedby")!)!;
+    expect(description.textContent).toBe("Tes pesées iront sur belay.example.org.");
+  });
 });

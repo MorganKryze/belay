@@ -15,6 +15,11 @@ export interface SyncEngine {
   start(): () => void; // syncs at once and on every trigger; returns the stop function
   status(): SyncStatus;
   subscribe(listener: () => void): () => void;
+  // After each landed sync, once onSynced is done; added after one has landed, called at once.
+  // For the phone's modules loaded later (Apple Health): a call in the account's onSynced would put
+  // their code in the startup bundle and hold this account's sync lock while Health answers, and
+  // the launch's first sync lands before they mount.
+  onLanded(listener: () => void): () => void;
 }
 
 // A server bug answering hasMore forever must not spin the phone: the next trigger goes on.
@@ -42,6 +47,8 @@ export function createSyncEngine({
   // Set by stop(), right before the account closes the database: a run under way ends there.
   let stopped = false;
   const listeners = new Set<() => void>();
+  const landed = new Set<() => void>();
+  let hasLanded = false;
   const set = (next: SyncStatus) => {
     if (next === status) return;
     status = next;
@@ -71,7 +78,14 @@ export function createSyncEngine({
       set("idle");
       // Only a pull that reached the end: rows come in server order, a half-pulled session
       // would look forgotten.
-      if (complete) await onSynced?.().catch(() => {}); // a failure here leaves the next sync to try again
+      if (complete) {
+        await onSynced?.().catch(() => {}); // a failure here leaves the next sync to try again
+        if (stopped) return;
+        // Told after the run, not awaited: a listener never holds this account's sync, and its
+        // failure is never the sync's.
+        hasLanded = true;
+        for (const listener of landed) queueMicrotask(listener);
+      }
     } catch (error) {
       if (stopped) return; // stop() closed the database under the run: not a failure
       console.error(
@@ -130,6 +144,7 @@ export function createSyncEngine({
       document.removeEventListener("visibilitychange", onVisible);
       clearTimeout(timer);
       stopped = true;
+      hasLanded = false; // a listener added later would run against a closed database
     };
   }
 
@@ -142,6 +157,11 @@ export function createSyncEngine({
     subscribe(listener) {
       listeners.add(listener);
       return () => listeners.delete(listener);
+    },
+    onLanded(listener) {
+      landed.add(listener);
+      if (hasLanded) queueMicrotask(listener);
+      return () => landed.delete(listener);
     },
   };
 }

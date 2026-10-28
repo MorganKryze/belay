@@ -149,6 +149,13 @@ shows its exercise, its set and its timers, never a load or a body figure.
 Nothing leaves the phone for it: the app draws it from what it already holds.
 iOS's own switch turns it off, in **Settings › Belay › Live Activities**.
 
+With **Settings › Apple Health** on, the app adds each finished session and
+each weigh-in to the iPhone's Health app; it is off until you turn it on, and
+the browser never has it. You can also import the weigh-ins Health receives
+from a connected scale or another app: after a sheet that names your
+instance, they sync to it like weigh-ins you typed. The details are in
+[`apps/ios/README.md`](apps/ios/README.md#apple-health).
+
 ## Threat model
 
 Read this before hosting Belay for anyone else.
@@ -192,6 +199,10 @@ Read this before hosting Belay for anyone else.
   the server. A token lives as long as a session (`SESSION_TTL_DAYS` after its
   last use, `SESSION_MAX_DAYS` at most), and a stolen, unlocked phone holds the
   session just as it would hold a browser's cookie.
+- **Apple Health**: what the iPhone app reads from Health leaves the phone
+  only as imported weigh-ins, and only after you accept the sheet that names
+  your instance. The workouts it reads to avoid counting a session twice are
+  neither stored nor sent.
 - **Media**: with `BELAY_MEDIA_DIR` set, `/media/exercises/<number>` serves
   files of that folder to signed-in people only: four digits, regular files
   of 8 MiB at most, inside the folder (links leaving it are refused).

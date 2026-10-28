@@ -19,7 +19,7 @@ import {
   Utensils,
   Weight,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 import { toISODate } from "@belay/shared/body/dates";
@@ -67,6 +67,7 @@ import { previewRestSound, readRestSound, setRestSound, type RestSound } from "@
 import { readTheme, setTheme, type Theme } from "@/lib/theme";
 import { readWeightUnit, setWeightUnit, type WeightUnit } from "@/lib/units";
 import { formatWeekday } from "@/lib/format";
+import { isNative } from "@/lib/platform";
 import { useToday } from "@/lib/today";
 import { APP_VERSION, releaseUrl } from "@/lib/version";
 import type { LastUser } from "@/sync/last-user";
@@ -79,6 +80,9 @@ import {
   useAnnotations,
   useSupplements,
 } from "@/sync/account";
+
+// Apple Health, in the iPhone app only: a browser never loads its code.
+const HealthGroup = lazy(() => import("./health").then((m) => ({ default: m.HealthGroup })));
 
 const LANGUAGE_NAMES: Record<Locale, string> = { en: "English", fr: "Français" };
 const THEMES = ["light", "dark", "system"] as const satisfies readonly Theme[];
@@ -277,6 +281,11 @@ export function Settings() {
 
       {account.kind === "open" && <TrackingGroup account={account} />}
       {account.kind === "unavailable" && <TrackingGroup account={null} />}
+      {isNative() && account.kind === "open" && (
+        <Suspense fallback={null}>
+          <HealthGroup account={account} />
+        </Suspense>
+      )}
 
       {/* The page's end: sign-out and the version sit at the bottom of a page that fits, and
           follow the last group, 24 px under it at least, on a page that scrolls. */}

@@ -29,6 +29,10 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
+	<key>NSHealthShareUsageDescription</key>
+	<string>Belay reads your other workouts so a session your watch already recorded is not counted twice, and your weigh-ins if you turn on the import.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>Belay adds your finished sessions and your weigh-ins to Health.</string>
 	<key>NSSupportsLiveActivities</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>

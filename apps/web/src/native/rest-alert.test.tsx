@@ -1,4 +1,4 @@
-import { cleanup, render, waitFor } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import i18n from "@/i18n";
 import type { ActiveSession } from "@/sync/db";
@@ -30,6 +30,8 @@ const { notes, pending, view, unschedule } = vi.hoisted(() => {
   return { notes, pending, unschedule, view: { active: null as ActiveSession | null } };
 });
 vi.mock("@capacitor/local-notifications", () => ({ LocalNotifications: notes }));
+// The Health link has its own tests; here only whether it is there.
+vi.mock("./health-mirror", () => ({ HealthMirror: () => <i data-testid="health-mirror" /> }));
 vi.mock("@/sync/account", () => ({
   useSessionView: () => ({ data: { active: view.active } }),
   useHistory: () => ({ data: {} }),
@@ -186,6 +188,15 @@ describe("NativeRestAlert", () => {
     render(show(rest(90)));
     await waitFor(() => expect(only().schedule).toEqual({ at: new Date(at(90)) }));
     expect(notes.requestPermissions).toHaveBeenCalledTimes(1);
+  });
+
+  it("an open account mounts the Health link, a signed-out one does not", async () => {
+    render(show(null));
+    await screen.findByTestId("health-mirror");
+    cleanup();
+    render(<NativeRestAlert account={{ kind: "signed-out", unreachable: false }} session={null} />);
+    await new Promise((r) => setTimeout(r, 20));
+    expect(screen.queryByTestId("health-mirror")).toBeNull();
   });
 
   it("a refusal asks nothing more and a missing plugin changes nothing for the person", async () => {

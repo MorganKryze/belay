@@ -1,0 +1,3 @@
+/* iOS shows these texts instead of the English ones in Info.plist when the phone is set to French. */
+"NSHealthUpdateUsageDescription" = "Belay ajoute tes séances terminées et tes pesées à Santé.";
+"NSHealthShareUsageDescription" = "Belay lit tes autres entraînements pour ne pas compter deux fois une séance déjà enregistrée par ta montre, et tes pesées si tu actives leur import.";
