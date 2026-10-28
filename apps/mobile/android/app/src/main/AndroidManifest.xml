@@ -74,6 +74,10 @@
 
     <queries>
         <package android:name="com.google.android.apps.healthdata" />
+        <!-- The browsers that open sign-in tabs, so the app can tell whether one offers an Auth Tab. -->
+        <intent>
+            <action android:name="android.support.customtabs.action.CustomTabsService" />
+        </intent>
     </queries>
 
     <!-- Permissions -->
