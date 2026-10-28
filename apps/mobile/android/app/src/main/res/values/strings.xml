@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Belay</string>
+    <string name="title_activity_main">Belay</string>
+    <string name="package_name">cloud.libresoftware.belay</string>
+    <string name="custom_url_scheme">cloud.libresoftware.belay</string>
+</resources>

@@ -2,5 +2,8 @@
   "appId": "cloud.libresoftware.belay",
   "appName": "Belay",
   "webDir": "../web/dist",
-  "loggingBehavior": "none"
+  "loggingBehavior": "none",
+  "android": {
+    "minWebViewVersion": 111
+  }
 }
