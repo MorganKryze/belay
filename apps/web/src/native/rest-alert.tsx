@@ -9,6 +9,7 @@ import type { PermissionStatus } from "@capacitor/local-notifications";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { readPauseStops } from "@/lib/pause-stops";
+import { nativePlatform } from "@/lib/platform";
 import { readRestSound } from "@/lib/rest-sound";
 import { type Account, type OpenAccount, useHistory, useSessionView } from "@/sync/account";
 import type { ActiveSession } from "@/sync/db";
@@ -17,6 +18,20 @@ import { liveActivityOf, type OpenSession, showLiveActivity } from "./live-activ
 
 // One notification at a time: scheduling under the same id replaces the pending one.
 const ID = 1;
+
+// Android shows a notification over the app, with its sound, where iOS keeps it quiet: there it
+// stays pending only while the app is hidden, since the rest bar, the tone and the haptic already
+// tell the end on screen.
+function useHidden(android: boolean): boolean {
+  const [hidden, setHidden] = useState(() => android && document.visibilityState === "hidden");
+  useEffect(() => {
+    if (!android) return;
+    const update = () => setHidden(document.visibilityState === "hidden");
+    document.addEventListener("visibilitychange", update);
+    return () => document.removeEventListener("visibilitychange", update);
+  }, [android]);
+  return hidden;
+}
 
 type Notifications = typeof import("@capacitor/local-notifications").LocalNotifications;
 // Loaded with the first call rather than with this module, so the startup bundle's list of what
@@ -93,6 +108,8 @@ function RestAlert({
   const read = view !== undefined && history !== undefined;
   const at = restAlertAt(active, readPauseStops(), Date.now());
   const workoutId = active?.workoutId;
+  const android = nativePlatform() === "android";
+  const hidden = useHidden(android);
 
   // Asked once per launch, when a session first opens: the question then makes sense.
   const [display, setDisplay] = useState<PermissionStatus["display"] | null>(null);
@@ -111,25 +128,30 @@ function RestAlert({
   useEffect(() => {
     run(async (notes) => {
       await cancel(notes);
-      if (at === null || display !== "granted") return;
+      if (at === null || display !== "granted" || (android && !hidden)) return;
+      const sound = readRestSound() !== "off";
       await notes.schedule({
         notifications: [
           {
             id: ID,
             title: t("session.restOver"),
             body: t("session.backToIt"),
-            schedule: { at: new Date(at) },
+            // Android rings it exactly, even with the phone idle; iOS ignores the flag.
+            schedule: android ? { at: new Date(at), allowWhileIdle: true } : { at: new Date(at) },
             // No banner while the app is in the foreground: the rest bar, the tone and the haptic
             // already tell it there. The sound follows the Silent switch, as every notification
             // does without Apple's critical alert entitlement.
             silent: true,
-            ...(readRestSound() === "off" ? {} : { sound: "rest.wav" }),
+            ...(sound ? { sound: "rest.wav" } : {}),
+            // On Android the sound belongs to the channel.
+            ...(android ? { channelId: sound ? "rest" : "rest-quiet" } : {}),
           },
         ],
       });
     });
-    // Only a new end, or the answer to the question, changes what is pending.
-  }, [at, display, t]);
+    // Only a new end, the answer to the question, or the app hidden or shown on Android changes
+    // what is pending.
+  }, [at, display, t, android, hidden]);
   // Leaving the account unmounts this: nothing rings for a person who left.
   useEffect(() => () => run(cancel), []);
 
