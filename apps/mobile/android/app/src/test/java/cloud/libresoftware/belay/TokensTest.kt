@@ -17,6 +17,14 @@ class TokensTest {
         override fun put(key: String, value: String?) {
             if (value == null) values.remove(key) else values[key] = value
         }
+
+        // A commit the disk refuses changes nothing, as with the app's preferences file.
+        var commitFails = false
+
+        override fun putAll(values: Map<String, String?>) {
+            if (commitFails) throw IllegalStateException("preferences not written")
+            values.forEach { (key, value) -> put(key, value) }
+        }
     }
 
     // Seals by XOR, so a test can tell a sealed value from the token. Opens only a value that starts
@@ -80,6 +88,15 @@ class TokensTest {
         vault.write("https://a.example", "token-a")
         crypto.sealFails = true
         assertThrows(IllegalStateException::class.java) { vault.write("https://b.example", "token-b") }
+        assertEquals("token-a", vault.read("https://a.example"))
+    }
+
+    @Test
+    fun `a write the disk refuses keeps the previous session`() {
+        vault.write("https://a.example", "token-a")
+        store.commitFails = true
+        assertThrows(IllegalStateException::class.java) { vault.write("https://b.example", "token-b") }
+        store.commitFails = false
         assertEquals("token-a", vault.read("https://a.example"))
     }
 

@@ -49,18 +49,14 @@ class TokenVault(private val store: PrefsStore, private val crypto: TokenCrypto)
     private fun unreadableForGood(e: Exception) =
         e is AEADBadTagException || e is IllegalArgumentException || e is TokenKeyGoneException
 
-    // Sealed before anything is erased: a Keystore that fails here leaves the previous session.
+    // Sealed before anything is written, then both keys in one commit: a Keystore or a disk that
+    // fails here leaves the previous session whole.
     fun write(origin: String, token: String) {
         val sealed = Base64.getEncoder().encodeToString(crypto.seal(token.toByteArray(Charsets.UTF_8)))
-        clear()
-        store.put(ORIGIN, origin)
-        store.put(SEALED, sealed)
+        store.putAll(mapOf(ORIGIN to origin, SEALED to sealed))
     }
 
-    fun clear() {
-        store.put(SEALED, null)
-        store.put(ORIGIN, null)
-    }
+    fun clear() = store.putAll(mapOf(SEALED to null, ORIGIN to null))
 
     private companion object {
         const val ORIGIN = "origin"

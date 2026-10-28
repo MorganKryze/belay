@@ -27,7 +27,9 @@ class SessionAlarmReceiver : BroadcastReceiver() {
 class SessionDismissReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val workoutId = intent.getStringExtra(WORKOUT_ID) ?: return
-        SessionNotifier(context).dismissed(workoutId)
+        inBackground({ Log.w("Belay", "session dismissal not kept", it) }) {
+            SessionNotifier(context).dismissed(workoutId)
+        }
     }
 
     companion object {
