@@ -53,13 +53,16 @@ export function finishedSpan(
 // What the native side takes, as it checks it: a batch with one object outside these bounds is
 // refused whole, so such an object is never sent. Times from 1899-12-31 in UTC (08:00 on
 // 1900-01-01, the earliest day Belay keeps, east of UTC) to a day past the phone's clock, a
-// workout of a day at most, a weigh-in of 20 to 400 kg.
-const EARLIEST = Date.UTC(1899, 11, 31);
-const DAY = 86_400_000;
+// workout of a day at most, a weigh-in of 20 to 400 kg. Exported for the tests that hold the
+// native decoders to the same bounds.
+export const EARLIEST = Date.UTC(1899, 11, 31);
+export const DAY = 86_400_000;
+export const HEALTH_KG_MIN = 20;
+export const HEALTH_KG_MAX = 400;
 const isTime = (t: number, now: number) => t >= EARLIEST && t <= now + DAY;
 const healthTakesSpan = (s: { startedAt: number; endedAt: number }, now: number) =>
   isTime(s.startedAt, now) && isTime(s.endedAt, now) && s.endedAt - s.startedAt <= DAY;
-const healthTakesKg = (kg: number) => kg >= 20 && kg <= 400;
+const healthTakesKg = (kg: number) => kg >= HEALTH_KG_MIN && kg <= HEALTH_KG_MAX;
 
 // Always above the last version this phone wrote, even with a clock set back; otherwise the
 // latest time written on the row, which every device derives alike from the merged data.
