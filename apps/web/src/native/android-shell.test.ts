@@ -8,6 +8,7 @@ import { kotlin } from "@/test/kotlin";
 // manifest and the network rules let out of the phone.
 const app = join(dirname(fileURLToPath(import.meta.url)), "../../../mobile/android/app/src");
 const read = (path: string) => readFileSync(join(app, path), "utf8");
+const manifest = () => read("main/AndroidManifest.xml");
 const pluginTs = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "plugin.ts"), "utf8");
 
 // The method names of the page's `interface BelayNativePlugin`.
@@ -48,9 +49,8 @@ describe("the Android shell", () => {
   });
 
   it("nothing private is backed up", () => {
-    const manifest = read("main/AndroidManifest.xml");
-    expect(manifest).toContain('android:allowBackup="false"');
-    expect(manifest).toContain('android:dataExtractionRules="@xml/data_extraction_rules"');
+    expect(manifest()).toContain('android:allowBackup="false"');
+    expect(manifest()).toContain('android:dataExtractionRules="@xml/data_extraction_rules"');
     const rules = read("main/res/xml/data_extraction_rules.xml");
     for (const section of ["cloud-backup", "device-transfer"]) {
       const block = new RegExp(`<${section}>([\\s\\S]*?)</${section}>`).exec(rules)?.[1] ?? "";
@@ -77,5 +77,54 @@ describe("the Android shell", () => {
     const domains = [...debug.matchAll(/<domain[^>]*>([^<]+)<\/domain>/g)].map((m) => m[1]).sort();
     expect(domains).toEqual(["127.0.0.1", "localhost"]);
     expect(debug).toMatch(/<base-config cleartextTrafficPermitted="false"/);
+  });
+
+  it("installs as Belay, from Android 9, built for Android 16, in portrait", () => {
+    expect(read("../build.gradle")).toMatch(/^\s*applicationId "cloud\.libresoftware\.belay"$/m);
+    expect(read("main/res/values/strings.xml")).toContain('<string name="app_name">Belay</string>');
+    const sdk = (name: string) =>
+      new RegExp(`^\\s*${name} = (\\d+)$`, "m").exec(read("../../variables.gradle"))?.[1];
+    expect([sdk("minSdkVersion"), sdk("compileSdkVersion"), sdk("targetSdkVersion")]).toEqual([
+      "28",
+      "36",
+      "36",
+    ]);
+    const main = /<activity\b[^>]*android:name="\.MainActivity"[^>]*>/.exec(manifest())?.[0] ?? "";
+    expect(main).toContain('android:screenOrientation="portrait"');
+  });
+
+  it("git never tracks the signing keys, the local paths, the build or the copied web app", () => {
+    const ignored = read("../../.gitignore").split("\n");
+    for (const entry of [
+      "*.jks",
+      "*.keystore",
+      "local.properties",
+      "build/",
+      "app/src/main/assets/public",
+    ])
+      expect(ignored).toContain(entry);
+  });
+
+  // Older web views lack what the web app needs; the README names the version to have.
+  it("asks for Android System WebView 111 or later, as the README says", () => {
+    const config = JSON.parse(readFileSync(join(app, "../../../capacitor.config.json"), "utf8"));
+    expect(config.android.minWebViewVersion).toBe(111);
+    const readme = readFileSync(join(app, "../../../README.md"), "utf8").replace(/\s+/g, " ");
+    expect(readme).toContain("**Android System WebView** 111 or later");
+  });
+
+  // Exact alarms come at install: USE_EXACT_ALARM from Android 13, SCHEDULE_EXACT_ALARM before it.
+  // The latter stops at Android 12L and replaces the notifications plugin's line for every version.
+  it("declares the exact alarm permissions each Android version grants at install", () => {
+    const permission = (name: string) =>
+      [...manifest().matchAll(/<uses-permission\b[^>]*>/g)]
+        .map((m) => m[0].replace(/\s+/g, " "))
+        .filter((tag) => tag.includes(`android:name="android.permission.${name}"`));
+    expect(permission("USE_EXACT_ALARM")).toEqual([
+      '<uses-permission android:name="android.permission.USE_EXACT_ALARM" />',
+    ]);
+    expect(permission("SCHEDULE_EXACT_ALARM")).toEqual([
+      '<uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" android:maxSdkVersion="32" tools:node="replace" />',
+    ]);
   });
 });
