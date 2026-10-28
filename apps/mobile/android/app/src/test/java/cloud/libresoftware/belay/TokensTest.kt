@@ -1,6 +1,9 @@
 package cloud.libresoftware.belay
 
+import java.security.ProviderException
+import javax.crypto.AEADBadTagException
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
 import org.junit.Test
@@ -16,8 +19,9 @@ class TokensTest {
         }
     }
 
-    // Seals by XOR, so a test can tell a sealed value from the token; refuses anything that starts
-    // with REFUSED, as a key that is gone or a damaged value would.
+    // Seals by XOR, so a test can tell a sealed value from the token. Opens only a value that starts
+    // with SEALED: KEY_GONE fails as a Keystore that lost its key, BUSY as one that cannot answer
+    // right now, an empty value as a too short one, anything else as a damaged value.
     private class XorCrypto : TokenCrypto {
         // Set to make the next seal fail, as a Keystore that cannot make or use its key would.
         var sealFails = false
@@ -28,13 +32,20 @@ class TokensTest {
         }
 
         override fun open(sealed: ByteArray): ByteArray {
-            if (sealed.isEmpty() || sealed[0] != SEALED) throw IllegalStateException("cannot open")
-            return sealed.drop(1).map { (it.toInt() xor 0x5a).toByte() }.toByteArray()
+            require(sealed.isNotEmpty()) { "too short" }
+            when (sealed[0]) {
+                SEALED -> return sealed.drop(1).map { (it.toInt() xor 0x5a).toByte() }.toByteArray()
+                KEY_GONE -> throw TokenKeyGoneException()
+                BUSY -> throw ProviderException("keystore busy")
+                else -> throw AEADBadTagException("tag mismatch")
+            }
         }
 
         companion object {
             const val SEALED: Byte = 1
             const val REFUSED: Byte = 2
+            const val KEY_GONE: Byte = 3
+            const val BUSY: Byte = 4
         }
     }
 
@@ -88,6 +99,33 @@ class TokensTest {
         assertNull(vault.read("https://a.example"))
         assertNull(store.get("origin"))
         assertNull(store.get("sealed"))
+    }
+
+    private fun seed(vararg sealed: Byte) {
+        store.put("origin", "https://a.example")
+        store.put("sealed", java.util.Base64.getEncoder().encodeToString(sealed))
+    }
+
+    @Test
+    fun `a key that is gone reads none and erases`() {
+        seed(XorCrypto.KEY_GONE, 9)
+        assertNull(vault.read("https://a.example"))
+        assertNull(store.get("sealed"))
+    }
+
+    @Test
+    fun `a too short value reads none and erases`() {
+        seed()
+        assertNull(vault.read("https://a.example"))
+        assertNull(store.get("sealed"))
+    }
+
+    @Test
+    fun `a keystore that cannot answer now throws and keeps the session`() {
+        seed(XorCrypto.BUSY, 9)
+        assertThrows(ProviderException::class.java) { vault.read("https://a.example") }
+        assertEquals("https://a.example", store.get("origin"))
+        assertNotNull(store.get("sealed"))
     }
 
     @Test
