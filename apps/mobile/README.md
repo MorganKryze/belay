@@ -1,5 +1,11 @@
 # Belay for iPhone
 
+## Moving from `apps/ios`
+
+The folder was renamed from `apps/ios` to `apps/mobile`. Copy your signing file once:
+`mv apps/ios/ios/local.xcconfig apps/mobile/ios/`, then delete the leftover `apps/ios`
+folder (only ignored build files remain in it).
+
 This folder builds Belay as an iPhone app that talks to any Belay instance.
 You build it on a Mac and install it on your own iPhone with a free Apple ID;
 the instance needs no setting. A free install lasts 7 days, then you run it again.

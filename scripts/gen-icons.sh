@@ -8,7 +8,7 @@ set -euo pipefail
 web="$(cd "$(dirname "$0")/../apps/web" && pwd)"
 src="$web/icons/app-icon.svg"
 out="$web/public"
-ios="$(cd "$(dirname "$0")/../apps/ios/ios/App/App/Assets.xcassets/AppIcon.appiconset" && pwd)"
+ios="$(cd "$(dirname "$0")/../apps/mobile/ios/App/App/Assets.xcassets/AppIcon.appiconset" && pwd)"
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 

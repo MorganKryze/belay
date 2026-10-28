@@ -17,9 +17,9 @@ function capacitorPins(app: string): Record<string, string> {
 }
 
 describe("Capacitor versions", () => {
-  it("the web app and the iPhone project pin the same Capacitor versions, exactly", () => {
+  it("the web app and the phone project pin the same Capacitor versions, exactly", () => {
     const web = capacitorPins("web");
-    const ios = capacitorPins("ios");
+    const ios = capacitorPins("mobile");
     expect(Object.keys(web)).toEqual(
       expect.arrayContaining([
         "@capacitor/core",

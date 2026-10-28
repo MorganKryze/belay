@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const app = join(dirname(fileURLToPath(import.meta.url)), "../../../ios/ios/App");
+const app = join(dirname(fileURLToPath(import.meta.url)), "../../../mobile/ios/App");
 
 // A file under the app's sources, as "App/Health.swift".
 export const swift = (path: string): string => readFileSync(join(app, path), "utf8");

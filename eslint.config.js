@@ -14,7 +14,7 @@ export default defineConfig(
       "apps/web/src/components/ui/**",
       "apps/web/public/**",
       // The Xcode project holds a copy of the built web app and Swift package checkouts.
-      "apps/ios/ios/**",
+      "apps/mobile/ios/**",
     ],
   },
   js.configs.recommended,

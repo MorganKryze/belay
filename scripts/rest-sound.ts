@@ -52,6 +52,6 @@ samples.forEach((sample, i) => {
   wav.writeInt16LE(Math.round(Math.max(-1, Math.min(1, sample)) * 32767), 44 + i * 2);
 });
 
-const target = fileURLToPath(new URL("../apps/ios/ios/App/App/rest.wav", import.meta.url));
+const target = fileURLToPath(new URL("../apps/mobile/ios/App/App/rest.wav", import.meta.url));
 writeFileSync(target, wav);
 console.log(`Wrote ${target} (${wav.length} bytes).`);

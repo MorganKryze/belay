@@ -135,7 +135,7 @@ shows none.
 ### The iPhone app
 
 Anyone can build an iPhone app that talks to any Belay instance: the steps are
-in [`apps/ios/README.md`](apps/ios/README.md). There is nothing to set on the
+in [`apps/mobile/README.md`](apps/mobile/README.md). There is nothing to set on the
 instance, but it needs this release of Belay or a later one.
 
 - The app's requests come from the origin `capacitor://localhost`. The server
@@ -154,7 +154,7 @@ each weigh-in to the iPhone's Health app; it is off until you turn it on, and
 the browser never has it. You can also import the weigh-ins Health receives
 from a connected scale or another app: after a sheet that names your
 instance, they sync to it like weigh-ins you typed. The details are in
-[`apps/ios/README.md`](apps/ios/README.md#apple-health).
+[`apps/mobile/README.md`](apps/mobile/README.md#apple-health).
 
 ## Threat model
 

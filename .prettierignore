@@ -4,4 +4,4 @@ pnpm-lock.yaml
 apps/server/drizzle
 apps/web/src/components/ui
 LICENSE
-apps/ios/ios
+apps/mobile/ios
