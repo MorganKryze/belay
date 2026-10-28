@@ -1,15 +1,23 @@
 // Where the app runs and which server it talks to. In a browser the page comes from its own
-// server, always asked at the same origin with the session cookie. In the iPhone app the page comes
+// server, always asked at the same origin with the session cookie. In the phone app the page comes
 // from the app itself: the person gives their instance's address once, it is kept here, and each
 // request carries the session token the app's native side keeps for that address. Startup-safe:
 // the native code itself stays in lazy modules.
 
-type WithCapacitor = typeof globalThis & { Capacitor?: { isNativePlatform?: () => boolean } };
+type WithCapacitor = typeof globalThis & {
+  Capacitor?: { isNativePlatform?: () => boolean; getPlatform?: () => string };
+};
 
 // The app's native side defines this global before the page's first script runs; a browser never
 // has it.
 export const isNative = (): boolean =>
   (globalThis as WithCapacitor).Capacitor?.isNativePlatform?.() === true;
+
+// Which phone app the page runs in, or null in a browser.
+export const nativePlatform = (): "ios" | "android" | null => {
+  if (!isNative()) return null;
+  return (globalThis as WithCapacitor).Capacitor?.getPlatform?.() === "android" ? "android" : "ios";
+};
 
 const KEY = "belay.instance";
 

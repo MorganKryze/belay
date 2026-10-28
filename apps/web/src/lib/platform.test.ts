@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { postSync } from "@/sync/transport";
 import { fetchMe, logout } from "./api";
 import { checkAddress, probeInstance } from "@/native/address";
-import { apiFetch, isNative, setNativeSession, writeInstance } from "./platform";
+import { apiFetch, isNative, nativePlatform, setNativeSession, writeInstance } from "./platform";
 
 const ORIGIN = "https://belay.example.org";
 const asApp = () => vi.stubGlobal("Capacitor", { isNativePlatform: () => true });
@@ -146,6 +146,22 @@ describe("in the app", () => {
     await expect(logout()).rejects.toThrow();
     expect(forget).not.toHaveBeenCalled();
     expect(assign).not.toHaveBeenCalled();
+  });
+});
+
+describe("nativePlatform", () => {
+  it("null in a browser", () => expect(nativePlatform()).toBeNull());
+
+  it("android when the bridge says so", () => {
+    vi.stubGlobal("Capacitor", { isNativePlatform: () => true, getPlatform: () => "android" });
+    expect(nativePlatform()).toBe("android");
+  });
+
+  it("ios otherwise", () => {
+    asApp();
+    expect(nativePlatform()).toBe("ios");
+    vi.stubGlobal("Capacitor", { isNativePlatform: () => true, getPlatform: () => "ios" });
+    expect(nativePlatform()).toBe("ios");
   });
 });
 
