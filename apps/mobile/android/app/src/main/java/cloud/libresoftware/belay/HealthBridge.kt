@@ -189,7 +189,10 @@ class HealthBridge(private val plugin: Plugin) {
     // Another app's session covering half of this one or more. Called only with the read grant; a
     // failed read answers as an empty Health Connect, and the session is then written.
     private suspend fun overlapped(w: HealthObject.Workout): Boolean {
-        val span = TimeRangeFilter.between(Instant.ofEpochMilli(w.startedAt), Instant.ofEpochMilli(w.endedAt))
+        val span = TimeRangeFilter.between(
+            Instant.ofEpochMilli(HealthRules.overlapReadFrom(w.startedAt)),
+            Instant.ofEpochMilli(w.endedAt),
+        )
         val others = try {
             readAll(ExerciseSessionRecord::class, span)
                 .filter { it.metadata.dataOrigin.packageName != plugin.context.packageName }

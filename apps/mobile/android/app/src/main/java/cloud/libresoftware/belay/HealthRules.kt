@@ -48,6 +48,11 @@ object HealthRules {
     fun covers(start: Long, end: Long, others: List<Pair<Long, Long>>): Boolean =
         others.any { (from, to) -> 2 * (minOf(end, to) - maxOf(start, from)) >= end - start }
 
+    // Health Connect returns the sessions that start inside the read range, so it opens a day
+    // (the page's longest workout) before Belay's start: a watch started first is still read, and
+    // covers() keeps only what lies inside Belay's session.
+    fun overlapReadFrom(start: Long): Long = start - HealthRequest.DAY
+
     // How the page should take a refusal: a permission, a Health Connect it cannot reach right now
     // (a lost binding, its storage, its rate limit), or anything else.
     fun outcomeOf(error: Throwable): String =

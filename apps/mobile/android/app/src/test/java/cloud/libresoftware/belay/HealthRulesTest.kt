@@ -57,6 +57,17 @@ class HealthRulesTest {
     @Test fun `one ending as the session starts does not cover it`() =
         assertFalse(HealthRules.covers(start, end, listOf(-600_000L to 0L)))
 
+    // Health Connect returns the sessions starting inside the read range, so the range opens before
+    // Belay's start: a watch started first still counts.
+    @Test fun `another app's session starting before Belay's and covering it counts`() {
+        val watch = (start - 3_600_000L) to (end + 600_000L)
+        assertTrue(watch.first >= HealthRules.overlapReadFrom(start))
+        assertTrue(HealthRules.covers(start, end, listOf(watch)))
+    }
+
+    @Test fun `the overlap read opens one day before the session`() =
+        assertEquals(start - 86_400_000L, HealthRules.overlapReadFrom(start))
+
     @Test fun `no other session, no cover`() = assertFalse(HealthRules.covers(start, end, emptyList()))
 
     @Test fun `a refusal for a permission reads denied`() =
