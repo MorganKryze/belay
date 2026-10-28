@@ -118,6 +118,20 @@ describe("CORS for the app", () => {
     expect(res.headers.get("access-control-allow-credentials")).toBeNull();
   });
 
+  it("the Android app's origin gets the same answer, and a near miss gets none", async () => {
+    const { bearer } = await signIn();
+    const android = await me({ origin: "https://localhost", authorization: bearer });
+    expect(android.headers.get("access-control-allow-origin")).toBe("https://localhost");
+    for (const origin of [
+      "http://localhost",
+      "https://localhost:8443",
+      "https://localhost.evil.example",
+    ]) {
+      const res = await me({ origin, authorization: bearer });
+      expect(res.headers.get("access-control-allow-origin"), origin).toBeNull();
+    }
+  });
+
   it("another origin gets no CORS header, on a request or a preflight", async () => {
     const { bearer } = await signIn();
     const request = await me({ origin: OTHER_ORIGIN, authorization: bearer });

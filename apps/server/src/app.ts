@@ -8,7 +8,7 @@ import { secureHeaders } from "hono/secure-headers";
 import { apiRoutes } from "./api/routes";
 import type { OidcProvider } from "./auth/oidc";
 import { authRoutes } from "./auth/routes";
-import { NATIVE_ORIGIN } from "./auth/session";
+import { NATIVE_ORIGINS } from "./auth/session";
 import type { Config } from "./config";
 import type { Db } from "./db/client";
 import { describeError } from "./log";
@@ -44,10 +44,10 @@ export function createApp({ cfg, db, getOidc }: { cfg: Config; db: Db; getOidc: 
       strictTransportSecurity: cfg.secureCookies ? "max-age=31536000" : false,
     }),
   );
-  // The iPhone app calls from its own origin with a bearer token, never a cookie, so no
+  // The phone apps call from their own origins with a bearer token, never a cookie, so no
   // credentials. Any other origin gets no Access-Control-Allow-Origin and its browser refuses.
   const native = cors({
-    origin: (origin) => (origin === NATIVE_ORIGIN ? origin : null),
+    origin: (origin) => (NATIVE_ORIGINS.has(origin) ? origin : null),
     allowMethods: ["GET", "HEAD", "POST"],
     allowHeaders: ["Authorization", "Content-Type"],
     maxAge: 600,
