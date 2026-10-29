@@ -144,6 +144,15 @@ function RestAlert({
       learn(before, before === "prompt" ? (await notes.requestPermissions()).display : before);
     });
   }, [workoutId, learn]);
+  // Read again each time the app comes back, once asked: notifications may have been allowed or
+  // turned off in the phone's settings meanwhile. Only Android reports the app hidden.
+  const away = useRef(false);
+  useEffect(() => {
+    if (hidden) away.current = true;
+    if (hidden || !away.current || !asked.current) return;
+    away.current = false;
+    run(async (notes) => learn(known.current, (await notes.checkPermissions()).display));
+  }, [hidden, learn]);
 
   useEffect(() => {
     run(async (notes) => {

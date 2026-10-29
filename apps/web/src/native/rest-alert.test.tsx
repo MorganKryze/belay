@@ -359,12 +359,61 @@ describe("NativeRestAlert on Android", () => {
     expect(only().schedule).toEqual({ at: new Date(at(90)), allowWhileIdle: true });
   });
 
+  it("android: notifications allowed in the settings meanwhile schedule the next rest", async () => {
+    notes.checkPermissions.mockResolvedValue({ display: "prompt" });
+    notes.requestPermissions.mockResolvedValue({ display: "denied" });
+    render(show(rest(90)));
+    await waitFor(() => expect(notes.requestPermissions).toHaveBeenCalledTimes(1));
+    await settle();
+    // Off to Android's settings, where the person allows notifications, then back.
+    setVisible(false);
+    await settle();
+    expect(notes.schedule).not.toHaveBeenCalled();
+    notes.checkPermissions.mockResolvedValue({ display: "granted" });
+    setVisible(true);
+    await waitFor(() => expect(notes.checkPermissions).toHaveBeenCalledTimes(2));
+    await settle();
+    expect(resend).toHaveBeenCalledTimes(1);
+    setVisible(false);
+    await waitFor(() =>
+      expect(only().schedule).toEqual({ at: new Date(at(90)), allowWhileIdle: true }),
+    );
+    expect(notes.requestPermissions).toHaveBeenCalledTimes(1);
+  });
+
   it("android: a grant at the prompt sends the session's description again", async () => {
     notes.checkPermissions.mockResolvedValue({ display: "prompt" });
     render(show(rest(90)));
     await waitFor(() => expect(resend).toHaveBeenCalledTimes(1));
     await settle();
     expect(resend).toHaveBeenCalledTimes(1);
+  });
+
+  it("android: notifications turned off in the settings meanwhile schedule nothing more", async () => {
+    render(show(rest(90)));
+    await waitFor(() => expect(notes.checkPermissions).toHaveBeenCalledTimes(1));
+    await settle();
+    setVisible(false);
+    await waitFor(() => expect(pending.size).toBe(1));
+    notes.checkPermissions.mockResolvedValue({ display: "denied" });
+    setVisible(true);
+    await waitFor(() => expect(notes.checkPermissions).toHaveBeenCalledTimes(2));
+    await settle();
+    setVisible(false);
+    await settle();
+    expect(notes.schedule).toHaveBeenCalledTimes(1);
+    expect(pending.size).toBe(0);
+  });
+
+  it("android: notifications already allowed send nothing again", async () => {
+    render(show(rest(90)));
+    await waitFor(() => expect(notes.checkPermissions).toHaveBeenCalledTimes(1));
+    setVisible(false);
+    await settle();
+    setVisible(true);
+    await waitFor(() => expect(notes.checkPermissions).toHaveBeenCalledTimes(2));
+    await settle();
+    expect(resend).not.toHaveBeenCalled();
   });
 
   it("android: no schedule for a rest already over", async () => {
