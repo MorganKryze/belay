@@ -83,6 +83,7 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <!-- Exact alarms are granted at install with USE_EXACT_ALARM from Android 13 and with
          SCHEDULE_EXACT_ALARM before it. The notifications plugin declares the latter for every
          version, where Android 14 would no longer grant it at install, so its line is replaced. -->

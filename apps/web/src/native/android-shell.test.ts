@@ -41,6 +41,20 @@ describe("the Android shell", () => {
     );
   });
 
+  // The Android web view always reports itself online: the activity tells it the truth, so the
+  // page can say « no connection » apart from an address that does not answer.
+  it("the web view knows when the phone is offline", () => {
+    const source = kotlin("MainActivity.kt").replace(/\s+/g, " ");
+    expect(source).toContain("registerDefaultNetworkCallback(network)");
+    expect(source).toContain("override fun onAvailable(n: Network) = online(true)");
+    expect(source).toContain("override fun onLost(n: Network) = online(false)");
+    expect(source).toContain("bridge?.webView?.setNetworkAvailable(available)");
+    expect(source).toContain("unregisterNetworkCallback(network)");
+    expect(read("main/AndroidManifest.xml")).toContain(
+      '<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />',
+    );
+  });
+
   // The notifications plugin makes a channel of its own as it loads: Belay's channels are made,
   // and that one removed, once the bridge has loaded every plugin.
   it("the channels are made once the bridge has loaded its plugins", () => {
