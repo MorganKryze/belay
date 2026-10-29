@@ -329,6 +329,37 @@ test("a second tap on Save while the sheet leaves writes nothing, and Undo bring
   await expect(line).toContainText("81.2 kg");
 });
 
+// The day chip's date field is invisible over the chip: a field wider than its chip would take the
+// taps meant for the close button next to it. Android's web view gives a date field 161 px of its
+// own, more than this browser does; that width is given here at the page's base level, under the
+// app's own classes, as the platform's would be.
+test("the weigh-in sheet's date field stays within its chip, clear of the close button", async ({
+  page,
+}) => {
+  await fakeServer(page, { rows: WEEKS });
+  await page.goto("/");
+  await page.addStyleTag({
+    content: '@layer base { input[type="date"] { width: 161px; min-width: 161px; } }',
+  });
+  await page.getByRole("button", { name: /^Weigh-in/ }).click();
+  const sheet = page.getByRole("dialog", { name: "Weigh-in" });
+  await sheet.evaluate((el) => Promise.all(el.getAnimations().map((a) => a.finished)));
+  const field = sheet.getByLabel("Date of the weigh-in");
+  const chip = (await field.evaluate((el) => {
+    const box = el.closest("label")!.getBoundingClientRect();
+    return { x: box.x, y: box.y, width: box.width, height: box.height };
+  }))!;
+  const box = (await field.boundingBox())!;
+  expect(box.x).toBeGreaterThanOrEqual(chip.x - 0.5);
+  expect(box.x + box.width).toBeLessThanOrEqual(chip.x + chip.width + 0.5);
+  const close = (await sheet.getByRole("button", { name: "Close" }).boundingBox())!;
+  const hit = await page.evaluate(
+    ({ x, y }) => document.elementFromPoint(x, y)?.closest("button")?.getAttribute("aria-label"),
+    { x: close.x + 4, y: close.y + close.height / 2 },
+  );
+  expect(hit).toBe("Close");
+});
+
 test.describe("on a computer", () => {
   test.use({ viewport: { width: 1280, height: 800 } });
 
