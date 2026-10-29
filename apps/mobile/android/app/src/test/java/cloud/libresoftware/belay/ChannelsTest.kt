@@ -10,8 +10,8 @@ class ChannelsTest {
     private val specs = Channels.specs().associateBy { it.id }
 
     @Test
-    fun `ids are rest, rest-quiet and session`() {
-        assertEquals(listOf("rest", "rest-quiet", "session"), Channels.specs().map { it.id })
+    fun `ids are rest, rest-quiet and session-shown`() {
+        assertEquals(listOf("rest", "rest-quiet", "session-shown"), Channels.specs().map { it.id })
     }
 
     @Test
@@ -23,13 +23,30 @@ class ChannelsTest {
     }
 
     @Test
-    fun `rest-quiet and session are low without sound`() {
-        for (id in listOf(Channels.REST_QUIET, Channels.SESSION)) {
-            val spec = specs.getValue(id)
-            assertEquals(id, NotificationManagerCompat.IMPORTANCE_LOW, spec.importance)
-            assertFalse(id, spec.sound)
-        }
-        assertEquals(R.string.channel_rest_quiet, specs.getValue(Channels.REST_QUIET).name)
-        assertEquals(R.string.channel_session, specs.getValue(Channels.SESSION).name)
+    fun `rest-quiet is low without sound`() {
+        val quiet = specs.getValue(Channels.REST_QUIET)
+        assertEquals(NotificationManagerCompat.IMPORTANCE_LOW, quiet.importance)
+        assertFalse(quiet.sound)
+        assertFalse(quiet.lockScreen)
+        assertEquals(R.string.channel_rest_quiet, quiet.name)
+    }
+
+    // Android 15 and later keep low-importance notifications off the lock screen unless the person
+    // turns that on: the session sits one level up, still without sound or vibration.
+    @Test
+    fun `session shows on the lock screen at default importance, without sound`() {
+        val session = specs.getValue(Channels.SESSION)
+        assertEquals(NotificationManagerCompat.IMPORTANCE_DEFAULT, session.importance)
+        assertFalse(session.sound)
+        assertTrue(session.lockScreen)
+        assertEquals(R.string.channel_session, session.name)
+    }
+
+    // An app cannot raise a channel's importance once made: the first session channel is removed
+    // and never made again.
+    @Test
+    fun `the first session channel is retired`() {
+        assertEquals(listOf("session"), Channels.RETIRED)
+        for (spec in Channels.specs()) assertFalse(spec.id, spec.id in Channels.RETIRED)
     }
 }
