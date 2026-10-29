@@ -407,7 +407,7 @@ describe("Réglages › Santé Connect, on Android", () => {
     );
     expect(
       await within(from).findByText(
-        "Si aucune pesée n’arrive, vérifie que Belay peut lire le poids dans les réglages de Santé Connect › Autorisations des applis › Belay.",
+        "Si aucune pesée n’arrive, vérifie que Belay peut lire le poids dans les réglages de Santé Connect › Autorisations des applications › Belay.",
       ),
     ).toBeTruthy();
     // The matcher reads the narrow no-break space before « : » as a plain one.
@@ -446,7 +446,7 @@ describe("Réglages › Santé Connect, on Android", () => {
     await screen.findByText("Santé Connect n’autorise pas Belay à écrire.");
     expect(
       screen.getByText(
-        "Autorise-le dans les réglages de Santé Connect › Autorisations des applis › Belay, puis réessaie.",
+        "Autorise-le dans les réglages de Santé Connect › Autorisations des applications › Belay, puis réessaie.",
       ),
     ).toBeTruthy();
   });
