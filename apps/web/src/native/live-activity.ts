@@ -115,6 +115,8 @@ export function liveActivityOf(
 let wanted: string | undefined;
 let asked: LiveActivity | null = null;
 let sending = false;
+// The last description is to go once more, unchanged.
+let again = false;
 
 // One call at a time, each awaited, so an older description never lands after a newer one; what
 // is asked meanwhile waits, and only the latest goes.
@@ -126,11 +128,20 @@ export function showLiveActivity(next: LiveActivity | null): void {
   if (!sending) void send();
 }
 
+// Android posts nothing for a description sent while notifications are off: once they are
+// allowed, the last one goes again, after the call under way if there is one.
+export function resendLiveActivity(): void {
+  if (wanted === undefined) return;
+  again = true;
+  if (!sending) void send();
+}
+
 async function send(): Promise<void> {
   sending = true;
   let sent: string | undefined;
-  while (sent !== wanted) {
+  while (sent !== wanted || again) {
     sent = wanted;
+    again = false;
     try {
       await BelayNative.setLiveActivity({ activity: asked });
     } catch {

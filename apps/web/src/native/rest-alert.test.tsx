@@ -54,6 +54,12 @@ vi.mock("@/lib/platform", async (original) => ({
   ...(await original<typeof import("@/lib/platform")>()),
   nativePlatform: () => phone.platform,
 }));
+// The lock screen's description has its own tests: here only when it is sent again.
+const { resend } = vi.hoisted(() => ({ resend: vi.fn() }));
+vi.mock("./live-activity", async (original) => ({
+  ...(await original<typeof import("./live-activity")>()),
+  resendLiveActivity: resend,
+}));
 vi.mock("@/sync/account", () => ({
   useSessionView: () => ({ data: { active: view.active } }),
   useHistory: () => ({ data: {} }),
@@ -223,6 +229,8 @@ describe("NativeRestAlert", () => {
     render(show(rest(90)));
     await waitFor(() => expect(only().schedule).toEqual({ at: new Date(at(90)) }));
     expect(notes.requestPermissions).toHaveBeenCalledTimes(1);
+    // The iPhone's lock screen does not hang on the notification permission.
+    expect(resend).not.toHaveBeenCalled();
   });
 
   it("an open account mounts the Health link, a signed-out one does not", async () => {
@@ -349,6 +357,14 @@ describe("NativeRestAlert on Android", () => {
       ]),
     );
     expect(only().schedule).toEqual({ at: new Date(at(90)), allowWhileIdle: true });
+  });
+
+  it("android: a grant at the prompt sends the session's description again", async () => {
+    notes.checkPermissions.mockResolvedValue({ display: "prompt" });
+    render(show(rest(90)));
+    await waitFor(() => expect(resend).toHaveBeenCalledTimes(1));
+    await settle();
+    expect(resend).toHaveBeenCalledTimes(1);
   });
 
   it("android: no schedule for a rest already over", async () => {

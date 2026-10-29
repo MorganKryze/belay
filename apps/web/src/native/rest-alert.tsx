@@ -6,7 +6,7 @@
 import "@/i18n/lazy";
 import type { PauseStops } from "@belay/shared/training/pause";
 import type { PermissionStatus } from "@capacitor/local-notifications";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { readPauseStops } from "@/lib/pause-stops";
 import { nativePlatform } from "@/lib/platform";
@@ -14,10 +14,16 @@ import { readRestSound } from "@/lib/rest-sound";
 import { type Account, type OpenAccount, useHistory, useSessionView } from "@/sync/account";
 import type { ActiveSession } from "@/sync/db";
 import { HealthMirror } from "./health-mirror";
-import { liveActivityOf, type OpenSession, showLiveActivity } from "./live-activity";
+import {
+  liveActivityOf,
+  type OpenSession,
+  resendLiveActivity,
+  showLiveActivity,
+} from "./live-activity";
 
 // One notification at a time: scheduling under the same id replaces the pending one.
 const ID = 1;
+type Display = PermissionStatus["display"];
 
 // Android shows a notification over the app, with its sound, where iOS keeps it quiet: there it
 // stays pending only while the app is hidden, since the rest bar, the tone and the haptic already
@@ -117,18 +123,27 @@ function RestAlert({
   const hidden = useHidden(android);
 
   // Asked once per launch, when a session first opens: the question then makes sense.
-  const [display, setDisplay] = useState<PermissionStatus["display"] | null>(null);
+  const [display, setDisplay] = useState<Display | null>(null);
+  const known = useRef<Display | null>(null);
+  const learn = useCallback(
+    (before: Display | null, after: Display) => {
+      // Android posted nothing for the session while notifications were off: once they are
+      // allowed, its description goes again.
+      if (android && before !== "granted" && after === "granted") resendLiveActivity();
+      known.current = after;
+      setDisplay(after);
+    },
+    [android],
+  );
   const asked = useRef(false);
   useEffect(() => {
     if (workoutId === undefined || asked.current) return;
     asked.current = true;
     run(async (notes) => {
-      const status = await notes.checkPermissions();
-      setDisplay(
-        status.display === "prompt" ? (await notes.requestPermissions()).display : status.display,
-      );
+      const { display: before } = await notes.checkPermissions();
+      learn(before, before === "prompt" ? (await notes.requestPermissions()).display : before);
     });
-  }, [workoutId]);
+  }, [workoutId, learn]);
 
   useEffect(() => {
     run(async (notes) => {
