@@ -145,6 +145,7 @@ async function asPhone(
           requestPermissions: async () => ({ display: "granted" }),
           schedule: async () => ({ notifications: [] }),
           cancel: async () => {},
+          removeDeliveredNotificationsById: async () => {},
         },
         SystemBars: {
           setStyle: async ({ style }: { style: string }) =>

@@ -8,9 +8,11 @@ type Note = { id: number; schedule?: { at: Date }; [field: string]: unknown };
 type Display = "granted" | "denied" | "prompt";
 
 // The phone's pending notifications as iOS keeps them: one per id, a new one replacing the old.
-// `calls` keeps the order the plugin heard cancels and schedules in.
-const { notes, pending, view, unschedule, calls, phone } = vi.hoisted(() => {
+// `shown` holds those already delivered, which a cancel leaves in place on Android. `calls` keeps
+// the order the plugin heard cancels, removals and schedules in.
+const { notes, pending, shown, view, unschedule, calls, phone } = vi.hoisted(() => {
   const pending = new Map<number, Note>();
+  const shown = new Map<number, Note>();
   const calls: string[] = [];
   const unschedule = async ({ notifications }: { notifications: { id: number }[] }) => {
     calls.push("cancel");
@@ -23,6 +25,10 @@ const { notes, pending, view, unschedule, calls, phone } = vi.hoisted(() => {
       return { notifications: notifications.map((n) => ({ id: n.id })) };
     }),
     cancel: vi.fn(unschedule),
+    removeDeliveredNotificationsById: vi.fn(async ({ ids }: { ids: number[] }) => {
+      calls.push("remove");
+      for (const id of ids) shown.delete(id);
+    }),
     checkPermissions: vi.fn(async (): Promise<{ display: Display }> => ({ display: "granted" })),
     requestPermissions: vi.fn(async (): Promise<{ display: Display }> => ({ display: "granted" })),
     // Capacitor's plugin proxy answers any other name with a method that throws, then included:
@@ -34,6 +40,7 @@ const { notes, pending, view, unschedule, calls, phone } = vi.hoisted(() => {
   return {
     notes,
     pending,
+    shown,
     unschedule,
     calls,
     view: { active: null as ActiveSession | null },
@@ -85,6 +92,7 @@ const settle = () => new Promise((r) => setTimeout(r, 20));
 beforeEach(async () => {
   localStorage.clear();
   pending.clear();
+  shown.clear();
   calls.length = 0;
   phone.platform = "ios";
   visibility = "visible";
@@ -295,6 +303,29 @@ describe("NativeRestAlert on Android", () => {
     await waitFor(() => expect(pending.size).toBe(0));
   });
 
+  it("android: showing again removes an alert already shown", async () => {
+    render(show(rest(90)));
+    await waitFor(() => expect(notes.checkPermissions).toHaveBeenCalledTimes(1));
+    await settle();
+    setVisible(false);
+    await waitFor(() => expect(pending.size).toBe(1));
+    // The rest ends with the app hidden: Android posts the alert.
+    shown.set(1, only());
+    pending.clear();
+    setVisible(true);
+    await waitFor(() => expect(shown.size).toBe(0));
+    expect(pending.size).toBe(0);
+  });
+
+  it("android: the session ending removes an alert already shown", async () => {
+    const { rerender } = render(show(rest(90)));
+    await waitFor(() => expect(notes.checkPermissions).toHaveBeenCalledTimes(1));
+    await settle();
+    shown.set(1, { id: 1 });
+    rerender(show(null));
+    await waitFor(() => expect(shown.size).toBe(0));
+  });
+
   it("android: hide, show, hide leaves one pending", async () => {
     render(show(rest(90)));
     await waitFor(() => expect(notes.checkPermissions).toHaveBeenCalledTimes(1));
@@ -306,7 +337,16 @@ describe("NativeRestAlert on Android", () => {
     await settle();
     setVisible(false);
     await waitFor(() =>
-      expect(calls).toEqual(["cancel", "schedule", "cancel", "cancel", "schedule"]),
+      expect(calls).toEqual([
+        "cancel",
+        "remove",
+        "schedule",
+        "cancel",
+        "remove",
+        "cancel",
+        "remove",
+        "schedule",
+      ]),
     );
     expect(only().schedule).toEqual({ at: new Date(at(90)), allowWhileIdle: true });
   });

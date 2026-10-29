@@ -51,7 +51,12 @@ function run(step: (notes: Notifications) => Promise<unknown>): void {
       // else: the rest bar, the tone and the haptic still tell the end of a rest in the app.
     });
 }
-const cancel = (notes: Notifications) => notes.cancel({ notifications: [{ id: ID }] });
+// Android's cancel only reaches a pending alert: one already in the shade is removed as well, so
+// it goes once the app is shown again, the rest is over or the person has left.
+const cancel = async (notes: Notifications) => {
+  await notes.cancel({ notifications: [{ id: ID }] });
+  if (nativePlatform() === "android") await notes.removeDeliveredNotificationsById({ ids: [ID] });
+};
 
 // When the pending notification should ring: the rest's end while it runs, nothing once it has
 // passed. A pause that stops everything holds the rest still, so nothing rings until the resume
