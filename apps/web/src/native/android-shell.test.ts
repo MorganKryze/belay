@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
@@ -49,6 +49,13 @@ describe("the Android shell", () => {
     expect(start).toBeGreaterThan(-1);
     expect(source.indexOf("Channels.create(this)")).toBeGreaterThan(start);
     expect(kotlin("BelayNativePlugin.kt")).not.toContain("Channels.create");
+  });
+
+  // The rest alert names this drawable for its small icon, as the session notification uses it.
+  it("Belay's small notification icon is in every density", () => {
+    for (const density of ["mdpi", "hdpi", "xhdpi", "xxhdpi", "xxxhdpi"]) {
+      expect(existsSync(join(app, `main/res/drawable-${density}/ic_stat_belay.png`))).toBe(true);
+    }
   });
 
   it("the plugin answers to BelayNative with the page's six methods", () => {

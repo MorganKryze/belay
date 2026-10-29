@@ -172,8 +172,11 @@ function RestAlert({
             // does without Apple's critical alert entitlement.
             silent: true,
             ...(sound ? { sound: "rest.wav" } : {}),
-            // On Android the sound belongs to the channel.
-            ...(android ? { channelId: sound ? "rest" : "rest-quiet" } : {}),
+            // On Android the sound belongs to the channel, and the small icon is Belay's mark, as
+            // on the session notification, instead of the plugin's generic one.
+            ...(android
+              ? { channelId: sound ? "rest" : "rest-quiet", smallIcon: "ic_stat_belay" }
+              : {}),
           },
         ],
       });

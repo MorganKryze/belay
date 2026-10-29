@@ -287,6 +287,7 @@ describe("NativeRestAlert on Android", () => {
       title: "Repos terminé",
       body: "C’est reparti",
       channelId: "rest",
+      smallIcon: "ic_stat_belay",
       schedule: { at: new Date(at(90)), allowWhileIdle: true },
     });
   });
