@@ -43,10 +43,11 @@ class ChannelsTest {
     }
 
     // An app cannot raise a channel's importance once made: the first session channel is removed
-    // and never made again.
+    // and never made again. The notifications plugin's own channel, which nothing posts to, goes
+    // too.
     @Test
-    fun `the first session channel is retired`() {
-        assertEquals(listOf("session"), Channels.RETIRED)
+    fun `the first session channel and the plugin's default one are retired`() {
+        assertEquals(listOf("session", "default"), Channels.RETIRED)
         for (spec in Channels.specs()) assertFalse(spec.id, spec.id in Channels.RETIRED)
     }
 }

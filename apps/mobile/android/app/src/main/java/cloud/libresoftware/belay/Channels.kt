@@ -27,10 +27,12 @@ object Channels {
     const val REST_QUIET = "rest-quiet"
     const val SESSION = "session-shown"
 
-    // Channels an earlier build made. The session's first one was low importance, which Android
+    // Channels removed at every launch. The session's first one was low importance, which Android
     // 15 and later keep off the lock screen by default, and an app cannot raise the importance of
-    // a channel it already made: the session moved to a new id and the old one is removed.
-    val RETIRED = listOf("session")
+    // a channel it already made: the session moved to a new id. The notifications plugin makes
+    // « default » each time it loads, named in English; every alert names its own channel, so
+    // nothing posts there.
+    val RETIRED = listOf("session", "default")
 
     fun specs(): List<ChannelSpec> {
         val high = NotificationManagerCompat.IMPORTANCE_HIGH
@@ -51,9 +53,10 @@ object Channels {
         )
     }
 
-    // Created at every launch: Android keeps a channel's settings once made, so this only adds the
-    // missing ones and renames them when the phone's language changed. A channel's sound and
-    // importance cannot change after its creation; a new one needs a new id.
+    // Created at every launch, once the bridge has loaded its plugins: Android keeps a channel's
+    // settings once made, so this only adds the missing ones and renames them when the phone's
+    // language changed. A channel's sound and importance cannot change after its creation; a new
+    // one needs a new id.
     fun create(context: Context) {
         // Notification usage follows silent mode and Do Not Disturb, as the iPhone's tone follows
         // the Silent switch.

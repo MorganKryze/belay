@@ -41,6 +41,16 @@ describe("the Android shell", () => {
     );
   });
 
+  // The notifications plugin makes a channel of its own as it loads: Belay's channels are made,
+  // and that one removed, once the bridge has loaded every plugin.
+  it("the channels are made once the bridge has loaded its plugins", () => {
+    const source = kotlin("MainActivity.kt");
+    const start = source.indexOf("super.onCreate");
+    expect(start).toBeGreaterThan(-1);
+    expect(source.indexOf("Channels.create(this)")).toBeGreaterThan(start);
+    expect(kotlin("BelayNativePlugin.kt")).not.toContain("Channels.create");
+  });
+
   it("the plugin answers to BelayNative with the page's six methods", () => {
     const source = kotlin("BelayNativePlugin.kt");
     expect(source).toContain('@CapacitorPlugin(name = "BelayNative")');

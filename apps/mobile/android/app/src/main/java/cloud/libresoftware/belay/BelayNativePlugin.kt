@@ -16,7 +16,6 @@ class BelayNativePlugin : Plugin() {
     private val healthBridge by lazy { HealthBridge(this) }
 
     override fun load() {
-        Channels.create(context)
         // The sign-in and Health Connect register their activity results here, while the activity
         // is still being created: Android refuses a registration once it has started.
         signIn.register()
