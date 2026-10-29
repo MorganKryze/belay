@@ -45,6 +45,8 @@ describe("the Android shell", () => {
   // page can say « no connection » apart from an address that does not answer.
   it("the web view knows when the phone is offline", () => {
     const source = kotlin("MainActivity.kt").replace(/\s+/g, " ");
+    // The callback says nothing when the app starts with no network: the first state is read.
+    expect(source).toContain("online(connectivity.activeNetwork != null)");
     expect(source).toContain("registerDefaultNetworkCallback(network)");
     expect(source).toContain("override fun onAvailable(n: Network) = online(true)");
     expect(source).toContain("override fun onLost(n: Network) = online(false)");
