@@ -9,10 +9,13 @@
         <item name="colorAccent">@color/colorAccent</item>
     </style>
 
+    <!-- Below web view 140 the page stops at the system bars and this background fills the band
+         behind them: the page's own chalk, dark in dark mode, rather than the theme's grey. -->
     <style name="AppTheme.NoActionBar" parent="Theme.AppCompat.DayNight.NoActionBar">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
         <item name="android:background">@null</item>
+        <item name="android:windowBackground">@color/launch</item>
     </style>
 
     <!-- Android's own splash: the mark on chalk, then the app's theme once the page is up. -->

@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import { LAUNCH_BACKGROUND } from "@/lib/theme";
 import { kotlin } from "@/test/kotlin";
 
 // The Android project's shape, read from its sources: the plugin the page calls, and what the
@@ -103,6 +104,24 @@ describe("the Android shell", () => {
       "app/src/main/assets/public",
     ])
       expect(ignored).toContain(entry);
+  });
+
+  // Below web view 140 the page stops at the system bars and the window's background fills the
+  // band behind them: it has to be the page's own, in the light theme and in the dark one.
+  it("the band behind the system bars is the page's background in both themes", () => {
+    const theme =
+      /<style name="AppTheme\.NoActionBar"[^>]*>([\s\S]*?)<\/style>/.exec(
+        read("main/res/values/styles.xml"),
+      )?.[1] ?? "";
+    expect(theme).toContain('<item name="android:windowBackground">@color/launch</item>');
+    const launch = (dir: string) =>
+      /<color name="launch">(#[0-9A-Fa-f]{6})<\/color>/.exec(
+        read(`main/res/${dir}/colors.xml`),
+      )?.[1];
+    expect([launch("values"), launch("values-night")]).toEqual([
+      LAUNCH_BACKGROUND.light,
+      LAUNCH_BACKGROUND.dark,
+    ]);
   });
 
   // Older web views lack what the web app needs; the README names the version to have.
