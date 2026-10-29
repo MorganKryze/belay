@@ -1,14 +1,18 @@
 {
-  "name": "@belay/ios",
+  "name": "@belay/mobile",
   "private": true,
   "type": "module",
   "scripts": {
     "sync": "cap sync ios",
     "open": "cap open ios",
     "build:sim": "xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath ios/DerivedData CODE_SIGNING_ALLOWED=NO build -quiet",
-    "check:swift": "mkdir -p ios/DerivedData && xcrun swiftc -parse-as-library ios/App/App/HealthRequest.swift checks/HealthRequestCheck.swift -o ios/DerivedData/health-check && ios/DerivedData/health-check"
+    "check:swift": "mkdir -p ios/DerivedData && xcrun swiftc -parse-as-library ios/App/App/HealthRequest.swift checks/HealthRequestCheck.swift -o ios/DerivedData/health-check && ios/DerivedData/health-check",
+    "sync:android": "cap sync android",
+    "open:android": "cap open android",
+    "android": "sh scripts/android.sh"
   },
   "dependencies": {
+    "@capacitor/android": "8.5.3",
     "@capacitor/cli": "8.5.3",
     "@capacitor/core": "8.5.3",
     "@capacitor/haptics": "8.0.2",

@@ -1,0 +1,13 @@
+{
+  "appId": "cloud.libresoftware.belay",
+  "appName": "Belay",
+  "webDir": "../web/dist",
+  "loggingBehavior": "none",
+  "server": {
+    "androidScheme": "https",
+    "hostname": "localhost"
+  },
+  "android": {
+    "minWebViewVersion": 111
+  }
+}

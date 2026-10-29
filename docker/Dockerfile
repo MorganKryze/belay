@@ -13,7 +13,7 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY packages/shared/package.json packages/shared/
 COPY apps/server/package.json apps/server/
 COPY apps/web/package.json apps/web/
-COPY apps/ios/package.json apps/ios/
+COPY apps/mobile/package.json apps/mobile/
 RUN pnpm install --frozen-lockfile
 COPY . .
 # The release tag, shown in Settings; "dev" for a build made outside a release.

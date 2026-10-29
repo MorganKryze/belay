@@ -66,7 +66,17 @@ afterEach(async () => {
 // same stand-in server as in a browser. `answers` is what each `health` call resolves with, in
 // turn; the last one stays.
 function onIPhone(...answers: ReturnType<typeof status>[]) {
-  (globalThis as { Capacitor?: unknown }).Capacitor = { isNativePlatform: () => true };
+  onPhone("ios", answers);
+}
+// The same on Android: the page then names Health Connect and the phone.
+function onAndroid(...answers: ReturnType<typeof status>[]) {
+  onPhone("android", answers);
+}
+function onPhone(platform: "ios" | "android", answers: ReturnType<typeof status>[]) {
+  (globalThis as { Capacitor?: unknown }).Capacitor = {
+    isNativePlatform: () => true,
+    getPlatform: () => platform,
+  };
   localStorage.setItem("belay.instance", ORIGIN);
   api = fakeApi({ me: ADA });
   vi.stubGlobal("fetch", (input: RequestInfo | URL, init?: RequestInit) =>
@@ -356,5 +366,121 @@ describe("Réglages › Apple Santé, weigh-ins from Health", () => {
     await waitFor(async () => expect((await settingsNow()).importOn).toBe(false));
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(calls("authorize")).toHaveLength(0);
+  });
+});
+
+describe("Réglages › Santé Connect, on Android", () => {
+  it("on Android Settings says Sur ce téléphone", async () => {
+    onAndroid(status("undetermined", "undetermined"));
+    renderRoute("/settings");
+    const group = await screen.findByRole("region", { name: "Sur ce téléphone" });
+    const row = await within(group).findByRole("link", { name: /^Santé Connect/ });
+    await within(row).findByText("Désactivé");
+    expect(screen.queryByText(/iPhone|Apple/)).toBeNull();
+  });
+
+  it("on Android the page says Santé Connect", async () => {
+    onAndroid(status("allowed", "allowed"));
+    await seed(ADA.id, [weight("2026-09-01", 80.2)]);
+    await turnedOn();
+    const db = await openAccountDb(ADA.id);
+    await setImportOn(db, true, Date.now());
+    db.close();
+    renderRoute("/settings/health");
+    expect(await screen.findByRole("heading", { level: 1, name: "Santé Connect" })).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Belay ajoute tes séances terminées et tes pesées à Santé Connect sur ce téléphone.",
+      ),
+    ).toBeTruthy();
+    expect((await mainSwitch()).textContent).toContain(
+      "Envoyées à Santé Connect dès qu’elles sont enregistrées",
+    );
+    const to = await screen.findByRole("region", { name: "Vers Santé Connect" });
+    await within(to).findByText("À jour avec Santé Connect");
+    expect(
+      await within(to).findByRole("button", { name: /^Envoyer l’historique à Santé Connect/ }),
+    ).toBeTruthy();
+    const from = screen.getByRole("region", { name: "Depuis Santé Connect" });
+    expect(within(from).getByRole("switch").textContent).toContain(
+      "Celles d’une balance connectée ou d’une autre app",
+    );
+    expect(
+      await within(from).findByText(
+        "Si aucune pesée n’arrive, vérifie que Belay peut lire le poids dans les réglages de Santé Connect › Autorisations des applications › Belay.",
+      ),
+    ).toBeTruthy();
+    // The matcher reads the narrow no-break space before « : » as a plain one.
+    expect(
+      screen.getByText(
+        "Les séries, les charges et les répétitions restent dans Belay : Santé Connect n’a pas de place pour elles.",
+      ),
+    ).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Désactiver ne retire rien de Santé Connect : ce qui y est déjà se supprime dans Santé Connect.",
+      ),
+    ).toBeTruthy();
+    expect(screen.queryByText(/iPhone|Apple|l’app Santé/)).toBeNull();
+  });
+
+  it("on Android the status lines and the help say Santé Connect", async () => {
+    onAndroid(status("allowed", "denied"));
+    await turnedOn();
+    renderRoute("/settings/health");
+    await screen.findByText("Santé Connect refuse les pesées");
+    cleanup();
+    native.health.mockResolvedValue(status("denied", "allowed"));
+    renderRoute("/settings/health");
+    await screen.findByText("Santé Connect refuse les entraînements");
+    cleanup();
+    native.health.mockResolvedValue(status("allowed", "allowed"));
+    healthProgress.set({ sending: null, pending: 2 });
+    renderRoute("/settings/health");
+    await screen.findByText(
+      "Santé Connect n’était pas disponible. Nouvel essai à la prochaine ouverture.",
+    );
+    cleanup();
+    native.health.mockResolvedValue(status("denied", "denied"));
+    renderRoute("/settings/health");
+    await screen.findByText("Santé Connect n’autorise pas Belay à écrire.");
+    expect(
+      screen.getByText(
+        "Autorise-le dans les réglages de Santé Connect › Autorisations des applications › Belay, puis réessaie.",
+      ),
+    ).toBeTruthy();
+  });
+
+  it("on Android the import's sheet names Santé Connect and the instance", async () => {
+    onAndroid(status("allowed", "allowed"));
+    await turnedOn();
+    renderRoute("/settings/health");
+    fireEvent.click(await importSwitch());
+    const sheet = await screen.findByRole("dialog", {
+      name: "Importer tes pesées de Santé Connect\u202f?",
+    });
+    expect(within(sheet).getByText("belay.example.org").tagName).toBe("STRONG");
+    expect(sheet.textContent).toContain(
+      "Les pesées que Santé Connect reçoit d’autres apps et appareils seront ajoutées à Belay et synchronisées avec belay.example.org.",
+    );
+  });
+
+  it("on the iPhone nothing changes", async () => {
+    onIPhone(status("allowed", "allowed"));
+    await turnedOn();
+    renderRoute("/settings");
+    const group = await screen.findByRole("region", { name: "Sur cet iPhone" });
+    await within(group).findByRole("link", { name: /^Apple Santé/ });
+    cleanup();
+    renderRoute("/settings/health");
+    expect(await screen.findByRole("heading", { level: 1, name: "Apple Santé" })).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Belay ajoute tes séances terminées et tes pesées à l’app Santé de cet iPhone.",
+      ),
+    ).toBeTruthy();
+    expect(await screen.findByRole("region", { name: "Vers Santé" })).toBeTruthy();
+    await screen.findByText("À jour avec Santé");
+    expect(screen.queryByText(/Santé Connect/)).toBeNull();
   });
 });

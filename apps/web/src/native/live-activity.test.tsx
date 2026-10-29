@@ -35,7 +35,12 @@ vi.mock("@capacitor/local-notifications", () => ({
 // The Health half too, with its own tests.
 vi.mock("@/native/health-mirror", () => ({ HealthMirror: () => null }));
 
-import { type LiveActivity, liveActivityOf, showLiveActivity } from "./live-activity";
+import {
+  type LiveActivity,
+  liveActivityOf,
+  resendLiveActivity,
+  showLiveActivity,
+} from "./live-activity";
 import { NativeRestAlert } from "./rest-alert";
 
 const NOW = Date.parse("2026-10-28T18:00:00.000Z");
@@ -274,6 +279,31 @@ describe("showLiveActivity", () => {
     expect(native.setLiveActivity).toHaveBeenLastCalledWith({ activity: null });
     await quiet();
     expect(native.setLiveActivity).toHaveBeenCalledTimes(3);
+  });
+});
+
+describe("resendLiveActivity", () => {
+  // Android posts nothing while notifications are off: once they are allowed, the description
+  // already sent has to go again, unchanged.
+  it("sends the last description again, after the call under way", async () => {
+    const due = describeIt([])!;
+    showLiveActivity(due);
+    await vi.waitFor(() => expect(native.setLiveActivity).toHaveBeenCalledTimes(1));
+    resendLiveActivity();
+    await vi.waitFor(() => expect(native.setLiveActivity).toHaveBeenCalledTimes(2));
+    expect(shown(2)).toEqual(due);
+
+    let finish = () => {};
+    native.setLiveActivity.mockImplementationOnce(() => new Promise<void>((r) => (finish = r)));
+    resendLiveActivity();
+    resendLiveActivity();
+    await quiet();
+    expect(native.setLiveActivity).toHaveBeenCalledTimes(3);
+    finish();
+    await vi.waitFor(() => expect(native.setLiveActivity).toHaveBeenCalledTimes(4));
+    expect(shown(4)).toEqual(due);
+    await quiet();
+    expect(native.setLiveActivity).toHaveBeenCalledTimes(4);
   });
 });
 

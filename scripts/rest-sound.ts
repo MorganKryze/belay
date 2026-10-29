@@ -1,4 +1,4 @@
-// Writes the rest-end tone the iPhone app's notification plays, as a WAV file bundled with the app.
+// Writes the rest-end tone the phone apps' notification plays, as a WAV file bundled with each app.
 // It is the same sound the web app plays in the browser (apps/web/src/lib/rest-sound.ts): two sine
 // notes a fifth apart, each rising to 0.6 in 10 ms then fading exponentially to 0.001 at its end.
 // Run by hand after changing the tone, then commit the output.
@@ -52,6 +52,13 @@ samples.forEach((sample, i) => {
   wav.writeInt16LE(Math.round(Math.max(-1, Math.min(1, sample)) * 32767), 44 + i * 2);
 });
 
-const target = fileURLToPath(new URL("../apps/ios/ios/App/App/rest.wav", import.meta.url));
-writeFileSync(target, wav);
-console.log(`Wrote ${target} (${wav.length} bytes).`);
+// The same bytes for both: the iPhone's bundle, and Android's raw resources, where the rest
+// channel's sound is read by name.
+for (const path of [
+  "../apps/mobile/ios/App/App/rest.wav",
+  "../apps/mobile/android/app/src/main/res/raw/rest.wav",
+]) {
+  const target = fileURLToPath(new URL(path, import.meta.url));
+  writeFileSync(target, wav);
+  console.log(`Wrote ${target} (${wav.length} bytes).`);
+}

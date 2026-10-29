@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Belay</string>
+    <string name="title_activity_main">Belay</string>
+    <string name="channel_rest">Fin de repos</string>
+    <string name="channel_rest_desc">Sonne à la fin d’un repos quand Belay n’est pas à l’écran</string>
+    <string name="channel_rest_quiet">Fin de repos (sans son)</string>
+    <string name="channel_session">Séance en cours</string>
+    <string name="channel_session_desc">Exercice, série et minuteurs de la séance ouverte</string>
+    <string name="privacy_title">Belay et Santé Connect</string>
+    <string name="privacy_body">Si tu l’actives dans Réglages › Santé Connect, Belay ajoute tes séances terminées (début et fin) et tes pesées à Santé Connect. Il lit les entraînements d’autres apps seulement pour ne pas compter une séance deux fois, et tes pesées seulement si tu actives leur import : elles sont alors synchronisées avec ton instance Belay. Aucune autre donnée de Santé Connect ne quitte ce téléphone.</string>
+    <string name="privacy_ok">OK</string>
+</resources>

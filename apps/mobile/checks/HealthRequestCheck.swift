@@ -1,7 +1,7 @@
 import Foundation
 
 // The Health bridge's page-facing rules, run on a Mac without a simulator:
-// `pnpm --filter @belay/ios check:swift` compiles this file with HealthRequest.swift.
+// `pnpm --filter @belay/mobile check:swift` compiles this file with HealthRequest.swift.
 @main
 struct HealthRequestCheck {
     static var failures = 0

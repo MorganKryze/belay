@@ -14,7 +14,9 @@ export default defineConfig(
       "apps/web/src/components/ui/**",
       "apps/web/public/**",
       // The Xcode project holds a copy of the built web app and Swift package checkouts.
-      "apps/ios/ios/**",
+      "apps/mobile/ios/**",
+      // The Gradle project holds a copy of the built web app and Gradle output.
+      "apps/mobile/android/**",
     ],
   },
   js.configs.recommended,

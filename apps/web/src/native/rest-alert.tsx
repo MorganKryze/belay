@@ -6,17 +6,38 @@
 import "@/i18n/lazy";
 import type { PauseStops } from "@belay/shared/training/pause";
 import type { PermissionStatus } from "@capacitor/local-notifications";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { readPauseStops } from "@/lib/pause-stops";
+import { nativePlatform } from "@/lib/platform";
 import { readRestSound } from "@/lib/rest-sound";
 import { type Account, type OpenAccount, useHistory, useSessionView } from "@/sync/account";
 import type { ActiveSession } from "@/sync/db";
 import { HealthMirror } from "./health-mirror";
-import { liveActivityOf, type OpenSession, showLiveActivity } from "./live-activity";
+import {
+  liveActivityOf,
+  type OpenSession,
+  resendLiveActivity,
+  showLiveActivity,
+} from "./live-activity";
 
 // One notification at a time: scheduling under the same id replaces the pending one.
 const ID = 1;
+type Display = PermissionStatus["display"];
+
+// Android shows a notification over the app, with its sound, where iOS keeps it quiet: there it
+// stays pending only while the app is hidden, since the rest bar, the tone and the haptic already
+// tell the end on screen.
+function useHidden(android: boolean): boolean {
+  const [hidden, setHidden] = useState(() => android && document.visibilityState === "hidden");
+  useEffect(() => {
+    if (!android) return;
+    const update = () => setHidden(document.visibilityState === "hidden");
+    document.addEventListener("visibilitychange", update);
+    return () => document.removeEventListener("visibilitychange", update);
+  }, [android]);
+  return hidden;
+}
 
 type Notifications = typeof import("@capacitor/local-notifications").LocalNotifications;
 // Loaded with the first call rather than with this module, so the startup bundle's list of what
@@ -36,7 +57,12 @@ function run(step: (notes: Notifications) => Promise<unknown>): void {
       // else: the rest bar, the tone and the haptic still tell the end of a rest in the app.
     });
 }
-const cancel = (notes: Notifications) => notes.cancel({ notifications: [{ id: ID }] });
+// Android's cancel only reaches a pending alert: one already in the shade is removed as well, so
+// it goes once the app is shown again, the rest is over or the person has left.
+const cancel = async (notes: Notifications) => {
+  await notes.cancel({ notifications: [{ id: ID }] });
+  if (nativePlatform() === "android") await notes.removeDeliveredNotificationsById({ ids: [ID] });
+};
 
 // When the pending notification should ring: the rest's end while it runs, nothing once it has
 // passed. A pause that stops everything holds the rest still, so nothing rings until the resume
@@ -93,43 +119,71 @@ function RestAlert({
   const read = view !== undefined && history !== undefined;
   const at = restAlertAt(active, readPauseStops(), Date.now());
   const workoutId = active?.workoutId;
+  const android = nativePlatform() === "android";
+  const hidden = useHidden(android);
 
   // Asked once per launch, when a session first opens: the question then makes sense.
-  const [display, setDisplay] = useState<PermissionStatus["display"] | null>(null);
+  const [display, setDisplay] = useState<Display | null>(null);
+  const known = useRef<Display | null>(null);
+  const learn = useCallback(
+    (before: Display | null, after: Display) => {
+      // Android posted nothing for the session while notifications were off: once they are
+      // allowed, its description goes again.
+      if (android && before !== "granted" && after === "granted") resendLiveActivity();
+      known.current = after;
+      setDisplay(after);
+    },
+    [android],
+  );
   const asked = useRef(false);
   useEffect(() => {
     if (workoutId === undefined || asked.current) return;
     asked.current = true;
     run(async (notes) => {
-      const status = await notes.checkPermissions();
-      setDisplay(
-        status.display === "prompt" ? (await notes.requestPermissions()).display : status.display,
-      );
+      const { display: before } = await notes.checkPermissions();
+      learn(before, before === "prompt" ? (await notes.requestPermissions()).display : before);
     });
-  }, [workoutId]);
+  }, [workoutId, learn]);
+  // Read again each time the app comes back, once asked: notifications may have been allowed or
+  // turned off in the phone's settings meanwhile. Only Android reports the app hidden.
+  const away = useRef(false);
+  useEffect(() => {
+    if (hidden) away.current = true;
+    if (hidden || !away.current || !asked.current) return;
+    away.current = false;
+    run(async (notes) => learn(known.current, (await notes.checkPermissions()).display));
+  }, [hidden, learn]);
 
   useEffect(() => {
     run(async (notes) => {
       await cancel(notes);
-      if (at === null || display !== "granted") return;
+      if (at === null || display !== "granted" || (android && !hidden)) return;
+      const sound = readRestSound() !== "off";
       await notes.schedule({
         notifications: [
           {
             id: ID,
             title: t("session.restOver"),
             body: t("session.backToIt"),
-            schedule: { at: new Date(at) },
+            // Android rings it exactly, even with the phone idle; iOS ignores the flag.
+            schedule: android ? { at: new Date(at), allowWhileIdle: true } : { at: new Date(at) },
             // No banner while the app is in the foreground: the rest bar, the tone and the haptic
             // already tell it there. The sound follows the Silent switch, as every notification
             // does without Apple's critical alert entitlement.
             silent: true,
-            ...(readRestSound() === "off" ? {} : { sound: "rest.wav" }),
+            ...(sound ? { sound: "rest.wav" } : {}),
+            // On Android the sound belongs to the channel, and the small icon is Belay's mark, as
+            // on the session notification, instead of the plugin's generic one.
+            ...(android
+              ? { channelId: sound ? "rest" : "rest-quiet", smallIcon: "ic_stat_belay" }
+              : {}),
           },
         ],
       });
     });
-    // Only a new end, or the answer to the question, changes what is pending.
-  }, [at, display, t]);
+    // Only a new end, the answer to the question, or the app hidden or shown on Android changes
+    // what is pending.
+  }, [at, display, t, android, hidden]);
   // Leaving the account unmounts this: nothing rings for a person who left.
   useEffect(() => () => run(cancel), []);
 

@@ -25,9 +25,14 @@ import {
   setImportOn,
 } from "@/native/health";
 import { historyCounts } from "@/native/health-plan";
-import { readInstance } from "@/lib/platform";
+import { nativePlatform, readInstance } from "@/lib/platform";
 import { type OpenAccount, useAccount } from "@/sync/account";
 import { NotFound } from "./fallbacks";
+
+// On Android the page names Health Connect and the phone where the iPhone's names Apple Health and
+// the iPhone. The keys that differ have an `_android` variant; any other key falls back to the
+// iPhone's words.
+const words = () => ({ context: nativePlatform() === "android" ? "android" : undefined });
 
 const footnote =
   "px-4 text-(length:--text-secondary) leading-(--text-secondary--line-height) text-muted-foreground";
@@ -76,8 +81,9 @@ function useHealthState(account: OpenAccount) {
   return { state, progress, changed };
 }
 
-// Réglages' « Sur cet iPhone » group: the row to the page, saying whether the setting is on, or
-// that iOS refuses both writes (icon and word, never red). Nothing until iOS says Health is there.
+// Réglages' « Sur cet iPhone » group (« Sur ce téléphone » on Android): the row to the page,
+// saying whether the setting is on, or that the system refuses both writes (icon and word, never
+// red). Nothing until it says Health is there.
 export function HealthGroup({ account }: { account: OpenAccount }) {
   const { t } = useTranslation();
   const status = useHealthStatus();
@@ -92,11 +98,11 @@ export function HealthGroup({ account }: { account: OpenAccount }) {
     t(state.settings.on ? "health.on" : "health.off")
   );
   return (
-    <GroupedList label={t("settings.onThisPhone")}>
+    <GroupedList label={t("settings.onThisPhone", words())}>
       <RowLink
         to="/settings/health"
         icon={HeartPulse}
-        label={t("health.title")}
+        label={t("health.title", words())}
         value={value}
         trailing="push"
       />
@@ -104,8 +110,9 @@ export function HealthGroup({ account }: { account: OpenAccount }) {
   );
 }
 
-// Réglages › Apple Santé, in the iPhone app only (the route is not found in a browser), and only
-// where Health exists. Nothing shows while iOS has not answered.
+// Réglages › Apple Santé (Santé Connect on Android), in the phone app only (the route is not
+// found in a browser), and only where Health exists. Nothing shows while the system has not
+// answered.
 export function HealthPage() {
   const { t } = useTranslation();
   const account = useAccount();
@@ -115,7 +122,7 @@ export function HealthPage() {
   return (
     <section className="flex flex-col gap-4">
       <PageHeader
-        title={t("health.title")}
+        title={t("health.title", words())}
         focusFallback
         back={
           <BackLink to="/settings" activeOptions={{ exact: true }}>
@@ -123,12 +130,12 @@ export function HealthPage() {
           </BackLink>
         }
       />
-      <p className="px-1 text-body text-muted-foreground">{t("health.intro")}</p>
+      <p className="px-1 text-body text-muted-foreground">{t("health.intro", words())}</p>
       <HealthSettings account={account} status={status} />
       <div className="mt-1 flex flex-col gap-2">
-        <p className={footnote}>{t("health.footerSets")}</p>
+        <p className={footnote}>{t("health.footerSets", words())}</p>
         <p className={footnote}>{t("health.footerWatch")}</p>
-        <p className={footnote}>{t("health.footerOff")}</p>
+        <p className={footnote}>{t("health.footerOff", words())}</p>
       </div>
     </section>
   );
@@ -164,10 +171,10 @@ function HealthSettings({ account, status }: { account: OpenAccount; status: Hea
 
   return (
     <>
-      <GroupedList footer={refused ? t("health.refusedHelp") : undefined}>
+      <GroupedList footer={refused ? t("health.refusedHelp", words()) : undefined}>
         <RowSwitch
           label={t("health.switch")}
-          sub={t("health.switchSub")}
+          sub={t("health.switchSub", words())}
           wrap
           checked={settings.on}
           onCheckedChange={(on) => void (on ? turnOn() : turnOff())}
@@ -176,12 +183,12 @@ function HealthSettings({ account, status }: { account: OpenAccount; status: Hea
           <InfoRow
             icon={CircleAlert}
             label={t("health.refused")}
-            detail={t("health.refusedDetail")}
+            detail={t("health.refusedDetail", words())}
           />
         )}
       </GroupedList>
       {settings.on && !refused && (
-        <GroupedList label={t("health.toHealth")}>
+        <GroupedList label={t("health.toHealth", words())}>
           <SendingStatus status={status} progress={progress} />
           {settings.history === "no" && !progress.sending && (
             <HistoryOffer account={account} onAsk={changed} />
@@ -231,10 +238,13 @@ function ImportGroup({
   };
   return (
     <>
-      <GroupedList label={t("health.fromHealth")} footer={on ? t("health.importNote") : undefined}>
+      <GroupedList
+        label={t("health.fromHealth", words())}
+        footer={on ? t("health.importNote", words()) : undefined}
+      >
         <RowSwitch
           label={t("health.import")}
-          sub={t("health.importSub")}
+          sub={t("health.importSub", words())}
           wrap
           checked={on}
           onCheckedChange={(next) => (next ? setAsking(true) : void turnOff())}
@@ -242,10 +252,11 @@ function ImportGroup({
       </GroupedList>
       {asking && (
         <ActionSheet
-          title={t("health.consentTitle")}
+          title={t("health.consentTitle", words())}
           body={
             <Trans
               i18nKey="health.consentBody"
+              context={words().context}
               values={{ host }}
               components={{ host: <strong className="font-semibold break-all text-foreground" /> }}
             />
@@ -284,23 +295,23 @@ function SendingStatus({
         ) : status.weighings !== "allowed" ? (
           <InfoRow
             icon={CircleAlert}
-            label={t("health.refusesWeighings")}
+            label={t("health.refusesWeighings", words())}
             detail={t("health.onlySessions")}
           />
         ) : status.workouts !== "allowed" ? (
           <InfoRow
             icon={CircleAlert}
-            label={t("health.refusesWorkouts")}
+            label={t("health.refusesWorkouts", words())}
             detail={t("health.onlyWeighings")}
           />
         ) : pending > 0 ? (
           <InfoRow
             icon={Clock}
             label={t("health.pending", { count: pending })}
-            detail={t("health.pendingDetail")}
+            detail={t("health.pendingDetail", words())}
           />
         ) : (
-          <InfoRow icon={CircleCheck} tone="reference" label={t("health.upToDate")} />
+          <InfoRow icon={CircleCheck} tone="reference" label={t("health.upToDate", words())} />
         )}
       </div>
       {sending && (
@@ -366,7 +377,7 @@ function HistoryOffer({ account, onAsk }: { account: OpenAccount; onAsk: () => P
   return (
     <RowButton
       icon={Send}
-      label={t("health.history")}
+      label={t("health.history", words())}
       sub={t("health.historySub", {
         sessions: t("health.sessions", { count: counts.sessions }),
         weighings: t("health.weighings", { count: counts.weighings }),
