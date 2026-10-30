@@ -7,7 +7,15 @@ import { BelayNative } from "./plugin";
 // Times are epoch milliseconds, dates YYYY-MM-DD, weights kilograms; a weigh-in's owner tags the
 // account in its sync identifier (8 hex digits).
 export type HealthAccess = "allowed" | "denied" | "undetermined";
-export type HealthStatus = { available: boolean; workouts: HealthAccess; weighings: HealthAccess };
+export type HealthHistoryAccess = HealthAccess | "unavailable";
+// Android only: whether weigh-ins older than Health Connect's 30-day window can be read; Apple
+// Health has no such window and leaves it out.
+export type HealthStatus = {
+  available: boolean;
+  workouts: HealthAccess;
+  weighings: HealthAccess;
+  history?: HealthHistoryAccess;
+};
 export type HealthObject =
   | { kind: "workout"; id: string; startedAt: number; endedAt: number; version: number }
   | { kind: "workoutRemoved"; id: string }
@@ -17,7 +25,7 @@ export type HealthOutcome = "written" | "removed" | "overlap" | "denied" | "unav
 export type HealthSample = { startedAt: number; kg: number };
 export type HealthRequest =
   | { op: "status" }
-  | { op: "authorize"; scope: "write" | "import" }
+  | { op: "authorize"; scope: "write" | "import" | "history" }
   | { op: "apply"; objects: HealthObject[] }
   | { op: "readWeighings"; anchor: string | null; since: number };
 
@@ -26,7 +34,7 @@ export const HEALTH_BATCH = 100;
 
 // Write access per type; iOS never tells whether a read is allowed.
 export function health(
-  request: { op: "status" } | { op: "authorize"; scope: "write" | "import" },
+  request: { op: "status" } | { op: "authorize"; scope: "write" | "import" | "history" },
 ): Promise<HealthStatus>;
 export function health(request: {
   op: "apply";

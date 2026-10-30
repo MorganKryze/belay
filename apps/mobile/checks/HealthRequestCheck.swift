@@ -44,6 +44,7 @@ struct HealthRequestCheck {
         check("an unknown key is refused", decodes(#"{"op":"status","x":1}"#) == nil)
         check("an unknown operation is refused", decodes(#"{"op":"delete"}"#) == nil)
         check("authorize import decodes", decodes(#"{"op":"authorize","scope":"import"}"#) == .authorize(.import))
+        check("authorize history decodes", decodes(#"{"op":"authorize","scope":"history"}"#) == .authorize(.history))
         check("an unknown scope is refused", decodes(#"{"op":"authorize","scope":"read"}"#) == nil)
 
         let one = decodes(#"{"op":"apply","objects":[\#(workout())]}"#)
@@ -90,6 +91,10 @@ struct HealthRequestCheck {
               decodes(#"{"op":"readWeighings","anchor":null,"since":\#(floor - 1)}"#) == nil)
         check("readWeighings since two days ahead is refused",
               decodes(#"{"op":"readWeighings","anchor":null,"since":\#(now + 48 * hour)}"#) == nil)
+
+        check("readWeighings since at the floor decodes",
+              decodes(#"{"op":"readWeighings","anchor":null,"since":\#(floor)}"#)
+                == .readWeighings(anchor: nil, since: Date(timeIntervalSince1970: Double(floor) / 1000)))
 
         let hundred = Array(repeating: workout(), count: 100).joined(separator: ",")
         check("100 objects decode", decodes(#"{"op":"apply","objects":[\#(hundred)]}"#) != nil)
@@ -155,6 +160,7 @@ struct HealthRequestCheck {
         let write = HealthRules.requested(.write), imports = HealthRules.requested(.import)
         check("both scopes ask to write sessions and weigh-ins",
               write.share == [.workouts, .weighings] && imports.share == write.share)
+        check("history asks what the import asks", HealthRules.requested(.history) == imports)
         check("weigh-ins are read only once the import asks", !write.read.contains(.weighings)
               && imports.read == [.workouts, .weighings])
 

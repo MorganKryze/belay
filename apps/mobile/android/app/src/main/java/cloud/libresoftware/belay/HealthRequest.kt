@@ -51,7 +51,7 @@ sealed interface HealthRequest {
 
         // Every value and every key the page sends, as sets the page's contract test reads.
         val OPS = setOf("status", "authorize", "apply", "readWeighings")
-        val SCOPES = setOf("write", "import")
+        val SCOPES = setOf("write", "import", "history")
         val KINDS = setOf("workout", "workoutRemoved", "weighing", "weighingRemoved")
 
         val STATUS_KEYS = setOf("op")
