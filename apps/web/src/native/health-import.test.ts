@@ -294,6 +294,15 @@ describe("the history", () => {
     expect((await readHealth(db)).imported).toMatchObject({ anchor: "H1", historyDone: true });
   });
 
+  it("a read that finds only a reading waiting for its day still marks the history done", async () => {
+    await askImportHistory(db);
+    const tomorrow = { startedAt: new Date(2026, 9, 27, 7).getTime(), kg: 79.8 };
+    expect(await read([tomorrow], "H1", NOW)).toEqual({ written: 0, historyDone: true });
+    const { settings, imported } = await readHealth(db);
+    expect(imported.anchor).toBeNull();
+    expect(importHistory(settings, imported)).toBe("done");
+  });
+
   it("the same samples read twice write no day twice", async () => {
     await askImportHistory(db);
     const samples = [
