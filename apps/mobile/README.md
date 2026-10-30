@@ -353,22 +353,30 @@ only, in Health Connect's own screen, and the app's privacy dialog opens from
 there.
 
 The permissions live in Health Connect's settings, under **App permissions ›
-Belay**. That is the path the page's help text gives; it has not been read on a
-device yet. Turning the setting off, or deleting the account, removes nothing
-from Health Connect: delete what is there in its **Data** tab.
+Belay**. The one for older weigh-ins is further down that page, at **App
+permissions › Belay › Additional access › Access past data**. That path was read
+on the API 36.1 emulator, not on a phone. Turning the setting off, or deleting
+the account, removes nothing from Health Connect: delete what is there in its
+**Data** tab.
 
 ### Check the weigh-in history
 
-On the API 36.1 emulator, with Health Connect Toolbox:
+An old weigh-in arriving through the history permission has not been seen yet,
+on a phone or on the emulator: Google's Health Connect Toolbox, the test app that
+adds one, does not install on the API 36.1 emulator. There, the permission
+screens, the rows and the settings path were checked with a read that found
+nothing. This list is what is left to run, with the Toolbox:
 
 1. Add a weight dated 60 days back with the Toolbox, then turn on **Import
    weigh-ins**.
-2. Tap **Import history from Health Connect**: Health Connect's screen lists the
-   history permission. Allow it: the weigh-in arrives in Belay.
+2. Tap **Import history from Health Connect**: on API 36.1 the history permission
+   comes on a screen of its own, after any data permission Belay does not hold
+   yet. Allow it: the weigh-in arrives in Belay.
 3. Start again with a new emulator data set and refuse: the row shows the
    30-day window and **Import older weigh-ins**.
-4. Allow the history in Health Connect's settings, then tap that action: the
-   weigh-in arrives.
+4. In Health Connect's settings, go to **App permissions › Belay › Additional
+   access**, turn on **Access past data**, then tap that action: the weigh-in
+   arrives.
 5. After each request, check that write access is still granted.
 6. Note what the image reports for the history feature: without it, the row
    says this version does not give older ones.
@@ -396,6 +404,7 @@ On the API 36.1 emulator, with Health Connect Toolbox:
 - The identity provider with passkeys or biometrics.
 - Samsung Health or Fitbit showing the strength session.
 - Android 9 to 13 with the Health Connect app from Play.
-- Health Connect's history permission.
+- Health Connect's history permission, and an old weigh-in arriving through it,
+  which the emulator has not shown either.
 - The feel of system back with gesture navigation.
 - A release build signed with a kept keystore.
