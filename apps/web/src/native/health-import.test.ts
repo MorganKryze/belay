@@ -290,6 +290,10 @@ describe("after a landed sync", () => {
   it("Health unavailable leaves everything as it was, for the next landed sync", async () => {
     native.health.mockRejectedValue(new Error("health unavailable"));
     await importAfterSync({ db, engine: { schedule: vi.fn() } }, async () => {});
-    expect((await readHealth(db)).imported).toEqual({ anchor: null, filled: {} });
+    expect((await readHealth(db)).imported).toEqual({
+      anchor: null,
+      filled: {},
+      historyDone: false,
+    });
   });
 });

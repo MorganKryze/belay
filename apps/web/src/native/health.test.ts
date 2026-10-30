@@ -14,10 +14,13 @@ const native = vi.hoisted(() => ({
 vi.mock("./plugin", () => ({ BelayNative: native }));
 
 import {
+  askImportHistory,
   HEALTH_OFF,
   health,
   healthProgress,
+  HISTORY_SINCE,
   IMPORT_KEY,
+  importHistory,
   localDayStart,
   markHistorySent,
   readHealth,
@@ -110,6 +113,7 @@ describe("the Health state", () => {
     expect((await readHealth(db)).imported).toEqual({
       anchor: null,
       filled: { "2026-10-25": { at: "a", startedAt: 1 } },
+      historyDone: false,
     });
     expect(localDayStart(NOW)).toBe(new Date(2026, 9, 26).getTime());
   });
@@ -136,6 +140,62 @@ describe("the Health state", () => {
     await applyServer(db, [], answer({ cursor: "42" }));
     expect(await readCursor(db)).toBe("42");
     expect((await readHealth(db)).settings.on).toBe(true);
+  });
+});
+
+describe("the history of the import", () => {
+  const filled = { "2026-10-25": { at: "a", startedAt: 1 } };
+  const importOn = async () => {
+    await setHealthOn(db, true, NOW);
+    await setImportOn(db, true, NOW);
+  };
+
+  it("asking the history reads from the floor: the anchor cleared, not done, the filled days kept", async () => {
+    await importOn();
+    await db.put("meta", { anchor: "A1", filled, historyDone: true }, IMPORT_KEY);
+    expect(await askImportHistory(db)).toMatchObject({
+      importOn: true,
+      importSince: -2_209_075_200_000,
+    });
+    expect((await readHealth(db)).imported).toEqual({ anchor: null, filled, historyDone: false });
+  });
+
+  it("the history is not asked while the import is off", async () => {
+    await setHealthOn(db, true, NOW);
+    const stored = { anchor: "A1", filled };
+    await db.put("meta", stored, IMPORT_KEY);
+    expect((await askImportHistory(db)).importSince).toBeNull();
+    await setImportOn(db, true, NOW);
+    await db.put("meta", stored, IMPORT_KEY);
+    await setHealthOn(db, false, NOW);
+    expect((await askImportHistory(db)).importSince).toBe(new Date(2026, 9, 26).getTime());
+    expect((await readHealth(db)).imported).toEqual(stored);
+  });
+
+  it("turning the import on again clears a done history and reads from the new day", async () => {
+    await importOn();
+    await askImportHistory(db);
+    await db.put("meta", { anchor: "H1", filled, historyDone: true }, IMPORT_KEY);
+    await setImportOn(db, false, NOW);
+    const tomorrow = NOW + 86_400_000;
+    expect((await setImportOn(db, true, tomorrow)).importSince).toBe(localDayStart(tomorrow));
+    const { settings, imported } = await readHealth(db);
+    expect(imported).toEqual({ anchor: null, filled, historyDone: false });
+    expect(importHistory(settings, imported)).toBe("offered");
+  });
+
+  it("the history's state: none, offered, importing, done", () => {
+    const on = { ...HEALTH_OFF, on: true, importOn: true };
+    const imported = { anchor: null, filled: {} };
+    const asked = { ...on, importSince: HISTORY_SINCE };
+    expect(importHistory(HEALTH_OFF, imported)).toBe("none");
+    expect(importHistory({ ...asked, on: false }, imported)).toBe("none");
+    expect(importHistory({ ...asked, importOn: false }, imported)).toBe("none");
+    expect(importHistory(on, imported)).toBe("none");
+    expect(importHistory({ ...on, importSince: NOW }, imported)).toBe("offered");
+    expect(importHistory(asked, imported)).toBe("importing");
+    expect(importHistory(asked, { ...imported, historyDone: false })).toBe("importing");
+    expect(importHistory(asked, { ...imported, historyDone: true })).toBe("done");
   });
 });
 
