@@ -2,22 +2,32 @@ import { addDays, toISODate } from "@belay/shared/body/dates";
 import { expect, type Page, test } from "@playwright/test";
 import { expectNoAxeViolations, settled } from "./axe";
 import { fakeServer } from "./fake-server";
-import { asAndroid, barStyles } from "./native";
+import { asAndroid, barStyles, healthRequests } from "./native";
 
 // The Android app: the same pages as on the iPhone, worded for Health Connect and the phone.
 test.use({ locale: "fr-FR" });
 
+type Health = NonNullable<Parameters<typeof asAndroid>[1]>["health"];
+
+const today = () => toISODate(new Date());
+
 // Signed in to an instance at the preview's own address, with a weigh-in from before the setting
 // goes on, so « Envoyer l’historique » offers something.
-async function signedIn(page: Page, baseURL: string) {
-  await asAndroid(page, { instance: baseURL, token: "a".repeat(43), health: {} });
-  await fakeServer(page, { rows: [{ date: addDays(toISODate(new Date()), -10), weightKg: 80 }] });
+async function signedIn(page: Page, baseURL: string, health: Health = {}) {
+  await asAndroid(page, { instance: baseURL, token: "a".repeat(43), health });
+  return fakeServer(page, { rows: [{ date: addDays(today(), -10), weightKg: 80 }] });
 }
 
 const healthSwitch = (page: Page) => page.getByRole("switch", { name: /^Séances et pesées/ });
 const importSwitch = (page: Page) => page.getByRole("switch", { name: /^Importer les pesées/ });
 const consent = (page: Page) =>
   page.getByRole("dialog", { name: "Importer tes pesées de Santé Connect ?" });
+const historyAction = (page: Page) =>
+  page.getByRole("button", { name: /^Importer l’historique de Santé Connect/ });
+
+const WINDOW = "Santé Connect ne donne que les pesées des 30 jours avant ta première autorisation.";
+// The instant the history's read starts from, the earliest both phones accept.
+const HISTORY_SINCE = Date.UTC(1899, 11, 31);
 
 async function openHealth(page: Page) {
   await page.goto("/settings/health");
@@ -87,6 +97,42 @@ test("the system bars follow the theme, the phone's own included", async ({ page
   await expect.poll(async () => (await barStyles(page)).at(-1)).toBe("DARK");
   await page.emulateMedia({ colorScheme: "light" });
   await expect.poll(async () => (await barStyles(page)).at(-1)).toBe("LIGHT");
+});
+
+test("the history asks Health Connect's permission, then imports", async ({ page, baseURL }) => {
+  const day = addDays(today(), -60);
+  const server = await signedIn(page, baseURL!, {
+    history: "undetermined",
+    grantHistory: true,
+    samples: [{ startedAt: new Date(`${day}T07:00:00`).getTime(), kg: 78.4 }],
+  });
+  await openHealth(page);
+  await allOn(page);
+  await historyAction(page).click();
+  await expect(page.getByText("Historique importé")).toBeVisible();
+  await expect.poll(() => server.rows.get(day)?.weightKg).toBe(78.4);
+  const requests = await healthRequests(page);
+  const asked = requests.findIndex((r) => r.op === "authorize" && r.scope === "history");
+  const read = requests.findIndex((r) => r.op === "readWeighings" && r.since === HISTORY_SINCE);
+  expect(asked).toBeGreaterThanOrEqual(0);
+  expect(read).toBeGreaterThan(asked);
+  await expect(page.getByText(WINDOW)).toHaveCount(0);
+});
+
+test("without the history feature the done row says the 30-day window", async ({
+  page,
+  baseURL,
+}) => {
+  await signedIn(page, baseURL!, { history: "unavailable" });
+  await openHealth(page);
+  await allOn(page);
+  await historyAction(page).click();
+  await expect(page.getByText("Historique importé")).toBeVisible();
+  await expect(page.getByText(WINDOW)).toContainText(
+    "Cette version de Santé Connect ne donne pas les plus anciennes.",
+  );
+  await expect(page.getByRole("button", { name: /^Importer les plus anciennes/ })).toHaveCount(0);
+  expect(await healthRequests(page)).not.toContainEqual({ op: "authorize", scope: "history" });
 });
 
 for (const scheme of ["light", "dark"] as const) {

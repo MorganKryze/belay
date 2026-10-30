@@ -1,5 +1,5 @@
 import type { Page, Request } from "@playwright/test";
-import type { HealthAccess, HealthSample } from "../src/native/health";
+import type { HealthAccess, HealthHistoryAccess, HealthSample } from "../src/native/health";
 
 // The instance the simulated app talks to, answered by routeInstance.
 export const INSTANCE = "https://belay.test";
@@ -25,11 +25,14 @@ type PhoneOptions = {
   // The sign-in sheet: closed by the person, or coming back to this address.
   authenticate?: "cancel" | { url: string };
   // Health on this phone: there or not, the write access the system grants once asked (both
-  // allowed by default), and the body-mass readings other apps wrote.
+  // allowed by default), and the body-mass readings other apps wrote. On Android, also the history
+  // permission as Health Connect first answers it, and whether its screen grants it once asked.
   health?: {
     available?: boolean;
     grant?: { workouts: HealthAccess; weighings: HealthAccess };
     samples?: HealthSample[];
+    history?: HealthHistoryAccess;
+    grantHistory?: boolean;
   };
 };
 
@@ -62,16 +65,28 @@ async function asPhone(
       // removed under the sync identifier the native side builds, so a second write replaces the
       // first; the readings after the anchor, the anchor being how many were already read.
       type Health = NonNullable<typeof health>;
-      type Status = { available: boolean; workouts: HealthAccess; weighings: HealthAccess };
+      type Status = {
+        available: boolean;
+        workouts: HealthAccess;
+        weighings: HealthAccess;
+        history?: HealthHistoryAccess;
+      };
       type HealthObject = Record<string, unknown> & { kind: string };
       function fakeHealth({
         available = true,
         grant = { workouts: "allowed", weighings: "allowed" },
+        history = "undetermined",
+        grantHistory = false,
       }: Health) {
         const STATUS = "belay.fake.healthStatus";
         const STORE = "belay.fake.healthStore";
         const status = (): Status =>
-          read(STATUS, { available, workouts: "undetermined", weighings: "undetermined" });
+          read(STATUS, {
+            available,
+            workouts: "undetermined",
+            weighings: "undetermined",
+            ...(platform === "android" && { history }),
+          });
         const syncID = (o: HealthObject) =>
           o.kind.startsWith("workout")
             ? `belay-session-${o.id as string}`
@@ -97,6 +112,8 @@ async function asPhone(
               return status();
             case "authorize":
               if (request.scope === "write" && available) write(STATUS, { ...status(), ...grant });
+              if (request.scope === "history" && grantHistory)
+                write(STATUS, { ...status(), history: "allowed" });
               return status();
             case "apply":
               return { outcomes: (request.objects as HealthObject[]).map(apply) };

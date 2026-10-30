@@ -15,11 +15,13 @@ const A = sessionByCode("A", starterProgram)!;
 const SESSION = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7f01";
 const SESSION_KEY = `belay-session-${SESSION}`;
 const today = () => toISODate(new Date());
-// 08:00 or 07:00 on this phone's day, in its own time zone (the browser's is the test's).
-const todayAt = (hour: number) => {
+// 08:00 or 07:00 on this phone's day, in its own time zone (the browser's is the test's), and the
+// same hour on a day further back.
+const daysAgoAt = (days: number, hour: number) => {
   const now = new Date();
-  return new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour).getTime();
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate() - days, hour).getTime();
 };
+const todayAt = (hour: number) => daysAgoAt(0, hour);
 // A weigh-in ten days ago, from before the setting goes on: it prefills the weigh-in sheet and
 // makes « Envoyer l’historique » offer something.
 const EARLIER = () => [{ date: addDays(today(), -10), weightKg: 80 }];
@@ -67,6 +69,8 @@ const healthSwitch = (page: Page) => page.getByRole("switch", { name: /^Séances
 const importSwitch = (page: Page) => page.getByRole("switch", { name: /^Importer les pesées/ });
 const consent = (page: Page) =>
   page.getByRole("dialog", { name: "Importer tes pesées de Santé ?" });
+const historyAction = (page: Page) =>
+  page.getByRole("button", { name: /^Importer l’historique de Santé/ });
 
 async function openHealth(page: Page) {
   await page.goto("/settings/health");
@@ -233,6 +237,29 @@ test("an import leaves a typed weigh-in alone", async ({ page, baseURL }) => {
   await expect(page.getByRole("button", { name: /^Pesée/ })).toContainText("79,6");
 });
 
+test("the history brings a weigh-in dated 30 days back and leaves a typed one alone", async ({
+  page,
+  baseURL,
+}) => {
+  const server = await signedIn(page, baseURL!, {
+    samples: [
+      { startedAt: daysAgoAt(30, 7), kg: 78.4 },
+      { startedAt: daysAgoAt(10, 7), kg: 81.4 },
+    ],
+  });
+  await openHealth(page);
+  await turnOn(page);
+  await openConsent(page);
+  await consent(page).getByRole("button", { name: "Importer" }).click();
+  await historyAction(page).click();
+  await expect(page.getByText("Historique importé")).toBeVisible();
+  await expect.poll(() => server.rows.get(addDays(today(), -30))?.weightKg).toBe(78.4);
+  expect(server.rows.get(addDays(today(), -10))?.weightKg).toBe(80);
+  // The sheet prefills the last weigh-in: the typed day, as it was.
+  const sheet = await weighSheet(page);
+  await expect(sheet.getByRole("textbox", { name: "Poids" })).toHaveValue(/^80\b/);
+});
+
 test("a browser shows no Apple Santé and the page is not found", async ({ page }) => {
   await fakeServer(page);
   await page.goto("/settings");
@@ -259,6 +286,7 @@ for (const scheme of ["light", "dark"] as const) {
       await expect(
         page.getByRole("button", { name: /^Envoyer l’historique à Santé/ }),
       ).toBeVisible();
+      await expect(historyAction(page)).toBeVisible();
       await expectNoAxeViolations(page);
     });
 
