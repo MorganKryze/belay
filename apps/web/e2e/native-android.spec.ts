@@ -25,7 +25,7 @@ const consent = (page: Page) =>
 const historyAction = (page: Page) =>
   page.getByRole("button", { name: /^Importer l’historique de Santé Connect/ });
 
-const WINDOW = "Santé Connect ne donne que les pesées des 30 jours avant ta première autorisation.";
+const WINDOW = "Santé Connect ne remonte qu’à 30 jours avant ta première autorisation.";
 // The instant the history's read starts from, the earliest both phones accept.
 const HISTORY_SINCE = Date.UTC(1899, 11, 31);
 

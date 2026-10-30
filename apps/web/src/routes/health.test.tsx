@@ -843,7 +843,7 @@ describe("Réglages › Santé Connect, the weigh-in history", () => {
     await within(from).findByText("Historique importé");
     expect(
       within(from).getByText(
-        "Santé Connect ne donne que les pesées des 30 jours avant ta première autorisation. Cette version de Santé Connect ne donne pas les plus anciennes.",
+        "Santé Connect ne remonte qu’à 30 jours avant ta première autorisation. Cette version de Santé Connect ne donne pas les plus anciennes.",
       ),
     ).toBeTruthy();
     expect(within(from).queryByRole("button")).toBeNull();
@@ -856,7 +856,7 @@ describe("Réglages › Santé Connect, the weigh-in history", () => {
     const from = await fromConnect();
     expect(
       await within(from).findByText(
-        "Santé Connect ne donne que les pesées des 30 jours avant ta première autorisation.",
+        "Santé Connect ne remonte qu’à 30 jours avant ta première autorisation.",
       ),
     ).toBeTruthy();
     expect((await older()).textContent).toContain(

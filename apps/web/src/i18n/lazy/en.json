@@ -970,7 +970,7 @@
     "importHistorySub": "Your weigh-ins dated before {{date}}. A weigh-in already in Belay is never replaced.",
     "importingHistory": "Importing history…",
     "historyImported": "History imported",
-    "historyWindow": "Health Connect gives only the weigh-ins from the 30 days before you first allowed Belay.",
+    "historyWindow": "Health Connect goes back only 30 days before you first allowed Belay.",
     "historyNotOffered": "This version of Health Connect does not give older ones.",
     "importOlder": "Import older weigh-ins",
     "importOlderAsk": "Health Connect asks you to allow access to history.",

@@ -970,7 +970,7 @@
     "importHistorySub": "Tes pesées datées d’avant le {{date}}. Une pesée déjà dans Belay n’est jamais remplacée.",
     "importingHistory": "Import de l’historique…",
     "historyImported": "Historique importé",
-    "historyWindow": "Santé Connect ne donne que les pesées des 30 jours avant ta première autorisation.",
+    "historyWindow": "Santé Connect ne remonte qu’à 30 jours avant ta première autorisation.",
     "historyNotOffered": "Cette version de Santé Connect ne donne pas les plus anciennes.",
     "importOlder": "Importer les plus anciennes",
     "importOlderAsk": "Santé Connect te demande d’autoriser l’accès à l’historique.",
