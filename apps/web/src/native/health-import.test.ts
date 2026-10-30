@@ -59,7 +59,11 @@ const day = async (date: string) => db.get("weights", date);
 // An import whose read of Health began from what is stored now.
 const read = async (samples: readonly HealthSample[], anchor: string, now: Date) => {
   const { settings, imported } = await readHealth(db);
-  const from = { anchor: imported.anchor, since: settings.importSince ?? 0 };
+  const from = {
+    anchor: imported.anchor,
+    since: settings.importSince ?? 0,
+    historyDone: imported.historyDone,
+  };
   return importWeighings(db, samples, anchor, now, from);
 };
 const take = async (samples: readonly HealthSample[], anchor: string, now: Date) =>
@@ -178,6 +182,13 @@ describe("a day and its record", () => {
     await take([], "A1", NOW);
     expect(put).not.toHaveBeenCalled();
     put.mockRestore();
+  });
+
+  it("a first read that sees nothing keeps no place, so what a refused access hid still comes in", async () => {
+    await read([], "A1", NOW);
+    expect((await readHealth(db)).imported.anchor).toBeNull();
+    expect(await take([{ startedAt: at(8), kg: 80 }], "A2", NOW)).toBe(1);
+    expect((await readHealth(db)).imported.anchor).toBe("A2");
   });
 
   it("a reading more than a day ahead is dropped and the anchor moves on", async () => {
@@ -349,6 +360,25 @@ describe("the history", () => {
     expect((await readHealth(db)).imported).toMatchObject({ anchor: null, historyDone: false });
   });
 
+  it("a history whose read saw nothing is done, and the next read starts from the floor again", async () => {
+    await askImportHistory(db);
+    expect(await read([], "H1", NOW)).toEqual({ written: 0, historyDone: true });
+    expect((await readHealth(db)).imported).toMatchObject({ anchor: null, historyDone: true });
+  });
+
+  it("a history asked again during a read with no place yet takes nothing from that read", async () => {
+    await askImportHistory(db);
+    await read([], "H1", NOW);
+    const from = { anchor: null, since: HISTORY_SINCE, historyDone: true };
+    await askImportHistory(db);
+    const sample = { startedAt: march(5), kg: 81.4 };
+    expect(await importWeighings(db, [sample], "H2", NOW, from)).toEqual({
+      written: 0,
+      historyDone: false,
+    });
+    expect((await readHealth(db)).imported).toMatchObject({ anchor: null, historyDone: false });
+  });
+
   it("a read begun from the import's day takes nothing once the history is asked", async () => {
     const { settings } = await readHealth(db);
     const from = { anchor: null, since: settings.importSince ?? 0 };
@@ -487,7 +517,7 @@ describe("after a landed sync", () => {
     await importAfterSync({ db, engine: { schedule } }, refresh, () => NOW);
     expect(native.health).toHaveBeenLastCalledWith({
       op: "readWeighings",
-      anchor: "H1",
+      anchor: null,
       since: HISTORY_SINCE,
     });
     expect(schedule).not.toHaveBeenCalled();

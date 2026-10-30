@@ -18,8 +18,8 @@ import {
   readHealth,
   SETTINGS_KEY,
 } from "./health";
+import { DAY } from "./health-plan";
 
-const DAY = 86_400_000;
 const NOTHING_TAKEN = { written: 0, historyDone: false };
 
 // Per local day from `fromDay` on, the earliest reading in Belay's range once rounded to 0.1 kg:
@@ -42,9 +42,10 @@ export function earliestPerDay(
 // Writes the readings' days and the new anchor in one transaction, with their changes queued as
 // ordinary weigh-ins: a day with no record gets its reading; a day this import filled, untouched
 // since, takes an earlier reading; anything the person did (a weigh-in typed here or elsewhere,
-// an edit, a deletion) stays. `from` is where Health was read from: the anchor and the import's
-// day stored when the read began. Returns how many weigh-ins were written and whether this read
-// marked the history done: any read from the floor does, whatever it found.
+// an edit, a deletion) stays. `from` is where Health was read from: the anchor, the import's day
+// and whether the history was done, as stored when the read began. Returns how many weigh-ins were
+// written and whether this read marked the history done: any read from the floor does, whatever it
+// found.
 // One read and one transaction hold the whole history, ~3 650 days for ten years of daily readings:
 // a deliberate ceiling; the way past it is a paged read through the bridge.
 export async function importWeighings(
@@ -52,7 +53,7 @@ export async function importWeighings(
   samples: readonly HealthSample[],
   anchor: string,
   now: Date,
-  from: { anchor: string | null; since: number },
+  from: { anchor: string | null; since: number; historyDone?: boolean | undefined },
 ): Promise<{ written: number; historyDone: boolean }> {
   const today = toISODate(now);
   let written = 0;
@@ -69,7 +70,11 @@ export async function importWeighings(
   };
   // Turned off and on again, or the history asked, while Health was read: the new place in Health
   // stands, and the next landed sync reads from it.
-  if (imported.anchor !== from.anchor || settings.importSince !== from.since) {
+  if (
+    imported.anchor !== from.anchor ||
+    settings.importSince !== from.since ||
+    !imported.historyDone !== !from.historyDone
+  ) {
     await tx.done;
     return NOTHING_TAKEN;
   }
@@ -111,10 +116,14 @@ export async function importWeighings(
     written++;
   }
   // The place is kept even when nothing was new, so the next read does not go through the same
-  // samples again; a read that moved nothing leaves the key alone.
+  // samples again; a read that moved nothing leaves the key alone. A first read that saw nothing
+  // keeps no place: with read access refused, Health shows Belay's own samples only, and a place
+  // past them would skip what it hid.
+  // The ceiling: Belay's own samples are read again at each sync until a first foreign one.
   const historyDone = imported.historyDone || from.since === HISTORY_SINCE;
   const justDone = historyDone && !imported.historyDone;
-  const next: HealthImport = { anchor: waits ? imported.anchor : anchor, filled, historyDone };
+  const stays = waits || (samples.length === 0 && imported.anchor === null);
+  const next: HealthImport = { anchor: stays ? imported.anchor : anchor, filled, historyDone };
   if (written > 0 || justDone || next.anchor !== imported.anchor) {
     await tx.objectStore("meta").put(next, IMPORT_KEY);
   }
@@ -138,7 +147,11 @@ export function importAfterSync(
         anchor: imported.anchor,
         since: settings.importSince,
       });
-      const from = { anchor: imported.anchor, since: settings.importSince };
+      const from = {
+        anchor: imported.anchor,
+        since: settings.importSince,
+        historyDone: imported.historyDone,
+      };
       const { written, historyDone } = await importWeighings(
         account.db,
         samples,
