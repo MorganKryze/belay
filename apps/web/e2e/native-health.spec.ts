@@ -260,7 +260,7 @@ test("the history brings a weigh-in dated 30 days back and leaves a typed one al
   await expect(sheet.getByRole("textbox", { name: "Poids" })).toHaveValue(/^80\b/);
 });
 
-test("a key press on the history action keeps the next Tab in the group", async ({
+test("a key press on the history action keeps the focus in the group", async ({
   page,
   baseURL,
 }) => {
@@ -274,8 +274,9 @@ test("a key press on the history action keeps the next Tab in the group", async 
   await expect(
     page.getByRole("region", { name: "Depuis Santé" }).getByRole("status"),
   ).toBeFocused();
-  await page.keyboard.press("Tab");
-  await expect(page.getByRole("link", { name: "Réglages" })).not.toBeFocused();
+  // The last control of the page: the next Tab leaves it, so the way back shows where the focus is.
+  await page.keyboard.press("Shift+Tab");
+  await expect(importSwitch(page)).toBeFocused();
 });
 
 test("a browser shows no Apple Santé and the page is not found", async ({ page }) => {

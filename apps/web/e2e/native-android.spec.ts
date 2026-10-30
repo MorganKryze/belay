@@ -135,6 +135,30 @@ test("without the history feature the done row says the 30-day window", async ({
   expect(await healthRequests(page)).not.toContainEqual({ op: "authorize", scope: "history" });
 });
 
+const isHistoryRead = (r: Record<string, unknown>) =>
+  r.op === "readWeighings" && r.since === HISTORY_SINCE;
+
+test("the next Tab after « Importer les plus anciennes » finds it again", async ({
+  page,
+  baseURL,
+}) => {
+  await signedIn(page, baseURL!, { history: "denied" });
+  await openHealth(page);
+  await allOn(page);
+  await historyAction(page).click();
+  const older = page.getByRole("button", { name: /^Importer les plus anciennes/ });
+  await older.focus();
+  await page.keyboard.press("Enter");
+  await expect(
+    page.getByRole("region", { name: "Depuis Santé Connect" }).getByRole("status"),
+  ).toBeFocused();
+  // The second read is what takes the row away and brings it back.
+  await expect.poll(async () => (await healthRequests(page)).filter(isHistoryRead).length).toBe(2);
+  await expect(older).toBeVisible();
+  await page.keyboard.press("Tab");
+  await expect(older).toBeFocused();
+});
+
 for (const scheme of ["light", "dark"] as const) {
   test.describe(scheme, () => {
     test.use({ colorScheme: scheme });
