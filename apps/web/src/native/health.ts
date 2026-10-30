@@ -41,8 +41,14 @@ export function health(request: HealthRequest): Promise<unknown> {
   return BelayNative.health(request);
 }
 
+// The earliest instant both native decoders accept (1899-12-31 UTC): read from there, Health gives
+// every weigh-in from Belay's first day, 1900-01-01, in any time zone. A fixed instant, so the
+// stored value compares equal wherever the phone is.
+export const HISTORY_SINCE = Date.UTC(1899, 11, 31); // -2_209_075_200_000
+
 // Both switches, when the first one was last turned on, and where « Envoyer l’historique » stands:
-// "no" until asked, "asked" while it runs (across launches), "sent" once nothing was left.
+// "no" until asked, "asked" while it runs (across launches), "sent" once nothing was left. The
+// import reads from its own local day, or from `HISTORY_SINCE` once its history is asked.
 export type HealthSettings = {
   on: boolean;
   turnedOnAt: number | null;
@@ -63,7 +69,10 @@ export type Written =
 export type HealthImport = {
   anchor: string | null;
   filled: Record<string, { at: string; startedAt: number }>;
+  // The read from HISTORY_SINCE went through since the history was asked.
+  historyDone?: boolean;
 };
+export type ImportHistory = "none" | "offered" | "importing" | "done";
 export type HealthState = {
   settings: HealthSettings;
   written: Record<string, Written>;
@@ -99,21 +108,32 @@ export async function readHealth(db: AccountDb): Promise<HealthState> {
   };
 }
 
+// Where the import's history stands, for the page: the settings alone keep the ask and the import's
+// key keeps the end, so the running state lasts across launches.
+export function importHistory(settings: HealthSettings, imported: HealthImport): ImportHistory {
+  if (!settings.on || !settings.importOn || settings.importSince === null) return "none";
+  if (settings.importSince !== HISTORY_SINCE) return "offered";
+  return imported.historyDone ? "done" : "importing";
+}
+
 // The settings as they become, read and written in one transaction so two writers never cross.
+// A new start for the import reads Health again from its own day, not from the last anchor, and
+// the history it held is over; the days it filled stay its own. An import already running keeps
+// its place.
 async function changeSettings(
   db: AccountDb,
   change: (s: HealthSettings) => HealthSettings,
+  startsOver: (current: HealthSettings, next: HealthSettings) => boolean = (current, next) =>
+    next.importOn && !current.importOn,
 ): Promise<HealthSettings> {
   const tx = db.transaction("meta", "readwrite");
   const current = ((await tx.store.get(SETTINGS_KEY)) as HealthSettings | undefined) ?? HEALTH_OFF;
   const next = change(current);
   await tx.store.put(next, SETTINGS_KEY);
-  // A new start for the import reads Health again from its own day, not from the last anchor; the
-  // days it filled stay its own. An import already running keeps its place.
-  if (next.importOn && !current.importOn) {
+  if (startsOver(current, next)) {
     const imported =
       ((await tx.store.get(IMPORT_KEY)) as HealthImport | undefined) ?? NOTHING_IMPORTED;
-    await tx.store.put({ ...imported, anchor: null }, IMPORT_KEY);
+    await tx.store.put({ ...imported, anchor: null, historyDone: false }, IMPORT_KEY);
   }
   await tx.done;
   return next;
@@ -141,6 +161,12 @@ export const setImportOn = (db: AccountDb, on: boolean, now: number) =>
     if (!s.on || s.importOn) return s;
     return { ...s, importOn: true, importSince: localDayStart(now) };
   });
+
+// Health is read whole from the floor at the next landed sync, each time this is asked: the place
+// in Health and the floor change together, so a read begun from any other place takes nothing.
+const importing = (s: HealthSettings) => s.on && s.importOn;
+export const askImportHistory = (db: AccountDb) =>
+  changeSettings(db, (s) => (importing(s) ? { ...s, importSince: HISTORY_SINCE } : s), importing);
 
 export const setHistory = (db: AccountDb, history: HealthSettings["history"]) =>
   changeSettings(db, (s) => (s.on ? { ...s, history } : s));
