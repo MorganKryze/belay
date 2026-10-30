@@ -514,9 +514,17 @@ describe("after a landed sync", () => {
     await askImportHistory(db);
     const engine = { schedule: vi.fn() };
     native.health.mockResolvedValue({ samples: [], anchor: "H1" });
-    await importAfterSync({ db, engine }, async () => {}, () => NOW);
+    await importAfterSync(
+      { db, engine },
+      async () => {},
+      () => NOW,
+    );
     native.health.mockResolvedValue({ samples: [{ startedAt: at(8), kg: 80 }], anchor: "H2" });
-    await importAfterSync({ db, engine }, async () => {}, () => NOW);
+    await importAfterSync(
+      { db, engine },
+      async () => {},
+      () => NOW,
+    );
     expect((await day("2026-10-26"))?.weightKg).toBe(80);
     expect(engine.schedule).toHaveBeenCalledOnce();
   });
