@@ -365,7 +365,7 @@ describe("Réglages › Apple Santé, what goes to Health", () => {
     renderRoute("/settings/health");
     const offer = await screen.findByRole("button", { name: /Envoyer l’historique à Santé/ });
     expect(offer.textContent).toContain(
-      "Tes 1 séance et 2 pesées d’avant l’activation. Rien n’est envoyé en double.",
+      "1 séance et 2 pesées d’avant l’activation. Rien n’est envoyé en double.",
     );
     fireEvent.click(offer);
     await waitFor(async () => expect((await settingsNow()).history).toBe("asked"));
@@ -843,7 +843,7 @@ describe("Réglages › Santé Connect, the weigh-in history", () => {
     await within(from).findByText("Historique importé");
     expect(
       within(from).getByText(
-        "Santé Connect ne remonte qu’à 30 jours avant ta première autorisation. Cette version de Santé Connect ne donne pas les plus anciennes.",
+        "Santé Connect ne remonte qu’à 30 jours avant ta première autorisation. Cette version de Santé Connect ne donne pas les pesées plus anciennes.",
       ),
     ).toBeTruthy();
     expect(within(from).queryByRole("button")).toBeNull();

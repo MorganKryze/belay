@@ -379,7 +379,7 @@ nothing. This list is what is left to run, with the Toolbox:
    arrives.
 5. After each request, check that write access is still granted.
 6. Note what the image reports for the history feature: without it, the row
-   says this version does not give older ones.
+   says this version does not give older weigh-ins.
 
 ## On the emulator
 

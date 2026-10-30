@@ -129,7 +129,7 @@ test("without the history feature the done row says the 30-day window", async ({
   await historyAction(page).click();
   await expect(page.getByText("Historique importé")).toBeVisible();
   await expect(page.getByText(WINDOW)).toContainText(
-    "Cette version de Santé Connect ne donne pas les plus anciennes.",
+    "Cette version de Santé Connect ne donne pas les pesées plus anciennes.",
   );
   await expect(page.getByRole("button", { name: /^Importer les plus anciennes/ })).toHaveCount(0);
   expect(await healthRequests(page)).not.toContainEqual({ op: "authorize", scope: "history" });
