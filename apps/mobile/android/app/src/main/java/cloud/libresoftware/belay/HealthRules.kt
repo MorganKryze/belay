@@ -88,6 +88,17 @@ object HealthRules {
     // refused read looks empty. The page keeps no place from a first read that saw nothing.
     fun placeAfterRefusal(anchor: String?): String = anchor ?: ""
 
+    // Health Connect throws SecurityException for a missing permission and for a read it will not
+    // serve for another reason, such as an app in the background. Only the first reads as empty:
+    // the other stays a failure, or the history would count as done with nothing read.
+    inline fun <T> readOrRefused(granted: () -> Set<String>, read: () -> T, refused: () -> T): T =
+        try {
+            read()
+        } catch (error: SecurityException) {
+            if (READ_WEIGHT in granted()) throw error
+            refused()
+        }
+
     // A weigh-in Belay wrote, known by this app's package or by Belay's own id: the import never
     // reads Belay's weigh-ins back as a scale's.
     fun isOwn(packageName: String, ourPackage: String, clientRecordId: String?): Boolean =

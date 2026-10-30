@@ -5,6 +5,7 @@ import java.io.IOException
 import kotlin.coroutines.cancellation.CancellationException
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -146,6 +147,27 @@ class HealthRulesTest {
     @Test fun `a refused read leaves the place where it was`() {
         assertEquals("token", HealthRules.placeAfterRefusal("token"))
         assertEquals("", HealthRules.placeAfterRefusal(null))
+    }
+
+    private fun refusedRead(granted: Set<String>, error: Exception): String =
+        HealthRules.readOrRefused(granted = { granted }, read = { throw error }, refused = { "refused" })
+
+    @Test fun `a read that works gives its answer`() =
+        assertEquals("read", HealthRules.readOrRefused(granted = { emptySet() }, read = { "read" }, refused = { "refused" }))
+
+    @Test fun `a read refused without the weight permission gives the refused answer`() {
+        assertEquals("refused", refusedRead(emptySet(), SecurityException()))
+        assertEquals("refused", refusedRead(setOf(HealthRules.WRITE_WEIGHT, HealthRules.READ_HISTORY), SecurityException()))
+    }
+
+    @Test fun `a read refused with the weight permission granted stays a failure`() {
+        val error = SecurityException("in the background")
+        assertSame(error, assertThrows(SecurityException::class.java) { refusedRead(setOf(HealthRules.READ_WEIGHT), error) })
+    }
+
+    @Test fun `a read that fails for another reason stays a failure, whatever is granted`() {
+        assertThrows(IOException::class.java) { refusedRead(emptySet(), IOException()) }
+        assertThrows(IOException::class.java) { refusedRead(setOf(HealthRules.READ_WEIGHT), IOException()) }
     }
 
     @Test fun `the history access values are the page's`() =

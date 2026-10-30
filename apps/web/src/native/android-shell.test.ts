@@ -57,6 +57,16 @@ describe("the Android shell", () => {
     );
   });
 
+  // Health Connect refuses a read the same way whether the permission is missing or not: the
+  // bridge leaves that call to the rule the JVM tests hold.
+  it("a refused weigh-in read goes through the rule on what is granted", () => {
+    const source = kotlin("HealthBridge.kt").replace(/\s+/g, " ");
+    expect(source).toContain(
+      "HealthRules.readOrRefused( granted = { client.permissionController.getGrantedPermissions() }, read = { readAllowedWeighings(anchor, since) },",
+    );
+    expect(source).not.toContain("catch (_: SecurityException)");
+  });
+
   // The notifications plugin makes a channel of its own as it loads: Belay's channels are made,
   // and that one removed, once the bridge has loaded every plugin.
   it("the channels are made once the bridge has loaded its plugins", () => {
