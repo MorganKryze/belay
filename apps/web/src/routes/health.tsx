@@ -284,7 +284,9 @@ function ImportGroup({ account, status, settings, imported, onChange }: ImportPr
               i18nKey="health.consentBody"
               context={words().context}
               values={{ host }}
-              components={{ host: <strong className="font-semibold break-all text-foreground" /> }}
+              components={{
+                host: <strong className="font-semibold wrap-anywhere text-foreground" />,
+              }}
             />
           }
           primary={{ label: t("health.consentConfirm"), onSelect: () => void turnOn() }}
