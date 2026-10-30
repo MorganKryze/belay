@@ -5,7 +5,7 @@ import Foundation
 // before Health is touched. Foundation only, so these rules also run in a plain check on a Mac.
 
 enum HealthOp: String, Decodable { case status, authorize, apply, readWeighings }
-enum HealthScope: String, Decodable { case write, `import` }
+enum HealthScope: String, Decodable { case write, `import`, history }
 enum HealthKind: String, Decodable { case workout, workoutRemoved, weighing, weighingRemoved }
 enum HealthOutcome: String { case written, removed, overlap, denied, unavailable, failed }
 
@@ -202,7 +202,7 @@ enum HealthRules {
     static func requested(_ scope: HealthScope) -> (share: Set<HealthType>, read: Set<HealthType>) {
         switch scope {
         case .write: return ([.workouts, .weighings], [.workouts])
-        case .import: return ([.workouts, .weighings], [.workouts, .weighings])
+        case .import, .history: return ([.workouts, .weighings], [.workouts, .weighings]) // no window on iOS
         }
     }
 }

@@ -140,6 +140,14 @@ those are neither kept nor sent anywhere. And body mass, only once you turn on
 **Import weigh-ins** and accept the sheet that names your instance: those
 weigh-ins then sync to your instance like typed ones.
 
+The import takes weigh-ins dated from the day you turn it on, whenever they
+reach Health. **Import history from Health**, under the switch, brings the older
+ones once, under the same rules: the first reading of each day comes in, and a
+weigh-in typed, edited or deleted in Belay stays as it is. The read follows the
+next sync, so offline the row keeps saying **Importing history…**. Once it says
+**History imported**, the action comes back only after you turn the import off
+and on. Turning the import off keeps what the history brought.
+
 The project carries the HealthKit entitlement (`App/App.entitlements`), with no
 team in it. Xcode's automatic signing adds HealthKit to your free team's App ID
 at the next **Run**; there is nothing to tick. `pnpm ios:sim` builds unsigned,
@@ -328,15 +336,50 @@ twice; those are neither kept nor sent anywhere. And weight, only once you turn
 on **Import weigh-ins** and accept the sheet that names your instance: those
 weigh-ins then sync to your instance like typed ones.
 
+The import takes weigh-ins dated from the day you turn it on, and **Import
+history from Health Connect** brings the older ones once, under the same rules
+as on the iPhone. Health Connect gives an app nothing older than 30 days before
+its first permission, unless the app holds the history permission, which only
+recent versions offer. Where it is offered, Belay asks for it when you tap the
+action, and nowhere else, then reads what Health Connect gives whatever your
+answer. If you refuse, the done row names the 30-day window and offers
+**Import older weigh-ins**. On a version without the permission, the row says
+that too, and offers nothing more.
+
 Android 14 and later include Health Connect. On Android 9 to 13, install the
 **Health Connect** app from Google Play first; Belay does not install it for
-you. Belay asks for its permissions from the switches only, in Health
-Connect's own screen, and the app's privacy dialog opens from there.
+you. Belay asks for its permissions from the switches and the history action
+only, in Health Connect's own screen, and the app's privacy dialog opens from
+there.
 
 The permissions live in Health Connect's settings, under **App permissions ›
-Belay**. That is the path the page's help text gives; it has not been read on a
-device yet. Turning the setting off, or deleting the account, removes nothing
-from Health Connect: delete what is there in its **Data** tab.
+Belay**. The one for older weigh-ins is further down that page, at **App
+permissions › Belay › Additional access › Access past data**. That path was read
+on the API 36.1 emulator, not on a phone. Turning the setting off, or deleting
+the account, removes nothing from Health Connect: delete what is there in its
+**Data** tab.
+
+### Check the weigh-in history
+
+An old weigh-in arriving through the history permission has not been seen yet,
+on a phone or on the emulator: Google's Health Connect Toolbox, the test app that
+adds one, does not install on the API 36.1 emulator. There, the permission
+screens, the rows and the settings path were checked with a read that found
+nothing. This list is what is left to run, with the Toolbox:
+
+1. Add a weight dated 60 days back with the Toolbox, then turn on **Import
+   weigh-ins**.
+2. Tap **Import history from Health Connect**: on API 36.1 the history permission
+   comes on a screen of its own, after any data permission Belay does not hold
+   yet. Allow it: the weigh-in arrives in Belay.
+3. Start again with a new emulator data set and refuse: the row shows the
+   30-day window and **Import older weigh-ins**.
+4. In Health Connect's settings, go to **App permissions › Belay › Additional
+   access**, turn on **Access past data**, then tap that action: the weigh-in
+   arrives.
+5. After each request, check that write access is still granted.
+6. Note what the image reports for the history feature: without it, the row
+   says this version does not give older weigh-ins.
 
 ## On the emulator
 
@@ -361,5 +404,7 @@ from Health Connect: delete what is there in its **Data** tab.
 - The identity provider with passkeys or biometrics.
 - Samsung Health or Fitbit showing the strength session.
 - Android 9 to 13 with the Health Connect app from Play.
+- Health Connect's history permission, and an old weigh-in arriving through it,
+  which the emulator has not shown either.
 - The feel of system back with gesture navigation.
 - A release build signed with a kept keystore.

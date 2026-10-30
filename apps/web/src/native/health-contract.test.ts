@@ -7,6 +7,7 @@ import {
   HEALTH_OFF,
   health,
   type HealthAccess,
+  type HealthHistoryAccess,
   type HealthObject,
   type HealthOutcome,
   type HealthRequest,
@@ -122,7 +123,7 @@ const OPS = {
   apply: true,
   readWeighings: true,
 } satisfies Record<HealthRequest["op"], true>;
-const SCOPES = { write: true, import: true } satisfies Record<
+const SCOPES = { write: true, import: true, history: true } satisfies Record<
   Extract<HealthRequest, { op: "authorize" }>["scope"],
   true
 >;
@@ -144,10 +145,17 @@ const ACCESS = { allowed: true, denied: true, undetermined: true } satisfies Rec
   HealthAccess,
   true
 >;
+const HISTORY_ACCESS = {
+  allowed: true,
+  denied: true,
+  undetermined: true,
+  unavailable: true,
+} satisfies Record<HealthHistoryAccess, true>;
 // The keys each answer carries.
 const ANSWER_KEYS = Object.keys({
+  // `history` is Android's alone: Apple Health has no window to answer for.
   ...({ available: true, workouts: true, weighings: true } satisfies Record<
-    keyof HealthStatus,
+    Exclude<keyof HealthStatus, "history">,
     true
   >),
   ...({ outcomes: true } satisfies Record<"outcomes", true>),
@@ -219,10 +227,18 @@ describe("the Health Connect requests and the Android app's decoder", () => {
     expect(keysOf(KINDS)).toEqual(kotlinSet(decoder, "KINDS"));
     expect(keysOf(OUTCOMES)).toEqual(kotlinSet(rules, "OUTCOMES"));
     expect(keysOf(ACCESS)).toEqual(kotlinSet(rules, "ACCESS"));
+    expect(keysOf(HISTORY_ACCESS)).toEqual(kotlinSet(rules, "HISTORY_ACCESS"));
   });
 
   it("the answers' keys are the ones Kotlin writes", () => {
-    for (const key of ANSWER_KEYS) expect(bridge).toContain(`put("${key}",`);
+    for (const key of [...ANSWER_KEYS, "history"]) expect(bridge).toContain(`put("${key}",`);
+  });
+
+  it("the anchor ceiling is the same on both phones", () => {
+    const swiftCeiling = /static let maxAnchor = ([\d_]+)/.exec(
+      body(request, "enum", "HealthRequest"),
+    );
+    expect(Number(swiftCeiling?.[1]?.replaceAll("_", ""))).toBe(longConst(decoder, "MAX_ANCHOR"));
   });
 
   it("the batch size, the time bounds and the weight range are the page's", () => {

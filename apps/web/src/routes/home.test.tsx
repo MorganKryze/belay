@@ -336,7 +336,7 @@ describe("the trend", () => {
     await open([...week("2026-09-21", 80.8), ...week("2026-09-28", 80.4)]);
     const link = await card();
     await waitFor(() => expect(link.textContent).toContain("loss 0.5%/wk last week"));
-    expect(within(link).getByText("in your range")).toBeTruthy();
+    expect(await within(link).findByText("in your range")).toBeTruthy();
   });
 
   it("no pill outside the range", async () => {

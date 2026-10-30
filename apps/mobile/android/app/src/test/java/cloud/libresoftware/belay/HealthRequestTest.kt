@@ -51,6 +51,9 @@ class HealthRequestTest {
     @Test fun `authorize import decodes`() =
         assertEquals(HealthRequest.Authorize("import"), decodes("""{"op":"authorize","scope":"import"}"""))
 
+    @Test fun `authorize history decodes`() =
+        assertEquals(HealthRequest.Authorize("history"), decodes("""{"op":"authorize","scope":"history"}"""))
+
     @Test fun `an unknown scope is refused`() = assertNull(decodes("""{"op":"authorize","scope":"read"}"""))
 
     @Test fun `a workout decodes with its times in milliseconds`() =
@@ -113,6 +116,12 @@ class HealthRequestTest {
 
     @Test fun `readWeighings since before 1899-12-31 is refused`() =
         assertNull(decodes("""{"op":"readWeighings","anchor":null,"since":${floor - 1}}"""))
+
+    @Test fun `readWeighings since at EARLIEST decodes`() =
+        assertEquals(
+            HealthRequest.ReadWeighings(null, HealthRequest.EARLIEST),
+            decodes("""{"op":"readWeighings","anchor":null,"since":${HealthRequest.EARLIEST}}"""),
+        )
 
     @Test fun `readWeighings since two days ahead is refused`() =
         assertNull(decodes("""{"op":"readWeighings","anchor":null,"since":${now + 48 * hour}}"""))

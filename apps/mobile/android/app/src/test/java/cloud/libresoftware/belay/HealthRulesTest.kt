@@ -5,6 +5,7 @@ import java.io.IOException
 import kotlin.coroutines.cancellation.CancellationException
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -31,6 +32,12 @@ class HealthRulesTest {
         val asked = MapStore()
         HealthRules.launchAsking(asked, "import") {}
         assertEquals(mapOf("asked.import" to "1"), asked.values)
+    }
+
+    @Test fun `asking the history marks it asked after the launch`() {
+        val asked = MapStore()
+        HealthRules.launchAsking(asked, "history") { assertTrue(asked.values.isEmpty()) }
+        assertEquals(mapOf("asked.history" to "1"), asked.values)
     }
 
     @Test fun `a screen that never launched leaves the scope unasked`() {
@@ -115,7 +122,54 @@ class HealthRulesTest {
             "android.permission.health.WRITE_WEIGHT",
             "android.permission.health.READ_EXERCISE",
         )
-        assertEquals(write, HealthRules.requested("write"))
-        assertEquals(write + "android.permission.health.READ_WEIGHT", HealthRules.requested("import"))
+        for (offered in listOf(true, false)) {
+            assertEquals(write, HealthRules.requested("write", offered))
+            assertEquals(write + "android.permission.health.READ_WEIGHT", HealthRules.requested("import", offered))
+        }
     }
+
+    @Test fun `history asks the import's permissions and the write set, plus history when offered`() =
+        assertEquals(
+            HealthRules.requested("import", true) + "android.permission.health.READ_HEALTH_DATA_HISTORY",
+            HealthRules.requested("history", true),
+        )
+
+    @Test fun `history not offered asks no history permission`() =
+        assertEquals(HealthRules.requested("import", false), HealthRules.requested("history", false))
+
+    @Test fun `the history access reads unavailable, allowed, denied, undetermined`() {
+        assertEquals("unavailable", HealthRules.historyAccess(offered = false, granted = true, asked = true))
+        assertEquals("allowed", HealthRules.historyAccess(offered = true, granted = true, asked = false))
+        assertEquals("denied", HealthRules.historyAccess(offered = true, granted = false, asked = true))
+        assertEquals("undetermined", HealthRules.historyAccess(offered = true, granted = false, asked = false))
+    }
+
+    @Test fun `a refused read leaves the place where it was`() {
+        assertEquals("token", HealthRules.placeAfterRefusal("token"))
+        assertEquals("", HealthRules.placeAfterRefusal(null))
+    }
+
+    private fun refusedRead(granted: Set<String>, error: Exception): String =
+        HealthRules.readOrRefused(granted = { granted }, read = { throw error }, refused = { "refused" })
+
+    @Test fun `a read that works gives its answer`() =
+        assertEquals("read", HealthRules.readOrRefused(granted = { emptySet() }, read = { "read" }, refused = { "refused" }))
+
+    @Test fun `a read refused without the weight permission gives the refused answer`() {
+        assertEquals("refused", refusedRead(emptySet(), SecurityException()))
+        assertEquals("refused", refusedRead(setOf(HealthRules.WRITE_WEIGHT, HealthRules.READ_HISTORY), SecurityException()))
+    }
+
+    @Test fun `a read refused with the weight permission granted stays a failure`() {
+        val error = SecurityException("in the background")
+        assertSame(error, assertThrows(SecurityException::class.java) { refusedRead(setOf(HealthRules.READ_WEIGHT), error) })
+    }
+
+    @Test fun `a read that fails for another reason stays a failure, whatever is granted`() {
+        assertThrows(IOException::class.java) { refusedRead(emptySet(), IOException()) }
+        assertThrows(IOException::class.java) { refusedRead(setOf(HealthRules.READ_WEIGHT), IOException()) }
+    }
+
+    @Test fun `the history access values are the page's`() =
+        assertEquals(setOf("allowed", "denied", "undetermined", "unavailable"), HealthRules.HISTORY_ACCESS)
 }

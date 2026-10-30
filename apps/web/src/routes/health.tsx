@@ -6,18 +6,23 @@ import {
   CircleCheck,
   Clock,
   HeartPulse,
+  History,
   type LucideIcon,
   Send,
 } from "lucide-react";
-import { useEffect, useId, useState, useSyncExternalStore } from "react";
+import { type RefObject, useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { ActionSheet } from "@/components/action-sheet";
 import { BackLink, PageHeader } from "@/components/page-header";
 import { GroupedList, RowButton, RowLink, RowSwitch } from "@/components/grouped-list";
+import { formatDay } from "@/lib/format";
 import {
+  askImportHistory,
   health,
+  type HealthState,
   type HealthStatus,
   healthProgress,
+  importHistory,
   readHealth,
   requestHealthRun,
   setHealthOn,
@@ -145,8 +150,9 @@ function HealthSettings({ account, status }: { account: OpenAccount; status: Hea
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { state, progress, changed } = useHealthState(account);
+  const sendingRegion = useRef<HTMLDivElement>(null);
   if (!state) return null;
-  const { settings } = state;
+  const { settings, imported } = state;
   const refused = bothRefused(status);
 
   // iOS asks once per type; later it answers at once. The answer is the new status. A rejected
@@ -167,6 +173,10 @@ function HealthSettings({ account, status }: { account: OpenAccount; status: Hea
   const turnOff = async () => {
     await setHealthOn(account.db, false, Date.now());
     await changed();
+  };
+  const historyAsked = () => {
+    sendingRegion.current?.focus();
+    return changed();
   };
 
   return (
@@ -189,44 +199,55 @@ function HealthSettings({ account, status }: { account: OpenAccount; status: Hea
       </GroupedList>
       {settings.on && !refused && (
         <GroupedList label={t("health.toHealth", words())}>
-          <SendingStatus status={status} progress={progress} />
+          <SendingStatus ref={sendingRegion} status={status} progress={progress} />
           {settings.history === "no" && !progress.sending && (
-            <HistoryOffer account={account} onAsk={changed} />
+            <HistoryOffer account={account} onAsk={historyAsked} />
           )}
           {settings.history === "sent" && !progress.sending && (
             <InfoRow icon={Check} tone="reference" label={t("health.sent")} />
           )}
         </GroupedList>
       )}
-      {settings.on && <ImportGroup account={account} on={settings.importOn} onChange={changed} />}
+      {settings.on && (
+        <ImportGroup
+          account={account}
+          status={status}
+          settings={settings}
+          imported={imported}
+          onChange={changed}
+        />
+      )}
     </>
   );
 }
 
+type ImportProps = Pick<HealthState, "settings" | "imported"> & {
+  account: OpenAccount;
+  status: HealthStatus;
+  onChange: () => Promise<void>;
+};
+
 // Weigh-ins from Health, asked only after a consent that names the server they will be synced
 // with. « Importer » alone turns it on; Annuler, a swipe or a tap outside leaves it off, and the
 // sheet gives the focus back to the switch.
-function ImportGroup({
-  account,
-  on,
-  onChange,
-}: {
-  account: OpenAccount;
-  on: boolean;
-  onChange: () => Promise<void>;
-}) {
+function ImportGroup({ account, status, settings, imported, onChange }: ImportProps) {
   const { t } = useTranslation();
+  const queryClient = useQueryClient();
   const [asking, setAsking] = useState(false);
+  const on = settings.importOn;
   // The iPhone app always has its instance once an account is open.
   const host = new URL(readInstance()!).host;
-  // iOS never says whether a read is allowed, so the answer changes nothing here; a rejected call
-  // (a build without the entitlement) leaves the import off.
+  // iOS never says whether a read is allowed, so the import goes on whatever the answer, which
+  // still tells the page about writing; a rejected call (a build without the entitlement) leaves
+  // the import off.
   const turnOn = async () => {
+    let answer: HealthStatus;
     try {
-      await health({ op: "authorize", scope: "import" });
+      answer = await health({ op: "authorize", scope: "import" });
     } catch {
       return;
     }
+    queryClient.setQueryData(["native", "health-status"], answer);
     await setImportOn(account.db, true, Date.now());
     await onChange();
     // The first import follows the sync this starts, or the one already going.
@@ -249,6 +270,15 @@ function ImportGroup({
           checked={on}
           onCheckedChange={(next) => (next ? setAsking(true) : void turnOff())}
         />
+        {on && (
+          <HistoryImport
+            account={account}
+            status={status}
+            settings={settings}
+            imported={imported}
+            onChange={onChange}
+          />
+        )}
       </GroupedList>
       {asking && (
         <ActionSheet
@@ -258,7 +288,9 @@ function ImportGroup({
               i18nKey="health.consentBody"
               context={words().context}
               values={{ host }}
-              components={{ host: <strong className="font-semibold break-all text-foreground" /> }}
+              components={{
+                host: <strong className="font-semibold wrap-anywhere text-foreground" />,
+              }}
             />
           }
           primary={{ label: t("health.consentConfirm"), onSelect: () => void turnOn() }}
@@ -269,13 +301,104 @@ function ImportGroup({
   );
 }
 
+// The weigh-ins Health holds from before the import's day, read on the person's gesture. The live
+// region stays in place from the offer on, so a screen reader says the start and the end, and it
+// takes the focus when the action goes with its tap: the focus would otherwise fall to the top of
+// the page. Apple Health has no window and answers no `history`, which leaves the iPhone out of
+// everything below that reads it.
+function HistoryImport({ account, status, settings, imported, onChange }: ImportProps) {
+  const { t, i18n } = useTranslation();
+  const queryClient = useQueryClient();
+  const region = useRef<HTMLDivElement>(null);
+  const state = importHistory(settings, imported);
+  const { history } = status;
+  const closed = history === "undetermined" || history === "denied";
+  // Health Connect's screen, while its permission can still be given. The read goes on whatever it
+  // answers; a rejected call (a screen already open) starts nothing.
+  const read = async () => {
+    let answer = status;
+    if (closed) {
+      try {
+        answer = await health({ op: "authorize", scope: "history" });
+      } catch {
+        return;
+      }
+    }
+    // Before anything that can take the action away: a new status alone may.
+    region.current?.focus();
+    queryClient.setQueryData(["native", "health-status"], answer);
+    const windowed = answer.history !== undefined && answer.history !== "allowed";
+    await askImportHistory(account.db, windowed);
+    await onChange();
+    // The read follows the sync this starts, or the one already going.
+    void account.engine.refresh();
+  };
+  const windowNote = closed
+    ? t("health.historyWindow")
+    : history === "unavailable"
+      ? `${t("health.historyWindow")} ${t("health.historyNotOffered")}`
+      : undefined;
+  return (
+    <>
+      <div ref={region} role="status" tabIndex={-1}>
+        {state === "importing" && (
+          <div className="flex min-h-14 items-center gap-3 px-4 py-2">
+            <BusyTile />
+            <span className="min-w-0 flex-1 text-body font-semibold">
+              {t("health.importingHistory")}
+            </span>
+          </div>
+        )}
+        {state === "done" && (
+          <InfoRow
+            icon={Check}
+            tone="reference"
+            label={t("health.historyImported")}
+            detail={windowNote}
+          />
+        )}
+      </div>
+      {state === "offered" && (
+        <RowButton
+          icon={History}
+          label={t("health.importHistory", words())}
+          sub={t("health.importHistorySub", {
+            // The import's own day: "offered" means it holds one.
+            date: formatDay(new Date(settings.importSince!), i18n.language, new Date()),
+          })}
+          wrap
+          className="text-primary"
+          onClick={() => void read()}
+        />
+      )}
+      {state === "done" && (closed || (history === "allowed" && imported.historyWindowed)) && (
+        <RowButton
+          icon={History}
+          label={t("health.importOlder")}
+          sub={
+            closed
+              ? t(history === "denied" ? "health.importOlderDenied" : "health.importOlderAsk")
+              : undefined
+          }
+          wrap
+          className="border-t border-border text-primary"
+          onClick={() => void read()}
+        />
+      )}
+    </>
+  );
+}
+
 // The state of what goes to Health, a polite live region. While the history goes, its progress
 // takes the row's place (« À jour » would be false), and the region says only the start and the
-// end: it holds the first count, then empties, which a screen reader does not read.
+// end: it holds the first count, then empties, which a screen reader does not read. It takes the
+// focus from « Envoyer l’historique », which goes with its tap.
 function SendingStatus({
+  ref,
   status,
   progress,
 }: {
+  ref: RefObject<HTMLDivElement | null>;
   status: HealthStatus;
   progress: ReturnType<typeof healthProgress.get>;
 }) {
@@ -289,7 +412,7 @@ function SendingStatus({
     sending && first && sending.done === first.done ? t("health.sending", first) : "";
   return (
     <div>
-      <div role="status" className={sending ? "sr-only" : undefined}>
+      <div ref={ref} role="status" tabIndex={-1} className={sending ? "sr-only" : undefined}>
         {sending ? (
           announced
         ) : status.weighings !== "allowed" ? (
@@ -316,12 +439,7 @@ function SendingStatus({
       </div>
       {sending && (
         <div className="flex min-h-14 items-center gap-3 px-4 py-2">
-          <span className={tile("primary")}>
-            <span
-              aria-hidden="true"
-              className="size-4.5 animate-spin-arc rounded-round border-2 border-current border-t-transparent"
-            />
-          </span>
+          <BusyTile />
           <span className="flex min-w-0 flex-1 flex-col gap-2">
             <span id={labelId} className="text-body font-semibold tabular-nums">
               {t("health.sending", sending)}
@@ -374,14 +492,20 @@ function HistoryOffer({ account, onAsk }: { account: OpenAccount; onAsk: () => P
     networkMode: "always",
   }).data;
   if (!counts) return null;
+  const sessions = t("health.sessions", { count: counts.sessions });
+  const weighings = t("health.weighings", { count: counts.weighings });
+  const count = counts.sessions || counts.weighings;
   return (
     <RowButton
       icon={Send}
       label={t("health.history", words())}
-      sub={t("health.historySub", {
-        sessions: t("health.sessions", { count: counts.sessions }),
-        weighings: t("health.weighings", { count: counts.weighings }),
-      })}
+      sub={
+        counts.sessions && counts.weighings
+          ? t("health.historySub", { sessions, weighings })
+          : count > 0
+            ? t("health.historySubOne", { what: counts.sessions ? sessions : weighings, count })
+            : undefined
+      }
       wrap
       className="text-primary"
       onClick={async () => {
@@ -397,6 +521,17 @@ const tile = (tone: "primary" | "reference") =>
   `flex size-7 shrink-0 items-center justify-center rounded-icon ${
     tone === "reference" ? "bg-reference text-reference-ink" : "bg-primary-soft text-primary-ink"
   }`;
+
+function BusyTile() {
+  return (
+    <span className={tile("primary")}>
+      <span
+        aria-hidden="true"
+        className="size-4.5 animate-spin-arc rounded-round border-2 border-current border-t-transparent"
+      />
+    </span>
+  );
+}
 
 // A row that only reads, with its icon square: the label bold, the detail muted, both wrapping.
 // The alert is drawn in the accent's ink, never red: it says why, it does not warn.

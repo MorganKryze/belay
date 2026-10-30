@@ -1,5 +1,10 @@
 import { mergeWeights } from "@belay/shared/sync/merge";
-import type { Change, SyncRequest, WeightChange } from "@belay/shared/sync/schema";
+import {
+  type Change,
+  type SyncRequest,
+  SyncRequestSchema,
+  type WeightChange,
+} from "@belay/shared/sync/schema";
 import { IDBFactory } from "fake-indexeddb";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { type AccountDb, applyServer, openAccountDb, readOutbox, recordChange } from "@/sync/db";
@@ -14,7 +19,15 @@ const native = vi.hoisted(() => ({
 }));
 vi.mock("./plugin", () => ({ BelayNative: native }));
 
-import { type HealthSample, IMPORT_KEY, readHealth, setHealthOn, setImportOn } from "./health";
+import {
+  askImportHistory,
+  type HealthSample,
+  HISTORY_SINCE,
+  importHistory,
+  readHealth,
+  setHealthOn,
+  setImportOn,
+} from "./health";
 import { earliestPerDay, importAfterSync, importWeighings } from "./health-import";
 
 // The phone's local time: the import was turned on on the 26th at 07:00.
@@ -44,11 +57,17 @@ beforeEach(async () => {
 });
 const day = async (date: string) => db.get("weights", date);
 // An import whose read of Health began from what is stored now.
-const take = async (samples: readonly HealthSample[], anchor: string, now: Date) => {
+const read = async (samples: readonly HealthSample[], anchor: string, now: Date) => {
   const { settings, imported } = await readHealth(db);
-  const from = { anchor: imported.anchor, since: settings.importSince ?? 0 };
+  const from = {
+    anchor: imported.anchor,
+    since: settings.importSince ?? 0,
+    historyDone: imported.historyDone,
+  };
   return importWeighings(db, samples, anchor, now, from);
 };
+const take = async (samples: readonly HealthSample[], anchor: string, now: Date) =>
+  (await read(samples, anchor, now)).written;
 const queued = async () => (await readOutbox(db)).map((e) => e.change);
 
 describe("the readings kept", () => {
@@ -95,6 +114,7 @@ describe("a day and its record", () => {
     expect((await readHealth(db)).imported).toEqual({
       anchor: "A1",
       filled: { "2026-10-26": { at: MIDNIGHT, startedAt: at(7, 5) } },
+      historyDone: false,
     });
   });
 
@@ -146,11 +166,44 @@ describe("a day and its record", () => {
     expect(await queued()).toHaveLength(2);
   });
 
-  it("nothing new writes nothing", async () => {
-    const before = await db.get("meta", IMPORT_KEY);
-    expect(await take([], "A1", NOW)).toBe(0);
-    expect(await db.get("meta", IMPORT_KEY)).toEqual(before);
+  it("a read with nothing new keeps its anchor, writes no weigh-in and queues nothing", async () => {
+    await take([{ startedAt: at(7, 5), kg: 80.4 }], "A1", NOW);
+    const rows = await db.getAll("weights");
+    const outbox = await queued();
+    expect(await read([], "A2", NOW)).toEqual({ written: 0, historyDone: false });
+    expect((await readHealth(db)).imported.anchor).toBe("A2");
+    expect(await db.getAll("weights")).toEqual(rows);
+    expect(await queued()).toEqual(outbox);
+  });
+
+  it("a read that moves nothing writes nothing at all", async () => {
+    await take([], "A1", NOW);
+    const put = vi.spyOn(IDBObjectStore.prototype, "put");
+    await take([], "A1", NOW);
+    expect(put).not.toHaveBeenCalled();
+    put.mockRestore();
+  });
+
+  it("a first read that sees nothing keeps no place, so what a refused access hid still comes in", async () => {
+    await read([], "A1", NOW);
+    expect((await readHealth(db)).imported.anchor).toBeNull();
+    expect(await take([{ startedAt: at(8), kg: 80 }], "A2", NOW)).toBe(1);
+    expect((await readHealth(db)).imported.anchor).toBe("A2");
+  });
+
+  it("a reading more than a day ahead is dropped and the anchor moves on", async () => {
+    const ahead = { startedAt: NOW.getTime() + 86_400_000 + 1, kg: 79.8 };
+    const years = { startedAt: new Date(2031, 0, 1, 7).getTime(), kg: 79.5 };
+    expect(await take([ahead, years], "A1", NOW)).toBe(0);
+    expect(await db.count("weights")).toBe(0);
     expect(await queued()).toEqual([]);
+    expect((await readHealth(db)).imported.anchor).toBe("A1");
+  });
+
+  it("a reading exactly a day ahead still waits for its day", async () => {
+    const sample = { startedAt: NOW.getTime() + 86_400_000, kg: 79.8 };
+    expect(await take([sample], "A1", NOW)).toBe(0);
+    expect((await readHealth(db)).imported.anchor).toBeNull();
   });
 
   it("turned off while Health was read, nothing is taken", async () => {
@@ -164,7 +217,11 @@ describe("a day and its record", () => {
     const from = { anchor: "A1", since: new Date(2026, 9, 26).getTime() };
     await setImportOn(db, false, NOW.getTime());
     await setImportOn(db, true, NOW.getTime());
-    expect(await importWeighings(db, [{ startedAt: at(6), kg: 79.5 }], "A2", NOW, from)).toBe(0);
+    const sample = { startedAt: at(6), kg: 79.5 };
+    expect(await importWeighings(db, [sample], "A2", NOW, from)).toEqual({
+      written: 0,
+      historyDone: false,
+    });
     expect((await readHealth(db)).imported.anchor).toBeNull();
     expect((await day("2026-10-26"))?.weightKg).toBe(80.4);
     expect(await queued()).toHaveLength(1);
@@ -177,6 +234,188 @@ describe("a day and its record", () => {
     expect((await readHealth(db)).imported.anchor).toBe("A1");
     await setImportOn(db, true, NOW.getTime());
     expect((await readHealth(db)).imported.anchor).toBeNull();
+  });
+});
+
+describe("the history", () => {
+  const march = (date: number, h = 7, mi = 0) => new Date(2019, 2, date, h, mi).getTime();
+  const stamp = (date: number) => new Date(2019, 2, date).toISOString();
+
+  it("a day years back with no record takes its earliest reading, stamped at its local midnight", async () => {
+    await askImportHistory(db);
+    const samples = [
+      { startedAt: march(4, 7, 40), kg: 81.2 },
+      { startedAt: march(4, 7, 10), kg: 81.6 },
+    ];
+    expect(await take(samples, "H1", NOW)).toBe(1);
+    expect(await day("2019-03-04")).toEqual({
+      date: "2019-03-04",
+      weightKg: 81.6,
+      at: stamp(4),
+    });
+    expect(await queued()).toEqual([weight("2019-03-04", 81.6, stamp(4))]);
+    expect((await readHealth(db)).imported.filled).toEqual({
+      "2019-03-04": { at: stamp(4), startedAt: march(4, 7, 10) },
+    });
+  });
+
+  it("a reading dated before 1900 stays out of the queue, so the queue can still be sent", async () => {
+    await askImportHistory(db);
+    const samples = [
+      { startedAt: new Date(1899, 11, 31, 12).getTime(), kg: 81.6 },
+      { startedAt: new Date(1900, 0, 1, 12).getTime(), kg: 81.4 },
+    ];
+    expect(await read(samples, "H1", NOW)).toEqual({ written: 1, historyDone: true });
+    expect(await db.getAllKeys("weights")).toEqual(["1900-01-01"]);
+    const changes = await queued();
+    expect(changes).toEqual([weight("1900-01-01", 81.4, new Date(1900, 0, 1).toISOString())]);
+    const request = { account: crypto.randomUUID(), cursor: "0", changes };
+    expect(SyncRequestSchema.safeParse(request).success).toBe(true);
+  });
+
+  it("a typed, an edited and a deleted day stay as they are; a filled day takes only an earlier reading", async () => {
+    await askImportHistory(db);
+    await recordChange(db, weight("2019-03-04", 82.1));
+    await recordChange(db, weight("2019-03-05", null));
+    const first = [
+      { startedAt: march(6), kg: 80 },
+      { startedAt: march(7), kg: 80 },
+    ];
+    expect(await take(first, "H1", NOW)).toBe(2);
+    await recordChange(db, weight("2019-03-06", 79.5));
+
+    const again = [4, 5, 6, 7].map((date) => ({ startedAt: march(date, 6), kg: 78 }));
+    expect(await take([...again, { startedAt: march(7, 9), kg: 77 }], "H2", NOW)).toBe(1);
+    expect((await day("2019-03-04"))?.weightKg).toBe(82.1);
+    expect((await day("2019-03-05"))?.weightKg).toBeNull();
+    expect((await day("2019-03-06"))?.weightKg).toBe(79.5);
+    expect(await day("2019-03-07")).toEqual({
+      date: "2019-03-07",
+      weightKg: 78,
+      at: new Date(Date.parse(stamp(7)) + 1).toISOString(),
+    });
+  });
+
+  it("3 650 days land as 3 650 weigh-ins and 3 650 queued changes", async () => {
+    await askImportHistory(db);
+    const samples = Array.from({ length: 3650 }, (_, i) => ({
+      startedAt: new Date(2026, 9, 25 - i, 7).getTime(),
+      kg: 80 + (i % 50) / 10,
+    }));
+    expect(await take(samples, "H1", NOW)).toBe(3650);
+    expect(await db.count("weights")).toBe(3650);
+    expect(await queued()).toHaveLength(3650);
+    expect(Object.keys((await readHealth(db)).imported.filled)).toHaveLength(3650);
+    expect((await day("2026-10-25"))?.weightKg).toBe(80);
+  });
+
+  it("the read from the floor marks the history done, even while a reading waits for its day", async () => {
+    await askImportHistory(db);
+    const tomorrow = { startedAt: new Date(2026, 9, 27, 7).getTime(), kg: 79.8 };
+    const samples = [{ startedAt: march(4), kg: 81.6 }, tomorrow];
+    expect(await read(samples, "H1", NOW)).toEqual({ written: 1, historyDone: true });
+    const { settings, imported } = await readHealth(db);
+    expect(imported.anchor).toBeNull();
+    expect(importHistory(settings, imported)).toBe("done");
+
+    // Read again on the 27th: the waiting reading is taken, the history already told.
+    const next = await read(samples, "H1", new Date(2026, 9, 27, 9));
+    expect(next).toEqual({ written: 1, historyDone: false });
+    expect((await readHealth(db)).imported).toMatchObject({ anchor: "H1", historyDone: true });
+  });
+
+  it("a history asked without the permission still says so after its read and the ones that follow", async () => {
+    await askImportHistory(db, true);
+    await read([{ startedAt: march(4), kg: 81.6 }], "H1", NOW);
+    expect((await readHealth(db)).imported).toMatchObject({
+      historyDone: true,
+      historyWindowed: true,
+    });
+    await read([{ startedAt: at(7, 5), kg: 80.4 }], "H2", NOW);
+    expect((await readHealth(db)).imported).toMatchObject({ anchor: "H2", historyWindowed: true });
+  });
+
+  it("a read that finds only a reading waiting for its day still marks the history done", async () => {
+    await askImportHistory(db);
+    const tomorrow = { startedAt: new Date(2026, 9, 27, 7).getTime(), kg: 79.8 };
+    expect(await read([tomorrow], "H1", NOW)).toEqual({ written: 0, historyDone: true });
+    const { settings, imported } = await readHealth(db);
+    expect(imported.anchor).toBeNull();
+    expect(importHistory(settings, imported)).toBe("done");
+  });
+
+  it("the same samples read twice write no day twice", async () => {
+    await askImportHistory(db);
+    const samples = [
+      { startedAt: march(4), kg: 81.6 },
+      { startedAt: march(5), kg: 81.4 },
+    ];
+    expect(await take(samples, "H1", NOW)).toBe(2);
+    const before = await queued();
+    expect(await take(samples, "H2", NOW)).toBe(0);
+    expect(await queued()).toEqual(before);
+    expect((await readHealth(db)).imported.anchor).toBe("H2");
+  });
+
+  it("a history asked again during a read takes nothing from that read", async () => {
+    await askImportHistory(db);
+    await take([{ startedAt: march(4), kg: 81.6 }], "H1", NOW);
+    const from = { anchor: "H1", since: HISTORY_SINCE };
+    await askImportHistory(db);
+    const sample = { startedAt: march(5), kg: 81.4 };
+    expect(await importWeighings(db, [sample], "H2", NOW, from)).toEqual({
+      written: 0,
+      historyDone: false,
+    });
+    expect(await day("2019-03-05")).toBeUndefined();
+    expect((await readHealth(db)).imported).toMatchObject({ anchor: null, historyDone: false });
+  });
+
+  it("a history whose read saw nothing is done, and the next read starts from the floor again", async () => {
+    await askImportHistory(db);
+    expect(await read([], "H1", NOW)).toEqual({ written: 0, historyDone: true });
+    expect((await readHealth(db)).imported).toMatchObject({ anchor: null, historyDone: true });
+  });
+
+  it("a history asked again during a read with no place yet takes nothing from that read", async () => {
+    await askImportHistory(db);
+    await read([], "H1", NOW);
+    const from = { anchor: null, since: HISTORY_SINCE, historyDone: true };
+    await askImportHistory(db);
+    const sample = { startedAt: march(5), kg: 81.4 };
+    expect(await importWeighings(db, [sample], "H2", NOW, from)).toEqual({
+      written: 0,
+      historyDone: false,
+    });
+    expect((await readHealth(db)).imported).toMatchObject({ anchor: null, historyDone: false });
+  });
+
+  it("a read begun from the import's day takes nothing once the history is asked", async () => {
+    const { settings } = await readHealth(db);
+    const from = { anchor: null, since: settings.importSince ?? 0 };
+    await askImportHistory(db);
+    expect(await importWeighings(db, [{ startedAt: at(7), kg: 80 }], "A1", NOW, from)).toEqual({
+      written: 0,
+      historyDone: false,
+    });
+    expect(await queued()).toEqual([]);
+    const after = await readHealth(db);
+    expect(importHistory(after.settings, after.imported)).toBe("importing");
+  });
+
+  it("the import turned off and on during the read offers the history again, nothing taken", async () => {
+    await askImportHistory(db);
+    const from = { anchor: null, since: HISTORY_SINCE };
+    await setImportOn(db, false, NOW.getTime());
+    await setImportOn(db, true, NOW.getTime());
+    const sample = { startedAt: march(4), kg: 81.6 };
+    expect(await importWeighings(db, [sample], "H1", NOW, from)).toEqual({
+      written: 0,
+      historyDone: false,
+    });
+    const { settings, imported } = await readHealth(db);
+    expect(await day("2019-03-04")).toBeUndefined();
+    expect(importHistory(settings, imported)).toBe("offered");
   });
 });
 
@@ -261,13 +500,58 @@ describe("after a landed sync", () => {
     expect([...new Set([...sent, ...(await queued())].map((c) => JSON.stringify(c)))]).toEqual([
       JSON.stringify(weight("2026-10-26", 80.4, MIDNIGHT)),
     ]);
-    // Nothing new in Health: no second write, no sync asked.
+    // Nothing new in Health: no second write, no sync asked, nothing to show.
     expect(schedule).toHaveBeenCalledOnce();
+    expect(refresh).toHaveBeenCalledOnce();
     expect(native.health).toHaveBeenLastCalledWith({
       op: "readWeighings",
       anchor: "A1",
       since: new Date(2026, 9, 26).getTime(),
     });
+  });
+
+  it("a scale reading after a done history still comes in", async () => {
+    await askImportHistory(db);
+    const engine = { schedule: vi.fn() };
+    native.health.mockResolvedValue({ samples: [], anchor: "H1" });
+    await importAfterSync(
+      { db, engine },
+      async () => {},
+      () => NOW,
+    );
+    native.health.mockResolvedValue({ samples: [{ startedAt: at(8), kg: 80 }], anchor: "H2" });
+    await importAfterSync(
+      { db, engine },
+      async () => {},
+      () => NOW,
+    );
+    expect((await day("2026-10-26"))?.weightKg).toBe(80);
+    expect(engine.schedule).toHaveBeenCalledOnce();
+  });
+
+  it("a history done with nothing new refreshes the page and starts no sync", async () => {
+    await askImportHistory(db);
+    native.health.mockResolvedValue({ samples: [], anchor: "H1" });
+    const schedule = vi.fn();
+    const refresh = vi.fn(async () => {});
+    await importAfterSync({ db, engine: { schedule } }, refresh, () => NOW);
+    expect(native.health).toHaveBeenCalledWith({
+      op: "readWeighings",
+      anchor: null,
+      since: HISTORY_SINCE,
+    });
+    expect(schedule).not.toHaveBeenCalled();
+    expect(refresh).toHaveBeenCalledOnce();
+
+    // The next landed sync finds the history told already: nothing to show.
+    await importAfterSync({ db, engine: { schedule } }, refresh, () => NOW);
+    expect(native.health).toHaveBeenLastCalledWith({
+      op: "readWeighings",
+      anchor: null,
+      since: HISTORY_SINCE,
+    });
+    expect(schedule).not.toHaveBeenCalled();
+    expect(refresh).toHaveBeenCalledOnce();
   });
 
   it("with the import off, Health is not asked", async () => {
@@ -290,6 +574,10 @@ describe("after a landed sync", () => {
   it("Health unavailable leaves everything as it was, for the next landed sync", async () => {
     native.health.mockRejectedValue(new Error("health unavailable"));
     await importAfterSync({ db, engine: { schedule: vi.fn() } }, async () => {});
-    expect((await readHealth(db)).imported).toEqual({ anchor: null, filled: {} });
+    expect((await readHealth(db)).imported).toEqual({
+      anchor: null,
+      filled: {},
+      historyDone: false,
+    });
   });
 });

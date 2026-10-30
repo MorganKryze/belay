@@ -57,6 +57,29 @@ describe("the Android shell", () => {
     );
   });
 
+  // A permission the manifest leaves out is one Health Connect never shows: nothing fails, the
+  // page just goes on asking.
+  it("the manifest declares every health permission the app asks for", () => {
+    const named = [
+      ...kotlin("HealthRules.kt").matchAll(/const val \w+ = "(android\.permission\.health\.\w+)"/g),
+    ].map((m) => m[1]!);
+    expect(named).toContain("android.permission.health.READ_HEALTH_DATA_HISTORY");
+    expect(named).toHaveLength(5);
+    for (const permission of named) {
+      expect(manifest()).toContain(`<uses-permission android:name="${permission}" />`);
+    }
+  });
+
+  // Health Connect refuses a read the same way whether the permission is missing or not: the
+  // bridge leaves that call to the rule the JVM tests hold.
+  it("a refused weigh-in read goes through the rule on what is granted", () => {
+    const source = kotlin("HealthBridge.kt").replace(/\s+/g, " ");
+    expect(source).toContain(
+      "HealthRules.readOrRefused( granted = { client.permissionController.getGrantedPermissions() }, read = { readAllowedWeighings(anchor, since) },",
+    );
+    expect(source).not.toContain("catch (_: SecurityException)");
+  });
+
   // The notifications plugin makes a channel of its own as it loads: Belay's channels are made,
   // and that one removed, once the bridge has loaded every plugin.
   it("the channels are made once the bridge has loaded its plugins", () => {

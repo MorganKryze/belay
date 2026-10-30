@@ -2,6 +2,7 @@ package cloud.libresoftware.belay
 
 import androidx.activity.result.ActivityResultLauncher
 import androidx.health.connect.client.HealthConnectClient
+import androidx.health.connect.client.HealthConnectFeatures
 import androidx.health.connect.client.PermissionController
 import androidx.health.connect.client.changes.UpsertionChange
 import androidx.health.connect.client.records.ExerciseSessionRecord
@@ -79,32 +80,48 @@ class HealthBridge(private val plugin: Plugin) {
     // Built in on Android 14 and later; on 9 to 13 only once its app is installed and current.
     private fun available() = HealthConnectClient.getSdkStatus(plugin.context) == HealthConnectClient.SDK_AVAILABLE
 
-    // Write access per type.
+    // Whether this Health Connect can give what is older than its 30-day window at all.
+    private fun historyOffered() = available() &&
+        client.features.getFeatureStatus(HealthConnectFeatures.FEATURE_READ_HEALTH_DATA_HISTORY) ==
+        HealthConnectFeatures.FEATURE_STATUS_AVAILABLE
+
+    // Write access per type, and whether older weigh-ins can be read.
     private suspend fun status(): JSObject {
         if (!available()) {
-            return JSObject().put("available", false).put("workouts", "undetermined").put("weighings", "undetermined")
+            return JSObject()
+                .put("available", false)
+                .put("workouts", "undetermined")
+                .put("weighings", "undetermined")
+                .put("history", "unavailable")
         }
         val granted = client.permissionController.getGrantedPermissions()
-        // Both scopes ask for the write set, so either one counts as asked.
-        val wasAsked = asked.get(HealthRules.ASKED_WRITE) != null || asked.get(HealthRules.ASKED_IMPORT) != null
+        // Every scope asks for the write set, so any one counts as asked.
+        val wasAsked = listOf(HealthRules.ASKED_WRITE, HealthRules.ASKED_IMPORT, HealthRules.ASKED_HISTORY)
+            .any { asked.get(it) != null }
+        val historyAsked = asked.get(HealthRules.ASKED_HISTORY) != null
         return JSObject()
             .put("available", true)
             .put("workouts", HealthRules.access(HealthRules.WRITE_EXERCISE in granted, wasAsked))
             .put("weighings", HealthRules.access(HealthRules.WRITE_WEIGHT in granted, wasAsked))
+            .put("history", HealthRules.historyAccess(historyOffered(), HealthRules.READ_HISTORY in granted, historyAsked))
     }
 
     // Health Connect's permission screen, then the status it leaves. One screen at a time: a second
-    // request while one is open is refused, and the page asks again from its switch.
+    // request while one is open is refused, and the page asks again from its switch. Calls arrive on
+    // the plugin's thread and the screen's answer on the main one, so `waiting` lives on the main one.
     private fun authorize(call: PluginCall, scopeName: String) {
         val launcher = permissions
         if (!available() || launcher == null) return answer(call) { status() }
-        if (waiting != null) return call.reject("health unavailable")
-        try {
-            waiting = call
-            HealthRules.launchAsking(asked, scopeName) { launcher.launch(HealthRules.requested(scopeName)) }
-        } catch (e: Exception) {
-            waiting = null
-            call.reject("health unavailable", e)
+        val wanted = HealthRules.requested(scopeName, historyOffered())
+        plugin.activity.runOnUiThread {
+            if (waiting != null) return@runOnUiThread call.reject("health unavailable")
+            try {
+                waiting = call
+                HealthRules.launchAsking(asked, scopeName) { launcher.launch(wanted) }
+            } catch (e: Exception) {
+                waiting = null
+                call.reject("health unavailable", e)
+            }
         }
     }
 
@@ -219,7 +236,14 @@ class HealthBridge(private val plugin: Plugin) {
     // out. Deletions are not followed: a weigh-in once in Belay stays the person's there. With no
     // anchor, or an expired or refused one, everything from `since` is read again; the token is taken first,
     // so a record written during the read comes back next time rather than never.
-    private suspend fun readWeighings(anchor: String?, since: Long): JSObject {
+    private suspend fun readWeighings(anchor: String?, since: Long): JSObject =
+        HealthRules.readOrRefused(
+            granted = { client.permissionController.getGrantedPermissions() },
+            read = { readAllowedWeighings(anchor, since) },
+            refused = { JSObject().put("samples", JSArray()).put("anchor", HealthRules.placeAfterRefusal(anchor)) },
+        )
+
+    private suspend fun readAllowedWeighings(anchor: String?, since: Long): JSObject {
         val records = mutableListOf<WeightRecord>()
         var next = anchor?.let { changesAfter(it, records) }
         if (next == null) {
