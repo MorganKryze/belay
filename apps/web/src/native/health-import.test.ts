@@ -1,5 +1,10 @@
 import { mergeWeights } from "@belay/shared/sync/merge";
-import type { Change, SyncRequest, WeightChange } from "@belay/shared/sync/schema";
+import {
+  type Change,
+  type SyncRequest,
+  SyncRequestSchema,
+  type WeightChange,
+} from "@belay/shared/sync/schema";
 import { IDBFactory } from "fake-indexeddb";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { type AccountDb, applyServer, openAccountDb, readOutbox, recordChange } from "@/sync/db";
@@ -241,6 +246,20 @@ describe("the history", () => {
     expect((await readHealth(db)).imported.filled).toEqual({
       "2019-03-04": { at: stamp(4), startedAt: march(4, 7, 10) },
     });
+  });
+
+  it("a reading dated before 1900 stays out of the queue, so the queue can still be sent", async () => {
+    await askImportHistory(db);
+    const samples = [
+      { startedAt: new Date(1899, 11, 31, 12).getTime(), kg: 81.6 },
+      { startedAt: new Date(1900, 0, 1, 12).getTime(), kg: 81.4 },
+    ];
+    expect(await read(samples, "H1", NOW)).toEqual({ written: 1, historyDone: true });
+    expect(await db.getAllKeys("weights")).toEqual(["1900-01-01"]);
+    const changes = await queued();
+    expect(changes).toEqual([weight("1900-01-01", 81.4, new Date(1900, 0, 1).toISOString())]);
+    const request = { account: crypto.randomUUID(), cursor: "0", changes };
+    expect(SyncRequestSchema.safeParse(request).success).toBe(true);
   });
 
   it("a typed, an edited and a deleted day stay as they are; a filled day takes only an earlier reading", async () => {
