@@ -84,6 +84,10 @@ object HealthRules {
     // missing permission or a cancelled call is not the token's fault and stays a failure.
     fun readsAgain(error: Throwable): Boolean = error !is SecurityException && error !is CancellationException
 
+    // What a refused read answers: nothing new, its place where it was, as on the iPhone, where a
+    // refused read looks empty. The page keeps no place from a first read that saw nothing.
+    fun placeAfterRefusal(anchor: String?): String = anchor ?: ""
+
     // A weigh-in Belay wrote, known by this app's package or by Belay's own id: the import never
     // reads Belay's weigh-ins back as a scale's.
     fun isOwn(packageName: String, ourPackage: String, clientRecordId: String?): Boolean =

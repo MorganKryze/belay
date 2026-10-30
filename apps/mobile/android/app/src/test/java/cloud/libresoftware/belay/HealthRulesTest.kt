@@ -143,6 +143,11 @@ class HealthRulesTest {
         assertEquals("undetermined", HealthRules.historyAccess(offered = true, granted = false, asked = false))
     }
 
+    @Test fun `a refused read leaves the place where it was`() {
+        assertEquals("token", HealthRules.placeAfterRefusal("token"))
+        assertEquals("", HealthRules.placeAfterRefusal(null))
+    }
+
     @Test fun `the history access values are the page's`() =
         assertEquals(setOf("allowed", "denied", "undetermined", "unavailable"), HealthRules.HISTORY_ACCESS)
 }

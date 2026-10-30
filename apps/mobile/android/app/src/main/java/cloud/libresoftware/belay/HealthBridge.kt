@@ -236,7 +236,14 @@ class HealthBridge(private val plugin: Plugin) {
     // out. Deletions are not followed: a weigh-in once in Belay stays the person's there. With no
     // anchor, or an expired or refused one, everything from `since` is read again; the token is taken first,
     // so a record written during the read comes back next time rather than never.
-    private suspend fun readWeighings(anchor: String?, since: Long): JSObject {
+    private suspend fun readWeighings(anchor: String?, since: Long): JSObject =
+        try {
+            readAllowedWeighings(anchor, since)
+        } catch (_: SecurityException) {
+            JSObject().put("samples", JSArray()).put("anchor", HealthRules.placeAfterRefusal(anchor))
+        }
+
+    private suspend fun readAllowedWeighings(anchor: String?, since: Long): JSObject {
         val records = mutableListOf<WeightRecord>()
         var next = anchor?.let { changesAfter(it, records) }
         if (next == null) {
