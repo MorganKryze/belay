@@ -974,7 +974,7 @@
     "historyNotOffered": "Cette version de Santé Connect ne donne pas les plus anciennes.",
     "importOlder": "Importer les plus anciennes",
     "importOlderAsk": "Santé Connect te demande d’autoriser l’accès à l’historique.",
-    "importOlderDenied": "Autorise l’historique dans les réglages de Santé Connect › Autorisations des applications › Belay, puis touche ici.",
+    "importOlderDenied": "Dans les réglages de Santé Connect › Autorisations des applications › Belay › Accès supplémentaires, active « Accéder aux anciennes données », puis touche ici.",
     "history": "Envoyer l’historique à Santé",
     "history_android": "Envoyer l’historique à Santé Connect",
     "historySub": "Tes {{sessions}} et {{weighings}} d’avant l’activation. Rien n’est envoyé en double.",

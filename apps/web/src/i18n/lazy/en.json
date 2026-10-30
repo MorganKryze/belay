@@ -974,7 +974,7 @@
     "historyNotOffered": "This version of Health Connect does not give older ones.",
     "importOlder": "Import older weigh-ins",
     "importOlderAsk": "Health Connect asks you to allow access to history.",
-    "importOlderDenied": "Allow history in Health Connect settings › App permissions › Belay, then tap here.",
+    "importOlderDenied": "In Health Connect settings › App permissions › Belay › Additional access, turn on “Access past data”, then tap here.",
     "history": "Send history to Health",
     "history_android": "Send history to Health Connect",
     "historySub": "Your {{sessions}} and {{weighings}} from before you turned this on. Nothing is sent twice.",

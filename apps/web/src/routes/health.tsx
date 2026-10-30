@@ -232,18 +232,22 @@ type ImportProps = Pick<HealthState, "settings" | "imported"> & {
 // sheet gives the focus back to the switch.
 function ImportGroup({ account, status, settings, imported, onChange }: ImportProps) {
   const { t } = useTranslation();
+  const queryClient = useQueryClient();
   const [asking, setAsking] = useState(false);
   const on = settings.importOn;
   // The iPhone app always has its instance once an account is open.
   const host = new URL(readInstance()!).host;
-  // iOS never says whether a read is allowed, so the answer changes nothing here; a rejected call
-  // (a build without the entitlement) leaves the import off.
+  // iOS never says whether a read is allowed, so the import goes on whatever the answer, which
+  // still tells the page about writing; a rejected call (a build without the entitlement) leaves
+  // the import off.
   const turnOn = async () => {
+    let answer: HealthStatus;
     try {
-      await health({ op: "authorize", scope: "import" });
+      answer = await health({ op: "authorize", scope: "import" });
     } catch {
       return;
     }
+    queryClient.setQueryData(["native", "health-status"], answer);
     await setImportOn(account.db, true, Date.now());
     await onChange();
     // The first import follows the sync this starts, or the one already going.

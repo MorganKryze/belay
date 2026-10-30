@@ -426,6 +426,19 @@ describe("Réglages › Apple Santé, weigh-ins from Health", () => {
     await waitFor(() => expect(api.requests.length).toBeGreaterThan(before));
   });
 
+  it("the import's permission answer takes « Accès refusé » away at once", async () => {
+    onIPhone(status("denied", "denied"));
+    native.health.mockImplementation(async ({ op }: { op: string }) =>
+      status(op === "authorize" ? "allowed" : "denied", op === "authorize" ? "allowed" : "denied"),
+    );
+    await turnedOn();
+    renderRoute("/settings/health");
+    await screen.findByText("Accès refusé");
+    fireEvent.click(await importSwitch());
+    fireEvent.click(await screen.findByRole("button", { name: "Importer" }));
+    await waitFor(() => expect(screen.queryByText("Accès refusé")).toBeNull());
+  });
+
   it("the import turned off writes it off without asking iOS", async () => {
     onIPhone(status("allowed", "allowed"));
     await turnedOn();
@@ -824,7 +837,7 @@ describe("Réglages › Santé Connect, the weigh-in history", () => {
     renderRoute("/settings/health");
     const action = await older();
     expect(action.textContent).toContain(
-      "Autorise l’historique dans les réglages de Santé Connect › Autorisations des applications › Belay, puis touche ici.",
+      "Dans les réglages de Santé Connect › Autorisations des applications › Belay › Accès supplémentaires, active «\u202fAccéder aux anciennes données\u202f», puis touche ici.",
     );
     await syncStarted();
     const before = api.requests.length;
