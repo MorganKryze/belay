@@ -4,11 +4,13 @@
 import type { AccountDb } from "@/sync/db";
 import {
   HEALTH_BATCH,
+  type HealthImport,
   type HealthObject,
   type HealthOutcome,
   type HealthProgress,
   health,
   healthProgress,
+  IMPORT_KEY,
   markHistorySent,
   readHealth,
   recordWritten,
@@ -39,17 +41,20 @@ export function createHealthRunner(
   const blocked: Record<Type, boolean> = { workouts: false, weighings: false };
 
   async function once(): Promise<void> {
-    const { settings, written, imported } = await readHealth(db);
+    const { settings, written } = await readHealth(db);
     // Off: not one call to Health. Off, unavailable or stopped, no earlier run's progress (perhaps
     // another account's) stays on screen.
     if (!settings.on) return healthProgress.set(IDLE);
     const status = await health({ op: "status" });
     if (!status.available) return healthProgress.set(IDLE);
-    const tx = db.transaction(["workouts", "sets", "weights"]);
-    const [workouts, sets, weights] = await Promise.all([
+    // The days the import filled are read with the weigh-ins: read apart, a history landing in
+    // between would look like the person's own weigh-ins and go back to Health.
+    const tx = db.transaction(["workouts", "sets", "weights", "meta"]);
+    const [workouts, sets, weights, imported] = await Promise.all([
       tx.objectStore("workouts").getAll(),
       tx.objectStore("sets").getAll(),
       tx.objectStore("weights").getAll(),
+      tx.objectStore("meta").get(IMPORT_KEY) as Promise<HealthImport | undefined>,
     ]);
     const objects = planHealth({
       workouts,
@@ -57,7 +62,7 @@ export function createHealthRunner(
       weights,
       settings,
       written,
-      filled: imported.filled,
+      filled: imported?.filled ?? {},
       allowed: {
         workouts: status.workouts === "allowed" && !blocked.workouts,
         weighings: status.weighings === "allowed" && !blocked.weighings,

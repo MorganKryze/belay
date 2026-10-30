@@ -15,16 +15,20 @@ const native = vi.hoisted(() => ({
 vi.mock("./plugin", () => ({ BelayNative: native }));
 
 import {
+  askImportHistory,
   type HealthObject,
   type HealthOutcome,
   type HealthProgress,
   type HealthRequest,
   type HealthStatus,
   healthProgress,
+  HISTORY_SINCE,
   readHealth,
   setHealthOn,
   setHistory,
+  setImportOn,
 } from "./health";
+import { importWeighings } from "./health-import";
 import { ownerOf, weighingKey } from "./health-plan";
 import { createHealthRunner, type HealthRunner } from "./health-run";
 
@@ -362,6 +366,28 @@ describe("the run", () => {
     expect(applied()).toHaveLength(1);
     expect(seen.every((s) => s === null)).toBe(true);
     off();
+  });
+
+  it("a history landing during the status call goes back to Health as no weigh-in", async () => {
+    await setHealthOn(db, true, ON);
+    await setImportOn(db, true, ON);
+    await setHistory(db, "asked");
+    await askImportHistory(db);
+    const samples = [1, 2, 3].map((date) => ({
+      startedAt: new Date(2025, 2, date, 7).getTime(),
+      kg: 80,
+    }));
+    const from = { anchor: null, since: HISTORY_SINCE };
+    native.health.mockImplementation(async (req: HealthRequest) => {
+      if (req.op !== "status") throw new Error(req.op);
+      await importWeighings(db, samples, "H1", new Date(NOW), from);
+      return ALLOWED;
+    });
+    const { r, changed } = runner();
+    r.request();
+    await ran(changed);
+    expect(await db.count("weights")).toBe(3);
+    expect(applied()).toEqual([]);
   });
 
   it("an interrupted run writes the unconfirmed objects again under the same sync identifiers", async () => {
