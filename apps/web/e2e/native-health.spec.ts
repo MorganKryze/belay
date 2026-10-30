@@ -260,6 +260,24 @@ test("the history brings a weigh-in dated 30 days back and leaves a typed one al
   await expect(sheet.getByRole("textbox", { name: "Poids" })).toHaveValue(/^80\b/);
 });
 
+test("a key press on the history action keeps the next Tab in the group", async ({
+  page,
+  baseURL,
+}) => {
+  await signedIn(page, baseURL!);
+  await openHealth(page);
+  await turnOn(page);
+  await openConsent(page);
+  await consent(page).getByRole("button", { name: "Importer" }).click();
+  await historyAction(page).focus();
+  await page.keyboard.press("Enter");
+  await expect(
+    page.getByRole("region", { name: "Depuis Santé" }).getByRole("status"),
+  ).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(page.getByRole("link", { name: "Réglages" })).not.toBeFocused();
+});
+
 test("a browser shows no Apple Santé and the page is not found", async ({ page }) => {
   await fakeServer(page);
   await page.goto("/settings");

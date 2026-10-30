@@ -354,6 +354,19 @@ describe("Réglages › Apple Santé, what goes to Health", () => {
     expect(await screen.findByText("Historique envoyé")).toBeTruthy();
     expect(screen.queryByRole("button", { name: /Envoyer l’historique/ })).toBeNull();
   });
+
+  it("the focus stays in the group when « Envoyer l’historique » goes", async () => {
+    onIPhone(status("allowed", "allowed"));
+    await seed(ADA.id, [weight("2026-09-01", 80.2)]);
+    await turnedOn();
+    renderRoute("/settings/health");
+    const offer = await screen.findByRole("button", { name: /Envoyer l’historique à Santé/ });
+    offer.focus();
+    fireEvent.click(offer);
+    await waitFor(() => expect(offer.isConnected).toBe(false));
+    const to = screen.getByRole("region", { name: "Vers Santé" });
+    expect(document.activeElement).toBe(within(to).getByRole("status"));
+  });
 });
 
 describe("Réglages › Apple Santé, weigh-ins from Health", () => {
@@ -486,6 +499,22 @@ describe("Réglages › Apple Santé, the weigh-in history", () => {
     await waitFor(() => expect(api.requests.length).toBeGreaterThan(before));
     expect(calls("authorize")).toHaveLength(0);
     expect((await stateNow()).imported.historyWindowed).toBeUndefined();
+  });
+
+  it("the focus stays on the live region from the tap to the end", async () => {
+    onIPhone(status("allowed", "allowed"));
+    await importTurnedOn();
+    renderRoute("/settings/health");
+    const action = await screen.findByRole("button", { name: /^Importer l’historique de Santé/ });
+    const live = within(await fromHealth()).getByRole("status");
+    action.focus();
+    fireEvent.click(action);
+    await within(live).findByText("Import de l’historique…");
+    expect(document.activeElement).toBe(live);
+    await historyRead();
+    backInForeground();
+    await within(live).findByText("Historique importé");
+    expect(document.activeElement).toBe(live);
   });
 
   it("a history asked and not done shows the running row when the page opens again", async () => {
@@ -740,11 +769,13 @@ describe("Réglages › Santé Connect, the weigh-in history", () => {
     renderRoute("/settings/health");
     const action = await screen.findByRole("button", { name: /^Importer l’historique/ });
     native.health.mockRejectedValueOnce(new Error("health unavailable"));
+    action.focus();
     fireEvent.click(action);
     await waitFor(() => expect(calls("authorize")).toHaveLength(1));
     await act(async () => {});
     expect((await settingsNow()).importSince).not.toBe(HISTORY_SINCE);
     expect(action.isConnected).toBe(true);
+    expect(document.activeElement).toBe(action);
   });
 
   it("done with the history unavailable: the 30-day sentence and the version sentence, no action", async () => {
@@ -796,6 +827,25 @@ describe("Réglages › Santé Connect, the weigh-in history", () => {
     expect(imported.historyDone).toBe(false);
     expect(imported.historyWindowed).toBeUndefined();
     await waitFor(() => expect(api.requests.length).toBeGreaterThan(before));
+  });
+
+  it("the focus waits on the live region while « Importer les plus anciennes » comes back", async () => {
+    const answer = permissionScreen(withHistory("denied"));
+    await historyDone(true);
+    renderRoute("/settings/health");
+    const action = await older();
+    const live = within(await fromConnect()).getByRole("status");
+    action.focus();
+    fireEvent.click(action);
+    await waitFor(() => expect(calls("authorize")).toHaveLength(1));
+    expect(document.activeElement).toBe(action);
+    await answer(withHistory("denied"));
+    await within(live).findByText("Import de l’historique…");
+    expect(document.activeElement).toBe(live);
+    await historyRead();
+    backInForeground();
+    expect(await older()).not.toBe(action);
+    expect(document.activeElement).toBe(live);
   });
 
   it("done with the history allowed: no window sentence", async () => {

@@ -10,7 +10,7 @@ import {
   type LucideIcon,
   Send,
 } from "lucide-react";
-import { useEffect, useId, useState, useSyncExternalStore } from "react";
+import { type RefObject, useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { ActionSheet } from "@/components/action-sheet";
 import { BackLink, PageHeader } from "@/components/page-header";
@@ -150,6 +150,7 @@ function HealthSettings({ account, status }: { account: OpenAccount; status: Hea
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { state, progress, changed } = useHealthState(account);
+  const sendingRegion = useRef<HTMLDivElement>(null);
   if (!state) return null;
   const { settings, imported } = state;
   const refused = bothRefused(status);
@@ -173,6 +174,10 @@ function HealthSettings({ account, status }: { account: OpenAccount; status: Hea
     await setHealthOn(account.db, false, Date.now());
     await changed();
   };
+  const historyAsked = () => {
+    sendingRegion.current?.focus();
+    return changed();
+  };
 
   return (
     <>
@@ -194,9 +199,9 @@ function HealthSettings({ account, status }: { account: OpenAccount; status: Hea
       </GroupedList>
       {settings.on && !refused && (
         <GroupedList label={t("health.toHealth", words())}>
-          <SendingStatus status={status} progress={progress} />
+          <SendingStatus ref={sendingRegion} status={status} progress={progress} />
           {settings.history === "no" && !progress.sending && (
-            <HistoryOffer account={account} onAsk={changed} />
+            <HistoryOffer account={account} onAsk={historyAsked} />
           )}
           {settings.history === "sent" && !progress.sending && (
             <InfoRow icon={Check} tone="reference" label={t("health.sent")} />
@@ -291,12 +296,14 @@ function ImportGroup({ account, status, settings, imported, onChange }: ImportPr
 }
 
 // The weigh-ins Health holds from before the import's day, read on the person's gesture. The live
-// region stays in place from the offer on, so a screen reader says the start and the end. Apple
-// Health has no window and answers no `history`, which leaves the iPhone out of everything below
-// that reads it.
+// region stays in place from the offer on, so a screen reader says the start and the end, and it
+// takes the focus when the action goes with its tap: the focus would otherwise fall to the top of
+// the page. Apple Health has no window and answers no `history`, which leaves the iPhone out of
+// everything below that reads it.
 function HistoryImport({ account, status, settings, imported, onChange }: ImportProps) {
   const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
+  const region = useRef<HTMLDivElement>(null);
   const state = importHistory(settings, imported);
   const { history } = status;
   const closed = history === "undetermined" || history === "denied";
@@ -310,8 +317,10 @@ function HistoryImport({ account, status, settings, imported, onChange }: Import
       } catch {
         return;
       }
-      queryClient.setQueryData(["native", "health-status"], answer);
     }
+    // Before anything that can take the action away: a new status alone may.
+    region.current?.focus();
+    queryClient.setQueryData(["native", "health-status"], answer);
     const windowed = answer.history !== undefined && answer.history !== "allowed";
     await askImportHistory(account.db, windowed);
     await onChange();
@@ -325,7 +334,7 @@ function HistoryImport({ account, status, settings, imported, onChange }: Import
       : undefined;
   return (
     <>
-      <div role="status">
+      <div ref={region} role="status" tabIndex={-1}>
         {state === "importing" && (
           <div className="flex min-h-14 items-center gap-3 px-4 py-2">
             <BusyTile />
@@ -376,11 +385,14 @@ function HistoryImport({ account, status, settings, imported, onChange }: Import
 
 // The state of what goes to Health, a polite live region. While the history goes, its progress
 // takes the row's place (« À jour » would be false), and the region says only the start and the
-// end: it holds the first count, then empties, which a screen reader does not read.
+// end: it holds the first count, then empties, which a screen reader does not read. It takes the
+// focus from « Envoyer l’historique », which goes with its tap.
 function SendingStatus({
+  ref,
   status,
   progress,
 }: {
+  ref: RefObject<HTMLDivElement | null>;
   status: HealthStatus;
   progress: ReturnType<typeof healthProgress.get>;
 }) {
@@ -394,7 +406,7 @@ function SendingStatus({
     sending && first && sending.done === first.done ? t("health.sending", first) : "";
   return (
     <div>
-      <div role="status" className={sending ? "sr-only" : undefined}>
+      <div ref={ref} role="status" tabIndex={-1} className={sending ? "sr-only" : undefined}>
         {sending ? (
           announced
         ) : status.weighings !== "allowed" ? (
