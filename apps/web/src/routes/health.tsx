@@ -488,14 +488,20 @@ function HistoryOffer({ account, onAsk }: { account: OpenAccount; onAsk: () => P
     networkMode: "always",
   }).data;
   if (!counts) return null;
+  const sessions = t("health.sessions", { count: counts.sessions });
+  const weighings = t("health.weighings", { count: counts.weighings });
   return (
     <RowButton
       icon={Send}
       label={t("health.history", words())}
-      sub={t("health.historySub", {
-        sessions: t("health.sessions", { count: counts.sessions }),
-        weighings: t("health.weighings", { count: counts.weighings }),
-      })}
+      sub={
+        counts.sessions && counts.weighings
+          ? t("health.historySub", { sessions, weighings })
+          : t("health.historySubOne", {
+              what: counts.sessions ? sessions : weighings,
+              count: counts.sessions || counts.weighings,
+            })
+      }
       wrap
       className="text-primary"
       onClick={async () => {

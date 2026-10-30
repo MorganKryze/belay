@@ -310,6 +310,17 @@ describe("Réglages › Apple Santé, what goes to Health", () => {
     ).toBeTruthy();
   });
 
+  it("the offer names only what there is to send", async () => {
+    onIPhone(status("allowed", "allowed"));
+    await seed(ADA.id, [weight("2026-09-01", 80.2)]);
+    await turnedOn();
+    renderRoute("/settings/health");
+    const offer = await screen.findByRole("button", { name: /Envoyer l’historique à Santé/ });
+    expect(offer.textContent).toContain(
+      "Ta 1 pesée d’avant l’activation. Rien n’est envoyé en double.",
+    );
+  });
+
   it("the history offers the counts, then shows Envoi… n sur N, then Historique envoyé", async () => {
     onIPhone(status("allowed", "allowed"));
     await seed(ADA.id, [
