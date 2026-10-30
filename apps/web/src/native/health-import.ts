@@ -123,7 +123,12 @@ export async function importWeighings(
   const historyDone = imported.historyDone || from.since === HISTORY_SINCE;
   const justDone = historyDone && !imported.historyDone;
   const stays = waits || (samples.length === 0 && imported.anchor === null);
-  const next: HealthImport = { anchor: stays ? imported.anchor : anchor, filled, historyDone };
+  const next: HealthImport = {
+    ...imported,
+    anchor: stays ? imported.anchor : anchor,
+    filled,
+    historyDone,
+  };
   if (written > 0 || justDone || next.anchor !== imported.anchor) {
     await tx.objectStore("meta").put(next, IMPORT_KEY);
   }

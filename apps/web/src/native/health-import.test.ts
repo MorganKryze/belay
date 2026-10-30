@@ -324,6 +324,17 @@ describe("the history", () => {
     expect((await readHealth(db)).imported).toMatchObject({ anchor: "H1", historyDone: true });
   });
 
+  it("a history asked without the permission still says so after its read and the ones that follow", async () => {
+    await askImportHistory(db, true);
+    await read([{ startedAt: march(4), kg: 81.6 }], "H1", NOW);
+    expect((await readHealth(db)).imported).toMatchObject({
+      historyDone: true,
+      historyWindowed: true,
+    });
+    await read([{ startedAt: at(7, 5), kg: 80.4 }], "H2", NOW);
+    expect((await readHealth(db)).imported).toMatchObject({ anchor: "H2", historyWindowed: true });
+  });
+
   it("a read that finds only a reading waiting for its day still marks the history done", async () => {
     await askImportHistory(db);
     const tomorrow = { startedAt: new Date(2026, 9, 27, 7).getTime(), kg: 79.8 };

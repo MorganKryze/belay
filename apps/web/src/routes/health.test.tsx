@@ -21,19 +21,34 @@ vi.mock("@/native/plugin", () => ({ BelayNative: native }));
 vi.mock("@/native/rest-alert", () => ({ NativeRestAlert: () => null }));
 
 import {
+  askImportHistory,
+  type HealthHistoryAccess,
   healthProgress,
+  HISTORY_SINCE,
   markHistorySent,
   readHealth,
   setHealthOn,
   setHealthRunner,
   setImportOn,
 } from "../native/health";
+import { importWeighings } from "../native/health-import";
 
 type Access = "allowed" | "denied" | "undetermined";
-const status = (workouts: Access, weighings: Access, available = true) => ({
+type Answer = {
+  available: boolean;
+  workouts: Access;
+  weighings: Access;
+  history?: HealthHistoryAccess;
+};
+const status = (workouts: Access, weighings: Access, available = true): Answer => ({
   available,
   workouts,
   weighings,
+});
+// Android's status, which also says whether older weigh-ins can be read.
+const withHistory = (history: HealthHistoryAccess): Answer => ({
+  ...status("allowed", "allowed"),
+  history,
 });
 const ORIGIN = "https://belay.example.org";
 const IDLE = { sending: null, pending: 0 };
@@ -65,14 +80,14 @@ afterEach(async () => {
 // The iPhone app signed in to its instance: requests go to the stored address, answered by the
 // same stand-in server as in a browser. `answers` is what each `health` call resolves with, in
 // turn; the last one stays.
-function onIPhone(...answers: ReturnType<typeof status>[]) {
+function onIPhone(...answers: Answer[]) {
   onPhone("ios", answers);
 }
 // The same on Android: the page then names Health Connect and the phone.
-function onAndroid(...answers: ReturnType<typeof status>[]) {
+function onAndroid(...answers: Answer[]) {
   onPhone("android", answers);
 }
-function onPhone(platform: "ios" | "android", answers: ReturnType<typeof status>[]) {
+function onPhone(platform: "ios" | "android", answers: Answer[]) {
   (globalThis as { Capacitor?: unknown }).Capacitor = {
     isNativePlatform: () => true,
     getPlatform: () => platform,
@@ -89,17 +104,51 @@ const calls = (op: string) =>
   native.health.mock.calls.filter(([r]) => (r as { op: string }).op === op);
 const mainSwitch = () => screen.findByRole("switch", { name: /^Séances et pesées/ });
 const importSwitch = () => screen.findByRole("switch", { name: /^Importer les pesées/ });
-const settingsNow = async () => {
+const stateNow = async () => {
   const db = await openAccountDb(ADA.id);
-  const { settings } = await readHealth(db);
+  const state = await readHealth(db);
   db.close();
-  return settings;
+  return state;
 };
+const settingsNow = async () => (await stateNow()).settings;
 async function turnedOn() {
   const db = await openAccountDb(ADA.id);
   await setHealthOn(db, true, Date.now());
   db.close();
 }
+async function importTurnedOn(at = Date.now()) {
+  await turnedOn();
+  const db = await openAccountDb(ADA.id);
+  await setImportOn(db, false, at);
+  await setImportOn(db, true, at);
+  db.close();
+}
+async function historyAsked(windowed = false) {
+  await importTurnedOn();
+  const db = await openAccountDb(ADA.id);
+  await askImportHistory(db, windowed);
+  db.close();
+}
+// The read the shell runs after a landed sync, finding nothing new.
+async function historyRead() {
+  const db = await openAccountDb(ADA.id);
+  await importWeighings(db, [], "H1", new Date(), {
+    anchor: null,
+    since: HISTORY_SINCE,
+  });
+  db.close();
+}
+async function historyDone(windowed = false) {
+  await historyAsked(windowed);
+  await historyRead();
+}
+const fromHealth = () => screen.findByRole("region", { name: "Depuis Santé" });
+const fromConnect = () => screen.findByRole("region", { name: "Depuis Santé Connect" });
+const syncStarted = () => waitFor(() => expect(api.requests.length).toBeGreaterThan(0));
+// The shell's refresh after a read: here the page comes back to the foreground, which the state's
+// query follows.
+const backInForeground = () =>
+  act(() => void document.dispatchEvent(new Event("visibilitychange", { bubbles: true })));
 
 describe("Réglages › Apple Santé, where it shows", () => {
   it("in a browser Réglages has no Sur cet iPhone group and the page is not found", async () => {
@@ -369,6 +418,127 @@ describe("Réglages › Apple Santé, weigh-ins from Health", () => {
   });
 });
 
+describe("Réglages › Apple Santé, the weigh-in history", () => {
+  it("the import switch says it takes weigh-ins dated from the day it is turned on", async () => {
+    onIPhone(status("allowed", "allowed"));
+    await turnedOn();
+    renderRoute("/settings/health");
+    expect((await importSwitch()).textContent).toContain(
+      "Celles d’une balance connectée ou saisies dans Santé, datées du jour de l’activation ou après",
+    );
+  });
+
+  it("the consent sheet says today or later and that older ones come from this page", async () => {
+    onIPhone(status("allowed", "allowed"));
+    await turnedOn();
+    renderRoute("/settings/health");
+    fireEvent.click(await importSwitch());
+    const sheet = await screen.findByRole("dialog");
+    expect(sheet.textContent).toContain(
+      "Les pesées que Santé reçoit d’autres apps et appareils, datées d’aujourd’hui ou après, seront ajoutées à Belay et synchronisées avec belay.example.org.",
+    );
+    expect(sheet.textContent).toContain(
+      "Tes pesées plus anciennes pourront ensuite être importées depuis cette page.",
+    );
+  });
+
+  it("with the import on, « Importer l’historique de Santé » names the import's day", async () => {
+    onIPhone(status("allowed", "allowed"));
+    await importTurnedOn(new Date(new Date().getFullYear(), 0, 15, 9).getTime());
+    renderRoute("/settings/health");
+    const action = await screen.findByRole("button", { name: /^Importer l’historique de Santé/ });
+    expect((await fromHealth()).contains(action)).toBe(true);
+    expect(action.textContent).toContain(
+      "Tes pesées datées d’avant le 15 janvier. Une pesée déjà dans Belay n’est jamais remplacée.",
+    );
+    cleanup();
+    await importTurnedOn(new Date(2025, 9, 29, 9).getTime());
+    renderRoute("/settings/health");
+    expect(
+      (await screen.findByRole("button", { name: /^Importer l’historique de Santé/ })).textContent,
+    ).toContain("Tes pesées datées d’avant le 29 octobre 2025.");
+  });
+
+  it("the import off offers no history", async () => {
+    onIPhone(status("allowed", "allowed"));
+    await turnedOn();
+    renderRoute("/settings/health");
+    await importSwitch();
+    expect(screen.queryByRole("button", { name: /^Importer l’historique/ })).toBeNull();
+  });
+
+  it("tapping it asks the history, starts a sync, and shows « Import de l’historique… »", async () => {
+    onIPhone(status("allowed", "allowed"));
+    await importTurnedOn();
+    renderRoute("/settings/health");
+    const action = await screen.findByRole("button", { name: /^Importer l’historique de Santé/ });
+    await syncStarted();
+    const before = api.requests.length;
+    fireEvent.click(action);
+    await waitFor(async () => expect((await settingsNow()).importSince).toBe(HISTORY_SINCE));
+    const from = await fromHealth();
+    await within(from).findByText("Import de l’historique…");
+    expect(
+      within(within(from).getByRole("status")).getByText(/Import de l’historique/),
+    ).toBeTruthy();
+    expect(within(from).queryByRole("progressbar")).toBeNull();
+    expect(within(from).queryByRole("button")).toBeNull();
+    await waitFor(() => expect(api.requests.length).toBeGreaterThan(before));
+    expect(calls("authorize")).toHaveLength(0);
+    expect((await stateNow()).imported.historyWindowed).toBeUndefined();
+  });
+
+  it("a history asked and not done shows the running row when the page opens again", async () => {
+    onIPhone(status("allowed", "allowed"));
+    await historyAsked();
+    renderRoute("/settings/health");
+    const from = await fromHealth();
+    await within(from).findByText("Import de l’historique…");
+    expect(within(from).queryByRole("button")).toBeNull();
+  });
+
+  it("the same live region says the start and the end", async () => {
+    onIPhone(status("allowed", "allowed"));
+    await importTurnedOn();
+    renderRoute("/settings/health");
+    const action = await screen.findByRole("button", { name: /^Importer l’historique de Santé/ });
+    const live = within(await fromHealth()).getByRole("status");
+    expect(live.textContent).toBe("");
+    fireEvent.click(action);
+    await within(live).findByText("Import de l’historique…");
+    await historyRead();
+    backInForeground();
+    await within(live).findByText("Historique importé");
+  });
+
+  it("a done history shows « Historique importé » and no action", async () => {
+    onIPhone(status("allowed", "allowed"));
+    await historyDone();
+    renderRoute("/settings/health");
+    const from = await fromHealth();
+    await within(from).findByText("Historique importé");
+    expect(within(from).queryByRole("button")).toBeNull();
+    expect(within(from).queryByText(/Santé Connect/)).toBeNull();
+  });
+
+  it("turned off and on, the action is offered again", async () => {
+    onIPhone(status("allowed", "allowed"));
+    await historyDone();
+    renderRoute("/settings/health");
+    await screen.findByText("Historique importé");
+    fireEvent.click(await importSwitch());
+    await waitFor(async () => expect((await settingsNow()).importOn).toBe(false));
+    await waitFor(() => expect(screen.queryByText("Historique importé")).toBeNull());
+    fireEvent.click(await importSwitch());
+    const sheet = await screen.findByRole("dialog");
+    fireEvent.click(within(sheet).getByRole("button", { name: "Importer" }));
+    expect(
+      await screen.findByRole("button", { name: /^Importer l’historique de Santé/ }),
+    ).toBeTruthy();
+    expect(screen.queryByText("Historique importé")).toBeNull();
+  });
+});
+
 describe("Réglages › Santé Connect, on Android", () => {
   it("on Android Settings says Sur ce téléphone", async () => {
     onAndroid(status("undetermined", "undetermined"));
@@ -461,7 +631,10 @@ describe("Réglages › Santé Connect, on Android", () => {
     });
     expect(within(sheet).getByText("belay.example.org").tagName).toBe("STRONG");
     expect(sheet.textContent).toContain(
-      "Les pesées que Santé Connect reçoit d’autres apps et appareils seront ajoutées à Belay et synchronisées avec belay.example.org.",
+      "Les pesées que Santé Connect reçoit d’autres apps et appareils, datées d’aujourd’hui ou après, seront ajoutées à Belay et synchronisées avec belay.example.org.",
+    );
+    expect(sheet.textContent).toContain(
+      "Tes pesées plus anciennes pourront ensuite être importées depuis cette page.",
     );
   });
 
@@ -482,5 +655,177 @@ describe("Réglages › Santé Connect, on Android", () => {
     expect(await screen.findByRole("region", { name: "Vers Santé" })).toBeTruthy();
     await screen.findByText("À jour avec Santé");
     expect(screen.queryByText(/Santé Connect/)).toBeNull();
+  });
+});
+
+describe("Réglages › Santé Connect, the weigh-in history", () => {
+  // Health Connect's screen stays open until the test answers it.
+  function permissionScreen(before: Answer) {
+    onAndroid(before);
+    let now = before;
+    let answer: (after: Answer) => void = () => {};
+    native.health.mockImplementation(async ({ op }: { op: string }) =>
+      op === "authorize"
+        ? new Promise<Answer>((resolve) => {
+            answer = resolve;
+          })
+        : now,
+    );
+    return (after: Answer) =>
+      act(async () => {
+        now = after;
+        answer(after);
+      });
+  }
+  const older = () => screen.findByRole("button", { name: /^Importer les plus anciennes/ });
+
+  it("the action names Santé Connect, and an undetermined history opens the permission first, then imports whatever the answer", async () => {
+    const answer = permissionScreen(withHistory("undetermined"));
+    await importTurnedOn();
+    renderRoute("/settings/health");
+    const action = await screen.findByRole("button", {
+      name: /^Importer l’historique de Santé Connect/,
+    });
+    await syncStarted();
+    const before = api.requests.length;
+    fireEvent.click(action);
+    await waitFor(() =>
+      expect(calls("authorize")).toEqual([[{ op: "authorize", scope: "history" }]]),
+    );
+    expect((await settingsNow()).importSince).not.toBe(HISTORY_SINCE);
+    await answer(withHistory("denied"));
+    await waitFor(async () => expect((await settingsNow()).importSince).toBe(HISTORY_SINCE));
+    expect((await stateNow()).imported.historyWindowed).toBe(true);
+    await within(await fromConnect()).findByText("Import de l’historique…");
+    await waitFor(() => expect(api.requests.length).toBeGreaterThan(before));
+  });
+
+  it("allowed on the permission screen, the history is read whole and the done row knows it", async () => {
+    const answer = permissionScreen(withHistory("undetermined"));
+    await importTurnedOn();
+    renderRoute("/settings/health");
+    fireEvent.click(await screen.findByRole("button", { name: /^Importer l’historique/ }));
+    await waitFor(() => expect(calls("authorize")).toHaveLength(1));
+    await answer(withHistory("allowed"));
+    await waitFor(async () => expect((await settingsNow()).importSince).toBe(HISTORY_SINCE));
+    expect((await stateNow()).imported.historyWindowed).toBeUndefined();
+    await historyRead();
+    backInForeground();
+    const from = await fromConnect();
+    await within(from).findByText("Historique importé");
+    expect(within(from).queryByRole("button")).toBeNull();
+  });
+
+  it("a denied history asks again at the tap", async () => {
+    onAndroid(withHistory("denied"));
+    await importTurnedOn();
+    renderRoute("/settings/health");
+    fireEvent.click(await screen.findByRole("button", { name: /^Importer l’historique/ }));
+    await waitFor(() => expect(calls("authorize")).toHaveLength(1));
+  });
+
+  it("where Health Connect does not offer the permission, the tap reads without asking", async () => {
+    onAndroid(withHistory("unavailable"));
+    await importTurnedOn();
+    renderRoute("/settings/health");
+    fireEvent.click(await screen.findByRole("button", { name: /^Importer l’historique/ }));
+    await waitFor(async () => expect((await settingsNow()).importSince).toBe(HISTORY_SINCE));
+    expect(calls("authorize")).toHaveLength(0);
+    expect((await stateNow()).imported.historyWindowed).toBe(true);
+  });
+
+  it("a permission call the phone rejects starts nothing and leaves the action", async () => {
+    onAndroid(withHistory("undetermined"));
+    await importTurnedOn();
+    renderRoute("/settings/health");
+    const action = await screen.findByRole("button", { name: /^Importer l’historique/ });
+    native.health.mockRejectedValueOnce(new Error("health unavailable"));
+    fireEvent.click(action);
+    await waitFor(() => expect(calls("authorize")).toHaveLength(1));
+    await act(async () => {});
+    expect((await settingsNow()).importSince).not.toBe(HISTORY_SINCE);
+    expect(action.isConnected).toBe(true);
+  });
+
+  it("done with the history unavailable: the 30-day sentence and the version sentence, no action", async () => {
+    onAndroid(withHistory("unavailable"));
+    await historyDone(true);
+    renderRoute("/settings/health");
+    const from = await fromConnect();
+    await within(from).findByText("Historique importé");
+    expect(
+      within(from).getByText(
+        "Santé Connect ne donne que les pesées des 30 jours avant ta première autorisation. Cette version de Santé Connect ne donne pas les plus anciennes.",
+      ),
+    ).toBeTruthy();
+    expect(within(from).queryByRole("button")).toBeNull();
+  });
+
+  it("done with the history undetermined: « Importer les plus anciennes » says Health Connect will ask", async () => {
+    onAndroid(withHistory("undetermined"));
+    await historyDone(true);
+    renderRoute("/settings/health");
+    const from = await fromConnect();
+    expect(
+      await within(from).findByText(
+        "Santé Connect ne donne que les pesées des 30 jours avant ta première autorisation.",
+      ),
+    ).toBeTruthy();
+    expect((await older()).textContent).toContain(
+      "Santé Connect te demande d’autoriser l’accès à l’historique.",
+    );
+  });
+
+  it("done with the history denied: « Importer les plus anciennes » with the settings path, which asks and reads again", async () => {
+    const answer = permissionScreen(withHistory("denied"));
+    await historyDone(true);
+    renderRoute("/settings/health");
+    const action = await older();
+    expect(action.textContent).toContain(
+      "Autorise l’historique dans les réglages de Santé Connect › Autorisations des applications › Belay, puis touche ici.",
+    );
+    await syncStarted();
+    const before = api.requests.length;
+    fireEvent.click(action);
+    await waitFor(() =>
+      expect(calls("authorize")).toEqual([[{ op: "authorize", scope: "history" }]]),
+    );
+    await answer(withHistory("allowed"));
+    await within(await fromConnect()).findByText("Import de l’historique…");
+    const { imported } = await stateNow();
+    expect(imported.historyDone).toBe(false);
+    expect(imported.historyWindowed).toBeUndefined();
+    await waitFor(() => expect(api.requests.length).toBeGreaterThan(before));
+  });
+
+  it("done with the history allowed: no window sentence", async () => {
+    onAndroid(withHistory("allowed"));
+    await historyDone();
+    renderRoute("/settings/health");
+    const from = await fromConnect();
+    await within(from).findByText("Historique importé");
+    expect(within(from).queryByText(/30 jours/)).toBeNull();
+    expect(within(from).queryByRole("button")).toBeNull();
+  });
+
+  it("allowed in the settings after a refusal: the action stays, reads again without asking", async () => {
+    onAndroid(withHistory("allowed"));
+    await historyDone(true);
+    renderRoute("/settings/health");
+    const from = await fromConnect();
+    await within(from).findByText("Historique importé");
+    expect(within(from).queryByText(/30 jours/)).toBeNull();
+    const action = await older();
+    expect(action.textContent).toBe("Importer les plus anciennes");
+    await syncStarted();
+    const before = api.requests.length;
+    fireEvent.click(action);
+    await within(from).findByText("Import de l’historique…");
+    const { settings, imported } = await stateNow();
+    expect(settings.importSince).toBe(HISTORY_SINCE);
+    expect(imported.historyDone).toBe(false);
+    expect(imported.historyWindowed).toBeUndefined();
+    expect(calls("authorize")).toHaveLength(0);
+    await waitFor(() => expect(api.requests.length).toBeGreaterThan(before));
   });
 });

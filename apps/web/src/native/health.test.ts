@@ -160,6 +160,24 @@ describe("the history of the import", () => {
     expect((await readHealth(db)).imported).toEqual({ anchor: null, filled, historyDone: false });
   });
 
+  it("a history asked without the permission says so with the ask; a new ask or a new start clears it", async () => {
+    await importOn();
+    await db.put("meta", { anchor: "A1", filled, historyDone: true }, IMPORT_KEY);
+    await askImportHistory(db, true);
+    expect((await readHealth(db)).imported).toEqual({
+      anchor: null,
+      filled,
+      historyDone: false,
+      historyWindowed: true,
+    });
+    await askImportHistory(db);
+    expect((await readHealth(db)).imported).toEqual({ anchor: null, filled, historyDone: false });
+    await askImportHistory(db, true);
+    await setImportOn(db, false, NOW);
+    await setImportOn(db, true, NOW);
+    expect((await readHealth(db)).imported).toEqual({ anchor: null, filled, historyDone: false });
+  });
+
   it("the history is not asked while the import is off", async () => {
     await setHealthOn(db, true, NOW);
     const stored = { anchor: "A1", filled };

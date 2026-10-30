@@ -79,6 +79,9 @@ export type HealthImport = {
   filled: Record<string, { at: string; startedAt: number }>;
   // The read from HISTORY_SINCE went through since the history was asked.
   historyDone?: boolean;
+  // The history was asked on Android without the permission for what is older than Health
+  // Connect's window, so its read left those weigh-ins out even if the permission comes later.
+  historyWindowed?: boolean;
 };
 export type ImportHistory = "none" | "offered" | "importing" | "done";
 export type HealthState = {
@@ -126,22 +129,24 @@ export function importHistory(settings: HealthSettings, imported: HealthImport):
 
 // The settings as they become, read and written in one transaction so two writers never cross.
 // A new start for the import reads Health again from its own day, not from the last anchor, and
-// the history it held is over; the days it filled stay its own. An import already running keeps
-// its place.
+// the history it held is over; the days it filled stay its own, and nothing else of it does. An
+// import already running keeps its place.
 async function changeSettings(
   db: AccountDb,
   change: (s: HealthSettings) => HealthSettings,
   startsOver: (current: HealthSettings, next: HealthSettings) => boolean = (current, next) =>
     next.importOn && !current.importOn,
+  windowed = false,
 ): Promise<HealthSettings> {
   const tx = db.transaction("meta", "readwrite");
   const current = ((await tx.store.get(SETTINGS_KEY)) as HealthSettings | undefined) ?? HEALTH_OFF;
   const next = change(current);
   await tx.store.put(next, SETTINGS_KEY);
   if (startsOver(current, next)) {
-    const imported =
+    const { filled } =
       ((await tx.store.get(IMPORT_KEY)) as HealthImport | undefined) ?? NOTHING_IMPORTED;
-    await tx.store.put({ ...imported, anchor: null, historyDone: false }, IMPORT_KEY);
+    const start: HealthImport = { anchor: null, filled, historyDone: false };
+    await tx.store.put(windowed ? { ...start, historyWindowed: true } : start, IMPORT_KEY);
   }
   await tx.done;
   return next;
@@ -173,8 +178,13 @@ export const setImportOn = (db: AccountDb, on: boolean, now: number) =>
 // Health is read whole from the floor at the next landed sync, each time this is asked: the place
 // in Health and the floor change together, so a read begun from any other place takes nothing.
 const importing = (s: HealthSettings) => s.on && s.importOn;
-export const askImportHistory = (db: AccountDb) =>
-  changeSettings(db, (s) => (importing(s) ? { ...s, importSince: HISTORY_SINCE } : s), importing);
+export const askImportHistory = (db: AccountDb, windowed = false) =>
+  changeSettings(
+    db,
+    (s) => (importing(s) ? { ...s, importSince: HISTORY_SINCE } : s),
+    importing,
+    windowed,
+  );
 
 export const setHistory = (db: AccountDb, history: HealthSettings["history"]) =>
   changeSettings(db, (s) => (s.on ? { ...s, history } : s));
