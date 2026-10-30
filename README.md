@@ -155,7 +155,9 @@ With **Settings › Apple Health** on, the app adds each finished session and
 each weigh-in to the iPhone's Health app; it is off until you turn it on, and
 the browser never has it. You can also import the weigh-ins Health receives
 from a connected scale or another app: after a sheet that names your
-instance, they sync to it like weigh-ins you typed. The details are in
+instance, they sync to it like weigh-ins you typed. The import takes weigh-ins
+dated from the day you turn it on, and **Import history from Health** brings the
+older ones once, under the same rules. The details are in
 [`apps/mobile/README.md`](apps/mobile/README.md#apple-health).
 
 The Android app is the same on its own phone: while a session is open, an
@@ -163,8 +165,10 @@ ongoing notification (a Live Update on Android 16) shows the exercise, the set
 and the timers, drawn from what the app already holds, and the end of a rest
 rings on time with the app closed. With **Settings › Health Connect** on, it
 adds each finished session and each weigh-in to Health Connect and can import
-weigh-ins like the iPhone app, under the same rules. Android v1 is tested on
-the emulator only; the details are in
+weigh-ins like the iPhone app, under the same rules. Its history action asks for
+Health Connect's history permission where the phone offers it; otherwise Health
+Connect gives nothing older than 30 days before you first allowed Belay. Android
+v1 is tested on the emulator only; the details are in
 [`apps/mobile/README.md`](apps/mobile/README.md#belay-for-android).
 
 ## Threat model
