@@ -33,6 +33,12 @@ class HealthRulesTest {
         assertEquals(mapOf("asked.import" to "1"), asked.values)
     }
 
+    @Test fun `asking the history marks it asked after the launch`() {
+        val asked = MapStore()
+        HealthRules.launchAsking(asked, "history") { assertTrue(asked.values.isEmpty()) }
+        assertEquals(mapOf("asked.history" to "1"), asked.values)
+    }
+
     @Test fun `a screen that never launched leaves the scope unasked`() {
         val asked = MapStore()
         assertThrows(IllegalStateException::class.java) {
@@ -115,7 +121,28 @@ class HealthRulesTest {
             "android.permission.health.WRITE_WEIGHT",
             "android.permission.health.READ_EXERCISE",
         )
-        assertEquals(write, HealthRules.requested("write"))
-        assertEquals(write + "android.permission.health.READ_WEIGHT", HealthRules.requested("import"))
+        for (offered in listOf(true, false)) {
+            assertEquals(write, HealthRules.requested("write", offered))
+            assertEquals(write + "android.permission.health.READ_WEIGHT", HealthRules.requested("import", offered))
+        }
     }
+
+    @Test fun `history asks the import's permissions and the write set, plus history when offered`() =
+        assertEquals(
+            HealthRules.requested("import", true) + "android.permission.health.READ_HEALTH_DATA_HISTORY",
+            HealthRules.requested("history", true),
+        )
+
+    @Test fun `history not offered asks no history permission`() =
+        assertEquals(HealthRules.requested("import", false), HealthRules.requested("history", false))
+
+    @Test fun `the history access reads unavailable, allowed, denied, undetermined`() {
+        assertEquals("unavailable", HealthRules.historyAccess(offered = false, granted = true, asked = true))
+        assertEquals("allowed", HealthRules.historyAccess(offered = true, granted = true, asked = false))
+        assertEquals("denied", HealthRules.historyAccess(offered = true, granted = false, asked = true))
+        assertEquals("undetermined", HealthRules.historyAccess(offered = true, granted = false, asked = false))
+    }
+
+    @Test fun `the history access values are the page's`() =
+        assertEquals(setOf("allowed", "denied", "undetermined", "unavailable"), HealthRules.HISTORY_ACCESS)
 }
