@@ -978,7 +978,7 @@
     "history": "Envoyer l’historique à Santé",
     "history_android": "Envoyer l’historique à Santé Connect",
     "historySub": "Tes {{sessions}} et {{weighings}} d’avant l’activation. Rien n’est envoyé en double.",
-    "historySubOne_one": "Ta {{what}} d’avant l’activation. Rien n’est envoyé en double.",
+    "historySubOne_one": "{{what}} d’avant l’activation. Rien n’est envoyé en double.",
     "historySubOne_other": "Tes {{what}} d’avant l’activation. Rien n’est envoyé en double.",
     "sessions_one": "{{count}} séance",
     "sessions_other": "{{count}} séances",

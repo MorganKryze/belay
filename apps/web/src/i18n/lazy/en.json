@@ -978,7 +978,7 @@
     "history": "Send history to Health",
     "history_android": "Send history to Health Connect",
     "historySub": "Your {{sessions}} and {{weighings}} from before you turned this on. Nothing is sent twice.",
-    "historySubOne_one": "Your {{what}} from before you turned this on. Nothing is sent twice.",
+    "historySubOne_one": "{{what}} from before you turned this on. Nothing is sent twice.",
     "historySubOne_other": "Your {{what}} from before you turned this on. Nothing is sent twice.",
     "sessions_one": "{{count}} session",
     "sessions_other": "{{count}} sessions",

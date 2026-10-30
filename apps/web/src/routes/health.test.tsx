@@ -316,8 +316,41 @@ describe("Réglages › Apple Santé, what goes to Health", () => {
     await turnedOn();
     renderRoute("/settings/health");
     const offer = await screen.findByRole("button", { name: /Envoyer l’historique à Santé/ });
+    expect(
+      within(offer).getByText("1 pesée d’avant l’activation. Rien n’est envoyé en double."),
+    ).toBeTruthy();
+  });
+
+  it("the offer speaks of nothing when there is nothing to send, and stays", async () => {
+    onIPhone(status("allowed", "allowed"));
+    await turnedOn();
+    renderRoute("/settings/health");
+    const offer = await screen.findByRole("button", { name: /Envoyer l’historique à Santé/ });
+    expect(offer.textContent).toBe("Envoyer l’historique à Santé");
+  });
+
+  it("the offer counts the sessions alone when no weigh-in is left to send", async () => {
+    onIPhone(status("allowed", "allowed"));
+    await seed(ADA.id, [
+      ...session(1, "A", new Date(2026, 8, 3, 18), 58, [[0, 3, 100, 5, 2]]),
+      ...session(2, "B", new Date(2026, 8, 5, 18), 58, [[0, 3, 100, 5, 2]]),
+    ]);
+    await turnedOn();
+    renderRoute("/settings/health");
+    const offer = await screen.findByRole("button", { name: /Envoyer l’historique à Santé/ });
     expect(offer.textContent).toContain(
-      "Ta 1 pesée d’avant l’activation. Rien n’est envoyé en double.",
+      "Tes 2 séances d’avant l’activation. Rien n’est envoyé en double.",
+    );
+  });
+
+  it("the offer counts the weigh-ins alone when no session is left to send", async () => {
+    onIPhone(status("allowed", "allowed"));
+    await seed(ADA.id, [weight("2026-09-01", 80.2), weight("2026-09-02", 80)]);
+    await turnedOn();
+    renderRoute("/settings/health");
+    const offer = await screen.findByRole("button", { name: /Envoyer l’historique à Santé/ });
+    expect(offer.textContent).toContain(
+      "Tes 2 pesées d’avant l’activation. Rien n’est envoyé en double.",
     );
   });
 

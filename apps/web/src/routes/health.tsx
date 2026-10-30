@@ -494,6 +494,7 @@ function HistoryOffer({ account, onAsk }: { account: OpenAccount; onAsk: () => P
   if (!counts) return null;
   const sessions = t("health.sessions", { count: counts.sessions });
   const weighings = t("health.weighings", { count: counts.weighings });
+  const count = counts.sessions || counts.weighings;
   return (
     <RowButton
       icon={Send}
@@ -501,10 +502,9 @@ function HistoryOffer({ account, onAsk }: { account: OpenAccount; onAsk: () => P
       sub={
         counts.sessions && counts.weighings
           ? t("health.historySub", { sessions, weighings })
-          : t("health.historySubOne", {
-              what: counts.sessions ? sessions : weighings,
-              count: counts.sessions || counts.weighings,
-            })
+          : count > 0
+            ? t("health.historySubOne", { what: counts.sessions ? sessions : weighings, count })
+            : undefined
       }
       wrap
       className="text-primary"
