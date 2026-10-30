@@ -42,8 +42,8 @@ export function health(request: HealthRequest): Promise<unknown> {
 }
 
 // The earliest instant both native decoders accept (1899-12-31 UTC): read from there, Health gives
-// every weigh-in from Belay's first day, 1900-01-01, in any time zone. A fixed instant, so the stored
-// value compares equal wherever the phone is.
+// every weigh-in from Belay's first day, 1900-01-01, in any time zone. A fixed instant, so the
+// stored value compares equal wherever the phone is.
 export const HISTORY_SINCE = Date.UTC(1899, 11, 31); // -2_209_075_200_000
 
 // Both switches, when the first one was last turned on, and where « Envoyer l’historique » stands:
@@ -69,7 +69,8 @@ export type Written =
 export type HealthImport = {
   anchor: string | null;
   filled: Record<string, { at: string; startedAt: number }>;
-  historyDone?: boolean; // the read from HISTORY_SINCE went through since the history was asked
+  // The read from HISTORY_SINCE went through since the history was asked.
+  historyDone?: boolean;
 };
 export type ImportHistory = "none" | "offered" | "importing" | "done";
 export type HealthState = {
@@ -116,8 +117,9 @@ export function importHistory(settings: HealthSettings, imported: HealthImport):
 }
 
 // The settings as they become, read and written in one transaction so two writers never cross.
-// A new start for the import reads Health again from its own day, not from the last anchor, and the
-// history it held is over; the days it filled stay its own. An import already running keeps its place.
+// A new start for the import reads Health again from its own day, not from the last anchor, and
+// the history it held is over; the days it filled stay its own. An import already running keeps
+// its place.
 async function changeSettings(
   db: AccountDb,
   change: (s: HealthSettings) => HealthSettings,
