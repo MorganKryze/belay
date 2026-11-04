@@ -3,7 +3,7 @@
 # The build stage runs on the builder's own architecture: the esbuild bundle and the
 # vite dist are the same for every target, and the final stage has no RUN, so a
 # multi-arch build never emulates the install or the build.
-FROM --platform=$BUILDPLATFORM mirror.gcr.io/library/node:24-alpine@sha256:ebfe2f90462722a7a4de65e91990e97fe0d401c70e0e762c5b53302f905ec1c1 AS build
+FROM --platform=$BUILDPLATFORM mirror.gcr.io/library/node:24-alpine@sha256:8a32c8cf649a49915a66e81e7a609223c708d0adabf288ee3f4077d765542f85 AS build
 WORKDIR /src
 # ponytail: pnpm is fetched without an integrity hash (no +sha512 in packageManager).
 # Node 25+ drops corepack: a base bump to a newer major must switch to a pinned
@@ -21,7 +21,7 @@ ARG BELAY_VERSION=dev
 RUN BELAY_VERSION=$BELAY_VERSION pnpm --filter @belay/web build && pnpm --filter @belay/server build
 
 # The server is one esbuild bundle: no node_modules in the final image.
-FROM mirror.gcr.io/library/node:24-alpine@sha256:ebfe2f90462722a7a4de65e91990e97fe0d401c70e0e762c5b53302f905ec1c1
+FROM mirror.gcr.io/library/node:24-alpine@sha256:8a32c8cf649a49915a66e81e7a609223c708d0adabf288ee3f4077d765542f85
 WORKDIR /app
 ENV NODE_ENV=production PORT=3000 WEB_DIST=public MIGRATIONS_DIR=drizzle
 COPY --from=build /src/apps/server/dist/main.js ./main.js
