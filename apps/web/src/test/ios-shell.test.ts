@@ -1,6 +1,6 @@
 // What the iPhone and iPad shell must keep so the page behaves as it does in the browser: the
 // system's own look, the device families, the launch screen and the rubber-band at the page's ends.
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
@@ -71,6 +71,32 @@ describe("the iOS shell", () => {
     expect(start).toBeGreaterThan(-1);
     expect(source.slice(start, source.indexOf("\n    }", start))).toContain(
       "webView?.scrollView.bounces = true",
+    );
+  });
+
+  // The edge swipe is the web view's own back gesture: off as the shell starts, and turned on or
+  // off only by the page, which alone knows whether a pushed page is on top.
+  it("leaves the edge swipe off until the page turns it on", () => {
+    const sources = readdirSync(join(mobile, "ios/App/App"))
+      .filter((f) => f.endsWith(".swift"))
+      .map((f) => swift(`App/${f}`));
+    const native = swift("App/BelayNative.swift");
+    const assigned = sources.flatMap((s) => [
+      ...s.matchAll(/allowsBackForwardNavigationGestures\s*=\s*([^\n]+)/g),
+    ]);
+    expect(assigned.map((m) => m[1]!.trim())).toEqual(["enabled"]);
+    expect(native).not.toMatch(/allowsBackForwardNavigationGestures\s*=\s*true/);
+    const start = native.indexOf("@objc func setSwipeBack(_ call: CAPPluginCall)");
+    expect(start).toBeGreaterThan(-1);
+    const method = native.slice(start, native.indexOf("\n    }", start));
+    expect(method).toContain("allowsBackForwardNavigationGestures = enabled");
+    expect(method).toContain("bridge?.webView");
+    expect(method).toContain("DispatchQueue.main.async");
+    expect(method).toMatch(
+      /guard let enabled = call\.getBool\("enabled"\) else \{\s*return call\.reject\(/,
+    );
+    expect(native).toContain(
+      'CAPPluginMethod(name: "setSwipeBack", returnType: CAPPluginReturnPromise)',
     );
   });
 

@@ -113,12 +113,20 @@ describe("the Android shell", () => {
     }
   });
 
-  it("the plugin answers to BelayNative with the page's six methods", () => {
+  it("the plugin answers to BelayNative with the page's seven methods", () => {
     const source = kotlin("BelayNativePlugin.kt");
     expect(source).toContain('@CapacitorPlugin(name = "BelayNative")');
     const methods = [...source.matchAll(/@PluginMethod\s+fun (\w+)\(/g)].map((m) => m[1]!).sort();
-    expect(pageMethods()).toHaveLength(6);
+    expect(pageMethods()).toHaveLength(7);
     expect(methods).toEqual(pageMethods());
+  });
+
+  // The edge swipe is the iPhone's; Android's Back asks the page by its own path, so the call
+  // only answers, should it ever arrive.
+  it("answers the iPhone's edge swipe call and does nothing with it", () => {
+    expect(kotlin("BelayNativePlugin.kt").replace(/\s+/g, " ")).toContain(
+      "@PluginMethod fun setSwipeBack(call: PluginCall) = call.resolve()",
+    );
   });
 
   // Android would zoom the page's text by the font scale on its own, and the page scales it again

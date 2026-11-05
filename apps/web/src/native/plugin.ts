@@ -15,6 +15,8 @@ export interface BelayNativePlugin {
   setLiveActivity(o: { activity: LiveActivity | null }): Promise<void>;
   // Apple Health, one operation per call (native/health.ts types each answer).
   health(request: HealthRequest): Promise<unknown>;
+  // Turns the iPhone's edge swipe back on or off; Android answers and does nothing.
+  setSwipeBack(o: { enabled: boolean }): Promise<void>;
 }
 
 export const BelayNative = registerPlugin<BelayNativePlugin>("BelayNative");

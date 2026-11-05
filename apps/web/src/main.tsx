@@ -50,6 +50,11 @@ if (isNative()) {
     (m) => m.installBack(router),
     () => {},
   );
+  // The iPhone's edge swipe stays off until this lands.
+  void import("./native/swipe-back").then(
+    (m) => m.watchSwipeBack(router),
+    () => {},
+  );
   void import("./native/session")
     .then((m) => m.install())
     .catch(() => {})
