@@ -284,7 +284,7 @@ describe("the page's sign-in links and vibrations", () => {
   });
 });
 
-describe("Android's system bars and storage", () => {
+describe("the system bars and storage", () => {
   const onAndroid = () =>
     vi.stubGlobal("Capacitor", { isNativePlatform: () => true, getPlatform: () => "android" });
   const lastStyle = () => bars.setStyle.mock.calls.at(-1)?.[0].style;
@@ -316,13 +316,14 @@ describe("Android's system bars and storage", () => {
     await expect(install()).resolves.toBeUndefined();
   });
 
-  it("the iPhone does neither", async () => {
+  it("the iPhone sets its bar style as well, and asks for no storage", async () => {
     vi.stubGlobal("Capacitor", { isNativePlatform: () => true, getPlatform: () => "ios" });
+    document.documentElement.classList.add("dark");
     const { install } = await load();
     await install();
-    document.documentElement.classList.add("dark");
-    await new Promise((settle) => setTimeout(settle, 10));
-    expect(bars.setStyle).not.toHaveBeenCalled();
+    expect(lastStyle()).toBe("DARK");
+    document.documentElement.classList.remove("dark");
+    await vi.waitFor(() => expect(lastStyle()).toBe("LIGHT"));
     expect(persist).not.toHaveBeenCalled();
   });
 });

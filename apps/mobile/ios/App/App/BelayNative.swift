@@ -143,5 +143,8 @@ public class BelayNativePlugin: CAPPlugin, CAPBridgedPlugin, ASWebAuthentication
 class MainViewController: CAPBridgeViewController {
     override open func capacitorDidLoad() {
         bridge?.registerPluginInstance(BelayNativePlugin())
+        // The web view's own rubber-band, which Capacitor's default turns off, is what a page that
+        // reaches its end is expected to do on an iPhone.
+        webView?.scrollView.bounces = true
     }
 }

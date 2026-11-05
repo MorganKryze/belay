@@ -112,7 +112,10 @@ export async function install(): Promise<void> {
     { capture: true },
   );
 
-  if (nativePlatform() === "android") keepAndroidReadable();
+  followTheme();
+  // Android may clear a web view's storage when space runs low, the outbox included, unless the
+  // page asks to keep it. A refusal changes nothing the person can act on, so nothing waits.
+  if (nativePlatform() === "android") navigator.storage?.persist?.().catch(() => {});
   watchTextScale();
 
   // WebKit has no vibration API, so the rest's end would be silent in the hand: a success haptic
@@ -126,11 +129,10 @@ export async function install(): Promise<void> {
   });
 }
 
-// Android draws the page under its status and navigation bars, so their icons follow the theme:
-// light on the dark one, dark on the light one, at once and on every change of the `dark` class.
-// Android may also clear a web view's storage when space runs low, the outbox included, unless the
-// page asks to keep it. A refusal changes nothing the person can act on, so neither waits.
-function keepAndroidReadable(): void {
+// The page is drawn under the system bars, so their icons follow the theme: light on the dark
+// one, dark on the light one, at once and on every change of the `dark` class. A refusal changes
+// nothing the person can act on, so nothing waits.
+function followTheme(): void {
   const root = document.documentElement;
   const follow = () => {
     const style = root.classList.contains("dark") ? SystemBarsStyle.Dark : SystemBarsStyle.Light;
@@ -138,5 +140,4 @@ function keepAndroidReadable(): void {
   };
   follow();
   new MutationObserver(follow).observe(root, { attributes: true, attributeFilter: ["class"] });
-  navigator.storage?.persist?.().catch(() => {});
 }
