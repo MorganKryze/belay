@@ -1,6 +1,6 @@
 import { EXERCISES } from "@belay/shared/exercises/catalog";
 import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import i18n from "../i18n";
 import { renderRoute } from "../test/render-route";
 import { muscleColors, shapesOf, thumbnailOf, thumbnailSvg, thumbnailUrl } from "./body-map";
@@ -152,6 +152,23 @@ describe("the Exercises segment", () => {
     expect(rows.length).toBeGreaterThan(5);
     expect(rows.length).toBeLessThan(50);
     expect(rows[0]!.getAttribute("aria-setsize")).toBe("1291");
+  });
+
+  it("lays the rows out at the height they are drawn, so larger text does not overlap them", async () => {
+    // jsdom draws nothing: a row taller than 72 px stands for one at the phone's largest text.
+    const drawn = vi
+      .spyOn(HTMLAnchorElement.prototype, "getBoundingClientRect")
+      .mockReturnValue(new DOMRect(0, 0, 360, 96));
+    try {
+      await openLibrary();
+      const all = within(screen.getByRole("main")).getAllByRole("list")[1]!;
+      await waitFor(() => expect(all.style.height).toBe(`${1291 * 96}px`));
+      const rows = within(all).getAllByRole("listitem");
+      expect(rows[1]!.style.top).toBe("96px");
+      expect(rows[1]!.style.height).toBe("96px");
+    } finally {
+      drawn.mockRestore();
+    }
   });
 
   it("only the first row of a list draws no hairline", async () => {
