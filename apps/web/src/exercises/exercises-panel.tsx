@@ -273,23 +273,25 @@ function ChoiceSheet<T extends string>({
   );
 }
 
-const ROW = 72; // px, every row the same height: the list only renders what is on screen
+// px at the default text size. Every row is the same height, one line of name and one of muscle
+// and equipment, so the list only renders what is on screen; larger text makes them all taller.
+const ROW = 72;
 
 // The rows on screen, plus a few, from the list's top edge: below the fold, only the few.
-export function visibleRange(top: number, viewport: number, count: number) {
+export function visibleRange(top: number, viewport: number, count: number, row = ROW) {
   const overscan = 8;
-  const start = Math.min(count, Math.max(0, Math.floor(-top / ROW) - overscan));
-  const end = Math.min(count, Math.max(0, Math.ceil((viewport - top) / ROW)) + overscan);
+  const start = Math.min(count, Math.max(0, Math.floor(-top / row) - overscan));
+  const end = Math.min(count, Math.max(0, Math.ceil((viewport - top) / row)) + overscan);
   return { start, end: Math.max(start, end) };
 }
 
 // 1 290 rows would take seconds to lay out on a phone.
-function useVisibleRange(list: RefObject<HTMLElement | null>, count: number) {
+function useVisibleRange(list: RefObject<HTMLElement | null>, count: number, row: number) {
   const [range, setRange] = useState({ start: 0, end: Math.min(count, 24) });
   useLayoutEffect(() => {
     const update = () => {
       const top = list.current?.getBoundingClientRect().top ?? 0;
-      const { start, end } = visibleRange(top, window.innerHeight, count);
+      const { start, end } = visibleRange(top, window.innerHeight, count, row);
       setRange((r) => (r.start === start && r.end === end ? r : { start, end }));
     };
     update();
@@ -299,8 +301,25 @@ function useVisibleRange(list: RefObject<HTMLElement | null>, count: number) {
       window.removeEventListener("scroll", update);
       window.removeEventListener("resize", update);
     };
-  }, [list, count]);
+  }, [list, count, row]);
   return range;
+}
+
+// The height of a row as drawn: it follows the phone's text size, which the iPhone can change
+// while the list is open. The first row on screen stands for all of them.
+function useRowHeight(list: RefObject<HTMLElement | null>) {
+  const [row, setRow] = useState(ROW);
+  useLayoutEffect(() => {
+    const first = list.current?.querySelector("a");
+    if (!first) return;
+    const measure = () => setRow(first.getBoundingClientRect().height || ROW);
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const size = new ResizeObserver(measure);
+    size.observe(first);
+    return () => size.disconnect();
+  });
+  return row;
 }
 
 export function ExerciseList({
@@ -311,13 +330,14 @@ export function ExerciseList({
   sessions: Sessions;
 }) {
   const list = useRef<HTMLUListElement>(null);
-  const { start, end } = useVisibleRange(list, items.length);
+  const row = useRowHeight(list);
+  const { start, end } = useVisibleRange(list, items.length, row);
   return (
     // The height counts the rows only: in dark the card's border sits outside it, not over the last row.
     <ul
       ref={list}
       className={`relative box-content ${groupSurface}`}
-      style={{ height: items.length * ROW }}
+      style={{ height: items.length * row }}
     >
       {items.slice(start, end).map((e, i) => (
         <li
@@ -325,7 +345,7 @@ export function ExerciseList({
           aria-setsize={items.length}
           aria-posinset={start + i + 1}
           className="absolute inset-x-0"
-          style={{ top: (start + i) * ROW, height: ROW }}
+          style={{ top: (start + i) * row, height: row }}
         >
           <Row exercise={e} first={start + i === 0} sessions={sessions} />
         </li>
@@ -359,7 +379,7 @@ function Row({
     <Link
       to="/exercises/$exerciseId"
       params={{ exerciseId: e.id }}
-      className={`press-tint flex h-[72px] items-center gap-3 px-4 outline-ring focus-visible:outline-2 focus-visible:-outline-offset-2${first ? "" : " border-t border-border"}`}
+      className={`press-tint flex min-h-[72px] items-center gap-3 px-4 py-3 outline-ring focus-visible:outline-2 focus-visible:-outline-offset-2${first ? "" : " border-t border-border"}`}
     >
       <BodyThumb primary={e.primary[0]!} secondary={e.secondary} />
       <span className="flex min-w-0 flex-1 flex-col">

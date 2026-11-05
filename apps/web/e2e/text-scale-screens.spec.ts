@@ -200,3 +200,47 @@ for (const width of [360, 390]) {
     }
   }
 }
+
+// The exercise list in French, whose muscle and equipment words run longest: each row grows with
+// its name and line, so no text spills over the hairline of the row above or below it. A row keeps
+// one line of each, ending in an ellipsis: the list only renders what is on screen, which needs
+// every row the same height.
+test.describe("in French", () => {
+  test.use({ locale: "fr-FR" });
+
+  // Rows whose text sticks out of the row's own box, top or bottom.
+  const spilledRows = (page: Page) =>
+    page.evaluate(() =>
+      [...document.querySelectorAll<HTMLElement>("main li a")].flatMap((row) => {
+        const box = row.getBoundingClientRect();
+        return [...row.querySelectorAll<HTMLElement>("span")]
+          .filter((el) => [...el.childNodes].some((n) => n.nodeType === 3))
+          .filter((el) => {
+            const text = el.getBoundingClientRect();
+            return text.top < box.top - 0.5 || text.bottom > box.bottom + 0.5;
+          })
+          .map((el) => `"${el.textContent!.trim().slice(0, 40)}"`);
+      }),
+    );
+
+  for (const width of [360, 390]) {
+    for (const textScale of [2, 2.35]) {
+      test(`text scale x${textScale} at ${width} px holds the exercise list`, async ({ page }) => {
+        await asAndroid(page, { textScale });
+        await page.setViewportSize({ width, height: 800 });
+        await fakeServer(page, { changes: LAST_A });
+        await page.goto("/workouts?tab=exercises");
+        await expect(page.getByRole("heading", { name: "Dans ton programme" })).toBeVisible();
+        await expect(page.locator(".launch")).toBeHidden();
+        await settled(page);
+
+        expect(await spilledRows(page), "text out of its row").toEqual([]);
+        expect(await smallTargets(page), "small targets").toEqual([]);
+        expect(
+          await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+          "sideways scroll",
+        ).toBe(true);
+      });
+    }
+  }
+});
