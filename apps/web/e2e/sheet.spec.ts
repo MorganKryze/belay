@@ -596,3 +596,14 @@ test.describe("on a wide screen", () => {
     expect(await sheet.evaluate((el) => el.style.transform)).toBe("");
   });
 });
+
+test("a sheet scrolled past its end by the wheel leaves the page still", async ({ page }) => {
+  const sheet = await openIntake(page);
+  await expect(sheet).toBeVisible();
+  const scrolled = await sheet.evaluate((el) => getComputedStyle(el).overscrollBehaviorY);
+  expect(scrolled).toBe("contain");
+  const box = (await sheet.boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  for (let i = 0; i < 4; i++) await page.mouse.wheel(0, 600);
+  expect(await page.evaluate(() => scrollY)).toBe(0);
+});

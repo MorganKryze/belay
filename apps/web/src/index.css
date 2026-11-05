@@ -766,6 +766,30 @@ html:active-view-transition-type(cover, uncover)::view-transition-new(top-bar) {
     /* Pressed controls answer with their own scale or tint, not the browser's grey flash. */
     -webkit-tap-highlight-color: transparent;
   }
+  /* On a touch screen a long press on a row, a tab or a title would select it and raise the
+     system's copy callout over the app. Fields and reading prose keep their selection. */
+  @media (pointer: coarse) {
+    body {
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+    }
+    input,
+    textarea,
+    [contenteditable],
+    .select-text {
+      -webkit-user-select: text;
+      user-select: text;
+      -webkit-touch-callout: default;
+    }
+  }
+  /* A sheet or a menu scrolled to its end must not hand the rest of the swipe to the page. */
+  [role="dialog"],
+  [role="alertdialog"],
+  [role="menu"],
+  [role="listbox"] {
+    overscroll-behavior: contain;
+  }
 }
 
 /* After a tap, a control given the focus back by a closing menu or sheet draws no ring
