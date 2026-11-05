@@ -43,9 +43,14 @@ function render() {
 // On the phone the session token is read once, before the first request asks for it. If that
 // fails the app opens signed out rather than staying on its launch screen. A promise rather than a
 // top-level await: with one, the build preloads lazy pages at startup (13 kB more, measured).
-if (isNative())
+if (isNative()) {
+  // Android's Back asks the page first; until this lands it hears nothing and goes back as before.
+  void import("./native/back").then(
+    (m) => m.installBack(router),
+    () => {},
+  );
   void import("./native/session")
     .then((m) => m.install())
     .catch(() => {})
     .then(render);
-else render();
+} else render();

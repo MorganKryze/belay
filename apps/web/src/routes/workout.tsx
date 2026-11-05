@@ -516,6 +516,7 @@ function Screen({
         <button
           type="button"
           aria-label={t("session.lower")}
+          data-cover-lower
           onClick={lower}
           className="press grid size-11 place-items-center rounded-control"
         >

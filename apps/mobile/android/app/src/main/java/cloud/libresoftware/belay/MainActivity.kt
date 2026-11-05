@@ -3,6 +3,8 @@ package cloud.libresoftware.belay
 import android.net.ConnectivityManager
 import android.net.Network
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import androidx.activity.OnBackPressedCallback
 import com.getcapacitor.BridgeActivity
 
@@ -28,13 +30,11 @@ class MainActivity : BridgeActivity() {
         val connectivity = getSystemService(ConnectivityManager::class.java)
         online(connectivity.activeNetwork != null)
         connectivity.registerDefaultNetworkCallback(network)
-        // Back returns to the previous page, as in the browser. With none left, the app steps
-        // aside instead of closing, so a session under way keeps its place.
+        // Back closes what is on top of the page first, then goes back a step; on Accueil the
+        // app steps aside instead of closing, so a session under way keeps its place.
+        val back = SystemBack(bridge.webView, Handler(Looper.getMainLooper())) { moveTaskToBack(true) }
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() {
-                val webView = bridge.webView
-                if (webView.canGoBack()) webView.goBack() else moveTaskToBack(true)
-            }
+            override fun handleOnBackPressed() = back.press()
         })
     }
 
