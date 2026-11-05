@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
@@ -173,7 +173,7 @@ describe("the Android shell", () => {
     expect(debug).toMatch(/<base-config cleartextTrafficPermitted="false"/);
   });
 
-  it("installs as Belay, from Android 9, built for Android 16, in portrait", () => {
+  it("installs as Belay, from Android 9, built for Android 16", () => {
     expect(read("../build.gradle")).toMatch(/^\s*applicationId "cloud\.libresoftware\.belay"$/m);
     expect(read("main/res/values/strings.xml")).toContain('<string name="app_name">Belay</string>');
     const sdk = (name: string) =>
@@ -183,8 +183,22 @@ describe("the Android shell", () => {
       "36",
       "36",
     ]);
-    const main = /<activity\b[^>]*android:name="\.MainActivity"[^>]*>/.exec(manifest())?.[0] ?? "";
-    expect(main).toContain('android:screenOrientation="portrait"');
+  });
+
+  // A tablet turns every way; a phone stays upright. The manifest's lock is ignored on large screens
+  // from Android 16 only, so the activity decides from the screen itself, as it starts.
+  it("holds phones in portrait and lets tablets rotate", () => {
+    expect(manifest()).not.toContain("screenOrientation");
+    const source = kotlin("MainActivity.kt");
+    const flat = source.replace(/\s+/g, " ");
+    expect(flat).toContain(
+      "if (resources.configuration.smallestScreenWidthDp < 600) requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT",
+    );
+    const onCreate = source.indexOf("override fun onCreate");
+    const end = source.indexOf("override fun onDestroy");
+    const lock = source.indexOf("smallestScreenWidthDp < 600");
+    expect(lock).toBeGreaterThan(onCreate);
+    expect(lock).toBeLessThan(end);
   });
 
   it("git never tracks the signing keys, the local paths, the build or the copied web app", () => {
@@ -215,6 +229,48 @@ describe("the Android shell", () => {
       LAUNCH_BACKGROUND.light,
       LAUNCH_BACKGROUND.dark,
     ]);
+  });
+
+  // The system's date picker and dialogs come in Material 3 with Belay's accent, never the
+  // wallpaper's colours; the band, the splash and the system bars stay as they were.
+  it("the app's theme is Material 3 in Belay's accent, the splash unchanged and Monet off", () => {
+    const styles = read("main/res/values/styles.xml");
+    const style = (name: string) =>
+      new RegExp(`<style name="${name.replace(".", "\\.")}"([^>]*)>([\\s\\S]*?)</style>`).exec(
+        styles,
+      );
+    const theme = style("AppTheme.NoActionBar");
+    expect(theme?.[1]).toContain('parent="Theme.Material3.DayNight.NoActionBar"');
+    const body = theme?.[2] ?? "";
+    expect(body).toContain('<item name="android:windowBackground">@color/launch</item>');
+    expect(body).toMatch(/<item name="android:datePickerDialogTheme">@style\/[\w.]+<\/item>/);
+    const colour = (dir: string, name: string) =>
+      new RegExp(`<color name="${name}">(#[0-9A-Fa-f]{6})</color>`).exec(
+        read(`main/res/${dir}/colors.xml`),
+      )?.[1] ??
+      new RegExp(`<color name="${name}">(#[0-9A-Fa-f]{6})</color>`).exec(
+        read("main/res/values/colors.xml"),
+      )?.[1];
+    const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../index.css"), "utf8");
+    const primary = [...css.matchAll(/^\s*--primary: (#[0-9a-f]{6});/gm)].map((m) => m[1]);
+    expect(primary).toHaveLength(2);
+    for (const item of ["colorPrimary", "android:colorAccent"]) {
+      const ref = new RegExp(`<item name="${item}">@color/(\\w+)</item>`).exec(body)?.[1] ?? "";
+      expect(
+        [colour("values", ref), colour("values-night", ref)].map((c) => c?.toLowerCase()),
+        item,
+      ).toEqual(primary);
+    }
+    expect(style("AppTheme.NoActionBarLaunch")?.[0]).toBe(
+      `<style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/launch</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher_foreground</item>
+        <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>
+    </style>`,
+    );
+    const sources = join(app, "main/java/cloud/libresoftware/belay");
+    for (const file of readdirSync(sources))
+      expect(readFileSync(join(sources, file), "utf8"), file).not.toContain("DynamicColors");
   });
 
   // Older web views lack what the web app needs; the README names the version to have.

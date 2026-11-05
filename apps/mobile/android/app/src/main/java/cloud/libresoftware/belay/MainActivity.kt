@@ -1,5 +1,6 @@
 package cloud.libresoftware.belay
 
+import android.content.pm.ActivityInfo
 import android.net.ConnectivityManager
 import android.net.Network
 import android.os.Bundle
@@ -22,6 +23,9 @@ class MainActivity : BridgeActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // A phone stays upright, one hand at the gym; a tablet turns every way. Android 16 ignores
+        // a manifest lock on large screens only, so the screen itself decides on every version.
+        if (resources.configuration.smallestScreenWidthDp < 600) requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
         // The bridge loads its plugins in onCreate: the app's own one is registered before it.
         registerPlugin(BelayNativePlugin::class.java)
         super.onCreate(savedInstanceState)
