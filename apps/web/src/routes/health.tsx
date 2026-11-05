@@ -185,7 +185,6 @@ function HealthSettings({ account, status }: { account: OpenAccount; status: Hea
         <RowSwitch
           label={t("health.switch")}
           sub={t("health.switchSub", words())}
-          wrap
           checked={settings.on}
           onCheckedChange={(on) => void (on ? turnOn() : turnOff())}
         />
@@ -266,7 +265,6 @@ function ImportGroup({ account, status, settings, imported, onChange }: ImportPr
         <RowSwitch
           label={t("health.import")}
           sub={t("health.importSub", words())}
-          wrap
           checked={on}
           onCheckedChange={(next) => (next ? setAsking(true) : void turnOff())}
         />
@@ -366,7 +364,6 @@ function HistoryImport({ account, status, settings, imported, onChange }: Import
             // The import's own day: "offered" means it holds one.
             date: formatDay(new Date(settings.importSince!), i18n.language, new Date()),
           })}
-          wrap
           className="text-primary"
           onClick={() => void read()}
         />
@@ -380,7 +377,6 @@ function HistoryImport({ account, status, settings, imported, onChange }: Import
               ? t(history === "denied" ? "health.importOlderDenied" : "health.importOlderAsk")
               : undefined
           }
-          wrap
           className="border-t border-border text-primary"
           onClick={() => void read()}
         />
@@ -506,7 +502,6 @@ function HistoryOffer({ account, onAsk }: { account: OpenAccount; onAsk: () => P
             ? t("health.historySubOne", { what: counts.sessions ? sessions : weighings, count })
             : undefined
       }
-      wrap
       className="text-primary"
       onClick={async () => {
         await setHistory(account.db, "asked");
