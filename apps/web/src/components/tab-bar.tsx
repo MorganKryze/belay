@@ -2,6 +2,7 @@ import { Link, useLocation } from "@tanstack/react-router";
 import { Calculator, Dumbbell, House, PersonStanding } from "lucide-react";
 import type { CSSProperties, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { tabIndexOf } from "@/lib/tab-index";
 
 const TABS = [
   { to: "/", label: "nav.home", Icon: House },
@@ -10,17 +11,8 @@ const TABS = [
   { to: "/tools", label: "nav.tools", Icon: Calculator },
 ] as const;
 
-// The one place that says which tab a page belongs to. An exercise belongs to Séances, whose
-// library opens it; every tool page to Outils. The session cover ("/workout") is in no tab. A
-// session's preview opened from Accueil stays Accueil's.
-export function tabIndexOf(pathname: string, search?: { from?: unknown }): 0 | 1 | 2 | 3 | null {
-  if (pathname === "/") return 0;
-  if (search?.from === "home" && /^\/workouts\/session\/[^/]+$/.test(pathname)) return 0;
-  if (/^\/(?:workouts(?:\/|$)|exercises\/)/.test(pathname)) return 1;
-  if (/^\/body(?:\/|$)/.test(pathname)) return 2;
-  if (/^\/tools(?:\/|$)/.test(pathname)) return 3;
-  return null;
-}
+// The rule lives apart from the bar, so Android's Back can read it without the bar in its chunk.
+export { tabIndexOf };
 
 const tab =
   "press-tint press-icon flex min-h-12.5 flex-col items-center justify-center gap-0.5 rounded-card text-tab text-muted-foreground";
