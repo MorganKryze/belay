@@ -1,6 +1,6 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { useState } from "react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setHaptics } from "@/lib/haptic";
 import { expectTokensOnly } from "@/test/design-rules";
 import { Segmented, type SegmentedOptions } from "./segmented";
@@ -101,6 +101,76 @@ describe("Segmented", () => {
       expect(cls).toMatch(/\btext-\(length:--text-secondary\)/);
       expect(cls.split(/\s+/)).not.toContain("text-secondary");
     }
+  });
+
+  describe("at text sizes where a word outgrows its column", () => {
+    // jsdom lays nothing out: the groove's width and each label's width are set by hand, and the
+    // observer is told when they change.
+    let groove = 0;
+    let word = 0;
+    let resized: (() => void) | undefined;
+    beforeEach(() => {
+      vi.stubGlobal(
+        "ResizeObserver",
+        class {
+          constructor(callback: ResizeObserverCallback) {
+            resized = () => callback([], this as unknown as ResizeObserver);
+          }
+          observe() {}
+          disconnect() {}
+        },
+      );
+      vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockImplementation(function (
+        this: HTMLElement,
+      ) {
+        return this.getAttribute("role") === "radiogroup" ? groove : 0;
+      });
+      vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockImplementation(function (
+        this: HTMLElement,
+      ) {
+        return this.dataset.slot === "segmented-label" ? word : 0;
+      });
+    });
+    afterEach(() => {
+      vi.unstubAllGlobals();
+      vi.restoreAllMocks();
+    });
+
+    // A 300 px groove leaves each of three options 88 px for its label.
+    it("keeps the options side by side while every label fits", () => {
+      groove = 300;
+      word = 88;
+      const { container } = render(<Harness initial="m" />);
+      const group = screen.getByRole("radiogroup");
+      expect(group.hasAttribute("data-stacked")).toBe(false);
+      expect(group.getAttribute("aria-orientation")).toBe("horizontal");
+      expect(thumb(container)!.className).toContain("translate-x-[calc(var(--seg-i)*");
+    });
+
+    it("stacks them one per row, arrows going up and down, when a label is wider", () => {
+      groove = 300;
+      word = 89;
+      const { container } = render(<Harness initial="m" />);
+      const group = screen.getByRole("radiogroup");
+      expect(group.hasAttribute("data-stacked")).toBe(true);
+      expect(group.getAttribute("aria-orientation")).toBe("vertical");
+      expect(thumb(container)!.className).toContain("translate-y-[calc(var(--seg-i)*");
+      expect(thumb(container)!.className).not.toContain("translate-x-");
+    });
+
+    it("restacks when the text grows after the first layout, and unstacks when it shrinks", () => {
+      groove = 300;
+      word = 60;
+      render(<Harness initial="w" />);
+      const group = screen.getByRole("radiogroup");
+      expect(group.hasAttribute("data-stacked")).toBe(false);
+      word = 151;
+      act(() => resized!());
+      expect(group.hasAttribute("data-stacked")).toBe(true);
+      word = 60;
+      act(() => resized!());
+      expect(group.hasAttribute("data-stacked")).toBe(false);
+    });
   });
 
   it("uses tokens only", () => {
