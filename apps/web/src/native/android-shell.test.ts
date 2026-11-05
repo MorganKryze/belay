@@ -2,6 +2,7 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import { LAUNCH_SAFETY_MS } from "@/lib/launch";
 import { LAUNCH_BACKGROUND } from "@/lib/theme";
 import { kotlin, longConst, stringSet } from "@/test/kotlin";
 
@@ -229,6 +230,26 @@ describe("the Android shell", () => {
       LAUNCH_BACKGROUND.light,
       LAUNCH_BACKGROUND.dark,
     ]);
+  });
+
+  // Android's splash leaves on the activity's first frame, long before the page draws: the web
+  // view's own white filled the gap. The splash now stays until the page's first frame, whose
+  // launch screen carries the same mark on, and the web view starts on the launch colour. A page
+  // that never draws lets the splash go at the page's own safety delay.
+  it("the splash stays until the page's first frame, on the launch colour", () => {
+    const source = kotlin("MainActivity.kt");
+    const flat = source.replace(/\s+/g, " ");
+    const hold = source.indexOf("installSplashScreen().setKeepOnScreenCondition { !painted }");
+    expect(hold).toBeGreaterThan(-1);
+    expect(hold).toBeLessThan(source.indexOf("super.onCreate"));
+    expect(flat).toContain("bridge.webView.setBackgroundColor(getColor(R.color.launch))");
+    expect(flat).toContain(
+      "bridge.addWebViewListener(object : WebViewListener() { override fun onPageCommitVisible(view: WebView, url: String) { painted = true } })",
+    );
+    expect(flat).toContain(
+      "Handler(Looper.getMainLooper()).postDelayed({ painted = true }, SPLASH_MS)",
+    );
+    expect(longConst(source, "SPLASH_MS")).toBe(LAUNCH_SAFETY_MS);
   });
 
   // The system's date picker and dialogs come in Material 3 with Belay's accent, never the
