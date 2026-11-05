@@ -4,7 +4,7 @@ import { fakeServer } from "./fake-server";
 import { asIPhone, swipeCalls } from "./native";
 
 // The iPhone's edge swipe as the page drives it: the web view's own back gesture, on only while a
-// pushed page is on top. The shell starts with it off, so no call means off.
+// pushed page is on top. The web view keeps it through a reload, so each document states it once.
 test.use({ locale: "fr-FR" });
 
 test.beforeEach(async ({ page, baseURL }) => {
@@ -50,7 +50,7 @@ const stored = (page: Page) =>
 test("the swipe is off at start and on the tab roots, on at a pushed page", async ({ page }) => {
   await open(page, "/");
   await expect(page.getByRole("heading", { level: 1, name: /^Bonjour/ })).toBeVisible();
-  expect(await swipeCalls(page)).toEqual([]);
+  await expect.poll(() => swipeCalls(page)).toEqual([false]);
   await tab(page, "Outils").click();
   await expect(page.getByRole("heading", { level: 1, name: "Outils" })).toBeVisible();
   expect(await swipe(page)).toBe(false);
@@ -77,7 +77,16 @@ test("the session cover keeps the swipe off", async ({ page }) => {
   await open(page, "/workout?start=A");
   await expect(page.getByRole("button", { name: "Réduire la séance" })).toBeVisible();
   await settled(page);
-  expect(await swipeCalls(page)).toEqual([]);
+  expect(await swipeCalls(page)).toEqual([false]);
+});
+
+test("a reload home from a pushed page turns the swipe off", async ({ page }) => {
+  await open(page, "/settings");
+  await expect.poll(() => swipe(page)).toBe(true);
+  // A sign-in or a lost session reloads the app at home; the web view keeps the swipe on.
+  await open(page, "/");
+  await expect(page.getByRole("heading", { level: 1, name: /^Bonjour/ })).toBeVisible();
+  await expect.poll(() => swipeCalls(page)).toEqual([true, false]);
 });
 
 // The web view's swipe comes with a forward one from the right edge, which the shell cannot

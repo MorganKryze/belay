@@ -61,16 +61,18 @@ afterEach(() => {
 });
 
 describe("the iPhone's edge swipe", () => {
-  it("turns on at a pushed page, the shell having started with it off", async () => {
+  it("turns on at a pushed page", async () => {
     watchSwipeBack(routerAt("/settings/profile"));
     await settle();
     expect(calls()).toEqual([true]);
   });
 
-  it.each(["/", "/tools", "/workouts/", "/workout"])("stays off at %s", async (path) => {
+  // The web view keeps its gesture through a reload: a sign-in that reloads home from a pushed
+  // page would land there with the swipe still on.
+  it.each(["/", "/tools", "/workouts/", "/workout"])("turns off at %s on start", async (path) => {
     watchSwipeBack(routerAt(path));
     await settle();
-    expect(calls()).toEqual([]);
+    expect(calls()).toEqual([false]);
   });
 
   it("goes on and off with the navigation, one call per change and none without one", async () => {
@@ -82,7 +84,7 @@ describe("the iPhone's edge swipe", () => {
     router.go("/body");
     router.go("/workout");
     await settle();
-    expect(calls()).toEqual([true, false]);
+    expect(calls()).toEqual([false, true, false]);
   });
 
   it("goes off while a sheet opens over a page and on again once it is gone", async () => {
@@ -99,11 +101,11 @@ describe("the iPhone's edge swipe", () => {
     expect(calls()).toEqual([true, false, true]);
   });
 
-  it("a menu over a tab root sends nothing: the swipe is already off", async () => {
+  it("a menu over a tab root sends nothing more: the swipe is already off", async () => {
     watchSwipeBack(routerAt("/tools"));
     surface("menu").remove();
     await settle();
-    expect(calls()).toEqual([]);
+    expect(calls()).toEqual([false]);
   });
 
   it("on Android sends nothing, its Back asking the page by its own path", async () => {
@@ -118,18 +120,29 @@ describe("the iPhone's edge swipe", () => {
   });
 
   it("a refused call leaves the swipe where the shell last put it", async () => {
-    setSwipeBack.mockRejectedValueOnce(new Error("no web view"));
     const router = routerAt("/");
     watchSwipeBack(router);
+    await settle();
+    setSwipeBack.mockRejectedValueOnce(new Error("no web view"));
     router.go("/settings");
     await settle();
     // Still off on the shell's side: back on a tab root, there is nothing to turn off.
     router.go("/tools");
     await settle();
-    expect(calls()).toEqual([true]);
+    expect(calls()).toEqual([false, true]);
     // And the next page asks again.
     router.go("/tools/plates");
     await settle();
-    expect(calls()).toEqual([true, true]);
+    expect(calls()).toEqual([false, true, true]);
+  });
+
+  it("a refused first call is sent again at the next change, the shell's state still unknown", async () => {
+    setSwipeBack.mockRejectedValueOnce(new Error("no web view"));
+    const router = routerAt("/");
+    watchSwipeBack(router);
+    await settle();
+    router.go("/tools");
+    await settle();
+    expect(calls()).toEqual([false, false]);
   });
 });

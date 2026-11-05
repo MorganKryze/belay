@@ -14,8 +14,9 @@ export interface SwipeRouter {
 export function watchSwipeBack(router: SwipeRouter): void {
   // Android's Back asks the page by its own path.
   if (nativePlatform() !== "ios") return;
-  // The shell starts with the swipe off.
-  let enabled = false;
+  // Unknown at start: the web view keeps its gesture through a reload, so a sign-in that reloads
+  // home from a pushed page would find it still on. The first sync always says what it wants.
+  let enabled: boolean | undefined;
   const sync = () => {
     const wanted = topOfStack(router.state.location.pathname) === "page";
     if (wanted === enabled) return;
