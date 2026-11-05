@@ -294,6 +294,44 @@ describe("the Android shell", () => {
       expect(readFileSync(join(sources, file), "utf8"), file).not.toContain("DynamicColors");
   });
 
+  // The web view opens the framework's date picker in this overlay. Each part reads its own
+  // attribute, measured on the emulator with one colour per attribute: the header in light reads
+  // android:colorAccent and in dark the picker style's header, the chosen day
+  // android:colorControlActivated, the buttons colorPrimary and the sheet colorSurface. Material 3
+  // fills the last two from its baseline purple unless they are set.
+  it("the date picker takes Belay's accent and surface in both themes", () => {
+    const styles = read("main/res/values/styles.xml");
+    const style = (name: string) =>
+      new RegExp(`<style name="${name.replaceAll(".", "\\.")}"([^>]*)>([\\s\\S]*?)</style>`).exec(
+        styles,
+      );
+    const item = (body: string, name: string) =>
+      new RegExp(`<item name="${name}">@(\\w+)/([\\w.]+)</item>`).exec(body)?.slice(1);
+    const overlayName =
+      item(style("AppTheme.NoActionBar")?.[2] ?? "", "android:datePickerDialogTheme")?.[1] ?? "";
+    const overlay = style(overlayName)?.[2] ?? "";
+    for (const name of ["android:colorAccent", "android:colorControlActivated", "colorPrimary"])
+      expect(item(overlay, name), name).toEqual(["color", "accent"]);
+    expect(item(overlay, "colorSurface")).toEqual(["color", "surface"]);
+    const pickerName = item(overlay, "android:datePickerStyle")?.[1] ?? "";
+    const picker = style(pickerName);
+    expect(picker?.[1]).toContain('parent="@android:style/Widget.Material.DatePicker"');
+    expect(item(picker?.[2] ?? "", "android:headerBackground")).toEqual(["color", "accent"]);
+
+    const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../index.css"), "utf8");
+    const token = (name: string) =>
+      [...css.matchAll(new RegExp(`^\\s*--${name}: (#[0-9a-f]{6});`, "gm"))].map((m) => m[1]);
+    const colour = (dir: string, name: string) =>
+      new RegExp(`<color name="${name}">(#[0-9A-Fa-f]{6})</color>`)
+        .exec(read(`main/res/${dir}/colors.xml`))?.[1]
+        ?.toLowerCase();
+    for (const [name, css] of [
+      ["accent", "primary"],
+      ["surface", "surface"],
+    ] as const)
+      expect([colour("values", name), colour("values-night", name)], name).toEqual(token(css));
+  });
+
   // Older web views lack what the web app needs; the README names the version to have.
   it("asks for Android System WebView 111 or later, as the README says", () => {
     const config = JSON.parse(readFileSync(join(app, "../../../capacitor.config.json"), "utf8"));

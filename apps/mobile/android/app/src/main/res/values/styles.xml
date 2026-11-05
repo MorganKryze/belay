@@ -23,10 +23,20 @@
         <item name="android:datePickerDialogTheme">@style/DatePicker</item>
     </style>
 
-    <!-- The date field's picker, a system dialog: Material 3's, its day and buttons in the accent. -->
+    <!-- The date field's picker, the framework's own dialog. Each part reads its own attribute:
+         the light header android:colorAccent, the dark one the picker style's header, the chosen
+         day android:colorControlActivated, the buttons colorPrimary, the sheet colorSurface.
+         Material 3 fills the last two from its baseline purple unless they are set. -->
     <style name="DatePicker" parent="ThemeOverlay.Material3.Dialog">
         <item name="colorPrimary">@color/accent</item>
         <item name="android:colorAccent">@color/accent</item>
+        <item name="android:colorControlActivated">@color/accent</item>
+        <item name="colorSurface">@color/surface</item>
+        <item name="android:datePickerStyle">@style/DatePickerCalendar</item>
+    </style>
+
+    <style name="DatePickerCalendar" parent="@android:style/Widget.Material.DatePicker">
+        <item name="android:headerBackground">@color/accent</item>
     </style>
 
     <!-- Android's own splash: the mark on chalk, then the app's theme once the page is up. -->
