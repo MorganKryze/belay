@@ -17,8 +17,7 @@
       "content",
       dark((meta.getAttribute("media") || "").includes("dark")) ? "#151412" : "#FAFAF7",
     );
-  // The phone apps' pages are styled by platform and text size from the first paint (the launch
-  // screen is).
+  // The apps' pages get their platform and text size from the first paint (the launch screen does).
   const c = globalThis.Capacitor;
   if (c?.isNativePlatform?.()) {
     const r = document.documentElement;
@@ -27,6 +26,6 @@
     r.style.font = "-apple-system-body";
     if (r.style.font) k = parseFloat(getComputedStyle(r).fontSize) / 17;
     r.style.font = "";
-    if (Number.isFinite(k) && k > 0) r.style.setProperty("--text-scale", k);
+    if (isFinite(k) && k > 0) r.style.setProperty("--text-scale", k);
   }
 }

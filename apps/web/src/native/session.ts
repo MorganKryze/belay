@@ -8,6 +8,7 @@ import { setHaptics } from "@/lib/haptic";
 import { nativePlatform, readInstance, setNativeSession } from "@/lib/platform";
 import { fireHaptic } from "./haptics";
 import { BelayNative } from "./plugin";
+import { watchTextScale } from "./text-scale";
 
 export type SignInResult = "cancelled" | "unavailable" | "expired" | "failed" | "denied";
 // The reasons the server puts in the app's callback, the same Accueil shows after a web sign-in.
@@ -112,6 +113,7 @@ export async function install(): Promise<void> {
   );
 
   if (nativePlatform() === "android") keepAndroidReadable();
+  watchTextScale();
 
   // WebKit has no vibration API, so the rest's end would be silent in the hand: a success haptic
   // stands in for it. A device without a haptic engine just stays still.
