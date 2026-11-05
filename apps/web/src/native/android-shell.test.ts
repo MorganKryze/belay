@@ -120,6 +120,28 @@ describe("the Android shell", () => {
     expect(methods).toEqual(pageMethods());
   });
 
+  // Android would zoom the page's text by the font scale on its own, and the page scales it again
+  // from the ratio it reads: the web view's zoom stays at 100 % and the ratio is handed over as
+  // the plugin loads, before the bridge loads the page. A change of the font scale restarts the
+  // activity, which reads it again.
+  it("hands the page the font scale once and keeps the web view's own zoom at 100 %", () => {
+    const source = kotlin("BelayNativePlugin.kt").replace(/\s+/g, " ");
+    const load = /override fun load\(\) \{(.*?)\} override fun/.exec(source)![1]!;
+    expect(load).toContain("val scale = context.resources.configuration.fontScale");
+    expect(load).toContain("bridge.webView.settings.textZoom = 100");
+    expect(load).toContain('bridge.webView.addJavascriptInterface(TextScale(scale), "BelayText")');
+    expect(source).toContain(
+      "class TextScale(private val scale: Float) { @JavascriptInterface fun scale(): Float = scale }",
+    );
+    expect(source.match(/@JavascriptInterface/g)).toHaveLength(1);
+    const init = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), "../../public/theme-init.js"),
+      "utf8",
+    );
+    expect(init).toContain("globalThis.BelayText?.scale()");
+    expect(manifest()).not.toMatch(/android:configChanges="[^"]*fontScale/);
+  });
+
   it("nothing private is backed up", () => {
     expect(manifest()).toContain('android:allowBackup="false"');
     expect(manifest()).toContain('android:dataExtractionRules="@xml/data_extraction_rules"');

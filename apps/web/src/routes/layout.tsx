@@ -142,13 +142,14 @@ function Shell() {
             : "pt-[max(1rem,env(safe-area-inset-top))]"
         } pr-[max(1rem,env(safe-area-inset-right))] pl-[max(1rem,env(safe-area-inset-left))] ${
           docked
-            ? // The dock's height, its offset from the bottom edge and a gap above it; the toast
-              // sits on the same line.
+            ? // The dock's height, its offset from the bottom edge and a gap above it, plus what
+              // larger text adds to the dock (native/text-scale.ts); the toast sits on the same
+              // line.
               `${
                 bar.shown
                   ? // The session bar, the gap to the tabs and the backing's top padding on top.
-                    "[--chrome-bottom:calc(8.875rem+max(0.75rem,env(safe-area-inset-bottom)))]"
-                  : "[--chrome-bottom:calc(4.5rem+max(0.75rem,env(safe-area-inset-bottom)))]"
+                    "[--chrome-bottom:calc(8.875rem+max(0.75rem,env(safe-area-inset-bottom))+var(--dock-extra,0px))]"
+                  : "[--chrome-bottom:calc(4.5rem+max(0.75rem,env(safe-area-inset-bottom))+var(--dock-extra,0px))]"
               } pb-[calc(var(--chrome-bottom)+0.5rem)] lg:[--chrome-bottom:0px]`
             : "pb-[max(1rem,env(safe-area-inset-bottom))]"
         }`}

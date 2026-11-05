@@ -1,6 +1,7 @@
 package cloud.libresoftware.belay
 
 import android.content.Intent
+import android.webkit.JavascriptInterface
 import com.getcapacitor.Plugin
 import com.getcapacitor.PluginCall
 import com.getcapacitor.PluginMethod
@@ -20,6 +21,12 @@ class BelayNativePlugin : Plugin() {
         // is still being created: Android refuses a registration once it has started.
         signIn.register()
         healthBridge.register()
+        // The page scales its text by the font scale itself (theme-init.js), so the web view's
+        // own zoom stays at 100 % and text grows once. Read here, before the bridge loads the page;
+        // a change of the font scale restarts the activity, which reads it again.
+        val scale = context.resources.configuration.fontScale
+        bridge.webView.settings.textZoom = 100
+        bridge.webView.addJavascriptInterface(TextScale(scale), "BelayText")
     }
 
     override fun handleOnNewIntent(intent: Intent) {
@@ -49,4 +56,9 @@ class BelayNativePlugin : Plugin() {
 
     @PluginMethod
     fun health(call: PluginCall) = healthBridge.handle(call)
+}
+
+// What the page reads as window.BelayText: a number, nothing else crosses.
+class TextScale(private val scale: Float) {
+    @JavascriptInterface fun scale(): Float = scale
 }
