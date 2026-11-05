@@ -3,7 +3,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { LAUNCH_BACKGROUND } from "@/lib/theme";
-import { kotlin } from "@/test/kotlin";
+import { kotlin, longConst, stringSet } from "@/test/kotlin";
 
 // The Android project's shape, read from its sources: the plugin the page calls, and what the
 // manifest and the network rules let out of the phone.
@@ -27,7 +27,9 @@ describe("the Android shell", () => {
     expect(start).toBeGreaterThan(register);
   });
 
-  it("system back goes to the previous page, and with none sends the app to the background", () => {
+  // Back asks the page first, which closes what is on top; the app's own step back is the
+  // fallback when the page is silent or late, and stepping aside stays the only way out.
+  it("system back asks the page, and only Accueil's answer or silence leaves", () => {
     const source = kotlin("MainActivity.kt");
     const start = source.indexOf("super.onCreate");
     const added = source.indexOf(
@@ -35,10 +37,23 @@ describe("the Android shell", () => {
     );
     expect(start).toBeGreaterThan(-1);
     expect(added).toBeGreaterThan(start);
-    const handler = /fun handleOnBackPressed\(\) \{([\s\S]*?)\n\s*\}/.exec(source)?.[1] ?? "";
-    expect(handler.replace(/\s+/g, " ").trim()).toBe(
-      "val webView = bridge.webView if (webView.canGoBack()) webView.goBack() else moveTaskToBack(true)",
+    const flat = source.replace(/\s+/g, " ");
+    expect(flat).toContain(
+      "val back = SystemBack(bridge.webView, Handler(Looper.getMainLooper())) { moveTaskToBack(true) }",
     );
+    expect(flat).toContain("override fun handleOnBackPressed() = back.press()");
+    expect(flat.match(/moveTaskToBack\(/g)).toHaveLength(1);
+    expect(flat).not.toMatch(/\bfinish(AndRemoveTask)?\(\)/);
+
+    const back = kotlin("SystemBack.kt");
+    expect(longConst(back, "ANSWER_MS")).toBe(500);
+    expect(back).toContain('"window.belayBack?.() ?? null"');
+    // Every answer the page gives after taking its step; "home" alone lets the app step aside.
+    expect(stringSet(back, "DONE")).toEqual(["surface", "cover", "page", "tab-root"]);
+    expect(back.replace(/\s+/g, " ")).toContain(
+      "if (webView.canGoBack()) webView.goBack() else leave()",
+    );
+    expect(back).not.toMatch(/\bfinish(AndRemoveTask)?\(\)/);
   });
 
   // The Android web view always reports itself online: the activity tells it the truth, so the
