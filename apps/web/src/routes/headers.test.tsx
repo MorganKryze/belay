@@ -59,6 +59,9 @@ const fresh = () => {
 
 describe("pushed pages", () => {
   it("a session detail, an exercise, a tool, the equipment page, Profil and Compléments show their back chevron and large title", async () => {
+    // The seeded session is in October: on another month the back link would carry it.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(2026, 9, 7, 7, 30));
     await seed(ADA.id, FINISHED);
     await pushed(`/workouts/${WORKOUT}`, "Session B · Legs", "History", "/workouts?tab=history");
     fresh();
