@@ -70,7 +70,7 @@ export function Barbell({
             transform={`rotate(-90 ${x + PLATE_W / 2} ${mid})`}
             textAnchor="middle"
             dominantBaseline="central"
-            className={`${INK[color]} text-[10px] font-bold`}
+            className={`${INK[color]} text-(length:--text-micro) font-bold`}
           >
             {formatNumber(kg, i18n.language, { digits: 2 })}
           </text>

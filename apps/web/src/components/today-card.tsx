@@ -332,16 +332,22 @@ export function RowBody({
         <span className="font-semibold">{title}</span>{" "}
         {/* Keyed: each state mounts its own span instead of patching the one before into it. */}
         {status === null ? (
-          <span key="blank" aria-hidden className="text-[13px] text-muted-foreground">
+          <span
+            key="blank"
+            aria-hidden
+            className="text-(length:--text-secondary) text-muted-foreground"
+          >
             {"\u00a0"}
           </span>
         ) : status.done ? (
           <span key="done" className="flex min-w-0 items-center gap-1">
             <Check aria-hidden className="size-4 shrink-0 text-reference-ink" />
-            <span className="text-[13px] font-medium text-foreground">{status.text}</span>
+            <span className="text-(length:--text-secondary) font-medium text-foreground">
+              {status.text}
+            </span>
           </span>
         ) : (
-          <span key="todo" className="text-[13px] text-muted-foreground">
+          <span key="todo" className="text-(length:--text-secondary) text-muted-foreground">
             {status.text}
           </span>
         )}

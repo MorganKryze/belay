@@ -47,7 +47,7 @@ export function Equipment() {
     return (
       <ToolPage title={t("equipment.title")} lead={t("equipment.lead")} backTo="plates">
         <div className="flex flex-col gap-1.5">
-          <h2 className="text-[13px] font-semibold">{t("equipment.bar")}</h2>
+          <h2 className="text-(length:--text-secondary) font-semibold">{t("equipment.bar")}</h2>
           <div className="flex flex-wrap gap-2">
             <span className={cn(chip, "border-border bg-track")}>
               {t("equipment.kg", { value: n(LB_PLATES.bar), unit: "lb" })}
@@ -55,7 +55,7 @@ export function Equipment() {
           </div>
         </div>
         <div className="flex flex-col gap-1.5">
-          <h2 className="text-[13px] font-semibold">{t("equipment.plates")}</h2>
+          <h2 className="text-(length:--text-secondary) font-semibold">{t("equipment.plates")}</h2>
           <div className="flex flex-wrap gap-2">
             {LB_PLATES.plates.map((p) => (
               <span key={p} className={cn(chip, "border-border bg-track")}>
@@ -64,7 +64,9 @@ export function Equipment() {
             ))}
           </div>
         </div>
-        <p className="text-[13px] text-muted-foreground">{t("equipment.lbNote")}</p>
+        <p className="text-(length:--text-secondary) text-muted-foreground">
+          {t("equipment.lbNote")}
+        </p>
       </ToolPage>
     );
 
@@ -84,14 +86,14 @@ export function Equipment() {
         }}
       />
       {custom && (
-        <p className="rounded-[12px] bg-track px-3 py-2.5 text-[13px]">
+        <p className="rounded-[12px] bg-track px-3 py-2.5 text-(length:--text-secondary)">
           {copiedFrom
             ? t("equipment.copied", { preset: t(`equipment.presets.${copiedFrom}`) })
             : t("equipment.customNote")}
         </p>
       )}
       <div className="flex flex-col gap-1.5">
-        <h2 className="text-[13px] font-semibold">{t("equipment.bar")}</h2>
+        <h2 className="text-(length:--text-secondary) font-semibold">{t("equipment.bar")}</h2>
         <div className="flex flex-wrap gap-2">
           {custom ? (
             <>
@@ -143,7 +145,7 @@ export function Equipment() {
         )}
       </div>
       <div className="flex flex-col gap-1.5">
-        <h2 className="text-[13px] font-semibold">{t("equipment.plates")}</h2>
+        <h2 className="text-(length:--text-secondary) font-semibold">{t("equipment.plates")}</h2>
         <div className="flex flex-wrap gap-2">
           {custom
             ? chips.map((p) => (
@@ -210,7 +212,9 @@ export function Equipment() {
           >
             {t("equipment.edit")}
           </Button>
-          <p className="text-[13px] text-muted-foreground">{t("equipment.presetNote")}</p>
+          <p className="text-(length:--text-secondary) text-muted-foreground">
+            {t("equipment.presetNote")}
+          </p>
         </>
       )}
     </ToolPage>

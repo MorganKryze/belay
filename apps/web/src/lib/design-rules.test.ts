@@ -88,6 +88,15 @@ describe("design rules", () => {
     ).toEqual(["text-[15px]", "rounded-[7px]", "leading-[1.4]", "tracking-[-0.02em]"]);
   });
 
+  it("no component sets a text size by a raw length", () => {
+    const found = sourceFiles().flatMap((file) =>
+      arbitraryScale(readFileSync(file, "utf8"))
+        .filter((hit) => hit.startsWith("text-["))
+        .map((hit) => `${file}: ${hit}`),
+    );
+    expect(found).toEqual([]);
+  });
+
   it("no component uses a raw duration, curve or a transition on every property", () => {
     const found = sourceFiles().flatMap((file) =>
       motionViolations(readFileSync(file, "utf8")).map((v) => `${file}: ${v}`),

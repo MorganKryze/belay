@@ -133,7 +133,7 @@ function SupplementList({ account }: { account: OpenAccount }) {
             void add(name, true);
           }}
         >
-          <label htmlFor={nameId} className="text-[13px] font-semibold">
+          <label htmlFor={nameId} className="text-(length:--text-secondary) font-semibold">
             {t("supplementsPage.name")}
           </label>
           <input
@@ -159,7 +159,7 @@ function SupplementList({ account }: { account: OpenAccount }) {
         </form>
         {suggestions.length > 0 && (
           <>
-            <h2 className="mt-2 text-[13px] text-muted-foreground">
+            <h2 className="mt-2 text-(length:--text-secondary) text-muted-foreground">
               {t("supplementsPage.suggestionsTitle")}
             </h2>
             <ul className="flex flex-wrap gap-2">
@@ -180,7 +180,9 @@ function SupplementList({ account }: { account: OpenAccount }) {
         )}
         {/* While the list is empty, its empty state already says this. */}
         {active.length > 0 && (
-          <p className="mt-2 text-[13px] text-muted-foreground">{t("supplementsPage.note")}</p>
+          <p className="mt-2 text-(length:--text-secondary) text-muted-foreground">
+            {t("supplementsPage.note")}
+          </p>
         )}
       </div>
       <Toast toast={toast} onDone={dismiss} />
@@ -235,7 +237,7 @@ function SupplementItem({
             });
           }}
         >
-          <label className="flex flex-col gap-1.5 text-[13px] font-semibold">
+          <label className="flex flex-col gap-1.5 text-(length:--text-secondary) font-semibold">
             {t("supplementsPage.newName", { name: s.name })}
             <input
               value={renaming}

@@ -279,7 +279,7 @@ export function WeightChart({
                 data-slot="band-label"
                 x={bandLabels[i]!.x0}
                 y={baseline.top}
-                className="fill-primary-ink text-[11.5px] font-semibold"
+                className="fill-primary-ink text-(length:--text-label) font-semibold"
               >
                 {bandLabel}
               </text>

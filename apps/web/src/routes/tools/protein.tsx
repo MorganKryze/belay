@@ -72,7 +72,7 @@ export function ProteinTool() {
         {r && (
           <>
             <ResultFigure value={range(r.lowG, r.highG)} unit="g" />
-            <p className="text-[13.5px] text-muted-foreground">
+            <p className="text-(length:--text-note) text-muted-foreground">
               {t("protein.perKg", {
                 low: n(roundTo(r.lowG / weightKg, 0.1)),
                 high: n(roundTo(r.highG / weightKg, 0.1)),
@@ -86,8 +86,12 @@ export function ProteinTool() {
                 ] as const
               ).map(([key, [low, high]]) => (
                 <div key={key}>
-                  <div className="text-[13px] text-muted-foreground">{t(`protein.${key}`)}</div>
-                  <div className="text-[17px] font-bold tabular-nums">{range(low, high)} g</div>
+                  <div className="text-(length:--text-secondary) text-muted-foreground">
+                    {t(`protein.${key}`)}
+                  </div>
+                  <div className="text-(length:--text-title-compact) font-bold tabular-nums">
+                    {range(low, high)} g
+                  </div>
                 </div>
               ))}
             </div>
@@ -95,7 +99,7 @@ export function ProteinTool() {
         )}
       </ResultCard>
       {r && inputs.goal === "cut" && (
-        <p className="text-[13px] text-muted-foreground">
+        <p className="text-(length:--text-secondary) text-muted-foreground">
           {r.basis === "no-body-fat" ? t("protein.noBodyFat") : t("protein.leanMass")}
           {r.floorApplied && ` ${t("protein.floor")}`}
         </p>

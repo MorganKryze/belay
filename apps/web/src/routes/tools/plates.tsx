@@ -52,7 +52,7 @@ export function PlatesTool() {
               unit={unit}
             />
             <p className="text-body font-semibold tabular-nums">{detail(result.loading)}</p>
-            <p className="text-[13.5px] text-muted-foreground">
+            <p className="text-(length:--text-note) text-muted-foreground">
               {t("plates.bar", { bar: n(barKg), unit })}
             </p>
           </>
@@ -74,7 +74,7 @@ export function PlatesTool() {
                       <p className="text-body font-semibold">
                         {t(item[0], { total: n(item[1].totalKg), unit })}
                       </p>
-                      <p className="text-[13.5px] text-muted-foreground tabular-nums">
+                      <p className="text-(length:--text-note) text-muted-foreground tabular-nums">
                         {detail(item[1])}
                       </p>
                     </div>

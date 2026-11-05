@@ -562,7 +562,7 @@ function Screen({
         paused={paused !== null}
         onResume={() => void resume(new Date().toISOString())}
       />
-      <h1 className="text-[22px] leading-tight font-bold tracking-tight">
+      <h1 className="text-(length:--text-title-session) leading-tight font-bold tracking-tight">
         {workoutTitle(workout, sessions, t)}
       </h1>
       {plan.some((s) => s.rule === "no_climbing") && (

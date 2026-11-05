@@ -26,7 +26,7 @@ describe("ResultFigure", () => {
     expect(el.classList).toContain("text-foreground");
     const unit = el.querySelector("span")!;
     expect(unit.textContent).toBe(" kg");
-    expect(unit.classList).toContain("text-[17px]");
+    expect(unit.classList).toContain("text-(length:--text-title-compact)");
   });
 
   it("a medium figure, and a muted one", () => {
@@ -34,7 +34,7 @@ describe("ResultFigure", () => {
     const el = figure(container);
     expect(el.classList).toContain("text-figure-md");
     expect(el.classList).toContain("text-muted-foreground");
-    expect(el.querySelector("span")!.classList).toContain("text-[14px]");
+    expect(el.querySelector("span")!.classList).toContain("text-(length:--text-sm)");
   });
 
   it("a percent follows the figure with the space it is given", () => {

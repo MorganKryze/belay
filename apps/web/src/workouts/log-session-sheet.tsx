@@ -104,7 +104,9 @@ function LogSession({
               })) as unknown as SegmentedOptions<string>
             }
           />
-          <p className="text-[13px] text-muted-foreground">{rotationTitle(session, t)}</p>
+          <p className="text-(length:--text-secondary) text-muted-foreground">
+            {rotationTitle(session, t)}
+          </p>
         </div>
       )}
       <DurationStepper

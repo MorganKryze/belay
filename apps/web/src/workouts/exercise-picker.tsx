@@ -55,7 +55,7 @@ export function ExercisePicker({
       .join(" · ");
     return t("session.picker.lastTime", { value });
   };
-  const title = "text-[15px] font-semibold";
+  const title = "text-(length:--text-body) font-semibold";
   return (
     <Sheet
       title={
@@ -120,7 +120,9 @@ export function ExercisePicker({
           ))}
         </ul>
       </section>
-      <p className="text-[13px] text-muted-foreground">{t("session.picker.note")}</p>
+      <p className="text-(length:--text-secondary) text-muted-foreground">
+        {t("session.picker.note")}
+      </p>
     </Sheet>
   );
 }
@@ -144,7 +146,7 @@ function Choice({
       <BodyThumb primary={e.primary[0]!} secondary={e.secondary} />
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="font-semibold">{e.name}</span>
-        <span className="text-[13px] text-muted-foreground">
+        <span className="text-(length:--text-secondary) text-muted-foreground">
           {[
             t(`library.muscles.${e.primary[0]}`),
             t(`library.equipment.${e.equipment}`),

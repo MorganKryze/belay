@@ -17,11 +17,11 @@ export function SessionHeading({
 }) {
   return (
     <div className="flex flex-col">
-      <h2 id={id} className="text-[17px] font-semibold">
+      <h2 id={id} className="text-(length:--text-title-compact) font-semibold">
         {title}
       </h2>
       {/* The space keeps the title and this line apart when read as one name. */}{" "}
-      <p className="text-[13px] text-muted-foreground">
+      <p className="text-(length:--text-secondary) text-muted-foreground">
         {lead && <span className="font-semibold text-primary-ink">{lead} · </span>}
         {detail}
       </p>

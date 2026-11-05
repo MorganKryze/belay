@@ -84,7 +84,7 @@ function Summary({ account }: { account: OpenAccount }) {
         </Button>
       </div>
       <div>
-        <p className="text-[13px] font-semibold text-muted-foreground">
+        <p className="text-(length:--text-secondary) font-semibold text-muted-foreground">
           {t("summary.eyebrow", {
             day: formatWeekday(dayOf(workout), i18n.language, today, {
               startOfLine: false,
@@ -92,7 +92,7 @@ function Summary({ account }: { account: OpenAccount }) {
             }),
           })}
         </p>
-        <h1 className="text-[30px] leading-tight font-bold tracking-tight">
+        <h1 className="text-(length:--text-title-lg) leading-tight font-bold tracking-tight">
           {workoutTitle(workout, sessions, t)}
         </h1>
       </div>
@@ -126,7 +126,7 @@ function Summary({ account }: { account: OpenAccount }) {
             >
               <span
                 aria-hidden
-                className="grid size-7 shrink-0 place-items-center rounded-icon bg-track text-[13px] font-semibold text-muted-foreground tabular-nums"
+                className="grid size-7 shrink-0 place-items-center rounded-icon bg-track text-(length:--text-secondary) font-semibold text-muted-foreground tabular-nums"
               >
                 {e.slotIndex + 1}
               </span>
@@ -145,10 +145,10 @@ function Summary({ account }: { account: OpenAccount }) {
           ))}
         </GroupedList>
       )}
-      <p className="text-[13px] text-muted-foreground">
+      <p className="text-(length:--text-secondary) text-muted-foreground">
         {t("summary.warmups")} · {t("summary.warmupCount", { count: stats.warmupSets })}
       </p>
-      <label className="flex flex-col gap-1.5 text-[13px] font-semibold">
+      <label className="flex flex-col gap-1.5 text-(length:--text-secondary) font-semibold">
         {t("summary.note")}
         <textarea
           value={note}
@@ -180,11 +180,13 @@ function Figure({
 }) {
   return (
     <div className={cn("flex min-w-0 flex-col gap-1 p-4", groupSurface, className)}>
-      <dt className="text-[13px] font-semibold text-muted-foreground">{label}</dt>
-      <dd className="text-[44px] leading-none font-extrabold tracking-tight break-words tabular-nums">
+      <dt className="text-(length:--text-secondary) font-semibold text-muted-foreground">
+        {label}
+      </dt>
+      <dd className="text-(length:--text-figure-lg) leading-none font-extrabold tracking-tight break-words tabular-nums">
         {value}
         {unit && (
-          <span className="text-[17px] font-semibold tracking-normal text-muted-foreground">
+          <span className="text-(length:--text-title-compact) font-semibold tracking-normal text-muted-foreground">
             {" "}
             {unit}
           </span>

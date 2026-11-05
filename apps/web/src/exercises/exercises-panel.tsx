@@ -251,7 +251,11 @@ function ChoiceSheet<T extends string>({
         </div>
         {groups.map((g, i) => (
           <div key={i} className="flex flex-col gap-2">
-            {g.label && <span className="text-[13px] text-muted-foreground">{g.label}</span>}
+            {g.label && (
+              <span className="text-(length:--text-secondary) text-muted-foreground">
+                {g.label}
+              </span>
+            )}
             <div className="flex flex-wrap gap-2">
               {g.values.map((v) => (
                 <RadioGroup.Item key={v} value={v} className={chip}>
@@ -360,7 +364,7 @@ function Row({
       <BodyThumb primary={e.primary[0]!} secondary={e.secondary} />
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="truncate font-semibold">{e.name}</span>
-        <span className="truncate text-[13px] text-muted-foreground">
+        <span className="truncate text-(length:--text-secondary) text-muted-foreground">
           {t(`library.muscles.${e.primary[0]}`)} · {t(`library.equipment.${e.equipment}`)}
         </span>
       </span>

@@ -107,7 +107,10 @@ export function NumberStepper({
     "grid size-12 shrink-0 place-items-center text-primary aria-disabled:text-muted-foreground aria-disabled:opacity-60";
   return (
     <div className="flex min-w-0 flex-col gap-1.5">
-      <label htmlFor={id} className={labelHidden ? "sr-only" : "text-[13px] font-semibold"}>
+      <label
+        htmlFor={id}
+        className={labelHidden ? "sr-only" : "text-(length:--text-secondary) font-semibold"}
+      >
         {label}
       </label>
       <div className="field flex h-12.5 items-center">
@@ -155,7 +158,7 @@ export function NumberStepper({
           {unit && (
             <span
               id={`${id}-unit`}
-              className="flex-1 text-[13px] font-medium text-muted-foreground"
+              className="flex-1 text-(length:--text-secondary) font-medium text-muted-foreground"
             >
               {unit}
             </span>

@@ -78,7 +78,7 @@ export function BmiTool() {
               {t(`bmi.sentence.${band}`, bounds[band])}
             </p>
             {bmiSuggestsProfessional(value) && (
-              <p className="text-[13.5px]">{t("bmi.professional")}</p>
+              <p className="text-(length:--text-note)">{t("bmi.professional")}</p>
             )}
           </>
         )}
@@ -106,7 +106,7 @@ export function BmiTool() {
           },
         ]}
       />
-      <p className="text-[13px] text-muted-foreground">{t("bmi.note")}</p>
+      <p className="text-(length:--text-secondary) text-muted-foreground">{t("bmi.note")}</p>
     </ToolPage>
   );
 }

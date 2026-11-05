@@ -123,7 +123,9 @@ function WeighInForm({
         }
       />
       {start.prefilled && edited === undefined && (
-        <p className="text-[13px] text-muted-foreground">{t("weighIn.prefilled")}</p>
+        <p className="text-(length:--text-secondary) text-muted-foreground">
+          {t("weighIn.prefilled")}
+        </p>
       )}
       <Button
         disabled={kg === null || invalid}

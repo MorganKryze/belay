@@ -263,7 +263,10 @@ function BodyContent({
   return (
     <>
       <section aria-labelledby="figure" className={`${cardSurface} flex flex-col px-4 py-3.5`}>
-        <h2 id="figure" className="text-[13px] font-semibold text-muted-foreground">
+        <h2
+          id="figure"
+          className="text-(length:--text-secondary) font-semibold text-muted-foreground"
+        >
           {t("trend.average")}
         </h2>
         {weighings.length < MIN_WEIGHINGS ? (
@@ -276,7 +279,7 @@ function BodyContent({
           />
         )}
         {onCreatine && (
-          <p className="mt-2.5 border-t border-border pt-2.5 text-[13px] text-muted-foreground">
+          <p className="mt-2.5 border-t border-border pt-2.5 text-(length:--text-secondary) text-muted-foreground">
             {t("body.creatineNote")}
           </p>
         )}
@@ -572,7 +575,7 @@ function Weeks({ weeks, ctx }: { weeks: WeekSummary[]; ctx: WeekContext }) {
             <span className="text-body font-semibold">{title}</span>
             <span className="text-right text-body font-semibold tabular-nums">
               {value.kind === "toFollow" ? (
-                <span className="rounded-full bg-track px-2 py-0.5 text-[13px] font-semibold text-muted-foreground">
+                <span className="rounded-full bg-track px-2 py-0.5 text-(length:--text-secondary) font-semibold text-muted-foreground">
                   {value.text}
                 </span>
               ) : value.kind === "inRange" ? (
@@ -585,7 +588,7 @@ function Weeks({ weeks, ctx }: { weeks: WeekSummary[]; ctx: WeekContext }) {
                 value.text
               )}
             </span>
-            <span className="col-span-2 flex flex-wrap gap-x-1.5 text-[13px] text-muted-foreground tabular-nums">
+            <span className="col-span-2 flex flex-wrap gap-x-1.5 text-(length:--text-secondary) text-muted-foreground tabular-nums">
               {parts.map((p, i) => (
                 <span key={p} className="whitespace-nowrap">
                   {i < parts.length - 1 ? `${p} ·` : p}

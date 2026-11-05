@@ -59,7 +59,9 @@ export function AnnotationSheet({
             { value: "note", label: t("annotation.kinds.note") },
           ]}
         />
-        <p className="text-[13px] text-muted-foreground">{t("annotation.legend")}</p>
+        <p className="text-(length:--text-secondary) text-muted-foreground">
+          {t("annotation.legend")}
+        </p>
       </div>
       <label htmlFor={labelId} className="sr-only">
         {t("annotation.label")}
@@ -105,7 +107,9 @@ export function AnnotationSheet({
           {t("annotation.delete")}
         </Button>
       ) : (
-        <p className="text-[13px] text-muted-foreground">{t("annotation.creatineNote")}</p>
+        <p className="text-(length:--text-secondary) text-muted-foreground">
+          {t("annotation.creatineNote")}
+        </p>
       )}
     </Sheet>
   );

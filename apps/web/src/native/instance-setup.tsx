@@ -74,7 +74,7 @@ export function InstanceSetup({ current, onCancel }: { current?: string; onCance
         <p className="mt-1.5 text-body text-muted-foreground">{t("native.instance.intro")}</p>
       </PageHeader>
       <form noValidate onSubmit={(e) => void submit(e)} className="flex flex-col gap-2">
-        <label htmlFor={id} className="text-[13px] font-semibold">
+        <label htmlFor={id} className="text-(length:--text-secondary) font-semibold">
           {t("native.instance.label")}
         </label>
         <input

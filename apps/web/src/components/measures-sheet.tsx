@@ -124,13 +124,17 @@ function MeasuresForm({
   return (
     <div className="flex flex-col gap-3">
       {stepper("waist", t("measures.waist"))}
-      <p className="-mt-1 text-[13px] text-muted-foreground">{t("measures.waistHint")}</p>
+      <p className="-mt-1 text-(length:--text-secondary) text-muted-foreground">
+        {t("measures.waistHint")}
+      </p>
       {/* Side by side from 400 px: under it, the steppers' buttons would squeeze the value. */}
       <div className="grid grid-cols-1 gap-3 min-[400px]:grid-cols-2">
         {stepper("neck", t("measures.neck"))}
         {stepper("hip", t("measures.hip"))}
       </div>
-      <p className="-mt-1 text-[13px] text-muted-foreground">{t("measures.neckHipHint")}</p>
+      <p className="-mt-1 text-(length:--text-secondary) text-muted-foreground">
+        {t("measures.neckHipHint")}
+      </p>
       <Button
         disabled={values.waist === null || bad("waist") || bad("neck") || bad("hip")}
         onClick={() => onSave(values)}

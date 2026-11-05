@@ -69,7 +69,7 @@ export function History({
           const rest = parts(date);
           const content = (
             <>
-              <span className="col-start-1 flex items-baseline justify-between gap-x-3 text-[15px] font-semibold">
+              <span className="col-start-1 flex items-baseline justify-between gap-x-3 text-(length:--text-body) font-semibold">
                 <span>{dayLabel(date, today, t, i18n.language)}</span>
                 {w && (
                   <b className="font-semibold text-foreground tabular-nums">
@@ -79,7 +79,7 @@ export function History({
               </span>
               {rest.length > 0 && (
                 // A line only breaks between two parts, never inside one.
-                <span className="col-start-1 flex flex-wrap gap-x-1.5 text-[13px] text-muted-foreground tabular-nums">
+                <span className="col-start-1 flex flex-wrap gap-x-1.5 text-(length:--text-secondary) text-muted-foreground tabular-nums">
                   {rest.map((part, i) => (
                     <span key={part} className="whitespace-nowrap">
                       {part}

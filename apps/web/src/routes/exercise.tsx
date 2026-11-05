@@ -123,7 +123,7 @@ export function ExercisePage() {
                 ? rotationTitle({ code, sessionId: key, name }, t)
                 : sessionName({ id: key, name }, t)}
             </span>
-            <span className="text-[13px] text-muted-foreground">
+            <span className="text-(length:--text-secondary) text-muted-foreground">
               {[
                 formatSets(slot),
                 formatRir(slot, t),
@@ -152,7 +152,7 @@ export function ExercisePage() {
         );
       })}
       <section aria-labelledby="how" className="flex flex-col gap-2">
-        <h2 id="how" className="text-[15px] font-semibold">
+        <h2 id="how" className="text-(length:--text-body) font-semibold">
           {t("library.howTo")}
         </h2>
         {steps.isPending ? (

@@ -165,7 +165,7 @@ function TrendCard({
         {t("trend.title")}
       </h2>
       <Link to="/body" className={`${cardSurface} flex flex-col px-4 py-3.5`}>
-        <span className="flex items-center justify-between text-[13px] font-semibold text-muted-foreground">
+        <span className="flex items-center justify-between text-(length:--text-secondary) font-semibold text-muted-foreground">
           {t("trend.average")}
           <ChevronRight aria-hidden className="size-4" />
         </span>

@@ -342,7 +342,11 @@ function StepsForm({
         optional
         clampTyped={false}
         error={bad ? t("activitySheet.stepsOutOfRange") : undefined}
-        hint={<p className="text-[13px] text-muted-foreground">{t("activitySheet.stepsNote")}</p>}
+        hint={
+          <p className="text-(length:--text-secondary) text-muted-foreground">
+            {t("activitySheet.stepsNote")}
+          </p>
+        }
       />
       <Button
         // Emptied, it deletes the day's steps; never entered, there is nothing to save.
@@ -426,7 +430,9 @@ function Chips<T extends string>({
     "min-h-11 min-w-11 rounded-chip border border-input bg-card px-3 text-sm font-semibold data-[state=checked]:border-foreground data-[state=checked]:bg-foreground data-[state=checked]:text-background";
   return (
     <div className="flex flex-col gap-1.5">
-      <span className={labelHidden ? "sr-only" : "text-[13px] font-semibold"}>{label}</span>
+      <span className={labelHidden ? "sr-only" : "text-(length:--text-secondary) font-semibold"}>
+        {label}
+      </span>
       <RadioGroup.Root
         aria-label={label}
         value={value ?? ""}
@@ -493,7 +499,10 @@ function Colors({
           </RadioGroup.Item>
         ))}
       </RadioGroup.Root>
-      <p aria-hidden className="min-h-5 text-[13px] text-muted-foreground first-letter:uppercase">
+      <p
+        aria-hidden
+        className="min-h-5 text-(length:--text-secondary) text-muted-foreground first-letter:uppercase"
+      >
         {value ? t(`activities.colors.${value}`) : ""}
       </p>
     </div>
