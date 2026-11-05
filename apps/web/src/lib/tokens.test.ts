@@ -18,6 +18,31 @@ function declared(pattern: RegExp): Record<string, string> {
   return Object.fromEntries([...scales.matchAll(pattern)].map((m) => [m[1]!, oneLine(m[2]!)]));
 }
 
+// The scales text sizes are multiplied by, as declared on the root.
+const scaleOf = (name: string): string => {
+  const value = new RegExp(`--${name}:\\s*([^;]+);`).exec(scales)?.[1];
+  if (value === undefined) throw new Error(`--${name} not declared`);
+  return value;
+};
+
+// A text size in px with the phone's text size at `ratio` and a 16 px root: the scales resolved
+// from their declarations, then the arithmetic CSS would do.
+function sizeAt(value: string, ratio = 1): number {
+  let expression = value;
+  for (let i = 0; i < 3; i++)
+    expression = expression.replace(/var\(--(text-scale|title-scale|bar-scale)\)/g, (_, name) =>
+      name === "text-scale" ? String(ratio) : `(${scaleOf(name)})`,
+    );
+  const js = expression
+    .replace(/(\d*\.?\d+)rem/g, "($1*16)")
+    .replace(/(\d*\.?\d+)px/g, "$1")
+    .replace(/\bcalc\(/g, "(")
+    .replace(/\b(min|max)\(/g, "Math.$1(");
+  if (!/^(?:[\d\s.+\-*/(),]|Math\.min|Math\.max)*$/.test(js))
+    throw new Error(`cannot read ${value}`);
+  return Math.round((new Function(`return ${js}`)() as number) * 1000) / 1000;
+}
+
 describe("design scales", () => {
   it("defines exactly the charter's durations", () => {
     expect(declared(/--(dur-[\w-]+):\s*([^;]+);/g)).toEqual({
@@ -63,27 +88,76 @@ describe("design scales", () => {
     });
   });
 
-  it("defines the type scale from big figure to tab label", () => {
+  it("defines the type scale from big figure to tab label, each at its size at the default text size", () => {
     const text = declared(/--(text-[\w-]+):\s*([^;]+);/g);
-    const expected: Record<string, [string, string, string | undefined, string]> = {
-      figure: ["50px", "1", "-0.035em", "700"],
-      "figure-md": ["34px", "1", "-0.03em", "700"],
-      "title-lg": ["30px", "1.15", "-0.02em", "700"],
-      "title-session": ["22px", "1.25", "-0.015em", "700"],
-      "title-card": ["19px", "1.3", "-0.01em", "650"],
-      "title-compact": ["17px", "1.3", undefined, "650"],
-      button: ["16px", "1.25", undefined, "650"],
-      body: ["15px", "1.45", undefined, "400"],
-      secondary: ["13px", "1.35", undefined, "400"],
-      section: ["13px", "1.35", undefined, "600"],
-      tab: ["11.5px", "1.2", undefined, "600"],
+    const expected: Record<string, [number, string, string | undefined, string]> = {
+      figure: [50, "1", "-0.035em", "700"],
+      "figure-md": [34, "1", "-0.03em", "700"],
+      "title-lg": [30, "1.15", "-0.02em", "700"],
+      "title-session": [22, "1.25", "-0.015em", "700"],
+      "title-card": [19, "1.3", "-0.01em", "650"],
+      "title-compact": [17, "1.3", undefined, "650"],
+      button: [16, "1.25", undefined, "650"],
+      body: [15, "1.45", undefined, "400"],
+      secondary: [13, "1.35", undefined, "400"],
+      section: [13, "1.35", undefined, "600"],
+      tab: [11.5, "1.2", undefined, "600"],
     };
     for (const [name, [size, lh, ls, weight]] of Object.entries(expected)) {
-      expect(text[`text-${name}`], name).toBe(size);
+      expect(sizeAt(text[`text-${name}`]!), name).toBe(size);
       expect(text[`text-${name}--line-height`], name).toBe(lh);
       expect(text[`text-${name}--letter-spacing`], name).toBe(ls);
       expect(text[`text-${name}--font-weight`], name).toBe(weight);
     }
+  });
+
+  it("keeps every text size where it was at the default text size", () => {
+    const sizes = Object.fromEntries(
+      Object.entries(declared(/--(text-[\w-]+):\s*([^;]+);/g))
+        .filter(([name]) => !name.includes("--") && name !== "text-scale")
+        .map(([name, value]) => [name, sizeAt(value)]),
+    );
+    expect(sizes).toEqual({
+      "text-figure": 50,
+      "text-figure-lg": 44,
+      "text-figure-md": 34,
+      "text-title-lg": 30,
+      "text-title-session": 22,
+      "text-title-card": 19,
+      "text-title-compact": 17,
+      "text-button": 16,
+      "text-body": 15,
+      "text-note": 13.5,
+      "text-secondary": 13,
+      "text-section": 13,
+      "text-tab": 11.5,
+      "text-label": 11.5,
+      "text-caption": 11,
+      "text-micro": 10,
+      "text-xs": 12,
+      "text-sm": 14,
+      "text-base": 16,
+      "text-lg": 18,
+      "text-xl": 20,
+      "text-2xl": 24,
+      "text-3xl": 30,
+      "text-4xl": 36,
+      "text-5xl": 48,
+      "text-6xl": 60,
+      "text-7xl": 72,
+      "text-8xl": 96,
+      "text-9xl": 128,
+    });
+  });
+
+  // AX3 on the iPhone: body text from 17 to 40 px.
+  it("damps titles to x1.54 and caps the bar's labels at x1.3 at a large text size", () => {
+    const text = declared(/--(text-[\w-]+):\s*([^;]+);/g);
+    expect(sizeAt(text["text-body"]!, 2.35)).toBeCloseTo(15 * 2.35);
+    expect(sizeAt(text["text-title-lg"]!, 2.35)).toBeCloseTo(30 * 1.54);
+    expect(sizeAt(text["text-tab"]!, 2.35)).toBeCloseTo(11.5 * 1.3);
+    // A field under 16 px makes WebKit zoom the page on focus.
+    expect(sizeAt(text["text-base"]!, 0.82)).toBe(16);
   });
 
   it("defines the radius scale 10, 12, 14, 16, 18, 24, 30 and round (and the 8 px icon square)", () => {
@@ -101,7 +175,8 @@ describe("design scales", () => {
     });
   });
 
+  // In px, so a larger text size, the phone's or the browser's, grows no margin or gap.
   it("keeps the 4 px spacing step", () => {
-    expect(declared(/--(spacing):\s*([^;]+);/g)).toEqual({ spacing: "0.25rem" });
+    expect(declared(/--(spacing):\s*([^;]+);/g)).toEqual({ spacing: "4px" });
   });
 });

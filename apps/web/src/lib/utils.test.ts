@@ -5,9 +5,10 @@ import { describe, expect, it } from "vitest";
 import { cn } from "./utils";
 
 const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../index.css"), "utf8");
+// --text-scale is the phone's text size the steps are multiplied by, not a step.
 const sizes = [...css.matchAll(/--text-([a-z][a-z-]*?):/g)]
   .map((m) => m[1] ?? "")
-  .filter((name) => !name.includes("--"));
+  .filter((name) => !name.includes("--") && name !== "scale");
 
 describe("cn", () => {
   it("finds the project's size tokens", () => {

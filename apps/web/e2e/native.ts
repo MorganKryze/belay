@@ -34,15 +34,17 @@ type PhoneOptions = {
     history?: HealthHistoryAccess;
     grantHistory?: boolean;
   };
+  // The phone's text size over its default, as Android's shell hands it to the page.
+  textScale?: number;
 };
 
 async function asPhone(
   page: Page,
   platform: "ios" | "android",
-  { instance = INSTANCE, token = null, authenticate = "cancel", health }: PhoneOptions,
+  { instance = INSTANCE, token = null, authenticate = "cancel", health, textScale }: PhoneOptions,
 ): Promise<void> {
   await page.addInitScript(
-    ({ platform, instance, token, authenticate, health }) => {
+    ({ platform, instance, token, authenticate, health, textScale }) => {
       type Kept = { origin: string; token: string };
       const TOKEN = "belay.fake.token";
       if (sessionStorage.getItem("belay.fake.seeded") === null) {
@@ -176,6 +178,7 @@ async function asPhone(
         },
       };
       const w = window as unknown as Record<string, unknown>;
+      if (textScale !== undefined) w.BelayText = { scale: () => textScale };
       w.CapacitorCustomPlatform = { name: platform, plugins };
       w.Capacitor = {
         isNativePlatform: () => true,
@@ -188,7 +191,7 @@ async function asPhone(
           plugins[plugin]![method]!(options),
       };
     },
-    { platform, instance, token, authenticate, health },
+    { platform, instance, token, authenticate, health, textScale },
   );
 }
 
