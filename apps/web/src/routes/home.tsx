@@ -79,8 +79,9 @@ export function Home() {
             : t("app.name")
         }
         trailing={
-          // From 1 024 px the top bar carries the avatar to Réglages: one is enough.
-          <div className="lg:hidden">
+          // From 1 024 px the top bar carries the avatar to Réglages, one is enough; the apps have no top
+          // bar.
+          <div className="lg:hidden app:block">
             <AvatarLink
               name={account.kind === "unavailable" ? account.user.displayName : undefined}
             />
@@ -123,7 +124,7 @@ function SignedInHome({ account }: { account: OpenAccount }) {
         title={t("home.greeting", { name: account.user.displayName })}
         eyebrow={formatWeekday(today, i18n.language, today, { long: true })}
         trailing={
-          <div className="lg:hidden">
+          <div className="lg:hidden app:block">
             <AvatarLink name={account.user.displayName} />
           </div>
         }

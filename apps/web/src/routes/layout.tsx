@@ -123,9 +123,9 @@ function Shell() {
       : undefined;
   return (
     <>
-      {/* From 1 024 px the top bar stands in for the dock; an open session resumes from Accueil's
-        Today card or Séances, so the session bar stays on the phone. The session cover keeps the
-        whole screen. */}
+      {/* From 1 024 px in a browser the top bar stands in for the dock; an open session resumes from
+        Accueil's Today card or Séances, so the session bar stays with the dock. The apps never show
+        it (index.css). The session cover keeps the whole screen. */}
       {topBar && <TopBar name={name} />}
       {/* Under the top bar the column fills only the rest of the screen, so a short page does not
           scroll by the bar's height. */}
@@ -144,12 +144,12 @@ function Shell() {
           docked
             ? // The dock's height, its offset from the bottom edge and a gap above it, plus what
               // larger text adds to the dock (native/text-scale.ts); the toast sits on the same
-              // line.
+              // line. Beside a rail (index.css), only the session bar holds the bottom.
               `${
                 bar.shown
                   ? // The session bar, the gap to the tabs and the backing's top padding on top.
-                    "[--chrome-bottom:calc(8.875rem+max(0.75rem,env(safe-area-inset-bottom))+var(--dock-extra,0px))]"
-                  : "[--chrome-bottom:calc(4.5rem+max(0.75rem,env(safe-area-inset-bottom))+var(--dock-extra,0px))]"
+                    "[--chrome-bottom:calc(8.875rem+max(0.75rem,env(safe-area-inset-bottom))+var(--dock-extra,0px))] rail:[--chrome-bottom:calc(3.875rem+max(0.75rem,env(safe-area-inset-bottom)))]"
+                  : "[--chrome-bottom:calc(4.5rem+max(0.75rem,env(safe-area-inset-bottom))+var(--dock-extra,0px))] rail:[--chrome-bottom:0.5rem]"
               } pb-[calc(var(--chrome-bottom)+0.5rem)] lg:[--chrome-bottom:0px]`
             : "pb-[max(1rem,env(safe-area-inset-bottom))]"
         }`}
@@ -173,8 +173,9 @@ function Shell() {
           <Outlet />
         </main>
         {docked && (
-          // No box of its own, so the column's gap never counts it.
-          <div className="contents lg:hidden *:[view-transition-name:dock]">
+          // No box of its own, so the column's gap never counts it. A browser's top bar stands in
+          // for it from 1 024 px; the apps keep it, as a rail, at every width.
+          <div className="contents lg:hidden app:contents *:[view-transition-name:dock]">
             <TabBar
               above={
                 bar.shown &&

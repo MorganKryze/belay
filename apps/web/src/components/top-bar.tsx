@@ -22,7 +22,7 @@ export function TopBar({ name }: { name?: string }) {
   const active = tabIndexOf(useLocation().pathname);
   const onClick = useTabClick();
   return (
-    <header className="sticky top-0 z-30 hidden h-(--top-bar) [view-transition-name:top-bar] items-center border-b border-border bg-surface px-6 lg:flex">
+    <header className="sticky top-0 z-30 hidden h-(--top-bar) [view-transition-name:top-bar] items-center border-b border-border bg-surface px-6 lg:flex app:hidden">
       <div className="mx-auto flex w-full max-w-5xl items-center gap-6">
         {/* The brand and the sections change section like the dock does, by the same click: the
             page left there comes back, with no page transition. */}

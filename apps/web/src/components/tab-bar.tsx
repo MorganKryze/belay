@@ -57,35 +57,38 @@ export function TabBar({ above }: { above?: ReactNode }) {
         }`}
         style={{ "--tab-i": active ?? 0 } as CSSProperties}
       >
-        {/* One pill for the bar, slid to the active column; its edge keeps the cue at 3:1 where
-            the fill alone would not. */}
-        {active !== null && (
-          <span
-            aria-hidden
-            data-pill
-            className="absolute inset-y-1.5 left-1.5 w-[calc((100%-0.75rem)/4)] translate-x-[calc(var(--tab-i)*100%)] rounded-card bg-tab-pill ring-[1.5px] ring-primary-ink ring-inset transition-transform duration-(--pill-duration) ease-pill"
-          />
-        )}
-        <ul className="relative grid grid-cols-4">
-          {TABS.map(({ to, label, Icon }, i) => (
-            <li key={to}>
-              {/* Exact matching keeps the router from marking a tab on its own: on deeper pages
+        {/* The pill's box is the list's, across the bar or down the rail (index.css). */}
+        <div className="relative">
+          {/* One pill for the bar, slid to the active tab; its edge keeps the cue at 3:1 where the
+            fill alone would not. */}
+          {active !== null && (
+            <span
+              aria-hidden
+              data-pill
+              className="absolute inset-y-0 left-0 w-1/4 translate-x-[calc(var(--tab-i)*100%)] rounded-card bg-tab-pill ring-[1.5px] ring-primary-ink ring-inset transition-transform duration-(--pill-duration) ease-pill"
+            />
+          )}
+          <ul className="relative grid grid-cols-4">
+            {TABS.map(({ to, label, Icon }, i) => (
+              <li key={to}>
+                {/* Exact matching keeps the router from marking a tab on its own: on deeper pages
                   aria-current comes from tabIndexOf alone. A tab change is never a step back,
                   even from a deeper page, so it runs no page transition. */}
-              <Link
-                to={to}
-                onClick={onClick(i as 0 | 1 | 2 | 3)}
-                viewTransition={false}
-                activeOptions={{ exact: true, includeSearch: false }}
-                aria-current={i === active ? "page" : undefined}
-                className={i === active ? `${tab} font-bold text-primary-ink` : tab}
-              >
-                <Icon aria-hidden className="size-6" />
-                {t(label)}
-              </Link>
-            </li>
-          ))}
-        </ul>
+                <Link
+                  to={to}
+                  onClick={onClick(i as 0 | 1 | 2 | 3)}
+                  viewTransition={false}
+                  activeOptions={{ exact: true, includeSearch: false }}
+                  aria-current={i === active ? "page" : undefined}
+                  className={i === active ? `${tab} font-bold text-primary-ink` : tab}
+                >
+                  <Icon aria-hidden className="size-6" />
+                  {t(label)}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
       </nav>
     </div>
   );

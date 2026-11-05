@@ -20,6 +20,22 @@
 }
 
 @custom-variant dark (&:is(.dark *));
+/* Inside the Android and iPhone apps, which name their platform on the root (theme-init.js). */
+@custom-variant app (&:is([data-platform] *));
+/*
+ * Where the tabs stand in a rail on the left: from 600 px in the apps, which never show the top
+ * bar, and from 600 to 1 023 px in a browser, where the top bar takes over above that.
+ */
+@custom-variant rail {
+  @media (600px <= width < 64rem) {
+    @slot;
+  }
+  @media (width >= 64rem) {
+    &:is([data-platform] *) {
+      @slot;
+    }
+  }
+}
 
 @theme inline {
   --font-heading: var(--font-sans);
@@ -519,6 +535,31 @@
     --header-top: var(--top-bar);
   }
 }
+/* The apps never show the top bar: nothing pins under it. */
+[data-platform] {
+  --top-bar: 0px;
+}
+
+/*
+ * The rail's width, wherever the tabs stand in one (the rail variant): the page is centred in what
+ * the rail leaves. Pages without tabs (the session cover, Réglages) keep the whole width.
+ */
+:root {
+  --rail-width: 0px;
+}
+@media (600px <= width < 64rem) {
+  html:has([data-dock]) {
+    --rail-width: 5rem;
+  }
+}
+@media (width >= 64rem) {
+  html[data-platform]:has([data-dock]) {
+    --rail-width: 5rem;
+  }
+}
+body {
+  padding-left: var(--rail-width);
+}
 
 /*
  * Calm by default: with reduced motion, nothing scales or bounces; a sheet, a pushed page and the
@@ -724,6 +765,67 @@ html:has([role="dialog"][data-state="open"]) [data-dock] {
 }
 
 /*
+ * The rail: the same dock, restyled, so crossing 600 px mounts nothing and an open sheet stays.
+ * The dock lends its box to its two parts: the tabs stand in a column down the left edge, the
+ * open session's bar runs along the bottom beside them. The pill slides down instead of across.
+ */
+[data-dock] {
+  @variant rail {
+    display: contents;
+    & > * {
+      transition: opacity var(--dock-fade) var(--ease-out);
+    }
+    html:has([role="dialog"][data-state="open"]) & > * {
+      opacity: 0;
+    }
+    & > nav {
+      position: fixed;
+      inset-block: 0;
+      left: 0;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      width: calc(var(--rail-width) + env(safe-area-inset-left));
+      max-width: none;
+      margin: 0;
+      padding: max(0.75rem, env(safe-area-inset-top)) 0.375rem
+        max(0.75rem, env(safe-area-inset-bottom)) calc(0.375rem + env(safe-area-inset-left));
+      border-width: 0 1px 0 0;
+      border-radius: 0;
+      background-color: var(--surface);
+      box-shadow: none;
+      backdrop-filter: none;
+      view-transition-name: dock;
+    }
+    & > :not(nav) {
+      position: fixed;
+      right: 0;
+      bottom: 0;
+      left: calc(var(--rail-width) + env(safe-area-inset-left));
+      z-index: 10;
+      max-width: none;
+      margin: 0;
+      padding: 0.625rem max(0.75rem, env(safe-area-inset-right))
+        max(0.75rem, env(safe-area-inset-bottom)) 0.75rem;
+      view-transition-name: dock-bar;
+      @apply glass;
+    }
+    & ul {
+      grid-template-columns: none;
+      grid-auto-rows: 1fr;
+      row-gap: 0.75rem;
+    }
+    & [data-pill] {
+      inset: 0 0 auto;
+      width: auto;
+      height: calc((100% - 2.25rem) / 4);
+      translate: 0 calc(var(--tab-i) * (100% + 0.75rem));
+    }
+  }
+}
+
+/*
  * Page changes. The router only starts a transition, typed push, pop, cover or uncover, where the
  * browser supports transition types; tab switches get none and change in the same frame. The page
  * moves as the root snapshot: it is the size of the screen and taken at each page's own scroll, so
@@ -765,20 +867,26 @@ html:active-view-transition-type(uncover)::view-transition-old(root) {
   animation: var(--animate-page-uncover-out);
 }
 html:active-view-transition-type(push, pop)::view-transition-old(dock),
+html:active-view-transition-type(push, pop)::view-transition-old(dock-bar),
 html:active-view-transition-type(push, pop)::view-transition-old(top-bar) {
   animation: none;
   opacity: 0;
 }
 html:active-view-transition-type(push, pop)::view-transition-new(dock),
+html:active-view-transition-type(push, pop)::view-transition-new(dock-bar),
 html:active-view-transition-type(push, pop)::view-transition-new(top-bar) {
   animation: none;
 }
 /* The session cover takes the whole screen: the dock and the top bar fade as it rises. */
 html:active-view-transition-type(cover, uncover)::view-transition-old(dock),
+html:active-view-transition-type(cover, uncover)::view-transition-old(dock-bar),
 html:active-view-transition-type(cover, uncover)::view-transition-old(top-bar) {
   animation: var(--animate-fade-out);
 }
 html:active-view-transition-type(cover, uncover)::view-transition-new(dock) {
+  animation: var(--animate-dock-in);
+}
+html:active-view-transition-type(cover, uncover)::view-transition-new(dock-bar) {
   animation: var(--animate-dock-in);
 }
 html:active-view-transition-type(cover, uncover)::view-transition-new(top-bar) {

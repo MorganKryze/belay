@@ -73,7 +73,7 @@ export function SessionBar({
         // Takes up the open session, as Home's session row does, on a device that never had it.
         search={{ start: code }}
         onAnimationEnd={onAnimationEnd}
-        className={`${leaving ? "animate-fade-out" : "animate-session-bar-in"} press flex min-h-13 w-full items-center gap-2.5 rounded-card bg-foreground py-1 pr-0 pl-3.5 text-background lg:hidden`}
+        className={`${leaving ? "animate-fade-out" : "animate-session-bar-in"} press flex min-h-13 w-full items-center gap-2.5 rounded-card bg-foreground py-1 pr-0 pl-3.5 text-background lg:hidden app:flex`}
       >
         <span className="flex min-w-0 flex-1 flex-col text-sm leading-tight">
           {slot ? (
