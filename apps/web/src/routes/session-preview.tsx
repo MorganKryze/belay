@@ -192,13 +192,11 @@ function Preview({
           startLink(session.code, t(open ? "preview.resume" : "preview.start"))
         ))}
       <section aria-labelledby={listId} className="flex flex-col gap-2">
-        <div className="flex items-baseline justify-between gap-3 px-4">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-3 px-4">
           <h2 id={listId} className="text-section text-muted-foreground">
             {t("preview.exercises")}
           </h2>
-          <span className="truncate text-section text-muted-foreground">
-            {t("preview.columns")}
-          </span>
+          <span className="text-section text-muted-foreground">{t("preview.columns")}</span>
         </div>
         <ul className={groupCard}>
           {plan.map((slot, i) => {
