@@ -1,6 +1,7 @@
 import { act, cleanup, render, renderHook, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import i18n from "@/i18n";
+import { setHaptics } from "@/lib/haptic";
 import type { OpenAccount } from "@/sync/account";
 import { expectTokensOnly } from "@/test/design-rules";
 import { Toast, type ToastState, useWriter } from "./weigh-in";
@@ -23,6 +24,19 @@ const classes = (el: Element | null | undefined) => (el?.getAttribute("class") ?
 const card = () => screen.getByRole("status").firstElementChild;
 
 describe("Toast", () => {
+  it("Undo gives a selection haptic, before the undo runs", () => {
+    const events: string[] = [];
+    setHaptics((kind) => events.push(kind));
+    const undo = () => {
+      events.push("undo");
+      return Promise.resolve(true);
+    };
+    render(<Toast toast={{ id: 3, text: "Saved", undo }} onDone={() => {}} />);
+    act(() => screen.getByRole("button", { name: "Undo" }).click());
+    expect(events).toEqual(["selection", "undo"]);
+    setHaptics(() => {});
+  });
+
   it("draws the toast in inverse colours with a 44 px action in the toast-action colour", () => {
     render(<Toast toast={ok} onDone={() => {}} />);
     expect(classes(card())).toEqual(

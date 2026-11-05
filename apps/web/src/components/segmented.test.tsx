@@ -1,6 +1,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { useState } from "react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { setHaptics } from "@/lib/haptic";
 import { expectTokensOnly } from "@/test/design-rules";
 import { Segmented, type SegmentedOptions } from "./segmented";
 
@@ -21,6 +22,16 @@ const thumb = (container: HTMLElement) =>
   container.querySelector<HTMLElement>("[data-slot=segmented-thumb]");
 
 describe("Segmented", () => {
+  it("choosing another segment gives a selection haptic, before the choice is passed on", () => {
+    const events: string[] = [];
+    setHaptics((kind) => events.push(kind));
+    const onChange = vi.fn(() => events.push("change"));
+    render(<Segmented label="Period" value="w" options={options} onChange={onChange} />);
+    fireEvent.click(screen.getByRole("radio", { name: "Month" }));
+    expect(events).toEqual(["selection", "change"]);
+    setHaptics(() => {});
+  });
+
   it("shows no thumb when nothing is chosen", () => {
     const { container } = render(<Harness initial={null} />);
     expect(thumb(container)).toBeNull();

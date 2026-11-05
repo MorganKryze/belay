@@ -1,6 +1,7 @@
 import { createLink } from "@tanstack/react-router";
 import { ChevronDown, ChevronRight, type LucideIcon } from "lucide-react";
 import { Children, type ComponentProps, forwardRef, type ReactNode, useId } from "react";
+import { haptic } from "@/lib/haptic";
 import { cn } from "@/lib/utils";
 import { groupCard, sectionLabel } from "./surfaces";
 
@@ -231,6 +232,7 @@ export function RowSwitch({
       className={cn(row, className)}
       onClick={(e) => {
         onClick?.(e);
+        haptic("selection");
         onCheckedChange(!checked);
       }}
     >
