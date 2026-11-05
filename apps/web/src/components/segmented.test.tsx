@@ -109,15 +109,22 @@ describe("Segmented", () => {
     let groove = 0;
     let word = 0;
     let resized: (() => void) | undefined;
+    // What the live observer watches: a label it does not watch can grow unseen.
+    const watched = new Set<Element>();
     beforeEach(() => {
+      watched.clear();
       vi.stubGlobal(
         "ResizeObserver",
         class {
           constructor(callback: ResizeObserverCallback) {
             resized = () => callback([], this as unknown as ResizeObserver);
           }
-          observe() {}
-          disconnect() {}
+          observe(target: Element) {
+            watched.add(target);
+          }
+          disconnect() {
+            watched.clear();
+          }
         },
       );
       vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockImplementation(function (
@@ -187,6 +194,30 @@ describe("Segmented", () => {
       word = 60;
       act(() => resized!());
       expect(group.hasAttribute("data-stacked")).toBe(false);
+    });
+
+    // The same number of options with other values renders new labels: the old ones leave the page.
+    it("watches the new labels when the options change for others of the same number", () => {
+      groove = 300;
+      word = 60;
+      const labels = () => [
+        ...document.querySelectorAll<HTMLElement>("[data-slot=segmented-label]"),
+      ];
+      const { rerender } = render(
+        <Segmented<string> label="Period" value="w" options={options} onChange={() => {}} />,
+      );
+      expect(labels().every((label) => watched.has(label))).toBe(true);
+      const others: SegmentedOptions<"a" | "b" | "c"> = [
+        { value: "a", label: "Day" },
+        { value: "b", label: "Quarter" },
+        { value: "c", label: "All" },
+      ];
+      rerender(<Segmented<string> label="Period" value="a" options={others} onChange={() => {}} />);
+      expect(labels().map((label) => label.textContent)).toEqual(["Day", "Quarter", "All"]);
+      expect(labels().every((label) => watched.has(label))).toBe(true);
+      word = 151;
+      act(() => resized!());
+      expect(screen.getByRole("radiogroup").hasAttribute("data-stacked")).toBe(true);
     });
   });
 

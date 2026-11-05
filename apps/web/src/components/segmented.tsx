@@ -35,6 +35,8 @@ export function Segmented<T extends string>({
   // for the first measure (null until then): drawn before it, it would slide to its row on open.
   const groove = useRef<HTMLDivElement>(null);
   const [stacked, setStacked] = useState<boolean | null>(null);
+  // Other values render other labels, the old ones leaving the page: they are watched afresh.
+  const values = options.map((o) => o.value).join("\n");
   useLayoutEffect(() => {
     const root = groove.current;
     if (!root) return;
@@ -54,7 +56,7 @@ export function Segmented<T extends string>({
     observer.observe(root);
     for (const label of labels) observer.observe(label);
     return () => observer.disconnect();
-  }, [options.length]);
+  }, [values]);
   return (
     <div className="flex flex-col gap-1.5">
       <span id={id} className={labelHidden ? "sr-only" : `${type} font-semibold`}>
