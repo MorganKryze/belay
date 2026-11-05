@@ -2,7 +2,7 @@ import { Link, useLocation } from "@tanstack/react-router";
 import { Calculator, Dumbbell, House, PersonStanding } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { AvatarLink } from "@/components/avatar";
-import { tabIndexOf } from "@/components/tab-bar";
+import { tabIndexOf, useTabClick } from "@/components/tab-bar";
 
 const SECTIONS = [
   { to: "/", label: "nav.home", Icon: House },
@@ -20,12 +20,15 @@ const section =
 export function TopBar({ name }: { name?: string }) {
   const { t } = useTranslation();
   const active = tabIndexOf(useLocation().pathname);
+  const onClick = useTabClick();
   return (
     <header className="sticky top-0 z-30 hidden h-(--top-bar) [view-transition-name:top-bar] items-center border-b border-border bg-surface px-6 lg:flex">
       <div className="mx-auto flex w-full max-w-5xl items-center gap-6">
-        {/* The brand and the sections change section like the dock does: no page transition. */}
+        {/* The brand and the sections change section like the dock does, by the same click: the
+            page left there comes back, with no page transition. */}
         <Link
           to="/"
+          onClick={onClick(0)}
           viewTransition={false}
           className="flex min-h-11 items-center gap-2 text-title-compact text-foreground"
         >
@@ -44,6 +47,7 @@ export function TopBar({ name }: { name?: string }) {
                 {/* As in the dock, aria-current comes from tabIndexOf alone. */}
                 <Link
                   to={to}
+                  onClick={onClick(i as 0 | 1 | 2 | 3)}
                   viewTransition={false}
                   activeOptions={{ exact: true, includeSearch: false }}
                   aria-current={i === active ? "page" : undefined}

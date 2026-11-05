@@ -15,6 +15,13 @@ export function trackEntries(history: RouterHistory) {
   history.subscribe(note);
 }
 
+// For an entry rewritten under the router, which tells no one: the tab bar's root put back under
+// a restored page.
+export function noteEntry(history: RouterHistory, index: number, href: string) {
+  const hrefs = seen.get(history);
+  if (hrefs) hrefs[index] = href;
+}
+
 export function previousHref(history: RouterHistory): string | undefined {
   const index = history.location.state.__TSR_index;
   return index > 0 ? seen.get(history)?.[index - 1] : undefined;

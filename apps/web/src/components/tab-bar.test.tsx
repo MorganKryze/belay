@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Change } from "@belay/shared/sync/schema";
 import { sessionByCode, starterProgram } from "@belay/shared/training/program";
-import { cleanup, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { IDBFactory } from "fake-indexeddb";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import i18n from "../i18n";
@@ -211,6 +211,30 @@ describe("the tab bar", () => {
     expect(css).toMatch(
       /@media \(prefers-reduced-motion: reduce\) \{\s*:root \{[^}]*--dock-fade: var\(--dur-veil-reduced\);/,
     );
+  });
+
+  it("a tab click brings back the page its tab was left on, in place of the page on screen", async () => {
+    fakeApi({ me: null });
+    const router = renderRoute("/tools/bmi");
+    const nav = await dock();
+    const length = router.history.length;
+    fireEvent.click(nav.getByRole("link", { name: "Body" }));
+    await waitFor(() => expect(router.state.location.pathname).toBe("/body"));
+    fireEvent.click(nav.getByRole("link", { name: "Tools" }));
+    await waitFor(() => expect(router.state.location.pathname).toBe("/tools/bmi"));
+    expect(router.history.length).toBe(length);
+  });
+
+  it("a modified click keeps the browser's own meaning", async () => {
+    fakeApi({ me: null });
+    const router = renderRoute("/tools");
+    const nav = await dock();
+    for (const key of ["metaKey", "ctrlKey", "shiftKey", "altKey"]) {
+      expect(fireEvent.click(nav.getByRole("link", { name: "Body" }), { [key]: true }), key).toBe(
+        true,
+      );
+    }
+    expect(router.state.location.pathname).toBe("/tools");
   });
 
   it("uses tokens only", () => {

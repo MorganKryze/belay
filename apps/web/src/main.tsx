@@ -37,7 +37,8 @@ function render() {
   );
   // Once the first screen has settled, the tabs' pages load ahead of their first tap: on a slow
   // network a tab then opens at once instead of holding the previous page.
-  preloadWhenIdle(TAB_PAGES);
+  // The tabs' memory too, so the first tap does not wait for it.
+  preloadWhenIdle([...TAB_PAGES, { preload: () => import("./lib/tab-memory").catch(() => {}) }]);
 }
 
 // On the phone the session token is read once, before the first request asks for it. If that
