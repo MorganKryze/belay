@@ -5,13 +5,18 @@ import { expectNoAxeViolations } from "./axe";
 import { fakeServer } from "./fake-server";
 
 // Programs as the server stores them, end to end: two programs, the active one of five sessions
-// (the fifth placed before the fourth) and a session set aside. The real clock throughout: the
-// history is placed relative to now.
+// (the fifth placed before the fourth) and a session set aside. The history is placed relative
+// to a clock that stands still on Wednesday 14 October 2026, 6 p.m. in Paris: History lists the
+// current month only, so on the real clock the session done 5 days ago drops out during a month's
+// first days.
 test.use({ locale: "fr-FR", timezoneId: "Europe/Paris", viewport: { width: 390, height: 844 } });
 
 const id = (n: number) => `0199c3a2-7b1e-7cc0-8f3e-${n.toString(16).padStart(12, "0")}`;
 const DAY = 86_400_000;
-const NOW = Date.now();
+const NOW = new Date("2026-10-14T18:00:00+02:00").getTime();
+test.beforeEach(async ({ page }) => {
+  await page.clock.setFixedTime(NOW);
+});
 const T0 = new Date(NOW - 20 * DAY).toISOString(); // the programs written, the first one made active
 // A morning on the Paris day n days ago.
 const morning = (n: number) => {

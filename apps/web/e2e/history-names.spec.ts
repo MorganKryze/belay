@@ -8,10 +8,17 @@ import { ADA, fakeServer } from "./fake-server";
 // before names were kept follows the rename.
 test.use({ locale: "fr-FR", timezoneId: "Europe/Paris", viewport: { width: 1280, height: 900 } });
 
+// Wednesday 14 October 2026, 6 p.m. in Paris; the clock stands still. History lists the current
+// month only, so on the real clock a session done 5 days ago drops out during a month's first days.
+const NOW = new Date("2026-10-14T18:00:00+02:00").getTime();
+test.beforeEach(async ({ page }) => {
+  await page.clock.setFixedTime(NOW);
+});
+
 const id = (n: number) => `0199c3a2-7b1e-7cc0-8f3e-${n.toString(16).padStart(12, "0")}`;
-const T0 = new Date(Date.now() - 20 * 86_400_000).toISOString();
+const T0 = new Date(NOW - 20 * 86_400_000).toISOString();
 const DAY = (n: number, minutes = 0) =>
-  new Date(Date.now() - n * 86_400_000 + minutes * 60_000).toISOString();
+  new Date(NOW - n * 86_400_000 + minutes * 60_000).toISOString();
 const FORCE = id(0x10);
 const HAUT = id(0x11);
 const SCHEDULE = { mode: "rotation" as const, days: Array<null>(7).fill(null) };
