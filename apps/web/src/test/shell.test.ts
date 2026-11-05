@@ -37,12 +37,14 @@ const pathBounds = (d: string) => {
   }
   return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
 };
-// Bounding box (left, top, right, bottom) of the pixels that pass `ink` in an 8-bit RGB,
+// Bounding box (left, top, right, bottom) of the pixels that pass `ink` in an 8-bit RGB or RGBA,
 // non-interlaced PNG.
-const inkBox = (p: string, ink: (r: number, g: number, b: number) => boolean) => {
+const inkBox = (p: string, ink: (r: number, g: number, b: number, a: number) => boolean) => {
   const b = readFileSync(resolve(web, p));
   const [w, h] = [b.readUInt32BE(16), b.readUInt32BE(20)];
-  expect([b[24], b[25], b[28]]).toEqual([8, 2, 0]);
+  expect([b[24], b[28]]).toEqual([8, 0]);
+  expect([2, 6]).toContain(b[25]);
+  const bpp = b[25] === 6 ? 4 : 3;
   const chunks: Buffer[] = [];
   for (let at = 8; at < b.length;) {
     const len = b.readUInt32BE(at);
@@ -51,16 +53,16 @@ const inkBox = (p: string, ink: (r: number, g: number, b: number) => boolean) =>
     at += len + 12;
   }
   const raw = inflateSync(Buffer.concat(chunks));
-  const row = w * 3;
+  const row = w * bpp;
   const px = Buffer.alloc(row * h);
   let [top, bottom, left, right] = [h, -1, w, -1];
   for (let j = 0; j < h; j++) {
     const filter = raw[j * (row + 1)];
     for (let i = 0; i < row; i++) {
       const v = raw[j * (row + 1) + 1 + i]!;
-      const a = i >= 3 ? px[j * row + i - 3]! : 0;
+      const a = i >= bpp ? px[j * row + i - bpp]! : 0;
       const up = j > 0 ? px[(j - 1) * row + i]! : 0;
-      const c = i >= 3 && j > 0 ? px[(j - 1) * row + i - 3]! : 0;
+      const c = i >= bpp && j > 0 ? px[(j - 1) * row + i - bpp]! : 0;
       let pred = 0;
       if (filter === 1) pred = a;
       else if (filter === 2) pred = up;
@@ -73,8 +75,8 @@ const inkBox = (p: string, ink: (r: number, g: number, b: number) => boolean) =>
       px[j * row + i] = (v + pred) & 255;
     }
     for (let i = 0; i < w; i++) {
-      const at = j * row + i * 3;
-      if (ink(px[at]!, px[at + 1]!, px[at + 2]!)) {
+      const at = j * row + i * bpp;
+      if (ink(px[at]!, px[at + 1]!, px[at + 2]!, bpp === 4 ? px[at + 3]! : 255)) {
         [top, bottom] = [Math.min(top, j), Math.max(bottom, j)];
         [left, right] = [Math.min(left, i), Math.max(right, i)];
       }
@@ -221,5 +223,20 @@ describe("app shell identity", () => {
       expect(Math.abs(top - (markTop + markHeight) - 53)).toBeLessThanOrEqual(3);
       expect(Math.abs((left + right + 1) / 2 - 1170 / 2)).toBeLessThanOrEqual(3);
     }
+  });
+
+  it("sizes the Android launch mark as the system splash draws its icon", () => {
+    // The system splash scales the 432 px foreground canvas to 288 dp, and the page takes over
+    // from it: the mark must be as wide there as it was on the splash, so it does not jump.
+    const [left, , right] = inkBox(
+      "../mobile/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png",
+      (_r, _g, _b, a) => a > 127,
+    );
+    const drawn = ((right - left + 1) / 432) * 288;
+    const width = /html\[data-platform="android"\] \.launch \.mark \{\s*width: ([\d.]+)px/.exec(
+      read("index.html"),
+    );
+    expect(width).not.toBeNull();
+    expect(Math.abs(Number(width![1]) - drawn)).toBeLessThanOrEqual(0.5);
   });
 });

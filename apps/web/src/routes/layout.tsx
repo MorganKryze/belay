@@ -84,8 +84,8 @@ function Shell() {
   const session = useOpenSession(account);
   // The launch screen of index.html sits outside the root and covers the wait for the account,
   // so the first screen shows the right one; the class fades it out once the account is known
-  // and the mark has held its second since it was painted. An answer that never comes (a hung
-  // request, storage that never opens) must not keep it up: past the safety delay it goes anyway.
+  // and the page has drawn two frames. An answer that never comes (a hung request, storage that
+  // never opens) must not keep it up: past the safety delay it goes anyway.
   const known = account.kind !== "loading";
   const [start] = useState(() => performance.now());
   useEffect(

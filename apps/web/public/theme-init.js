@@ -17,4 +17,7 @@
       "content",
       dark((meta.getAttribute("media") || "").includes("dark")) ? "#151412" : "#FAFAF7",
     );
+  // The phone apps' pages are styled by platform from the first paint (the launch screen is).
+  const c = globalThis.Capacitor;
+  if (c?.isNativePlatform?.()) document.documentElement.dataset.platform = c.getPlatform();
 }
