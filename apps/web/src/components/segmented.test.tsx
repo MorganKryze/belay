@@ -158,6 +158,23 @@ describe("Segmented", () => {
       expect(thumb(container)!.className).not.toContain("translate-x-");
     });
 
+    // Measuring lays the page out once: a thumb drawn side by side then would slide across to its
+    // row as the screen opens.
+    it("places the thumb in the stack from its first frame, without sliding there", () => {
+      groove = 300;
+      word = 151;
+      const changes = new MutationObserver(() => {});
+      changes.observe(document.body, { subtree: true, attributes: true, attributeOldValue: true });
+      const { container } = render(<Harness initial="y" />);
+      const before = changes
+        .takeRecords()
+        .filter((r) => r.target === thumb(container) && r.attributeName === "class")
+        .map((r) => r.oldValue);
+      changes.disconnect();
+      expect(before).toEqual([]);
+      expect(thumb(container)!.className).toContain("translate-y-[calc(var(--seg-i)*");
+    });
+
     it("restacks when the text grows after the first layout, and unstacks when it shrinks", () => {
       groove = 300;
       word = 60;

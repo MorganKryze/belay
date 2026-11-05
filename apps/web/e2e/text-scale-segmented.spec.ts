@@ -74,3 +74,36 @@ for (const width of [360, 390, 411]) {
     });
   }
 }
+
+// Measuring the labels lays the page out once; a thumb drawn side by side then would slide across
+// to its row each time the screen opens.
+test("text scale x2 opens Séances with the thumb already on the chosen row", async ({ page }) => {
+  await asAndroid(page, { textScale: 2 });
+  await page.setViewportSize({ width: 411, height: 800 });
+  await fakeServer(page);
+  await page.goto("/workouts?tab=program");
+  await expect(page.locator(".launch")).toBeHidden();
+  const tabs = page.getByRole("navigation", { name: "Principale" });
+  await tabs.getByRole("link", { name: "Accueil" }).press("Enter");
+  await settled(page);
+
+  // Every transition the thumb starts as the screen opens.
+  await page.evaluate(() => {
+    const w = window as unknown as { slides: string[] };
+    w.slides = [];
+    document.addEventListener(
+      "transitionrun",
+      (e) => {
+        if ((e.target as HTMLElement).dataset.slot === "segmented-thumb")
+          w.slides.push(e.propertyName);
+      },
+      true,
+    );
+  });
+  await tabs.getByRole("link", { name: "Séances" }).press("Enter");
+  const group = page.getByRole("radiogroup", { name: "Afficher" });
+  await expect(group).toHaveAttribute("data-stacked", "true");
+  await expect(group.getByRole("radio", { name: "Programme" })).toBeChecked();
+  await settled(page);
+  expect(await page.evaluate(() => (window as unknown as { slides: string[] }).slides)).toEqual([]);
+});

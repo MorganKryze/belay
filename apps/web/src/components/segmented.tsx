@@ -31,12 +31,18 @@ export function Segmented<T extends string>({
   const type = "text-(length:--text-secondary) leading-(--text-secondary--line-height)";
   // At the largest text sizes a word can outgrow its third of the groove: the options then stack,
   // one per row, rather than run into each other. Each label's own width is measured, so the
-  // choice holds whichever way they are laid out.
+  // choice holds whichever way they are laid out. Measuring lays the page out, so the thumb waits
+  // for the first measure (null until then): drawn before it, it would slide to its row on open.
   const groove = useRef<HTMLDivElement>(null);
-  const [stacked, setStacked] = useState(false);
+  const [stacked, setStacked] = useState<boolean | null>(null);
   useLayoutEffect(() => {
     const root = groove.current;
-    if (!root || typeof ResizeObserver === "undefined") return;
+    if (!root) return;
+    // A browser without the observer keeps the options side by side.
+    if (typeof ResizeObserver === "undefined") {
+      setStacked(false);
+      return;
+    }
     const labels = [...root.querySelectorAll<HTMLElement>("[data-slot=segmented-label]")];
     const measure = () => {
       // 3 px of padding each side and between columns, 4 px of padding inside each option.
@@ -75,7 +81,7 @@ export function Segmented<T extends string>({
         data-stacked={stacked || undefined}
         className="relative grid auto-cols-fr auto-rows-fr grid-flow-col gap-[3px] data-stacked:grid-flow-row rounded-control bg-track p-[3px] [html:not([data-pointer])_&]:has-[:focus-visible]:outline-2! [html:not([data-pointer])_&]:has-[:focus-visible]:outline-offset-2 [html:not([data-pointer])_&]:has-[:focus-visible]:outline-ring!"
       >
-        {index >= 0 && (
+        {index >= 0 && stacked !== null && (
           // One thumb slides between options; its width is one column of the groove (3 px padding
           // each side, 3 px between columns), and each step moves it one column plus one gap.
           // Stacked, the same along the rows.
