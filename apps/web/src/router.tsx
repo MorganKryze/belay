@@ -207,8 +207,9 @@ export const createAppRouter = (history?: RouterHistory) => {
     defaultNotFoundComponent: NotFound,
     defaultErrorComponent: RouteError,
     defaultViewTransition: viewTransition,
-    // A pushed page opens at its top, Back finds the page where it was left, and a tab opened
-    // from the bar is a new entry, so it starts at its top too.
+    // A pushed page opens at its top and Back finds the page where it was left. A tab from the
+    // bar takes the place of the page on screen and brings back the page and scroll it was left
+    // on (lib/tab-memory.ts).
     scrollRestoration: true,
     // A link starts loading its page when a finger lands on it or a pointer hovers it, so the
     // tap rarely waits on the network.

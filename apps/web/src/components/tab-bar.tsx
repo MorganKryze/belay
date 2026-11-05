@@ -1,6 +1,6 @@
-import { Link, useLocation } from "@tanstack/react-router";
+import { Link, useLocation, useRouter } from "@tanstack/react-router";
 import { Calculator, Dumbbell, House, PersonStanding } from "lucide-react";
-import type { CSSProperties, ReactNode } from "react";
+import type { CSSProperties, MouseEvent, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { tabIndexOf } from "@/lib/tab-index";
 
@@ -13,6 +13,23 @@ const TABS = [
 
 // The rule lives apart from the bar, so Android's Back can read it without the bar in its chunk.
 export { tabIndexOf };
+
+// The dock and the top bar share it: a plain click brings the tab back as it was left; a modified
+// one keeps the browser's own meaning (a new tab, a new window), as the back chevron does. The
+// memory loads ahead with the tabs' pages (main.tsx), outside the startup bundle; if it cannot
+// load, the tab opens at its root as the link would.
+export function useTabClick() {
+  const router = useRouter();
+  return (tab: 0 | 1 | 2 | 3) => (e: MouseEvent) => {
+    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    e.preventDefault();
+    const root = TABS[tab].to;
+    import("@/lib/tab-memory").then(
+      (m) => m.goToTab(router, tab, root),
+      () => router.navigate({ to: root, viewTransition: false }),
+    );
+  };
+}
 
 const tab =
   "press-tint press-icon flex min-h-12.5 flex-col items-center justify-center gap-0.5 rounded-card text-tab text-muted-foreground";
@@ -28,6 +45,7 @@ export function TabBar({ above }: { above?: ReactNode }) {
   const { t } = useTranslation();
   const { pathname, search } = useLocation();
   const active = tabIndexOf(pathname, search);
+  const onClick = useTabClick();
   return (
     // The wrapper is what fades under an open dialog (index.css).
     <div data-dock className={above ? backed : floating}>
@@ -56,6 +74,7 @@ export function TabBar({ above }: { above?: ReactNode }) {
                   even from a deeper page, so it runs no page transition. */}
               <Link
                 to={to}
+                onClick={onClick(i as 0 | 1 | 2 | 3)}
                 viewTransition={false}
                 activeOptions={{ exact: true, includeSearch: false }}
                 aria-current={i === active ? "page" : undefined}
