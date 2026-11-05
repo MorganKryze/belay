@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import i18n from "../i18n";
+import { setHaptics } from "../lib/haptic";
 import { NumberStepper, type NumberStepperProps } from "./number-stepper";
 
 afterEach(async () => {
@@ -33,6 +34,16 @@ function Harness(props: Partial<NumberStepperProps> & { initial?: number | null 
 const input = () => screen.getByRole("textbox", { name: "Load" });
 
 describe("NumberStepper", () => {
+  it("a step with a button or an arrow key gives a light haptic, before the value changes", () => {
+    const events: string[] = [];
+    setHaptics((kind) => events.push(kind));
+    render(<Harness onChange={() => events.push("change")} />);
+    fireEvent.click(screen.getByRole("button", { name: "Increase Load" }));
+    fireEvent.keyDown(input(), { key: "ArrowDown" });
+    expect(events).toEqual(["light", "change", "light", "change"]);
+    setHaptics(() => {});
+  });
+
   it("labels the field and both buttons", () => {
     render(<Harness />);
     expect(input()).toBeTruthy();

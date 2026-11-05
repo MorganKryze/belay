@@ -129,6 +129,8 @@ for (const theme of ["light", "dark"] as const) {
     await page.addInitScript((t) => localStorage.setItem("belay.theme", t), theme);
     await openHome(page, runningA());
     await expect(sessionCard(page)).toContainText("In progress");
+    // The bar rises once the open session is read; axe waits for it to finish.
+    await expect(page.getByRole("region", { name: "Session in progress" })).toBeVisible();
     await expectNoAxeViolations(page);
   });
 }

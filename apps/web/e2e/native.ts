@@ -156,7 +156,13 @@ async function asPhone(
             );
           },
         },
-        Haptics: { notification: async () => {} },
+        Haptics: {
+          notification: async () => {},
+          impact: async () => {},
+          selectionStart: async () => {},
+          selectionChanged: async () => {},
+          selectionEnd: async () => {},
+        },
         LocalNotifications: {
           checkPermissions: async () => ({ display: "granted" }),
           requestPermissions: async () => ({ display: "granted" }),

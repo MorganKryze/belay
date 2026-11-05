@@ -7,6 +7,7 @@ import { CircleAlert } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { formatWeekday } from "@/lib/format";
+import { haptic } from "@/lib/haptic";
 import { usePresence } from "@/lib/presence";
 import { type OpenAccount, useRecord } from "@/sync/account";
 
@@ -126,6 +127,7 @@ export function Toast({ toast, onDone }: { toast: ToastState | null; onDone: () 
               type="button"
               className="min-h-11 min-w-11 rounded-chip px-3 font-bold text-toast-action"
               onClick={() => {
+                haptic("selection");
                 void shown.undo?.().then((ok) => ok && onDone());
               }}
             >

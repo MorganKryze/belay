@@ -3,6 +3,7 @@ import { roundTo } from "@belay/shared/tools/round";
 import { Minus, Plus } from "lucide-react";
 import { type KeyboardEvent, type ReactNode, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { haptic } from "@/lib/haptic";
 import { cn } from "@/lib/utils";
 import { FieldError } from "./field-error";
 import { decimalsOf, formatNumber, parseDecimal } from "@/lib/format";
@@ -64,6 +65,7 @@ export function NumberStepper({
   const nudge = (direction: 1 | -1) => {
     if (inert) return;
     const next = clamp(roundTo((value ?? min) + direction * step, step), min, max);
+    haptic("light");
     setDraft(null);
     onChange(next);
   };

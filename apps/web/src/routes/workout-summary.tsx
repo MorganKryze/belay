@@ -5,12 +5,13 @@ import { liveSets, loggedByExercise, summary } from "@belay/shared/training/rule
 import { NOTE_MAX } from "@belay/shared/training/workout";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { PartyPopper } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { GroupedList, groupSurface } from "@/components/grouped-list";
 import { Button } from "@/components/ui/button";
 import { readSessionVolume } from "@/lib/display-prefs";
 import { formatNumber, formatWeekday, workoutTitle } from "@/lib/format";
+import { haptic } from "@/lib/haptic";
 import { useToday } from "@/lib/today";
 import { readWeightUnit } from "@/lib/units";
 import { cn } from "@/lib/utils";
@@ -41,9 +42,18 @@ function Summary({ account }: { account: OpenAccount }) {
   const [error, setError] = useState<string>();
   // A device preference, read once as the page opens.
   const [volumeShown] = useState(() => readSessionVolume() === "shown");
+  const workout = history?.workouts.find((w) => w.id === workoutId);
+  const done = !!workout && !workout.removed && workout.endedAt !== null;
+  // The session's end, in the hand, once: the ref outlives the second run of a development
+  // render, and a return to this page is a new mount.
+  const buzzed = useRef(false);
+  useEffect(() => {
+    if (!done || buzzed.current) return;
+    buzzed.current = true;
+    haptic("success");
+  }, [done]);
   if (!history) return null;
-  const workout = history.workouts.find((w) => w.id === workoutId);
-  if (!workout || workout.removed || workout.endedAt === null) return <NotFound />;
+  if (!workout || !done) return <NotFound />;
   const stats = summary(workout, liveSets(history), history);
   const unit = readWeightUnit();
   const n = (v: number, digits = 0) => formatNumber(v, i18n.language, { digits });

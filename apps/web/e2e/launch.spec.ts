@@ -1,6 +1,7 @@
 import { expect, type Page, test } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { fakeServer } from "./fake-server";
+import { asAndroid, asIPhone } from "./native";
 import { readMotion, recordMotion } from "./motion";
 
 test.use({ locale: "en-US" });
@@ -66,19 +67,57 @@ test("a signed-in launch never shows the signed-out header", async ({ page }) =>
   expect(seen).not.toContain("Belay");
 });
 
-test("the launch screen stays at least a second after its first paint when the account answers at once", async ({
-  page,
-}) => {
+// Answers the held account question and returns when the page did, on its own clock.
+async function answerAt(page: Page, answer: () => void) {
+  const at = await page.evaluate(() => performance.now());
+  answer();
+  return at;
+}
+
+test("the launch screen leaves in under a second once the account answers", async ({ page }) => {
   await recordLaunch(page);
   await fakeServer(page);
+  const answer = await holdAccount(page);
   await page.goto("/");
+  await expect(page.locator(".launch")).toBeVisible();
+  const answered = await answerAt(page, answer);
   await expect(page.getByRole("heading", { level: 1, name: "Hello, Ada" })).toBeVisible();
-  const { fcp, launchedAt } = await readLaunch(page);
-  expect(launchedAt - fcp).toBeGreaterThanOrEqual(1000);
-  expect(launchedAt - fcp).toBeLessThan(1600);
+  const { launchedAt } = await readLaunch(page);
+  expect(launchedAt - answered).toBeLessThan(1000);
 });
 
-test("the launch screen stays a second after its first paint when the account is known before it", async ({
+for (const [name, phone] of [
+  ["Android", asAndroid],
+  ["iPhone", asIPhone],
+] as const) {
+  test(`in the ${name} app the launch screen leaves in under a second, with the mark alone and centred`, async ({
+    page,
+    baseURL,
+  }) => {
+    await recordLaunch(page);
+    await phone(page, { instance: baseURL!, token: "a".repeat(43) });
+    await fakeServer(page);
+    const answer = await holdAccount(page);
+    await page.goto("/");
+    await expect(page.locator(".launch")).toBeVisible();
+    await expect(page.locator(".launch .word")).toBeHidden();
+    const [mark, viewport] = await page.evaluate(() => {
+      const r = document.querySelector(".launch .mark")!.getBoundingClientRect();
+      return [
+        [r.x + r.width / 2, r.y + r.height / 2],
+        [innerWidth / 2, innerHeight / 2],
+      ];
+    });
+    expect(Math.abs(mark![0]! - viewport![0]!)).toBeLessThanOrEqual(1);
+    expect(Math.abs(mark![1]! - viewport![1]!)).toBeLessThanOrEqual(1);
+    const answered = await answerAt(page, answer);
+    await expect(page.locator(".launch")).toBeHidden();
+    const { launchedAt } = await readLaunch(page);
+    expect(launchedAt - answered).toBeLessThan(1000);
+  });
+}
+
+test("the launch screen never leaves before its first paint, even with the account known", async ({
   page,
 }) => {
   await recordLaunch(page);
@@ -107,7 +146,8 @@ test("the launch screen stays a second after its first paint when the account is
   await expect(page.getByRole("heading", { level: 1, name: "Hello, Ada" })).toBeVisible();
   const { fcp, launchedAt } = await readLaunch(page);
   expect(fcp).toBeGreaterThan(700);
-  expect(launchedAt - fcp).toBeGreaterThanOrEqual(1000);
+  // A frame's callback runs a few milliseconds before the paint it belongs to is stamped.
+  expect(launchedAt).toBeGreaterThanOrEqual(fcp - 17);
 });
 
 test("with the account known after 1.5 s the launch screen leaves right after the answer", async ({
@@ -158,8 +198,7 @@ test("with reduced motion the launch screen fades out in 120 ms on the out curve
   await recordMotion(page);
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1, name: "Hello, Ada" })).toBeVisible();
-  const { fcp, launchedAt } = await readLaunch(page);
-  expect(launchedAt - fcp).toBeGreaterThanOrEqual(1000);
+  await readLaunch(page);
   await expect
     .poll(async () =>
       (await readMotion(page)).filter(

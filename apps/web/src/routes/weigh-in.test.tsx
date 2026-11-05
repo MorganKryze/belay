@@ -2,6 +2,7 @@ import { act, cleanup, fireEvent, screen, waitFor, within } from "@testing-libra
 import { IDBFactory } from "fake-indexeddb";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import i18n from "../i18n";
+import { setHaptics } from "../lib/haptic";
 import { openAccountDb, readOutbox, readWeights, recordChanges } from "../sync/db";
 import { writeLastUser } from "../sync/last-user";
 import { fakeApi } from "../test/fake-api";
@@ -46,6 +47,23 @@ const days = async () =>
   (await readWeights(await openAccountDb(ADA.id))).map((w) => [w.date, w.weightKg]);
 
 describe("the weigh-in line and its sheet", () => {
+  it("Save gives a success haptic, before the weigh-in is written", async () => {
+    await seed(ADA.id, [weight("2026-10-06", 80.2)]);
+    fakeApi({ me: ADA });
+    const haptic = vi.fn();
+    setHaptics(haptic);
+    renderRoute("/");
+    await openSheet();
+    await field();
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(vi.mocked(recordChanges)).toHaveBeenCalled());
+    expect(haptic.mock.calls).toEqual([["success"]]);
+    expect(haptic.mock.invocationCallOrder[0]).toBeLessThan(
+      vi.mocked(recordChanges).mock.invocationCallOrder[0]!,
+    );
+    setHaptics(() => {});
+  });
+
   it("weighs in with two taps when the weight prefilled from the last weigh-in is right", async () => {
     await seed(ADA.id, [weight("2026-10-06", 80.2)]);
     fakeApi({ me: ADA });

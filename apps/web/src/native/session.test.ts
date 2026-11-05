@@ -7,7 +7,13 @@ const { plugin, haptics, bars } = vi.hoisted(() => ({
     clearToken: vi.fn<() => Promise<void>>(),
     authenticate: vi.fn<(o: { url: string; callbackScheme: string }) => Promise<{ url: string }>>(),
   },
-  haptics: { notification: vi.fn<(o: { type: string }) => Promise<void>>() },
+  haptics: {
+    notification: vi.fn<(o: { type: string }) => Promise<void>>(),
+    impact: vi.fn<(o: { style: string }) => Promise<void>>(),
+    selectionStart: vi.fn<() => Promise<void>>(),
+    selectionChanged: vi.fn<() => Promise<void>>(),
+    selectionEnd: vi.fn<() => Promise<void>>(),
+  },
   bars: { setStyle: vi.fn<(o: { style: string }) => Promise<void>>() },
 }));
 vi.mock("@capacitor/core", () => ({
@@ -18,6 +24,7 @@ vi.mock("@capacitor/core", () => ({
 vi.mock("@capacitor/haptics", () => ({
   Haptics: haptics,
   NotificationType: { Success: "SUCCESS" },
+  ImpactStyle: { Light: "LIGHT" },
 }));
 
 const ORIGIN = "https://belay.example.org";
@@ -47,7 +54,7 @@ beforeEach(() => {
   localStorage.setItem("belay.instance", ORIGIN);
   for (const fn of [
     ...Object.values(plugin),
-    haptics.notification,
+    ...Object.values(haptics),
     bars.setStyle,
     persist,
     fetchMock,
@@ -255,6 +262,17 @@ describe("the page's sign-in links and vibrations", () => {
     await new Promise((settle) => setTimeout(settle, 10));
     expect(assign).not.toHaveBeenCalled();
     expect(replace).not.toHaveBeenCalled();
+  });
+
+  it("installing hands the page the app's haptics", async () => {
+    haptics.impact.mockResolvedValue();
+    const { install } = await load();
+    const { haptic } = await import("@/lib/haptic");
+    haptic("light");
+    expect(haptics.impact).not.toHaveBeenCalled();
+    await install();
+    haptic("light");
+    expect(haptics.impact).toHaveBeenCalledWith({ style: "LIGHT" });
   });
 
   it("vibrate gives a success haptic", async () => {

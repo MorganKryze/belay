@@ -9,6 +9,7 @@ import {
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { Settings } from "lucide-react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { setHaptics } from "@/lib/haptic";
 import { expectTokensOnly } from "@/test/design-rules";
 import {
   EmptyState,
@@ -307,6 +308,21 @@ describe("GroupedList", () => {
 });
 
 describe("RowSwitch", () => {
+  it("a tap gives a selection haptic, before the change is passed on", () => {
+    const events: string[] = [];
+    setHaptics((kind) => events.push(kind));
+    render(
+      <RowSwitch
+        label="Importer les pesées"
+        checked={false}
+        onCheckedChange={() => events.push("change")}
+      />,
+    );
+    fireEvent.click(screen.getByRole("switch"));
+    expect(events).toEqual(["selection", "change"]);
+    setHaptics(() => {});
+  });
+
   const sub = "Tes séances terminées et tes pesées vont dans Santé.";
 
   it("a switch row is a switch whose name holds its label and its sub", () => {

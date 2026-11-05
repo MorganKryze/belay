@@ -6,6 +6,7 @@ import { kgFromWeighing, rangeIn, stepIn, weighingFromKg } from "@belay/shared/t
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { formatNumber } from "@/lib/format";
+import { haptic } from "@/lib/haptic";
 import { readWeightUnit, weighingDigits } from "@/lib/units";
 import { DayChip } from "./day-chip";
 import { NumberStepper } from "./number-stepper";
@@ -124,7 +125,14 @@ function WeighInForm({
       {start.prefilled && edited === undefined && (
         <p className="text-[13px] text-muted-foreground">{t("weighIn.prefilled")}</p>
       )}
-      <Button disabled={kg === null || invalid} onClick={() => kg !== null && onSave(date, kg)}>
+      <Button
+        disabled={kg === null || invalid}
+        onClick={() => {
+          if (kg === null) return;
+          haptic("success");
+          onSave(date, kg);
+        }}
+      >
         {t("weighIn.save")}
       </Button>
       {error && (

@@ -69,6 +69,19 @@
       html.dark .launch .mark {
         color: #fb923c;
       }
+      /* In the apps the launch screen is the system's own splash carried on: the mark alone,
+         centred, with no word and no lift, so nothing moves at the handover. */
+      html[data-platform] .launch > div {
+        transform: none;
+      }
+      html[data-platform] .launch .word {
+        display: none;
+      }
+      /* The system splash draws the mark at this width: 288 dp of the icon canvas, of which the
+         mark's ink is 164 of 432 px. */
+      html[data-platform="android"] .launch .mark {
+        width: 109.33px;
+      }
       /* Charter §8: no launch screen on a computer, the tab favicon is enough. */
       @media (min-width: 1024px) {
         .launch {

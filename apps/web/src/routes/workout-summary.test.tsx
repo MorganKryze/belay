@@ -4,6 +4,7 @@ import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/re
 import { IDBFactory } from "fake-indexeddb";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import i18n from "../i18n";
+import { setHaptics } from "../lib/haptic";
 import { openAccountDb, readHistory } from "../sync/db";
 import { writeLastUser } from "../sync/last-user";
 import { fakeApi } from "../test/fake-api";
@@ -103,6 +104,17 @@ const URL = `/workout/summary/${id(2)}`;
 const WEEKDAY = "(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)";
 
 describe("the summary", () => {
+  it("gives a success haptic once as it opens, even where effects run twice", async () => {
+    await seed(ADA.id, DONE);
+    const haptic = vi.fn();
+    setHaptics(haptic);
+    renderRoute(URL, { strict: true });
+    await screen.findByRole("heading", { level: 1, name: "Session A · Push" });
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(haptic.mock.calls).toEqual([["success"]]);
+    setHaptics(() => {});
+  });
+
   it("the summary reads as the session's own page", async () => {
     await seed(ADA.id, DONE);
     renderRoute(URL);

@@ -25,6 +25,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ExerciseLoop } from "@/components/exercise-loop";
 import { Sheet } from "@/components/sheet";
+import { haptic } from "@/lib/haptic";
 import { useLoop } from "@/lib/media";
 import { loadNumber, parseLoad, readWeightUnit, type WeightUnit } from "@/lib/units";
 import type { Chrono } from "@/sync/db";
@@ -273,6 +274,7 @@ export function ExerciseCard({
   const validate = async (row: Row) => {
     const load = loadOf(row);
     if (!load || busy) return;
+    haptic("success");
     setBusy(true);
     setFresh((f) => new Set(f).add(row.position));
     try {

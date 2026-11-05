@@ -4,7 +4,9 @@
 // first request already carries the token.
 import { SystemBars, SystemBarsStyle } from "@capacitor/core";
 import { Haptics, NotificationType } from "@capacitor/haptics";
+import { setHaptics } from "@/lib/haptic";
 import { nativePlatform, readInstance, setNativeSession } from "@/lib/platform";
+import { fireHaptic } from "./haptics";
 import { BelayNative } from "./plugin";
 
 export type SignInResult = "cancelled" | "unavailable" | "expired" | "failed" | "denied";
@@ -89,6 +91,8 @@ export async function install(): Promise<void> {
     token: (o) => (o === origin ? token : null),
     forget: () => BelayNative.clearToken(),
   });
+
+  setHaptics(fireHaptic);
 
   // The page's sign-in links go to the server's web sign-in, which the app cannot use (the
   // cookie would land in the system sheet, not here): they open the native sign-in instead.

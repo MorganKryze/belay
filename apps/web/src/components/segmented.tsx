@@ -1,5 +1,6 @@
 import { RadioGroup } from "radix-ui";
 import { useId, type CSSProperties } from "react";
+import { haptic } from "@/lib/haptic";
 
 export type ChoiceOption<T extends string> = { value: T; label: string };
 // Two or three options of one word each. Beyond that, use ChoiceList.
@@ -45,7 +46,10 @@ export function Segmented<T extends string>({
       <RadioGroup.Root
         aria-labelledby={id}
         value={value ?? ""}
-        onValueChange={(v) => onChange(v as T)}
+        onValueChange={(v) => {
+          haptic("selection");
+          onChange(v as T);
+        }}
         orientation="horizontal"
         className="relative grid auto-cols-fr grid-flow-col gap-[3px] rounded-control bg-track p-[3px] [html:not([data-pointer])_&]:has-[:focus-visible]:outline-2! [html:not([data-pointer])_&]:has-[:focus-visible]:outline-offset-2 [html:not([data-pointer])_&]:has-[:focus-visible]:outline-ring!"
       >
