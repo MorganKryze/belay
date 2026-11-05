@@ -233,22 +233,34 @@ describe("the Android shell", () => {
   });
 
   // Android's splash leaves on the activity's first frame, long before the page draws: the web
-  // view's own white filled the gap. The splash now stays until the page's first frame, whose
-  // launch screen carries the same mark on, and the web view starts on the launch colour. A page
-  // that never draws lets the splash go at the page's own safety delay.
-  it("the splash stays until the page's first frame, on the launch colour", () => {
+  // view's own white filled the gap. The splash now holds the activity until the page has loaded,
+  // its launch screen in it, and then stays over the activity until the web view has drawn that
+  // screen: a web view that has not drawn yet shows its bare background, chalk with no mark. A
+  // page that never draws lets the splash go at the page's own safety delay.
+  it("the splash stays until the web view has drawn the page's launch screen", () => {
     const source = kotlin("MainActivity.kt");
     const flat = source.replace(/\s+/g, " ");
-    const hold = source.indexOf("installSplashScreen().setKeepOnScreenCondition { !painted }");
+    const hold = flat.indexOf("splash.setKeepOnScreenCondition { !loaded }");
     expect(hold).toBeGreaterThan(-1);
-    expect(hold).toBeLessThan(source.indexOf("super.onCreate"));
+    expect(hold).toBeLessThan(flat.indexOf("super.onCreate"));
     expect(flat).toContain("bridge.webView.setBackgroundColor(getColor(R.color.launch))");
+    // Loaded, not merely committed: a committed page may not have parsed its launch screen yet.
+    expect(flat).toContain("override fun onPageLoaded(webView: WebView) { loaded = true }");
+    expect(flat).not.toContain("onPageCommitVisible");
+    // One cap for both holds, counted from the activity's start: 4 s at most, not 4 s twice.
+    expect(flat).toContain("val start = SystemClock.uptimeMillis()");
     expect(flat).toContain(
-      "bridge.addWebViewListener(object : WebViewListener() { override fun onPageCommitVisible(view: WebView, url: String) { painted = true } })",
+      "Handler(Looper.getMainLooper()).postAtTime({ loaded = true }, start + SPLASH_MS)",
     );
-    expect(flat).toContain(
-      "Handler(Looper.getMainLooper()).postDelayed({ painted = true }, SPLASH_MS)",
+    // Over the activity, the splash goes once the web view's frame is on screen, or at the cap.
+    const exit = flat.slice(flat.indexOf("splash.setOnExitAnimationListener { provider ->"));
+    expect(exit.length).toBeLessThan(flat.length);
+    expect(exit).toMatch(
+      /postVisualStateCallback\(.*postOnAnimation \{ web\.postOnAnimation\(remove\) \}/,
     );
+    expect(exit).toContain("Handler(Looper.getMainLooper()).postAtTime(remove, start + SPLASH_MS)");
+    expect(flat).not.toContain("postDelayed");
+    expect(exit.indexOf("provider.remove()")).toBeGreaterThan(-1);
     expect(longConst(source, "SPLASH_MS")).toBe(LAUNCH_SAFETY_MS);
   });
 
