@@ -39,6 +39,13 @@ public final class AccountStore: Sendable {
     return store
   }
 
+  /// What a failed `open` may write to the log: the error's domain and code. Its text can carry
+  /// the store's path, and the path names the account and its instance.
+  public static func logLabel(_ error: any Error) -> String {
+    let error = error as NSError
+    return "\(error.domain) \(error.code)"
+  }
+
   /// A store that lives as long as the value, for tests and previews; `userId` names no file.
   public static func inMemory(userId: String) throws -> AccountStore {
     try AccountStore(writer: DatabaseQueue())

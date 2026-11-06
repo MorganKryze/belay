@@ -73,7 +73,7 @@ final class AccountModel {
         do {
             store = try AccountStore.open(userId: account.userId, origin: account.instance.origin, in: storeFolder)
         } catch {
-            Self.log.error("store not opened: \(String(describing: error), privacy: .public)")
+            Self.log.error("store not opened: \(AccountStore.logLabel(error), privacy: .public)")
         }
     }
 

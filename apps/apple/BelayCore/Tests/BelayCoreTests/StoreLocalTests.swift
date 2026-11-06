@@ -301,6 +301,22 @@ enum Fixture {
     #endif
   }
 
+  @Test func aFailedOpenLogsNeitherTheAccountNorItsInstance() throws {
+    let origin = URL(string: "https://belay.example.org")!
+    let gone = try Fixture.folder().appendingPathComponent("gone")
+    let file = AccountStore.fileURL(userId: "0190abcd-user", origin: origin, in: gone)
+    // The last step of `open`, on a file that is not there: Foundation's error names its path.
+    let error = try #require(throws: (any Error).self) {
+      try FileManager.default.setAttributes(
+        [.protectionKey: AccountStore.protection], ofItemAtPath: file.path)
+    }
+    #expect(String(describing: error).contains("0190abcd-user"))
+
+    let label = AccountStore.logLabel(error)
+    #expect(!label.contains("0190abcd") && !label.contains("example"))
+    #expect(label == "\((error as NSError).domain) \((error as NSError).code)")
+  }
+
   @Test func anInvalidChangeIsRefusedBeforeAnyWrite() throws {
     let w = Fixture.id()
     var late = Fixture.start(w)
