@@ -126,7 +126,14 @@ test.describe("normal motion", () => {
       .getByRole("link", { name: "Tools" })
       .click();
     await expect(page.getByRole("heading", { level: 1, name: "Tools" })).toBeVisible();
-    await expect.poll(async () => (await readMotion(page)).length).toBeGreaterThan(0);
+    // The bar brings the tab back through its memory, so the pill sets off a frame after the
+    // tab's own tint: read once it has run to its end, which also catches anything else set
+    // moving by the switch.
+    const pill = page.getByRole("navigation", { name: "Main" }).locator("[data-pill]");
+    await expect
+      .poll(async () => (await readMotion(page)).some((m) => m.target === "span[data-pill]"))
+      .toBe(true);
+    await pill.evaluate((el) => Promise.all(el.getAnimations().map((a) => a.finished)));
     const moving = (await readMotion(page)).filter((m) => m.transforms);
     expect(moving).toEqual([
       expect.objectContaining({
