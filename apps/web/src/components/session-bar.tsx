@@ -60,7 +60,7 @@ export function SessionBar({
   // The 13 px step: a bare `text-secondary` is the colour token of the same name. Muted through
   // opacity, since no muted colour token reads on the foreground-coloured backing.
   const status =
-    "truncate text-(length:--text-secondary) leading-(--text-secondary--line-height) opacity-80";
+    "break-words text-(length:--text-secondary) leading-(--text-secondary--line-height) opacity-80";
   return (
     // A landmark of its own, so nothing on the page sits outside one.
     <section aria-label={t("sessionBar.label")}>
@@ -78,11 +78,12 @@ export function SessionBar({
         <span className="flex min-w-0 flex-1 flex-col text-sm leading-tight">
           {slot ? (
             <>
-              <span className="truncate font-semibold">
+              <span className="font-semibold break-words">
                 {exerciseById(slot.exerciseId)?.name ?? slot.exerciseId}
               </span>
               {/* As validated: « Série 2 sur 3 · Séance A » while it runs, the rest or the pause
-                  ahead of it, one line at every width. */}
+                  ahead of it. It wraps rather than lose the set once the text is enlarged: it is
+                  what a person looks for mid-session. */}
               <span className={status}>
                 {[
                   ...(paused || resting ? [running] : []),
@@ -96,7 +97,7 @@ export function SessionBar({
             </>
           ) : (
             <>
-              <span className="truncate font-semibold">{letter}</span>
+              <span className="font-semibold break-words">{letter}</span>
               <span className={status}>{running}</span>
             </>
           )}

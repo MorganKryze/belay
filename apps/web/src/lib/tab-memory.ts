@@ -86,10 +86,17 @@ export function goToTab(router: AnyRouter, tab: 0 | 1 | 2 | 3, root: string): vo
   else if (isNative() && levelOf(pathOf(to)) !== 0) {
     // The tab's root takes the place of the page left, under the router, then the page goes on
     // top: Back, the chevron and the swipe all reach the root in one step. The router's own
-    // replace and push in one go would be merged into a single entry.
+    // replace and push in one go would be merged into a single entry. The router's history hears
+    // every replaceState: it would load the root first, and that navigation would cancel the
+    // scroll being restored. The history silences itself the same way for its own writes. The
+    // root gets a key of its own: the router keeps each scroll under its entry's key, and the
+    // left page's would bring the root back at that page's scroll.
     const base = page?.under ?? root;
     const index = router.history.location.state.__TSR_index;
-    window.history.replaceState({ ...window.history.state }, "", base);
+    const key = crypto.randomUUID();
+    router.history._ignoreSubscribers = true;
+    window.history.replaceState({ ...window.history.state, key, __TSR_key: key }, "", base);
+    router.history._ignoreSubscribers = false;
     noteEntry(router.history, index, base);
     void router.navigate(options);
   } else void router.navigate({ ...options, replace: true });
