@@ -43,7 +43,7 @@ struct BelayApp: App {
                     if Fixture.isOn, let store = account.store { Fixture.QueueProbe(store: store) }
                 }
             #endif
-            .task { await account.finishRestore() }
+            .task { await account.finishSignIn() }
             .onChange(of: scenePhase) { _, phase in
                 if phase == .active { account.refresh() }
             }

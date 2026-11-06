@@ -187,8 +187,11 @@ final class AccountModel {
         return origin.hasPrefix("https://") ? String(origin.dropFirst("https://".count)) : origin
     }
 
-    /// A session the previous app kept has no id beside it: the instance names its owner once.
-    func finishRestore() async {
+    /// A sign-in the instance could not answer for (`open` met it unreachable) kept its token with
+    /// no owner beside it: at the next launch the instance names the owner once. The app before
+    /// this one kept its address elsewhere, so its token is never taken up here: the person signs
+    /// in once after the replacement.
+    func finishSignIn() async {
         guard case .signedOut(nil) = state, let instance = storedInstance,
               let token = session.token(origin: instance.origin.absoluteString)
         else { return }
