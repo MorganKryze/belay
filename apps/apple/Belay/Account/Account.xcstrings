@@ -211,6 +211,16 @@
           }
         }
       }
+    },
+    "L’envoi n’a pas abouti. Tout est gardé sur ce téléphone.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sending didn’t go through. Everything is kept on this phone."
+          }
+        }
+      }
     }
   }
 }

@@ -2,11 +2,13 @@ import BelayCore
 import SwiftUI
 
 /// What the screen says while the queue waits, once and quietly: offline, one line; a refused
-/// session, one line and the way back in. Nothing while idle or syncing, nor after a failure the
-/// next sync tries again; logging works the same in every case.
+/// session, one line and the way back in; a send that failed, one line and a retry, since some
+/// failures (a proxy down, a server this build cannot read) never clear on their own. Nothing while
+/// idle or syncing; logging works the same in every case.
 struct SyncNotice: View {
     let status: SyncStatus
     let reconnect: () -> Void
+    let retry: () -> Void
 
     var body: some View {
         switch status {
@@ -18,20 +20,31 @@ struct SyncNotice: View {
             row(symbol: "person.crop.circle.badge.exclamationmark") {
                 Text("Ta session a expiré.", tableName: "Account")
             } action: {
-                Button(action: reconnect) {
-                    Text("Se reconnecter", tableName: "Account")
-                        .font(.subheadline.weight(.semibold))
-                        .frame(minHeight: 44)
-                }
-                .buttonStyle(.bordered)
-                .buttonBorderShape(.capsule)
-                .tint(.muted)
-                .foregroundStyle(.ink)
-                .accessibilityIdentifier("sync-reconnect")
+                button("Se reconnecter", id: "sync-reconnect", action: reconnect)
             }
-        case .idle, .syncing, .failed:
+        case .failed:
+            row(symbol: "exclamationmark.circle") {
+                Text("L’envoi n’a pas abouti. Tout est gardé sur ce téléphone.", tableName: "Account")
+            } action: {
+                button("Réessayer", id: "sync-retry", action: retry)
+            }
+        case .idle, .syncing:
             EmptyView()
         }
+    }
+
+    /// Its title from this screen's table, as `PrimaryButton` reads one.
+    private func button(_ title: LocalizedStringKey, id: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title, tableName: "Account")
+                .font(.subheadline.weight(.semibold))
+                .frame(minHeight: 44)
+        }
+        .buttonStyle(.bordered)
+        .buttonBorderShape(.capsule)
+        .tint(.muted)
+        .foregroundStyle(.ink)
+        .accessibilityIdentifier(id)
     }
 
     /// The prototype's offline row: a muted symbol, the sentence beside it, on a solid surface so

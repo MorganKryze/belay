@@ -19,9 +19,10 @@ struct BelayApp: App {
                     } else {
                         RootView()
                             .safeAreaInset(edge: .top, spacing: 0) {
-                                SyncNotice(status: account.syncStatus) {
-                                    Task { await account.reconnect() }
-                                }
+                                SyncNotice(
+                                    status: account.syncStatus,
+                                    reconnect: { Task { await account.reconnect() } },
+                                    retry: account.refresh)
                             }
                     }
                 } else {
