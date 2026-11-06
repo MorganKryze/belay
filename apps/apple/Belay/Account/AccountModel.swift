@@ -23,7 +23,7 @@ final class AccountModel {
     /// Why the address typed last was not taken, said apart from a sign-in's own failures.
     private(set) var addressProblem: InstanceError?
 
-    private let store: SecretStore
+    private let session: StoredSession
     private let http: HTTPClient
     private let sheet: SignInSheet
     private let defaults: UserDefaults
@@ -36,11 +36,11 @@ final class AccountModel {
         store: SecretStore = KeychainStore(), http: HTTPClient = URLSessionClient(),
         sheet: SignInSheet = SystemSignInSheet(), defaults: UserDefaults = .standard
     ) {
-        self.store = store
+        session = StoredSession(store: store, defaults: defaults)
         self.http = http
         self.sheet = sheet
         self.defaults = defaults
-        if let instance = storedInstance, let token = store.read(origin: instance.origin.absoluteString),
+        if let instance = storedInstance, let token = session.token(origin: instance.origin.absoluteString),
            let userId = defaults.string(forKey: Self.userKey) {
             state = .signedIn(Account(userId: userId, instance: instance, token: token))
         }
@@ -60,7 +60,7 @@ final class AccountModel {
     /// A session the previous app kept has no id beside it: the instance names its owner once.
     func finishRestore() async {
         guard case .signedOut(nil) = state, let instance = storedInstance,
-              let token = store.read(origin: instance.origin.absoluteString)
+              let token = session.token(origin: instance.origin.absoluteString)
         else { return }
         state = .signingIn
         await open(token: token, at: instance)
@@ -93,7 +93,7 @@ final class AccountModel {
         case .failure(let failure): return fail(failure)
         }
         do {
-            try store.write(origin: instance.origin.absoluteString, token: token)
+            try session.keep(origin: instance.origin.absoluteString, token: token)
         } catch {
             Self.log.error("token not kept: \(String(describing: error), privacy: .public)")
             await logout(token: token, at: instance, using: http)
@@ -128,10 +128,11 @@ final class AccountModel {
     }
 
     /// Drops the token and the id; the instance stays, so the field shows it at the next sign-in.
+    /// A token the Keychain fails to drop is still never restored: the sign-out is marked first.
     private func forget() {
         defaults.removeObject(forKey: Self.userKey)
         do {
-            try store.clear()
+            try session.drop()
         } catch {
             Self.log.error("token not dropped: \(String(describing: error), privacy: .public)")
         }
