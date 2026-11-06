@@ -114,9 +114,10 @@ export function PageHeader({
           <h1
             ref={heading}
             {...(focusFallback && { tabIndex: -1, "data-focus-fallback": true })}
-            // Its own width beside the trailing control, so the fit measures the room it has.
+            // Its text's width, narrowed only when the row cannot hold it, so the fit measures the
+            // room it has and a trailing control keeps the rest of the row.
             className={cn(
-              "display-title min-w-0 flex-1 text-title-lg fold-out",
+              "display-title min-w-0 text-title-lg fold-out",
               focusFallback && "outline-none",
             )}
           >
