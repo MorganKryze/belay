@@ -9,6 +9,7 @@ struct SignInView: View {
     @State private var address = ""
     @FocusState private var typing: Bool
     @State private var problemHidden = false
+    @Environment(\.dynamicTypeSize) private var textSize
 
     private var busy: Bool {
         if case .signingIn = account.state { true } else { false }
@@ -18,9 +19,12 @@ struct SignInView: View {
         NavigationStack {
             List {
                 Section {
-                    // The system's placeholder and header greys sit under 4.5:1 on the surface and the wall.
+                    // The system's placeholder grey sits under 4.5:1 on the surface.
+                    // At the accessibility sizes a line holds a few characters: the address wraps instead of
+                    // scrolling out of sight.
                     TextField(
-                        text: $address, prompt: Text("belay.exemple.fr", tableName: "Account").foregroundStyle(.muted)
+                        text: $address, prompt: Text("belay.exemple.fr", tableName: "Account").foregroundStyle(.muted),
+                        axis: textSize.isAccessibilitySize ? .vertical : .horizontal
                     ) {
                         Text("Adresse de l’instance", tableName: "Account")
                     }
@@ -36,13 +40,10 @@ struct SignInView: View {
                     .contentShape(.rect)
                     .onTapGesture { typing = true }
                     .disabled(busy)
-                    // A list row's text field does not expose its label: the header's words name it.
+                    // A list row's text field does not expose its label, so it is named here. No header
+                    // repeats the name: a list header ignores accessibilityHidden, and VoiceOver read it twice.
                     .accessibilityLabel(Text("Adresse de l’instance", tableName: "Account"))
                     .accessibilityIdentifier("signin-address")
-                } header: {
-                    Text("Adresse de l’instance", tableName: "Account")
-                        .foregroundStyle(.muted)
-                        .accessibilityHidden(true)
                 } footer: {
                     if let problem {
                         Label {
@@ -80,7 +81,14 @@ struct SignInView: View {
             if address.isEmpty { address = account.lastAddress }
         }
         // A changed address takes the reproach away; it comes back at the next try if it still holds.
-        .onChange(of: address) { problemHidden = true }
+        .onChange(of: address) { _, typed in
+            // A wrapping field takes Return as a new line: it means Go, as on one line.
+            if typed.contains(where: \.isNewline) {
+                address = typed.filter { !$0.isNewline }
+                return submit()
+            }
+            problemHidden = true
+        }
         // Focus stays on Se connecter after the tap, so VoiceOver would never reach the sentence.
         .onChange(of: problem) { _, sentence in
             guard let sentence else { return }
