@@ -182,6 +182,33 @@ test.describe("in the Android app", () => {
     expect(Math.abs((await scrollY(page)) - y)).toBeLessThanOrEqual(2);
   });
 
+  test("Back from a restored page shows the tab's root at its own scroll, not the page left's", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 412, height: 700 });
+    await open(page, "/workouts?tab=exercises");
+    await expect(exercise(page)).toBeVisible();
+    expect(await scrollY(page)).toBe(0);
+    await exercise(page).click();
+    await expect(page).toHaveURL(/\/exercises\//);
+    await tab(page, "Outils").click();
+    await expect(page.getByRole("heading", { level: 1, name: "Outils" })).toBeVisible();
+    await settled(page);
+    const max = await page.evaluate(
+      () => document.documentElement.scrollHeight - window.innerHeight,
+    );
+    expect(max).toBeGreaterThan(40);
+    await scrollTo(page, Math.floor(max));
+    await tab(page, "Séances").click();
+    await expect(page).toHaveURL(/\/exercises\//);
+    await expect.poll(() => page.evaluate(() => typeof window.belayBack)).toBe("function");
+    expect(await page.evaluate(() => window.belayBack?.())).toBe("page");
+    await expect(page).toHaveURL(/\/workouts\?tab=exercises$/);
+    await expect(exercise(page)).toBeVisible();
+    await settled(page);
+    expect(await scrollY(page)).toBe(0);
+  });
+
   test("Back from a restored page shows the tab's root in one step", async ({ page }) => {
     await restored(page);
     await expect.poll(() => page.evaluate(() => typeof window.belayBack)).toBe("function");
