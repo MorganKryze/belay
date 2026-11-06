@@ -103,19 +103,21 @@ const launchMarkup = () => {
 const MARK = "M86 160L86 266A120 120 0 0 0 326 266";
 
 describe("app shell identity", () => {
-  it("shows the orange mark as the tab icon", () => {
+  it("shows the blue mark as the tab icon, light blue in the dark scheme", () => {
     const logo = read("public/logo.svg");
     expect(logo).toContain(MARK);
-    expect(logo).toContain('fill="#C2410C"');
-    expect(logo).toContain("#FB923C");
+    expect(logo).toContain('fill="#1F4E8C"');
+    expect(logo).toContain("fill:#8DB6EE");
     // Cropped to the mark's 340 px width: it fills a 16 px tab instead of 10.6 px of it.
     expect(logo).toContain('viewBox="86 86 340 340"');
   });
 
-  it("keeps the icon source with a chalk background", () => {
+  it("keeps the icon source as paper hooks on the blue, light blue on dark paper by scheme", () => {
     const src = read("icons/app-icon.svg");
     expect(src).toContain(MARK);
-    expect(src).toContain("#FAFAF7");
+    expect(src).toContain('<rect width="512" height="512" fill="#1F4E8C"/>');
+    expect(src).toContain('fill="#F3F5F5"');
+    expect(src).toMatch(/prefers-color-scheme: dark[^<]*#10151A[^<]*#8DB6EE/);
   });
 
   it("uses one file as normal and maskable icon", () => {
