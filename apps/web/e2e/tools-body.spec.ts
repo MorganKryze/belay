@@ -50,14 +50,14 @@ const style = (el: Locator, prop: string) =>
 
 async function expectLargeFigure(figure: Locator) {
   expect(await style(figure, "font-size")).toBe("50px");
-  expect(await style(figure, "font-weight")).toBe("700");
+  expect(await style(figure, "font-weight")).toBe("800");
   expect(await style(figure, "font-variant-numeric")).toBe("tabular-nums");
 }
 
 test.describe("en", () => {
   test.use({ locale: "en-US" });
 
-  test("the BMI and the body fat are 50 px 700 tabular", async ({ page }) => {
+  test("the BMI and the body fat are 50 px 800 tabular", async ({ page }) => {
     await open(page, "/tools/bmi");
     const bmi = page.getByRole("region", { name: "Your BMI" }).locator("[data-slot=result-figure]");
     await expect(bmi).toHaveText("24.2");

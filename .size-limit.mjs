@@ -16,4 +16,12 @@ export default [
     // Screens stay lazy-loaded, so this covers the startup shell only.
     limit: "180 KiB",
   },
+  {
+    // The bundled display face, as the browser downloads it: woff2 is already compressed.
+    name: "display face and cracks (bytes)",
+    path: [`${dist}/assets/archivo-belay-*.woff2`],
+    gzip: false,
+    brotli: false,
+    limit: "23.3 kB",
+  },
 ];

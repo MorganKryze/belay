@@ -8,6 +8,15 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon-180x180.png" />
     <meta name="theme-color" content="#FAFAF7" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#151412" media="(prefers-color-scheme: dark)" />
+    <!-- The display face, fetched with the page rather than once the stylesheet asks for it, so
+         the first titles and figures are drawn in it. -->
+    <link
+      rel="preload"
+      href="/src/fonts/archivo-belay.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
     <script src="/theme-init.js"></script>
     <style>
       .launch {

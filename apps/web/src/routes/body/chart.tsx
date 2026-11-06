@@ -16,16 +16,16 @@ import { weighingDigits, type WeightUnit } from "@/lib/units";
 
 // The drawing is as wide as the card, in screen pixels, so its text renders at its true size;
 // 320 where nothing is laid out (unit tests). The right padding leaves room for the last average,
-// five characters wide from 100.0 kg.
+// five characters wide from 100.0 kg in the system face, SF Pro's bold figures the widest seen.
 const FALLBACK_W = 320;
 const H = 180;
-const PAD = { left: 26, right: 42, top: 20, bottom: 24 };
+const PAD = { left: 26, right: 46, top: 20, bottom: 24 };
 // A tap this close to a dot (in screen pixels) opens that day's weigh-in.
 const HIT_PX = 22;
 // Rough width of an 11.5px semibold character, to keep the band's label inside the drawing.
 const LABEL_EM = 6.4;
-// Width of a 12px semibold character: a ceiling for Inter's widest letters, so a measured name is
-// never narrower than the drawn one. Tests have no layout to measure text with.
+// Width of a 12px semibold character: meant as a ceiling for the widest letters, so a measured
+// name is never narrower than the drawn one. Tests have no layout to measure text with.
 const NAME_EM = 6.7;
 // Free space kept between two names on the same level.
 const NAME_GAP = 6;

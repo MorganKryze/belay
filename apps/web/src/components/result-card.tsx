@@ -1,5 +1,6 @@
 import { type ReactNode, useId } from "react";
 import { cardSurface } from "@/components/surfaces";
+import { useFit } from "@/lib/fit";
 import { cn } from "@/lib/utils";
 
 // The result of a tool on the kit card. Always mounted, so screen readers announce each new
@@ -37,12 +38,13 @@ export function ResultFigure({
   muted?: boolean;
   unitSpace?: string;
 }) {
+  const fit = useFit<HTMLDivElement>();
   return (
     <div
+      ref={fit}
       data-slot="result-figure"
       className={cn(
-        size === "medium" ? "text-figure-md" : "text-figure",
-        "tabular-nums",
+        size === "medium" ? "display-figure-md text-figure-md" : "display-figure text-figure",
         muted ? "text-muted-foreground" : "text-foreground",
       )}
     >

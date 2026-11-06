@@ -10,6 +10,7 @@ import { useTranslation } from "react-i18next";
 import { GroupedList, groupSurface } from "@/components/grouped-list";
 import { Button } from "@/components/ui/button";
 import { readSessionVolume } from "@/lib/display-prefs";
+import { useFit } from "@/lib/fit";
 import { formatNumber, formatWeekday, workoutTitle } from "@/lib/format";
 import { haptic } from "@/lib/haptic";
 import { useToday } from "@/lib/today";
@@ -32,6 +33,7 @@ export function WorkoutSummary() {
 
 function Summary({ account }: { account: OpenAccount }) {
   const { t, i18n } = useTranslation();
+  const title = useFit<HTMLHeadingElement>();
   const today = useToday();
   const navigate = useNavigate();
   const { workoutId } = useParams({ from: "/workout/summary/$workoutId" });
@@ -92,7 +94,7 @@ function Summary({ account }: { account: OpenAccount }) {
             }),
           })}
         </p>
-        <h1 className="text-(length:--text-title-lg) leading-tight font-bold tracking-tight">
+        <h1 ref={title} className="display-title leading-tight tracking-tight">
           {workoutTitle(workout, sessions, t)}
         </h1>
       </div>
@@ -178,12 +180,13 @@ function Figure({
   unit?: string;
   className?: string;
 }) {
+  const fit = useFit<HTMLElement>();
   return (
     <div className={cn("flex min-w-0 flex-col gap-1 p-4", groupSurface, className)}>
       <dt className="text-(length:--text-secondary) font-semibold text-muted-foreground">
         {label}
       </dt>
-      <dd className="text-(length:--text-figure-lg) leading-none font-extrabold tracking-tight break-words tabular-nums">
+      <dd ref={fit} className="display-figure-lg leading-none tracking-tight">
         {value}
         {unit && (
           <span className="text-(length:--text-title-compact) font-semibold tracking-normal text-muted-foreground">

@@ -130,7 +130,7 @@ test("tapping Active closes the sheet and the row already says Active · 1.75", 
   await expect(activityRow(page)).toHaveText("Your activity Active · 1.75");
 });
 
-test("the energy result is 50 px 700 tabular, kcal 17 px muted, the BMR under a hairline in --border", async ({
+test("the energy result is 50 px 800 tabular, kcal 17 px muted, the BMR under a hairline in --border", async ({
   page,
 }) => {
   await open(page, "/tools/energy");
@@ -138,7 +138,7 @@ test("the energy result is 50 px 700 tabular, kcal 17 px muted, the BMR under a 
   const figure = card.locator('[data-slot="result-figure"]');
   await expect(figure).toHaveText(/^\d[\d,]*\u00a0kcal$/);
   expect(await style(figure, "font-size")).toBe("50px");
-  expect(await style(figure, "font-weight")).toBe("700");
+  expect(await style(figure, "font-weight")).toBe("800");
   expect(await style(figure, "font-variant-numeric")).toBe("tabular-nums");
   const unit = figure.locator("span");
   expect(await style(unit, "font-size")).toBe("17px");
