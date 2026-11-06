@@ -1,10 +1,11 @@
 import AuthenticationServices
 import BelayCore
 import Foundation
+import Network
 import os
 
 /// The person signed in: who they are on which instance, and the session token that proves it.
-struct Account {
+struct Account: Equatable {
     let userId: String
     let instance: Instance
     let token: String
@@ -27,6 +28,16 @@ final class AccountModel {
     private(set) var store: AccountStore?
     /// Why the address typed last was not taken, said apart from a sign-in's own failures.
     private(set) var addressProblem: InstanceError?
+    /// Where the open store's sync stands; idle while signed out.
+    private(set) var syncStatus: SyncStatus = .idle
+
+    /// Whom the open store and its sync were opened for. Another person, instance or token closes
+    /// both first, so one account's queue never goes out under another's token.
+    private var openedFor: Account?
+    private var engine: SyncEngine?
+    private var following: Task<Void, Never>?
+    /// The network coming back is a trigger: the queue may have waited for it.
+    private let path = NWPathMonitor()
 
     private let session: StoredSession
     private let http: HTTPClient
@@ -53,26 +64,81 @@ final class AccountModel {
         }
         // An assignment in init does not run didSet.
         followState()
-    }
-
-    /// The store is open exactly while signed in. Signing out closes it and keeps its file, queue
-    /// included, for that account's next sign-in.
-    private func followState() {
-        if case .signedIn = state {
-            if store == nil { openStore() }
-        } else {
-            store = nil
+        path.pathUpdateHandler = { [weak self] path in
+            guard path.status == .satisfied else { return }
+            Task { @MainActor in self?.refresh() }
         }
+        path.start(queue: .main)
     }
 
-    /// Opens the signed-in account's store; on failure the app says so and offers to try again.
+    /// The store and its sync are open exactly while signed in. Signing out closes them and keeps
+    /// the file, queue included, for that account's next sign-in.
+    private func followState() {
+        guard case .signedIn(let account) = state else { return closeStore() }
+        if openedFor != account { closeStore() }
+        if store == nil { openStore() }
+    }
+
+    /// Opens the signed-in account's store and syncs it; on failure the app says so and offers to
+    /// try again.
     func openStore() {
-        guard case .signedIn(let account) = state else { return }
+        guard case .signedIn(let account) = state, store == nil else { return }
+        let store: AccountStore
         do {
             store = try AccountStore.open(userId: account.userId, origin: account.instance.origin, in: storeFolder)
         } catch {
             Self.log.error("store not opened: \(AccountStore.logLabel(error), privacy: .public)")
+            return
         }
+        self.store = store
+        openedFor = account
+        let engine = SyncEngine(
+            userId: account.userId, store: store,
+            transport: HTTPTransport(instance: account.instance, token: account.token, client: http),
+            onLanded: { [weak self] in await self?.landed(store) })
+        self.engine = engine
+        following = Task { [weak self] in
+            for await status in engine.statuses() { self?.syncStatus = status }
+        }
+        Task { await engine.sync() }
+    }
+
+    private func closeStore() {
+        if let engine { Task { await engine.stop() } }
+        engine = nil
+        following?.cancel()
+        following = nil
+        store = nil
+        openedFor = nil
+        syncStatus = .idle
+    }
+
+    /// After a write to the store: the sync follows once writes pause.
+    func didWrite() {
+        guard let engine else { return }
+        Task { await engine.schedule() }
+    }
+
+    /// Back in front, or the network back: the run going, if any, is fresh enough.
+    func refresh() {
+        guard let engine else { return }
+        Task { await engine.refresh() }
+    }
+
+    /// A complete pull: what is stored is current, so a session left open elsewhere can be closed.
+    private func landed(_ store: AccountStore) {
+        // A sync of the store just closed lands nowhere: its account is gone from this screen.
+        guard store === self.store else { return }
+        do {
+            if try store.closeForgotten(now: Date()) { didWrite() }
+        } catch {
+            Self.log.error("forgotten sessions not closed: \(AccountStore.logLabel(error), privacy: .public)")
+        }
+    }
+
+    /// The token was refused: signing out leaves the store and its queue for the next sign-in.
+    func reconnect() async {
+        await signOut()
     }
 
     /// The instance last signed in to, as the web screens' links find it.

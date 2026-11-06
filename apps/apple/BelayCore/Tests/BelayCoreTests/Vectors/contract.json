@@ -29,7 +29,8 @@
     },
     "exerciseId": "^(ds|belay):[a-z0-9-]{1,40}$",
     "minTime": "1900-01-01T00:00:00.000Z",
-    "clockSlackMs": 300000
+    "clockSlackMs": 300000,
+    "maxChanges": 500
   },
   "changes": [
     {

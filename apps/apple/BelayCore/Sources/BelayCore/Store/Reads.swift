@@ -47,11 +47,13 @@ extension AccountStore {
     try Rows.single(ActiveSession.self, db, "activeSession")
   }
 
-  /// The refusals the person has not read about yet, in the order they came.
+  /// The refusals the person has not read about yet, in the order they came. An entry this build
+  /// cannot read stays as a trace but is not listed: no screen could say what it was.
   public static func rejected(_ db: Database) throws -> [RejectedEntry] {
-    try Row.fetchAll(db, sql: "SELECT id, bytes, reason FROM rejected ORDER BY id").map { row in
-      RejectedEntry(
-        id: row["id"], change: try ChangeJSON.decode(row["bytes"]), reason: row["reason"])
+    try Row.fetchAll(db, sql: "SELECT id, bytes, reason FROM rejected ORDER BY id").compactMap {
+      row in
+      guard let change = try? ChangeJSON.decode(row["bytes"]) else { return nil }
+      return RejectedEntry(id: row["id"], change: change, reason: row["reason"])
     }
   }
 

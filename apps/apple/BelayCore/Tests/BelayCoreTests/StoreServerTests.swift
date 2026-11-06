@@ -76,6 +76,43 @@ import Testing
     #expect(try store.rejected().map(\.change) == [note("a", at: 1)])
   }
 
+  @Test func aRefusedStartTakesItsSessionAway() throws {
+    let sent = try store.outbox(limit: nil)
+    try store.applyServer(
+      sent: sent, response: Fixture.response(rejected: [Rejected(index: 0, reason: "refused")]))
+    #expect(try row() == nil)
+    // Nothing is left to resume.
+    #expect(try store.activeSession() == nil)
+  }
+
+  @Test func aRefusedSetRemovalPutsTheSetBack() throws {
+    let set = try store.recordSet(Fixture.set(w), at: Fixture.time(1), active: Fixture.active(w))
+    try store.applyServer(sent: try store.outbox(limit: nil), response: Fixture.response())
+    let removal = Change.set(
+      SetChange(id: set.id, workoutId: w, at: Fixture.time(2), edit: .removed(true)))
+    try store.recordChanges([removal], active: .keep)
+    #expect(try store.history().sets.first?.removed == true)
+
+    try store.applyServer(
+      sent: try store.outbox(limit: nil),
+      response: Fixture.response(rejected: [Rejected(index: 0, reason: "refused")]))
+    let back = try #require(try store.history().sets.first)
+    #expect(!back.removed && back.removedAt == nil)
+  }
+
+  @Test func aRefusedSessionRemovalPutsTheSessionBack() throws {
+    try store.applyServer(sent: try store.outbox(limit: nil), response: Fixture.response())
+    let removal = Change.workout(WorkoutChange(id: w, at: Fixture.time(2), edit: .removed(true)))
+    try store.recordChanges([removal], active: .keep)
+    #expect(try row()?.removed == true)
+
+    try store.applyServer(
+      sent: try store.outbox(limit: nil),
+      response: Fixture.response(rejected: [Rejected(index: 0, reason: "refused")]))
+    let back = try #require(try row())
+    #expect(!back.removed && back.removedAt == nil)
+  }
+
   @Test func theRowsReceivedAreStored() throws {
     let other = Fixture.id(5)
     let set = SetRow(

@@ -31,6 +31,8 @@ public enum Bounds {
   public static let exerciseNameMax = 40
   /// No session time is before 1900.
   public static let minTime = "1900-01-01T00:00:00.000Z"
+  /// The most changes one sync request carries; the rest go in the next round.
+  public static let maxChanges = 500
   /// How far ahead of its own clock the server takes a session's time, in milliseconds.
   public static let clockSlackMs = 5 * 60_000
 }
