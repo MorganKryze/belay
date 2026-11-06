@@ -3,12 +3,14 @@ import Testing
 
 @testable import BelayCore
 
-/// A store that keeps one token in memory and, when asked, fails to drop it, as a locked or
-/// damaged Keychain can.
+/// A store that keeps one token in memory and, when asked, fails to drop it or to keep a new one,
+/// as a locked or damaged Keychain can.
 private final class MemoryStore: SecretStore, @unchecked Sendable {
   private let lock = NSLock()
   private var kept: (origin: String, token: String)?
   private let clearFails: Bool
+  /// Set once a token is in, so the store can hold one it will no longer replace.
+  var writeFails = false
 
   init(clearFails: Bool = false) { self.clearFails = clearFails }
 
@@ -17,6 +19,7 @@ private final class MemoryStore: SecretStore, @unchecked Sendable {
   }
 
   func write(origin: String, token: String) throws {
+    if writeFails { throw KeychainError(status: -25308) }
     lock.withLock { kept = (origin, token) }
   }
 
@@ -51,6 +54,18 @@ private func freshDefaults() -> UserDefaults {
     #expect(store.read(origin: origin) == "t0k3n")
     // The next launch builds its own.
     #expect(StoredSession(store: store, defaults: defaults).token(origin: origin) == nil)
+  }
+
+  /// The Keychain write clears first, so after a sign-out it could not drop, the next sign-in
+  /// throws too and the old token stays: the mark must stay with it.
+  @Test func staysSignedOutWhenTheNextSignInCannotKeepItsToken() throws {
+    let store = MemoryStore(clearFails: true)
+    let session = StoredSession(store: store, defaults: freshDefaults())
+    try session.keep(origin: origin, token: "t0k3n")
+    store.writeFails = true
+    try? session.drop()
+    #expect(throws: KeychainError.self) { try session.keep(origin: origin, token: "new") }
+    #expect(session.token(origin: origin) == nil)
   }
 
   @Test func restoresAgainAfterTheNextSignIn() throws {
