@@ -201,11 +201,32 @@ extension SignInTests {
       #expect(request.value(forHTTPHeaderField: "Authorization") == "Bearer t0k3n")
     }
 
-    @Test func mapsARefusedTokenAndANetworkError() async {
-      let refused = FakeServer(status: 401, json: #"{"error":"unauthenticated"}"#)
+    @Test(arguments: [401, 403])
+    func saysTheTokenIsRefusedOnlyWhenTheInstanceSaysSo(_ status: Int) async {
+      let refused = FakeServer(status: status, json: #"{"error":"unauthenticated"}"#)
       #expect(await me(token: "t", at: instance, using: refused) == .failure(.failed))
+    }
+
+    @Test(arguments: [500, 502, 503])
+    func keepsTheTokenWhenTheInstanceFails(_ status: Int) async {
+      let failing = FakeServer(status: status, json: #"{"error":"server_error"}"#)
+      #expect(await me(token: "t", at: instance, using: failing) == .failure(.unavailable))
+    }
+
+    @Test func keepsTheTokenWhenTheInstanceDoesNotAnswerInTime() async {
+      let slow = FakeServer(throwing: URLError(.timedOut))
+      #expect(await me(token: "t", at: instance, using: slow) == .failure(.unavailable))
+    }
+
+    @Test func keepsTheTokenWithoutANetwork() async {
       let offline = FakeServer(throwing: URLError(.notConnectedToInternet))
       #expect(await me(token: "t", at: instance, using: offline) == .failure(.unavailable))
+    }
+
+    // A captive portal answers 200 with its own page: the instance was never reached.
+    @Test func keepsTheTokenWhenSomethingElseAnswers() async {
+      let portal = FakeServer(status: 200, json: "<html><body>Wi-Fi login</body></html>")
+      #expect(await me(token: "t", at: instance, using: portal) == .failure(.unavailable))
     }
 
     @Test func endsTheSessionWithTheBearer() async throws {
