@@ -28,8 +28,6 @@ final class AccountModel {
     private let sheet: SignInSheet
     private let defaults: UserDefaults
 
-    /// The person's id, kept beside the instance so a launch without network opens signed in.
-    private static let userKey = "belay.user"
     private static let log = Logger(subsystem: "cloud.libresoftware.belay", category: "account")
 
     init(
@@ -41,7 +39,7 @@ final class AccountModel {
         self.sheet = sheet
         self.defaults = defaults
         if let instance = storedInstance, let token = session.token(origin: instance.origin.absoluteString),
-           let userId = defaults.string(forKey: Self.userKey) {
+           let userId = session.userId {
             state = .signedIn(Account(userId: userId, instance: instance, token: token))
         }
     }
@@ -107,7 +105,7 @@ final class AccountModel {
     private func open(token: String, at instance: Instance) async {
         switch await me(token: token, at: instance, using: http) {
         case .success(let me):
-            defaults.set(me.id, forKey: Self.userKey)
+            session.remember(userId: me.id)
             state = .signedIn(Account(userId: me.id, instance: instance, token: token))
         case .failure(.unavailable):
             // The token stays: the next try, or the next launch, may reach the instance.
@@ -130,7 +128,6 @@ final class AccountModel {
     /// Drops the token and the id; the instance stays, so the field shows it at the next sign-in.
     /// A token the Keychain fails to drop is still never restored: the sign-out is marked first.
     private func forget() {
-        defaults.removeObject(forKey: Self.userKey)
         do {
             try session.drop()
         } catch {
