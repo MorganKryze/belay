@@ -98,8 +98,15 @@ function Summary({ account }: { account: OpenAccount }) {
           {workoutTitle(workout, sessions, t)}
         </h1>
       </div>
-      <dl className="grid grid-cols-2 gap-3">
-        <Figure label={t("summary.duration")} value={duration.value} unit={duration.unit} />
+      {/* With large text (a browser's size counts, unlike data-text-scaled) the strip is narrow
+          in rem, and the duration gets both columns so it keeps one line above the fit floor. */}
+      <dl className="@container grid grid-cols-2 gap-3">
+        <Figure
+          label={t("summary.duration")}
+          value={duration.value}
+          unit={duration.unit}
+          className="@max-[16rem]:col-span-2"
+        />
         <Figure label={t("summary.sets")} value={String(stats.workSets)} />
         {volumeShown && (
           <Figure
