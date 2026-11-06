@@ -24,7 +24,7 @@ struct BelayApp: App {
                 if case .signedIn = account.state {
                     if let store = account.store {
                         // Another account's store is another shell: nothing of the last one stays.
-                        RootView(store: store).id(ObjectIdentifier(store))
+                        RootView(store: store, didWrite: account.didWrite).id(ObjectIdentifier(store))
                             .safeAreaInset(edge: .top, spacing: 0) {
                                 SyncNotice(
                                     status: account.syncStatus,
@@ -38,6 +38,11 @@ struct BelayApp: App {
                     SignInView(account: account)
                 }
             }
+            #if DEBUG
+                .overlay(alignment: .topLeading) {
+                    if Fixture.isOn, let store = account.store { Fixture.QueueProbe(store: store) }
+                }
+            #endif
             .task { await account.finishRestore() }
             .onChange(of: scenePhase) { _, phase in
                 if phase == .active { account.refresh() }
