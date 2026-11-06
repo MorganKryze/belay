@@ -22,6 +22,8 @@
 @custom-variant dark (&:is(.dark *));
 /* Inside the Android and iPhone apps, which name their platform on the root (theme-init.js). */
 @custom-variant app (&:is([data-platform] *));
+/* Enlarged text in the apps (native/text-scale.ts): what keeps one line at the default size wraps. */
+@custom-variant text-scaled (&:is([data-text-scaled] *));
 /*
  * Where the tabs stand in a rail on the left: from 600 px in the apps, which never show the top
  * bar, and from 600 to 1 023 px in a browser, where the top bar takes over above that.

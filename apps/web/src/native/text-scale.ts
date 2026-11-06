@@ -35,10 +35,13 @@ export function watchTextScale(): void {
 
 // The page keeps room for the dock at its default height (layout.tsx); what larger text adds to
 // it goes into --dock-extra. Nothing is watched at the default size, so nothing runs there.
+// data-text-scaled marks enlarged text, so what keeps one line at the default size (the session
+// bar) wraps only then, where the room follows the dock.
 let watching: { size: ResizeObserver; tree: MutationObserver } | null = null;
 let dock: Element | null = null;
 
 function followDock(): void {
+  root.toggleAttribute("data-text-scaled", ratio() !== 1);
   if (ratio() === 1) {
     watching?.size.disconnect();
     watching?.tree.disconnect();
@@ -73,13 +76,15 @@ function findDock(): void {
   else root.style.setProperty("--dock-extra", "0px");
 }
 
-// How much taller the dock is than at the default text size: measured both ways in the same task,
-// so the default size is never painted.
+// How much taller the dock is than at the default text size, its lines unwrapped as there: measured
+// both ways in the same task, so the default size is never painted.
 function growth(el: Element): number {
   const scale = root.style.getPropertyValue("--text-scale");
   const now = el.getBoundingClientRect().height;
   root.style.setProperty("--text-scale", "1");
+  root.removeAttribute("data-text-scaled");
   const base = el.getBoundingClientRect().height;
+  root.setAttribute("data-text-scaled", "");
   root.style.setProperty("--text-scale", scale);
   return Math.max(0, Math.round(now - base));
 }

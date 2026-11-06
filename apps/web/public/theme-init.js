@@ -26,6 +26,9 @@
     r.style.font = "-apple-system-body";
     if (r.style.font) k = parseFloat(getComputedStyle(r).fontSize) / 17;
     r.style.font = "";
-    if (isFinite(k) && k > 0) r.style.setProperty("--text-scale", k);
+    if (isFinite(k) && k > 0) {
+      r.style.setProperty("--text-scale", k);
+      r.toggleAttribute("data-text-scaled", k !== 1);
+    }
   }
 }

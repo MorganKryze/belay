@@ -57,10 +57,14 @@ export function SessionBar({
         : "sessionBar.running",
   );
   const letter = t("sessionBar.session", { code });
+  // One line each at the default size, ending in an ellipsis as validated, so the bar keeps the
+  // height the page leaves room for. Enlarged text wraps instead of losing the exercise and the set
+  // a person looks for mid-session; the page's room follows the dock there.
+  const lines =
+    "truncate text-scaled:overflow-visible text-scaled:whitespace-normal text-scaled:break-words";
   // The 13 px step: a bare `text-secondary` is the colour token of the same name. Muted through
   // opacity, since no muted colour token reads on the foreground-coloured backing.
-  const status =
-    "break-words text-(length:--text-secondary) leading-(--text-secondary--line-height) opacity-80";
+  const status = `${lines} text-(length:--text-secondary) leading-(--text-secondary--line-height) opacity-80`;
   return (
     // A landmark of its own, so nothing on the page sits outside one.
     <section aria-label={t("sessionBar.label")}>
@@ -78,12 +82,11 @@ export function SessionBar({
         <span className="flex min-w-0 flex-1 flex-col text-sm leading-tight">
           {slot ? (
             <>
-              <span className="font-semibold break-words">
+              <span className={`${lines} font-semibold`}>
                 {exerciseById(slot.exerciseId)?.name ?? slot.exerciseId}
               </span>
               {/* As validated: « Série 2 sur 3 · Séance A » while it runs, the rest or the pause
-                  ahead of it. It wraps rather than lose the set once the text is enlarged: it is
-                  what a person looks for mid-session. */}
+                  ahead of it. */}
               <span className={status}>
                 {[
                   ...(paused || resting ? [running] : []),
@@ -97,7 +100,7 @@ export function SessionBar({
             </>
           ) : (
             <>
-              <span className="font-semibold break-words">{letter}</span>
+              <span className={`${lines} font-semibold`}>{letter}</span>
               <span className={status}>{running}</span>
             </>
           )}

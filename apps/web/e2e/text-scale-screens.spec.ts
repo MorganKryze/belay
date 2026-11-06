@@ -237,6 +237,42 @@ for (const width of [360, 390]) {
   }
 }
 
+// At the default size the session bar keeps its validated look, one line each for the exercise and
+// the set: a long name ends in an ellipsis, so the bar stays the height the page leaves room for
+// and Home's last row still clears the dock.
+test.describe("at the default size, a long exercise name", () => {
+  const [first, ...rest] = sessionByCode("A", starterProgram)!.slots;
+  const LONG_A: Change[] = [
+    { ...RUNNING_A[0]!, plan: [{ ...first!, exerciseId: "ds:1679" }, ...rest] } as Change,
+  ];
+
+  for (const width of [360, 390]) {
+    test(`at ${width} px keeps the session bar on one line each and Home clear of the dock`, async ({
+      page,
+    }) => {
+      await asAndroid(page);
+      await page.setViewportSize({ width, height: 600 });
+      await fakeServer(page, { changes: LONG_A });
+      await page.goto("/");
+      await expect(sessionBar(page)).toContainText("Dumbbell seated one arm bicep curl");
+      await expect(page.locator(".launch")).toBeHidden();
+      await settled(page);
+
+      const bar = await sessionBar(page).boundingBox();
+      expect.soft(bar!.height, "the bar's height").toBeLessThanOrEqual(52.5);
+      const name = sessionBar(page).getByText("Dumbbell seated one arm bicep curl");
+      expect
+        .soft(
+          await name.evaluate((el) => el.scrollWidth > el.clientWidth),
+          "the name ends in an ellipsis",
+        )
+        .toBe(true);
+      expect.soft(await underDock(page), "under the dock").toEqual([]);
+      expect.soft(await lastRowClears(page), "the last row clears the dock").toBeLessThanOrEqual(0);
+    });
+  }
+});
+
 // The exercise list in French, whose muscle and equipment words run longest: each row grows with
 // its name and line, so no text spills over the hairline of the row above or below it. A row keeps
 // one line of each, ending in an ellipsis: the list only renders what is on screen, which needs

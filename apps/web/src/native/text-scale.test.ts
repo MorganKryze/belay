@@ -55,6 +55,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
   document.body.replaceChildren();
   root.removeAttribute("style");
+  root.removeAttribute("data-text-scaled");
 });
 
 describe("readRatio", () => {
@@ -138,5 +139,37 @@ describe("watchTextScale", () => {
     expect(scale()).toBe("1");
     expect(dockExtra()).toBe("0px");
     expect(FakeResizeObserver.made.some((o) => o.watched.has(bar))).toBe(false);
+  });
+
+  it("marks the page while the text is enlarged, so what wraps only then can follow", async () => {
+    onIPhone(true);
+    const { watchTextScale } = await import("./text-scale");
+    watchTextScale();
+    expect(root.hasAttribute("data-text-scaled")).toBe(false);
+
+    probe().style.fontSize = "40px";
+    FakeResizeObserver.resize(probe());
+    expect(root.hasAttribute("data-text-scaled")).toBe(true);
+
+    probe().style.fontSize = "17px";
+    FakeResizeObserver.resize(probe());
+    expect(root.hasAttribute("data-text-scaled")).toBe(false);
+  });
+
+  it("measures the dock's default height without what wraps only at enlarged text", async () => {
+    onIPhone(false);
+    root.style.setProperty("--text-scale", "2");
+    const bar = dock();
+    // A long exercise name in the session bar takes a second line once wrapping is on.
+    bar.getBoundingClientRect = () =>
+      ({
+        height:
+          (Number(scale() || 1) === 1 ? 64 : 94) + (root.hasAttribute("data-text-scaled") ? 26 : 0),
+      }) as DOMRect;
+    const { watchTextScale } = await import("./text-scale");
+    watchTextScale();
+    FakeResizeObserver.resize(bar);
+    expect(dockExtra()).toBe("56px");
+    expect(root.hasAttribute("data-text-scaled")).toBe(true);
   });
 });
