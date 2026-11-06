@@ -43,10 +43,11 @@ struct RootView: View {
     @Namespace private var space
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    init(store: AccountStore) {
-        // The sync joins in through `didWrite` once it runs on this phone.
+    /// `didWrite` follows every write the session screens make, so the sync sends it once writes
+    /// pause.
+    init(store: AccountStore, didWrite: @escaping () -> Void) {
         _training = State(
-            initialValue: TrainingModel(store: store, didWrite: {}, now: Date.init, timeZone: .current))
+            initialValue: TrainingModel(store: store, didWrite: didWrite, now: Date.init, timeZone: .current))
     }
 
     var body: some View {
@@ -81,9 +82,10 @@ struct RootView: View {
                 .environment(\.zoomSpace, space)
                 .tint(.ink)
         }
-        // A session closed elsewhere (another device, a forgotten one) takes its cover with it.
+        // A session closed elsewhere (another device, a forgotten one) takes its cover with it; one
+        // finished here keeps it for its summary.
         .onChange(of: training.open == nil) { _, closed in
-            if closed { model.coverOpen = false }
+            if closed && training.summary == nil { model.coverOpen = false }
         }
     }
 
@@ -111,34 +113,4 @@ struct RootView: View {
 enum Morph {
     static let accessory = "accessory"
     static let card = "card"
-}
-
-/// The open session, full screen. The session itself comes with its own screen; until then the
-/// cover names it and lowers back to the accessory.
-struct SessionCover: View {
-    let training: TrainingModel
-    let lower: () -> Void
-
-    var body: some View {
-        NavigationStack {
-            VStack(alignment: .leading, spacing: 8) {
-                if let open = training.open {
-                    DayHero(text: SessionText.short(open.code))
-                        .accessibilityIdentifier("cover-title")
-                    if let name = open.name, !name.isEmpty {
-                        Text(name).font(.title3.weight(.semibold)).foregroundStyle(.ink)
-                    }
-                }
-                Spacer()
-            }
-            .padding(20)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background { Wall() }
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("Réduire la séance", systemImage: "chevron.down", action: lower)
-                }
-            }
-        }
-    }
 }

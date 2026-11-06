@@ -38,7 +38,7 @@ final class AccueilTests: XCTestCase {
 
         let lower = app.buttons["Réduire la séance"]
         XCTAssertTrue(lower.waitForExistence(timeout: 5), "Commencer opens the session")
-        XCTAssertTrue(app.staticTexts["cover-title"].exists, "the session shows its title")
+        XCTAssertTrue(app.navigationBars["Séance A"].exists, "the session shows its title")
         lower.tap()
 
         let accessory = app.buttons["resume-accessory"]
