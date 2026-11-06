@@ -234,4 +234,40 @@ import Testing
     }
     #expect(!tables.contains("weights") && !tables.contains("steps"))
   }
+
+  /// The store keeps a row as this build reads it. A later build that reads a new field of a kept
+  /// kind finds it missing from every row stored before, so its migration must pull them again.
+  @Test func aFieldThisBuildDoesNotReadIsNotKept() throws {
+    let other = Fixture.id(5)
+    let set = Fixture.id(6)
+    let answer = """
+      {"cursor":"3","workouts":[{"id":"\(other)","sessionCode":"A","plan":[],"planAt":null,
+      "startedAt":"\(Fixture.time(5))","startedAtAt":null,"endedAt":null,"endedAtAt":null,
+      "note":null,"noteAt":null,"exerciseNotes":{},"exerciseNotesAt":null,"removed":false,
+      "removedAt":null,"feeling":4}],"sets":[{"id":"\(set)","workoutId":"\(other)",
+      "slotIndex":0,"position":0,"exerciseId":"belay:back-squat","warmup":false,"weightKg":40,
+      "reps":10,"seconds":null,"rir":null,"doneAt":"\(Fixture.time(6))",
+      "fieldsAt":"\(Fixture.time(6))","removed":false,"removedAt":null,"side":"left"}],
+      "activities":[],"rejected":[],"hasMore":false}
+      """
+    try store.applyServer(
+      sent: [], response: JSONDecoder().decode(SyncResponse.self, from: Data(answer.utf8)))
+
+    let (workout, setRow) = try store.writer.read { db in
+      (
+        try Data.fetchOne(db, sql: "SELECT row FROM workouts WHERE id = ?", arguments: [other]),
+        try Data.fetchOne(db, sql: "SELECT row FROM sets WHERE id = ?", arguments: [set])
+      )
+    }
+    guard case .object(let w) = try JSONDecoder().decode(JSONValue.self, from: #require(workout)),
+      case .object(let s) = try JSONDecoder().decode(JSONValue.self, from: #require(setRow))
+    else {
+      Issue.record("a stored row is not an object")
+      return
+    }
+    #expect(w["feeling"] == nil)
+    #expect(s["side"] == nil)
+    // A null the server wrote may come back left out: reads take both as no value.
+    #expect(s["seconds"] == nil && s["rir"] == nil)
+  }
 }

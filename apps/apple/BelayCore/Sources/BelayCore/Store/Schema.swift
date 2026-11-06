@@ -1,14 +1,17 @@
 import Foundation
 import GRDB
 
-// The store's tables. A row is kept as the JSON the server writes for it, beside the keys it is
-// found by: a field left out stays left out, a null stays null, and a field a later server adds to
-// a kept kind needs no new column.
+// The store's tables. A row is kept as JSON beside the keys it is found by, so a field needs no
+// column. The JSON is the row as this build reads it, not as the server sent it: a field this
+// build does not read is dropped, and a null may come back left out (reads take both as no
+// value). Only a session's plan keeps the server's own JSON (WorkoutRow.planJSON).
 
 enum Schema {
   /// Append only: a store already on a phone has run every earlier step and runs only the new
-  /// ones. A step that starts keeping a new kind of row sets the cursor back to "0", or the rows
-  /// of that kind received before would never come again.
+  /// ones. A step that starts keeping a new kind of row, or reading a new field of a kind already
+  /// kept, sets the cursor back to "0": the rows stored before it never had that kind or that
+  /// field, and would never come again. A start copies the stored slots into the session's plan,
+  /// so a field missing there would be missing from that session's history for good.
   static var migrator: DatabaseMigrator {
     var migrator = DatabaseMigrator()
     migrator.registerMigration("v1") { db in
