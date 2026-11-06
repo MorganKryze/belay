@@ -50,6 +50,25 @@ final class SignInTests: XCTestCase {
         }
     }
 
+    /// A refused address is said in one sentence under the field, in the person's language, even
+    /// when the refusal comes back before the screen has drawn the try.
+    func testRefusalIsSaidUnderTheField() {
+        let sentences = [
+            ("fr", "L’adresse doit commencer par https://"), ("en", "The address must start with https://"),
+        ]
+        for (language, sentence) in sentences {
+            let app = launch(language: language)
+            let field = field(in: app)
+            field.tap()
+            field.typeText("http://belay.example")
+            app.buttons["signin-submit"].tap()
+            let problem = app.staticTexts["signin-problem"]
+            XCTAssertTrue(problem.waitForExistence(timeout: 5), language)
+            XCTAssertEqual(problem.label, sentence, language)
+            app.terminate()
+        }
+    }
+
     func testHeaderAndPlaceholderMeetAA() {
         for appearance in [XCUIDevice.Appearance.light, .dark] {
             let app = launch(appearance)

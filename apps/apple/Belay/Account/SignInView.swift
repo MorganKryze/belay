@@ -81,7 +81,6 @@ struct SignInView: View {
         }
         // A changed address takes the reproach away; it comes back at the next try if it still holds.
         .onChange(of: address) { problemHidden = true }
-        .onChange(of: busy) { if !busy { problemHidden = false } }
     }
 
     /// The one sentence that says why the last try did not sign in.
@@ -95,6 +94,9 @@ struct SignInView: View {
     private func submit() {
         guard !busy else { return }
         typing = false
+        // Shown again here rather than when the try ends: an address refused on the spot ends it
+        // before the screen ever sees it busy.
+        problemHidden = false
         Task { await account.signIn(address: address) }
     }
 
