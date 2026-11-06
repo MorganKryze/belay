@@ -84,16 +84,17 @@ const inkBox = (p: string, ink: (r: number, g: number, b: number, a: number) => 
   }
   return [left, top, right, bottom] as const;
 };
-// Width, height and top row of the orange mark's bounding box.
+// Width, height and top row of the blue mark's bounding box: the pixels past halfway from the
+// paper to the blue, #1F4E8C on #F3F5F5 or #8DB6EE on #10151A, where blue leads red by 54 or more.
 const markBox = (p: string) => {
-  const [left, top, right, bottom] = inkBox(p, (r, _, b) => r > 150 && b < 100);
+  const [left, top, right, bottom] = inkBox(p, (r, _, b) => b - r > 54);
   return [right - left + 1, bottom - top + 1, top] as const;
 };
-// The launch word's box: the pixels past halfway from the background to the text color, stone
-// 900 on chalk or stone 100 on the dark background, the orange mark aside.
+// The launch word's box: the pixels past halfway from the paper to the ink, #12181C on #F3F5F5
+// or #EEF2F3 on #10151A, the blue mark aside.
 const wordBox = (p: string, theme: "light" | "dark") =>
   inkBox(p, (r, g, b) =>
-    theme === "light" ? Math.max(r, g, b) < 139 : Math.min(r, g, b) > 133 && b > 100,
+    theme === "light" ? Math.max(r, g, b) < 137 : Math.min(r, g, b) > 127 && b - r < 30,
   );
 // The launch screen's markup, before the app's root.
 const launchMarkup = () => {
@@ -124,18 +125,18 @@ describe("app shell identity", () => {
     expect(existsSync(resolve(web, "public/maskable-icon-512x512.png"))).toBe(false);
     const config = read("vite.config.ts");
     expect(config).not.toContain("maskable-icon");
-    expect(config).toContain('background_color: "#FAFAF7"');
-    expect(config).toContain('theme_color: "#FAFAF7"');
+    expect(config).toContain('background_color: "#F3F5F5"');
+    expect(config).toContain('theme_color: "#F3F5F5"');
   });
 
   it("paints a launch screen before the JavaScript, with a theme colour per scheme", () => {
     const html = read("index.html");
     expect(html).not.toMatch(/0f172a/i);
     expect(html).toContain(
-      '<meta name="theme-color" content="#FAFAF7" media="(prefers-color-scheme: light)" />',
+      '<meta name="theme-color" content="#F3F5F5" media="(prefers-color-scheme: light)" />',
     );
     expect(html).toContain(
-      '<meta name="theme-color" content="#151412" media="(prefers-color-scheme: dark)" />',
+      '<meta name="theme-color" content="#10151A" media="(prefers-color-scheme: dark)" />',
     );
     // Outside #root: React's first render would take it away before the account is known.
     const launch = html.slice(html.indexOf("<body>"), html.indexOf('<div id="root">'));
@@ -197,33 +198,36 @@ describe("app shell identity", () => {
   });
 
   it("places the mark where the launch screen shows it under the status bar", () => {
-    // Measured on an iPhone 1170x2532 in standalone mode: the HTML launch screen starts below the
-    // 47 px status bar and draws the mark's top at 996 device px. The image must match it.
+    // On an iPhone 1170x2532 in standalone mode the HTML launch screen starts below the 47 px
+    // status bar (measured on the phone). Centring the mark, the gap and the word in the rest,
+    // lifted by 6 % of the screen, puts the mark's top at 1000 device px. The image must match it.
     for (const theme of ["light", "dark"] as const) {
       const [, , top] = markBox(`public/${startupFile(theme, SCREENS[4]!)}`);
-      expect(Math.abs(top - 996)).toBeLessThanOrEqual(9);
+      expect(Math.abs(top - 1000)).toBeLessThanOrEqual(9);
     }
   });
 
   it("draws the launch word as a named image, with no text left to a font", () => {
     // The fonts are not loaded at the first paint: a text node would show in the system font
-    // while the launch image shows Inter, and the word would jump at the handover.
+    // while the launch image shows the display face, and the word would jump at the handover.
     const launch = launchMarkup().replace(/<!--[\s\S]*?-->/g, "");
     expect(launch.replace(/<[^>]*>/g, "").trim()).toBe("");
     expect(launch).toMatch(/<svg[^>]* role="img" aria-label="Belay"/);
   });
 
   it("keeps the launch word's place and size in the launch images", () => {
-    // The word as the launch images showed it before it became a drawing, in device px on the
-    // 1170x2532 iPhone: 180 by 64, 53 px under the mark, centred.
+    // The word as the launch screen draws it, in device px on the 1170x2532 iPhone: its outline
+    // inks x 85 to 3488 and y 153 to 1083 of a 3491 by 1088 box drawn 80.29 px wide at 3x, so 235
+    // by 64, 47 px under the mark (12 px of gap plus the box's top), and 3 px right of the centre
+    // since its left bearing is wider than its right.
     for (const theme of ["light", "dark"] as const) {
       const file = `public/${startupFile(theme, SCREENS[4]!)}`;
       const [left, top, right, bottom] = wordBox(file, theme);
       const [, markHeight, markTop] = markBox(file);
-      expect(Math.abs(right - left + 1 - 180)).toBeLessThanOrEqual(3);
+      expect(Math.abs(right - left + 1 - 235)).toBeLessThanOrEqual(3);
       expect(Math.abs(bottom - top + 1 - 64)).toBeLessThanOrEqual(3);
-      expect(Math.abs(top - (markTop + markHeight) - 53)).toBeLessThanOrEqual(3);
-      expect(Math.abs((left + right + 1) / 2 - 1170 / 2)).toBeLessThanOrEqual(3);
+      expect(Math.abs(top - (markTop + markHeight) - 47)).toBeLessThanOrEqual(3);
+      expect(Math.abs((left + right + 1) / 2 - (1170 / 2 + 3))).toBeLessThanOrEqual(3);
     }
   });
 
