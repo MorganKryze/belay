@@ -46,7 +46,7 @@ struct SignInView: View {
                 } footer: {
                     if let problem {
                         Label {
-                            Text(problem, tableName: "Account").foregroundStyle(.ink)
+                            Text(problem).foregroundStyle(.ink)
                         } icon: {
                             Image(systemName: "exclamationmark.circle.fill").foregroundStyle(.danger)
                         }
@@ -81,14 +81,27 @@ struct SignInView: View {
         }
         // A changed address takes the reproach away; it comes back at the next try if it still holds.
         .onChange(of: address) { problemHidden = true }
+        // Focus stays on Se connecter after the tap, so VoiceOver would never reach the sentence.
+        .onChange(of: problem) { _, sentence in
+            guard let sentence else { return }
+            var spoken = AttributedString(sentence)
+            spoken.accessibilitySpeechAnnouncementPriority = .high
+            AccessibilityNotification.Announcement(spoken).post()
+        }
     }
 
     /// The one sentence that says why the last try did not sign in.
-    private var problem: LocalizedStringKey? {
+    private var problem: String? {
         guard !problemHidden, !busy else { return nil }
-        if let refused = account.addressProblem { return Self.sentence(refused) }
-        if case .signedOut(let failure?) = account.state { return Self.sentence(failure) }
-        return nil
+        let sentence: String.LocalizationValue
+        if let refused = account.addressProblem {
+            sentence = Self.sentence(refused)
+        } else if case .signedOut(let failure?) = account.state {
+            sentence = Self.sentence(failure)
+        } else {
+            return nil
+        }
+        return String(localized: sentence, table: "Account")
     }
 
     private func submit() {
@@ -100,7 +113,7 @@ struct SignInView: View {
         Task { await account.signIn(address: address) }
     }
 
-    static func sentence(_ problem: InstanceError) -> LocalizedStringKey {
+    static func sentence(_ problem: InstanceError) -> String.LocalizationValue {
         switch problem {
         case .invalid: "Cette adresse n’est pas valide. Exemple\u{202F}: belay.exemple.fr"
         case .insecure: "L’adresse doit commencer par https://"
@@ -110,7 +123,7 @@ struct SignInView: View {
         }
     }
 
-    static func sentence(_ failure: SignInFailure) -> LocalizedStringKey {
+    static func sentence(_ failure: SignInFailure) -> String.LocalizationValue {
         switch failure {
         case .cancelled: "Connexion annulée. Tu peux réessayer quand tu veux."
         case .unavailable: "La connexion est indisponible pour le moment. Réessaie dans un instant."
