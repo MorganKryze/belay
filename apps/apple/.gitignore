@@ -1,0 +1,6 @@
+# Per-person signing settings: copy local.example.xcconfig to local.xcconfig.
+local.xcconfig
+xcuserdata/
+*.xcuserstate
+DerivedData/
+.build/
