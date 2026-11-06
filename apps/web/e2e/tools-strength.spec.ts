@@ -41,7 +41,7 @@ async function type(page: Page, label: string, value: string, prefilled: string)
 const figures = (page: Page) =>
   page.getByRole("region", { name: "Your estimated 1RM" }).locator("[data-slot=result-figure]");
 
-test("the 1RM pair is 34 px, 700, tabular, its unit 14 px muted", async ({ page }) => {
+test("the 1RM pair is 34 px, 800, tabular, its unit 14 px muted", async ({ page }) => {
   await open(page, "/tools/one-rep-max");
   await type(page, "Reps", "7", "5");
   await type(page, "Load", "80", "100");
@@ -49,7 +49,7 @@ test("the 1RM pair is 34 px, 700, tabular, its unit 14 px muted", async ({ page 
   const muted = await token(page, "--muted-foreground");
   for (const figure of await figures(page).all()) {
     expect(await style(figure, "font-size")).toBe("34px");
-    expect(await style(figure, "font-weight")).toBe("700");
+    expect(await style(figure, "font-weight")).toBe("800");
     expect(await style(figure, "font-variant-numeric")).toBe("tabular-nums");
     expect(await style(figure, "color")).toBe(await token(page, "--foreground"));
     const unit = figure.locator("span");
