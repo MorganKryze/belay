@@ -1,7 +1,10 @@
 // Writes the cases the native core is tested against, computed by the shared rules: change
 // validity for sessions and sets at each bound, the exact JSON each change is sent as, field
-// merge and time clamping, the instant and id formats. With --check, fails if the committed file
-// is not what the rules give today, so a rule changed here cannot drift from the Swift port.
+// merge and time clamping, the instant and id formats; then the session rules (order of sets,
+// rest, prefill, closing a forgotten session) and the schedule rules (plan of the day, rotation,
+// fixed days, in several time zones), and the starting program the native core ships. With
+// --check, fails if a committed file is not what the rules give today, so a rule changed here
+// cannot drift from the Swift port.
 import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { isDeepStrictEqual } from "node:util";
@@ -9,7 +12,43 @@ import { EXERCISE_ID } from "../packages/shared/src/exercises/library";
 import { clampAt, isNewer } from "../packages/shared/src/sync/merge";
 import { ChangeSchema, type Change } from "../packages/shared/src/sync/schema";
 import { isValidChange } from "../packages/shared/src/sync/valid";
-import { SESSION_NAME_MAX } from "../packages/shared/src/training/stored-program";
+import { type Activity, climbedThisWeek } from "../packages/shared/src/training/activities";
+import { planFor } from "../packages/shared/src/training/plan";
+import {
+  estimatedMinutes,
+  plannedWorkSets,
+  sessionByCode,
+  starterProgram,
+} from "../packages/shared/src/training/program";
+import {
+  autoClose,
+  FORGOTTEN_MS,
+  type History,
+  lastTime,
+  liveSets,
+  nextTurn,
+  openWorkout,
+  prefill,
+  restEndsAt,
+  restSecAfter,
+  sessionProgress,
+  type Turn,
+  turnKey,
+  workOrder,
+} from "../packages/shared/src/training/rules";
+import { plannedNext } from "../packages/shared/src/training/schedule";
+import * as fx from "../packages/shared/src/training/schedule-fixtures";
+import {
+  type LetteredTemplate,
+  MAX_ROTATION,
+  nextInRotation,
+  rotationOf,
+  SEED,
+  seedId,
+  SESSION_NAME_MAX,
+  type StoredPrograms,
+  withSeed,
+} from "../packages/shared/src/training/stored-program";
 import {
   CLOCK_SLACK_MS,
   MAX_POSITION,
@@ -24,11 +63,13 @@ import {
   SET_KG,
   SLOT_BOUNDS,
   type Slot,
+  type Workout,
+  type WorkoutSet,
+  workPosition,
 } from "../packages/shared/src/training/workout";
 
-const target = fileURLToPath(
-  new URL("../apps/apple/BelayCore/Tests/BelayCoreTests/Vectors/contract.json", import.meta.url),
-);
+const core = (path: string) =>
+  fileURLToPath(new URL(`../apps/apple/BelayCore/${path}`, import.meta.url));
 
 const iso = (ms: number) => new Date(ms).toISOString();
 // A fixed instant, so the file only changes when a rule does.
@@ -402,21 +443,781 @@ const vectors = {
   ids,
   instants,
 };
-const expected = `${JSON.stringify(vectors, null, 2)}\n`;
+// The session rules. Sessions and sets are written as the store keeps them, so the native core
+// reads them as rows: every row field there, a set's time of change at its own time.
+type Done = {
+  id: string;
+  sessionCode: string;
+  sessionId?: string | null;
+  startedAt: string;
+  endedAt: string | null;
+  removed: boolean;
+} & Partial<Workout>;
+const asRow = (w: Done & { startedAtAt?: string | null }) => ({
+  plan: [],
+  note: null,
+  exerciseNotes: {},
+  ...w,
+});
+const asSetRow = (s: WorkoutSet) => ({ ...s, fieldsAt: s.doneAt });
+const asHistory = (h: History) => ({ workouts: h.workouts.map(asRow), sets: h.sets.map(asSetRow) });
+
+const START_A = sessionByCode("A", starterProgram)!.slots;
+const START_B = sessionByCode("B", starterProgram)!.slots;
+const START_C = sessionByCode("C", starterProgram)!.slots;
+const BENCH = "ds:0025";
+const HANG = "belay:dead-hang";
+
+let serial = 0;
+const session = (patch: Partial<Workout> & { startedAtAt?: string | null } = {}) => ({
+  id: seedId(0x1000 + ++serial),
+  sessionCode: "A",
+  plan: [...START_A],
+  startedAt: "2026-10-05T17:00:00.000Z",
+  endedAt: "2026-10-05T18:05:00.000Z" as string | null,
+  note: null,
+  exerciseNotes: {},
+  removed: false,
+  ...patch,
+});
+const done = (
+  w: { id: string; startedAt: string },
+  round: number,
+  weightKg: number,
+  reps: number | null,
+  patch: Partial<WorkoutSet> = {},
+): WorkoutSet => ({
+  id: seedId(0x2000 + ++serial),
+  workoutId: w.id,
+  slotIndex: 0,
+  position: workPosition(round),
+  exerciseId: BENCH,
+  warmup: false,
+  weightKg,
+  reps,
+  rir: 1,
+  doneAt: w.startedAt,
+  removed: false,
+  ...patch,
+});
+const warm = (w: { id: string; startedAt: string }, position: number, kg: number, reps: number) =>
+  done(w, 0, kg, reps, { position, warmup: true });
+const timed = (w: { id: string; startedAt: string }, round: number, seconds: number) =>
+  done(w, round, 0, null, { exerciseId: HANG, seconds, rir: null });
+
+const skip = (plan: readonly Slot[], ...skipped: number[]) =>
+  plan.map((s, i) => (skipped.includes(i) ? { ...s, skipped: true } : s));
+const hang: Slot = {
+  exerciseId: HANG,
+  measure: "seconds",
+  sets: 3,
+  repRange: [20, 45],
+  rirTarget: [0, 0],
+  restSec: 60,
+  warmupSets: 0,
+  isMain: false,
+  groupKey: null,
+};
+const PLANS: Record<string, Slot[]> = {
+  "session A": [...START_A],
+  "session B": [...START_B],
+  "session C": [...START_C],
+  "session C, its group's middle slot skipped": skip(START_C, 4),
+  "session C, its group's last slot skipped": skip(START_C, 5),
+  "session A, a main lift skipped": skip(START_A, 1),
+  "session A, its whole group skipped": skip(START_A, 3, 4, 5),
+  "session A with a timed slot added": [...START_A, { ...hang, added: true }],
+  "a superset of two and three sets": [
+    { ...hang, exerciseId: BENCH, measure: undefined, sets: 2, restSec: 0, groupKey: "1" },
+    { ...hang, sets: 3, restSec: 90, groupKey: "1" },
+  ],
+  "two groups of one key apart": [
+    { ...hang, sets: 2, restSec: 0, groupKey: "4" },
+    { ...hang, sets: 2, restSec: 45, groupKey: "4" },
+    { ...hang, sets: 1, restSec: 30, groupKey: null },
+    { ...hang, sets: 2, restSec: 75, groupKey: "4" },
+  ],
+  "no slot": [],
+};
+const turn = (slotIndex: number, round: number) => ({ slotIndex, round });
+
+function rulesVectors() {
+  const plans = Object.entries(PLANS);
+  const workOrderCases = plans.map(([name, plan]) => ({ name, plan, result: workOrder(plan) }));
+
+  const all = (plan: readonly Slot[]) => workOrder(plan).map(turnKey);
+  const nextTurnCases = [
+    ["nothing done", START_A, [], undefined],
+    ["after the first set", START_A, ["0|0"], turn(0, 0)],
+    ["inside a superset: the partner comes next", START_A, ["3|0"], turn(3, 0)],
+    ["inside a superset: the third of the round", START_A, ["3|0", "4|0"], turn(4, 0)],
+    ["after a superset's round: the next round", START_A, ["3|0", "4|0", "5|0"], turn(5, 0)],
+    ["a skipped slot's turn left", START_C, ["3|0", "4|0", "3|1", "4|1"], turn(4, 1)],
+    ["back to one left behind", START_B, all(START_B).filter((k) => k !== "0|1"), turn(6, 2)],
+    ["from a turn not in the order", skip(START_A, 1), ["0|0"], turn(1, 0)],
+    ["every set done", START_A, all(START_A), turn(5, 2)],
+    ["the middle of a group skipped", skip(START_C, 4), ["3|0"], turn(3, 0)],
+    ["sets of two and three", PLANS["a superset of two and three sets"]!, ["0|1"], turn(0, 1)],
+    ["no slot", [], [], undefined],
+  ].map(([name, plan, keys, from]) => ({
+    name,
+    plan,
+    done: keys,
+    from,
+    result: nextTurn(plan as Slot[], new Set(keys as string[]), from as Turn | undefined),
+  }));
+
+  const open = () => session({ endedAt: null });
+  const w = open();
+  const progressCases = [
+    ["nothing done", START_A, []],
+    [
+      "two sets and a warm-up",
+      START_A,
+      [
+        done(w, 0, 60, 8, { doneAt: "2026-10-05T17:05:00.000Z" }),
+        done(w, 1, 60, 8, { doneAt: "2026-10-05T17:08:00.000Z" }),
+        warm(w, 0, 20, 10),
+      ],
+    ],
+    [
+      "a skipped slot and a set past the plan",
+      skip(START_A, 1),
+      [done(w, 0, 60, 8, { slotIndex: 1 }), done(w, START_A[0]!.sets, 60, 8, { slotIndex: 0 })],
+    ],
+    [
+      "every set done",
+      START_A,
+      workOrder(START_A).map((t) => done(w, t.round, 60, 8, { slotIndex: t.slotIndex })),
+    ],
+    [
+      "inside a superset",
+      START_A,
+      [
+        done(w, 0, 60, 8, { slotIndex: 3, doneAt: "2026-10-05T17:20:00.000Z" }),
+        done(w, 0, 60, 8, { slotIndex: 4, doneAt: "2026-10-05T17:21:00.000Z" }),
+      ],
+    ],
+    [
+      "done out of order: the last done counts",
+      START_A,
+      [
+        done(w, 0, 60, 8, { slotIndex: 2, doneAt: "2026-10-05T17:30:00.000Z" }),
+        done(w, 0, 60, 8, { slotIndex: 0, doneAt: "2026-10-05T17:10:00.000Z" }),
+      ],
+    ],
+    [
+      "two sets done at the same time",
+      START_A,
+      [
+        done(w, 0, 60, 8, { slotIndex: 0, doneAt: "2026-10-05T17:10:00.000Z" }),
+        done(w, 0, 60, 8, { slotIndex: 1, doneAt: "2026-10-05T17:10:00.000Z" }),
+      ],
+    ],
+    [
+      "a timed slot added",
+      PLANS["session A with a timed slot added"]!,
+      [timed({ ...w }, 0, 30), timed(w, 1, 30)].map((s) => ({ ...s, slotIndex: 6 })),
+    ],
+    ["a set on a slot the plan lacks", START_A, [done(w, 0, 60, 8, { slotIndex: 9 })]],
+  ].map(([name, plan, sets]) => {
+    const p = sessionProgress(plan as Slot[], sets as WorkoutSet[]);
+    return {
+      name,
+      plan,
+      sets: (sets as WorkoutSet[]).map(asSetRow),
+      result: { done: [...p.done], left: p.left, last: p.last, next: p.next },
+    };
+  });
+
+  const restSecCases = plans.map(([name, plan]) => ({
+    name,
+    plan,
+    results: plan.map((_, slotIndex) => restSecAfter(plan, slotIndex)),
+  }));
+
+  const at = "2026-10-07T17:00:00.000Z";
+  const restEndsCases = [
+    ["a slot alone", START_A, ["0|0"], turn(0, 0), at],
+    ["inside a round", START_A, ["3|0"], turn(3, 0), at],
+    ["after a round", START_A, ["3|0", "4|0", "5|0"], turn(5, 0), at],
+    ["a round's last exercise left", START_C, ["3|0", "4|0"], turn(4, 0), at],
+    [
+      "after a skipped exercise's round",
+      START_C,
+      ["3|0", "4|0", "5|1", "3|1", "4|1"],
+      turn(5, 1),
+      at,
+    ],
+    ["after the last set", START_A, all(START_A), turn(5, 2), at],
+    ["a group whose last slot is skipped", skip(START_C, 5), ["3|0", "4|0"], turn(4, 0), at],
+    ["inside a round with no rest planned", START_B, ["3|0"], turn(3, 0), at],
+    [
+      "no rest planned after a slot alone",
+      PLANS["two groups of one key apart"]!,
+      ["0|0", "1|0"],
+      turn(1, 0),
+      at,
+    ],
+    ["a timed slot", PLANS["session A with a timed slot added"]!, ["6|0"], turn(6, 0), at],
+    ["past midnight", START_A, ["0|0"], turn(0, 0), "2026-10-07T23:59:00.000Z"],
+    ["with an offset", START_A, ["0|0"], turn(0, 0), "2026-10-07T19:00:00.000+02:00"],
+  ].map(([name, plan, keys, after, doneAt]) => ({
+    name,
+    plan,
+    done: keys,
+    after,
+    doneAt,
+    result: restEndsAt(plan as Slot[], new Set(keys as string[]), after as Turn, doneAt as string),
+  }));
+
+  const old = session({ startedAt: "2026-09-30T17:00:00.000Z" });
+  const last = session({ startedAt: "2026-10-05T17:00:00.000Z" });
+  const inProgress = session({ startedAt: "2026-10-07T17:00:00.000Z", endedAt: null });
+  const twin = session({ startedAt: "2026-10-05T17:00:00.000Z" });
+  const gone = session({ startedAt: "2026-10-06T17:00:00.000Z", removed: true });
+  const history: History = {
+    workouts: [old, last, inProgress, gone],
+    sets: [
+      done(old, 0, 77.5, 8),
+      timed(old, 0, 40),
+      warm(last, 0, 40, 8),
+      done(last, 0, 80, 8),
+      done(last, 1, 80, 8),
+      done(last, 2, 80, 7),
+      done(last, 3, 77.5, 6),
+      done(last, 4, 80, 5, { removed: true }),
+      done(last, 0, 30, 10, { slotIndex: 1, exerciseId: "ds:0405" }),
+      { ...timed(last, 0, 45), seconds: undefined, reps: 12 },
+      done(inProgress, 0, 85, 5),
+      done(gone, 0, 90, 5),
+      timed(gone, 0, 60),
+    ],
+  };
+  const tied: History = {
+    workouts: [old, last, twin],
+    sets: [...history.sets, done(twin, 0, 82.5, 6)],
+  };
+  const empty: History = { workouts: [], sets: [] };
+  const histories: [string, History][] = [
+    ["a history", history],
+    ["two sessions started at the same time", tied],
+    ["the last session removed", { ...history, workouts: [old, { ...last, removed: true }] }],
+    ["no history", empty],
+  ];
+  const asked: [string, number, "reps" | "seconds"][] = [
+    [BENCH, 0, "reps"],
+    [BENCH, 3, "reps"],
+    [BENCH, 5, "reps"],
+    [BENCH, -1, "reps"],
+    [BENCH, 0, "seconds"],
+    ["ds:0405", 0, "reps"],
+    [HANG, 0, "seconds"],
+    [HANG, 0, "reps"],
+    ["ds:9999", 0, "reps"],
+  ];
+  // Each history is written once; a case names the one it reads.
+  const prefillCases = histories.flatMap(([name, h]) =>
+    asked.map(([exerciseId, setIndex, measure]) => ({
+      name: `${name}: ${exerciseId} set ${setIndex} in ${measure}`,
+      history: name,
+      exerciseId,
+      setIndex,
+      measure,
+      result: prefill(h, exerciseId, setIndex, measure),
+    })),
+  );
+  const lastTimeCases = histories.flatMap(([name, h]) =>
+    asked
+      .filter(([, setIndex]) => setIndex === 0)
+      .map(([exerciseId, , measure]) => ({
+        name: `${name}: ${exerciseId} in ${measure}`,
+        history: name,
+        exerciseId,
+        measure,
+        result: lastTime(h, exerciseId, measure),
+      })),
+  );
+  const liveSetsCases = histories.map(([name, h]) => ({
+    name,
+    history: name,
+    result: liveSets(h).map((s) => s.id),
+  }));
+
+  const now = (iso: string) => new Date(iso);
+  const left = session({ startedAt: "2026-10-07T17:00:00.000Z", endedAt: null });
+  const lastSet = "2026-10-07T18:00:00.000Z";
+  const leftSets = [
+    done(left, 0, 80, 8, { doneAt: "2026-10-07T17:30:00.000Z" }),
+    done(left, 1, 80, 8, { doneAt: lastSet }),
+  ];
+  const resumed = { ...left, startedAt: "2026-10-07T17:30:00.000Z" };
+  const other = session({ startedAt: "2026-10-07T17:00:00.000Z", endedAt: null });
+  const autoCloseCases = [
+    ["last set 5 h 59 old", left, leftSets, "2026-10-07T23:59:00.000Z"],
+    ["last set 6 h 01 old", left, leftSets, "2026-10-08T00:01:00.000Z"],
+    ["last set exactly 6 h old", left, leftSets, "2026-10-08T00:00:00.000Z"],
+    ["last set 6 h and a millisecond old", left, leftSets, "2026-10-08T00:00:00.001Z"],
+    [
+      "going on past midnight",
+      left,
+      [done(left, 0, 80, 8, { doneAt: "2026-10-07T22:50:00.000Z" })],
+      "2026-10-07T23:10:00.000Z",
+    ],
+    ["no set, 5 h 59", left, [], "2026-10-07T22:59:00.000Z"],
+    ["no set, 6 h 01", left, [], "2026-10-07T23:01:00.000Z"],
+    ["no set, exactly 6 h", left, [], "2026-10-07T23:00:00.000Z"],
+    ["no set, 6 h and a millisecond", left, [], "2026-10-07T23:00:00.001Z"],
+    ["finished", session(), [], "2026-12-01T00:00:00.000Z"],
+    ["removed", { ...left, removed: true }, [], "2026-12-01T00:00:00.000Z"],
+    [
+      "a removed set",
+      left,
+      [done(left, 0, 80, 8, { doneAt: lastSet, removed: true })],
+      "2026-10-07T23:01:00.000Z",
+    ],
+    [
+      "sets of another session",
+      left,
+      [done(other, 0, 80, 8, { doneAt: "2026-10-07T22:00:00.000Z" })],
+      "2026-10-07T23:01:00.000Z",
+    ],
+    [
+      "open on another device, its sets synced in",
+      other,
+      [done(other, 0, 80, 8, { doneAt: "2026-10-07T22:00:00.000Z" })],
+      "2026-10-08T03:59:00.000Z",
+    ],
+    [
+      "resumed after its last set, 6 h after the set",
+      { ...resumed, startedAtAt: "2026-10-07T18:35:00.000Z" },
+      leftSets,
+      "2026-10-08T00:01:00.000Z",
+    ],
+    [
+      "resumed after its last set, 6 h after the resume",
+      { ...resumed, startedAtAt: "2026-10-07T18:35:00.000Z" },
+      leftSets,
+      "2026-10-08T00:36:00.000Z",
+    ],
+    [
+      "a long pause",
+      { ...left, startedAt: "2026-10-07T18:55:00.000Z", startedAtAt: "2026-10-07T20:00:00.000Z" },
+      leftSets,
+      "2026-10-08T02:01:00.000Z",
+    ],
+    [
+      "the start moved before the last set",
+      { ...resumed, startedAtAt: "2026-10-07T17:45:00.000Z" },
+      leftSets,
+      "2026-10-08T00:01:00.000Z",
+    ],
+    [
+      "the start's change never written",
+      { ...resumed, startedAtAt: null },
+      leftSets,
+      "2026-10-08T00:01:00.000Z",
+    ],
+  ].map(([name, workout, sets, at]) => ({
+    name,
+    workout: asRow(workout as Done),
+    sets: (sets as WorkoutSet[]).map(asSetRow),
+    now: at,
+    result: autoClose(workout as Workout, sets as WorkoutSet[], now(at as string)),
+  }));
+
+  const older = session({ startedAt: "2026-10-06T17:00:00.000Z", endedAt: null });
+  const newer = session({ startedAt: "2026-10-07T17:00:00.000Z", endedAt: null });
+  const newerTwin = session({ startedAt: "2026-10-07T17:00:00.000Z", endedAt: null });
+  const removed = session({ startedAt: "2026-10-08T17:00:00.000Z", endedAt: null, removed: true });
+  const finished = session();
+  const newerSet = done(newer, 0, 80, 8, { doneAt: "2026-10-07T17:10:00.000Z" });
+  const openCases = [
+    ["the latest open one", [older, newer, removed, finished], undefined],
+    ["none open", [finished], undefined],
+    ["two started at the same time", [older, newerTwin, newer], undefined],
+    [
+      "the latest one still going",
+      [older, newer],
+      { sets: [newerSet], now: "2026-10-07T20:00:00.000Z" },
+    ],
+    [
+      "the latest one forgotten",
+      [older, newer],
+      { sets: [newerSet], now: "2026-10-07T23:11:00.000Z" },
+    ],
+    ["both forgotten", [older, newer], { sets: [newerSet], now: "2026-10-08T00:00:00.000Z" }],
+    ["no session", [], { sets: [], now: "2026-10-08T00:00:00.000Z" }],
+  ].map(([name, workouts, forgotten]) => {
+    const f = forgotten as { sets: WorkoutSet[]; now: string } | undefined;
+    const result = openWorkout(workouts as Workout[], f && { sets: f.sets, now: now(f.now) });
+    return {
+      name,
+      workouts: (workouts as Workout[]).map(asRow),
+      forgotten: f && { sets: f.sets.map(asSetRow), now: f.now },
+      result: result?.id ?? null,
+    };
+  });
+
+  return {
+    bounds: { forgottenMs: FORGOTTEN_MS, maxRotation: MAX_ROTATION },
+    histories: Object.fromEntries(histories.map(([name, h]) => [name, asHistory(h)])),
+    workOrder: workOrderCases,
+    nextTurn: nextTurnCases,
+    sessionProgress: progressCases,
+    restSecAfter: restSecCases,
+    restEndsAt: restEndsCases,
+    prefill: prefillCases,
+    lastTime: lastTimeCases,
+    liveSets: liveSetsCases,
+    autoClose: autoCloseCases,
+    openWorkout: openCases,
+  };
+}
+
+// The schedule rules. A day is local: each case that reads one names the zone it was computed
+// in, and the zones span a day either side of UTC, on a Sunday-to-Monday night and the night
+// Paris leaves summer time.
+const ZONES = ["Europe/Paris", "America/Los_Angeles", "Asia/Tokyo", "Pacific/Kiritimati", "UTC"];
+function inZone<T>(zone: string, make: () => T): T {
+  const was = process.env.TZ;
+  process.env.TZ = zone;
+  try {
+    return make();
+  } finally {
+    if (was === undefined) delete process.env.TZ;
+    else process.env.TZ = was;
+  }
+}
+
+const asActivity = (a: Pick<Activity, "date" | "kind" | "removed">, i: number) => ({
+  id: seedId(0x3000 + i),
+  date: a.date,
+  type: a.kind,
+  removed: a.removed,
+});
+const climb = (date: string, removed = false) => ({ date, kind: "climbing" as const, removed });
+const cardio = (date: string) => ({ date, kind: "cardio" as const, removed: false });
+
+// The session a rule picks, by its letter and the session it comes from; rotationOf's cases
+// check the templates themselves.
+const pick = (t: LetteredTemplate | null) => t && { code: t.code, sessionId: t.sessionId };
+
+function scheduleVectors() {
+  const seedRotation = rotationOf(SEED);
+  const sessionA = seedRotation[0]!;
+  const sessionC = seedRotation[2]!;
+  const long = { ...sessionC, slots: Array.from({ length: 29 }, () => sessionC.slots[0]!) };
+  const emptyRule = { ...sessionA, noClimbing: [] };
+  const weeks: [string, Pick<Activity, "date" | "kind" | "removed">[]][] = [
+    ["no activity", []],
+    ["a climb on Wednesday", [climb(fx.WED)]],
+    ["a climb removed", [climb(fx.WED, true)]],
+    ["cardio only", [cardio(fx.WED)]],
+    ["a climb on the Sunday summer time ends", [climb(fx.SUN)]],
+    ["a climb on the next Monday", [climb(fx.NEXT_MON)]],
+    ["a climb the Sunday before", [climb("2026-10-18")]],
+    ["a climb on Monday", [climb(fx.MON)]],
+  ];
+  const dates = [fx.MON, fx.WED, fx.SUN, fx.NEXT_MON, "2026-03-29", "2026-03-30", "2027-01-01"];
+  const climbedCases = weeks.flatMap(([name, activities]) =>
+    dates.map((date) => ({
+      name: `${name}, on ${date}`,
+      activities: activities.map(asActivity),
+      date,
+      result: climbedThisWeek(activities, date),
+    })),
+  );
+  // Each template is written once; a case names the one it plans.
+  const templates = {
+    "session C": sessionC,
+    "session A, no climbing rule": sessionA,
+    "an empty climbing rule": emptyRule,
+    "a session past the plan's bound": long,
+  };
+  const planForCases = Object.entries(templates).flatMap(([name, template]) =>
+    weeks.flatMap(([week, activities]) =>
+      [fx.WED, fx.NEXT_MON].map((date) => ({
+        name: `${name}: ${week}, on ${date}`,
+        session: name,
+        activities: activities.map(asActivity),
+        date,
+        result: planFor(template, activities, date),
+      })),
+    ),
+  );
+
+  const estimateCases = Object.entries({
+    ...Object.fromEntries(starterProgram.map((t) => [`session ${t.code}`, t.slots])),
+    ...PLANS,
+    "session C with its climbing rule": planFor(sessionC, [], fx.WED),
+    "one short slot": [{ ...hang, sets: 1, restSec: 0 }],
+    "half way to the next 5 minutes": [{ ...hang, sets: 2, restSec: 105 }],
+  }).map(([name, slots]) => ({
+    name,
+    slots,
+    minutes: estimatedMinutes({ slots }),
+    workSets: plannedWorkSets(slots),
+  }));
+
+  const seedProgram = SEED.programs[0]!;
+  const seedSession = SEED.sessions[0]!;
+  const seedSlot = SEED.slots[0]!;
+  const extra = { ...seedSession, id: seedId(0x4001), name: "Haut", position: 3 };
+  const partials: [string, Partial<StoredPrograms>][] = [
+    ["nothing stored", {}],
+    ["no program active", { activeId: null }],
+    ["no program active, a time kept", { activeId: null, activeAt: "2026-10-20T08:00:00.000Z" }],
+    ["another program active", { activeId: fx.P2, activeAt: "2026-10-20T08:00:00.000Z" }],
+    ["another program active, no time", { activeId: fx.P2 }],
+    ["the seed program renamed", { programs: [{ ...seedProgram, name: "Force" }] }],
+    ["a session added", { sessions: [extra] }],
+    ["a seed slot removed", { slots: [{ ...seedSlot, removed: true }] }],
+    [
+      "a fixed week stored",
+      { programs: [{ ...seedProgram, schedule: { mode: "fixed", days: fx.MWS.days } }] },
+    ],
+  ];
+  const withSeedCases = partials.map(([name, stored]) => ({
+    name,
+    stored,
+    result: withSeed(stored),
+  }));
+
+  const base = fx.stored(4);
+  const many = fx.stored(MAX_ROTATION + 1);
+  const programs: [string, StoredPrograms][] = [
+    ["the seed", SEED],
+    ["four sessions", base],
+    [
+      "a reorder",
+      {
+        ...base,
+        sessions: base.sessions.map((s) =>
+          s.id === fx.S(0) ? { ...s, position: 1 } : s.id === fx.S(1) ? { ...s, position: 0 } : s,
+        ),
+      },
+    ],
+    [
+      "two sessions at one position, by id",
+      { ...base, sessions: base.sessions.map((s) => ({ ...s, position: 7 })).reverse() },
+    ],
+    [
+      "a session set aside, one removed, one emptied, one in the other program",
+      {
+        ...base,
+        sessions: base.sessions.map((s, i) =>
+          i === 0
+            ? { ...s, programId: null }
+            : i === 1
+              ? { ...s, removed: true }
+              : i === 2
+                ? { ...s, programId: fx.P2 }
+                : s,
+        ),
+        slots: base.slots.filter((s) => s.sessionId !== fx.S(3)),
+      },
+    ],
+    [
+      "a session with only its climbing rule",
+      {
+        ...base,
+        slots: base.slots.map((s, i) => (i === 0 ? { ...s, rule: "no_climbing" as const } : s)),
+      },
+    ],
+    [
+      "slots in order, a timed one, a removed one, a climbing rule",
+      {
+        ...base,
+        slots: [
+          ...base.slots,
+          { ...base.slots[0]!, id: seedId(0x5001), position: 2, measure: "seconds" as const },
+          { ...base.slots[0]!, id: seedId(0x5002), position: 1, removed: true },
+          { ...base.slots[0]!, id: seedId(0x5003), position: 0, rule: "no_climbing" as const },
+          { ...base.slots[0]!, id: seedId(0x5004), position: 1, rule: "no_climbing" as const },
+        ],
+      },
+    ],
+    [
+      "named sessions",
+      { ...base, sessions: base.sessions.map((s, i) => ({ ...s, name: `S${i}` })) },
+    ],
+    ["no program active", { ...base, activeId: null }],
+    ["an unknown program active", { ...base, activeId: fx.UNKNOWN }],
+    ["the other program active", { ...base, activeId: fx.P2 }],
+    [
+      "the active program removed",
+      { ...base, programs: base.programs.map((p) => ({ ...p, removed: true })) },
+    ],
+    ["more sessions than letters", many],
+  ];
+  const rotationCases = programs.map(([name, stored]) => ({
+    name,
+    stored,
+    result: rotationOf(stored),
+  }));
+
+  const rotation = rotationOf(base);
+  const id = (i: number) => fx.S(i);
+  let day = 1;
+  const finishedOn = (patch: Partial<Done>): Done => {
+    const startedAt = patch.startedAt ?? `2026-10-${String(day++).padStart(2, "0")}T17:00:00.000Z`;
+    return {
+      id: seedId(0x6000 + day),
+      sessionCode: "A",
+      startedAt,
+      endedAt: startedAt,
+      removed: false,
+      ...patch,
+    };
+  };
+  const at = (d: string) => `2026-10-${d}T17:00:00.000Z`;
+  const history = [
+    finishedOn({ sessionId: id(0), startedAt: at("05") }),
+    finishedOn({ sessionId: id(1), startedAt: at("07") }),
+    { ...finishedOn({ sessionId: id(2), startedAt: at("08") }), endedAt: null },
+    { ...finishedOn({ sessionId: id(3), startedAt: at("09") }), removed: true },
+  ];
+  const first = finishedOn({ id: seedId(0xf01), sessionId: id(0), startedAt: at("10") });
+  const second = finishedOn({ id: seedId(0xf02), sessionId: id(1), startedAt: at("10") });
+  const rotationNext: [string, Done[], string | null][] = [
+    ["nothing done", [], null],
+    ["by its recorded id", [finishedOn({ sessionCode: "A", sessionId: id(2) })], null],
+    ["the last one wraps round", [finishedOn({ sessionCode: "C", sessionId: id(3) })], null],
+    ["by its letter", [finishedOn({ sessionCode: "B" })], null],
+    ["by its letter, the id null", [finishedOn({ sessionCode: "B", sessionId: null })], null],
+    ["by its letter, the id empty", [finishedOn({ sessionCode: "B", sessionId: "" })], null],
+    ["one open and one removed aside", history, null],
+    ["a recorded one before activation", history, "2026-10-08T00:00:00.000Z"],
+    [
+      "a letter before activation",
+      [finishedOn({ sessionCode: "B", startedAt: at("05") })],
+      at("06"),
+    ],
+    ["a letter at activation", [finishedOn({ sessionCode: "B", startedAt: at("06") })], at("06")],
+    ["the same instant, the greater id", [first, second], null],
+    ["the same instant, the other order", [second, first], null],
+    [
+      "the same instant written with an offset",
+      [first, { ...second, startedAt: "2026-10-10T19:00:00.000+02:00" }],
+      null,
+    ],
+    ["one that left the rotation", [finishedOn({ sessionId: fx.UNKNOWN })], null],
+    ["a letter the rotation lacks", [finishedOn({ sessionCode: "F" })], null],
+  ];
+  const nextCases = [
+    ...rotationNext.map(([name, workouts, activeAt]) => ({ name, workouts, rotation, activeAt })),
+    { name: "no rotation", workouts: history, rotation: [], activeAt: null },
+  ].map((c) => ({
+    ...c,
+    workouts: c.workouts.map(asRow),
+    result: pick(nextInRotation(c.workouts, c.rotation, c.activeAt)),
+  }));
+
+  const plannedCases = ZONES.flatMap((zone) =>
+    inZone(zone, () => {
+      const p = fx.stored(3, fx.MWS);
+      const one = fx.stored(3, fx.MONDAYS);
+      // Monday A, Sunday C: a session on the Sunday-to-Monday night is due or done by its day.
+      const sunMon = fx.stored(3, fx.fixed([fx.S(0), null, null, null, null, null, fx.S(2)]));
+      const laFallBack = fx.A("2026-11-02", {
+        startedAt: "2026-11-02T07:30:00.000Z",
+        endedAt: "2026-11-02T08:30:00.000Z",
+      });
+      const lateSunday = fx.A(fx.SUN, {
+        startedAt: fx.local(fx.SUN, 23, 30),
+        endedAt: fx.local(fx.NEXT_MON, 0, 30),
+      });
+      const utcSunday = fx.A(fx.SUN, {
+        startedAt: "2026-10-25T23:30:00.000Z",
+        endedAt: "2026-10-26T00:30:00.000Z",
+      });
+      const utcMonday = fx.A(fx.NEXT_MON, {
+        startedAt: "2026-10-26T09:30:00.000Z",
+        endedAt: "2026-10-26T10:30:00.000Z",
+      });
+      const letter = fx.did("B", null, fx.TUE);
+      const list: [string, StoredPrograms, Done[], string][] = [
+        ["rotation", fx.stored(3), [fx.A(fx.MON), fx.B(fx.TUE)], fx.WED],
+        ["no session", fx.stored(0), [], fx.WED],
+        ["fixed, due today", p, [], fx.WED],
+        ["fixed, done today", p, [fx.B(fx.WED)], fx.WED],
+        ["fixed, done the day before", p, [fx.A(fx.MON), fx.B(fx.TUE)], fx.WED],
+        ["fixed, done on the previous session day", p, [fx.B(fx.MON)], fx.WED],
+        ["fixed, done after today", p, [fx.B(fx.THU)], fx.WED],
+        ["fixed, a rest day", p, [], fx.TUE],
+        ["fixed, Sunday", p, [], fx.SUN],
+        [
+          "fixed, open and removed aside",
+          p,
+          [fx.B(fx.WED, { endedAt: null }), fx.B(fx.WED, { removed: true })],
+          fx.WED,
+        ],
+        ["one day a week, done last Tuesday", one, [fx.A(fx.TUE)], fx.NEXT_MON],
+        ["one day a week, done last Monday", one, [fx.A(fx.MON)], fx.NEXT_MON],
+        [
+          "started late on the Sunday summer time ends",
+          sunMon,
+          [fx.A(fx.MON), lateSunday],
+          fx.NEXT_MON,
+        ],
+        ["started on Sunday night in UTC", sunMon, [fx.A(fx.MON), utcSunday], fx.NEXT_MON],
+        ["started on Monday morning in UTC", sunMon, [fx.A(fx.MON), utcMonday], fx.NEXT_MON],
+        ["the night Los Angeles leaves summer time", sunMon, [laFallBack], "2026-11-02"],
+        [
+          "by letter, before activation",
+          { ...p, activeAt: fx.local(fx.TUE, 19) },
+          [letter],
+          fx.WED,
+        ],
+        ["by letter, after activation", { ...p, activeAt: fx.local(fx.TUE, 12) }, [letter], fx.WED],
+        ["another letter", p, [fx.did("C", null, fx.TUE)], fx.WED],
+      ];
+      return list.map(([name, stored, workouts, today]) => ({
+        name: `${zone}: ${name}`,
+        timeZone: zone,
+        stored,
+        workouts: workouts.map(asRow),
+        today,
+        result: pick(plannedNext(workouts, stored, rotationOf(stored), today)),
+      }));
+    }),
+  );
+
+  return {
+    templates,
+    climbedThisWeek: climbedCases,
+    planFor: planForCases,
+    estimates: estimateCases,
+    withSeed: withSeedCases,
+    rotationOf: rotationCases,
+    nextInRotation: nextCases,
+    plannedNext: plannedCases,
+  };
+}
+
+const files = [
+  { path: core("Tests/BelayCoreTests/Vectors/contract.json"), data: vectors },
+  { path: core("Tests/BelayCoreTests/Vectors/rules.json"), data: rulesVectors() },
+  { path: core("Tests/BelayCoreTests/Vectors/schedule.json"), data: scheduleVectors() },
+  { path: core("Sources/BelayCore/Resources/seed.json"), data: SEED },
+].map(({ path, data }) => ({ path, expected: `${JSON.stringify(data, null, 2)}\n` }));
 
 if (process.argv.includes("--check")) {
-  let current = "";
-  try {
-    current = readFileSync(target, "utf8");
-  } catch {
-    // Missing file: reported as out of date below.
-  }
-  if (current !== expected) {
+  const stale = files.filter(({ path, expected }) => {
+    try {
+      return readFileSync(path, "utf8") !== expected;
+    } catch {
+      // A missing file is out of date.
+      return true;
+    }
+  });
+  if (stale.length > 0) {
     console.error("The native vectors are out of date. Run `pnpm vectors` and commit the result.");
     process.exit(1);
   }
   console.log(`The native vectors are up to date: ${cases.length} changes.`);
 } else {
-  writeFileSync(target, expected);
+  for (const { path, expected } of files) writeFileSync(path, expected);
   console.log(`Wrote ${cases.length} changes to the native vectors.`);
 }

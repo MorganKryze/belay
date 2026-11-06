@@ -15,6 +15,7 @@ let package = Package(
     .target(
       name: "BelayCore",
       dependencies: [.product(name: "GRDB", package: "GRDB.swift")],
+      resources: [.copy("Resources/seed.json")],
       swiftSettings: [
         .treatAllWarnings(as: .error),
         .treatWarning("DeprecatedDeclaration", as: .warning),
