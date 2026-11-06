@@ -60,6 +60,8 @@ struct PrimaryButton: View {
     var place = Place.card
     /// One blue per screen: under a sheet, the sheet's own button holds it.
     var yields = false
+    /// The string table the title is read from, for a screen that keeps its own.
+    var tableName: String? = nil
     let action: () -> Void
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -80,7 +82,7 @@ struct PrimaryButton: View {
     }
 
     private var label: some View {
-        Text(title)
+        Text(title, tableName: tableName)
             .font(.headline)
             .foregroundStyle(yields ? Color.ink : Color.onMark)
             .multilineTextAlignment(.center)

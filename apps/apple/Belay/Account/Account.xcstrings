@@ -1,0 +1,166 @@
+{
+  "sourceLanguage": "fr",
+  "version": "1.0",
+  "strings": {
+    "Connexion": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign in"
+          }
+        }
+      }
+    },
+    "Adresse de l’instance": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Instance address"
+          }
+        }
+      }
+    },
+    "belay.exemple.fr": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "belay.example.org"
+          }
+        }
+      }
+    },
+    "Le serveur Belay que quelqu’un héberge pour toi, ou que tu héberges toi-même.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The Belay server someone hosts for you, or that you host yourself."
+          }
+        }
+      }
+    },
+    "Se connecter": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign in"
+          }
+        }
+      }
+    },
+    "Vérification…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checking…"
+          }
+        }
+      }
+    },
+    "Cette adresse n’est pas valide. Exemple : belay.exemple.fr": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This address isn’t valid. Example: belay.example.org"
+          }
+        }
+      }
+    },
+    "L’adresse doit commencer par https://": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The address must start with https://"
+          }
+        }
+      }
+    },
+    "Pas de connexion. Réessaie une fois en ligne.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No connection. Try again once you’re online."
+          }
+        }
+      }
+    },
+    "Impossible de joindre cette adresse. Vérifie-la, ou vérifie que l’instance est à jour.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Can’t reach this address. Check it, or check that the instance is up to date."
+          }
+        }
+      }
+    },
+    "Aucune instance Belay ne répond à cette adresse. Vérifie-la.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No Belay instance answers at this address. Check it."
+          }
+        }
+      }
+    },
+    "Connexion annulée. Tu peux réessayer quand tu veux.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign-in cancelled. You can try again whenever you like."
+          }
+        }
+      }
+    },
+    "La connexion est indisponible pour le moment. Réessaie dans un instant.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign-in is unavailable right now. Try again in a moment."
+          }
+        }
+      }
+    },
+    "La connexion a pris trop de temps. Réessaie.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your sign-in took too long. Please try again."
+          }
+        }
+      }
+    },
+    "La connexion n’a pas abouti. Réessaie.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign-in didn’t work. Please try again."
+          }
+        }
+      }
+    },
+    "Ton compte n’a pas accès à Belay. Demande l’accès à la personne qui gère cette instance.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your account doesn’t have access to Belay. Ask the person who runs this instance."
+          }
+        }
+      }
+    }
+  }
+}
