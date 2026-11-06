@@ -79,8 +79,9 @@ export function Home() {
             : t("app.name")
         }
         trailing={
-          // From 1 024 px the top bar carries the avatar to Réglages: one is enough.
-          <div className="lg:hidden">
+          // From 1 024 px the top bar carries the avatar to Réglages, one is enough; the apps have no top
+          // bar.
+          <div className="lg:hidden app:block">
             <AvatarLink
               name={account.kind === "unavailable" ? account.user.displayName : undefined}
             />
@@ -123,7 +124,7 @@ function SignedInHome({ account }: { account: OpenAccount }) {
         title={t("home.greeting", { name: account.user.displayName })}
         eyebrow={formatWeekday(today, i18n.language, today, { long: true })}
         trailing={
-          <div className="lg:hidden">
+          <div className="lg:hidden app:block">
             <AvatarLink name={account.user.displayName} />
           </div>
         }
@@ -165,7 +166,7 @@ function TrendCard({
         {t("trend.title")}
       </h2>
       <Link to="/body" className={`${cardSurface} flex flex-col px-4 py-3.5`}>
-        <span className="flex items-center justify-between text-[13px] font-semibold text-muted-foreground">
+        <span className="flex items-center justify-between text-(length:--text-secondary) font-semibold text-muted-foreground">
           {t("trend.average")}
           <ChevronRight aria-hidden className="size-4" />
         </span>

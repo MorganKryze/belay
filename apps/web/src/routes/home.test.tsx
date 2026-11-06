@@ -121,11 +121,11 @@ describe("the title's avatar", () => {
       },
     ],
   ])(
-    "the title's avatar is hidden from 1 024 px in every account state: %s",
+    "the title's avatar is hidden from 1 024 px in a browser, never in the apps, in every account state: %s",
     async (_, title, api) => {
       api();
       renderRoute("/");
-      expect((await titleAvatar(title)).parentElement!.className).toBe("lg:hidden");
+      expect((await titleAvatar(title)).parentElement!.className).toBe("lg:hidden app:block");
     },
   );
 });

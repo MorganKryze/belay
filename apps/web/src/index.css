@@ -20,6 +20,24 @@
 }
 
 @custom-variant dark (&:is(.dark *));
+/* Inside the Android and iPhone apps, which name their platform on the root (theme-init.js). */
+@custom-variant app (&:is([data-platform] *));
+/* Enlarged text in the apps (native/text-scale.ts): what keeps one line at the default size wraps. */
+@custom-variant text-scaled (&:is([data-text-scaled] *));
+/*
+ * Where the tabs stand in a rail on the left: from 600 px in the apps, which never show the top
+ * bar, and from 600 to 1 023 px in a browser, where the top bar takes over above that.
+ */
+@custom-variant rail {
+  @media (600px <= width < 64rem) {
+    @slot;
+  }
+  @media (width >= 64rem) {
+    &:is([data-platform] *) {
+      @slot;
+    }
+  }
+}
 
 @theme inline {
   --font-heading: var(--font-sans);
@@ -89,10 +107,12 @@
 
 /*
  * The charter's scales: components pick a step, never a raw size. Plain @theme so Tailwind emits
- * the ease-*, text-* and rounded-* utilities with these exact values.
+ * the ease-*, text-* and rounded-* utilities with these exact values. Text sizes are in rem, so a
+ * browser's default font size moves them, and multiplied by the phone's text size; spacing is in
+ * px, so neither moves a margin or a gap.
  */
 @theme {
-  --spacing: 0.25rem;
+  --spacing: 4px;
   --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
   --ease-nav: cubic-bezier(0.32, 0.72, 0, 1);
   --ease-sheet: cubic-bezier(0.4, 0.2, 0, 1);
@@ -101,44 +121,65 @@
   --ease-pill: linear(0, 0.2 10%, 0.6 25%, 0.9 40%, 1.03 55%, 1.01 70%, 1);
   /* The loading mark's hooks fade out and back as evenly as they came. */
   --ease-breathe: cubic-bezier(0.42, 0, 0.58, 1);
-  --text-figure: 50px;
+  --text-figure: calc(3.125rem * var(--title-scale));
   --text-figure--line-height: 1;
   --text-figure--letter-spacing: -0.035em;
   --text-figure--font-weight: 700;
-  --text-figure-md: 34px;
+  --text-figure-md: calc(2.125rem * var(--title-scale));
   --text-figure-md--line-height: 1;
   --text-figure-md--letter-spacing: -0.03em;
   --text-figure-md--font-weight: 700;
-  --text-title-lg: 30px;
+  --text-title-lg: calc(1.875rem * var(--title-scale));
   --text-title-lg--line-height: 1.15;
   --text-title-lg--letter-spacing: -0.02em;
   --text-title-lg--font-weight: 700;
-  --text-title-session: 22px;
+  --text-title-session: calc(1.375rem * var(--text-scale));
   --text-title-session--line-height: 1.25;
   --text-title-session--letter-spacing: -0.015em;
   --text-title-session--font-weight: 700;
-  --text-title-card: 19px;
+  --text-title-card: calc(1.1875rem * var(--text-scale));
   --text-title-card--line-height: 1.3;
   --text-title-card--letter-spacing: -0.01em;
   --text-title-card--font-weight: 650;
-  --text-title-compact: 17px;
+  --text-title-compact: calc(1.0625rem * var(--text-scale));
   --text-title-compact--line-height: 1.3;
   --text-title-compact--font-weight: 650;
-  --text-button: 16px;
+  --text-button: calc(1rem * var(--text-scale));
   --text-button--line-height: 1.25;
   --text-button--font-weight: 650;
-  --text-body: 15px;
+  --text-body: calc(0.9375rem * var(--text-scale));
   --text-body--line-height: 1.45;
   --text-body--font-weight: 400;
-  --text-secondary: 13px;
+  --text-secondary: calc(0.8125rem * var(--text-scale));
   --text-secondary--line-height: 1.35;
   --text-secondary--font-weight: 400;
-  --text-section: 13px;
+  --text-section: calc(0.8125rem * var(--text-scale));
   --text-section--line-height: 1.35;
   --text-section--font-weight: 600;
-  --text-tab: 11.5px;
+  --text-tab: calc(0.71875rem * var(--bar-scale));
   --text-tab--line-height: 1.2;
   --text-tab--font-weight: 600;
+  /* Steps that set a size only, for the few places between the charter's steps. */
+  --text-figure-lg: calc(2.75rem * var(--title-scale));
+  --text-note: calc(0.84375rem * var(--text-scale));
+  --text-label: calc(0.71875rem * var(--text-scale));
+  --text-caption: calc(0.6875rem * var(--text-scale));
+  --text-micro: calc(0.625rem * var(--text-scale));
+  /* Tailwind's own sizes follow the same scales, each keeping its line height. A field never goes
+     under 16 px: below that WebKit zooms the page when it takes the focus. */
+  --text-xs: calc(0.75rem * var(--text-scale));
+  --text-sm: calc(0.875rem * var(--text-scale));
+  --text-base: max(1rem, calc(1rem * var(--text-scale)));
+  --text-lg: calc(1.125rem * var(--text-scale));
+  --text-xl: calc(1.25rem * var(--text-scale));
+  --text-2xl: calc(1.5rem * var(--title-scale));
+  --text-3xl: calc(1.875rem * var(--title-scale));
+  --text-4xl: calc(2.25rem * var(--title-scale));
+  --text-5xl: calc(3rem * var(--title-scale));
+  --text-6xl: calc(3.75rem * var(--title-scale));
+  --text-7xl: calc(4.5rem * var(--title-scale));
+  --text-8xl: calc(6rem * var(--title-scale));
+  --text-9xl: calc(8rem * var(--title-scale));
   --radius-icon: 8px;
   --radius-chip: 10px;
   --radius-control: 12px;
@@ -475,6 +516,17 @@
   --swipe-snap-transition: transform var(--dur-release) var(--ease-out);
 }
 
+/*
+ * The phone's text size over its default, set on the root before the first paint (theme-init.js)
+ * and 1 elsewhere. Titles and big figures grow less, as the system's own large titles do: x1.54
+ * when body text is x2.35. The tab labels stop at x1.3, before four of them collide at 360 px.
+ */
+:root {
+  --text-scale: 1;
+  --title-scale: calc(1 + (var(--text-scale) - 1) * 0.4);
+  --bar-scale: min(var(--text-scale), 1.3);
+}
+
 /* On a computer the top bar holds the top of the screen, so the compact header pins under it. */
 :root {
   --top-bar: 3.75rem;
@@ -484,6 +536,31 @@
   :root {
     --header-top: var(--top-bar);
   }
+}
+/* The apps never show the top bar: nothing pins under it. */
+[data-platform] {
+  --top-bar: 0px;
+}
+
+/*
+ * The rail's width, wherever the tabs stand in one (the rail variant): the page is centred in what
+ * the rail leaves. Pages without tabs (the session cover, Réglages) keep the whole width.
+ */
+:root {
+  --rail-width: 0px;
+}
+@media (600px <= width < 64rem) {
+  html:has([data-dock]) {
+    --rail-width: 5rem;
+  }
+}
+@media (width >= 64rem) {
+  html[data-platform]:has([data-dock]) {
+    --rail-width: 5rem;
+  }
+}
+body {
+  padding-left: var(--rail-width);
 }
 
 /*
@@ -587,7 +664,12 @@
   background-color: var(--track);
   border: 0;
   border-radius: var(--radius-field);
-  min-height: calc(var(--spacing) * 12.5);
+  /* 50 px, or more once the text grows: the tallest line a field holds (a stepper's figure, 28 px
+     at the default size) and 8 px above and below it. */
+  min-height: max(
+    calc(var(--spacing) * 12.5),
+    calc(1.75rem * var(--text-scale) + var(--spacing) * 4)
+  );
   &:focus-visible,
   &:has(input:focus-visible),
   &:has([role="spinbutton"]:focus-visible) {
@@ -685,6 +767,67 @@ html:has([role="dialog"][data-state="open"]) [data-dock] {
 }
 
 /*
+ * The rail: the same dock, restyled, so crossing 600 px mounts nothing and an open sheet stays.
+ * The dock lends its box to its two parts: the tabs stand in a column down the left edge, the
+ * open session's bar runs along the bottom beside them. The pill slides down instead of across.
+ */
+[data-dock] {
+  @variant rail {
+    display: contents;
+    & > * {
+      transition: opacity var(--dock-fade) var(--ease-out);
+    }
+    html:has([role="dialog"][data-state="open"]) & > * {
+      opacity: 0;
+    }
+    & > nav {
+      position: fixed;
+      inset-block: 0;
+      left: 0;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      width: calc(var(--rail-width) + env(safe-area-inset-left));
+      max-width: none;
+      margin: 0;
+      padding: max(0.75rem, env(safe-area-inset-top)) 0.375rem
+        max(0.75rem, env(safe-area-inset-bottom)) calc(0.375rem + env(safe-area-inset-left));
+      border-width: 0 1px 0 0;
+      border-radius: 0;
+      background-color: var(--surface);
+      box-shadow: none;
+      backdrop-filter: none;
+      view-transition-name: dock;
+    }
+    & > :not(nav) {
+      position: fixed;
+      right: 0;
+      bottom: 0;
+      left: calc(var(--rail-width) + env(safe-area-inset-left));
+      z-index: 10;
+      max-width: none;
+      margin: 0;
+      padding: 0.625rem max(0.75rem, env(safe-area-inset-right))
+        max(0.75rem, env(safe-area-inset-bottom)) 0.75rem;
+      view-transition-name: dock-bar;
+      @apply glass;
+    }
+    & ul {
+      grid-template-columns: none;
+      grid-auto-rows: 1fr;
+      row-gap: 0.75rem;
+    }
+    & [data-pill] {
+      inset: 0 0 auto;
+      width: auto;
+      height: calc((100% - 2.25rem) / 4);
+      translate: 0 calc(var(--tab-i) * (100% + 0.75rem));
+    }
+  }
+}
+
+/*
  * Page changes. The router only starts a transition, typed push, pop, cover or uncover, where the
  * browser supports transition types; tab switches get none and change in the same frame. The page
  * moves as the root snapshot: it is the size of the screen and taken at each page's own scroll, so
@@ -726,20 +869,26 @@ html:active-view-transition-type(uncover)::view-transition-old(root) {
   animation: var(--animate-page-uncover-out);
 }
 html:active-view-transition-type(push, pop)::view-transition-old(dock),
+html:active-view-transition-type(push, pop)::view-transition-old(dock-bar),
 html:active-view-transition-type(push, pop)::view-transition-old(top-bar) {
   animation: none;
   opacity: 0;
 }
 html:active-view-transition-type(push, pop)::view-transition-new(dock),
+html:active-view-transition-type(push, pop)::view-transition-new(dock-bar),
 html:active-view-transition-type(push, pop)::view-transition-new(top-bar) {
   animation: none;
 }
 /* The session cover takes the whole screen: the dock and the top bar fade as it rises. */
 html:active-view-transition-type(cover, uncover)::view-transition-old(dock),
+html:active-view-transition-type(cover, uncover)::view-transition-old(dock-bar),
 html:active-view-transition-type(cover, uncover)::view-transition-old(top-bar) {
   animation: var(--animate-fade-out);
 }
 html:active-view-transition-type(cover, uncover)::view-transition-new(dock) {
+  animation: var(--animate-dock-in);
+}
+html:active-view-transition-type(cover, uncover)::view-transition-new(dock-bar) {
   animation: var(--animate-dock-in);
 }
 html:active-view-transition-type(cover, uncover)::view-transition-new(top-bar) {
@@ -760,11 +909,37 @@ html:active-view-transition-type(cover, uncover)::view-transition-new(top-bar) {
   }
   body {
     @apply bg-background text-foreground;
+    /* Text with no step of its own follows the phone's text size too. */
+    font-size: calc(1rem * var(--text-scale));
   }
   html {
     @apply font-sans;
     /* Pressed controls answer with their own scale or tint, not the browser's grey flash. */
     -webkit-tap-highlight-color: transparent;
+  }
+  /* On a touch screen a long press on a row, a tab or a title would select it and raise the
+     system's copy callout over the app. Fields and reading prose keep their selection. */
+  @media (pointer: coarse) {
+    body {
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+    }
+    input,
+    textarea,
+    [contenteditable],
+    .select-text {
+      -webkit-user-select: text;
+      user-select: text;
+      -webkit-touch-callout: default;
+    }
+  }
+  /* A sheet or a menu scrolled to its end must not hand the rest of the swipe to the page. */
+  [role="dialog"],
+  [role="alertdialog"],
+  [role="menu"],
+  [role="listbox"] {
+    overscroll-behavior: contain;
   }
 }
 

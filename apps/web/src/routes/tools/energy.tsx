@@ -118,11 +118,13 @@ export function EnergyTool() {
         {e && (
           <>
             <ResultFigure value={kcal(e.dayKcal)} unit="kcal" />
-            <p className="text-[13.5px] text-muted-foreground">
+            <p className="text-(length:--text-note) text-muted-foreground">
               {t("energy.range", { low: kcal(e.lowKcal), high: kcal(e.highKcal) })}
             </p>
             <p className="mt-2 flex items-baseline justify-between gap-3 border-t border-border pt-2.5">
-              <span className="text-[13.5px] text-muted-foreground">{t("energy.bmr")}</span>{" "}
+              <span className="text-(length:--text-note) text-muted-foreground">
+                {t("energy.bmr")}
+              </span>{" "}
               <b className="text-body font-semibold whitespace-nowrap tabular-nums">
                 {kcal(e.bmrKcal)} kcal
               </b>
@@ -130,7 +132,7 @@ export function EnergyTool() {
           </>
         )}
       </ResultCard>
-      <p className="text-[13px] text-muted-foreground">{t("energy.note")}</p>
+      <p className="text-(length:--text-secondary) text-muted-foreground">{t("energy.note")}</p>
     </ToolPage>
   );
 }

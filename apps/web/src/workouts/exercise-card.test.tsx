@@ -8,6 +8,7 @@ import { useState } from "react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import i18n from "../i18n";
 import "../i18n/lazy";
+import { setHaptics } from "../lib/haptic";
 import { writeMedia } from "../lib/media-flag";
 import { setWeightUnit } from "../lib/units";
 import { ExerciseCard, type Row } from "./exercise-card";
@@ -20,10 +21,14 @@ afterEach(() => {
   setWeightUnit("kg");
   localStorage.clear();
   logged.length = 0;
+  events.length = 0;
+  setHaptics(() => {});
 });
 
 // Every load the card hands to the session, in the order the sets were checked.
 const logged: Load[] = [];
+// What the card did in the hand and on the data, in order.
+const events: string[] = [];
 
 // The bench press of session A: 4 work sets, 2 warm-ups.
 const slot = sessionByCode("A", starterProgram)!.slots[0]!;
@@ -69,6 +74,7 @@ function Card({ initial = [] as WorkoutSet[], unfolded = true }) {
   const [sets, setSets] = useState(initial);
   const [open, setOpen] = useState(unfolded);
   const validate = async (row: Row, load: Load, rir: number | null) => {
+    events.push("write");
     logged.push(load);
     setSets((s) => [
       ...s,
@@ -110,6 +116,14 @@ const tick = (n: number) =>
 const toggle = () => fireEvent.click(card().querySelector("[aria-expanded]")!);
 
 describe("ExerciseCard", () => {
+  it("a set ticked gives a success haptic, before the set is written", async () => {
+    setHaptics((kind) => events.push(kind));
+    render(<Card />);
+    fireEvent.click(within(card()).getByRole("button", { name: "Log set 1" }));
+    await waitFor(() => expect(events).toContain("write"));
+    expect(events).toEqual(["success", "write"]);
+  });
+
   it("a tick logged before the card mounted does not pop", () => {
     render(<Card initial={[set(TODAY, 0, 80, 8)]} />);
     expect(tick(1).getAttribute("class")).not.toContain("animate-pop-in");

@@ -86,7 +86,7 @@ export function PalSheet({
               <span className="flex min-w-0 flex-1 flex-col">
                 <span className="flex items-baseline justify-between gap-2.5">
                   <span className="text-body font-semibold">{t(`energy.levels.${l.id}.name`)}</span>{" "}
-                  <span className="text-[14px] text-muted-foreground tabular-nums">
+                  <span className="text-(length:--text-sm) text-muted-foreground tabular-nums">
                     {formatNumber(l.pal, i18n.language, { digits: 2, minDigits: 2 })}
                   </span>
                 </span>{" "}

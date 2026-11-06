@@ -1,7 +1,8 @@
-import { Link, useLocation } from "@tanstack/react-router";
+import { Link, useLocation, useRouter } from "@tanstack/react-router";
 import { Calculator, Dumbbell, House, PersonStanding } from "lucide-react";
-import type { CSSProperties, ReactNode } from "react";
+import type { CSSProperties, MouseEvent, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { tabIndexOf } from "@/lib/tab-index";
 
 const TABS = [
   { to: "/", label: "nav.home", Icon: House },
@@ -10,16 +11,24 @@ const TABS = [
   { to: "/tools", label: "nav.tools", Icon: Calculator },
 ] as const;
 
-// The one place that says which tab a page belongs to. An exercise belongs to Séances, whose
-// library opens it; every tool page to Outils. The session cover ("/workout") is in no tab. A
-// session's preview opened from Accueil stays Accueil's.
-export function tabIndexOf(pathname: string, search?: { from?: unknown }): 0 | 1 | 2 | 3 | null {
-  if (pathname === "/") return 0;
-  if (search?.from === "home" && /^\/workouts\/session\/[^/]+$/.test(pathname)) return 0;
-  if (/^\/(?:workouts(?:\/|$)|exercises\/)/.test(pathname)) return 1;
-  if (/^\/body(?:\/|$)/.test(pathname)) return 2;
-  if (/^\/tools(?:\/|$)/.test(pathname)) return 3;
-  return null;
+// The rule lives apart from the bar, so Android's Back can read it without the bar in its chunk.
+export { tabIndexOf };
+
+// The dock and the top bar share it: a plain click brings the tab back as it was left; a modified
+// one keeps the browser's own meaning (a new tab, a new window), as the back chevron does. The
+// memory loads ahead with the tabs' pages (main.tsx), outside the startup bundle; if it cannot
+// load, the tab opens at its root as the link would.
+export function useTabClick() {
+  const router = useRouter();
+  return (tab: 0 | 1 | 2 | 3) => (e: MouseEvent) => {
+    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    e.preventDefault();
+    const root = TABS[tab].to;
+    import("@/lib/tab-memory").then(
+      (m) => m.goToTab(router, tab, root),
+      () => router.navigate({ to: root, viewTransition: false }),
+    );
+  };
 }
 
 const tab =
@@ -36,6 +45,7 @@ export function TabBar({ above }: { above?: ReactNode }) {
   const { t } = useTranslation();
   const { pathname, search } = useLocation();
   const active = tabIndexOf(pathname, search);
+  const onClick = useTabClick();
   return (
     // The wrapper is what fades under an open dialog (index.css).
     <div data-dock className={above ? backed : floating}>
@@ -47,34 +57,38 @@ export function TabBar({ above }: { above?: ReactNode }) {
         }`}
         style={{ "--tab-i": active ?? 0 } as CSSProperties}
       >
-        {/* One pill for the bar, slid to the active column; its edge keeps the cue at 3:1 where
-            the fill alone would not. */}
-        {active !== null && (
-          <span
-            aria-hidden
-            data-pill
-            className="absolute inset-y-1.5 left-1.5 w-[calc((100%-0.75rem)/4)] translate-x-[calc(var(--tab-i)*100%)] rounded-card bg-tab-pill ring-[1.5px] ring-primary-ink ring-inset transition-transform duration-(--pill-duration) ease-pill"
-          />
-        )}
-        <ul className="relative grid grid-cols-4">
-          {TABS.map(({ to, label, Icon }, i) => (
-            <li key={to}>
-              {/* Exact matching keeps the router from marking a tab on its own: on deeper pages
+        {/* The pill's box is the list's, across the bar or down the rail (index.css). */}
+        <div className="relative">
+          {/* One pill for the bar, slid to the active tab; its edge keeps the cue at 3:1 where the
+            fill alone would not. */}
+          {active !== null && (
+            <span
+              aria-hidden
+              data-pill
+              className="absolute inset-y-0 left-0 w-1/4 translate-x-[calc(var(--tab-i)*100%)] rounded-card bg-tab-pill ring-[1.5px] ring-primary-ink ring-inset transition-transform duration-(--pill-duration) ease-pill"
+            />
+          )}
+          <ul className="relative grid grid-cols-4">
+            {TABS.map(({ to, label, Icon }, i) => (
+              <li key={to}>
+                {/* Exact matching keeps the router from marking a tab on its own: on deeper pages
                   aria-current comes from tabIndexOf alone. A tab change is never a step back,
                   even from a deeper page, so it runs no page transition. */}
-              <Link
-                to={to}
-                viewTransition={false}
-                activeOptions={{ exact: true, includeSearch: false }}
-                aria-current={i === active ? "page" : undefined}
-                className={i === active ? `${tab} font-bold text-primary-ink` : tab}
-              >
-                <Icon aria-hidden className="size-6" />
-                {t(label)}
-              </Link>
-            </li>
-          ))}
-        </ul>
+                <Link
+                  to={to}
+                  onClick={onClick(i as 0 | 1 | 2 | 3)}
+                  viewTransition={false}
+                  activeOptions={{ exact: true, includeSearch: false }}
+                  aria-current={i === active ? "page" : undefined}
+                  className={i === active ? `${tab} font-bold text-primary-ink` : tab}
+                >
+                  <Icon aria-hidden className="size-6" />
+                  {t(label)}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
       </nav>
     </div>
   );

@@ -1,6 +1,7 @@
 import { createLink } from "@tanstack/react-router";
 import { ChevronDown, ChevronRight, type LucideIcon } from "lucide-react";
 import { Children, type ComponentProps, forwardRef, type ReactNode, useId } from "react";
+import { haptic } from "@/lib/haptic";
 import { cn } from "@/lib/utils";
 import { groupCard, sectionLabel } from "./surfaces";
 
@@ -19,8 +20,6 @@ export type RowProps = {
   // The value stays on the label's line and the sub runs under both, rather than the value
   // wrapping under a sub too wide to share the line (the rhythm row's count at 360 px).
   valueBeside?: boolean;
-  // The label and the sub wrap whole, never cut: for a row whose words must be read to choose.
-  wrap?: boolean;
 };
 
 // Also exported here, so a screen that lists rows imports one module.
@@ -44,12 +43,12 @@ function RowContent({
   prominent,
   destructive,
   valueBeside,
-  wrap,
 }: RowProps) {
   // A destructive row is red text alone, centred: no icon, no value, no chevron to dress it up.
+  // Its label wraps, so a person reads the whole action before taking it.
   if (destructive) {
     return (
-      <span className="min-w-0 truncate text-center text-body font-semibold text-destructive">
+      <span className="min-w-0 text-center break-words text-body font-semibold text-destructive">
         {label}
       </span>
     );
@@ -74,8 +73,8 @@ function RowContent({
       {valueBeside && sub ? (
         // Read in the same order as the other rows: label, sub, value.
         <span className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto] gap-x-3">
-          <span className={labelClass(prominent, wrap)}>{label}</span>{" "}
-          <span className={cn("col-span-2 row-start-2", subClass(wrap))}>{sub}</span>{" "}
+          <span className={labelClass(prominent)}>{label}</span>{" "}
+          <span className={cn("col-span-2 row-start-2", subClass)}>{sub}</span>{" "}
           <span className="col-start-2 row-start-1 text-body whitespace-nowrap text-muted-foreground">
             {value}
           </span>
@@ -84,12 +83,12 @@ function RowContent({
         <span className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-x-3">
           {sub ? (
             <span className="flex min-w-0 flex-1 basis-auto flex-col">
-              <span className={labelClass(prominent, wrap)}>{label}</span>{" "}
+              <span className={labelClass(prominent)}>{label}</span>{" "}
               {/* The summary wraps rather than ends in an ellipsis: two lines at most. */}
-              <span className={subClass(wrap)}>{sub}</span>
+              <span className={subClass}>{sub}</span>
             </span>
           ) : (
-            <span className={cn("flex-1 basis-auto", labelClass(prominent, wrap))}>{label}</span>
+            <span className={cn("flex-1 basis-auto", labelClass(prominent))}>{label}</span>
           )}
           {value != null && (
             <>
@@ -110,18 +109,13 @@ function RowContent({
   );
 }
 
-const labelClass = (prominent?: boolean, wrap?: boolean) =>
-  cn(
-    "min-w-0",
-    wrap ? "break-words" : "truncate",
-    prominent ? "text-title-compact" : "text-body font-semibold",
-  );
+// A label and its sub run on over as many lines as the text size needs: at the largest sizes a
+// cut word cannot be read, and the row grows with it.
+const labelClass = (prominent?: boolean) =>
+  cn("min-w-0 break-words", prominent ? "text-title-compact" : "text-body font-semibold");
 
-const subClass = (wrap?: boolean) =>
-  cn(
-    "break-words text-(length:--text-secondary) leading-(--text-secondary--line-height) text-muted-foreground",
-    !wrap && "line-clamp-2",
-  );
+const subClass =
+  "break-words text-(length:--text-secondary) leading-(--text-secondary--line-height) text-muted-foreground";
 
 // A destructive label sits alone in the middle of its row; a prominent row is taller.
 const rowClass = ({ prominent, destructive }: RowProps, className?: string) =>
@@ -140,7 +134,6 @@ const RowAnchor = forwardRef<HTMLAnchorElement, AnchorRowProps>(function RowAnch
     prominent,
     destructive,
     valueBeside,
-    wrap,
     className,
     ...rest
   },
@@ -156,7 +149,6 @@ const RowAnchor = forwardRef<HTMLAnchorElement, AnchorRowProps>(function RowAnch
     prominent,
     destructive,
     valueBeside,
-    wrap,
   };
   return (
     <a ref={ref} {...rest} className={rowClass(props, className)}>
@@ -177,7 +169,6 @@ export function RowButton({
   prominent,
   destructive,
   valueBeside,
-  wrap,
   className,
   type = "button",
   ...rest
@@ -192,7 +183,6 @@ export function RowButton({
     prominent,
     destructive,
     valueBeside,
-    wrap,
   };
   return (
     <button type={type} {...rest} className={rowClass(props, className)}>
@@ -208,7 +198,6 @@ export function RowSwitch({
   icon,
   label,
   sub,
-  wrap,
   checked,
   onCheckedChange,
   className,
@@ -218,7 +207,6 @@ export function RowSwitch({
   icon?: LucideIcon;
   label: string;
   sub?: string;
-  wrap?: boolean;
   checked: boolean;
   onCheckedChange: (next: boolean) => void;
 } & Omit<ComponentProps<"button">, "onChange" | "role">) {
@@ -231,10 +219,11 @@ export function RowSwitch({
       className={cn(row, className)}
       onClick={(e) => {
         onClick?.(e);
+        haptic("selection");
         onCheckedChange(!checked);
       }}
     >
-      <RowContent icon={icon} label={label} sub={sub} wrap={wrap} />
+      <RowContent icon={icon} label={label} sub={sub} />
       <span
         data-slot="switch-track"
         aria-hidden="true"

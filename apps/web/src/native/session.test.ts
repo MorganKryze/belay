@@ -7,7 +7,13 @@ const { plugin, haptics, bars } = vi.hoisted(() => ({
     clearToken: vi.fn<() => Promise<void>>(),
     authenticate: vi.fn<(o: { url: string; callbackScheme: string }) => Promise<{ url: string }>>(),
   },
-  haptics: { notification: vi.fn<(o: { type: string }) => Promise<void>>() },
+  haptics: {
+    notification: vi.fn<(o: { type: string }) => Promise<void>>(),
+    impact: vi.fn<(o: { style: string }) => Promise<void>>(),
+    selectionStart: vi.fn<() => Promise<void>>(),
+    selectionChanged: vi.fn<() => Promise<void>>(),
+    selectionEnd: vi.fn<() => Promise<void>>(),
+  },
   bars: { setStyle: vi.fn<(o: { style: string }) => Promise<void>>() },
 }));
 vi.mock("@capacitor/core", () => ({
@@ -18,6 +24,7 @@ vi.mock("@capacitor/core", () => ({
 vi.mock("@capacitor/haptics", () => ({
   Haptics: haptics,
   NotificationType: { Success: "SUCCESS" },
+  ImpactStyle: { Light: "LIGHT" },
 }));
 
 const ORIGIN = "https://belay.example.org";
@@ -47,7 +54,7 @@ beforeEach(() => {
   localStorage.setItem("belay.instance", ORIGIN);
   for (const fn of [
     ...Object.values(plugin),
-    haptics.notification,
+    ...Object.values(haptics),
     bars.setStyle,
     persist,
     fetchMock,
@@ -257,6 +264,17 @@ describe("the page's sign-in links and vibrations", () => {
     expect(replace).not.toHaveBeenCalled();
   });
 
+  it("installing hands the page the app's haptics", async () => {
+    haptics.impact.mockResolvedValue();
+    const { install } = await load();
+    const { haptic } = await import("@/lib/haptic");
+    haptic("light");
+    expect(haptics.impact).not.toHaveBeenCalled();
+    await install();
+    haptic("light");
+    expect(haptics.impact).toHaveBeenCalledWith({ style: "LIGHT" });
+  });
+
   it("vibrate gives a success haptic", async () => {
     haptics.notification.mockRejectedValue(new Error("no engine"));
     const { install } = await load();
@@ -266,7 +284,7 @@ describe("the page's sign-in links and vibrations", () => {
   });
 });
 
-describe("Android's system bars and storage", () => {
+describe("the system bars and storage", () => {
   const onAndroid = () =>
     vi.stubGlobal("Capacitor", { isNativePlatform: () => true, getPlatform: () => "android" });
   const lastStyle = () => bars.setStyle.mock.calls.at(-1)?.[0].style;
@@ -298,13 +316,14 @@ describe("Android's system bars and storage", () => {
     await expect(install()).resolves.toBeUndefined();
   });
 
-  it("the iPhone does neither", async () => {
+  it("the iPhone sets its bar style as well, and asks for no storage", async () => {
     vi.stubGlobal("Capacitor", { isNativePlatform: () => true, getPlatform: () => "ios" });
+    document.documentElement.classList.add("dark");
     const { install } = await load();
     await install();
-    document.documentElement.classList.add("dark");
-    await new Promise((settle) => setTimeout(settle, 10));
-    expect(bars.setStyle).not.toHaveBeenCalled();
+    expect(lastStyle()).toBe("DARK");
+    document.documentElement.classList.remove("dark");
+    await vi.waitFor(() => expect(lastStyle()).toBe("LIGHT"));
     expect(persist).not.toHaveBeenCalled();
   });
 });

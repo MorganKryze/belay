@@ -1,6 +1,7 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { useState } from "react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { setHaptics } from "@/lib/haptic";
 import { expectTokensOnly } from "@/test/design-rules";
 import { Segmented, type SegmentedOptions } from "./segmented";
 
@@ -21,6 +22,16 @@ const thumb = (container: HTMLElement) =>
   container.querySelector<HTMLElement>("[data-slot=segmented-thumb]");
 
 describe("Segmented", () => {
+  it("choosing another segment gives a selection haptic, before the choice is passed on", () => {
+    const events: string[] = [];
+    setHaptics((kind) => events.push(kind));
+    const onChange = vi.fn(() => events.push("change"));
+    render(<Segmented label="Period" value="w" options={options} onChange={onChange} />);
+    fireEvent.click(screen.getByRole("radio", { name: "Month" }));
+    expect(events).toEqual(["selection", "change"]);
+    setHaptics(() => {});
+  });
+
   it("shows no thumb when nothing is chosen", () => {
     const { container } = render(<Harness initial={null} />);
     expect(thumb(container)).toBeNull();
@@ -90,6 +101,124 @@ describe("Segmented", () => {
       expect(cls).toMatch(/\btext-\(length:--text-secondary\)/);
       expect(cls.split(/\s+/)).not.toContain("text-secondary");
     }
+  });
+
+  describe("at text sizes where a word outgrows its column", () => {
+    // jsdom lays nothing out: the groove's width and each label's width are set by hand, and the
+    // observer is told when they change.
+    let groove = 0;
+    let word = 0;
+    let resized: (() => void) | undefined;
+    // What the live observer watches: a label it does not watch can grow unseen.
+    const watched = new Set<Element>();
+    beforeEach(() => {
+      watched.clear();
+      vi.stubGlobal(
+        "ResizeObserver",
+        class {
+          constructor(callback: ResizeObserverCallback) {
+            resized = () => callback([], this as unknown as ResizeObserver);
+          }
+          observe(target: Element) {
+            watched.add(target);
+          }
+          disconnect() {
+            watched.clear();
+          }
+        },
+      );
+      vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockImplementation(function (
+        this: HTMLElement,
+      ) {
+        return this.getAttribute("role") === "radiogroup" ? groove : 0;
+      });
+      vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockImplementation(function (
+        this: HTMLElement,
+      ) {
+        return this.dataset.slot === "segmented-label" ? word : 0;
+      });
+    });
+    afterEach(() => {
+      vi.unstubAllGlobals();
+      vi.restoreAllMocks();
+    });
+
+    // A 300 px groove leaves each of three options 88 px for its label.
+    it("keeps the options side by side while every label fits", () => {
+      groove = 300;
+      word = 88;
+      const { container } = render(<Harness initial="m" />);
+      const group = screen.getByRole("radiogroup");
+      expect(group.hasAttribute("data-stacked")).toBe(false);
+      expect(group.getAttribute("aria-orientation")).toBe("horizontal");
+      expect(thumb(container)!.className).toContain("translate-x-[calc(var(--seg-i)*");
+    });
+
+    it("stacks them one per row, arrows going up and down, when a label is wider", () => {
+      groove = 300;
+      word = 89;
+      const { container } = render(<Harness initial="m" />);
+      const group = screen.getByRole("radiogroup");
+      expect(group.hasAttribute("data-stacked")).toBe(true);
+      expect(group.getAttribute("aria-orientation")).toBe("vertical");
+      expect(thumb(container)!.className).toContain("translate-y-[calc(var(--seg-i)*");
+      expect(thumb(container)!.className).not.toContain("translate-x-");
+    });
+
+    // Measuring lays the page out once: a thumb drawn side by side then would slide across to its
+    // row as the screen opens.
+    it("places the thumb in the stack from its first frame, without sliding there", () => {
+      groove = 300;
+      word = 151;
+      const changes = new MutationObserver(() => {});
+      changes.observe(document.body, { subtree: true, attributes: true, attributeOldValue: true });
+      const { container } = render(<Harness initial="y" />);
+      const before = changes
+        .takeRecords()
+        .filter((r) => r.target === thumb(container) && r.attributeName === "class")
+        .map((r) => r.oldValue);
+      changes.disconnect();
+      expect(before).toEqual([]);
+      expect(thumb(container)!.className).toContain("translate-y-[calc(var(--seg-i)*");
+    });
+
+    it("restacks when the text grows after the first layout, and unstacks when it shrinks", () => {
+      groove = 300;
+      word = 60;
+      render(<Harness initial="w" />);
+      const group = screen.getByRole("radiogroup");
+      expect(group.hasAttribute("data-stacked")).toBe(false);
+      word = 151;
+      act(() => resized!());
+      expect(group.hasAttribute("data-stacked")).toBe(true);
+      word = 60;
+      act(() => resized!());
+      expect(group.hasAttribute("data-stacked")).toBe(false);
+    });
+
+    // The same number of options with other values renders new labels: the old ones leave the page.
+    it("watches the new labels when the options change for others of the same number", () => {
+      groove = 300;
+      word = 60;
+      const labels = () => [
+        ...document.querySelectorAll<HTMLElement>("[data-slot=segmented-label]"),
+      ];
+      const { rerender } = render(
+        <Segmented<string> label="Period" value="w" options={options} onChange={() => {}} />,
+      );
+      expect(labels().every((label) => watched.has(label))).toBe(true);
+      const others: SegmentedOptions<"a" | "b" | "c"> = [
+        { value: "a", label: "Day" },
+        { value: "b", label: "Quarter" },
+        { value: "c", label: "All" },
+      ];
+      rerender(<Segmented<string> label="Period" value="a" options={others} onChange={() => {}} />);
+      expect(labels().map((label) => label.textContent)).toEqual(["Day", "Quarter", "All"]);
+      expect(labels().every((label) => watched.has(label))).toBe(true);
+      word = 151;
+      act(() => resized!());
+      expect(screen.getByRole("radiogroup").hasAttribute("data-stacked")).toBe(true);
+    });
   });
 
   it("uses tokens only", () => {

@@ -161,7 +161,7 @@ function IntakeForm({
           {error}
         </p>
       )}
-      <p className="text-[13px] text-muted-foreground">
+      <p className="text-(length:--text-secondary) text-muted-foreground">
         {t("intake.note")}
         {start.prefilled &&
           kcal === undefined &&

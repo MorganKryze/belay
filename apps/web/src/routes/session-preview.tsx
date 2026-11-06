@@ -130,8 +130,9 @@ function Preview({
   const top = (exerciseId: string, measure: Measure) =>
     history && lastTopSet(history, exerciseId, measure);
   // Replaced, so lowering the session lands where the preview was opened from.
+  // The label wraps rather than run off the screen once the text is enlarged.
   const startLink = (start: string, label: string) => (
-    <Button asChild className="w-full">
+    <Button asChild className="h-auto min-h-12.5 w-full py-1.5 text-center whitespace-normal">
       <Link to="/workout" search={{ start }} replace>
         <Play aria-hidden className="size-5" />
         {label}
@@ -192,13 +193,11 @@ function Preview({
           startLink(session.code, t(open ? "preview.resume" : "preview.start"))
         ))}
       <section aria-labelledby={listId} className="flex flex-col gap-2">
-        <div className="flex items-baseline justify-between gap-3 px-4">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-3 px-4">
           <h2 id={listId} className="text-section text-muted-foreground">
             {t("preview.exercises")}
           </h2>
-          <span className="truncate text-section text-muted-foreground">
-            {t("preview.columns")}
-          </span>
+          <span className="text-section text-muted-foreground">{t("preview.columns")}</span>
         </div>
         <ul className={groupCard}>
           {plan.map((slot, i) => {

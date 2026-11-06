@@ -25,6 +25,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ExerciseLoop } from "@/components/exercise-loop";
 import { Sheet } from "@/components/sheet";
+import { haptic } from "@/lib/haptic";
 import { useLoop } from "@/lib/media";
 import { loadNumber, parseLoad, readWeightUnit, type WeightUnit } from "@/lib/units";
 import type { Chrono } from "@/sync/db";
@@ -273,6 +274,7 @@ export function ExerciseCard({
   const validate = async (row: Row) => {
     const load = loadOf(row);
     if (!load || busy) return;
+    haptic("success");
     setBusy(true);
     setFresh((f) => new Set(f).add(row.position));
     try {
@@ -339,7 +341,9 @@ export function ExerciseCard({
           <h2 id={id} className="font-semibold text-muted-foreground">
             {exercise.name}
           </h2>
-          <span className="text-[13px] text-muted-foreground">{t("session.leftOut")}</span>
+          <span className="text-(length:--text-secondary) text-muted-foreground">
+            {t("session.leftOut")}
+          </span>
         </span>
         {onSkip && (
           <button
@@ -390,7 +394,7 @@ export function ExerciseCard({
             )}
             <span className="flex min-w-0 flex-1 flex-col">
               <span className="font-semibold">{exercise.name}</span>
-              <span className="text-[13px] font-normal text-muted-foreground">
+              <span className="text-(length:--text-secondary) font-normal text-muted-foreground">
                 {status ??
                   [...targets, ...(group ? [group] : []), ...(tag ? [tag] : [])].join(" · ")}
               </span>
@@ -414,7 +418,7 @@ export function ExerciseCard({
       {open && (
         <div className="flex flex-col pb-1">
           {foreign.length > 0 && (
-            <p className="mb-1 text-[13px] text-muted-foreground">
+            <p className="mb-1 text-(length:--text-secondary) text-muted-foreground">
               {t("session.doneWith", {
                 count: foreign.length,
                 exercise: exerciseById(foreign[0]!.set!.exerciseId)?.name,
@@ -423,7 +427,7 @@ export function ExerciseCard({
           )}
           <div
             aria-hidden
-            className="grid grid-cols-[3rem_1fr_1fr_2.75rem] gap-2 px-0.5 pb-1 text-[11px] font-semibold text-muted-foreground"
+            className="grid grid-cols-[3rem_1fr_1fr_2.75rem] gap-2 px-0.5 pb-1 text-(length:--text-caption) font-semibold text-muted-foreground"
           >
             <span>{t("session.set")}</span>
             <span className="text-center">{unit}</span>
@@ -456,8 +460,8 @@ export function ExerciseCard({
                   <span
                     className={
                       row.warmup
-                        ? "text-[11px] leading-tight font-semibold text-primary-ink"
-                        : `text-center text-[13px] font-bold ${row.set ? "text-reference-ink" : "text-muted-foreground"}`
+                        ? "text-(length:--text-caption) leading-tight font-semibold text-primary-ink"
+                        : `text-center text-(length:--text-secondary) font-bold ${row.set ? "text-reference-ink" : "text-muted-foreground"}`
                     }
                   >
                     {row.warmup ? t("session.warmup") : row.n}
@@ -687,10 +691,13 @@ function RirRow({
 }) {
   const { t } = useTranslation();
   const item =
-    "grid h-11 min-w-11 flex-1 place-items-center rounded-[10px] border border-input bg-card text-[13px] font-semibold data-[state=checked]:border-foreground data-[state=checked]:bg-foreground data-[state=checked]:text-background";
+    "grid h-11 min-w-11 flex-1 place-items-center rounded-[10px] border border-input bg-card text-(length:--text-secondary) font-semibold data-[state=checked]:border-foreground data-[state=checked]:bg-foreground data-[state=checked]:text-background";
   return (
     <div className="-mx-3 flex items-center gap-1 bg-primary-soft px-3 pb-2">
-      <span aria-hidden className="w-12 shrink-0 text-[11px] font-semibold text-muted-foreground">
+      <span
+        aria-hidden
+        className="w-12 shrink-0 text-(length:--text-caption) font-semibold text-muted-foreground"
+      >
         RIR
       </span>
       <RadioGroup.Root
@@ -744,7 +751,7 @@ function NoteField({
     );
   return (
     <label
-      className="mt-2 flex flex-col gap-1 text-[13px] font-semibold"
+      className="mt-2 flex flex-col gap-1 text-(length:--text-secondary) font-semibold"
       htmlFor={`note-${slotIndex}`}
     >
       {t("session.noteLabel", { exercise })}

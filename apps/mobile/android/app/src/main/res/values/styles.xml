@@ -10,12 +10,33 @@
     </style>
 
     <!-- Below web view 140 the page stops at the system bars and this background fills the band
-         behind them: the page's own chalk, dark in dark mode, rather than the theme's grey. -->
-    <style name="AppTheme.NoActionBar" parent="Theme.AppCompat.DayNight.NoActionBar">
+         behind them: the page's own chalk, dark in dark mode, rather than the theme's grey. The
+         system's dialogs, the date picker among them, take Material 3 in Belay's accent; the
+         wallpaper's colours are never asked for. -->
+    <style name="AppTheme.NoActionBar" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
         <item name="android:background">@null</item>
         <item name="android:windowBackground">@color/launch</item>
+        <item name="colorPrimary">@color/accent</item>
+        <item name="android:colorAccent">@color/accent</item>
+        <item name="android:datePickerDialogTheme">@style/DatePicker</item>
+    </style>
+
+    <!-- The date field's picker, the framework's own dialog. Each part reads its own attribute:
+         the light header android:colorAccent, the dark one the picker style's header, the chosen
+         day android:colorControlActivated, the buttons colorPrimary, the sheet colorSurface.
+         Material 3 fills the last two from its baseline purple unless they are set. -->
+    <style name="DatePicker" parent="ThemeOverlay.Material3.Dialog">
+        <item name="colorPrimary">@color/accent</item>
+        <item name="android:colorAccent">@color/accent</item>
+        <item name="android:colorControlActivated">@color/accent</item>
+        <item name="colorSurface">@color/surface</item>
+        <item name="android:datePickerStyle">@style/DatePickerCalendar</item>
+    </style>
+
+    <style name="DatePickerCalendar" parent="@android:style/Widget.Material.DatePicker">
+        <item name="android:headerBackground">@color/accent</item>
     </style>
 
     <!-- Android's own splash: the mark on chalk, then the app's theme once the page is up. -->

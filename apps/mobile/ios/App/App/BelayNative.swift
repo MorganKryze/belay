@@ -16,6 +16,7 @@ public class BelayNativePlugin: CAPPlugin, CAPBridgedPlugin, ASWebAuthentication
         CAPPluginMethod(name: "authenticate", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "setLiveActivity", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "health", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "setSwipeBack", returnType: CAPPluginReturnPromise),
     ]
 
     private static let service = "cloud.libresoftware.belay.session"
@@ -134,6 +135,19 @@ public class BelayNativePlugin: CAPPlugin, CAPBridgedPlugin, ASWebAuthentication
         }
     }
 
+    // The web view's own back swipe, which knows nothing of sheets or the session: the page turns
+    // it on only while a pushed page is on top. Off until the page first says so.
+    @objc func setSwipeBack(_ call: CAPPluginCall) {
+        guard let enabled = call.getBool("enabled") else {
+            return call.reject("enabled missing")
+        }
+        DispatchQueue.main.async {
+            guard let webView = self.bridge?.webView else { return call.reject("no web view") }
+            webView.allowsBackForwardNavigationGestures = enabled
+            call.resolve()
+        }
+    }
+
     public func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
         bridge?.viewController?.view.window ?? ASPresentationAnchor()
     }
@@ -143,5 +157,8 @@ public class BelayNativePlugin: CAPPlugin, CAPBridgedPlugin, ASWebAuthentication
 class MainViewController: CAPBridgeViewController {
     override open func capacitorDidLoad() {
         bridge?.registerPluginInstance(BelayNativePlugin())
+        // The web view's own rubber-band, which Capacitor's default turns off, is what a page that
+        // reaches its end is expected to do on an iPhone.
+        webView?.scrollView.bounces = true
     }
 }

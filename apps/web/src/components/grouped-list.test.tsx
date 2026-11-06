@@ -9,6 +9,7 @@ import {
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { Settings } from "lucide-react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { setHaptics } from "@/lib/haptic";
 import { expectTokensOnly } from "@/test/design-rules";
 import {
   EmptyState,
@@ -70,11 +71,11 @@ describe("GroupedList", () => {
     expect(chevron("None")).toBeNull();
   });
 
-  it("a long label ends in an ellipsis on one line", () => {
+  it("a long label wraps whole instead of ending in an ellipsis", () => {
     render(<RowButton label={"Very long label ".repeat(10)} />);
     const label = screen.getByText(/Very long label/);
     expect(classes(label)).toEqual(
-      expect.arrayContaining(["truncate", "text-body", "font-semibold", "min-w-0", "flex-1"]),
+      expect.arrayContaining(["break-words", "text-body", "font-semibold", "min-w-0", "flex-1"]),
     );
   });
 
@@ -173,7 +174,7 @@ describe("GroupedList", () => {
       expect.arrayContaining(["text-title-compact"]),
     );
     expect(classes(screen.getByText("Profile · height, age, loss range"))).toEqual(
-      expect.arrayContaining(["line-clamp-2", "text-muted-foreground"]),
+      expect.arrayContaining(["break-words", "text-muted-foreground"]),
     );
     expect(row.querySelector("[data-slot=row-chevron]")).toBeTruthy();
   });
@@ -307,6 +308,21 @@ describe("GroupedList", () => {
 });
 
 describe("RowSwitch", () => {
+  it("a tap gives a selection haptic, before the change is passed on", () => {
+    const events: string[] = [];
+    setHaptics((kind) => events.push(kind));
+    render(
+      <RowSwitch
+        label="Importer les pesées"
+        checked={false}
+        onCheckedChange={() => events.push("change")}
+      />,
+    );
+    fireEvent.click(screen.getByRole("switch"));
+    expect(events).toEqual(["selection", "change"]);
+    setHaptics(() => {});
+  });
+
   const sub = "Tes séances terminées et tes pesées vont dans Santé.";
 
   it("a switch row is a switch whose name holds its label and its sub", () => {
@@ -382,17 +398,16 @@ describe("RowSwitch", () => {
     expect(classes(knob).filter((c) => /^transition/.test(c))).toEqual([]);
   });
 
-  it("wrap lets the label and the sub run on", () => {
+  it("a row lets its label and its sub run on", () => {
     render(
       <>
         <RowSwitch
-          wrap
           label={"Séances et pesées ".repeat(6)}
           sub={"Une longue ligne ".repeat(12)}
           checked={false}
           onCheckedChange={vi.fn()}
         />
-        <RowButton wrap label={"Historique ".repeat(8)} sub={"Une autre ligne ".repeat(12)} />
+        <RowButton label={"Historique ".repeat(8)} sub={"Une autre ligne ".repeat(12)} />
       </>,
     );
     for (const text of [
@@ -406,11 +421,5 @@ describe("RowSwitch", () => {
       expect(classes(el)).not.toContain("line-clamp-2");
       expect(classes(el)).toContain("break-words");
     }
-  });
-
-  it("without wrap a row still cuts its label and clamps its sub", () => {
-    render(<RowButton label="Units" sub="Kilograms and centimetres" />);
-    expect(classes(screen.getByText("Units"))).toContain("truncate");
-    expect(classes(screen.getByText("Kilograms and centimetres"))).toContain("line-clamp-2");
   });
 });

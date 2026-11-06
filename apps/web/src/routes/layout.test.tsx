@@ -135,7 +135,7 @@ describe("the shell", () => {
     await screen.findByRole("heading", { level: 1, name: "Tools" });
     expect(classes(shell())).toEqual(
       expect.arrayContaining([
-        "[--chrome-bottom:calc(4.5rem+max(0.75rem,env(safe-area-inset-bottom)))]",
+        "[--chrome-bottom:calc(4.5rem+max(0.75rem,env(safe-area-inset-bottom))+var(--dock-extra,0px))]",
         "pb-[calc(var(--chrome-bottom)+0.5rem)]",
       ]),
     );
@@ -219,7 +219,7 @@ describe("the shell", () => {
     await screen.findByRole("link", { name: /Set \d+ of \d+ · Session [A-Z]/ });
     expect(classes(shell())).toEqual(
       expect.arrayContaining([
-        "[--chrome-bottom:calc(8.875rem+max(0.75rem,env(safe-area-inset-bottom)))]",
+        "[--chrome-bottom:calc(8.875rem+max(0.75rem,env(safe-area-inset-bottom))+var(--dock-extra,0px))]",
         "pb-[calc(var(--chrome-bottom)+0.5rem)]",
       ]),
     );

@@ -1,9 +1,23 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useRouter, useRouterState } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 
+// A page the tab bar brought back from memory that is gone or failed to load shows its tab's root
+// instead of this screen. Where the memory cannot load, nothing was remembered either.
+function useLeaveMissing() {
+  const router = useRouter();
+  useEffect(() => {
+    import("@/lib/tab-memory").then(
+      (m) => m.leaveMissing(router),
+      () => {},
+    );
+  }, [router]);
+}
+
 export function NotFound() {
   const { t } = useTranslation();
+  useLeaveMissing();
   return (
     <section className="flex flex-col gap-4">
       <h1 className="text-title-lg">{t("fallback.notFoundTitle")}</h1>
@@ -19,6 +33,7 @@ export function NotFound() {
 // a reload fetches the new one.
 export function RouteError() {
   const { t } = useTranslation();
+  useLeaveMissing();
   return (
     <section role="alert" className="flex flex-col gap-4">
       <h1 className="text-title-lg">{t("fallback.errorTitle")}</h1>

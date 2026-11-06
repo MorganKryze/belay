@@ -70,7 +70,7 @@ export function RestBar({
             <span
               role="timer"
               aria-live="off"
-              className="text-[30px] leading-tight font-bold tracking-tight tabular-nums"
+              className="text-(length:--text-title-lg) leading-tight font-bold tracking-tight tabular-nums"
             >
               {formatClock(left)}
             </span>

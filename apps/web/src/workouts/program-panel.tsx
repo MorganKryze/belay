@@ -365,10 +365,10 @@ function ProgramCard({
       {days && !next ? (
         // The days in the title's ink, as Accueil names a session in its quiet line.
         <div className="flex flex-col">
-          <h2 id={id} className="text-[17px] font-semibold">
+          <h2 id={id} className="text-(length:--text-title-compact) font-semibold">
             {title}
           </h2>{" "}
-          <p className="text-[13px] text-muted-foreground">
+          <p className="text-(length:--text-secondary) text-muted-foreground">
             <b className="font-semibold text-foreground">{days}</b> · {size}
           </p>
         </div>

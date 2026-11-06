@@ -187,7 +187,7 @@ function Editor({
           {t("editor.cancel")}
         </Link>
         <div className="flex items-center gap-2">
-          <h1 className="min-w-0 flex-1 text-[22px] leading-tight font-bold tracking-tight">
+          <h1 className="min-w-0 flex-1 text-(length:--text-title-session) leading-tight font-bold tracking-tight">
             {title}
           </h1>
           <DayChip date={date} today={today} onChange={setDate} label={t("editor.date")} />
@@ -291,7 +291,7 @@ function EditorSlot({
         >
           <span className="flex min-w-0 flex-col">
             <span className="font-semibold">{exercise.name}</span>
-            <span className="text-[13px] font-normal text-muted-foreground">
+            <span className="text-(length:--text-secondary) font-normal text-muted-foreground">
               {work.length > 0 ? t("history.workSets", { count: work.length }) : formatSets(slot)}
             </span>
           </span>
@@ -304,7 +304,7 @@ function EditorSlot({
       {open && (
         <div className="flex flex-col pb-2">
           {foreign.length > 0 && (
-            <p className="mb-1 text-[13px] text-muted-foreground">
+            <p className="mb-1 text-(length:--text-secondary) text-muted-foreground">
               {t("session.doneWith", {
                 count: foreign.length,
                 exercise: exerciseById(foreign[0]!.exerciseId)?.name,
@@ -314,7 +314,7 @@ function EditorSlot({
           {rows.length > 0 && (
             <div
               aria-hidden
-              className={`grid ${grid} gap-2 px-0.5 pb-1 text-[11px] font-semibold text-muted-foreground`}
+              className={`grid ${grid} gap-2 px-0.5 pb-1 text-(length:--text-caption) font-semibold text-muted-foreground`}
             >
               <span>{t("session.set")}</span>
               <span className="text-center">{unit}</span>
@@ -336,8 +336,8 @@ function EditorSlot({
                 <span
                   className={
                     row.warmup
-                      ? "text-[11px] leading-tight font-semibold text-primary-ink"
-                      : "text-center text-[13px] font-bold text-muted-foreground"
+                      ? "text-(length:--text-caption) leading-tight font-semibold text-primary-ink"
+                      : "text-center text-(length:--text-secondary) font-bold text-muted-foreground"
                   }
                 >
                   {row.warmup ? t("session.warmup") : n}

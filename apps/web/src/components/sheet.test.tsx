@@ -187,7 +187,7 @@ describe("Sheet", () => {
     expect(classesOf(handle)).toEqual(expect.arrayContaining(["lg:hidden"]));
     const title = screen.getByRole("heading", { name: "New annotation" });
     expect(classesOf(title)).toEqual(
-      expect.arrayContaining(["text-title-compact", "text-foreground", "line-clamp-2", "min-w-0"]),
+      expect.arrayContaining(["text-title-compact", "text-foreground", "break-words", "min-w-0"]),
     );
     const header = title.parentElement!;
     expect(header.previousElementSibling).toBe(handle);

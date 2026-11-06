@@ -41,6 +41,17 @@ describe("design rules", () => {
     expect(found.filter((entry) => !launch.includes(entry))).toEqual([]);
   });
 
+  it("a branch on the phone platform lives in native/ or lib/platform.ts, and nowhere else", () => {
+    // routes/health.tsx predates the rule and still asks which phone it runs on; a new file
+    // must style by html[data-platform] or ask the native modules instead.
+    const allowed = [join("native", ""), join("lib", "platform.ts"), join("routes", "health.tsx")];
+    const found = sourceFiles()
+      .filter((file) => /\bnativePlatform\b|\bCapacitor\b/.test(readFileSync(file, "utf8")))
+      .map((file) => file.slice(join(__dirname, "..").length + 1))
+      .filter((file) => !allowed.some((a) => file.startsWith(a)));
+    expect(found).toEqual([]);
+  });
+
   it("the launch colours are the page's background tokens", () => {
     const token = (selector: string) =>
       declarations(block(CSS, selector)).get("--background")?.toUpperCase();
@@ -75,6 +86,15 @@ describe("design rules", () => {
         'className="text-[15px] rounded-[7px] leading-[1.4] tracking-[-0.02em] rounded-[calc(var(--radius-card)-4px)] text-[var(--x)]"',
       ),
     ).toEqual(["text-[15px]", "rounded-[7px]", "leading-[1.4]", "tracking-[-0.02em]"]);
+  });
+
+  it("no component sets a text size by a raw length", () => {
+    const found = sourceFiles().flatMap((file) =>
+      arbitraryScale(readFileSync(file, "utf8"))
+        .filter((hit) => hit.startsWith("text-["))
+        .map((hit) => `${file}: ${hit}`),
+    );
+    expect(found).toEqual([]);
   });
 
   it("no component uses a raw duration, curve or a transition on every property", () => {

@@ -13,7 +13,7 @@ export function ResultCard({ label, children }: { label: string; children: React
       aria-atomic="true"
       className={`${cardSurface} flex flex-col gap-1 px-4 py-3.5`}
     >
-      <h2 id={id} className="text-[13px] font-semibold text-muted-foreground">
+      <h2 id={id} className="text-(length:--text-secondary) font-semibold text-muted-foreground">
         {label}
       </h2>
       {children}
@@ -51,7 +51,7 @@ export function ResultFigure({
         <span
           className={cn(
             "font-semibold tracking-normal text-muted-foreground",
-            size === "medium" ? "text-[14px]" : "text-[17px]",
+            size === "medium" ? "text-(length:--text-sm)" : "text-(length:--text-title-compact)",
           )}
         >
           {unitSpace}

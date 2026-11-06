@@ -153,7 +153,7 @@ function Detail({ account }: { account: OpenAccount }) {
       )}
       {workout.note && (
         <section aria-labelledby="note" className={`${cardSurface} p-4`}>
-          <h2 id="note" className="text-[15px] font-semibold">
+          <h2 id="note" className="text-(length:--text-body) font-semibold">
             {t("history.note")}
           </h2>
           <p className="mt-1 whitespace-pre-line">{workout.note}</p>
@@ -192,11 +192,11 @@ function Strip({ figures }: { figures: Figure[] }) {
     >
       {figures.map(({ label, value, unit }) => (
         <div key={label} className="flex min-w-0 flex-col items-center px-1 text-center">
-          <dt className="text-[12px] font-semibold text-muted-foreground">{label}</dt>
-          <dd className="text-[20px] font-bold tracking-[-0.01em] tabular-nums">
+          <dt className="text-(length:--text-xs) font-semibold text-muted-foreground">{label}</dt>
+          <dd className="text-(length:--text-xl) font-bold tracking-[-0.01em] tabular-nums">
             {value}
             {unit && (
-              <span className="text-[12px] font-semibold tracking-normal text-muted-foreground">
+              <span className="text-(length:--text-xs) font-semibold tracking-normal text-muted-foreground">
                 {" "}
                 {unit}
               </span>
@@ -268,7 +268,7 @@ function ExerciseSets({ n, name, prescription, sets, note }: Omit<ExerciseCard, 
             <span
               className={
                 s.warmup
-                  ? "justify-self-center text-center text-[11px] leading-tight font-semibold whitespace-nowrap text-primary-ink"
+                  ? "justify-self-center text-center text-(length:--text-caption) leading-tight font-semibold whitespace-nowrap text-primary-ink"
                   : `text-center font-semibold ${secondary}`
               }
             >

@@ -64,7 +64,9 @@ export function MonthStrip({ today, low, high }: { today: Date; low: Date; high:
                 : "text-center text-xs font-semibold text-muted-foreground"
             }
           >
-            <div className="h-4 text-[11px] font-normal text-muted-foreground">{c.year}</div>
+            <div className="h-4 text-(length:--text-caption) font-normal text-muted-foreground">
+              {c.year}
+            </div>
             {c.label}
             <div className="relative mt-1 h-2.5 overflow-hidden rounded-full bg-track">
               {filled && (

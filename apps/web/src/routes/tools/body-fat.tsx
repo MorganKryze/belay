@@ -93,7 +93,9 @@ export function BodyFatTool() {
             ]}
             onChange={(bodyFatReference) => update((s) => ({ ...s, bodyFatReference }))}
           />
-          <p className="text-[13px] text-muted-foreground">{t("bodyFat.referenceNote")}</p>
+          <p className="text-(length:--text-secondary) text-muted-foreground">
+            {t("bodyFat.referenceNote")}
+          </p>
         </div>
       }
     >
@@ -166,7 +168,7 @@ export function BodyFatTool() {
           hint={prefill.hint("heightCm")}
         />
       ) : (
-        <p className="text-[13px] text-muted-foreground">
+        <p className="text-(length:--text-secondary) text-muted-foreground">
           {t("bodyFat.heightKnown", { height: n(heightCm) })} ·{" "}
           <button
             type="button"
@@ -202,8 +204,8 @@ export function BodyFatTool() {
               unit="%"
               unitSpace={i18n.language.startsWith("fr") ? "\u202f" : ""}
             />
-            <p className="text-[13.5px] text-muted-foreground">{t("bodyFat.error")}</p>
-            <p className="text-[13.5px] text-muted-foreground">{t("bodyFat.bias")}</p>
+            <p className="text-(length:--text-note) text-muted-foreground">{t("bodyFat.error")}</p>
+            <p className="text-(length:--text-note) text-muted-foreground">{t("bodyFat.bias")}</p>
           </>
         ) : (
           <p className="text-sm">
@@ -241,7 +243,7 @@ export function BodyFatTool() {
               },
             ]}
           />
-          <p className="text-[13px] text-muted-foreground">
+          <p className="text-(length:--text-secondary) text-muted-foreground">
             {t(`bodyFat.caption.${state.bodyFatReference}`, {
               formula: t(`tools.formula.${formula}`).toLowerCase(),
               from: refs.group.slice(0, 2),
@@ -250,7 +252,9 @@ export function BodyFatTool() {
           </p>
         </>
       ) : (
-        <p className="text-[13px] text-muted-foreground">{t("bodyFat.noReferences")}</p>
+        <p className="text-(length:--text-secondary) text-muted-foreground">
+          {t("bodyFat.noReferences")}
+        </p>
       )}
     </ToolPage>
   );

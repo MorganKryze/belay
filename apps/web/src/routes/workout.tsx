@@ -516,8 +516,9 @@ function Screen({
         <button
           type="button"
           aria-label={t("session.lower")}
+          data-cover-lower
           onClick={lower}
-          className="press grid size-11 place-items-center rounded-control"
+          className="press grid size-11 shrink-0 place-items-center rounded-control"
         >
           <ChevronDown aria-hidden className="size-6" />
         </button>
@@ -561,7 +562,7 @@ function Screen({
         paused={paused !== null}
         onResume={() => void resume(new Date().toISOString())}
       />
-      <h1 className="text-[22px] leading-tight font-bold tracking-tight">
+      <h1 className="text-(length:--text-title-session) leading-tight font-bold tracking-tight">
         {workoutTitle(workout, sessions, t)}
       </h1>
       {plan.some((s) => s.rule === "no_climbing") && (

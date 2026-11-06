@@ -37,7 +37,7 @@ function Drawer({
           />
         </span>
       </summary>
-      <div className="pb-3 text-sm">{children}</div>
+      <div className="select-text pb-3 text-sm">{children}</div>
     </details>
   );
 }
@@ -77,12 +77,16 @@ export function ScienceSheet({
         />
       </summary>
       <div className="flex flex-col gap-2.5 border-t border-border px-4 pt-3 pb-2">
-        <div className="rounded-field border border-border p-3 text-sm">
-          <h3 className="mb-1 text-[13px] font-semibold">{t("science.brief")}</h3>
+        <div className="select-text rounded-field border border-border p-3 text-sm">
+          <h3 className="mb-1 text-(length:--text-secondary) font-semibold">
+            {t("science.brief")}
+          </h3>
           <p>{c.brief}</p>
         </div>
-        <div className="rounded-field bg-primary-soft p-3 text-sm">
-          <h3 className="mb-1 text-[13px] font-semibold text-primary-ink">{t("science.keep")}</h3>
+        <div className="select-text rounded-field bg-primary-soft p-3 text-sm">
+          <h3 className="mb-1 text-(length:--text-secondary) font-semibold text-primary-ink">
+            {t("science.keep")}
+          </h3>
           <ul className="list-disc pl-4">
             {c.keep.map((k) => (
               <li key={k}>{k}</li>
@@ -90,8 +94,10 @@ export function ScienceSheet({
           </ul>
         </div>
         {c.heuristic && (
-          <div className="rounded-field bg-track p-3 text-sm">
-            <h3 className="mb-1 text-[13px] font-semibold">{t("science.labels.heuristic")}</h3>
+          <div className="select-text rounded-field bg-track p-3 text-sm">
+            <h3 className="mb-1 text-(length:--text-secondary) font-semibold">
+              {t("science.labels.heuristic")}
+            </h3>
             <p>{c.heuristic}</p>
           </div>
         )}

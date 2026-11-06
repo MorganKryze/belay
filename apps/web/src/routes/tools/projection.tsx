@@ -103,7 +103,7 @@ export function ProjectionTool() {
             ]}
             onChange={(id) => setInputs({ pct: RATE_PRESETS.find((r) => r.id === id)!.pct })}
           />
-          <p className="-mt-2 text-[13px] text-muted-foreground tabular-nums">
+          <p className="-mt-2 text-(length:--text-secondary) text-muted-foreground tabular-nums">
             {t("projection.rateLine", {
               pct: n(preset.pct, 2),
               weight: n(
@@ -121,7 +121,7 @@ export function ProjectionTool() {
       )}
       <button
         type="button"
-        className="-mt-2 min-h-11 self-end text-[13px] font-semibold text-primary"
+        className="-mt-2 min-h-11 self-end text-(length:--text-secondary) font-semibold text-primary"
         onClick={() => setInputs(fine ? { fine: false, pct: preset?.pct ?? 0.75 } : { fine: true })}
       >
         {fine ? t("projection.presets") : `${t("projection.fine")} ›`}
@@ -135,14 +135,14 @@ export function ProjectionTool() {
       <ResultCard label={t("projection.result")}>
         {p?.kind === "ok" && (
           <>
-            <p className="text-[22px] leading-tight font-bold tracking-tight">
+            <p className="text-(length:--text-title-session) leading-tight font-bold tracking-tight">
               {t("projection.between", {
                 low: formatDay(p.dateLow, i18n.language, today),
                 high: formatDay(p.dateHigh, i18n.language, today),
               })}
             </p>
             <MonthStrip today={today} low={p.dateLow} high={p.dateHigh} />
-            <p className="text-[13.5px] text-muted-foreground">
+            <p className="text-(length:--text-note) text-muted-foreground">
               {t("projection.weeks", { low: p.weeksLow, high: p.weeksHigh })}
             </p>
           </>

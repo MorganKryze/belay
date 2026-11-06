@@ -395,7 +395,7 @@ describe("before the data is known", () => {
     renderRoute("/");
     const row = await line(/^Weigh-in/);
     // The blank line holds a no-break space in the status line's own style, so it keeps a line.
-    const blank = row.querySelector("span[aria-hidden].text-\\[13px\\]")!;
+    const blank = row.querySelector("span[aria-hidden].text-\\(length\\:--text-secondary\\)")!;
     expect(blank.textContent).toBe("\u00a0");
     fireEvent.click(row);
     expect(await screen.findByRole("dialog", { name: "Weigh-in" })).toBeTruthy();
@@ -403,7 +403,7 @@ describe("before the data is known", () => {
     // The open sheet hides the page from assistive technology: the rows are found hidden.
     const intake = () => screen.getByRole("button", { name: /^Intake/, hidden: true });
     await waitFor(() => expect(intake().textContent).toContain("not entered yet"));
-    const settled = intake().querySelector("span.text-\\[13px\\]")!;
+    const settled = intake().querySelector("span.text-\\(length\\:--text-secondary\\)")!;
     expect(settled.className).toBe(blank.className);
   });
 

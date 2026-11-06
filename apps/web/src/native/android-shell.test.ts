@@ -1,9 +1,10 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import { LAUNCH_SAFETY_MS } from "@/lib/launch";
 import { LAUNCH_BACKGROUND } from "@/lib/theme";
-import { kotlin } from "@/test/kotlin";
+import { kotlin, longConst, stringSet } from "@/test/kotlin";
 
 // The Android project's shape, read from its sources: the plugin the page calls, and what the
 // manifest and the network rules let out of the phone.
@@ -27,7 +28,9 @@ describe("the Android shell", () => {
     expect(start).toBeGreaterThan(register);
   });
 
-  it("system back goes to the previous page, and with none sends the app to the background", () => {
+  // Back asks the page first, which closes what is on top; the app's own step back is the
+  // fallback when the page is silent or late, and stepping aside stays the only way out.
+  it("system back asks the page, and only Accueil's answer or silence leaves", () => {
     const source = kotlin("MainActivity.kt");
     const start = source.indexOf("super.onCreate");
     const added = source.indexOf(
@@ -35,10 +38,23 @@ describe("the Android shell", () => {
     );
     expect(start).toBeGreaterThan(-1);
     expect(added).toBeGreaterThan(start);
-    const handler = /fun handleOnBackPressed\(\) \{([\s\S]*?)\n\s*\}/.exec(source)?.[1] ?? "";
-    expect(handler.replace(/\s+/g, " ").trim()).toBe(
-      "val webView = bridge.webView if (webView.canGoBack()) webView.goBack() else moveTaskToBack(true)",
+    const flat = source.replace(/\s+/g, " ");
+    expect(flat).toContain(
+      "val back = SystemBack(bridge.webView, Handler(Looper.getMainLooper())) { moveTaskToBack(true) }",
     );
+    expect(flat).toContain("override fun handleOnBackPressed() = back.press()");
+    expect(flat.match(/moveTaskToBack\(/g)).toHaveLength(1);
+    expect(flat).not.toMatch(/\bfinish(AndRemoveTask)?\(\)/);
+
+    const back = kotlin("SystemBack.kt");
+    expect(longConst(back, "ANSWER_MS")).toBe(500);
+    expect(back).toContain('"window.belayBack?.() ?? null"');
+    // Every answer the page gives after taking its step; "home" alone lets the app step aside.
+    expect(stringSet(back, "DONE")).toEqual(["surface", "cover", "page", "tab-root"]);
+    expect(back.replace(/\s+/g, " ")).toContain(
+      "if (webView.canGoBack()) webView.goBack() else leave()",
+    );
+    expect(back).not.toMatch(/\bfinish(AndRemoveTask)?\(\)/);
   });
 
   // The Android web view always reports itself online: the activity tells it the truth, so the
@@ -97,12 +113,42 @@ describe("the Android shell", () => {
     }
   });
 
-  it("the plugin answers to BelayNative with the page's six methods", () => {
+  it("the plugin answers to BelayNative with the page's seven methods", () => {
     const source = kotlin("BelayNativePlugin.kt");
     expect(source).toContain('@CapacitorPlugin(name = "BelayNative")');
     const methods = [...source.matchAll(/@PluginMethod\s+fun (\w+)\(/g)].map((m) => m[1]!).sort();
-    expect(pageMethods()).toHaveLength(6);
+    expect(pageMethods()).toHaveLength(7);
     expect(methods).toEqual(pageMethods());
+  });
+
+  // The edge swipe is the iPhone's; Android's Back asks the page by its own path, so the call
+  // only answers, should it ever arrive.
+  it("answers the iPhone's edge swipe call and does nothing with it", () => {
+    expect(kotlin("BelayNativePlugin.kt").replace(/\s+/g, " ")).toContain(
+      "@PluginMethod fun setSwipeBack(call: PluginCall) = call.resolve()",
+    );
+  });
+
+  // Android would zoom the page's text by the font scale on its own, and the page scales it again
+  // from the ratio it reads: the web view's zoom stays at 100 % and the ratio is handed over as
+  // the plugin loads, before the bridge loads the page. A change of the font scale restarts the
+  // activity, which reads it again.
+  it("hands the page the font scale once and keeps the web view's own zoom at 100 %", () => {
+    const source = kotlin("BelayNativePlugin.kt").replace(/\s+/g, " ");
+    const load = /override fun load\(\) \{(.*?)\} override fun/.exec(source)![1]!;
+    expect(load).toContain("val scale = context.resources.configuration.fontScale");
+    expect(load).toContain("bridge.webView.settings.textZoom = 100");
+    expect(load).toContain('bridge.webView.addJavascriptInterface(TextScale(scale), "BelayText")');
+    expect(source).toContain(
+      "class TextScale(private val scale: Float) { @JavascriptInterface fun scale(): Float = scale }",
+    );
+    expect(source.match(/@JavascriptInterface/g)).toHaveLength(1);
+    const init = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), "../../public/theme-init.js"),
+      "utf8",
+    );
+    expect(init).toContain("globalThis.BelayText?.scale()");
+    expect(manifest()).not.toMatch(/android:configChanges="[^"]*fontScale/);
   });
 
   it("nothing private is backed up", () => {
@@ -136,7 +182,7 @@ describe("the Android shell", () => {
     expect(debug).toMatch(/<base-config cleartextTrafficPermitted="false"/);
   });
 
-  it("installs as Belay, from Android 9, built for Android 16, in portrait", () => {
+  it("installs as Belay, from Android 9, built for Android 16", () => {
     expect(read("../build.gradle")).toMatch(/^\s*applicationId "cloud\.libresoftware\.belay"$/m);
     expect(read("main/res/values/strings.xml")).toContain('<string name="app_name">Belay</string>');
     const sdk = (name: string) =>
@@ -146,8 +192,22 @@ describe("the Android shell", () => {
       "36",
       "36",
     ]);
-    const main = /<activity\b[^>]*android:name="\.MainActivity"[^>]*>/.exec(manifest())?.[0] ?? "";
-    expect(main).toContain('android:screenOrientation="portrait"');
+  });
+
+  // A tablet turns every way; a phone stays upright. The manifest's lock is ignored on large screens
+  // from Android 16 only, so the activity decides from the screen itself, as it starts.
+  it("holds phones in portrait and lets tablets rotate", () => {
+    expect(manifest()).not.toContain("screenOrientation");
+    const source = kotlin("MainActivity.kt");
+    const flat = source.replace(/\s+/g, " ");
+    expect(flat).toContain(
+      "if (resources.configuration.smallestScreenWidthDp < 600) requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT",
+    );
+    const onCreate = source.indexOf("override fun onCreate");
+    const end = source.indexOf("override fun onDestroy");
+    const lock = source.indexOf("smallestScreenWidthDp < 600");
+    expect(lock).toBeGreaterThan(onCreate);
+    expect(lock).toBeLessThan(end);
   });
 
   it("git never tracks the signing keys, the local paths, the build or the copied web app", () => {
@@ -178,6 +238,118 @@ describe("the Android shell", () => {
       LAUNCH_BACKGROUND.light,
       LAUNCH_BACKGROUND.dark,
     ]);
+  });
+
+  // Android's splash leaves on the activity's first frame, long before the page draws: the web
+  // view's own white filled the gap. The splash now holds the activity until the page has loaded,
+  // its launch screen in it, and then stays over the activity until the web view has drawn that
+  // screen: a web view that has not drawn yet shows its bare background, chalk with no mark. A
+  // page that never draws lets the splash go at the page's own safety delay.
+  it("the splash stays until the web view has drawn the page's launch screen", () => {
+    const source = kotlin("MainActivity.kt");
+    const flat = source.replace(/\s+/g, " ");
+    const hold = flat.indexOf("splash.setKeepOnScreenCondition { !loaded }");
+    expect(hold).toBeGreaterThan(-1);
+    expect(hold).toBeLessThan(flat.indexOf("super.onCreate"));
+    expect(flat).toContain("bridge.webView.setBackgroundColor(getColor(R.color.launch))");
+    // Loaded, not merely committed: a committed page may not have parsed its launch screen yet.
+    expect(flat).toContain("override fun onPageLoaded(webView: WebView) { loaded = true }");
+    expect(flat).not.toContain("onPageCommitVisible");
+    // One cap for both holds, counted from the activity's start: 4 s at most, not 4 s twice.
+    expect(flat).toContain("val start = SystemClock.uptimeMillis()");
+    expect(flat).toContain(
+      "Handler(Looper.getMainLooper()).postAtTime({ loaded = true }, start + SPLASH_MS)",
+    );
+    // Over the activity, the splash goes once the web view's frame is on screen, or at the cap.
+    const exit = flat.slice(flat.indexOf("splash.setOnExitAnimationListener { provider ->"));
+    expect(exit.length).toBeLessThan(flat.length);
+    expect(exit).toMatch(
+      /postVisualStateCallback\(.*postOnAnimation \{ web\.postOnAnimation\(remove\) \}/,
+    );
+    expect(exit).toContain("Handler(Looper.getMainLooper()).postAtTime(remove, start + SPLASH_MS)");
+    expect(flat).not.toContain("postDelayed");
+    expect(exit.indexOf("provider.remove()")).toBeGreaterThan(-1);
+    expect(longConst(source, "SPLASH_MS")).toBe(LAUNCH_SAFETY_MS);
+  });
+
+  // The system's date picker and dialogs come in Material 3 with Belay's accent, never the
+  // wallpaper's colours; the band, the splash and the system bars stay as they were.
+  it("the app's theme is Material 3 in Belay's accent, the splash unchanged and Monet off", () => {
+    const styles = read("main/res/values/styles.xml");
+    const style = (name: string) =>
+      new RegExp(`<style name="${name.replace(".", "\\.")}"([^>]*)>([\\s\\S]*?)</style>`).exec(
+        styles,
+      );
+    const theme = style("AppTheme.NoActionBar");
+    expect(theme?.[1]).toContain('parent="Theme.Material3.DayNight.NoActionBar"');
+    const body = theme?.[2] ?? "";
+    expect(body).toContain('<item name="android:windowBackground">@color/launch</item>');
+    expect(body).toMatch(/<item name="android:datePickerDialogTheme">@style\/[\w.]+<\/item>/);
+    const colour = (dir: string, name: string) =>
+      new RegExp(`<color name="${name}">(#[0-9A-Fa-f]{6})</color>`).exec(
+        read(`main/res/${dir}/colors.xml`),
+      )?.[1] ??
+      new RegExp(`<color name="${name}">(#[0-9A-Fa-f]{6})</color>`).exec(
+        read("main/res/values/colors.xml"),
+      )?.[1];
+    const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../index.css"), "utf8");
+    const primary = [...css.matchAll(/^\s*--primary: (#[0-9a-f]{6});/gm)].map((m) => m[1]);
+    expect(primary).toHaveLength(2);
+    for (const item of ["colorPrimary", "android:colorAccent"]) {
+      const ref = new RegExp(`<item name="${item}">@color/(\\w+)</item>`).exec(body)?.[1] ?? "";
+      expect(
+        [colour("values", ref), colour("values-night", ref)].map((c) => c?.toLowerCase()),
+        item,
+      ).toEqual(primary);
+    }
+    expect(style("AppTheme.NoActionBarLaunch")?.[0]).toBe(
+      `<style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/launch</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher_foreground</item>
+        <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>
+    </style>`,
+    );
+    const sources = join(app, "main/java/cloud/libresoftware/belay");
+    for (const file of readdirSync(sources))
+      expect(readFileSync(join(sources, file), "utf8"), file).not.toContain("DynamicColors");
+  });
+
+  // The web view opens the framework's date picker in this overlay. Each part reads its own
+  // attribute, measured on the emulator with one colour per attribute: the header in light reads
+  // android:colorAccent and in dark the picker style's header, the chosen day
+  // android:colorControlActivated, the buttons colorPrimary and the sheet colorSurface. Material 3
+  // fills the last two from its baseline purple unless they are set.
+  it("the date picker takes Belay's accent and surface in both themes", () => {
+    const styles = read("main/res/values/styles.xml");
+    const style = (name: string) =>
+      new RegExp(`<style name="${name.replaceAll(".", "\\.")}"([^>]*)>([\\s\\S]*?)</style>`).exec(
+        styles,
+      );
+    const item = (body: string, name: string) =>
+      new RegExp(`<item name="${name}">@(\\w+)/([\\w.]+)</item>`).exec(body)?.slice(1);
+    const overlayName =
+      item(style("AppTheme.NoActionBar")?.[2] ?? "", "android:datePickerDialogTheme")?.[1] ?? "";
+    const overlay = style(overlayName)?.[2] ?? "";
+    for (const name of ["android:colorAccent", "android:colorControlActivated", "colorPrimary"])
+      expect(item(overlay, name), name).toEqual(["color", "accent"]);
+    expect(item(overlay, "colorSurface")).toEqual(["color", "surface"]);
+    const pickerName = item(overlay, "android:datePickerStyle")?.[1] ?? "";
+    const picker = style(pickerName);
+    expect(picker?.[1]).toContain('parent="@android:style/Widget.Material.DatePicker"');
+    expect(item(picker?.[2] ?? "", "android:headerBackground")).toEqual(["color", "accent"]);
+
+    const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../index.css"), "utf8");
+    const token = (name: string) =>
+      [...css.matchAll(new RegExp(`^\\s*--${name}: (#[0-9a-f]{6});`, "gm"))].map((m) => m[1]);
+    const colour = (dir: string, name: string) =>
+      new RegExp(`<color name="${name}">(#[0-9A-Fa-f]{6})</color>`)
+        .exec(read(`main/res/${dir}/colors.xml`))?.[1]
+        ?.toLowerCase();
+    for (const [name, css] of [
+      ["accent", "primary"],
+      ["surface", "surface"],
+    ] as const)
+      expect([colour("values", name), colour("values-night", name)], name).toEqual(token(css));
   });
 
   // Older web views lack what the web app needs; the README names the version to have.

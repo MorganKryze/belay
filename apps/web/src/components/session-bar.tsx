@@ -57,10 +57,14 @@ export function SessionBar({
         : "sessionBar.running",
   );
   const letter = t("sessionBar.session", { code });
+  // One line each at the default size, ending in an ellipsis as validated, so the bar keeps the
+  // height the page leaves room for. Enlarged text wraps instead of losing the exercise and the set
+  // a person looks for mid-session; the page's room follows the dock there.
+  const lines =
+    "truncate text-scaled:overflow-visible text-scaled:whitespace-normal text-scaled:break-words";
   // The 13 px step: a bare `text-secondary` is the colour token of the same name. Muted through
   // opacity, since no muted colour token reads on the foreground-coloured backing.
-  const status =
-    "truncate text-(length:--text-secondary) leading-(--text-secondary--line-height) opacity-80";
+  const status = `${lines} text-(length:--text-secondary) leading-(--text-secondary--line-height) opacity-80`;
   return (
     // A landmark of its own, so nothing on the page sits outside one.
     <section aria-label={t("sessionBar.label")}>
@@ -73,16 +77,16 @@ export function SessionBar({
         // Takes up the open session, as Home's session row does, on a device that never had it.
         search={{ start: code }}
         onAnimationEnd={onAnimationEnd}
-        className={`${leaving ? "animate-fade-out" : "animate-session-bar-in"} press flex min-h-13 w-full items-center gap-2.5 rounded-card bg-foreground py-1 pr-0 pl-3.5 text-background lg:hidden`}
+        className={`${leaving ? "animate-fade-out" : "animate-session-bar-in"} press flex min-h-13 w-full items-center gap-2.5 rounded-card bg-foreground py-1 pr-0 pl-3.5 text-background lg:hidden app:flex`}
       >
         <span className="flex min-w-0 flex-1 flex-col text-sm leading-tight">
           {slot ? (
             <>
-              <span className="truncate font-semibold">
+              <span className={`${lines} font-semibold`}>
                 {exerciseById(slot.exerciseId)?.name ?? slot.exerciseId}
               </span>
               {/* As validated: « Série 2 sur 3 · Séance A » while it runs, the rest or the pause
-                  ahead of it, one line at every width. */}
+                  ahead of it. */}
               <span className={status}>
                 {[
                   ...(paused || resting ? [running] : []),
@@ -96,7 +100,7 @@ export function SessionBar({
             </>
           ) : (
             <>
-              <span className="truncate font-semibold">{letter}</span>
+              <span className={`${lines} font-semibold`}>{letter}</span>
               <span className={status}>{running}</span>
             </>
           )}

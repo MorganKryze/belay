@@ -35,7 +35,7 @@ export function DurationStepper({
   const text = formatMinutes(value, t);
   return (
     <div className="flex min-w-0 flex-col gap-1.5">
-      <span id={id} className="text-[13px] font-semibold">
+      <span id={id} className="text-(length:--text-secondary) font-semibold">
         {label}
       </span>
       <div className="field flex h-12.5 items-center">

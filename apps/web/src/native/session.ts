@@ -4,8 +4,11 @@
 // first request already carries the token.
 import { SystemBars, SystemBarsStyle } from "@capacitor/core";
 import { Haptics, NotificationType } from "@capacitor/haptics";
+import { setHaptics } from "@/lib/haptic";
 import { nativePlatform, readInstance, setNativeSession } from "@/lib/platform";
+import { fireHaptic } from "./haptics";
 import { BelayNative } from "./plugin";
+import { watchTextScale } from "./text-scale";
 
 export type SignInResult = "cancelled" | "unavailable" | "expired" | "failed" | "denied";
 // The reasons the server puts in the app's callback, the same Accueil shows after a web sign-in.
@@ -90,6 +93,8 @@ export async function install(): Promise<void> {
     forget: () => BelayNative.clearToken(),
   });
 
+  setHaptics(fireHaptic);
+
   // The page's sign-in links go to the server's web sign-in, which the app cannot use (the
   // cookie would land in the system sheet, not here): they open the native sign-in instead.
   document.addEventListener(
@@ -107,7 +112,11 @@ export async function install(): Promise<void> {
     { capture: true },
   );
 
-  if (nativePlatform() === "android") keepAndroidReadable();
+  followTheme();
+  // Android may clear a web view's storage when space runs low, the outbox included, unless the
+  // page asks to keep it. A refusal changes nothing the person can act on, so nothing waits.
+  if (nativePlatform() === "android") navigator.storage?.persist?.().catch(() => {});
+  watchTextScale();
 
   // WebKit has no vibration API, so the rest's end would be silent in the hand: a success haptic
   // stands in for it. A device without a haptic engine just stays still.
@@ -120,11 +129,10 @@ export async function install(): Promise<void> {
   });
 }
 
-// Android draws the page under its status and navigation bars, so their icons follow the theme:
-// light on the dark one, dark on the light one, at once and on every change of the `dark` class.
-// Android may also clear a web view's storage when space runs low, the outbox included, unless the
-// page asks to keep it. A refusal changes nothing the person can act on, so neither waits.
-function keepAndroidReadable(): void {
+// The page is drawn under the system bars, so their icons follow the theme: light on the dark
+// one, dark on the light one, at once and on every change of the `dark` class. A refusal changes
+// nothing the person can act on, so nothing waits.
+function followTheme(): void {
   const root = document.documentElement;
   const follow = () => {
     const style = root.classList.contains("dark") ? SystemBarsStyle.Dark : SystemBarsStyle.Light;
@@ -132,5 +140,4 @@ function keepAndroidReadable(): void {
   };
   follow();
   new MutationObserver(follow).observe(root, { attributes: true, attributeFilter: ["class"] });
-  navigator.storage?.persist?.().catch(() => {});
 }

@@ -3,6 +3,7 @@ import { roundTo } from "@belay/shared/tools/round";
 import { Minus, Plus } from "lucide-react";
 import { type KeyboardEvent, type ReactNode, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { haptic } from "@/lib/haptic";
 import { cn } from "@/lib/utils";
 import { FieldError } from "./field-error";
 import { decimalsOf, formatNumber, parseDecimal } from "@/lib/format";
@@ -64,6 +65,7 @@ export function NumberStepper({
   const nudge = (direction: 1 | -1) => {
     if (inert) return;
     const next = clamp(roundTo((value ?? min) + direction * step, step), min, max);
+    haptic("light");
     setDraft(null);
     onChange(next);
   };
@@ -105,7 +107,10 @@ export function NumberStepper({
     "grid size-12 shrink-0 place-items-center text-primary aria-disabled:text-muted-foreground aria-disabled:opacity-60";
   return (
     <div className="flex min-w-0 flex-col gap-1.5">
-      <label htmlFor={id} className={labelHidden ? "sr-only" : "text-[13px] font-semibold"}>
+      <label
+        htmlFor={id}
+        className={labelHidden ? "sr-only" : "text-(length:--text-secondary) font-semibold"}
+      >
         {label}
       </label>
       <div className="field flex h-12.5 items-center">
@@ -153,7 +158,7 @@ export function NumberStepper({
           {unit && (
             <span
               id={`${id}-unit`}
-              className="flex-1 text-[13px] font-medium text-muted-foreground"
+              className="flex-1 text-(length:--text-secondary) font-medium text-muted-foreground"
             >
               {unit}
             </span>

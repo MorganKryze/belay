@@ -1,6 +1,6 @@
 import type { Change } from "@belay/shared/sync/schema";
 import { expect, type Page, test } from "@playwright/test";
-import { expectNoAxeViolations } from "./axe";
+import { expectNoAxeViolations, settled } from "./axe";
 import { ADA, fakeServer, WEEKS } from "./fake-server";
 
 // Wednesday 7 October 2026, 8 a.m. in Paris; timers still run, only the date is fixed.
@@ -305,6 +305,10 @@ test.describe("accessibility", () => {
 
       server.session = "expired"; // the banner that asks to sign in again
       await page.goto("/");
+      // Home at rest first: the weigh-in sheet opened while it still draws can leave the page
+      // scrolled a pixel, and the compact title starts to fade in under axe.
+      await expect(page.locator(".launch")).toBeHidden();
+      await settled(page);
       await weighInLine(page).click();
       // The sheet's own Save: a click in the frame the lazy sheet mounts can land nowhere.
       await page

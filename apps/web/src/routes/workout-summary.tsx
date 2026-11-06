@@ -5,12 +5,13 @@ import { liveSets, loggedByExercise, summary } from "@belay/shared/training/rule
 import { NOTE_MAX } from "@belay/shared/training/workout";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { PartyPopper } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { GroupedList, groupSurface } from "@/components/grouped-list";
 import { Button } from "@/components/ui/button";
 import { readSessionVolume } from "@/lib/display-prefs";
 import { formatNumber, formatWeekday, workoutTitle } from "@/lib/format";
+import { haptic } from "@/lib/haptic";
 import { useToday } from "@/lib/today";
 import { readWeightUnit } from "@/lib/units";
 import { cn } from "@/lib/utils";
@@ -41,9 +42,18 @@ function Summary({ account }: { account: OpenAccount }) {
   const [error, setError] = useState<string>();
   // A device preference, read once as the page opens.
   const [volumeShown] = useState(() => readSessionVolume() === "shown");
+  const workout = history?.workouts.find((w) => w.id === workoutId);
+  const done = !!workout && !workout.removed && workout.endedAt !== null;
+  // The session's end, in the hand, once: the ref outlives the second run of a development
+  // render, and a return to this page is a new mount.
+  const buzzed = useRef(false);
+  useEffect(() => {
+    if (!done || buzzed.current) return;
+    buzzed.current = true;
+    haptic("success");
+  }, [done]);
   if (!history) return null;
-  const workout = history.workouts.find((w) => w.id === workoutId);
-  if (!workout || workout.removed || workout.endedAt === null) return <NotFound />;
+  if (!workout || !done) return <NotFound />;
   const stats = summary(workout, liveSets(history), history);
   const unit = readWeightUnit();
   const n = (v: number, digits = 0) => formatNumber(v, i18n.language, { digits });
@@ -74,7 +84,7 @@ function Summary({ account }: { account: OpenAccount }) {
         </Button>
       </div>
       <div>
-        <p className="text-[13px] font-semibold text-muted-foreground">
+        <p className="text-(length:--text-secondary) font-semibold text-muted-foreground">
           {t("summary.eyebrow", {
             day: formatWeekday(dayOf(workout), i18n.language, today, {
               startOfLine: false,
@@ -82,7 +92,7 @@ function Summary({ account }: { account: OpenAccount }) {
             }),
           })}
         </p>
-        <h1 className="text-[30px] leading-tight font-bold tracking-tight">
+        <h1 className="text-(length:--text-title-lg) leading-tight font-bold tracking-tight">
           {workoutTitle(workout, sessions, t)}
         </h1>
       </div>
@@ -116,7 +126,7 @@ function Summary({ account }: { account: OpenAccount }) {
             >
               <span
                 aria-hidden
-                className="grid size-7 shrink-0 place-items-center rounded-icon bg-track text-[13px] font-semibold text-muted-foreground tabular-nums"
+                className="grid size-7 shrink-0 place-items-center rounded-icon bg-track text-(length:--text-secondary) font-semibold text-muted-foreground tabular-nums"
               >
                 {e.slotIndex + 1}
               </span>
@@ -135,10 +145,10 @@ function Summary({ account }: { account: OpenAccount }) {
           ))}
         </GroupedList>
       )}
-      <p className="text-[13px] text-muted-foreground">
+      <p className="text-(length:--text-secondary) text-muted-foreground">
         {t("summary.warmups")} · {t("summary.warmupCount", { count: stats.warmupSets })}
       </p>
-      <label className="flex flex-col gap-1.5 text-[13px] font-semibold">
+      <label className="flex flex-col gap-1.5 text-(length:--text-secondary) font-semibold">
         {t("summary.note")}
         <textarea
           value={note}
@@ -170,11 +180,13 @@ function Figure({
 }) {
   return (
     <div className={cn("flex min-w-0 flex-col gap-1 p-4", groupSurface, className)}>
-      <dt className="text-[13px] font-semibold text-muted-foreground">{label}</dt>
-      <dd className="text-[44px] leading-none font-extrabold tracking-tight break-words tabular-nums">
+      <dt className="text-(length:--text-secondary) font-semibold text-muted-foreground">
+        {label}
+      </dt>
+      <dd className="text-(length:--text-figure-lg) leading-none font-extrabold tracking-tight break-words tabular-nums">
         {value}
         {unit && (
-          <span className="text-[17px] font-semibold tracking-normal text-muted-foreground">
+          <span className="text-(length:--text-title-compact) font-semibold tracking-normal text-muted-foreground">
             {" "}
             {unit}
           </span>

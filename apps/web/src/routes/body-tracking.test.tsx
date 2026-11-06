@@ -282,7 +282,9 @@ describe("Log", () => {
     const [weighIn, measures, annotation] = within(list).getAllByRole("button");
     for (const row of [weighIn!, measures!]) {
       expect(row.textContent).not.toContain("not entered yet");
-      expect(row.querySelector("span[aria-hidden].text-\\[13px\\]")!.textContent).toBe("\u00a0");
+      expect(
+        row.querySelector("span[aria-hidden].text-\\(length\\:--text-secondary\\)")!.textContent,
+      ).toBe("\u00a0");
     }
     expect(annotation!.textContent).toContain("deload week, break or note");
   });

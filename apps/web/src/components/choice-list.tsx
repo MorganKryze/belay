@@ -26,7 +26,7 @@ export function ChoiceList<T extends string>({
   const id = useId();
   return (
     <div className="flex flex-col gap-1.5">
-      <span id={id} className="text-[13px] font-semibold">
+      <span id={id} className="text-(length:--text-secondary) font-semibold">
         {label} {hint && <span className="font-normal text-muted-foreground">{hint}</span>}
       </span>
       <RadioGroup.Root
@@ -52,7 +52,7 @@ export function ChoiceList<T extends string>({
               )}
             </span>
             {o.aside && (
-              <span className="ml-auto shrink-0 text-[13px] text-muted-foreground tabular-nums">
+              <span className="ml-auto shrink-0 text-(length:--text-secondary) text-muted-foreground tabular-nums">
                 {o.aside}
               </span>
             )}

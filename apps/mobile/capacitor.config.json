@@ -7,6 +7,9 @@
     "androidScheme": "https",
     "hostname": "localhost"
   },
+  "ios": {
+    "allowsLinkPreview": false
+  },
   "android": {
     "minWebViewVersion": 111
   }

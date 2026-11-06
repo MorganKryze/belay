@@ -178,7 +178,7 @@ function Fact({
   return (
     <div className="flex flex-col gap-2 py-3">
       <div className="flex min-h-11 items-center justify-between gap-2">
-        <h3 className="text-[15px] font-semibold">{label}</h3>
+        <h3 className="text-(length:--text-body) font-semibold">{label}</h3>
         {set && (
           <Button
             variant="text"
@@ -210,7 +210,7 @@ function Fact({
           {t("profile.fill")}
         </Button>
       )}
-      <p className="text-[13px] text-muted-foreground">{uses}</p>
+      <p className="text-(length:--text-secondary) text-muted-foreground">{uses}</p>
     </div>
   );
 }

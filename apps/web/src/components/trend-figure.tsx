@@ -33,7 +33,7 @@ export function TrendFigure({
             {bodyWeight(averageKg, i18n.language, unit)}
             {/* Read out as shown, « 80,4 kg »: the gap is a margin, which a name never counts. */}
             <span className="sr-only"> </span>
-            <span className="ml-1.5 text-[17px] font-semibold tracking-normal text-muted-foreground">
+            <span className="ml-1.5 text-(length:--text-title-compact) font-semibold tracking-normal text-muted-foreground">
               {unit}
             </span>
           </>
@@ -41,11 +41,11 @@ export function TrendFigure({
       </span>
       {loss &&
         (loss.value === 0 ? (
-          <span className="text-[13.5px] text-muted-foreground">
+          <span className="text-(length:--text-note) text-muted-foreground">
             <b className={strong}>{t("trend.stable")}</b> {t("trend.lastWeek")}
           </span>
         ) : (
-          <span className="text-[13.5px] text-muted-foreground">
+          <span className="text-(length:--text-note) text-muted-foreground">
             {t(loss.kind === "gain" ? "trend.gain" : "trend.loss")}{" "}
             <b className={strong}>
               {t("trend.perWeek", {

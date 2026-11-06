@@ -137,7 +137,7 @@ export function Sheet({
               <Dialog.Title
                 ref={heading}
                 tabIndex={-1}
-                className="line-clamp-2 min-w-0 flex-1 text-title-compact text-foreground outline-none"
+                className="min-w-0 flex-1 text-title-compact break-words text-foreground outline-none"
               >
                 {title}
               </Dialog.Title>

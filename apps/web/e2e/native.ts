@@ -34,15 +34,17 @@ type PhoneOptions = {
     history?: HealthHistoryAccess;
     grantHistory?: boolean;
   };
+  // The phone's text size over its default, as Android's shell hands it to the page.
+  textScale?: number;
 };
 
 async function asPhone(
   page: Page,
   platform: "ios" | "android",
-  { instance = INSTANCE, token = null, authenticate = "cancel", health }: PhoneOptions,
+  { instance = INSTANCE, token = null, authenticate = "cancel", health, textScale }: PhoneOptions,
 ): Promise<void> {
   await page.addInitScript(
-    ({ platform, instance, token, authenticate, health }) => {
+    ({ platform, instance, token, authenticate, health, textScale }) => {
       type Kept = { origin: string; token: string };
       const TOKEN = "belay.fake.token";
       if (sessionStorage.getItem("belay.fake.seeded") === null) {
@@ -147,6 +149,9 @@ async function asPhone(
             return authenticate;
           },
           ...(health && { health: fakeHealth(health) }),
+          // Every state the app asked of the edge swipe, in order.
+          setSwipeBack: async ({ enabled }: { enabled: boolean }) =>
+            write("belay.fake.swipe", [...read<boolean[]>("belay.fake.swipe", []), enabled]),
           // What the lock screen shows: the last description, and how many times the app asked.
           setLiveActivity: async ({ activity }: { activity: unknown }) => {
             sessionStorage.setItem("belay.fake.activity", JSON.stringify(activity));
@@ -156,7 +161,13 @@ async function asPhone(
             );
           },
         },
-        Haptics: { notification: async () => {} },
+        Haptics: {
+          notification: async () => {},
+          impact: async () => {},
+          selectionStart: async () => {},
+          selectionChanged: async () => {},
+          selectionEnd: async () => {},
+        },
         LocalNotifications: {
           checkPermissions: async () => ({ display: "granted" }),
           requestPermissions: async () => ({ display: "granted" }),
@@ -170,6 +181,7 @@ async function asPhone(
         },
       };
       const w = window as unknown as Record<string, unknown>;
+      if (textScale !== undefined) w.BelayText = { scale: () => textScale };
       w.CapacitorCustomPlatform = { name: platform, plugins };
       w.Capacitor = {
         isNativePlatform: () => true,
@@ -182,13 +194,17 @@ async function asPhone(
           plugins[plugin]![method]!(options),
       };
     },
-    { platform, instance, token, authenticate, health },
+    { platform, instance, token, authenticate, health, textScale },
   );
 }
 
 // Every style the Android app asked of its system bars, in order.
 export const barStyles = (page: Page): Promise<string[]> =>
   page.evaluate(() => JSON.parse(sessionStorage.getItem("belay.fake.barStyles") ?? "[]"));
+
+// Every state the app asked of the iPhone's edge swipe, in order; the shell starts with it off.
+export const swipeCalls = (page: Page): Promise<boolean[]> =>
+  page.evaluate(() => JSON.parse(sessionStorage.getItem("belay.fake.swipe") ?? "[]"));
 
 // The address the sign-in sheet was last opened at, or null.
 export const sheetOpenedAt = (page: Page): Promise<string | null> =>

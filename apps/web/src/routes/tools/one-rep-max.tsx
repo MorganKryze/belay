@@ -30,7 +30,7 @@ export function OneRepMaxTool() {
       : loadNumber(v, i18n.language, unit, true);
   // Read once: Réglages is another page, so the choice cannot change while this one is open.
   const [brzycki] = useState(readBrzycki);
-  const note = "text-[13.5px] text-muted-foreground";
+  const note = "text-(length:--text-note) text-muted-foreground";
   return (
     <ToolPage
       title={t("tools.items.one-rep-max.name")}
@@ -59,7 +59,7 @@ export function OneRepMaxTool() {
           <>
             {brzycki === "hidden" ? (
               <div>
-                <div className="text-[13px] text-muted-foreground">Epley</div>
+                <div className="text-(length:--text-secondary) text-muted-foreground">Epley</div>
                 <ResultFigure value={figure(r.epleyKg)} unit={unit} muted={r.lessReliable} />
               </div>
             ) : (
@@ -71,7 +71,9 @@ export function OneRepMaxTool() {
                   ] as const
                 ).map(([name, v]) => (
                   <div key={name}>
-                    <div className="text-[13px] text-muted-foreground">{name}</div>
+                    <div className="text-(length:--text-secondary) text-muted-foreground">
+                      {name}
+                    </div>
                     <ResultFigure
                       value={figure(v)}
                       unit={unit}
