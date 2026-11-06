@@ -158,6 +158,30 @@ test.describe("in the Android app", () => {
     return length;
   }
 
+  test("a tab comes back on the deeper page at the scroll it was left on", async ({ page }) => {
+    await page.setViewportSize({ width: 412, height: 700 });
+    await open(page, "/workouts?tab=exercises");
+    await exercise(page).click();
+    await expect(page).toHaveURL(/\/exercises\//);
+    const deep = page.url();
+    await expect(
+      page.getByRole("heading", { level: 1, name: /^Barbell bench press/i }),
+    ).toBeVisible();
+    await settled(page);
+    const max = await page.evaluate(
+      () => document.documentElement.scrollHeight - window.innerHeight,
+    );
+    const y = Math.min(400, Math.floor(max));
+    await scrollTo(page, y);
+    await tab(page, "Corps").click();
+    await expect(page.getByRole("heading", { level: 1, name: "Corps" })).toBeVisible();
+    await tab(page, "Séances").click();
+    await expect(page).toHaveURL(deep);
+    await expect(page.locator("main h1")).toBeFocused();
+    await expect.poll(() => scrollY(page)).toBeGreaterThanOrEqual(y - 2);
+    expect(Math.abs((await scrollY(page)) - y)).toBeLessThanOrEqual(2);
+  });
+
   test("Back from a restored page shows the tab's root in one step", async ({ page }) => {
     await restored(page);
     await expect.poll(() => page.evaluate(() => typeof window.belayBack)).toBe("function");
