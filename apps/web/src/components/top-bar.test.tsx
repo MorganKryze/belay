@@ -26,7 +26,7 @@ describe("the top bar", () => {
     const home = (await bar()).getByRole("link", { name: "Belay" });
     expect(home.getAttribute("href")).toBe("/");
     const mark = home.querySelector("svg")!;
-    expect(classes(mark)).toEqual(expect.arrayContaining(["size-7", "text-primary"]));
+    expect(classes(mark)).toEqual(expect.arrayContaining(["size-7", "text-foreground"]));
     expect(mark.querySelector("path")!.getAttribute("fill")).toBe("currentColor");
     expect(mark.getAttribute("aria-hidden")).toBe("true");
   });

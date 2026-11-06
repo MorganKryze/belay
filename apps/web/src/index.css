@@ -693,7 +693,7 @@ body {
   & > [data-hook] {
     position: absolute;
     inset: 0;
-    background-color: var(--primary);
+    background-color: var(--mark);
     mask: var(--hook-a) center / contain no-repeat;
     animation: var(--animate-breathe);
   }
@@ -812,6 +812,13 @@ body {
 }
 html:has([role="dialog"][data-state="open"]) [data-dock] {
   opacity: 0;
+}
+/* Under an open sheet or dialog the blue belongs to its own action: the page's next action beneath
+   takes the neutral fill, and gets its blue back as the sheet goes. */
+html:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"])
+  [data-slot="button"][data-variant="primary"]:not(:is([role="dialog"], [role="alertdialog"]) *) {
+  background-color: var(--track);
+  color: var(--foreground);
 }
 
 /*
