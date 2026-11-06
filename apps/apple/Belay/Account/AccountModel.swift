@@ -140,8 +140,8 @@ final class AccountModel {
 
     /// The token was refused: the sheet opens on the same instance while the store stays open, so
     /// the person keeps logging. The account changes only once the instance names the new token's
-    /// owner; a sheet closed or a sign-in that fails leaves all of it as it was, the notice still
-    /// offering to try again.
+    /// owner, and the refused token is then ended on the instance; a sheet closed or a sign-in that
+    /// fails leaves all of it as it was, the notice still offering to try again.
     func reconnect() async {
         guard case .signedIn(let account) = state, !reconnecting else { return }
         reconnecting = true
@@ -159,15 +159,16 @@ final class AccountModel {
             return await logout(token: renewal.token, at: instance, using: http)
         }
         do {
-            try session.keep(origin: instance.origin.absoluteString, token: renewal.token)
+            try await SignInFlow.replace(account.token, with: renewal, at: instance, using: http) { [self] in
+                try session.keep(origin: instance.origin.absoluteString, token: renewal.token)
+                session.remember(userId: renewal.me.id)
+                // Another person signing in here gets their own store: the new account differs, so
+                // the store and its sync reopen for it.
+                state = .signedIn(Account(userId: renewal.me.id, instance: instance, token: renewal.token))
+            }
         } catch {
             Self.log.error("token not kept: \(String(describing: error), privacy: .public)")
-            return await logout(token: renewal.token, at: instance, using: http)
         }
-        session.remember(userId: renewal.me.id)
-        // Another person signing in here gets their own store: the new account differs, so the
-        // store and its sync reopen for it.
-        state = .signedIn(Account(userId: renewal.me.id, instance: instance, token: renewal.token))
     }
 
     /// The system sheet, from the core's sign-in steps.

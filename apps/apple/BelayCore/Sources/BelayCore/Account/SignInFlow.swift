@@ -108,4 +108,21 @@ public enum SignInFlow {
       return .failure(failure)
     }
   }
+
+  /// Puts a renewed token in the place of `old`: `keep` stores it and switches the account to it,
+  /// then `old` is ended. A token refused for another account's queue (409) is still valid, and with
+  /// the new one kept nothing on the phone could sign it out; ending one already refused is
+  /// harmless. When `keep` throws, the new token is the one ended, and `old` stays in use.
+  public static func replace(
+    _ old: String, with renewal: Renewal, at instance: Instance, using client: HTTPClient,
+    keep: @MainActor @Sendable () throws -> Void
+  ) async throws {
+    do {
+      try await keep()
+    } catch {
+      await logout(token: renewal.token, at: instance, using: client)
+      throw error
+    }
+    await logout(token: old, at: instance, using: client)
+  }
 }

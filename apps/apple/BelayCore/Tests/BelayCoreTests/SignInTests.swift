@@ -312,5 +312,31 @@ extension SignInTests {
       #expect(logout?.url?.path == "/auth/logout")
       #expect(logout?.value(forHTTPHeaderField: "Authorization") == "Bearer n3w")
     }
+
+    private let renewal = SignInFlow.Renewal(token: "n3w", me: Me(id: "u1", displayName: "Ana"))
+
+    /// A token refused with a 409 (the queue's account is not the token's) is still valid: once the
+    /// new one is kept, the old one is ended, or it would stay open with nothing left to end it.
+    @Test func endsTheOldTokenOnceTheNewOneIsKept() async throws {
+      let server = FakeServer(status: 204, json: "")
+      let askedBeforeKeep = Mutex<Int?>(nil)
+      try await SignInFlow.replace("0ld", with: renewal, at: instance, using: server) {
+        askedBeforeKeep.withLock { $0 = server.requests.count }
+      }
+      #expect(askedBeforeKeep.withLock { $0 } == 0)
+      #expect(server.requests.map(\.url?.path) == ["/auth/logout"])
+      #expect(server.requests.first?.value(forHTTPHeaderField: "Authorization") == "Bearer 0ld")
+    }
+
+    /// A new token the phone failed to keep is the one ended; the old one stays in use.
+    @Test func endsTheNewTokenWhenItIsNotKept() async {
+      struct NotKept: Error {}
+      let server = FakeServer(status: 204, json: "")
+      await #expect(throws: NotKept.self) {
+        try await SignInFlow.replace("0ld", with: renewal, at: instance, using: server) { throw NotKept() }
+      }
+      #expect(server.requests.map(\.url?.path) == ["/auth/logout"])
+      #expect(server.requests.first?.value(forHTTPHeaderField: "Authorization") == "Bearer n3w")
+    }
   }
 }
