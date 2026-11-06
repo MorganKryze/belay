@@ -46,27 +46,39 @@ describe("design tokens", () => {
     }
   });
 
-  // Read from the button itself, so a hover fill drawn with an alpha (bg-primary/80) is laid on
-  // the page or a card before it is measured: the label needs 4.5:1 on what the eye sees.
-  it.each(EACH_SET)("%s theme reads the primary button's label on its hover fill", (_, tokens) => {
-    const hover = /(?:^|\s)hover:bg-([a-z-]+)(?:\/(\d+))?(?:\s|$)/.exec(
-      buttonVariants({ variant: "primary" }),
-    );
-    expect(hover, "the primary button has a hover fill").not.toBeNull();
-    const [, token, percent] = hover!;
-    const fill = tokens[token!]!;
-    const channels = [1, 3, 5].map((i) => parseInt(fill.slice(i, i + 2), 16)).join(", ");
-    for (const under of ["background", "surface"] as const) {
-      const seen = percent
-        ? flatten(`rgba(${channels}, ${Number(percent) / 100})`, tokens[under]!)
-        : fill;
-      const ratio = contrastRatio(tokens["primary-foreground"]!, seen);
-      expect(
-        ratio,
-        `primary-foreground on hover ${token}${percent ? `/${percent}` : ""} over ${under}: ${ratio.toFixed(2)}`,
-      ).toBeGreaterThanOrEqual(4.5);
-    }
-  });
+  // Read from the button itself: its label against each fill it takes at rest, on hover and on
+  // press. A fill drawn with an alpha (bg-mark/80) is laid on the page or a card before it is
+  // measured: the label needs 4.5:1 on what the eye sees.
+  it.each(EACH_SET)(
+    "%s theme reads the primary button's label on every fill it takes",
+    (_, tokens) => {
+      const classes = buttonVariants({ variant: "primary" });
+      // text-button is the type style, not a colour: only the classes naming a token count.
+      const labels = [...classes.matchAll(/(?:^|\s)text-([a-z-]+)(?=\s|$)/g)]
+        .map(([, token]) => token!)
+        .filter((token) => token in tokens);
+      expect(labels, "the primary button has one label colour").toHaveLength(1);
+      const label = labels[0]!;
+      const fills = [
+        ...classes.matchAll(/(?:^|\s)(?:(?:hover|active):)?bg-(?!clip-)([a-z-]+)(?:\/(\d+))?/g),
+      ];
+      expect(fills.length, "the primary button has a fill").toBeGreaterThan(0);
+      for (const [, token, percent] of fills) {
+        const fill = tokens[token!]!;
+        const channels = [1, 3, 5].map((i) => parseInt(fill.slice(i, i + 2), 16)).join(", ");
+        for (const under of ["background", "surface"] as const) {
+          const seen = percent
+            ? flatten(`rgba(${channels}, ${Number(percent) / 100})`, tokens[under]!)
+            : fill;
+          const ratio = contrastRatio(tokens[label]!, seen);
+          expect(
+            ratio,
+            `${label} on ${token}${percent ? `/${percent}` : ""} over ${under}: ${ratio.toFixed(2)}`,
+          ).toBeGreaterThanOrEqual(4.5);
+        }
+      }
+    },
+  );
 
   // The loading mark settles at 80 % opacity: what the eye sees is the primary laid on the page.
   it.each(EACH_SET)(
