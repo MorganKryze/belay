@@ -92,7 +92,7 @@ export function RestBar({
         )}
         <span
           aria-hidden
-          className="absolute inset-x-0 bottom-0 h-1 origin-left bg-toast-icon"
+          className="absolute inset-x-0 bottom-0 h-1 origin-left bg-toast-action"
           style={{ transform: `scaleX(${fraction})` }}
         />
       </div>

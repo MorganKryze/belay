@@ -43,7 +43,7 @@ test.describe("on a light phone", () => {
     await page.goto("/");
     await page.waitForFunction(() => "barAtLoad" in window);
     expect(await page.evaluate(() => (window as unknown as { barAtLoad: string }).barAtLoad)).toBe(
-      "#151412",
+      "#10151A",
     );
   });
 });

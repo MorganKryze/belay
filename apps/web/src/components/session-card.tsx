@@ -30,7 +30,7 @@ export function SessionHeading({
 }
 
 // A session as a card of its own: a region named by its title, then its action. A tile before
-// the title shows a session done (a check in the reference green) or a rest day (a leaf on the
+// the title shows a session done (a check in ink on the sunk tint) or a rest day (a leaf on the
 // track, quiet).
 export function SessionCard({
   title,
