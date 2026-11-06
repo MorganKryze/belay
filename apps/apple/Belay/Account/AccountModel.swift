@@ -19,30 +19,61 @@ final class AccountModel {
         case signedIn(Account)
     }
 
-    private(set) var state: State = .signedOut(nil)
+    private(set) var state: State = .signedOut(nil) {
+        didSet { followState() }
+    }
+    /// The signed-in account's records on this phone; nil while signed out, or when its file did
+    /// not open (`openStore` tries again).
+    private(set) var store: AccountStore?
     /// Why the address typed last was not taken, said apart from a sign-in's own failures.
     private(set) var addressProblem: InstanceError?
 
-    private let store: SecretStore
+    private let secrets: SecretStore
     private let http: HTTPClient
     private let sheet: SignInSheet
     private let defaults: UserDefaults
+    /// Where each account's store lives: the app's own Application Support, never a shared container.
+    private let storeFolder: URL
 
     /// The person's id, kept beside the instance so a launch without network opens signed in.
     private static let userKey = "belay.user"
     private static let log = Logger(subsystem: "cloud.libresoftware.belay", category: "account")
 
     init(
-        store: SecretStore = KeychainStore(), http: HTTPClient = URLSessionClient(),
-        sheet: SignInSheet = SystemSignInSheet(), defaults: UserDefaults = .standard
+        secrets: SecretStore = KeychainStore(), http: HTTPClient = URLSessionClient(),
+        sheet: SignInSheet = SystemSignInSheet(), defaults: UserDefaults = .standard,
+        storeFolder: URL = URL.applicationSupportDirectory.appending(path: "Stores", directoryHint: .isDirectory)
     ) {
-        self.store = store
+        self.secrets = secrets
         self.http = http
         self.sheet = sheet
         self.defaults = defaults
-        if let instance = storedInstance, let token = store.read(origin: instance.origin.absoluteString),
+        self.storeFolder = storeFolder
+        if let instance = storedInstance, let token = secrets.read(origin: instance.origin.absoluteString),
            let userId = defaults.string(forKey: Self.userKey) {
             state = .signedIn(Account(userId: userId, instance: instance, token: token))
+        }
+        // An assignment in init does not run didSet.
+        followState()
+    }
+
+    /// The store is open exactly while signed in. Signing out closes it and keeps its file, queue
+    /// included, for that account's next sign-in.
+    private func followState() {
+        if case .signedIn = state {
+            if store == nil { openStore() }
+        } else {
+            store = nil
+        }
+    }
+
+    /// Opens the signed-in account's store; on failure the app says so and offers to try again.
+    func openStore() {
+        guard case .signedIn(let account) = state else { return }
+        do {
+            store = try AccountStore.open(userId: account.userId, origin: account.instance.origin, in: storeFolder)
+        } catch {
+            Self.log.error("store not opened: \(AccountStore.logLabel(error), privacy: .public)")
         }
     }
 
@@ -60,7 +91,7 @@ final class AccountModel {
     /// A session the previous app kept has no id beside it: the instance names its owner once.
     func finishRestore() async {
         guard case .signedOut(nil) = state, let instance = storedInstance,
-              let token = store.read(origin: instance.origin.absoluteString)
+              let token = secrets.read(origin: instance.origin.absoluteString)
         else { return }
         state = .signingIn
         await open(token: token, at: instance)
@@ -93,7 +124,7 @@ final class AccountModel {
         case .failure(let failure): return fail(failure)
         }
         do {
-            try store.write(origin: instance.origin.absoluteString, token: token)
+            try secrets.write(origin: instance.origin.absoluteString, token: token)
         } catch {
             Self.log.error("token not kept: \(String(describing: error), privacy: .public)")
             await logout(token: token, at: instance, using: http)
@@ -131,7 +162,7 @@ final class AccountModel {
     private func forget() {
         defaults.removeObject(forKey: Self.userKey)
         do {
-            try store.clear()
+            try secrets.clear()
         } catch {
             Self.log.error("token not dropped: \(String(describing: error), privacy: .public)")
         }

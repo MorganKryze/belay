@@ -161,6 +161,26 @@
           }
         }
       }
+    },
+    "Tes séances ne s’ouvrent pas sur ce téléphone. Réessaie.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your sessions won’t open on this phone. Please try again."
+          }
+        }
+      }
+    },
+    "Réessayer": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try again"
+          }
+        }
+      }
     }
   }
 }

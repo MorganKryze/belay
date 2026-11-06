@@ -131,7 +131,7 @@ private func isJSSpace(_ scalar: Unicode.Scalar) -> Bool {
 private func isBlank(_ text: String) -> Bool { text.unicodeScalars.allSatisfy(isJSSpace) }
 
 /// 1 to 40 units, nothing `trim()` would take away, no control character.
-private func isSessionName(_ name: String) -> Bool {
+func isSessionName(_ name: String) -> Bool {
   guard let first = name.unicodeScalars.first, let last = name.unicodeScalars.last else {
     return false
   }

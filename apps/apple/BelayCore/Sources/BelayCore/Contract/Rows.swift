@@ -26,6 +26,79 @@ public struct WorkoutRow: Codable, Sendable, Equatable {
   public var exerciseNotesAt: String?
   public var removed: Bool
   public var removedAt: String?
+  /// The plan as the server sent it, keys this build does not know included.
+  var serverPlan = ServerPlan()
+
+  /// The plan's JSON as the server sent it, while `plan` still reads the same from it: the server
+  /// merges a plan as one field, so a plan the phone sends back unchanged must keep the keys a
+  /// newer version wrote. Nil once the phone changed the plan, or for a plan it wrote itself.
+  public var planJSON: Data? {
+    guard let raw = serverPlan.json, let bytes = try? JSONEncoder().encode(raw),
+      (try? JSONDecoder().decode([Slot].self, from: bytes)) == plan
+    else { return nil }
+    return bytes
+  }
+}
+
+/// The server's plan carried beside the typed one. Equal whatever it holds: two rows are the same
+/// row when their fields are, whichever bytes brought the plan.
+struct ServerPlan: Sendable, Equatable {
+  var json: JSONValue?
+
+  static func == (_: ServerPlan, _: ServerPlan) -> Bool { true }
+}
+
+extension WorkoutRow {
+  private enum CodingKeys: String, CodingKey {
+    case id, sessionCode, sessionId, sessionName, plan, planAt, startedAt, startedAtAt, endedAt
+    case endedAtAt, note, noteAt, exerciseNotes, exerciseNotesAt, removed, removedAt
+  }
+
+  public init(from decoder: any Decoder) throws {
+    let c = try decoder.container(keyedBy: CodingKeys.self)
+    id = try c.decode(String.self, forKey: .id)
+    sessionCode = try c.decode(String.self, forKey: .sessionCode)
+    sessionId = try c.decode(Nullable<String>.self, forKey: .sessionId)
+    sessionName = try c.decode(Nullable<String>.self, forKey: .sessionName)
+    plan = try c.decode([Slot].self, forKey: .plan)
+    serverPlan = ServerPlan(json: try c.decode(JSONValue.self, forKey: .plan))
+    planAt = try c.decodeIfPresent(String.self, forKey: .planAt)
+    startedAt = try c.decode(String.self, forKey: .startedAt)
+    startedAtAt = try c.decodeIfPresent(String.self, forKey: .startedAtAt)
+    endedAt = try c.decodeIfPresent(String.self, forKey: .endedAt)
+    endedAtAt = try c.decodeIfPresent(String.self, forKey: .endedAtAt)
+    note = try c.decodeIfPresent(String.self, forKey: .note)
+    noteAt = try c.decodeIfPresent(String.self, forKey: .noteAt)
+    exerciseNotes = try c.decode([String: String].self, forKey: .exerciseNotes)
+    exerciseNotesAt = try c.decodeIfPresent(String.self, forKey: .exerciseNotesAt)
+    removed = try c.decode(Bool.self, forKey: .removed)
+    removedAt = try c.decodeIfPresent(String.self, forKey: .removedAt)
+  }
+
+  /// As the server writes a row: unwritten times as null, the server's plan as it came.
+  public func encode(to encoder: any Encoder) throws {
+    var c = encoder.container(keyedBy: CodingKeys.self)
+    try c.encode(id, forKey: .id)
+    try c.encode(sessionCode, forKey: .sessionCode)
+    try c.encode(sessionId, forKey: .sessionId)
+    try c.encode(sessionName, forKey: .sessionName)
+    if planJSON != nil, let raw = serverPlan.json {
+      try c.encode(raw, forKey: .plan)
+    } else {
+      try c.encode(plan, forKey: .plan)
+    }
+    try c.encode(planAt, forKey: .planAt)
+    try c.encode(startedAt, forKey: .startedAt)
+    try c.encode(startedAtAt, forKey: .startedAtAt)
+    try c.encode(endedAt, forKey: .endedAt)
+    try c.encode(endedAtAt, forKey: .endedAtAt)
+    try c.encode(note, forKey: .note)
+    try c.encode(noteAt, forKey: .noteAt)
+    try c.encode(exerciseNotes, forKey: .exerciseNotes)
+    try c.encode(exerciseNotesAt, forKey: .exerciseNotesAt)
+    try c.encode(removed, forKey: .removed)
+    try c.encode(removedAt, forKey: .removedAt)
+  }
 }
 
 /// One set as done; its exercise is the one really done.
