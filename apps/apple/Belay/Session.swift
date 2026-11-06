@@ -213,7 +213,7 @@ private struct SessionList: View {
         do {
             try training.tick(slotIndex: set.slotIndex, position: set.position, weightKg: kg, count: count, rir: rir)
         } catch {
-            Self.log.error("set not recorded: \(String(describing: error), privacy: .public)")
+            Self.log.error("set not recorded: \(AccountStore.logLabel(error), privacy: .public)")
             failed = "La série n’a pas été notée. Vérifie la charge et le nombre, puis réessaie."
             return
         }
