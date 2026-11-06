@@ -178,12 +178,12 @@ test.describe("the session done", () => {
     // No filled button and no accent anywhere in the card.
     const accent = await card.evaluate((el) => {
       const probe = document.createElement("span");
-      probe.style.backgroundColor = "var(--primary)";
+      probe.style.backgroundColor = "var(--mark)";
       document.body.append(probe);
-      const primary = getComputedStyle(probe).backgroundColor;
+      const mark = getComputedStyle(probe).backgroundColor;
       probe.remove();
       return [el, ...el.querySelectorAll("*")].filter(
-        (n) => getComputedStyle(n).backgroundColor === primary,
+        (n) => getComputedStyle(n).backgroundColor === mark,
       ).length;
     });
     expect(accent).toBe(0);

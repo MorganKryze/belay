@@ -24,8 +24,10 @@ describe("Button", () => {
     );
     const primary = classes(screen.getByRole("button", { name: "Primary" }));
     expect(primary).toEqual(
-      expect.arrayContaining(["bg-primary", "h-12.5", "rounded-field", "text-button"]),
+      expect.arrayContaining(["bg-mark", "text-on-mark", "h-12.5", "rounded-field", "text-button"]),
     );
+    // Blue is the next action's alone: the primary takes the mark, never the ink tint.
+    expect(primary).not.toContain("bg-primary");
     const secondary = classes(screen.getByRole("button", { name: "Secondary" }));
     expect(secondary).toEqual(
       expect.arrayContaining(["bg-track", "text-foreground", "h-11", "rounded-control"]),
