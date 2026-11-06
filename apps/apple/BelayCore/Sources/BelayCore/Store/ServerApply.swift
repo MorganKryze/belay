@@ -5,6 +5,11 @@ import GRDB
 // half of it.
 
 extension AccountStore {
+  /// The oldest `limit` queued changes and the cursor, read together.
+  public func syncBatch(limit: Int) throws -> (entries: [OutboxEntry], cursor: String) {
+    try writer.read { db in (try Self.outbox(db, limit: limit), try Self.cursor(db)) }
+  }
+
   /// After a 200: drops exactly the changes that were sent, keeps a trace of the refused ones and
   /// takes back what they showed, takes the server's rows, then puts back on top the changes
   /// queued meanwhile unless the server holds a later write, and keeps the cursor. Kinds the

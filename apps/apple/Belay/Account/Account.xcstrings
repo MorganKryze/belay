@@ -181,6 +181,46 @@
           }
         }
       }
+    },
+    "Hors ligne. Tout est gardé sur ce téléphone.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Offline. Everything is kept on this phone."
+          }
+        }
+      }
+    },
+    "Ta session a expiré.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your session has expired."
+          }
+        }
+      }
+    },
+    "Se reconnecter": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign in again"
+          }
+        }
+      }
+    },
+    "L’envoi n’a pas abouti. Tout est gardé sur ce téléphone.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sending didn’t go through. Everything is kept on this phone."
+          }
+        }
+      }
     }
   }
 }

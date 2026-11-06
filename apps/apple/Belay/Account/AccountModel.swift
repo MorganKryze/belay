@@ -1,10 +1,11 @@
 import AuthenticationServices
 import BelayCore
 import Foundation
+import Network
 import os
 
 /// The person signed in: who they are on which instance, and the session token that proves it.
-struct Account {
+struct Account: Equatable {
     let userId: String
     let instance: Instance
     let token: String
@@ -27,6 +28,18 @@ final class AccountModel {
     private(set) var store: AccountStore?
     /// Why the address typed last was not taken, said apart from a sign-in's own failures.
     private(set) var addressProblem: InstanceError?
+    /// Where the open store's sync stands; idle while signed out.
+    private(set) var syncStatus: SyncStatus = .idle
+
+    /// Whom the open store and its sync were opened for. Another person, instance or token closes
+    /// both first, so one account's queue never goes out under another's token.
+    private var openedFor: Account?
+    private var engine: SyncEngine?
+    private var following: Task<Void, Never>?
+    /// A sign-in again is under way: a second tap waits for its sheet.
+    private var reconnecting = false
+    /// The network coming back is a trigger: the queue may have waited for it.
+    private let path = NWPathMonitor()
 
     private let session: StoredSession
     private let http: HTTPClient
@@ -53,26 +66,114 @@ final class AccountModel {
         }
         // An assignment in init does not run didSet.
         followState()
-    }
-
-    /// The store is open exactly while signed in. Signing out closes it and keeps its file, queue
-    /// included, for that account's next sign-in.
-    private func followState() {
-        if case .signedIn = state {
-            if store == nil { openStore() }
-        } else {
-            store = nil
+        path.pathUpdateHandler = { [weak self] path in
+            guard path.status == .satisfied else { return }
+            Task { @MainActor in self?.refresh() }
         }
+        path.start(queue: .main)
     }
 
-    /// Opens the signed-in account's store; on failure the app says so and offers to try again.
+    /// The store and its sync are open exactly while signed in. Signing out closes them and keeps
+    /// the file, queue included, for that account's next sign-in.
+    private func followState() {
+        guard case .signedIn(let account) = state else { return closeStore() }
+        if openedFor != account { closeStore() }
+        if store == nil { openStore() }
+    }
+
+    /// Opens the signed-in account's store and syncs it; on failure the app says so and offers to
+    /// try again.
     func openStore() {
-        guard case .signedIn(let account) = state else { return }
+        guard case .signedIn(let account) = state, store == nil else { return }
+        let store: AccountStore
         do {
             store = try AccountStore.open(userId: account.userId, origin: account.instance.origin, in: storeFolder)
         } catch {
             Self.log.error("store not opened: \(AccountStore.logLabel(error), privacy: .public)")
+            return
         }
+        self.store = store
+        openedFor = account
+        let engine = SyncEngine(
+            userId: account.userId, store: store,
+            transport: HTTPTransport(instance: account.instance, token: account.token, client: http),
+            onLanded: { [weak self] in await self?.landed(store) })
+        self.engine = engine
+        following = Task { [weak self] in
+            for await status in engine.statuses() { self?.syncStatus = status }
+        }
+        Task { await engine.sync() }
+    }
+
+    private func closeStore() {
+        if let engine { Task { await engine.stop() } }
+        engine = nil
+        following?.cancel()
+        following = nil
+        store = nil
+        openedFor = nil
+        syncStatus = .idle
+    }
+
+    /// After a write to the store: the sync follows once writes pause.
+    func didWrite() {
+        guard let engine else { return }
+        Task { await engine.schedule() }
+    }
+
+    /// Back in front, or the network back: the run going, if any, is fresh enough.
+    func refresh() {
+        guard let engine else { return }
+        Task { await engine.refresh() }
+    }
+
+    /// A complete pull: what is stored is current, so a session left open elsewhere can be closed.
+    private func landed(_ store: AccountStore) {
+        // A sync of the store just closed lands nowhere: its account is gone from this screen.
+        guard store === self.store else { return }
+        do {
+            if try store.closeForgotten(now: Date()) { didWrite() }
+        } catch {
+            Self.log.error("forgotten sessions not closed: \(AccountStore.logLabel(error), privacy: .public)")
+        }
+    }
+
+    /// The token was refused: the sheet opens on the same instance while the store stays open, so
+    /// the person keeps logging. The account changes only once the instance names the new token's
+    /// owner, and the refused token is then ended on the instance; a sheet closed or a sign-in that
+    /// fails leaves all of it as it was, the notice still offering to try again.
+    func reconnect() async {
+        guard case .signedIn(let account) = state, !reconnecting else { return }
+        reconnecting = true
+        defer { reconnecting = false }
+        let instance = account.instance
+        let renewal: SignInFlow.Renewal
+        switch await SignInFlow.renew(at: instance, using: http, open: openSheet) {
+        case .success(let renewed): renewal = renewed
+        case .failure(let failure):
+            Self.log.info("reconnect ended: \(String(describing: failure), privacy: .public)")
+            return
+        }
+        // Signed out while the sheet was up: the new session has no account to go to.
+        guard case .signedIn(account) = state else {
+            return await logout(token: renewal.token, at: instance, using: http)
+        }
+        do {
+            try await SignInFlow.replace(account.token, with: renewal, at: instance, using: http) { [self] in
+                try session.keep(origin: instance.origin.absoluteString, token: renewal.token)
+                session.remember(userId: renewal.me.id)
+                // Another person signing in here gets their own store: the new account differs, so
+                // the store and its sync reopen for it.
+                state = .signedIn(Account(userId: renewal.me.id, instance: instance, token: renewal.token))
+            }
+        } catch {
+            Self.log.error("token not kept: \(String(describing: error), privacy: .public)")
+        }
+    }
+
+    /// The system sheet, from the core's sign-in steps.
+    private var openSheet: @Sendable (URL) async -> Result<URL, SignInFailure> {
+        { @MainActor [self] url in await sheet.open(url) }
     }
 
     /// The instance last signed in to, as the web screens' links find it.
@@ -108,17 +209,9 @@ final class AccountModel {
             state = .signedOut(nil)
             return
         }
-        // The verifier stays here: only its hash goes to the sheet, and the verifier itself only to
-        // the exchange that proves this app asked for the code.
-        let verifier = PKCE.verifier()
-        let start = SignInFlow.startURL(instance, challenge: PKCE.challenge(of: verifier))
         let token: String
-        switch await sheet.open(start).flatMap(SignInFlow.callback) {
-        case .success(let code):
-            switch await SignInFlow.exchange(code: code, verifier: verifier, at: instance, using: http) {
-            case .success(let earned): token = earned
-            case .failure(let failure): return fail(failure)
-            }
+        switch await SignInFlow.authorize(at: instance, using: http, open: openSheet) {
+        case .success(let earned): token = earned
         case .failure(let failure): return fail(failure)
         }
         do {

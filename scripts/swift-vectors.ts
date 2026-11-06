@@ -9,6 +9,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { isDeepStrictEqual } from "node:util";
 import { EXERCISE_ID } from "../packages/shared/src/exercises/library";
+import { MAX_CHANGES } from "../packages/shared/src/sync/limits";
 import { clampAt, isNewer } from "../packages/shared/src/sync/merge";
 import { ChangeSchema, type Change } from "../packages/shared/src/sync/schema";
 import { isValidChange } from "../packages/shared/src/sync/valid";
@@ -437,6 +438,7 @@ const vectors = {
     exerciseId: EXERCISE_ID.source,
     minTime: MIN_TIME,
     clockSlackMs: CLOCK_SLACK_MS,
+    maxChanges: MAX_CHANGES,
   },
   changes: cases,
   ...merge,

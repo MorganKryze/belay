@@ -3,6 +3,7 @@ import SwiftUI
 @main
 struct BelayApp: App {
     @State private var account = AccountModel()
+    @Environment(\.scenePhase) private var scenePhase
 
     init() {
         DisplayType.register()
@@ -17,12 +18,21 @@ struct BelayApp: App {
                         StoreProblemView(account: account)
                     } else {
                         RootView()
+                            .safeAreaInset(edge: .top, spacing: 0) {
+                                SyncNotice(
+                                    status: account.syncStatus,
+                                    reconnect: { Task { await account.reconnect() } },
+                                    retry: account.refresh)
+                            }
                     }
                 } else {
                     SignInView(account: account)
                 }
             }
             .task { await account.finishRestore() }
+            .onChange(of: scenePhase) { _, phase in
+                if phase == .active { account.refresh() }
+            }
             .onReceive(NotificationCenter.default.publisher(for: UIContentSizeCategory.didChangeNotification)) { _ in
                 DisplayType.styleBars()
             }
