@@ -5,14 +5,19 @@ import GRDB
 // follow several of them as one consistent value.
 
 extension AccountStore {
-  /// The queue in the order written, the first `limit` entries when given.
+  /// The queue in the order written, the first `limit` entries when given. An entry this build
+  /// cannot read, written by a later one after a move back, is left out and left queued as
+  /// written: that build sends it once installed again. Sent from here it could make the server
+  /// refuse the whole request, and dropped it would be lost.
   public static func outbox(_ db: Database, limit: Int?) throws -> [OutboxEntry] {
-    try Row.fetchAll(
-      db, sql: "SELECT id, bytes FROM outbox ORDER BY id LIMIT ?", arguments: [limit ?? -1]
-    ).map { row in
+    var entries: [OutboxEntry] = []
+    let rows = try Row.fetchCursor(db, sql: "SELECT id, bytes FROM outbox ORDER BY id")
+    while entries.count < limit ?? .max, let row = try rows.next() {
       let bytes: Data = row["bytes"]
-      return OutboxEntry(id: row["id"], bytes: bytes, change: try ChangeJSON.decode(bytes))
+      guard let change = try? ChangeJSON.decode(bytes) else { continue }
+      entries.append(OutboxEntry(id: row["id"], bytes: bytes, change: change))
     }
+    return entries
   }
 
   /// Where the pull stands: "0" before the first answer.
@@ -47,8 +52,9 @@ extension AccountStore {
     try Rows.single(ActiveSession.self, db, "activeSession")
   }
 
-  /// The refusals the person has not read about yet, in the order they came. An entry this build
-  /// cannot read stays as a trace but is not listed: no screen could say what it was.
+  /// The refusals the person has not read about yet, in the order they came. One a later build
+  /// stored and this one cannot read stays as a trace but is not listed: no screen could say what
+  /// it was.
   public static func rejected(_ db: Database) throws -> [RejectedEntry] {
     try Row.fetchAll(db, sql: "SELECT id, bytes, reason FROM rejected ORDER BY id").compactMap {
       row in

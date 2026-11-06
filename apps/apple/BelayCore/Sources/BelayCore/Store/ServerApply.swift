@@ -5,22 +5,9 @@ import GRDB
 // half of it.
 
 extension AccountStore {
-  /// The oldest `limit` queued changes and the cursor, read together. An entry this build cannot
-  /// read, written by a later one, leaves the queue for the refusals with the reason
-  /// `unreadable`: sent as is it could make the server refuse the whole request, and every entry
-  /// behind it would wait for good.
+  /// The oldest `limit` queued changes and the cursor, read together.
   public func syncBatch(limit: Int) throws -> (entries: [OutboxEntry], cursor: String) {
-    try writer.write { db in
-      for row in try Row.fetchAll(db, sql: "SELECT id, bytes FROM outbox ORDER BY id") {
-        let bytes: Data = row["bytes"]
-        guard (try? ChangeJSON.decode(bytes)) == nil else { continue }
-        let id: Int64 = row["id"]
-        try db.execute(sql: "DELETE FROM outbox WHERE id = ?", arguments: [id])
-        try db.execute(
-          sql: "INSERT INTO rejected (bytes, reason) VALUES (?, 'unreadable')", arguments: [bytes])
-      }
-      return (try Self.outbox(db, limit: limit), try Self.cursor(db))
-    }
+    try writer.read { db in (try Self.outbox(db, limit: limit), try Self.cursor(db)) }
   }
 
   /// After a 200: drops exactly the changes that were sent, keeps a trace of the refused ones and

@@ -33,6 +33,25 @@ import Testing
     #expect(try Fixture.changes(store) == [note("b", at: 2)])
   }
 
+  /// The batch counts only what this build can send: a later build's entry neither takes a place
+  /// nor leaves the queue.
+  @Test func theBatchSkipsAnUnreadableEntryAndKeepsIt() throws {
+    let unreadable = Data(#"{"kind":"weighIn","id":"x"}"#.utf8)
+    try store.writer.write { db in
+      try db.execute(sql: "DELETE FROM outbox")
+      try db.execute(sql: "INSERT INTO outbox (bytes) VALUES (?)", arguments: [unreadable])
+    }
+    try store.recordChanges([note("a", at: 1)], active: .keep)
+
+    let batch = try store.syncBatch(limit: 1).entries
+    #expect(batch.map(\.change) == [note("a", at: 1)])
+    try store.applyServer(sent: batch, response: Fixture.response())
+    let queued = try store.writer.read { db in
+      try Data.fetchAll(db, sql: "SELECT bytes FROM outbox")
+    }
+    #expect(queued == [unreadable])
+  }
+
   @Test func aRefusalIsTracedAndReverted() throws {
     let set = try store.recordSet(Fixture.set(w), at: Fixture.time(1), active: Fixture.active(w))
     let sent = try store.outbox(limit: nil)

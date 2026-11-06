@@ -301,7 +301,9 @@ extension Fixture {
     #expect(landed.now == 1)
   }
 
-  @Test func anUnreadableEntryIsRefusedAloneAndTheRestGoesOut() async throws {
+  /// A later build wrote it and this one cannot read it: it stays queued as written, for that build
+  /// to send, and never holds back the rest.
+  @Test func anUnreadableEntryStaysQueuedAndTheRestGoesOut() async throws {
     let unreadable = Data(#"{"kind":"weighIn","id":"x"}"#.utf8)
     try await store.writer.write { db in
       try db.execute(sql: "INSERT INTO outbox (bytes) VALUES (?)", arguments: [unreadable])
@@ -316,13 +318,20 @@ extension Fixture {
     #expect(requests[0].changes.count == 2)
     #expect(!requests[0].changes.contains(RawChange(bytes: unreadable)))
     #expect(await engine.status == .idle)
-    #expect(try store.outbox(limit: nil).isEmpty)
-    // Its trace stays, though no screen can say what it was.
-    let traces = try await store.writer.read { db in
-      try Data.fetchAll(db, sql: "SELECT bytes FROM rejected WHERE reason = 'unreadable'")
+    #expect(landed.now == 1)
+    let queued = try await store.writer.read { db in
+      try Data.fetchAll(db, sql: "SELECT bytes FROM outbox ORDER BY id")
     }
-    #expect(traces == [unreadable])
-    #expect(try store.rejected().isEmpty)
+    #expect(queued == [unreadable])
+    let refused = try await store.writer.read { db in
+      try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM rejected")
+    }
+    #expect(refused == 0)
+
+    // The next run sends nothing more: the entry waits without making the queue look busy.
+    await engine.sync()
+    #expect(await transport.requests.count == 2)
+    #expect(await transport.requests[1].changes.isEmpty)
   }
 
   @Test func writesCloseTogetherAreSentOnceAfterTheDebounce() async throws {
