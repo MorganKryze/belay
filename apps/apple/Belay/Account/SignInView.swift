@@ -27,9 +27,12 @@ struct SignInView: View {
                     .autocorrectionDisabled()
                     .submitLabel(.go)
                     .focused($typing)
-                    .disabled(busy)
-                    .frame(minHeight: 44)
                     .onSubmit(submit)
+                    // The text field takes taps on its 22 pt line only; the whole 44 pt row starts typing.
+                    .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                    .contentShape(.rect)
+                    .onTapGesture { typing = true }
+                    .disabled(busy)
                     .accessibilityIdentifier("signin-address")
                 } header: {
                     Text("Adresse de l’instance", tableName: "Account")
