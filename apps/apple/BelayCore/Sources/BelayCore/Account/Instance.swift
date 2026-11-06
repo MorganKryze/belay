@@ -12,12 +12,18 @@ public protocol HTTPClient: Sendable {
 public struct URLSessionClient: HTTPClient {
   private let session: URLSession
 
-  public init() {
+  /// Ephemeral, with no cookie store at all and no cache.
+  static var configuration: URLSessionConfiguration {
     let configuration = URLSessionConfiguration.ephemeral
+    configuration.httpCookieStorage = nil
     configuration.httpShouldSetCookies = false
     configuration.httpCookieAcceptPolicy = .never
     configuration.urlCache = nil
-    session = URLSession(configuration: configuration)
+    return configuration
+  }
+
+  public init() {
+    session = URLSession(configuration: Self.configuration)
   }
 
   public func send(_ request: URLRequest) async throws -> (Data, HTTPURLResponse) {
@@ -27,7 +33,7 @@ public struct URLSessionClient: HTTPClient {
   }
 }
 
-private final class NoRedirect: NSObject, URLSessionTaskDelegate, Sendable {
+final class NoRedirect: NSObject, URLSessionTaskDelegate, Sendable {
   func urlSession(
     _ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse,
     newRequest request: URLRequest

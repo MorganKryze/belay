@@ -19,7 +19,9 @@ func request(_ path: String, token: String, at instance: Instance) -> URLRequest
   return request
 }
 
-/// The person `token` signs in, read from the instance.
+/// The person `token` signs in, read from the instance. Only a 401 or a 403 says the token is
+/// refused (`failed`); any other answer, a server error or a captive portal's page, says the
+/// instance was not reached (`unavailable`), so the token is kept for the next try.
 public func me(token: String, at instance: Instance, using client: HTTPClient) async -> Result<Me, SignInFailure> {
   let data: Data
   let response: HTTPURLResponse
@@ -28,8 +30,9 @@ public func me(token: String, at instance: Instance, using client: HTTPClient) a
   } catch {
     return .failure(.unavailable)
   }
+  if response.statusCode == 401 || response.statusCode == 403 { return .failure(.failed) }
   guard response.statusCode == 200, let me = try? JSONDecoder().decode(Me.self, from: data) else {
-    return .failure(.failed)
+    return .failure(.unavailable)
   }
   return .success(me)
 }

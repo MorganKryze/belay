@@ -3,7 +3,9 @@ import XCTest
 /// The sign-in screen as a person meets it signed out: the address field and the words around it.
 @MainActor
 final class SignInTests: XCTestCase {
-    private func launch(_ appearance: XCUIDevice.Appearance = .light, language: String = "fr") -> XCUIApplication {
+    private func launch(
+        _ appearance: XCUIDevice.Appearance = .light, language: String = "fr", largestText: Bool = false
+    ) -> XCUIApplication {
         XCUIDevice.shared.appearance = appearance
         let app = XCUIApplication()
         // No stored instance: the app opens signed out, the field empty with its placeholder showing.
@@ -11,6 +13,10 @@ final class SignInTests: XCTestCase {
             "-AppleLanguages", "(\(language))", "-AppleLocale", language == "fr" ? "fr_FR" : "en_US",
             "-belay.instance", "",
         ]
+        // AX3, the largest size the session path is held to.
+        if largestText {
+            app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXL"]
+        }
         app.launch()
         return app
     }
@@ -21,13 +27,57 @@ final class SignInTests: XCTestCase {
         return field
     }
 
-    /// VoiceOver and Voice Control name the field by the words of the header above it.
-    func testFieldIsNamedByItsHeader() {
+    /// VoiceOver and Voice Control name the field.
+    func testFieldIsNamed() {
         for (language, name) in [("fr", "Adresse de l’instance"), ("en", "Instance address")] {
             let app = launch(language: language)
             XCTAssertEqual(field(in: app).label, name, language)
             app.terminate()
         }
+    }
+
+    /// VoiceOver meets the field's name once, on the field, with no header saying it before.
+    func testHeaderIsNotReadBesideTheField() {
+        let app = launch()
+        XCTAssertEqual(field(in: app).label, "Adresse de l’instance")
+        XCTAssertFalse(app.staticTexts["Adresse de l’instance"].exists, "the header is read as well")
+    }
+
+    /// At AX3 a long address wraps onto more lines instead of scrolling out of sight.
+    func testLongAddressStaysWholeAtTheLargestSize() {
+        let app = launch(largestText: true)
+        let field = field(in: app)
+        let empty = field.frame.height
+        field.tap()
+        field.typeText("belay.une-instance-au-nom-long.exemple.fr")
+        XCTAssertGreaterThan(field.frame.height, empty * 1.5, "the field grows to show the whole address")
+        XCTAssertLessThanOrEqual(field.frame.maxX, app.windows.firstMatch.frame.maxX)
+    }
+
+    /// At AX3 the refusal sits above Se connecter, not under it, even below a long address.
+    func testRefusalStaysAboveTheButtonAtTheLargestSize() {
+        let app = launch(largestText: true)
+        let field = field(in: app)
+        field.tap()
+        field.typeText("https://ana:secret@belay.une-instance-au-nom-long.exemple.fr")
+        let submit = app.buttons["signin-submit"]
+        submit.tap()
+        let problem = app.staticTexts["signin-problem"]
+        XCTAssertTrue(problem.waitForExistence(timeout: 5))
+        XCTAssertGreaterThan(problem.frame.minY, app.navigationBars.firstMatch.frame.minY)
+        XCTAssertLessThanOrEqual(problem.frame.maxY, submit.frame.minY, "the sentence hides under the button")
+    }
+
+    /// At AX3 the field wraps and takes Return as a new line; Return still signs in, and the refusal
+    /// it brings back is shown.
+    func testReturnShowsTheRefusalAtTheLargestSize() {
+        let app = launch(largestText: true)
+        let field = field(in: app)
+        field.tap()
+        field.typeText("http://belay.example\n")
+        let problem = app.staticTexts["signin-problem"]
+        XCTAssertTrue(problem.waitForExistence(timeout: 5), "the refusal after Return is hidden")
+        XCTAssertEqual(problem.label, "L’adresse doit commencer par https://")
     }
 
     /// The typed line is 22 pt tall; a tap anywhere in the 44 pt around it starts typing.
@@ -69,14 +119,11 @@ final class SignInTests: XCTestCase {
         }
     }
 
-    func testHeaderAndPlaceholderMeetAA() {
+    func testPlaceholderMeetsAA() {
         for appearance in [XCUIDevice.Appearance.light, .dark] {
             let app = launch(appearance)
             let field = field(in: app)
-            let header = app.staticTexts["Adresse de l’instance"]
-            XCTAssertTrue(header.exists)
             let name = appearance == .light ? "light" : "dark"
-            XCTAssertGreaterThanOrEqual(Self.contrast(of: header.screenshot()), 4.5, "header, \(name)")
             XCTAssertGreaterThanOrEqual(Self.contrast(of: field.screenshot()), 4.5, "placeholder, \(name)")
             app.terminate()
         }

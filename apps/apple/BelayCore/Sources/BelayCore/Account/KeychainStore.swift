@@ -10,14 +10,22 @@ public struct KeychainError: Error, Sendable, Equatable {
 /// The token in the Keychain, under the same service and account as the previous app wrote it, so a
 /// session it earned stays usable.
 public struct KeychainStore: SecretStore {
-  private static let service = "cloud.libresoftware.belay.session"
+  private static let sessionService = "cloud.libresoftware.belay.session"
   private static let log = Logger(subsystem: "cloud.libresoftware.belay", category: "keychain")
+  private let service: String
 
-  public init() {}
+  public init() {
+    self.init(service: Self.sessionService)
+  }
+
+  /// A store under another service, so tests never touch the session item.
+  init(service: String) {
+    self.service = service
+  }
 
   /// The session item of `origin`, or of every instance when nil. Readable on this device only,
   /// once it has been unlocked after a restart: never copied into a backup or onto another device.
-  static func query(origin: String?) -> [String: Any] {
+  static func query(origin: String?, service: String = sessionService) -> [String: Any] {
     var query: [String: Any] = [
       kSecClass as String: kSecClassGenericPassword,
       kSecAttrService as String: service,
@@ -28,7 +36,7 @@ public struct KeychainStore: SecretStore {
   }
 
   public func read(origin: String) -> String? {
-    var query = Self.query(origin: origin)
+    var query = Self.query(origin: origin, service: service)
     query[kSecReturnData as String] = true
     query[kSecMatchLimit as String] = kSecMatchLimitOne
     var result: AnyObject?
@@ -46,14 +54,14 @@ public struct KeychainStore: SecretStore {
   /// instance's session.
   public func write(origin: String, token: String) throws {
     try clear()
-    var query = Self.query(origin: origin)
+    var query = Self.query(origin: origin, service: service)
     query[kSecValueData as String] = Data(token.utf8)
     let status = SecItemAdd(query as CFDictionary, nil)
     guard status == errSecSuccess else { throw KeychainError(status: status) }
   }
 
   public func clear() throws {
-    let status = SecItemDelete(Self.query(origin: nil) as CFDictionary)
+    let status = SecItemDelete(Self.query(origin: nil, service: service) as CFDictionary)
     guard status == errSecSuccess || status == errSecItemNotFound else {
       throw KeychainError(status: status)
     }

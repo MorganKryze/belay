@@ -28,15 +28,13 @@ final class AccountModel {
     /// Why the address typed last was not taken, said apart from a sign-in's own failures.
     private(set) var addressProblem: InstanceError?
 
-    private let secrets: SecretStore
+    private let session: StoredSession
     private let http: HTTPClient
     private let sheet: SignInSheet
     private let defaults: UserDefaults
     /// Where each account's store lives: the app's own Application Support, never a shared container.
     private let storeFolder: URL
 
-    /// The person's id, kept beside the instance so a launch without network opens signed in.
-    private static let userKey = "belay.user"
     private static let log = Logger(subsystem: "cloud.libresoftware.belay", category: "account")
 
     init(
@@ -44,13 +42,13 @@ final class AccountModel {
         sheet: SignInSheet = SystemSignInSheet(), defaults: UserDefaults = .standard,
         storeFolder: URL = URL.applicationSupportDirectory.appending(path: "Stores", directoryHint: .isDirectory)
     ) {
-        self.secrets = secrets
+        session = StoredSession(store: secrets, defaults: defaults)
         self.http = http
         self.sheet = sheet
         self.defaults = defaults
         self.storeFolder = storeFolder
-        if let instance = storedInstance, let token = secrets.read(origin: instance.origin.absoluteString),
-           let userId = defaults.string(forKey: Self.userKey) {
+        if let instance = storedInstance, let token = session.token(origin: instance.origin.absoluteString),
+           let userId = session.userId {
             state = .signedIn(Account(userId: userId, instance: instance, token: token))
         }
         // An assignment in init does not run didSet.
@@ -91,7 +89,7 @@ final class AccountModel {
     /// A session the previous app kept has no id beside it: the instance names its owner once.
     func finishRestore() async {
         guard case .signedOut(nil) = state, let instance = storedInstance,
-              let token = secrets.read(origin: instance.origin.absoluteString)
+              let token = session.token(origin: instance.origin.absoluteString)
         else { return }
         state = .signingIn
         await open(token: token, at: instance)
@@ -124,7 +122,7 @@ final class AccountModel {
         case .failure(let failure): return fail(failure)
         }
         do {
-            try secrets.write(origin: instance.origin.absoluteString, token: token)
+            try session.keep(origin: instance.origin.absoluteString, token: token)
         } catch {
             Self.log.error("token not kept: \(String(describing: error), privacy: .public)")
             await logout(token: token, at: instance, using: http)
@@ -138,7 +136,7 @@ final class AccountModel {
     private func open(token: String, at instance: Instance) async {
         switch await me(token: token, at: instance, using: http) {
         case .success(let me):
-            defaults.set(me.id, forKey: Self.userKey)
+            session.remember(userId: me.id)
             state = .signedIn(Account(userId: me.id, instance: instance, token: token))
         case .failure(.unavailable):
             // The token stays: the next try, or the next launch, may reach the instance.
@@ -159,10 +157,10 @@ final class AccountModel {
     }
 
     /// Drops the token and the id; the instance stays, so the field shows it at the next sign-in.
+    /// A token the Keychain fails to drop is still never restored: the sign-out is marked first.
     private func forget() {
-        defaults.removeObject(forKey: Self.userKey)
         do {
-            try secrets.clear()
+            try session.drop()
         } catch {
             Self.log.error("token not dropped: \(String(describing: error), privacy: .public)")
         }

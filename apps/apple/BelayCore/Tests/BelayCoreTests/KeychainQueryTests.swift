@@ -26,4 +26,14 @@ import Testing
     #expect(query[kSecAttrService as String] as? String == "cloud.libresoftware.belay.session")
     #expect(query[kSecAttrAccount as String] == nil)
   }
+
+  /// Runs against the Mac's Keychain under a service of its own, removed after.
+  @Test func keepsOnlyTheLastInstancesToken() throws {
+    let store = KeychainStore(service: "cloud.libresoftware.belay.tests.\(UUID().uuidString)")
+    defer { try? store.clear() }
+    try store.write(origin: "https://one.example.org", token: "first")
+    try store.write(origin: "https://two.example.org", token: "second")
+    #expect(store.read(origin: "https://one.example.org") == nil)
+    #expect(store.read(origin: "https://two.example.org") == "second")
+  }
 }
