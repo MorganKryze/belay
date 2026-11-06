@@ -3,11 +3,14 @@ import XCTest
 /// The sign-in screen as a person meets it signed out: the address field and the words around it.
 @MainActor
 final class SignInTests: XCTestCase {
-    private func launch(_ appearance: XCUIDevice.Appearance = .light) -> XCUIApplication {
+    private func launch(_ appearance: XCUIDevice.Appearance = .light, language: String = "fr") -> XCUIApplication {
         XCUIDevice.shared.appearance = appearance
         let app = XCUIApplication()
         // No stored instance: the app opens signed out, the field empty with its placeholder showing.
-        app.launchArguments = ["-AppleLanguages", "(fr)", "-AppleLocale", "fr_FR", "-belay.instance", ""]
+        app.launchArguments = [
+            "-AppleLanguages", "(\(language))", "-AppleLocale", language == "fr" ? "fr_FR" : "en_US",
+            "-belay.instance", "",
+        ]
         app.launch()
         return app
     }
@@ -16,6 +19,15 @@ final class SignInTests: XCTestCase {
         let field = app.textFields["signin-address"]
         XCTAssertTrue(field.waitForExistence(timeout: 5), "the sign-in screen shows its field")
         return field
+    }
+
+    /// VoiceOver and Voice Control name the field by the words of the header above it.
+    func testFieldIsNamedByItsHeader() {
+        for (language, name) in [("fr", "Adresse de l’instance"), ("en", "Instance address")] {
+            let app = launch(language: language)
+            XCTAssertEqual(field(in: app).label, name, language)
+            app.terminate()
+        }
     }
 
     /// The typed line is 22 pt tall; a tap anywhere in the 44 pt around it starts typing.

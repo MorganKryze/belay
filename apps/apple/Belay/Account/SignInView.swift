@@ -33,6 +33,8 @@ struct SignInView: View {
                     .contentShape(.rect)
                     .onTapGesture { typing = true }
                     .disabled(busy)
+                    // A list row's text field does not expose its label: the header's words name it.
+                    .accessibilityLabel(Text("Adresse de l’instance", tableName: "Account"))
                     .accessibilityIdentifier("signin-address")
                 } header: {
                     Text("Adresse de l’instance", tableName: "Account")
