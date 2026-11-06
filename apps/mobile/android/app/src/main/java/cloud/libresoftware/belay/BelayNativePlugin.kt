@@ -26,7 +26,11 @@ class BelayNativePlugin : Plugin() {
         // a change of the font scale restarts the activity, which reads it again.
         val scale = context.resources.configuration.fontScale
         bridge.webView.settings.textZoom = 100
-        bridge.webView.addJavascriptInterface(TextScale(scale), "BelayText")
+        // The contrast is read when the page asks, not here: a change shows on its next read.
+        bridge.webView.addJavascriptInterface(
+            TextScale(scale) { readContrast(context) },
+            "BelayText",
+        )
     }
 
     override fun handleOnNewIntent(intent: Intent) {
@@ -62,7 +66,10 @@ class BelayNativePlugin : Plugin() {
     fun setSwipeBack(call: PluginCall) = call.resolve()
 }
 
-// What the page reads as window.BelayText: a number, nothing else crosses.
-class TextScale(private val scale: Float) {
+// What the page reads as window.BelayText: the font scale and whether contrast is increased,
+// nothing else crosses.
+class TextScale(private val scale: Float, private val contrast: () -> Boolean) {
     @JavascriptInterface fun scale(): Float = scale
+
+    @JavascriptInterface fun contrast(): Boolean = contrast()
 }
