@@ -27,6 +27,23 @@ const LAST_A: Change[] = [
   { kind: "workout", id: LAST, field: "ended", value: "2026-10-05T17:04:00.000Z", at: MONDAY },
 ];
 
+// A session started at 17:40 and still running at the frozen 18:00.
+const OPEN = "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7e02";
+const STARTED = "2026-10-07T15:40:00.000Z";
+const RUNNING_A: Change[] = [
+  {
+    kind: "workout",
+    id: OPEN,
+    field: "start",
+    sessionCode: "A",
+    plan: [...sessionByCode("A", starterProgram)!.slots],
+    startedAt: STARTED,
+    at: STARTED,
+  },
+];
+const sessionBar = (page: Page) =>
+  page.getByRole("region", { name: "Session in progress" }).getByRole("link");
+
 const SCREENS: [string, (page: Page) => Promise<void>][] = [
   [
     "Home",
@@ -45,11 +62,28 @@ const SCREENS: [string, (page: Page) => Promise<void>][] = [
     },
   ],
   [
-    "the session cover",
+    "the session preview",
     async (page) => {
       await fakeServer(page, { changes: LAST_A });
       await page.goto("/workouts/session/A?from=home");
       await expect(page.getByRole("link", { name: "Start the session" })).toBeVisible();
+    },
+  ],
+  [
+    "Home with a session open",
+    async (page) => {
+      await fakeServer(page, { changes: RUNNING_A });
+      await page.goto("/");
+      await expect(sessionBar(page)).toContainText("Set 1 of 4");
+    },
+  ],
+  [
+    "the session cover",
+    async (page) => {
+      await fakeServer(page, { changes: RUNNING_A });
+      await page.goto("/");
+      await sessionBar(page).click();
+      await expect(page.getByRole("button", { name: "Minimize the session" })).toBeVisible();
     },
   ],
   [
@@ -96,7 +130,8 @@ const SCREENS: [string, (page: Page) => Promise<void>][] = [
 ];
 
 // Text whose box is wider or taller inside than out while its style hides the rest: a truncate,
-// a line clamp, or a hidden overflow.
+// a line clamp, or a hidden overflow. A control's label wider than the control counts too: the
+// page clips it further up.
 const cutText = (page: Page) =>
   page.evaluate(() =>
     [...document.querySelectorAll<HTMLElement>("body *")]
@@ -108,7 +143,8 @@ const cutText = (page: Page) =>
         if (s.display === "none" || s.visibility === "hidden") return false;
         const clamped = s.webkitLineClamp !== "none" && el.scrollHeight > el.clientHeight + 1;
         const clipped = s.overflowX !== "visible" && el.scrollWidth > el.clientWidth + 1;
-        return clamped || clipped;
+        const spills = el.matches("a, button") && el.scrollWidth > el.clientWidth + 1;
+        return clamped || clipped || spills;
       })
       .map(
         (el) =>
@@ -241,6 +277,43 @@ test.describe("in French", () => {
           "sideways scroll",
         ).toBe(true);
       });
+    }
+  }
+});
+
+// The French labels run longest. At the phone's largest sizes, past what the screens above are held
+// to, a page keeps every word on screen: nothing cut, nothing sideways.
+test.describe("in French at the largest sizes", () => {
+  test.use({ locale: "fr-FR" });
+
+  const LONGEST: [string, string, (page: Page) => Promise<void>][] = [
+    [
+      "the session preview",
+      "/workouts/session/A?from=home",
+      (page) => expect(page.getByRole("link", { name: "Commencer la séance" })).toBeVisible(),
+    ],
+  ];
+
+  for (const width of [360, 390]) {
+    for (const textScale of [2.35, 3.12]) {
+      for (const [name, path, ready] of LONGEST) {
+        test(`text scale x${textScale} at ${width} px keeps ${name} whole`, async ({ page }) => {
+          await asAndroid(page, { textScale });
+          await page.setViewportSize({ width, height: 800 });
+          await fakeServer(page, { changes: LAST_A });
+          await page.goto(path);
+          await ready(page);
+          await expect(page.locator(".launch")).toBeHidden();
+          await settled(page);
+
+          expect(await cutText(page), "cut text").toEqual([]);
+          expect(await smallTargets(page), "small targets").toEqual([]);
+          expect(
+            await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+            "sideways scroll",
+          ).toBe(true);
+        });
+      }
     }
   }
 });

@@ -518,7 +518,7 @@ function Screen({
           aria-label={t("session.lower")}
           data-cover-lower
           onClick={lower}
-          className="press grid size-11 place-items-center rounded-control"
+          className="press grid size-11 shrink-0 place-items-center rounded-control"
         >
           <ChevronDown aria-hidden className="size-6" />
         </button>
