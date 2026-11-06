@@ -48,7 +48,27 @@ public struct SetRow: Codable, Sendable, Equatable {
 
 /// When a program's sessions come: in turn, or on fixed days of the week.
 public struct Schedule: Codable, Sendable, Equatable {
-  public enum Mode: String, Codable, Sendable { case rotation, fixed }
+  public enum Mode: RawRepresentable, Codable, Sendable, Hashable {
+    case rotation, fixed
+    /// A mode this version does not know, as the server wrote it (see `Measure`).
+    case unknown(String)
+
+    public init(rawValue: String) {
+      switch rawValue {
+      case "rotation": self = .rotation
+      case "fixed": self = .fixed
+      default: self = .unknown(rawValue)
+      }
+    }
+
+    public var rawValue: String {
+      switch self {
+      case .rotation: "rotation"
+      case .fixed: "fixed"
+      case .unknown(let raw): raw
+      }
+    }
+  }
   public var mode: Mode
   /// A session id or nil per day, Monday first.
   public var days: [String?]

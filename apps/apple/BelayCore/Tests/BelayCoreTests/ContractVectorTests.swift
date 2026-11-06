@@ -199,4 +199,54 @@ struct ContractVectorTests {
     #expect(response.rejected.first?.reason == "unknown")
     #expect(response.hasMore)
   }
+
+  @Test func readsValuesANewerServerAdds() throws {
+    let slot = """
+      {"exerciseId":"belay:barbell-hip-thrust","sets":3,"repRange":[8,12],"rirTarget":[1,2],
+      "restSec":120,"warmupSets":2,"isMain":true,"groupKey":null,"measure":"kg","rule":"rest"}
+      """
+    let answer = """
+      {"cursor":"44","workouts":[{"id":"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00","sessionCode":"A",
+      "plan":[\(slot)],"planAt":null,"startedAt":"2026-11-06T09:29:00.123Z","startedAtAt":null,
+      "endedAt":null,"endedAtAt":null,"note":null,"noteAt":null,"exerciseNotes":{},
+      "exerciseNotesAt":null,"removed":false,"removedAt":null}],"sets":[],
+      "programs":[{"id":"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f04","name":null,"nameAt":null,
+      "schedule":{"mode":"weekly","days":[]},"scheduleAt":null,"removed":false,"removedAt":null}],
+      "programSlots":[{"id":"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f05",
+      "sessionId":"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f01","position":0,"positionAt":null,
+      "exerciseId":"belay:barbell-hip-thrust","measure":"kg","exerciseAt":null,"repRange":[8,12],
+      "repsAt":null,"sets":3,"setsAt":null,"rirTarget":[1,2],"rirAt":null,"restSec":120,
+      "restAt":null,"warmupSets":2,"warmupsAt":null,"isMain":true,"mainAt":null,"groupKey":null,
+      "groupAt":null,"rule":"rest","ruleAt":null,"removed":false,"removedAt":null}],
+      "activities":[],"rejected":[],"hasMore":false}
+      """
+    // One value this build does not know must not make the whole answer unreadable, or nothing
+    // would sync again until the app is updated.
+    let response = try JSONDecoder().decode(SyncResponse.self, from: Data(answer.utf8))
+    let read = try #require(response.workouts.first?.plan.first)
+    #expect(read.measure == .unknown("kg") && read.rule == .unknown("rest"))
+    #expect(response.programs?.first?.schedule.mode == .unknown("weekly"))
+    #expect(response.programSlots?.first?.measure == .unknown("kg"))
+    #expect(response.programSlots?.first?.rule == .unknown("rest"))
+    // Kept as read, so the row stored is the server's.
+    #expect(try json(JSONEncoder().encode(read)) == json(Data(slot.utf8)))
+    // Known values still read as themselves.
+    #expect(Measure(rawValue: "seconds") == .seconds)
+    #expect(SlotRule(rawValue: "no_climbing") == .noClimbing)
+    #expect(Schedule.Mode(rawValue: "fixed") == .fixed)
+
+    // The phone never writes one: the shared rules refuse it, and so would the server.
+    var known = read
+    known.measure = nil
+    known.rule = nil
+    let at = "2026-11-06T09:30:00.123Z"
+    let id = "019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00"
+    #expect(isValid(.workout(.init(id: id, at: at, edit: .plan([known]))), now: Date()))
+    var measure = known
+    measure.measure = .unknown("kg")
+    #expect(!isValid(.workout(.init(id: id, at: at, edit: .plan([measure]))), now: Date()))
+    var rule = known
+    rule.rule = .unknown("rest")
+    #expect(!isValid(.workout(.init(id: id, at: at, edit: .plan([rule]))), now: Date()))
+  }
 }

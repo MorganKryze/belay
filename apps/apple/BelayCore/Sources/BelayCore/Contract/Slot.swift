@@ -1,14 +1,44 @@
 import Foundation
 
+// The server may send a value a newer version added, to a phone that was not updated. Each
+// enum it fills keeps such a value as text in `unknown`, so the row still reads and the rest of
+// the answer with it. The phone never writes one: `isValid` refuses a change carrying it.
+
 /// How an exercise is counted when it is not in repetitions.
-public enum Measure: String, Codable, Sendable, Hashable {
+public enum Measure: RawRepresentable, Codable, Sendable, Hashable {
   case seconds
+  /// A measure this version does not know, as the server wrote it.
+  case unknown(String)
+
+  public init(rawValue: String) {
+    self = rawValue == "seconds" ? .seconds : .unknown(rawValue)
+  }
+
+  public var rawValue: String {
+    switch self {
+    case .seconds: "seconds"
+    case .unknown(let raw): raw
+    }
+  }
 }
 
 /// A rule a program adds to a slot.
-public enum SlotRule: String, Codable, Sendable, Hashable {
+public enum SlotRule: RawRepresentable, Codable, Sendable, Hashable {
   /// Added by session C's rule, the week with no climbing.
-  case noClimbing = "no_climbing"
+  case noClimbing
+  /// A rule this version does not know, as the server wrote it.
+  case unknown(String)
+
+  public init(rawValue: String) {
+    self = rawValue == "no_climbing" ? .noClimbing : .unknown(rawValue)
+  }
+
+  public var rawValue: String {
+    switch self {
+    case .noClimbing: "no_climbing"
+    case .unknown(let raw): raw
+    }
+  }
 }
 
 /// One exercise of a session's plan. In a group (the same `groupKey` on consecutive slots) the

@@ -166,6 +166,9 @@ private func isSlot(_ slot: Slot) -> Bool {
     && (0...Bounds.maxWarmups).contains(slot.warmupSets)
     && (slot.groupKey.map(isGroupKey) ?? true)
     && slot.added != false
+    // Only the values this version knows: one read from a newer server is never sent back.
+    && (slot.measure.map { $0 == .seconds } ?? true)
+    && (slot.rule.map { $0 == .noClimbing } ?? true)
 }
 
 private func isGroupKey(_ key: String) -> Bool {
