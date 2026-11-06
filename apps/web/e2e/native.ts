@@ -36,15 +36,24 @@ type PhoneOptions = {
   };
   // The phone's text size over its default, as Android's shell hands it to the page.
   textScale?: number;
+  // Whether Android's shell reports increased contrast, until setContrast changes it.
+  contrast?: boolean;
 };
 
 async function asPhone(
   page: Page,
   platform: "ios" | "android",
-  { instance = INSTANCE, token = null, authenticate = "cancel", health, textScale }: PhoneOptions,
+  {
+    instance = INSTANCE,
+    token = null,
+    authenticate = "cancel",
+    health,
+    textScale,
+    contrast,
+  }: PhoneOptions,
 ): Promise<void> {
   await page.addInitScript(
-    ({ platform, instance, token, authenticate, health, textScale }) => {
+    ({ platform, instance, token, authenticate, health, textScale, contrast }) => {
       type Kept = { origin: string; token: string };
       const TOKEN = "belay.fake.token";
       if (sessionStorage.getItem("belay.fake.seeded") === null) {
@@ -181,7 +190,14 @@ async function asPhone(
         },
       };
       const w = window as unknown as Record<string, unknown>;
-      if (textScale !== undefined) w.BelayText = { scale: () => textScale };
+      if (textScale !== undefined || contrast !== undefined)
+        w.BelayText = {
+          scale: () => textScale,
+          ...(contrast !== undefined && {
+            contrast: () =>
+              (sessionStorage.getItem("belay.fake.contrast") ?? `${contrast}`) === "true",
+          }),
+        };
       w.CapacitorCustomPlatform = { name: platform, plugins };
       w.Capacitor = {
         isNativePlatform: () => true,
@@ -194,9 +210,13 @@ async function asPhone(
           plugins[plugin]![method]!(options),
       };
     },
-    { platform, instance, token, authenticate, health, textScale },
+    { platform, instance, token, authenticate, health, textScale, contrast },
   );
 }
+
+// Changes the contrast Android's shell reports, as a change in the phone's Settings would.
+export const setContrast = (page: Page, more: boolean): Promise<void> =>
+  page.evaluate((more) => sessionStorage.setItem("belay.fake.contrast", `${more}`), more);
 
 // Every style the Android app asked of its system bars, in order.
 export const barStyles = (page: Page): Promise<string[]> =>

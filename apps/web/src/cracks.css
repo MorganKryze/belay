@@ -1,0 +1,49 @@
+/*
+ * A few fine cracks in the wall's top-right corner: one layer fixed under the page, so it holds
+ * still while the page scrolls. Cards, lists, sheets and bars are solid above it; the rest of the
+ * ground stays plain paper. The drawing keeps clear of text (cracks.spec.ts compares).
+ */
+:root {
+  --cracks: url("./assets/cracks-light.svg");
+}
+.dark {
+  --cracks: url("./assets/cracks-dark.svg");
+}
+html::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 240px;
+  height: 560px;
+  z-index: -1;
+  pointer-events: none;
+  background: var(--cracks) right top / 100% 100% no-repeat;
+}
+/* From a computer's width the corner sits under the top bar, drawn larger. */
+@media (width >= 64rem) {
+  html::before {
+    top: 64px;
+    width: 400px;
+    height: 933px;
+  }
+}
+
+/* No cracks where the person asked for plainer grounds, and the frosted bars turn solid. */
+@media (prefers-contrast: more), (prefers-reduced-transparency: reduce), (forced-colors: active) {
+  html::before {
+    content: none;
+  }
+  html:root {
+    --glass: var(--surface);
+    --glass-fallback: var(--surface);
+  }
+}
+/* The same when the Android app reports more contrast, which its web view does not pass on. */
+html[data-contrast="more"] {
+  --glass: var(--surface);
+  --glass-fallback: var(--surface);
+  &::before {
+    content: none;
+  }
+}

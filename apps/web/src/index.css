@@ -3,6 +3,7 @@
 @import "shadcn/tailwind.css";
 
 @import "./type.css";
+@import "./cracks.css";
 
 @custom-variant dark (&:is(.dark *));
 /* Inside the Android and iPhone apps, which name their platform on the root (theme-init.js). */
