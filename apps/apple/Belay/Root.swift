@@ -1,3 +1,4 @@
+import BelayCore
 import SwiftUI
 
 enum AppTab: String, Hashable, CaseIterable {
@@ -31,18 +32,33 @@ enum Route: Hashable {}
 final class ShellModel {
     var tab: AppTab = .home
     var paths: [AppTab: [Route]] = [:]
+    /// The session cover, and the element its zoom opens from.
+    var coverOpen = false
+    var coverSource: String?
 }
 
 struct RootView: View {
     @State private var model = ShellModel()
+    @State private var training: TrainingModel
     @Namespace private var space
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    init(store: AccountStore) {
+        // The sync joins in through `didWrite` once it runs on this phone.
+        _training = State(
+            initialValue: TrainingModel(store: store, didWrite: {}, now: Date.init, timeZone: .current))
+    }
 
     var body: some View {
         TabView(selection: $model.tab) {
             ForEach(AppTab.allCases, id: \.self) { tab in
                 Tab(value: tab) {
                     NavigationStack(path: path(of: tab)) {
-                        WebForNow(tab: tab)
+                        if tab == .home {
+                            AccueilView(training: training, openCover: openCover)
+                        } else {
+                            WebForNow(tab: tab)
+                        }
                     }
                 } label: {
                     tabLabel(tab)
@@ -51,12 +67,29 @@ struct RootView: View {
         }
         .tabViewStyle(.sidebarAdaptable)
         .tabBarMinimizeBehavior(.onScrollDown)
-        .tabViewBottomAccessory(isEnabled: false) {
-            ResumeAccessory()
-                .matchedTransitionSource(id: Morph.accessory, in: space)
+        .tabViewBottomAccessory(isEnabled: training.open != nil) {
+            if let open = training.open {
+                ResumeAccessory(session: open) { openCover(Morph.accessory) }
+                    .matchedTransitionSource(id: Morph.accessory, in: space)
+            }
         }
         .environment(\.zoomSpace, space)
         .tint(.ink)
+        .fullScreenCover(isPresented: $model.coverOpen) {
+            SessionCover(training: training) { model.coverOpen = false }
+                .zoomed(from: model.coverSource, in: space, reduceMotion: reduceMotion)
+                .environment(\.zoomSpace, space)
+                .tint(.ink)
+        }
+        // A session closed elsewhere (another device, a forgotten one) takes its cover with it.
+        .onChange(of: training.open == nil) { _, closed in
+            if closed { model.coverOpen = false }
+        }
+    }
+
+    private func openCover(_ source: String) {
+        model.coverSource = source
+        model.coverOpen = true
     }
 
     private func path(of tab: AppTab) -> Binding<[Route]> {
@@ -77,4 +110,35 @@ struct RootView: View {
 /// Names of the elements a zoom starts from and lands on.
 enum Morph {
     static let accessory = "accessory"
+    static let card = "card"
+}
+
+/// The open session, full screen. The session itself comes with its own screen; until then the
+/// cover names it and lowers back to the accessory.
+struct SessionCover: View {
+    let training: TrainingModel
+    let lower: () -> Void
+
+    var body: some View {
+        NavigationStack {
+            VStack(alignment: .leading, spacing: 8) {
+                if let open = training.open {
+                    DayHero(text: SessionText.short(open.code))
+                        .accessibilityIdentifier("cover-title")
+                    if let name = open.name, !name.isEmpty {
+                        Text(name).font(.title3.weight(.semibold)).foregroundStyle(.ink)
+                    }
+                }
+                Spacer()
+            }
+            .padding(20)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background { Wall() }
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Réduire la séance", systemImage: "chevron.down", action: lower)
+                }
+            }
+        }
+    }
 }

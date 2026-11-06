@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		B00000000000000000000030 /* BelayCore in Frameworks */ = {isa = PBXBuildFile; productRef = B00000000000000000000031 /* BelayCore */; };
+		B00000000000000000000041 /* index.json in Resources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000040 /* index.json */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -24,6 +25,7 @@
 		B00000000000000000000003 /* Belay.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Belay.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B00000000000000000000013 /* BelayUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BelayUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		B00000000000000000000020 /* Belay.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Belay.xcconfig; sourceTree = "<group>"; };
+		B00000000000000000000040 /* index.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = index.json; path = ../../packages/shared/src/exercises/data/index.json; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -75,6 +77,7 @@
 			isa = PBXGroup;
 			children = (
 				B00000000000000000000020 /* Belay.xcconfig */,
+				B00000000000000000000040 /* index.json */,
 				B00000000000000000000004 /* Belay */,
 				B00000000000000000000014 /* BelayUITests */,
 				B00000000000000000000007 /* Products */,
@@ -187,6 +190,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B00000000000000000000041 /* index.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
