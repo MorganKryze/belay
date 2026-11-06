@@ -18,7 +18,10 @@ struct SignInView: View {
         NavigationStack {
             List {
                 Section {
-                    TextField(text: $address, prompt: Text("belay.exemple.fr", tableName: "Account")) {
+                    // The system's placeholder and header greys sit under 4.5:1 on the surface and the wall.
+                    TextField(
+                        text: $address, prompt: Text("belay.exemple.fr", tableName: "Account").foregroundStyle(.muted)
+                    ) {
                         Text("Adresse de l’instance", tableName: "Account")
                     }
                     .textContentType(.URL)
@@ -38,6 +41,7 @@ struct SignInView: View {
                     .accessibilityIdentifier("signin-address")
                 } header: {
                     Text("Adresse de l’instance", tableName: "Account")
+                        .foregroundStyle(.muted)
                         .accessibilityHidden(true)
                 } footer: {
                     if let problem {
