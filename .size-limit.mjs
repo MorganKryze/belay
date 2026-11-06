@@ -17,9 +17,10 @@ export default [
     limit: "180 KiB",
   },
   {
-    // The bundled display face, as the browser downloads it: woff2 is already compressed.
+    // The bundled display face and the two crack drawings, in bytes: woff2 is already compressed,
+    // and each drawing has its own 6 kB ceiling in cracks.test.ts.
     name: "display face and cracks (bytes)",
-    path: [`${dist}/assets/archivo-belay-*.woff2`],
+    path: [`${dist}/assets/archivo-belay-*.woff2`, `${dist}/assets/cracks-*.svg`],
     gzip: false,
     brotli: false,
     limit: "23.3 kB",

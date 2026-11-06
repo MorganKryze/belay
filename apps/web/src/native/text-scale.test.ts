@@ -56,6 +56,7 @@ afterEach(() => {
   document.body.replaceChildren();
   root.removeAttribute("style");
   root.removeAttribute("data-text-scaled");
+  root.removeAttribute("data-contrast");
 });
 
 describe("readRatio", () => {
@@ -171,5 +172,42 @@ describe("watchTextScale", () => {
     FakeResizeObserver.resize(bar);
     expect(dockExtra()).toBe("56px");
     expect(root.hasAttribute("data-text-scaled")).toBe(true);
+  });
+});
+
+describe("the contrast the Android app reports", () => {
+  // The shell's answer, as a change in the phone's Settings leaves it; the page is in the
+  // background until `visible`.
+  let more = false;
+  const comeBack = (state: DocumentVisibilityState) => {
+    vi.spyOn(document, "visibilityState", "get").mockReturnValue(state);
+    document.dispatchEvent(new Event("visibilitychange"));
+  };
+  beforeEach(() => {
+    onIPhone(false);
+    vi.stubGlobal("BelayText", { scale: () => 1, contrast: () => more });
+  });
+  afterEach(() => vi.restoreAllMocks());
+
+  it("is read again when the app comes back to the foreground", async () => {
+    more = false;
+    const { watchTextScale } = await import("./text-scale");
+    watchTextScale();
+    more = true;
+    comeBack("hidden");
+    expect(root.dataset.contrast).toBeUndefined();
+    comeBack("visible");
+    expect(root.dataset.contrast).toBe("more");
+    more = false;
+    comeBack("visible");
+    expect(root.dataset.contrast).toBeUndefined();
+  });
+
+  it("is left alone where the shell reports none", async () => {
+    vi.stubGlobal("BelayText", { scale: () => 1 });
+    const { watchTextScale } = await import("./text-scale");
+    watchTextScale();
+    comeBack("visible");
+    expect(root.dataset.contrast).toBeUndefined();
   });
 });

@@ -22,6 +22,8 @@
   if (c?.isNativePlatform?.()) {
     const r = document.documentElement;
     r.dataset.platform = c.getPlatform();
+    // The Android web view does not pass the system's increased contrast on; its shell reports it.
+    if (globalThis.BelayText?.contrast?.()) r.dataset.contrast = "more";
     let k = globalThis.BelayText?.scale();
     r.style.font = "-apple-system-body";
     if (r.style.font) k = parseFloat(getComputedStyle(r).fontSize) / 17;
