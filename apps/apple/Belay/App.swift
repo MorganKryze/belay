@@ -24,7 +24,7 @@ struct BelayApp: App {
                 if case .signedIn = account.state {
                     if let store = account.store {
                         // Another account's store is another shell: nothing of the last one stays.
-                        RootView(store: store, didWrite: account.didWrite).id(ObjectIdentifier(store))
+                        RootView(store: store, account: account).id(ObjectIdentifier(store))
                             .safeAreaInset(edge: .top, spacing: 0) {
                                 SyncNotice(
                                     status: account.syncStatus,

@@ -221,6 +221,96 @@
           }
         }
       }
+    },
+    "Se déconnecter": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign out"
+          }
+        }
+      }
+    },
+    "Se déconnecter ?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign out?"
+          }
+        }
+      }
+    },
+    "Annuler": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel"
+          }
+        }
+      }
+    },
+    "Rien n’attend d’être envoyé.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing is waiting to be sent."
+          }
+        }
+      }
+    },
+    "%lld saisies partiront à ta prochaine connexion.": {
+      "localizations": {
+        "fr": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld saisie partira à ta prochaine connexion."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld saisies partiront à ta prochaine connexion."
+                }
+              }
+            }
+          }
+        },
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld entry will be sent at your next sign-in."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld entries will be sent at your next sign-in."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Ce qui attend d’être envoyé partira à ta prochaine connexion.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What is waiting to be sent will go at your next sign-in."
+          }
+        }
+      }
     }
   }
 }

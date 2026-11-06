@@ -23,9 +23,12 @@ enum AppTab: String, Hashable, CaseIterable {
     }
 }
 
-/// Where a tab can push to. No screen is native yet, so nothing can be pushed; each native screen
-/// adds its case here, with the destination that shows it.
-enum Route: Hashable {}
+/// Where a tab can push to; each native screen adds its case here, with the destination that
+/// shows it.
+enum Route: Hashable {
+    /// Réglages, from Accueil's avatar: for now only the way to sign out.
+    case settings
+}
 
 /// The tab in front and what each tab has pushed, kept across tab switches.
 @MainActor @Observable
@@ -42,12 +45,17 @@ struct RootView: View {
     @State private var training: TrainingModel
     @Namespace private var space
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    private let account: AccountModel
+    private let store: AccountStore
 
-    /// `didWrite` follows every write the session screens make, so the sync sends it once writes
-    /// pause.
-    init(store: AccountStore, didWrite: @escaping () -> Void) {
+    /// The account's `didWrite` follows every write the session screens make, so the sync sends it
+    /// once writes pause.
+    init(store: AccountStore, account: AccountModel) {
+        self.account = account
+        self.store = store
         _training = State(
-            initialValue: TrainingModel(store: store, didWrite: didWrite, now: Date.init, timeZone: .current))
+            initialValue: TrainingModel(
+                store: store, didWrite: account.didWrite, now: Date.init, timeZone: .current))
     }
 
     var body: some View {
@@ -55,10 +63,17 @@ struct RootView: View {
             ForEach(AppTab.allCases, id: \.self) { tab in
                 Tab(value: tab) {
                     NavigationStack(path: path(of: tab)) {
-                        if tab == .home {
-                            AccueilView(training: training, openCover: openCover)
-                        } else {
-                            WebForNow(tab: tab)
+                        Group {
+                            if tab == .home {
+                                AccueilView(training: training, openCover: openCover)
+                            } else {
+                                WebForNow(tab: tab)
+                            }
+                        }
+                        .navigationDestination(for: Route.self) { route in
+                            switch route {
+                            case .settings: ReglagesView(account: account, store: store)
+                            }
                         }
                     }
                 } label: {

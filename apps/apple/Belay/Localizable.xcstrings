@@ -784,6 +784,16 @@
           }
         }
       }
+    },
+    "Réglages": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Settings"
+          }
+        }
+      }
     }
   }
 }

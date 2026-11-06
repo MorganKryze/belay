@@ -22,6 +22,20 @@ struct AccueilView: View {
         .background { Wall() }
         .navigationTitle(AppTab.home.title)
         .belaySubtitle(Self.today())
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                // In the toolbar's own style: with `.plain` a tap on the simulator never reached
+                // the link.
+                NavigationLink(value: Route.settings) {
+                    Avatar()
+                        .frame(minWidth: 44, minHeight: 44)
+                        .contentShape(.rect)
+                }
+                .accessibilityLabel("Réglages")
+                .accessibilityIdentifier("settings")
+            }
+            .sharedBackgroundVisibility(.hidden)
+        }
         .alert("La séance n’a pas démarré. Réessaie.", isPresented: $startFailed) {
             Button("OK", role: .cancel) {}
         }

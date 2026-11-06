@@ -5,13 +5,13 @@ import SwiftUI
 import Synchronization
 
 /// The UI tests' account, in a debug build only: `-BelayFixture <mode>` signs in a made-up person
-/// on a made-up instance that never answers, with a store of its own in the app's caches.
+/// on a made-up instance that never syncs, with a store of its own in the app's caches.
 /// `fresh` starts from an empty store, `running` from one with a session started, `history` from
 /// one where session A was done yesterday and is open again, `keep` from the store the previous
 /// launch left, so a test can relaunch onto it.
 enum Fixture {
-    private static let origin = "https://belay.example"
-    private static let userId = "fixture"
+    nonisolated fileprivate static let origin = "https://belay.example"
+    nonisolated fileprivate static let userId = "fixture"
 
     static func account() -> AccountModel? {
         guard let mode = UserDefaults.standard.string(forKey: "BelayFixture") else { return nil }
@@ -38,7 +38,8 @@ enum Fixture {
         } catch {
             preconditionFailure("the fixture did not set up: \(error)")
         }
-        return AccountModel(secrets: secrets, http: OfflineClient(), defaults: defaults, storeFolder: folder)
+        return AccountModel(
+            secrets: secrets, http: FixtureClient(), sheet: FixtureSheet(), defaults: defaults, storeFolder: folder)
     }
 
     /// The same session done a day earlier, its first exercise at 62,5 kg for 8, 8, 7 and 6.
@@ -119,10 +120,32 @@ private nonisolated final class FixtureSecrets: SecretStore {
     }
 }
 
-/// An instance that is never reachable, as on a phone with no network.
-private nonisolated struct OfflineClient: HTTPClient {
+/// An instance whose sync is never reachable, as on a phone with no network, but that still
+/// answers a sign-in, so a test can sign out and back in as the same person.
+private nonisolated struct FixtureClient: HTTPClient {
     func send(_ request: URLRequest) async throws -> (Data, HTTPURLResponse) {
-        throw URLError(.notConnectedToInternet)
+        let answer: String
+        switch request.url?.path() {
+        case "/api/instance": answer = #"{"app":"belay","api":1,"origin":"\#(Fixture.origin)"}"#
+        case "/auth/native/token": answer = #"{"token":"fixture-token"}"#
+        case "/api/me": answer = #"{"id":"\#(Fixture.userId)","displayName":"Ada"}"#
+        case "/auth/logout": answer = "{}"
+        default: throw URLError(.notConnectedToInternet)
+        }
+        guard let url = request.url,
+              let response = HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil)
+        else { throw URLError(.badURL) }
+        return (Data(answer.utf8), response)
+    }
+}
+
+/// The sign-in sheet, answered at once with a code the fixture's instance takes.
+private struct FixtureSheet: SignInSheet {
+    func open(_ url: URL) async -> Result<URL, SignInFailure> {
+        guard let callback = URL(string: "\(SignInFlow.callbackScheme)://signin?code=fixture") else {
+            return .failure(.failed)
+        }
+        return .success(callback)
     }
 }
 #endif
