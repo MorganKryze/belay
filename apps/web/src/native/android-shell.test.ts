@@ -164,6 +164,29 @@ describe("the Android shell", () => {
     expect(manifest()).not.toMatch(/android:configChanges="[^"]*fontScale/);
   });
 
+  // R12: the page reads increased contrast from the shell, at call time so a change shows on the
+  // next read; the object offers the two readings and nothing else.
+  it("BelayText offers scale() and contrast() and reads the contrast when asked", () => {
+    const source = kotlin("BelayNativePlugin.kt").replace(/\s+/g, " ");
+    const tail = source.slice(source.indexOf("class TextScale"));
+    const exposed = [...tail.matchAll(/@JavascriptInterface fun (\w+)\(\): (\w+)/g)].map((m) => [
+      m[1],
+      m[2],
+    ]);
+    expect(exposed).toEqual([
+      ["scale", "Float"],
+      ["contrast", "Boolean"],
+    ]);
+    expect(tail).toContain("fun contrast(): Boolean = contrast()");
+    const rule = kotlin("Contrast.kt").replace(/\s+/g, " ");
+    expect(rule).toContain(
+      "internal fun isHighContrast(contrast: Float, highText: Boolean): Boolean",
+    );
+    expect(rule).toContain("highText || contrast > 0.25f");
+    // GC4: the Kotlin added for this branch stays far under its 150 lines.
+    expect(kotlin("Contrast.kt").split("\n").length).toBeLessThan(40);
+  });
+
   it("nothing private is backed up", () => {
     expect(manifest()).toContain('android:allowBackup="false"');
     expect(manifest()).toContain('android:dataExtractionRules="@xml/data_extraction_rules"');
