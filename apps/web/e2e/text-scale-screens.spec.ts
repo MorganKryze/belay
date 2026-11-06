@@ -282,7 +282,8 @@ test.describe("in French", () => {
 });
 
 // The French labels run longest. At the phone's largest sizes, past what the screens above are held
-// to, a page keeps every word on screen: nothing cut, nothing sideways.
+// to, a page keeps every word on screen: nothing cut, nothing sideways, the back link clear of the
+// title under it.
 test.describe("in French at the largest sizes", () => {
   test.use({ locale: "fr-FR" });
 
@@ -292,7 +293,23 @@ test.describe("in French at the largest sizes", () => {
       "/workouts/session/A?from=home",
       (page) => expect(page.getByRole("link", { name: "Commencer la séance" })).toBeVisible(),
     ],
+    [
+      "Réglages",
+      "/settings",
+      (page) => expect(page.getByRole("button", { name: "Se déconnecter" })).toBeVisible(),
+    ],
   ];
+
+  // The back link and the large title, by their boxes.
+  const backOverTitle = (page: Page) =>
+    page.evaluate(() => {
+      const back = document.querySelector<HTMLElement>("main a:has(> svg.lucide-chevron-left)");
+      const title = document.querySelector<HTMLElement>("main h1");
+      if (!back || !title) return null;
+      const a = back.getBoundingClientRect();
+      const b = title.getBoundingClientRect();
+      return a.bottom > b.top + 1 && a.top < b.bottom - 1 && a.right > b.left && a.left < b.right;
+    });
 
   for (const width of [360, 390]) {
     for (const textScale of [2.35, 3.12]) {
@@ -312,6 +329,7 @@ test.describe("in French at the largest sizes", () => {
             await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
             "sideways scroll",
           ).toBe(true);
+          expect(await backOverTitle(page), "the back link over the title").toBe(false);
         });
       }
     }

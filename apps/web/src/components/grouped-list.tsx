@@ -45,9 +45,10 @@ function RowContent({
   valueBeside,
 }: RowProps) {
   // A destructive row is red text alone, centred: no icon, no value, no chevron to dress it up.
+  // Its label wraps, so a person reads the whole action before taking it.
   if (destructive) {
     return (
-      <span className="min-w-0 truncate text-center text-body font-semibold text-destructive">
+      <span className="min-w-0 text-center break-words text-body font-semibold text-destructive">
         {label}
       </span>
     );

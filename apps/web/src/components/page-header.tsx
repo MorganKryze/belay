@@ -54,8 +54,9 @@ export function PageHeader({
         {/* An invisible copy of the back link holds the right column at the same width, so the
             compact title stays centred and truncates before it reaches the back label. With an
             action, each side stacks its own content over an invisible copy of the other's in one
-            cell, so both columns take the wider of the two. */}
-        <div className="relative grid h-11 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-1.5">
+            cell, so both columns take the wider of the two. The bar grows with an enlarged back
+            label rather than let it run over the large title. */}
+        <div className="relative grid min-h-11 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-1.5">
           {action ? (
             <div className="grid justify-items-start *:[grid-area:1/1]">
               {back}
