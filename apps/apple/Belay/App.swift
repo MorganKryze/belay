@@ -2,21 +2,30 @@ import SwiftUI
 
 @main
 struct BelayApp: App {
-    @State private var account = AccountModel()
+    @State private var account = Self.launchAccount()
 
     init() {
         DisplayType.register()
         DisplayType.styleBars()
     }
 
+    /// The person's account; in a debug build, the UI tests' fixture when the launch asks for it.
+    private static func launchAccount() -> AccountModel {
+        #if DEBUG
+            if let fixture = Fixture.account() { return fixture }
+        #endif
+        return AccountModel()
+    }
+
     var body: some Scene {
         WindowGroup {
             Group {
                 if case .signedIn = account.state {
-                    if account.store == nil {
-                        StoreProblemView(account: account)
+                    if let store = account.store {
+                        // Another account's store is another shell: nothing of the last one stays.
+                        RootView(store: store).id(ObjectIdentifier(store))
                     } else {
-                        RootView()
+                        StoreProblemView(account: account)
                     }
                 } else {
                     SignInView(account: account)
