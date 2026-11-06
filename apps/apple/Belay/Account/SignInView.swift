@@ -81,12 +81,14 @@ struct SignInView: View {
             if address.isEmpty { address = account.lastAddress }
         }
         // A changed address takes the reproach away; it comes back at the next try if it still holds.
-        .onChange(of: address) { _, typed in
+        .onChange(of: address) { old, typed in
             // A wrapping field takes Return as a new line: it means Go, as on one line.
             if typed.contains(where: \.isNewline) {
                 address = typed.filter { !$0.isNewline }
                 return submit()
             }
+            // Stripping the newline above changes the address again; that is not a new address.
+            if old.filter({ !$0.isNewline }) == typed { return }
             problemHidden = true
         }
         // Focus stays on Se connecter after the tap, so VoiceOver would never reach the sentence.

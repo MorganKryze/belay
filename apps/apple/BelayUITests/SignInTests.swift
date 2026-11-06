@@ -68,6 +68,18 @@ final class SignInTests: XCTestCase {
         XCTAssertLessThanOrEqual(problem.frame.maxY, submit.frame.minY, "the sentence hides under the button")
     }
 
+    /// At AX3 the field wraps and takes Return as a new line; Return still signs in, and the refusal
+    /// it brings back is shown.
+    func testReturnShowsTheRefusalAtTheLargestSize() {
+        let app = launch(largestText: true)
+        let field = field(in: app)
+        field.tap()
+        field.typeText("http://belay.example\n")
+        let problem = app.staticTexts["signin-problem"]
+        XCTAssertTrue(problem.waitForExistence(timeout: 5), "the refusal after Return is hidden")
+        XCTAssertEqual(problem.label, "L’adresse doit commencer par https://")
+    }
+
     /// The typed line is 22 pt tall; a tap anywhere in the 44 pt around it starts typing.
     func testFieldTakesATapAcrossItsTarget() {
         for offset in [-21.0, -15.0, 0, 15.0, 21.0] {
