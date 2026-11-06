@@ -1,0 +1,3 @@
+// Shared build settings. The optional include keeps a fresh clone building (for the simulator and
+// for tests) before anyone has set a team.
+#include? "local.xcconfig"
