@@ -28,7 +28,8 @@ final class AccountModel {
     private(set) var store: AccountStore?
     /// Why the address typed last was not taken, said apart from a sign-in's own failures.
     private(set) var addressProblem: InstanceError?
-    /// Where the open store's sync stands; idle while signed out.
+    /// What the screen says of the open store's sync: a run under way keeps the last line, so it
+    /// never blinks; idle while signed out.
     private(set) var syncStatus: SyncStatus = .idle
 
     /// Whom the open store and its sync were opened for. Another person, instance or token closes
@@ -100,7 +101,10 @@ final class AccountModel {
             onLanded: { [weak self] in await self?.landed(store) })
         self.engine = engine
         following = Task { [weak self] in
-            for await status in engine.statuses() { self?.syncStatus = status }
+            for await status in engine.statuses() {
+                guard let self else { return }
+                syncStatus = status.noticed(after: syncStatus)
+            }
         }
         Task { await engine.sync() }
     }

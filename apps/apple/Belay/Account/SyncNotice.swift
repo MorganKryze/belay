@@ -4,7 +4,7 @@ import SwiftUI
 /// What the screen says while the queue waits, once and quietly: offline, one line; a refused
 /// session, one line and the way back in; a send that failed, one line and a retry, since some
 /// failures (a proxy down, a server this build cannot read) never clear on their own. Nothing while
-/// idle or syncing; logging works the same in every case.
+/// idle; a run under way keeps the line before it. Logging works the same in every case.
 struct SyncNotice: View {
     let status: SyncStatus
     let reconnect: () -> Void

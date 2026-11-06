@@ -1,10 +1,11 @@
 import os
 import SwiftUI
 
-/// Accueil: the day's session, next or under way. The trend and the day's entries come with the
-/// screens they open.
+/// Accueil: the day's session, next or under way, and what the sync waits for, said here only.
+/// The trend and the day's entries come with the screens they open.
 struct AccueilView: View {
     let training: TrainingModel
+    let notice: SyncNotice
     /// Opens the session cover, zooming from the element named.
     let openCover: (String) -> Void
     @State private var startFailed = false
@@ -19,6 +20,7 @@ struct AccueilView: View {
             .listRowBackground(Color.surface)
         }
         .belayList()
+        .safeAreaInset(edge: .top, spacing: 0) { notice }
         .background { Wall() }
         .navigationTitle(AppTab.home.title)
         .belaySubtitle(Self.today())

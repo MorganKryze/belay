@@ -8,7 +8,8 @@ import Synchronization
 /// on a made-up instance that never syncs, with a store of its own in the app's caches.
 /// `fresh` starts from an empty store, `running` from one with a session started, `history` from
 /// one where session A was done yesterday and is open again, `keep` from the store the previous
-/// launch left, so a test can relaunch onto it.
+/// launch left, so a test can relaunch onto it. `expired` starts empty on an instance that refuses
+/// the token at each sync.
 enum Fixture {
     nonisolated fileprivate static let origin = "https://belay.example"
     nonisolated fileprivate static let userId = "fixture"
@@ -39,7 +40,8 @@ enum Fixture {
             preconditionFailure("the fixture did not set up: \(error)")
         }
         return AccountModel(
-            secrets: secrets, http: FixtureClient(), sheet: FixtureSheet(), defaults: defaults, storeFolder: folder)
+            secrets: secrets, http: FixtureClient(refusesSync: mode == "expired"), sheet: FixtureSheet(),
+            defaults: defaults, storeFolder: folder)
     }
 
     /// The same session done a day earlier, its first exercise at 62,5 kg for 8, 8, 7 and 6.
@@ -120,12 +122,19 @@ private nonisolated final class FixtureSecrets: SecretStore {
     }
 }
 
-/// An instance whose sync is never reachable, as on a phone with no network, but that still
-/// answers a sign-in, so a test can sign out and back in as the same person.
+/// An instance whose sync is never reachable, as on a phone with no network, or refuses the token
+/// when `refusesSync`, but that still answers a sign-in, so a test can sign out and back in as the
+/// same person.
 private nonisolated struct FixtureClient: HTTPClient {
+    let refusesSync: Bool
+
     func send(_ request: URLRequest) async throws -> (Data, HTTPURLResponse) {
         let answer: String
+        var status = 200
         switch request.url?.path() {
+        case "/api/sync" where refusesSync:
+            answer = "{}"
+            status = 401
         case "/api/instance": answer = #"{"app":"belay","api":1,"origin":"\#(Fixture.origin)"}"#
         case "/auth/native/token": answer = #"{"token":"fixture-token"}"#
         case "/api/me": answer = #"{"id":"\#(Fixture.userId)","displayName":"Ada"}"#
@@ -133,7 +142,7 @@ private nonisolated struct FixtureClient: HTTPClient {
         default: throw URLError(.notConnectedToInternet)
         }
         guard let url = request.url,
-              let response = HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil)
+              let response = HTTPURLResponse(url: url, statusCode: status, httpVersion: nil, headerFields: nil)
         else { throw URLError(.badURL) }
         return (Data(answer.utf8), response)
     }

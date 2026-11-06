@@ -25,12 +25,6 @@ struct BelayApp: App {
                     if let store = account.store {
                         // Another account's store is another shell: nothing of the last one stays.
                         RootView(store: store, account: account).id(ObjectIdentifier(store))
-                            .safeAreaInset(edge: .top, spacing: 0) {
-                                SyncNotice(
-                                    status: account.syncStatus,
-                                    reconnect: { Task { await account.reconnect() } },
-                                    retry: account.refresh)
-                            }
                     } else {
                         StoreProblemView(account: account)
                     }

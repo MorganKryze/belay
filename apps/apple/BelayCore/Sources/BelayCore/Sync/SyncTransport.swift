@@ -9,6 +9,13 @@ public enum SyncStatus: Sendable, Equatable {
   case expired
   /// The server answered but not with rows, or the store did not take them.
   case failed
+
+  /// What the screen says once this status arrives, `shown` being what it said until now: a run
+  /// under way keeps the last line, so each trigger while offline does not hide it and show it
+  /// again; the run's end replaces it.
+  public func noticed(after shown: SyncStatus) -> SyncStatus {
+    self == .syncing ? shown : self
+  }
 }
 
 /// What one request came back with.

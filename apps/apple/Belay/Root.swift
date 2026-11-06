@@ -65,7 +65,13 @@ struct RootView: View {
                     NavigationStack(path: path(of: tab)) {
                         Group {
                             if tab == .home {
-                                AccueilView(training: training, openCover: openCover)
+                                AccueilView(
+                                    training: training,
+                                    notice: SyncNotice(
+                                        status: account.syncStatus,
+                                        reconnect: { Task { await account.reconnect() } },
+                                        retry: account.refresh),
+                                    openCover: openCover)
                             } else {
                                 WebForNow(tab: tab)
                             }
