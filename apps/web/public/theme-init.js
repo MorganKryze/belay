@@ -15,7 +15,7 @@
   for (const meta of document.querySelectorAll('meta[name="theme-color"]'))
     meta.setAttribute(
       "content",
-      dark((meta.getAttribute("media") || "").includes("dark")) ? "#151412" : "#FAFAF7",
+      dark((meta.getAttribute("media") || "").includes("dark")) ? "#10151A" : "#F3F5F5",
     );
   // The apps' pages get their platform and text size from the first paint (the launch screen does).
   const c = globalThis.Capacitor;
