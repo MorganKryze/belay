@@ -47,8 +47,8 @@ struct SyncNotice: View {
         .accessibilityIdentifier(id)
     }
 
-    /// The prototype's offline row: a muted symbol, the sentence beside it, on a solid surface so
-    /// it never sits on the wall. At large text sizes the action goes under the sentence.
+    /// One quiet row: a muted symbol, the sentence beside it, on a solid surface so it never sits
+    /// on the wall. At large text sizes the action goes under the sentence.
     private func row(
         symbol: String, @ViewBuilder text: () -> some View,
         @ViewBuilder action: () -> some View = { EmptyView() }

@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// The stand-in for a tab that is not built natively yet: it says so plainly and opens the same
-/// screen on the person's instance in Safari. It never shows sample numbers, weights are sensitive.
+/// The stand-in for a tab that is not built natively yet: it says so plainly and opens the
+/// person's instance in Safari, at its home screen. It never shows sample numbers, weights are sensitive.
 struct WebForNow: View {
     let tab: AppTab
 
