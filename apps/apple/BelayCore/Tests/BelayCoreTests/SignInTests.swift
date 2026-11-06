@@ -1,4 +1,5 @@
 import Foundation
+import Synchronization
 import Testing
 
 @testable import BelayCore
@@ -243,6 +244,73 @@ extension SignInTests {
     @Test func logoutIgnoresAFailure() async {
       await logout(token: "t", at: instance, using: FakeServer(throwing: URLError(.timedOut)))
       await logout(token: "t", at: instance, using: FakeServer(status: 500, json: "{}"))
+    }
+  }
+}
+
+extension SignInTests {
+  /// Signing in again over an expired session: the sheet, the exchange and whose the token is,
+  /// with nothing kept touched, so the open account stays as it is until all of it succeeds.
+  @Suite struct Renewal {
+    /// The instance's three answers along a renewal; `me` decides the last one.
+    private func server(me: @escaping @Sendable () throws -> (Int, Data)) -> FakeServer {
+      FakeServer { request in
+        switch request.url?.path {
+        case "/auth/native/token": (200, Data(#"{"token":"n3w"}"#.utf8))
+        case "/api/me": try me()
+        default: (204, Data())
+        }
+      }
+    }
+
+    private let named: @Sendable () -> (Int, Data) = {
+      (200, Data(#"{"id":"u1","displayName":"Ana"}"#.utf8))
+    }
+
+    @Test func givesTheNewTokenAndWhoseItIs() async throws {
+      let server = server(me: named)
+      let opened = Mutex<[URL]>([])
+      let result = await SignInFlow.renew(at: instance, using: server) { url in
+        opened.withLock { $0.append(url) }
+        return .success(URL(string: "belay://auth?code=c0d3")!)
+      }
+      #expect(result == .success(SignInFlow.Renewal(token: "n3w", me: Me(id: "u1", displayName: "Ana"))))
+      let start = try #require(opened.withLock { $0.first })
+      #expect(start.path == "/auth/native/start")
+      #expect(server.requests.map(\.url?.path) == ["/auth/native/token", "/api/me"])
+      #expect(server.requests.last?.value(forHTTPHeaderField: "Authorization") == "Bearer n3w")
+    }
+
+    @Test func aClosedSheetAsksTheInstanceNothing() async {
+      let server = server(me: named)
+      let result = await SignInFlow.renew(at: instance, using: server) { _ in .failure(.cancelled) }
+      #expect(result == .failure(.cancelled))
+      #expect(server.requests.isEmpty)
+    }
+
+    @Test func aRefusedExchangeSaysWhy() async {
+      let server = FakeServer(status: 400, json: #"{"error":"invalid_grant"}"#)
+      let result = await SignInFlow.renew(at: instance, using: server) { _ in
+        .success(URL(string: "belay://auth?code=c0d3")!)
+      }
+      #expect(result == .failure(.expired))
+    }
+
+    /// Kept nowhere, a token whose owner the instance did not name is ended: it would otherwise
+    /// stay valid on the server with no one able to sign it out.
+    @Test(arguments: [false, true])
+    func endsATokenWithoutAKnownOwner(_ offline: Bool) async {
+      let server = server {
+        if offline { throw URLError(.notConnectedToInternet) }
+        return (401, Data(#"{"error":"unauthenticated"}"#.utf8))
+      }
+      let result = await SignInFlow.renew(at: instance, using: server) { _ in
+        .success(URL(string: "belay://auth?code=c0d3")!)
+      }
+      #expect(result == .failure(offline ? .unavailable : .failed))
+      let logout = server.requests.last
+      #expect(logout?.url?.path == "/auth/logout")
+      #expect(logout?.value(forHTTPHeaderField: "Authorization") == "Bearer n3w")
     }
   }
 }

@@ -36,6 +36,8 @@ final class AccountModel {
     private var openedFor: Account?
     private var engine: SyncEngine?
     private var following: Task<Void, Never>?
+    /// A sign-in again is under way: a second tap waits for its sheet.
+    private var reconnecting = false
     /// The network coming back is a trigger: the queue may have waited for it.
     private let path = NWPathMonitor()
 
@@ -136,9 +138,41 @@ final class AccountModel {
         }
     }
 
-    /// The token was refused: signing out leaves the store and its queue for the next sign-in.
+    /// The token was refused: the sheet opens on the same instance while the store stays open, so
+    /// the person keeps logging. The account changes only once the instance names the new token's
+    /// owner; a sheet closed or a sign-in that fails leaves all of it as it was, the notice still
+    /// offering to try again.
     func reconnect() async {
-        await signOut()
+        guard case .signedIn(let account) = state, !reconnecting else { return }
+        reconnecting = true
+        defer { reconnecting = false }
+        let instance = account.instance
+        let renewal: SignInFlow.Renewal
+        switch await SignInFlow.renew(at: instance, using: http, open: openSheet) {
+        case .success(let renewed): renewal = renewed
+        case .failure(let failure):
+            Self.log.info("reconnect ended: \(String(describing: failure), privacy: .public)")
+            return
+        }
+        // Signed out while the sheet was up: the new session has no account to go to.
+        guard case .signedIn(account) = state else {
+            return await logout(token: renewal.token, at: instance, using: http)
+        }
+        do {
+            try session.keep(origin: instance.origin.absoluteString, token: renewal.token)
+        } catch {
+            Self.log.error("token not kept: \(String(describing: error), privacy: .public)")
+            return await logout(token: renewal.token, at: instance, using: http)
+        }
+        session.remember(userId: renewal.me.id)
+        // Another person signing in here gets their own store: the new account differs, so the
+        // store and its sync reopen for it.
+        state = .signedIn(Account(userId: renewal.me.id, instance: instance, token: renewal.token))
+    }
+
+    /// The system sheet, from the core's sign-in steps.
+    private var openSheet: @Sendable (URL) async -> Result<URL, SignInFailure> {
+        { @MainActor [self] url in await sheet.open(url) }
     }
 
     /// The instance last signed in to, as the web screens' links find it.
@@ -174,17 +208,9 @@ final class AccountModel {
             state = .signedOut(nil)
             return
         }
-        // The verifier stays here: only its hash goes to the sheet, and the verifier itself only to
-        // the exchange that proves this app asked for the code.
-        let verifier = PKCE.verifier()
-        let start = SignInFlow.startURL(instance, challenge: PKCE.challenge(of: verifier))
         let token: String
-        switch await sheet.open(start).flatMap(SignInFlow.callback) {
-        case .success(let code):
-            switch await SignInFlow.exchange(code: code, verifier: verifier, at: instance, using: http) {
-            case .success(let earned): token = earned
-            case .failure(let failure): return fail(failure)
-            }
+        switch await SignInFlow.authorize(at: instance, using: http, open: openSheet) {
+        case .success(let earned): token = earned
         case .failure(let failure): return fail(failure)
         }
         do {

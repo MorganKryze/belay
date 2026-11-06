@@ -62,4 +62,50 @@ public enum SignInFlow {
     else { return .failure(.failed) }
     return .success(answer.token)
   }
+
+  /// The sheet `open` shows on the instance's native start, then its code exchanged for a session
+  /// token. The verifier stays here: only its hash goes to the sheet, and the verifier itself only
+  /// to the exchange that proves this app asked for the code.
+  public static func authorize(
+    at instance: Instance, using client: HTTPClient,
+    open: @Sendable (URL) async -> Result<URL, SignInFailure>
+  ) async -> Result<String, SignInFailure> {
+    let verifier = PKCE.verifier()
+    switch await open(startURL(instance, challenge: PKCE.challenge(of: verifier))).flatMap(callback) {
+    case .success(let code): return await exchange(code: code, verifier: verifier, at: instance, using: client)
+    case .failure(let failure): return .failure(failure)
+    }
+  }
+
+  /// A new session token and the person the instance says it belongs to.
+  public struct Renewal: Sendable, Equatable {
+    public let token: String
+    public let me: Me
+
+    public init(token: String, me: Me) {
+      self.token = token
+      self.me = me
+    }
+  }
+
+  /// Signs in again on the instance of an account still open. Nothing kept is touched: until the
+  /// whole of it succeeds, the open account and its records stay usable, and a sheet closed or a
+  /// network gone changes nothing. A token whose owner the instance did not name is ended, since
+  /// nothing on the phone would ever sign it out.
+  public static func renew(
+    at instance: Instance, using client: HTTPClient,
+    open: @Sendable (URL) async -> Result<URL, SignInFailure>
+  ) async -> Result<Renewal, SignInFailure> {
+    let token: String
+    switch await authorize(at: instance, using: client, open: open) {
+    case .success(let earned): token = earned
+    case .failure(let failure): return .failure(failure)
+    }
+    switch await me(token: token, at: instance, using: client) {
+    case .success(let me): return .success(Renewal(token: token, me: me))
+    case .failure(let failure):
+      await logout(token: token, at: instance, using: client)
+      return .failure(failure)
+    }
+  }
 }
