@@ -58,13 +58,8 @@ const KEEP: readonly string[] = [
   "#1c1917",
 ];
 
-// The icons, the launch screen and the installed app's manifest, recoloured with the new mark.
-const PENDING: readonly string[] = [
-  "index.html",
-  "public/logo.svg",
-  "icons/app-icon.svg",
-  "vite.config.ts",
-];
+// Nothing is left to recolour: every shipped file wears the new palette.
+const PENDING: readonly string[] = [];
 
 function walk(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -94,8 +89,8 @@ describe("old palette", () => {
     expect(OLD.filter((hex) => KEEP.includes(hex))).toEqual([]);
   });
 
-  it("reads every pending file, so the exceptions stay narrow", () => {
-    expect(PENDING.filter((path) => !shipped.includes(path))).toEqual([]);
+  it("has no file left on the exceptions list", () => {
+    expect(PENDING).toEqual([]);
   });
 
   it("ships no colour of the warm palette", () => {
