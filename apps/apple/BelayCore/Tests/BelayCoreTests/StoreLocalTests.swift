@@ -165,6 +165,26 @@ enum Fixture {
     #expect(try store.outbox(limit: nil).count == 3)
   }
 
+  @Test func aSetAtThePlaceOfARemovedOneIsANewSet() throws {
+    let w = Fixture.id()
+    _ = try store.startWorkout(Fixture.start(w), now: Fixture.t0)
+    let first = try store.recordSet(Fixture.set(w), at: Fixture.time(1), active: Fixture.active(w))
+    try store.recordChanges(
+      [.set(SetChange(id: first.id, workoutId: w, at: Fixture.time(2), edit: .removed(true)))],
+      active: .keep)
+    let again = try store.recordSet(
+      Fixture.set(w, kg: 70, at: 3), at: Fixture.time(3), active: Fixture.active(w))
+
+    #expect(again.id != first.id)
+    guard case .create = again.edit else {
+      Issue.record("not a creation")
+      return
+    }
+    let live = try store.history().sets.filter { !$0.removed }
+    #expect(live.map(\.id) == [again.id])
+    #expect(live.first?.weightKg == 70)
+  }
+
   @Test func aSecondStartTakesUpTheOneOpenHere() throws {
     let first = Fixture.id()
     #expect(try store.startWorkout(Fixture.start(first), now: Fixture.t0) == first)
