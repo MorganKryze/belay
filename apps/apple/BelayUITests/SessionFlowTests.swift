@@ -236,8 +236,9 @@ final class SessionFlowTests: XCTestCase {
         XCTAssertFalse((app.textFields["load-count"].value as? String ?? "").isEmpty, "the count is prefilled")
     }
 
-    /// The next set and its RIR take the prototype's 159 pt from « Série 1 sur 4 » to the hairline
-    /// of the row after, whose own label sits 13 pt lower in its 44 pt row.
+    /// The next set and its RIR take the prototype's 165 pt from « Série 1 sur 4 » to the hairline
+    /// of the row after, whose own label sits 26 pt lower in its 52 pt row of boxes: 191 pt, as
+    /// measured on both. Armed with its « Noter » pill, the block took 74 pt more.
     func testNextSetBlockKeepsItsHeight() {
         let app = launch("history")
         openCover(app)
@@ -245,6 +246,20 @@ final class SessionFlowTests: XCTestCase {
         let rir = app.segmentedControls.firstMatch.frame
         let after = element(app, "set-0-4").frame
         XCTAssertTrue(next.maxY < rir.minY && rir.maxY < after.minY, "the RIR sits under the next set: \(next) \(rir) \(after)")
-        XCTAssertLessThanOrEqual(after.minY - next.minY, 175, "next set \(next), the one after \(after)")
+        XCTAssertLessThanOrEqual(after.minY - next.minY, 192, "next set \(next), the one after \(after)")
+    }
+
+    /// The sets after the next are boxes holding what is offered, and their own tick logs them.
+    func testComingSetsAreEditableBoxes() {
+        let app = launch("history")
+        openCover(app)
+        XCTAssertEqual(app.textFields["kg-0-4"].value as? String, "62,5", "set 2 offers last time's load")
+        XCTAssertEqual(app.textFields["count-0-4"].value as? String, "8", "and its count")
+        XCTAssertEqual(app.textFields["kg-0-4"].label, "Charge de la série 2, kg")
+        app.buttons["tick-0-4"].tap()
+        let row = element(app, "set-0-4")
+        XCTAssertTrue(row.waitForExistence(timeout: 3))
+        XCTAssertTrue(row.label.contains("faite"), "set 2 is logged from its own row: \(row.label)")
+        XCTAssertEqual(queuedSets(app), "1")
     }
 }

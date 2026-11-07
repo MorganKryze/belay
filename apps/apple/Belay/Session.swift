@@ -69,9 +69,9 @@ private struct Draft: Equatable {
     var count: String
 }
 
-/// The next set's two fields, so a tap anywhere on a box focuses its own.
+/// A set's two fields, so a tap anywhere on a box focuses its own.
 private enum LoadField: Hashable {
-    case kg, count
+    case kg(String), count(String)
 }
 
 private struct SessionList: View {
@@ -83,6 +83,8 @@ private struct SessionList: View {
     @State private var drafts: [String: Draft] = [:]
     /// The RIR chosen for a set before its tick; the plan's low target until then.
     @State private var rirs: [String: Int] = [:]
+    /// The set just recorded here: its check draws itself.
+    @State private var justLogged: String?
     /// Counts the sets this screen recorded: one haptic each, once the write returned.
     @State private var recorded = 0
     @Binding var askFinish: Bool
@@ -111,6 +113,12 @@ private struct SessionList: View {
                 Section {
                     header(exercise)
                         .listRowBackground(Color.surface)
+                        .listRowSeparator(.hidden, edges: .bottom)
+                    if !type.isAccessibilitySize {
+                        columns(exercise)
+                            .listRowBackground(Color.surface)
+                            .listRowSeparator(.hidden)
+                    }
                     ForEach(exercise.sets) { set in
                         row(exercise, set)
                     }
@@ -166,11 +174,28 @@ private struct SessionList: View {
         .accessibilityAddTraits(.isHeader)
     }
 
+    /// « Série · kg · Reps » over the figures, once per exercise.
+    private func columns(_ exercise: CoverExercise) -> some View {
+        SetColumns {
+            Text("Série")
+        } kg: {
+            Text("kg")
+        } count: {
+            Text(exercise.timed ? "Secondes" : "Reps")
+        } tick: {
+            Color.clear.frame(height: 1)
+        }
+        .font(.footnote.weight(.semibold))
+        .foregroundStyle(.muted)
+        .listRowInsets(.init(top: 0, leading: 16, bottom: 0, trailing: 12))
+        .accessibilityHidden(true)
+    }
+
     @ViewBuilder private func row(_ exercise: CoverExercise, _ set: CoverSet) -> some View {
         let isNext = nextSet?.set.id == set.id
         if isNext {
             NextSetRow(
-                exercise: exercise, set: set, draft: draft(set), typing: $typing,
+                exercise: exercise, set: set, draft: draft(set), touched: drafts[set.id] != nil, typing: $typing,
                 tick: { tick(exercise, set) }
             )
             .listRowBackground(Color.surface)
@@ -189,7 +214,10 @@ private struct SessionList: View {
         } else {
             // A done row keeps its sunk tint, and the hairline between rows crosses the card in the
             // line colour, so the done rows read as one thin table rather than grey bands.
-            PlainSetRow(exercise: exercise, set: set)
+            SetRow(
+                exercise: exercise, set: set, draft: draft(set), touched: drafts[set.id] != nil,
+                fresh: justLogged == set.id, typing: $typing, tick: { tick(exercise, set) }
+            )
                 .listRowBackground(set.done ? Color.sunk : Color.surface)
                 .listRowSeparatorTint(.line)
                 .alignmentGuide(.listRowSeparatorLeading) { _ in 0 }
@@ -248,6 +276,7 @@ private struct SessionList: View {
         // Only now, with the set stored: the row turns done and the hand feels it once.
         drafts[set.id] = nil
         rirs[set.id] = nil
+        justLogged = set.id
         recorded += 1
         AccessibilityNotification.Announcement(String(localized: "Série notée.")).post()
     }
@@ -333,33 +362,126 @@ private struct SetColumns<A: View, B: View, C: View, D: View>: View {
     }
 }
 
-/// A set done, or one to come after the next: read only, one element for VoiceOver.
-private struct PlainSetRow: View {
+/// A set done, read as one element; or one to come after the next, its boxes already holding
+/// what is offered, so it can be corrected, or ticked, before its turn.
+private struct SetRow: View {
     let exercise: CoverExercise
     let set: CoverSet
+    @Binding var draft: Draft
+    /// Typed into since it was offered: until then its boxes are dashed.
+    let touched: Bool
+    /// Recorded this instant: the check draws itself.
+    let fresh: Bool
+    var typing: FocusState<LoadField?>.Binding
+    let tick: () -> Void
 
     var body: some View {
+        Group {
+            if set.done { done } else { open }
+        }
+        .monospacedDigit()
+        .listRowInsets(.init(top: set.done ? 0 : 4, leading: 16, bottom: set.done ? 0 : 4, trailing: 12))
+    }
+
+    private var done: some View {
         SetColumns {
             Text("\(set.number)")
                 .font(.subheadline.weight(.semibold))
-                .foregroundStyle(set.done ? .ink : .muted)
         } kg: {
             Text(set.weightKg.map(SetText.kg) ?? "–")
         } count: {
             Text(set.count.map(String.init) ?? "–")
         } tick: {
-            Image(systemName: set.done ? "checkmark.circle.fill" : "circle")
-                .font(.title2)
-                .foregroundStyle(set.done ? .ink : .muted)
-                .frame(width: 44, height: 44)
+            Tick(done: true, fresh: fresh)
         }
-        .font(.body.weight(set.done ? .semibold : .regular))
-        .foregroundStyle(set.done ? .ink : .muted)
-        .monospacedDigit()
-        .listRowInsets(.init(top: 0, leading: 16, bottom: 0, trailing: 12))
+        .font(.body.weight(.semibold))
+        .foregroundStyle(.ink)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(SetText.spoken(exercise, set))
         .accessibilityIdentifier("set-\(set.id)")
+    }
+
+    private var open: some View {
+        SetColumns {
+            Text("\(set.number)")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.muted)
+                .accessibilityLabel(
+                    SetText.spoken(exercise, set, weightKg: SetText.parseKg(draft.kg), count: Int(draft.count)))
+                .accessibilityIdentifier("set-\(set.id)")
+        } kg: {
+            cell($draft.kg, .kg(set.id), keyboard: .decimalPad, id: "kg-\(set.id)",
+                 label: "Charge de la série \(set.number), kg")
+        } count: {
+            cell($draft.count, .count(set.id), keyboard: .numberPad, id: "count-\(set.id)",
+                 label: exercise.timed ? "Secondes de la série \(set.number)" : "Répétitions de la série \(set.number)")
+        } tick: {
+            Button(action: tick) {
+                Tick(done: false, fresh: false)
+            }
+            .buttonStyle(.borderless)
+            .accessibilityLabel("Valider la série \(set.number)")
+            .accessibilityIdentifier("tick-\(set.id)")
+        }
+    }
+
+    private func cell(
+        _ text: Binding<String>, _ field: LoadField, keyboard: UIKeyboardType, id: String, label: LocalizedStringKey
+    ) -> some View {
+        TextField(text: text, prompt: Text(verbatim: "–")) { Text(label) }
+            .labelsHidden()
+            .accessibilityLabel(Text(label))
+            .keyboardType(keyboard)
+            .multilineTextAlignment(.center)
+            .font(.title3)
+            .foregroundStyle(touched ? .ink : .muted)
+            .focused(typing, equals: field)
+            .accessibilityIdentifier(id)
+            .frame(maxWidth: .infinity, minHeight: 44)
+            .background(Color.track, in: .rect(cornerRadius: 12))
+            .overlay { if !touched { Prefilled(radius: 12) } }
+            .contentShape(.rect(cornerRadius: 12))
+            .onTapGesture { typing.wrappedValue = field }
+    }
+}
+
+/// Offered from last time until typed into: dashed, as on every platform.
+private struct Prefilled: View {
+    let radius: CGFloat
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: radius)
+            .strokeBorder(Color.muted.opacity(0.45), style: StrokeStyle(lineWidth: 1, dash: [3, 3]))
+            .allowsHitTesting(false)
+    }
+}
+
+/// The set's tick. A row just recorded arrives with its ring and turns it into the check, so the
+/// symbol's own transition plays on a row that otherwise changed in one frame.
+private struct Tick: View {
+    let done: Bool
+    @State private var checked: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    init(done: Bool, fresh: Bool) {
+        self.done = done
+        _checked = State(initialValue: done && !fresh)
+    }
+
+    var body: some View {
+        Image(systemName: checked ? "checkmark.circle.fill" : "circle")
+            .font(.title2)
+            .foregroundStyle(checked ? .ink : .muted)
+            .contentTransition(reduceMotion ? .identity : .symbolEffect(.replace.magic(fallback: .downUp.byLayer)))
+            .frame(width: 44, height: 44)
+            .contentShape(.rect)
+            .onAppear { follow() }
+            .onChange(of: done) { follow() }
+    }
+
+    private func follow() {
+        guard checked != done else { return }
+        withAnimation(reduceMotion ? nil : .snappy) { checked = done }
     }
 }
 
@@ -368,6 +490,7 @@ private struct NextSetRow: View {
     let exercise: CoverExercise
     let set: CoverSet
     @Binding var draft: Draft
+    let touched: Bool
     var typing: FocusState<LoadField?>.Binding
     let tick: () -> Void
 
@@ -380,9 +503,9 @@ private struct NextSetRow: View {
                 .accessibilityLabel(SetText.spoken(exercise, set, weightKg: SetText.parseKg(draft.kg), count: Int(draft.count)))
                 .accessibilityIdentifier("set-\(set.id)")
             HStack(spacing: 8) {
-                cell($draft.kg, .kg, unit: "kg", keyboard: .decimalPad, id: "load-kg",
+                cell($draft.kg, .kg(set.id), unit: "kg", keyboard: .decimalPad, id: "load-kg",
                      label: "Charge de la série \(set.number), kg")
-                cell($draft.count, .count, unit: exercise.timed ? "s" : "reps", keyboard: .numberPad, id: "load-count",
+                cell($draft.count, .count(set.id), unit: exercise.timed ? "s" : "reps", keyboard: .numberPad, id: "load-count",
                      label: exercise.timed ? "Secondes de la série \(set.number)" : "Répétitions de la série \(set.number)")
                 Button(action: tick) {
                     Image(systemName: "circle")
@@ -425,6 +548,7 @@ private struct NextSetRow: View {
         }
         .frame(maxWidth: .infinity, minHeight: 76)
         .background(Color.track, in: .rect(cornerRadius: 16))
+        .overlay { if !touched { Prefilled(radius: 16) } }
         // The field itself is one line of the box; the box is what looks like the target.
         .contentShape(.rect(cornerRadius: 16))
         .onTapGesture { typing.wrappedValue = field }
