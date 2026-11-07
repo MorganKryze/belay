@@ -84,7 +84,7 @@ final class SyncNoticeTests: XCTestCase {
     /// A session the instance refused: the line says so and offers to sign in again.
     func testAnExpiredSessionAsksToSignInAgain() {
         let app = launch("expired")
-        XCTAssertTrue(app.staticTexts["Ta session a expiré."].waitForExistence(timeout: 10), "the line says so")
+        XCTAssertTrue(app.staticTexts["Ta connexion a expiré."].waitForExistence(timeout: 10), "the line says so")
         XCTAssertTrue(app.buttons["sync-reconnect"].exists, "with the way back in")
         XCTAssertEqual(app.buttons["sync-reconnect"].label, "Se reconnecter")
     }
