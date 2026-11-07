@@ -415,16 +415,6 @@
         }
       }
     },
-    "Celles non cochées ne seront pas enregistrées.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Unchecked ones will not be saved."
-          }
-        }
-      }
-    },
     "Charge de la série %lld, kg": {
       "localizations": {
         "en": {
@@ -635,16 +625,6 @@
         }
       }
     },
-    "Séries notées : %lld sur %lld.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sets logged: %lld of %lld."
-          }
-        }
-      }
-    },
     "Temps écoulé": {
       "localizations": {
         "en": {
@@ -821,6 +801,166 @@
           "stringUnit": {
             "state": "translated",
             "value": "The rest was not changed. Try again."
+          }
+        }
+      }
+    },
+    "%lld séries notées sur %lld.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%#@sets@ sur %2$lld."
+          },
+          "substitutions": {
+            "sets": {
+              "argNum": 1,
+              "formatSpecifier": "lld",
+              "variations": {
+                "plural": {
+                  "one": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg série notée"
+                    }
+                  },
+                  "other": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg séries notées"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%#@sets@ out of %2$lld."
+          },
+          "substitutions": {
+            "sets": {
+              "argNum": 1,
+              "formatSpecifier": "lld",
+              "variations": {
+                "plural": {
+                  "one": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg set logged"
+                    }
+                  },
+                  "other": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg sets logged"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld séries notées sur %lld ; ton programme ne change pas.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%#@sets@ sur %2$lld ; ton programme ne change pas."
+          },
+          "substitutions": {
+            "sets": {
+              "argNum": 1,
+              "formatSpecifier": "lld",
+              "variations": {
+                "plural": {
+                  "one": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg série notée"
+                    }
+                  },
+                  "other": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg séries notées"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%#@sets@ out of %2$lld; your program doesn't change."
+          },
+          "substitutions": {
+            "sets": {
+              "argNum": 1,
+              "formatSpecifier": "lld",
+              "variations": {
+                "plural": {
+                  "one": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg set logged"
+                    }
+                  },
+                  "other": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg sets logged"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Les %lld séries non cochées ne seront pas enregistrées ; ton programme ne change pas.": {
+      "localizations": {
+        "fr": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "La série non cochée ne sera pas enregistrée ; ton programme ne change pas."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Les %lld séries non cochées ne seront pas enregistrées ; ton programme ne change pas."
+                }
+              }
+            }
+          }
+        },
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "The unticked set won't be saved; your program doesn't change."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "The %lld unticked sets won't be saved; your program doesn't change."
+                }
+              }
+            }
           }
         }
       }

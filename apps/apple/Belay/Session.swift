@@ -48,11 +48,18 @@ struct SessionCover: View {
         }
     }
 
+    /// The web's words: what is kept, what is not, and that the program stays as it is.
     private var finishMessage: String {
         guard let cover = training.cover else { return "" }
-        let count = String(localized: "Séries notées\u{202F}: \(cover.setsDone) sur \(cover.setsPlanned).")
-        guard cover.setsDone < cover.setsPlanned else { return count }
-        return "\(count) \(String(localized: "Celles non cochées ne seront pas enregistrées."))"
+        let left = cover.setsPlanned - cover.setsDone
+        guard left > 0 else {
+            return String(
+                localized: "\(cover.setsDone) séries notées sur \(cover.setsPlanned)\u{202F}; ton programme ne change pas.")
+        }
+        let count = String(localized: "\(cover.setsDone) séries notées sur \(cover.setsPlanned).")
+        let rest = String(
+            localized: "Les \(left) séries non cochées ne seront pas enregistrées\u{202F}; ton programme ne change pas.")
+        return "\(count) \(rest)"
     }
 }
 

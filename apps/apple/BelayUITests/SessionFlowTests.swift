@@ -103,6 +103,9 @@ final class SessionFlowTests: XCTestCase {
         app.buttons["Terminer"].tap()
         let save = app.buttons["Terminer et enregistrer"]
         XCTAssertTrue(save.waitForExistence(timeout: 3), "Terminer asks first")
+        // The web's words: what is kept, what is not, and that the program stays as it is.
+        let message = "1 série notée sur 19. Les 18 séries non cochées ne seront pas enregistrées\u{202F}; ton programme ne change pas."
+        XCTAssertTrue(app.staticTexts[message].exists, "the dialog says what is kept: \(app.staticTexts.allElementsBoundByIndex.map(\.label))")
         save.tap()
 
         XCTAssertTrue(element(app, "summary-close").waitForExistence(timeout: 5), "the summary shows")
