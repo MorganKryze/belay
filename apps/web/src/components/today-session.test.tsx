@@ -197,7 +197,7 @@ describe("Accueil's session card", () => {
     const next = within(region).getByRole("link", { name: "Next up: Session B · Legs" });
     expect(next.getAttribute("href")).toBe("/workouts/session/B?from=home");
     expect(within(region).getAllByRole("link")).toHaveLength(1);
-    expect(region.querySelector(".bg-primary")).toBeNull();
+    expect(region.querySelector(".bg-mark")).toBeNull();
   });
 
   it("an open session wins over one done today", async () => {
@@ -470,7 +470,7 @@ describe("Accueil on fixed days", () => {
     const next = within(region).getByRole("link", { name: "Mercredi\u202f: Séance B · Legs" });
     expect(next.getAttribute("href")).toBe("/workouts/session/B?from=home");
     expect(within(region).getAllByRole("link")).toHaveLength(1);
-    expect(region.querySelector(".bg-primary")).toBeNull();
+    expect(region.querySelector(".bg-mark")).toBeNull();
   });
 
   it("done two days before: Faite jeudi", async () => {

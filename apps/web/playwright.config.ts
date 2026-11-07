@@ -8,7 +8,17 @@ export default defineConfig({
   // The default html reporter serves the report after a failure and never exits.
   reporter: [["list"], ["html", { open: "never" }]],
   use: { baseURL: `http://localhost:${port}` },
-  projects: [{ name: "chromium", use: { ...devices["Pixel 7"] } }],
+  projects: [
+    {
+      name: "chromium",
+      use: {
+        ...devices["Pixel 7"],
+        // Linux Chromium hints glyphs by default, rounding each advance: text set there runs
+        // wider than on a phone or a Mac. Unhinted, it measures as they do.
+        launchOptions: { args: ["--font-render-hinting=none"] },
+      },
+    },
+  ],
   webServer: {
     command: `pnpm build && pnpm preview --port ${port} --strictPort`,
     url: `http://localhost:${port}`,

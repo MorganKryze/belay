@@ -114,7 +114,7 @@ for (const scheme of ["light", "dark"] as const) {
   });
 }
 
-test("the empty supplements row is muted, never orange", async ({ page }) => {
+test("the empty supplements row is muted, never the blue", async ({ page }) => {
   await fakeServer(page);
   await page.goto("/");
   const link = page.getByRole("link", { name: /^Compléments/ });
@@ -122,9 +122,10 @@ test("the empty supplements row is muted, never orange", async ({ page }) => {
   await expect(link).toHaveAttribute("href", "/settings/supplements");
   const muted = await tokenColour(page, "--muted-foreground");
   expect(await colour(link.getByText("aucun pour l’instant"))).toBe(muted);
-  const primary = await tokenColour(page, "--primary");
+  // Blue is the next action's alone: an empty row is no action to take.
+  const blue = await tokenColour(page, "--mark");
   const inks = await link.evaluate((root) =>
     [root, ...root.querySelectorAll("*")].map((e) => getComputedStyle(e).color),
   );
-  expect(inks).not.toContain(primary);
+  expect(inks).not.toContain(blue);
 });

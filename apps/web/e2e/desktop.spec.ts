@@ -48,6 +48,40 @@ test("the top bar replaces the dock and the session bar", async ({ page }) => {
   await expect(page.getByRole("link", { name })).toBeVisible();
 });
 
+test("the top bar marks its active section in ink, in the system face, 44 px targets and no overflow", async ({
+  page,
+}) => {
+  await fakeServer(page, { rows: WEEKS });
+  for (const path of ["/", "/workouts", "/body", "/tools"]) {
+    await page.goto(path);
+    const bar = topBar(page);
+    await expect(bar).toBeVisible();
+    const look = await bar.evaluate((el) => {
+      const probe = document.createElement("i");
+      probe.style.color = "var(--foreground)";
+      document.body.append(probe);
+      const ink = getComputedStyle(probe).color;
+      probe.remove();
+      const links = [...el.querySelectorAll("a")];
+      return {
+        ink,
+        active: getComputedStyle(el.querySelector("nav [aria-current=page]")!).color,
+        brand: getComputedStyle(el.querySelector("svg path")!).fill,
+        faces: [...el.querySelectorAll("nav a")].map((a) => getComputedStyle(a).fontFamily),
+        small: links
+          .map((a) => a.getBoundingClientRect())
+          .filter((r) => r.width < 44 || r.height < 44).length,
+        overflow: el.scrollWidth - el.clientWidth,
+      };
+    });
+    expect(look.active, path).toBe(look.ink);
+    expect(look.brand, path).toBe(look.ink);
+    for (const face of look.faces) expect(face, path).toMatch(/^-apple-system,/);
+    expect(look.small, path).toBe(0);
+    expect(look.overflow, path).toBe(0);
+  }
+});
+
 test("the avatar opens Réglages", async ({ page }) => {
   await fakeServer(page, { rows: WEEKS });
   await page.goto("/body");

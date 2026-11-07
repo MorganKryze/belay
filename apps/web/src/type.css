@@ -1,0 +1,56 @@
+/*
+ * The display face: Archivo Expanded ExtraBold, cut to Latin with the French marks, the narrow
+ * no-break space and the tabular figures (scripts/cut-display-face.sh). index.html preloads it;
+ * text that uses it stays hidden until it arrives rather than drawing in the system face and
+ * swapping, and a character outside the cut is drawn by the system face.
+ */
+@font-face {
+  font-family: "Archivo Belay";
+  font-style: normal;
+  font-weight: 800;
+  font-display: block;
+  src: url("./fonts/archivo-belay.woff2") format("woff2");
+  unicode-range:
+    U+0020-007E, U+00A0-00FF, U+0152-0153, U+0178, U+2009, U+2013-2014, U+2018-201A, U+201C-201E,
+    U+2022, U+2026, U+2039-203A, U+202F, U+20AC, U+2122, U+2212;
+}
+
+/*
+ * Large titles and big figures, on their charter step. Outside any layer, so the face, its weight
+ * and the fitted size win over the step's utilities. --fit is written by lib/fit.ts: the text
+ * grows with the text size until it meets its box, then holds. A figure stays on one line and a
+ * title wraps between words only, so neither is ever broken inside a number or a word. What sits
+ * inside them (a unit, a word read out only) keeps the system face.
+ */
+.display-title,
+.display-figure,
+.display-figure-md,
+.display-figure-lg {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-synthesis: none;
+  font-variant-numeric: tabular-nums;
+}
+.display-title {
+  font-size: calc(var(--text-title-lg) * var(--fit, 1));
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: manual;
+}
+.display-figure {
+  font-size: calc(var(--text-figure) * var(--fit, 1));
+}
+.display-figure-md {
+  font-size: calc(var(--text-figure-md) * var(--fit, 1));
+}
+.display-figure-lg {
+  font-size: calc(var(--text-figure-lg) * var(--fit, 1));
+}
+.display-figure,
+.display-figure-md,
+.display-figure-lg {
+  white-space: nowrap;
+}
+:is(.display-title, .display-figure, .display-figure-md, .display-figure-lg) > * {
+  font-family: var(--font-sans);
+}

@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- The web app's chalk background and accent, so the launch screen, the band behind the
-         system bars and the page match. -->
-    <color name="launch">#FAFAF7</color>
-    <color name="accent">#C2410C</color>
+    <!-- The web app's paper and blue, so the launch screen, the band behind the system bars and
+         the page match. The launcher icon sits on its own ground, the blue by day. -->
+    <color name="launch">#F3F5F5</color>
+    <color name="accent">#1F4E8C</color>
+    <color name="icon_ground">#1F4E8C</color>
     <color name="surface">#FFFFFF</color>
 </resources>

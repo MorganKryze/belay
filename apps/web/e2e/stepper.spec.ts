@@ -123,9 +123,11 @@ for (const [name, open] of PAGES) {
 
 // Measured on the base at 390 px, light, before the input filled its field (value "100", unit
 // "kg"), as offsets from the input's own box: the page can move, the field's contents may not.
+// The unit's line box starts its face's ascent above the shared baseline: 18 px down in SF Pro,
+// 20 px in Roboto, the face Android and the Linux runner draw.
 const BEFORE = {
   value: { right: 0, top: 12, baseline: 31 },
-  unit: { left: 2, top: 18, baseline: 31 },
+  unit: { left: 2, top: process.platform === "linux" ? 20 : 18, baseline: 31 },
 };
 
 test("the value and its unit stay where they were, on one baseline", async ({ page }) => {

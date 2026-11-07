@@ -15,13 +15,15 @@
   for (const meta of document.querySelectorAll('meta[name="theme-color"]'))
     meta.setAttribute(
       "content",
-      dark((meta.getAttribute("media") || "").includes("dark")) ? "#151412" : "#FAFAF7",
+      dark((meta.getAttribute("media") || "").includes("dark")) ? "#10151A" : "#F3F5F5",
     );
   // The apps' pages get their platform and text size from the first paint (the launch screen does).
   const c = globalThis.Capacitor;
   if (c?.isNativePlatform?.()) {
     const r = document.documentElement;
     r.dataset.platform = c.getPlatform();
+    // The Android web view does not pass the system's increased contrast on; its shell reports it.
+    if (globalThis.BelayText?.contrast?.()) r.dataset.contrast = "more";
     let k = globalThis.BelayText?.scale();
     r.style.font = "-apple-system-body";
     if (r.style.font) k = parseFloat(getComputedStyle(r).fontSize) / 17;

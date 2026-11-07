@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 export type RangeRow = { id: string; range: string; label: string; reference?: boolean };
 
 // Ranges as rows on the kit's group surface (one shared grid, so the range column is as wide as its
-// widest range): the reference range on soft green, the person's row marked by the "you" pill alone,
+// widest range): the reference range on the sunk tint, the person's row marked by the "you" pill alone,
 // in its own colours whatever row it sits in, and a sentence for screen readers. No judging label,
 // no alarm colour. With `heading`, the label shows above the list as a section label and names it.
 export function RangeList({

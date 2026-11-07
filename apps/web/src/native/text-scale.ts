@@ -1,7 +1,8 @@
 // The phone's text size while the app is open. theme-init.js sets --text-scale before the first
 // paint, reading it as readRatio does; this keeps it current on the iPhone, where the size can
 // change from Control Centre with no event to say so, and keeps room for a dock that grew with it.
-// Android restarts the activity on a font scale change, so its first reading stands.
+// Android restarts the activity on a font scale change, so its first reading stands. The contrast
+// the Android app reports is read again each time the app comes back to the foreground.
 
 // The iPhone's body text style at the system's default size.
 export const BODY_PX = 17;
@@ -31,6 +32,18 @@ export function watchTextScale(): void {
     }).observe(probe);
   }
   followDock();
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") readContrast();
+  });
+}
+
+// The Android web view does not pass the system's increased contrast on, so the shell reports it
+// (theme-init.js reads it at the first paint); a change in Settings shows when the app comes back.
+function readContrast(): void {
+  const shell = (globalThis as { BelayText?: { contrast?: () => boolean } }).BelayText;
+  if (shell?.contrast === undefined) return;
+  if (shell.contrast()) root.dataset.contrast = "more";
+  else delete root.dataset.contrast;
 }
 
 // The page keeps room for the dock at its default height (layout.tsx); what larger text adds to
