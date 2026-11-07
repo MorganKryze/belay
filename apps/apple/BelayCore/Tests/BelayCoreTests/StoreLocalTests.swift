@@ -202,6 +202,33 @@ enum Fixture {
     #expect(try store.outbox(limit: nil).count == queued)
   }
 
+  /// « Supprimer la séance » writes what the web writes: the session removed, queued in the same
+  /// write that forgets it as this device's open session.
+  @Test func aSessionRemovedWhileOpenIsNoLongerOpen() throws {
+    let w = Fixture.id()
+    _ = try store.startWorkout(Fixture.start(w), now: Fixture.t0)
+    _ = try store.recordSet(Fixture.set(w), at: Fixture.time(1), active: Fixture.active(w))
+    let removal = Change.workout(WorkoutChange(id: w, at: Fixture.time(2), edit: .removed(true)))
+    try store.recordChanges([removal], active: .clear)
+
+    #expect(openWorkout(try store.history().workouts) == nil)
+    #expect(try store.history().workouts.first?.removed == true)
+    #expect(try store.activeSession() == nil)
+    #expect(try store.outbox(limit: nil).last?.change == removal)
+  }
+
+  @Test func aRemovalWhoseQueueEntryFailsLeavesTheSessionOpen() throws {
+    let w = Fixture.id()
+    _ = try store.startWorkout(Fixture.start(w), now: Fixture.t0)
+    try Fixture.refuseInserts(into: "outbox", in: store)
+    #expect(throws: (any Error).self) {
+      try store.recordChanges(
+        [.workout(WorkoutChange(id: w, at: Fixture.time(2), edit: .removed(true)))], active: .clear)
+    }
+    #expect(openWorkout(try store.history().workouts)?.id == w)
+    #expect(try store.activeSession() == Fixture.active(w))
+  }
+
   @Test func theRestOfAnotherSessionIsLeftAlone() throws {
     let w = Fixture.id()
     _ = try store.startWorkout(Fixture.start(w), now: Fixture.t0)
