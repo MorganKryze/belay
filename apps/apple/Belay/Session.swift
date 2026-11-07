@@ -181,8 +181,12 @@ private struct SessionList: View {
                 .listRowBackground(Color.surface)
             }
         } else {
+            // A done row keeps its sunk tint, and the hairline between rows crosses the card in the
+            // line colour, so the done rows read as one thin table rather than grey bands.
             PlainSetRow(exercise: exercise, set: set)
                 .listRowBackground(set.done ? Color.sunk : Color.surface)
+                .listRowSeparatorTint(.line)
+                .alignmentGuide(.listRowSeparatorLeading) { _ in 0 }
         }
     }
 
