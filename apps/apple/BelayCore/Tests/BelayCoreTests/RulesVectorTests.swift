@@ -123,6 +123,27 @@ private struct RulesFile: Decodable, Sendable {
     var testDescription: String { name }
   }
 
+  struct SummaryCase: Decodable, Sendable, CustomTestStringConvertible {
+    struct Record: Decodable, Sendable, Equatable {
+      let exerciseId: String
+      let weightKg: Double
+      let reps: Int?
+      let seconds: Int?
+    }
+    struct Result: Decodable, Sendable {
+      let durationMs: Int64
+      let workSets: Int
+      let warmupSets: Int
+      let volumeKg: Double
+      let records: [Record]
+    }
+    let name: String
+    let history: String
+    let workoutId: String
+    let result: Result
+    var testDescription: String { name }
+  }
+
   let bounds: Bounds
   let histories: [String: HistoryVector]
   let workOrder: [WorkOrderCase]
@@ -135,6 +156,7 @@ private struct RulesFile: Decodable, Sendable {
   let liveSets: [LiveSetsCase]
   let autoClose: [AutoCloseCase]
   let openWorkout: [OpenCase]
+  let summary: [SummaryCase]
 
   static func load() throws -> RulesFile { try BelayCoreTests.load("rules") }
 
@@ -290,6 +312,21 @@ struct RulesVectorTests {
       default: .keep
       }
     #expect(BelayCore.autoClose(c.workout, sets: c.sets, now: try date(c.now)) == expected)
+  }
+
+  @Test(arguments: try RulesFile.load().summary)
+  fileprivate func summary(_ c: RulesFile.SummaryCase) throws {
+    let history = try RulesFile.load().history(c.history)
+    let workout = try #require(history.workouts.first { $0.id == c.workoutId })
+    let totals = BelayCore.summary(workout, sets: BelayCore.liveSets(history), history: history)
+    #expect(totals.durationMs == c.result.durationMs)
+    #expect(totals.workSets == c.result.workSets)
+    #expect(totals.warmupSets == c.result.warmupSets)
+    #expect(totals.volumeKg == c.result.volumeKg)
+    #expect(
+      totals.records.map {
+        .init(exerciseId: $0.exerciseId, weightKg: $0.load.weightKg, reps: $0.load.reps, seconds: $0.load.seconds)
+      } == c.result.records)
   }
 
   @Test(arguments: try RulesFile.load().openWorkout)

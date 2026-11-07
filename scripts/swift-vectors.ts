@@ -33,6 +33,7 @@ import {
   restEndsAt,
   restSecAfter,
   sessionProgress,
+  summary,
   type Turn,
   turnKey,
   workOrder,
@@ -861,6 +862,66 @@ function rulesVectors() {
     };
   });
 
+  // Records against an earlier session: a tie, an estimate past 10 reps, a warm-up, a first
+  // time and a timed set. Made with ids of their own, so the cases above keep theirs.
+  const own = (n: number) => seedId(0x3000 + n);
+  const endedOne = (n: number, startedAt: string, endedAt: string | null): Workout =>
+    ({
+      id: own(n),
+      sessionCode: "A",
+      plan: [...START_A],
+      startedAt,
+      endedAt,
+      note: null,
+      exerciseNotes: {},
+      removed: false,
+    }) as Workout;
+  const at_ = (w: Workout, n: number, patch: Partial<WorkoutSet>): WorkoutSet => ({
+    id: own(0x100 + n),
+    workoutId: w.id,
+    slotIndex: 0,
+    position: workPosition(0),
+    exerciseId: BENCH,
+    warmup: false,
+    weightKg: 80,
+    reps: 8,
+    rir: 1,
+    doneAt: w.startedAt,
+    removed: false,
+    ...patch,
+  });
+  const before = endedOne(1, "2026-09-01T17:00:00.000Z", "2026-09-01T18:00:00.000Z");
+  const tie = endedOne(2, "2026-09-08T17:00:00.000Z", "2026-09-08T18:10:30.250Z");
+  const better = endedOne(3, "2026-09-15T17:00:00.000Z", "2026-09-15T17:58:00.000Z");
+  const later = endedOne(4, "2026-09-22T17:00:00.000Z", null);
+  const records: History = {
+    workouts: [before, tie, better, later],
+    sets: [
+      at_(before, 1, {}),
+      at_(before, 2, { exerciseId: HANG, slotIndex: 6, reps: null, seconds: 30, weightKg: 0 }),
+      at_(before, 3, { exerciseId: "ds:0405", slotIndex: 1, weightKg: 50, reps: 12 }),
+      at_(tie, 1, {}),
+      at_(tie, 2, { position: 0, warmup: true, weightKg: 100, reps: 3 }),
+      at_(tie, 3, { exerciseId: "ds:0739", slotIndex: 2, weightKg: 20, reps: 10 }),
+      at_(better, 1, { weightKg: 82.5, reps: 8 }),
+      at_(better, 2, { position: workPosition(1), weightKg: 70, reps: 12 }),
+      at_(better, 3, { exerciseId: HANG, slotIndex: 6, reps: null, seconds: 35, weightKg: 5 }),
+      at_(better, 4, { exerciseId: "ds:0405", slotIndex: 1, weightKg: 52.5, reps: 10 }),
+      at_(better, 5, { position: workPosition(2), weightKg: 85, reps: 8, removed: true }),
+      at_(later, 1, { weightKg: 90, reps: 1 }),
+      at_(later, 2, { position: workPosition(1), weightKg: 0, reps: 8 }),
+    ],
+  };
+  histories.push(["records against earlier sessions", records]);
+  const summaryCases = histories.flatMap(([name, h]) =>
+    h.workouts.map((w, i) => ({
+      name: `${name}: session ${i + 1}`,
+      history: name,
+      workoutId: w.id,
+      result: summary(w, liveSets(h), h),
+    })),
+  );
+
   return {
     bounds: { forgottenMs: FORGOTTEN_MS, maxRotation: MAX_ROTATION },
     histories: Object.fromEntries(histories.map(([name, h]) => [name, asHistory(h)])),
@@ -874,6 +935,7 @@ function rulesVectors() {
     liveSets: liveSetsCases,
     autoClose: autoCloseCases,
     openWorkout: openCases,
+    summary: summaryCases,
   };
 }
 
