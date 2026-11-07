@@ -81,9 +81,8 @@ private struct SessionList: View {
     @Environment(\.dynamicTypeSize) private var type
     @Environment(\.scenePhase) private var scenePhase
     @State private var drafts: [String: Draft] = [:]
-    /// The next set ticked, waiting for its RIR.
-    @State private var armed: String?
-    @State private var rir = 0
+    /// The RIR chosen for a set before its tick; the plan's low target until then.
+    @State private var rirs: [String: Int] = [:]
     /// Counts the sets this screen recorded: one haptic each, once the write returned.
     @State private var recorded = 0
     @Binding var askFinish: Bool
@@ -176,8 +175,8 @@ private struct SessionList: View {
             )
             .listRowBackground(Color.surface)
             .listRowSeparator(.hidden, edges: .bottom)
-            if armed == set.id {
-                RIRRow(rir: $rir, confirm: { record(exercise, set, rir: rir) })
+            if !exercise.timed {
+                RIRRow(rir: rir(exercise, set))
                     .listRowBackground(Color.surface)
             }
             if let resting {
@@ -203,6 +202,12 @@ private struct SessionList: View {
             set: { drafts[set.id] = $0 })
     }
 
+    private func rir(_ exercise: CoverExercise, _ set: CoverSet) -> Binding<Int> {
+        Binding(
+            get: { rirs[set.id] ?? set.rir ?? exercise.rirTarget.first ?? 0 },
+            set: { rirs[set.id] = $0 })
+    }
+
     /// « Repos · série 2 ensuite », or the next exercise's name when the set up next is another's.
     private func restLabel(after exercise: CoverExercise, _ set: CoverSet) -> String {
         guard let next = nextSet else { return String(localized: "Repos") }
@@ -224,17 +229,11 @@ private struct SessionList: View {
 
     // MARK: Tick
 
-    /// A set in repetitions asks for its RIR before it is recorded; a timed set has none.
+    /// One tap records the set with the RIR shown under it; a timed set has none.
     private func tick(_ exercise: CoverExercise, _ set: CoverSet) {
         typing = nil
-        if exercise.timed { return record(exercise, set, rir: nil) }
-        if armed == set.id { return record(exercise, set, rir: rir) }
-        rir = exercise.rirTarget.first ?? 0
-        armed = set.id
-    }
-
-    private func record(_ exercise: CoverExercise, _ set: CoverSet, rir: Int?) {
         let typed = draft(set).wrappedValue
+        let rir = exercise.timed ? nil : rir(exercise, set).wrappedValue
         guard let kg = SetText.parseKg(typed.kg), let count = Int(typed.count) else {
             failed = "Indique la charge et le nombre avant de valider."
             return
@@ -247,8 +246,8 @@ private struct SessionList: View {
             return
         }
         // Only now, with the set stored: the row turns done and the hand feels it once.
-        armed = nil
         drafts[set.id] = nil
+        rirs[set.id] = nil
         recorded += 1
         AccessibilityNotification.Announcement(String(localized: "Série notée.")).post()
     }
@@ -259,15 +258,23 @@ private struct SessionList: View {
     @ViewBuilder private var foot: some View {
         FootBar {
             if let next = nextSet {
-                let title: LocalizedStringKey =
-                    armed == next.set.id ? "Noter la série \(next.set.number)" : "Valider la série \(next.set.number)"
-                PrimaryButton(title: title, place: .foot) { tick(next.exercise, next.set) }
+                PrimaryButton(title: footTitle(next.exercise, next.set), place: .foot) { tick(next.exercise, next.set) }
                     .accessibilityIdentifier("foot")
             } else {
                 PrimaryButton(title: "Terminer la séance", place: .foot) { askFinish = true }
                     .accessibilityIdentifier("foot")
             }
         }
+    }
+
+    /// « Valider la série 3 · 60 kg × 8 »: what the tap logs. At the largest sizes the row above
+    /// already holds the values, so the foot keeps the set alone.
+    private func footTitle(_ exercise: CoverExercise, _ set: CoverSet) -> LocalizedStringKey {
+        let typed = draft(set).wrappedValue
+        guard !type.isAccessibilitySize, let kg = SetText.parseKg(typed.kg), let count = Int(typed.count) else {
+            return "Valider la série \(set.number)"
+        }
+        return "Valider la série \(set.number) · \(SetText.load(kg, count, timed: exercise.timed))"
     }
 
     @ToolbarContentBuilder private var toolbar: some ToolbarContent {
@@ -398,8 +405,10 @@ private struct NextSetRow: View {
         label: LocalizedStringKey
     ) -> some View {
         VStack(spacing: 0) {
-            TextField(label, text: text)
+            // A dash while empty: the field's name is for VoiceOver, not drawn in the box.
+            TextField(text: text, prompt: Text(verbatim: "–")) { Text(label) }
                 .labelsHidden()
+                .accessibilityLabel(Text(label))
                 .keyboardType(keyboard)
                 .multilineTextAlignment(.center)
                 .font(.displayLoad)
@@ -422,10 +431,9 @@ private struct NextSetRow: View {
     }
 }
 
-/// Five segments, one word each, then the button that records the set with the RIR chosen.
+/// Five segments, one word each, under the next set: its tick records the one chosen.
 private struct RIRRow: View {
     @Binding var rir: Int
-    let confirm: () -> Void
     @ScaledMetric(relativeTo: .subheadline) private var labelWidth: CGFloat = 56
     @Environment(\.dynamicTypeSize) private var type
 
@@ -445,40 +453,18 @@ private struct RIRRow: View {
         .pickerStyle(.segmented)
         .labelsHidden()
         .controlSize(.large)
-    }
-
-    private var button: some View {
-        Button(action: confirm) {
-            Text("Noter")
-                .font(.subheadline.weight(.semibold))
-                .frame(minHeight: 44)
-        }
-        .buttonStyle(.bordered)
-        .buttonBorderShape(.capsule)
-        .tint(.muted)
-        .foregroundStyle(.ink)
-        .accessibilityLabel("Noter la série avec ce RIR")
-        .accessibilityIdentifier("rir-confirm")
+        .sensoryFeedback(.selection, trigger: rir)
     }
 
     var body: some View {
         Group {
             if type.isAccessibilitySize {
                 // The label moves above, so every segment keeps its 44 points.
-                VStack(alignment: .leading, spacing: 8) {
-                    label
-                    picker
-                    button
-                }
+                VStack(alignment: .leading, spacing: 6) { label; picker }
             } else {
-                // Beside the picker, the button left each segment 39 points on the narrowest
-                // phone; under it, the five share the row past 44.
-                VStack(alignment: .trailing, spacing: 8) {
-                    HStack(spacing: 8) {
-                        label.frame(width: labelWidth, alignment: .leading)
-                        picker
-                    }
-                    button.fixedSize()
+                HStack(spacing: 8) {
+                    label.frame(width: labelWidth, alignment: .leading)
+                    picker
                 }
             }
         }
@@ -573,10 +559,18 @@ enum SetText {
     /// « 62,5 kg × 8, 8, 7, 6 », the groups of equal loads one after the other.
     static func lastTime(_ exercise: CoverExercise) -> String {
         exercise.lastTime.map { group in
-            let counts = group.counts.map(String.init).joined(separator: ", ")
-            return exercise.timed && group.weightKg == 0
-                ? "\(counts)\u{202F}s" : "\(kg(group.weightKg))\u{202F}kg × \(counts)\(exercise.timed ? "\u{202F}s" : "")"
+            load(group.weightKg, group.counts.map(String.init).joined(separator: ", "), timed: exercise.timed)
         }.joined(separator: " · ")
+    }
+
+    /// « 60 kg × 8 », or « 30 s » for a hold with no added load.
+    static func load(_ weightKg: Double, _ counts: some StringProtocol, timed: Bool) -> String {
+        if timed && weightKg == 0 { return "\(counts)\u{202F}s" }
+        return "\(kg(weightKg))\u{202F}kg × \(counts)\(timed ? "\u{202F}s" : "")"
+    }
+
+    static func load(_ weightKg: Double, _ count: Int, timed: Bool) -> String {
+        load(weightKg, String(count), timed: timed)
     }
 
     /// « Barbell bench press, série 1 sur 4, 62,5 kg, 8 répétitions, faite ».

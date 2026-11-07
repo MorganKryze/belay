@@ -485,36 +485,6 @@
         }
       }
     },
-    "Noter": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Log"
-          }
-        }
-      }
-    },
-    "Noter la série %lld": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Log set %lld"
-          }
-        }
-      }
-    },
-    "Noter la série avec ce RIR": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Log the set with this RIR"
-          }
-        }
-      }
-    },
     "RIR": {
       "localizations": {
         "en": {
@@ -961,6 +931,16 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "Valider la série %lld · %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tick set %1$lld · %2$@"
           }
         }
       }

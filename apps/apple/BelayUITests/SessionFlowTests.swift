@@ -5,9 +5,12 @@ import XCTest
 @MainActor
 final class SessionFlowTests: XCTestCase {
     /// `history` opens the store described above, `keep` the one the previous launch left.
-    private func launch(_ fixture: String) -> XCUIApplication {
+    private func launch(_ fixture: String, large: Bool = false) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = ["-AppleLanguages", "(fr)", "-AppleLocale", "fr_FR", "-BelayFixture", fixture]
+        if large {
+            app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXL"]
+        }
         app.launch()
         return app
     }
@@ -29,12 +32,9 @@ final class SessionFlowTests: XCTestCase {
         element(app, "fixture-queue").value as? String
     }
 
-    /// The next set, then its RIR: two taps record what was prefilled.
+    /// One tap on the next set's tick records what was prefilled, with the RIR already chosen.
     private func tickFirstSet(_ app: XCUIApplication) {
         app.buttons["tick"].tap()
-        let confirm = app.buttons["rir-confirm"]
-        XCTAssertTrue(confirm.waitForExistence(timeout: 3), "the tick asks for the RIR")
-        confirm.tap()
     }
 
     /// Seconds on a « m:ss » clock.
@@ -43,14 +43,19 @@ final class SessionFlowTests: XCTestCase {
         return parts.count == 2 ? parts[0] * 60 + parts[1] : nil
     }
 
-    func testTwoTapsLogPrefilled() {
+    func testOneTapLogsPrefilled() {
         let app = launch("history")
         openCover(app)
         XCTAssertEqual(app.textFields["load-kg"].value as? String, "62,5", "last time's load")
         XCTAssertEqual(app.textFields["load-count"].value as? String, "8", "and last time's count")
         XCTAssertEqual(queuedSets(app), "0", "nothing is queued for this session yet")
+        // The RIR is under the next set before any tap, the plan's low target chosen.
+        let picker = app.segmentedControls.firstMatch
+        XCTAssertTrue(picker.exists, "the RIR is shown under the next set")
+        XCTAssertTrue(picker.buttons["1"].isSelected, "the plan's RIR 1–2 starts on 1")
 
-        tickFirstSet(app)
+        app.buttons["tick"].tap()
+        XCTAssertFalse(app.buttons["rir-confirm"].exists, "no second step")
         let row = element(app, "set-0-3")
         XCTAssertTrue(row.waitForExistence(timeout: 3))
         XCTAssertTrue(row.label.contains("faite"), "the row shows done: \(row.label)")
@@ -121,9 +126,8 @@ final class SessionFlowTests: XCTestCase {
     func testRIRSegmentsAreTargets() {
         let app = launch("history")
         openCover(app)
-        app.buttons["tick"].tap()
         let picker = app.segmentedControls.firstMatch
-        XCTAssertTrue(picker.waitForExistence(timeout: 3), "the tick asks for the RIR")
+        XCTAssertTrue(picker.waitForExistence(timeout: 3), "the RIR is under the next set")
         let segments = picker.buttons.allElementsBoundByIndex
         XCTAssertEqual(segments.count, 5)
         for segment in segments {
@@ -200,5 +204,47 @@ final class SessionFlowTests: XCTestCase {
         for part in ["Barbell bench press", "série 1 sur 4", "62,5 kg", "8 répétitions", "faite"] {
             XCTAssertTrue(done.label.contains(part), "a done set reads \(part): \(done.label)")
         }
+    }
+
+    /// The foot says what it logs, and logs it in the one tap the row's tick takes.
+    func testFootSaysWhatItLogs() {
+        let app = launch("history")
+        openCover(app)
+        let foot = app.buttons["foot"]
+        XCTAssertEqual(foot.label, "Valider la série 1 · 62,5\u{202F}kg × 8")
+        foot.tap()
+        let row = element(app, "set-0-3")
+        XCTAssertTrue(row.label.contains("faite"), "one tap logs the set: \(row.label)")
+        XCTAssertEqual(queuedSets(app), "1", "stored and queued once")
+        XCTAssertEqual(foot.label, "Valider la série 2 · 62,5\u{202F}kg × 8", "the foot moves to the next set")
+    }
+
+    /// At the largest sizes the row above holds the values; the foot keeps the set alone.
+    func testFootLeavesValuesOutAtAccessibilitySizes() {
+        let app = launch("history", large: true)
+        openCover(app)
+        XCTAssertEqual(app.buttons["foot"].label, "Valider la série 1")
+    }
+
+    /// A set with no history shows a dash in its empty load, never the field's spoken label.
+    func testEmptyLoadShowsADash() {
+        let app = launch("running")
+        openCover(app)
+        let kg = app.textFields["load-kg"]
+        XCTAssertEqual(kg.placeholderValue, "–", "a dash, not « Charge de la série 1, kg »")
+        XCTAssertEqual(kg.label, "Charge de la série 1, kg", "VoiceOver still hears what the field is")
+        XCTAssertFalse((app.textFields["load-count"].value as? String ?? "").isEmpty, "the count is prefilled")
+    }
+
+    /// The next set and its RIR take the prototype's 159 pt from « Série 1 sur 4 » to the hairline
+    /// of the row after, whose own label sits 13 pt lower in its 44 pt row.
+    func testNextSetBlockKeepsItsHeight() {
+        let app = launch("history")
+        openCover(app)
+        let next = element(app, "set-0-3").frame
+        let rir = app.segmentedControls.firstMatch.frame
+        let after = element(app, "set-0-4").frame
+        XCTAssertTrue(next.maxY < rir.minY && rir.maxY < after.minY, "the RIR sits under the next set: \(next) \(rir) \(after)")
+        XCTAssertLessThanOrEqual(after.minY - next.minY, 175, "next set \(next), the one after \(after)")
     }
 }
