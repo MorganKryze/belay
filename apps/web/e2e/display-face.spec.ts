@@ -35,8 +35,32 @@ test.describe("which face", () => {
       ...(await family(page, "[data-slot=trend-figure] > span:not(.sr-only)")),
     ];
     expect(system.length).toBeGreaterThan(3);
-    // Chromium reports BlinkMacSystemFont as its system-ui alias.
-    for (const f of system) expect(f).toMatch(/^-apple-system, .*Roboto, sans-serif$/);
+    // Roboto is named ahead of the generic system-ui: a Linux machine with Roboto reads the
+    // face Android does, not whatever its font configuration calls the system face. Chromium on
+    // a Mac reports BlinkMacSystemFont as "system-ui".
+    for (const f of system)
+      expect(f).toMatch(
+        /^-apple-system, (BlinkMacSystemFont|"system-ui"), "Segoe UI", Roboto, system-ui, sans-serif$/,
+      );
+  });
+
+  test("on Linux the system face is Roboto, as on Android", async ({ page }) => {
+    test.skip(process.platform !== "linux", "Apple and Windows machines draw their own face");
+    await fakeServer(page, { rows: WEEKS });
+    await page.goto("/");
+    const body = page.locator("main h2").first();
+    await expect(body).toBeVisible();
+    await settled(page);
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send("DOM.enable");
+    await cdp.send("CSS.enable");
+    const { root } = await cdp.send("DOM.getDocument");
+    const { nodeId } = await cdp.send("DOM.querySelector", {
+      nodeId: root.nodeId,
+      selector: "main h2",
+    });
+    const { fonts } = await cdp.send("CSS.getPlatformFontsForNode", { nodeId });
+    expect(fonts.map((f) => f.familyName)).toEqual(["Roboto"]);
   });
 
   test("the summary's figures and title are in the display face, their units are not", async ({

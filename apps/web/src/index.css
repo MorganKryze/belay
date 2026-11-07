@@ -27,8 +27,9 @@
 
 @theme inline {
   --font-heading: var(--font-sans);
-  /* The system's own face: SF Pro on Apple devices, Roboto on Android, Segoe UI on Windows. */
-  --font-sans: -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", Roboto, sans-serif;
+  /* The system's own face: SF Pro on Apple devices, Segoe UI on Windows, Roboto on Android. Roboto
+     comes before the generic system-ui, so a Linux machine that has it draws the Android face. */
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
   /* Large titles and big figures (type.css); a character the cut lacks falls back to the above. */
   --font-display: "Archivo Belay", var(--font-sans);
   --color-ring: var(--ring);
