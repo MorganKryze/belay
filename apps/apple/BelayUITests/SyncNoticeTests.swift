@@ -55,7 +55,7 @@ final class SyncNoticeTests: XCTestCase {
         XCTAssertTrue(line.exists, "the line stays through the sync the tick runs")
         XCTAssertEqual(app.staticTexts.matching(NSPredicate(format: "label == %@", offline)).count, 1, "still once")
 
-        app.buttons["dumbbell"].tap()
+        app.tabBars.firstMatch.buttons["Séances"].tap()
         XCTAssertTrue(app.staticTexts["Cet écran est sur le web pour l’instant."].waitForExistence(timeout: 5))
         XCTAssertFalse(element(app, "sync-notice").exists, "only Accueil says it")
     }
