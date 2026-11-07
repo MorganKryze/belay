@@ -200,14 +200,22 @@ struct EntryRow: View {
 /// Avatar: the way to Réglages. The phone keeps no name for the person yet, so it shows a figure
 /// rather than an initial; the profile comes with Réglages in full.
 struct Avatar: View {
+    /// The person's initial; the person symbol before the instance has named them.
+    var letter: String?
     var size: CGFloat = 36
     @ScaledMetric(relativeTo: .body) private var scale: CGFloat = 1
 
     var body: some View {
-        Image(systemName: "person.fill")
-            .font(.headline)
-            .foregroundStyle(.ink)
-            .frame(width: size * scale, height: size * scale)
-            .background(Color.track, in: .circle)
+        Group {
+            if let letter {
+                Text(letter)
+            } else {
+                Image(systemName: "person.fill")
+            }
+        }
+        .font(.headline)
+        .foregroundStyle(.ink)
+        .frame(width: size * scale, height: size * scale)
+        .background(Color.track, in: .circle)
     }
 }

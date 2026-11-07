@@ -192,12 +192,12 @@
         }
       }
     },
-    "Ta session a expiré.": {
+    "Ta connexion a expiré.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Your session has expired."
+            "value": "Your sign-in has expired."
           }
         }
       }

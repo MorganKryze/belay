@@ -35,7 +35,7 @@ enum Fixture {
             }
             defaults.set(origin, forKey: StoredInstance.key)
             try session.keep(origin: origin, token: "fixture-token")
-            session.remember(userId: userId)
+            session.remember(userId: userId, displayName: "Ada")
         } catch {
             preconditionFailure("the fixture did not set up: \(error)")
         }

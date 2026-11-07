@@ -31,6 +31,8 @@ final class AccountModel {
     /// What the screen says of the open store's sync: a run under way keeps the last line, so it
     /// never blinks; idle while signed out.
     private(set) var syncStatus: SyncStatus = .idle
+    /// How the instance names the person, for Accueil's greeting; nil before it has said so.
+    private(set) var displayName: String?
 
     /// Whom the open store and its sync were opened for. Another person, instance or token closes
     /// both first, so one account's queue never goes out under another's token.
@@ -64,6 +66,7 @@ final class AccountModel {
         if let instance = storedInstance, let token = session.token(origin: instance.origin.absoluteString),
            let userId = session.userId {
             state = .signedIn(Account(userId: userId, instance: instance, token: token))
+            displayName = session.displayName
         }
         // An assignment in init does not run didSet.
         followState()
@@ -165,7 +168,7 @@ final class AccountModel {
         do {
             try await SignInFlow.replace(account.token, with: renewal, at: instance, using: http) { [self] in
                 try session.keep(origin: instance.origin.absoluteString, token: renewal.token)
-                session.remember(userId: renewal.me.id)
+                remember(renewal.me)
                 // Another person signing in here gets their own store: the new account differs, so
                 // the store and its sync reopen for it.
                 state = .signedIn(Account(userId: renewal.me.id, instance: instance, token: renewal.token))
@@ -232,11 +235,16 @@ final class AccountModel {
         await open(token: token, at: instance)
     }
 
+    private func remember(_ me: Me) {
+        session.remember(userId: me.id, displayName: me.displayName)
+        displayName = me.displayName
+    }
+
     /// Signed in once the instance names who `token` belongs to; a token it refuses is dropped.
     private func open(token: String, at instance: Instance) async {
         switch await me(token: token, at: instance, using: http) {
         case .success(let me):
-            session.remember(userId: me.id)
+            remember(me)
             state = .signedIn(Account(userId: me.id, instance: instance, token: token))
         case .failure(.unavailable):
             // The token stays: the next try, or the next launch, may reach the instance.
@@ -259,6 +267,7 @@ final class AccountModel {
     /// Drops the token and the id; the instance stays, so the field shows it at the next sign-in.
     /// A token the Keychain fails to drop is still never restored: the sign-out is marked first.
     private func forget() {
+        displayName = nil
         do {
             try session.drop()
         } catch {

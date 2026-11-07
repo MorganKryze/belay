@@ -1554,6 +1554,624 @@
     "no history": {
       "workouts": [],
       "sets": []
+    },
+    "records against earlier sessions": {
+      "workouts": [
+        {
+          "plan": [
+            {
+              "exerciseId": "ds:0025",
+              "sets": 4,
+              "repRange": [
+                6,
+                8
+              ],
+              "rirTarget": [
+                1,
+                2
+              ],
+              "restSec": 150,
+              "warmupSets": 2,
+              "isMain": true,
+              "groupKey": null
+            },
+            {
+              "exerciseId": "ds:0405",
+              "sets": 3,
+              "repRange": [
+                8,
+                10
+              ],
+              "rirTarget": [
+                1,
+                2
+              ],
+              "restSec": 120,
+              "warmupSets": 1,
+              "isMain": true,
+              "groupKey": null
+            },
+            {
+              "exerciseId": "ds:0739",
+              "sets": 3,
+              "repRange": [
+                10,
+                12
+              ],
+              "rirTarget": [
+                1,
+                2
+              ],
+              "restSec": 120,
+              "warmupSets": 2,
+              "isMain": true,
+              "groupKey": null
+            },
+            {
+              "exerciseId": "ds:0334",
+              "sets": 3,
+              "repRange": [
+                12,
+                20
+              ],
+              "rirTarget": [
+                0,
+                1
+              ],
+              "restSec": 0,
+              "warmupSets": 0,
+              "isMain": false,
+              "groupKey": "4"
+            },
+            {
+              "exerciseId": "ds:0201",
+              "sets": 3,
+              "repRange": [
+                10,
+                15
+              ],
+              "rirTarget": [
+                0,
+                1
+              ],
+              "restSec": 0,
+              "warmupSets": 0,
+              "isMain": false,
+              "groupKey": "4"
+            },
+            {
+              "exerciseId": "ds:0605",
+              "sets": 3,
+              "repRange": [
+                10,
+                15
+              ],
+              "rirTarget": [
+                0,
+                1
+              ],
+              "restSec": 75,
+              "warmupSets": 0,
+              "isMain": false,
+              "groupKey": "4"
+            }
+          ],
+          "note": null,
+          "exerciseNotes": {},
+          "id": "00000000-0000-7000-8000-000000003001",
+          "sessionCode": "A",
+          "startedAt": "2026-09-01T17:00:00.000Z",
+          "endedAt": "2026-09-01T18:00:00.000Z",
+          "removed": false
+        },
+        {
+          "plan": [
+            {
+              "exerciseId": "ds:0025",
+              "sets": 4,
+              "repRange": [
+                6,
+                8
+              ],
+              "rirTarget": [
+                1,
+                2
+              ],
+              "restSec": 150,
+              "warmupSets": 2,
+              "isMain": true,
+              "groupKey": null
+            },
+            {
+              "exerciseId": "ds:0405",
+              "sets": 3,
+              "repRange": [
+                8,
+                10
+              ],
+              "rirTarget": [
+                1,
+                2
+              ],
+              "restSec": 120,
+              "warmupSets": 1,
+              "isMain": true,
+              "groupKey": null
+            },
+            {
+              "exerciseId": "ds:0739",
+              "sets": 3,
+              "repRange": [
+                10,
+                12
+              ],
+              "rirTarget": [
+                1,
+                2
+              ],
+              "restSec": 120,
+              "warmupSets": 2,
+              "isMain": true,
+              "groupKey": null
+            },
+            {
+              "exerciseId": "ds:0334",
+              "sets": 3,
+              "repRange": [
+                12,
+                20
+              ],
+              "rirTarget": [
+                0,
+                1
+              ],
+              "restSec": 0,
+              "warmupSets": 0,
+              "isMain": false,
+              "groupKey": "4"
+            },
+            {
+              "exerciseId": "ds:0201",
+              "sets": 3,
+              "repRange": [
+                10,
+                15
+              ],
+              "rirTarget": [
+                0,
+                1
+              ],
+              "restSec": 0,
+              "warmupSets": 0,
+              "isMain": false,
+              "groupKey": "4"
+            },
+            {
+              "exerciseId": "ds:0605",
+              "sets": 3,
+              "repRange": [
+                10,
+                15
+              ],
+              "rirTarget": [
+                0,
+                1
+              ],
+              "restSec": 75,
+              "warmupSets": 0,
+              "isMain": false,
+              "groupKey": "4"
+            }
+          ],
+          "note": null,
+          "exerciseNotes": {},
+          "id": "00000000-0000-7000-8000-000000003002",
+          "sessionCode": "A",
+          "startedAt": "2026-09-08T17:00:00.000Z",
+          "endedAt": "2026-09-08T18:10:30.250Z",
+          "removed": false
+        },
+        {
+          "plan": [
+            {
+              "exerciseId": "ds:0025",
+              "sets": 4,
+              "repRange": [
+                6,
+                8
+              ],
+              "rirTarget": [
+                1,
+                2
+              ],
+              "restSec": 150,
+              "warmupSets": 2,
+              "isMain": true,
+              "groupKey": null
+            },
+            {
+              "exerciseId": "ds:0405",
+              "sets": 3,
+              "repRange": [
+                8,
+                10
+              ],
+              "rirTarget": [
+                1,
+                2
+              ],
+              "restSec": 120,
+              "warmupSets": 1,
+              "isMain": true,
+              "groupKey": null
+            },
+            {
+              "exerciseId": "ds:0739",
+              "sets": 3,
+              "repRange": [
+                10,
+                12
+              ],
+              "rirTarget": [
+                1,
+                2
+              ],
+              "restSec": 120,
+              "warmupSets": 2,
+              "isMain": true,
+              "groupKey": null
+            },
+            {
+              "exerciseId": "ds:0334",
+              "sets": 3,
+              "repRange": [
+                12,
+                20
+              ],
+              "rirTarget": [
+                0,
+                1
+              ],
+              "restSec": 0,
+              "warmupSets": 0,
+              "isMain": false,
+              "groupKey": "4"
+            },
+            {
+              "exerciseId": "ds:0201",
+              "sets": 3,
+              "repRange": [
+                10,
+                15
+              ],
+              "rirTarget": [
+                0,
+                1
+              ],
+              "restSec": 0,
+              "warmupSets": 0,
+              "isMain": false,
+              "groupKey": "4"
+            },
+            {
+              "exerciseId": "ds:0605",
+              "sets": 3,
+              "repRange": [
+                10,
+                15
+              ],
+              "rirTarget": [
+                0,
+                1
+              ],
+              "restSec": 75,
+              "warmupSets": 0,
+              "isMain": false,
+              "groupKey": "4"
+            }
+          ],
+          "note": null,
+          "exerciseNotes": {},
+          "id": "00000000-0000-7000-8000-000000003003",
+          "sessionCode": "A",
+          "startedAt": "2026-09-15T17:00:00.000Z",
+          "endedAt": "2026-09-15T17:58:00.000Z",
+          "removed": false
+        },
+        {
+          "plan": [
+            {
+              "exerciseId": "ds:0025",
+              "sets": 4,
+              "repRange": [
+                6,
+                8
+              ],
+              "rirTarget": [
+                1,
+                2
+              ],
+              "restSec": 150,
+              "warmupSets": 2,
+              "isMain": true,
+              "groupKey": null
+            },
+            {
+              "exerciseId": "ds:0405",
+              "sets": 3,
+              "repRange": [
+                8,
+                10
+              ],
+              "rirTarget": [
+                1,
+                2
+              ],
+              "restSec": 120,
+              "warmupSets": 1,
+              "isMain": true,
+              "groupKey": null
+            },
+            {
+              "exerciseId": "ds:0739",
+              "sets": 3,
+              "repRange": [
+                10,
+                12
+              ],
+              "rirTarget": [
+                1,
+                2
+              ],
+              "restSec": 120,
+              "warmupSets": 2,
+              "isMain": true,
+              "groupKey": null
+            },
+            {
+              "exerciseId": "ds:0334",
+              "sets": 3,
+              "repRange": [
+                12,
+                20
+              ],
+              "rirTarget": [
+                0,
+                1
+              ],
+              "restSec": 0,
+              "warmupSets": 0,
+              "isMain": false,
+              "groupKey": "4"
+            },
+            {
+              "exerciseId": "ds:0201",
+              "sets": 3,
+              "repRange": [
+                10,
+                15
+              ],
+              "rirTarget": [
+                0,
+                1
+              ],
+              "restSec": 0,
+              "warmupSets": 0,
+              "isMain": false,
+              "groupKey": "4"
+            },
+            {
+              "exerciseId": "ds:0605",
+              "sets": 3,
+              "repRange": [
+                10,
+                15
+              ],
+              "rirTarget": [
+                0,
+                1
+              ],
+              "restSec": 75,
+              "warmupSets": 0,
+              "isMain": false,
+              "groupKey": "4"
+            }
+          ],
+          "note": null,
+          "exerciseNotes": {},
+          "id": "00000000-0000-7000-8000-000000003004",
+          "sessionCode": "A",
+          "startedAt": "2026-09-22T17:00:00.000Z",
+          "endedAt": null,
+          "removed": false
+        }
+      ],
+      "sets": [
+        {
+          "id": "00000000-0000-7000-8000-000000003101",
+          "workoutId": "00000000-0000-7000-8000-000000003001",
+          "slotIndex": 0,
+          "position": 3,
+          "exerciseId": "ds:0025",
+          "warmup": false,
+          "weightKg": 80,
+          "reps": 8,
+          "rir": 1,
+          "doneAt": "2026-09-01T17:00:00.000Z",
+          "removed": false,
+          "fieldsAt": "2026-09-01T17:00:00.000Z"
+        },
+        {
+          "id": "00000000-0000-7000-8000-000000003102",
+          "workoutId": "00000000-0000-7000-8000-000000003001",
+          "slotIndex": 6,
+          "position": 3,
+          "exerciseId": "belay:dead-hang",
+          "warmup": false,
+          "weightKg": 0,
+          "reps": null,
+          "rir": 1,
+          "doneAt": "2026-09-01T17:00:00.000Z",
+          "removed": false,
+          "seconds": 30,
+          "fieldsAt": "2026-09-01T17:00:00.000Z"
+        },
+        {
+          "id": "00000000-0000-7000-8000-000000003103",
+          "workoutId": "00000000-0000-7000-8000-000000003001",
+          "slotIndex": 1,
+          "position": 3,
+          "exerciseId": "ds:0405",
+          "warmup": false,
+          "weightKg": 50,
+          "reps": 12,
+          "rir": 1,
+          "doneAt": "2026-09-01T17:00:00.000Z",
+          "removed": false,
+          "fieldsAt": "2026-09-01T17:00:00.000Z"
+        },
+        {
+          "id": "00000000-0000-7000-8000-000000003101",
+          "workoutId": "00000000-0000-7000-8000-000000003002",
+          "slotIndex": 0,
+          "position": 3,
+          "exerciseId": "ds:0025",
+          "warmup": false,
+          "weightKg": 80,
+          "reps": 8,
+          "rir": 1,
+          "doneAt": "2026-09-08T17:00:00.000Z",
+          "removed": false,
+          "fieldsAt": "2026-09-08T17:00:00.000Z"
+        },
+        {
+          "id": "00000000-0000-7000-8000-000000003102",
+          "workoutId": "00000000-0000-7000-8000-000000003002",
+          "slotIndex": 0,
+          "position": 0,
+          "exerciseId": "ds:0025",
+          "warmup": true,
+          "weightKg": 100,
+          "reps": 3,
+          "rir": 1,
+          "doneAt": "2026-09-08T17:00:00.000Z",
+          "removed": false,
+          "fieldsAt": "2026-09-08T17:00:00.000Z"
+        },
+        {
+          "id": "00000000-0000-7000-8000-000000003103",
+          "workoutId": "00000000-0000-7000-8000-000000003002",
+          "slotIndex": 2,
+          "position": 3,
+          "exerciseId": "ds:0739",
+          "warmup": false,
+          "weightKg": 20,
+          "reps": 10,
+          "rir": 1,
+          "doneAt": "2026-09-08T17:00:00.000Z",
+          "removed": false,
+          "fieldsAt": "2026-09-08T17:00:00.000Z"
+        },
+        {
+          "id": "00000000-0000-7000-8000-000000003101",
+          "workoutId": "00000000-0000-7000-8000-000000003003",
+          "slotIndex": 0,
+          "position": 3,
+          "exerciseId": "ds:0025",
+          "warmup": false,
+          "weightKg": 82.5,
+          "reps": 8,
+          "rir": 1,
+          "doneAt": "2026-09-15T17:00:00.000Z",
+          "removed": false,
+          "fieldsAt": "2026-09-15T17:00:00.000Z"
+        },
+        {
+          "id": "00000000-0000-7000-8000-000000003102",
+          "workoutId": "00000000-0000-7000-8000-000000003003",
+          "slotIndex": 0,
+          "position": 4,
+          "exerciseId": "ds:0025",
+          "warmup": false,
+          "weightKg": 70,
+          "reps": 12,
+          "rir": 1,
+          "doneAt": "2026-09-15T17:00:00.000Z",
+          "removed": false,
+          "fieldsAt": "2026-09-15T17:00:00.000Z"
+        },
+        {
+          "id": "00000000-0000-7000-8000-000000003103",
+          "workoutId": "00000000-0000-7000-8000-000000003003",
+          "slotIndex": 6,
+          "position": 3,
+          "exerciseId": "belay:dead-hang",
+          "warmup": false,
+          "weightKg": 5,
+          "reps": null,
+          "rir": 1,
+          "doneAt": "2026-09-15T17:00:00.000Z",
+          "removed": false,
+          "seconds": 35,
+          "fieldsAt": "2026-09-15T17:00:00.000Z"
+        },
+        {
+          "id": "00000000-0000-7000-8000-000000003104",
+          "workoutId": "00000000-0000-7000-8000-000000003003",
+          "slotIndex": 1,
+          "position": 3,
+          "exerciseId": "ds:0405",
+          "warmup": false,
+          "weightKg": 52.5,
+          "reps": 10,
+          "rir": 1,
+          "doneAt": "2026-09-15T17:00:00.000Z",
+          "removed": false,
+          "fieldsAt": "2026-09-15T17:00:00.000Z"
+        },
+        {
+          "id": "00000000-0000-7000-8000-000000003105",
+          "workoutId": "00000000-0000-7000-8000-000000003003",
+          "slotIndex": 0,
+          "position": 5,
+          "exerciseId": "ds:0025",
+          "warmup": false,
+          "weightKg": 85,
+          "reps": 8,
+          "rir": 1,
+          "doneAt": "2026-09-15T17:00:00.000Z",
+          "removed": true,
+          "fieldsAt": "2026-09-15T17:00:00.000Z"
+        },
+        {
+          "id": "00000000-0000-7000-8000-000000003101",
+          "workoutId": "00000000-0000-7000-8000-000000003004",
+          "slotIndex": 0,
+          "position": 3,
+          "exerciseId": "ds:0025",
+          "warmup": false,
+          "weightKg": 90,
+          "reps": 1,
+          "rir": 1,
+          "doneAt": "2026-09-22T17:00:00.000Z",
+          "removed": false,
+          "fieldsAt": "2026-09-22T17:00:00.000Z"
+        },
+        {
+          "id": "00000000-0000-7000-8000-000000003102",
+          "workoutId": "00000000-0000-7000-8000-000000003004",
+          "slotIndex": 0,
+          "position": 4,
+          "exerciseId": "ds:0025",
+          "warmup": false,
+          "weightKg": 0,
+          "reps": 8,
+          "rir": 1,
+          "doneAt": "2026-09-22T17:00:00.000Z",
+          "removed": false,
+          "fieldsAt": "2026-09-22T17:00:00.000Z"
+        }
+      ]
     }
   },
   "workOrder": [
@@ -13478,6 +14096,198 @@
         "now": "2026-10-08T00:00:00.000Z"
       },
       "result": null
+    }
+  ],
+  "summary": [
+    {
+      "name": "a history: session 1",
+      "history": "a history",
+      "workoutId": "00000000-0000-7000-8000-000000001023",
+      "result": {
+        "durationMs": 435900000,
+        "workSets": 2,
+        "warmupSets": 0,
+        "volumeKg": 620,
+        "records": []
+      }
+    },
+    {
+      "name": "a history: session 2",
+      "history": "a history",
+      "workoutId": "00000000-0000-7000-8000-000000001024",
+      "result": {
+        "durationMs": 3900000,
+        "workSets": 6,
+        "warmupSets": 1,
+        "volumeKg": 2605,
+        "records": [
+          {
+            "exerciseId": "ds:0025",
+            "weightKg": 80,
+            "reps": 8,
+            "seconds": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "a history: session 3",
+      "history": "a history",
+      "workoutId": "00000000-0000-7000-8000-000000001025",
+      "result": {
+        "durationMs": 0,
+        "workSets": 1,
+        "warmupSets": 0,
+        "volumeKg": 425,
+        "records": []
+      }
+    },
+    {
+      "name": "a history: session 4",
+      "history": "a history",
+      "workoutId": "00000000-0000-7000-8000-000000001027",
+      "result": {
+        "durationMs": -82500000,
+        "workSets": 0,
+        "warmupSets": 0,
+        "volumeKg": 0,
+        "records": []
+      }
+    },
+    {
+      "name": "two sessions started at the same time: session 1",
+      "history": "two sessions started at the same time",
+      "workoutId": "00000000-0000-7000-8000-000000001023",
+      "result": {
+        "durationMs": 435900000,
+        "workSets": 2,
+        "warmupSets": 0,
+        "volumeKg": 620,
+        "records": []
+      }
+    },
+    {
+      "name": "two sessions started at the same time: session 2",
+      "history": "two sessions started at the same time",
+      "workoutId": "00000000-0000-7000-8000-000000001024",
+      "result": {
+        "durationMs": 3900000,
+        "workSets": 6,
+        "warmupSets": 1,
+        "volumeKg": 2605,
+        "records": [
+          {
+            "exerciseId": "ds:0025",
+            "weightKg": 80,
+            "reps": 8,
+            "seconds": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "two sessions started at the same time: session 3",
+      "history": "two sessions started at the same time",
+      "workoutId": "00000000-0000-7000-8000-000000001026",
+      "result": {
+        "durationMs": 3900000,
+        "workSets": 1,
+        "warmupSets": 0,
+        "volumeKg": 495,
+        "records": [
+          {
+            "exerciseId": "ds:0025",
+            "weightKg": 82.5,
+            "reps": 6,
+            "seconds": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "the last session removed: session 1",
+      "history": "the last session removed",
+      "workoutId": "00000000-0000-7000-8000-000000001023",
+      "result": {
+        "durationMs": 435900000,
+        "workSets": 2,
+        "warmupSets": 0,
+        "volumeKg": 620,
+        "records": []
+      }
+    },
+    {
+      "name": "the last session removed: session 2",
+      "history": "the last session removed",
+      "workoutId": "00000000-0000-7000-8000-000000001024",
+      "result": {
+        "durationMs": 3900000,
+        "workSets": 0,
+        "warmupSets": 0,
+        "volumeKg": 0,
+        "records": []
+      }
+    },
+    {
+      "name": "records against earlier sessions: session 1",
+      "history": "records against earlier sessions",
+      "workoutId": "00000000-0000-7000-8000-000000003001",
+      "result": {
+        "durationMs": 3600000,
+        "workSets": 3,
+        "warmupSets": 0,
+        "volumeKg": 1240,
+        "records": []
+      }
+    },
+    {
+      "name": "records against earlier sessions: session 2",
+      "history": "records against earlier sessions",
+      "workoutId": "00000000-0000-7000-8000-000000003002",
+      "result": {
+        "durationMs": 4230250,
+        "workSets": 2,
+        "warmupSets": 1,
+        "volumeKg": 840,
+        "records": []
+      }
+    },
+    {
+      "name": "records against earlier sessions: session 3",
+      "history": "records against earlier sessions",
+      "workoutId": "00000000-0000-7000-8000-000000003003",
+      "result": {
+        "durationMs": 3480000,
+        "workSets": 4,
+        "warmupSets": 0,
+        "volumeKg": 2025,
+        "records": [
+          {
+            "exerciseId": "ds:0025",
+            "weightKg": 82.5,
+            "reps": 8,
+            "seconds": null
+          },
+          {
+            "exerciseId": "belay:dead-hang",
+            "weightKg": 5,
+            "reps": null,
+            "seconds": 35
+          }
+        ]
+      }
+    },
+    {
+      "name": "records against earlier sessions: session 4",
+      "history": "records against earlier sessions",
+      "workoutId": "00000000-0000-7000-8000-000000003004",
+      "result": {
+        "durationMs": 0,
+        "workSets": 2,
+        "warmupSets": 0,
+        "volumeKg": 90,
+        "records": []
+      }
     }
   ]
 }

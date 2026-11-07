@@ -18,7 +18,7 @@ struct SyncNotice: View {
             }
         case .expired:
             row(symbol: "person.crop.circle.badge.exclamationmark") {
-                Text("Ta session a expiré.", tableName: "Account")
+                Text("Ta connexion a expiré.", tableName: "Account")
             } action: {
                 button("Se reconnecter", id: "sync-reconnect", action: reconnect)
             }

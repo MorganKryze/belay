@@ -114,12 +114,14 @@ final class SessionFlowTests: XCTestCase {
         save.tap()
 
         XCTAssertTrue(element(app, "summary-close").waitForExistence(timeout: 5), "the summary shows")
-        XCTAssertTrue(app.staticTexts["Séance terminée"].exists, "saying the session is done: \(app.navigationBars.debugDescription)")
+        XCTAssertTrue(
+            app.staticTexts.containing(NSPredicate(format: "label BEGINSWITH %@", "Séance terminée")).firstMatch.exists,
+            "saying the session is done: \(app.navigationBars.debugDescription)")
         let sets = element(app, "summary-sets")
         XCTAssertTrue(sets.label.contains("1"), "one set done: \(sets.label)")
         XCTAssertTrue(app.staticTexts["Barbell bench press"].exists, "what was logged")
         app.buttons["Fermer"].tap()
-        XCTAssertTrue(app.buttons["Commencer"].waitForExistence(timeout: 5), "the session is ended")
+        XCTAssertTrue(app.buttons["Voir la séance"].waitForExistence(timeout: 5), "the session is ended")
     }
 
     /// Wet hands on the narrowest phone: every RIR segment is a 44 pt target at the default size.

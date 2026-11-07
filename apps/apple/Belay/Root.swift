@@ -28,6 +28,8 @@ enum AppTab: String, Hashable, CaseIterable {
 enum Route: Hashable {
     /// Réglages, from Accueil's avatar: for now only the way to sign out.
     case settings
+    /// The next session before it starts, from Accueil's card.
+    case preview
 }
 
 /// The tab in front and what each tab has pushed, kept across tab switches.
@@ -71,6 +73,8 @@ struct RootView: View {
                                         status: account.syncStatus,
                                         reconnect: { Task { await account.reconnect() } },
                                         retry: account.refresh),
+                                    displayName: account.displayName,
+                                    openPreview: { model.paths[.home, default: []].append(.preview) },
                                     openCover: openCover)
                             } else {
                                 WebForNow(tab: tab)
@@ -79,6 +83,7 @@ struct RootView: View {
                         .navigationDestination(for: Route.self) { route in
                             switch route {
                             case .settings: ReglagesView(account: account, store: store)
+                            case .preview: SessionPreview(training: training, openCover: openCover)
                             }
                         }
                     }
@@ -134,4 +139,5 @@ struct RootView: View {
 enum Morph {
     static let accessory = "accessory"
     static let card = "card"
+    static let start = "start"
 }

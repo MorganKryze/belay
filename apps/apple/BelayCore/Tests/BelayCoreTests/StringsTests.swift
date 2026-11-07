@@ -144,6 +144,20 @@ func frenchTypographyFaults(_ text: String) -> [String] {
     }
   }
 
+  /// In French a workout is a « séance »: the word « session » never reaches the screen, the
+  /// sign-in's own included.
+  @Test func frenchSaysSeance() throws {
+    for url in try catalogs() {
+      for entry in try entries(of: url) {
+        for value in entry.french.values {
+          #expect(
+            value.range(of: "session", options: .caseInsensitive) == nil,
+            "\(url.lastPathComponent): \(value)")
+        }
+      }
+    }
+  }
+
   /// The check itself: it would catch what a catalog could get wrong.
   @Test func typographyCheckCatchesFaults() {
     #expect(!frenchTypographyFaults("Exemple : belay.fr").isEmpty)
