@@ -174,8 +174,11 @@ private struct SessionList: View {
                     .listRowBackground(Color.surface)
             }
             if let resting {
-                RestRow(end: resting, label: restLabel(after: exercise, set))
-                    .listRowBackground(Color.surface)
+                RestRow(
+                    end: resting, label: restLabel(after: exercise, set),
+                    more: { moveRest(to: resting.addingTimeInterval(30)) }, skip: { moveRest(to: nil) }
+                )
+                .listRowBackground(Color.surface)
             }
         } else {
             PlainSetRow(exercise: exercise, set: set)
@@ -196,6 +199,16 @@ private struct SessionList: View {
             return String(localized: "Repos · série \(next.set.number) ensuite")
         }
         return String(localized: "Repos · \(next.exercise.name) ensuite")
+    }
+
+    /// The end the web moves too: 30 s later, or now with « Passer ».
+    private func moveRest(to end: Date?) {
+        do {
+            try training.moveRest(to: end)
+        } catch {
+            Self.log.error("rest not moved: \(AccountStore.logLabel(error), privacy: .public)")
+            failed = "Le repos n’a pas été changé. Réessaie."
+        }
     }
 
     // MARK: Tick
@@ -467,20 +480,59 @@ private struct RIRRow: View {
 private struct RestRow: View {
     let end: Date
     let label: String
+    let more: () -> Void
+    let skip: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(label)
                 .font(.footnote.weight(.semibold))
                 .foregroundStyle(.muted)
-            Text(timerInterval: Date.now ... end, countsDown: true)
-                .font(.title.weight(.semibold))
-                .monospacedDigit()
-                .foregroundStyle(.ink)
-                .accessibilityIdentifier("rest-clock")
+            // The buttons go under the clock when the text is too large for one line.
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 8) {
+                    clock
+                    Spacer(minLength: 4)
+                    buttons
+                }
+                VStack(alignment: .leading, spacing: 8) {
+                    clock
+                    HStack(spacing: 8) { buttons }
+                }
+            }
         }
         .padding(.vertical, 8)
         .accessibilityElement(children: .contain)
+    }
+
+    private var clock: some View {
+        Text(timerInterval: Date.now ... end, countsDown: true)
+            .font(.title.weight(.semibold))
+            .monospacedDigit()
+            .foregroundStyle(.ink)
+            .accessibilityIdentifier("rest-clock")
+    }
+
+    private var buttons: some View {
+        Group {
+            Button(action: more) {
+                Text("+30\u{202F}s")
+                    .monospacedDigit()
+                    .frame(minWidth: 44, minHeight: 44)
+            }
+            .accessibilityIdentifier("rest-more")
+            Button(action: skip) {
+                Text("Passer")
+                    .frame(minWidth: 44, minHeight: 44)
+            }
+            .accessibilityIdentifier("rest-skip")
+        }
+        .font(.subheadline.weight(.semibold))
+        .buttonStyle(.bordered)
+        .buttonBorderShape(.capsule)
+        .tint(.muted)
+        .foregroundStyle(.ink)
+        .fixedSize()
     }
 }
 

@@ -185,6 +185,30 @@ enum Fixture {
     #expect(live.first?.weightKg == 70)
   }
 
+  @Test func theRestMovesAndEndsInPlaceQueueingNothing() throws {
+    let w = Fixture.id()
+    _ = try store.startWorkout(Fixture.start(w), now: Fixture.t0)
+    let active = ActiveSession(workoutId: w, slotIndex: 1, restEndsAt: Fixture.time(3))
+    _ = try store.recordSet(Fixture.set(w), at: Fixture.time(1), active: active)
+    let queued = try store.outbox(limit: nil).count
+
+    #expect(try store.moveRest(of: w, to: Fixture.time(3.5)))
+    #expect(
+      try store.activeSession()
+        == ActiveSession(workoutId: w, slotIndex: 1, restEndsAt: Fixture.time(3.5)))
+    #expect(try store.moveRest(of: w, to: nil))
+    #expect(try store.activeSession() == ActiveSession(workoutId: w, slotIndex: 1, restEndsAt: nil))
+    // The rest is this device's own: the server holds no rest, so nothing is sent.
+    #expect(try store.outbox(limit: nil).count == queued)
+  }
+
+  @Test func theRestOfAnotherSessionIsLeftAlone() throws {
+    let w = Fixture.id()
+    _ = try store.startWorkout(Fixture.start(w), now: Fixture.t0)
+    #expect(try store.moveRest(of: Fixture.id(1), to: Fixture.time(3)) == false)
+    #expect(try store.activeSession() == Fixture.active(w))
+  }
+
   @Test func aSecondStartTakesUpTheOneOpenHere() throws {
     let first = Fixture.id()
     #expect(try store.startWorkout(Fixture.start(first), now: Fixture.t0) == first)

@@ -145,6 +145,41 @@ final class SessionFlowTests: XCTestCase {
         }
     }
 
+    /// « +30 s » moves the rest's end 30 s later and « Passer » ends it, each a 44 pt target.
+    func testRestMovesAndSkips() throws {
+        let app = launch("history")
+        openCover(app)
+        tickFirstSet(app)
+        let clock = element(app, "rest-clock")
+        XCTAssertTrue(clock.waitForExistence(timeout: 3), "the rest starts")
+        let more = app.buttons["rest-more"]
+        let skip = app.buttons["rest-skip"]
+        XCTAssertTrue(more.exists && skip.exists, "the rest row offers +30 s and Passer")
+        XCTAssertEqual(more.label, "+30\u{202F}s")
+        XCTAssertEqual(skip.label, "Passer")
+        for button in [more, skip] {
+            XCTAssertGreaterThanOrEqual(button.frame.width, 44, "\(button.label) is \(button.frame.size)")
+            XCTAssertGreaterThanOrEqual(button.frame.height, 44, "\(button.label) is \(button.frame.size)")
+        }
+
+        let before = try XCTUnwrap(seconds(clock.label), "a clock: \(clock.label)")
+        more.tap()
+        let moved = NSPredicate { _, _ in (self.seconds(clock.label) ?? 0) >= before + 25 }
+        XCTAssertEqual(
+            XCTWaiter.wait(for: [expectation(for: moved, evaluatedWith: nil)], timeout: 3), .completed,
+            "30 s more: \(before) then \(clock.label)")
+
+        skip.tap()
+        let gone = NSPredicate(format: "exists == false")
+        XCTAssertEqual(
+            XCTWaiter.wait(for: [expectation(for: gone, evaluatedWith: clock)], timeout: 3), .completed,
+            "Passer ends the rest")
+        app.terminate()
+        let again = launch("keep")
+        openCover(again)
+        XCTAssertFalse(element(again, "rest-clock").waitForExistence(timeout: 2), "the rest stays ended: it was stored")
+    }
+
     func testVoiceOverLabels() {
         let app = launch("history")
         openCover(app)

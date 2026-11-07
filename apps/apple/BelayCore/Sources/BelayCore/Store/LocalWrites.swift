@@ -43,6 +43,20 @@ extension AccountStore {
     }
   }
 
+  /// Moves the end of the rest in `workoutId`, or ends it with nil, in one write. The rest is this
+  /// device's own, as on the web: the server holds none, so nothing is queued. Whether it was
+  /// written: false when the device holds another session open, or none.
+  public func moveRest(of workoutId: String, to end: String?) throws -> Bool {
+    try writer.write { db in
+      guard var active = try Rows.single(ActiveSession.self, db, "activeSession"),
+        active.workoutId == workoutId
+      else { return false }
+      active.restEndsAt = end
+      try Rows.putSingle(db, "activeSession", active)
+      return true
+    }
+  }
+
   /// Starts a session, unless one is open already, here or on another device: then this device
   /// takes that one up and its id is returned, so two taps never open two. A session left behind
   /// is closed in the same write, or nobody would.

@@ -213,6 +213,15 @@ final class TrainingModel {
         refresh()
     }
 
+    /// Moves the end of the open session's rest, or ends the rest with nil.
+    func moveRest(to end: Date?) throws {
+        guard let workoutId = open?.workoutId,
+              try store.moveRest(of: workoutId, to: end.map(Instant.string))
+        else { return }
+        didWrite()
+        refresh()
+    }
+
     /// Ends the open session now, as the web does, and keeps its summary for the cover.
     func finish() throws {
         let snapshot = try store.read()
