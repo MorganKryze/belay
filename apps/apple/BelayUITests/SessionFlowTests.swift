@@ -338,9 +338,9 @@ final class SessionFlowTests: XCTestCase {
         let message = "La série notée ne sera pas gardée\u{202F}; ton programme ne change pas."
         XCTAssertTrue(app.staticTexts[message].exists, "saying what goes: \(app.staticTexts.allElementsBoundByIndex.map(\.label))")
         confirm.tap()
-        XCTAssertTrue(app.buttons["Commencer"].waitForExistence(timeout: 5), "the session is gone")
+        XCTAssertTrue(app.buttons["Voir la séance"].waitForExistence(timeout: 5), "the session is gone")
         app.terminate()
         let again = launch("keep")
-        XCTAssertTrue(again.buttons["Commencer"].waitForExistence(timeout: 10), "and stays gone: it was stored")
+        XCTAssertTrue(again.buttons["Voir la séance"].waitForExistence(timeout: 10), "and stays gone: it was stored")
     }
 }
