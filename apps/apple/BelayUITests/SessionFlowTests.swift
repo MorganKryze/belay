@@ -114,6 +114,22 @@ final class SessionFlowTests: XCTestCase {
         XCTAssertTrue(app.buttons["Commencer"].waitForExistence(timeout: 5), "the session is ended")
     }
 
+    /// Wet hands on the narrowest phone: every RIR segment is a 44 pt target at the default size.
+    func testRIRSegmentsAreTargets() {
+        let app = launch("history")
+        openCover(app)
+        app.buttons["tick"].tap()
+        let picker = app.segmentedControls.firstMatch
+        XCTAssertTrue(picker.waitForExistence(timeout: 3), "the tick asks for the RIR")
+        let segments = picker.buttons.allElementsBoundByIndex
+        XCTAssertEqual(segments.count, 5)
+        for segment in segments {
+            let frame = segment.frame
+            XCTAssertGreaterThanOrEqual(frame.width, 44, "segment \(segment.label) is \(frame.size)")
+            XCTAssertGreaterThanOrEqual(frame.height, 44, "segment \(segment.label) is \(frame.size)")
+        }
+    }
+
     func testVoiceOverLabels() {
         let app = launch("history")
         openCover(app)

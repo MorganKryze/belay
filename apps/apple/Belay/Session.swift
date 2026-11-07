@@ -439,9 +439,13 @@ private struct RIRRow: View {
                     button
                 }
             } else {
-                HStack(spacing: 8) {
-                    label.frame(width: labelWidth, alignment: .leading)
-                    picker
+                // Beside the picker, the button left each segment 39 points on the narrowest
+                // phone; under it, the five share the row past 44.
+                VStack(alignment: .trailing, spacing: 8) {
+                    HStack(spacing: 8) {
+                        label.frame(width: labelWidth, alignment: .leading)
+                        picker
+                    }
                     button.fixedSize()
                 }
             }
