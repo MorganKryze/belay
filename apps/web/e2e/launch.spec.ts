@@ -20,15 +20,19 @@ async function holdAccount(page: Page) {
   return answer;
 }
 
-type Launch = { fcp?: number; launchedAt?: number };
+type Launch = { fcp?: number; painted?: number; launchedAt?: number };
 
-// On the real clock: the first paint's start, and the moment body gets its launched class.
+// On the real clock: the first paint's start (when the frame reached the screen), the moment the
+// page painted that frame, and the moment body gets its launched class.
 async function recordLaunch(page: Page) {
   await page.addInitScript(() => {
     const launch: Launch = {};
     (window as unknown as { launch: Launch }).launch = launch;
     new PerformanceObserver((list) => {
-      for (const e of list.getEntriesByName("first-contentful-paint")) launch.fcp ??= e.startTime;
+      for (const e of list.getEntriesByName("first-contentful-paint")) {
+        launch.fcp ??= e.startTime;
+        launch.painted ??= (e as PerformanceEntry & { paintTime: number }).paintTime;
+      }
     }).observe({ type: "paint", buffered: true });
     new MutationObserver(() => {
       if (launch.launchedAt === undefined && document.body?.classList.contains("launched"))
@@ -144,10 +148,13 @@ test("the launch screen never leaves before its first paint, even with the accou
   });
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1, name: "Hello, Ada" })).toBeVisible();
-  const { fcp, launchedAt } = await readLaunch(page);
+  const { fcp, painted, launchedAt } = await readLaunch(page);
   expect(fcp).toBeGreaterThan(700);
-  // A frame's callback runs a few milliseconds before the paint it belongs to is stamped.
-  expect(launchedAt).toBeGreaterThanOrEqual(fcp - 17);
+  // The order, not a margin: the page painted its first frame, then body got its class. That frame
+  // holds the launch screen. The paint's start is stamped later, when the frame reaches the
+  // screen, and a busy machine can add the class in between.
+  expect(painted).toBeGreaterThan(0);
+  expect(launchedAt).toBeGreaterThan(painted);
 });
 
 test("with the account known after 1.5 s the launch screen leaves right after the answer", async ({
