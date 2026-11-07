@@ -54,6 +54,19 @@ final class AccueilTests: XCTestCase {
         XCTAssertTrue(fresh.buttons["Réduire la séance"].waitForExistence(timeout: 5), "Commencer la séance opens it")
     }
 
+    /// Each exercise of the preview says what was logged last time, as figures.
+    func testPreviewSaysTheLastTime() {
+        let app = launch("past")
+        let open = app.buttons["Voir la séance"]
+        XCTAssertTrue(open.waitForExistence(timeout: 10))
+        open.tap()
+        XCTAssertTrue(app.navigationBars["Séance A"].waitForExistence(timeout: 5))
+        let last = text(app, containing: "la dernière fois")
+        XCTAssertTrue(last.exists, "the bench press has a last time")
+        XCTAssertTrue(
+            last.label.hasSuffix("4 × 6–8 · la dernière fois 62,5\u{202F}kg × 8, 8, 7, 6"), "as figures: \(last.label)")
+    }
+
     /// Under way, the card and the accessory say where the session stands: the load on the bar,
     /// the exercise, the set.
     func testRunningCardLeadsWithTheLoad() {

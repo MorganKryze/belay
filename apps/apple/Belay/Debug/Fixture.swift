@@ -7,7 +7,8 @@ import Synchronization
 /// The UI tests' account, in a debug build only: `-BelayFixture <mode>` signs in a made-up person
 /// on a made-up instance that never syncs, with a store of its own in the app's caches.
 /// `fresh` starts from an empty store, `running` from one with a session started, `history` from
-/// one where session A was done yesterday and is open again, `keep` from the store the previous
+/// one where session A was done yesterday and is open again, `past` from one where every session
+/// of the program was done once, A first, so A comes next with a last time, `keep` from the store the previous
 /// launch left, so a test can relaunch onto it. `expired` starts empty on an instance that refuses
 /// the token at each sync.
 enum Fixture {
@@ -27,6 +28,19 @@ enum Fixture {
             if mode != "keep", FileManager.default.fileExists(atPath: folder.path) {
                 try FileManager.default.removeItem(at: folder)
             }
+            if mode == "past" {
+                let store = try AccountStore.open(userId: userId, origin: url, in: folder)
+                let model = TrainingModel(store: store, didWrite: {}, now: Date.init, timeZone: .current)
+                // Each session started, done some days back and its open copy deleted, until A
+                // comes round again; the bound only stops a program the loop cannot go round.
+                for round in 0..<8 {
+                    let id = try model.start()
+                    let code = try store.history().workouts.first(where: { $0.id == id })?.sessionCode
+                    if round > 0, code == "A" { try model.delete(); break }
+                    try doneYesterday(like: id, in: store, daysAgo: Double(10 - round))
+                    try model.delete()
+                }
+            }
             if mode == "running" || mode == "history" {
                 // Through the same start a tap makes, so the store holds what the app writes.
                 let store = try AccountStore.open(userId: userId, origin: url, in: folder)
@@ -44,10 +58,10 @@ enum Fixture {
             defaults: defaults, storeFolder: folder)
     }
 
-    /// The same session done a day earlier, its first exercise at 62,5 kg for 8, 8, 7 and 6.
-    private static func doneYesterday(like openId: String, in store: AccountStore) throws {
+    /// The same session done a day earlier, or `daysAgo`, its first exercise at 62,5 kg for 8, 8, 7 and 6.
+    private static func doneYesterday(like openId: String, in store: AccountStore, daysAgo: Double = 1) throws {
         guard let open = try store.history().workouts.first(where: { $0.id == openId }) else { return }
-        let start = Date.now.addingTimeInterval(-86_400)
+        let start = Date.now.addingTimeInterval(-86_400 * daysAgo)
         let id = UUIDv7.make(at: start)
         let at = { (minutes: Double) in Instant.string(start.addingTimeInterval(minutes * 60)) }
         let exercise = open.plan[0].exerciseId

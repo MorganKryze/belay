@@ -122,7 +122,8 @@ enum SessionText {
         let sets = "\(exercise.sets) × \(exercise.repRange.map(String.init).joined(separator: "–"))"
             + (exercise.timed ? "\u{202F}s" : "")
         guard !exercise.lastTime.isEmpty else { return sets }
-        let last = exercise.lastTime.map { group in
+        // Typed: with the store's SQL builder in scope, the literals below would build a query.
+        let last: String = exercise.lastTime.map { group in
             let counts = group.counts.map(String.init).joined(separator: ", ")
             return exercise.timed && group.weightKg == 0
                 ? "\(counts)\u{202F}s"
