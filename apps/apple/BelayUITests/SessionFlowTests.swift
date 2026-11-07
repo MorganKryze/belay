@@ -262,4 +262,60 @@ final class SessionFlowTests: XCTestCase {
         XCTAssertTrue(row.label.contains("faite"), "set 2 is logged from its own row: \(row.label)")
         XCTAssertEqual(queuedSets(app), "1")
     }
+
+    /// The navigation bar's bottom edge: the exercise up next is held right under it.
+    private func barBottom(_ app: XCUIApplication) -> CGFloat {
+        app.navigationBars.firstMatch.frame.maxY
+    }
+
+    /// The exercise up next opens anchored under the bar, its header a button that folds it.
+    func testExerciseHeaderFoldsAndIsAnchored() {
+        let app = launch("history")
+        openCover(app)
+        let header = app.buttons["exercise-0"]
+        XCTAssertTrue(header.exists, "the exercise's header is a button")
+        XCTAssertLessThanOrEqual(header.frame.minY - barBottom(app), 24, "anchored under the bar: \(header.frame)")
+        XCTAssertEqual(header.value as? String, "ouvert")
+        XCTAssertEqual(app.buttons["exercise-1"].value as? String, "replié", "the others start folded")
+
+        header.tap()
+        XCTAssertEqual(header.value as? String, "replié")
+        XCTAssertFalse(app.buttons["tick"].exists, "folded, its sets are hidden")
+        XCTAssertTrue(header.label.contains("4 × 6–8 · à venir"), "with where it stands: \(header.label)")
+        header.tap()
+        XCTAssertTrue(app.buttons["tick"].waitForExistence(timeout: 2), "open again")
+    }
+
+    /// An exercise whose four sets are done folds with its count, and the next one takes the top.
+    func testDoneExerciseFoldsAndTheNextTakesTheTop() {
+        let app = launch("history")
+        openCover(app)
+        let foot = app.buttons["foot"]
+        for _ in 0..<4 { foot.tap() }
+        let done = app.buttons["exercise-0"]
+        let folded = NSPredicate(format: "value == 'replié'")
+        XCTAssertEqual(
+            XCTWaiter.wait(for: [expectation(for: folded, evaluatedWith: done)], timeout: 3), .completed,
+            "the done exercise folds")
+        XCTAssertTrue(done.label.contains("4 séries notées"), "saying so: \(done.label)")
+        let next = app.buttons["exercise-1"]
+        XCTAssertEqual(next.value as? String, "ouvert", "the next exercise opens")
+        let anchored = NSPredicate { _, _ in abs(next.frame.minY - self.barBottom(app)) <= 24 }
+        XCTAssertEqual(
+            XCTWaiter.wait(for: [expectation(for: anchored, evaluatedWith: nil)], timeout: 3), .completed,
+            "and is anchored under the bar: \(next.frame), bar \(barBottom(app))")
+    }
+
+    /// At the largest sizes the next set takes the middle of the screen, the header above it.
+    func testNextSetTakesTheMiddleAtAccessibilitySizes() {
+        let app = launch("history", large: true)
+        openCover(app)
+        let window = app.windows.firstMatch.frame
+        let centred = { (id: String) in
+            NSPredicate { _, _ in abs(app.buttons[id].frame.midY - window.midY) <= window.height * 0.2 }
+        }
+        XCTAssertEqual(
+            XCTWaiter.wait(for: [expectation(for: centred("tick"), evaluatedWith: nil)], timeout: 3), .completed,
+            "the next set's tick near the middle: \(app.buttons["tick"].frame) in \(window)")
+    }
 }

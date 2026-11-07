@@ -80,6 +80,11 @@ private struct SessionList: View {
     let lower: () -> Void
     @Environment(\.dynamicTypeSize) private var type
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// An exercise opened or folded by hand; otherwise the one up next is open, the others folded.
+    @State private var opened: [Int: Bool] = [:]
+    /// Counts the rests that ran to their end here: one tap of the hand each.
+    @State private var restOvers = 0
     @State private var drafts: [String: Draft] = [:]
     /// The RIR chosen for a set before its tick; the plan's low target until then.
     @State private var rirs: [String: Int] = [:]
@@ -107,33 +112,47 @@ private struct SessionList: View {
         training.restEnd.flatMap { $0 > clock ? $0 : nil }
     }
 
+    /// The tint moves to the next target on a critically damped spring; nothing plays under Reduce Motion.
+    private var settle: Animation? { reduceMotion ? nil : .spring(duration: 0.35, bounce: 0) }
+
     var body: some View {
-        List {
-            ForEach(cover.exercises) { exercise in
-                Section {
-                    header(exercise)
-                        .listRowBackground(Color.surface)
-                        .listRowSeparator(.hidden, edges: .bottom)
-                    if !type.isAccessibilitySize {
-                        columns(exercise)
+        ScrollViewReader { proxy in
+            List {
+                ForEach(cover.exercises) { exercise in
+                    Section {
+                        header(exercise)
                             .listRowBackground(Color.surface)
-                            .listRowSeparator(.hidden)
-                    }
-                    ForEach(exercise.sets) { set in
-                        row(exercise, set)
+                            .listRowSeparator(expanded(exercise) ? .hidden : .automatic, edges: .bottom)
+                        if expanded(exercise) {
+                            if !type.isAccessibilitySize {
+                                columns(exercise)
+                                    .listRowBackground(Color.surface)
+                                    .listRowSeparator(.hidden)
+                            }
+                            ForEach(exercise.sets) { set in
+                                row(exercise, set)
+                            }
+                        }
                     }
                 }
             }
+            // Rows packed with figures stay legible under the toolbar: the hard edge holds them back.
+            .belayList(edge: .hard)
+            .environment(\.defaultMinListRowHeight, 44)
+            .onChange(of: cover.next) { old, _ in
+                // An exercise just finished folds again, unless the person opens it.
+                if let old, old.slotIndex != cover.next?.slotIndex { opened[old.slotIndex] = nil }
+                withAnimation(settle) { land(proxy) }
+            }
+            .onAppear { DispatchQueue.main.async { land(proxy) } }
         }
-        // Rows packed with figures stay legible under the toolbar: the hard edge holds them back.
-        .belayList(edge: .hard)
-        .environment(\.defaultMinListRowHeight, 44)
         .navigationTitle(SessionText.short(cover.code))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { toolbar }
         .safeAreaBar(edge: .bottom) { foot }
         .scrollEdgeEffectStyle(.hard, for: .bottom)
         .sensoryFeedback(.success, trigger: recorded)
+        .sensoryFeedback(.impact(weight: .medium), trigger: restOvers)
         .task(id: training.restEnd) { await followRest() }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active { clock = .now }
@@ -143,35 +162,86 @@ private struct SessionList: View {
         }
     }
 
-    /// The rest row stays while its end is ahead; the clock itself is the system's.
+    /// The rest row stays while its end is ahead; the clock itself is the system's. A rest that
+    /// runs out here taps the hand; one moved or skipped cancels this first.
     private func followRest() async {
         clock = .now
         guard let end = training.restEnd, end > clock else { return }
-        try? await Task.sleep(for: .seconds(end.timeIntervalSince(clock)))
+        do {
+            try await Task.sleep(for: .seconds(end.timeIntervalSince(clock)))
+        } catch {
+            return
+        }
         clock = .now
+        restOvers += 1
+    }
+
+    /// The exercise's name stays on screen above the load and the rest clear of the foot, as long as
+    /// the table allows; past that, or at the largest text sizes, the load itself takes the middle.
+    private func land(_ proxy: ScrollViewProxy) {
+        guard let next = nextSet else { return }
+        if next.exercise.sets.filter(\.done).count <= 5, !type.isAccessibilitySize {
+            proxy.scrollTo(Self.anchor(next.exercise), anchor: .top)
+        } else {
+            proxy.scrollTo(next.set.id, anchor: .center)
+        }
+    }
+
+    private static func anchor(_ exercise: CoverExercise) -> String {
+        "exercise-\(exercise.slotIndex)"
+    }
+
+    private func expanded(_ exercise: CoverExercise) -> Bool {
+        opened[exercise.slotIndex] ?? (exercise.slotIndex == cover.next?.slotIndex)
     }
 
     // MARK: Rows
 
+    /// A button that folds the exercise: open, its prescription and last time; folded, where it
+    /// stands in one line, with a check once every set is done.
     private func header(_ exercise: CoverExercise) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(exercise.name)
-                .font(.headline)
-                .foregroundStyle(.ink)
-            Text(SetText.prescription(exercise))
-                .font(.subheadline)
-                .foregroundStyle(.muted)
-                .monospacedDigit()
-            if !exercise.lastTime.isEmpty {
-                Text("la dernière fois \(SetText.lastTime(exercise))")
-                    .font(.subheadline)
+        let open = expanded(exercise)
+        let done = exercise.sets.allSatisfy(\.done)
+        return Button {
+            withAnimation(settle) { opened[exercise.slotIndex] = !open }
+        } label: {
+            HStack(spacing: 12) {
+                if done {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.title2)
+                        .foregroundStyle(.ink)
+                        .accessibilityHidden(true)
+                }
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(exercise.name)
+                        .font(.headline)
+                        .foregroundStyle(.ink)
+                    Text(open ? SetText.prescription(exercise) : SetText.status(exercise))
+                        .font(.subheadline)
+                        .foregroundStyle(.muted)
+                        .monospacedDigit()
+                    if open && !exercise.lastTime.isEmpty {
+                        Text("la dernière fois \(SetText.lastTime(exercise))")
+                            .font(.subheadline)
+                            .foregroundStyle(.muted)
+                            .monospacedDigit()
+                    }
+                }
+                Spacer(minLength: 8)
+                Image(systemName: "chevron.up")
+                    .font(.footnote.weight(.semibold))
                     .foregroundStyle(.muted)
-                    .monospacedDigit()
+                    .rotationEffect(.degrees(open ? 0 : 180))
+                    .accessibilityHidden(true)
             }
+            .padding(.vertical, 4)
+            .contentShape(.rect)
         }
-        .padding(.vertical, 4)
-        .accessibilityElement(children: .combine)
+        .buttonStyle(.plain)
         .accessibilityAddTraits(.isHeader)
+        .accessibilityValue(open ? Text("ouvert") : Text("replié"))
+        .accessibilityIdentifier(Self.anchor(exercise))
+        .id(Self.anchor(exercise))
     }
 
     /// « Série · kg · Reps » over the figures, once per exercise.
@@ -198,6 +268,7 @@ private struct SessionList: View {
                 exercise: exercise, set: set, draft: draft(set), touched: drafts[set.id] != nil, typing: $typing,
                 tick: { tick(exercise, set) }
             )
+            .id(set.id)
             .listRowBackground(Color.surface)
             .listRowSeparator(.hidden, edges: .bottom)
             if !exercise.timed {
@@ -206,7 +277,7 @@ private struct SessionList: View {
             }
             if let resting {
                 RestRow(
-                    end: resting, label: restLabel(after: exercise, set),
+                    end: resting, start: training.restFrom, label: restLabel(after: exercise, set),
                     more: { moveRest(to: resting.addingTimeInterval(30)) }, skip: { moveRest(to: nil) }
                 )
                 .listRowBackground(Color.surface)
@@ -596,16 +667,43 @@ private struct RIRRow: View {
     }
 }
 
+/// A system ProgressView, drawn as the rope: 3 pt of ink over a hairline of the line colour.
+private struct RopeLine: ProgressViewStyle {
+    let reduceMotion: Bool
+
+    func makeBody(configuration: Configuration) -> some View {
+        let fraction = configuration.fractionCompleted ?? 0
+        return Color.line
+            .frame(height: 1)
+            .frame(maxWidth: .infinity)
+            .overlay(alignment: .leading) {
+                GeometryReader { box in
+                    Capsule()
+                        .fill(Color.ink)
+                        .frame(width: box.size.width * fraction, height: 3)
+                        .frame(maxHeight: .infinity, alignment: .center)
+                        .animation(reduceMotion ? nil : .linear(duration: 1), value: fraction)
+                }
+                .frame(height: 3)
+            }
+            .frame(height: 3)
+    }
+}
+
 /// The rest is a row of the table, under the next set: quiet, in system type at title size. It
 /// counts to an absolute end, so a locked phone or a closed app finds it where it should be.
 private struct RestRow: View {
     let end: Date
+    /// When the set before it was done: the rope's full length runs from there to the end.
+    let start: Date?
     let label: String
     let more: () -> Void
     let skip: () -> Void
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 6) {
             Text(label)
                 .font(.footnote.weight(.semibold))
                 .foregroundStyle(.muted)
@@ -621,6 +719,13 @@ private struct RestRow: View {
                     HStack(spacing: 8) { buttons }
                 }
             }
+            TimelineView(.periodic(from: .now, by: 1)) { context in
+                let total = max(1, end.timeIntervalSince(start ?? context.date))
+                ProgressView(value: min(total, max(0, end.timeIntervalSince(context.date))), total: total)
+                    .progressViewStyle(RopeLine(reduceMotion: reduceMotion))
+            }
+            .padding(.top, 4)
+            .accessibilityHidden(true)
         }
         .padding(.vertical, 8)
         .accessibilityElement(children: .contain)
@@ -673,11 +778,23 @@ enum SetText {
 
     /// « 4 × 6–8 · RIR 1–2 », or « 3 × 30–45 s » for a timed exercise.
     static func prescription(_ exercise: CoverExercise) -> String {
-        let range = exercise.repRange.map(String.init).joined(separator: "–")
-        let sets = "\(exercise.sets.count) × \(range)"
-        if exercise.timed { return "\(sets)\u{202F}s" }
+        if exercise.timed { return target(exercise) }
         let rir = exercise.rirTarget.map(String.init).joined(separator: "–")
-        return "\(sets) · RIR \(rir)"
+        return "\(target(exercise)) · RIR \(rir)"
+    }
+
+    /// « 3 × 8–10 », or « 3 × 30–45 s » for a timed exercise.
+    static func target(_ exercise: CoverExercise) -> String {
+        let range = exercise.repRange.map(String.init).joined(separator: "–")
+        return "\(exercise.sets.count) × \(range)\(exercise.timed ? "\u{202F}s" : "")"
+    }
+
+    /// A folded exercise in one line: « 4 séries notées », « 2 séries sur 4 », « 3 × 8–10 · à venir ».
+    static func status(_ exercise: CoverExercise) -> String {
+        let done = exercise.sets.filter(\.done).count
+        if done == exercise.sets.count { return String(localized: "\(done) séries notées") }
+        if done > 0 { return String(localized: "\(done) séries sur \(exercise.sets.count)") }
+        return String(localized: "\(target(exercise)) · à venir")
     }
 
     /// « 62,5 kg × 8, 8, 7, 6 », the groups of equal loads one after the other.

@@ -118,6 +118,8 @@ final class TrainingModel {
     private(set) var cover: CoverState?
     /// When the rest after the last set ends, as the store holds it; it may be past.
     private(set) var restEnd: Date?
+    /// When the open session's last set was done: where the rest after it starts.
+    private(set) var restFrom: Date?
     /// The session just finished here, until the person closes its summary.
     private(set) var summary: SessionSummary?
 
@@ -284,10 +286,12 @@ final class TrainingModel {
             cover = coverOf(workout, sets: own, history: snapshot.history)
             restEnd = snapshot.active.flatMap { $0.workoutId == workout.id ? $0.restEndsAt : nil }
                 .flatMap(Instant.date)
+            restFrom = own.compactMap { Instant.date($0.doneAt) }.max()
         } else {
             open = nil
             cover = nil
             restEnd = nil
+            restFrom = nil
         }
         next = template(snapshot, at: at).map { template in
             let plan = planFor(template, activities: snapshot.activities, date: toISODate(at, timeZone: timeZone))
