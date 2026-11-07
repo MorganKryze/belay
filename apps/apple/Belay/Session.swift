@@ -62,6 +62,11 @@ private struct Draft: Equatable {
     var count: String
 }
 
+/// The next set's two fields, so a tap anywhere on a box focuses its own.
+private enum LoadField: Hashable {
+    case kg, count
+}
+
 private struct SessionList: View {
     let training: TrainingModel
     let cover: CoverState
@@ -78,7 +83,7 @@ private struct SessionList: View {
     @State private var failed: LocalizedStringKey?
     /// The time the rest row was last checked against; moved when the rest ends or the app returns.
     @State private var clock = Date.now
-    @FocusState private var typing: Bool
+    @FocusState private var typing: LoadField?
 
     private static let log = Logger(subsystem: "cloud.libresoftware.belay", category: "session")
 
@@ -197,7 +202,7 @@ private struct SessionList: View {
 
     /// A set in repetitions asks for its RIR before it is recorded; a timed set has none.
     private func tick(_ exercise: CoverExercise, _ set: CoverSet) {
-        typing = false
+        typing = nil
         if exercise.timed { return record(exercise, set, rir: nil) }
         if armed == set.id { return record(exercise, set, rir: rir) }
         rir = exercise.rirTarget.first ?? 0
@@ -258,7 +263,7 @@ private struct SessionList: View {
         }
         ToolbarItemGroup(placement: .keyboard) {
             Spacer()
-            Button("OK") { typing = false }
+            Button("OK") { typing = nil }
                 .fontWeight(.semibold)
         }
     }
@@ -332,7 +337,7 @@ private struct NextSetRow: View {
     let exercise: CoverExercise
     let set: CoverSet
     @Binding var draft: Draft
-    var typing: FocusState<Bool>.Binding
+    var typing: FocusState<LoadField?>.Binding
     let tick: () -> Void
 
     var body: some View {
@@ -344,9 +349,9 @@ private struct NextSetRow: View {
                 .accessibilityLabel(SetText.spoken(exercise, set, weightKg: SetText.parseKg(draft.kg), count: Int(draft.count)))
                 .accessibilityIdentifier("set-\(set.id)")
             HStack(spacing: 8) {
-                cell($draft.kg, unit: "kg", keyboard: .decimalPad, id: "load-kg",
+                cell($draft.kg, .kg, unit: "kg", keyboard: .decimalPad, id: "load-kg",
                      label: "Charge de la série \(set.number), kg")
-                cell($draft.count, unit: exercise.timed ? "s" : "reps", keyboard: .numberPad, id: "load-count",
+                cell($draft.count, .count, unit: exercise.timed ? "s" : "reps", keyboard: .numberPad, id: "load-count",
                      label: exercise.timed ? "Secondes de la série \(set.number)" : "Répétitions de la série \(set.number)")
                 Button(action: tick) {
                     Image(systemName: "circle")
@@ -365,7 +370,7 @@ private struct NextSetRow: View {
     }
 
     private func cell(
-        _ text: Binding<String>, unit: LocalizedStringKey, keyboard: UIKeyboardType, id: String,
+        _ text: Binding<String>, _ field: LoadField, unit: LocalizedStringKey, keyboard: UIKeyboardType, id: String,
         label: LocalizedStringKey
     ) -> some View {
         VStack(spacing: 0) {
@@ -376,7 +381,7 @@ private struct NextSetRow: View {
                 .font(.displayLoad)
                 .monospacedDigit()
                 .foregroundStyle(.ink)
-                .focused(typing)
+                .focused(typing, equals: field)
                 .accessibilityIdentifier(id)
                 // The display face past this size would push the tick off the row.
                 .dynamicTypeSize(...DynamicTypeSize.accessibility1)
@@ -387,6 +392,9 @@ private struct NextSetRow: View {
         }
         .frame(maxWidth: .infinity, minHeight: 76)
         .background(Color.track, in: .rect(cornerRadius: 16))
+        // The field itself is one line of the box; the box is what looks like the target.
+        .contentShape(.rect(cornerRadius: 16))
+        .onTapGesture { typing.wrappedValue = field }
     }
 }
 

@@ -130,6 +130,21 @@ final class SessionFlowTests: XCTestCase {
         }
     }
 
+    /// The whole load box is the target: a tap on its « kg » or « reps » line focuses its field.
+    func testLoadBoxFocusesItsField() {
+        let app = launch("history")
+        openCover(app)
+        for id in ["load-kg", "load-count"] {
+            let field = app.textFields[id]
+            // The unit line sits under the figure, 30 pt below the field's middle.
+            field.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).withOffset(CGVector(dx: 0, dy: 30)).tap()
+            let focused = NSPredicate(format: "hasKeyboardFocus == true")
+            XCTAssertEqual(
+                XCTWaiter.wait(for: [expectation(for: focused, evaluatedWith: field)], timeout: 3), .completed,
+                "a tap on the unit line of \(id) focuses it")
+        }
+    }
+
     func testVoiceOverLabels() {
         let app = launch("history")
         openCover(app)
