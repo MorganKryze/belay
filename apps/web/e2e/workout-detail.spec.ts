@@ -290,7 +290,7 @@ for (const theme of ["light", "dark"] as const) {
       return { shadow: s.boxShadow, border: s.borderTopWidth };
     });
     if (theme === "light") {
-      expect(card.shadow).toContain("0.035");
+      expect(card.shadow).toContain("rgba(18, 24, 28, 0.04) 0px 0px 0px 1px");
       expect(card.border).toBe("0px");
     } else {
       expect(card.shadow).toBe("none");
