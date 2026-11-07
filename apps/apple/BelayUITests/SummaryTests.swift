@@ -32,8 +32,12 @@ final class SummaryTests: XCTestCase {
     /// The session's letter as the large title, its end and day under it.
     func testTitledBySession() {
         let app = finishAfterOneSet()
-        XCTAssertTrue(app.navigationBars["Séance A"].exists, "the summary is titled by the session")
-        XCTAssertTrue(text(app, containing: "Séance terminée · ").exists, "and says it is done, with the day")
+        let bar = app.navigationBars["Séance A"]
+        XCTAssertTrue(bar.exists, "the summary is titled by the session")
+        let done = bar.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "Séance terminée · "))
+        XCTAssertTrue(done.firstMatch.exists, "the bar says it is done, with the day: \(bar.debugDescription)")
+        // An inline bar is about 54 pt; the large title with its subtitle runs past 100.
+        XCTAssertGreaterThan(bar.frame.height, 90, "the title is large: \(bar.frame)")
     }
 
     /// The volume leads, warm-ups left out: 62,5 kg × 8 is 500 kg; the same load as last time

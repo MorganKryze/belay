@@ -21,8 +21,11 @@ struct SessionCover: View {
                     SessionList(training: training, cover: cover, lower: lower)
                 }
             }
-            .animation(reduceMotion ? nil : .smooth, value: training.summary == nil)
         }
+        // The summary gets a stack of its own: the session's inline bar would otherwise hold its
+        // large title down.
+        .id(training.summary == nil)
+        .animation(reduceMotion ? nil : .smooth, value: training.summary == nil)
     }
 }
 

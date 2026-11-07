@@ -9,15 +9,6 @@ struct SummaryView: View {
     var body: some View {
         List {
             Section {
-                // In the list, not under the title: the cover's bar stays inline from the session.
-                VStack(alignment: .leading, spacing: 2) {
-                    if let name = summary.name, !name.isEmpty {
-                        Text(name).font(.title3.weight(.semibold)).foregroundStyle(.ink)
-                    }
-                    Text("Séance terminée · \(Self.day(summary.endedAt))")
-                        .font(.subheadline)
-                        .foregroundStyle(.muted)
-                }
                 VStack(alignment: .leading, spacing: 2) {
                     block("Volume", Self.volume(summary.volumeKg), unit: "kg", font: .displayHero)
                         .accessibilityIdentifier("summary-volume")
@@ -71,7 +62,8 @@ struct SummaryView: View {
         }
         .belayList()
         .navigationTitle(SessionText.short(summary.code))
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarTitleDisplayMode(.large)
+        .modifier(Subtitle(name: summary.name, line: String(localized: "Séance terminée · \(Self.day(summary.endedAt))")))
         .scrollEdgeEffectStyle(.hard, for: .bottom)
         // The dialog before this screen already saved: one way out, at the foot, and no blue left.
         .safeAreaBar(edge: .bottom) {
