@@ -238,6 +238,18 @@ final class TrainingModel {
         refresh()
     }
 
+    /// Removes the open session as the web's « Supprimer la séance » does: one change, its sets
+    /// going with it, queued in the write that forgets it as this device's open session.
+    func delete() throws {
+        let snapshot = try store.read()
+        let at = now()
+        guard let workout = openWorkout(snapshot.history.workouts, forgotten: (snapshot.history.sets, at)) else { return }
+        let time = Instant.string(at)
+        try store.recordChanges([.workout(WorkoutChange(id: workout.id, at: time, edit: .removed(true)))], active: .clear)
+        didWrite()
+        refresh()
+    }
+
     /// The summary is read: the cover can close.
     func closeSummary() {
         summary = nil

@@ -1082,6 +1082,86 @@
           }
         }
       }
+    },
+    "Supprimer la séance…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete the session…"
+          }
+        }
+      }
+    },
+    "Supprimer la séance ?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete the session?"
+          }
+        }
+      }
+    },
+    "Supprimer la séance": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete the session"
+          }
+        }
+      }
+    },
+    "La séance n’a pas été supprimée. Réessaie.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The session was not deleted. Try again."
+          }
+        }
+      }
+    },
+    "Les %lld séries notées ne seront pas gardées ; ton programme ne change pas.": {
+      "localizations": {
+        "fr": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "La série notée ne sera pas gardée ; ton programme ne change pas."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Les %lld séries notées ne seront pas gardées ; ton programme ne change pas."
+                }
+              }
+            }
+          }
+        },
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "The logged set won’t be kept; your program doesn’t change."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "The %lld logged sets won’t be kept; your program doesn’t change."
+                }
+              }
+            }
+          }
+        }
+      }
     }
   }
 }

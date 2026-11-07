@@ -318,4 +318,27 @@ final class SessionFlowTests: XCTestCase {
             XCTWaiter.wait(for: [expectation(for: centred("tick"), evaluatedWith: nil)], timeout: 3), .completed,
             "the next set's tick near the middle: \(app.buttons["tick"].frame) in \(window)")
     }
+
+    /// « Supprimer la séance… » in Terminer's dialog, drawn from its button, asks again, then the
+    /// session is gone and stays gone.
+    func testDeleteRemovesTheSession() {
+        let app = launch("history")
+        openCover(app)
+        tickFirstSet(app)
+        app.buttons["Terminer"].tap()
+        let ask = app.buttons["Supprimer la séance…"]
+        XCTAssertTrue(ask.waitForExistence(timeout: 3), "Terminer offers the delete")
+        let window = app.windows.firstMatch.frame
+        XCTAssertLessThan(ask.frame.midY, window.midY, "the dialog comes from its button at the top: \(ask.frame)")
+        ask.tap()
+        let confirm = app.buttons["Supprimer la séance"]
+        XCTAssertTrue(confirm.waitForExistence(timeout: 3), "asked again before anything goes")
+        let message = "La série notée ne sera pas gardée\u{202F}; ton programme ne change pas."
+        XCTAssertTrue(app.staticTexts[message].exists, "saying what goes: \(app.staticTexts.allElementsBoundByIndex.map(\.label))")
+        confirm.tap()
+        XCTAssertTrue(app.buttons["Commencer"].waitForExistence(timeout: 5), "the session is gone")
+        app.terminate()
+        let again = launch("keep")
+        XCTAssertTrue(again.buttons["Commencer"].waitForExistence(timeout: 10), "and stays gone: it was stored")
+    }
 }

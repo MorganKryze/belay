@@ -8,10 +8,6 @@ struct SessionCover: View {
     let training: TrainingModel
     let lower: () -> Void
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var askFinish = false
-    @State private var finishFailed = false
-
-    private static let log = Logger(subsystem: "cloud.libresoftware.belay", category: "session")
 
     var body: some View {
         NavigationStack {
@@ -22,44 +18,11 @@ struct SessionCover: View {
                         lower()
                     }
                 } else if let cover = training.cover {
-                    SessionList(training: training, cover: cover, lower: lower, askFinish: $askFinish)
+                    SessionList(training: training, cover: cover, lower: lower)
                 }
             }
             .animation(reduceMotion ? nil : .smooth, value: training.summary == nil)
         }
-        // On the cover, which stays while the list under the dialog turns into the summary.
-        .confirmationDialog("Terminer la séance\u{202F}?", isPresented: $askFinish, titleVisibility: .visible) {
-            Button("Terminer et enregistrer", action: finish)
-            Button("Continuer la séance", role: .cancel) {}
-        } message: {
-            Text(finishMessage)
-        }
-        .alert("La séance n’a pas été terminée. Réessaie.", isPresented: $finishFailed) {
-            Button("OK", role: .cancel) {}
-        }
-    }
-
-    private func finish() {
-        do {
-            try training.finish()
-        } catch {
-            Self.log.error("session not ended: \(String(describing: error), privacy: .public)")
-            finishFailed = true
-        }
-    }
-
-    /// The web's words: what is kept, what is not, and that the program stays as it is.
-    private var finishMessage: String {
-        guard let cover = training.cover else { return "" }
-        let left = cover.setsPlanned - cover.setsDone
-        guard left > 0 else {
-            return String(
-                localized: "\(cover.setsDone) séries notées sur \(cover.setsPlanned)\u{202F}; ton programme ne change pas.")
-        }
-        let count = String(localized: "\(cover.setsDone) séries notées sur \(cover.setsPlanned).")
-        let rest = String(
-            localized: "Les \(left) séries non cochées ne seront pas enregistrées\u{202F}; ton programme ne change pas.")
-        return "\(count) \(rest)"
     }
 }
 
@@ -92,7 +55,8 @@ private struct SessionList: View {
     @State private var justLogged: String?
     /// Counts the sets this screen recorded: one haptic each, once the write returned.
     @State private var recorded = 0
-    @Binding var askFinish: Bool
+    @State private var askFinish = false
+    @State private var askDelete = false
     @State private var failed: LocalizedStringKey?
     /// The time the rest row was last checked against; moved when the rest ends or the app returns.
     @State private var clock = Date.now
@@ -352,6 +316,42 @@ private struct SessionList: View {
         AccessibilityNotification.Announcement(String(localized: "Série notée.")).post()
     }
 
+    // MARK: End
+
+    private func finish() {
+        do {
+            try training.finish()
+        } catch {
+            Self.log.error("session not ended: \(String(describing: error), privacy: .public)")
+            failed = "La séance n’a pas été terminée. Réessaie."
+        }
+    }
+
+    /// The session goes, with every set logged in it; the program stays as it is.
+    private func delete() {
+        do {
+            try training.delete()
+        } catch {
+            Self.log.error("session not removed: \(AccountStore.logLabel(error), privacy: .public)")
+            failed = "La séance n’a pas été supprimée. Réessaie."
+            return
+        }
+        lower()
+    }
+
+    /// The web's words: what is kept, what is not, and that the program stays as it is.
+    private var finishMessage: String {
+        let left = cover.setsPlanned - cover.setsDone
+        guard left > 0 else {
+            return String(
+                localized: "\(cover.setsDone) séries notées sur \(cover.setsPlanned)\u{202F}; ton programme ne change pas.")
+        }
+        let count = String(localized: "\(cover.setsDone) séries notées sur \(cover.setsPlanned).")
+        let rest = String(
+            localized: "Les \(left) séries non cochées ne seront pas enregistrées\u{202F}; ton programme ne change pas.")
+        return "\(count) \(rest)"
+    }
+
     // MARK: Bars
 
     /// One thumb, wet hands: the next set is validated from the foot of the screen too.
@@ -390,7 +390,21 @@ private struct SessionList: View {
                 .accessibilityLabel("Temps écoulé")
         }
         ToolbarItem(placement: .topBarTrailing) {
+            // Both questions come from the button that asked them.
             Button("Terminer") { askFinish = true }
+                .confirmationDialog("Terminer la séance\u{202F}?", isPresented: $askFinish, titleVisibility: .visible) {
+                    Button("Terminer et enregistrer", action: finish)
+                    Button("Supprimer la séance…", role: .destructive) { askDelete = true }
+                    Button("Continuer la séance", role: .cancel) {}
+                } message: {
+                    Text(finishMessage)
+                }
+                .confirmationDialog("Supprimer la séance\u{202F}?", isPresented: $askDelete, titleVisibility: .visible) {
+                    Button("Supprimer la séance", role: .destructive, action: delete)
+                    Button("Continuer la séance", role: .cancel) {}
+                } message: {
+                    Text("Les \(cover.setsDone) séries notées ne seront pas gardées\u{202F}; ton programme ne change pas.")
+                }
         }
         ToolbarItemGroup(placement: .keyboard) {
             Spacer()
