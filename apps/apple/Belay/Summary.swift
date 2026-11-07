@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// A plain record of what happened, sets and time: no rings, no reward screen.
+/// A plain record of what happened, the volume first: no rings, no reward screen.
 struct SummaryView: View {
     let summary: SessionSummary
     let close: () -> Void
@@ -14,8 +14,18 @@ struct SummaryView: View {
                     if let name = summary.name, !name.isEmpty {
                         Text(name).font(.title3.weight(.semibold)).foregroundStyle(.ink)
                     }
-                    Text("Séance terminée").font(.subheadline).foregroundStyle(.muted)
+                    Text("Séance terminée · \(Self.day(summary.endedAt))")
+                        .font(.subheadline)
+                        .foregroundStyle(.muted)
                 }
+                VStack(alignment: .leading, spacing: 2) {
+                    block("Volume", Self.volume(summary.volumeKg), unit: "kg", font: .displayHero)
+                        .accessibilityIdentifier("summary-volume")
+                    Text("Montée exclue · \(summary.warmupSets) séries")
+                        .font(.subheadline)
+                        .foregroundStyle(.muted)
+                }
+                .padding(.bottom, 4)
                 ViewThatFits(in: .horizontal) {
                     HStack(alignment: .top) {
                         block("Durée", Self.duration(summary.duration))
@@ -30,6 +40,17 @@ struct SummaryView: View {
                 }
             }
             .listRowBackground(Color.surface)
+
+            if !summary.records.isEmpty {
+                Section {
+                    ForEach(summary.records) { record in
+                        Text("Record\u{202F}: \(record.name), \(SessionText.load(record.load))")
+                            .font(.body.weight(.medium))
+                            .foregroundStyle(.ink)
+                    }
+                }
+                .listRowBackground(Color.surface)
+            }
 
             if !summary.exercises.isEmpty {
                 Section {
@@ -63,12 +84,14 @@ struct SummaryView: View {
         .sensoryFeedback(.success, trigger: arrived)
     }
 
-    private func block(_ title: LocalizedStringKey, _ value: String) -> some View {
+    private func block(
+        _ title: LocalizedStringKey, _ value: String, unit: String? = nil, font: Font = .displayLoad
+    ) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(title)
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.muted)
-            Figure(text: value, font: .displayLoad)
+            Figure(text: value, unit: unit, font: font)
         }
         .padding(.vertical, 4)
         .accessibilityElement(children: .combine)
@@ -82,6 +105,16 @@ struct SummaryView: View {
             : "\(SetText.kg(logged.top.weightKg))\u{202F}kg × \(count)"
         return logged.sets == 1
             ? String(localized: "1 série · \(top)") : String(localized: "\(logged.sets) séries · meilleure \(top)")
+    }
+
+    /// « 2 605 », whole kilograms.
+    private static func volume(_ kg: Double) -> String {
+        kg.formatted(.number.precision(.fractionLength(0)))
+    }
+
+    /// « samedi 7 novembre », in the person's language.
+    private static func day(_ date: Date) -> String {
+        date.formatted(.dateTime.weekday(.wide).day().month(.wide))
     }
 
     /// « 48 min », « 1 h 5 min ».

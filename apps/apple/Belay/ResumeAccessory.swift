@@ -8,17 +8,28 @@ struct ResumeAccessory: View {
     @Environment(\.tabViewBottomAccessoryPlacement) private var placement
     @Environment(\.dynamicTypeSize) private var typeSize
 
+    /// « Série 3 sur 4 · Séance A », or « En cours » once every planned set is done.
+    private var line: String {
+        session.current.map { SessionText.setLine($0, code: session.code) } ?? String(localized: "En cours")
+    }
+
+    private var spoken: String {
+        let what = session.current.map { "\($0.exercise), \(line)" }
+            ?? SessionText.title(session.code, name: session.name)
+        return String(localized: "Reprendre la séance, \(what)")
+    }
+
     var body: some View {
         Button(action: action) {
             HStack(spacing: 10) {
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(SessionText.title(session.code, name: session.name))
+                    Text(session.current?.exercise ?? SessionText.title(session.code, name: session.name))
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(.ink)
                         .lineLimit(1)
                     // The accessory keeps the bar's height: at the largest sizes one line fits whole.
                     if placement != .inline && !typeSize.isAccessibilitySize {
-                        Text("En cours")
+                        Text(line)
                             .font(.caption)
                             .foregroundStyle(.muted)
                             .lineLimit(1)
@@ -45,7 +56,7 @@ struct ResumeAccessory: View {
         // Capped as the tab bar's own labels are, so the title and the time are never cut; the
         // card above carries the session at full size.
         .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-        .accessibilityLabel("Reprendre la séance, \(SessionText.title(session.code, name: session.name))")
+        .accessibilityLabel(spoken)
         .accessibilityIdentifier("resume-accessory")
     }
 }

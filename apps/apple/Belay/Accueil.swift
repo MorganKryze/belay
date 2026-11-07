@@ -1,4 +1,4 @@
-import os
+import BelayCore
 import SwiftUI
 
 /// Accueil: the day's session, next or under way, and what the sync waits for, said here only.
@@ -6,11 +6,12 @@ import SwiftUI
 struct AccueilView: View {
     let training: TrainingModel
     let notice: SyncNotice
+    /// How the instance names the person; nil until it has said so.
+    let displayName: String?
+    /// Pushes the next session's preview.
+    let openPreview: () -> Void
     /// Opens the session cover, zooming from the element named.
     let openCover: (String) -> Void
-    @State private var startFailed = false
-
-    private static let log = Logger(subsystem: "cloud.libresoftware.belay", category: "accueil")
 
     var body: some View {
         List {
@@ -22,14 +23,14 @@ struct AccueilView: View {
         .belayList()
         .safeAreaInset(edge: .top, spacing: 0) { notice }
         .background { Wall() }
-        .navigationTitle(AppTab.home.title)
+        .navigationTitle(title)
         .belaySubtitle(Self.today())
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 // In the toolbar's own style: with `.plain` a tap on the simulator never reached
                 // the link.
                 NavigationLink(value: Route.settings) {
-                    Avatar()
+                    Avatar(letter: displayName?.first.map { String($0).localizedUppercase })
                         .frame(minWidth: 44, minHeight: 44)
                         .contentShape(.rect)
                 }
@@ -38,16 +39,22 @@ struct AccueilView: View {
             }
             .sharedBackgroundVisibility(.hidden)
         }
-        .alert("La séance n’a pas démarré. Réessaie.", isPresented: $startFailed) {
-            Button("OK", role: .cancel) {}
-        }
+    }
+
+    /// « Bonjour Ada », or the tab's name before the instance has named the person.
+    private var title: Text {
+        guard let name = displayName, !name.isEmpty else { return Text(AppTab.home.title) }
+        return Text("Bonjour \(name)")
     }
 
     @ViewBuilder private var card: some View {
         if let open = training.open {
+            // Under way, the load leads: what is on the bar, not the session's name.
             DayCard(
-                state: String(localized: "En cours"), lead: SessionText.short(open.code), name: open.name,
-                line: String(localized: "Séries\u{202F}: \(open.setsDone) sur \(open.setsPlanned)"),
+                state: SessionText.progress(done: open.setsDone, of: open.setsPlanned),
+                lead: open.current.flatMap(SessionText.load) ?? SessionText.short(open.code),
+                name: open.current?.exercise ?? open.name,
+                line: open.current.map { SessionText.setLine($0, code: open.code) } ?? SessionText.short(open.code),
                 button: "Reprendre", source: Morph.card
             ) {
                 openCover(Morph.card)
@@ -56,22 +63,12 @@ struct AccueilView: View {
             DayCard(
                 state: String(localized: "La prochaine"), lead: SessionText.short(next.code), name: next.name,
                 line: SessionText.size(exercises: next.exercises, minutes: next.minutes),
-                button: "Commencer", source: Morph.card, action: start
+                button: "Voir la séance", source: Morph.card, action: openPreview
             )
         } else {
             Text("Aucune séance prévue. Choisis un programme sur le web.")
                 .foregroundStyle(.ink)
                 .padding(.vertical, 12)
-        }
-    }
-
-    private func start() {
-        do {
-            _ = try training.start()
-            openCover(Morph.card)
-        } catch {
-            Self.log.error("session not started: \(String(describing: error), privacy: .public)")
-            startFailed = true
         }
     }
 
@@ -93,6 +90,45 @@ enum SessionText {
     static func title(_ code: String, name: String?) -> String {
         guard let name, !name.isEmpty else { return short(code) }
         return "\(short(code)) · \(name)"
+    }
+
+    /// « En cours · 2 séries sur 19 ».
+    static func progress(done: Int, of planned: Int) -> String {
+        String(localized: "En cours · \(done) séries sur \(planned)")
+    }
+
+    /// « Série 3 sur 4 · Séance A ».
+    static func setLine(_ set: CurrentSet, code: String) -> String {
+        String(localized: "Série \(set.number) sur \(set.of) · \(short(code))")
+    }
+
+    /// « 62,5 kg × 8 », « 45 s », « 5 kg · 45 s »; nil while the load is still to type.
+    static func load(_ set: CurrentSet) -> String? {
+        guard let weightKg = set.weightKg, let count = set.count else { return nil }
+        return set.timed
+            ? load(Load(weightKg: weightKg, reps: nil, seconds: count))
+            : load(Load(weightKg: weightKg, reps: count, seconds: nil))
+    }
+
+    /// A set's load and count as the summary and the card write them.
+    static func load(_ load: Load) -> String {
+        let kg = "\(SetText.kg(load.weightKg))\u{202F}kg"
+        guard let seconds = load.seconds else { return "\(kg) × \(load.reps ?? 0)" }
+        return load.weightKg > 0 ? "\(kg) · \(seconds)\u{202F}s" : "\(seconds)\u{202F}s"
+    }
+
+    /// « 4 × 6–8 · la dernière fois 62,5 kg × 8, 8, 7, 6 », or the sets alone the first time.
+    static func target(_ exercise: PlannedExercise) -> String {
+        let sets = "\(exercise.sets) × \(exercise.repRange.map(String.init).joined(separator: "–"))"
+            + (exercise.timed ? "\u{202F}s" : "")
+        guard !exercise.lastTime.isEmpty else { return sets }
+        let last = exercise.lastTime.map { group in
+            let counts = group.counts.map(String.init).joined(separator: ", ")
+            return exercise.timed && group.weightKg == 0
+                ? "\(counts)\u{202F}s"
+                : "\(SetText.kg(group.weightKg))\u{202F}kg × \(counts)\(exercise.timed ? "\u{202F}s" : "")"
+        }.joined(separator: " · ")
+        return "\(sets) · \(String(localized: "la dernière fois \(last)"))"
     }
 
     /// « 6 exercices · environ 55 min ».

@@ -10,6 +10,34 @@ struct NextSession: Equatable {
     /// The slots of the day's plan, the no-climbing ones included when the week asks for them.
     let exercises: Int
     let minutes: Int
+    /// The live slots of that plan, as the preview lists them.
+    let plan: [PlannedExercise]
+}
+
+/// One exercise of the next session, before it starts.
+struct PlannedExercise: Equatable, Identifiable {
+    let slotIndex: Int
+    let name: String
+    let sets: Int
+    /// Seconds for a timed exercise; repetitions otherwise.
+    let timed: Bool
+    let repRange: [Int]
+    /// Last time's work sets, the counts of equal loads in a row grouped.
+    let lastTime: [LoadGroup]
+
+    var id: Int { slotIndex }
+}
+
+/// The set up next in the open session, as the card and the accessory lead with it.
+struct CurrentSet: Equatable {
+    let exercise: String
+    /// Its number among the exercise's work sets, from 1, and how many there are.
+    let number: Int
+    let of: Int
+    let timed: Bool
+    /// Nil when the person has to type it.
+    let weightKg: Double?
+    let count: Int?
 }
 
 /// The session open on this phone, or on another device, as the card and the accessory show it.
@@ -21,6 +49,8 @@ struct OpenSession: Equatable {
     /// The plan's work sets, and how many of them are done.
     let setsPlanned: Int
     let setsDone: Int
+    /// Nil once every planned set is done.
+    let current: CurrentSet?
 }
 
 /// The open session as its cover shows it: each exercise of the plan with its work sets, and the
@@ -86,10 +116,23 @@ struct SessionSummary: Equatable {
         var id: Int { slotIndex }
     }
 
+    /// A record of the session: the exercise and the set that beat every earlier session's.
+    struct Record: Equatable, Identifiable {
+        let name: String
+        let load: Load
+
+        var id: String { name }
+    }
+
     let code: String
     let name: String?
+    let endedAt: Date
     let duration: TimeInterval
     let workSets: Int
+    let warmupSets: Int
+    /// The work sets' kilograms times reps, warm-ups and timed sets left out.
+    let volumeKg: Double
+    let records: [Record]
     let exercises: [Logged]
 }
 
@@ -232,7 +275,9 @@ final class TrainingModel {
         try store.recordChanges(
             [.workout(WorkoutChange(id: workout.id, at: time, edit: .ended(time)))], active: .clear)
         didWrite()
-        summary = summarize(workout, sets: history.sets, endedAt: at)
+        var ended = workout
+        ended.endedAt = time
+        summary = summarize(ended, history: history, endedAt: at)
         refresh()
     }
 
@@ -241,7 +286,10 @@ final class TrainingModel {
         summary = nil
     }
 
-    private func summarize(_ workout: WorkoutRow, sets: [SetRow], endedAt: Date) -> SessionSummary {
+    /// The shared summary rule's figures, read against the history the session ends in.
+    private func summarize(_ workout: WorkoutRow, history: History, endedAt: Date) -> SessionSummary {
+        let sets = history.sets
+        let totals = BelayCore.summary(workout, sets: liveSets(history), history: history)
         let work = sets.filter { $0.workoutId == workout.id && !$0.removed && !$0.warmup }
         let logged = workout.plan.indices.compactMap { index -> SessionSummary.Logged? in
             let own = work.filter { $0.slotIndex == index }
@@ -253,8 +301,11 @@ final class TrainingModel {
         }
         let started = Instant.date(workout.startedAt) ?? endedAt
         return SessionSummary(
-            code: workout.sessionCode, name: workout.sessionName.value,
-            duration: max(0, endedAt.timeIntervalSince(started)), workSets: work.count, exercises: logged)
+            code: workout.sessionCode, name: workout.sessionName.value, endedAt: endedAt,
+            duration: max(0, endedAt.timeIntervalSince(started)), workSets: work.count,
+            warmupSets: totals.warmupSets, volumeKg: totals.volumeKg,
+            records: totals.records.map { .init(name: exerciseName($0.exerciseId), load: $0.load) },
+            exercises: logged)
     }
 
     private func refresh() {
@@ -277,11 +328,12 @@ final class TrainingModel {
         let sets = snapshot.history.sets
         if let workout = openWorkout(snapshot.history.workouts, forgotten: (sets, at)) {
             let own = sets.filter { $0.workoutId == workout.id && !$0.removed }
+            let cover = coverOf(workout, sets: own, history: snapshot.history)
             open = OpenSession(
                 workoutId: workout.id, code: workout.sessionCode, name: workout.sessionName.value,
-                startedAt: Instant.date(workout.startedAt) ?? at, setsPlanned: plannedWorkSets(workout.plan),
-                setsDone: sessionProgress(workout.plan, sets: own).done.count)
-            cover = coverOf(workout, sets: own, history: snapshot.history)
+                startedAt: Instant.date(workout.startedAt) ?? at, setsPlanned: cover.setsPlanned,
+                setsDone: cover.setsDone, current: Self.current(cover))
+            self.cover = cover
             restEnd = snapshot.active.flatMap { $0.workoutId == workout.id ? $0.restEndsAt : nil }
                 .flatMap(Instant.date)
         } else {
@@ -293,8 +345,29 @@ final class TrainingModel {
             let plan = planFor(template, activities: snapshot.activities, date: toISODate(at, timeZone: timeZone))
             return NextSession(
                 sessionId: template.sessionId, code: template.code, name: template.name,
-                exercises: plan.count, minutes: estimatedMinutes(plan))
+                exercises: plan.count, minutes: estimatedMinutes(plan),
+                plan: liveSlots(plan).map { index in
+                    let slot = plan[index]
+                    let measure: Measure? = slot.measure == .seconds ? .seconds : nil
+                    return PlannedExercise(
+                        slotIndex: index, name: exerciseName(slot.exerciseId), sets: slot.sets,
+                        timed: measure != nil, repRange: slot.repRange,
+                        lastTime: lastTime(snapshot.history, exerciseId: slot.exerciseId, measure: measure)
+                            .map { LoadGroup(weightKg: $0.weightKg, counts: $0.counts) })
+                })
         }
+    }
+
+    /// The set the turn rule offers next, with what the cover offers for it.
+    private static func current(_ cover: CoverState) -> CurrentSet? {
+        guard let turn = cover.next,
+              let exercise = cover.exercises.first(where: { $0.slotIndex == turn.slotIndex }),
+              exercise.sets.indices.contains(turn.round)
+        else { return nil }
+        let set = exercise.sets[turn.round]
+        return CurrentSet(
+            exercise: exercise.name, number: set.number, of: exercise.sets.count, timed: exercise.timed,
+            weightKg: set.weightKg, count: set.count)
     }
 
     /// The plan's live slots with their work sets: a done set as it was logged; one to do with last
