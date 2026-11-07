@@ -67,6 +67,29 @@ final class AccueilTests: XCTestCase {
             last.label.hasSuffix("4 × 6–8 · la dernière fois 62,5\u{202F}kg × 8, 8, 7, 6"), "as figures: \(last.label)")
     }
 
+    /// A session started from the preview and finished closes onto Accueil, not onto the preview.
+    func testFinishingClosesOntoAccueil() {
+        let app = launch("past")
+        let open = app.buttons["Voir la séance"]
+        XCTAssertTrue(open.waitForExistence(timeout: 10))
+        open.tap()
+        let start = app.buttons["Commencer la séance"]
+        XCTAssertTrue(start.waitForExistence(timeout: 5))
+        start.tap()
+        let tick = app.buttons["tick"]
+        XCTAssertTrue(tick.waitForExistence(timeout: 5))
+        tick.tap()
+        app.buttons["Terminer"].tap()
+        let save = app.buttons["Terminer et enregistrer"]
+        XCTAssertTrue(save.waitForExistence(timeout: 3))
+        save.tap()
+        let close = app.buttons["summary-close"]
+        XCTAssertTrue(close.waitForExistence(timeout: 5))
+        close.tap()
+        XCTAssertTrue(app.navigationBars["Bonjour Ada"].waitForExistence(timeout: 5), "back on Accueil")
+        XCTAssertFalse(app.buttons["Commencer la séance"].exists, "the preview is gone")
+    }
+
     /// Under way, the card and the accessory say where the session stands: the load on the bar,
     /// the exercise, the set.
     func testRunningCardLeadsWithTheLoad() {

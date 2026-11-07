@@ -109,9 +109,12 @@ struct RootView: View {
                 .tint(.ink)
         }
         // A session closed elsewhere (another device, a forgotten one) takes its cover with it; one
-        // finished here keeps it for its summary.
+        // finished here keeps it for its summary. Either way its preview is done with: the cover
+        // closes onto Accueil, as on the web.
         .onChange(of: training.open == nil) { _, closed in
-            if closed && training.summary == nil { model.coverOpen = false }
+            guard closed else { return }
+            model.paths[.home]?.removeAll { $0 == .preview }
+            if training.summary == nil { model.coverOpen = false }
         }
     }
 
