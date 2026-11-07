@@ -89,25 +89,27 @@ private func freshDefaults() -> UserDefaults {
   @Test func remembersWhoTheTokenBelongsTo() throws {
     let session = StoredSession(store: MemoryStore(), defaults: freshDefaults())
     try session.keep(origin: origin, token: "t0k3n")
-    session.remember(userId: "ana")
+    session.remember(userId: "ana", displayName: "Ana")
     #expect(session.userId == "ana")
+    #expect(session.displayName == "Ana")
   }
 
   /// A restore can bring the defaults back without the Keychain, so an id can outlive its token:
   /// a new token never sits beside it until the instance names its owner.
   @Test func forgetsThePreviousPersonWhenANewTokenIsKept() throws {
     let defaults = freshDefaults()
-    StoredSession(store: MemoryStore(), defaults: defaults).remember(userId: "ana")
+    StoredSession(store: MemoryStore(), defaults: defaults).remember(userId: "ana", displayName: "Ana")
     let session = StoredSession(store: MemoryStore(), defaults: defaults)
     try session.keep(origin: origin, token: "bo's")
     #expect(session.userId == nil)
+    #expect(session.displayName == nil)
   }
 
   @Test func forgetsThePreviousPersonEvenWhenTheNewTokenIsNotKept() throws {
     let store = MemoryStore()
     store.writeFails = true
     let session = StoredSession(store: store, defaults: freshDefaults())
-    session.remember(userId: "ana")
+    session.remember(userId: "ana", displayName: "Ana")
     #expect(throws: KeychainError.self) { try session.keep(origin: origin, token: "bo's") }
     #expect(session.userId == nil)
   }
@@ -115,8 +117,9 @@ private func freshDefaults() -> UserDefaults {
   @Test func forgetsThePersonAtSignOut() throws {
     let session = StoredSession(store: MemoryStore(clearFails: true), defaults: freshDefaults())
     try session.keep(origin: origin, token: "t0k3n")
-    session.remember(userId: "ana")
+    session.remember(userId: "ana", displayName: "Ana")
     try? session.drop()
     #expect(session.userId == nil)
+    #expect(session.displayName == nil)
   }
 }
