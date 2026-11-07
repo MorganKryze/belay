@@ -248,6 +248,8 @@ for (const theme of ["light", "dark"] as const) {
       await fakeServer(page, { rows: WEEKS });
       await page.goto("/");
       await homeReady(page);
+      // The launch mark is blue standing alone: read the page once the launch has faded out.
+      await expect(page.locator(".launch")).toBeHidden();
       // Located by its markup: under the sheet the page is hidden from the accessibility tree.
       const see = page.locator('main a[data-variant="primary"]');
       expect(await blueTargets(page)).toEqual(["See the session"]);
