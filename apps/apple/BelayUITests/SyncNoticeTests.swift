@@ -29,12 +29,9 @@ final class SyncNoticeTests: XCTestCase {
         XCTAssertTrue(app.buttons["tick"].waitForExistence(timeout: 5), "the cover shows the next set")
     }
 
-    /// Ticks the next set with its RIR, as two taps do.
+    /// Ticks the next set with the RIR shown under it, in one tap.
     private func tick(_ app: XCUIApplication) {
         app.buttons["tick"].tap()
-        let confirm = app.buttons["rir-confirm"]
-        XCTAssertTrue(confirm.waitForExistence(timeout: 3), "the tick asks for the RIR")
-        confirm.tap()
     }
 
     /// Offline is said once, on Accueil only, through a return to the foreground and a tick that

@@ -30,9 +30,6 @@ final class SignOutTests: XCTestCase {
         let app = launch("history")
         openCover(app)
         app.buttons["tick"].tap()
-        let confirm = app.buttons["rir-confirm"]
-        XCTAssertTrue(confirm.waitForExistence(timeout: 3), "the tick asks for the RIR")
-        confirm.tap()
         XCTAssertTrue(element(app, "set-0-3").label.contains("faite"), "the set is done")
         XCTAssertEqual(queuedSets(app), "1", "and queued once")
         app.buttons["Réduire la séance"].tap()
