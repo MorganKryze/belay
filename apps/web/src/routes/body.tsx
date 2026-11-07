@@ -558,7 +558,8 @@ function Weeks({ weeks, ctx }: { weeks: WeekSummary[]; ctx: WeekContext }) {
       <div className={`${sectionLabel} flex items-baseline justify-between`}>
         <h2 id="weeks">{t("body.weeks")}</h2>
         {views.some((v) => v.value.kind === "inRange") && (
-          <span className="flex items-center gap-1 font-medium">
+          // On paper: set right, the legend passes over the cracks as the page scrolls.
+          <span className="flex items-center gap-1 bg-background font-medium">
             <span className="inline-flex self-center rounded-full bg-reference px-[5px] py-px text-reference-ink">
               {rangeCheck}
             </span>

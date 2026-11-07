@@ -154,11 +154,13 @@ function Summary({ account }: { account: OpenAccount }) {
           ))}
         </GroupedList>
       )}
-      <p className="text-(length:--text-secondary) text-muted-foreground">
+      {/* These two lines on paper: at the largest text they reach the cracks' band and scroll
+          over them. */}
+      <p className="w-fit bg-background text-(length:--text-secondary) text-muted-foreground">
         {t("summary.warmups")} · {t("summary.warmupCount", { count: stats.warmupSets })}
       </p>
       <label className="flex flex-col gap-1.5 text-(length:--text-secondary) font-semibold">
-        {t("summary.note")}
+        <span className="w-fit bg-background">{t("summary.note")}</span>
         <textarea
           value={note}
           maxLength={NOTE_MAX}

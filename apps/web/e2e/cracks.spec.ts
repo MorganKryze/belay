@@ -264,6 +264,7 @@ test.describe("plainer grounds", () => {
   });
 });
 
+const SCROLL_STEP = 40;
 const SIZES = [
   ["the default text", async () => {}],
   ["the largest text", (page: Page) => asAndroid(page, { textScale: 2 })],
@@ -284,20 +285,30 @@ for (const [width, height] of WIDTHS)
           await settled(page);
           const box = await layer(page);
           expect(box).not.toBeNull();
-          // Read until two still captures agree: a screen still settling its data changes
-          // between them, a crack under text stays.
-          await expect
-            .poll(
-              async () => {
-                const boxes = await textBoxes(page, box!);
-                const counts = await changed(page, boxes);
-                return boxes
-                  .filter((_, i) => counts[i]! > 0)
-                  .map((b) => `${b.text} at ${Math.round(b.left)},${Math.round(b.top)}`);
-              },
-              { timeout: 10_000 },
-            )
-            .toEqual([]);
+          // The page scrolls over the still layer, so every line is read at each step from the
+          // top to the bottom. A step is about two lines of text: a crack runs down the edge
+          // further than that, so a line that would cross one meets it at some step.
+          const end = await page.evaluate(
+            () => document.documentElement.scrollHeight - innerHeight,
+          );
+          for (let y = 0; ; y = Math.min(y + SCROLL_STEP, end)) {
+            await page.evaluate((top) => scrollTo({ top, behavior: "instant" }), y);
+            // Read until two still captures agree: a screen still settling its data changes
+            // between them, a crack under text stays.
+            await expect
+              .poll(
+                async () => {
+                  const boxes = await textBoxes(page, box!);
+                  const counts = await changed(page, boxes);
+                  return boxes
+                    .filter((_, i) => counts[i]! > 0)
+                    .map((b) => `${b.text} at ${Math.round(b.left)},${Math.round(b.top)}`);
+                },
+                { timeout: 10_000, message: `scrolled ${y} px` },
+              )
+              .toEqual([]);
+            if (y >= end) break;
+          }
         });
 
 test("offline after one visit, the cracks still load", async ({ page, context }) => {
