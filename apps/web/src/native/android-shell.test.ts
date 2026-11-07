@@ -10,8 +10,8 @@ import { kotlin, longConst, stringSet } from "@/test/kotlin";
 const app = join(dirname(fileURLToPath(import.meta.url)), "../../../mobile/android/app/src");
 const read = (path: string) => readFileSync(join(app, path), "utf8");
 const manifest = () => read("main/AndroidManifest.xml");
-// The cool blue identity, as the preview and the Android prototype give it: the launch papers, the
-// accent and the sheet surface, light then dark.
+// The app's colours, light then dark: the launch papers, the accent and the sheet surface. The
+// shell's resources must carry the same values as the page, or the handover shows a step.
 const PAPER = ["#F3F5F5", "#10151A"];
 const ACCENT = ["#1F4E8C", "#8DB6EE"];
 const SURFACE = ["#FFFFFF", "#182027"];
@@ -164,8 +164,8 @@ describe("the Android shell", () => {
     expect(manifest()).not.toMatch(/android:configChanges="[^"]*fontScale/);
   });
 
-  // R12: the page reads increased contrast from the shell, at call time so a change shows on the
-  // next read; the object offers the two readings and nothing else.
+  // The page reads increased contrast from the shell, at call time so a change shows on the next
+  // read; the object offers the two readings and nothing else, so the bridge keeps a fixed shape.
   it("BelayText offers scale() and contrast() and reads the contrast when asked", () => {
     const source = kotlin("BelayNativePlugin.kt").replace(/\s+/g, " ");
     const tail = source.slice(source.indexOf("class TextScale"));
@@ -183,7 +183,7 @@ describe("the Android shell", () => {
       "internal fun isHighContrast(contrast: Float, highText: Boolean): Boolean",
     );
     expect(rule).toContain("highText || contrast > 0.25f");
-    // GC4: the Kotlin added for this branch stays far under its 150 lines.
+    // The contrast reading stays a few lines: native code is kept small and never grows per screen.
     expect(kotlin("Contrast.kt").split("\n").length).toBeLessThan(40);
   });
 
@@ -272,7 +272,7 @@ describe("the Android shell", () => {
   // Android's splash leaves on the activity's first frame, long before the page draws: the web
   // view's own white filled the gap. The splash now holds the activity until the page has loaded,
   // its launch screen in it, and then stays over the activity until the web view has drawn that
-  // screen: a web view that has not drawn yet shows its bare background, chalk with no mark. A
+  // screen: a web view that has not drawn yet shows its bare background, paper with no mark. A
   // page that never draws lets the splash go at the page's own safety delay.
   it("the splash stays until the web view has drawn the page's launch screen", () => {
     const source = kotlin("MainActivity.kt");
@@ -379,8 +379,8 @@ describe("the Android shell", () => {
       '<uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" android:maxSdkVersion="32" tools:node="replace" />',
     ]);
   });
-  // PA3 on Android: the orange family and the warm neutrals are in no colour resource, style or
-  // Kotlin file.
+  // The old orange family and warm neutrals are in no colour resource, style or Kotlin file, so
+  // no surface of the app falls back to the former palette.
   it("keeps no colour of the old palette in the values, the styles or the Kotlin", () => {
     const old = /#(fafaf7|151412|c2410c|fb923c|ea580c|1d1b19)\b/i;
     for (const dir of ["values", "values-night"])
@@ -389,7 +389,8 @@ describe("the Android shell", () => {
     for (const file of kotlinFiles()) expect(kotlin(file), file).not.toMatch(old);
   });
 
-  // LN3: the splash draws its own mark in the launch blue, never the launcher's paper foreground.
+  // The splash draws its own mark in the launch blue, never the launcher's paper foreground, so
+  // the mark keeps one colour from the first frame to the page.
   it("the splash draws ic_splash_mark in the launch blue on the two papers", () => {
     const launch = /<style name="AppTheme\.NoActionBarLaunch"[^>]*>([\s\S]*?)<\/style>/.exec(
       read("main/res/values/styles.xml"),
@@ -406,7 +407,8 @@ describe("the Android shell", () => {
     expect(colours("launch")).toEqual(PAPER);
   });
 
-  // IC1: the adaptive icon sits on the blue by day and dark paper by night; the themed layer stays.
+  // The adaptive icon sits on the blue by day and dark paper by night; the themed layer stays so
+  // the launcher can draw its monochrome icon.
   it("the adaptive icon has the icon ground, a night foreground and the monochrome layer", () => {
     expect(colours("icon_ground")).toEqual(["#1F4E8C", "#10151A"]);
     for (const icon of ["ic_launcher", "ic_launcher_round"]) {
@@ -426,7 +428,7 @@ describe("the Android shell", () => {
       ).toBe(true);
   });
 
-  // IC4: the status bar icon stays the white mark.
+  // The status bar icon stays the white mark: Android draws status icons as a white silhouette.
   it("the status bar icon stays white and the notifier tints the Live Update with the accent", () => {
     const script = readFileSync(join(app, "../../../../../scripts/gen-icons.sh"), "utf8");
     const stat = script.split("\n").find((line) => line.includes('fill="#FFFFFF" transform'));

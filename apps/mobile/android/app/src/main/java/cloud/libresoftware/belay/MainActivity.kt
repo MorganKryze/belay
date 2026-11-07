@@ -40,7 +40,7 @@ class MainActivity : BridgeActivity() {
         val splash = installSplashScreen()
         splash.setKeepOnScreenCondition { !loaded }
         // Then the activity draws under the splash, but a web view's first frames are its bare
-        // background, chalk with no mark: the splash stays over it until the web view has drawn the
+        // background, paper with no mark: the splash stays over it until the web view has drawn the
         // page, two frames after it says the page is ready to draw, so that frame is on screen.
         splash.setOnExitAnimationListener { provider ->
             var gone = false
