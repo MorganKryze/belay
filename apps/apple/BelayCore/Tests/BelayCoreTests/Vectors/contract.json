@@ -1,0 +1,1052 @@
+{
+  "bounds": {
+    "setKg": {
+      "min": 0,
+      "max": 500,
+      "step": 0.25
+    },
+    "reps": {
+      "min": 0,
+      "max": 100
+    },
+    "seconds": {
+      "min": 0,
+      "max": 3600
+    },
+    "rirMax": 4,
+    "maxSlots": 30,
+    "maxPosition": 49,
+    "maxWarmups": 3,
+    "noteMax": 500,
+    "sessionNameMax": 40,
+    "planMaxBytes": 16384,
+    "slot": {
+      "sets": 10,
+      "reps": 100,
+      "seconds": 3600,
+      "restSec": 900,
+      "groupKey": 16
+    },
+    "exerciseId": "^(ds|belay):[a-z0-9-]{1,40}$",
+    "minTime": "1900-01-01T00:00:00.000Z",
+    "clockSlackMs": 300000,
+    "maxChanges": 500
+  },
+  "changes": [
+    {
+      "name": "start: as the phone writes it",
+      "valid": true,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"start\",\"sessionCode\":\"A\",\"sessionId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f01\",\"sessionName\":\"Push\",\"plan\":[{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null}],\"startedAt\":\"2026-11-06T09:29:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "start: no session id nor name, as an older phone",
+      "valid": true,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"start\",\"sessionCode\":\"A\",\"plan\":[{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null}],\"startedAt\":\"2026-11-06T09:29:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "start: session id and name null",
+      "valid": true,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"start\",\"sessionCode\":\"A\",\"sessionId\":null,\"sessionName\":null,\"plan\":[{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null}],\"startedAt\":\"2026-11-06T09:29:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "start: session code Z",
+      "valid": true,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"start\",\"sessionCode\":\"Z\",\"sessionId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f01\",\"sessionName\":\"Push\",\"plan\":[{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null}],\"startedAt\":\"2026-11-06T09:29:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "start: session code lower case",
+      "valid": false,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"start\",\"sessionCode\":\"a\",\"sessionId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f01\",\"sessionName\":\"Push\",\"plan\":[{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null}],\"startedAt\":\"2026-11-06T09:29:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "start: session code of two letters",
+      "valid": false,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"start\",\"sessionCode\":\"AB\",\"sessionId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f01\",\"sessionName\":\"Push\",\"plan\":[{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null}],\"startedAt\":\"2026-11-06T09:29:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "start: session id in upper case",
+      "valid": false,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"start\",\"sessionCode\":\"A\",\"sessionId\":\"019A5A3C-7B2E-7D41-9C3F-2B8E4D6A1F01\",\"sessionName\":\"Push\",\"plan\":[{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null}],\"startedAt\":\"2026-11-06T09:29:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "start: session name at its bound",
+      "valid": true,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"start\",\"sessionCode\":\"A\",\"sessionId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f01\",\"sessionName\":\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\",\"plan\":[{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null}],\"startedAt\":\"2026-11-06T09:29:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "start: session name one past",
+      "valid": false,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"start\",\"sessionCode\":\"A\",\"sessionId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f01\",\"sessionName\":\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\",\"plan\":[{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null}],\"startedAt\":\"2026-11-06T09:29:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "start: session name in emoji at its bound",
+      "valid": true,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"start\",\"sessionCode\":\"A\",\"sessionId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f01\",\"sessionName\":\"💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪\",\"plan\":[{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null}],\"startedAt\":\"2026-11-06T09:29:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "start: session name in emoji one past",
+      "valid": false,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"start\",\"sessionCode\":\"A\",\"sessionId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f01\",\"sessionName\":\"💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪\",\"plan\":[{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null}],\"startedAt\":\"2026-11-06T09:29:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "start: session name empty",
+      "valid": false,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"start\",\"sessionCode\":\"A\",\"sessionId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f01\",\"sessionName\":\"\",\"plan\":[{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null}],\"startedAt\":\"2026-11-06T09:29:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "start: session name with a leading space",
+      "valid": false,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"start\",\"sessionCode\":\"A\",\"sessionId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f01\",\"sessionName\":\" Push\",\"plan\":[{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null}],\"startedAt\":\"2026-11-06T09:29:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "start: session name ending in a no-break space",
+      "valid": false,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"start\",\"sessionCode\":\"A\",\"sessionId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f01\",\"sessionName\":\"Push \",\"plan\":[{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null}],\"startedAt\":\"2026-11-06T09:29:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "start: session name ending in a byte order mark",
+      "valid": false,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"start\",\"sessionCode\":\"A\",\"sessionId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f01\",\"sessionName\":\"Push﻿\",\"plan\":[{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null}],\"startedAt\":\"2026-11-06T09:29:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "start: session name with a control character",
+      "valid": false,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"start\",\"sessionCode\":\"A\",\"sessionId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f01\",\"sessionName\":\"Pu\\u0007sh\",\"plan\":[{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null}],\"startedAt\":\"2026-11-06T09:29:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "start: session name with an inner space",
+      "valid": true,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"start\",\"sessionCode\":\"A\",\"sessionId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f01\",\"sessionName\":\"Push day\",\"plan\":[{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null}],\"startedAt\":\"2026-11-06T09:29:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "start: started at the floor",
+      "valid": true,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"start\",\"sessionCode\":\"A\",\"sessionId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f01\",\"sessionName\":\"Push\",\"plan\":[{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null}],\"startedAt\":\"1900-01-01T00:00:00.000Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "start: started one millisecond before the floor",
+      "valid": false,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"start\",\"sessionCode\":\"A\",\"sessionId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f01\",\"sessionName\":\"Push\",\"plan\":[{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null}],\"startedAt\":\"1899-12-31T23:59:59.999Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "start: started at its change",
+      "valid": true,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"start\",\"sessionCode\":\"A\",\"sessionId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f01\",\"sessionName\":\"Push\",\"plan\":[{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null}],\"startedAt\":\"2026-11-06T09:30:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "start: started one millisecond after its change",
+      "valid": false,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"start\",\"sessionCode\":\"A\",\"sessionId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f01\",\"sessionName\":\"Push\",\"plan\":[{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null}],\"startedAt\":\"2026-11-06T09:30:00.124Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "start: started without milliseconds",
+      "valid": false,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"start\",\"sessionCode\":\"A\",\"sessionId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f01\",\"sessionName\":\"Push\",\"plan\":[{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null}],\"startedAt\":\"2026-11-06T09:00:00Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "start: empty plan",
+      "valid": false,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"start\",\"sessionCode\":\"A\",\"sessionId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f01\",\"sessionName\":\"Push\",\"plan\":[],\"startedAt\":\"2026-11-06T09:29:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "start: plan at its bound",
+      "valid": true,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"start\",\"sessionCode\":\"A\",\"sessionId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f01\",\"sessionName\":\"Push\",\"plan\":[{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null},{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null},{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null},{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null},{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null},{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null},{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null},{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null},{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null},{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null},{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null},{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null},{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null},{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null},{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null},{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null},{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null},{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null},{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null},{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null},{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null},{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null},{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null},{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null},{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null},{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null},{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null},{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null},{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null},{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null}],\"startedAt\":\"2026-11-06T09:29:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "start: plan one past",
+      "valid": false,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"start\",\"sessionCode\":\"A\",\"sessionId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f01\",\"sessionName\":\"Push\",\"plan\":[{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null},{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null},{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null},{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null},{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null},{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null},{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null},{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null},{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null},{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null},{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null},{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null},{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null},{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null},{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null},{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null},{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null},{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null},{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null},{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null},{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null},{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null},{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null},{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null},{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null},{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null},{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null},{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null},{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null},{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null},{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null}],\"startedAt\":\"2026-11-06T09:29:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "start: timed slot at its bound",
+      "valid": true,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"start\",\"sessionCode\":\"A\",\"sessionId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f01\",\"sessionName\":\"Push\",\"plan\":[{\"exerciseId\":\"belay:dead-hang\",\"sets\":3,\"repRange\":[1,3600],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null,\"measure\":\"seconds\"}],\"startedAt\":\"2026-11-06T09:29:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "start: timed slot one past",
+      "valid": false,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"start\",\"sessionCode\":\"A\",\"sessionId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f01\",\"sessionName\":\"Push\",\"plan\":[{\"exerciseId\":\"belay:dead-hang\",\"sets\":3,\"repRange\":[1,3601],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null,\"measure\":\"seconds\"}],\"startedAt\":\"2026-11-06T09:29:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "slot: one set",
+      "valid": true,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"start\",\"sessionCode\":\"A\",\"sessionId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f01\",\"sessionName\":\"Push\",\"plan\":[{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":1,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null}],\"startedAt\":\"2026-11-06T09:29:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "slot: no set",
+      "valid": false,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"start\",\"sessionCode\":\"A\",\"sessionId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f01\",\"sessionName\":\"Push\",\"plan\":[{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":0,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null}],\"startedAt\":\"2026-11-06T09:29:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "slot: sets at their bound",
+      "valid": true,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"start\",\"sessionCode\":\"A\",\"sessionId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f01\",\"sessionName\":\"Push\",\"plan\":[{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":10,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null}],\"startedAt\":\"2026-11-06T09:29:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "slot: sets one past",
+      "valid": false,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"start\",\"sessionCode\":\"A\",\"sessionId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f01\",\"sessionName\":\"Push\",\"plan\":[{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":11,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null}],\"startedAt\":\"2026-11-06T09:29:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "slot: reps at their bounds",
+      "valid": true,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"start\",\"sessionCode\":\"A\",\"sessionId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f01\",\"sessionName\":\"Push\",\"plan\":[{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[1,100],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null}],\"startedAt\":\"2026-11-06T09:29:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "slot: reps from zero",
+      "valid": false,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"start\",\"sessionCode\":\"A\",\"sessionId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f01\",\"sessionName\":\"Push\",\"plan\":[{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[0,5],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null}],\"startedAt\":\"2026-11-06T09:29:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "slot: reps one past",
+      "valid": false,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"start\",\"sessionCode\":\"A\",\"sessionId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f01\",\"sessionName\":\"Push\",\"plan\":[{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[1,101],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null}],\"startedAt\":\"2026-11-06T09:29:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "slot: reps the wrong way round",
+      "valid": false,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"start\",\"sessionCode\":\"A\",\"sessionId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f01\",\"sessionName\":\"Push\",\"plan\":[{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[6,5],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null}],\"startedAt\":\"2026-11-06T09:29:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "slot: reps of three numbers",
+      "valid": false,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"start\",\"sessionCode\":\"A\",\"sessionId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f01\",\"sessionName\":\"Push\",\"plan\":[{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[5,6,7],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null}],\"startedAt\":\"2026-11-06T09:29:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "slot: rir at its bounds",
+      "valid": true,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"start\",\"sessionCode\":\"A\",\"sessionId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f01\",\"sessionName\":\"Push\",\"plan\":[{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[0,4],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null}],\"startedAt\":\"2026-11-06T09:29:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "slot: rir one past",
+      "valid": false,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"start\",\"sessionCode\":\"A\",\"sessionId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f01\",\"sessionName\":\"Push\",\"plan\":[{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[0,5],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null}],\"startedAt\":\"2026-11-06T09:29:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "slot: rest at its bound",
+      "valid": true,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"start\",\"sessionCode\":\"A\",\"sessionId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f01\",\"sessionName\":\"Push\",\"plan\":[{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":900,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null}],\"startedAt\":\"2026-11-06T09:29:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "slot: rest one past",
+      "valid": false,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"start\",\"sessionCode\":\"A\",\"sessionId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f01\",\"sessionName\":\"Push\",\"plan\":[{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":901,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null}],\"startedAt\":\"2026-11-06T09:29:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "slot: warm-ups at their bound",
+      "valid": true,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"start\",\"sessionCode\":\"A\",\"sessionId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f01\",\"sessionName\":\"Push\",\"plan\":[{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":3,\"isMain\":true,\"groupKey\":null}],\"startedAt\":\"2026-11-06T09:29:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "slot: warm-ups one past",
+      "valid": false,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"start\",\"sessionCode\":\"A\",\"sessionId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f01\",\"sessionName\":\"Push\",\"plan\":[{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":4,\"isMain\":true,\"groupKey\":null}],\"startedAt\":\"2026-11-06T09:29:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "slot: no main flag",
+      "valid": false,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"start\",\"sessionCode\":\"A\",\"sessionId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f01\",\"sessionName\":\"Push\",\"plan\":[{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"groupKey\":null}],\"startedAt\":\"2026-11-06T09:29:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "slot: no group key",
+      "valid": false,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"start\",\"sessionCode\":\"A\",\"sessionId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f01\",\"sessionName\":\"Push\",\"plan\":[{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true}],\"startedAt\":\"2026-11-06T09:29:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "slot: group key",
+      "valid": true,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"start\",\"sessionCode\":\"A\",\"sessionId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f01\",\"sessionName\":\"Push\",\"plan\":[{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":\"A1\"}],\"startedAt\":\"2026-11-06T09:29:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "slot: group key at its bound",
+      "valid": true,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"start\",\"sessionCode\":\"A\",\"sessionId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f01\",\"sessionName\":\"Push\",\"plan\":[{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":\"xxxxxxxxxxxxxxxx\"}],\"startedAt\":\"2026-11-06T09:29:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "slot: group key one past",
+      "valid": false,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"start\",\"sessionCode\":\"A\",\"sessionId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f01\",\"sessionName\":\"Push\",\"plan\":[{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":\"xxxxxxxxxxxxxxxxx\"}],\"startedAt\":\"2026-11-06T09:29:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "slot: group key with a dash",
+      "valid": false,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"start\",\"sessionCode\":\"A\",\"sessionId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f01\",\"sessionName\":\"Push\",\"plan\":[{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":\"a-b\"}],\"startedAt\":\"2026-11-06T09:29:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "slot: measure in reps",
+      "valid": false,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"start\",\"sessionCode\":\"A\",\"sessionId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f01\",\"sessionName\":\"Push\",\"plan\":[{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null,\"measure\":\"reps\"}],\"startedAt\":\"2026-11-06T09:29:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "slot: measure null",
+      "valid": false,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"start\",\"sessionCode\":\"A\",\"sessionId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f01\",\"sessionName\":\"Push\",\"plan\":[{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null,\"measure\":null}],\"startedAt\":\"2026-11-06T09:29:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "slot: climbing rule",
+      "valid": true,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"start\",\"sessionCode\":\"A\",\"sessionId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f01\",\"sessionName\":\"Push\",\"plan\":[{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null,\"rule\":\"no_climbing\"}],\"startedAt\":\"2026-11-06T09:29:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "slot: another rule",
+      "valid": false,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"start\",\"sessionCode\":\"A\",\"sessionId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f01\",\"sessionName\":\"Push\",\"plan\":[{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null,\"rule\":\"rest\"}],\"startedAt\":\"2026-11-06T09:29:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "slot: added",
+      "valid": true,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"start\",\"sessionCode\":\"A\",\"sessionId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f01\",\"sessionName\":\"Push\",\"plan\":[{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null,\"added\":true}],\"startedAt\":\"2026-11-06T09:29:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "slot: added false",
+      "valid": false,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"start\",\"sessionCode\":\"A\",\"sessionId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f01\",\"sessionName\":\"Push\",\"plan\":[{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null,\"added\":false}],\"startedAt\":\"2026-11-06T09:29:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "slot: added null",
+      "valid": false,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"start\",\"sessionCode\":\"A\",\"sessionId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f01\",\"sessionName\":\"Push\",\"plan\":[{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null,\"added\":null}],\"startedAt\":\"2026-11-06T09:29:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "slot: skipped",
+      "valid": true,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"start\",\"sessionCode\":\"A\",\"sessionId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f01\",\"sessionName\":\"Push\",\"plan\":[{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null,\"skipped\":true}],\"startedAt\":\"2026-11-06T09:29:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "slot: put back",
+      "valid": true,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"start\",\"sessionCode\":\"A\",\"sessionId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f01\",\"sessionName\":\"Push\",\"plan\":[{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null,\"skipped\":false}],\"startedAt\":\"2026-11-06T09:29:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "slot: unknown exercise id shape",
+      "valid": false,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"start\",\"sessionCode\":\"A\",\"sessionId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f01\",\"sessionName\":\"Push\",\"plan\":[{\"exerciseId\":\"bench\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null}],\"startedAt\":\"2026-11-06T09:29:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "slot: exercise id at its bound",
+      "valid": true,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"start\",\"sessionCode\":\"A\",\"sessionId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f01\",\"sessionName\":\"Push\",\"plan\":[{\"exerciseId\":\"ds:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null}],\"startedAt\":\"2026-11-06T09:29:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "slot: exercise id one past",
+      "valid": false,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"start\",\"sessionCode\":\"A\",\"sessionId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f01\",\"sessionName\":\"Push\",\"plan\":[{\"exerciseId\":\"ds:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null}],\"startedAt\":\"2026-11-06T09:29:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "plan: replaced",
+      "valid": true,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"plan\",\"value\":[{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null},{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":false,\"groupKey\":\"B\"}],\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "plan: empty",
+      "valid": false,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"plan\",\"value\":[],\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "plan: not a list",
+      "valid": false,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"plan\",\"value\":{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null},\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "startedAt: corrected",
+      "valid": true,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"startedAt\",\"value\":\"2026-11-06T08:30:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "startedAt: at the floor",
+      "valid": true,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"startedAt\",\"value\":\"1900-01-01T00:00:00.000Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "startedAt: before the floor",
+      "valid": false,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"startedAt\",\"value\":\"1899-12-31T23:59:59.999Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "startedAt: after its change",
+      "valid": false,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"startedAt\",\"value\":\"2026-11-06T09:30:00.124Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "ended: at its change",
+      "valid": true,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"ended\",\"value\":\"2026-11-06T09:30:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "ended: reopened",
+      "valid": true,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"ended\",\"value\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "ended: after its change",
+      "valid": false,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"ended\",\"value\":\"2026-11-06T09:30:00.124Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "note: cleared",
+      "valid": true,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"note\",\"value\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "note: written",
+      "valid": true,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"note\",\"value\":\"Bonne séance\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "note: empty",
+      "valid": false,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"note\",\"value\":\"\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "note: blank",
+      "valid": false,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"note\",\"value\":\"   \",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "note: no-break spaces only",
+      "valid": false,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"note\",\"value\":\"  \",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "note: at its bound",
+      "valid": true,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"note\",\"value\":\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "note: one past",
+      "valid": false,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"note\",\"value\":\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "note: emoji at its bound",
+      "valid": true,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"note\",\"value\":\"💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "note: emoji one past",
+      "valid": false,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"note\",\"value\":\"💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "exerciseNotes: none",
+      "valid": true,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"exerciseNotes\",\"value\":{},\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "exerciseNotes: first and last slot",
+      "valid": true,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"exerciseNotes\",\"value\":{\"0\":\"a\",\"29\":\"b\"},\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "exerciseNotes: slot one past",
+      "valid": false,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"exerciseNotes\",\"value\":{\"30\":\"a\"},\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "exerciseNotes: slot with a leading zero",
+      "valid": false,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"exerciseNotes\",\"value\":{\"01\":\"a\"},\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "exerciseNotes: empty note",
+      "valid": false,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"exerciseNotes\",\"value\":{\"0\":\"\"},\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "exerciseNotes: note at its bound",
+      "valid": true,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"exerciseNotes\",\"value\":{\"3\":\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"},\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "exerciseNotes: note one past",
+      "valid": false,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"exerciseNotes\",\"value\":{\"3\":\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"},\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "exerciseNotes: a list",
+      "valid": false,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"exerciseNotes\",\"value\":[\"a\"],\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "removed: true",
+      "valid": true,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"removed\",\"value\":true,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "removed: false",
+      "valid": true,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"removed\",\"value\":false,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "removed: not a boolean",
+      "valid": false,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"removed\",\"value\":1,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "workout: id in upper case",
+      "valid": false,
+      "json": "{\"kind\":\"workout\",\"id\":\"019A5A3C-7B2E-7D41-9C3F-2B8E4D6A1F00\",\"field\":\"removed\",\"value\":true,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "workout: id of version 4",
+      "valid": true,
+      "json": "{\"kind\":\"workout\",\"id\":\"6f1c2a4e-3b5d-4e7f-8a9b-0c1d2e3f4a5b\",\"field\":\"removed\",\"value\":true,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "workout: nil id",
+      "valid": false,
+      "json": "{\"kind\":\"workout\",\"id\":\"00000000-0000-0000-0000-000000000000\",\"field\":\"removed\",\"value\":true,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "workout: unknown field",
+      "valid": false,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"rating\",\"value\":5,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "at: without milliseconds",
+      "valid": false,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"removed\",\"value\":true,\"at\":\"2026-11-06T09:30:00Z\"}"
+    },
+    {
+      "name": "at: with an offset",
+      "valid": false,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"removed\",\"value\":true,\"at\":\"2026-11-06T10:30:00.123+01:00\"}"
+    },
+    {
+      "name": "at: not a time",
+      "valid": false,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"removed\",\"value\":true,\"at\":\"yesterday\"}"
+    },
+    {
+      "name": "at: day past the month's end",
+      "valid": false,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"removed\",\"value\":true,\"at\":\"2026-02-30T00:00:00.000Z\"}"
+    },
+    {
+      "name": "at: the epoch",
+      "valid": true,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"removed\",\"value\":true,\"at\":\"1970-01-01T00:00:00.000Z\"}"
+    },
+    {
+      "name": "set: as the phone writes it",
+      "valid": true,
+      "json": "{\"kind\":\"set\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f02\",\"workoutId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"create\",\"slotIndex\":0,\"position\":3,\"exerciseId\":\"belay:barbell-hip-thrust\",\"warmup\":false,\"weightKg\":100,\"reps\":5,\"rir\":2,\"doneAt\":\"2026-11-06T09:30:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "set: seconds null",
+      "valid": true,
+      "json": "{\"kind\":\"set\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f02\",\"workoutId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"create\",\"slotIndex\":0,\"position\":3,\"exerciseId\":\"belay:barbell-hip-thrust\",\"warmup\":false,\"weightKg\":100,\"reps\":5,\"rir\":2,\"doneAt\":\"2026-11-06T09:30:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\",\"seconds\":null}"
+    },
+    {
+      "name": "set: no load",
+      "valid": true,
+      "json": "{\"kind\":\"set\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f02\",\"workoutId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"create\",\"slotIndex\":0,\"position\":3,\"exerciseId\":\"belay:barbell-hip-thrust\",\"warmup\":false,\"weightKg\":0,\"reps\":5,\"rir\":2,\"doneAt\":\"2026-11-06T09:30:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "set: load at its bound",
+      "valid": true,
+      "json": "{\"kind\":\"set\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f02\",\"workoutId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"create\",\"slotIndex\":0,\"position\":3,\"exerciseId\":\"belay:barbell-hip-thrust\",\"warmup\":false,\"weightKg\":500,\"reps\":5,\"rir\":2,\"doneAt\":\"2026-11-06T09:30:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "set: load one step past",
+      "valid": false,
+      "json": "{\"kind\":\"set\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f02\",\"workoutId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"create\",\"slotIndex\":0,\"position\":3,\"exerciseId\":\"belay:barbell-hip-thrust\",\"warmup\":false,\"weightKg\":500.25,\"reps\":5,\"rir\":2,\"doneAt\":\"2026-11-06T09:30:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "set: load one step",
+      "valid": true,
+      "json": "{\"kind\":\"set\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f02\",\"workoutId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"create\",\"slotIndex\":0,\"position\":3,\"exerciseId\":\"belay:barbell-hip-thrust\",\"warmup\":false,\"weightKg\":0.25,\"reps\":5,\"rir\":2,\"doneAt\":\"2026-11-06T09:30:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "set: load on the grid",
+      "valid": true,
+      "json": "{\"kind\":\"set\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f02\",\"workoutId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"create\",\"slotIndex\":0,\"position\":3,\"exerciseId\":\"belay:barbell-hip-thrust\",\"warmup\":false,\"weightKg\":102.75,\"reps\":5,\"rir\":2,\"doneAt\":\"2026-11-06T09:30:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "set: load off the grid",
+      "valid": false,
+      "json": "{\"kind\":\"set\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f02\",\"workoutId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"create\",\"slotIndex\":0,\"position\":3,\"exerciseId\":\"belay:barbell-hip-thrust\",\"warmup\":false,\"weightKg\":0.1,\"reps\":5,\"rir\":2,\"doneAt\":\"2026-11-06T09:30:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "set: load half a step",
+      "valid": false,
+      "json": "{\"kind\":\"set\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f02\",\"workoutId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"create\",\"slotIndex\":0,\"position\":3,\"exerciseId\":\"belay:barbell-hip-thrust\",\"warmup\":false,\"weightKg\":0.125,\"reps\":5,\"rir\":2,\"doneAt\":\"2026-11-06T09:30:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "set: load below zero",
+      "valid": false,
+      "json": "{\"kind\":\"set\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f02\",\"workoutId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"create\",\"slotIndex\":0,\"position\":3,\"exerciseId\":\"belay:barbell-hip-thrust\",\"warmup\":false,\"weightKg\":-0.25,\"reps\":5,\"rir\":2,\"doneAt\":\"2026-11-06T09:30:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "set: load within the grid's tolerance",
+      "valid": true,
+      "json": "{\"kind\":\"set\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f02\",\"workoutId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"create\",\"slotIndex\":0,\"position\":3,\"exerciseId\":\"belay:barbell-hip-thrust\",\"warmup\":false,\"weightKg\":0.2500001,\"reps\":5,\"rir\":2,\"doneAt\":\"2026-11-06T09:30:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "set: load past the grid's tolerance",
+      "valid": false,
+      "json": "{\"kind\":\"set\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f02\",\"workoutId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"create\",\"slotIndex\":0,\"position\":3,\"exerciseId\":\"belay:barbell-hip-thrust\",\"warmup\":false,\"weightKg\":0.25001,\"reps\":5,\"rir\":2,\"doneAt\":\"2026-11-06T09:30:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "set: load as text",
+      "valid": false,
+      "json": "{\"kind\":\"set\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f02\",\"workoutId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"create\",\"slotIndex\":0,\"position\":3,\"exerciseId\":\"belay:barbell-hip-thrust\",\"warmup\":false,\"weightKg\":\"100\",\"reps\":5,\"rir\":2,\"doneAt\":\"2026-11-06T09:30:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "set: no rep",
+      "valid": true,
+      "json": "{\"kind\":\"set\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f02\",\"workoutId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"create\",\"slotIndex\":0,\"position\":3,\"exerciseId\":\"belay:barbell-hip-thrust\",\"warmup\":false,\"weightKg\":100,\"reps\":0,\"rir\":2,\"doneAt\":\"2026-11-06T09:30:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "set: reps at their bound",
+      "valid": true,
+      "json": "{\"kind\":\"set\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f02\",\"workoutId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"create\",\"slotIndex\":0,\"position\":3,\"exerciseId\":\"belay:barbell-hip-thrust\",\"warmup\":false,\"weightKg\":100,\"reps\":100,\"rir\":2,\"doneAt\":\"2026-11-06T09:30:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "set: reps one past",
+      "valid": false,
+      "json": "{\"kind\":\"set\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f02\",\"workoutId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"create\",\"slotIndex\":0,\"position\":3,\"exerciseId\":\"belay:barbell-hip-thrust\",\"warmup\":false,\"weightKg\":100,\"reps\":101,\"rir\":2,\"doneAt\":\"2026-11-06T09:30:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "set: reps below zero",
+      "valid": false,
+      "json": "{\"kind\":\"set\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f02\",\"workoutId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"create\",\"slotIndex\":0,\"position\":3,\"exerciseId\":\"belay:barbell-hip-thrust\",\"warmup\":false,\"weightKg\":100,\"reps\":-1,\"rir\":2,\"doneAt\":\"2026-11-06T09:30:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "set: reps not whole",
+      "valid": false,
+      "json": "{\"kind\":\"set\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f02\",\"workoutId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"create\",\"slotIndex\":0,\"position\":3,\"exerciseId\":\"belay:barbell-hip-thrust\",\"warmup\":false,\"weightKg\":100,\"reps\":2.5,\"rir\":2,\"doneAt\":\"2026-11-06T09:30:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "set: neither reps nor seconds",
+      "valid": false,
+      "json": "{\"kind\":\"set\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f02\",\"workoutId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"create\",\"slotIndex\":0,\"position\":3,\"exerciseId\":\"belay:barbell-hip-thrust\",\"warmup\":false,\"weightKg\":100,\"reps\":null,\"rir\":2,\"doneAt\":\"2026-11-06T09:30:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "set: timed",
+      "valid": true,
+      "json": "{\"kind\":\"set\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f02\",\"workoutId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"create\",\"slotIndex\":0,\"position\":3,\"exerciseId\":\"belay:dead-hang\",\"warmup\":false,\"weightKg\":100,\"reps\":null,\"rir\":null,\"doneAt\":\"2026-11-06T09:30:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\",\"seconds\":45}"
+    },
+    {
+      "name": "set: timed at no second",
+      "valid": true,
+      "json": "{\"kind\":\"set\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f02\",\"workoutId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"create\",\"slotIndex\":0,\"position\":3,\"exerciseId\":\"belay:dead-hang\",\"warmup\":false,\"weightKg\":100,\"reps\":null,\"rir\":null,\"doneAt\":\"2026-11-06T09:30:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\",\"seconds\":0}"
+    },
+    {
+      "name": "set: timed at its bound",
+      "valid": true,
+      "json": "{\"kind\":\"set\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f02\",\"workoutId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"create\",\"slotIndex\":0,\"position\":3,\"exerciseId\":\"belay:dead-hang\",\"warmup\":false,\"weightKg\":100,\"reps\":null,\"rir\":null,\"doneAt\":\"2026-11-06T09:30:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\",\"seconds\":3600}"
+    },
+    {
+      "name": "set: timed one past",
+      "valid": false,
+      "json": "{\"kind\":\"set\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f02\",\"workoutId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"create\",\"slotIndex\":0,\"position\":3,\"exerciseId\":\"belay:dead-hang\",\"warmup\":false,\"weightKg\":100,\"reps\":null,\"rir\":null,\"doneAt\":\"2026-11-06T09:30:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\",\"seconds\":3601}"
+    },
+    {
+      "name": "set: timed with a rir",
+      "valid": false,
+      "json": "{\"kind\":\"set\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f02\",\"workoutId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"create\",\"slotIndex\":0,\"position\":3,\"exerciseId\":\"belay:dead-hang\",\"warmup\":false,\"weightKg\":100,\"reps\":null,\"rir\":1,\"doneAt\":\"2026-11-06T09:30:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\",\"seconds\":45}"
+    },
+    {
+      "name": "set: reps and seconds",
+      "valid": false,
+      "json": "{\"kind\":\"set\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f02\",\"workoutId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"create\",\"slotIndex\":0,\"position\":3,\"exerciseId\":\"belay:dead-hang\",\"warmup\":false,\"weightKg\":100,\"reps\":5,\"rir\":null,\"doneAt\":\"2026-11-06T09:30:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\",\"seconds\":45}"
+    },
+    {
+      "name": "set: rir null",
+      "valid": true,
+      "json": "{\"kind\":\"set\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f02\",\"workoutId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"create\",\"slotIndex\":0,\"position\":3,\"exerciseId\":\"belay:barbell-hip-thrust\",\"warmup\":false,\"weightKg\":100,\"reps\":5,\"rir\":null,\"doneAt\":\"2026-11-06T09:30:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "set: rir zero",
+      "valid": true,
+      "json": "{\"kind\":\"set\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f02\",\"workoutId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"create\",\"slotIndex\":0,\"position\":3,\"exerciseId\":\"belay:barbell-hip-thrust\",\"warmup\":false,\"weightKg\":100,\"reps\":5,\"rir\":0,\"doneAt\":\"2026-11-06T09:30:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "set: rir at its bound",
+      "valid": true,
+      "json": "{\"kind\":\"set\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f02\",\"workoutId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"create\",\"slotIndex\":0,\"position\":3,\"exerciseId\":\"belay:barbell-hip-thrust\",\"warmup\":false,\"weightKg\":100,\"reps\":5,\"rir\":4,\"doneAt\":\"2026-11-06T09:30:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "set: rir one past",
+      "valid": false,
+      "json": "{\"kind\":\"set\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f02\",\"workoutId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"create\",\"slotIndex\":0,\"position\":3,\"exerciseId\":\"belay:barbell-hip-thrust\",\"warmup\":false,\"weightKg\":100,\"reps\":5,\"rir\":5,\"doneAt\":\"2026-11-06T09:30:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "set: rir below zero",
+      "valid": false,
+      "json": "{\"kind\":\"set\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f02\",\"workoutId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"create\",\"slotIndex\":0,\"position\":3,\"exerciseId\":\"belay:barbell-hip-thrust\",\"warmup\":false,\"weightKg\":100,\"reps\":5,\"rir\":-1,\"doneAt\":\"2026-11-06T09:30:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "set: first slot",
+      "valid": true,
+      "json": "{\"kind\":\"set\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f02\",\"workoutId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"create\",\"slotIndex\":0,\"position\":3,\"exerciseId\":\"belay:barbell-hip-thrust\",\"warmup\":false,\"weightKg\":100,\"reps\":5,\"rir\":2,\"doneAt\":\"2026-11-06T09:30:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "set: last slot",
+      "valid": true,
+      "json": "{\"kind\":\"set\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f02\",\"workoutId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"create\",\"slotIndex\":29,\"position\":3,\"exerciseId\":\"belay:barbell-hip-thrust\",\"warmup\":false,\"weightKg\":100,\"reps\":5,\"rir\":2,\"doneAt\":\"2026-11-06T09:30:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "set: slot one past",
+      "valid": false,
+      "json": "{\"kind\":\"set\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f02\",\"workoutId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"create\",\"slotIndex\":30,\"position\":3,\"exerciseId\":\"belay:barbell-hip-thrust\",\"warmup\":false,\"weightKg\":100,\"reps\":5,\"rir\":2,\"doneAt\":\"2026-11-06T09:30:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "set: slot below zero",
+      "valid": false,
+      "json": "{\"kind\":\"set\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f02\",\"workoutId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"create\",\"slotIndex\":-1,\"position\":3,\"exerciseId\":\"belay:barbell-hip-thrust\",\"warmup\":false,\"weightKg\":100,\"reps\":5,\"rir\":2,\"doneAt\":\"2026-11-06T09:30:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "set: first warm-up",
+      "valid": true,
+      "json": "{\"kind\":\"set\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f02\",\"workoutId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"create\",\"slotIndex\":0,\"position\":0,\"exerciseId\":\"belay:barbell-hip-thrust\",\"warmup\":true,\"weightKg\":60,\"reps\":5,\"rir\":null,\"doneAt\":\"2026-11-06T09:30:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "set: last warm-up",
+      "valid": true,
+      "json": "{\"kind\":\"set\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f02\",\"workoutId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"create\",\"slotIndex\":0,\"position\":2,\"exerciseId\":\"belay:barbell-hip-thrust\",\"warmup\":true,\"weightKg\":60,\"reps\":5,\"rir\":null,\"doneAt\":\"2026-11-06T09:30:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "set: warm-up at a work position",
+      "valid": false,
+      "json": "{\"kind\":\"set\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f02\",\"workoutId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"create\",\"slotIndex\":0,\"position\":3,\"exerciseId\":\"belay:barbell-hip-thrust\",\"warmup\":true,\"weightKg\":60,\"reps\":5,\"rir\":null,\"doneAt\":\"2026-11-06T09:30:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "set: work set at a warm-up position",
+      "valid": false,
+      "json": "{\"kind\":\"set\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f02\",\"workoutId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"create\",\"slotIndex\":0,\"position\":2,\"exerciseId\":\"belay:barbell-hip-thrust\",\"warmup\":false,\"weightKg\":100,\"reps\":5,\"rir\":2,\"doneAt\":\"2026-11-06T09:30:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "set: warm-up with a rir",
+      "valid": false,
+      "json": "{\"kind\":\"set\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f02\",\"workoutId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"create\",\"slotIndex\":0,\"position\":0,\"exerciseId\":\"belay:barbell-hip-thrust\",\"warmup\":true,\"weightKg\":60,\"reps\":5,\"rir\":1,\"doneAt\":\"2026-11-06T09:30:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "set: warm-up timed",
+      "valid": false,
+      "json": "{\"kind\":\"set\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f02\",\"workoutId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"create\",\"slotIndex\":0,\"position\":0,\"exerciseId\":\"belay:dead-hang\",\"warmup\":true,\"weightKg\":60,\"reps\":null,\"rir\":null,\"doneAt\":\"2026-11-06T09:30:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\",\"seconds\":45}"
+    },
+    {
+      "name": "set: last position",
+      "valid": true,
+      "json": "{\"kind\":\"set\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f02\",\"workoutId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"create\",\"slotIndex\":0,\"position\":49,\"exerciseId\":\"belay:barbell-hip-thrust\",\"warmup\":false,\"weightKg\":100,\"reps\":5,\"rir\":2,\"doneAt\":\"2026-11-06T09:30:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "set: position one past",
+      "valid": false,
+      "json": "{\"kind\":\"set\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f02\",\"workoutId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"create\",\"slotIndex\":0,\"position\":50,\"exerciseId\":\"belay:barbell-hip-thrust\",\"warmup\":false,\"weightKg\":100,\"reps\":5,\"rir\":2,\"doneAt\":\"2026-11-06T09:30:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "set: done at the floor",
+      "valid": true,
+      "json": "{\"kind\":\"set\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f02\",\"workoutId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"create\",\"slotIndex\":0,\"position\":3,\"exerciseId\":\"belay:barbell-hip-thrust\",\"warmup\":false,\"weightKg\":100,\"reps\":5,\"rir\":2,\"doneAt\":\"1900-01-01T00:00:00.000Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "set: done before the floor",
+      "valid": false,
+      "json": "{\"kind\":\"set\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f02\",\"workoutId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"create\",\"slotIndex\":0,\"position\":3,\"exerciseId\":\"belay:barbell-hip-thrust\",\"warmup\":false,\"weightKg\":100,\"reps\":5,\"rir\":2,\"doneAt\":\"1899-12-31T23:59:59.999Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "set: done after its change",
+      "valid": false,
+      "json": "{\"kind\":\"set\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f02\",\"workoutId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"create\",\"slotIndex\":0,\"position\":3,\"exerciseId\":\"belay:barbell-hip-thrust\",\"warmup\":false,\"weightKg\":100,\"reps\":5,\"rir\":2,\"doneAt\":\"2026-11-06T09:30:00.124Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "set: unknown exercise id shape",
+      "valid": false,
+      "json": "{\"kind\":\"set\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f02\",\"workoutId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"create\",\"slotIndex\":0,\"position\":3,\"exerciseId\":\"ds:Bench\",\"warmup\":false,\"weightKg\":100,\"reps\":5,\"rir\":2,\"doneAt\":\"2026-11-06T09:30:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "set: session id in upper case",
+      "valid": false,
+      "json": "{\"kind\":\"set\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f02\",\"workoutId\":\"019A5A3C-7B2E-7D41-9C3F-2B8E4D6A1F00\",\"field\":\"create\",\"slotIndex\":0,\"position\":3,\"exerciseId\":\"belay:barbell-hip-thrust\",\"warmup\":false,\"weightKg\":100,\"reps\":5,\"rir\":2,\"doneAt\":\"2026-11-06T09:30:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "set: id of version 8",
+      "valid": true,
+      "json": "{\"kind\":\"set\",\"id\":\"019a5a3c-7b2e-8d41-9c3f-2b8e4d6a1f02\",\"workoutId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"create\",\"slotIndex\":0,\"position\":3,\"exerciseId\":\"belay:barbell-hip-thrust\",\"warmup\":false,\"weightKg\":100,\"reps\":5,\"rir\":2,\"doneAt\":\"2026-11-06T09:30:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "set: id of version 9",
+      "valid": false,
+      "json": "{\"kind\":\"set\",\"id\":\"019a5a3c-7b2e-9d41-9c3f-2b8e4d6a1f02\",\"workoutId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"create\",\"slotIndex\":0,\"position\":3,\"exerciseId\":\"belay:barbell-hip-thrust\",\"warmup\":false,\"weightKg\":100,\"reps\":5,\"rir\":2,\"doneAt\":\"2026-11-06T09:30:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "values: corrected",
+      "valid": true,
+      "json": "{\"kind\":\"set\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f02\",\"workoutId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"values\",\"weightKg\":102.5,\"reps\":6,\"rir\":1,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "values: seconds null",
+      "valid": true,
+      "json": "{\"kind\":\"set\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f02\",\"workoutId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"values\",\"weightKg\":100,\"reps\":5,\"rir\":2,\"at\":\"2026-11-06T09:30:00.123Z\",\"seconds\":null}"
+    },
+    {
+      "name": "values: timed",
+      "valid": true,
+      "json": "{\"kind\":\"set\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f02\",\"workoutId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"values\",\"weightKg\":100,\"reps\":null,\"rir\":null,\"at\":\"2026-11-06T09:30:00.123Z\",\"seconds\":30}"
+    },
+    {
+      "name": "values: timed with a rir",
+      "valid": false,
+      "json": "{\"kind\":\"set\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f02\",\"workoutId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"values\",\"weightKg\":100,\"reps\":null,\"rir\":2,\"at\":\"2026-11-06T09:30:00.123Z\",\"seconds\":30}"
+    },
+    {
+      "name": "values: off the grid",
+      "valid": false,
+      "json": "{\"kind\":\"set\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f02\",\"workoutId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"values\",\"weightKg\":100.1,\"reps\":5,\"rir\":2,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "values: neither reps nor seconds",
+      "valid": false,
+      "json": "{\"kind\":\"set\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f02\",\"workoutId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"values\",\"weightKg\":100,\"reps\":null,\"rir\":2,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "set removed: true",
+      "valid": true,
+      "json": "{\"kind\":\"set\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f02\",\"workoutId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"removed\",\"value\":true,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "set removed: not a boolean",
+      "valid": false,
+      "json": "{\"kind\":\"set\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f02\",\"workoutId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"removed\",\"value\":\"yes\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "set: unknown field",
+      "valid": false,
+      "json": "{\"kind\":\"set\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f02\",\"workoutId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"moved\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    }
+  ],
+  "isNewer": [
+    {
+      "incoming": "2026-11-06T09:30:00.123Z",
+      "existing": null,
+      "newer": true
+    },
+    {
+      "incoming": "2026-11-06T09:30:00.123Z",
+      "existing": "2026-11-06T09:30:00.123Z",
+      "newer": false
+    },
+    {
+      "incoming": "2026-11-06T09:30:00.124Z",
+      "existing": "2026-11-06T09:30:00.123Z",
+      "newer": true
+    },
+    {
+      "incoming": "2026-11-06T09:30:00.122Z",
+      "existing": "2026-11-06T09:30:00.123Z",
+      "newer": false
+    },
+    {
+      "incoming": "2026-11-06T09:30:00Z",
+      "existing": "2026-11-06T09:30:00.000Z",
+      "newer": false
+    },
+    {
+      "incoming": "2026-11-06T09:30:00.001Z",
+      "existing": "2026-11-06T09:30:00Z",
+      "newer": true
+    },
+    {
+      "incoming": "2026-11-06T10:30:00.124+01:00",
+      "existing": "2026-11-06T09:30:00.123Z",
+      "newer": true
+    },
+    {
+      "incoming": "2026-11-06T10:30:00.123+01:00",
+      "existing": "2026-11-06T09:30:00.123Z",
+      "newer": false
+    },
+    {
+      "incoming": "2026-11-06T09:30Z",
+      "existing": "2026-11-06T09:30:00.000Z",
+      "newer": false
+    },
+    {
+      "incoming": "2026-11-06T09:30:00.5Z",
+      "existing": "2026-11-06T09:30:00.499Z",
+      "newer": true
+    },
+    {
+      "incoming": "1900-01-01T00:00:00.000Z",
+      "existing": null,
+      "newer": true
+    },
+    {
+      "incoming": "1899-12-31T23:59:59.999Z",
+      "existing": "1900-01-01T00:00:00.000Z",
+      "newer": false
+    },
+    {
+      "incoming": "1900-01-01T00:00:00.000Z",
+      "existing": "1899-12-31T23:59:59.999Z",
+      "newer": true
+    },
+    {
+      "incoming": "yesterday",
+      "existing": "2026-11-06T09:30:00.123Z",
+      "newer": false
+    },
+    {
+      "incoming": "2026-11-06T09:30:00.123Z",
+      "existing": "yesterday",
+      "newer": false
+    },
+    {
+      "incoming": "yesterday",
+      "existing": null,
+      "newer": true
+    },
+    {
+      "incoming": "2026-11-06T09:30:60.000Z",
+      "existing": "2026-11-06T09:30:00.123Z",
+      "newer": false
+    }
+  ],
+  "clampAt": [
+    {
+      "at": "2026-11-06T09:30:00.122Z",
+      "now": "2026-11-06T09:30:00.123Z",
+      "result": "2026-11-06T09:30:00.122Z"
+    },
+    {
+      "at": "2026-11-06T09:30:00.123Z",
+      "now": "2026-11-06T09:30:00.123Z",
+      "result": "2026-11-06T09:30:00.123Z"
+    },
+    {
+      "at": "2026-11-06T09:30:00.124Z",
+      "now": "2026-11-06T09:30:00.123Z",
+      "result": "2026-11-06T09:30:00.123Z"
+    },
+    {
+      "at": "2026-11-06T09:35:00.123Z",
+      "now": "2026-11-06T09:30:00.123Z",
+      "result": "2026-11-06T09:30:00.123Z"
+    },
+    {
+      "at": "2026-11-06T09:35:00.124Z",
+      "now": "2026-11-06T09:30:00.123Z",
+      "result": "2026-11-06T09:30:00.123Z"
+    },
+    {
+      "at": "2026-11-06T09:30:00Z",
+      "now": "2026-11-06T09:30:00.123Z",
+      "result": "2026-11-06T09:30:00Z"
+    },
+    {
+      "at": "2026-11-06T10:31:00.000+01:00",
+      "now": "2026-11-06T09:30:00.123Z",
+      "result": "2026-11-06T09:30:00.123Z"
+    },
+    {
+      "at": "1900-01-01T00:00:00.000Z",
+      "now": "2026-11-06T09:30:00.123Z",
+      "result": "1900-01-01T00:00:00.000Z"
+    },
+    {
+      "at": "yesterday",
+      "now": "2026-11-06T09:30:00.123Z",
+      "result": "yesterday"
+    }
+  ],
+  "ids": [
+    {
+      "id": "019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00",
+      "valid": true
+    },
+    {
+      "id": "019A5A3C-7B2E-7D41-9C3F-2B8E4D6A1F00",
+      "valid": false
+    },
+    {
+      "id": "6f1c2a4e-3b5d-4e7f-8a9b-0c1d2e3f4a5b",
+      "valid": true
+    },
+    {
+      "id": "019a5a3c-7b2e-0d41-9c3f-2b8e4d6a1f00",
+      "valid": false
+    },
+    {
+      "id": "019a5a3c-7b2e-7d41-cc3f-2b8e4d6a1f00",
+      "valid": false
+    },
+    {
+      "id": "019a5a3c-7b2e-7d41-7c3f-2b8e4d6a1f00",
+      "valid": false
+    },
+    {
+      "id": "019a5a3c7b2e7d419c3f2b8e4d6a1f00",
+      "valid": false
+    },
+    {
+      "id": "{019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00}",
+      "valid": false
+    },
+    {
+      "id": "019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f0",
+      "valid": false
+    },
+    {
+      "id": "019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f000",
+      "valid": false
+    },
+    {
+      "id": "019a5a3g-7b2e-7d41-9c3f-2b8e4d6a1f00",
+      "valid": false
+    },
+    {
+      "id": "00000000-0000-0000-0000-000000000000",
+      "valid": false
+    }
+  ],
+  "instants": [
+    {
+      "ms": 0,
+      "iso": "1970-01-01T00:00:00.000Z"
+    },
+    {
+      "ms": 1793957400123,
+      "iso": "2026-11-06T09:30:00.123Z"
+    },
+    {
+      "ms": -1,
+      "iso": "1969-12-31T23:59:59.999Z"
+    },
+    {
+      "ms": -2208988800000,
+      "iso": "1900-01-01T00:00:00.000Z"
+    },
+    {
+      "ms": -2208988800001,
+      "iso": "1899-12-31T23:59:59.999Z"
+    },
+    {
+      "ms": 1709251199999,
+      "iso": "2024-02-29T23:59:59.999Z"
+    },
+    {
+      "ms": 253402300799999,
+      "iso": "9999-12-31T23:59:59.999Z"
+    },
+    {
+      "ms": 253402300800000,
+      "iso": "+010000-01-01T00:00:00.000Z"
+    },
+    {
+      "ms": -62167219200001,
+      "iso": "-000001-12-31T23:59:59.999Z"
+    },
+    {
+      "ms": -62198755200000,
+      "iso": "-000001-01-01T00:00:00.000Z"
+    },
+    {
+      "ms": -11670955200000,
+      "iso": "1600-02-29T12:00:00.000Z"
+    }
+  ]
+}

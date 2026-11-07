@@ -1,0 +1,531 @@
+{
+  "activeId": "00000000-0000-7000-8000-000000000010",
+  "activeAt": null,
+  "programs": [
+    {
+      "id": "00000000-0000-7000-8000-000000000010",
+      "name": null,
+      "schedule": {
+        "mode": "rotation",
+        "days": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      "removed": false
+    }
+  ],
+  "sessions": [
+    {
+      "id": "00000000-0000-7000-8000-000000000001",
+      "name": null,
+      "programId": "00000000-0000-7000-8000-000000000010",
+      "position": 0,
+      "removed": false
+    },
+    {
+      "id": "00000000-0000-7000-8000-000000000002",
+      "name": null,
+      "programId": "00000000-0000-7000-8000-000000000010",
+      "position": 1,
+      "removed": false
+    },
+    {
+      "id": "00000000-0000-7000-8000-000000000003",
+      "name": null,
+      "programId": "00000000-0000-7000-8000-000000000010",
+      "position": 2,
+      "removed": false
+    }
+  ],
+  "slots": [
+    {
+      "exerciseId": "ds:0025",
+      "sets": 4,
+      "repRange": [
+        6,
+        8
+      ],
+      "rirTarget": [
+        1,
+        2
+      ],
+      "restSec": 150,
+      "warmupSets": 2,
+      "isMain": true,
+      "groupKey": null,
+      "id": "00000000-0000-7000-8000-000000000101",
+      "sessionId": "00000000-0000-7000-8000-000000000001",
+      "position": 0,
+      "rule": null,
+      "removed": false
+    },
+    {
+      "exerciseId": "ds:0405",
+      "sets": 3,
+      "repRange": [
+        8,
+        10
+      ],
+      "rirTarget": [
+        1,
+        2
+      ],
+      "restSec": 120,
+      "warmupSets": 1,
+      "isMain": true,
+      "groupKey": null,
+      "id": "00000000-0000-7000-8000-000000000102",
+      "sessionId": "00000000-0000-7000-8000-000000000001",
+      "position": 1,
+      "rule": null,
+      "removed": false
+    },
+    {
+      "exerciseId": "ds:0739",
+      "sets": 3,
+      "repRange": [
+        10,
+        12
+      ],
+      "rirTarget": [
+        1,
+        2
+      ],
+      "restSec": 120,
+      "warmupSets": 2,
+      "isMain": true,
+      "groupKey": null,
+      "id": "00000000-0000-7000-8000-000000000103",
+      "sessionId": "00000000-0000-7000-8000-000000000001",
+      "position": 2,
+      "rule": null,
+      "removed": false
+    },
+    {
+      "exerciseId": "ds:0334",
+      "sets": 3,
+      "repRange": [
+        12,
+        20
+      ],
+      "rirTarget": [
+        0,
+        1
+      ],
+      "restSec": 0,
+      "warmupSets": 0,
+      "isMain": false,
+      "groupKey": "4",
+      "id": "00000000-0000-7000-8000-000000000104",
+      "sessionId": "00000000-0000-7000-8000-000000000001",
+      "position": 3,
+      "rule": null,
+      "removed": false
+    },
+    {
+      "exerciseId": "ds:0201",
+      "sets": 3,
+      "repRange": [
+        10,
+        15
+      ],
+      "rirTarget": [
+        0,
+        1
+      ],
+      "restSec": 0,
+      "warmupSets": 0,
+      "isMain": false,
+      "groupKey": "4",
+      "id": "00000000-0000-7000-8000-000000000105",
+      "sessionId": "00000000-0000-7000-8000-000000000001",
+      "position": 4,
+      "rule": null,
+      "removed": false
+    },
+    {
+      "exerciseId": "ds:0605",
+      "sets": 3,
+      "repRange": [
+        10,
+        15
+      ],
+      "rirTarget": [
+        0,
+        1
+      ],
+      "restSec": 75,
+      "warmupSets": 0,
+      "isMain": false,
+      "groupKey": "4",
+      "id": "00000000-0000-7000-8000-000000000106",
+      "sessionId": "00000000-0000-7000-8000-000000000001",
+      "position": 5,
+      "rule": null,
+      "removed": false
+    },
+    {
+      "exerciseId": "ds:0043",
+      "sets": 4,
+      "repRange": [
+        5,
+        8
+      ],
+      "rirTarget": [
+        2,
+        2
+      ],
+      "restSec": 150,
+      "warmupSets": 3,
+      "isMain": true,
+      "groupKey": null,
+      "id": "00000000-0000-7000-8000-000000000201",
+      "sessionId": "00000000-0000-7000-8000-000000000002",
+      "position": 0,
+      "rule": null,
+      "removed": false
+    },
+    {
+      "exerciseId": "ds:0085",
+      "sets": 3,
+      "repRange": [
+        6,
+        10
+      ],
+      "rirTarget": [
+        2,
+        2
+      ],
+      "restSec": 150,
+      "warmupSets": 1,
+      "isMain": true,
+      "groupKey": null,
+      "id": "00000000-0000-7000-8000-000000000202",
+      "sessionId": "00000000-0000-7000-8000-000000000002",
+      "position": 1,
+      "rule": null,
+      "removed": false
+    },
+    {
+      "exerciseId": "ds:0410",
+      "sets": 2,
+      "repRange": [
+        8,
+        12
+      ],
+      "rirTarget": [
+        1,
+        2
+      ],
+      "restSec": 90,
+      "warmupSets": 0,
+      "isMain": false,
+      "groupKey": null,
+      "id": "00000000-0000-7000-8000-000000000203",
+      "sessionId": "00000000-0000-7000-8000-000000000002",
+      "position": 2,
+      "rule": null,
+      "removed": false
+    },
+    {
+      "exerciseId": "ds:0586",
+      "sets": 3,
+      "repRange": [
+        10,
+        15
+      ],
+      "rirTarget": [
+        0,
+        1
+      ],
+      "restSec": 0,
+      "warmupSets": 0,
+      "isMain": false,
+      "groupKey": "4",
+      "id": "00000000-0000-7000-8000-000000000204",
+      "sessionId": "00000000-0000-7000-8000-000000000002",
+      "position": 3,
+      "rule": null,
+      "removed": false
+    },
+    {
+      "exerciseId": "ds:0314",
+      "sets": 3,
+      "repRange": [
+        8,
+        12
+      ],
+      "rirTarget": [
+        1,
+        1
+      ],
+      "restSec": 90,
+      "warmupSets": 1,
+      "isMain": false,
+      "groupKey": "4",
+      "id": "00000000-0000-7000-8000-000000000205",
+      "sessionId": "00000000-0000-7000-8000-000000000002",
+      "position": 4,
+      "rule": null,
+      "removed": false
+    },
+    {
+      "exerciseId": "ds:0175",
+      "sets": 3,
+      "repRange": [
+        10,
+        15
+      ],
+      "rirTarget": [
+        0,
+        1
+      ],
+      "restSec": 0,
+      "warmupSets": 0,
+      "isMain": false,
+      "groupKey": "5",
+      "id": "00000000-0000-7000-8000-000000000206",
+      "sessionId": "00000000-0000-7000-8000-000000000002",
+      "position": 5,
+      "rule": null,
+      "removed": false
+    },
+    {
+      "exerciseId": "ds:0594",
+      "sets": 3,
+      "repRange": [
+        12,
+        15
+      ],
+      "rirTarget": [
+        0,
+        1
+      ],
+      "restSec": 60,
+      "warmupSets": 0,
+      "isMain": false,
+      "groupKey": "5",
+      "id": "00000000-0000-7000-8000-000000000207",
+      "sessionId": "00000000-0000-7000-8000-000000000002",
+      "position": 6,
+      "rule": null,
+      "removed": false
+    },
+    {
+      "exerciseId": "belay:barbell-hip-thrust",
+      "sets": 4,
+      "repRange": [
+        8,
+        12
+      ],
+      "rirTarget": [
+        1,
+        2
+      ],
+      "restSec": 120,
+      "warmupSets": 2,
+      "isMain": true,
+      "groupKey": null,
+      "id": "00000000-0000-7000-8000-000000000301",
+      "sessionId": "00000000-0000-7000-8000-000000000003",
+      "position": 0,
+      "rule": null,
+      "removed": false
+    },
+    {
+      "exerciseId": "ds:0327",
+      "sets": 3,
+      "repRange": [
+        8,
+        12
+      ],
+      "rirTarget": [
+        1,
+        2
+      ],
+      "restSec": 90,
+      "warmupSets": 1,
+      "isMain": true,
+      "groupKey": null,
+      "id": "00000000-0000-7000-8000-000000000302",
+      "sessionId": "00000000-0000-7000-8000-000000000003",
+      "position": 1,
+      "rule": null,
+      "removed": false
+    },
+    {
+      "exerciseId": "ds:0585",
+      "sets": 3,
+      "repRange": [
+        10,
+        15
+      ],
+      "rirTarget": [
+        0,
+        1
+      ],
+      "restSec": 90,
+      "warmupSets": 0,
+      "isMain": false,
+      "groupKey": null,
+      "id": "00000000-0000-7000-8000-000000000303",
+      "sessionId": "00000000-0000-7000-8000-000000000003",
+      "position": 2,
+      "rule": null,
+      "removed": false
+    },
+    {
+      "exerciseId": "ds:0662",
+      "sets": 2,
+      "repRange": [
+        8,
+        15
+      ],
+      "rirTarget": [
+        1,
+        1
+      ],
+      "restSec": 0,
+      "warmupSets": 0,
+      "isMain": false,
+      "groupKey": "4",
+      "id": "00000000-0000-7000-8000-000000000304",
+      "sessionId": "00000000-0000-7000-8000-000000000003",
+      "position": 3,
+      "rule": null,
+      "removed": false
+    },
+    {
+      "exerciseId": "belay:cable-face-pull",
+      "sets": 2,
+      "repRange": [
+        12,
+        15
+      ],
+      "rirTarget": [
+        0,
+        1
+      ],
+      "restSec": 0,
+      "warmupSets": 0,
+      "isMain": false,
+      "groupKey": "4",
+      "id": "00000000-0000-7000-8000-000000000305",
+      "sessionId": "00000000-0000-7000-8000-000000000003",
+      "position": 4,
+      "rule": null,
+      "removed": false
+    },
+    {
+      "exerciseId": "ds:0334",
+      "sets": 3,
+      "repRange": [
+        12,
+        20
+      ],
+      "rirTarget": [
+        0,
+        1
+      ],
+      "restSec": 60,
+      "warmupSets": 0,
+      "isMain": false,
+      "groupKey": "4",
+      "id": "00000000-0000-7000-8000-000000000306",
+      "sessionId": "00000000-0000-7000-8000-000000000003",
+      "position": 5,
+      "rule": null,
+      "removed": false
+    },
+    {
+      "exerciseId": "ds:0385",
+      "sets": 2,
+      "repRange": [
+        15,
+        20
+      ],
+      "rirTarget": [
+        1,
+        2
+      ],
+      "restSec": 0,
+      "warmupSets": 0,
+      "isMain": false,
+      "groupKey": "5",
+      "id": "00000000-0000-7000-8000-000000000307",
+      "sessionId": "00000000-0000-7000-8000-000000000003",
+      "position": 6,
+      "rule": null,
+      "removed": false
+    },
+    {
+      "exerciseId": "ds:0872",
+      "sets": 2,
+      "repRange": [
+        10,
+        15
+      ],
+      "rirTarget": [
+        1,
+        2
+      ],
+      "restSec": 60,
+      "warmupSets": 0,
+      "isMain": false,
+      "groupKey": "5",
+      "id": "00000000-0000-7000-8000-000000000308",
+      "sessionId": "00000000-0000-7000-8000-000000000003",
+      "position": 7,
+      "rule": null,
+      "removed": false
+    },
+    {
+      "exerciseId": "ds:2330",
+      "sets": 3,
+      "repRange": [
+        8,
+        12
+      ],
+      "rirTarget": [
+        1,
+        2
+      ],
+      "restSec": 90,
+      "warmupSets": 1,
+      "isMain": false,
+      "groupKey": null,
+      "id": "00000000-0000-7000-8000-000000000309",
+      "sessionId": "00000000-0000-7000-8000-000000000003",
+      "position": 0,
+      "rule": "no_climbing",
+      "removed": false
+    },
+    {
+      "exerciseId": "ds:0294",
+      "sets": 2,
+      "repRange": [
+        10,
+        15
+      ],
+      "rirTarget": [
+        0,
+        1
+      ],
+      "restSec": 60,
+      "warmupSets": 0,
+      "isMain": false,
+      "groupKey": null,
+      "id": "00000000-0000-7000-8000-00000000030a",
+      "sessionId": "00000000-0000-7000-8000-000000000003",
+      "position": 1,
+      "rule": "no_climbing",
+      "removed": false
+    }
+  ]
+}
