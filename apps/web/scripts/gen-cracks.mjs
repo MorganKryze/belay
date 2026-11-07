@@ -10,10 +10,10 @@ const H = 560;
 // The extra crack's steps at density 2.
 const LENGTH = 100;
 // Every crack stays in the right 60 % of the corner: the left of it lies under titles and text.
+// The drawing starts at the top, beside the titles at the default text size; larger text widens
+// them across it, and cracks.css then moves the drawing down, 150 px at twice the size. A crack
+// that runs off the bottom ends there.
 const LEFT = W * 0.4;
-// The top of the corner holds a page's title and its close button, which the largest text widens
-// across it, so the cracks start below them; one that runs off the bottom ends there.
-const DROP = 150;
 const INK = { light: "#12181c", dark: "#eef2f3" };
 // The Belay mark, as a path in its own 86..426 by 140..372 box; only one hook of it is shown.
 const MARK =
@@ -66,12 +66,11 @@ export function fissures(theme, density) {
     }
     return p;
   };
-  // The main crack comes down from under the titles and bends along the right edge.
-  const main = crack(175, DROP - 2, 1.68, 64, 6, 1.0, 2);
-  crack(W + 2, DROP + 120, 2.75, 20, 5, 0.75, 1);
-  crack(W + 2, DROP + 380, 2.5, 14, 5, 0.6, 0);
-  if (density > 1)
-    crack(W + 2, DROP + 250, 2.65, Math.round(LENGTH * (density - 1)), 5, 0.65, 1, 0.1);
+  // The main crack comes in at the top edge and bends down along the right edge.
+  const main = crack(175, -2, 1.68, 64, 6, 1.0, 2);
+  crack(W + 2, 120, 2.75, 20, 5, 0.75, 1);
+  crack(W + 2, 380, 2.5, 14, 5, 0.6, 0);
+  if (density > 1) crack(W + 2, 250, 2.65, Math.round(LENGTH * (density - 1)), 5, 0.65, 1, 0.1);
   // The hook sits in the main crack, 12 px wide.
   const [hx, hy] = main[9];
   const hook = `<path transform="translate(${r1(hx - 6)} ${r1(hy - 1)}) scale(0.0353) translate(-86 -140)" fill="${INK[theme]}" d="${MARK}"/>`;

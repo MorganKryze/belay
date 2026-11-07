@@ -80,7 +80,8 @@ function Summary({ account }: { account: OpenAccount }) {
 
   return (
     <section className="flex flex-col gap-4">
-      <div className="-mr-3 flex justify-end">
+      {/* Close sits on the bare ground in the top-right corner: the wall's cracks keep below it. */}
+      <div data-corner-text className="-mr-3 flex justify-end">
         <Button variant="text" onClick={home}>
           {t("summary.close")}
         </Button>

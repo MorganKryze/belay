@@ -1,7 +1,7 @@
 import { expect, type Page, test } from "@playwright/test";
 import { settled } from "./axe";
 import { fakeServer, WEEKS } from "./fake-server";
-import { RUNNING_A, SCREENS, sessionBar } from "./key-screens";
+import { LAST, LAST_A, RUNNING_A, SCREENS, sessionBar } from "./key-screens";
 import { asAndroid, setContrast } from "./native";
 
 // A few fine cracks fixed in the top-right corner, behind the page, never under text, and none
@@ -166,6 +166,57 @@ test.describe("where the layer sits", () => {
         expect((await changed(page, [box!]))[0]).toBeGreaterThan(50);
       });
 
+  for (const scheme of ["light", "dark"] as const)
+    test(`at 390 px in ${scheme} and the default text, cracks and the hook fill the corner above the first card`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme: scheme });
+      await page.setViewportSize({ width: 390, height: 844 });
+      await fakeServer(page, { rows: WEEKS });
+      await page.goto("/");
+      await expect(page.getByRole("button", { name: /^Weigh-in/ })).toBeVisible();
+      await settled(page);
+      const box = (await layer(page))!;
+      // The top of what follows the page's header, and where the hook sits in the drawing.
+      const { cardTop, hook } = await page.evaluate(async () => {
+        // The page's header is the first block of the page's section; the first card follows it.
+        let header: Element = document.querySelector("main h1")!;
+        const section = header.closest("section")!;
+        while (header.parentElement !== section) header = header.parentElement!;
+        let next = header.nextElementSibling;
+        while (next && next.getBoundingClientRect().height === 0) next = next.nextElementSibling;
+        const image = getComputedStyle(document.documentElement, "::before").backgroundImage;
+        const svg = await (await fetch(/url\("?([^")]+)"?\)/.exec(image)![1]!)).text();
+        const [, x, y] =
+          /<g opacity="[\d.]+"><path transform="translate\(([\d.-]+) ([\d.-]+)\)/.exec(svg)!;
+        return { cardTop: next!.getBoundingClientRect().top, hook: [Number(x), Number(y)] };
+      });
+      const corner = { left: box.left, top: 0, width: box.width, height: cardTop };
+      // The hook is 12 px wide and 8 px tall.
+      const mark = { left: box.left + hook[0]!, top: box.top + hook[1]!, width: 12, height: 9 };
+      expect(mark.top + mark.height).toBeLessThan(cardTop);
+      const [inCorner, onHook] = await changed(page, [corner, mark]);
+      expect(inCorner).toBeGreaterThan(100);
+      expect(onHook).toBeGreaterThan(10);
+    });
+
+  test("the drawing moves down with larger text and below a phone page's own corner text", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await asAndroid(page, { textScale: 1.5 });
+    await fakeServer(page, { rows: WEEKS, changes: LAST_A });
+    await page.goto("/");
+    await expect(page.getByRole("button", { name: /^Weigh-in/ })).toBeVisible();
+    // Halfway to twice the size, halfway down; the bottom stays where it was.
+    expect(await layer(page)).toMatchObject({ top: 75, height: 485 });
+    await page.goto(`/workout/summary/${LAST}`);
+    await expect(page.getByRole("heading", { level: 1, name: "Session A · Push" })).toBeVisible();
+    expect(await layer(page)).toMatchObject({ top: 150, height: 410 });
+    await page.setViewportSize({ width: 1280, height: 800 });
+    expect(await layer(page)).toMatchObject({ top: 64 + 75 * (5 / 3), height: 933 - 75 * (5 / 3) });
+  });
+
   test("the layer holds still on a scroll, a push, a pop and the session cover rising", async ({
     page,
   }) => {
@@ -267,6 +318,8 @@ test.describe("plainer grounds", () => {
 const SCROLL_STEP = 40;
 const SIZES = [
   ["the default text", async () => {}],
+  // Between the two the drawing is part of the way down: one size on the way checks the slope.
+  ["a larger text", (page: Page) => asAndroid(page, { textScale: 1.4 })],
   ["the largest text", (page: Page) => asAndroid(page, { textScale: 2 })],
 ] as const;
 
