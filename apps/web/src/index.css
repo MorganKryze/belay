@@ -74,6 +74,16 @@
   --color-plate-grey: var(--plate-grey);
   --color-plate-ink-light: var(--plate-ink-light);
   --color-plate-ink-dark: var(--plate-ink-dark);
+  --color-session-tint: var(--session-tint);
+  --color-session-shade: var(--session-shade);
+  --color-body-tint: var(--body-tint);
+  --color-body-shade: var(--body-shade);
+  --color-activity-tint: var(--activity-tint);
+  --color-activity-shade: var(--activity-shade);
+  --color-intake-tint: var(--intake-tint);
+  --color-intake-shade: var(--intake-shade);
+  --color-rest-tint: var(--rest-tint);
+  --color-rest-shade: var(--rest-shade);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -378,6 +388,19 @@
   /* Red only for destroying something (the activity delete), never on body data. Dark enough
      here (light enough in .dark) for its label to keep 4.5:1 on the button's own red tint. */
   --destructive: #b42318;
+  /* The five domains: a pale tint to sit on and a shade for the words and icons on it. They mark
+     which domain a chip, a tile or a chart belongs to, never a control; the session takes the
+     mark's blue, as a chip only. Each shade reads at 4.5:1 on paper, surface and its tint. */
+  --session-tint: #dce5f0;
+  --session-shade: var(--mark);
+  --body-tint: #efdddc;
+  --body-shade: #94434c;
+  --activity-tint: #dce6d3;
+  --activity-shade: #46672d;
+  --intake-tint: #eee2c9;
+  --intake-shade: #7e5c1a;
+  --rest-tint: #e1deee;
+  --rest-shade: #574d8a;
   --radius: 0.625rem;
   /* The active tab's pill, the frosted bars (and their fallback without backdrop-filter), the
      overlay under a sheet and the tint of a pressed row. */
@@ -477,6 +500,15 @@
   --muscle-rest: #2e3a43;
   /* Derived to read as text: the darker red of a fill falls to 3:1 on the dark surface. */
   --destructive: #f2998f;
+  --session-tint: #1e2b3b;
+  --body-tint: #36262a;
+  --body-shade: #e7aab0;
+  --activity-tint: #243020;
+  --activity-shade: #a8c98d;
+  --intake-tint: #352d1d;
+  --intake-shade: #dcbd82;
+  --rest-tint: #29273d;
+  --rest-shade: #b6ade2;
   --tab-pill: #2e3a43;
   --glass: rgba(24, 32, 39, 0.84);
   --toast-icon: #4a555c;
@@ -490,7 +522,8 @@
 
 /*
  * More contrast, asked by the browser or given to the page by the app: plain grounds, stronger ink
- * and edges, the blue a step deeper. The two copies hold the same values (tokens.test.ts checks).
+ * and edges, the blue a step deeper, and each domain shade at 7:1 on paper, surface and its tint.
+ * The two copies hold the same values (tokens.test.ts checks).
  */
 @media (prefers-contrast: more) {
   :root:not(.dark) {
@@ -504,6 +537,10 @@
     --mark: #143a6b;
     --on-mark: #ffffff;
     --destructive: #9a1b12;
+    --body-shade: #73343b;
+    --activity-shade: #364f23;
+    --intake-shade: #5e4513;
+    --rest-shade: #484073;
   }
   :root.dark {
     --background: #0a0e12;
@@ -516,6 +553,7 @@
     --chart-day: #98a3aa;
     --mark: #b5d0f5;
     --on-mark: #000000;
+    --rest-shade: #b7aee2;
   }
 }
 html[data-contrast="more"]:not(.dark) {
@@ -529,6 +567,10 @@ html[data-contrast="more"]:not(.dark) {
   --mark: #143a6b;
   --on-mark: #ffffff;
   --destructive: #9a1b12;
+  --body-shade: #73343b;
+  --activity-shade: #364f23;
+  --intake-shade: #5e4513;
+  --rest-shade: #484073;
 }
 html.dark[data-contrast="more"] {
   --background: #0a0e12;
@@ -541,6 +583,7 @@ html.dark[data-contrast="more"] {
   --chart-day: #98a3aa;
   --mark: #b5d0f5;
   --on-mark: #000000;
+  --rest-shade: #b7aee2;
 }
 
 :root {
@@ -1005,4 +1048,28 @@ html:active-view-transition-type(cover, uncover)::view-transition-new(top-bar) {
    where the typing goes. */
 html[data-pointer] :focus-visible:not(input, textarea, select, [contenteditable]) {
   outline: none;
+}
+
+/*
+ * Accueil's band: the session's tint at the top of the page fading to paper, behind the title. It
+ * sits on the document, so it scrolls with the title, and under the cracks. Muted words keep
+ * 4.5:1 on its tint. It goes with the cracks wherever plainer grounds are asked for.
+ */
+.home-band {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 280px;
+  z-index: -2;
+  pointer-events: none;
+  background-image: linear-gradient(var(--session-tint), var(--background));
+}
+@media (prefers-contrast: more), (prefers-reduced-transparency: reduce), (forced-colors: active) {
+  .home-band {
+    display: none;
+  }
+}
+html[data-contrast="more"] .home-band {
+  display: none;
 }

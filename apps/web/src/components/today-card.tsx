@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { Suspense, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { type Domain, DomainTile } from "./domain";
 import { daySummaryText } from "@/lib/activities";
 import { useFirstPull } from "@/lib/first-pull";
 import { groupCard, sectionLabel } from "./surfaces";
@@ -134,6 +135,7 @@ export function TodayCard({
         <div className={groupCard}>
           <Row
             icon={ActivityIcon}
+            domain="activity"
             title={t("today.activity")}
             status={
               unknown.activity
@@ -148,6 +150,7 @@ export function TodayCard({
           />
           <Row
             icon={Scale}
+            domain="body"
             title={t("today.weighIn")}
             status={
               unknown.weighIn
@@ -164,6 +167,7 @@ export function TodayCard({
           />
           <Row
             icon={Utensils}
+            domain="intake"
             title={t("today.intake")}
             status={unknown.intake ? null : intakeText}
             onClick={() => setOpen("intake")}
@@ -172,6 +176,7 @@ export function TodayCard({
           {unknown.supplements || active.length > 0 ? (
             <Row
               icon={Pill}
+              domain="intake"
               title={t("today.supplements")}
               status={
                 unknown.supplements
@@ -191,6 +196,7 @@ export function TodayCard({
             <Link to="/settings/supplements" className={rowLine}>
               <RowBody
                 icon={Pill}
+                domain="intake"
                 title={t("today.supplements")}
                 status={{ text: t("today.supplementsNone"), done: false }}
               />
@@ -307,7 +313,7 @@ export const rowLine =
 // Where a gesture stands today: null while not known yet; done when something is logged.
 export type Status = { text: string; done: boolean } | null;
 
-// The inside of a row: the icon square, the name over its status, and a chevron. A status still
+// The inside of a row: the icon square (on its domain's tint where one is given), the name over its status, and a chevron. A status still
 // unknown (null) is a blank line of the same height, so nothing moves when it comes; the
 // no-break space keeps the line from collapsing. The space between the name and the status is
 // for the row's accessible name ("Weigh-in 80.2 kg"); the column drops it from the layout.
@@ -315,19 +321,25 @@ export function RowBody({
   icon: Icon,
   title,
   status,
+  domain,
 }: {
   icon: LucideIcon;
   title: string;
   status: Status;
+  domain?: Domain;
 }) {
   return (
     <>
-      <span
-        aria-hidden
-        className="grid size-7 shrink-0 place-items-center rounded-[8px] bg-primary-soft text-primary-ink"
-      >
-        <Icon className="size-4" />
-      </span>
+      {domain ? (
+        <DomainTile domain={domain} icon={Icon} />
+      ) : (
+        <span
+          aria-hidden
+          className="grid size-7 shrink-0 place-items-center rounded-[8px] bg-primary-soft text-primary-ink"
+        >
+          <Icon className="size-4" />
+        </span>
+      )}
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="font-semibold">{title}</span>{" "}
         {/* Keyed: each state mounts its own span instead of patching the one before into it. */}
@@ -360,12 +372,14 @@ export function RowBody({
 // One gesture; the whole line opens its sheet.
 function Row({
   icon,
+  domain,
   title,
   status,
   onClick,
   sheet,
 }: {
   icon: LucideIcon;
+  domain: Domain;
   title: string;
   status: Status;
   onClick: () => void;
@@ -379,7 +393,7 @@ function Row({
       onPointerDown={sheet.preload}
       onFocus={sheet.preload}
     >
-      <RowBody icon={icon} title={title} status={status} />
+      <RowBody icon={icon} title={title} status={status} domain={domain} />
     </button>
   );
 }

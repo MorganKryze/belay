@@ -1,19 +1,22 @@
-import { Check, Leaf } from "lucide-react";
+import { Check, Dumbbell, Leaf } from "lucide-react";
 import { type ReactNode, useId } from "react";
+import { type Domain, DomainChip } from "./domain";
 import { cardSurface } from "./surfaces";
 
 // A session's title (17 px) over one muted line, led by where it stands (« La prochaine »,
-// « En cours ») in the accent ink.
+// « En cours ») in the accent ink, or as its domain's chip where domains meet.
 export function SessionHeading({
   id,
   title,
   lead,
   detail,
+  domain,
 }: {
   id: string;
   title: string;
   lead?: string;
   detail: string;
+  domain?: Domain;
 }) {
   return (
     <div className="flex flex-col">
@@ -22,7 +25,17 @@ export function SessionHeading({
       </h2>
       {/* The space keeps the title and this line apart when read as one name. */}{" "}
       <p className="text-(length:--text-secondary) text-muted-foreground">
-        {lead && <span className="font-semibold text-primary-ink">{lead} · </span>}
+        {lead &&
+          (domain ? (
+            <>
+              <DomainChip domain={domain} icon={Dumbbell}>
+                {lead}
+              </DomainChip>
+              {" · "}
+            </>
+          ) : (
+            <span className="font-semibold text-primary-ink">{lead} · </span>
+          ))}
         {detail}
       </p>
     </div>
@@ -37,16 +50,20 @@ export function SessionCard({
   lead,
   detail,
   tile,
+  domain,
   children,
 }: {
   title: string;
   lead?: string;
   detail: string;
   tile?: "done" | "rest";
+  domain?: Domain;
   children?: ReactNode;
 }) {
   const id = useId();
-  const heading = <SessionHeading id={id} title={title} lead={lead} detail={detail} />;
+  const heading = (
+    <SessionHeading id={id} title={title} lead={lead} detail={detail} domain={domain} />
+  );
   return (
     <section aria-labelledby={id} className={`${cardSurface} flex flex-col gap-3 px-4 py-3`}>
       {tile ? (
