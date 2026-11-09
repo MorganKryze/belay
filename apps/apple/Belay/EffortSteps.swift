@@ -33,7 +33,7 @@ struct EffortSteps: View {
                 DragGesture(minimumDistance: 0).onChanged { drag in
                     let floor = max(1, min(5, Int(drag.location.x / max(1, box.size.width) * 5) + 1))
                     guard floor != value else { return }
-                    withAnimation(reduceMotion ? nil : .snappy) { value = floor }
+                    withAnimation(Motion.change(reduce: Motion.reduced(reduceMotion))) { value = floor }
                 })
         }
         .frame(height: 112)
