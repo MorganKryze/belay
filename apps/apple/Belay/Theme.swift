@@ -53,6 +53,18 @@ extension View {
             .scrollEdgeEffectStyle(edge, for: .top)
     }
 
+    /// A large title that scrolls away with the content, as a page's heading does: once it has
+    /// gone, the bar keeps its buttons and shows no compact title, which would stand at the top
+    /// like a web page's sticky header. The empty view takes the compact title's place; the large
+    /// title, the back button's label and VoiceOver still read the navigation title.
+    func largeTitleOnly() -> some View {
+        toolbar {
+            ToolbarItem(placement: .principal) {
+                Color.clear.frame(width: 1, height: 1).accessibilityHidden(true)
+            }
+        }
+    }
+
     /// The subtitle under a large title, in the toolbar's own slot: `navigationSubtitle` paints lighter
     /// than 4.5:1 on the wall.
     func belaySubtitle(_ text: String) -> some View {
@@ -93,7 +105,7 @@ extension View {
     }
 
     /// A big figure thins out as the scroll takes it under the bar: at this size the edge effect has
-    /// no way to blur it, and it would stand as a smudge behind the compact title.
+    /// no way to blur it, and it would stand as a smudge behind the bar's buttons.
     func thinsUnderBar() -> some View {
         visualEffect { content, proxy in
             content.opacity(max(0, min(1, (proxy.frame(in: .global).minY - 80) / 46)))

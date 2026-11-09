@@ -28,6 +28,7 @@ struct ReglagesView: View {
         .belayList()
         .background { Wall() }
         .navigationTitle("Réglages")
+        .largeTitleOnly()
         .confirmationDialog(
             Text("Se déconnecter\u{202F}?", tableName: "Account"), isPresented: $asking, titleVisibility: .visible
         ) {

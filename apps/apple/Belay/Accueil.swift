@@ -24,6 +24,7 @@ struct AccueilView: View {
         .safeAreaInset(edge: .top, spacing: 0) { notice }
         .background { Wall() }
         .navigationTitle(title)
+        .largeTitleOnly()
         .belaySubtitle(Self.today())
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {

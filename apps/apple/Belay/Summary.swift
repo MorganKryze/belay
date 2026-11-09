@@ -63,6 +63,7 @@ struct SummaryView: View {
         .belayList()
         .navigationTitle(SessionText.short(summary.code))
         .navigationBarTitleDisplayMode(.large)
+        .largeTitleOnly()
         .modifier(Subtitle(name: summary.name, line: String(localized: "Séance terminée · \(Self.day(summary.endedAt))")))
         .scrollEdgeEffectStyle(.hard, for: .bottom)
         // The dialog before this screen already saved: one way out, at the foot, and no blue left.

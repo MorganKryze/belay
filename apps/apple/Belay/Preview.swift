@@ -53,6 +53,7 @@ struct SessionPreview: View {
         .belayList()
         .navigationTitle(SessionText.short(next.code))
         .navigationBarTitleDisplayMode(.large)
+        .largeTitleOnly()
         .modifier(Subtitle(name: next.name, line: size))
         .scrollEdgeEffectStyle(.hard, for: .bottom)
         .safeAreaBar(edge: .bottom) {
