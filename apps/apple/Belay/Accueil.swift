@@ -22,17 +22,13 @@ struct AccueilView: View {
             }
             .listRowBackground(Color.surface)
         }
+        // Inside the list's wall, so the wall lies under the band and the rows over it.
+        .background(alignment: .top) { AccueilBand(scrolled: scrolled) }
         .belayList()
         .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y + $0.contentInsets.top } action: { _, y in
             scrolled = y
         }
         .safeAreaInset(edge: .top, spacing: 0) { notice }
-        .background(alignment: .top) {
-            ZStack(alignment: .top) {
-                Wall()
-                AccueilBand(scrolled: scrolled)
-            }
-        }
         .navigationTitle(title)
         .largeTitleOnly()
         .belaySubtitle(Self.today())
@@ -195,9 +191,10 @@ struct AccueilBand: View {
     let scrolled: CGFloat
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @Environment(\.colorSchemeContrast) private var contrast
+    @Environment(\.contrastIncreased) private var contrastIncreased
 
     var body: some View {
-        if !reduceTransparency && contrast != .increased {
+        if !reduceTransparency && contrast != .increased && !contrastIncreased {
             LinearGradient(colors: [.sessionTint, .sessionTint.opacity(0)], startPoint: .top, endPoint: .bottom)
                 .frame(height: 280)
                 .offset(y: -max(scrolled, 0))

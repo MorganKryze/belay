@@ -36,6 +36,7 @@ struct BelayApp: App {
                 .overlay(alignment: .topLeading) {
                     if Fixture.isOn, let store = account.store { Fixture.QueueProbe(store: store) }
                 }
+                .environment(\.contrastIncreased, Fixture.contrastIncreased)
             #endif
             .task { await account.finishSignIn() }
             .onChange(of: scenePhase) { _, phase in
