@@ -65,7 +65,8 @@ extension AccountStore {
   // MARK: Logging
 
   /// Logs the set due, read here at the moment of the write. With `expecting`, a set already
-  /// stored at that place is corrected instead of doubled, and another set due writes nothing.
+  /// stored at that place is corrected instead of doubled (nil when the values are the same), and
+  /// another set due writes nothing.
   /// `lockScreen` refuses while paused or for a timed set, which the lock screen never offers.
   func logNext(
     count: Int?, weightKg: Double?, expecting: SetPlace?, workoutId: String? = nil,
@@ -85,6 +86,14 @@ extension AccountStore {
           reps: there.seconds == nil ? (count ?? there.reps) : nil,
           seconds: there.seconds == nil ? .null : .value(count ?? there.seconds ?? 0),
           rir: there.rir)
+        // Nothing new, as from a second ✓ on an Activity not updated yet: a change stamped now
+        // could overwrite a newer correction from another device.
+        if values == SetValues(
+          weightKg: there.weightKg, reps: there.reps,
+          seconds: there.seconds.map { .value($0) } ?? .null, rir: there.rir)
+        {
+          return nil
+        }
         let change = SetChange(
           id: there.id, workoutId: there.workoutId, at: at, edit: .values(values))
         try Self.write(db, [.set(change)])
