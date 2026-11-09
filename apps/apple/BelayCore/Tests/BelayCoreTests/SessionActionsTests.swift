@@ -351,6 +351,37 @@ struct Seance {
     #expect(try s.workout.startedAt == Fixture.time(2))
   }
 
+  @Test func pauseEndedBySyncedSet() throws {
+    let s = try Seance()
+    s.clock.advance(seconds: 600)
+    try s.actions.pause()
+    s.clock.advance(seconds: 600)
+    _ = try s.landed(position: 3)
+    s.clock.advance(seconds: 60)
+    // The cover reads the pause as over at the set's time, before any write here.
+    let state = try s.state()
+    #expect(!state.paused)
+    #expect(state.elapsedMs == 660_000)
+    // The next write settles it there: the start leaves out only the ten minutes paused.
+    try s.actions.resume()
+    #expect(try s.workout.startedAt == Fixture.time(10))
+    #expect(try s.active?.pausedAt == nil)
+  }
+
+  @Test func finishAfterSyncedSetsKeepsTheirTime() throws {
+    let s = try Seance()
+    s.clock.advance(seconds: 600)
+    try s.actions.pause()
+    s.clock.advance(seconds: 600)
+    _ = try s.landed(position: 3)
+    s.clock.advance(seconds: 1200)
+    _ = try s.landed(position: 4)
+    #expect(try s.actions.finish() == s.workoutId)
+    let w = try s.workout
+    #expect(w.startedAt == Fixture.time(10))
+    #expect(summary(w, sets: try s.sets, history: try s.store.history()).durationMs == 1_800_000)
+  }
+
   @Test func finishWhilePausedLeavesPauseOut() throws {
     let s = try Seance()
     s.clock.advance(seconds: 600)

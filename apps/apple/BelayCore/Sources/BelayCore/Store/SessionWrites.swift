@@ -49,6 +49,7 @@ extension AccountStore {
         let workout = try Rows.get(WorkoutRow.self, db, "workouts", id: active.workoutId)
       else { return nil }
       var open = OpenSession(workout: workout, active: active, history: try Self.history(db))
+      try settlePause(db, &open.workout, &open.active, sets: open.sets)
       let result = try body(db, &open)
       try Rows.putSingle(db, "activeSession", open.active)
       return result
@@ -106,13 +107,9 @@ extension AccountStore {
           .init(
             slotIndex: due.place.slotIndex, position: due.place.position,
             exerciseId: due.exerciseId, warmup: due.warmup, values: values, doneAt: at)))
-      var changes: [Change] = []
       // A set logged during a pause ends it at the set's time.
-      if let pausedAt = open.active.pausedAt {
-        changes.append(resumeChange(&open, pausedAt: pausedAt, at: at))
-      }
-      changes.append(.set(change))
-      try Self.write(db, changes)
+      try Self.write(
+        db, resumeChange(&open.workout, &open.active, at: at) + [.set(change)])
       open.active.chrono = nil
       open.active.draft = nil
       // A warm-up starts no rest and leaves a running one alone.
@@ -139,20 +136,27 @@ extension AccountStore {
     return Instant.string(ms: ms + Int64(restSec) * 1000)
   }
 
-  /// The session's start moved past the pause, the rest and a chrono moved with it, the pause
-  /// gone: what a resume at `at` writes. The record is changed in place.
-  private func resumeChange(_ open: inout OpenSession, pausedAt: String, at: String) -> Change {
-    let start = resumedStart(startedAt: open.workout.startedAt, pausedAt: pausedAt, resumedAt: at)
-    open.active.restEndsAt = resumedRestEnd(
-      open.active.restEndsAt, pausedAt: pausedAt, resumedAt: at, stops: .all)
-    if var chrono = open.active.chrono {
-      chrono.endsAt =
-        resumedRestEnd(chrono.endsAt, pausedAt: pausedAt, resumedAt: at, stops: .all)
-        ?? chrono.endsAt
-      open.active.chrono = chrono
-    }
-    open.active.pausedAt = nil
-    return .workout(WorkoutChange(id: open.workout.id, at: at, edit: .startedAt(start)))
+  /// What a resume at `at` writes: the start moved past the pause, the rest and a chrono moved
+  /// with it on the record, changed in place. Nothing while the session runs.
+  private func resumeChange(_ workout: inout WorkoutRow, _ active: inout ActiveSession, at: String)
+    -> [Change]
+  {
+    guard active.pausedAt != nil else { return [] }
+    let next = resumed(startedAt: workout.startedAt, active: active, at: at)
+    active = next.active
+    workout.startedAt = next.startedAt
+    return [.workout(WorkoutChange(id: workout.id, at: at, edit: .startedAt(next.startedAt)))]
+  }
+
+  /// A pause a set has ended since, synced or logged here, is resumed at that set's time before
+  /// anything else is decided, so neither a resume nor the end takes the time trained out.
+  private func settlePause(
+    _ db: Database, _ workout: inout WorkoutRow, _ active: inout ActiveSession, sets: [SetRow]
+  ) throws {
+    guard let pausedAt = active.pausedAt,
+      let endedBy = pauseEndedBy(pausedAt: pausedAt, doneAts: sets.map(\.doneAt))
+    else { return }
+    try Self.write(db, resumeChange(&workout, &active, at: endedBy))
   }
 
   // MARK: A set done
@@ -292,8 +296,7 @@ extension AccountStore {
   func resume(_ ctx: SessionContext) throws {
     try requireOpen(
       withOpenSession { db, open in
-        guard let pausedAt = open.active.pausedAt else { return }
-        try Self.write(db, [resumeChange(&open, pausedAt: pausedAt, at: Instant.string(ctx.now()))])
+        try Self.write(db, resumeChange(&open.workout, &open.active, at: Instant.string(ctx.now())))
       })
   }
 
@@ -412,18 +415,17 @@ extension AccountStore {
   /// Ended now, a pause left out of its time; the device forgets it as open.
   func finish(_ ctx: SessionContext) throws -> String {
     let id = try writer.write { db -> String? in
-      guard let active = try Rows.single(ActiveSession.self, db, "activeSession"),
-        let workout = try Rows.get(WorkoutRow.self, db, "workouts", id: active.workoutId)
+      guard var active = try Rows.single(ActiveSession.self, db, "activeSession"),
+        var workout = try Rows.get(WorkoutRow.self, db, "workouts", id: active.workoutId)
       else { return nil }
       let at = Instant.string(ctx.now())
-      var open = OpenSession(
-        workout: workout, active: active, history: History(workouts: [], sets: []))
-      var changes: [Change] = []
-      if let pausedAt = active.pausedAt {
-        changes.append(resumeChange(&open, pausedAt: pausedAt, at: at))
-      }
-      changes.append(.workout(WorkoutChange(id: workout.id, at: at, edit: .ended(at))))
-      try Self.write(db, changes)
+      try settlePause(
+        db, &workout, &active, sets: try Self.sets(db, of: workout.id).filter { !$0.removed })
+      try Self.write(
+        db,
+        resumeChange(&workout, &active, at: at) + [
+          .workout(WorkoutChange(id: workout.id, at: at, edit: .ended(at)))
+        ])
       try Rows.clearSingle(db, "activeSession")
       return workout.id
     }

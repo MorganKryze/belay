@@ -145,6 +145,36 @@ func ownSets(_ history: History, workoutId: String) -> [SetRow] {
   history.sets.filter { !$0.removed && $0.workoutId == workoutId }
 }
 
+/// The session resumed at `at`: the start moved past the pause, the rest and a chrono moved with
+/// it, the pause gone. Unchanged when it runs.
+func resumed(startedAt: String, active: ActiveSession, at: String) -> (
+  startedAt: String, active: ActiveSession
+) {
+  guard let pausedAt = active.pausedAt else { return (startedAt, active) }
+  var active = active
+  active.restEndsAt = resumedRestEnd(
+    active.restEndsAt, pausedAt: pausedAt, resumedAt: at, stops: .all)
+  if var chrono = active.chrono {
+    chrono.endsAt =
+      resumedRestEnd(chrono.endsAt, pausedAt: pausedAt, resumedAt: at, stops: .all)
+      ?? chrono.endsAt
+    active.chrono = chrono
+  }
+  active.pausedAt = nil
+  return (resumedStart(startedAt: startedAt, pausedAt: pausedAt, resumedAt: at), active)
+}
+
+/// A pause that a set logged since has ended, here or on another device, read as resumed at that
+/// set's time: the time trained since stays in the session. Unchanged otherwise.
+func settledPause(startedAt: String, active: ActiveSession, sets: [SetRow]) -> (
+  startedAt: String, active: ActiveSession
+) {
+  guard let pausedAt = active.pausedAt,
+    let endedBy = pauseEndedBy(pausedAt: pausedAt, doneAts: sets.map(\.doneAt))
+  else { return (startedAt, active) }
+  return resumed(startedAt: startedAt, active: active, at: endedBy)
+}
+
 /// The set due in `workout`: a set the person added, else the next turn of the shared rule with
 /// its warm-ups first, the warm-ups coming before a slot's first work set when a working load is
 /// known. Its values are the draft's at that place, else the prefill.
@@ -245,12 +275,14 @@ public func sessionState(
   }
   let plan = workout.plan
   let sets = ownSets(history, workoutId: workout.id)
+  let settled = settledPause(startedAt: workout.startedAt, active: active, sets: sets)
+  let device = settled.active
   let progress = sessionProgress(plan, sets: sets)
-  let due = dueSet(history: history, workout: workout, active: active, library: library, bar: bar)
+  let due = dueSet(history: history, workout: workout, active: device, library: library, bar: bar)
   let elapsed = Int(
-    sessionElapsed(startedAt: workout.startedAt, pausedAt: active.pausedAt, now: now))
-  let restAt = restClock(pausedAt: active.pausedAt, now: now, stops: .all)
-  let restEnd = active.restEndsAt.flatMap(date).flatMap { $0 > restAt ? $0 : nil }
+    sessionElapsed(startedAt: settled.startedAt, pausedAt: device.pausedAt, now: now))
+  let restAt = restClock(pausedAt: device.pausedAt, now: now, stops: .all)
+  let restEnd = device.restEndsAt.flatMap(date).flatMap { $0 > restAt ? $0 : nil }
   let title = workout.sessionName.value ?? workout.sessionCode
   let workDone = sets.filter { !$0.warmup }.count
   let latestWork = sets.filter { !$0.warmup }.max { precedes($0.doneAt, $1.doneAt) }
@@ -265,9 +297,9 @@ public func sessionState(
     return answered.map { now >= $0 + afterAnswer } ?? false
   }()
 
-  var shownSlot = due?.place.slotIndex ?? latestWork?.slotIndex ?? active.slotIndex
+  var shownSlot = due?.place.slotIndex ?? latestWork?.slotIndex ?? device.slotIndex
   let phase: SessionPhase
-  if active.pausedAt != nil {
+  if device.pausedAt != nil {
     phase = .paused(
       Paused(
         elapsedMs: elapsed,
@@ -288,7 +320,7 @@ public func sessionState(
   } else if let restEnd {
     phase = .resting(Rest(endsAt: restEnd, next: due))
   } else if let due {
-    if let chrono = active.chrono, chrono.place == due.place, let end = date(chrono.endsAt) {
+    if let chrono = device.chrono, chrono.place == due.place, let end = date(chrono.endsAt) {
       phase =
         end > now
         ? .holding(Hold(due: due, endsAt: end)) : .held(Held(due: due, seconds: chrono.seconds))
@@ -338,7 +370,7 @@ public func sessionState(
     workoutId: workout.id, title: title, exerciseIndex: live.firstIndex(of: shownSlot) ?? 0,
     exerciseCount: live.count, bars: bars, phase: phase, done: done, askRIR: ask,
     note: workout.exerciseNotes[String(shownSlot)], elapsedMs: elapsed,
-    startedAt: date(workout.startedAt) ?? now, paused: active.pausedAt != nil)
+    startedAt: date(settled.startedAt) ?? now, paused: device.pausedAt != nil)
 }
 
 private func slotSets(_ sets: [SetRow], _ slotIndex: Int) -> [DoneSet] {
