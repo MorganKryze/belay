@@ -1,0 +1,61 @@
+/*
+ * A few fine cracks in the wall's top-right corner: one layer fixed under the page, so it holds
+ * still while the page scrolls. Cards, lists, sheets and bars are solid above it; the rest of the
+ * ground stays plain paper. The drawing keeps clear of text (cracks.spec.ts compares).
+ */
+:root {
+  --cracks: url("./assets/cracks-light.svg");
+}
+.dark {
+  --cracks: url("./assets/cracks-dark.svg");
+}
+html::before {
+  /* The drawing starts beside the titles at the default text size. Larger text, the phone's or the
+     browser's, widens them across the corner: the drawing moves down as the text grows, 150 px at
+     twice the size and no further, its bottom cut where it was. On a phone, a page with text of
+     its own in the corner, on the bare ground and scrolling through it, has it 150 px down at any
+     size. */
+  --cracks-drop: clamp(0px, (var(--text-scale) * 1rem - 16px) * 9.375, 150px);
+  content: "";
+  position: fixed;
+  top: var(--cracks-drop);
+  right: 0;
+  width: 240px;
+  height: calc(560px - var(--cracks-drop));
+  z-index: -1;
+  pointer-events: none;
+  background: var(--cracks) right top / 240px 560px no-repeat;
+}
+@media (width < 64rem) {
+  html:has(main [data-corner-text])::before {
+    --cracks-drop: 150px;
+  }
+}
+/* From a computer's width the corner sits under the top bar, drawn larger. */
+@media (width >= 64rem) {
+  html::before {
+    top: calc(64px + var(--cracks-drop) * 5 / 3);
+    width: 400px;
+    height: calc(933px - var(--cracks-drop) * 5 / 3);
+    background-size: 400px 933px;
+  }
+}
+
+/* No cracks where the person asked for plainer grounds, and the frosted bars turn solid. */
+@media (prefers-contrast: more), (prefers-reduced-transparency: reduce), (forced-colors: active) {
+  html::before {
+    content: none;
+  }
+  html:root {
+    --glass: var(--surface);
+    --glass-fallback: var(--surface);
+  }
+}
+/* The same when the Android app reports more contrast, which its web view does not pass on. */
+html[data-contrast="more"] {
+  --glass: var(--surface);
+  --glass-fallback: var(--surface);
+  &::before {
+    content: none;
+  }
+}

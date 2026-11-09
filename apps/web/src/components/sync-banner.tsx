@@ -48,7 +48,8 @@ export function SyncBanner({ account }: { account: OpenAccount }) {
             <p>
               <b>{t("sync.expiredTitle")}</b> {t(`sync.expired${what}`, { count })}
             </p>
-            <Button asChild>
+            {/* Neutral: the notice sits above the screen's own next action, which keeps the blue. */}
+            <Button asChild variant="secondary">
               <a href={`/auth/login?returnTo=${encodeURIComponent(pathname)}`}>
                 {t("sync.reconnect")}
               </a>

@@ -16,16 +16,16 @@ import { weighingDigits, type WeightUnit } from "@/lib/units";
 
 // The drawing is as wide as the card, in screen pixels, so its text renders at its true size;
 // 320 where nothing is laid out (unit tests). The right padding leaves room for the last average,
-// five characters wide from 100.0 kg.
+// five characters wide from 100.0 kg in the system face, SF Pro's bold figures the widest seen.
 const FALLBACK_W = 320;
 const H = 180;
-const PAD = { left: 26, right: 42, top: 20, bottom: 24 };
+const PAD = { left: 26, right: 46, top: 20, bottom: 24 };
 // A tap this close to a dot (in screen pixels) opens that day's weigh-in.
 const HIT_PX = 22;
 // Rough width of an 11.5px semibold character, to keep the band's label inside the drawing.
 const LABEL_EM = 6.4;
-// Width of a 12px semibold character: a ceiling for Inter's widest letters, so a measured name is
-// never narrower than the drawn one. Tests have no layout to measure text with.
+// Width of a 12px semibold character: meant as a ceiling for the widest letters, so a measured
+// name is never narrower than the drawn one. Tests have no layout to measure text with.
 const NAME_EM = 6.7;
 // Free space kept between two names on the same level.
 const NAME_GAP = 6;
@@ -101,7 +101,7 @@ export function lastAverageBox(
   return { x0: x + LAST_DX, x1: x + LAST_DX + label.length * NAME_EM };
 }
 
-// Grey dots for the daily weigh-ins, an orange line for the 7-day average, and, in
+// Grey dots for the daily weigh-ins, an ink line for the 7-day average, and, in
 // context only: the first 14 days of each creatine course as a band, the annotations as
 // named dashed lines. Pointer, touch or arrow keys move a crosshair over the nearest day; its
 // values are read out politely. The weeks list and the history below are the data table. The
@@ -362,7 +362,11 @@ export function WeightChart({
               cx={x(w.date)}
               cy={y(w.weightKg)}
               r={dotR}
-              className="fill-chart-dot"
+              // A ring of the card's colour drawn under the fill: unseen on the card, it keeps the
+              // grey dot at 3:1 where a creatine band runs behind it.
+              strokeWidth={2}
+              paintOrder="stroke"
+              className="fill-chart-dot stroke-card"
             />
           ),
         )}

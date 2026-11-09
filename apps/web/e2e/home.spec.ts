@@ -108,7 +108,7 @@ test("the session card sits on the kit's surface: a ring in light, a border in d
   await page.addInitScript(() => localStorage.setItem("belay.theme", "light"));
   await openHome(page);
   const light = await surface();
-  expect(light.shadow).toContain("rgba(28, 25, 23, 0.035) 0px 0px 0px 1px");
+  expect(light.shadow).toContain("rgba(18, 24, 28, 0.04) 0px 0px 0px 1px");
   expect(light.border).toBe("0px");
   expect(light.radius).toBe("18px");
   await page.addInitScript(() => localStorage.setItem("belay.theme", "dark"));
@@ -178,12 +178,12 @@ test.describe("the session done", () => {
     // No filled button and no accent anywhere in the card.
     const accent = await card.evaluate((el) => {
       const probe = document.createElement("span");
-      probe.style.backgroundColor = "var(--primary)";
+      probe.style.backgroundColor = "var(--mark)";
       document.body.append(probe);
-      const primary = getComputedStyle(probe).backgroundColor;
+      const mark = getComputedStyle(probe).backgroundColor;
       probe.remove();
       return [el, ...el.querySelectorAll("*")].filter(
-        (n) => getComputedStyle(n).backgroundColor === primary,
+        (n) => getComputedStyle(n).backgroundColor === mark,
       ).length;
     });
     expect(accent).toBe(0);

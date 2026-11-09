@@ -481,7 +481,7 @@ test("Programme cards sit on the card surface", async ({ page }) => {
   await expect(titles).toHaveCount(3);
   const light = await surfaces();
   for (const s of light) {
-    expect(s.shadow).toContain("rgba(28, 25, 23, 0.035) 0px 0px 0px 1px");
+    expect(s.shadow).toContain("rgba(18, 24, 28, 0.04) 0px 0px 0px 1px");
     expect(s.border).toBe("0px");
   }
   await page.addInitScript(() => localStorage.setItem("belay.theme", "dark"));

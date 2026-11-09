@@ -85,7 +85,7 @@ test.describe("on Wednesday 7 October 2026", () => {
       });
       expect(style.radius).toBe("18px");
       if (theme === "light") {
-        expect(style.shadow).toContain("0.035");
+        expect(style.shadow).toContain("rgba(18, 24, 28, 0.04) 0px 0px 0px 1px");
         expect(style.border).toBe("0px");
       } else {
         expect(style.shadow).toBe("none");

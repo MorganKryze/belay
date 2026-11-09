@@ -10,7 +10,7 @@
     </style>
 
     <!-- Below web view 140 the page stops at the system bars and this background fills the band
-         behind them: the page's own chalk, dark in dark mode, rather than the theme's grey. The
+         behind them: the page's own paper, dark in dark mode, rather than the theme's grey. The
          system's dialogs, the date picker among them, take Material 3 in Belay's accent; the
          wallpaper's colours are never asked for. -->
     <style name="AppTheme.NoActionBar" parent="Theme.Material3.DayNight.NoActionBar">
@@ -39,10 +39,10 @@
         <item name="android:headerBackground">@color/accent</item>
     </style>
 
-    <!-- Android's own splash: the mark on chalk, then the app's theme once the page is up. -->
+    <!-- Android's own splash: the mark in the launch blue on paper, then the app's theme once the page is up. -->
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@color/launch</item>
-        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher_foreground</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_mark</item>
         <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>
     </style>
 

@@ -20,15 +20,19 @@ async function holdAccount(page: Page) {
   return answer;
 }
 
-type Launch = { fcp?: number; launchedAt?: number };
+type Launch = { fcp?: number; painted?: number; launchedAt?: number };
 
-// On the real clock: the first paint's start, and the moment body gets its launched class.
+// On the real clock: the first paint's start (when the frame reached the screen), the moment the
+// page painted that frame, and the moment body gets its launched class.
 async function recordLaunch(page: Page) {
   await page.addInitScript(() => {
     const launch: Launch = {};
     (window as unknown as { launch: Launch }).launch = launch;
     new PerformanceObserver((list) => {
-      for (const e of list.getEntriesByName("first-contentful-paint")) launch.fcp ??= e.startTime;
+      for (const e of list.getEntriesByName("first-contentful-paint")) {
+        launch.fcp ??= e.startTime;
+        launch.painted ??= (e as PerformanceEntry & { paintTime: number }).paintTime;
+      }
     }).observe({ type: "paint", buffered: true });
     new MutationObserver(() => {
       if (launch.launchedAt === undefined && document.body?.classList.contains("launched"))
@@ -144,10 +148,13 @@ test("the launch screen never leaves before its first paint, even with the accou
   });
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1, name: "Hello, Ada" })).toBeVisible();
-  const { fcp, launchedAt } = await readLaunch(page);
+  const { fcp, painted, launchedAt } = await readLaunch(page);
   expect(fcp).toBeGreaterThan(700);
-  // A frame's callback runs a few milliseconds before the paint it belongs to is stamped.
-  expect(launchedAt).toBeGreaterThanOrEqual(fcp - 17);
+  // The order, not a margin: the page painted its first frame, then body got its class. That frame
+  // holds the launch screen. The paint's start is stamped later, when the frame reaches the
+  // screen, and a busy machine can add the class in between.
+  expect(painted).toBeGreaterThan(0);
+  expect(launchedAt).toBeGreaterThan(painted);
 });
 
 test("with the account known after 1.5 s the launch screen leaves right after the answer", async ({
@@ -322,12 +329,13 @@ test("the launch word sits where the 1170x2532 launch image draws it", async ({ 
     const context = canvas.getContext("2d")!;
     context.drawImage(img, 0, 0);
     const { data } = context.getImageData(0, 0, canvas.width, canvas.height);
-    // The word's pixels: past halfway from the chalk background to its stone 900.
+    // The word's pixels: past halfway from the paper to the word's ink. The mark's blue stays
+    // above it, so it is left out.
     let [left, top, right, bottom] = [canvas.width, canvas.height, 0, 0];
     for (let y = 0; y < canvas.height; y++)
       for (let x = 0; x < canvas.width; x++) {
         const at = (y * canvas.width + x) * 4;
-        if (Math.max(data[at]!, data[at + 1]!, data[at + 2]!) < 139) {
+        if (Math.max(data[at]!, data[at + 1]!, data[at + 2]!) < 136) {
           [left, top] = [Math.min(left, x), Math.min(top, y)];
           [right, bottom] = [Math.max(right, x + 1), Math.max(bottom, y + 1)];
         }
@@ -336,4 +344,69 @@ test("the launch word sits where the 1170x2532 launch image draws it", async ({ 
   });
   for (const [i, edge] of image.entries())
     expect(Math.abs(edge - drawn[i]!)).toBeLessThanOrEqual(3);
+});
+
+const LAUNCH = {
+  light: { ground: "rgb(243, 245, 245)", mark: "rgb(31, 78, 140)" },
+  dark: { ground: "rgb(16, 21, 26)", mark: "rgb(141, 182, 238)" },
+} as const;
+
+for (const scheme of ["light", "dark"] as const) {
+  test(`the ${scheme} launch is plain paper with one mark in one blue and no cracks`, async ({
+    page,
+  }) => {
+    await page.emulateMedia({ colorScheme: scheme });
+    await fakeServer(page);
+    const answer = await holdAccount(page);
+    await page.goto("/");
+    const launch = page.locator(".launch");
+    await expect(launch).toBeVisible();
+    await expect(launch).toHaveCSS("background-color", LAUNCH[scheme].ground);
+    await expect(launch).toHaveCSS("background-image", "none");
+    await expect(launch.locator("svg.mark")).toHaveCount(1);
+    await expect(launch.locator("svg.mark")).toHaveCSS("color", LAUNCH[scheme].mark);
+    // Nothing else is drawn on the paper: no crack layer, no pseudo-element picture.
+    await expect(launch.locator("canvas, img, video")).toHaveCount(0);
+    for (const where of ["::before", "::after"])
+      expect(await launch.evaluate((el, w) => getComputedStyle(el, w).content, where)).toBe("none");
+    answer();
+  });
+}
+
+test("the launch mark stays put in size and place until the first page", async ({ page }) => {
+  await fakeServer(page);
+  const answer = await holdAccount(page);
+  await page.goto("/");
+  const mark = page.locator(".launch .mark");
+  await expect(mark).toBeVisible();
+  const box = () => mark.boundingBox();
+  const first = await box();
+  await page.waitForTimeout(600);
+  expect(await box()).toEqual(first);
+  answer();
+});
+
+test("in a browser on a phone the word sits beside the mark, named Belay and drawn in outlines", async ({
+  page,
+}) => {
+  await fakeServer(page);
+  const answer = await holdAccount(page);
+  await page.goto("/");
+  const word = page.locator(".launch").getByRole("img", { name: "Belay" });
+  await expect(word).toBeVisible();
+  // Shaped from the display face at weight 800, so its box is that face's advance by line height.
+  await expect(word).toHaveAttribute("viewBox", "0 0 3491 1088");
+  await expect(word.locator("path")).toHaveCount(1);
+  await expect(word).toHaveCSS("color", "rgb(18, 24, 28)");
+  answer();
+});
+
+test("the app keeps the mark alone, without the word", async ({ page, baseURL }) => {
+  await asAndroid(page, { instance: baseURL!, token: "a".repeat(43) });
+  await fakeServer(page);
+  const answer = await holdAccount(page);
+  await page.goto("/");
+  await expect(page.locator(".launch .mark")).toBeVisible();
+  await expect(page.locator(".launch").getByRole("img", { name: "Belay" })).toHaveCount(0);
+  answer();
 });

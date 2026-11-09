@@ -67,7 +67,7 @@ for (const scheme of ["light", "dark"] as const) {
       );
       const figure = card.locator("[data-slot=trend-figure]");
       await expect(figure).toHaveCSS("font-size", "50px");
-      await expect(figure).toHaveCSS("font-weight", "700");
+      await expect(figure).toHaveCSS("font-weight", "800");
       await expect(figure).toHaveCSS("font-variant-numeric", "tabular-nums");
       await expect(figure).toHaveCSS("letter-spacing", "-1.5px");
       await expect(figure.getByText("kg", { exact: true })).toHaveCSS("font-size", "17px");

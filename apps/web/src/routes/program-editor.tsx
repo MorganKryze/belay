@@ -65,7 +65,8 @@ export function ProgramEditor() {
 }
 
 // The title with the selector of the active program, once the programs are read, and on the same
-// line, once something changed, the word that it is kept on the device.
+// line, once something changed, the word that it is kept on the device, on two lines when the
+// selector needs the room.
 function Header({ switcher = false, saved = false }: { switcher?: boolean; saved?: boolean }) {
   const { t } = useTranslation();
   return (
@@ -80,8 +81,8 @@ function Header({ switcher = false, saved = false }: { switcher?: boolean; saved
         <div className="flex min-w-0 flex-1 items-center justify-between gap-3">
           {switcher ? <ProgramSwitcher /> : <span />}
           {saved && (
-            <p className="flex shrink-0 items-center gap-1.5 text-sm text-muted-foreground">
-              <Check aria-hidden className="size-4" />
+            <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+              <Check aria-hidden className="size-4 shrink-0" />
               {t("editor.saved")}
             </p>
           )}
