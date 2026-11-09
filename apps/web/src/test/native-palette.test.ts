@@ -54,13 +54,14 @@ describe("native domain colours", () => {
   );
 
   it.each(["light", "dark", "more light", "more dark"])(
-    "%s reads each shade on the app's paper and surface",
+    "%s reads each shade on the app's paper, its surface and the shade's own tint",
     (set) => {
       const min = set.startsWith("more") ? 7 : 4.5;
       const grounds = [colourSet("Paper")[set]!, colourSet("Surface")[set]!];
       for (const d of DOMAINS) {
         const shade = colourSet(`${title(d)}Shade`)[set]!;
-        for (const ground of grounds) {
+        const tint = colourSet(`${title(d)}Tint`)[set]!;
+        for (const ground of [...grounds, tint]) {
           const ratio = contrastRatio(shade, ground);
           expect(ratio, `${d} on ${ground}: ${ratio.toFixed(2)}`).toBeGreaterThanOrEqual(min);
         }
