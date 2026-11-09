@@ -51,6 +51,9 @@ const SCREENS: [string, (page: Page) => Promise<void>][] = [
       await fakeServer(page, { rows: WEEKS });
       await page.goto("/");
       await expect(page.getByRole("button", { name: /^Weigh-in/ })).toBeVisible();
+      // The weigh-in card shows before the sync brings the weeks in; the trend comes with them
+      // and adds about 300 px, so the page is measured once it is there.
+      await expect(page.getByRole("region", { name: "Your trend" })).toBeVisible();
     },
   ],
   [
