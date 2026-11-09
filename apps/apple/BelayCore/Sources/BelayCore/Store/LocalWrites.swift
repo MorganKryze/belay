@@ -108,7 +108,7 @@ extension AccountStore {
   }
 
   /// Applied here and queued as the bytes it is sent as.
-  private static func record(_ db: Database, _ written: Change) throws {
+  static func record(_ db: Database, _ written: Change) throws {
     var change = written
     if case .workout(var workout) = written, case .start(let start) = workout.edit {
       workout.edit = .start(try withSessionName(db, start))
