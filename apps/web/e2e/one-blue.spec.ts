@@ -56,7 +56,14 @@ async function blueTargets(page: Page): Promise<string[]> {
         .filter((side) => parseFloat(s[`border${side}Width`]) > 0)
         .map((side) => s[`border${side}Color`]);
       const svg = el instanceof SVGElement ? [s.fill, s.stroke] : [];
-      const paints = [s.backgroundColor, ...edges, ...svg, ...(ownText ? [s.color] : [])];
+      // A domain accent's words and icon may take the session's blue, on its tint: they name the
+      // domain, so only a fill or an edge of the action's blue counts there.
+      const accent = el.closest("[data-accent]") !== null;
+      const paints = [
+        s.backgroundColor,
+        ...edges,
+        ...(accent ? [] : [...svg, ...(ownText ? [s.color] : [])]),
+      ];
       if (!paints.includes(mark)) continue;
       const target = el.closest(control) ?? el;
       found.add(nameOf(target) || target.tagName.toLowerCase());

@@ -218,15 +218,19 @@ const colour = (page: Page, name: string, prop = "color") =>
     [name, prop],
   );
 
-test("the session card's title is 17 px 600 and its lead is in the accent ink", async ({
+test("the session card's title is 17 px 600 and its lead is the session's chip", async ({
   page,
 }) => {
   await openHome(page);
   const title = sessionCard(page).getByRole("heading", { name: /^Session A · Push/ });
   expect(await px(title, "font-size")).toBe("17px");
   expect(await px(title, "font-weight")).toBe("600");
-  const lead = sessionCard(page).getByText("Next up · ", { exact: true });
-  expect(await px(lead, "color")).toBe(await colour(page, "--primary-ink"));
+  const lead = sessionCard(page).locator('[data-accent="session"]');
+  await expect(lead).toHaveText("Next up");
+  expect(await px(lead, "color")).toBe(await colour(page, "--session-shade"));
+  expect(await px(lead, "background-color")).toBe(
+    await colour(page, "--session-tint", "background-color"),
+  );
   expect(await px(lead, "font-weight")).toBe("600");
 });
 

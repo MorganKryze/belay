@@ -1049,3 +1049,27 @@ html:active-view-transition-type(cover, uncover)::view-transition-new(top-bar) {
 html[data-pointer] :focus-visible:not(input, textarea, select, [contenteditable]) {
   outline: none;
 }
+
+/*
+ * Accueil's band: the session's tint at the top of the page fading to paper, behind the title. It
+ * sits on the document, so it scrolls with the title, and under the cracks. Muted words keep
+ * 4.5:1 on its tint. It goes with the cracks wherever plainer grounds are asked for.
+ */
+.home-band {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 280px;
+  z-index: -2;
+  pointer-events: none;
+  background-image: linear-gradient(var(--session-tint), var(--background));
+}
+@media (prefers-contrast: more), (prefers-reduced-transparency: reduce), (forced-colors: active) {
+  .home-band {
+    display: none;
+  }
+}
+html[data-contrast="more"] .home-band {
+  display: none;
+}

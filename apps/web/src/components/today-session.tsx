@@ -36,6 +36,7 @@ export function TodaySession({ account, today }: { account: OpenAccount; today: 
       <SessionCard
         title={workoutTitle(open, sessions, t)}
         lead={t("sessionCard.inProgress")}
+        domain="session"
         detail={t("sessionCard.sets", { count: done, total: plannedWorkSets(open.plan) })}
       >
         <Button asChild variant="primary">
@@ -111,6 +112,7 @@ export function TodaySession({ account, today }: { account: OpenAccount; today: 
   return (
     <SessionCard
       title={rotationTitle(next, t)}
+      domain="session"
       lead={
         plan.kind === "due"
           ? t("sessionCard.due", { day: weekdayName(today, lang, { startOfLine: false }) })
