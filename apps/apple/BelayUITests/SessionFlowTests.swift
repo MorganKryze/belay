@@ -341,11 +341,11 @@ final class SessionFlowTests: XCTestCase {
     func testReduceMotionCrossfades() {
         var app = launch("history")
         openCover(app)
-        XCTAssertEqual(element(app, "fixture-motion").value as? String, "matched", "the card moves by default")
+        XCTAssertEqual(element(app, "fixture-motion").value as? String, "spring", "the cover moves on the spring by default")
         app.terminate()
         app = launch("history", extra: ["-BelayReduceMotion", "YES"])
         openCover(app)
-        XCTAssertEqual(element(app, "fixture-motion").value as? String, "fade", "no matched geometry")
+        XCTAssertEqual(element(app, "fixture-motion").value as? String, "fade", "the cover only fades")
         logFirstWorkSet(app)
     }
 

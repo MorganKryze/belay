@@ -97,7 +97,7 @@ struct Cover: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
-                card.modifier(Hero(space: flow, reduce: reduce))
+                card.transition(.opacity)
                 if showsDone, !state.done.isEmpty {
                     DoneList(sets: state.done, asking: state.askRIR, actions: actions, space: flow, reduce: reduce)
                 }
@@ -146,7 +146,7 @@ struct Cover: View {
             Button(role: .cancel) {} label: { Text("OK", tableName: "Session") }
         }
         #if DEBUG
-        .overlay(alignment: .topLeading) { Fixture.MotionProbe(reduce: reduce) }
+        .overlay(alignment: .topLeading) { Fixture.MotionProbe(animation: motion) }
         #endif
     }
 

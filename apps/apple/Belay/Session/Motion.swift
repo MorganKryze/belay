@@ -21,21 +21,6 @@ enum Motion {
     }
 }
 
-/// The card that keeps its place while its content changes: the set becomes the clock, the recap
-/// the announcement. Under Reduce Motion it only fades.
-struct Hero: ViewModifier {
-    let space: Namespace.ID
-    let reduce: Bool
-
-    func body(content: Content) -> some View {
-        if reduce {
-            content.transition(.opacity)
-        } else {
-            content.matchedGeometryEffect(id: "hero", in: space).transition(.opacity)
-        }
-    }
-}
-
 /// The count logged: the ruler's figure and the done row's figure are one element in flight.
 struct InFlight: ViewModifier {
     let id: String

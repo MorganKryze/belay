@@ -130,17 +130,18 @@ enum Fixture {
         }
     }
 
-    /// Whether the motion the cover would play is matched geometry or a fade, for a test to read;
+    /// Whether the cover runs its changes on the spring or the fade, for a test to read;
     /// nothing a person sees or hears.
     struct MotionProbe: View {
-        let reduce: Bool
+        /// The animation the cover runs its changes on.
+        let animation: Animation
 
         var body: some View {
             Color.clear
                 .frame(width: 1, height: 1)
                 .accessibilityElement()
                 .accessibilityIdentifier("fixture-motion")
-                .accessibilityValue(reduce ? "fade" : "matched")
+                .accessibilityValue(animation == Motion.fade ? "fade" : animation == Motion.spring ? "spring" : "other")
         }
     }
 
