@@ -1,7 +1,8 @@
 import XCTest
 
-/// The summary of session A on the `finished` fixture: one set of the bench press at 65 kg for 8
-/// is logged, over a previous session A at 62,5 kg, so the summary names one record.
+/// The summary of session A on the `finished` fixture: the first work set of the bench press at
+/// 65 kg for 8, over a previous session A at 62,5 kg, so the summary names a record; every other
+/// set is logged as prefilled, so the cover opens on 🏁.
 @MainActor
 final class SummaryTests: XCTestCase {
     private func summary(extra: [String] = []) -> XCUIApplication {
@@ -11,13 +12,7 @@ final class SummaryTests: XCTestCase {
         let resume = app.buttons["Reprendre"]
         XCTAssertTrue(resume.waitForExistence(timeout: 10), "the session is open")
         resume.tap()
-        let finish = app.buttons["Terminer"]
-        XCTAssertTrue(finish.waitForExistence(timeout: 5), "the cover shows")
-        finish.tap()
-        let save = app.buttons["Terminer et enregistrer"]
-        XCTAssertTrue(save.waitForExistence(timeout: 3), "Terminer asks first")
-        save.tap()
-        XCTAssertTrue(app.buttons["Enregistrer et fermer"].waitForExistence(timeout: 5), "the summary shows")
+        app.finishSession()
         return app
     }
 

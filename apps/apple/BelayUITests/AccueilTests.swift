@@ -76,13 +76,8 @@ final class AccueilTests: XCTestCase {
         let start = app.buttons["Commencer la séance"]
         XCTAssertTrue(start.waitForExistence(timeout: 5))
         start.tap()
-        let tick = app.buttons["tick"]
-        XCTAssertTrue(tick.waitForExistence(timeout: 5))
-        tick.tap()
-        app.buttons["Terminer"].tap()
-        let save = app.buttons["Terminer et enregistrer"]
-        XCTAssertTrue(save.waitForExistence(timeout: 3))
-        save.tap()
+        XCTAssertTrue(app.buttons["log-set"].waitForExistence(timeout: 5), "the cover shows")
+        app.finishSession()
         let close = app.buttons["summary-close"]
         XCTAssertTrue(close.waitForExistence(timeout: 5))
         close.tap()

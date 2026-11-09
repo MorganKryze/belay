@@ -88,6 +88,13 @@ enum Fixture {
                 logged = try $0.logNext(count: nil, weightKg: nil, expecting: nil)
             }
             if let logged { try model.answerRIR(setId: logged.id, rir: 2) }
+            // The other sets as prefilled, so the cover opens on 🏁.
+            while model.open?.current != nil {
+                try model.act {
+                    _ = try $0.logNext(count: nil, weightKg: nil, expecting: nil)
+                    try $0.skipRest()
+                }
+            }
         case "timed":
             try model.act { try $0.replace(slotIndex: 0, with: "belay:dead-hang") }
         case "group":
