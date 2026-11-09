@@ -294,13 +294,13 @@ for (const theme of ["light", "dark"] as const) {
         });
       }
 
-      test("the top bar draws the mark and the active section in ink", async ({ page }) => {
+      test("the top bar draws the lockup and the active section in ink", async ({ page }) => {
         await fakeServer(page, { rows: WEEKS });
         await page.goto("/");
         const bar = page.getByRole("banner");
         await expect(bar).toBeVisible();
         const ink = await page.evaluate(() => getComputedStyle(document.body).color);
-        await expect(bar.locator("svg path").first()).toHaveCSS("fill", ink);
+        await expect(bar.getByRole("img", { name: "Belay" })).toHaveCSS("background-color", ink);
         await expect(bar.locator("nav [aria-current=page]")).toHaveCSS("color", ink);
         const blue = await blueTargets(page);
         expect(blue).not.toContain("Belay");
@@ -334,10 +334,10 @@ test.describe("the loader", () => {
         .getByRole("navigation", { name: "Main" })
         .getByRole("link", { name: "Body" })
         .click();
-      const hook = page.locator("[data-pending] .loader-mark > [data-hook]").first();
-      await expect(hook).toBeVisible();
+      const mountain = page.locator('[data-pending] .loader-mark > [data-part="mountain"]');
+      await expect(mountain).toBeVisible();
       const mark = await token(page, "mark");
-      await expect(hook).toHaveCSS("background-color", mark);
+      await expect(mountain).toHaveCSS("background-color", mark);
       release();
     });
   }

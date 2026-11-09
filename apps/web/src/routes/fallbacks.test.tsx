@@ -62,8 +62,8 @@ describe("pending page", () => {
     const mark = document.querySelector(".loader-mark")!;
     expect(mark.getAttribute("aria-hidden")).toBe("true");
     expect(
-      [...mark.querySelectorAll("[data-hook]")].map((h) => h.getAttribute("data-hook")),
-    ).toEqual(["a", "b"]);
+      [...mark.querySelectorAll("[data-part]")].map((h) => h.getAttribute("data-part")),
+    ).toEqual(["ring", "mountain"]);
     expect(document.querySelector("[data-pending]")).not.toBeNull();
   });
 

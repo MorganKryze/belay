@@ -66,7 +66,10 @@ test("the top bar marks its active section in ink, in the system face, 44 px tar
       return {
         ink,
         active: getComputedStyle(el.querySelector("nav [aria-current=page]")!).color,
-        brand: getComputedStyle(el.querySelector("svg path")!).fill,
+        brand: (() => {
+          const lockup = getComputedStyle(el.querySelector('[role="img"]')!);
+          return { ink: lockup.backgroundColor, picture: lockup.maskImage };
+        })(),
         faces: [...el.querySelectorAll("nav a")].map((a) => getComputedStyle(a).fontFamily),
         small: links
           .map((a) => a.getBoundingClientRect())
@@ -75,11 +78,28 @@ test("the top bar marks its active section in ink, in the system face, 44 px tar
       };
     });
     expect(look.active, path).toBe(look.ink);
-    expect(look.brand, path).toBe(look.ink);
+    // The lockup is one shape filled in the text's ink: no blue in it.
+    expect(look.brand.ink, path).toBe(look.ink);
+    expect(look.brand.picture, path).toMatch(/^url\(/);
     for (const face of look.faces) expect(face, path).toMatch(/^-apple-system,/);
     expect(look.small, path).toBe(0);
     expect(look.overflow, path).toBe(0);
   }
+});
+
+test("the top bar leads with the ink lockup, named Belay, a 44 px way home", async ({ page }) => {
+  await fakeServer(page, { rows: WEEKS });
+  await page.goto("/tools");
+  const home = topBar(page).getByRole("link", { name: "Belay", exact: true });
+  await expect(home).toBeVisible();
+  await expect(home.getByRole("img", { name: "Belay" })).toBeVisible();
+  // The logotype carries the name, so no text is set beside it.
+  await expect(home).toHaveText("");
+  const box = (await home.boundingBox())!;
+  expect(box.height).toBeGreaterThanOrEqual(44);
+  expect(box.width).toBeGreaterThanOrEqual(44);
+  await home.click();
+  await expect(page).toHaveURL(/\/$/);
 });
 
 test("the avatar opens Réglages", async ({ page }) => {

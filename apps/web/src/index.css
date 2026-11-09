@@ -123,7 +123,7 @@
   --ease-exit: cubic-bezier(0.4, 0, 1, 1);
   /* The tab pill passes its column by a hair and settles back. */
   --ease-pill: linear(0, 0.2 10%, 0.6 25%, 0.9 40%, 1.03 55%, 1.01 70%, 1);
-  /* The loading mark's hooks fade out and back as evenly as they came. */
+  /* The loading mark's ring and mountain fade out and back as evenly as they came. */
   --ease-breathe: cubic-bezier(0.42, 0, 0.58, 1);
   --text-figure: calc(3.125rem * var(--title-scale));
   --text-figure--line-height: 1;
@@ -225,7 +225,7 @@
   --animate-pop-in: pop-in var(--dur-check) var(--spring-pop-in) both;
   /* The loading arc. */
   --animate-spin-arc: spin-arc var(--dur-pulse) linear infinite;
-  /* The loading mark brightens as it shows, then its two hooks breathe in turn. */
+  /* The loading mark brightens as it shows, then its ring and mountain breathe in turn. */
   --animate-loader-in: loader-in var(--dur-release) var(--ease-out) both;
   --animate-breathe: breathe var(--dur-breathe) var(--ease-breathe) infinite;
   /* Page changes: a push slides the new page in and the old one 25 % left as it dims, Back plays
@@ -464,10 +464,10 @@
     1
   );
   --spring-pop-in: linear(0, 0.5 18%, 0.9 35%, 1.06 52%, 1.02 70%, 1);
-  /* The mark's two hooks, as masks held in the stylesheet: the loader shows exactly when the
-     network is slow, so it must not wait on a file of its own. */
-  --hook-a: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='86 126 340 260'%3E%3Cpath d='M86 160L86 266A120 120 0 0 0 326 266L326 246A20 20 0 0 0 286 246L286 266A80 80 0 0 1 126 266L126 160A20 20 0 0 0 86 160Z'/%3E%3C/svg%3E");
-  --hook-b: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='86 126 340 260'%3E%3Cpath d='M426 352L426 246A120 120 0 0 0 186 246L186 266A20 20 0 0 0 226 266L226 246A80 80 0 0 1 386 246L386 352A20 20 0 0 0 426 352Z'/%3E%3C/svg%3E");
+  /* The mark's ring and mountain, as masks held in the stylesheet: the loader shows exactly when
+     the network is slow, so it must not wait on a file of its own. */
+  --mark-ring: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath transform='translate(0 1)' fill='none' stroke='%23000' stroke-width='11' stroke-linecap='round' stroke-linejoin='round' d='M28.6 78.8 A37 37 0 1 1 71.4 78.8'/%3E%3C/svg%3E");
+  --mark-mountain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath transform='translate(0 1)' fill='none' stroke='%23000' stroke-width='11' stroke-linecap='round' stroke-linejoin='round' d='M28.6 78.8 L39 58 L45 64 L56 44 L71.4 78.8'/%3E%3C/svg%3E");
   /* How far the page left behind dims under a push: more in dark, where 90 % barely shows. */
   --push-dim: 0.9;
   /* IWF competition colours (rule 3.3.3.6), the same in both themes; grey for any other value. */
@@ -659,7 +659,7 @@ body {
  * Calm by default: with reduced motion, nothing scales or bounces; a sheet, a pushed page and the
  * session cover still slide, without the spring, over a page or a veil that holds still or fades,
  * other enters and leaves become short fades, the tick, the loading arc and the loading mark's
- * hooks stand still. Components never write their own media query.
+ * ring and mountain stand still. Components never write their own media query.
  */
 @media (prefers-reduced-motion: reduce) {
   :root {
@@ -723,8 +723,9 @@ body {
 }
 
 /*
- * The loading mark: 56 px wide at the mark's own proportions, centred, its top at 44 % of the
- * page's height. It brightens as it shows, then each hook breathes, the second half a beat behind.
+ * The loading mark: 56 px square on the mark's own grid, centred, its top at 44 % of the page's
+ * height. It brightens as it shows, then the ring breathes and the mountain half a beat behind,
+ * the ring in ink and the mountain in the mark's blue, as the colour mark draws them.
  */
 @utility loader-mark {
   position: absolute;
@@ -732,19 +733,29 @@ body {
   inset-inline: 0;
   margin-inline: auto;
   width: 56px;
-  aspect-ratio: 340 / 260;
+  aspect-ratio: 1;
   animation: var(--animate-loader-in);
-  & > [data-hook] {
+  & > [data-part] {
     position: absolute;
     inset: 0;
-    background-color: var(--mark);
-    mask: var(--hook-a) center / contain no-repeat;
+    background-color: var(--foreground);
+    mask: var(--mark-ring) center / contain no-repeat;
     animation: var(--animate-breathe);
   }
-  & > [data-hook="b"] {
-    mask-image: var(--hook-b);
+  & > [data-part="mountain"] {
+    background-color: var(--mark);
+    mask-image: var(--mark-mountain);
     animation-delay: calc(var(--dur-breathe) / 2);
   }
+}
+
+/* The top bar's lockup, the mark and the logotype as one shape filled in the text's ink. */
+@utility brand-lockup {
+  display: block;
+  height: 28px;
+  aspect-ratio: 1245.52 / 278.26;
+  background-color: currentColor;
+  mask: url("../icons/lockup-ink.svg") center / contain no-repeat;
 }
 
 /*

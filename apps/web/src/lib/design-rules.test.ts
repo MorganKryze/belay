@@ -9,6 +9,7 @@ import {
   sourceFiles,
 } from "@/test/design-rules";
 import { LAUNCH_BACKGROUND } from "@/lib/theme";
+import { MARK_VIEWBOX, MOUNTAIN_D, RING_D, STROKE } from "@/lib/mark";
 
 const CSS = readFileSync(join(__dirname, "..", "index.css"), "utf8");
 
@@ -270,14 +271,19 @@ describe("design rules", () => {
     );
   });
 
-  it("the loading mark's two hooks share one frame that holds the whole mark", () => {
-    // Hook A runs from y 140 down to its arc at 386, hook B from its arc at 126 down to 372; both
-    // span x 86 to 426. A tighter frame cuts the arcs flat.
+  it("the loading mark's ring and mountain share one frame that holds the whole mark", () => {
+    // Both masks draw on the mark's own 100-unit grid, so laid over each other they make the
+    // mark whole; a tighter frame would cut the ring's round caps.
     const root = declarations(block(CSS, ":root {"));
-    for (const hook of ["--hook-a", "--hook-b"]) {
-      expect(root.get(hook), hook).toContain("viewBox='86 126 340 260'");
+    for (const [name, d] of [
+      ["--mark-ring", RING_D],
+      ["--mark-mountain", MOUNTAIN_D],
+    ] as const) {
+      expect(root.get(name), name).toContain(`viewBox='${MARK_VIEWBOX}'`);
+      expect(root.get(name), name).toContain(`d='${d}'`);
+      expect(root.get(name), name).toContain(`stroke-width='${STROKE}'`);
     }
-    expect(block(CSS, "@utility loader-mark {")).toMatch(/aspect-ratio:\s*340 \/ 260;/);
+    expect(block(CSS, "@utility loader-mark {")).toMatch(/aspect-ratio:\s*1;/);
   });
 
   it("the old 0.01 ms blanket rule is gone", () => {
