@@ -36,9 +36,28 @@ public struct ExerciseLibrary: Sendable {
   /// Reads the index: a list of `[id, name, primary, secondary, equipment, incrementKg,
   /// measure]`. The muscles are not read here.
   public init(indexJSON: Data) throws {
-    let rows = try JSONDecoder().decode([Row].self, from: indexJSON)
-    exercises = rows.map(\.exercise)
+    self.init(exercises: try JSONDecoder().decode([Row].self, from: indexJSON).map(\.exercise))
+  }
+
+  private init(exercises: [LibraryExercise]) {
+    self.exercises = exercises
     byId = Dictionary(exercises.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+  }
+
+  /// The index the app ships, read once at launch. A build that lacks it, or holds a broken one,
+  /// still opens: the library is empty, so names show as ids, and `failed` says why
+  /// (`missing`, `unreadable`) for the log.
+  public static func bundled(at url: URL?, failed: (String) -> Void) -> ExerciseLibrary {
+    guard let url else {
+      failed("missing")
+      return ExerciseLibrary(exercises: [])
+    }
+    do {
+      return try ExerciseLibrary(indexJSON: Data(contentsOf: url))
+    } catch {
+      failed("unreadable")
+      return ExerciseLibrary(exercises: [])
+    }
   }
 
   public func exercise(_ id: String) -> LibraryExercise? { byId[id] }

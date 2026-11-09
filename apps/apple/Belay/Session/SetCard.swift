@@ -77,7 +77,7 @@ struct SetCard: View {
         .popover(isPresented: $choosing, arrowEdge: .top) {
             LoadChoices(
                 weightKg: due.weightKg,
-                incrementKg: TrainingModel.library.exercise(due.exerciseId)?.incrementKg ?? 2.5,
+                incrementKg: BundledLibrary.library.exercise(due.exerciseId)?.incrementKg ?? 2.5,
                 choose: { kg in
                     choosing = false
                     actions.run { try $0.choose(weightKg: kg, count: nil) }

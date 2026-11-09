@@ -139,7 +139,7 @@ final class TrainingModel {
 
     init(store: AccountStore, didWrite: @escaping () -> Void, now: @escaping @Sendable () -> Date, timeZone: TimeZone) {
         self.store = store
-        actions = SessionActions(store: store, library: Self.library, now: now, newId: UUIDv7.make)
+        actions = SessionActions(store: store, library: BundledLibrary.library, now: now, newId: UUIDv7.make)
         self.didWrite = didWrite
         self.now = now
         self.timeZone = timeZone
@@ -188,7 +188,7 @@ final class TrainingModel {
     /// The exercise's name, as the library holds it (English in both languages, as on the web);
     /// its id when this build's library does not know it.
     func exerciseName(_ id: String) -> String {
-        Self.library.exercise(id)?.name ?? id
+        BundledLibrary.library.exercise(id)?.name ?? id
     }
 
     /// Runs one action on the open session, then lets the sync know and reads the store again, so
@@ -213,16 +213,6 @@ final class TrainingModel {
         self.marks = marks
         recompute()
     }
-
-    /// The library bundled with the app, read once.
-    static let library: ExerciseLibrary = {
-        // The index is a resource of every build: one without it cannot log a set, so it stops here.
-        guard let url = Bundle.main.url(forResource: "index", withExtension: "json"),
-              let data = try? Data(contentsOf: url),
-              let library = try? ExerciseLibrary(indexJSON: data)
-        else { preconditionFailure("the exercise library ships with the app") }
-        return library
-    }()
 
     /// The exercise's sets last time, grouped by load: « 62,5 kg × 8, 8, 7, 6 ».
     func lastTime(exerciseId: String, timed: Bool) -> [LoadGroup] {
@@ -352,7 +342,7 @@ final class TrainingModel {
             let own = sets.filter { $0.workoutId == workout.id && !$0.removed }
             let due = snapshot.active.flatMap { active in
                 active.workoutId == workout.id
-                    ? dueSet(history: snapshot.history, workout: workout, active: active, library: Self.library, bar: .gym)
+                    ? dueSet(history: snapshot.history, workout: workout, active: active, library: BundledLibrary.library, bar: .gym)
                     : nil
             }
             open = OpenSession(
@@ -395,7 +385,7 @@ final class TrainingModel {
         }
         let at = now()
         func read() -> SessionState {
-            sessionState(history: snapshot.history, active: active, now: at, library: Self.library, bar: .gym, marks: marks)
+            sessionState(history: snapshot.history, active: active, now: at, library: BundledLibrary.library, bar: .gym, marks: marks)
         }
         var state = read()
         switch state.phase {
