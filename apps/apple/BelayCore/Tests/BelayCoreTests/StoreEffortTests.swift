@@ -63,6 +63,28 @@ import Testing
     #expect(try store.outbox(limit: nil) == before)
   }
 
+  @Test func theEffortsOfEndedSessionsAreSettledButTheOneOnScreen() throws {
+    let store = try AccountStore.inMemory(userId: "u")
+    let ended = Fixture.id(0), open = Fixture.id(10), onScreen = Fixture.id(20)
+    for id in [ended, onScreen] {
+      _ = try store.startWorkout(Fixture.start(id), now: Fixture.t0)
+      try store.recordChanges(
+        [.workout(WorkoutChange(id: id, at: Fixture.time(30), edit: .ended(Fixture.time(30))))],
+        active: .clear)
+    }
+    _ = try store.startWorkout(Fixture.start(open, at: 40), now: Fixture.t0.addingTimeInterval(2400))
+    for id in [ended, open, onScreen] { try store.giveEffort(workoutId: id, floor: 3) }
+    let before = try store.outbox(limit: nil)
+
+    try store.settleEndedEfforts(except: onScreen)
+
+    #expect(try store.effort(workoutId: ended)?.settled == true)
+    #expect(try store.effort(workoutId: ended)?.floor == 3)
+    #expect(try store.effort(workoutId: open)?.settled == false)
+    #expect(try store.effort(workoutId: onScreen)?.settled == false)
+    #expect(try store.outbox(limit: nil) == before)
+  }
+
   @Test func v2OpensOnAFileTheV1SchemaMade() throws {
     let folder = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
     defer { try? FileManager.default.removeItem(at: folder) }

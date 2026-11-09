@@ -108,6 +108,18 @@ final class SummaryTests: XCTestCase {
         XCTAssertTrue(probe(app).hasPrefix("floor=4 settled=true"), probe(app))
     }
 
+    /// The app ends with the summary still up: the next launch settles the effort as it was given.
+    func testEffortSettledWhenTheAppEndsOnTheSummary() {
+        let app = summary()
+        any(app, "effort-steps").coordinate(withNormalizedOffset: CGVector(dx: 0.7, dy: 0.5)).tap()
+        XCTAssertTrue(text(app, containing: "Difficile").waitForExistence(timeout: 2))
+        app.terminate()
+        app.launchArguments = ["-AppleLanguages", "(fr)", "-AppleLocale", "fr_FR", "-BelayFixture", "keep"]
+        app.launch()
+        XCTAssertTrue(app.staticTexts["Bonjour Ada"].waitForExistence(timeout: 10), "on Accueil")
+        XCTAssertTrue(probe(app).hasPrefix("floor=4 settled=true"), probe(app))
+    }
+
     /// A scroll leaves no bar and no compact title at the top.
     func testNoBarOnScroll() {
         let app = summary(extra: ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityL"])

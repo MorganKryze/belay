@@ -33,6 +33,22 @@ extension AccountStore {
     try update(workoutId) { $0.settled = true }
   }
 
+  /// Settles every effort left unsettled on a session that has ended, but `except`'s, still on
+  /// screen: a summary closed by the app's end, or by a write that failed, would otherwise hold
+  /// its effort back for good.
+  public func settleEndedEfforts(except: String?) throws {
+    try writer.write { db in
+      for var effort in try Self.efforts(db) where !effort.settled && effort.workoutId != except {
+        guard try Rows.get(WorkoutRow.self, db, "workouts", id: effort.workoutId)?.endedAt != nil
+        else { continue }
+        effort.settled = true
+        try db.execute(
+          sql: "UPDATE efforts SET row = ? WHERE workoutId = ?",
+          arguments: [Rows.encode(effort), effort.workoutId])
+      }
+    }
+  }
+
   public func markEffortRelated(workoutId: String, at: String) throws {
     try update(workoutId) { $0.relatedAt = at }
   }

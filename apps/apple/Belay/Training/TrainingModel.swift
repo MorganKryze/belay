@@ -186,6 +186,7 @@ final class TrainingModel {
         self.timeZone = timeZone
         // Read once now, so the first frame already shows the card; then follow every write.
         refresh()
+        settleEndedEfforts(except: nil)
         watch = Task { [weak self, store] in
             do {
                 let snapshots = store.observe { db in
@@ -285,6 +286,7 @@ final class TrainingModel {
         var ended = workout
         ended.endedAt = time
         summary = summarize(ended, history: history, endedAt: at)
+        settleEndedEfforts(except: workout.id)
         refresh()
     }
 
@@ -314,14 +316,31 @@ final class TrainingModel {
         guard let left = summary else { return }
         let trimmed = fitNote(note.trimmingCharacters(in: .whitespacesAndNewlines))
         let written: String? = trimmed.isEmpty ? nil : trimmed
+        var unwritten: (any Error)?
         if written != left.note {
-            try store.recordChanges(
-                [.workout(WorkoutChange(id: left.workoutId, at: Instant.string(now()), edit: .note(written)))],
-                active: .keep)
-            didWrite()
+            do {
+                try store.recordChanges(
+                    [.workout(WorkoutChange(id: left.workoutId, at: Instant.string(now()), edit: .note(written)))],
+                    active: .keep)
+                didWrite()
+            } catch {
+                unwritten = error
+            }
         }
+        // Settled even when the note was not written: the floor given does not depend on it.
         try store.settleEffort(workoutId: left.workoutId)
+        if let unwritten { throw unwritten }
         summary = nil
+    }
+
+    /// A summary the app's end, or a failed write, closed without settling its effort: no screen
+    /// will show it again, so its effort is settled as it stands.
+    private func settleEndedEfforts(except workoutId: String?) {
+        do {
+            try store.settleEndedEfforts(except: workoutId)
+        } catch {
+            Self.log.error("efforts not settled: \(AccountStore.logLabel(error), privacy: .public)")
+        }
     }
 
     /// The shared summary rule's figures, read against the history the session ends in.
