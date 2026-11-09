@@ -5,14 +5,18 @@ import Testing
 // French and English, with the plural forms each language needs, and the French follows its
 // typography. The app target has no unit tests of its own, so the core's suite reads its files.
 
-/// The app's sources, beside this package.
-private let appFolder = URL(filePath: #filePath)
+/// The app's sources and its Live Activity's, beside this package.
+private let appleFolder = URL(filePath: #filePath)
   .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
-  .deletingLastPathComponent().appending(path: "Belay", directoryHint: .isDirectory)
+  .deletingLastPathComponent()
+private let appFolder = appleFolder.appending(path: "Belay", directoryHint: .isDirectory)
+private let activityFolder = appleFolder.appending(path: "BelayActivity", directoryHint: .isDirectory)
 
 private func catalogs() throws -> [URL] {
-  let walk = FileManager.default.enumerator(at: appFolder, includingPropertiesForKeys: nil)
-  let urls = (walk?.allObjects as? [URL]) ?? []
+  let urls = [appFolder, activityFolder].flatMap { folder in
+    let walk = FileManager.default.enumerator(at: folder, includingPropertiesForKeys: nil)
+    return (walk?.allObjects as? [URL]) ?? []
+  }
   return urls.filter { $0.pathExtension == "xcstrings" }.sorted { $0.path < $1.path }
 }
 
@@ -99,6 +103,9 @@ func frenchTypographyFaults(_ text: String) -> [String] {
 @Suite struct StringsTests {
   @Test func appHasCatalogs() throws {
     #expect(try catalogs().count >= 2, "the app's catalogs are found at \(appFolder.path)")
+    #expect(
+      try catalogs().contains { $0.path.hasPrefix(activityFolder.path) },
+      "the Live Activity's catalog is found at \(activityFolder.path)")
   }
 
   @Test func everyKeyHasFrenchAndEnglish() throws {

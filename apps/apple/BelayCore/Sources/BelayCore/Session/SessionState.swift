@@ -362,13 +362,9 @@ public func sessionState(
     default: return false
     }
   }()
+  // A warm-up logged since, from the lock screen during that rest, leaves the question in place.
   let ask = latestWork.flatMap { s in
-    asksNow && s.rir == nil && s.seconds == nil
-      && s.id
-        == sets.max(by: {
-          precedes($0.doneAt, $1.doneAt)
-        })?.id
-      ? doneSet(s) : nil
+    asksNow && s.rir == nil && s.seconds == nil ? doneSet(s) : nil
   }
   return SessionState(
     workoutId: workout.id, title: title, exerciseIndex: live.firstIndex(of: shownSlot) ?? 0,
