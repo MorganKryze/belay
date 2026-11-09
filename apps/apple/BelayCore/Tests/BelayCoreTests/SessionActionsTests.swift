@@ -345,6 +345,24 @@ struct Seance {
     #expect(try s.queued == before)
   }
 
+  @Test func tickAfterPauseKeepsPausedAt() throws {
+    let s = try Seance()
+    s.clock.advance(seconds: 60)
+    try s.actions.logNext(count: 8, weightKg: 60, expecting: nil)
+    s.clock.advance(seconds: 30)
+    try s.actions.pause()
+    // The cover's tick only reads; the writes it can make while paused leave the pause in place.
+    s.clock.advance(seconds: 300)
+    let frozen = try s.state()
+    try s.actions.choose(weightKg: 62.5, count: nil)
+    _ = try s.actions.addRest(seconds: 30)
+    s.clock.advance(seconds: 300)
+    #expect(try s.active?.pausedAt == Fixture.time(1.5))
+    let later = try s.state()
+    #expect(later.paused)
+    #expect(later.elapsedMs == frozen.elapsedMs)
+  }
+
   @Test func resumeMovesStartAndRestInOneWrite() throws {
     let s = try Seance()
     s.clock.advance(seconds: 60)
