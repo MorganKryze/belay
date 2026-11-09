@@ -6,15 +6,23 @@ import PackageDescription
 let package = Package(
   name: "BelayCore",
   platforms: [.iOS(.v26), .watchOS(.v26), .macOS(.v15)],
-  products: [.library(name: "BelayCore", targets: ["BelayCore"])],
+  products: [
+    .library(name: "BelayCore", targets: ["BelayCore"]),
+    // What the Live Activity's extension draws and calls, without the store: it links this alone.
+    .library(name: "BelayActivity", targets: ["BelayActivity"]),
+  ],
   dependencies: [
     // Pinned exact: the store's format and its migrations follow this one version.
     .package(url: "https://github.com/groue/GRDB.swift.git", exact: "7.12.0")
   ],
   targets: [
     .target(
+      name: "BelayActivity",
+      swiftSettings: [.treatAllWarnings(as: .error)]
+    ),
+    .target(
       name: "BelayCore",
-      dependencies: [.product(name: "GRDB", package: "GRDB.swift")],
+      dependencies: ["BelayActivity", .product(name: "GRDB", package: "GRDB.swift")],
       resources: [.copy("Resources/seed.json")],
       swiftSettings: [
         .treatAllWarnings(as: .error),

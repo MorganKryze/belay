@@ -9,6 +9,9 @@
 /* Begin PBXBuildFile section */
 		B00000000000000000000030 /* BelayCore in Frameworks */ = {isa = PBXBuildFile; productRef = B00000000000000000000031 /* BelayCore */; };
 		B00000000000000000000041 /* index.json in Resources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000040 /* index.json */; };
+		B00000000000000000000055 /* ArchivoExpanded-ExtraBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000054 /* ArchivoExpanded-ExtraBold.ttf */; };
+		B00000000000000000000056 /* BelayActivity in Frameworks */ = {isa = PBXBuildFile; productRef = B00000000000000000000057 /* BelayActivity */; };
+		B00000000000000000000058 /* BelayActivityExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = B00000000000000000000050 /* BelayActivityExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -19,13 +22,36 @@
 			remoteGlobalIDString = B00000000000000000000002;
 			remoteInfo = Belay;
 		};
+		B00000000000000000000062 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = B00000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = B0000000000000000000005A;
+			remoteInfo = BelayActivityExtension;
+		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		B00000000000000000000059 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				B00000000000000000000058 /* BelayActivityExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		B00000000000000000000003 /* Belay.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Belay.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B00000000000000000000013 /* BelayUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BelayUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		B00000000000000000000020 /* Belay.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Belay.xcconfig; sourceTree = "<group>"; };
 		B00000000000000000000040 /* index.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = index.json; path = ../../packages/shared/src/exercises/data/index.json; sourceTree = SOURCE_ROOT; };
+		B00000000000000000000050 /* BelayActivityExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = BelayActivityExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		B00000000000000000000054 /* ArchivoExpanded-ExtraBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = "ArchivoExpanded-ExtraBold.ttf"; path = "Belay/ArchivoExpanded-ExtraBold.ttf"; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -35,6 +61,13 @@
 				Info.plist,
 			);
 			target = B00000000000000000000002 /* Belay */;
+		};
+		B00000000000000000000053 /* Exceptions for "BelayActivity" folder in "BelayActivityExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = B0000000000000000000005A /* BelayActivityExtension */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -50,6 +83,19 @@
 		B00000000000000000000014 /* BelayUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = BelayUITests;
+			sourceTree = "<group>";
+		};
+		B00000000000000000000051 /* Shared */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		B00000000000000000000052 /* BelayActivity */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				B00000000000000000000053 /* Exceptions for "BelayActivity" folder in "BelayActivityExtension" target */,
+			);
+			path = BelayActivity;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -70,6 +116,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		B0000000000000000000005C /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B00000000000000000000056 /* BelayActivity in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -79,6 +133,8 @@
 				B00000000000000000000020 /* Belay.xcconfig */,
 				B00000000000000000000040 /* index.json */,
 				B00000000000000000000004 /* Belay */,
+				B00000000000000000000051 /* Shared */,
+				B00000000000000000000052 /* BelayActivity */,
 				B00000000000000000000014 /* BelayUITests */,
 				B00000000000000000000007 /* Products */,
 			);
@@ -89,6 +145,7 @@
 			children = (
 				B00000000000000000000003 /* Belay.app */,
 				B00000000000000000000013 /* BelayUITests.xctest */,
+				B00000000000000000000050 /* BelayActivityExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -103,13 +160,16 @@
 				B00000000000000000000009 /* Sources */,
 				B00000000000000000000005 /* Frameworks */,
 				B0000000000000000000000B /* Resources */,
+				B00000000000000000000059 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				B00000000000000000000061 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				B00000000000000000000004 /* Belay */,
+				B00000000000000000000051 /* Shared */,
 			);
 			name = Belay;
 			packageProductDependencies = (
@@ -142,6 +202,30 @@
 			productReference = B00000000000000000000013 /* BelayUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
+		B0000000000000000000005A /* BelayActivityExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B0000000000000000000005E /* Build configuration list for PBXNativeTarget "BelayActivityExtension" */;
+			buildPhases = (
+				B0000000000000000000005B /* Sources */,
+				B0000000000000000000005C /* Frameworks */,
+				B0000000000000000000005D /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				B00000000000000000000052 /* BelayActivity */,
+				B00000000000000000000051 /* Shared */,
+			);
+			name = BelayActivityExtension;
+			packageProductDependencies = (
+				B00000000000000000000057 /* BelayActivity */,
+			);
+			productName = BelayActivityExtension;
+			productReference = B00000000000000000000050 /* BelayActivityExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -158,6 +242,9 @@
 					B00000000000000000000012 = {
 						CreatedOnToolsVersion = 27.2;
 						TestTargetID = B00000000000000000000002;
+					};
+					B0000000000000000000005A = {
+						CreatedOnToolsVersion = 27.2;
 					};
 				};
 			};
@@ -181,6 +268,7 @@
 			targets = (
 				B00000000000000000000002 /* Belay */,
 				B00000000000000000000012 /* BelayUITests */,
+				B0000000000000000000005A /* BelayActivityExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -201,6 +289,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		B0000000000000000000005D /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B00000000000000000000055 /* ArchivoExpanded-ExtraBold.ttf in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -218,6 +314,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		B0000000000000000000005B /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -225,6 +328,11 @@
 			isa = PBXTargetDependency;
 			target = B00000000000000000000002 /* Belay */;
 			targetProxy = B0000000000000000000000A /* PBXContainerItemProxy */;
+		};
+		B00000000000000000000061 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = B0000000000000000000005A /* BelayActivityExtension */;
+			targetProxy = B00000000000000000000062 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -352,6 +460,42 @@
 			};
 			name = Release;
 		};
+		B0000000000000000000005F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = BelayActivity/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Belay;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				MARKETING_VERSION = 0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = cloud.libresoftware.belay.activity;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		B00000000000000000000060 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = BelayActivity/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Belay;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				MARKETING_VERSION = 0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = cloud.libresoftware.belay.activity;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -382,6 +526,15 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
+		B0000000000000000000005E /* Build configuration list for PBXNativeTarget "BelayActivityExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B0000000000000000000005F /* Debug */,
+				B00000000000000000000060 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
@@ -395,6 +548,10 @@
 		B00000000000000000000031 /* BelayCore */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = BelayCore;
+		};
+		B00000000000000000000057 /* BelayActivity */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = BelayActivity;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

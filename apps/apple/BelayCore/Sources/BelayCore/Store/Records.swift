@@ -1,4 +1,5 @@
 import Foundation
+public import BelayActivity
 
 // What the store takes and gives besides the contract's rows.
 
@@ -33,15 +34,8 @@ public struct ActiveSession: Codable, Sendable, Equatable {
 }
 
 /// A place of a session: its slot and its position (warm-ups 0 to 2, work sets from 3).
-public struct SetPlace: Codable, Sendable, Hashable {
-  public var slotIndex: Int
-  public var position: Int
-
-  public init(slotIndex: Int, position: Int) {
-    self.slotIndex = slotIndex
-    self.position = position
-  }
-}
+// The place lives with the Activity's content, which the extension decodes without the store.
+public typealias SetPlace = BelayActivity.SetPlace
 
 /// A timed set being held: the seconds it counts down from and its absolute end, so a relaunch
 /// reads the right time left. Once stopped, `seconds` is the time held and `endsAt` the stop.
