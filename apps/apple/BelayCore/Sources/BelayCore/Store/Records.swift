@@ -3,8 +3,8 @@ import Foundation
 // What the store takes and gives besides the contract's rows.
 
 /// The session open on this device: which one, the slot it shows and when its rest ends. Local
-/// only, never sent: the sets are what syncs. The pause, a running chrono and the values chosen
-/// for the next set stay here too, so a relaunch shows them as they were; a row written before
+/// only, never sent: the sets are what syncs. The pause, a running chrono, the values chosen
+/// for the next set and the sets added past the plan stay here too, so a relaunch shows them as they were; a row written before
 /// they existed reads them as absent.
 public struct ActiveSession: Codable, Sendable, Equatable {
   public var workoutId: String
@@ -14,10 +14,13 @@ public struct ActiveSession: Codable, Sendable, Equatable {
   public var pausedAt: String?
   public var chrono: Chrono?
   public var draft: SetDraft?
+  /// The furthest set added past the plan and not logged yet. Every position past the plan up to
+  /// it is due, so each tap on « add a set » adds one; the planned count never grows.
+  public var added: SetPlace?
 
   public init(
     workoutId: String, slotIndex: Int, restEndsAt: String?, pausedAt: String? = nil,
-    chrono: Chrono? = nil, draft: SetDraft? = nil
+    chrono: Chrono? = nil, draft: SetDraft? = nil, added: SetPlace? = nil
   ) {
     self.workoutId = workoutId
     self.slotIndex = slotIndex
@@ -25,6 +28,7 @@ public struct ActiveSession: Codable, Sendable, Equatable {
     self.pausedAt = pausedAt
     self.chrono = chrono
     self.draft = draft
+    self.added = added
   }
 }
 
@@ -58,7 +62,6 @@ public struct Chrono: Codable, Sendable, Equatable {
 }
 
 /// The load and count chosen for the set at a place before it is logged; nil keeps the prefill.
-/// A draft past the plan is a set the person added.
 public struct SetDraft: Codable, Sendable, Equatable {
   public var slotIndex: Int
   public var position: Int

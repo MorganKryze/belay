@@ -111,7 +111,9 @@ extension AccountStore {
       try Self.write(
         db, resumeChange(&open.workout, &open.active, at: at) + [.set(change)])
       open.active.chrono = nil
-      open.active.draft = nil
+      // A load chosen for another set, the planned one an added set went before, stays.
+      if open.active.draft?.place == due.place { open.active.draft = nil }
+      if open.active.added == due.place { open.active.added = nil }
       // A warm-up starts no rest and leaves a running one alone.
       if !due.warmup {
         let plan = open.workout.plan
@@ -326,6 +328,7 @@ extension AccountStore {
           at: Instant.string(ctx.now()))
         if open.active.draft?.slotIndex == slotIndex { open.active.draft = nil }
         if open.active.chrono?.slotIndex == slotIndex { open.active.chrono = nil }
+        if open.active.added?.slotIndex == slotIndex { open.active.added = nil }
       })
   }
 
@@ -339,6 +342,7 @@ extension AccountStore {
         if out {
           if open.active.draft?.slotIndex == slotIndex { open.active.draft = nil }
           if open.active.chrono?.slotIndex == slotIndex { open.active.chrono = nil }
+          if open.active.added?.slotIndex == slotIndex { open.active.added = nil }
         }
         if open.active.slotIndex == slotIndex || !out {
           open.active.slotIndex =
@@ -359,14 +363,15 @@ extension AccountStore {
       })
   }
 
-  /// One set past the plan, due next; it stays on this device until it is logged, so the
-  /// planned count never grows.
+  /// One more set past the plan on each tap, due next; the sets added stay on this device until
+  /// they are logged, so the planned count never grows. Adding to another exercise drops the
+  /// ones still unlogged on the previous one.
   func addSet(slotIndex: Int, _ ctx: SessionContext) throws {
     try requireOpen(
       withOpenSession { _, open in
         try slot(open, slotIndex)
         let planned = Bounds.maxWarmups + open.workout.plan[slotIndex].sets - 1
-        let pending = open.active.draft.flatMap {
+        let pending = open.active.added.flatMap {
           $0.slotIndex == slotIndex ? $0.position : nil
         }
         let last =
@@ -374,8 +379,7 @@ extension AccountStore {
             planned, pending ?? planned,
           ]).max() ?? planned
         guard last < Bounds.maxPosition else { throw SessionError.noPositionLeft }
-        open.active.draft = SetDraft(
-          slotIndex: slotIndex, position: last + 1, weightKg: nil, count: nil)
+        open.active.added = SetPlace(slotIndex: slotIndex, position: last + 1)
         open.active.slotIndex = slotIndex
       })
   }

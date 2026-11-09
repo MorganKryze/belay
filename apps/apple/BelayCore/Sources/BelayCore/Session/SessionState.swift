@@ -204,13 +204,17 @@ public func dueSet(
         warmup: warmup, weightKg: weight, count: count))
   }
 
-  if let draft, plan.indices.contains(draft.slotIndex), plan[draft.slotIndex].skipped != true,
-    draft.position - Bounds.maxWarmups >= plan[draft.slotIndex].sets, !taken.contains(draft.place)
+  if let added = active.added, plan.indices.contains(added.slotIndex),
+    plan[added.slotIndex].skipped != true,
+    let position = stride(
+      from: Bounds.maxWarmups + plan[added.slotIndex].sets, through: added.position, by: 1
+    ).first(where: { !taken.contains(SetPlace(slotIndex: added.slotIndex, position: $0)) })
   {
-    let round = draft.position - Bounds.maxWarmups
+    let round = position - Bounds.maxWarmups
     return make(
-      draft.place, warmup: false, number: round + 1, of: plan[draft.slotIndex].sets,
-      values: workValues(history, plan: plan, sets: sets, slotIndex: draft.slotIndex, round: round))
+      SetPlace(slotIndex: added.slotIndex, position: position), warmup: false, number: round + 1,
+      of: plan[added.slotIndex].sets,
+      values: workValues(history, plan: plan, sets: sets, slotIndex: added.slotIndex, round: round))
   }
   guard let turn = sessionProgress(plan, sets: sets).next else { return nil }
   let slot = plan[turn.slotIndex]

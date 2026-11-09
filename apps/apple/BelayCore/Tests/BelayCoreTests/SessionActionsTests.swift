@@ -254,7 +254,7 @@ struct Seance {
   @Test func addSetPastPlanUpTo49() throws {
     let s = try Seance([Seance.slot(sets: 1)])
     try s.actions.addSet(slotIndex: 0)
-    #expect(try s.active?.draft?.place == SetPlace(slotIndex: 0, position: 4))
+    #expect(try s.active?.added == SetPlace(slotIndex: 0, position: 4))
     try s.actions.logNext(count: nil, weightKg: nil, expecting: nil)
     try s.actions.logNext(count: nil, weightKg: nil, expecting: nil)
     #expect(try s.sets.map(\.position).sorted() == [3, 4])
@@ -262,8 +262,37 @@ struct Seance {
     #expect(sessionProgress(try s.workout.plan, sets: try s.sets).left == 0)
 
     for _ in 5...Bounds.maxPosition { try s.actions.addSet(slotIndex: 0) }
-    #expect(try s.active?.draft?.position == Bounds.maxPosition)
+    #expect(try s.active?.added?.position == Bounds.maxPosition)
     #expect(throws: SessionError.noPositionLeft) { try s.actions.addSet(slotIndex: 0) }
+  }
+
+  @Test func addSetTwiceAddsTwo() throws {
+    let s = try Seance([Seance.slot(sets: 1)])
+    try s.actions.logNext(count: 8, weightKg: 60, expecting: nil)
+    try s.actions.addSet(slotIndex: 0)
+    try s.actions.addSet(slotIndex: 0)
+    #expect(try s.actions.logNext(count: 8, weightKg: 60, expecting: nil) != nil)
+    #expect(try s.actions.logNext(count: 8, weightKg: 60, expecting: nil) != nil)
+    #expect(try s.sets.map(\.position).sorted() == [3, 4, 5])
+    #expect(try s.actions.logNext(count: 8, weightKg: 60, expecting: nil) == nil)
+    s.clock.advance(seconds: 600)
+    #expect(try s.state().bars == [.done, .done, .done])
+  }
+
+  @Test func addSetKeepsTheLoadChosen() throws {
+    let s = try Seance([Seance.slot(sets: 1)])
+    try s.actions.choose(weightKg: 70, count: 10)
+    try s.actions.addSet(slotIndex: 0)
+    #expect(try s.active?.draft == SetDraft(slotIndex: 0, position: 3, weightKg: 70, count: 10))
+    // The set added is due first; the planned set keeps what was chosen for it.
+    try s.actions.logNext(count: 8, weightKg: 60, expecting: SetPlace(slotIndex: 0, position: 4))
+    let set = try #require(try s.actions.logNext(count: nil, weightKg: nil, expecting: nil))
+    guard case .create(let create) = set.edit else {
+      Issue.record("a creation")
+      return
+    }
+    #expect(create.position == 3)
+    #expect(create.values.weightKg == 70 && create.values.reps == 10)
   }
 
   @Test func planEditsComposeInOrder() throws {
