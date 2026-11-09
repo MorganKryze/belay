@@ -38,21 +38,32 @@
         gap: 12px;
         transform: translateY(-6vh);
       }
+      /* The colour mark: the ring in ink, the mountain and the logotype's peak in blue. */
       .launch .mark {
         width: 112px;
-        color: #1f4e8c;
       }
-      /* The word is drawn, not set: no font is loaded at the first paint, and the launch images
-         must show the same shapes. 80.29 px wide is the outline's advance at 23 px. */
+      .launch .mark,
       .launch .word {
-        width: 80.29px;
+        color: #12181c;
       }
-      /* The mark breathes from its first frame, the second hook half a beat behind. Each breath
-         starts at full strength, as the launch images paint the mark. */
-      .launch [data-hook] {
+      .launch .mark [data-part="mountain"] {
+        stroke: #1f4e8c;
+      }
+      .launch .word [data-part="peak"] {
+        fill: #1f4e8c;
+      }
+      /* The logotype is drawn, not set: no font is loaded at the first paint, and the launch
+         images must show the same shapes. 100 px wide keeps the capitals 15.8 px tall, as the
+         word they replace. */
+      .launch .word {
+        width: 100px;
+      }
+      /* The mark breathes from its first frame, the mountain half a beat behind the ring. Each
+         breath starts at full strength, as the launch images paint the mark. */
+      .launch .mark [data-part] {
         animation: var(--animate-breathe);
       }
-      .launch [data-hook="b"] {
+      .launch .mark [data-part="mountain"] {
         animation-delay: calc(var(--dur-breathe) / 2);
       }
       /* Once the account is known: a short fade, then out of reach; 120 ms under reduced motion. */
@@ -67,28 +78,41 @@
       }
       /* Hidden, the screen stays in the page: its breathing stops where it is rather than run
          behind the app for good. */
-      .launched .launch [data-hook] {
+      .launched .launch .mark [data-part] {
         animation-play-state: paused;
       }
       html.dark .launch {
         background: #10151a;
-        color: #eef2f3;
       }
-      html.dark .launch .mark {
-        color: #8db6ee;
+      html.dark .launch .mark,
+      html.dark .launch .word {
+        color: #f3f5f5;
+      }
+      html.dark .launch .mark [data-part="mountain"] {
+        stroke: #8db6ee;
+      }
+      html.dark .launch .word [data-part="peak"] {
+        fill: #8db6ee;
       }
       /* In the apps the launch screen is the system's own splash carried on: the mark alone,
-         centred, with no word and no lift, so nothing moves at the handover. */
+         centred, with no word and no lift, so nothing moves at the handover. The word is clipped
+         out of the flow rather than removed: it stays the launch's name, Belay, for
+         assistive tech, as the mark itself is hidden from it. */
       html[data-platform] .launch > div {
         transform: none;
       }
       html[data-platform] .launch .word {
-        display: none;
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
       }
-      /* The system splash draws the mark at this width: 288 dp of the icon canvas, of which the
-         mark's ink is 164 of 432 px. */
+      /* The system splash draws the mark's ink 109.33 dp wide: 288 dp of the icon canvas, of
+         which the ink is 164 of 432 px. The svg is the mark's 100-unit grid and its ink spans 85
+         units, so the svg is 100/85 of that width. */
       html[data-platform="android"] .launch .mark {
-        width: 109.33px;
+        width: 128.63px;
       }
       /* Charter §8: no launch screen on a computer, the tab favicon is enough. */
       @media (min-width: 1024px) {
@@ -103,23 +127,43 @@
     <!-- Outside #root, so the first render leaves it: it goes once the account is known. -->
     <div class="launch">
       <div>
-        <svg class="mark" viewBox="86 126 340 260" fill="currentColor" aria-hidden="true">
-          <path
-            data-hook="a"
-            d="M86 160L86 266A120 120 0 0 0 326 266L326 246A20 20 0 0 0 286 246L286 266A80 80 0 0 1 126 266L126 160A20 20 0 0 0 86 160Z"
-          />
-          <path
-            data-hook="b"
-            d="M426 352L426 246A120 120 0 0 0 186 246L186 266A20 20 0 0 0 226 266L226 246A80 80 0 0 1 386 246L386 352A20 20 0 0 0 426 352Z"
-          />
+        <svg class="mark" viewBox="0 0 100 100" fill="none" aria-hidden="true">
+          <g
+            transform="translate(0 1)"
+            stroke="currentColor"
+            stroke-width="11"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path data-part="ring" d="M28.6 78.8 A37 37 0 1 1 71.4 78.8" />
+            <path data-part="mountain" d="M28.6 78.8 L39 58 L45 64 L56 44 L71.4 78.8" />
+          </g>
         </svg>
-        <!-- "Belay" as a fixed outline, in font units (1000 per em). It was shaped with HarfBuzz and
-             outlined with fontTools from the display face at weight 800, so the word matches the
-             titles and the launch images. The box is the advance by the ascent plus the descent,
-             the line box the text has. -->
-        <svg class="word" viewBox="0 0 3491 1088" fill="currentColor" role="img" aria-label="Belay">
+        <!-- The logotype as fixed outlines, the A drawn as a peak; the same letters as the app's
+             icons, so the word matches them and the launch images. -->
+        <svg
+          class="word"
+          viewBox="17 -3 872 140.6"
+          fill="currentColor"
+          role="img"
+          aria-label="Belay"
+        >
           <path
-            d="M85 878V190H650Q706 190 751 212Q796 233 822 271Q849 309 849 360Q849 405 833 437Q817 469 790 489Q762 509 729 519V523Q768 531 799 552Q830 572 848 607Q866 642 866 692Q866 751 838 792Q809 834 761 856Q713 878 653 878ZM288 733H585Q617 733 637 716Q657 698 657 662Q657 643 648 628Q640 613 623 604Q606 596 582 596H288ZM288 462H568Q591 462 607 454Q623 445 632 430Q641 415 641 394Q641 365 621 348Q601 330 571 330H288ZM1313 890Q1205 890 1125 861Q1045 832 1000 770Q956 709 956 614Q956 522 1000 460Q1043 399 1122 368Q1200 338 1305 338Q1415 338 1492 368Q1570 398 1611 458Q1652 518 1652 608V651H1150Q1152 693 1172 720Q1192 747 1228 760Q1265 772 1315 772Q1342 772 1367 766Q1392 761 1412 751Q1433 741 1446 726Q1458 711 1460 693H1650Q1650 738 1625 774Q1600 811 1555 837Q1510 863 1448 876Q1386 890 1313 890ZM1150 553H1455Q1455 531 1444 513Q1434 495 1414 482Q1395 470 1368 463Q1342 456 1311 456Q1264 456 1230 468Q1195 480 1175 502Q1155 524 1150 553ZM1759 878V153H1944V878ZM2279 890Q2230 890 2188 883Q2145 876 2114 858Q2082 841 2064 810Q2047 780 2047 733Q2047 670 2081 634Q2115 597 2178 580Q2241 564 2326 560Q2412 555 2515 555V539Q2515 508 2500 490Q2484 472 2454 464Q2425 456 2381 456Q2349 456 2319 461Q2289 466 2270 476Q2251 487 2251 505V513H2064Q2063 509 2063 506Q2063 503 2063 498Q2063 451 2100 415Q2137 379 2210 358Q2283 338 2390 338Q2490 338 2559 356Q2628 373 2664 412Q2699 450 2699 515V726Q2699 743 2707 754Q2715 765 2732 765H2785V871Q2771 877 2740 884Q2709 890 2674 890Q2625 890 2595 880Q2565 870 2550 852Q2536 835 2530 814H2522Q2494 837 2456 854Q2419 872 2375 881Q2331 890 2279 890ZM2331 773Q2354 773 2384 768Q2415 762 2445 751Q2475 740 2495 722Q2515 705 2515 680V650Q2416 650 2353 658Q2290 666 2260 682Q2230 699 2230 725Q2230 745 2244 756Q2259 766 2282 770Q2306 773 2331 773ZM2940 1083Q2906 1083 2880 1078Q2853 1072 2831 1065V957H2914Q2955 957 2980 947Q3004 937 3018 919Q3032 901 3044 878L2787 350H2989L3090 594Q3097 610 3106 634Q3116 658 3126 682Q3135 707 3142 725H3151Q3154 718 3160 702Q3165 686 3172 666Q3180 646 3188 626Q3195 606 3201 591L3295 350H3488L3265 831Q3239 885 3212 931Q3186 977 3150 1011Q3114 1045 3063 1064Q3012 1083 2940 1083Z"
+            d="M17 137.6 L17 0 L130 0 Q141.2 0 150.2 4.3 Q159.2 8.6 164.5 16.2 Q169.8 23.8 169.8 34 Q169.8 43 166.6 49.4 Q163.4 55.8 157.9 59.8 Q152.4 63.8 145.8 65.8 L145.8 66.6 Q153.6 68.2 159.8 72.3 Q166 76.4 169.6 83.4 Q173.2 90.4 173.2 100.4 Q173.2 112.2 167.5 120.5 Q161.8 128.8 152.2 133.2 Q142.6 137.6 130.6 137.6 L17 137.6 Z M57.6 108.6 L117 108.6 Q123.4 108.6 127.4 105.1 Q131.4 101.6 131.4 94.4 Q131.4 90.6 129.7 87.6 Q128 84.6 124.6 82.9 Q121.2 81.2 116.4 81.2 L57.6 81.2 L57.6 108.6 Z M57.6 54.4 L113.6 54.4 Q118.2 54.4 121.4 52.7 Q124.6 51 126.4 48 Q128.2 45 128.2 40.8 Q128.2 35 124.2 31.5 Q120.2 28 114.2 28 L57.6 28 L57.6 54.4 Z"
+          />
+          <path
+            d="M201.8 137.6 L201.8 0 L345 0 L345 30.2 L242.6 30.2 L242.6 53.4 L332.2 53.4 L332.2 82.6 L242.6 82.6 L242.6 107.4 L346.6 107.4 L346.6 137.6 L201.8 137.6 Z"
+          />
+          <path
+            d="M376.4 137.6 L376.4 0 L417 0 L417 104.8 L505.4 104.8 L505.4 137.6 L376.4 137.6 Z"
+          />
+          <path
+            data-part="peak"
+            transform="translate(516.2 0)"
+            d="M0 137.6 L31 71 L45 83 L95 -3 L186 137.6 L138 137.6 L95 72.6 L50 137.6 Z"
+          />
+          <path
+            d="M780.2 137.6 L780.2 82.8 L712.2 0 L760.4 0 L800.6 51.6 L802.4 51.6 L843 0 L889 0 L821 82.8 L821 137.6 L780.2 137.6 Z"
           />
         </svg>
       </div>

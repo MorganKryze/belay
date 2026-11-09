@@ -1,4 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="86 86 340 340">
-  <style>@media (prefers-color-scheme: dark){path{fill:#8DB6EE}}</style>
-  <path d="M86 160L86 266A120 120 0 0 0 326 266L326 246A20 20 0 0 0 286 246L286 266A80 80 0 0 1 126 266L126 160A20 20 0 0 0 86 160ZM426 352L426 246A120 120 0 0 0 186 246L186 266A20 20 0 0 0 226 266L226 246A80 80 0 0 1 386 246L386 352A20 20 0 0 0 426 352Z" fill="#1F4E8C"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <style>@media (prefers-color-scheme: dark){path:first-child{stroke:#F3F5F5}path:last-child{stroke:#8DB6EE}}</style>
+  <g transform="translate(0 1)" fill="none" stroke-width="11" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M28.6 78.8 A37 37 0 1 1 71.4 78.8" stroke="#12181C"/>
+    <path d="M28.6 78.8 L39 58 L45 64 L56 44 L71.4 78.8" stroke="#1F4E8C"/>
+  </g>
 </svg>

@@ -115,6 +115,9 @@ enum Fixture {
         }
     }
 
+    /// Whether `-BelayContrast increased` asks for increased contrast, which a test cannot set.
+    static var contrastIncreased: Bool { UserDefaults.standard.string(forKey: "BelayContrast") == "increased" }
+
     /// Whether this launch runs on the fixture.
     static var isOn: Bool { UserDefaults.standard.string(forKey: "BelayFixture") != nil }
 }

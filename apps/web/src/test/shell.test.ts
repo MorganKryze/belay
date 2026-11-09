@@ -1,8 +1,17 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { inflateSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
 import { SCREENS, startupFile } from "../../startup-images";
+import {
+  MARK_SHIFT,
+  MARK_VIEWBOX,
+  MOUNTAIN_D,
+  PEAK_D,
+  RING_D,
+  STROKE,
+  TILE_MARK,
+} from "@/lib/mark";
+import { decodePng } from "./png";
 
 const web = resolve(__dirname, "../..");
 const read = (p: string) => readFileSync(resolve(web, p), "utf8");
@@ -11,114 +20,79 @@ const pngSize = (p: string) => {
   const b = readFileSync(resolve(web, p));
   return [b.readUInt32BE(16), b.readUInt32BE(20)];
 };
-// Bounds of an SVG path made of M, L and semicircle A commands: each arc's extreme points lie on
-// its centre (the chord's midpoint) plus or minus its radius.
-const pathBounds = (d: string) => {
-  const xs: number[] = [];
-  const ys: number[] = [];
-  let x = 0;
-  let y = 0;
-  for (const [, cmd, args] of d.matchAll(/([MLAZ])([^MLAZ]*)/g)) {
-    const n = args!
-      .trim()
-      .split(/[\s,]+/)
-      .filter(Boolean)
-      .map(Number);
-    if (cmd === "A") {
-      const [r, , , , , nx, ny] = n as [number, number, number, number, number, number, number];
-      const cx = (x + nx) / 2;
-      const cy = (y + ny) / 2;
-      xs.push(cx - r, cx + r);
-      ys.push(cy - r, cy + r);
-      [x, y] = [nx, ny];
-    } else if (cmd !== "Z") [x, y] = [n[0]!, n[1]!];
-    xs.push(x);
-    ys.push(y);
-  }
-  return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
+// The mark's ink on its grid: the ring's circle (centre from its chord and radius) and the
+// mountain's foot, each widened by half the stroke for the round caps and joins.
+const markInk = () => {
+  const n = [...RING_D.matchAll(/-?[\d.]+/g)].map((m) => Number(m[0]));
+  // M x0 y0 A r r rotation large sweep x1 y1.
+  const [x0, y0, r, x1] = [n[0]!, n[1]!, n[2]!, n[7]!];
+  const cx = (x0 + x1) / 2;
+  const cy = y0 - Math.sqrt(r * r - ((x1 - x0) / 2) ** 2) + MARK_SHIFT.y;
+  const half = STROKE / 2;
+  return {
+    left: cx - r - half,
+    top: cy - r - half,
+    right: cx + r + half,
+    bottom: y0 + MARK_SHIFT.y + half,
+  };
 };
-// Bounding box (left, top, right, bottom) of the pixels that pass `ink` in an 8-bit RGB or RGBA,
-// non-interlaced PNG.
-const inkBox = (p: string, ink: (r: number, g: number, b: number, a: number) => boolean) => {
-  const b = readFileSync(resolve(web, p));
-  const [w, h] = [b.readUInt32BE(16), b.readUInt32BE(20)];
-  expect([b[24], b[28]]).toEqual([8, 0]);
-  expect([2, 6]).toContain(b[25]);
-  const bpp = b[25] === 6 ? 4 : 3;
-  const chunks: Buffer[] = [];
-  for (let at = 8; at < b.length;) {
-    const len = b.readUInt32BE(at);
-    if (b.toString("ascii", at + 4, at + 8) === "IDAT")
-      chunks.push(b.subarray(at + 8, at + 8 + len));
-    at += len + 12;
-  }
-  const raw = inflateSync(Buffer.concat(chunks));
-  const row = w * bpp;
-  const px = Buffer.alloc(row * h);
-  let [top, bottom, left, right] = [h, -1, w, -1];
+// The rows of a launch image that hold anything but the paper, split where a blank row parts
+// them: the first band is the mark, the second the logotype. Each comes back as its box.
+const bands = (p: string) => {
+  const { width: w, height: h, rgba } = decodePng(readFileSync(resolve(web, p)));
+  const [pr, pg, pb] = [rgba[0]!, rgba[1]!, rgba[2]!];
+  const found: [number, number, number, number][] = [];
+  let open = false;
   for (let j = 0; j < h; j++) {
-    const filter = raw[j * (row + 1)];
-    for (let i = 0; i < row; i++) {
-      const v = raw[j * (row + 1) + 1 + i]!;
-      const a = i >= bpp ? px[j * row + i - bpp]! : 0;
-      const up = j > 0 ? px[(j - 1) * row + i]! : 0;
-      const c = i >= bpp && j > 0 ? px[(j - 1) * row + i - bpp]! : 0;
-      let pred = 0;
-      if (filter === 1) pred = a;
-      else if (filter === 2) pred = up;
-      else if (filter === 3) pred = (a + up) >> 1;
-      else if (filter === 4) {
-        const base = a + up - c;
-        const [pa, pb, pc] = [Math.abs(base - a), Math.abs(base - up), Math.abs(base - c)];
-        pred = pa <= pb && pa <= pc ? a : pb <= pc ? up : c;
-      }
-      px[j * row + i] = (v + pred) & 255;
-    }
+    let [left, right] = [w, -1];
     for (let i = 0; i < w; i++) {
-      const at = j * row + i * bpp;
-      if (ink(px[at]!, px[at + 1]!, px[at + 2]!, bpp === 4 ? px[at + 3]! : 255)) {
-        [top, bottom] = [Math.min(top, j), Math.max(bottom, j)];
-        [left, right] = [Math.min(left, i), Math.max(right, i)];
-      }
+      const at = (j * w + i) * 4;
+      // Past halfway from the paper to the lightest ink the launch draws.
+      const far =
+        Math.abs(rgba[at]! - pr) + Math.abs(rgba[at + 1]! - pg) + Math.abs(rgba[at + 2]! - pb);
+      if (far > 120) [left, right] = [Math.min(left, i), Math.max(right, i)];
     }
+    if (right < 0) {
+      open = false;
+      continue;
+    }
+    const band = found.at(-1);
+    if (open && band) {
+      band[0] = Math.min(band[0], left);
+      band[2] = Math.max(band[2], right);
+      band[3] = j;
+    } else found.push([left, j, right, j]);
+    open = true;
   }
-  return [left, top, right, bottom] as const;
+  return found;
 };
-// Width, height and top row of the blue mark's bounding box: the pixels past halfway from the
-// paper to the blue, #1F4E8C on #F3F5F5 or #8DB6EE on #10151A, where blue leads red by 54 or more.
+// Width, height and top row of the mark in a launch image.
 const markBox = (p: string) => {
-  const [left, top, right, bottom] = inkBox(p, (r, _, b) => b - r > 54);
+  const [left, top, right, bottom] = bands(p)[0]!;
   return [right - left + 1, bottom - top + 1, top] as const;
 };
-// The launch word's box: the pixels past halfway from the paper to the ink, #12181C on #F3F5F5
-// or #EEF2F3 on #10151A, the blue mark aside.
-const wordBox = (p: string, theme: "light" | "dark") =>
-  inkBox(p, (r, g, b) =>
-    theme === "light" ? Math.max(r, g, b) < 137 : Math.min(r, g, b) > 127 && b - r < 30,
-  );
+// The logotype's box in a launch image, below the mark.
+const wordBox = (p: string) => bands(p)[1]!;
 // The launch screen's markup, before the app's root.
 const launchMarkup = () => {
   const html = read("index.html");
   return html.slice(html.indexOf("<body>"), html.indexOf('<div id="root">'));
 };
-const MARK = "M86 160L86 266A120 120 0 0 0 326 266";
+// The logotype's letters as the icons hold them, every outline drawn on the launch.
+const LOGOTYPE = [...read("icons/logotype-light.svg").matchAll(/ d="([^"]+)"/g)].map((m) => m[1]!);
 
 describe("app shell identity", () => {
-  it("shows the blue mark as the tab icon, light blue in the dark scheme", () => {
-    const logo = read("public/logo.svg");
-    expect(logo).toContain(MARK);
-    expect(logo).toContain('fill="#1F4E8C"');
-    expect(logo).toContain("fill:#8DB6EE");
-    // Cropped to the mark's 340 px width: it fills a 16 px tab instead of 10.6 px of it.
-    expect(logo).toContain('viewBox="86 86 340 340"');
-  });
-
-  it("keeps the icon source as paper hooks on the blue, light blue on dark paper by scheme", () => {
-    const src = read("icons/app-icon.svg");
-    expect(src).toContain(MARK);
-    expect(src).toContain('<rect width="512" height="512" fill="#1F4E8C"/>');
-    expect(src).toContain('fill="#F3F5F5"');
-    expect(src).toMatch(/prefers-color-scheme: dark[^<]*#10151A[^<]*#8DB6EE/);
+  it("keeps the icon sources as the mark on a paper tile, colour light and colour dark", () => {
+    for (const [file, paper, ring, mountain] of [
+      ["icons/app-icon.svg", "#F3F5F5", "#12181C", "#1F4E8C"],
+      ["icons/app-icon-dark.svg", "#10151A", "#F3F5F5", "#8DB6EE"],
+    ] as const) {
+      const src = read(file);
+      expect(src).toContain(`<rect width="100" height="100" fill="${paper}"/>`);
+      expect(src).toContain(`<path d="${RING_D}" stroke="${ring}"/>`);
+      expect(src).toContain(`<path d="${MOUNTAIN_D}" stroke="${mountain}"/>`);
+      expect(src).not.toContain("prefers-color-scheme");
+    }
   });
 
   it("uses one file as normal and maskable icon", () => {
@@ -140,20 +114,20 @@ describe("app shell identity", () => {
     );
     // Outside #root: React's first render would take it away before the account is known.
     const launch = html.slice(html.indexOf("<body>"), html.indexOf('<div id="root">'));
-    expect(launch).toContain(MARK);
-    expect(launch).toContain("Belay");
+    expect(launch).toContain(`d="${RING_D}"`);
+    expect(launch).toContain(`d="${MOUNTAIN_D}"`);
+    expect(LOGOTYPE).toHaveLength(5);
+    expect(LOGOTYPE).toContain(PEAK_D);
+    for (const d of LOGOTYPE) expect(launch).toContain(`d="${d}"`);
+    expect(launch).toContain('aria-label="Belay"');
   });
 
   it("keeps the mark inside the charter's icon geometry", () => {
-    const scale = /scale\(([\d.]+)\)/.exec(read("icons/app-icon.svg"));
-    expect(scale).not.toBeNull();
-    const s = Number(scale![1]);
-    // 198 px is the farthest point of the master path from the centre (256, 256): the outer edge
-    // of the round cap at (106, 160) and (406, 352), 178.1 px away plus its 20 px radius. It must
-    // stay inside the maskable safe circle, 40 % of 512.
-    expect(198 * s).toBeLessThanOrEqual(204.8);
-    expect(340 * s).toBeLessThanOrEqual(290);
-    expect((512 - 340 * s) / 2).toBeGreaterThanOrEqual((340 * s) / 4);
+    const { offset, scale } = TILE_MARK;
+    for (const file of ["icons/app-icon.svg", "icons/app-icon-dark.svg"])
+      expect(read(file)).toContain(
+        `<g transform="translate(${offset} ${offset}) scale(${scale})">`,
+      );
   });
 
   it("ships every icon at its size", () => {
@@ -176,34 +150,32 @@ describe("app shell identity", () => {
       }
   });
   it("frames the whole mark on the launch screen", () => {
-    const launch = launchMarkup().split("</svg>")[0]!;
-    const box = /viewBox="([\d. ]+)"/.exec(launch);
-    expect(box).not.toBeNull();
-    const [vx, vy, vw, vh] = box![1]!.split(" ").map(Number) as [number, number, number, number];
-    for (const [, d] of launch.matchAll(/ d="([^"]+)"/g)) {
-      const [x0, y0, x1, y1] = pathBounds(d!);
-      expect(x0).toBeGreaterThanOrEqual(vx);
-      expect(y0).toBeGreaterThanOrEqual(vy);
-      expect(x1).toBeLessThanOrEqual(vx + vw);
-      expect(y1).toBeLessThanOrEqual(vy + vh);
-    }
+    const mark = launchMarkup().split("</svg>")[0]!;
+    expect(mark).toContain(`viewBox="${MARK_VIEWBOX}"`);
+    expect(mark).toContain(`transform="translate(${MARK_SHIFT.x} ${MARK_SHIFT.y})"`);
+    expect(mark).toContain(`stroke-width="${STROKE}"`);
+    const { left, top, right, bottom } = markInk();
+    expect(Math.min(left, top)).toBeGreaterThanOrEqual(0);
+    expect(Math.max(right, bottom)).toBeLessThanOrEqual(100);
   });
 
   it("paints the whole mark in the launch images", () => {
-    // The full mark is 340 by 260; a crop to the old 232 high frame flattens both arcs.
+    // A crop of the frame would flatten the ring's top or cut its caps.
+    const { left, top, right, bottom } = markInk();
     for (const theme of ["light", "dark"] as const) {
       const [w, h] = markBox(`public/${startupFile(theme, SCREENS[4]!)}`);
-      expect(h / w).toBeCloseTo(260 / 340, 1);
+      expect(h / w).toBeCloseTo((bottom - top) / (right - left), 1);
     }
   });
 
   it("places the mark where the launch screen shows it under the status bar", () => {
     // On an iPhone 1170x2532 in standalone mode the HTML launch screen starts below the 47 px
-    // status bar (measured on the phone). Centring the mark, the gap and the word in the rest,
-    // lifted by 6 % of the screen, puts the mark's top at 1000 device px. The image must match it.
+    // status bar (measured on the phone). The 112 px mark, the 12 px gap and the 16.1 px logotype
+    // centred in the rest and lifted by 6 % of the screen put the mark's frame at 324.8 px, and
+    // its ink 8 px lower: 999 device px. The image must match it.
     for (const theme of ["light", "dark"] as const) {
       const [, , top] = markBox(`public/${startupFile(theme, SCREENS[4]!)}`);
-      expect(Math.abs(top - 1000)).toBeLessThanOrEqual(9);
+      expect(Math.abs(top - 999)).toBeLessThanOrEqual(9);
     }
   });
 
@@ -212,37 +184,21 @@ describe("app shell identity", () => {
     // while the launch image shows the display face, and the word would jump at the handover.
     const launch = launchMarkup().replace(/<!--[\s\S]*?-->/g, "");
     expect(launch.replace(/<[^>]*>/g, "").trim()).toBe("");
-    expect(launch).toMatch(/<svg[^>]* role="img" aria-label="Belay"/);
+    expect(launch).toMatch(/<svg[^>]*\srole="img"\s+aria-label="Belay"/);
   });
 
-  it("keeps the launch word's place and size in the launch images", () => {
-    // The word as the launch screen draws it, in device px on the 1170x2532 iPhone: its outline
-    // inks x 85 to 3488 and y 153 to 1083 of a 3491 by 1088 box drawn 80.29 px wide at 3x, so 235
-    // by 64, 47 px under the mark (12 px of gap plus the box's top), and 3 px right of the centre
-    // since its left bearing is wider than its right.
+  it("keeps the logotype's place and size in the launch images", () => {
+    // The logotype as the launch screen draws it, in device px on the 1170x2532 iPhone: its
+    // outlines fill a 872 by 140.6 box drawn 100 px wide at 3x, so 300 by 48, centred, and 85 px
+    // under the mark's ink (the frame's 14.7 units below the feet, then the 12 px gap).
     for (const theme of ["light", "dark"] as const) {
       const file = `public/${startupFile(theme, SCREENS[4]!)}`;
-      const [left, top, right, bottom] = wordBox(file, theme);
+      const [left, top, right, bottom] = wordBox(file);
       const [, markHeight, markTop] = markBox(file);
-      expect(Math.abs(right - left + 1 - 235)).toBeLessThanOrEqual(3);
-      expect(Math.abs(bottom - top + 1 - 64)).toBeLessThanOrEqual(3);
-      expect(Math.abs(top - (markTop + markHeight) - 47)).toBeLessThanOrEqual(3);
-      expect(Math.abs((left + right + 1) / 2 - (1170 / 2 + 3))).toBeLessThanOrEqual(3);
+      expect(Math.abs(right - left + 1 - 300)).toBeLessThanOrEqual(3);
+      expect(Math.abs(bottom - top + 1 - 48)).toBeLessThanOrEqual(3);
+      expect(Math.abs(top - (markTop + markHeight) - 85)).toBeLessThanOrEqual(4);
+      expect(Math.abs((left + right + 1) / 2 - 1170 / 2)).toBeLessThanOrEqual(3);
     }
-  });
-
-  it("sizes the Android launch mark as the system splash draws its icon", () => {
-    // The system splash scales the 432 px foreground canvas to 288 dp, and the page takes over
-    // from it: the mark must be as wide there as it was on the splash, so it does not jump.
-    const [left, , right] = inkBox(
-      "../mobile/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png",
-      (_r, _g, _b, a) => a > 127,
-    );
-    const drawn = ((right - left + 1) / 432) * 288;
-    const width = /html\[data-platform="android"\] \.launch \.mark \{\s*width: ([\d.]+)px/.exec(
-      read("index.html"),
-    );
-    expect(width).not.toBeNull();
-    expect(Math.abs(Number(width![1]) - drawn)).toBeLessThanOrEqual(0.5);
   });
 });

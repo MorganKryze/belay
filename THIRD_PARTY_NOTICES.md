@@ -110,6 +110,9 @@ narrow no-break space and the tabular figures. The cut is a Modified Version und
 keeps the name tables of the original.
 The iPhone app bundles the same instance, unchanged, as
 `apps/apple/Belay/ArchivoExpanded-ExtraBold.ttf`.
+The BELΛY logotype (`apps/web/icons/logotype-*.svg` and `lockup-*.svg`) is drawn from that
+instance's outlines of B, E, L and Y by `apps/web/scripts/draw-logotype.py`; its A is our own
+peak.
 
 ```text
 Copyright 2020 The Archivo Project Authors (https://github.com/Omnibus-Type/Archivo)

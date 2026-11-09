@@ -12,6 +12,8 @@ struct AccueilView: View {
     let openPreview: () -> Void
     /// Opens the session cover, zooming from the element named.
     let openCover: (String) -> Void
+    /// How far the list has scrolled, so the band behind the title leaves with it.
+    @State private var scrolled: CGFloat = 0
 
     var body: some View {
         List {
@@ -20,9 +22,13 @@ struct AccueilView: View {
             }
             .listRowBackground(Color.surface)
         }
+        // Inside the list's wall, so the wall lies under the band and the rows over it.
+        .background(alignment: .top) { AccueilBand(scrolled: scrolled) }
         .belayList()
+        .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y + $0.contentInsets.top } action: { _, y in
+            scrolled = y
+        }
         .safeAreaInset(edge: .top, spacing: 0) { notice }
-        .background { Wall() }
         .navigationTitle(title)
         .largeTitleOnly()
         .belaySubtitle(Self.today())
@@ -151,15 +157,10 @@ struct DayCard: View {
     let action: () -> Void
     @Environment(\.zoomSpace) private var space
     @Environment(\.horizontalSizeClass) private var width
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(state)
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.muted)
-                .monospacedDigit()
-                .contentTransition(reduceMotion ? .identity : .numericText())
+            DomainChip(domain: .session, text: state, symbol: "dumbbell.fill")
             DayHero(text: lead)
                 .padding(.top, 10)
             if let name, !name.isEmpty {
@@ -180,6 +181,27 @@ struct DayCard: View {
         .padding(.top, 12)
         .padding(.bottom, 8)
         .zoomSource(source, in: space)
+    }
+}
+
+/// Accueil's band: the session's tint at the top of the screen fading to the wall, behind the
+/// title. It moves with the list, as the title does, and goes wherever plainer grounds are asked
+/// for, as the wall's dust does.
+struct AccueilBand: View {
+    let scrolled: CGFloat
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+    @Environment(\.colorSchemeContrast) private var contrast
+    @Environment(\.contrastIncreased) private var contrastIncreased
+
+    var body: some View {
+        if !reduceTransparency && contrast != .increased && !contrastIncreased {
+            LinearGradient(colors: [.sessionTint, .sessionTint.opacity(0)], startPoint: .top, endPoint: .bottom)
+                .frame(height: 280)
+                .offset(y: -max(scrolled, 0))
+                .ignoresSafeArea(edges: .top)
+                .allowsHitTesting(false)
+                .accessibilityHidden(true)
+        }
     }
 }
 

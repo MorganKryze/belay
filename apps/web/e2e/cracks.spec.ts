@@ -167,7 +167,7 @@ test.describe("where the layer sits", () => {
       });
 
   for (const scheme of ["light", "dark"] as const)
-    test(`at 390 px in ${scheme} and the default text, cracks and the hook fill the corner above the first card`, async ({
+    test(`at 390 px in ${scheme} and the default text, cracks and the mark fill the corner above the first card`, async ({
       page,
     }) => {
       await page.emulateMedia({ colorScheme: scheme });
@@ -177,8 +177,8 @@ test.describe("where the layer sits", () => {
       await expect(page.getByRole("button", { name: /^Weigh-in/ })).toBeVisible();
       await settled(page);
       const box = (await layer(page))!;
-      // The top of what follows the page's header, and where the hook sits in the drawing.
-      const { cardTop, hook } = await page.evaluate(async () => {
+      // The top of what follows the page's header, and where the mark sits in the drawing.
+      const { cardTop, at } = await page.evaluate(async () => {
         // The page's header is the first block of the page's section; the first card follows it.
         let header: Element = document.querySelector("main h1")!;
         const section = header.closest("section")!;
@@ -188,16 +188,16 @@ test.describe("where the layer sits", () => {
         const image = getComputedStyle(document.documentElement, "::before").backgroundImage;
         const svg = await (await fetch(/url\("?([^")]+)"?\)/.exec(image)![1]!)).text();
         const [, x, y] =
-          /<g opacity="[\d.]+"><path transform="translate\(([\d.-]+) ([\d.-]+)\)/.exec(svg)!;
-        return { cardTop: next!.getBoundingClientRect().top, hook: [Number(x), Number(y)] };
+          /<g opacity="[\d.]+"[^>]* transform="translate\(([\d.-]+) ([\d.-]+)\)/.exec(svg)!;
+        return { cardTop: next!.getBoundingClientRect().top, at: [Number(x), Number(y)] };
       });
       const corner = { left: box.left, top: 0, width: box.width, height: cardTop };
-      // The hook is 12 px wide and 8 px tall.
-      const mark = { left: box.left + hook[0]!, top: box.top + hook[1]!, width: 12, height: 9 };
+      // The mark is 12 px wide and 11 px tall.
+      const mark = { left: box.left + at[0]!, top: box.top + at[1]!, width: 12, height: 11 };
       expect(mark.top + mark.height).toBeLessThan(cardTop);
-      const [inCorner, onHook] = await changed(page, [corner, mark]);
+      const [inCorner, onMark] = await changed(page, [corner, mark]);
       expect(inCorner).toBeGreaterThan(100);
-      expect(onHook).toBeGreaterThan(10);
+      expect(onMark).toBeGreaterThan(10);
     });
 
   test("the drawing moves down with larger text and below a phone page's own corner text", async ({

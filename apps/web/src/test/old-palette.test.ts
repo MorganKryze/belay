@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
+import { walk } from "@/test/files";
 
 const web = resolve(__dirname, "../..");
 
@@ -60,13 +61,6 @@ const KEEP: readonly string[] = [
 
 // Nothing is left to recolour: every shipped file wears the new palette.
 const PENDING: readonly string[] = [];
-
-function walk(dir: string): string[] {
-  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
-    const path = join(dir, entry.name);
-    return entry.isDirectory() ? walk(path) : [path];
-  });
-}
 
 // What the build ships: the app's sources without their tests, the scripts and drawings served
 // as they are, the page, the icon sources and the build's own config.
