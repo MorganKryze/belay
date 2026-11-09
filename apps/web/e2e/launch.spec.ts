@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { fakeServer } from "./fake-server";
 import { asAndroid, asIPhone } from "./native";
 import { readMotion, recordMotion } from "./motion";
+import { PEAK_D } from "../src/lib/mark";
 
 test.use({ locale: "en-US" });
 
@@ -233,7 +234,7 @@ test("an account question that never gets an answer lets the launch screen go af
   await expect(page.locator("h1")).toHaveCount(0);
 });
 
-test("while the account is unknown the launch mark's hooks breathe in turn from the first frame", async ({
+test("while the account is unknown the launch mark's ring and mountain breathe in turn from the first frame", async ({
   page,
 }) => {
   await recordMotion(page);
@@ -242,11 +243,11 @@ test("while the account is unknown the launch mark's hooks breathe in turn from 
   await page.goto("/");
   await expect(page.locator(".launch")).toBeVisible();
   await expect
-    .poll(async () => (await readMotion(page)).filter((m) => m.target === "path[data-hook]"))
+    .poll(async () => (await readMotion(page)).filter((m) => m.target === "path[data-part]"))
     .toHaveLength(2);
-  const hooks = (await readMotion(page)).filter((m) => m.target === "path[data-hook]");
+  const parts = (await readMotion(page)).filter((m) => m.target === "path[data-part]");
   for (const delay of [0, 600]) {
-    expect(hooks).toContainEqual(
+    expect(parts).toContainEqual(
       expect.objectContaining({
         kind: "animation",
         duration: 1200,
@@ -256,6 +257,14 @@ test("while the account is unknown the launch mark's hooks breathe in turn from 
       }),
     );
   }
+  // The ring leads and the mountain follows.
+  const delays = await page
+    .locator(".launch .mark path[data-part]")
+    .evaluateAll((paths) => paths.map((p) => [p.dataset.part, getComputedStyle(p).animationDelay]));
+  expect(delays).toEqual([
+    ["ring", "0s"],
+    ["mountain", "0.6s"],
+  ]);
   answer();
 });
 
@@ -282,20 +291,20 @@ test("the launch screen fades out in 240 ms on the out curve once the account is
   expect(states).toEqual(["paused", "paused"]);
 });
 
-test("with reduced motion the launch hooks stand still", async ({ page }) => {
+test("with reduced motion the launch ring and mountain stand still", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await recordMotion(page);
   await fakeServer(page);
   const answer = await holdAccount(page);
   await page.goto("/");
   await expect(page.locator(".launch")).toBeVisible();
-  // Past a full breath and the second hook's half-beat start.
+  // Past a full breath and the mountain's half-beat start.
   await page.waitForTimeout(1_500);
-  expect((await readMotion(page)).filter((m) => m.target === "path[data-hook]")).toEqual([]);
+  expect((await readMotion(page)).filter((m) => m.target === "path[data-part]")).toEqual([]);
   answer();
 });
 
-test("the launch word sits where the 1170x2532 launch image draws it", async ({ page }) => {
+test("the logotype sits where the 1170x2532 launch image draws it", async ({ page }) => {
   // The iPhone 390x844 at 3x, in standalone mode: the page starts below its 47 px status bar, and
   // the lift is pinned to the full screen height, as the launch image generator does.
   const [width, height, top, ratio] = [390, 844, 47, 3];
@@ -308,8 +317,8 @@ test("the launch word sits where the 1170x2532 launch image draws it", async ({ 
   });
   const word = page.getByRole("img", { name: "Belay" });
   await expect(word).toBeVisible();
-  const html = await word.locator("path").evaluate((path) => {
-    const r = path.getBoundingClientRect();
+  const html = await word.evaluate((svg) => {
+    const r = svg.getBoundingClientRect();
     return [r.left, r.top, r.right, r.bottom];
   });
   const drawn = [
@@ -322,37 +331,40 @@ test("the launch word sits where the 1170x2532 launch image draws it", async ({ 
 
   const png = readFileSync(new URL("../public/startup/light-1170x2532.png", import.meta.url));
   await page.setContent(`<img src="data:image/png;base64,${png.toString("base64")}">`);
-  const image = await page.locator("img").evaluate(async (img: HTMLImageElement) => {
+  // The logotype's rows start under the mark's frame.
+  const below = Math.round((drawn[1]! - 12) as number);
+  const image = await page.locator("img").evaluate(async (img: HTMLImageElement, from: number) => {
     await img.decode();
     const canvas = document.createElement("canvas");
     [canvas.width, canvas.height] = [img.naturalWidth, img.naturalHeight];
     const context = canvas.getContext("2d")!;
     context.drawImage(img, 0, 0);
     const { data } = context.getImageData(0, 0, canvas.width, canvas.height);
-    // The word's pixels: past halfway from the paper to the word's ink. The mark's blue stays
-    // above it, so it is left out.
+    // The logotype's pixels: past halfway from the paper to its ink or its blue, below the mark.
     let [left, top, right, bottom] = [canvas.width, canvas.height, 0, 0];
-    for (let y = 0; y < canvas.height; y++)
+    for (let y = from; y < canvas.height; y++)
       for (let x = 0; x < canvas.width; x++) {
         const at = (y * canvas.width + x) * 4;
-        if (Math.max(data[at]!, data[at + 1]!, data[at + 2]!) < 136) {
+        const far = 765 - data[at]! - data[at + 1]! - data[at + 2]!;
+        if (far > 120) {
           [left, top] = [Math.min(left, x), Math.min(top, y)];
           [right, bottom] = [Math.max(right, x + 1), Math.max(bottom, y + 1)];
         }
       }
     return [left, top, right, bottom];
-  });
+  }, below);
   for (const [i, edge] of image.entries())
     expect(Math.abs(edge - drawn[i]!)).toBeLessThanOrEqual(3);
 });
 
+// The paper, then the mark's ring and mountain as the colour light and colour dark marks draw them.
 const LAUNCH = {
-  light: { ground: "rgb(243, 245, 245)", mark: "rgb(31, 78, 140)" },
-  dark: { ground: "rgb(16, 21, 26)", mark: "rgb(141, 182, 238)" },
+  light: { ground: "rgb(243, 245, 245)", ring: "rgb(18, 24, 28)", mountain: "rgb(31, 78, 140)" },
+  dark: { ground: "rgb(16, 21, 26)", ring: "rgb(243, 245, 245)", mountain: "rgb(141, 182, 238)" },
 } as const;
 
 for (const scheme of ["light", "dark"] as const) {
-  test(`the ${scheme} launch is plain paper with one mark in one blue and no cracks`, async ({
+  test(`the ${scheme} launch is plain paper with one colour mark and no cracks`, async ({
     page,
   }) => {
     await page.emulateMedia({ colorScheme: scheme });
@@ -364,7 +376,13 @@ for (const scheme of ["light", "dark"] as const) {
     await expect(launch).toHaveCSS("background-color", LAUNCH[scheme].ground);
     await expect(launch).toHaveCSS("background-image", "none");
     await expect(launch.locator("svg.mark")).toHaveCount(1);
-    await expect(launch.locator("svg.mark")).toHaveCSS("color", LAUNCH[scheme].mark);
+    const mark = launch.locator("svg.mark");
+    for (const part of ["ring", "mountain"] as const) {
+      const path = mark.locator(`path[data-part="${part}"]`);
+      await expect(path).toHaveCount(1);
+      await expect(path).toHaveCSS("stroke", LAUNCH[scheme][part]);
+      await expect(path).toHaveCSS("fill", "none");
+    }
     // Nothing else is drawn on the paper: no crack layer, no pseudo-element picture.
     await expect(launch.locator("canvas, img, video")).toHaveCount(0);
     for (const where of ["::before", "::after"])
@@ -386,7 +404,7 @@ test("the launch mark stays put in size and place until the first page", async (
   answer();
 });
 
-test("in a browser on a phone the word sits beside the mark, named Belay and drawn in outlines", async ({
+test("in a browser on a phone the logotype sits beside the mark, named Belay and drawn in outlines", async ({
   page,
 }) => {
   await fakeServer(page);
@@ -394,10 +412,21 @@ test("in a browser on a phone the word sits beside the mark, named Belay and dra
   await page.goto("/");
   const word = page.locator(".launch").getByRole("img", { name: "Belay" });
   await expect(word).toBeVisible();
-  // Shaped from the display face at weight 800, so its box is that face's advance by line height.
-  await expect(word).toHaveAttribute("viewBox", "0 0 3491 1088");
-  await expect(word.locator("path")).toHaveCount(1);
-  await expect(word).toHaveCSS("color", "rgb(18, 24, 28)");
+  // The logotype's own box, its five letters drawn in ink and its peak in the mark's blue.
+  await expect(word).toHaveAttribute("viewBox", "17 -3 872 140.6");
+  await expect(word.locator("path")).toHaveCount(5);
+  const fills = await word
+    .locator("path")
+    .evaluateAll(
+      (paths, peak) => paths.map((p) => [p.getAttribute("d") === peak, getComputedStyle(p).fill]),
+      PEAK_D,
+    );
+  expect(fills).toEqual(
+    [false, false, false, true, false].map((peak) => [
+      peak,
+      peak ? LAUNCH.light.mountain : LAUNCH.light.ring,
+    ]),
+  );
   answer();
 });
 
