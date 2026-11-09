@@ -4,8 +4,11 @@ import SwiftUI
 /// card, the foot's glass and the figures arrive together. Under Reduce Motion each change is a
 /// short crossfade and nothing moves.
 enum Motion {
+    static let spring = Animation.spring(duration: 0.55, bounce: 0.2)
+    static let fade = Animation.easeInOut(duration: 0.25)
+
     static func change(reduce: Bool) -> Animation {
-        reduce ? .easeInOut(duration: 0.25) : .spring(duration: 0.55, bounce: 0.2)
+        reduce ? fade : spring
     }
 
     /// Reduce Motion as the system sets it, or as a debug launch forces it for the tests.

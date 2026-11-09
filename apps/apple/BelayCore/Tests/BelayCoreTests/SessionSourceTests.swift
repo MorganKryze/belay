@@ -32,4 +32,13 @@ private func lines(in path: String) throws -> [(place: String, text: String)] {
         "\(place): \(trimmed)")
     }
   }
+
+  /// One spring moves the app: every animation is Motion's.
+  @Test func oneSpring() throws {
+    let named = #/\.(snappy|bouncy|smooth|spring)\b/#
+    for (place, text) in try lines(in: "") where !place.hasPrefix("Motion.swift") {
+      guard text.replacing("Motion.spring", with: "").contains(named) else { continue }
+      Issue.record("\(place): \(text.trimmingCharacters(in: .whitespaces))")
+    }
+  }
 }
