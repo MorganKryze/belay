@@ -7,7 +7,8 @@ import Synchronization
 /// The UI tests' account, in a debug build only: `-BelayFixture <mode>` signs in a made-up person
 /// on a made-up instance that never syncs, with a store of its own in the app's caches.
 /// `fresh` starts from an empty store, `running` from one with a session started, `history` from
-/// one where session A was done yesterday and is open again, `past` from one where every session
+/// one where session A was done yesterday and is open again, `finished` from `history` with one set
+/// of the first exercise logged at 65 kg for 8, a record over yesterday's, `past` from one where every session
 /// of the program was done once, A first, so A comes next with a last time, `keep` from the store the previous
 /// launch left, so a test can relaunch onto it. `expired` starts empty on an instance that refuses
 /// the token at each sync.
@@ -41,11 +42,15 @@ enum Fixture {
                     try model.delete()
                 }
             }
-            if mode == "running" || mode == "history" {
+            if mode == "running" || mode == "history" || mode == "finished" {
                 // Through the same start a tap makes, so the store holds what the app writes.
                 let store = try AccountStore.open(userId: userId, origin: url, in: folder)
-                let id = try TrainingModel(store: store, didWrite: {}, now: Date.init, timeZone: .current).start()
-                if mode == "history" { try doneYesterday(like: id, in: store) }
+                let model = TrainingModel(store: store, didWrite: {}, now: Date.init, timeZone: .current)
+                let id = try model.start()
+                if mode != "running" { try doneYesterday(like: id, in: store) }
+                if mode == "finished" {
+                    try model.tick(slotIndex: 0, position: Bounds.maxWarmups, weightKg: 65, count: 8, rir: 2)
+                }
             }
             defaults.set(origin, forKey: StoredInstance.key)
             try session.keep(origin: origin, token: "fixture-token")
@@ -110,6 +115,33 @@ enum Fixture {
                         for try await value in counts { count = value }
                     } catch {
                         preconditionFailure("the fixture's queue is not followed: \(error)")
+                    }
+                }
+        }
+    }
+
+    /// The effort and note the store holds for the latest session, for a test to read:
+    /// « floor=4 settled=true note=… ». Nothing a person sees or hears.
+    struct SummaryProbe: View {
+        let store: AccountStore
+        @State private var line = ""
+
+        var body: some View {
+            Color.clear
+                .frame(width: 1, height: 1)
+                .accessibilityElement()
+                .accessibilityIdentifier("fixture-summary")
+                .accessibilityValue(line)
+                .task {
+                    let lines = store.observe { db in
+                        let effort = try AccountStore.efforts(db).last
+                        let note = try AccountStore.history(db).workouts.last?.note
+                        return "floor=\(effort?.floor.map(String.init) ?? "none") settled=\(effort?.settled ?? false) note=\(note ?? "")"
+                    }
+                    do {
+                        for try await value in lines { line = value }
+                    } catch {
+                        preconditionFailure("the fixture's summary is not followed: \(error)")
                     }
                 }
         }

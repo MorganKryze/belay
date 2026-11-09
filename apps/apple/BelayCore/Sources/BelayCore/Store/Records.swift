@@ -84,4 +84,6 @@ public struct WorkoutStart: Sendable, Equatable {
 public enum StoreError: Error, Sendable, Equatable {
   /// Outside the contract: the server would refuse it, and a refused change blocks the queue.
   case invalidChange
+  /// An effort off the five floors.
+  case invalidEffort
 }

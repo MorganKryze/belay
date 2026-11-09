@@ -49,6 +49,14 @@ enum Schema {
         t.column("value", .text).notNull()
       }
     }
+    // The effort given on a session's summary. The server has no field for it, so it lives on
+    // this phone only and never enters the queue; the cursor stays where it is.
+    migrator.registerMigration("v2") { db in
+      try db.create(table: "efforts") { t in
+        t.primaryKey("workoutId", .text)
+        t.column("row", .blob).notNull()
+      }
+    }
     return migrator
   }
 }

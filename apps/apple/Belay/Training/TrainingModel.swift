@@ -124,8 +124,13 @@ struct SessionSummary: Equatable {
         var id: String { name }
     }
 
+    let workoutId: String
     let code: String
     let name: String?
+    /// The session's note as the summary opened on it.
+    let note: String?
+    /// The floor given here, 1 to 5, or none yet.
+    var effort: Int?
     let endedAt: Date
     let duration: TimeInterval
     let workSets: Int
@@ -295,9 +300,27 @@ final class TrainingModel {
         refresh()
     }
 
-    /// The summary is read: the cover can close.
-    func closeSummary() {
+    /// The floor given on the summary, or none: kept on this phone at once, never queued.
+    func giveEffort(_ floor: Int?) throws {
+        guard let workoutId = summary?.workoutId else { return }
+        try store.giveEffort(workoutId: workoutId, floor: floor)
+        summary?.effort = floor
+    }
+
+    /// The summary is left: its note, when changed, is written and queued, and the effort, given
+    /// or not, is settled. The cover can close.
+    func closeSummary(note: String) throws {
+        guard let left = summary else { return }
         summary = nil
+        let trimmed = note.trimmingCharacters(in: .whitespacesAndNewlines)
+        let written: String? = trimmed.isEmpty ? nil : trimmed
+        if written != left.note {
+            try store.recordChanges(
+                [.workout(WorkoutChange(id: left.workoutId, at: Instant.string(now()), edit: .note(written)))],
+                active: .keep)
+            didWrite()
+        }
+        try store.settleEffort(workoutId: left.workoutId)
     }
 
     /// The shared summary rule's figures, read against the history the session ends in.
@@ -315,7 +338,8 @@ final class TrainingModel {
         }
         let started = Instant.date(workout.startedAt) ?? endedAt
         return SessionSummary(
-            code: workout.sessionCode, name: workout.sessionName.value, endedAt: endedAt,
+            workoutId: workout.id, code: workout.sessionCode, name: workout.sessionName.value, note: workout.note,
+            effort: nil, endedAt: endedAt,
             duration: max(0, endedAt.timeIntervalSince(started)), workSets: work.count,
             warmupSets: totals.warmupSets, volumeKg: totals.volumeKg,
             records: totals.records.map { .init(name: exerciseName($0.exerciseId), load: $0.load) },

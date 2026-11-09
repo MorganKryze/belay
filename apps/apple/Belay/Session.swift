@@ -13,8 +13,12 @@ struct SessionCover: View {
         NavigationStack {
             Group {
                 if let summary = training.summary {
-                    SummaryView(summary: summary) {
-                        training.closeSummary()
+                    SummaryView(summary: summary, giveEffort: giveEffort) { note in
+                        do {
+                            try training.closeSummary(note: note)
+                        } catch {
+                            Self.log.error("summary not saved: \(AccountStore.logLabel(error), privacy: .public)")
+                        }
                         lower()
                     }
                 } else if let cover = training.cover {
@@ -26,6 +30,16 @@ struct SessionCover: View {
         // large title down.
         .id(training.summary == nil)
         .animation(reduceMotion ? nil : .smooth, value: training.summary == nil)
+    }
+
+    private static let log = Logger(subsystem: "cloud.libresoftware.belay", category: "summary")
+
+    private func giveEffort(_ floor: Int?) {
+        do {
+            try training.giveEffort(floor)
+        } catch {
+            Self.log.error("effort not kept: \(AccountStore.logLabel(error), privacy: .public)")
+        }
     }
 }
 

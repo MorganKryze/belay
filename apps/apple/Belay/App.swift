@@ -34,7 +34,10 @@ struct BelayApp: App {
             }
             #if DEBUG
                 .overlay(alignment: .topLeading) {
-                    if Fixture.isOn, let store = account.store { Fixture.QueueProbe(store: store) }
+                    if Fixture.isOn, let store = account.store {
+                        Fixture.QueueProbe(store: store)
+                        Fixture.SummaryProbe(store: store)
+                    }
                 }
             #endif
             .task { await account.finishSignIn() }
