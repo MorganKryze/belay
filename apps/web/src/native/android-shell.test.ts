@@ -3,7 +3,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { LAUNCH_SAFETY_MS } from "@/lib/launch";
-import { MARK_SHIFT, MOUNTAIN_D, RING_D, STROKE } from "@/lib/mark";
+import { MARK_SHIFT, MARK_VIEWBOX, MOUNTAIN_D, RING_D, STROKE } from "@/lib/mark";
 import { kotlin, longConst, stringSet } from "@/test/kotlin";
 import { decodePng } from "@/test/png";
 
@@ -560,6 +560,10 @@ describe("the Android shell", () => {
       webPage(),
     );
     expect(width).not.toBeNull();
-    expect(Math.abs(Number(width![1]) - drawn)).toBeLessThanOrEqual(0.5);
+    // The svg is the mark's whole grid; its ink is the ring's diameter plus one stroke.
+    const grid = Number(MARK_VIEWBOX.split(" ")[2]);
+    const radius = Number(/A([\d.]+) /.exec(RING_D)![1]);
+    const ink = (Number(width![1]) * (2 * radius + STROKE)) / grid;
+    expect(Math.abs(ink - drawn)).toBeLessThanOrEqual(0.5);
   });
 });
