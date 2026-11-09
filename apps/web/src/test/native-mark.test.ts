@@ -1,5 +1,5 @@
 // The iPhone app's icon and in-app mark read the web's numbers, so both platforms draw one sign.
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { walk } from "@/test/files";
@@ -10,12 +10,6 @@ const apple = resolve(__dirname, "../../../apple");
 const app = join(apple, "Belay");
 const iconFile = join(app, "AppIcon.icon");
 const read = (path: string) => readFileSync(path, "utf8");
-
-const walk = (dir: string): string[] =>
-  readdirSync(dir).flatMap((name) => {
-    const path = join(dir, name);
-    return statSync(path).isDirectory() ? walk(path) : [path];
-  });
 
 // "#RRGGBB" as the sRGB components Icon Composer writes, three decimals compared.
 const rgb = (hex: string) =>
