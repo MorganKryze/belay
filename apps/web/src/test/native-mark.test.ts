@@ -79,3 +79,35 @@ describe("the iPhone icon", () => {
     expect(walk(app).filter((p) => /icon[^/]*\.png$/i.test(p))).toEqual([]);
   });
 });
+
+describe("the native mark", () => {
+  const source = read(join(app, "BelayMark.swift"));
+  const points = (d: string) =>
+    [...d.matchAll(/(-?[\d.]+) (-?[\d.]+)/g)].map((m) => `CGPoint(x: ${m[1]}, y: ${m[2]})`);
+
+  it("is built from the same numbers, as a ring and a mountain", () => {
+    expect(source).toMatch(/nonisolated struct BelayMark: Shape/);
+    expect(source).toMatch(/enum Part \{\s*case ring, mountain\s*\}/);
+    for (const point of points(MOUNTAIN_D)) expect(source).toContain(point);
+    expect(source).toContain("static let radius: CGFloat = 37");
+    expect(source).toContain(`static let strokeWidth: CGFloat = ${STROKE}`);
+    expect(source).toContain(
+      `CGAffineTransform(translationX: ${MARK_SHIFT.x}, y: ${MARK_SHIFT.y})`,
+    );
+  });
+
+  it("is stroked in the muted colour on the stand-in screen, hidden from VoiceOver", () => {
+    const view = read(join(app, "WebForNow.swift"));
+    expect(view).toMatch(/BelayMark\(\)\s*\.stroke\(Color\.muted/);
+    expect(view).toContain(".accessibilityHidden(true)");
+  });
+
+  it("leaves no drawing of the old hooks in the app or its UI tests", () => {
+    const old = ["86, y: 160", "426, y: 352", "radius: 120", "512-unit"];
+    const found = [app, join(apple, "BelayUITests")]
+      .flatMap(walk)
+      .filter((p) => /\.(swift|json|svg)$/.test(p))
+      .flatMap((p) => old.filter((n) => read(p).includes(n)).map((n) => `${p}: ${n}`));
+    expect(found).toEqual([]);
+  });
+});
