@@ -37,6 +37,9 @@ struct RepRuler: View {
                 Text(value, format: .number)
                     .font(.custom(Font.archivoName, size: 30, relativeTo: .title))
                     .monospacedDigit()
+                    // Two digits stay whole in the lens at the largest text sizes.
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
                     .foregroundStyle(Color.ink)
                     .contentTransition(reduce ? .opacity : .numericText(value: Double(value)))
                     .modifier(InFlight(id: flightId, space: space, reduce: reduce))

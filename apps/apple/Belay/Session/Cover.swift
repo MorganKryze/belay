@@ -107,6 +107,9 @@ struct Cover: View {
             .padding(.bottom, 16)
         }
         .scrollEdgeEffectStyle(.hard, for: .top)
+        // The cover has no title: the bar holds the clock, and the card starts right under it
+        // instead of under the empty room a large title keeps.
+        .navigationBarTitleDisplayMode(.inline)
         .background { Wall() }
         .safeAreaBar(edge: .bottom) { foot }
         .toolbar {
