@@ -106,7 +106,9 @@ struct Cover: View {
             .padding(.top, 8)
             .padding(.bottom, 16)
         }
-        .scrollEdgeEffectStyle(.hard, for: .top)
+        // No band under the bar once the card scrolls up: the content runs under the glass buttons,
+        // as on every titled page.
+        .scrollEdgeEffectHidden(true, for: .top)
         // The cover has no title: the bar holds the clock, and the card starts right under it
         // instead of under the empty room a large title keeps.
         .navigationBarTitleDisplayMode(.inline)

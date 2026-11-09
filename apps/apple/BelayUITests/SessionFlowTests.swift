@@ -239,14 +239,51 @@ final class SessionFlowTests: XCTestCase {
         XCTAssertTrue(app.buttons["Arrêter la séance"].waitForExistence(timeout: 3), "still paused")
     }
 
+    /// Scrolled, the cover draws no band under the bar: the card's title that went up shows
+    /// through it in its own ink. A band, even a glassy one, leaves only a pale ghost of it there
+    /// (184 of 255 at its darkest, measured with the hard edge effect).
     func testNoBarOnScroll() {
-        let app = launch("history")
+        let app = launch("history", extra: Self.ax3)
         openCover(app)
         passWarmups(app)
+        let strip = barStrip(app)
+        XCTAssertGreaterThan(darkest(pixels(app, in: strip)), 200, "nothing under the bar at rest")
         app.swipeUp()
         app.swipeUp()
         let titled = app.navigationBars.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "Séance"))
         XCTAssertEqual(titled.count, 0, "no compact title: \(app.navigationBars.debugDescription)")
+        XCTAssertLessThan(darkest(pixels(app, in: strip)), 100, "the title's ink shows under the bar, no band over it")
+    }
+
+    /// The bar's height, between ⌄ and the clock: nothing of the bar's own is drawn there.
+    private func barStrip(_ app: XCUIApplication) -> CGRect {
+        let bar = app.navigationBars.firstMatch.frame
+        let lower = app.buttons["Réduire la séance"].frame
+        let clock = element(app, "session-clock").frame
+        return CGRect(x: lower.maxX + 6, y: bar.minY, width: clock.minX - lower.maxX - 12, height: bar.height)
+    }
+
+    /// The screen's pixels in `rect`, in points, as RGBA bytes.
+    private func pixels(_ app: XCUIApplication, in rect: CGRect) -> [UInt8] {
+        let image = app.screenshot().image
+        let scale = image.scale
+        let crop = CGRect(x: rect.minX * scale, y: rect.minY * scale, width: rect.width * scale, height: rect.height * scale)
+        guard let cg = image.cgImage?.cropping(to: crop.integral) else { return [] }
+        var bytes = [UInt8](repeating: 0, count: cg.width * cg.height * 4)
+        bytes.withUnsafeMutableBytes { buffer in
+            let context = CGContext(
+                data: buffer.baseAddress, width: cg.width, height: cg.height, bitsPerComponent: 8,
+                bytesPerRow: cg.width * 4, space: CGColorSpaceCreateDeviceRGB(),
+                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+            context?.draw(cg, in: CGRect(x: 0, y: 0, width: cg.width, height: cg.height))
+        }
+        return bytes
+    }
+
+    /// The darkest pixel's gray, 0 for black to 255 for white.
+    private func darkest(_ rgba: [UInt8]) -> Int {
+        stride(from: 0, to: rgba.count - 3, by: 4).map { (Int(rgba[$0]) + Int(rgba[$0 + 1]) + Int(rgba[$0 + 2])) / 3 }
+            .min() ?? 255
     }
 
     func testDraftSurvivesRelaunch() {
