@@ -1,0 +1,899 @@
+{
+  "bounds": {
+    "earliest": -2209075200000,
+    "day": 86400000,
+    "sessionKey": "belay-session-x"
+  },
+  "workouts": [
+    {
+      "plan": [],
+      "note": null,
+      "exerciseNotes": {},
+      "id": "00000000-0000-7000-8000-000000007001",
+      "sessionCode": "A",
+      "sessionId": null,
+      "startedAt": "2026-10-09T17:00:00.000Z",
+      "startedAtAt": "2026-10-09T17:00:00.000Z",
+      "endedAt": "2026-10-09T18:00:00.000Z",
+      "endedAtAt": "2026-10-09T18:00:00.500Z",
+      "removed": false,
+      "removedAt": null
+    },
+    {
+      "plan": [],
+      "note": null,
+      "exerciseNotes": {},
+      "id": "00000000-0000-7000-8000-000000007002",
+      "sessionCode": "A",
+      "sessionId": null,
+      "startedAt": "2026-10-09T17:00:00.000Z",
+      "startedAtAt": "2026-10-09T17:00:00.000Z",
+      "endedAt": null,
+      "endedAtAt": null,
+      "removed": false,
+      "removedAt": null
+    },
+    {
+      "plan": [],
+      "note": null,
+      "exerciseNotes": {},
+      "id": "00000000-0000-7000-8000-000000007003",
+      "sessionCode": "A",
+      "sessionId": null,
+      "startedAt": "2026-10-09T17:00:00.000Z",
+      "startedAtAt": "2026-10-09T17:00:00.000Z",
+      "endedAt": "2026-10-09T18:00:00.000Z",
+      "endedAtAt": "2026-10-09T18:00:00.500Z",
+      "removed": true,
+      "removedAt": "2026-10-09T19:00:00.000Z"
+    },
+    {
+      "plan": [],
+      "note": null,
+      "exerciseNotes": {},
+      "id": "00000000-0000-7000-8000-000000007004",
+      "sessionCode": "A",
+      "sessionId": null,
+      "startedAt": "2026-10-09T17:00:00.000Z",
+      "startedAtAt": "2026-10-09T17:00:00.000Z",
+      "endedAt": "2026-10-09T18:00:00.000Z",
+      "endedAtAt": "2026-10-09T18:00:00.500Z",
+      "removed": false,
+      "removedAt": null
+    },
+    {
+      "plan": [],
+      "note": null,
+      "exerciseNotes": {},
+      "id": "00000000-0000-7000-8000-000000007005",
+      "sessionCode": "A",
+      "sessionId": null,
+      "startedAt": "2026-10-09T17:00:00.000Z",
+      "startedAtAt": "2026-10-09T17:00:00.000Z",
+      "endedAt": "2026-10-09T18:30:00.000Z",
+      "endedAtAt": "2026-10-09T20:00:00.000Z",
+      "removed": false,
+      "removedAt": null
+    },
+    {
+      "plan": [],
+      "note": null,
+      "exerciseNotes": {},
+      "id": "00000000-0000-7000-8000-000000007006",
+      "sessionCode": "A",
+      "sessionId": null,
+      "startedAt": "2026-10-08T10:00:00.000Z",
+      "startedAtAt": "2026-10-09T17:00:00.000Z",
+      "endedAt": "2026-10-09T18:00:00.000Z",
+      "endedAtAt": "2026-10-09T18:00:00.500Z",
+      "removed": false,
+      "removedAt": null
+    },
+    {
+      "plan": [],
+      "note": null,
+      "exerciseNotes": {},
+      "id": "00000000-0000-7000-8000-000000007007",
+      "sessionCode": "A",
+      "sessionId": null,
+      "startedAt": "2026-10-11T13:00:00.000Z",
+      "startedAtAt": "2026-10-09T17:00:00.000Z",
+      "endedAt": "2026-10-11T14:00:00.000Z",
+      "endedAtAt": "2026-10-09T18:00:00.500Z",
+      "removed": false,
+      "removedAt": null
+    },
+    {
+      "plan": [],
+      "note": null,
+      "exerciseNotes": {},
+      "id": "00000000-0000-7000-8000-000000007008",
+      "sessionCode": "A",
+      "sessionId": null,
+      "startedAt": "1899-12-30T10:00:00.000Z",
+      "startedAtAt": "2026-10-09T17:00:00.000Z",
+      "endedAt": "1899-12-30T11:00:00.000Z",
+      "endedAtAt": "2026-10-09T18:00:00.500Z",
+      "removed": false,
+      "removedAt": null
+    },
+    {
+      "plan": [],
+      "note": null,
+      "exerciseNotes": {},
+      "id": "00000000-0000-7000-8000-000000007009",
+      "sessionCode": "A",
+      "sessionId": null,
+      "startedAt": "2026-10-09T17:00:00.000Z",
+      "startedAtAt": "2026-10-09T17:00:00.000Z",
+      "endedAt": "2026-10-09T17:00:00.000Z",
+      "endedAtAt": "2026-10-09T18:00:00.500Z",
+      "removed": false,
+      "removedAt": null
+    }
+  ],
+  "sets": [
+    {
+      "id": "00000000-0000-7000-8000-000000007100",
+      "workoutId": "00000000-0000-7000-8000-000000007001",
+      "slotIndex": 0,
+      "position": 3,
+      "exerciseId": "ds:0025",
+      "warmup": false,
+      "weightKg": 60,
+      "reps": 8,
+      "rir": 1,
+      "doneAt": "2026-10-09T17:00:00.000Z",
+      "removed": false,
+      "fieldsAt": "2026-10-09T17:00:00.000Z"
+    },
+    {
+      "id": "00000000-0000-7000-8000-000000007101",
+      "workoutId": "00000000-0000-7000-8000-000000007002",
+      "slotIndex": 0,
+      "position": 4,
+      "exerciseId": "ds:0025",
+      "warmup": false,
+      "weightKg": 60,
+      "reps": 8,
+      "rir": 1,
+      "doneAt": "2026-10-09T17:00:00.000Z",
+      "removed": false,
+      "fieldsAt": "2026-10-09T17:00:00.000Z"
+    },
+    {
+      "id": "00000000-0000-7000-8000-000000007102",
+      "workoutId": "00000000-0000-7000-8000-000000007003",
+      "slotIndex": 0,
+      "position": 5,
+      "exerciseId": "ds:0025",
+      "warmup": false,
+      "weightKg": 60,
+      "reps": 8,
+      "rir": 1,
+      "doneAt": "2026-10-09T17:00:00.000Z",
+      "removed": false,
+      "fieldsAt": "2026-10-09T17:00:00.000Z"
+    },
+    {
+      "id": "00000000-0000-7000-8000-000000007103",
+      "workoutId": "00000000-0000-7000-8000-000000007005",
+      "slotIndex": 0,
+      "position": 6,
+      "exerciseId": "ds:0025",
+      "warmup": false,
+      "weightKg": 60,
+      "reps": 8,
+      "rir": 1,
+      "doneAt": "2026-10-09T17:00:00.000Z",
+      "removed": false,
+      "fieldsAt": "2026-10-09T17:00:00.000Z"
+    },
+    {
+      "id": "00000000-0000-7000-8000-000000007104",
+      "workoutId": "00000000-0000-7000-8000-000000007006",
+      "slotIndex": 0,
+      "position": 7,
+      "exerciseId": "ds:0025",
+      "warmup": false,
+      "weightKg": 60,
+      "reps": 8,
+      "rir": 1,
+      "doneAt": "2026-10-08T10:00:00.000Z",
+      "removed": false,
+      "fieldsAt": "2026-10-08T10:00:00.000Z"
+    },
+    {
+      "id": "00000000-0000-7000-8000-000000007105",
+      "workoutId": "00000000-0000-7000-8000-000000007007",
+      "slotIndex": 0,
+      "position": 8,
+      "exerciseId": "ds:0025",
+      "warmup": false,
+      "weightKg": 60,
+      "reps": 8,
+      "rir": 1,
+      "doneAt": "2026-10-11T13:00:00.000Z",
+      "removed": false,
+      "fieldsAt": "2026-10-11T13:00:00.000Z"
+    },
+    {
+      "id": "00000000-0000-7000-8000-000000007106",
+      "workoutId": "00000000-0000-7000-8000-000000007008",
+      "slotIndex": 0,
+      "position": 9,
+      "exerciseId": "ds:0025",
+      "warmup": false,
+      "weightKg": 60,
+      "reps": 8,
+      "rir": 1,
+      "doneAt": "1899-12-30T10:00:00.000Z",
+      "removed": false,
+      "fieldsAt": "1899-12-30T10:00:00.000Z"
+    },
+    {
+      "id": "00000000-0000-7000-8000-000000007107",
+      "workoutId": "00000000-0000-7000-8000-000000007009",
+      "slotIndex": 0,
+      "position": 10,
+      "exerciseId": "ds:0025",
+      "warmup": false,
+      "weightKg": 60,
+      "reps": 8,
+      "rir": 1,
+      "doneAt": "2026-10-09T17:00:00.000Z",
+      "removed": false,
+      "fieldsAt": "2026-10-09T17:00:00.000Z"
+    },
+    {
+      "id": "00000000-0000-7000-8000-000000007194",
+      "workoutId": "00000000-0000-7000-8000-000000007004",
+      "slotIndex": 0,
+      "position": 23,
+      "exerciseId": "ds:0025",
+      "warmup": false,
+      "weightKg": 60,
+      "reps": 8,
+      "rir": 1,
+      "doneAt": "2026-10-09T17:00:00.000Z",
+      "removed": true,
+      "fieldsAt": "2026-10-09T17:00:00.000Z"
+    }
+  ],
+  "planHealth": [
+    {
+      "name": "nothing written",
+      "on": true,
+      "turnedOnAt": 1790812800000,
+      "written": {},
+      "allowed": true,
+      "owner": "0442a7f3",
+      "now": 1791633600000,
+      "result": [
+        {
+          "kind": "workout",
+          "id": "00000000-0000-7000-8000-000000007001",
+          "startedAt": 1791565200000,
+          "endedAt": 1791568800000,
+          "version": 1791568800500
+        },
+        {
+          "kind": "workout",
+          "id": "00000000-0000-7000-8000-000000007005",
+          "startedAt": 1791565200000,
+          "endedAt": 1791570600000,
+          "version": 1791576000000
+        }
+      ]
+    },
+    {
+      "name": "each one written before",
+      "on": true,
+      "turnedOnAt": 1790812800000,
+      "written": {
+        "belay-session-00000000-0000-7000-8000-000000007001": {
+          "state": "workout",
+          "version": 3,
+          "startedAt": 1791565200000,
+          "endedAt": 1791568800000
+        },
+        "belay-session-00000000-0000-7000-8000-000000007003": {
+          "state": "workout",
+          "version": 3,
+          "startedAt": 1791565200000,
+          "endedAt": 1791568800000
+        },
+        "belay-session-00000000-0000-7000-8000-000000007004": {
+          "state": "workout",
+          "version": 3,
+          "startedAt": 1791565200000,
+          "endedAt": 1791568800000
+        },
+        "belay-session-00000000-0000-7000-8000-000000007005": {
+          "state": "workout",
+          "version": 3,
+          "startedAt": 1791565200000,
+          "endedAt": 1791570600000
+        },
+        "belay-session-00000000-0000-7000-8000-000000007006": {
+          "state": "workout",
+          "version": 3,
+          "startedAt": 1791453600000,
+          "endedAt": 1791568800000
+        },
+        "belay-session-00000000-0000-7000-8000-000000007007": {
+          "state": "workout",
+          "version": 3,
+          "startedAt": 1791723600000,
+          "endedAt": 1791727200000
+        },
+        "belay-session-00000000-0000-7000-8000-000000007008": {
+          "state": "workout",
+          "version": 3,
+          "startedAt": -2209125600000,
+          "endedAt": -2209122000000
+        },
+        "belay-session-00000000-0000-7000-8000-000000007009": {
+          "state": "workout",
+          "version": 3,
+          "startedAt": 1791565200000,
+          "endedAt": 1791565200000
+        }
+      },
+      "allowed": true,
+      "owner": "0442a7f3",
+      "now": 1791633600000,
+      "result": [
+        {
+          "kind": "workoutRemoved",
+          "id": "00000000-0000-7000-8000-000000007003"
+        },
+        {
+          "kind": "workoutRemoved",
+          "id": "00000000-0000-7000-8000-000000007004"
+        },
+        {
+          "kind": "workoutRemoved",
+          "id": "00000000-0000-7000-8000-000000007006"
+        },
+        {
+          "kind": "workoutRemoved",
+          "id": "00000000-0000-7000-8000-000000007008"
+        },
+        {
+          "kind": "workoutRemoved",
+          "id": "00000000-0000-7000-8000-000000007009"
+        }
+      ]
+    },
+    {
+      "name": "open and removed once written",
+      "on": true,
+      "turnedOnAt": 1790812800000,
+      "written": {
+        "belay-session-00000000-0000-7000-8000-000000007002": {
+          "state": "workout",
+          "version": 2,
+          "startedAt": 0,
+          "endedAt": 1791568800000
+        },
+        "belay-session-00000000-0000-7000-8000-000000007003": {
+          "state": "workout",
+          "version": 2,
+          "startedAt": 1791565200000,
+          "endedAt": 1791568800000
+        }
+      },
+      "allowed": true,
+      "owner": "0442a7f3",
+      "now": 1791633600000,
+      "result": [
+        {
+          "kind": "workout",
+          "id": "00000000-0000-7000-8000-000000007001",
+          "startedAt": 1791565200000,
+          "endedAt": 1791568800000,
+          "version": 1791568800500
+        },
+        {
+          "kind": "workoutRemoved",
+          "id": "00000000-0000-7000-8000-000000007002"
+        },
+        {
+          "kind": "workoutRemoved",
+          "id": "00000000-0000-7000-8000-000000007003"
+        },
+        {
+          "kind": "workout",
+          "id": "00000000-0000-7000-8000-000000007005",
+          "startedAt": 1791565200000,
+          "endedAt": 1791570600000,
+          "version": 1791576000000
+        }
+      ]
+    },
+    {
+      "name": "a changed end",
+      "on": true,
+      "turnedOnAt": 1790812800000,
+      "written": {
+        "belay-session-00000000-0000-7000-8000-000000007005": {
+          "state": "workout",
+          "version": 4,
+          "startedAt": 1791565200000,
+          "endedAt": 1791568800000
+        }
+      },
+      "allowed": true,
+      "owner": "0442a7f3",
+      "now": 1791633600000,
+      "result": [
+        {
+          "kind": "workout",
+          "id": "00000000-0000-7000-8000-000000007001",
+          "startedAt": 1791565200000,
+          "endedAt": 1791568800000,
+          "version": 1791568800500
+        },
+        {
+          "kind": "workout",
+          "id": "00000000-0000-7000-8000-000000007005",
+          "startedAt": 1791565200000,
+          "endedAt": 1791570600000,
+          "version": 1791576000000
+        }
+      ]
+    },
+    {
+      "name": "a version past the clock",
+      "on": true,
+      "turnedOnAt": 1790812800000,
+      "written": {
+        "belay-session-00000000-0000-7000-8000-000000007005": {
+          "state": "workout",
+          "version": 1798761600000,
+          "startedAt": 1791565200000,
+          "endedAt": 1791568800000
+        }
+      },
+      "allowed": true,
+      "owner": "0442a7f3",
+      "now": 1791633600000,
+      "result": [
+        {
+          "kind": "workout",
+          "id": "00000000-0000-7000-8000-000000007001",
+          "startedAt": 1791565200000,
+          "endedAt": 1791568800000,
+          "version": 1791568800500
+        },
+        {
+          "kind": "workout",
+          "id": "00000000-0000-7000-8000-000000007005",
+          "startedAt": 1791565200000,
+          "endedAt": 1791570600000,
+          "version": 1798761600001
+        }
+      ]
+    },
+    {
+      "name": "an overlap record, same span",
+      "on": true,
+      "turnedOnAt": 1790812800000,
+      "written": {
+        "belay-session-00000000-0000-7000-8000-000000007001": {
+          "state": "skipped",
+          "version": 1,
+          "startedAt": 1791565200000,
+          "endedAt": 1791568800000
+        }
+      },
+      "allowed": true,
+      "owner": "0442a7f3",
+      "now": 1791633600000,
+      "result": [
+        {
+          "kind": "workout",
+          "id": "00000000-0000-7000-8000-000000007005",
+          "startedAt": 1791565200000,
+          "endedAt": 1791570600000,
+          "version": 1791576000000
+        }
+      ]
+    },
+    {
+      "name": "an overlap record, the span moved",
+      "on": true,
+      "turnedOnAt": 1790812800000,
+      "written": {
+        "belay-session-00000000-0000-7000-8000-000000007005": {
+          "state": "skipped",
+          "version": 1,
+          "startedAt": 1791565200000,
+          "endedAt": 1791568800000
+        }
+      },
+      "allowed": true,
+      "owner": "0442a7f3",
+      "now": 1791633600000,
+      "result": [
+        {
+          "kind": "workout",
+          "id": "00000000-0000-7000-8000-000000007001",
+          "startedAt": 1791565200000,
+          "endedAt": 1791568800000,
+          "version": 1791568800500
+        },
+        {
+          "kind": "workout",
+          "id": "00000000-0000-7000-8000-000000007005",
+          "startedAt": 1791565200000,
+          "endedAt": 1791570600000,
+          "version": 1791576000000
+        }
+      ]
+    },
+    {
+      "name": "a removal record",
+      "on": true,
+      "turnedOnAt": 1790812800000,
+      "written": {
+        "belay-session-00000000-0000-7000-8000-000000007001": {
+          "state": "removed",
+          "version": 7
+        }
+      },
+      "allowed": true,
+      "owner": "0442a7f3",
+      "now": 1791633600000,
+      "result": [
+        {
+          "kind": "workout",
+          "id": "00000000-0000-7000-8000-000000007001",
+          "startedAt": 1791565200000,
+          "endedAt": 1791568800000,
+          "version": 1791568800500
+        },
+        {
+          "kind": "workout",
+          "id": "00000000-0000-7000-8000-000000007005",
+          "startedAt": 1791565200000,
+          "endedAt": 1791570600000,
+          "version": 1791576000000
+        }
+      ]
+    },
+    {
+      "name": "Health off",
+      "on": false,
+      "turnedOnAt": 1790812800000,
+      "written": {
+        "belay-session-00000000-0000-7000-8000-000000007001": {
+          "state": "workout",
+          "version": 3,
+          "startedAt": 1791565200000,
+          "endedAt": 1791568800000
+        },
+        "belay-session-00000000-0000-7000-8000-000000007003": {
+          "state": "workout",
+          "version": 3,
+          "startedAt": 1791565200000,
+          "endedAt": 1791568800000
+        },
+        "belay-session-00000000-0000-7000-8000-000000007004": {
+          "state": "workout",
+          "version": 3,
+          "startedAt": 1791565200000,
+          "endedAt": 1791568800000
+        },
+        "belay-session-00000000-0000-7000-8000-000000007005": {
+          "state": "workout",
+          "version": 3,
+          "startedAt": 1791565200000,
+          "endedAt": 1791570600000
+        },
+        "belay-session-00000000-0000-7000-8000-000000007006": {
+          "state": "workout",
+          "version": 3,
+          "startedAt": 1791453600000,
+          "endedAt": 1791568800000
+        },
+        "belay-session-00000000-0000-7000-8000-000000007007": {
+          "state": "workout",
+          "version": 3,
+          "startedAt": 1791723600000,
+          "endedAt": 1791727200000
+        },
+        "belay-session-00000000-0000-7000-8000-000000007008": {
+          "state": "workout",
+          "version": 3,
+          "startedAt": -2209125600000,
+          "endedAt": -2209122000000
+        },
+        "belay-session-00000000-0000-7000-8000-000000007009": {
+          "state": "workout",
+          "version": 3,
+          "startedAt": 1791565200000,
+          "endedAt": 1791565200000
+        }
+      },
+      "allowed": true,
+      "owner": "0442a7f3",
+      "now": 1791633600000,
+      "result": []
+    },
+    {
+      "name": "writing not allowed",
+      "on": true,
+      "turnedOnAt": 1790812800000,
+      "written": {
+        "belay-session-00000000-0000-7000-8000-000000007001": {
+          "state": "workout",
+          "version": 3,
+          "startedAt": 1791565200000,
+          "endedAt": 1791568800000
+        },
+        "belay-session-00000000-0000-7000-8000-000000007003": {
+          "state": "workout",
+          "version": 3,
+          "startedAt": 1791565200000,
+          "endedAt": 1791568800000
+        },
+        "belay-session-00000000-0000-7000-8000-000000007004": {
+          "state": "workout",
+          "version": 3,
+          "startedAt": 1791565200000,
+          "endedAt": 1791568800000
+        },
+        "belay-session-00000000-0000-7000-8000-000000007005": {
+          "state": "workout",
+          "version": 3,
+          "startedAt": 1791565200000,
+          "endedAt": 1791570600000
+        },
+        "belay-session-00000000-0000-7000-8000-000000007006": {
+          "state": "workout",
+          "version": 3,
+          "startedAt": 1791453600000,
+          "endedAt": 1791568800000
+        },
+        "belay-session-00000000-0000-7000-8000-000000007007": {
+          "state": "workout",
+          "version": 3,
+          "startedAt": 1791723600000,
+          "endedAt": 1791727200000
+        },
+        "belay-session-00000000-0000-7000-8000-000000007008": {
+          "state": "workout",
+          "version": 3,
+          "startedAt": -2209125600000,
+          "endedAt": -2209122000000
+        },
+        "belay-session-00000000-0000-7000-8000-000000007009": {
+          "state": "workout",
+          "version": 3,
+          "startedAt": 1791565200000,
+          "endedAt": 1791565200000
+        }
+      },
+      "allowed": false,
+      "owner": "0442a7f3",
+      "now": 1791633600000,
+      "result": []
+    },
+    {
+      "name": "turned on after the sessions",
+      "on": true,
+      "turnedOnAt": 1791572400000,
+      "written": {},
+      "allowed": true,
+      "owner": "0442a7f3",
+      "now": 1791633600000,
+      "result": []
+    },
+    {
+      "name": "turned on after, one written",
+      "on": true,
+      "turnedOnAt": 1791572400000,
+      "written": {
+        "belay-session-00000000-0000-7000-8000-000000007005": {
+          "state": "workout",
+          "version": 4,
+          "startedAt": 1791565200000,
+          "endedAt": 1791568800000
+        }
+      },
+      "allowed": true,
+      "owner": "0442a7f3",
+      "now": 1791633600000,
+      "result": [
+        {
+          "kind": "workout",
+          "id": "00000000-0000-7000-8000-000000007005",
+          "startedAt": 1791565200000,
+          "endedAt": 1791570600000,
+          "version": 1791576000000
+        }
+      ]
+    },
+    {
+      "name": "no time turned on",
+      "on": true,
+      "turnedOnAt": null,
+      "written": {},
+      "allowed": true,
+      "owner": "0442a7f3",
+      "now": 1791633600000,
+      "result": []
+    },
+    {
+      "name": "another owner",
+      "on": true,
+      "turnedOnAt": 1790812800000,
+      "written": {},
+      "allowed": true,
+      "owner": "0542a986",
+      "now": 1791633600000,
+      "result": [
+        {
+          "kind": "workout",
+          "id": "00000000-0000-7000-8000-000000007001",
+          "startedAt": 1791565200000,
+          "endedAt": 1791568800000,
+          "version": 1791568800500
+        },
+        {
+          "kind": "workout",
+          "id": "00000000-0000-7000-8000-000000007005",
+          "startedAt": 1791565200000,
+          "endedAt": 1791570600000,
+          "version": 1791576000000
+        }
+      ]
+    }
+  ],
+  "finishedSpan": [
+    {
+      "name": "finished",
+      "workout": {
+        "plan": [],
+        "note": null,
+        "exerciseNotes": {},
+        "id": "00000000-0000-7000-8000-000000007001",
+        "sessionCode": "A",
+        "sessionId": null,
+        "startedAt": "2026-10-09T17:00:00.000Z",
+        "startedAtAt": "2026-10-09T17:00:00.000Z",
+        "endedAt": "2026-10-09T18:00:00.000Z",
+        "endedAtAt": "2026-10-09T18:00:00.500Z",
+        "removed": false,
+        "removedAt": null
+      },
+      "liveSets": 1,
+      "result": {
+        "startedAt": 1791565200000,
+        "endedAt": 1791568800000
+      }
+    },
+    {
+      "name": "open",
+      "workout": {
+        "plan": [],
+        "note": null,
+        "exerciseNotes": {},
+        "id": "00000000-0000-7000-8000-000000007002",
+        "sessionCode": "A",
+        "sessionId": null,
+        "startedAt": "2026-10-09T17:00:00.000Z",
+        "startedAtAt": "2026-10-09T17:00:00.000Z",
+        "endedAt": null,
+        "endedAtAt": null,
+        "removed": false,
+        "removedAt": null
+      },
+      "liveSets": 1,
+      "result": null
+    },
+    {
+      "name": "removed",
+      "workout": {
+        "plan": [],
+        "note": null,
+        "exerciseNotes": {},
+        "id": "00000000-0000-7000-8000-000000007003",
+        "sessionCode": "A",
+        "sessionId": null,
+        "startedAt": "2026-10-09T17:00:00.000Z",
+        "startedAtAt": "2026-10-09T17:00:00.000Z",
+        "endedAt": "2026-10-09T18:00:00.000Z",
+        "endedAtAt": "2026-10-09T18:00:00.500Z",
+        "removed": true,
+        "removedAt": "2026-10-09T19:00:00.000Z"
+      },
+      "liveSets": 1,
+      "result": null
+    },
+    {
+      "name": "emptied",
+      "workout": {
+        "plan": [],
+        "note": null,
+        "exerciseNotes": {},
+        "id": "00000000-0000-7000-8000-000000007004",
+        "sessionCode": "A",
+        "sessionId": null,
+        "startedAt": "2026-10-09T17:00:00.000Z",
+        "startedAtAt": "2026-10-09T17:00:00.000Z",
+        "endedAt": "2026-10-09T18:00:00.000Z",
+        "endedAtAt": "2026-10-09T18:00:00.500Z",
+        "removed": false,
+        "removedAt": null
+      },
+      "liveSets": 0,
+      "result": null
+    },
+    {
+      "name": "ending at its start",
+      "workout": {
+        "plan": [],
+        "note": null,
+        "exerciseNotes": {},
+        "id": "00000000-0000-7000-8000-000000007009",
+        "sessionCode": "A",
+        "sessionId": null,
+        "startedAt": "2026-10-09T17:00:00.000Z",
+        "startedAtAt": "2026-10-09T17:00:00.000Z",
+        "endedAt": "2026-10-09T17:00:00.000Z",
+        "endedAtAt": "2026-10-09T18:00:00.500Z",
+        "removed": false,
+        "removedAt": null
+      },
+      "liveSets": 1,
+      "result": null
+    }
+  ],
+  "versionOf": [
+    {
+      "latest": 1000,
+      "last": null,
+      "result": 1000
+    },
+    {
+      "latest": 1000,
+      "last": 999,
+      "result": 1000
+    },
+    {
+      "latest": 1000,
+      "last": 1000,
+      "result": 1001
+    },
+    {
+      "latest": 1000,
+      "last": 5000,
+      "result": 5001
+    }
+  ],
+  "ownerOf": [
+    {
+      "userId": "u1",
+      "result": "0442a7f3"
+    },
+    {
+      "userId": "u2",
+      "result": "0542a986"
+    },
+    {
+      "userId": "",
+      "result": "811c9dc5"
+    },
+    {
+      "userId": "019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00",
+      "result": "a751e0ee"
+    },
+    {
+      "userId": "é💪",
+      "result": "9acffb03"
+    }
+  ]
+}

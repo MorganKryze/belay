@@ -3,8 +3,8 @@ import Testing
 
 @testable import BelayCore
 
-// The session and schedule cases the shared TypeScript rules computed (`pnpm vectors`), each
-// rule checked over every one of its cases.
+// The session, tool and schedule cases the shared TypeScript rules computed (`pnpm vectors`),
+// each rule checked over every one of its cases.
 
 private func load<T: Decodable>(_ name: String, as type: T.Type = T.self) throws -> T {
   let url = try #require(
@@ -19,6 +19,16 @@ private func measure(_ name: String) -> Measure? {
 
 private func date(_ text: String) throws -> Date { try #require(Instant.date(text)) }
 
+private func stops(_ name: String) throws -> PauseStops {
+  switch name {
+  case "all": .all
+  case "session": .session
+  default: throw VectorError.unknown(name)
+  }
+}
+
+private enum VectorError: Error { case unknown(String) }
+
 private struct HistoryVector: Decodable, Sendable {
   let workouts: [WorkoutRow]
   let sets: [SetRow]
@@ -27,8 +37,139 @@ private struct HistoryVector: Decodable, Sendable {
 
 private struct RulesFile: Decodable, Sendable {
   struct Bounds: Decodable, Sendable {
+    struct Preset: Decodable, Sendable {
+      let barKg: Double
+      let platesKg: [Double]
+      var plates: Plates { Plates(barKg: barKg, platesKg: platesKg) }
+    }
+    struct WarmupStep: Decodable, Sendable, Equatable {
+      let fraction: Double
+      let reps: Int
+      init(from decoder: any Decoder) throws {
+        var c = try decoder.unkeyedContainer()
+        fraction = try c.decode(Double.self)
+        reps = try c.decode(Int.self)
+      }
+    }
+    struct DefaultCount: Decodable, Sendable {
+      let workKg: Double
+      let count: Int
+    }
     let forgottenMs: Int
     let maxRotation: Int
+    let maxTargetKg: Double
+    let platePresets: [String: Preset]
+    let warmupSchemes: [String: [WarmupStep]]
+    let defaultWarmupCount: [DefaultCount]
+  }
+  /// An exercise as the library index gives it, its measure named as the rules name it.
+  struct Exercise: Decodable, Sendable {
+    let id: String
+    let name: String
+    let equipment: String
+    let incrementKg: Double
+    let measure: String
+    var library: LibraryExercise {
+      LibraryExercise(
+        id: id, name: name, equipment: Equipment(rawValue: equipment) ?? .other,
+        incrementKg: incrementKg, measure: BelayCoreTests.measure(measure))
+    }
+  }
+  struct NearestCase: Decodable, Sendable, CustomTestStringConvertible {
+    let name: String
+    let targetKg: Double
+    let barKg: Double
+    let platesKg: [Double]
+    let result: Loading
+    var testDescription: String { name }
+  }
+  struct WarmupSetsCase: Decodable, Sendable, CustomTestStringConvertible {
+    let name: String
+    let workKg: Double
+    let count: Int
+    let barKg: Double
+    let platesKg: [Double]
+    let result: [WarmupSet]
+    var testDescription: String { name }
+  }
+  struct WarmupsCase: Decodable, Sendable, CustomTestStringConvertible {
+    let name: String
+    let slot: Slot
+    let workKg: Double?
+    let exercise: Exercise
+    let bar: Bounds.Preset
+    let result: [Load]
+    var testDescription: String { name }
+  }
+  struct LiveSlotsCase: Decodable, Sendable, CustomTestStringConvertible {
+    let name: String
+    let plan: [Slot]
+    let result: [Int]
+    var testDescription: String { name }
+  }
+  struct ReplaceCase: Decodable, Sendable, CustomTestStringConvertible {
+    let name: String
+    let plan: [Slot]
+    let at: Int
+    let exercise: Exercise
+    let result: [Slot]
+    var testDescription: String { name }
+  }
+  struct SkipCase: Decodable, Sendable, CustomTestStringConvertible {
+    let name: String
+    let plan: [Slot]
+    let at: Int
+    let skipped: Bool
+    let result: [Slot]
+    var testDescription: String { name }
+  }
+  struct AppendCase: Decodable, Sendable, CustomTestStringConvertible {
+    let name: String
+    let plan: [Slot]
+    let exercise: Exercise
+    /// Null when the plan is full.
+    let result: [Slot]?
+    var testDescription: String { name }
+  }
+  struct ElapsedCase: Decodable, Sendable, CustomTestStringConvertible {
+    let name: String
+    let startedAt: String
+    let pausedAt: String?
+    let now: String
+    let result: Int64
+    var testDescription: String { name }
+  }
+  struct ResumedStartCase: Decodable, Sendable, CustomTestStringConvertible {
+    let name: String
+    let startedAt: String
+    let pausedAt: String
+    let resumedAt: String
+    let result: String
+    var testDescription: String { name }
+  }
+  struct EndedByCase: Decodable, Sendable, CustomTestStringConvertible {
+    let name: String
+    let pausedAt: String
+    let doneAts: [String]
+    let result: String?
+    var testDescription: String { name }
+  }
+  struct RestClockCase: Decodable, Sendable, CustomTestStringConvertible {
+    let name: String
+    let pausedAt: String?
+    let now: String
+    let stops: String
+    let result: String
+    var testDescription: String { name }
+  }
+  struct RestEndCase: Decodable, Sendable, CustomTestStringConvertible {
+    let name: String
+    let restEndsAt: String?
+    let pausedAt: String
+    let resumedAt: String
+    let stops: String
+    let result: String?
+    var testDescription: String { name }
   }
   struct WorkOrderCase: Decodable, Sendable, CustomTestStringConvertible {
     let name: String
@@ -157,6 +298,18 @@ private struct RulesFile: Decodable, Sendable {
   let autoClose: [AutoCloseCase]
   let openWorkout: [OpenCase]
   let summary: [SummaryCase]
+  let nearestLoading: [NearestCase]
+  let warmupSets: [WarmupSetsCase]
+  let warmups: [WarmupsCase]
+  let liveSlots: [LiveSlotsCase]
+  let replaceSlot: [ReplaceCase]
+  let skipSlot: [SkipCase]
+  let appendSlot: [AppendCase]
+  let sessionElapsed: [ElapsedCase]
+  let resumedStart: [ResumedStartCase]
+  let pauseEndedBy: [EndedByCase]
+  let restClock: [RestClockCase]
+  let resumedRestEnd: [RestEndCase]
 
   static func load() throws -> RulesFile { try BelayCoreTests.load("rules") }
 
@@ -250,6 +403,110 @@ struct RulesVectorTests {
     let bounds = try RulesFile.load().bounds
     #expect(forgottenMs == bounds.forgottenMs)
     #expect(maxRotation == bounds.maxRotation)
+    #expect(maxTargetKg == bounds.maxTargetKg)
+    #expect(Plates.gym == bounds.platePresets["gym"]?.plates)
+    #expect(Plates.competition == bounds.platePresets["competition"]?.plates)
+    #expect(bounds.warmupSchemes.count == warmupSchemes.count)
+    for (count, steps) in bounds.warmupSchemes {
+      let index = try #require(Int(count))
+      let scheme = try #require(warmupSchemes[index])
+      #expect(scheme.map(\.fraction) == steps.map(\.fraction))
+      #expect(scheme.map(\.reps) == steps.map(\.reps))
+    }
+    for c in bounds.defaultWarmupCount {
+      #expect(BelayCore.defaultWarmupCount(workKg: c.workKg) == c.count)
+    }
+  }
+
+  @Test(arguments: try RulesFile.load().nearestLoading)
+  fileprivate func nearestLoading(_ c: RulesFile.NearestCase) {
+    #expect(BelayCore.nearestLoading(c.targetKg, barKg: c.barKg, platesKg: c.platesKg) == c.result)
+  }
+
+  @Test(arguments: try RulesFile.load().warmupSets)
+  fileprivate func warmupSets(_ c: RulesFile.WarmupSetsCase) {
+    let sets = BelayCore.warmupSets(
+      workKg: c.workKg, count: c.count, barKg: c.barKg, platesKg: c.platesKg)
+    #expect(sets == c.result)
+  }
+
+  @Test(arguments: try RulesFile.load().warmups)
+  fileprivate func warmups(_ c: RulesFile.WarmupsCase) {
+    let loads = BelayCore.warmups(
+      c.slot, workKg: c.workKg, exercise: c.exercise.library, bar: c.bar.plates)
+    #expect(loads == c.result)
+  }
+
+  @Test(arguments: try RulesFile.load().liveSlots)
+  fileprivate func liveSlots(_ c: RulesFile.LiveSlotsCase) {
+    #expect(BelayCore.liveSlots(c.plan) == c.result)
+  }
+
+  @Test(arguments: try RulesFile.load().replaceSlot)
+  fileprivate func replaceSlot(_ c: RulesFile.ReplaceCase) {
+    #expect(BelayCore.replaceSlot(c.plan, at: c.at, with: c.exercise.library) == c.result)
+  }
+
+  @Test(arguments: try RulesFile.load().skipSlot)
+  fileprivate func skipSlot(_ c: RulesFile.SkipCase) {
+    #expect(BelayCore.skipSlot(c.plan, at: c.at, skipped: c.skipped) == c.result)
+  }
+
+  @Test(arguments: try RulesFile.load().appendSlot)
+  fileprivate func appendSlot(_ c: RulesFile.AppendCase) throws {
+    if let result = c.result {
+      #expect(try BelayCore.appendSlot(c.plan, c.exercise.library) == result)
+    } else {
+      #expect(throws: PlanError.full) { try BelayCore.appendSlot(c.plan, c.exercise.library) }
+    }
+  }
+
+  @Test(arguments: try RulesFile.load().sessionElapsed)
+  fileprivate func sessionElapsed(_ c: RulesFile.ElapsedCase) throws {
+    let elapsed = BelayCore.sessionElapsed(
+      startedAt: c.startedAt, pausedAt: c.pausedAt, now: try date(c.now))
+    #expect(elapsed == c.result)
+  }
+
+  @Test(arguments: try RulesFile.load().resumedStart)
+  fileprivate func resumedStart(_ c: RulesFile.ResumedStartCase) {
+    let start = BelayCore.resumedStart(
+      startedAt: c.startedAt, pausedAt: c.pausedAt, resumedAt: c.resumedAt)
+    #expect(start == c.result)
+  }
+
+  @Test(arguments: try RulesFile.load().pauseEndedBy)
+  fileprivate func pauseEndedBy(_ c: RulesFile.EndedByCase) {
+    #expect(BelayCore.pauseEndedBy(pausedAt: c.pausedAt, doneAts: c.doneAts) == c.result)
+  }
+
+  @Test(arguments: try RulesFile.load().restClock)
+  fileprivate func restClock(_ c: RulesFile.RestClockCase) throws {
+    let clock = BelayCore.restClock(
+      pausedAt: c.pausedAt, now: try date(c.now), stops: try stops(c.stops))
+    #expect(Instant.string(clock) == c.result)
+  }
+
+  @Test(arguments: try RulesFile.load().resumedRestEnd)
+  fileprivate func resumedRestEnd(_ c: RulesFile.RestEndCase) throws {
+    let end = BelayCore.resumedRestEnd(
+      c.restEndsAt, pausedAt: c.pausedAt, resumedAt: c.resumedAt, stops: try stops(c.stops))
+    #expect(end == c.result)
+  }
+
+  @Test func library() throws {
+    let index = Data(
+      #"[["ds:0025","Barbell bench press",["chest"],["triceps"],"barbell",2.5,"reps"],["belay:dead-hang","Dead hang",["forearms"],[],"bodyweight",2.5,"seconds"],["ds:0405","Écarté à la poulie",["chest"],[],"cable",2.5,"reps"]]"#
+        .utf8)
+    let library = try ExerciseLibrary(indexJSON: index)
+    let hang = try #require(library.exercise("belay:dead-hang"))
+    #expect(hang.equipment == .bodyweight)
+    #expect(hang.measure == .seconds)
+    #expect(library.exercise("ds:0025")?.measure == nil)
+    #expect(library.exercise("ds:9999") == nil)
+    #expect(library.search("BENCH").map(\.id) == ["ds:0025"])
+    #expect(library.search("ecarte").map(\.id) == ["ds:0405"])
+    #expect(library.search("  ").count == 3)
   }
 
   @Test(arguments: try RulesFile.load().workOrder)
