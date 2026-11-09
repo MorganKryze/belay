@@ -102,7 +102,9 @@ test("the top bar leads with the ink lockup, named Belay, a 44 px way home", asy
   await expect(page).toHaveURL(/\/$/);
 });
 
-test("the lockup stays drawn in the system's text colour under forced colours", async ({ page }) => {
+test("the lockup stays drawn in the system's text colour under forced colours", async ({
+  page,
+}) => {
   await page.emulateMedia({ forcedColors: "active" });
   await fakeServer(page, { rows: WEEKS });
   await page.goto("/tools");
