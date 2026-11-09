@@ -1,6 +1,7 @@
 import { type PauseStops, restClock } from "@belay/shared/training/pause";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useFit } from "@/lib/fit";
 import { restEnded } from "@/lib/rest-sound";
 import { formatClock, useNow } from "./hooks";
 
@@ -26,6 +27,7 @@ export function RestBar({
   onChange: (endsAt: string | null) => void;
 }) {
   const { t } = useTranslation();
+  const fit = useFit<HTMLSpanElement>();
   // The last tick may be up to 250 ms old: a pause tapped since then would first show the rest
   // from before the tap, then step down a second at the next tick.
   const now = restClock(pausedAt, Math.max(useNow(250), Date.now()), stops);
@@ -70,7 +72,8 @@ export function RestBar({
             <span
               role="timer"
               aria-live="off"
-              className="text-(length:--text-title-lg) leading-tight font-bold tracking-tight tabular-nums"
+              ref={fit}
+              className="display-title leading-tight tracking-tight whitespace-nowrap"
             >
               {formatClock(left)}
             </span>
@@ -92,7 +95,7 @@ export function RestBar({
         )}
         <span
           aria-hidden
-          className="absolute inset-x-0 bottom-0 h-1 origin-left bg-toast-icon"
+          className="absolute inset-x-0 bottom-0 h-1 origin-left bg-toast-action"
           style={{ transform: `scaleX(${fraction})` }}
         />
       </div>

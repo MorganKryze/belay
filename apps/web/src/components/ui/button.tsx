@@ -13,9 +13,10 @@ const buttonBox = cva(
   {
     variants: {
       variant: {
-        // Belay: hover on the ink shade, not primary/80: white on a faded orange fell to 3.8:1.
+        // Belay: the screen's next action, the one thing drawn in the mark blue; everything else is
+        // ink and grey. No hover shade: a lighter or darker blue would read as a second blue.
         primary:
-          "h-12.5 rounded-field bg-primary px-4 text-primary-foreground hover:bg-primary-ink disabled:bg-track aria-busy:not-has-[>[data-slot=busy-arc]+svg]:px-1.25",
+          "h-12.5 rounded-field bg-mark px-4 text-on-mark disabled:bg-track aria-busy:not-has-[>[data-slot=busy-arc]+svg]:px-1.25",
         secondary:
           "h-11 rounded-control bg-track px-3 text-foreground disabled:bg-track aria-busy:not-has-[>[data-slot=busy-arc]+svg]:px-px",
         // The pressed tint is instant: only transform animates, through the shared press.

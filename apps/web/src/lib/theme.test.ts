@@ -25,6 +25,10 @@ describe("theme", () => {
     expect(readTheme()).toBe("system");
   });
 
+  it("colours the browser bar with the paper of each theme", () => {
+    expect(LAUNCH_BACKGROUND).toEqual({ light: "#F3F5F5", dark: "#10151A" });
+  });
+
   it("persists and applies the choice", () => {
     setTheme("dark");
     expect(readTheme()).toBe("dark");
@@ -35,18 +39,18 @@ describe("theme", () => {
 
   it("a chosen theme colours the browser bar in both schemes, and system gives each scheme its own colour", () => {
     document.head.innerHTML =
-      '<meta name="theme-color" content="#FAFAF7" media="(prefers-color-scheme: light)" />' +
-      '<meta name="theme-color" content="#151412" media="(prefers-color-scheme: dark)" />';
+      '<meta name="theme-color" content="#F3F5F5" media="(prefers-color-scheme: light)" />' +
+      '<meta name="theme-color" content="#10151A" media="(prefers-color-scheme: dark)" />';
     const colours = () =>
       [...document.querySelectorAll('meta[name="theme-color"]')].map((m) =>
         m.getAttribute("content"),
       );
     applyTheme("dark");
-    expect(colours()).toEqual(["#151412", "#151412"]);
+    expect(colours()).toEqual(["#10151A", "#10151A"]);
     applyTheme("light");
-    expect(colours()).toEqual(["#FAFAF7", "#FAFAF7"]);
+    expect(colours()).toEqual(["#F3F5F5", "#F3F5F5"]);
     applyTheme("system");
-    expect(colours()).toEqual(["#FAFAF7", "#151412"]);
+    expect(colours()).toEqual(["#F3F5F5", "#10151A"]);
   });
 
   // The script that runs before the bundle repeats the colours; it must paint the same ones.

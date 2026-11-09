@@ -56,6 +56,9 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @belay/web exec playwright install --with-deps chromium
+      # The page names Roboto ahead of the generic system face: with it installed, the runner
+      # measures text in the face Android phones draw, not in the runner's own default.
+      - run: sudo apt-get install -y --no-install-recommends fonts-roboto
       - run: pnpm e2e --shard=${{ matrix.shard }}/2
 
   e2e:

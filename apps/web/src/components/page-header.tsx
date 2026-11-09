@@ -1,7 +1,15 @@
 import { createLink, useRouter } from "@tanstack/react-router";
 import { ChevronLeft } from "lucide-react";
-import { type ComponentProps, forwardRef, type ReactNode, useEffect, useRef } from "react";
+import {
+  type ComponentProps,
+  forwardRef,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useRef,
+} from "react";
 import { previousHref } from "@/lib/back";
+import { useFit } from "@/lib/fit";
 import { cn } from "@/lib/utils";
 
 // The screen's title: a large h1 that fades as the page scrolls under a frosted bar, whose compact
@@ -28,6 +36,14 @@ export function PageHeader({
 }) {
   const bar = useRef<HTMLDivElement>(null);
   const large = useRef<HTMLHeadingElement>(null);
+  const fit = useFit<HTMLHeadingElement>();
+  const heading = useCallback(
+    (el: HTMLHeadingElement | null) => {
+      large.current = el;
+      fit(el);
+    },
+    [fit],
+  );
   // Without scroll timelines, the bar is marked folded once the large title has gone under it.
   useEffect(() => {
     if (CSS.supports("animation-timeline: scroll()")) return;
@@ -96,9 +112,14 @@ export function PageHeader({
         )}
         <div className="flex items-center justify-between gap-3">
           <h1
-            ref={large}
+            ref={heading}
             {...(focusFallback && { tabIndex: -1, "data-focus-fallback": true })}
-            className={cn("text-title-lg fold-out", focusFallback && "outline-none")}
+            // Its text's width, narrowed only when the row cannot hold it, so the fit measures the
+            // room it has and a trailing control keeps the rest of the row.
+            className={cn(
+              "display-title min-w-0 text-title-lg fold-out",
+              focusFallback && "outline-none",
+            )}
           >
             {title}
           </h1>

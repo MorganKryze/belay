@@ -101,7 +101,11 @@ test("text scale x2 opens Séances with the thumb already on the chosen row", as
     );
   });
   await tabs.getByRole("link", { name: "Séances" }).press("Enter");
+  // The tab's page comes back through a lazy chunk: on a slow runner it takes longer than the
+  // default wait to draw.
+  await page.waitForURL(/\/workouts\?tab=program/);
   const group = page.getByRole("radiogroup", { name: "Afficher" });
+  await expect(group).toBeVisible({ timeout: 15_000 });
   await expect(group).toHaveAttribute("data-stacked", "true");
   await expect(group.getByRole("radio", { name: "Programme" })).toBeChecked();
   await settled(page);

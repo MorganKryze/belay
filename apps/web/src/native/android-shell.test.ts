@@ -3,7 +3,6 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { LAUNCH_SAFETY_MS } from "@/lib/launch";
-import { LAUNCH_BACKGROUND } from "@/lib/theme";
 import { kotlin, longConst, stringSet } from "@/test/kotlin";
 
 // The Android project's shape, read from its sources: the plugin the page calls, and what the
@@ -11,6 +10,22 @@ import { kotlin, longConst, stringSet } from "@/test/kotlin";
 const app = join(dirname(fileURLToPath(import.meta.url)), "../../../mobile/android/app/src");
 const read = (path: string) => readFileSync(join(app, path), "utf8");
 const manifest = () => read("main/AndroidManifest.xml");
+// The app's colours, light then dark: the launch papers, the accent and the sheet surface. The
+// shell's resources must carry the same values as the page, or the handover shows a step.
+const PAPER = ["#F3F5F5", "#10151A"];
+const ACCENT = ["#1F4E8C", "#8DB6EE"];
+const SURFACE = ["#FFFFFF", "#182027"];
+// A colour's value in the light and the night resources.
+const colours = (name: string) =>
+  ["values", "values-night"].map((dir) =>
+    new RegExp(`<color name="${name}">(#[0-9A-Fa-f]{6})</color>`)
+      .exec(read(`main/res/${dir}/colors.xml`))?.[1]
+      ?.toUpperCase(),
+  );
+const kotlinFiles = () => {
+  const dir = join(app, "main/java/cloud/libresoftware/belay");
+  return readdirSync(dir).filter((f) => f.endsWith(".kt"));
+};
 const pluginTs = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "plugin.ts"), "utf8");
 
 // The method names of the page's `interface BelayNativePlugin`.
@@ -138,17 +153,38 @@ describe("the Android shell", () => {
     const load = /override fun load\(\) \{(.*?)\} override fun/.exec(source)![1]!;
     expect(load).toContain("val scale = context.resources.configuration.fontScale");
     expect(load).toContain("bridge.webView.settings.textZoom = 100");
-    expect(load).toContain('bridge.webView.addJavascriptInterface(TextScale(scale), "BelayText")');
-    expect(source).toContain(
-      "class TextScale(private val scale: Float) { @JavascriptInterface fun scale(): Float = scale }",
-    );
-    expect(source.match(/@JavascriptInterface/g)).toHaveLength(1);
+    expect(load).toContain("bridge.webView.addJavascriptInterface(");
+    expect(load).toContain('"BelayText"');
+    expect(source).toContain("@JavascriptInterface fun scale(): Float = scale");
     const init = readFileSync(
       join(dirname(fileURLToPath(import.meta.url)), "../../public/theme-init.js"),
       "utf8",
     );
     expect(init).toContain("globalThis.BelayText?.scale()");
     expect(manifest()).not.toMatch(/android:configChanges="[^"]*fontScale/);
+  });
+
+  // The page reads increased contrast from the shell, at call time so a change shows on the next
+  // read; the object offers the two readings and nothing else, so the bridge keeps a fixed shape.
+  it("BelayText offers scale() and contrast() and reads the contrast when asked", () => {
+    const source = kotlin("BelayNativePlugin.kt").replace(/\s+/g, " ");
+    const tail = source.slice(source.indexOf("class TextScale"));
+    const exposed = [...tail.matchAll(/@JavascriptInterface fun (\w+)\(\): (\w+)/g)].map((m) => [
+      m[1],
+      m[2],
+    ]);
+    expect(exposed).toEqual([
+      ["scale", "Float"],
+      ["contrast", "Boolean"],
+    ]);
+    expect(tail).toContain("fun contrast(): Boolean = contrast()");
+    const rule = kotlin("Contrast.kt").replace(/\s+/g, " ");
+    expect(rule).toContain(
+      "internal fun isHighContrast(contrast: Float, highText: Boolean): Boolean",
+    );
+    expect(rule).toContain("highText || contrast > 0.25f");
+    // The contrast reading stays a few lines: native code is kept small and never grows per screen.
+    expect(kotlin("Contrast.kt").split("\n").length).toBeLessThan(40);
   });
 
   it("nothing private is backed up", () => {
@@ -230,20 +266,13 @@ describe("the Android shell", () => {
         read("main/res/values/styles.xml"),
       )?.[1] ?? "";
     expect(theme).toContain('<item name="android:windowBackground">@color/launch</item>');
-    const launch = (dir: string) =>
-      /<color name="launch">(#[0-9A-Fa-f]{6})<\/color>/.exec(
-        read(`main/res/${dir}/colors.xml`),
-      )?.[1];
-    expect([launch("values"), launch("values-night")]).toEqual([
-      LAUNCH_BACKGROUND.light,
-      LAUNCH_BACKGROUND.dark,
-    ]);
+    expect(colours("launch")).toEqual(PAPER);
   });
 
   // Android's splash leaves on the activity's first frame, long before the page draws: the web
   // view's own white filled the gap. The splash now holds the activity until the page has loaded,
   // its launch screen in it, and then stays over the activity until the web view has drawn that
-  // screen: a web view that has not drawn yet shows its bare background, chalk with no mark. A
+  // screen: a web view that has not drawn yet shows its bare background, paper with no mark. A
   // page that never draws lets the splash go at the page's own safety delay.
   it("the splash stays until the web view has drawn the page's launch screen", () => {
     const source = kotlin("MainActivity.kt");
@@ -285,27 +314,13 @@ describe("the Android shell", () => {
     const body = theme?.[2] ?? "";
     expect(body).toContain('<item name="android:windowBackground">@color/launch</item>');
     expect(body).toMatch(/<item name="android:datePickerDialogTheme">@style\/[\w.]+<\/item>/);
-    const colour = (dir: string, name: string) =>
-      new RegExp(`<color name="${name}">(#[0-9A-Fa-f]{6})</color>`).exec(
-        read(`main/res/${dir}/colors.xml`),
-      )?.[1] ??
-      new RegExp(`<color name="${name}">(#[0-9A-Fa-f]{6})</color>`).exec(
-        read("main/res/values/colors.xml"),
-      )?.[1];
-    const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../index.css"), "utf8");
-    const primary = [...css.matchAll(/^\s*--primary: (#[0-9a-f]{6});/gm)].map((m) => m[1]);
-    expect(primary).toHaveLength(2);
-    for (const item of ["colorPrimary", "android:colorAccent"]) {
-      const ref = new RegExp(`<item name="${item}">@color/(\\w+)</item>`).exec(body)?.[1] ?? "";
-      expect(
-        [colour("values", ref), colour("values-night", ref)].map((c) => c?.toLowerCase()),
-        item,
-      ).toEqual(primary);
-    }
+    for (const item of ["colorPrimary", "android:colorAccent"])
+      expect(body, item).toContain(`<item name="${item}">@color/accent</item>`);
+    expect(colours("accent")).toEqual(ACCENT);
     expect(style("AppTheme.NoActionBarLaunch")?.[0]).toBe(
       `<style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@color/launch</item>
-        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher_foreground</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_mark</item>
         <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>
     </style>`,
     );
@@ -338,18 +353,8 @@ describe("the Android shell", () => {
     expect(picker?.[1]).toContain('parent="@android:style/Widget.Material.DatePicker"');
     expect(item(picker?.[2] ?? "", "android:headerBackground")).toEqual(["color", "accent"]);
 
-    const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../index.css"), "utf8");
-    const token = (name: string) =>
-      [...css.matchAll(new RegExp(`^\\s*--${name}: (#[0-9a-f]{6});`, "gm"))].map((m) => m[1]);
-    const colour = (dir: string, name: string) =>
-      new RegExp(`<color name="${name}">(#[0-9A-Fa-f]{6})</color>`)
-        .exec(read(`main/res/${dir}/colors.xml`))?.[1]
-        ?.toLowerCase();
-    for (const [name, css] of [
-      ["accent", "primary"],
-      ["surface", "surface"],
-    ] as const)
-      expect([colour("values", name), colour("values-night", name)], name).toEqual(token(css));
+    expect(colours("accent")).toEqual(ACCENT);
+    expect(colours("surface")).toEqual(SURFACE);
   });
 
   // Older web views lack what the web app needs; the README names the version to have.
@@ -373,5 +378,63 @@ describe("the Android shell", () => {
     expect(permission("SCHEDULE_EXACT_ALARM")).toEqual([
       '<uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" android:maxSdkVersion="32" tools:node="replace" />',
     ]);
+  });
+  // The old orange family and warm neutrals are in no colour resource, style or Kotlin file, so
+  // no surface of the app falls back to the former palette.
+  it("keeps no colour of the old palette in the values, the styles or the Kotlin", () => {
+    const old = /#(fafaf7|151412|c2410c|fb923c|ea580c|1d1b19)\b/i;
+    for (const dir of ["values", "values-night"])
+      expect(read(`main/res/${dir}/colors.xml`)).not.toMatch(old);
+    expect(read("main/res/values/styles.xml")).not.toMatch(old);
+    for (const file of kotlinFiles()) expect(kotlin(file), file).not.toMatch(old);
+  });
+
+  // The splash draws its own mark in the launch blue, never the launcher's paper foreground, so
+  // the mark keeps one colour from the first frame to the page.
+  it("the splash draws ic_splash_mark in the launch blue on the two papers", () => {
+    const launch = /<style name="AppTheme\.NoActionBarLaunch"[^>]*>([\s\S]*?)<\/style>/.exec(
+      read("main/res/values/styles.xml"),
+    )?.[1];
+    expect(launch).toContain(
+      '<item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_mark</item>',
+    );
+    expect(launch).toContain('<item name="windowSplashScreenBackground">@color/launch</item>');
+    const mark = read("main/res/drawable/ic_splash_mark.xml");
+    expect(mark).toContain("M86 160L86 266A120 120 0 0 0 326 266");
+    expect(mark).toContain('android:fillColor="@color/accent"');
+    expect(mark).not.toContain("@color/launch");
+    expect(colours("accent")).toEqual(["#1F4E8C", "#8DB6EE"]);
+    expect(colours("launch")).toEqual(PAPER);
+  });
+
+  // The adaptive icon sits on the blue by day and dark paper by night; the themed layer stays so
+  // the launcher can draw its monochrome icon.
+  it("the adaptive icon has the icon ground, a night foreground and the monochrome layer", () => {
+    expect(colours("icon_ground")).toEqual(["#1F4E8C", "#10151A"]);
+    for (const icon of ["ic_launcher", "ic_launcher_round"]) {
+      const xml = read(`main/res/mipmap-anydpi-v26/${icon}.xml`);
+      expect(xml).toContain('<background android:drawable="@color/icon_ground" />');
+      expect(xml).toContain('<foreground android:drawable="@mipmap/ic_launcher_foreground" />');
+      expect(xml).toContain('<monochrome android:drawable="@mipmap/ic_launcher_monochrome" />');
+    }
+    for (const density of ["mdpi", "hdpi", "xhdpi", "xxhdpi", "xxxhdpi"])
+      for (const layer of ["foreground", "monochrome"])
+        expect(existsSync(join(app, `main/res/mipmap-${density}/ic_launcher_${layer}.png`))).toBe(
+          true,
+        );
+    for (const density of ["mdpi", "hdpi", "xhdpi", "xxhdpi", "xxxhdpi"])
+      expect(
+        existsSync(join(app, `main/res/mipmap-night-${density}/ic_launcher_foreground.png`)),
+      ).toBe(true);
+  });
+
+  // The status bar icon stays the white mark: Android draws status icons as a white silhouette.
+  it("the status bar icon stays white and the notifier tints the Live Update with the accent", () => {
+    const script = readFileSync(join(app, "../../../../../scripts/gen-icons.sh"), "utf8");
+    const stat = script.split("\n").find((line) => line.includes('fill="#FFFFFF" transform'));
+    expect(stat).toContain('width="24"');
+    expect(kotlin("SessionNotifier.kt")).toContain(
+      ".setColor(ContextCompat.getColor(context, R.color.accent))",
+    );
   });
 });

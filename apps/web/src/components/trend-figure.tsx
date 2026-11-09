@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { useFit } from "@/lib/fit";
 import { formatNumber, lossView } from "@/lib/format";
 import { bodyWeight, readWeightUnit } from "@/lib/units";
 
@@ -19,12 +20,14 @@ export function TrendFigure({
   const { t, i18n } = useTranslation();
   const unit = readWeightUnit();
   const loss = lossPct === null ? null : lossView(lossPct);
+  const fit = useFit<HTMLSpanElement>();
   const strong = "font-semibold whitespace-nowrap text-foreground tabular-nums";
   return (
     <>
       <span
+        ref={fit}
         data-slot="trend-figure"
-        className="mt-2.5 mb-2 text-figure tracking-[-0.03em] text-foreground tabular-nums"
+        className="mt-2.5 mb-2 display-figure text-figure tracking-[-0.03em] text-foreground"
       >
         {averageKg === null ? (
           "—"

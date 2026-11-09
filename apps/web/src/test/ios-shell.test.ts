@@ -4,7 +4,6 @@ import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { LAUNCH_BACKGROUND } from "@/lib/theme";
 import { swift } from "./swift";
 
 const mobile = join(dirname(fileURLToPath(import.meta.url)), "../../../mobile");
@@ -116,7 +115,9 @@ describe("the iOS shell", () => {
     for (const edge of ["leading", "trailing", "top", "bottom"]) expect(on(edge)).toEqual([]);
   });
 
-  it("starts the launch screen on the page's background in both themes", () => {
+  // The shell keeps its own launch until the native app replaces it, so these are its colours,
+  // the page's before the cool palette, and no longer the page's.
+  it("keeps its own launch background in both themes", () => {
     const set = JSON.parse(
       swift("App/Assets.xcassets/LaunchBackground.colorset/Contents.json"),
     ) as {
@@ -127,6 +128,6 @@ describe("the iOS shell", () => {
       ["red", "green", "blue"].map((k) => c.color.components[k]!.slice(2).toUpperCase()).join("");
     const light = set.colors.find((c) => !c.appearances)!;
     const dark = set.colors.find((c) => c.appearances)!;
-    expect([hex(light), hex(dark)]).toEqual([LAUNCH_BACKGROUND.light, LAUNCH_BACKGROUND.dark]);
+    expect([hex(light), hex(dark)]).toEqual(["#FAFAF7", "#151412"]);
   });
 });

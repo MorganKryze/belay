@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="launch">#151412</color>
-    <color name="accent">#FB923C</color>
-    <color name="surface">#1D1B19</color>
+    <color name="launch">#10151A</color>
+    <color name="accent">#8DB6EE</color>
+    <color name="icon_ground">#10151A</color>
+    <color name="surface">#182027</color>
 </resources>

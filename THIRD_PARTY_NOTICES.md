@@ -103,9 +103,13 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ## Archivo
 
-The iPhone app's display face is Archivo Expanded ExtraBold, from the
-[Archivo](https://github.com/Omnibus-Type/Archivo) family by Omnibus-Type, bundled as
-`apps/apple/Belay/ArchivoExpanded-ExtraBold.ttf` without changes.
+The display face of the web app (`apps/web/src/fonts/archivo-belay.woff2`) is cut from
+[Archivo](https://github.com/Omnibus-Type/Archivo) 2.001, its Expanded ExtraBold instance (width
+125, weight 800), by `apps/web/scripts/cut-display-face.sh`: Latin with the French marks, the
+narrow no-break space and the tabular figures. The cut is a Modified Version under the license and
+keeps the name tables of the original.
+The iPhone app bundles the same instance, unchanged, as
+`apps/apple/Belay/ArchivoExpanded-ExtraBold.ttf`.
 
 ```text
 Copyright 2020 The Archivo Project Authors (https://github.com/Omnibus-Type/Archivo)

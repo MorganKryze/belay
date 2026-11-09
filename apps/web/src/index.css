@@ -2,22 +2,8 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-/*
- * Inter, latin subset only (covers French, œ and € included). The package's own CSS declares all
- * seven subsets, and the PWA precaches every font file, so declare the one we need ourselves.
- * Same family name and unicode-range as @fontsource-variable/inter/wght.css.
- */
-@font-face {
-  font-family: "Inter Variable";
-  font-style: normal;
-  font-display: swap;
-  font-weight: 100 900;
-  src: url("@fontsource-variable/inter/files/inter-latin-wght-normal.woff2")
-    format("woff2-variations");
-  unicode-range:
-    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
-    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
+@import "./type.css";
+@import "./cracks.css";
 
 @custom-variant dark (&:is(.dark *));
 /* Inside the Android and iPhone apps, which name their platform on the root (theme-init.js). */
@@ -41,7 +27,11 @@
 
 @theme inline {
   --font-heading: var(--font-sans);
-  --font-sans: "Inter Variable", sans-serif;
+  /* The system's own face: SF Pro on Apple devices, Segoe UI on Windows, Roboto on Android. Roboto
+     comes before the generic system-ui, so a Linux machine that has it draws the Android face. */
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
+  /* Large titles and big figures (type.css); a character the cut lacks falls back to the above. */
+  --font-display: "Archivo Belay", var(--font-sans);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -62,6 +52,10 @@
   --color-background: var(--background);
   --color-surface: var(--surface);
   --color-track: var(--track);
+  --color-sunk: var(--sunk);
+  --color-chart-day: var(--chart-day);
+  --color-mark: var(--mark);
+  --color-on-mark: var(--on-mark);
   --color-primary-soft: var(--primary-soft);
   --color-primary-ink: var(--primary-ink);
   --color-reference: var(--reference);
@@ -336,38 +330,42 @@
 }
 
 /*
- * "Chalk & rope" tokens. Components use these names only, never a raw colour. Every text pair is
- * at least 4.5:1 and every non-text pair at least 3:1 (src/lib/contrast.test.ts reads this file).
- * No red on body data: orange is for actions and "you", soft green only marks a reference range.
+ * The palette: paper, ink and cool greys, and one blue, the mark, kept for the screen's next
+ * action and the focus ring. Components use these names only, never a raw colour. Ink is the tint
+ * of every selection, chart and done state; the sunk tint marks what is done or in range, the
+ * check and the words carry the meaning. Every text pair is at least 4.5:1 and every non-text pair
+ * at least 3:1, in both themes and with more contrast (src/lib/tokens.test.ts reads this file).
  */
 :root {
   color-scheme: light;
-  --background: #fafaf7;
+  --background: #f3f5f5;
   --surface: #ffffff;
-  --foreground: #1c1917;
-  --muted-foreground: #57534e;
-  --border: #e7e5e4;
-  --input: #78716c;
-  --track: #edebe8;
-  --primary: #c2410c;
+  --foreground: #12181c;
+  --muted-foreground: #4a555c;
+  --border: #d5dbdd;
+  --input: #6c777e;
+  --track: #e8eced;
+  --sunk: #edf0f1;
+  --chart-day: #8a9297;
+  --mark: #1f4e8c;
+  --on-mark: #ffffff;
+  --primary: var(--foreground);
   --primary-foreground: #ffffff;
-  --primary-soft: #fff4ea;
-  --primary-ink: #9a3412;
-  --reference: #dcebdd;
-  --reference-ink: #24503a;
+  --primary-soft: var(--sunk);
+  --primary-ink: var(--foreground);
+  --reference: var(--sunk);
+  --reference-ink: var(--foreground);
   /* The toast is the foreground colour; its action reads on it in both themes. */
-  --toast-action: #fdba74;
-  /* Body chart: grey daily weigh-ins (the noise), orange 7-day average (the signal). Each at
-     least 3:1 on the card in both themes; the grey is context, not a category colour. */
-  --chart-dot: #8a837e;
-  --chart-line: #c2410c;
-  /* Body map: the primary tone at least 3:1 on the card in both themes; the secondary one clearly
-     lighter (light theme) or darker (dark theme) than the primary; every muscle also named in
-     words, so the secondary and rest tones carry no meaning alone. */
-  --muscle-primary: #c2410c;
-  --muscle-secondary: #f4b08a;
-  --muscle-rest: #dedad6;
-  --ring: #c2410c;
+  --toast-action: #8db6ee;
+  /* Body chart: grey daily weigh-ins (the noise), the 7-day average in ink (the signal). */
+  --chart-dot: var(--chart-day);
+  --chart-line: var(--foreground);
+  /* Body map: the primary muscles in ink, the secondary ones a grey apart from it, every muscle
+     also named in words, so the secondary and rest tones carry no meaning alone. */
+  --muscle-primary: var(--foreground);
+  --muscle-secondary: #8e9aa1;
+  --muscle-rest: #d5dbdd;
+  --ring: var(--mark);
   --card: var(--surface);
   --card-foreground: var(--foreground);
   --popover: var(--surface);
@@ -379,20 +377,20 @@
   --accent-foreground: var(--foreground);
   /* Red only for destroying something (the activity delete), never on body data. Dark enough
      here (light enough in .dark) for its label to keep 4.5:1 on the button's own red tint. */
-  --destructive: #991b1b;
+  --destructive: #b42318;
   --radius: 0.625rem;
   /* The active tab's pill, the frosted bars (and their fallback without backdrop-filter), the
      overlay under a sheet and the tint of a pressed row. */
-  --tab-pill: #fce3ce;
+  --tab-pill: #dde2e4;
   --glass: rgba(255, 255, 255, 0.82);
   --glass-fallback: color-mix(in srgb, var(--background) 96%, transparent);
   /* On the foreground-coloured session bar and toast: the timer and the error icon. */
-  --toast-icon: #fb923c;
-  --scrim: rgba(28, 25, 23, 0.35);
+  --toast-icon: #c9d3d8;
+  --scrim: rgba(18, 24, 28, 0.35);
   --press-tint: color-mix(in srgb, var(--foreground) 6%, transparent);
-  --shadow-card: 0 1px 2px rgba(28, 25, 23, 0.05), 0 0 0 1px rgba(28, 25, 23, 0.035);
-  --shadow-float: 0 6px 20px rgba(28, 25, 23, 0.08);
-  --shadow-sheet: 0 -4px 24px rgba(28, 25, 23, 0.12);
+  --shadow-card: 0 1px 2px rgba(18, 24, 28, 0.05), 0 0 0 1px rgba(18, 24, 28, 0.04);
+  --shadow-float: 0 6px 20px rgba(18, 24, 28, 0.08);
+  --shadow-sheet: 0 -4px 24px rgba(18, 24, 28, 0.12);
   /* Climbing hold colours, the same in both themes; always named in words beside the dot. */
   --hold-yellow: #facc15;
   --hold-green: #22c55e;
@@ -462,36 +460,87 @@
 
 .dark {
   color-scheme: dark;
-  --background: #151412;
-  --surface: #1d1b19;
-  --foreground: #f5f5f4;
-  --muted-foreground: #a8a29e;
-  --border: #2e2b28;
-  --input: #78716c;
-  --track: #2a2724;
-  --primary: #fb923c;
-  --primary-foreground: #151412;
-  --primary-soft: #2a1e16;
-  --primary-ink: #fdba74;
-  --reference: #1e2e23;
-  --reference-ink: #a7d3b2;
-  --toast-action: #9a3412;
-  --chart-dot: #8a837e;
-  --chart-line: #ea580c;
-  --muscle-primary: #fb923c;
-  --muscle-secondary: #8a4524;
-  --muscle-rest: #36322f;
-  --ring: #fb923c;
-  --destructive: #fca5a5;
-  --tab-pill: #3d2818;
-  --glass: rgba(29, 27, 25, 0.84);
-  --toast-icon: #c2410c;
+  --background: #10151a;
+  --surface: #182027;
+  --foreground: #eef2f3;
+  --muted-foreground: #a9b5bc;
+  --border: #2e3a43;
+  --input: #6f7d86;
+  --track: #232d35;
+  --sunk: #1f2931;
+  --chart-day: #667079;
+  --mark: #8db6ee;
+  --on-mark: #10151a;
+  --primary-foreground: #10151a;
+  --toast-action: #1f4e8c;
+  --muscle-secondary: #6f7d86;
+  --muscle-rest: #2e3a43;
+  /* Derived to read as text: the darker red of a fill falls to 3:1 on the dark surface. */
+  --destructive: #f2998f;
+  --tab-pill: #2e3a43;
+  --glass: rgba(24, 32, 39, 0.84);
+  --toast-icon: #4a555c;
   --scrim: rgba(0, 0, 0, 0.55);
   --press-tint: color-mix(in srgb, var(--foreground) 7%, transparent);
   --push-dim: 0.8;
   --shadow-card: none;
   --shadow-float: 0 6px 20px rgba(0, 0, 0, 0.35);
   --shadow-sheet: none;
+}
+
+/*
+ * More contrast, asked by the browser or given to the page by the app: plain grounds, stronger ink
+ * and edges, the blue a step deeper. The two copies hold the same values (tokens.test.ts checks).
+ */
+@media (prefers-contrast: more) {
+  :root:not(.dark) {
+    --foreground: #000000;
+    --muted-foreground: #343d43;
+    --border: #8e9aa1;
+    --input: var(--muted-foreground);
+    --track: #dde3e5;
+    --sunk: #e4e9ea;
+    --chart-day: #5f686e;
+    --mark: #143a6b;
+    --on-mark: #ffffff;
+    --destructive: #9a1b12;
+  }
+  :root.dark {
+    --background: #0a0e12;
+    --foreground: #ffffff;
+    --muted-foreground: #cbd4d9;
+    --border: #6f7d86;
+    --input: var(--muted-foreground);
+    --track: #2e3a43;
+    --sunk: #27323b;
+    --chart-day: #98a3aa;
+    --mark: #b5d0f5;
+    --on-mark: #000000;
+  }
+}
+html[data-contrast="more"]:not(.dark) {
+  --foreground: #000000;
+  --muted-foreground: #343d43;
+  --border: #8e9aa1;
+  --input: var(--muted-foreground);
+  --track: #dde3e5;
+  --sunk: #e4e9ea;
+  --chart-day: #5f686e;
+  --mark: #143a6b;
+  --on-mark: #ffffff;
+  --destructive: #9a1b12;
+}
+html.dark[data-contrast="more"] {
+  --background: #0a0e12;
+  --foreground: #ffffff;
+  --muted-foreground: #cbd4d9;
+  --border: #6f7d86;
+  --input: var(--muted-foreground);
+  --track: #2e3a43;
+  --sunk: #27323b;
+  --chart-day: #98a3aa;
+  --mark: #b5d0f5;
+  --on-mark: #000000;
 }
 
 :root {
@@ -645,7 +694,7 @@ body {
   & > [data-hook] {
     position: absolute;
     inset: 0;
-    background-color: var(--primary);
+    background-color: var(--mark);
     mask: var(--hook-a) center / contain no-repeat;
     animation: var(--animate-breathe);
   }
@@ -764,6 +813,13 @@ body {
 }
 html:has([role="dialog"][data-state="open"]) [data-dock] {
   opacity: 0;
+}
+/* Under an open sheet or dialog the blue belongs to its own action: the page's next action beneath
+   takes the neutral fill, and gets its blue back as the sheet goes. */
+html:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"])
+  [data-slot="button"][data-variant="primary"]:not(:is([role="dialog"], [role="alertdialog"]) *) {
+  background-color: var(--track);
+  color: var(--foreground);
 }
 
 /*
