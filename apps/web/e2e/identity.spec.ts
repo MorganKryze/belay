@@ -1,7 +1,8 @@
 import { expect, test } from "@playwright/test";
+import { MOUNTAIN_D, RING_D } from "../src/lib/mark";
 import { fakeServer } from "./fake-server";
 
-// The mark's geometry, as the icons have always drawn it: only colours and grounds change.
+// The launch screen's mark, still drawn as two hooks until it moves to the new mark.
 const MARK =
   "M86 160L86 266A120 120 0 0 0 326 266L326 246A20 20 0 0 0 286 246L286 266A80 80 0 0 1 126 266L126 160A20 20 0 0 0 86 160ZM426 352L426 246A120 120 0 0 0 186 246L186 266A20 20 0 0 0 226 266L226 246A80 80 0 0 1 386 246L386 352A20 20 0 0 0 426 352Z";
 
@@ -64,14 +65,16 @@ test("the browser bar is paper in light and dark paper in dark before any script
   );
 });
 
-test("the favicon is the mark alone, blue in light and light blue in dark", async ({ request }) => {
+test("the favicon is the mark alone, colour light, and colour dark in the dark scheme", async ({
+  request,
+}) => {
   const svg = await (await request.get("/logo.svg")).text();
-  expect(svg).toContain(`d="${MARK}"`);
-  expect(svg).toContain('fill="#1F4E8C"');
-  expect(svg).toMatch(/prefers-color-scheme: dark\)\{path\{fill:#8DB6EE\}/);
+  expect(svg).toContain(`<path d="${RING_D}" stroke="#12181C"/>`);
+  expect(svg).toContain(`<path d="${MOUNTAIN_D}" stroke="#1F4E8C"/>`);
+  expect(svg).toMatch(/prefers-color-scheme: dark\)\{[^<]*#F3F5F5[^<]*#8DB6EE/);
 });
 
-test("the launch mark's outline is the icons' outline", async ({ page }) => {
+test("the launch mark keeps its outline", async ({ page }) => {
   await fakeServer(page);
   await page.goto("/");
   const hooks = await page
