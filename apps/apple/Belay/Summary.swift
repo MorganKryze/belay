@@ -88,14 +88,10 @@ struct SummaryView: View {
             .frame(maxWidth: .infinity)
             .padding(.bottom, 4)
         }
-        // A pull down closes it as a sheet would, and saves as the ✓ does.
-        .simultaneousGesture(
-            DragGesture(minimumDistance: 30).onEnded { drag in
-                if drag.translation.height > 140, abs(drag.translation.width) < 80 { leave() }
-            })
+        // The cover's zoom has a pull down of its own, which starts only at the top of the scroll;
+        // a pull closes it as the ✓ does, saving on the way out.
         .interactiveDismissDisabled(false)
         .onAppear { arrived = true }
-        // The system may close the cover itself (its zoom has a pull of its own): leave all the same.
         .onDisappear { leave() }
         .sensoryFeedback(.success, trigger: arrived)
         .sensoryFeedback(.error, trigger: failures)

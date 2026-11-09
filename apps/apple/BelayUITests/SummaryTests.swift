@@ -120,6 +120,18 @@ final class SummaryTests: XCTestCase {
         XCTAssertTrue(probe(app).hasPrefix("floor=4 settled=true"), probe(app))
     }
 
+    /// A drag down that scrolls back up the long AX layout only scrolls: the summary stays.
+    func testScrollBackUpKeepsTheSummary() {
+        let app = summary(extra: ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityL"])
+        any(app, "effort-steps").coordinate(withNormalizedOffset: CGVector(dx: 0.7, dy: 0.5)).tap()
+        app.swipeUp()
+        app.swipeUp()
+        let middle = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.3))
+        middle.press(forDuration: 0.05, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.6)))
+        XCTAssertTrue(app.buttons["Enregistrer et fermer"].exists, "still on the summary")
+        XCTAssertFalse(probe(app).contains("settled=true"), probe(app))
+    }
+
     /// A scroll leaves no bar and no compact title at the top.
     func testNoBarOnScroll() {
         let app = summary(extra: ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityL"])
