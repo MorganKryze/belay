@@ -1,10 +1,12 @@
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { LAUNCH_SAFETY_MS } from "@/lib/launch";
 import { MARK_SHIFT, MARK_VIEWBOX, MOUNTAIN_D, RING_D, STROKE } from "@/lib/mark";
 import { kotlin, longConst, stringSet } from "@/test/kotlin";
+import { walk } from "@/test/files";
+import { oldHooksIn } from "@/test/old-hooks";
 import { decodePng } from "@/test/png";
 
 // The Android project's shape, read from its sources: the plugin the page calls, and what the
@@ -494,20 +496,11 @@ describe("the Android shell", () => {
 
   // The two hooks are retired: no resource or Kotlin file of the app still draws them.
   it("no Android resource or source holds the old hooks", () => {
-    const old = ["M86 160L86 266", "M426 352L426 246", "A120 120 0 0 0 326 266"];
-    const walk = (dir: string): string[] =>
-      readdirSync(dir).flatMap((name) => {
-        const path = join(dir, name);
-        return statSync(path).isDirectory() ? walk(path) : [path];
-      });
     const found = ["main/res", "main/java", "debug"]
       .filter((dir) => existsSync(join(app, dir)))
       .flatMap((dir) => walk(join(app, dir)))
       .filter((path) => /\.(xml|kt|java)$/.test(path))
-      .flatMap((path) => {
-        const text = readFileSync(path, "utf8");
-        return old.filter((needle) => text.includes(needle)).map((n) => `${path}: ${n}`);
-      });
+      .flatMap((path) => oldHooksIn(path, readFileSync(path, "utf8")));
     expect(found).toEqual([]);
   });
 
