@@ -1,8 +1,9 @@
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { LAUNCH_SAFETY_MS } from "@/lib/launch";
+import { MARK_SHIFT, MOUNTAIN_D, RING_D, STROKE } from "@/lib/mark";
 import { kotlin, longConst, stringSet } from "@/test/kotlin";
 import { decodePng } from "@/test/png";
 
@@ -40,6 +41,32 @@ const inkBox = (p: string, ink: (r: number, g: number, b: number, a: number) => 
       }
     }
   return [left, top, right, bottom] as const;
+};
+// The splash drawing of a resource folder: its canvas, the group that places the mark and the
+// strokes, colours resolved from the folder's own colour file when named by reference.
+const splashMark = (dir: string) => {
+  const xml = read(`main/res/${dir}/ic_splash_mark.xml`);
+  const attr = (tag: string, name: string) =>
+    new RegExp(`android:${name}="([^"]+)"`).exec(tag)?.[1];
+  const num = (tag: string, name: string) => Number(attr(tag, name)?.replace(/dp$/, ""));
+  const vector = /<vector[^>]*>/.exec(xml)![0];
+  const group = /<group[^>]*>/.exec(xml)?.[0] ?? "";
+  expect(num(group, "scaleX")).toBe(num(group, "scaleY"));
+  return {
+    size: num(vector, "width"),
+    viewport: num(vector, "viewportWidth"),
+    scale: num(group, "scaleX"),
+    x: num(group, "translateX"),
+    y: num(group, "translateY"),
+    paths: [...xml.matchAll(/<path[^>]*>/g)].map(([tag]) => ({
+      d: attr(tag, "pathData"),
+      colour: attr(tag, "strokeColor")?.toUpperCase(),
+      width: num(tag, "strokeWidth"),
+      cap: attr(tag, "strokeLineCap"),
+      join: attr(tag, "strokeLineJoin"),
+      fill: attr(tag, "fillColor"),
+    })),
+  };
 };
 const webPage = () =>
   readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../../index.html"), "utf8");
@@ -406,9 +433,9 @@ describe("the Android shell", () => {
     for (const file of kotlinFiles()) expect(kotlin(file), file).not.toMatch(old);
   });
 
-  // The splash draws its own mark in the launch blue, never the launcher's paper foreground, so
-  // the mark keeps one colour from the first frame to the page.
-  it("the splash draws ic_splash_mark in the launch blue on the two papers", () => {
+  // The splash draws its own mark, never the launcher's foreground, in the colours of the page's
+  // launch: ink and blue on paper by day, paper and light blue on dark paper by night.
+  it("the splash draws ic_splash_mark on the two papers", () => {
     const launch = /<style name="AppTheme\.NoActionBarLaunch"[^>]*>([\s\S]*?)<\/style>/.exec(
       read("main/res/values/styles.xml"),
     )?.[1];
@@ -416,18 +443,78 @@ describe("the Android shell", () => {
       '<item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_mark</item>',
     );
     expect(launch).toContain('<item name="windowSplashScreenBackground">@color/launch</item>');
-    const mark = read("main/res/drawable/ic_splash_mark.xml");
-    expect(mark).toContain("M86 160L86 266A120 120 0 0 0 326 266");
-    expect(mark).toContain('android:fillColor="@color/accent"');
-    expect(mark).not.toContain("@color/launch");
-    expect(colours("accent")).toEqual(["#1F4E8C", "#8DB6EE"]);
     expect(colours("launch")).toEqual(PAPER);
   });
 
-  // The adaptive icon sits on the blue by day and dark paper by night; the themed layer stays so
+  it("the splash mark is the mark's two strokes in the web launch's colours", () => {
+    const web = (file: string) =>
+      readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../../icons", file), "utf8");
+    for (const [dir, source] of [
+      ["drawable", "mark-light.svg"],
+      ["drawable-night", "mark-dark.svg"],
+    ] as const) {
+      const mark = splashMark(dir);
+      expect(
+        mark.paths.map((p) => p.d),
+        dir,
+      ).toEqual([RING_D, MOUNTAIN_D]);
+      for (const path of mark.paths) {
+        expect(path.width, dir).toBe(STROKE);
+        expect([path.cap, path.join], dir).toEqual(["round", "round"]);
+        expect(path.fill, dir).toBeUndefined();
+      }
+      // The same strokes, in the same colours, as the page's launch draws for this theme.
+      const strokes = [...web(source).matchAll(/<path d="([^"]+)" stroke="(#[0-9A-F]{6})"/g)];
+      expect(strokes.map((m) => [m[1], m[2]])).toEqual(mark.paths.map((p) => [p.d, p.colour]));
+    }
+    expect(splashMark("drawable").paths.map((p) => p.colour)).toEqual(["#12181C", "#1F4E8C"]);
+    expect(splashMark("drawable-night").paths.map((p) => p.colour)).toEqual(["#F3F5F5", "#8DB6EE"]);
+  });
+
+  it("the splash mark sits centred in the splash icon's circle, as wide as the launcher's", () => {
+    for (const dir of ["drawable", "drawable-night"]) {
+      const { size, viewport, scale, x, y } = splashMark(dir);
+      expect([size, viewport], dir).toEqual([288, 108]);
+      // The mark's grid centre, one unit lower, lands on the canvas centre.
+      expect(x + 50 * scale, dir).toBeCloseTo(54, 3);
+      expect(y + (50 - MARK_SHIFT.y) * scale, dir).toBeCloseTo(54, 3);
+      // The splash shows the middle 72 of the 108 units as a circle: the farthest stroke edge,
+      // 43 units from the centre, stays inside its 36-unit radius.
+      expect(43 * scale, dir).toBeLessThan(36);
+      // The ink spans 85 units; at 288 dp it is as wide as the launcher foreground on the splash,
+      // which the page's launch matches at the handover, within one pixel of the raster.
+      const [left, , right] = inkBox(
+        "mipmap-xxxhdpi/ic_launcher_foreground.png",
+        (_r, _g, _b, a) => a > 127,
+      );
+      const drawn = ((right - left + 1) / 432) * 288;
+      expect(Math.abs((85 * scale * size) / viewport - drawn), dir).toBeLessThanOrEqual(288 / 432);
+    }
+  });
+
+  // The two hooks are retired: no resource or Kotlin file of the app still draws them.
+  it("no Android resource or source holds the old hooks", () => {
+    const old = ["M86 160L86 266", "M426 352L426 246", "A120 120 0 0 0 326 266"];
+    const walk = (dir: string): string[] =>
+      readdirSync(dir).flatMap((name) => {
+        const path = join(dir, name);
+        return statSync(path).isDirectory() ? walk(path) : [path];
+      });
+    const found = ["main/res", "main/java", "debug"]
+      .filter((dir) => existsSync(join(app, dir)))
+      .flatMap((dir) => walk(join(app, dir)))
+      .filter((path) => /\.(xml|kt|java)$/.test(path))
+      .flatMap((path) => {
+        const text = readFileSync(path, "utf8");
+        return old.filter((needle) => text.includes(needle)).map((n) => `${path}: ${n}`);
+      });
+    expect(found).toEqual([]);
+  });
+
+  // The adaptive icon sits on paper by day and dark paper by night; the themed layer stays so
   // the launcher can draw its monochrome icon.
   it("the adaptive icon has the icon ground, a night foreground and the monochrome layer", () => {
-    expect(colours("icon_ground")).toEqual(["#1F4E8C", "#10151A"]);
+    expect(colours("icon_ground")).toEqual(PAPER);
     for (const icon of ["ic_launcher", "ic_launcher_round"]) {
       const xml = read(`main/res/mipmap-anydpi-v26/${icon}.xml`);
       expect(xml).toContain('<background android:drawable="@color/icon_ground" />');
