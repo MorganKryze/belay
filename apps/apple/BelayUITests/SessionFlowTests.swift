@@ -239,14 +239,51 @@ final class SessionFlowTests: XCTestCase {
         XCTAssertTrue(app.buttons["Arrêter la séance"].waitForExistence(timeout: 3), "still paused")
     }
 
+    /// Scrolled, the cover draws no band under the bar: the card's title that went up shows
+    /// through it in its own ink. A band, even a glassy one, leaves only a pale ghost of it there
+    /// (184 of 255 at its darkest, measured with the hard edge effect).
     func testNoBarOnScroll() {
-        let app = launch("history")
+        let app = launch("history", extra: Self.ax3)
         openCover(app)
         passWarmups(app)
+        let strip = barStrip(app)
+        XCTAssertGreaterThan(darkest(pixels(app, in: strip)), 200, "nothing under the bar at rest")
         app.swipeUp()
         app.swipeUp()
         let titled = app.navigationBars.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "Séance"))
         XCTAssertEqual(titled.count, 0, "no compact title: \(app.navigationBars.debugDescription)")
+        XCTAssertLessThan(darkest(pixels(app, in: strip)), 100, "the title's ink shows under the bar, no band over it")
+    }
+
+    /// The bar's height, between ⌄ and the clock: nothing of the bar's own is drawn there.
+    private func barStrip(_ app: XCUIApplication) -> CGRect {
+        let bar = app.navigationBars.firstMatch.frame
+        let lower = app.buttons["Réduire la séance"].frame
+        let clock = element(app, "session-clock").frame
+        return CGRect(x: lower.maxX + 6, y: bar.minY, width: clock.minX - lower.maxX - 12, height: bar.height)
+    }
+
+    /// The screen's pixels in `rect`, in points, as RGBA bytes.
+    private func pixels(_ app: XCUIApplication, in rect: CGRect) -> [UInt8] {
+        let image = app.screenshot().image
+        let scale = image.scale
+        let crop = CGRect(x: rect.minX * scale, y: rect.minY * scale, width: rect.width * scale, height: rect.height * scale)
+        guard let cg = image.cgImage?.cropping(to: crop.integral) else { return [] }
+        var bytes = [UInt8](repeating: 0, count: cg.width * cg.height * 4)
+        bytes.withUnsafeMutableBytes { buffer in
+            let context = CGContext(
+                data: buffer.baseAddress, width: cg.width, height: cg.height, bitsPerComponent: 8,
+                bytesPerRow: cg.width * 4, space: CGColorSpaceCreateDeviceRGB(),
+                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+            context?.draw(cg, in: CGRect(x: 0, y: 0, width: cg.width, height: cg.height))
+        }
+        return bytes
+    }
+
+    /// The darkest pixel's gray, 0 for black to 255 for white.
+    private func darkest(_ rgba: [UInt8]) -> Int {
+        stride(from: 0, to: rgba.count - 3, by: 4).map { (Int(rgba[$0]) + Int(rgba[$0 + 1]) + Int(rgba[$0 + 2])) / 3 }
+            .min() ?? 255
     }
 
     func testDraftSurvivesRelaunch() {
@@ -267,6 +304,33 @@ final class SessionFlowTests: XCTestCase {
         XCTAssertEqual(element(app, "rep-ruler").value as? String, "10", "the count chosen")
     }
 
+    /// A ✓ right after the ruler moved logs that count, and the next set keeps last time's. The
+    /// launch stretches the ruler's wait to 4 s so the ✓ lands inside it.
+    func testRulerThenCheckKeepsNextPrefill() {
+        let app = launch("history", extra: ["-BelayDraftDelay", "4"])
+        openCover(app)
+        passWarmups(app)
+        let ruler = element(app, "rep-ruler")
+        slide(ruler, by: 2)
+        element(app, "log-set").tap()
+        let skip = element(app, "skip-rest")
+        XCTAssertTrue(skip.waitForExistence(timeout: 3), "the rest starts")
+        XCTAssertTrue(element(app, "done-0-3").label.contains("× 10"), element(app, "done-0-3").label)
+        Thread.sleep(forTimeInterval: 5)
+        skip.tap()
+        XCTAssertTrue(element(app, "set-title").waitFor(NSPredicate(format: "label == %@", "Série 2 sur 4")))
+        XCTAssertEqual(ruler.value as? String, "8", "the next set opens on last time's count")
+    }
+
+    /// Paused past an hour, the clock reads as it ran: hours, minutes, seconds.
+    func testPausedClockPastAnHour() {
+        let app = launch("pausedLong")
+        openCover(app)
+        let clock = element(app, "session-clock")
+        XCTAssertTrue(app.buttons["Arrêter la séance"].waitForExistence(timeout: 3), "paused")
+        XCTAssertTrue(clock.label.hasPrefix("1:15:"), clock.label)
+    }
+
     func testLockLoggedAsksRIR() {
         let app = launch("lockLogged")
         openCover(app)
@@ -277,11 +341,11 @@ final class SessionFlowTests: XCTestCase {
     func testReduceMotionCrossfades() {
         var app = launch("history")
         openCover(app)
-        XCTAssertEqual(element(app, "fixture-motion").value as? String, "matched", "the card moves by default")
+        XCTAssertEqual(element(app, "fixture-motion").value as? String, "spring", "the cover moves on the spring by default")
         app.terminate()
         app = launch("history", extra: ["-BelayReduceMotion", "YES"])
         openCover(app)
-        XCTAssertEqual(element(app, "fixture-motion").value as? String, "fade", "no matched geometry")
+        XCTAssertEqual(element(app, "fixture-motion").value as? String, "fade", "the cover only fades")
         logFirstWorkSet(app)
     }
 

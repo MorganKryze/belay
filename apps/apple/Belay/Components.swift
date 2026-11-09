@@ -23,7 +23,7 @@ struct Figure: View {
                     .foregroundStyle(.muted)
             }
         }
-        .animation(reduceMotion ? nil : .snappy, value: text)
+        .animation(reduceMotion ? nil : Motion.spring, value: text)
         .lineLimit(1)
         .minimumScaleFactor(0.4)
         .thinsUnderBar()
@@ -78,7 +78,7 @@ struct PrimaryButton: View {
         .buttonSizing(.flexible)
         .controlSize(.extraLarge)
         .tint(yields ? Color.track : Color.mark)
-        .animation(reduceMotion ? nil : .smooth, value: yields)
+        .animation(reduceMotion ? nil : Motion.spring, value: yields)
     }
 
     private var label: some View {
@@ -87,7 +87,7 @@ struct PrimaryButton: View {
             .foregroundStyle(yields ? Color.ink : Color.onMark)
             .multilineTextAlignment(.center)
             .contentTransition(reduceMotion ? .identity : .numericText())
-            .animation(reduceMotion ? nil : .snappy, value: title)
+            .animation(reduceMotion ? nil : Motion.spring, value: title)
     }
 }
 
@@ -189,7 +189,7 @@ struct EntryRow: View {
                         .monospacedDigit()
                         .contentTransition(reduceMotion ? .identity : .numericText(value: value ?? 0))
                 }
-                .animation(reduceMotion ? nil : .snappy, value: logged)
+                .animation(reduceMotion ? nil : Motion.spring, value: logged)
             }
             Spacer(minLength: 0)
         }

@@ -49,8 +49,10 @@ enum Fixture {
             if openModes.contains(mode) {
                 // Through the same start and actions a tap makes, so the store holds what the app writes.
                 let store = try AccountStore.open(userId: userId, origin: url, in: folder)
+                // `pausedLong` starts 75 minutes back, so its pause stands past the hour.
+                let startedAt = mode == "pausedLong" ? Date.now.addingTimeInterval(-75 * 60) : Date.now
+                let id = try TrainingModel(store: store, didWrite: {}, now: { startedAt }, timeZone: .current).start()
                 let model = TrainingModel(store: store, didWrite: {}, now: Date.init, timeZone: .current)
-                let id = try model.start()
                 if mode != "running" { try doneYesterday(like: id, in: store) }
                 // Yesterday's session was written beside the model: it reads it before acting.
                 model.refresh()
@@ -68,8 +70,11 @@ enum Fixture {
     }
 
     private static let openModes: Set = [
-        "running", "history", "finished", "warmups", "timed", "group", "lastSet", "paused", "lockLogged",
+        "running", "history", "finished", "warmups", "timed", "group", "lastSet", "paused", "pausedLong", "lockLogged", "workSet",
     ]
+
+    /// Seconds the ruler waits before keeping its count as the draft, when a test stretches it.
+    static var draftDelay: Double { UserDefaults.standard.double(forKey: "BelayDraftDelay") }
 
     /// Reduce Motion forced on, for the test that checks the cover only fades.
     static var reduceMotion: Bool { UserDefaults.standard.bool(forKey: "BelayReduceMotion") }
@@ -85,6 +90,13 @@ enum Fixture {
                 logged = try $0.logNext(count: nil, weightKg: nil, expecting: nil)
             }
             if let logged { try model.answerRIR(setId: logged.id, rir: 2) }
+            // The other sets as prefilled, so the cover opens on 🏁.
+            while model.open?.current != nil {
+                try model.act {
+                    _ = try $0.logNext(count: nil, weightKg: nil, expecting: nil)
+                    try $0.skipRest()
+                }
+            }
         case "timed":
             try model.act { try $0.replace(slotIndex: 0, with: "belay:dead-hang") }
         case "group":
@@ -100,7 +112,9 @@ enum Fixture {
                     try $0.skipRest()
                 }
             }
-        case "paused":
+        case "workSet":
+            try passWarmups(model)
+        case "paused", "pausedLong":
             try model.act { try $0.pause() }
         case "lockLogged":
             try passWarmups(model)
@@ -118,17 +132,18 @@ enum Fixture {
         }
     }
 
-    /// Whether the motion the cover would play is matched geometry or a fade, for a test to read;
+    /// Whether the cover runs its changes on the spring or the fade, for a test to read;
     /// nothing a person sees or hears.
     struct MotionProbe: View {
-        let reduce: Bool
+        /// The animation the cover runs its changes on.
+        let animation: Animation
 
         var body: some View {
             Color.clear
                 .frame(width: 1, height: 1)
                 .accessibilityElement()
                 .accessibilityIdentifier("fixture-motion")
-                .accessibilityValue(reduce ? "fade" : "matched")
+                .accessibilityValue(animation == Motion.fade ? "fade" : animation == Motion.spring ? "spring" : "other")
         }
     }
 

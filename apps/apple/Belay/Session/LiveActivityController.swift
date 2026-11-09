@@ -6,19 +6,6 @@ import UIKit
 import UserNotifications
 import os
 
-/// The exercise library bundled with the app, read once; empty when the build lacks it.
-enum BundledLibrary {
-    static let library: ExerciseLibrary = {
-        if let url = Bundle.main.url(forResource: "index", withExtension: "json"),
-           let data = try? Data(contentsOf: url), let library = try? ExerciseLibrary(indexJSON: data) {
-            return library
-        }
-        Logger(subsystem: "cloud.libresoftware.belay", category: "activity").error("exercise library not read")
-        // A hand-written empty list always reads.
-        return try! ExerciseLibrary(indexJSON: Data("[]".utf8))
-    }()
-}
-
 extension ActivityWords {
     /// The Activity's and the alert's words, in the phone's language.
     static func phone(_ library: ExerciseLibrary) -> ActivityWords {

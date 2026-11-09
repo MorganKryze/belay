@@ -76,13 +76,8 @@ final class AccueilTests: XCTestCase {
         let start = app.buttons["Commencer la séance"]
         XCTAssertTrue(start.waitForExistence(timeout: 5))
         start.tap()
-        let tick = app.buttons["tick"]
-        XCTAssertTrue(tick.waitForExistence(timeout: 5))
-        tick.tap()
-        app.buttons["Terminer"].tap()
-        let save = app.buttons["Terminer et enregistrer"]
-        XCTAssertTrue(save.waitForExistence(timeout: 3))
-        save.tap()
+        XCTAssertTrue(app.buttons["log-set"].waitForExistence(timeout: 5), "the cover shows")
+        app.finishSession()
         let close = app.buttons["summary-close"]
         XCTAssertTrue(close.waitForExistence(timeout: 5))
         close.tap()
@@ -93,7 +88,8 @@ final class AccueilTests: XCTestCase {
     /// Under way, the card and the accessory say where the session stands: the load on the bar,
     /// the exercise, the set.
     func testRunningCardLeadsWithTheLoad() {
-        let app = launch("history")
+        // Past the warm-ups, so the set up is the first work set at last time's load.
+        let app = launch("workSet")
         let resume = app.buttons["Reprendre"]
         XCTAssertTrue(resume.waitForExistence(timeout: 10))
         XCTAssertTrue(text(app, containing: "62,5\u{202F}kg × 8").exists, "the card leads with the load on the bar")

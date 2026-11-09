@@ -63,7 +63,7 @@ struct SetCard: View {
                     .contentTransition(.numericText(value: due.weightKg))
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
-                Text(verbatim: "kg").font(.title2.weight(.semibold)).foregroundStyle(.muted)
+                Text("kg", tableName: "Session").font(.title2.weight(.semibold)).foregroundStyle(.muted)
                 Image(systemName: "chevron.up.chevron.down").font(.headline).foregroundStyle(.muted)
                     .accessibilityHidden(true)
             }
@@ -77,7 +77,7 @@ struct SetCard: View {
         .popover(isPresented: $choosing, arrowEdge: .top) {
             LoadChoices(
                 weightKg: due.weightKg,
-                incrementKg: TrainingModel.library.exercise(due.exerciseId)?.incrementKg ?? 2.5,
+                incrementKg: BundledLibrary.library.exercise(due.exerciseId)?.incrementKg ?? 2.5,
                 choose: { kg in
                     choosing = false
                     actions.run { try $0.choose(weightKg: kg, count: nil) }
@@ -209,7 +209,9 @@ enum SetText {
     /// « 60 kg × 8 », or « 30 s » for a hold with no added load.
     static func load(_ weightKg: Double, _ counts: some StringProtocol, timed: Bool) -> String {
         if timed && weightKg == 0 { return "\(counts)\u{202F}s" }
-        return "\(kg(weightKg))\u{202F}kg × \(counts)\(timed ? "\u{202F}s" : "")"
+        return timed
+            ? String(localized: "\(kg(weightKg))\u{202F}kg × \(String(counts))\u{202F}s", table: "Session")
+            : String(localized: "\(kg(weightKg))\u{202F}kg × \(String(counts))", table: "Session")
     }
 
     /// « 62,5 kg × 8, 8, 7, 6 », the groups of equal loads one after the other.

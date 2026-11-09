@@ -64,15 +64,16 @@ final class SyncNoticeTests: XCTestCase {
     func testALoadTheRulesRefuseIsNotSaved() {
         let app = launch("history")
         openCover(app)
-        let kg = app.textFields["load-kg"]
-        kg.tap()
-        kg.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 6) + "62,3")
+        element(app, "load").tap()
+        app.buttons["Autre charge…"].tap()
+        let keypad = app.alerts.textFields.firstMatch
+        XCTAssertTrue(keypad.waitForExistence(timeout: 2), "a keypad opens")
+        keypad.typeText("62,3")
+        app.alerts.buttons["OK"].tap()
         tick(app)
         let alert = app.alerts.firstMatch
         XCTAssertTrue(alert.waitForExistence(timeout: 3), "the refusal is said")
-        XCTAssertTrue(
-            alert.staticTexts.containing(NSPredicate(format: "label BEGINSWITH %@", "La série n’a pas été notée"))
-                .firstMatch.exists, "as not saved")
+        XCTAssertTrue(alert.staticTexts["Ce n’est pas noté. Réessaie."].exists, "as not saved")
         XCTAssertEqual(queuedSets(app), "0", "nothing is queued")
         alert.buttons.firstMatch.tap()
         XCTAssertFalse(element(app, "done-0-0").label.contains("Montée"), "the set is not done")

@@ -4,8 +4,11 @@ import SwiftUI
 /// card, the foot's glass and the figures arrive together. Under Reduce Motion each change is a
 /// short crossfade and nothing moves.
 enum Motion {
+    static let spring = Animation.spring(duration: 0.55, bounce: 0.2)
+    static let fade = Animation.easeInOut(duration: 0.25)
+
     static func change(reduce: Bool) -> Animation {
-        reduce ? .easeInOut(duration: 0.25) : .spring(duration: 0.55, bounce: 0.2)
+        reduce ? fade : spring
     }
 
     /// Reduce Motion as the system sets it, or as a debug launch forces it for the tests.
@@ -15,21 +18,6 @@ enum Motion {
         #else
         system
         #endif
-    }
-}
-
-/// The card that keeps its place while its content changes: the set becomes the clock, the recap
-/// the announcement. Under Reduce Motion it only fades.
-struct Hero: ViewModifier {
-    let space: Namespace.ID
-    let reduce: Bool
-
-    func body(content: Content) -> some View {
-        if reduce {
-            content.transition(.opacity)
-        } else {
-            content.matchedGeometryEffect(id: "hero", in: space).transition(.opacity)
-        }
     }
 }
 

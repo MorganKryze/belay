@@ -97,7 +97,7 @@ struct Cover: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
-                card.modifier(Hero(space: flow, reduce: reduce))
+                card.transition(.opacity)
                 if showsDone, !state.done.isEmpty {
                     DoneList(sets: state.done, asking: state.askRIR, actions: actions, space: flow, reduce: reduce)
                 }
@@ -106,7 +106,9 @@ struct Cover: View {
             .padding(.top, 8)
             .padding(.bottom, 16)
         }
-        .scrollEdgeEffectStyle(.hard, for: .top)
+        // No band under the bar once the card scrolls up: the content runs under the glass buttons,
+        // as on every titled page.
+        .scrollEdgeEffectHidden(true, for: .top)
         // The cover has no title: the bar holds the clock, and the card starts right under it
         // instead of under the empty room a large title keeps.
         .navigationBarTitleDisplayMode(.inline)
@@ -125,8 +127,9 @@ struct Cover: View {
         // The count moved on the ruler is kept as the set's draft, so a relaunch shows it again.
         .task(id: reps) {
             guard let due, reps != due.count else { return }
-            try? await Task.sleep(for: .milliseconds(400))
-            guard !Task.isCancelled else { return }
+            try? await Task.sleep(for: Self.draftDelay)
+            // A ✓ in the meantime logged this count and moved on: the set due now keeps its own.
+            guard !Task.isCancelled, case .due(let now)? = training.session?.phase, now.place == due.place else { return }
             actions.run { try $0.choose(weightKg: nil, count: reps) }
         }
         .task(id: noted) {
@@ -143,8 +146,17 @@ struct Cover: View {
             Button(role: .cancel) {} label: { Text("OK", tableName: "Session") }
         }
         #if DEBUG
-        .overlay(alignment: .topLeading) { Fixture.MotionProbe(reduce: reduce) }
+        .overlay(alignment: .topLeading) { Fixture.MotionProbe(animation: motion) }
         #endif
+    }
+
+    /// How long the ruler stands still before its count is kept as the draft. A debug launch
+    /// stretches it, so a test can tap ✓ inside it.
+    private static var draftDelay: Duration {
+        #if DEBUG
+        if Fixture.draftDelay > 0 { return .seconds(Fixture.draftDelay) }
+        #endif
+        return .milliseconds(400)
     }
 
     // MARK: The card
