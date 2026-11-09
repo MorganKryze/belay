@@ -12,16 +12,8 @@ const OLD: readonly string[] = [
   "--hook-a",
   "--hook-b",
 ];
-// Files that still draw the hooks until the launch, the top bar and the cracks move to the mark.
-const PENDING: readonly string[] = [
-  "index.html",
-  "src/index.css",
-  "src/components/top-bar.tsx",
-  "src/routes/fallbacks.tsx",
-  "scripts/gen-cracks.mjs",
-  "src/assets/cracks-light.svg",
-  "src/assets/cracks-dark.svg",
-];
+// No shipped file is waiting to move to the new mark any more.
+const PENDING: readonly string[] = [];
 
 const walk = (dir: string): string[] =>
   readdirSync(dir).flatMap((name) => {
