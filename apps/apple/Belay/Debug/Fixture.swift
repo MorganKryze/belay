@@ -49,8 +49,10 @@ enum Fixture {
             if openModes.contains(mode) {
                 // Through the same start and actions a tap makes, so the store holds what the app writes.
                 let store = try AccountStore.open(userId: userId, origin: url, in: folder)
+                // `pausedLong` starts 75 minutes back, so its pause stands past the hour.
+                let startedAt = mode == "pausedLong" ? Date.now.addingTimeInterval(-75 * 60) : Date.now
+                let id = try TrainingModel(store: store, didWrite: {}, now: { startedAt }, timeZone: .current).start()
                 let model = TrainingModel(store: store, didWrite: {}, now: Date.init, timeZone: .current)
-                let id = try model.start()
                 if mode != "running" { try doneYesterday(like: id, in: store) }
                 // Yesterday's session was written beside the model: it reads it before acting.
                 model.refresh()
@@ -68,7 +70,7 @@ enum Fixture {
     }
 
     private static let openModes: Set = [
-        "running", "history", "finished", "warmups", "timed", "group", "lastSet", "paused", "lockLogged",
+        "running", "history", "finished", "warmups", "timed", "group", "lastSet", "paused", "pausedLong", "lockLogged",
     ]
 
     /// Seconds the ruler waits before keeping its count as the draft, when a test stretches it.
@@ -110,7 +112,7 @@ enum Fixture {
                     try $0.skipRest()
                 }
             }
-        case "paused":
+        case "paused", "pausedLong":
             try model.act { try $0.pause() }
         case "lockLogged":
             try passWarmups(model)

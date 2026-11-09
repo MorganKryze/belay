@@ -45,7 +45,7 @@ private struct SessionClock: View {
     var body: some View {
         Group {
             if state.paused {
-                Text(Duration.milliseconds(state.elapsedMs).formatted(.time(pattern: .minuteSecond)))
+                Text(verbatim: clockText(ms: state.elapsedMs))
             } else {
                 Text(timerInterval: state.startedAt ... .distantFuture, countsDown: false)
             }

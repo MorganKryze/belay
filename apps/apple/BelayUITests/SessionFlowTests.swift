@@ -322,6 +322,15 @@ final class SessionFlowTests: XCTestCase {
         XCTAssertEqual(ruler.value as? String, "8", "the next set opens on last time's count")
     }
 
+    /// Paused past an hour, the clock reads as it ran: hours, minutes, seconds.
+    func testPausedClockPastAnHour() {
+        let app = launch("pausedLong")
+        openCover(app)
+        let clock = element(app, "session-clock")
+        XCTAssertTrue(app.buttons["Arrêter la séance"].waitForExistence(timeout: 3), "paused")
+        XCTAssertTrue(clock.label.hasPrefix("1:15:"), clock.label)
+    }
+
     func testLockLoggedAsksRIR() {
         let app = launch("lockLogged")
         openCover(app)

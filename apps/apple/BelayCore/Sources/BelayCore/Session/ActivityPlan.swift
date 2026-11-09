@@ -81,7 +81,7 @@ private func loadLine(_ due: DueSet, _ words: ActivityWords) -> String {
 }
 
 /// « 1:30 », « 1:02:05 ».
-func clockText(ms: Int) -> String {
+public func clockText(ms: Int) -> String {
   let total = max(0, ms / 1000)
   let (h, m, s) = (total / 3600, total / 60 % 60, total % 60)
   let two = { (n: Int) in n < 10 ? "0\(n)" : "\(n)" }
