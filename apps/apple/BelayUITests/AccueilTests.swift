@@ -29,6 +29,17 @@ final class AccueilTests: XCTestCase {
         XCTAssertTrue(app.buttons["Voir la séance"].exists, "the card opens it")
     }
 
+    /// The day's state is a chip in the session's colour, holding the card's own words; no other
+    /// domain marks Accueil.
+    func testStateIsTheSessionChip() {
+        let app = launch("fresh")
+        let chip = app.descendants(matching: .any)["chip.session"]
+        XCTAssertTrue(chip.waitForExistence(timeout: 10), "the day card carries the session chip")
+        XCTAssertEqual(chip.label, "La prochaine", "the chip reads the state as is")
+        let chips = app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH 'chip.'"))
+        XCTAssertEqual(chips.count, 1, "the session is the only domain on Accueil")
+    }
+
     /// The person's name as the title, their initial on the avatar.
     func testGreetsByName() {
         let app = launch("fresh")
