@@ -105,7 +105,7 @@ for (const [name, phone] of [
     const answer = await holdAccount(page);
     await page.goto("/");
     await expect(page.locator(".launch")).toBeVisible();
-    await expect(page.locator(".launch .word")).toBeHidden();
+    await expect(page.locator(".launch .word")).toHaveCSS("clip-path", "inset(50%)");
     const [mark, viewport] = await page.evaluate(() => {
       const r = document.querySelector(".launch .mark")!.getBoundingClientRect();
       return [
@@ -430,12 +430,17 @@ test("in a browser on a phone the logotype sits beside the mark, named Belay and
   answer();
 });
 
-test("the app keeps the mark alone, without the word", async ({ page, baseURL }) => {
+test("the app keeps the mark alone, the word left only as its name", async ({ page, baseURL }) => {
   await asAndroid(page, { instance: baseURL!, token: "a".repeat(43) });
   await fakeServer(page);
   const answer = await holdAccount(page);
   await page.goto("/");
   await expect(page.locator(".launch .mark")).toBeVisible();
-  await expect(page.locator(".launch").getByRole("img", { name: "Belay" })).toHaveCount(0);
+  // The word is clipped away but stays the launch's one name for assistive tech.
+  await expect(page.locator(".launch")).toMatchAriaSnapshot('- img "Belay"');
+  const word = page.locator(".launch").getByRole("img", { name: "Belay" });
+  await expect(word).toHaveCSS("clip-path", "inset(50%)");
+  const box = await word.boundingBox();
+  expect(Math.max(box!.width, box!.height)).toBeLessThanOrEqual(1);
   answer();
 });
