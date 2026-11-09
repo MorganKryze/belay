@@ -85,6 +85,22 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
+## GRDB.swift
+
+The iPhone app stores each account's records on the phone with
+[GRDB.swift](https://github.com/groue/GRDB.swift) 7.12.0, a SQLite toolkit linked into the app
+binary (`apps/apple/BelayCore/Package.swift`).
+
+```text
+Copyright (C) 2015-2025 Gwendal Roué
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+```
+
 ## Archivo
 
 The display face of the web app (`apps/web/src/fonts/archivo-belay.woff2`) is cut from
@@ -92,6 +108,8 @@ The display face of the web app (`apps/web/src/fonts/archivo-belay.woff2`) is cu
 125, weight 800), by `apps/web/scripts/cut-display-face.sh`: Latin with the French marks, the
 narrow no-break space and the tabular figures. The cut is a Modified Version under the license and
 keeps the name tables of the original.
+The iPhone app bundles the same instance, unchanged, as
+`apps/apple/Belay/ArchivoExpanded-ExtraBold.ttf`.
 
 ```text
 Copyright 2020 The Archivo Project Authors (https://github.com/Omnibus-Type/Archivo)

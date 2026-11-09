@@ -1,0 +1,316 @@
+{
+  "sourceLanguage": "fr",
+  "version": "1.0",
+  "strings": {
+    "Connexion": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign in"
+          }
+        }
+      }
+    },
+    "Adresse de l’instance": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Instance address"
+          }
+        }
+      }
+    },
+    "belay.exemple.fr": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "belay.example.org"
+          }
+        }
+      }
+    },
+    "Le serveur Belay que quelqu’un héberge pour toi, ou que tu héberges toi-même.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The Belay server someone hosts for you, or that you host yourself."
+          }
+        }
+      }
+    },
+    "Se connecter": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign in"
+          }
+        }
+      }
+    },
+    "Vérification…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checking…"
+          }
+        }
+      }
+    },
+    "Cette adresse n’est pas valide. Exemple : belay.exemple.fr": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This address isn’t valid. Example: belay.example.org"
+          }
+        }
+      }
+    },
+    "L’adresse doit commencer par https://": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The address must start with https://"
+          }
+        }
+      }
+    },
+    "Pas de connexion. Réessaie une fois en ligne.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No connection. Try again once you’re online."
+          }
+        }
+      }
+    },
+    "Impossible de joindre cette adresse. Vérifie-la, ou vérifie que l’instance est à jour.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Can’t reach this address. Check it, or check that the instance is up to date."
+          }
+        }
+      }
+    },
+    "Aucune instance Belay ne répond à cette adresse. Vérifie-la.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No Belay instance answers at this address. Check it."
+          }
+        }
+      }
+    },
+    "Connexion annulée. Tu peux réessayer quand tu veux.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign-in cancelled. You can try again whenever you like."
+          }
+        }
+      }
+    },
+    "La connexion est indisponible pour le moment. Réessaie dans un instant.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign-in is unavailable right now. Try again in a moment."
+          }
+        }
+      }
+    },
+    "La connexion a pris trop de temps. Réessaie.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your sign-in took too long. Please try again."
+          }
+        }
+      }
+    },
+    "La connexion n’a pas abouti. Réessaie.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign-in didn’t work. Please try again."
+          }
+        }
+      }
+    },
+    "Ton compte n’a pas accès à Belay. Demande l’accès à la personne qui gère cette instance.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your account doesn’t have access to Belay. Ask the person who runs this instance."
+          }
+        }
+      }
+    },
+    "Tes séances ne s’ouvrent pas sur ce téléphone. Réessaie.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your sessions won’t open on this phone. Please try again."
+          }
+        }
+      }
+    },
+    "Réessayer": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try again"
+          }
+        }
+      }
+    },
+    "Hors ligne. Tout est gardé sur ce téléphone.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Offline. Everything is kept on this phone."
+          }
+        }
+      }
+    },
+    "Ta connexion a expiré.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your sign-in has expired."
+          }
+        }
+      }
+    },
+    "Se reconnecter": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign in again"
+          }
+        }
+      }
+    },
+    "L’envoi n’a pas abouti. Tout est gardé sur ce téléphone.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sending didn’t go through. Everything is kept on this phone."
+          }
+        }
+      }
+    },
+    "Se déconnecter": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign out"
+          }
+        }
+      }
+    },
+    "Se déconnecter ?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign out?"
+          }
+        }
+      }
+    },
+    "Annuler": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel"
+          }
+        }
+      }
+    },
+    "Rien n’attend d’être envoyé.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing is waiting to be sent."
+          }
+        }
+      }
+    },
+    "%lld saisies partiront à ta prochaine connexion.": {
+      "localizations": {
+        "fr": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld saisie partira à ta prochaine connexion."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld saisies partiront à ta prochaine connexion."
+                }
+              }
+            }
+          }
+        },
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld entry will be sent at your next sign-in."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld entries will be sent at your next sign-in."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Ce qui attend d’être envoyé partira à ta prochaine connexion.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What is waiting to be sent will go at your next sign-in."
+          }
+        }
+      }
+    }
+  }
+}
