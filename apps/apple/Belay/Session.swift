@@ -17,9 +17,12 @@ struct SessionCover: View {
                         do {
                             try training.closeSummary(note: note)
                         } catch {
+                            // The cover stays, the note still typed in it, so the ✓ can try again.
                             Self.log.error("summary not saved: \(AccountStore.logLabel(error), privacy: .public)")
+                            return false
                         }
                         lower()
+                        return true
                     }
                 } else if let cover = training.cover {
                     SessionList(training: training, cover: cover, lower: lower)

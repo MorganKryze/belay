@@ -7,14 +7,17 @@ import SwiftUI
 struct SummaryView: View {
     let summary: SessionSummary
     let giveEffort: (Int?) -> Void
-    let close: (String) -> Void
+    /// Saves and closes; false when the save failed and the summary stays.
+    let close: (String) -> Bool
     @Environment(\.dynamicTypeSize) private var type
     @State private var note: String
     @State private var arrived = false
     /// Set once the summary was left, so a dismissal by the system does not leave it twice.
     @State private var left = false
+    /// Counts the saves that failed, for a haptic: the summary stays, and the ✓ can try again.
+    @State private var failures = 0
 
-    init(summary: SessionSummary, giveEffort: @escaping (Int?) -> Void, close: @escaping (String) -> Void) {
+    init(summary: SessionSummary, giveEffort: @escaping (Int?) -> Void, close: @escaping (String) -> Bool) {
         self.summary = summary
         self.giveEffort = giveEffort
         self.close = close
@@ -57,7 +60,7 @@ struct SummaryView: View {
                     .background(Color.surface, in: .rect(cornerRadius: 22))
                     // The server takes up to this many UTF-16 units; past it the note would be refused.
                     .onChange(of: note) { _, text in
-                        if text.utf16.count > Bounds.noteMax { note = String(text.utf16.prefix(Bounds.noteMax)) ?? note }
+                        if text.utf16.count > Bounds.noteMax { note = fitNote(text) }
                     }
             }
             .padding(.horizontal, 16)
@@ -95,6 +98,7 @@ struct SummaryView: View {
         // The system may close the cover itself (its zoom has a pull of its own): leave all the same.
         .onDisappear { leave() }
         .sensoryFeedback(.success, trigger: arrived)
+        .sensoryFeedback(.error, trigger: failures)
     }
 
     private var titleCard: some View {
@@ -167,8 +171,8 @@ struct SummaryView: View {
 
     private func leave() {
         guard !left else { return }
-        left = true
-        close(note)
+        left = close(note)
+        if !left { failures += 1 }
     }
 
     /// « 2 605 », whole kilograms.

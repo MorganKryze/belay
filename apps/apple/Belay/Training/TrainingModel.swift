@@ -308,11 +308,11 @@ final class TrainingModel {
     }
 
     /// The summary is left: its note, when changed, is written and queued, and the effort, given
-    /// or not, is settled. The cover can close.
+    /// or not, is settled. Only then is the summary let go, so a write that fails keeps it, and the
+    /// note typed, on screen.
     func closeSummary(note: String) throws {
         guard let left = summary else { return }
-        summary = nil
-        let trimmed = note.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmed = fitNote(note.trimmingCharacters(in: .whitespacesAndNewlines))
         let written: String? = trimmed.isEmpty ? nil : trimmed
         if written != left.note {
             try store.recordChanges(
@@ -321,6 +321,7 @@ final class TrainingModel {
             didWrite()
         }
         try store.settleEffort(workoutId: left.workoutId)
+        summary = nil
     }
 
     /// The shared summary rule's figures, read against the history the session ends in.
