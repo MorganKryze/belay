@@ -26,12 +26,12 @@ final class SyncNoticeTests: XCTestCase {
         let resume = app.buttons["Reprendre"]
         XCTAssertTrue(resume.waitForExistence(timeout: 10), "the session is open")
         resume.tap()
-        XCTAssertTrue(app.buttons["tick"].waitForExistence(timeout: 5), "the cover shows the next set")
+        XCTAssertTrue(app.buttons["log-set"].waitForExistence(timeout: 5), "the cover shows the next set")
     }
 
-    /// Ticks the next set with the RIR shown under it, in one tap.
+    /// Logs the next set with ✓, as prefilled, in one tap.
     private func tick(_ app: XCUIApplication) {
-        app.buttons["tick"].tap()
+        app.buttons["log-set"].tap()
     }
 
     /// Offline is said once, on Accueil only, through a return to the foreground and a tick that
@@ -75,7 +75,7 @@ final class SyncNoticeTests: XCTestCase {
                 .firstMatch.exists, "as not saved")
         XCTAssertEqual(queuedSets(app), "0", "nothing is queued")
         alert.buttons.firstMatch.tap()
-        XCTAssertFalse(element(app, "set-0-3").label.contains("faite"), "the set is not done")
+        XCTAssertFalse(element(app, "done-0-0").label.contains("Montée"), "the set is not done")
     }
 
     /// A session the instance refused: the line says so and offers to sign in again.

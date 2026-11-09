@@ -11,7 +11,11 @@ import Synchronization
 /// of the first exercise logged at 65 kg for 8, a record over yesterday's, `past` from one where every session
 /// of the program was done once, A first, so A comes next with a last time, `keep` from the store the previous
 /// launch left, so a test can relaunch onto it. `expired` starts empty on an instance that refuses
-/// the token at each sync.
+/// the token at each sync. From `history`: `warmups` as it is, its first exercise's warm-ups due;
+/// `timed` with a dead hang in place of the first exercise; `group` with the first two exercises
+/// in one group; `lastSet` with every planned set logged but the last; `paused` paused at once;
+/// `lockLogged` with the first work set logged from the lock screen, its rest running.
+/// `-BelayReduceMotion YES` forces Reduce Motion on the session's cover.
 enum Fixture {
     nonisolated fileprivate static let origin = "https://belay.example"
     nonisolated fileprivate static let userId = "fixture"
@@ -37,20 +41,20 @@ enum Fixture {
                 for round in 0..<8 {
                     let id = try model.start()
                     let code = try store.history().workouts.first(where: { $0.id == id })?.sessionCode
-                    if round > 0, code == "A" { try model.delete(); break }
+                    if round > 0, code == "A" { try model.stopEmpty(); break }
                     try doneYesterday(like: id, in: store, daysAgo: Double(10 - round))
-                    try model.delete()
+                    try model.stopEmpty()
                 }
             }
-            if mode == "running" || mode == "history" || mode == "finished" {
-                // Through the same start a tap makes, so the store holds what the app writes.
+            if openModes.contains(mode) {
+                // Through the same start and actions a tap makes, so the store holds what the app writes.
                 let store = try AccountStore.open(userId: userId, origin: url, in: folder)
                 let model = TrainingModel(store: store, didWrite: {}, now: Date.init, timeZone: .current)
                 let id = try model.start()
                 if mode != "running" { try doneYesterday(like: id, in: store) }
-                if mode == "finished" {
-                    try model.tick(slotIndex: 0, position: Bounds.maxWarmups, weightKg: 65, count: 8, rir: 2)
-                }
+                // Yesterday's session was written beside the model: it reads it before acting.
+                model.refresh()
+                try prepare(mode, model: model, store: store, workoutId: id)
             }
             defaults.set(origin, forKey: StoredInstance.key)
             try session.keep(origin: origin, token: "fixture-token")
@@ -61,6 +65,71 @@ enum Fixture {
         return AccountModel(
             secrets: secrets, http: FixtureClient(refusesSync: mode == "expired"), sheet: FixtureSheet(),
             defaults: defaults, storeFolder: folder)
+    }
+
+    private static let openModes: Set = [
+        "running", "history", "finished", "warmups", "timed", "group", "lastSet", "paused", "lockLogged",
+    ]
+
+    /// Reduce Motion forced on, for the test that checks the cover only fades.
+    static var reduceMotion: Bool { UserDefaults.standard.bool(forKey: "BelayReduceMotion") }
+
+    /// The open session brought to the mode's state, through the session's actions.
+    private static func prepare(_ mode: String, model: TrainingModel, store: AccountStore, workoutId: String) throws {
+        switch mode {
+        case "finished":
+            try passWarmups(model)
+            var logged: SetChange?
+            try model.act {
+                try $0.choose(weightKg: 65, count: 8)
+                logged = try $0.logNext(count: nil, weightKg: nil, expecting: nil)
+            }
+            if let logged { try model.answerRIR(setId: logged.id, rir: 2) }
+        case "timed":
+            try model.act { try $0.replace(slotIndex: 0, with: "belay:dead-hang") }
+        case "group":
+            guard var plan = try store.history().workouts.first(where: { $0.id == workoutId })?.plan else { return }
+            plan[0].groupKey = "a"
+            plan[1].groupKey = "a"
+            let at = Instant.string(.now)
+            try store.recordChanges([.workout(WorkoutChange(id: workoutId, at: at, edit: .plan(plan)))], active: .keep)
+        case "lastSet":
+            while let open = model.open, open.setsPlanned - open.setsDone > 1 {
+                try model.act {
+                    _ = try $0.logNext(count: nil, weightKg: nil, expecting: nil)
+                    try $0.skipRest()
+                }
+            }
+        case "paused":
+            try model.act { try $0.pause() }
+        case "lockLogged":
+            try passWarmups(model)
+            guard case .due(let due)? = model.session?.phase else { return }
+            try model.act { _ = try LockScreenActions.logShown(due.place, workoutId: workoutId, using: $0) }
+        default:
+            break
+        }
+    }
+
+    /// Logs the warm-ups due, as their ✓ would.
+    private static func passWarmups(_ model: TrainingModel) throws {
+        while case .due(let due)? = model.session?.phase, due.warmup {
+            try model.act { _ = try $0.logNext(count: nil, weightKg: nil, expecting: nil) }
+        }
+    }
+
+    /// Whether the motion the cover would play is matched geometry or a fade, for a test to read;
+    /// nothing a person sees or hears.
+    struct MotionProbe: View {
+        let reduce: Bool
+
+        var body: some View {
+            Color.clear
+                .frame(width: 1, height: 1)
+                .accessibilityElement()
+                .accessibilityIdentifier("fixture-motion")
+                .accessibilityValue(reduce ? "fade" : "matched")
+        }
     }
 
     /// The same session done a day earlier, or `daysAgo`, its first exercise at 62,5 kg for 8, 8, 7 and 6.
