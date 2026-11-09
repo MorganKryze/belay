@@ -105,7 +105,7 @@ extension AccountStore {
           bar: ctx.bar),
         expecting == nil || expecting == due.place, !(lockScreen && due.timed)
       else { return nil }
-      let held = open.active.chrono.flatMap { $0.place == due.place ? $0.seconds : nil }
+      let held = open.active.chrono.flatMap { $0.place == due.place ? heldSeconds($0, at: now) : nil }
       let n = count ?? (due.timed ? held ?? due.count : due.count)
       let values = SetValues(
         weightKg: weightKg ?? due.weightKg, reps: due.timed ? nil : n,
@@ -288,12 +288,18 @@ extension AccountStore {
         }
         let now = ctx.now()
         if end > now {
-          let left = Int(end.timeIntervalSince(now).rounded(.up))
-          chrono.seconds = max(0, chrono.seconds - left)
+          chrono.seconds = heldSeconds(chrono, at: now)
           chrono.endsAt = Instant.string(now)
           open.active.chrono = chrono
         }
       })
+  }
+
+  /// The seconds a hold has lasted at `now`: its target once it ran out, else what ran so far.
+  private func heldSeconds(_ chrono: Chrono, at now: Date) -> Int {
+    guard let end = Instant.date(chrono.endsAt), end > now else { return chrono.seconds }
+    let left = Int(end.timeIntervalSince(now).rounded(.up))
+    return max(0, chrono.seconds - left)
   }
 
   func pause(_ ctx: SessionContext) throws {
