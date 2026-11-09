@@ -1,19 +1,15 @@
 // The iPhone app's icon and in-app mark read the web's numbers, so both platforms draw one sign.
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
+import { walk } from "@/test/files";
+import { oldHooksIn } from "@/test/old-hooks";
 import { MARK_SHIFT, MOUNTAIN_D, RING_D, STROKE, TILE_MARK } from "../lib/mark";
 
 const apple = resolve(__dirname, "../../../apple");
 const app = join(apple, "Belay");
 const iconFile = join(app, "AppIcon.icon");
 const read = (path: string) => readFileSync(path, "utf8");
-
-const walk = (dir: string): string[] =>
-  readdirSync(dir).flatMap((name) => {
-    const path = join(dir, name);
-    return statSync(path).isDirectory() ? walk(path) : [path];
-  });
 
 // "#RRGGBB" as the sRGB components Icon Composer writes, three decimals compared.
 const rgb = (hex: string) =>
@@ -103,11 +99,10 @@ describe("the native mark", () => {
   });
 
   it("leaves no drawing of the old hooks in the app or its UI tests", () => {
-    const old = ["86, y: 160", "426, y: 352", "radius: 120", "512-unit"];
     const found = [app, join(apple, "BelayUITests")]
       .flatMap(walk)
       .filter((p) => /\.(swift|json|svg)$/.test(p))
-      .flatMap((p) => old.filter((n) => read(p).includes(n)).map((n) => `${p}: ${n}`));
+      .flatMap((p) => oldHooksIn(p, read(p)));
     expect(found).toEqual([]);
   });
 });

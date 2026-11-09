@@ -95,17 +95,24 @@
         fill: #8db6ee;
       }
       /* In the apps the launch screen is the system's own splash carried on: the mark alone,
-         centred, with no word and no lift, so nothing moves at the handover. */
+         centred, with no word and no lift, so nothing moves at the handover. The word is clipped
+         out of the flow rather than removed: it stays the launch's name, Belay, for
+         assistive tech, as the mark itself is hidden from it. */
       html[data-platform] .launch > div {
         transform: none;
       }
       html[data-platform] .launch .word {
-        display: none;
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
       }
-      /* The system splash draws the mark at this width: 288 dp of the icon canvas, of which the
-         mark's ink is 164 of 432 px. */
+      /* The system splash draws the mark's ink 109.33 dp wide: 288 dp of the icon canvas, of
+         which the ink is 164 of 432 px. The svg is the mark's 100-unit grid and its ink spans 85
+         units, so the svg is 100/85 of that width. */
       html[data-platform="android"] .launch .mark {
-        width: 109.33px;
+        width: 128.63px;
       }
       /* Charter §8: no launch screen on a computer, the tab favicon is enough. */
       @media (min-width: 1024px) {
