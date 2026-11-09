@@ -88,7 +88,8 @@ final class AccueilTests: XCTestCase {
     /// Under way, the card and the accessory say where the session stands: the load on the bar,
     /// the exercise, the set.
     func testRunningCardLeadsWithTheLoad() {
-        let app = launch("history")
+        // Past the warm-ups, so the set up is the first work set at last time's load.
+        let app = launch("workSet")
         let resume = app.buttons["Reprendre"]
         XCTAssertTrue(resume.waitForExistence(timeout: 10))
         XCTAssertTrue(text(app, containing: "62,5\u{202F}kg × 8").exists, "the card leads with the load on the bar")

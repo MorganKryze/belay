@@ -70,7 +70,7 @@ enum Fixture {
     }
 
     private static let openModes: Set = [
-        "running", "history", "finished", "warmups", "timed", "group", "lastSet", "paused", "pausedLong", "lockLogged",
+        "running", "history", "finished", "warmups", "timed", "group", "lastSet", "paused", "pausedLong", "lockLogged", "workSet",
     ]
 
     /// Seconds the ruler waits before keeping its count as the draft, when a test stretches it.
@@ -112,6 +112,8 @@ enum Fixture {
                     try $0.skipRest()
                 }
             }
+        case "workSet":
+            try passWarmups(model)
         case "paused", "pausedLong":
             try model.act { try $0.pause() }
         case "lockLogged":
