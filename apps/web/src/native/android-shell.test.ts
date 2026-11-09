@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { LAUNCH_SAFETY_MS } from "@/lib/launch";
 import { kotlin, longConst, stringSet } from "@/test/kotlin";
+import { decodePng } from "@/test/png";
 
 // The Android project's shape, read from its sources: the plugin the page calls, and what the
 // manifest and the network rules let out of the phone.
@@ -26,6 +27,22 @@ const kotlinFiles = () => {
   const dir = join(app, "main/java/cloud/libresoftware/belay");
   return readdirSync(dir).filter((f) => f.endsWith(".kt"));
 };
+// Bounding box (left, top, right, bottom) of the pixels of a resource PNG that pass `ink`.
+const inkBox = (p: string, ink: (r: number, g: number, b: number, a: number) => boolean) => {
+  const { width: w, height: h, rgba } = decodePng(readFileSync(join(app, "main/res", p)));
+  let [top, bottom, left, right] = [h, -1, w, -1];
+  for (let j = 0; j < h; j++)
+    for (let i = 0; i < w; i++) {
+      const at = (j * w + i) * 4;
+      if (ink(rgba[at]!, rgba[at + 1]!, rgba[at + 2]!, rgba[at + 3]!)) {
+        [top, bottom] = [Math.min(top, j), Math.max(bottom, j)];
+        [left, right] = [Math.min(left, i), Math.max(right, i)];
+      }
+    }
+  return [left, top, right, bottom] as const;
+};
+const webPage = () =>
+  readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../../index.html"), "utf8");
 const pluginTs = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "plugin.ts"), "utf8");
 
 // The method names of the page's `interface BelayNativePlugin`.
@@ -430,11 +447,32 @@ describe("the Android shell", () => {
 
   // The status bar icon stays the white mark: Android draws status icons as a white silhouette.
   it("the status bar icon stays white and the notifier tints the Live Update with the accent", () => {
-    const script = readFileSync(join(app, "../../../../../scripts/gen-icons.sh"), "utf8");
-    const stat = script.split("\n").find((line) => line.includes('fill="#FFFFFF" transform'));
-    expect(stat).toContain('width="24"');
+    const { width, height, rgba } = decodePng(
+      readFileSync(join(app, "main/res/drawable-xxxhdpi/ic_stat_belay.png")),
+    );
+    expect([width, height]).toEqual([96, 96]);
+    const coloured: number[] = [];
+    for (let at = 0; at < rgba.length; at += 4)
+      if (rgba[at + 3]! > 0 && (rgba[at]! < 255 || rgba[at + 1]! < 255 || rgba[at + 2]! < 255))
+        coloured.push(at / 4);
+    expect(coloured).toEqual([]);
     expect(kotlin("SessionNotifier.kt")).toContain(
       ".setColor(ContextCompat.getColor(context, R.color.accent))",
     );
+  });
+
+  it("sizes the Android launch mark as the system splash draws its icon", () => {
+    // The system splash scales the 432 px foreground canvas to 288 dp, and the page takes over
+    // from it: the mark must be as wide there as it was on the splash, so it does not jump.
+    const [left, , right] = inkBox(
+      "mipmap-xxxhdpi/ic_launcher_foreground.png",
+      (_r, _g, _b, a) => a > 127,
+    );
+    const drawn = ((right - left + 1) / 432) * 288;
+    const width = /html\[data-platform="android"\] \.launch \.mark \{\s*width: ([\d.]+)px/.exec(
+      webPage(),
+    );
+    expect(width).not.toBeNull();
+    expect(Math.abs(Number(width![1]) - drawn)).toBeLessThanOrEqual(0.5);
   });
 });
