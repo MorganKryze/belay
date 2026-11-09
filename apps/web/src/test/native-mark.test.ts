@@ -98,10 +98,11 @@ describe("the native mark", () => {
     expect(view).toContain(".accessibilityHidden(true)");
   });
 
-  it("leaves no drawing of the old hooks in the app or its UI tests", () => {
-    const found = [app, join(apple, "BelayUITests")]
-      .flatMap(walk)
-      .filter((p) => /\.(swift|json|svg)$/.test(p))
+  it("leaves no drawing of the old hooks anywhere in the native apps", () => {
+    // Every target counts, shared code and extensions too; only build output is skipped.
+    const built = /[\\/](\.build|build|DerivedData)[\\/]/;
+    const found = walk(apple)
+      .filter((p) => /\.(swift|json|svg)$/.test(p) && !built.test(p.slice(apple.length)))
       .flatMap((p) => oldHooksIn(p, read(p)));
     expect(found).toEqual([]);
   });

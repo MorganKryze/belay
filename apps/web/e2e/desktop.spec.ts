@@ -102,6 +102,24 @@ test("the top bar leads with the ink lockup, named Belay, a 44 px way home", asy
   await expect(page).toHaveURL(/\/$/);
 });
 
+test("the lockup stays drawn in the system's text colour under forced colours", async ({
+  page,
+}) => {
+  await page.emulateMedia({ forcedColors: "active" });
+  await fakeServer(page, { rows: WEEKS });
+  await page.goto("/tools");
+  const lockup = topBar(page).getByRole("img", { name: "Belay" });
+  await expect(lockup).toBeVisible();
+  // The mask shows only the fill, so the fill must not be forced to the page's own Canvas.
+  const look = await lockup.evaluate((el) => ({
+    fill: getComputedStyle(el).backgroundColor,
+    page: getComputedStyle(document.body).backgroundColor,
+    text: getComputedStyle(document.body).color,
+  }));
+  expect(look.fill).not.toBe(look.page);
+  expect(look.fill).toBe(look.text);
+});
+
 test("the avatar opens Réglages", async ({ page }) => {
   await fakeServer(page, { rows: WEEKS });
   await page.goto("/body");

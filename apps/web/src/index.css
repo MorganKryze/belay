@@ -747,6 +747,13 @@ body {
     mask-image: var(--mark-mountain);
     animation-delay: calc(var(--dur-breathe) / 2);
   }
+  /* Forced colours paint every background Canvas, which would fill the masks with the page. */
+  @media (forced-colors: active) {
+    & > [data-part] {
+      forced-color-adjust: none;
+      background-color: CanvasText;
+    }
+  }
 }
 
 /* The top bar's lockup, the mark and the logotype as one shape filled in the text's ink. */
@@ -756,6 +763,11 @@ body {
   aspect-ratio: 1245.52 / 278.26;
   background-color: currentColor;
   mask: url("../icons/lockup-ink.svg") center / contain no-repeat;
+  /* Forced colours paint every background Canvas, which would fill the mask with the page. */
+  @media (forced-colors: active) {
+    forced-color-adjust: none;
+    background-color: CanvasText;
+  }
 }
 
 /*
