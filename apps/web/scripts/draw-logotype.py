@@ -17,7 +17,7 @@ PEAK_BOX = (186.6, 137.6)
 EM = 200
 TRACKING = 0.01 * EM
 PEAK_MARGIN = 0.02 * EM
-# The lockup as validated: a 64 px mark box beside 46 px capitals (cap height 0.688 em), 18 px apart.
+# The drawn lockup: a 64 px mark box beside 46 px capitals (cap height 0.688 em), 18 px apart.
 CAP = 46 * 0.688
 MARK_PER_CAP = 64 / CAP
 GAP_PER_CAP = 18 / CAP

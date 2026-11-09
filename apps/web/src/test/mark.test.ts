@@ -28,7 +28,7 @@ const COLOURS = {
   white: ["#FFFFFF", "#FFFFFF"],
 } as const;
 
-// The validated lockup set the mark in a 64 px box beside 46 px capitals (cap height 0.688 em)
+// The drawn lockup sets the mark in a 64 px box beside 46 px capitals (cap height 0.688 em)
 // with an 18 px gap; the files keep those proportions to the cap height.
 const CAP = 46 * 0.688;
 const MARK_PER_CAP = 64 / CAP;
@@ -87,7 +87,7 @@ const darkness = (rgba: Buffer, width: number, x: number, y: number) => {
 };
 
 describe("the mark's sources", () => {
-  it("draws every version from the board's ring and mountain, round-capped", () => {
+  it("draws every version from the mark's own ring and mountain, round-capped", () => {
     for (const [name, size] of [
       ["mark", STROKE],
       ["mark-small", STROKE_SMALL],
@@ -104,7 +104,7 @@ describe("the mark's sources", () => {
       }
   });
 
-  it("keeps the board's numbers", () => {
+  it("keeps the mark's own numbers", () => {
     expect(MARK_VIEWBOX).toBe("0 0 100 100");
     expect(RING_D).toBe("M28.6 78.8 A37 37 0 1 1 71.4 78.8");
     expect(MOUNTAIN_D).toBe("M28.6 78.8 L39 58 L45 64 L56 44 L71.4 78.8");
@@ -129,7 +129,7 @@ describe("the mark's sources", () => {
     }
   });
 
-  it("sets the lockup with the board's proportions", () => {
+  it("keeps the drawn lockup's proportions", () => {
     for (const version of ["light", "dark", "ink"] as const) {
       const svg = read(`icons/lockup-${version}.svg`);
       expect(svg).not.toMatch(/<text|font-family|@font-face|\.woff|\.ttf/);
@@ -161,7 +161,7 @@ describe("the web's marks", () => {
     const frames = icoFrames(readFileSync(resolve(web, "public/favicon.ico")));
     expect(frames.map((f) => f.size).sort((a, b) => a - b)).toEqual([16, 32, 48]);
     const { rgba } = frames.find((f) => f.size === 16)!;
-    // The favicon's tile sets the mark at 84 % with an 8 % margin, as the board drew it.
+    // The favicon's tile sets the mark at 84 % with an 8 % margin.
     const px = (u: number) => ((8 + 0.84 * u) * 16) / 100;
     const ringCentre = 78.8 - Math.sqrt(37 ** 2 - 21.4 ** 2) + MARK_SHIFT.y;
     const column = Math.floor(px(56 + MARK_SHIFT.x));
