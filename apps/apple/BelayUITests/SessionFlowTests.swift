@@ -267,6 +267,24 @@ final class SessionFlowTests: XCTestCase {
         XCTAssertEqual(element(app, "rep-ruler").value as? String, "10", "the count chosen")
     }
 
+    /// A ✓ right after the ruler moved logs that count, and the next set keeps last time's. The
+    /// launch stretches the ruler's wait to 4 s so the ✓ lands inside it.
+    func testRulerThenCheckKeepsNextPrefill() {
+        let app = launch("history", extra: ["-BelayDraftDelay", "4"])
+        openCover(app)
+        passWarmups(app)
+        let ruler = element(app, "rep-ruler")
+        slide(ruler, by: 2)
+        element(app, "log-set").tap()
+        let skip = element(app, "skip-rest")
+        XCTAssertTrue(skip.waitForExistence(timeout: 3), "the rest starts")
+        XCTAssertTrue(element(app, "done-0-3").label.contains("× 10"), element(app, "done-0-3").label)
+        Thread.sleep(forTimeInterval: 5)
+        skip.tap()
+        XCTAssertTrue(element(app, "set-title").waitFor(NSPredicate(format: "label == %@", "Série 2 sur 4")))
+        XCTAssertEqual(ruler.value as? String, "8", "the next set opens on last time's count")
+    }
+
     func testLockLoggedAsksRIR() {
         let app = launch("lockLogged")
         openCover(app)

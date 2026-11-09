@@ -71,6 +71,9 @@ enum Fixture {
         "running", "history", "finished", "warmups", "timed", "group", "lastSet", "paused", "lockLogged",
     ]
 
+    /// Seconds the ruler waits before keeping its count as the draft, when a test stretches it.
+    static var draftDelay: Double { UserDefaults.standard.double(forKey: "BelayDraftDelay") }
+
     /// Reduce Motion forced on, for the test that checks the cover only fades.
     static var reduceMotion: Bool { UserDefaults.standard.bool(forKey: "BelayReduceMotion") }
 
