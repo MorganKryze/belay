@@ -6,40 +6,57 @@
 set -euo pipefail
 
 web="$(cd "$(dirname "$0")/../apps/web" && pwd)"
-src="$web/icons/app-icon.svg"
+icons="$web/icons"
 out="$web/public"
 res="$(cd "$(dirname "$0")/../apps/mobile/android/app/src/main/res" && pwd)"
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 
-for size in 64 192 512; do
-  rsvg-convert -w "$size" -h "$size" "$src" -o "$out/pwa-${size}x${size}.png"
-done
-rsvg-convert -w 180 -h 180 "$src" -o "$out/apple-touch-icon-180x180.png"
+# The drawing inside a mark source, without its <svg> wrapper.
+inner() { sed '1d;$d' "$icons/$1.svg"; }
 
-# favicon.ico: the mark alone on transparent, light-scheme blue (the SVG's dark style is dropped).
-sed 's|<style>.*</style>||' "$out/logo.svg" > "$tmp/mark.svg"
+for size in 64 192 512; do
+  rsvg-convert -w "$size" -h "$size" "$icons/app-icon.svg" -o "$out/pwa-${size}x${size}.png"
+done
+rsvg-convert -w 180 -h 180 "$icons/app-icon.svg" -o "$out/apple-touch-icon-180x180.png"
+
+# The tab icon: the mark in colour light, its ring and mountain recoloured under the dark scheme.
+style='  <style>@media (prefers-color-scheme: dark){path:first-child{stroke:#F3F5F5}path:last-child{stroke:#8DB6EE}}</style>'
+{ head -1 "$icons/mark-light.svg"; echo "$style"; inner mark-light; tail -1 "$icons/mark-light.svg"; } > "$out/logo.svg"
+
+# favicon.ico: the mark on a rounded paper tile. At 16 px the standard strokes would be 1.5 px
+# and the summit would run into the ring, so that frame draws the small-size mark.
+tile() { # source, file
+  { printf '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="#F3F5F5"/><g transform="translate(8 8) scale(0.84)">'
+    inner "$1"; printf '</g></svg>'; } > "$2"
+}
+tile mark-small-light "$tmp/fav-16.svg"
+tile mark-light "$tmp/fav-32.svg"
+tile mark-light "$tmp/fav-48.svg"
 for size in 16 32 48; do
-  rsvg-convert -w "$size" -h "$size" "$tmp/mark.svg" -o "$tmp/fav-$size.png"
+  rsvg-convert -w "$size" -h "$size" "$tmp/fav-$size.svg" -o "$tmp/fav-$size.png"
 done
 magick "$tmp/fav-16.png" "$tmp/fav-32.png" "$tmp/fav-48.png" "$out/favicon.ico"
 
-# Android: the mark alone, from the favicon's path, drawn at its size on the web icon (0.8529 of
-# a 512 px tile) relative to the 72 dp an adaptive icon shows. That keeps it well inside the 66 dp
-# safe zone every launcher mask leaves whole. The ground is the `icon_ground` colour, so only the
-# foreground changes between day (paper hooks) and night (light blue hooks).
-mark="$(sed -n 's|.*<path d="\([^"]*\)".*|\1|p' "$out/logo.svg")"
-layer() { # fill, file: one 108 dp adaptive layer
-  printf '<svg xmlns="http://www.w3.org/2000/svg" width="108" height="108" viewBox="0 0 108 108"><path d="%s" fill="%s" transform="translate(54 54) scale(%s) translate(-256 -256)"/></svg>' \
-    "$mark" "$1" "$(echo "0.8529 * 72 / 512" | bc -l)" > "$2"
+# Android: the mark alone, as wide as the old mark was on the web icon (0.8529 of a 512 px tile's
+# 340 px drawing) relative to the 72 dp an adaptive icon shows: 85 of its 100 units span 40.8 dp,
+# well inside the 66 dp safe zone every launcher mask leaves whole, and the page's launch mark
+# keeps the width it has at the splash's handover. The ground is the `icon_ground` colour, so only
+# the foreground changes between day (colour light) and night (colour dark).
+layer() { # source, file: one 108 dp adaptive layer
+  { printf '<svg xmlns="http://www.w3.org/2000/svg" width="108" height="108" viewBox="0 0 108 108"><g transform="translate(54 54) scale(%s) translate(-50 -50)">' \
+      "$(echo "0.8529 * 340 / 512 * 72 / 85" | bc -l)"
+    inner "$1"; printf '</g></svg>'; } > "$2"
 }
-layer '#F3F5F5' "$tmp/foreground.svg"
-layer '#8DB6EE' "$tmp/foreground-night.svg"
+layer mark-light "$tmp/foreground.svg"
+layer mark-dark "$tmp/foreground-night.svg"
 # Themed icons keep only the monochrome layer's alpha and tint it themselves.
-layer '#FFFFFF' "$tmp/monochrome.svg"
-# The status bar icon: white on transparent, the mark in the 20 dp live area of a 24 dp icon.
-printf '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="84 84 344 344"><path d="%s" fill="#FFFFFF" transform="translate(256 256) scale(%s) translate(-256 -256)"/></svg>' \
-  "$mark" "$(echo "344 * 20 / 24 / 340" | bc -l)" > "$tmp/stat.svg"
+layer mark-white "$tmp/monochrome.svg"
+# The status bar icon: the small-size mark in white on transparent, its 85-unit width in the
+# 20 dp live area of a 24 dp icon, its drawn box (y 7.1 to 85.3) centred.
+{ printf '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 100 100"><g transform="translate(50 50) scale(%s) translate(-50 -46.2)">' \
+    "$(echo "100 * 20 / 24 / 85" | bc -l)"
+  inner mark-small-white; printf '</g></svg>'; } > "$tmp/stat.svg"
 
 for density in mdpi:1 hdpi:1.5 xhdpi:2 xxhdpi:3 xxxhdpi:4; do
   name="${density%%:*}"

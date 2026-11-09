@@ -9,7 +9,9 @@ import {
   RING_D,
   STROKE,
   STROKE_SMALL,
+  TILE_MARK,
 } from "@/lib/mark";
+import { decodePng } from "./png";
 
 const web = resolve(__dirname, "../..");
 const read = (p: string) => readFileSync(resolve(web, p), "utf8");
@@ -47,6 +49,41 @@ const capHeight = (svg: string) => {
     .filter((p) => attr(p, "d") !== PEAK_D)
     .flatMap((p) => points(attr(p, "d")!).map(([, y]) => y));
   return Math.max(...ys) - Math.min(...ys);
+};
+
+// The frames of an ICO, each as RGBA rows: PNG frames, or 32-bit BMP frames stored bottom-up.
+const icoFrames = (b: Buffer) =>
+  Array.from({ length: b.readUInt16LE(4) }, (_, i) => {
+    const size = b[6 + i * 16] || 256;
+    const length = b.readUInt32LE(6 + i * 16 + 8);
+    const at = b.readUInt32LE(6 + i * 16 + 12);
+    const data = b.subarray(at, at + length);
+    if (data.readUInt32BE(0) === 0x89504e47) return { size, ...decodePng(data) };
+    expect(data.readUInt16LE(14)).toBe(32);
+    const header = data.readUInt32LE(0);
+    const rgba = Buffer.alloc(size * size * 4);
+    for (let y = 0; y < size; y++)
+      for (let x = 0; x < size; x++) {
+        const from = header + ((size - 1 - y) * size + x) * 4;
+        const to = (y * size + x) * 4;
+        rgba[to] = data[from + 2]!;
+        rgba[to + 1] = data[from + 1]!;
+        rgba[to + 2] = data[from]!;
+        rgba[to + 3] = data[from + 3]!;
+      }
+    return { size, width: size, height: size, rgba };
+  });
+
+const hex = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+const distance = (a: number[], b: number[]) => Math.hypot(...a.map((v, i) => v - b[i]!));
+// How far a pixel is from the paper, composited on it, as a share of the ink's distance:
+// 0 is paper, 1 is a full ink stroke.
+const darkness = (rgba: Buffer, width: number, x: number, y: number) => {
+  const at = (y * width + x) * 4;
+  const alpha = rgba[at + 3]! / 255;
+  const paper = hex(PAPER);
+  const rgb = [0, 1, 2].map((c) => rgba[at + c]! * alpha + paper[c]! * (1 - alpha));
+  return distance(rgb, paper) / distance(hex(INK), paper);
 };
 
 describe("the mark's sources", () => {
@@ -109,5 +146,71 @@ describe("the mark's sources", () => {
       expect(svg).toContain(`<path d="${RING_D}" stroke="${ring}"/>`);
       expect(svg).toContain(`<path d="${MOUNTAIN_D}" stroke="${mountain}"/>`);
     }
+  });
+});
+
+describe("the web's marks", () => {
+  it("shows the mark in colour light as the tab icon, colour dark in the dark scheme", () => {
+    const logo = read("public/logo.svg");
+    expect(logo).toContain(`<path d="${RING_D}" stroke="${INK}"/>`);
+    expect(logo).toContain(`<path d="${MOUNTAIN_D}" stroke="${BLUE}"/>`);
+    expect(logo).toMatch(new RegExp(`prefers-color-scheme: dark[^<]*${PAPER}[^<]*${LIGHT_BLUE}`));
+  });
+
+  it("keeps the ring, its opening and the summit apart in the 16 px favicon", () => {
+    const frames = icoFrames(readFileSync(resolve(web, "public/favicon.ico")));
+    expect(frames.map((f) => f.size).sort((a, b) => a - b)).toEqual([16, 32, 48]);
+    const { rgba } = frames.find((f) => f.size === 16)!;
+    // The favicon's tile sets the mark at 84 % with an 8 % margin, as the board drew it.
+    const px = (u: number) => ((8 + 0.84 * u) * 16) / 100;
+    const ringCentre = 78.8 - Math.sqrt(37 ** 2 - 21.4 ** 2) + MARK_SHIFT.y;
+    const column = Math.floor(px(56 + MARK_SHIFT.x));
+    const d = Array.from({ length: 16 }, (_, y) => darkness(rgba, 16, column, y));
+    const ringTop = px(ringCentre - 37);
+    const summit = px(44 + MARK_SHIFT.y);
+    const rows = (from: number, to: number) => d.slice(Math.round(from), Math.round(to) + 1);
+    const ringPeak = Math.max(...rows(ringTop - 1, ringTop + 1));
+    const summitPeak = Math.max(...rows(summit - 1, summit + 1));
+    const between = Math.min(...rows(ringTop + 1, summit - 1));
+    expect(between).toBeLessThan(Math.min(ringPeak, summitPeak) / 2);
+    // A stroke's width is the ink it lays across one line of pixels.
+    const sum = (v: number[]) => v.reduce((a, b) => a + b, 0);
+    expect(sum(rows(ringTop - 2, ringTop + 1.5))).toBeGreaterThanOrEqual(1.5);
+    const row = Math.floor(px(ringCentre));
+    const across = Array.from({ length: 16 }, (_, x) => darkness(rgba, 16, x, row));
+    expect(sum(across.slice(0, 6))).toBeGreaterThanOrEqual(1.5);
+    expect(sum(across.slice(10))).toBeGreaterThanOrEqual(1.5);
+  });
+
+  it("ships the installed app's icons with the mark inside the maskable circle", () => {
+    for (const [file, side] of [
+      ["pwa-64x64.png", 64],
+      ["pwa-192x192.png", 192],
+      ["pwa-512x512.png", 512],
+      ["apple-touch-icon-180x180.png", 180],
+    ] as const) {
+      const { width, height, rgba } = decodePng(readFileSync(resolve(web, `public/${file}`)));
+      expect([width, height]).toEqual([side, side]);
+      expect(darkness(rgba, side, 0, 0)).toBeLessThan(0.02);
+      let inked = 0;
+      for (let y = 0; y < side; y++)
+        for (let x = 0; x < side; x++) {
+          if (darkness(rgba, side, x, y) < 0.1) continue;
+          inked++;
+          const r = Math.hypot(x + 0.5 - side / 2, y + 0.5 - side / 2);
+          expect(r, `${file} ${x},${y}`).toBeLessThanOrEqual(0.4 * side);
+        }
+      expect(inked).toBeGreaterThan(0);
+    }
+  });
+
+  it("sizes the iPhone tile's mark for the home screen at 180 px", () => {
+    expect(TILE_MARK.scale).toBeCloseTo(0.66, 2);
+    expect(TILE_MARK.offset).toBeCloseTo((100 - 100 * TILE_MARK.scale) / 2, 5);
+    const toPx = (u: number) => u * TILE_MARK.scale * 1.8;
+    expect(toPx(STROKE)).toBeGreaterThanOrEqual(8);
+    // The shoulder is the mountain's second point, the dip after it its third.
+    const [, shoulder, dip] = points(MOUNTAIN_D);
+    expect(toPx(dip![1] - shoulder![1])).toBeGreaterThanOrEqual(4);
   });
 });

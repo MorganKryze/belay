@@ -1,8 +1,9 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { inflateSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
 import { SCREENS, startupFile } from "../../startup-images";
+import { MOUNTAIN_D, RING_D, TILE_MARK } from "@/lib/mark";
+import { decodePng } from "./png";
 
 const web = resolve(__dirname, "../..");
 const read = (p: string) => readFileSync(resolve(web, p), "utf8");
@@ -40,48 +41,16 @@ const pathBounds = (d: string) => {
 // Bounding box (left, top, right, bottom) of the pixels that pass `ink` in an 8-bit RGB or RGBA,
 // non-interlaced PNG.
 const inkBox = (p: string, ink: (r: number, g: number, b: number, a: number) => boolean) => {
-  const b = readFileSync(resolve(web, p));
-  const [w, h] = [b.readUInt32BE(16), b.readUInt32BE(20)];
-  expect([b[24], b[28]]).toEqual([8, 0]);
-  expect([2, 6]).toContain(b[25]);
-  const bpp = b[25] === 6 ? 4 : 3;
-  const chunks: Buffer[] = [];
-  for (let at = 8; at < b.length;) {
-    const len = b.readUInt32BE(at);
-    if (b.toString("ascii", at + 4, at + 8) === "IDAT")
-      chunks.push(b.subarray(at + 8, at + 8 + len));
-    at += len + 12;
-  }
-  const raw = inflateSync(Buffer.concat(chunks));
-  const row = w * bpp;
-  const px = Buffer.alloc(row * h);
+  const { width: w, height: h, rgba } = decodePng(readFileSync(resolve(web, p)));
   let [top, bottom, left, right] = [h, -1, w, -1];
-  for (let j = 0; j < h; j++) {
-    const filter = raw[j * (row + 1)];
-    for (let i = 0; i < row; i++) {
-      const v = raw[j * (row + 1) + 1 + i]!;
-      const a = i >= bpp ? px[j * row + i - bpp]! : 0;
-      const up = j > 0 ? px[(j - 1) * row + i]! : 0;
-      const c = i >= bpp && j > 0 ? px[(j - 1) * row + i - bpp]! : 0;
-      let pred = 0;
-      if (filter === 1) pred = a;
-      else if (filter === 2) pred = up;
-      else if (filter === 3) pred = (a + up) >> 1;
-      else if (filter === 4) {
-        const base = a + up - c;
-        const [pa, pb, pc] = [Math.abs(base - a), Math.abs(base - up), Math.abs(base - c)];
-        pred = pa <= pb && pa <= pc ? a : pb <= pc ? up : c;
-      }
-      px[j * row + i] = (v + pred) & 255;
-    }
+  for (let j = 0; j < h; j++)
     for (let i = 0; i < w; i++) {
-      const at = j * row + i * bpp;
-      if (ink(px[at]!, px[at + 1]!, px[at + 2]!, bpp === 4 ? px[at + 3]! : 255)) {
+      const at = (j * w + i) * 4;
+      if (ink(rgba[at]!, rgba[at + 1]!, rgba[at + 2]!, rgba[at + 3]!)) {
         [top, bottom] = [Math.min(top, j), Math.max(bottom, j)];
         [left, right] = [Math.min(left, i), Math.max(right, i)];
       }
     }
-  }
   return [left, top, right, bottom] as const;
 };
 // Width, height and top row of the blue mark's bounding box: the pixels past halfway from the
@@ -104,21 +73,17 @@ const launchMarkup = () => {
 const MARK = "M86 160L86 266A120 120 0 0 0 326 266";
 
 describe("app shell identity", () => {
-  it("shows the blue mark as the tab icon, light blue in the dark scheme", () => {
-    const logo = read("public/logo.svg");
-    expect(logo).toContain(MARK);
-    expect(logo).toContain('fill="#1F4E8C"');
-    expect(logo).toContain("fill:#8DB6EE");
-    // Cropped to the mark's 340 px width: it fills a 16 px tab instead of 10.6 px of it.
-    expect(logo).toContain('viewBox="86 86 340 340"');
-  });
-
-  it("keeps the icon source as paper hooks on the blue, light blue on dark paper by scheme", () => {
-    const src = read("icons/app-icon.svg");
-    expect(src).toContain(MARK);
-    expect(src).toContain('<rect width="512" height="512" fill="#1F4E8C"/>');
-    expect(src).toContain('fill="#F3F5F5"');
-    expect(src).toMatch(/prefers-color-scheme: dark[^<]*#10151A[^<]*#8DB6EE/);
+  it("keeps the icon sources as the mark on a paper tile, colour light and colour dark", () => {
+    for (const [file, paper, ring, mountain] of [
+      ["icons/app-icon.svg", "#F3F5F5", "#12181C", "#1F4E8C"],
+      ["icons/app-icon-dark.svg", "#10151A", "#F3F5F5", "#8DB6EE"],
+    ] as const) {
+      const src = read(file);
+      expect(src).toContain(`<rect width="100" height="100" fill="${paper}"/>`);
+      expect(src).toContain(`<path d="${RING_D}" stroke="${ring}"/>`);
+      expect(src).toContain(`<path d="${MOUNTAIN_D}" stroke="${mountain}"/>`);
+      expect(src).not.toContain("prefers-color-scheme");
+    }
   });
 
   it("uses one file as normal and maskable icon", () => {
@@ -145,15 +110,11 @@ describe("app shell identity", () => {
   });
 
   it("keeps the mark inside the charter's icon geometry", () => {
-    const scale = /scale\(([\d.]+)\)/.exec(read("icons/app-icon.svg"));
-    expect(scale).not.toBeNull();
-    const s = Number(scale![1]);
-    // 198 px is the farthest point of the master path from the centre (256, 256): the outer edge
-    // of the round cap at (106, 160) and (406, 352), 178.1 px away plus its 20 px radius. It must
-    // stay inside the maskable safe circle, 40 % of 512.
-    expect(198 * s).toBeLessThanOrEqual(204.8);
-    expect(340 * s).toBeLessThanOrEqual(290);
-    expect((512 - 340 * s) / 2).toBeGreaterThanOrEqual((340 * s) / 4);
+    const { offset, scale } = TILE_MARK;
+    for (const file of ["icons/app-icon.svg", "icons/app-icon-dark.svg"])
+      expect(read(file)).toContain(
+        `<g transform="translate(${offset} ${offset}) scale(${scale})">`,
+      );
   });
 
   it("ships every icon at its size", () => {
@@ -229,20 +190,5 @@ describe("app shell identity", () => {
       expect(Math.abs(top - (markTop + markHeight) - 47)).toBeLessThanOrEqual(3);
       expect(Math.abs((left + right + 1) / 2 - (1170 / 2 + 3))).toBeLessThanOrEqual(3);
     }
-  });
-
-  it("sizes the Android launch mark as the system splash draws its icon", () => {
-    // The system splash scales the 432 px foreground canvas to 288 dp, and the page takes over
-    // from it: the mark must be as wide there as it was on the splash, so it does not jump.
-    const [left, , right] = inkBox(
-      "../mobile/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png",
-      (_r, _g, _b, a) => a > 127,
-    );
-    const drawn = ((right - left + 1) / 432) * 288;
-    const width = /html\[data-platform="android"\] \.launch \.mark \{\s*width: ([\d.]+)px/.exec(
-      read("index.html"),
-    );
-    expect(width).not.toBeNull();
-    expect(Math.abs(Number(width![1]) - drawn)).toBeLessThanOrEqual(0.5);
   });
 });
