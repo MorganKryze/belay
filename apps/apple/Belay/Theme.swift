@@ -60,13 +60,15 @@ extension View {
     /// A large title that scrolls away with the content, as a page's heading does: once it has
     /// gone, the bar keeps its buttons and shows no compact title, which would stand at the top
     /// like a web page's sticky header. The empty view takes the compact title's place; the large
-    /// title, the back button's label and VoiceOver still read the navigation title.
+    /// title, the back button's label and VoiceOver still read the navigation title. No edge
+    /// effect either: the content runs to the top under the glass buttons, with no band over it.
     func largeTitleOnly() -> some View {
         toolbar {
             ToolbarItem(placement: .principal) {
                 Color.clear.frame(width: 1, height: 1).accessibilityHidden(true)
             }
         }
+        .scrollEdgeEffectHidden(true, for: .top)
     }
 
     /// The subtitle under a large title, in the toolbar's own slot: `navigationSubtitle` paints lighter
