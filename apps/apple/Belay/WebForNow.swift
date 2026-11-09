@@ -8,9 +8,8 @@ struct WebForNow: View {
     var body: some View {
         VStack(spacing: 20) {
             BelayMark()
-                .fill(Color.muted)
-                .aspectRatio(1 / BelayMark.aspect, contentMode: .fit)
-                .frame(width: 72)
+                .stroke(Color.muted, style: BelayMark.strokeStyle(side: 72))
+                .frame(width: 72, height: 72)
                 .accessibilityHidden(true)
             Text("Cet écran est sur le web pour l’instant.")
                 .font(.headline)

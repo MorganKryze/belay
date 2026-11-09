@@ -1,0 +1,31 @@
+{
+  "fill-specializations" : [
+    { "value" : { "solid" : "srgb:0.95294,0.96078,0.96078,1.00000" } },
+    { "appearance" : "dark", "value" : { "solid" : "srgb:0.06275,0.08235,0.10196,1.00000" } }
+  ],
+  "groups" : [
+    {
+      "layers" : [
+        {
+          "fill-specializations" : [
+            { "value" : { "solid" : "srgb:0.12157,0.30588,0.54902,1.00000" } },
+            { "appearance" : "dark", "value" : { "solid" : "srgb:0.55294,0.71373,0.93333,1.00000" } }
+          ],
+          "image-name" : "mountain.svg",
+          "name" : "mountain"
+        },
+        {
+          "fill-specializations" : [
+            { "value" : { "solid" : "srgb:0.07059,0.09412,0.10980,1.00000" } },
+            { "appearance" : "dark", "value" : { "solid" : "srgb:0.95294,0.96078,0.96078,1.00000" } }
+          ],
+          "image-name" : "ring.svg",
+          "name" : "ring"
+        }
+      ],
+      "shadow" : { "kind" : "neutral", "opacity" : 0.5 },
+      "translucency" : { "enabled" : true, "value" : 0.5 }
+    }
+  ],
+  "supported-platforms" : { "squares" : "shared" }
+}
