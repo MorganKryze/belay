@@ -2,19 +2,52 @@
 // validity for sessions and sets at each bound, the exact JSON each change is sent as, field
 // merge and time clamping, the instant and id formats; then the session rules (order of sets,
 // rest, prefill, closing a forgotten session) and the schedule rules (plan of the day, rotation,
-// fixed days, in several time zones), and the starting program the native core ships. With
+// fixed days, in several time zones), the session's tools (loading a bar, warm-ups, editing the
+// day's plan, pausing), which workouts Health should hold, and the starting program the native
+// core ships. With
 // --check, fails if a committed file is not what the rules give today, so a rule changed here
 // cannot drift from the Swift port.
 import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { isDeepStrictEqual } from "node:util";
 import { EXERCISE_ID } from "../packages/shared/src/exercises/library";
+import {
+  DAY,
+  EARLIEST,
+  finishedSpan,
+  ownerOf,
+  planHealth,
+  sessionKey,
+  versionOf,
+} from "../apps/web/src/native/health-plan";
+import type { Written } from "../apps/web/src/native/health";
 import { MAX_CHANGES } from "../packages/shared/src/sync/limits";
 import { clampAt, isNewer } from "../packages/shared/src/sync/merge";
 import { ChangeSchema, type Change } from "../packages/shared/src/sync/schema";
 import { isValidChange } from "../packages/shared/src/sync/valid";
 import { type Activity, climbedThisWeek } from "../packages/shared/src/training/activities";
-import { planFor } from "../packages/shared/src/training/plan";
+import { MAX_TARGET_KG, nearestLoading, PLATE_PRESETS } from "../packages/shared/src/tools/plates";
+import {
+  defaultWarmupCount,
+  WARMUP_SCHEMES,
+  type WarmupCount,
+  warmupSets,
+} from "../packages/shared/src/tools/warmup";
+import {
+  pauseEndedBy,
+  type PauseStops,
+  restClock,
+  resumedRestEnd,
+  resumedStart,
+  sessionElapsed,
+} from "../packages/shared/src/training/pause";
+import {
+  appendSlot,
+  liveSlots,
+  planFor,
+  replaceSlot,
+  skipSlot,
+} from "../packages/shared/src/training/plan";
 import {
   estimatedMinutes,
   plannedWorkSets,
@@ -36,6 +69,7 @@ import {
   summary,
   type Turn,
   turnKey,
+  warmups,
   workOrder,
 } from "../packages/shared/src/training/rules";
 import { plannedNext } from "../packages/shared/src/training/schedule";
@@ -1260,9 +1294,467 @@ function scheduleVectors() {
   };
 }
 
+// The session's tools: loading a bar, warm-ups, the day's plan edited, a pause. Loads span under
+// the bar to past the plate table's bound, on three kinds of equipment.
+const BARBELL = {
+  id: "ds:0025",
+  name: "Barbell bench press",
+  equipment: "barbell",
+  incrementKg: 2.5,
+  measure: "reps",
+} as const;
+const DUMBBELL = {
+  id: "ds:0405",
+  name: "Dumbbell curl",
+  equipment: "dumbbell",
+  incrementKg: 2,
+  measure: "reps",
+} as const;
+const BODYWEIGHT = {
+  id: "ds:0739",
+  name: "Pull-up",
+  equipment: "bodyweight",
+  incrementKg: 2.5,
+  measure: "reps",
+} as const;
+const HOLD = {
+  id: HANG,
+  name: "Dead hang",
+  equipment: "bodyweight",
+  incrementKg: 2.5,
+  measure: "seconds",
+} as const;
+const LOADS = [10, 20, 60, 100, 140, MAX_TARGET_KG + 0.5];
+const COUNTS: WarmupCount[] = [0, 1, 2, 3];
+
+function toolVectors() {
+  const presets = Object.entries(PLATE_PRESETS);
+  const nearestCases = presets.flatMap(([preset, { barKg, platesKg }]) =>
+    [0, 10, 20, 21, 22.5, 23.75, 41.2, 60, 61.25, 100, 101, 140, 333.3, MAX_TARGET_KG].map(
+      (targetKg) => ({
+        name: `${preset}: ${targetKg} kg`,
+        targetKg,
+        barKg,
+        platesKg,
+        result: nearestLoading(targetKg, barKg, platesKg),
+      }),
+    ),
+  );
+  const gym = PLATE_PRESETS.gym;
+  const warmupSetsCases = [...LOADS.slice(0, -1), 47.5, 250].flatMap((workKg) =>
+    COUNTS.map((count) => ({
+      name: `${workKg} kg, ${count} sets`,
+      workKg,
+      count,
+      barKg: gym.barKg,
+      platesKg: gym.platesKg,
+      result: warmupSets(workKg, count, gym.barKg, gym.platesKg),
+    })),
+  );
+  const warmupsCases = [BARBELL, DUMBBELL, BODYWEIGHT].flatMap((exercise) =>
+    [null, 0, 3, ...LOADS, 47.3].flatMap((workKg) =>
+      COUNTS.map((count) => ({
+        name: `${exercise.equipment}: ${workKg} kg, ${count} sets`,
+        slot: { ...slot, warmupSets: count },
+        workKg,
+        exercise,
+        bar: gym,
+        result: warmups({ warmupSets: count }, workKg, exercise, gym),
+      })),
+    ),
+  );
+
+  const timedSkipped = [...START_A.slice(0, 2), { ...hang, skipped: true }, START_A[2]!];
+  const plans: [string, Slot[]][] = [
+    ["session A", [...START_A]],
+    ["a slot skipped and one put back", [...skip(START_A, 1), { ...START_A[2]!, skipped: false }]],
+    ["a timed slot skipped", timedSkipped],
+    ["no slot", []],
+  ];
+  const liveSlotsCases = plans.map(([name, plan]) => ({ name, plan, result: liveSlots(plan) }));
+  const exercises = { BARBELL, DUMBBELL, BODYWEIGHT, HOLD };
+  const replaceCases = [
+    ["reps by reps", START_A, 0, BARBELL],
+    ["reps by seconds", START_A, 1, HOLD],
+    ["seconds by reps", timedSkipped, 2, DUMBBELL],
+    ["seconds by seconds", timedSkipped, 2, HOLD],
+    ["in a group", START_A, 4, BODYWEIGHT],
+    ["past the plan", START_A, 9, BARBELL],
+  ].map(([name, plan, at, exercise]) => ({
+    name,
+    plan,
+    at,
+    exercise,
+    result: replaceSlot(plan as Slot[], at as number, exercise as typeof BARBELL),
+  }));
+  const next = nextTurn(START_A, new Set(["0|0", "0|1", "0|2"]), turn(0, 2))!.slotIndex;
+  const skipCases = [
+    ["the next slot", START_A, next, true],
+    ["put back", skip(START_A, next), next, false],
+    ["a group's middle", START_C, 4, true],
+    ["past the plan", START_A, 9, true],
+  ].map(([name, plan, at, skipped]) => ({
+    name,
+    plan,
+    at,
+    skipped,
+    result: skipSlot(plan as Slot[], at as number, skipped as boolean),
+  }));
+  const sized = (n: number) => Array.from({ length: n }, (_, i) => START_A[i % START_A.length]!);
+  const appendCases = [
+    ["reps", START_A, BARBELL],
+    ["seconds", START_A, HOLD],
+    ["to no slot", [], DUMBBELL],
+    [`at ${MAX_SLOTS - 1} slots`, sized(MAX_SLOTS - 1), BARBELL],
+    [`at ${MAX_SLOTS} slots`, sized(MAX_SLOTS), BARBELL],
+  ].map(([name, plan, exercise]) => {
+    let result: Slot[] | null;
+    try {
+      result = appendSlot(plan as Slot[], exercise as typeof BARBELL);
+    } catch {
+      result = null; // full
+    }
+    return { name, plan, exercise, result };
+  });
+
+  // A session started at 17:00, paused at 17:20 and resumed at 17:30, in every variation.
+  const S = "2026-10-07T17:00:00.000Z";
+  const P = "2026-10-07T17:20:00.000Z";
+  const R = "2026-10-07T17:30:00.000Z";
+  const t = (m: number) => iso(Date.parse(S) + m * 60_000);
+  const elapsedCases = [
+    ["running", S, null, t(45)],
+    ["paused", S, P, t(45)],
+    ["a start moved past the pause elsewhere", t(25), P, t(45)],
+    ["a clock put back before the start", S, null, t(-5)],
+  ].map(([name, startedAt, pausedAt, now]) => ({
+    name,
+    startedAt,
+    pausedAt,
+    now,
+    result: sessionElapsed(startedAt!, pausedAt, Date.parse(now!)),
+  }));
+  const resumedStartCases = [
+    ["a pause of ten minutes", S, P, R],
+    ["a clock put back during the pause", S, P, t(10)],
+    ["the start moved past the pause elsewhere", t(25), P, t(40)],
+    ["the start moved past the resume elsewhere", t(35), P, R],
+    ["paused before the start", S, t(-10), t(5)],
+    ["resumed at once", S, P, P],
+  ].map(([name, startedAt, pausedAt, resumedAt]) => ({
+    name,
+    startedAt,
+    pausedAt,
+    resumedAt,
+    result: resumedStart(startedAt!, pausedAt!, resumedAt!),
+  }));
+  const endedByCases = [
+    ["no set", []],
+    ["a set before the pause", [t(10)]],
+    ["a set at the pause", [P]],
+    ["a set after the pause", [t(10), t(25)]],
+    ["two after, the later first", [t(28), t(25), t(15)]],
+  ].map(([name, doneAts]) => ({
+    name,
+    pausedAt: P,
+    doneAts,
+    result: pauseEndedBy(P, doneAts as string[]),
+  }));
+  const STOPS: PauseStops[] = ["all", "session"];
+  const restClockCases = STOPS.flatMap((stops) =>
+    [
+      ["running", null, t(25)],
+      ["paused", P, t(25)],
+      ["a clock put back during the pause", P, t(15)],
+    ].map(([name, pausedAt, now]) => ({
+      name: `${stops}: ${name}`,
+      pausedAt,
+      now,
+      stops,
+      result: iso(restClock(pausedAt, Date.parse(now!), stops)),
+    })),
+  );
+  const restEndCases = STOPS.flatMap((stops) =>
+    [
+      ["no rest", null, R],
+      ["a rest running at the pause", t(21), R],
+      ["a rest over before the pause", t(19), R],
+      ["a rest ending at the pause", P, R],
+      ["a clock put back during the pause", t(21), t(15)],
+    ].map(([name, restEndsAt, resumedAt]) => ({
+      name: `${stops}: ${name}`,
+      restEndsAt,
+      pausedAt: P,
+      resumedAt,
+      stops,
+      result: resumedRestEnd(restEndsAt, P, resumedAt!, stops),
+    })),
+  );
+
+  return {
+    bounds: {
+      maxTargetKg: MAX_TARGET_KG,
+      platePresets: PLATE_PRESETS,
+      warmupSchemes: WARMUP_SCHEMES,
+      defaultWarmupCount: [0, 59.75, 60, 119.75, 120].map((workKg) => ({
+        workKg,
+        count: defaultWarmupCount(workKg),
+      })),
+    },
+    exercises,
+    nearestLoading: nearestCases,
+    warmupSets: warmupSetsCases,
+    warmups: warmupsCases,
+    liveSlots: liveSlotsCases,
+    replaceSlot: replaceCases,
+    skipSlot: skipCases,
+    appendSlot: appendCases,
+    sessionElapsed: elapsedCases,
+    resumedStart: resumedStartCases,
+    pauseEndedBy: endedByCases,
+    restClock: restClockCases,
+    resumedRestEnd: restEndCases,
+  };
+}
+
+// Which workouts Health should hold. Only the session part runs on the phone here: no history
+// sent, no weigh-in, so those settings stay at their defaults.
+function healthVectors() {
+  const NOW = Date.parse("2026-10-10T12:00:00.000Z");
+  const own = (n: number) => seedId(0x7000 + n);
+  type Row = ReturnType<typeof asRow> & { endedAtAt?: string | null; removedAt?: string | null };
+  const row = (n: number, patch: Partial<Row> = {}): Row =>
+    asRow({
+      id: own(n),
+      sessionCode: "A",
+      sessionId: null,
+      startedAt: "2026-10-09T17:00:00.000Z",
+      startedAtAt: "2026-10-09T17:00:00.000Z",
+      endedAt: "2026-10-09T18:00:00.000Z",
+      endedAtAt: "2026-10-09T18:00:00.500Z",
+      removed: false,
+      removedAt: null,
+      ...patch,
+    } as Done);
+  const setOf = (w: Row, n: number, removed = false) =>
+    asSetRow(done(w, n, 60, 8, { id: own(0x100 + n + (removed ? 0x80 : 0)), removed }));
+  const ms = (s: string) => Date.parse(s);
+  const finished = row(1);
+  const open = row(2, { endedAt: null, endedAtAt: null });
+  const removed = row(3, { removed: true, removedAt: "2026-10-09T19:00:00.000Z" });
+  const emptied = row(4);
+  const moved = row(5, {
+    endedAt: "2026-10-09T18:30:00.000Z",
+    endedAtAt: "2026-10-09T20:00:00.000Z",
+  });
+  const long = row(6, {
+    startedAt: "2026-10-08T10:00:00.000Z",
+    endedAt: "2026-10-09T18:00:00.000Z",
+  });
+  const ahead = row(7, {
+    startedAt: "2026-10-11T13:00:00.000Z",
+    endedAt: "2026-10-11T14:00:00.000Z",
+  });
+  const old = row(8, {
+    startedAt: "1899-12-30T10:00:00.000Z",
+    endedAt: "1899-12-30T11:00:00.000Z",
+  });
+  const backwards = row(9, { endedAt: "2026-10-09T17:00:00.000Z" });
+  const workouts = [finished, open, removed, emptied, moved, long, ahead, old, backwards];
+  const sets = [
+    ...workouts.filter((w) => w !== emptied).map((w, i) => setOf(w, i)),
+    setOf(emptied, 20, true),
+  ];
+  const span = (w: Row) => ({ startedAt: ms(w.startedAt), endedAt: ms(w.endedAt!) });
+  const kept = (state: "workout" | "skipped", w: Row, version: number, over = {}): Written => ({
+    state,
+    version,
+    ...span(w),
+    ...over,
+  });
+  const wrote = (entries: [Row, Written][]) =>
+    Object.fromEntries(entries.map(([w, k]) => [sessionKey(w.id), k]));
+  const every: [Row, Written][] = workouts
+    .filter((w) => w.endedAt !== null)
+    .map((w) => [w, kept("workout", w, 3)]);
+  const on = ms("2026-10-01T00:00:00.000Z");
+  const later = ms("2026-10-09T19:00:00.000Z");
+  const cases: [
+    string,
+    {
+      on: boolean;
+      turnedOnAt: number | null;
+      written: Record<string, Written>;
+      allowed: boolean;
+      owner: string;
+    },
+  ][] = [
+    [
+      "nothing written",
+      { on: true, turnedOnAt: on, written: {}, allowed: true, owner: ownerOf("u1") },
+    ],
+    [
+      "each one written before",
+      { on: true, turnedOnAt: on, written: wrote(every), allowed: true, owner: ownerOf("u1") },
+    ],
+    [
+      "open and removed once written",
+      {
+        on: true,
+        turnedOnAt: on,
+        written: wrote([
+          [open, kept("workout", finished, 2, { startedAt: 0 })],
+          [removed, kept("workout", removed, 2)],
+        ]),
+        allowed: true,
+        owner: ownerOf("u1"),
+      },
+    ],
+    [
+      "a changed end",
+      {
+        on: true,
+        turnedOnAt: on,
+        written: wrote([[moved, kept("workout", finished, 4)]]),
+        allowed: true,
+        owner: ownerOf("u1"),
+      },
+    ],
+    [
+      "a version past the clock",
+      {
+        on: true,
+        turnedOnAt: on,
+        written: wrote([[moved, kept("workout", finished, ms("2027-01-01T00:00:00.000Z"))]]),
+        allowed: true,
+        owner: ownerOf("u1"),
+      },
+    ],
+    [
+      "an overlap record, same span",
+      {
+        on: true,
+        turnedOnAt: on,
+        written: wrote([[finished, kept("skipped", finished, 1)]]),
+        allowed: true,
+        owner: ownerOf("u1"),
+      },
+    ],
+    [
+      "an overlap record, the span moved",
+      {
+        on: true,
+        turnedOnAt: on,
+        written: wrote([[moved, kept("skipped", finished, 1)]]),
+        allowed: true,
+        owner: ownerOf("u1"),
+      },
+    ],
+    [
+      "a removal record",
+      {
+        on: true,
+        turnedOnAt: on,
+        written: wrote([[finished, { state: "removed", version: 7 }]]),
+        allowed: true,
+        owner: ownerOf("u1"),
+      },
+    ],
+    [
+      "Health off",
+      { on: false, turnedOnAt: on, written: wrote(every), allowed: true, owner: ownerOf("u1") },
+    ],
+    [
+      "writing not allowed",
+      { on: true, turnedOnAt: on, written: wrote(every), allowed: false, owner: ownerOf("u1") },
+    ],
+    [
+      "turned on after the sessions",
+      { on: true, turnedOnAt: later, written: {}, allowed: true, owner: ownerOf("u1") },
+    ],
+    [
+      "turned on after, one written",
+      {
+        on: true,
+        turnedOnAt: later,
+        written: wrote([[moved, kept("workout", finished, 4)]]),
+        allowed: true,
+        owner: ownerOf("u1"),
+      },
+    ],
+    [
+      "no time turned on",
+      { on: true, turnedOnAt: null, written: {}, allowed: true, owner: ownerOf("u1") },
+    ],
+    [
+      "another owner",
+      { on: true, turnedOnAt: on, written: {}, allowed: true, owner: ownerOf("u2") },
+    ],
+  ];
+  const planCases = cases.map(([name, c]) => ({
+    name,
+    ...c,
+    now: NOW,
+    result: planHealth({
+      workouts: workouts as never,
+      sets: sets as never,
+      weights: [],
+      settings: {
+        on: c.on,
+        turnedOnAt: c.turnedOnAt,
+        history: "no",
+        importOn: false,
+        importSince: null,
+      },
+      written: c.written,
+      filled: {},
+      allowed: { workouts: c.allowed, weighings: false },
+      now: NOW,
+      owner: c.owner,
+    }),
+  }));
+  const spanCases = [
+    ["finished", finished, 1],
+    ["open", open, 1],
+    ["removed", removed, 1],
+    ["emptied", emptied, 0],
+    ["ending at its start", backwards, 1],
+  ].map(([name, w, live]) => ({
+    name,
+    workout: w,
+    liveSets: live,
+    result: finishedSpan(w as never, live as number),
+  }));
+  const versionCases = [
+    [1000, undefined],
+    [1000, 999],
+    [1000, 1000],
+    [1000, 5000],
+  ].map(([latest, last]) => ({ latest, last: last ?? null, result: versionOf(latest!, last) }));
+  const owners = ["u1", "u2", "", "019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00", "é💪"].map((userId) => ({
+    userId,
+    result: ownerOf(userId),
+  }));
+  return {
+    bounds: { earliest: EARLIEST, day: DAY, sessionKey: sessionKey("x") },
+    workouts,
+    sets,
+    planHealth: planCases,
+    finishedSpan: spanCases,
+    versionOf: versionCases,
+    ownerOf: owners,
+  };
+}
+
+const rules = rulesVectors();
+const tools = toolVectors();
 const files = [
   { path: core("Tests/BelayCoreTests/Vectors/contract.json"), data: vectors },
-  { path: core("Tests/BelayCoreTests/Vectors/rules.json"), data: rulesVectors() },
+  {
+    path: core("Tests/BelayCoreTests/Vectors/rules.json"),
+    data: { ...rules, ...tools, bounds: { ...rules.bounds, ...tools.bounds } },
+  },
+  { path: core("Tests/BelayCoreTests/Vectors/health.json"), data: healthVectors() },
   { path: core("Tests/BelayCoreTests/Vectors/schedule.json"), data: scheduleVectors() },
   { path: core("Sources/BelayCore/Resources/seed.json"), data: SEED },
 ].map(({ path, data }) => ({ path, expected: `${JSON.stringify(data, null, 2)}\n` }));
