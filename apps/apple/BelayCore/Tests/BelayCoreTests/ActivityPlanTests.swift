@@ -120,6 +120,17 @@ import Testing
     #expect(activityChange(from: nil, to: nil) == .none)
   }
 
+  @Test func theFirstReadAtLaunchAlwaysReachesTheSystem() throws {
+    let due = try content(try Seance())
+    // At launch an Activity from an earlier run may be there: the first read adopts or ends it.
+    #expect(activityNeedsSync(from: nil, to: due, synced: false))
+    #expect(activityNeedsSync(from: nil, to: nil, synced: false))
+    // After that, only a change shown goes to the system.
+    #expect(!activityNeedsSync(from: nil, to: nil, synced: true))
+    #expect(!activityNeedsSync(from: due, to: due, synced: true))
+    #expect(activityNeedsSync(from: due, to: nil, synced: true))
+  }
+
   @Test func anotherSessionStartsAnew() throws {
     let a = try content(try Seance())
     var b = a

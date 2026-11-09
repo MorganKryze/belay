@@ -55,6 +55,8 @@ final class LiveActivityController {
     private var following: Task<Void, Never>?
     /// What the Activity shows, as last handed to the system.
     private var shown: Content?
+    /// Whether the system has heard of a read since launch, so a leftover Activity is settled once.
+    private var synced = false
     /// Runs the system calls one after the other, in the order the states came.
     private var queue: Task<Void, Never>?
     private var asked = false
@@ -64,8 +66,8 @@ final class LiveActivityController {
 
     init(account: AccountModel) {
         self.account = account
-        // An Activity left from an earlier run is matched to the open session or ended.
-        enqueue(nil)
+        // No sync before the first read: ending everything first would end the open session's
+        // Activity, and a launch in the background could not start it again.
         trackStore()
         // An Activity can only start in front: coming back starts the one that could not.
         foreground = NotificationCenter.default.addObserver(
@@ -83,7 +85,12 @@ final class LiveActivityController {
         followed = store
         following?.cancel()
         following = nil
-        guard let store else { return show(nil) }
+        guard let store else {
+            // Signed out, no session is open: any Activity ends, a leftover the controller never
+            // showed included, so this read goes to the system even when nothing was shown.
+            synced = false
+            return show(nil)
+        }
         following = Task { [weak self] in await self?.follow(store) }
     }
 
@@ -112,7 +119,8 @@ final class LiveActivityController {
         alert.apply(state.map { restAlert($0, words: words) ?? .cancel } ?? .cancel)
         let content = state.flatMap { activityContent($0, words: words) }
         if content != nil { askPermissionOnce() }
-        guard activityChange(from: shown, to: content) != .none else { return }
+        guard activityNeedsSync(from: shown, to: content, synced: synced) else { return }
+        synced = true
         shown = content
         enqueue(content)
     }

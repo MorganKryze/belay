@@ -142,6 +142,12 @@ public func activityChange(from: ActivityContent?, to: ActivityContent?) -> Acti
   }
 }
 
+/// Whether the system must hear of `to`. The first read after launch always goes, so an Activity
+/// left from an earlier run is kept for the open session or ended; after it, only a change does.
+public func activityNeedsSync(from: ActivityContent?, to: ActivityContent?, synced: Bool) -> Bool {
+  !synced || activityChange(from: from, to: to) != .none
+}
+
 /// The alert at the rest's end: « Repos terminé », then the next set and its exercise. Nil while
 /// paused: the rest stands still and no alert is due until it runs again.
 public func restAlert(_ state: SessionState, words: ActivityWords) -> RestAlertPlan? {
