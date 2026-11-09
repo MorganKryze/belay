@@ -36,7 +36,7 @@ struct DoneList: View {
             ? String(localized: "Montée \(number)", table: "Session")
             : String(localized: "Série \(number)", table: "Session")
         let shownRIR = set.rir.flatMap { !set.warmup && set.id != asking?.id ? $0 : nil }
-        let rir = shownRIR.map { "RIR \($0 == Bounds.rirMax ? "\($0)+" : String($0))" }
+        let rir = shownRIR.map { String(localized: "RIR \($0 == Bounds.rirMax ? "\($0)+" : String($0))", table: "Session") }
         let spoken = [title, SetText.load(set.weightKg, String(set.count), timed: set.timed), rir]
         return Button { correcting = set } label: {
             layout {
@@ -50,7 +50,7 @@ struct DoneList: View {
                 if !type.isAccessibilitySize { Spacer(minLength: 8) }
                 HStack(spacing: 4) {
                     if !(set.timed && set.weightKg == 0) {
-                        Text(verbatim: "\(SetText.kg(set.weightKg))\u{202F}kg ×")
+                        Text("\(SetText.kg(set.weightKg))\u{202F}kg ×", tableName: "Session")
                             .font(.body.weight(.semibold)).monospacedDigit().foregroundStyle(.ink)
                     }
                     Text(verbatim: set.timed ? "\(set.count)\u{202F}s" : String(set.count))

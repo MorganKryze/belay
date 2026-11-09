@@ -19,7 +19,7 @@ struct LoadChoices: View {
                 Button { choose(kg) } label: {
                     HStack {
                         Image(systemName: "checkmark").opacity(kg == weightKg ? 1 : 0).accessibilityHidden(true)
-                        Text(verbatim: "\(SetText.kg(kg))\u{202F}kg").monospacedDigit()
+                        Text("\(SetText.kg(kg))\u{202F}kg", tableName: "Session").monospacedDigit()
                         Spacer()
                     }
                     .font(.body)

@@ -1,6 +1,46 @@
 {
   "sourceLanguage": "fr",
   "strings": {
+    "%@ kg": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ kg"
+          }
+        }
+      }
+    },
+    "%@ kg ×": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ kg ×"
+          }
+        }
+      }
+    },
+    "%@ kg × %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ kg × %@"
+          }
+        }
+      }
+    },
+    "%@ kg × %@ s": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ kg × %@ s"
+          }
+        }
+      }
+    },
     "%lld en réserve": {
       "localizations": {
         "en": {
@@ -421,6 +461,16 @@
         }
       }
     },
+    "RIR %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RIR %@"
+          }
+        }
+      }
+    },
     "Repos": {
       "localizations": {
         "en": {
@@ -547,6 +597,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "target %lld–%lld"
+          }
+        }
+      }
+    },
+    "kg": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "kg"
           }
         }
       }
