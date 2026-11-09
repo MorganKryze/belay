@@ -1,22 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- The splash's mark in the launch blue. The launcher's foreground is paper, made for the icon's
-     ground; here the ground is the launch paper, so the mark is drawn apart. Same size as the
-     foreground had on the splash (0.8529 of a 512 px tile on a 72 dp area, in a 288 dp canvas),
-     so the page's own launch takes over without a jump. -->
+<!-- The splash's mark, the ring in ink and the mountain in blue, as the page's launch draws it in the light theme. The
+     canvas is the adaptive icon's 108 units at the splash's 288 dp, and the mark is placed as the
+     launcher foreground places it, so the page's launch takes over without a jump. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="288dp"
     android:height="288dp"
-    android:viewportWidth="288"
-    android:viewportHeight="288">
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- The 100-unit mark, one unit lower, centred on the canvas. -->
     <group
-        android:pivotX="256"
-        android:pivotY="256"
-        android:scaleX="0.31985"
-        android:scaleY="0.31985"
-        android:translateX="-112"
-        android:translateY="-112">
+        android:scaleX="0.47975625"
+        android:scaleY="0.47975625"
+        android:translateX="30.0121875"
+        android:translateY="30.49194375">
         <path
-            android:fillColor="@color/accent"
-            android:pathData="M86 160L86 266A120 120 0 0 0 326 266L326 246A20 20 0 0 0 286 246L286 266A80 80 0 0 1 126 266L126 160A20 20 0 0 0 86 160ZM426 352L426 246A120 120 0 0 0 186 246L186 266A20 20 0 0 0 226 266L226 246A80 80 0 0 1 386 246L386 352A20 20 0 0 0 426 352Z" />
+            android:pathData="M28.6 78.8 A37 37 0 1 1 71.4 78.8"
+            android:strokeColor="#12181C"
+            android:strokeWidth="11"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+        <path
+            android:pathData="M28.6 78.8 L39 58 L45 64 L56 44 L71.4 78.8"
+            android:strokeColor="#1F4E8C"
+            android:strokeWidth="11"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
     </group>
 </vector>
