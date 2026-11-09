@@ -124,8 +124,13 @@ struct SessionSummary: Equatable {
         var id: String { name }
     }
 
+    let workoutId: String
     let code: String
     let name: String?
+    /// The session's note as the summary opened on it.
+    let note: String?
+    /// The floor given here, 1 to 5, or none yet.
+    var effort: Int?
     let endedAt: Date
     let duration: TimeInterval
     let workSets: Int
@@ -181,6 +186,7 @@ final class TrainingModel {
         self.timeZone = timeZone
         // Read once now, so the first frame already shows the card; then follow every write.
         refresh()
+        settleEndedEfforts(except: nil)
         watch = Task { [weak self, store] in
             do {
                 let snapshots = store.observe { db in
@@ -280,6 +286,7 @@ final class TrainingModel {
         var ended = workout
         ended.endedAt = time
         summary = summarize(ended, history: history, endedAt: at)
+        settleEndedEfforts(except: workout.id)
         refresh()
     }
 
@@ -295,9 +302,45 @@ final class TrainingModel {
         refresh()
     }
 
-    /// The summary is read: the cover can close.
-    func closeSummary() {
+    /// The floor given on the summary, or none: kept on this phone at once, never queued.
+    func giveEffort(_ floor: Int?) throws {
+        guard let workoutId = summary?.workoutId else { return }
+        try store.giveEffort(workoutId: workoutId, floor: floor)
+        summary?.effort = floor
+    }
+
+    /// The summary is left: its note, when changed, is written and queued, and the effort, given
+    /// or not, is settled. Only then is the summary let go, so a write that fails keeps it, and the
+    /// note typed, on screen.
+    func closeSummary(note: String) throws {
+        guard let left = summary else { return }
+        let trimmed = fitNote(note.trimmingCharacters(in: .whitespacesAndNewlines))
+        let written: String? = trimmed.isEmpty ? nil : trimmed
+        var unwritten: (any Error)?
+        if written != left.note {
+            do {
+                try store.recordChanges(
+                    [.workout(WorkoutChange(id: left.workoutId, at: Instant.string(now()), edit: .note(written)))],
+                    active: .keep)
+                didWrite()
+            } catch {
+                unwritten = error
+            }
+        }
+        // Settled even when the note was not written: the floor given does not depend on it.
+        try store.settleEffort(workoutId: left.workoutId)
+        if let unwritten { throw unwritten }
         summary = nil
+    }
+
+    /// A summary the app's end, or a failed write, closed without settling its effort: no screen
+    /// will show it again, so its effort is settled as it stands.
+    private func settleEndedEfforts(except workoutId: String?) {
+        do {
+            try store.settleEndedEfforts(except: workoutId)
+        } catch {
+            Self.log.error("efforts not settled: \(AccountStore.logLabel(error), privacy: .public)")
+        }
     }
 
     /// The shared summary rule's figures, read against the history the session ends in.
@@ -315,7 +358,8 @@ final class TrainingModel {
         }
         let started = Instant.date(workout.startedAt) ?? endedAt
         return SessionSummary(
-            code: workout.sessionCode, name: workout.sessionName.value, endedAt: endedAt,
+            workoutId: workout.id, code: workout.sessionCode, name: workout.sessionName.value, note: workout.note,
+            effort: nil, endedAt: endedAt,
             duration: max(0, endedAt.timeIntervalSince(started)), workSets: work.count,
             warmupSets: totals.warmupSets, volumeKg: totals.volumeKg,
             records: totals.records.map { .init(name: exerciseName($0.exerciseId), load: $0.load) },
