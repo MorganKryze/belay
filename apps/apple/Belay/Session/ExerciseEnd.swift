@@ -80,7 +80,7 @@ private struct RecapCard: View {
                     .monospacedDigit()
                     .foregroundStyle(.ink)
                 if let rir = set.rir {
-                    Text(verbatim: "RIR \(rir == Bounds.rirMax ? "\(rir)+" : String(rir))")
+                    Text(verbatim: String(localized: "RIR \(rir == Bounds.rirMax ? "\(rir)+" : String(rir))", table: "Session"))
                         .font(.subheadline)
                         .monospacedDigit()
                         .foregroundStyle(.muted)
