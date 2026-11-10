@@ -2,7 +2,7 @@ import BelayCore
 import SwiftUI
 
 /// The set become the clock, in the same card: « Repos », the time left to the rest's absolute
-/// end, a rope that empties, what comes next, then +30 s and ⏭.
+/// end, a rope that empties, what comes next, then +30 s and skip.
 struct RestCard: View {
     let rest: Rest
     /// When the rest began: the latest set's time, so the rope starts full.

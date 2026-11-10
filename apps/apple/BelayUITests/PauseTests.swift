@@ -1,6 +1,6 @@
 import XCTest
 
-/// The pause on the fixture's session A, 19 work sets planned: ⏸ stops everything and leaves ▶
+/// The pause on the fixture's session A, 19 work sets planned: pause stops everything and leaves play
 /// alone in the foot; the bar's ■ asks in a system alert before the session ends.
 @MainActor
 final class PauseTests: XCTestCase {
@@ -60,12 +60,12 @@ final class PauseTests: XCTestCase {
         let stood = text(app, beginning: "Séance arrêtée à ").label
         Thread.sleep(forTimeInterval: 1.5)
         XCTAssertEqual(text(app, beginning: "Séance arrêtée à ").label, stood, "it does not run")
-        XCTAssertTrue(app.buttons["foot-play"].exists, "▶ in the foot")
+        XCTAssertTrue(app.buttons["foot-play"].exists, "play in the foot")
         XCTAssertEqual(app.buttons["foot-play"].label, "Reprendre")
         for id in ["log-set", "add-thirty", "skip-rest", "rir-2", "foot-skip", "foot-finish", "rest-clock"] {
             XCTAssertFalse(element(app, id).exists, "nothing else: \(id)")
         }
-        XCTAssertTrue(app.buttons["Arrêter la séance"].exists, "⏸ became ■")
+        XCTAssertTrue(app.buttons["Arrêter la séance"].exists, "pause became ■")
         XCTAssertFalse(app.buttons["Mettre la séance en pause"].exists)
     }
 
@@ -126,7 +126,7 @@ final class PauseTests: XCTestCase {
         XCTAssertTrue(element(app, "rep-ruler").exists)
         XCTAssertFalse(app.staticTexts["En pause"].exists)
         XCTAssertFalse(app.buttons["foot-play"].exists)
-        XCTAssertTrue(app.buttons["Mettre la séance en pause"].exists, "■ became ⏸ again")
+        XCTAssertTrue(app.buttons["Mettre la séance en pause"].exists, "■ became pause again")
     }
 
     func testAx3Pause() {
@@ -141,7 +141,7 @@ final class PauseTests: XCTestCase {
         }
         let base = measure([])
         let large = measure(Self.ax3)
-        XCTAssertLessThanOrEqual(large.play, base.play * 1.35, "▶ is capped")
+        XCTAssertLessThanOrEqual(large.play, base.play * 1.35, "play is capped")
         XCTAssertGreaterThan(large.title.height, base.title.height, "the title follows the size")
         for frame in [large.title, large.line] {
             XCTAssertGreaterThanOrEqual(frame.minX, 0, "nothing runs off the left")

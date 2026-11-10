@@ -1,6 +1,6 @@
 import XCTest
 
-/// How a test ends the open session: by 🏁 once everything is noted, or by ■ in the pause.
+/// How a test ends the open session: by the finish flag once everything is noted, or by ■ in the pause.
 enum SessionEnd {
     case flag
     case stop
@@ -21,10 +21,10 @@ extension XCUIApplication {
     }
 
     /// Ends the open session the way the cover offers, then waits for the summary. By `.flag`,
-    /// each set due is logged as prefilled, each recap tapped and each rest skipped until 🏁 shows,
-    /// then 🏁: on a fixture with everything noted that is one tap on the recap. One query finds
-    /// whichever control the cover holds; the deadline only stops a cover that never reaches 🏁.
-    /// By `.stop`, ⏸, then ■ and « Arrêter » in its alert, wherever the session stands.
+    /// each set due is logged as prefilled, each recap tapped and each rest skipped until the finish flag shows,
+    /// then the finish flag: on a fixture with everything noted that is one tap on the recap. One query finds
+    /// whichever control the cover holds; the deadline only stops a cover that never reaches the finish flag.
+    /// By `.stop`, pause, then ■ and « Arrêter » in its alert, wherever the session stands.
     func finishSession(by end: SessionEnd = .flag, file: StaticString = #filePath, line: UInt = #line) {
         switch end {
         case .flag:
@@ -37,12 +37,12 @@ extension XCUIApplication {
                 if control.identifier == "foot-finish" { break }
                 control.identifier.hasPrefix("foot-") || control.identifier == "log-set" ? control.tapFootButton() : control.tap()
             }
-            XCTAssertTrue(finish.exists, "🏁 shows once everything is noted", file: file, line: line)
+            XCTAssertTrue(finish.exists, "the finish flag shows once everything is noted", file: file, line: line)
             finish.tapFootButton()
         case .stop:
             buttons["Mettre la séance en pause"].tap()
             let stop = buttons["Arrêter la séance"]
-            XCTAssertTrue(stop.waitForExistence(timeout: 3), "⏸ becomes ■", file: file, line: line)
+            XCTAssertTrue(stop.waitForExistence(timeout: 3), "pause becomes ■", file: file, line: line)
             stop.tap()
             let alert = alerts.firstMatch
             XCTAssertTrue(alert.waitForExistence(timeout: 3), "■ asks first", file: file, line: line)
@@ -56,7 +56,7 @@ extension XCUIApplication {
 extension XCUIElement {
     /// Taps one of the foot's round buttons where it is drawn. After a change, SwiftUI keeps the
     /// button's accessibility frame from before until the spring ends (measured: the reserve's
-    /// 350 × 98 pt for up to 1.6 s, its centre 50 pt under the drawn ⏭), and a tap at that centre
+    /// 350 × 98 pt for up to 1.6 s, its centre 50 pt under the drawn skip), and a tap at that centre
     /// misses. A finger is not affected; the test waits for the frame to be the button's circle.
     func tapFootButton(timeout: TimeInterval = 5) {
         let deadline = Date.now.addingTimeInterval(timeout)

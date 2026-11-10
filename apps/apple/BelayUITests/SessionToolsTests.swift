@@ -89,7 +89,7 @@ final class SessionToolsTests: XCTestCase {
     func testStopRightAfterPlay() {
         let app = launch("timed")
         app.buttons["foot-play"].tap()
-        // At once, while the foot's glass still morphs from ▶ into ■: the tap stops the hold.
+        // At once, while the foot's glass still morphs from play into ■: the tap stops the hold.
         app.buttons["foot-stop"].tap()
         XCTAssertTrue(text(app, containing: "s tenues").waitForExistence(timeout: 3), "the hold stops")
     }

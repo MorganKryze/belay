@@ -226,7 +226,7 @@ final class SessionFlowTests: XCTestCase {
 
         app.buttons["Mettre la séance en pause"].tap()
         let stop = app.buttons["Arrêter la séance"]
-        XCTAssertTrue(stop.waitForExistence(timeout: 3), "⏸ becomes ■")
+        XCTAssertTrue(stop.waitForExistence(timeout: 3), "pause becomes ■")
         let clock = element(app, "session-clock")
         let still = clock.label
         Thread.sleep(forTimeInterval: 2)

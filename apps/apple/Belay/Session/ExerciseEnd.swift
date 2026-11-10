@@ -182,7 +182,7 @@ private struct AnnounceCard: View {
     }
 }
 
-/// Everything planned is noted: the foot's 🏁 ends the session without a question.
+/// Everything planned is noted: the foot's the finish flag ends the session without a question.
 private struct AllDoneCard: View {
     let sets: Int
     let session: String

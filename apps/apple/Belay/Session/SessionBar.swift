@@ -2,7 +2,7 @@ import BelayCore
 import SwiftUI
 
 /// The bar while a session runs: lower on the left, the session's clock in the middle, pause on
-/// the right. Stopping lives in the pause: ⏸ turns into a light red ■ that asks first.
+/// the right. Stopping lives in the pause: pause turns into a light red ■ that asks first.
 struct SessionBar: ToolbarContent {
     let state: SessionState
     let lower: () -> Void

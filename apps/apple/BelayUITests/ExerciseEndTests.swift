@@ -3,7 +3,7 @@ import XCTest
 /// The end of an exercise on the fixture's session A. `exerciseEnd` has the bench press's last
 /// work set due, its RIR not asked yet, with a last time for the exercise after it, so that one
 /// starts with a warm-up; `lastSet` has the session's last set due. The recap shows first, then the
-/// next exercise is announced during the rest, and once everything is noted the cover offers 🏁.
+/// next exercise is announced during the rest, and once everything is noted the cover offers the finish flag.
 @MainActor
 final class ExerciseEndTests: XCTestCase {
     override func setUp() {
@@ -87,7 +87,7 @@ final class ExerciseEndTests: XCTestCase {
     func testAnnounceOnlySkip() {
         let app = launch("exerciseEnd")
         announce(app)
-        XCTAssertTrue(app.buttons["foot-skip"].exists, "⏭ is the one action")
+        XCTAssertTrue(app.buttons["foot-skip"].exists, "skip is the one action")
         XCTAssertEqual(app.buttons["foot-skip"].label, "Passer le repos")
         for id in ["log-set", "add-thirty", "skip-rest", "rir-2", "foot-finish"] {
             XCTAssertFalse(element(app, id).exists, "no \(id) while announced")
@@ -118,8 +118,8 @@ final class ExerciseEndTests: XCTestCase {
             "of the next exercise")
     }
 
-    /// ⏭ tapped by a finger the moment it shows, while the foot's glass still morphs out of the
-    /// reserve: the tap where ⏭ is drawn skips the rest. Its accessibility frame lags the drawing
+    /// skip tapped by a finger the moment it shows, while the foot's glass still morphs out of the
+    /// reserve: the tap where skip is drawn skips the rest. Its accessibility frame lags the drawing
     /// until the spring ends (350 × 98 pt, 44 pt low), so the tap goes to the drawn place, which is
     /// where the frame settles.
     func testSkipTappedAsItArrives() {
@@ -127,7 +127,7 @@ final class ExerciseEndTests: XCTestCase {
         _ = logLast(app)
         element(app, "exercise-recap").tap()
         let skip = app.buttons["foot-skip"]
-        XCTAssertTrue(skip.waitForExistence(timeout: 2), "⏭ arrives")
+        XCTAssertTrue(skip.waitForExistence(timeout: 2), "skip arrives")
         app.coordinate(withNormalizedOffset: .zero).withOffset(Self.footCenter(app)).tap()
         XCTAssertTrue(element(app, "set-title").waitForExistence(timeout: 3), "the next set is due")
     }
@@ -161,7 +161,7 @@ final class ExerciseEndTests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Tout est noté"].waitForExistence(timeout: 2), "everything is noted")
         XCTAssertTrue(app.staticTexts["19 séries · Séance A"].exists, "the sets and the session")
         let finish = app.buttons["foot-finish"]
-        XCTAssertTrue(finish.exists, "🏁 is the one action")
+        XCTAssertTrue(finish.exists, "the finish flag is the one action")
         XCTAssertFalse(element(app, "log-set").exists)
         finish.tapFootButton()
         XCTAssertFalse(app.alerts.firstMatch.waitForExistence(timeout: 1), "no question")

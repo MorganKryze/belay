@@ -2,7 +2,7 @@ import XCTest
 
 /// The summary of session A on the `finished` fixture: the first work set of the bench press at
 /// 65 kg for 8, over a previous session A at 62,5 kg, so the summary names a record; every other
-/// set is logged as prefilled, so the cover opens on 🏁.
+/// set is logged as prefilled, so the cover opens on the finish flag.
 @MainActor
 final class SummaryTests: XCTestCase {
     private func summary(extra: [String] = []) -> XCUIApplication {
