@@ -332,12 +332,22 @@
         }
       }
     },
-    "Retirer": {
+    "Mettre de côté": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Leave out"
+            "value": "Set aside"
+          }
+        }
+      }
+    },
+    "Actions pour %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Actions for %@"
           }
         }
       }

@@ -2,8 +2,9 @@ import BelayCore
 import SwiftUI
 
 /// The whole session, opened from the card's header: each exercise with its sets (done, the next
-/// on a grey ground, to come) and four icons to replace it, leave it out or put it back, note it
-/// and add a set; « + Exercice » closes the list.
+/// on a grey ground, to come) and one menu that names its actions: replace it, set it aside or put
+/// it back, note it, add a set. The rows offer the first three by a swipe, as Mail and Reminders
+/// do. « + Exercice » closes the list.
 struct ProgrammeSheet: View {
     let state: SessionState
     let actions: CoverActions
@@ -29,10 +30,15 @@ struct ProgrammeSheet: View {
                                 .font(.subheadline)
                                 .foregroundStyle(.muted)
                                 .frame(minHeight: 44)
+                                .swipeActions(edge: .leading, allowsFullSwipe: false) { leading(exercise) }
+                                .swipeActions(edge: .trailing, allowsFullSwipe: false) { trailing(exercise) }
                         } else {
-                            ForEach(exercise.rows) { row($0, timed: exercise.timed) }
+                            ForEach(exercise.rows) {
+                                row($0, timed: exercise.timed)
+                                    .swipeActions(edge: .leading, allowsFullSwipe: false) { leading(exercise) }
+                                    .swipeActions(edge: .trailing, allowsFullSwipe: false) { trailing(exercise) }
+                            }
                         }
-                        icons(exercise)
                     } header: {
                         header(exercise)
                     }
@@ -85,21 +91,25 @@ struct ProgrammeSheet: View {
 
     private func header(_ exercise: ProgrammeExercise) -> some View {
         HStack(spacing: 6) {
-            Text(verbatim: training.exerciseName(exercise.exerciseId))
-                .font(.headline)
-                .foregroundStyle(exercise.skipped ? .muted : .ink)
-                .strikethrough(exercise.skipped)
-            if exercise.note != nil {
-                Image(systemName: "note.text")
-                    .font(.subheadline)
-                    .foregroundStyle(.ink)
-                    .accessibilityLabel(Text("avec une note", tableName: "SessionTools"))
+            HStack(spacing: 6) {
+                Text(verbatim: training.exerciseName(exercise.exerciseId))
+                    .font(.headline)
+                    .foregroundStyle(exercise.skipped ? .muted : .ink)
+                    .strikethrough(exercise.skipped)
+                if exercise.note != nil {
+                    Image(systemName: "note.text")
+                        .font(.subheadline)
+                        .foregroundStyle(.ink)
+                        .accessibilityLabel(Text("avec une note", tableName: "SessionTools"))
+                }
             }
+            .accessibilityElement(children: .combine)
+            .accessibilityAddTraits(.isHeader)
+            .accessibilityIdentifier("programme-exercise-\(exercise.slotIndex)")
+            Spacer(minLength: 8)
+            menu(exercise)
         }
         .textCase(nil)
-        .accessibilityElement(children: .combine)
-        .accessibilityAddTraits(.isHeader)
-        .accessibilityIdentifier("programme-exercise-\(exercise.slotIndex)")
     }
 
     private func row(_ row: ProgrammeExercise.Row, timed: Bool) -> some View {
@@ -145,42 +155,73 @@ struct ProgrammeSheet: View {
         }
     }
 
-    private func icons(_ exercise: ProgrammeExercise) -> some View {
-        let slot = exercise.slotIndex
-        return HStack(spacing: 10) {
-            icon("arrow.triangle.2.circlepath", Text("Remplacer", tableName: "SessionTools"), id: "replace-\(slot)") {
-                replacing = exercise
-            }
-            icon(
-                exercise.skipped ? "arrow.uturn.backward" : "minus",
-                exercise.skipped ? Text("Remettre", tableName: "SessionTools") : Text("Retirer", tableName: "SessionTools"),
-                id: "leave-\(slot)"
-            ) {
-                withAnimation(motion) { _ = actions.run { try $0.leaveOut(slotIndex: slot, !exercise.skipped) } }
-            }
-            icon("square.and.pencil", Text("Note", tableName: "SessionTools"), id: "note-\(slot)") { noting = exercise }
+    // MARK: An exercise's actions
+
+    /// One labelled menu per exercise: each action says what it does, none sits as a bare sign
+    /// beside another.
+    private func menu(_ exercise: ProgrammeExercise) -> some View {
+        Menu {
+            replaceButton(exercise)
+            leaveButton(exercise)
+            noteButton(exercise)
             if !exercise.skipped {
-                icon("plus", Text("Ajouter une série", tableName: "SessionTools"), id: "addset-\(slot)") {
-                    withAnimation(motion) { _ = actions.run { try $0.addSet(slotIndex: slot) } }
+                Button { addSet(exercise) } label: {
+                    Label { Text("Ajouter une série", tableName: "SessionTools") } icon: { Image(systemName: "plus") }
                 }
             }
-            Spacer(minLength: 0)
-        }
-        .padding(.vertical, 4)
-    }
-
-    private func icon(_ symbol: String, _ label: Text, id: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: symbol)
+        } label: {
+            Image(systemName: "ellipsis")
                 .font(.headline)
                 .foregroundStyle(.ink)
+                // 48 pt as drawn: the sheet's half height shows its content at 0.96 (measured), and the
+                // target still keeps 44 pt there.
                 .frame(width: 48, height: 48)
                 .background(Color.track, in: .circle)
                 .contentShape(.circle)
         }
-        .buttonStyle(.plain)
         .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-        .accessibilityLabel(label)
-        .accessibilityIdentifier(id)
+        .accessibilityLabel(Text("Actions pour \(training.exerciseName(exercise.exerciseId))", tableName: "SessionTools"))
+        .accessibilityIdentifier("actions-\(exercise.slotIndex)")
+    }
+
+    /// The same actions on the exercise's rows, as Mail and Reminders offer them: the note from the
+    /// leading edge, set aside and replace from the trailing one. No full swipe, so a long swipe
+    /// never sets an exercise aside. Set aside keeps the system's gray, so it reads apart from
+    /// replace beside it.
+    private func leading(_ exercise: ProgrammeExercise) -> some View {
+        noteButton(exercise).tint(.mark)
+    }
+
+    @ViewBuilder private func trailing(_ exercise: ProgrammeExercise) -> some View {
+        leaveButton(exercise)
+        replaceButton(exercise).tint(.mark)
+    }
+
+    private func replaceButton(_ exercise: ProgrammeExercise) -> some View {
+        Button { replacing = exercise } label: {
+            Label { Text("Remplacer", tableName: "SessionTools") } icon: { Image(systemName: "arrow.triangle.2.circlepath") }
+        }
+    }
+
+    private func leaveButton(_ exercise: ProgrammeExercise) -> some View {
+        Button {
+            withAnimation(motion) { _ = actions.run { try $0.leaveOut(slotIndex: exercise.slotIndex, !exercise.skipped) } }
+        } label: {
+            if exercise.skipped {
+                Label { Text("Remettre", tableName: "SessionTools") } icon: { Image(systemName: "arrow.uturn.backward") }
+            } else {
+                Label { Text("Mettre de côté", tableName: "SessionTools") } icon: { Image(systemName: "archivebox") }
+            }
+        }
+    }
+
+    private func noteButton(_ exercise: ProgrammeExercise) -> some View {
+        Button { noting = exercise } label: {
+            Label { Text("Note", tableName: "SessionTools") } icon: { Image(systemName: "square.and.pencil") }
+        }
+    }
+
+    private func addSet(_ exercise: ProgrammeExercise) {
+        withAnimation(motion) { _ = actions.run { try $0.addSet(slotIndex: exercise.slotIndex) } }
     }
 }

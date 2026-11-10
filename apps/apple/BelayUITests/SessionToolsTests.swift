@@ -1,7 +1,8 @@
 import XCTest
 
 /// The session's tools on the fixture account: a timed hold, the correction and removal of a done
-/// set, and the programme with its four icons per exercise, the picker and the note.
+/// set, and the programme with one menu of actions per exercise and the same actions by a swipe,
+/// the picker and the note.
 @MainActor
 final class SessionToolsTests: XCTestCase {
     private static let ax3 = ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityL"]
@@ -51,6 +52,20 @@ final class SessionToolsTests: XCTestCase {
         let control = element(app, id)
         XCTAssertTrue(app.swipeUpUntil(control), "\(id) is reached")
         return control
+    }
+
+    /// Opens the exercise's menu in the programme and picks the action labelled `action`.
+    private func pick(_ action: String, for slot: Int, in app: XCUIApplication, line: UInt = #line) {
+        reach(app, "actions-\(slot)").tap()
+        let item = app.buttons[action].firstMatch
+        XCTAssertTrue(item.waitForExistence(timeout: 3), "the menu offers « \(action) »", line: line)
+        item.tap()
+    }
+
+    /// The first row of the exercise's sets in the programme.
+    private func firstRow(_ app: XCUIApplication, slot: Int) -> XCUIElement {
+        app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH %@", "programme-row-\(slot)-"))
+            .firstMatch
     }
 
     /// Replaces the field's text by `value`.
@@ -179,7 +194,9 @@ final class SessionToolsTests: XCTestCase {
         for slot in 0..<count {
             reach(app, "programme-exercise-\(slot)")
         }
-        XCTAssertTrue(reach(app, "add-exercise").isHittable, "« + Exercice » closes the list")
+        let add = reach(app, "add-exercise")
+        XCTAssertTrue(add.isHittable, "« + Exercice » closes the list")
+        XCTAssertEqual(add.label, "Ajouter un exercice")
     }
 
     func testProgrammeMarksDoneAndNext() {
@@ -196,11 +213,11 @@ final class SessionToolsTests: XCTestCase {
         let app = launch("workSet")
         openProgramme(app)
         assertTitleInContent(app, "the programme", close: "programme-close")
-        reach(app, "replace-1").tap()
+        pick("Remplacer", for: 1, in: app)
         XCTAssertTrue(app.buttons["picker-close"].waitForExistence(timeout: 3), "the picker opens")
         assertTitleInContent(app, "the picker", close: "picker-close")
         app.buttons["picker-close"].tap()
-        reach(app, "note-0").tap()
+        pick("Note", for: 0, in: app)
         XCTAssertTrue(app.buttons["note-close"].waitForExistence(timeout: 3), "the note opens")
         assertTitleInContent(app, "the note", close: "note-close")
     }
@@ -222,7 +239,7 @@ final class SessionToolsTests: XCTestCase {
     func testReplaceBySearch() {
         let app = launch("workSet")
         openProgramme(app)
-        reach(app, "replace-1").tap()
+        pick("Remplacer", for: 1, in: app)
         let search = app.searchFields.firstMatch
         XCTAssertTrue(search.waitForExistence(timeout: 3), "the search is at the top")
         search.tap()
@@ -238,12 +255,9 @@ final class SessionToolsTests: XCTestCase {
     func testLeaveOutAndPutBack() {
         let app = launch("workSet")
         openProgramme(app)
-        let leave = reach(app, "leave-1")
-        XCTAssertEqual(leave.label, "Retirer")
-        leave.tap()
-        XCTAssertTrue(text(app, containing: "Retiré de cette séance").waitForExistence(timeout: 3), "left out")
-        XCTAssertTrue(leave.waitFor(NSPredicate(format: "label == %@", "Remettre")), "it can be put back")
-        leave.tap()
+        pick("Mettre de côté", for: 1, in: app)
+        XCTAssertTrue(text(app, containing: "Retiré de cette séance").waitForExistence(timeout: 3), "set aside")
+        pick("Remettre", for: 1, in: app)
         XCTAssertTrue(text(app, containing: "Retiré de cette séance").waitForNonExistence(timeout: 3), "put back")
     }
 
@@ -273,7 +287,7 @@ final class SessionToolsTests: XCTestCase {
     func testAddSetMarkedAdded() {
         let app = launch("workSet")
         openProgramme(app)
-        reach(app, "addset-0").tap()
+        pick("Ajouter une série", for: 0, in: app)
         let added = element(app, "programme-row-0-7")
         XCTAssertTrue(app.swipeUpUntil(added), "one set past the plan")
         XCTAssertTrue(added.label.contains("Série 5 · ajoutée"), "marked added: \(added.label)")
@@ -283,7 +297,7 @@ final class SessionToolsTests: XCTestCase {
         let app = launch("workSet")
         XCTAssertFalse(app.buttons["card-note"].exists, "no note yet")
         openProgramme(app)
-        reach(app, "note-0").tap()
+        pick("Note", for: 0, in: app)
         let field = element(app, "note-field")
         XCTAssertTrue(field.waitForExistence(timeout: 3))
         field.tap()
@@ -297,14 +311,40 @@ final class SessionToolsTests: XCTestCase {
         XCTAssertTrue(element(app, "note-field").waitFor(NSPredicate(format: "value == %@", "Coude")), "it opens the note")
     }
 
-    func testIconsNamedForVoiceOver() {
+    /// One menu per exercise, named for it, 44 pt at least, that says each action in words.
+    func testMenuNamesItsActions() {
         let app = launch("workSet")
         openProgramme(app)
-        XCTAssertEqual(reach(app, "replace-0").label, "Remplacer")
-        XCTAssertEqual(reach(app, "leave-0").label, "Retirer")
-        XCTAssertEqual(reach(app, "note-0").label, "Note")
-        XCTAssertEqual(reach(app, "addset-0").label, "Ajouter une série")
-        XCTAssertEqual(reach(app, "add-exercise").label, "Ajouter un exercice")
+        let menu = reach(app, "actions-0")
+        XCTAssertEqual(menu.label, "Actions pour Barbell bench press")
+        XCTAssertGreaterThanOrEqual(menu.frame.width, 44, "\(menu.frame.width) pt wide")
+        XCTAssertGreaterThanOrEqual(menu.frame.height, 44, "\(menu.frame.height) pt high")
+        XCTAssertFalse(app.buttons["Remplacer"].exists, "no bare action beside the exercise")
+        menu.tap()
+        for action in ["Remplacer", "Mettre de côté", "Note", "Ajouter une série"] {
+            XCTAssertTrue(app.buttons[action].waitForExistence(timeout: 3), "the menu offers « \(action) »")
+        }
+    }
+
+    /// The rows offer the note from the leading edge, set aside and replace from the trailing one.
+    func testRowsSwipeToActions() {
+        let app = launch("workSet")
+        openProgramme(app)
+        let row = firstRow(app, slot: 1)
+        XCTAssertTrue(app.swipeUpUntil(row), "the exercise's rows are reached")
+        row.swipeRight()
+        let note = app.buttons["Note"]
+        XCTAssertTrue(note.waitForExistence(timeout: 3), "a swipe right offers the note")
+        note.tap()
+        XCTAssertTrue(app.buttons["note-close"].waitForExistence(timeout: 3), "the note opens")
+        app.buttons["note-close"].tap()
+        XCTAssertTrue(app.swipeUpUntil(row))
+        row.swipeLeft()
+        XCTAssertTrue(app.buttons["Remplacer"].waitForExistence(timeout: 3), "a swipe left offers to replace")
+        let aside = app.buttons["Mettre de côté"]
+        XCTAssertTrue(aside.exists, "and to set aside")
+        aside.tap()
+        XCTAssertTrue(text(app, containing: "Retiré de cette séance").waitForExistence(timeout: 3), "set aside")
     }
 
     func testAx3Sheets() {
@@ -327,7 +367,7 @@ final class SessionToolsTests: XCTestCase {
         let app = launch("workSet", extra: Self.ax3)
         let width = app.windows.firstMatch.frame.width
         openProgramme(app)
-        for id in ["programme-row-0-3", "replace-0", "addset-0"] {
+        for id in ["programme-row-0-3", "actions-0"] {
             let control = element(app, id)
             XCTAssertTrue(app.swipeUpUntil(control), "\(id) is reached at AX3")
             XCTAssertLessThanOrEqual(control.frame.maxX, width + 0.5, "\(id) fits the width")
