@@ -13,7 +13,7 @@ final class ExerciseEndTests: XCTestCase {
     private func launch(_ fixture: String, extra: [String] = []) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = ["-AppleLanguages", "(fr)", "-AppleLocale", "fr_FR", "-BelayFixture", fixture] + extra
-        app.launch()
+        app.launchFixture()
         let resume = app.buttons["Reprendre"]
         XCTAssertTrue(resume.waitForExistence(timeout: 20), "the session is open")
         resume.tap()
@@ -42,11 +42,13 @@ final class ExerciseEndTests: XCTestCase {
 
     func testRecapThenAnnounce() {
         let app = launch("exerciseEnd")
-        let began = logLast(app)
-        let ask = element(app, "rir-2")
-        XCTAssertTrue(ask.exists, "the foot asks the last set's RIR")
-        ask.tap()
+        let began = Date.now
+        element(app, "log-set").tap()
+        // Answered as soon as the foot asks, so the answer's own 0.9 s would end before 2.6 s:
+        // only the recap's floor keeps the announcement back.
+        element(app, "rir-2").tap()
         let answered = Date.now.timeIntervalSince(began)
+        XCTAssertTrue(element(app, "exercise-recap").exists, "the recap shows")
         // Watched closely: the moment the announcement shows is never before the recap's 2.6 s,
         // which began no earlier than the tap that logged the set.
         let announce = element(app, "exercise-announce")
@@ -107,14 +109,34 @@ final class ExerciseEndTests: XCTestCase {
     func testNextExerciseStartsWithWarmup() {
         let app = launch("exerciseEnd")
         announce(app)
-        // At once, while the foot's glass still morphs from the reserve into ⏭: the tap skips.
-        app.buttons["foot-skip"].tap()
+        app.buttons["foot-skip"].tapFootButton()
         let title = element(app, "set-title")
         XCTAssertTrue(title.waitForExistence(timeout: 3), "the next set is due")
         XCTAssertEqual(title.label, "Montée 1 sur 1", "its first warm-up")
         XCTAssertTrue(
             app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Exercice 2 sur ")).firstMatch.exists,
             "of the next exercise")
+    }
+
+    /// ⏭ tapped by a finger the moment it shows, while the foot's glass still morphs out of the
+    /// reserve: the tap where ⏭ is drawn skips the rest. Its accessibility frame lags the drawing
+    /// until the spring ends (350 × 98 pt, 44 pt low), so the tap goes to the drawn place, which is
+    /// where the frame settles.
+    func testSkipTappedAsItArrives() {
+        let app = launch("exerciseEnd")
+        _ = logLast(app)
+        element(app, "exercise-recap").tap()
+        let skip = app.buttons["foot-skip"]
+        XCTAssertTrue(skip.waitForExistence(timeout: 2), "⏭ arrives")
+        app.coordinate(withNormalizedOffset: .zero).withOffset(Self.footCenter(app)).tap()
+        XCTAssertTrue(element(app, "set-title").waitForExistence(timeout: 3), "the next set is due")
+    }
+
+    /// Where the foot draws its one big button: centered, its 84 pt circle 4 pt above the bottom
+    /// safe area (34 pt on this phone).
+    private static func footCenter(_ app: XCUIApplication) -> CGVector {
+        let window = app.windows.firstMatch.frame
+        return CGVector(dx: window.midX, dy: window.maxY - 34 - 4 - 42)
     }
 
     /// The bench press and the next exercise in one group: A1, then B1 at once, with no rest.
@@ -141,7 +163,7 @@ final class ExerciseEndTests: XCTestCase {
         let finish = app.buttons["foot-finish"]
         XCTAssertTrue(finish.exists, "🏁 is the one action")
         XCTAssertFalse(element(app, "log-set").exists)
-        finish.tap()
+        finish.tapFootButton()
         XCTAssertFalse(app.alerts.firstMatch.waitForExistence(timeout: 1), "no question")
         XCTAssertTrue(app.buttons["Enregistrer et fermer"].waitForExistence(timeout: 5), "the summary shows")
     }

@@ -21,6 +21,7 @@ struct ProgrammeSheet: View {
     var body: some View {
         NavigationStack {
             List {
+                SheetTitle(title: Text(verbatim: state.title))
                 ForEach(training.programme) { exercise in
                     Section {
                         if exercise.skipped {
@@ -52,8 +53,7 @@ struct ProgrammeSheet: View {
             .listStyle(.insetGrouped)
             .scrollContentBackground(.hidden)
             .background(Color.paper)
-            .navigationTitle(Text(verbatim: state.title))
-            .navigationBarTitleDisplayMode(.inline)
+            .sheetWithoutBar()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(role: .close) { dismiss() }.accessibilityIdentifier("programme-close")

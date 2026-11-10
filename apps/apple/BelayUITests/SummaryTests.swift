@@ -8,7 +8,7 @@ final class SummaryTests: XCTestCase {
     private func summary(extra: [String] = []) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = ["-AppleLanguages", "(fr)", "-AppleLocale", "fr_FR", "-BelayFixture", "finished"] + extra
-        app.launch()
+        app.launchFixture()
         let resume = app.buttons["Reprendre"]
         XCTAssertTrue(resume.waitForExistence(timeout: 10), "the session is open")
         resume.tap()
@@ -110,7 +110,7 @@ final class SummaryTests: XCTestCase {
         XCTAssertTrue(text(app, containing: "Difficile").waitForExistence(timeout: 2))
         app.terminate()
         app.launchArguments = ["-AppleLanguages", "(fr)", "-AppleLocale", "fr_FR", "-BelayFixture", "keep"]
-        app.launch()
+        app.launchFixture()
         XCTAssertTrue(app.staticTexts["Bonjour Ada"].waitForExistence(timeout: 10), "on Accueil")
         XCTAssertTrue(probe(app).hasPrefix("floor=4 settled=true"), probe(app))
     }

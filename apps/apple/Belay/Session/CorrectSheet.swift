@@ -32,20 +32,9 @@ struct CorrectSheet: View {
     var body: some View {
         NavigationStack {
             List {
-                Section {
-                    VStack(spacing: 4) {
-                        Text(verbatim: SetName.of(set))
-                            .font(.custom(Font.archivoName, size: 34, relativeTo: .largeTitle))
-                            .foregroundStyle(.ink)
-                            .accessibilityAddTraits(.isHeader)
-                        Text(verbatim: actions.training.exerciseName(set.exerciseId))
-                            .font(.subheadline)
-                            .foregroundStyle(.muted)
-                    }
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: .infinity)
-                    .listRowBackground(Color.clear)
-                }
+                SheetTitle(
+                    title: Text(verbatim: SetName.of(set)),
+                    subtitle: Text(verbatim: actions.training.exerciseName(set.exerciseId)))
                 Section {
                     field(Text("kg", tableName: "Session"), $kg, keyboard: .decimalPad, id: "correct-kg")
                     field(
@@ -72,6 +61,7 @@ struct CorrectSheet: View {
                 }
             }
             .listStyle(.insetGrouped)
+            .sheetWithoutBar()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(role: .close) { dismiss() }.accessibilityIdentifier("correct-close")

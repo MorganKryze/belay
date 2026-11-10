@@ -10,7 +10,7 @@ final class SyncNoticeTests: XCTestCase {
     private func launch(_ fixture: String) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = ["-AppleLanguages", "(fr)", "-AppleLocale", "fr_FR", "-BelayFixture", fixture]
-        app.launch()
+        app.launchFixture()
         return app
     }
 

@@ -11,7 +11,7 @@ final class AccueilTests: XCTestCase {
         if largestText {
             app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXL"]
         }
-        app.launch()
+        app.launchFixture()
         return app
     }
 

@@ -31,14 +31,3 @@ struct InFlight: ViewModifier {
         if reduce { content } else { content.matchedGeometryEffect(id: id, in: space) }
     }
 }
-
-/// A foot control on its way out stops taking taps the moment it starts leaving: while the glass
-/// morphs into the next control, a tap goes to the one the person sees arriving, never to the
-/// one that is fading under it. The look stays the default crossfade.
-struct LeavingTakesNoTap: Transition {
-    func body(content: Content, phase: TransitionPhase) -> some View {
-        content
-            .opacity(phase.isIdentity ? 1 : 0)
-            .allowsHitTesting(phase != .didDisappear)
-    }
-}

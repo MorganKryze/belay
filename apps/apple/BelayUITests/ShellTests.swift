@@ -11,7 +11,7 @@ final class ShellTests: XCTestCase {
             "-AppleLanguages", "(fr)", "-AppleLocale", "fr_FR", "-BelayFixture", "fresh",
             "-belay.instance", "https://belay.example",
         ]
-        app.launch()
+        app.launchFixture()
         return app
     }
 
