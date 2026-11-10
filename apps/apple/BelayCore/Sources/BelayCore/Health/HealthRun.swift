@@ -80,7 +80,8 @@ func afterOutcome(_ o: HealthObject, _ outcome: HealthOutcome, kept: HealthWritt
 private let log = Logger(subsystem: "cloud.libresoftware.belay", category: "health")
 
 /// One run for the account of `store`, whose `ownerOf` is `owner`. Off, or Health unavailable:
-/// not one call that writes. The caller runs one at a time.
+/// not one call that writes. The caller runs one at a time (`HealthRuns`); cancelled, the run
+/// stops before the next object.
 public func runHealth(store: AccountStore, writer: any HealthWriting, owner: String, now: Date)
   async
 {
@@ -110,8 +111,9 @@ private struct HealthRun {
         turnedOnAt: settings.turnedOnAt, written: written, allowed: access.workouts == .allowed,
         now: Instant.milliseconds(now), owner: owner))
     for object in plan {
-      // Turned off meanwhile, or off and on again: nothing more of this plan goes.
-      guard try store.healthSettings() == settings else { return }
+      // Turned off meanwhile, or off and on again, or the account signed out: nothing more of
+      // this plan goes.
+      guard !Task.isCancelled, try store.healthSettings() == settings else { return }
       let (id, key) = Self.ids(object)
       let syncId = healthSyncId(id, owner: owner)
       let outcome: HealthOutcome
@@ -157,7 +159,7 @@ private struct HealthRun {
     for effort in try store.efforts() where effort.settled && effort.relatedAt == nil {
       guard let floor = effort.floor, case .workout = written[sessionKey(effort.workoutId)]
       else { continue }
-      guard try store.healthSettings() == settings else { return }
+      guard !Task.isCancelled, try store.healthSettings() == settings else { return }
       let outcome = await writer.relateEffort(
         score: floor * 2, syncId: healthSyncId(effort.workoutId, owner: owner),
         effortSyncId: healthEffortSyncId(effort.workoutId, owner: owner))
