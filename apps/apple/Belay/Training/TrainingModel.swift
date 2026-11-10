@@ -161,6 +161,8 @@ final class TrainingModel {
     /// Every write to the open session goes through these, each one transaction of the store.
     private let actions: SessionActions
     private let didWrite: () -> Void
+    /// Told when Health may have something new: a session finished, a summary left.
+    private let health: () -> Void
     private let now: @Sendable () -> Date
     private let timeZone: TimeZone
     @ObservationIgnored private var watch: Task<Void, Never>?
@@ -170,10 +172,14 @@ final class TrainingModel {
 
     private static let log = Logger(subsystem: "cloud.libresoftware.belay", category: "training")
 
-    init(store: AccountStore, didWrite: @escaping () -> Void, now: @escaping @Sendable () -> Date, timeZone: TimeZone) {
+    init(
+        store: AccountStore, didWrite: @escaping () -> Void, health: @escaping () -> Void = {},
+        now: @escaping @Sendable () -> Date, timeZone: TimeZone
+    ) {
         self.store = store
         actions = SessionActions(store: store, library: BundledLibrary.library, now: now, newId: UUIDv7.make)
         self.didWrite = didWrite
+        self.health = health
         self.now = now
         self.timeZone = timeZone
         // Read once now, so the first frame already shows the card; then follow every write.
@@ -333,6 +339,7 @@ final class TrainingModel {
         }
         settleEndedEfforts(except: id)
         refresh()
+        health()
     }
 
     /// Drops the open session while it holds no set: nothing of it is kept.
@@ -367,8 +374,17 @@ final class TrainingModel {
         }
         // Settled even when the note was not written: the floor given does not depend on it.
         try store.settleEffort(workoutId: left.workoutId)
+        // The effort is settled now, so Health can take it, whatever became of the note.
+        health()
         if let unwritten { throw unwritten }
         summary = nil
+    }
+
+    /// Whether Health holds the workout of `workoutId`, now and after each change of the record.
+    func heldInHealth(_ workoutId: String) -> AsyncThrowingStream<Bool, any Error> {
+        store.observe { db in
+            if case .workout = try AccountStore.healthWritten(db, key: sessionKey(workoutId)) { true } else { false }
+        }
     }
 
     /// A summary the app's end, or a failed write, closed without settling its effort: no screen

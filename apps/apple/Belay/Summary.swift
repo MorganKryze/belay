@@ -9,6 +9,9 @@ struct SummaryView: View {
     let giveEffort: (Int?) -> Void
     /// Saves and closes; false when the save failed and the summary stays.
     let close: (String) -> Bool
+    /// Whether Health holds the session's workout, as the record of what was written says.
+    let heldInHealth: () -> AsyncThrowingStream<Bool, any Error>
+    @State private var inHealth = false
     @Environment(\.dynamicTypeSize) private var type
     @State private var note: String
     @State private var arrived = false
@@ -17,9 +20,14 @@ struct SummaryView: View {
     /// Counts the saves that failed, for a haptic: the summary stays, and the ✓ can try again.
     @State private var failures = 0
 
-    init(summary: SessionSummary, giveEffort: @escaping (Int?) -> Void, close: @escaping (String) -> Bool) {
+    init(
+        summary: SessionSummary, giveEffort: @escaping (Int?) -> Void,
+        heldInHealth: @escaping () -> AsyncThrowingStream<Bool, any Error>,
+        close: @escaping (String) -> Bool
+    ) {
         self.summary = summary
         self.giveEffort = giveEffort
+        self.heldInHealth = heldInHealth
         self.close = close
         _note = State(initialValue: summary.note ?? "")
     }
@@ -62,6 +70,18 @@ struct SummaryView: View {
                     .onChange(of: note) { _, text in
                         if text.utf16.count > Bounds.noteMax { note = fitNote(text) }
                     }
+                if inHealth {
+                    Label {
+                        Text("Enregistrée dans Santé", tableName: "Health")
+                    } icon: {
+                        Image(systemName: "heart.fill").accessibilityHidden(true)
+                    }
+                    .font(.subheadline)
+                    .foregroundStyle(.muted)
+                    .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                    .padding(.horizontal, 16)
+                    .accessibilityIdentifier("summary-health")
+                }
             }
             .padding(.horizontal, 16)
             .padding(.top, 8)
@@ -92,6 +112,14 @@ struct SummaryView: View {
         // a pull closes it as the ✓ does, saving on the way out.
         .interactiveDismissDisabled(false)
         .onAppear { arrived = true }
+        // The run writes the workout a moment after the finish: the line follows the record.
+        .task {
+            do {
+                for try await held in heldInHealth() { inHealth = held }
+            } catch {
+                inHealth = false
+            }
+        }
         .onDisappear { leave() }
         .sensoryFeedback(.success, trigger: arrived)
         .sensoryFeedback(.error, trigger: failures)

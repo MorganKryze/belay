@@ -58,7 +58,11 @@ struct RootView: View {
     }
 
     private var training: TrainingModel {
-        box.model { TrainingModel(store: store, didWrite: account.didWrite, now: Date.init, timeZone: .current) }
+        box.model {
+            TrainingModel(
+                store: store, didWrite: account.didWrite, health: account.runHealth, now: Date.init,
+                timeZone: .current)
+        }
     }
 
     var body: some View {

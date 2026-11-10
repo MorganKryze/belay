@@ -13,7 +13,10 @@ struct SessionCover: View {
         NavigationStack {
             Group {
                 if let summary = training.summary {
-                    SummaryView(summary: summary, giveEffort: giveEffort) { note in
+                    SummaryView(
+                        summary: summary, giveEffort: giveEffort,
+                        heldInHealth: { training.heldInHealth(summary.workoutId) }
+                    ) { note in
                         do {
                             try training.closeSummary(note: note)
                         } catch {

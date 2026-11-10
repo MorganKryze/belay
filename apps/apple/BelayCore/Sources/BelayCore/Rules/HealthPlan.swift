@@ -44,8 +44,10 @@ public enum HealthWritten: Codable, Sendable, Equatable {
       self = .skipped(
         version: version, startedAt: try c.decode(Int64.self, forKey: .startedAt),
         endedAt: try c.decode(Int64.self, forKey: .endedAt))
-    default:
-      self = .removed(version: version)
+    case "removed": self = .removed(version: version)
+    case let state:
+      throw DecodingError.dataCorruptedError(
+        forKey: .state, in: c, debugDescription: "not a written state: \(state)")
     }
   }
 

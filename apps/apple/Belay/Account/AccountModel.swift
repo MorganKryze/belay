@@ -50,19 +50,25 @@ final class AccountModel {
     private let defaults: UserDefaults
     /// Where each account's store lives: the app's own Application Support, never a shared container.
     private let storeFolder: URL
+    private let health: any HealthWriting
+    /// One Health run at a time; a trigger during a run gives one more run after it.
+    private var healthRunning = false
+    private var healthAgain = false
 
     private static let log = Logger(subsystem: "cloud.libresoftware.belay", category: "account")
 
     init(
         secrets: SecretStore = KeychainStore(), http: HTTPClient = URLSessionClient(),
         sheet: SignInSheet = SystemSignInSheet(), defaults: UserDefaults = .standard,
-        storeFolder: URL = URL.applicationSupportDirectory.appending(path: "Stores", directoryHint: .isDirectory)
+        storeFolder: URL = URL.applicationSupportDirectory.appending(path: "Stores", directoryHint: .isDirectory),
+        health: any HealthWriting = HealthKitWriter()
     ) {
         session = StoredSession(store: secrets, defaults: defaults)
         self.http = http
         self.sheet = sheet
         self.defaults = defaults
         self.storeFolder = storeFolder
+        self.health = health
         if let instance = storedInstance, let token = session.token(origin: instance.origin.absoluteString),
            let userId = session.userId {
             state = .signedIn(Account(userId: userId, instance: instance, token: token))
@@ -142,6 +148,60 @@ final class AccountModel {
             if try store.closeForgotten(now: Date()) { didWrite() }
         } catch {
             Self.log.error("forgotten sessions not closed: \(AccountStore.logLabel(error), privacy: .public)")
+        }
+        // What other devices finished, changed or removed is here now.
+        runHealth()
+    }
+
+    /// Brings Health in line with the open store: after a landed sync, a finish and a summary left.
+    /// Each run reads the store as it is, so a trigger missed is caught by the next one.
+    func runHealth() {
+        guard let store, case .signedIn(let account) = state else { return }
+        if healthRunning {
+            healthAgain = true
+            return
+        }
+        healthRunning = true
+        let owner = ownerOf(account.userId)
+        let health = health
+        Task { [weak self] in
+            repeat {
+                self?.healthAgain = false
+                await BelayCore.runHealth(store: store, writer: health, owner: owner, now: Date())
+            } while self?.healthAgain == true && self?.store === store
+            self?.healthRunning = false
+        }
+    }
+
+    /// The Santé switch turned on: iOS is asked now, never at launch, and the switch stays on only
+    /// when it lets Belay write workouts. Whether it did.
+    func turnHealthOn() async -> Bool {
+        guard let store else { return false }
+        do {
+            try await health.authorize()
+        } catch {
+            Self.log.error("health not asked: \(AccountStore.logLabel(error), privacy: .public)")
+        }
+        let access = await health.access()
+        guard access.available, access.workouts == .allowed else { return false }
+        do {
+            try store.setHealthOn(true, now: Date())
+        } catch {
+            Self.log.error("health switch not kept: \(AccountStore.logLabel(error), privacy: .public)")
+            return false
+        }
+        runHealth()
+        return true
+    }
+
+    /// Off stops every write and deletion and leaves what Health holds. Whether it was kept.
+    func turnHealthOff() -> Bool {
+        do {
+            try store?.setHealthOn(false, now: Date())
+            return true
+        } catch {
+            Self.log.error("health switch not kept: \(AccountStore.logLabel(error), privacy: .public)")
+            return false
         }
     }
 
