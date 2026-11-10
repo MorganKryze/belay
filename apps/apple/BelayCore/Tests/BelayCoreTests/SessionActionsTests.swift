@@ -553,3 +553,33 @@ struct Seance {
     #expect(try s.queued == before)
   }
 }
+
+// The writes, the lock screen's included, read a synced time the phone cannot read as left out.
+@Suite struct SessionActionsUnreadableTests {
+  @Test func aSetWithAnUnreadableTimeLeavesThePauseToTheResume() throws {
+    let s = try Seance()
+    s.clock.advance(seconds: 60)
+    try s.actions.pause()
+    s.clock.advance(seconds: 60)
+    try s.serverSetUnreadable(try s.landed(position: 3))
+    s.clock.advance(seconds: 60)
+    try s.actions.resume()
+    #expect(try s.active?.pausedAt == nil)
+    #expect(try s.workout.startedAt == Fixture.time(2))
+  }
+
+  @Test func anUnreadableStartStaysAsItIsOnResume() throws {
+    let s = try Seance()
+    s.clock.advance(seconds: 60)
+    try s.actions.pause()
+    try s.serverSession { $0.startedAt = "not a time" }
+    s.clock.advance(seconds: 60)
+    try s.actions.resume()
+    #expect(try s.active?.pausedAt == nil)
+    #expect(try s.workout.startedAt == "not a time")
+    _ = try s.actions.logNext(count: 8, weightKg: 60, expecting: nil)
+    #expect(try s.sets.count == 1)
+    #expect(try s.actions.finish() == s.workoutId)
+    #expect(try s.workout.endedAt == Fixture.time(2))
+  }
+}

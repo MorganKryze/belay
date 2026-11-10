@@ -288,3 +288,46 @@ import Testing
     #expect(fromPlan.count == 8)
   }
 }
+
+extension Seance {
+  /// The server's copy of this session lands with `edit` applied, the queue already sent.
+  func serverSession(_ edit: (inout WorkoutRow) -> Void) throws {
+    var row = try workout
+    edit(&row)
+    try store.applyServer(
+      sent: try store.outbox(limit: nil), response: Fixture.response(workouts: [row]))
+  }
+
+  /// The server's copy of the set `id` lands with a done time the phone cannot read.
+  func serverSetUnreadable(_ id: String) throws {
+    var row = try #require(try sets.first { $0.id == id })
+    row.doneAt = "not a time"
+    try store.applyServer(
+      sent: try store.outbox(limit: nil), response: Fixture.response(sets: [row]))
+  }
+}
+
+// A time the phone cannot read on a synced row: the cover and the Activity read it at every
+// change and tick, so it is left out rather than closing the app at each launch.
+@Suite struct SessionStateUnreadableTests {
+  @Test func anUnreadableStartReadsNoTimeElapsed() throws {
+    let s = try Seance()
+    s.clock.advance(seconds: 60)
+    try s.serverSession { $0.startedAt = "not a time" }
+    #expect(try s.state().elapsedMs == 0)
+    try s.actions.pause()
+    #expect(try s.state().elapsedMs == 0)
+  }
+
+  @Test func anUnreadableSetTimeEndsNoPause() throws {
+    let s = try Seance()
+    s.clock.advance(seconds: 60)
+    try s.actions.pause()
+    s.clock.advance(seconds: 60)
+    try s.serverSetUnreadable(try s.landed(position: 3))
+    s.clock.advance(seconds: 60)
+    let state = try s.state()
+    #expect(state.paused)
+    #expect(state.elapsedMs == 60_000)
+  }
+}
