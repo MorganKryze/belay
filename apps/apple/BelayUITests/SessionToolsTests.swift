@@ -86,6 +86,14 @@ final class SessionToolsTests: XCTestCase {
         XCTAssertTrue(element(app, "done-0-3").waitForExistence(timeout: 3), "✓ logs the hold")
     }
 
+    func testStopRightAfterPlay() {
+        let app = launch("timed")
+        app.buttons["foot-play"].tap()
+        // At once, while the foot's glass still morphs from ▶ into ■: the tap stops the hold.
+        app.buttons["foot-stop"].tap()
+        XCTAssertTrue(text(app, containing: "s tenues").waitForExistence(timeout: 3), "the hold stops")
+    }
+
     func testHoldSurvivesRelaunch() {
         var app = launch("timed")
         app.buttons["foot-play"].tap()

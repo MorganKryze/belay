@@ -279,6 +279,7 @@ struct Cover: View {
                     }
                 }
             }
+            .transition(LeavingTakesNoTap())
         }
         .padding(.horizontal, 12)
         .padding(.bottom, 4)
