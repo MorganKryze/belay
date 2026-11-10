@@ -34,6 +34,8 @@ struct CurrentSet: Equatable {
     /// Its number among the exercise's work sets, from 1, and how many there are.
     let number: Int
     let of: Int
+    /// A warm-up counts among the exercise's warm-ups instead, and is named « Montée ».
+    let warmup: Bool
     let timed: Bool
     /// Nil when the person has to type it.
     let weightKg: Double?
@@ -435,7 +437,8 @@ final class TrainingModel {
                 setsDone: sessionProgress(workout.plan, sets: own).done.count,
                 current: due.map { set in
                     CurrentSet(
-                        exercise: exerciseName(set.exerciseId), number: set.number, of: set.of, timed: set.timed,
+                        exercise: exerciseName(set.exerciseId), number: set.number, of: set.of, warmup: set.warmup,
+                        timed: set.timed,
                         weightKg: set.weightKg, count: set.count)
                 })
         } else {
