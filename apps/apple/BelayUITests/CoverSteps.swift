@@ -7,6 +7,19 @@ enum SessionEnd {
 }
 
 extension XCUIApplication {
+    /// Launches with the test's arguments. The first launch after an install can meet an instance
+    /// the system started on its own: the launch then fails (« No such process ») or the test gets
+    /// that instance without its arguments, on the English sign-in. A running instance is ended
+    /// first, and a fixture launch that still shows the sign-in, which a fixture never does, is
+    /// launched again once.
+    func launchFixture() {
+        if state != .notRunning { terminate() }
+        launch()
+        guard launchArguments.contains("-BelayFixture"), buttons["signin-submit"].exists else { return }
+        terminate()
+        launch()
+    }
+
     /// Ends the open session the way the cover offers, then waits for the summary. By `.flag`,
     /// each set due is logged as prefilled, each recap tapped and each rest skipped until 🏁 shows,
     /// then 🏁: on a fixture with everything noted that is one tap on the recap. One query finds

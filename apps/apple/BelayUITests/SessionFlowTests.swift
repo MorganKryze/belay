@@ -11,7 +11,7 @@ final class SessionFlowTests: XCTestCase {
     private func launch(_ fixture: String, extra: [String] = []) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = ["-AppleLanguages", "(fr)", "-AppleLocale", "fr_FR", "-BelayFixture", fixture] + extra
-        app.launch()
+        app.launchFixture()
         return app
     }
 

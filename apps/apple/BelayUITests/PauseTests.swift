@@ -13,7 +13,7 @@ final class PauseTests: XCTestCase {
     private func launch(_ fixture: String, extra: [String] = []) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = ["-AppleLanguages", "(fr)", "-AppleLocale", "fr_FR", "-BelayFixture", fixture] + extra
-        app.launch()
+        app.launchFixture()
         let resume = app.buttons["Reprendre"]
         XCTAssertTrue(resume.waitForExistence(timeout: 10), "the session is open")
         resume.tap()
