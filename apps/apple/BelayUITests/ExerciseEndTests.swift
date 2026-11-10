@@ -107,14 +107,34 @@ final class ExerciseEndTests: XCTestCase {
     func testNextExerciseStartsWithWarmup() {
         let app = launch("exerciseEnd")
         announce(app)
-        // At once, while the foot's glass still morphs from the reserve into ⏭: the tap skips.
-        app.buttons["foot-skip"].tap()
+        app.buttons["foot-skip"].tapFootButton()
         let title = element(app, "set-title")
         XCTAssertTrue(title.waitForExistence(timeout: 3), "the next set is due")
         XCTAssertEqual(title.label, "Montée 1 sur 1", "its first warm-up")
         XCTAssertTrue(
             app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Exercice 2 sur ")).firstMatch.exists,
             "of the next exercise")
+    }
+
+    /// ⏭ tapped by a finger the moment it shows, while the foot's glass still morphs out of the
+    /// reserve: the tap where ⏭ is drawn skips the rest. Its accessibility frame lags the drawing
+    /// until the spring ends (350 × 98 pt, 44 pt low), so the tap goes to the drawn place, which is
+    /// where the frame settles.
+    func testSkipTappedAsItArrives() {
+        let app = launch("exerciseEnd")
+        _ = logLast(app)
+        element(app, "exercise-recap").tap()
+        let skip = app.buttons["foot-skip"]
+        XCTAssertTrue(skip.waitForExistence(timeout: 2), "⏭ arrives")
+        app.coordinate(withNormalizedOffset: .zero).withOffset(Self.footCenter(app)).tap()
+        XCTAssertTrue(element(app, "set-title").waitForExistence(timeout: 3), "the next set is due")
+    }
+
+    /// Where the foot draws its one big button: centered, its 84 pt circle 4 pt above the bottom
+    /// safe area (34 pt on this phone).
+    private static func footCenter(_ app: XCUIApplication) -> CGVector {
+        let window = app.windows.firstMatch.frame
+        return CGVector(dx: window.midX, dy: window.maxY - 34 - 4 - 42)
     }
 
     /// The bench press and the next exercise in one group: A1, then B1 at once, with no rest.
@@ -141,7 +161,7 @@ final class ExerciseEndTests: XCTestCase {
         let finish = app.buttons["foot-finish"]
         XCTAssertTrue(finish.exists, "🏁 is the one action")
         XCTAssertFalse(element(app, "log-set").exists)
-        finish.tap()
+        finish.tapFootButton()
         XCTAssertFalse(app.alerts.firstMatch.waitForExistence(timeout: 1), "no question")
         XCTAssertTrue(app.buttons["Enregistrer et fermer"].waitForExistence(timeout: 5), "the summary shows")
     }

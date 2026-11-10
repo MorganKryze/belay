@@ -22,10 +22,10 @@ extension XCUIApplication {
             while Date.now < deadline {
                 guard control.waitForExistence(timeout: 3) else { continue }
                 if control.identifier == "foot-finish" { break }
-                control.tap()
+                control.identifier.hasPrefix("foot-") || control.identifier == "log-set" ? control.tapFootButton() : control.tap()
             }
             XCTAssertTrue(finish.exists, "🏁 shows once everything is noted", file: file, line: line)
-            finish.tap()
+            finish.tapFootButton()
         case .stop:
             buttons["Mettre la séance en pause"].tap()
             let stop = buttons["Arrêter la séance"]
@@ -41,6 +41,16 @@ extension XCUIApplication {
 }
 
 extension XCUIElement {
+    /// Taps one of the foot's round buttons where it is drawn. After a change, SwiftUI keeps the
+    /// button's accessibility frame from before until the spring ends (measured: the reserve's
+    /// 350 × 98 pt for up to 1.6 s, its centre 50 pt under the drawn ⏭), and a tap at that centre
+    /// misses. A finger is not affected; the test waits for the frame to be the button's circle.
+    func tapFootButton(timeout: TimeInterval = 5) {
+        let deadline = Date.now.addingTimeInterval(timeout)
+        while frame.width != frame.height, Date.now < deadline { Thread.sleep(forTimeInterval: 0.1) }
+        tap()
+    }
+
     /// Whether the element meets the predicate within the timeout.
     func waitFor(_ predicate: NSPredicate, timeout: TimeInterval = 3) -> Bool {
         XCTWaiter().wait(for: [XCTNSPredicateExpectation(predicate: predicate, object: self)], timeout: timeout)
