@@ -107,6 +107,9 @@ final class ExerciseEndTests: XCTestCase {
     func testNextExerciseStartsWithWarmup() {
         let app = launch("exerciseEnd")
         announce(app)
+        // The foot's glass morphs into ⏭ on the session's spring; a tap mid-morph lands on the
+        // shape that is leaving, so the test waits for the spring to settle.
+        Thread.sleep(forTimeInterval: 1)
         app.buttons["foot-skip"].tap()
         let title = element(app, "set-title")
         XCTAssertTrue(title.waitForExistence(timeout: 3), "the next set is due")
