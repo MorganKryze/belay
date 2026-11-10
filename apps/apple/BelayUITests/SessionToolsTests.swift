@@ -191,7 +191,7 @@ final class SessionToolsTests: XCTestCase {
     }
 
     /// The programme, the picker and the note keep no title in their bar, before or after a
-    /// scroll: the title sits at the top of the content, only ✕ and ✓ stay over it (SE65).
+    /// scroll: the title sits at the top of the content, only ✕ and ✓ stay over it.
     func testSheetsShowNoBarTitle() {
         let app = launch("workSet")
         openProgramme(app)
