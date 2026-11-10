@@ -41,7 +41,7 @@ struct SessionActivityWidget: Widget {
 
 private typealias Content = BelayActivity.ActivityContent
 
-/// E2's colors: the card is always dark, so its text keeps AA contrast in light and dark.
+/// The card's own colors: it is always dark, so its text keeps AA contrast in light and dark.
 private enum Palette {
     static let ink = Color.white
     static let soft = Color(white: 0.78)

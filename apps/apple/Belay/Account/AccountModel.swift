@@ -51,9 +51,8 @@ final class AccountModel {
     /// Where each account's store lives: the app's own Application Support, never a shared container.
     private let storeFolder: URL
     private let health: any HealthWriting
-    /// One Health run at a time; a trigger during a run gives one more run after it.
-    private var healthRunning = false
-    private var healthAgain = false
+    /// One Health run at a time, cancelled when the store closes.
+    private let healthRuns: HealthRuns
 
     private static let log = Logger(subsystem: "cloud.libresoftware.belay", category: "account")
 
@@ -69,6 +68,7 @@ final class AccountModel {
         self.defaults = defaults
         self.storeFolder = storeFolder
         self.health = health
+        healthRuns = HealthRuns(writer: health)
         if let instance = storedInstance, let token = session.token(origin: instance.origin.absoluteString),
            let userId = session.userId {
             state = .signedIn(Account(userId: userId, instance: instance, token: token))
@@ -119,6 +119,7 @@ final class AccountModel {
     }
 
     private func closeStore() {
+        healthRuns.cancel()
         if let engine { Task { await engine.stop() } }
         engine = nil
         following?.cancel()
@@ -157,20 +158,7 @@ final class AccountModel {
     /// Each run reads the store as it is, so a trigger missed is caught by the next one.
     func runHealth() {
         guard let store, case .signedIn(let account) = state else { return }
-        if healthRunning {
-            healthAgain = true
-            return
-        }
-        healthRunning = true
-        let owner = ownerOf(account.userId)
-        let health = health
-        Task { [weak self] in
-            repeat {
-                self?.healthAgain = false
-                await BelayCore.runHealth(store: store, writer: health, owner: owner, now: Date())
-            } while self?.healthAgain == true && self?.store === store
-            self?.healthRunning = false
-        }
+        healthRuns.trigger(store: store, owner: ownerOf(account.userId))
     }
 
     /// The Santé switch turned on: iOS is asked now, never at launch, and the switch stays on only

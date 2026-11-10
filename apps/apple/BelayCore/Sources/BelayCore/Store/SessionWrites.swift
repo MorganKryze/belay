@@ -148,13 +148,15 @@ extension AccountStore {
   }
 
   /// What a resume at `at` writes: the start moved past the pause, the rest and a chrono moved
-  /// with it on the record, changed in place. Nothing while the session runs.
+  /// with it on the record, changed in place. Nothing while the session runs, and nothing synced
+  /// when the start stays (a start the phone cannot read is never sent back).
   private func resumeChange(_ workout: inout WorkoutRow, _ active: inout ActiveSession, at: String)
     -> [Change]
   {
     guard active.pausedAt != nil else { return [] }
     let next = resumed(startedAt: workout.startedAt, active: active, at: at)
     active = next.active
+    guard next.startedAt != workout.startedAt else { return [] }
     workout.startedAt = next.startedAt
     return [.workout(WorkoutChange(id: workout.id, at: at, edit: .startedAt(next.startedAt)))]
   }

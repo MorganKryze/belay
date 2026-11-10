@@ -212,12 +212,13 @@ final class AccueilTests: XCTestCase {
     }
 
     /// At the largest text size the session path is held to, the card keeps its button in reach.
+    /// The card can sit below the fold there, and a list makes a row only once it scrolls into
+    /// view, so the button is reached by scrolling rather than awaited where it stands.
     func testCardAtLargestText() {
         let app = launch("fresh", largestText: true)
+        XCTAssertTrue(app.buttons["settings"].waitForExistence(timeout: 10), "Accueil shows")
         let start = app.buttons["Voir la séance"]
-        XCTAssertTrue(start.waitForExistence(timeout: 10))
-        if !start.isHittable { app.swipeUp() }
-        XCTAssertTrue(start.isHittable, "Voir la séance can be tapped at AX3")
+        XCTAssertTrue(app.swipeUpUntil(start), "Voir la séance can be tapped at AX3")
         XCTAssertGreaterThanOrEqual(start.frame.height, 44, "a 44 pt target")
     }
 }
