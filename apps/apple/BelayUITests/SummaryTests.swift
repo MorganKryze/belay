@@ -68,6 +68,18 @@ final class SummaryTests: XCTestCase {
         XCTAssertEqual(steps.value as? String, "5 sur 5, Maximal")
     }
 
+    /// A scroll that starts on the floors moves the page, not the effort.
+    func testScrollFromTheFloorsLeavesTheEffortUnset() {
+        let app = summary(extra: ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityL"])
+        let steps = any(app, "effort-steps")
+        let before = steps.frame.minY
+        steps.coordinate(withNormalizedOffset: CGVector(dx: 0.6, dy: 0.5))
+            .press(forDuration: 0.05, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.6, dy: 0.1)))
+        XCTAssertLessThan(steps.frame.minY, before - 20, "the page scrolled")
+        XCTAssertEqual(steps.value as? String, "non donnée")
+        XCTAssertTrue(probe(app).hasPrefix("floor=none"), probe(app))
+    }
+
     func testNoExerciseList() {
         let app = summary()
         XCTAssertFalse(app.staticTexts["Ce que tu as noté"].exists, "no list of exercises")

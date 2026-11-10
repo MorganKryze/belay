@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 /// How hard a session felt, in five floors. Apple's effort has four words; « Soutenu » fills the
 /// middle floor.
@@ -15,7 +16,7 @@ enum EffortText {
 }
 
 /// The effort as five steps rising like a staircase, filled up to the chosen one. One control,
-/// like a slider: a tap or a drag anywhere across it picks the floor under the finger, with a
+/// like a slider: a tap or a drag across it picks the floor under the finger, with a
 /// tick of the hand at each new floor. VoiceOver reads it as one adjustable value.
 struct EffortSteps: View {
     @Binding var value: Int?
@@ -29,12 +30,9 @@ struct EffortSteps: View {
                 }
             }
             .contentShape(.rect)
-            .gesture(
-                DragGesture(minimumDistance: 0).onChanged { drag in
-                    let floor = max(1, min(5, Int(drag.location.x / max(1, box.size.width) * 5) + 1))
-                    guard floor != value else { return }
-                    withAnimation(Motion.change(reduce: Motion.reduced(reduceMotion))) { value = floor }
-                })
+            .onTapGesture { location in pick(location.x, width: box.size.width) }
+            // Only a drag across picks: one that starts upward or downward is the page's scroll.
+            .gesture(AcrossPan { x in pick(x, width: box.size.width) })
         }
         .frame(height: 112)
         .sensoryFeedback(.selection, trigger: value)
@@ -49,6 +47,12 @@ struct EffortSteps: View {
             }
         }
         .accessibilityIdentifier("effort-steps")
+    }
+
+    private func pick(_ x: CGFloat, width: CGFloat) {
+        let floor = max(1, min(5, Int(x / max(1, width) * 5) + 1))
+        guard floor != value else { return }
+        withAnimation(Motion.change(reduce: Motion.reduced(reduceMotion))) { value = floor }
     }
 
     private func step(_ floor: Int) -> some View {
@@ -68,5 +72,34 @@ struct EffortSteps: View {
                 .dynamicTypeSize(...DynamicTypeSize.xxLarge)
         }
         .frame(maxWidth: .infinity)
+    }
+}
+
+/// A pan that begins only when it moves across: one that moves up or down fails at once and
+/// leaves the touch to the scroll it sits in. A SwiftUI drag in a scroll view holds the touch
+/// whatever its direction.
+private struct AcrossPan: UIGestureRecognizerRepresentable {
+    /// The finger's x in the steps, as it moves.
+    let moved: (CGFloat) -> Void
+
+    func makeCoordinator(converter: CoordinateSpaceConverter) -> Coordinator { Coordinator() }
+
+    func makeUIGestureRecognizer(context: Context) -> UIPanGestureRecognizer {
+        let pan = UIPanGestureRecognizer()
+        pan.delegate = context.coordinator
+        return pan
+    }
+
+    func handleUIGestureRecognizerAction(_ pan: UIPanGestureRecognizer, context: Context) {
+        guard pan.state == .began || pan.state == .changed else { return }
+        moved(context.converter.localLocation.x)
+    }
+
+    final class Coordinator: NSObject, UIGestureRecognizerDelegate {
+        func gestureRecognizerShouldBegin(_ recognizer: UIGestureRecognizer) -> Bool {
+            guard let pan = recognizer as? UIPanGestureRecognizer else { return true }
+            let velocity = pan.velocity(in: pan.view)
+            return abs(velocity.x) > abs(velocity.y)
+        }
     }
 }
