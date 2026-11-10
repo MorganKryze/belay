@@ -9,7 +9,7 @@ final class SessionToolsTests: XCTestCase {
     private func launch(_ fixture: String, extra: [String] = []) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = ["-AppleLanguages", "(fr)", "-AppleLocale", "fr_FR", "-BelayFixture", fixture] + extra
-        app.launch()
+        app.launchFixture()
         let resume = app.buttons["Reprendre"]
         // The full fixture writes thirty exercises before the first frame.
         XCTAssertTrue(resume.waitForExistence(timeout: 30), "the session is open")
@@ -188,6 +188,35 @@ final class SessionToolsTests: XCTestCase {
         XCTAssertEqual(reach(app, "programme-row-0-0").value as? String, "faite", "a warm-up done")
         XCTAssertEqual(reach(app, "programme-row-0-3").value as? String, "la prochaine", "the set up next")
         XCTAssertEqual(reach(app, "programme-row-0-4").value as? String, "à venir", "a set to come")
+    }
+
+    /// The programme, the picker and the note keep no title in their bar, before or after a
+    /// scroll: the title sits at the top of the content, only ✕ and ✓ stay over it (SE65).
+    func testSheetsShowNoBarTitle() {
+        let app = launch("workSet")
+        openProgramme(app)
+        assertTitleInContent(app, "the programme", close: "programme-close")
+        reach(app, "replace-1").tap()
+        XCTAssertTrue(app.buttons["picker-close"].waitForExistence(timeout: 3), "the picker opens")
+        assertTitleInContent(app, "the picker", close: "picker-close")
+        app.buttons["picker-close"].tap()
+        reach(app, "note-0").tap()
+        XCTAssertTrue(app.buttons["note-close"].waitForExistence(timeout: 3), "the note opens")
+        assertTitleInContent(app, "the note", close: "note-close")
+    }
+
+    /// The sheet's bar is the one holding its ✕.
+    private func assertTitleInContent(_ app: XCUIApplication, _ sheet: String, close: String, line: UInt = #line) {
+        let bars = app.navigationBars.containing(.button, identifier: close)
+        XCTAssertTrue(bars.firstMatch.exists, "\(sheet): ✕ sits in its bar", line: line)
+        XCTAssertFalse(
+            bars.staticTexts.firstMatch.exists, "\(sheet): no title in the bar: \(bars.debugDescription)", line: line)
+        let title = app.staticTexts["sheet-title"].firstMatch
+        XCTAssertTrue(title.exists, "\(sheet): its title at the top of the content", line: line)
+        XCTAssertFalse(bars.firstMatch.identifier == title.label, "\(sheet): no bar named after it", line: line)
+        app.swipeUp()
+        XCTAssertFalse(bars.staticTexts.firstMatch.exists, "\(sheet): none once scrolled either", line: line)
+        app.swipeDown()
     }
 
     func testReplaceBySearch() {

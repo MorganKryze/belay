@@ -13,6 +13,7 @@ struct NoteSheet: View {
     var body: some View {
         NavigationStack {
             List {
+                SheetTitle(title: Text(verbatim: actions.training.exerciseName(exerciseId)))
                 Section {
                     TextField(text: $text, axis: .vertical) { Text("Une note sur cet exercice", tableName: "SessionTools") }
                         .lineLimit(3...8)
@@ -26,8 +27,7 @@ struct NoteSheet: View {
                 }
             }
             .listStyle(.insetGrouped)
-            .navigationTitle(Text(verbatim: actions.training.exerciseName(exerciseId)))
-            .navigationBarTitleDisplayMode(.inline)
+            .sheetWithoutBar()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(role: .close) { dismiss() }.accessibilityIdentifier("note-close")
