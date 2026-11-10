@@ -1,3 +1,4 @@
+import { Check } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useFit } from "@/lib/fit";
 import { formatNumber, lossView } from "@/lib/format";
@@ -12,10 +13,14 @@ export function TrendFigure({
   averageKg,
   lossPct,
   pill,
+  accent = false,
 }: {
   averageKg: number | null;
   lossPct: number | null;
   pill: boolean;
+  // Where domains meet, the pill sits on the body's tint, its check in the body's shade: the same
+  // for a gain and a loss, since it names the domain and never judges the figure.
+  accent?: boolean;
 }) {
   const { t, i18n } = useTranslation();
   const unit = readWeightUnit();
@@ -58,11 +63,21 @@ export function TrendFigure({
             {t("trend.lastWeek")}
           </span>
         ))}
-      {pill && (
-        <span className="mt-2 self-start rounded-full bg-reference px-2 py-0.5 text-xs font-semibold whitespace-nowrap text-reference-ink">
-          {t("body.inRange")}
-        </span>
-      )}
+      {pill &&
+        (accent ? (
+          <span
+            data-slot="range-pill"
+            data-accent="body"
+            className="mt-2 inline-flex items-center gap-1 self-start rounded-full bg-body-tint px-2 py-0.5 text-xs font-semibold whitespace-nowrap text-foreground"
+          >
+            <Check aria-hidden="true" className="size-3 shrink-0 text-body-shade" />
+            {t("body.inRange")}
+          </span>
+        ) : (
+          <span className="mt-2 self-start rounded-full bg-reference px-2 py-0.5 text-xs font-semibold whitespace-nowrap text-reference-ink">
+            {t("body.inRange")}
+          </span>
+        ))}
     </>
   );
 }

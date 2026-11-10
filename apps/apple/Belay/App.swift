@@ -49,6 +49,7 @@ struct BelayApp: App {
                         Fixture.SummaryProbe(store: store)
                     }
                 }
+                .environment(\.contrastIncreased, Fixture.contrastIncreased)
             #endif
             .task { await account.finishSignIn() }
             .onChange(of: scenePhase) { _, phase in

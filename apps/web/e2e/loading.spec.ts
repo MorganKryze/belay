@@ -101,7 +101,7 @@ test.describe("normal motion", () => {
     for (const delay of [0, 600]) {
       expect(motion).toContainEqual(
         expect.objectContaining({
-          target: "span[data-hook]",
+          target: "span[data-part]",
           kind: "animation",
           duration: 1200,
           delay,
@@ -110,6 +110,21 @@ test.describe("normal motion", () => {
         }),
       );
     }
+
+    // The ring, then the mountain half a beat behind, laid on one square frame: the whole mark.
+    const parts = await pending.locator(".loader-mark > span").evaluateAll((spans) =>
+      spans.map((span) => {
+        const r = span.getBoundingClientRect();
+        const delay = getComputedStyle(span).animationDelay;
+        return { part: span.dataset.part, delay, box: [r.x, r.y, r.width, r.height] };
+      }),
+    );
+    expect(parts.map(({ part, delay }) => [part, delay])).toEqual([
+      ["ring", "0s"],
+      ["mountain", "0.6s"],
+    ]);
+    expect(parts[1]!.box).toEqual(parts[0]!.box);
+    expect(parts[0]!.box[2]).toBe(parts[0]!.box[3]);
 
     const h1 = page.getByRole("heading", { name: "Body", level: 1 });
     await expect(h1).toBeVisible({ timeout: 5000 });
@@ -188,17 +203,19 @@ test.describe("normal motion", () => {
 test.describe("reduced motion", () => {
   test.use({ reducedMotion: "reduce" });
 
-  test("with reduced motion the hooks stand still and the timing holds", async ({ page }) => {
+  test("with reduced motion the ring and mountain stand still and the timing holds", async ({
+    page,
+  }) => {
     await recordMotion(page);
     await openHome(page);
     await hold(page, "body", 1600);
     await tab(page, "Body").click();
-    await expect(page.locator("[data-pending] [data-hook]").first()).toBeVisible();
+    await expect(page.locator("[data-pending] [data-part]").first()).toBeVisible();
     await expect(page.getByRole("heading", { name: "Body", level: 1 })).toBeVisible({
       timeout: 5000,
     });
     const motion = await readMotion(page);
-    expect(motion.filter((m) => m.target === "span[data-hook]")).toEqual([]);
+    expect(motion.filter((m) => m.target === "span[data-part]")).toEqual([]);
     const { tap, mount } = await stamps(page);
     expect(mount! - tap!).toBeGreaterThanOrEqual(140);
   });
@@ -217,4 +234,28 @@ test.describe("accessibility", () => {
       release();
     });
   }
+});
+
+test("the loading mark stays drawn in the system's text colour under forced colours", async ({
+  page,
+}) => {
+  await page.emulateMedia({ forcedColors: "active" });
+  await openHome(page);
+  const release = await hold(page, "body");
+  await tab(page, "Body").click();
+  const parts = page.locator("[data-pending] .loader-mark > span");
+  await expect(parts).toHaveCount(2);
+  // Each part is a mask over its fill, so the fill must not be forced to the page's own Canvas.
+  const look = await parts.evaluateAll((spans) =>
+    spans.map((span) => ({
+      fill: getComputedStyle(span).backgroundColor,
+      page: getComputedStyle(document.body).backgroundColor,
+      text: getComputedStyle(document.body).color,
+    })),
+  );
+  for (const { fill, page: ground, text } of look) {
+    expect(fill).not.toBe(ground);
+    expect(fill).toBe(text);
+  }
+  release();
 });

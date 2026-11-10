@@ -83,8 +83,8 @@ export function Pending({ title = true }: { title?: boolean }) {
         </>
       )}
       <div aria-hidden className="loader-mark">
-        <span data-hook="a" />
-        <span data-hook="b" />
+        <span data-part="ring" />
+        <span data-part="mountain" />
       </div>
       <p role="status" className="sr-only">
         {t("fallback.loading")}

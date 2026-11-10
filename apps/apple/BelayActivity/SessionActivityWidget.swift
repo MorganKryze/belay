@@ -176,8 +176,8 @@ private struct Mark: View {
     let side: CGFloat
 
     var body: some View {
-        BelayMark().fill(Palette.ink)
-            .frame(width: side, height: side * BelayMark.aspect)
+        BelayMark().stroke(Palette.ink, style: BelayMark.strokeStyle(side: side))
+            .frame(width: side, height: side)
             .accessibilityHidden(true)
     }
 }

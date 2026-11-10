@@ -16,8 +16,8 @@ const section =
 
 // On a computer the dock gives way to this bar: plain surface rather than glass, as nothing
 // scrolls under it at that width. The active section keeps the dock's edge so the cue holds at
-// 3:1 where the fill alone would not. The mark is ink here: blue beside content is kept for the
-// screen's next action.
+// 3:1 where the fill alone would not. The lockup is ink here, the logotype naming the app: blue
+// beside content is kept for the screen's next action.
 export function TopBar({ name }: { name?: string }) {
   const { t } = useTranslation();
   const active = tabIndexOf(useLocation().pathname);
@@ -31,19 +31,9 @@ export function TopBar({ name }: { name?: string }) {
           to="/"
           onClick={onClick(0)}
           viewTransition={false}
-          className="flex min-h-11 items-center gap-2 text-title-compact text-foreground"
+          className="flex min-h-11 items-center text-foreground"
         >
-          <svg
-            aria-hidden="true"
-            viewBox="86 86 340 340"
-            className="size-7 shrink-0 text-foreground"
-          >
-            <path
-              fill="currentColor"
-              d="M86 160L86 266A120 120 0 0 0 326 266L326 246A20 20 0 0 0 286 246L286 266A80 80 0 0 1 126 266L126 160A20 20 0 0 0 86 160ZM426 352L426 246A120 120 0 0 0 186 246L186 266A20 20 0 0 0 226 266L226 246A80 80 0 0 1 386 246L386 352A20 20 0 0 0 426 352Z"
-            />
-          </svg>
-          {t("app.name")}
+          <span role="img" aria-label={t("app.name")} className="brand-lockup" />
         </Link>
         <nav className="flex-1">
           <ul className="flex gap-1">

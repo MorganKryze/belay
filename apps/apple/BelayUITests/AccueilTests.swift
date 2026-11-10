@@ -5,11 +5,14 @@ import XCTest
 @MainActor
 final class AccueilTests: XCTestCase {
     /// `fresh` opens an empty store, `keep` the one the previous launch left.
-    private func launch(_ fixture: String, largestText: Bool = false) -> XCUIApplication {
+    private func launch(_ fixture: String, largestText: Bool = false, increasedContrast: Bool = false) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = ["-AppleLanguages", "(fr)", "-AppleLocale", "fr_FR", "-BelayFixture", fixture]
         if largestText {
             app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXL"]
+        }
+        if increasedContrast {
+            app.launchArguments += ["-BelayContrast", "increased"]
         }
         app.launchFixture()
         return app
@@ -27,6 +30,69 @@ final class AccueilTests: XCTestCase {
         XCTAssertTrue(text(app, containing: "6 exercices").exists, "with its exercise count")
         XCTAssertTrue(text(app, containing: "environ 55\u{202F}min").exists, "and its estimated time")
         XCTAssertTrue(app.buttons["Voir la séance"].exists, "the card opens it")
+    }
+
+    /// The day's state is a chip in the session's colour, holding the card's own words; no other
+    /// domain marks Accueil.
+    func testStateIsTheSessionChip() {
+        let app = launch("fresh")
+        let chip = app.descendants(matching: .any)["chip.session"]
+        XCTAssertTrue(chip.waitForExistence(timeout: 10), "the day card carries the session chip")
+        XCTAssertEqual(chip.label, "La prochaine", "the chip reads the state as is")
+        let chips = app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH 'chip.'"))
+        XCTAssertEqual(chips.count, 1, "the session is the only domain on Accueil")
+    }
+
+    /// How much bluer than red the top left of the screen reads, between the status bar and the
+    /// title, in 0-255 steps: the session's tint is about 20 bluer in both appearances, the wall
+    /// and the paper are grey.
+    private func blueCast(_ app: XCUIApplication) -> Int {
+        let shot = app.screenshot().image
+        guard let image = shot.cgImage else {
+            XCTFail("the screenshot has no bitmap")
+            return 0
+        }
+        let scale = shot.scale
+        let box = CGRect(x: 16 * scale, y: 70 * scale, width: 80 * scale, height: 20 * scale).integral
+        guard let crop = image.cropping(to: box) else {
+            XCTFail("the sample falls off the screen")
+            return 0
+        }
+        let width = crop.width, height = crop.height
+        var pixels = [UInt8](repeating: 0, count: width * height * 4)
+        let drawn = pixels.withUnsafeMutableBytes { bytes in
+            guard
+                let context = CGContext(
+                    data: bytes.baseAddress, width: width, height: height, bitsPerComponent: 8,
+                    bytesPerRow: width * 4, space: CGColorSpace(name: CGColorSpace.sRGB)!,
+                    bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+            else { return false }
+            context.draw(crop, in: CGRect(x: 0, y: 0, width: width, height: height))
+            return true
+        }
+        XCTAssertTrue(drawn, "the sample draws")
+        var red = 0, blue = 0
+        for pixel in stride(from: 0, to: pixels.count, by: 4) {
+            red += Int(pixels[pixel])
+            blue += Int(pixels[pixel + 2])
+        }
+        return (blue - red) / (width * height)
+    }
+
+    /// The session's tint washes the top of Accueil behind the title, as on the web.
+    func testSessionBandBehindTheTitle() {
+        let app = launch("fresh")
+        XCTAssertTrue(app.navigationBars["Bonjour Ada"].waitForExistence(timeout: 10))
+        let cast = blueCast(app)
+        XCTAssertGreaterThanOrEqual(cast, 8, "the top of the screen carries the session's tint: \(cast)")
+    }
+
+    /// Under increased contrast the band is gone: the top is the plain paper.
+    func testNoBandUnderIncreasedContrast() {
+        let app = launch("fresh", increasedContrast: true)
+        XCTAssertTrue(app.navigationBars["Bonjour Ada"].waitForExistence(timeout: 10))
+        let cast = blueCast(app)
+        XCTAssertLessThanOrEqual(cast, 3, "no tint at the top under increased contrast: \(cast)")
     }
 
     /// The person's name as the title, their initial on the avatar.

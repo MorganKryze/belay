@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { cleanup, screen, within } from "@testing-library/react";
 import { IDBFactory } from "fake-indexeddb";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -25,10 +27,23 @@ describe("the top bar", () => {
     renderRoute("/tools");
     const home = (await bar()).getByRole("link", { name: "Belay" });
     expect(home.getAttribute("href")).toBe("/");
-    const mark = home.querySelector("svg")!;
-    expect(classes(mark)).toEqual(expect.arrayContaining(["size-7", "text-foreground"]));
-    expect(mark.querySelector("path")!.getAttribute("fill")).toBe("currentColor");
-    expect(mark.getAttribute("aria-hidden")).toBe("true");
+    // The link holds the lockup alone, named Belay as the link's whole name.
+    expect(home.children).toHaveLength(1);
+    const lockup = within(home).getByRole("img", { name: "Belay" });
+    expect(classes(lockup)).toContain("brand-lockup");
+    expect(lockup.getAttribute("aria-hidden")).toBeNull();
+    // The lockup draws 28 px tall in the text's ink, and the mark fills its height: the mark's
+    // 100-unit grid scaled to the lockup's own height.
+    const css = readFileSync(join(__dirname, "..", "index.css"), "utf8");
+    const rule = /@utility brand-lockup \{([^}]*)\}/.exec(css)![1]!;
+    expect(rule).toMatch(/height: 28px;/);
+    expect(rule).toMatch(/background-color: currentColor;/);
+    expect(rule).toMatch(/mask: url\("..\/icons\/lockup-ink.svg"\)/);
+    const svg = readFileSync(join(__dirname, "..", "..", "icons", "lockup-ink.svg"), "utf8");
+    const [, , width, height] = /viewBox="([\d. ]+)"/.exec(svg)![1]!.split(" ").map(Number);
+    expect(rule).toContain(`aspect-ratio: ${width} / ${height};`);
+    const scale = Number(/scale\(([\d.]+)\)/.exec(svg)![1]);
+    expect(100 * scale).toBeCloseTo(height!, 1);
   });
 
   it("lists the four sections, the active one on primary-soft with a primary-ink edge and aria-current", async () => {

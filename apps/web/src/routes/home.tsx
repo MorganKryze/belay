@@ -2,11 +2,12 @@ import type { ISODate } from "@belay/shared/body/dates";
 import { inTargetRange } from "@belay/shared/body/target";
 import { latestMovingAverage, type Weighing, weeklySummaries } from "@belay/shared/body/weighings";
 import { Link, lazyRouteComponent, useNavigate, useSearch } from "@tanstack/react-router";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Scale } from "lucide-react";
 import { Suspense, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AvatarLink } from "@/components/avatar";
 import { PageHeader } from "@/components/page-header";
+import { DomainChip } from "@/components/domain";
 import { cardSurface, sectionLabel } from "@/components/surfaces";
 import { SyncBanner } from "@/components/sync-banner";
 import { TodayCard } from "@/components/today-card";
@@ -120,6 +121,8 @@ function SignedInHome({ account }: { account: OpenAccount }) {
   useCloseForgotten(account);
   return (
     <section className="flex flex-col gap-4">
+      {/* The session's tint washed over the top of the page, behind the title; it scrolls away. */}
+      <div aria-hidden="true" data-band className="home-band" />
       <PageHeader
         title={t("home.greeting", { name: account.user.displayName })}
         eyebrow={formatWeekday(today, i18n.language, today, { long: true })}
@@ -166,8 +169,10 @@ function TrendCard({
         {t("trend.title")}
       </h2>
       <Link to="/body" className={`${cardSurface} flex flex-col px-4 py-3.5`}>
-        <span className="flex items-center justify-between text-(length:--text-secondary) font-semibold text-muted-foreground">
-          {t("trend.average")}
+        <span className="flex items-center justify-between text-muted-foreground">
+          <DomainChip domain="body" icon={Scale}>
+            {t("trend.average")}
+          </DomainChip>
           <ChevronRight aria-hidden className="size-4" />
         </span>
         <TrendFigure
@@ -179,6 +184,7 @@ function TrendCard({
             target !== undefined &&
             inTargetRange(lossPct, target)
           }
+          accent
         />
       </Link>
     </section>

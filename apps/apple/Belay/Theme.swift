@@ -28,10 +28,11 @@ enum DisplayType {
 struct Wall: View {
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @Environment(\.colorSchemeContrast) private var contrast
+    @Environment(\.contrastIncreased) private var contrastIncreased
 
     var body: some View {
         Group {
-            if reduceTransparency || contrast == .increased {
+            if reduceTransparency || contrast == .increased || contrastIncreased {
                 Color.paper
             } else {
                 Image("Wall").resizable(resizingMode: .tile)
@@ -131,4 +132,7 @@ extension View {
 extension EnvironmentValues {
     /// The namespace every zoom shares, from the tab root to the cover and the sheets.
     @Entry var zoomSpace: Namespace.ID?
+    /// Increased contrast as the UI tests' fixture asks for it, the system setting being out of a
+    /// test's reach. Read alongside `colorSchemeContrast`.
+    @Entry var contrastIncreased = false
 }

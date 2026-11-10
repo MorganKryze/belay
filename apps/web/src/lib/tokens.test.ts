@@ -346,3 +346,124 @@ describe("palette", () => {
     expect(readTokens(media, nested, "  ")).toEqual(readTokens(css, selector));
   });
 });
+
+// The five domains, each a pale tint and a readable shade, as the palette draws them; the session
+// takes the mark's own blue.
+const DOMAINS = ["session", "body", "activity", "intake", "rest"] as const;
+const DOMAIN_VALUES: Record<"light" | "dark", Record<string, string>> = {
+  light: {
+    "session-tint": "#dce5f0",
+    "session-shade": "#1f4e8c",
+    "body-tint": "#efdddc",
+    "body-shade": "#94434c",
+    "activity-tint": "#dce6d3",
+    "activity-shade": "#46672d",
+    "intake-tint": "#eee2c9",
+    "intake-shade": "#7e5c1a",
+    "rest-tint": "#e1deee",
+    "rest-shade": "#574d8a",
+  },
+  dark: {
+    "session-tint": "#1e2b3b",
+    "session-shade": "#8db6ee",
+    "body-tint": "#36262a",
+    "body-shade": "#e7aab0",
+    "activity-tint": "#243020",
+    "activity-shade": "#a8c98d",
+    "intake-tint": "#352d1d",
+    "intake-shade": "#dcbd82",
+    "rest-tint": "#29273d",
+    "rest-shade": "#b6ade2",
+  },
+};
+
+// With more contrast each shade reads at 7:1 on paper, surface and its own tint; the tints stay.
+// Beside each value, its ratio on paper, surface and tint. Derived from the shade above, darker in
+// light and lighter in dark, only where it fell short.
+const MORE_SHADES: Record<"more light" | "more dark", Record<string, [string, number[]]>> = {
+  "more light": {
+    session: ["#143a6b", [10.39, 11.37, 8.94]],
+    body: ["#73343b", [8.4, 9.2, 7.03]],
+    activity: ["#364f23", [8.35, 9.13, 7.09]],
+    intake: ["#5e4513", [8.21, 8.99, 7]],
+    rest: ["#484073", [8.5, 9.31, 7.04]],
+  },
+  "more dark": {
+    session: ["#b5d0f5", [12.27, 10.44, 9.09]],
+    body: ["#e7aab0", [9.94, 8.45, 7.34]],
+    activity: ["#a8c98d", [10.52, 8.95, 7.51]],
+    intake: ["#dcbd82", [10.74, 9.13, 7.54]],
+    rest: ["#b7aee2", [9.37, 7.98, 7]],
+  },
+};
+
+const two = (n: number) => Number(n.toFixed(2));
+
+describe("domain colours", () => {
+  it.each(["light", "dark"] as const)("%s holds the palette's ten values", (name) => {
+    const tokens = SETS[name];
+    const expected = DOMAIN_VALUES[name];
+    expect(Object.fromEntries(Object.keys(expected).map((k) => [k, tokens[k]]))).toEqual(expected);
+  });
+
+  it.each(EACH_SET)("%s reads each shade at 4.5:1 on paper, surface and its tint", (_, tokens) => {
+    for (const d of DOMAINS) {
+      const shade = tokens[`${d}-shade`]!;
+      for (const ground of [tokens.background!, tokens.surface!, tokens[`${d}-tint`]!]) {
+        const ratio = contrastRatio(shade, ground);
+        expect(ratio, `${d} on ${ground}: ${ratio.toFixed(2)}`).toBeGreaterThanOrEqual(4.5);
+      }
+    }
+  });
+
+  it.each(["more light", "more dark"] as const)(
+    "%s draws each shade at 7:1, the ratios as measured",
+    (name) => {
+      const tokens = SETS[name];
+      for (const [d, [shade, ratios]] of Object.entries(MORE_SHADES[name])) {
+        expect(tokens[`${d}-shade`], d).toBe(shade);
+        const grounds = [tokens.background!, tokens.surface!, tokens[`${d}-tint`]!];
+        const measured = grounds.map((g) => two(contrastRatio(shade, g)));
+        expect(measured, d).toEqual(ratios);
+        for (const r of measured) expect(r, d).toBeGreaterThanOrEqual(7);
+      }
+    },
+  );
+
+  it.each([
+    ["more light", "light"],
+    ["more dark", "dark"],
+  ] as const)("%s keeps the tints of %s", (more, base) => {
+    for (const d of DOMAINS) expect(SETS[more][`${d}-tint`], d).toBe(SETS[base][`${d}-tint`]);
+  });
+
+  it.each(EACH_SET)("%s keeps the session shade on the mark's blue", (_, tokens) => {
+    expect(tokens["session-shade"]).toBe(tokens.mark);
+  });
+
+  // A domain names where a figure belongs; the danger red would judge it.
+  it.each(EACH_SET)("%s gives no domain the danger red", (_, tokens) => {
+    for (const d of DOMAINS)
+      for (const part of ["tint", "shade"])
+        expect(tokens[`${d}-${part}`], `${d}-${part}`).not.toBe(tokens.destructive);
+  });
+
+  it("maps each domain token to a colour utility", () => {
+    for (const d of DOMAINS)
+      for (const part of ["tint", "shade"])
+        expect(css).toContain(`--color-${d}-${part}: var(--${d}-${part});`);
+  });
+
+  // The body accent is the same for a gain and a loss: no line of the trend's code picks a body
+  // colour beside a sign or a direction.
+  it("never chooses the body colour from a gain or a loss", () => {
+    const here = dirname(fileURLToPath(import.meta.url));
+    for (const file of ["../components/trend-figure.tsx", "../routes/home.tsx"]) {
+      const source = readFileSync(join(here, file), "utf8");
+      for (const line of source.split("\n"))
+        if (/body-(tint|shade)|domain="body"|destructive/.test(line))
+          expect(line, file).not.toMatch(/gain|loss|kind ===|[<>]\s*0|Math\.sign|destructive/);
+      expect(source, file).not.toMatch(/destructive/);
+    }
+  });
+});
