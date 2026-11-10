@@ -42,11 +42,13 @@ final class ExerciseEndTests: XCTestCase {
 
     func testRecapThenAnnounce() {
         let app = launch("exerciseEnd")
-        let began = logLast(app)
-        let ask = element(app, "rir-2")
-        XCTAssertTrue(ask.exists, "the foot asks the last set's RIR")
-        ask.tap()
+        let began = Date.now
+        element(app, "log-set").tap()
+        // Answered as soon as the foot asks, so the answer's own 0.9 s would end before 2.6 s:
+        // only the recap's floor keeps the announcement back.
+        element(app, "rir-2").tap()
         let answered = Date.now.timeIntervalSince(began)
+        XCTAssertTrue(element(app, "exercise-recap").exists, "the recap shows")
         // Watched closely: the moment the announcement shows is never before the recap's 2.6 s,
         // which began no earlier than the tap that logged the set.
         let announce = element(app, "exercise-announce")
