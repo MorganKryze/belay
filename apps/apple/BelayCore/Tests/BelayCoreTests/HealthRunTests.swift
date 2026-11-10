@@ -254,6 +254,30 @@ private actor FakeHealth: HealthWriting {
     #expect(await health.saved.count == 1)
   }
 
+  /// The overlap check is for a session Health does not hold yet: one this phone already wrote
+  /// follows its edits, so another app's workout found later never leaves the old one behind.
+  @Test func aWrittenSessionFollowsItsEditsWhateverCoversItSince() async throws {
+    let store = try storeOn()
+    try finished(store, w, end: 30)
+    let health = FakeHealth()
+    await run(store, health)
+
+    await health.set(covered: true)
+    try edit(store, w, at: 46, .ended(Fixture.time(45)))
+    await run(store, health)
+
+    #expect(await health.saved.count == 2)
+    guard case .workout = try store.healthWritten()[sessionKey(w)] else {
+      Issue.record("the record holds the workout")
+      return
+    }
+
+    try edit(store, w, at: 50, .removed(true))
+    await run(store, health)
+
+    #expect(await health.deleted == [healthSyncId(w, owner: owner)])
+  }
+
   @Test func refusedAccessWritesNothingAndKeepsThePlan() async throws {
     let store = try storeOn()
     try finished(store, w)

@@ -110,9 +110,14 @@ private struct HealthRun {
       let outcome: HealthOutcome
       switch object {
       case .workout(_, let startedAt, let endedAt, _):
-        outcome =
-          await writer.overlaps(startedAt: startedAt, endedAt: endedAt)
-          ? .overlap : await writer.save(object, syncId: syncId)
+        // Only a session Health does not hold yet is looked at: one already written follows its
+        // edits, or skipping it would leave the old workout in Health for good.
+        let held = if case .workout = written[key] { true } else { false }
+        if !held, await writer.overlaps(startedAt: startedAt, endedAt: endedAt) {
+          outcome = .overlap
+        } else {
+          outcome = await writer.save(object, syncId: syncId)
+        }
       case .workoutRemoved:
         outcome = await writer.delete(syncId: syncId)
       }
