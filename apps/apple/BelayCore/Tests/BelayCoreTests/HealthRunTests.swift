@@ -150,16 +150,18 @@ private actor FakeHealth: HealthWriting {
     }
   }
 
-  @Test func theSyncIdCarriesTheOwnerTag() async throws {
+  /// The web's rule and the Capacitor writer save a session's workout under its key alone
+  /// (`sessionKey`, pinned to the web's by the vectors): a session's id is already unique, and the
+  /// same session written from the web app stays one workout.
+  @Test func theSyncIdIsTheWebOne() async throws {
     let store = try storeOn()
     try finished(store, w)
     let health = FakeHealth()
 
     await run(store, health)
 
-    #expect(await health.saved.first?.syncId == "belay-session-\(owner)-\(w)")
-    #expect(healthSyncId(w, owner: owner) == "belay-session-\(owner)-\(w)")
-    #expect(healthSyncId(w, owner: ownerOf("user-2")) != healthSyncId(w, owner: owner))
+    #expect(await health.saved.first?.syncId == "belay-session-\(w)")
+    #expect(await health.saved.first?.syncId == sessionKey(w))
   }
 
   @Test func aSessionEndedBeforeTheSwitchWentOnIsNotWritten() async throws {
@@ -231,7 +233,7 @@ private actor FakeHealth: HealthWriting {
     await run(store, health)
     await run(store, health)
 
-    #expect(await health.deleted == [healthSyncId(w, owner: owner)])
+    #expect(await health.deleted == [sessionKey(w)])
     guard case .removed = try store.healthWritten()[sessionKey(w)] else {
       Issue.record("the record says removed")
       return
@@ -283,7 +285,7 @@ private actor FakeHealth: HealthWriting {
     try edit(store, w, at: 50, .removed(true))
     await run(store, health)
 
-    #expect(await health.deleted == [healthSyncId(w, owner: owner)])
+    #expect(await health.deleted == [sessionKey(w)])
   }
 
   @Test func refusedAccessWritesNothingAndKeepsThePlan() async throws {
@@ -334,7 +336,7 @@ private actor FakeHealth: HealthWriting {
     let related = await health.related
     #expect(related.count == 1)
     #expect(related.first?.score == 6)
-    #expect(related.first?.syncId == healthSyncId(w, owner: owner))
+    #expect(related.first?.syncId == sessionKey(w))
     #expect(try store.effort(workoutId: w)?.relatedAt == Instant.string(now))
   }
 
@@ -374,8 +376,8 @@ private actor FakeHealth: HealthWriting {
     await health.set(relating: .written)
     await run(store, health)
 
-    let id = "belay-effort-\(owner)-\(w)"
-    #expect(healthEffortSyncId(w, owner: owner) == id)
+    let id = "belay-effort-\(w)"
+    #expect(healthEffortSyncId(w) == id)
     #expect(await health.relateTries == [id, id])
     #expect(await health.related.count == 1)
   }

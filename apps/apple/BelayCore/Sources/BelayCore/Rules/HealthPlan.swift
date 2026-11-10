@@ -5,10 +5,12 @@ import Foundation
 // weigh-ins and sending the history come later, so history stays at "no" and only sessions
 // ended after the switch went on, or already written, are eligible.
 
+/// A session's key in the record, and its workout's sync identifier in Health, as the web's rule
+/// and its writer have it: a session's id is unique, so it needs no account's tag.
 public func sessionKey(_ id: String) -> String { "belay-session-\(id)" }
 
-/// Health keeps one store for every app on the phone, so a sync identifier also carries this tag
-/// of the account's id. FNV-1a on 32 bits over UTF-16 units, as the web computes it: a clash
+/// Health keeps one store for every app on the phone, and a weigh-in's sync identifier is its
+/// day, so that one also carries this tag of the account's id. FNV-1a on 32 bits over UTF-16 units, as the web computes it: a clash
 /// between the few accounts of one phone is a one in four billion chance.
 public func ownerOf(_ userId: String) -> String {
   var hash: UInt32 = 0x811c_9dc5

@@ -51,16 +51,9 @@ public protocol HealthWriting: Sendable {
   func relateEffort(score: Int, syncId: String, effortSyncId: String) async -> HealthOutcome
 }
 
-/// Health keeps one store for every app and account on the phone, so the identifier of a
-/// session's workout carries the account's tag (`ownerOf`) before the session's id.
-public func healthSyncId(_ id: String, owner: String) -> String {
-  "belay-session-\(owner)-\(id)"
-}
-
-/// The effort score of a session, under the same tag: one per session, so a retry replaces it.
-public func healthEffortSyncId(_ id: String, owner: String) -> String {
-  "belay-effort-\(owner)-\(id)"
-}
+/// The effort score of a session: one per session, so a retry replaces it. Like its workout's
+/// (`sessionKey`, as the web writes it), it needs no account's tag: a session's id is unique.
+public func healthEffortSyncId(_ id: String) -> String { "belay-effort-\(id)" }
 
 /// What the record keeps once Health answered; nil leaves the object for the next run.
 func afterOutcome(_ o: HealthObject, _ outcome: HealthOutcome, kept: HealthWritten?)
@@ -115,7 +108,7 @@ private struct HealthRun {
       // this plan goes.
       guard !Task.isCancelled, try store.healthSettings() == settings else { return }
       let (id, key) = Self.ids(object)
-      let syncId = healthSyncId(id, owner: owner)
+      let syncId = sessionKey(id)
       let outcome: HealthOutcome
       switch object {
       case .workout(_, let startedAt, let endedAt, _):
@@ -161,8 +154,8 @@ private struct HealthRun {
       else { continue }
       guard !Task.isCancelled, try store.healthSettings() == settings else { return }
       let outcome = await writer.relateEffort(
-        score: floor * 2, syncId: healthSyncId(effort.workoutId, owner: owner),
-        effortSyncId: healthEffortSyncId(effort.workoutId, owner: owner))
+        score: floor * 2, syncId: sessionKey(effort.workoutId),
+        effortSyncId: healthEffortSyncId(effort.workoutId))
       if outcome == .written {
         try store.markEffortRelated(workoutId: effort.workoutId, at: Instant.string(now))
       } else if outcome == .denied {

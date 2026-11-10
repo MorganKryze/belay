@@ -82,7 +82,7 @@ private actor HeldHealth: HealthWriting {
     await runs.idle()
 
     let saved = await health.saved
-    #expect(saved == [healthSyncId(a, owner: ownerOf("user-1"))])
+    #expect(saved == [sessionKey(a)])
   }
 
   @Test func aTriggerForTheNextStoreDuringTheRunGivesItARun() async throws {
@@ -101,7 +101,7 @@ private actor HeldHealth: HealthWriting {
 
     let saved = await health.saved
     #expect(saved.count == 2)
-    #expect(saved.last == healthSyncId(c, owner: ownerOf("user-2")))
+    #expect(saved.last == sessionKey(c))
   }
 
   @Test func aTriggerDuringARunGivesOneMoreRun() async throws {
