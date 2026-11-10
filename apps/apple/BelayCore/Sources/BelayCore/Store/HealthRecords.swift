@@ -33,11 +33,30 @@ extension AccountStore {
 
   /// What Health holds for `key` (a `sessionKey`) once it answered.
   public func recordHealthWritten(_ key: String, _ value: HealthWritten) throws {
+    try writer.write { try Self.putHealthWritten($0, key, value) }
+  }
+
+  /// A session's workout Health saved. A save replaces the workout object, and the effort related
+  /// to the one replaced does not follow, so in the same write the effort is no longer related:
+  /// the run relates it to the new workout.
+  public func recordWorkoutWritten(workoutId: String, _ value: HealthWritten) throws {
     try writer.write { db in
+      try Self.putHealthWritten(db, sessionKey(workoutId), value)
+      guard var effort = try Self.effort(db, workoutId: workoutId), effort.relatedAt != nil
+      else { return }
+      effort.relatedAt = nil
       try db.execute(
-        sql: "INSERT OR REPLACE INTO healthWritten (key, row) VALUES (?, ?)",
-        arguments: [key, Rows.encode(value)])
+        sql: "UPDATE efforts SET row = ? WHERE workoutId = ?",
+        arguments: [Rows.encode(effort), workoutId])
     }
+  }
+
+  private static func putHealthWritten(_ db: Database, _ key: String, _ value: HealthWritten)
+    throws
+  {
+    try db.execute(
+      sql: "INSERT OR REPLACE INTO healthWritten (key, row) VALUES (?, ?)",
+      arguments: [key, Rows.encode(value)])
   }
 
   public func healthWritten() throws -> [String: HealthWritten] {

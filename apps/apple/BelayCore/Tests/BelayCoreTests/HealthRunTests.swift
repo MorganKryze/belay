@@ -306,6 +306,27 @@ private actor FakeHealth: HealthWriting {
     #expect(try store.effort(workoutId: w)?.relatedAt == Instant.string(now))
   }
 
+  /// A workout saved again is a new object in Health, without the effort related to the one it
+  /// replaces: the effort goes again, to the new one.
+  @Test func aWorkoutSavedAgainGetsItsEffortAgain() async throws {
+    let store = try storeOn()
+    try finished(store, w)
+    try store.giveEffort(workoutId: w, floor: 4)
+    try store.settleEffort(workoutId: w)
+    let health = FakeHealth()
+    await run(store, health)
+
+    try edit(store, w, at: 46, .ended(Fixture.time(45)))
+    await run(store, health)
+    await run(store, health)
+
+    #expect(await health.saved.count == 2)
+    let related = await health.related
+    #expect(related.count == 2)
+    #expect(related.last?.score == 8)
+    #expect(try store.effort(workoutId: w)?.relatedAt != nil)
+  }
+
   @Test func anEffortWithoutAWrittenWorkoutStaysOnThePhone() async throws {
     let store = try storeOn()
     try finished(store, w)

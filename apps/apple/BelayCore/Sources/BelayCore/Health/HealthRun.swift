@@ -117,7 +117,11 @@ private struct HealthRun {
         outcome = await writer.delete(syncId: syncId)
       }
       if let kept = afterOutcome(object, outcome, kept: written[key]) {
-        try store.recordHealthWritten(key, kept)
+        if case .workout = kept {
+          try store.recordWorkoutWritten(workoutId: id, kept)
+        } else {
+          try store.recordHealthWritten(key, kept)
+        }
         written[key] = kept
       }
       // Write access withdrawn in iOS: the rest waits for a run that finds it back.
