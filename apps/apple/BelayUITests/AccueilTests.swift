@@ -103,6 +103,18 @@ final class AccueilTests: XCTestCase {
         XCTAssertTrue(accessory.label.contains("Série 1 sur 4 · Séance A"), "and the set: \(accessory.label)")
     }
 
+    /// On a warm-up the card and the accessory call the set « Montée », as the cover does.
+    func testRunningCardNamesAWarmup() {
+        let app = launch("warmups")
+        XCTAssertTrue(app.buttons["Reprendre"].waitForExistence(timeout: 10))
+        let line = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Montée 1 sur ")).firstMatch
+        XCTAssertTrue(line.exists, "the card names the warm-up")
+        XCTAssertTrue(line.label.hasSuffix(" · Séance A"), line.label)
+        XCTAssertFalse(app.staticTexts["Série 1 sur 2 · Séance A"].exists, "never as a work set")
+        let accessory = app.buttons["resume-accessory"]
+        XCTAssertTrue(accessory.label.contains("Montée 1 sur "), "and the accessory: \(accessory.label)")
+    }
+
     /// The preview's start opens the session; lowered, it waits above the tab bar; a relaunch finds it open.
     func testStartThenResumeAfterRelaunch() {
         var app = launch("fresh")
