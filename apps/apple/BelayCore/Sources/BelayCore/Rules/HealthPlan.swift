@@ -151,19 +151,16 @@ public struct HealthPlanInput: Sendable {
 public let healthEarliest: Int64 = -2_209_075_200_000
 public let healthDay: Int64 = 86_400_000
 
-private func ms(_ text: String) -> Int64 {
-  guard let ms = Instant.milliseconds(text) else { preconditionFailure("not an instant") }
-  return ms
-}
-
 private func isTime(_ t: Int64, now: Int64) -> Bool { t >= healthEarliest && t <= now + healthDay }
 
 /// A session Health can hold: ended, still there, at least one set still there, and ending after
-/// it starts (a workout needs a span). Nil for one in progress, removed or empty.
+/// it starts (a workout needs a span). Nil for one in progress, removed or empty, and for a time
+/// the phone cannot read, which only a server or contract at fault sends: that one session is
+/// left out, as the web's NaN leaves it, rather than every run stopping on it.
 public func finishedSpan(_ w: WorkoutRow, liveSets: Int) -> (startedAt: Int64, endedAt: Int64)? {
-  guard let endedAt = w.endedAt, !w.removed, liveSets != 0 else { return nil }
-  let start = ms(w.startedAt)
-  let end = ms(endedAt)
+  guard let endedAt = w.endedAt, !w.removed, liveSets != 0,
+    let start = Instant.milliseconds(w.startedAt), let end = Instant.milliseconds(endedAt)
+  else { return nil }
   return end > start ? (start, end) : nil
 }
 
@@ -198,7 +195,7 @@ public func planHealth(_ input: HealthPlanInput) -> [HealthObject] {
       default: break
       }
       let latest = [w.startedAt, w.startedAtAt, w.endedAt, w.endedAtAt, w.removedAt]
-        .compactMap { $0.map(ms) }.max() ?? 0
+        .compactMap { $0.flatMap(Instant.milliseconds) }.max() ?? 0
       objects.append(
         .workout(
           id: w.id, startedAt: span.startedAt, endedAt: span.endedAt,

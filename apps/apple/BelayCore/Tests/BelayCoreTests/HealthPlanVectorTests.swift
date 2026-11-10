@@ -92,4 +92,37 @@ struct HealthPlanVectorTests {
   fileprivate func ownerOf(_ c: HealthFile.OwnerCase) {
     #expect(BelayCore.ownerOf(c.userId) == c.result)
   }
+
+  /// A time the phone cannot read, from a server or a contract at fault, is no span: the session
+  /// is left out, and one already written is removed, as the web's plan does with its NaN. A
+  /// time on the row read only for the version is left out of it.
+  @Test(arguments: ["startedAt", "endedAt"])
+  func anUnreadableTimeIsNoSession(_ field: String) throws {
+    let file = try HealthFile.load()
+    var w = try #require(file.workouts.first)
+    if field == "startedAt" { w.startedAt = "not a time" } else { w.endedAt = "not a time" }
+    #expect(BelayCore.finishedSpan(w, liveSets: 1) == nil)
+    let input = { (written: [String: HealthWritten]) in
+      HealthPlanInput(
+        workouts: [w], sets: file.sets, on: true, turnedOnAt: 0, written: written,
+        allowed: true, now: Int64(Date().timeIntervalSince1970 * 1000), owner: "00000000")
+    }
+    #expect(BelayCore.planHealth(input([:])).isEmpty)
+    let kept = HealthWritten.workout(version: 1, startedAt: 0, endedAt: 1)
+    #expect(BelayCore.planHealth(input([sessionKey(w.id): kept])) == [.workoutRemoved(id: w.id)])
+  }
+
+  @Test func anUnreadableTimeIsLeftOutOfTheVersion() throws {
+    let file = try HealthFile.load()
+    var w = try #require(file.workouts.first)
+    w.endedAtAt = "not a time"
+    let input = HealthPlanInput(
+      workouts: [w], sets: file.sets, on: true, turnedOnAt: 0, written: [:], allowed: true,
+      now: Int64(Date().timeIntervalSince1970 * 1000), owner: "00000000")
+    guard case .workout(_, _, _, let version) = BelayCore.planHealth(input).first else {
+      Issue.record("the session is written")
+      return
+    }
+    #expect(version == Instant.milliseconds(w.endedAt ?? ""))
+  }
 }
