@@ -47,7 +47,7 @@ struct CorrectSheet: View {
                     .listRowBackground(Color.clear)
                 }
                 Section {
-                    field(Text(verbatim: "kg"), $kg, keyboard: .decimalPad, id: "correct-kg")
+                    field(Text("kg", tableName: "Session"), $kg, keyboard: .decimalPad, id: "correct-kg")
                     field(
                         set.timed ? Text("secondes", tableName: "SessionTools") : Text("reps", tableName: "SessionTools"),
                         $count, keyboard: .numberPad, id: "correct-count")
