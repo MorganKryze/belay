@@ -322,6 +322,25 @@ final class SessionFlowTests: XCTestCase {
         XCTAssertEqual(ruler.value as? String, "8", "the next set opens on last time's count")
     }
 
+    /// The count slid to and kept as the draft goes with its set: after ✓, the next set opens on
+    /// its own prefill, with no touch on the ruler.
+    func testSlidCountStaysWithItsSet() {
+        let app = launch("history")
+        openCover(app)
+        passWarmups(app)
+        let ruler = element(app, "rep-ruler")
+        slide(ruler, by: 1)
+        XCTAssertEqual(ruler.value as? String, "9")
+        Thread.sleep(forTimeInterval: 1.5)
+        element(app, "log-set").tap()
+        let skip = element(app, "skip-rest")
+        XCTAssertTrue(skip.waitForExistence(timeout: 3), "the rest starts")
+        XCTAssertTrue(element(app, "done-0-3").label.contains("× 9"), element(app, "done-0-3").label)
+        skip.tap()
+        XCTAssertTrue(element(app, "set-title").waitFor(NSPredicate(format: "label == %@", "Série 2 sur 4")))
+        XCTAssertEqual(ruler.value as? String, "8", "the next set opens on last time's count")
+    }
+
     /// Paused past an hour, the clock reads as it ran: hours, minutes, seconds.
     func testPausedClockPastAnHour() {
         let app = launch("pausedLong")

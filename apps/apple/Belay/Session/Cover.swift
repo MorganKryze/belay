@@ -79,8 +79,9 @@ struct Cover: View {
     @Environment(\.accessibilityVoiceOverEnabled) private var voiceOver
     @Namespace private var glass
     @Namespace private var flow
-    /// The count under the ruler: the prefill, then what the person moved it to.
-    @State private var reps = 0
+    /// The count the person moved the ruler to, with the set it was moved for. Another set due
+    /// opens on its own count: nothing carries over from the set before.
+    @State private var moved: MovedCount?
     /// The reserve just answered, shown in a capsule for 2 s.
     @State private var noted: Int?
     @State private var programme = false
@@ -135,16 +136,18 @@ struct Cover: View {
         .sheet(isPresented: $programme) { ProgrammeSheet(state: state, actions: actions) }
         .sensoryFeedback(.success, trigger: logged)
         .sensoryFeedback(.impact(weight: .light), trigger: answered)
-        .onChange(of: due.map { "\($0.place.slotIndex)-\($0.place.position)-\($0.count)" }, initial: true) {
-            if let due { reps = due.count }
+        // Once its set is no longer due, the moved count goes: a set removed and due again opens
+        // on its own count. The ruler already reads the new set's own count before this runs.
+        .onChange(of: due?.place) { _, place in
+            if moved?.place != place { moved = nil }
         }
         // The count moved on the ruler is kept as the set's draft, so a relaunch shows it again.
-        .task(id: reps) {
-            guard let due, reps != due.count else { return }
+        .task(id: moved) {
+            guard let moved, let due, moved.place == due.place, moved.count != due.count else { return }
             try? await Task.sleep(for: Self.draftDelay)
             // A ✓ in the meantime logged this count and moved on: the set due now keeps its own.
-            guard !Task.isCancelled, case .due(let now)? = training.session?.phase, now.place == due.place else { return }
-            actions.run { try $0.choose(weightKg: nil, count: reps) }
+            guard !Task.isCancelled, case .due(let now)? = training.session?.phase, now.place == moved.place else { return }
+            actions.run { try $0.choose(weightKg: nil, count: moved.count) }
         }
         .task(id: noted) {
             guard noted != nil else { return }
@@ -278,7 +281,7 @@ struct Cover: View {
                 case .due(let due):
                     HStack(spacing: 12) {
                         ruler(due)
-                        check(checkLabel(due)) { log(due, count: reps) }
+                        check(checkLabel(due)) { log(due, count: reps(due)) }
                     }
                 }
             }
@@ -288,10 +291,15 @@ struct Cover: View {
         .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
     }
 
+    /// The count under the ruler: the one moved for this set, else the set's own (its draft or prefill).
+    private func reps(_ due: DueSet) -> Int {
+        if let moved, moved.place == due.place { moved.count } else { due.count }
+    }
+
     private func checkLabel(_ due: DueSet) -> Text {
         due.warmup
-            ? Text("Noter la montée \(due.number), \(reps) reps", tableName: "Session")
-            : Text("Noter la série \(due.number), \(reps) reps", tableName: "Session")
+            ? Text("Noter la montée \(due.number), \(reps(due)) reps", tableName: "Session")
+            : Text("Noter la série \(due.number), \(reps(due)) reps", tableName: "Session")
     }
 
     private func ruler(_ due: DueSet) -> some View {
@@ -306,8 +314,11 @@ struct Cover: View {
             .padding(.horizontal, 18)
             .padding(.top, 12)
             .accessibilityHidden(true)
+            // The ruler reads the set's own count and writes with the set's place: a count moved for
+            // the set before is never read, nor written, as this one's.
             RepRuler(
-                value: $reps, target: due.target, flightId: DoneList.flightId(due.place), space: flow, reduce: reduce
+                value: Binding(get: { reps(due) }, set: { moved = MovedCount(place: due.place, count: $0) }),
+                target: due.target, flightId: DoneList.flightId(due.place), space: flow, reduce: reduce
             )
             .frame(height: 70)
             .padding(.bottom, 6)
@@ -466,4 +477,10 @@ struct Cover: View {
             failed = true
         }
     }
+}
+
+/// A count moved on the ruler and the set it was moved for.
+private struct MovedCount: Equatable {
+    let place: SetPlace
+    let count: Int
 }
