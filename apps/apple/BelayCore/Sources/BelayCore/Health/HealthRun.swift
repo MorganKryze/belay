@@ -45,14 +45,21 @@ public protocol HealthWriting: Sendable {
   func delete(syncId: String) async -> HealthOutcome
   /// Whether another source's workout covers at least half of the span.
   func overlaps(startedAt: Int64, endedAt: Int64) async -> Bool
-  /// Relates one effort score to this app's workout under `syncId`.
-  func relateEffort(score: Int, syncId: String) async -> HealthOutcome
+  /// Relates one effort score, saved under `effortSyncId`, to this app's workout under `syncId`.
+  /// A score already saved under `effortSyncId` goes first, so a try that failed halfway, or one
+  /// the store did not record, never leaves a second score in Health.
+  func relateEffort(score: Int, syncId: String, effortSyncId: String) async -> HealthOutcome
 }
 
 /// Health keeps one store for every app and account on the phone, so the identifier of a
 /// session's workout carries the account's tag (`ownerOf`) before the session's id.
 public func healthSyncId(_ id: String, owner: String) -> String {
   "belay-session-\(owner)-\(id)"
+}
+
+/// The effort score of a session, under the same tag: one per session, so a retry replaces it.
+public func healthEffortSyncId(_ id: String, owner: String) -> String {
+  "belay-effort-\(owner)-\(id)"
 }
 
 /// What the record keeps once Health answered; nil leaves the object for the next run.
@@ -152,7 +159,8 @@ private struct HealthRun {
       else { continue }
       guard try store.healthSettings() == settings else { return }
       let outcome = await writer.relateEffort(
-        score: floor * 2, syncId: healthSyncId(effort.workoutId, owner: owner))
+        score: floor * 2, syncId: healthSyncId(effort.workoutId, owner: owner),
+        effortSyncId: healthEffortSyncId(effort.workoutId, owner: owner))
       if outcome == .written {
         try store.markEffortRelated(workoutId: effort.workoutId, at: Instant.string(now))
       } else if outcome == .denied {

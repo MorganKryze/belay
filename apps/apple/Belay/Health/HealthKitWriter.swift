@@ -94,15 +94,27 @@ nonisolated struct HealthKitWriter: HealthWriting {
     }
 
     /// The score as its own sample over the workout's span, related to the workout Belay wrote.
-    func relateEffort(score: Int, syncId: String) async -> HealthOutcome {
+    /// The score left by an earlier try goes first: one saved but not related, one related but not
+    /// recorded on the phone, or one related to a workout since replaced. Its sync identifier names
+    /// it; the version, the time of this try, also has a later try replace it should one remain.
+    func relateEffort(score: Int, syncId: String, effortSyncId: String) async -> HealthOutcome {
         guard Self.permission(Self.effort) == .allowed else { return .denied }
         do {
             let descriptor = HKSampleQueryDescriptor(
                 predicates: [.workout(Self.own(syncId))], sortDescriptors: [], limit: 1)
             guard let workout = try await descriptor.result(for: Self.store).first else { return .failed }
+            do {
+                _ = try await Self.store.deleteObjects(of: Self.effort, predicate: Self.own(effortSyncId))
+            } catch let error as HKError where error.code == .errorNoData {
+                // Nothing left from an earlier try.
+            }
             let sample = HKQuantitySample(
                 type: Self.effort, quantity: HKQuantity(unit: .appleEffortScore(), doubleValue: Double(score)),
-                start: workout.startDate, end: workout.endDate)
+                start: workout.startDate, end: workout.endDate,
+                metadata: [
+                    HKMetadataKeySyncIdentifier: effortSyncId,
+                    HKMetadataKeySyncVersion: NSNumber(value: Int64(Date().timeIntervalSince1970 * 1000)),
+                ])
             try await Self.store.save(sample)
             _ = try await Self.store.relateWorkoutEffortSample(sample, with: workout, activity: nil)
             return .written

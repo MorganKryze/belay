@@ -16,14 +16,21 @@ private actor FakeHealth: HealthWriting {
   var saving = HealthOutcome.written
   private(set) var saved: [(object: HealthObject, syncId: String)] = []
   private(set) var deleted: [String] = []
-  private(set) var related: [(score: Int, syncId: String)] = []
+  private(set) var related: [(score: Int, syncId: String, effortSyncId: String)] = []
+  /// What a relate answers; `.written` unless a test says otherwise.
+  var relating = HealthOutcome.written
+  private(set) var relateTries: [String] = []
   private(set) var looked = 0
   private(set) var calls = 0
   /// Runs inside the first save, or the first relate: what the person does while Health works.
   private var duringSave: (@Sendable () throws -> Void)?
   private var duringRelate: (@Sendable () throws -> Void)?
 
-  func set(access: HealthAccess? = nil, covered: Bool? = nil, saving: HealthOutcome? = nil) {
+  func set(
+    access: HealthAccess? = nil, covered: Bool? = nil, saving: HealthOutcome? = nil,
+    relating: HealthOutcome? = nil
+  ) {
+    if let relating { self.relating = relating }
     if let access { answer = access }
     if let covered { self.covered = covered }
     if let saving { self.saving = saving }
@@ -63,12 +70,13 @@ private actor FakeHealth: HealthWriting {
     return covered
   }
 
-  func relateEffort(score: Int, syncId: String) async -> HealthOutcome {
+  func relateEffort(score: Int, syncId: String, effortSyncId: String) async -> HealthOutcome {
     calls += 1
     try? duringRelate?()
     duringRelate = nil
-    related.append((score, syncId))
-    return .written
+    relateTries.append(effortSyncId)
+    if relating == .written { related.append((score, syncId, effortSyncId)) }
+    return relating
   }
 }
 
@@ -349,6 +357,27 @@ private actor FakeHealth: HealthWriting {
     #expect(related.count == 2)
     #expect(related.last?.score == 8)
     #expect(try store.effort(workoutId: w)?.relatedAt != nil)
+  }
+
+  /// Every try at an effort goes under the same identifier, its session's with the account's
+  /// tag, so Health keeps one score whatever failed between a save and its relation.
+  @Test func aRetriedEffortGoesUnderTheSameIdentifier() async throws {
+    let store = try storeOn()
+    try finished(store, w)
+    try store.giveEffort(workoutId: w, floor: 1)
+    try store.settleEffort(workoutId: w)
+    let health = FakeHealth()
+    await health.set(relating: .failed)
+
+    await run(store, health)
+    #expect(try store.effort(workoutId: w)?.relatedAt == nil)
+    await health.set(relating: .written)
+    await run(store, health)
+
+    let id = "belay-effort-\(owner)-\(w)"
+    #expect(healthEffortSyncId(w, owner: owner) == id)
+    #expect(await health.relateTries == [id, id])
+    #expect(await health.related.count == 1)
   }
 
   @Test func anEffortWithoutAWrittenWorkoutStaysOnThePhone() async throws {
