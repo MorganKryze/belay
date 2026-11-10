@@ -20,33 +20,42 @@ struct RepRuler: View {
 
     var body: some View {
         GeometryReader { box in
-            ZStack {
-                ScrollView(.horizontal) {
-                    LazyHStack(spacing: 0) {
-                        ForEach(0...Bounds.repsMax, id: \.self) { n in
-                            mark(n).id(n)
+            ScrollViewReader { scale in
+                ZStack {
+                    ScrollView(.horizontal) {
+                        LazyHStack(spacing: 0) {
+                            ForEach(0...Bounds.repsMax, id: \.self) { n in
+                                mark(n).id(n)
+                            }
                         }
+                        .scrollTargetLayout()
                     }
-                    .scrollTargetLayout()
+                    .scrollIndicators(.hidden)
+                    .scrollTargetBehavior(.viewAligned)
+                    .scrollPosition(id: Binding(get: { value }, set: { if let n = $0 { value = n } }), anchor: .center)
+                    .contentMargins(.horizontal, max(0, (box.size.width - step) / 2), for: .scrollContent)
+                    // A ruler that comes back from the rest's glass grows into its width, and its
+                    // margins with it; the offset stays, so the scale would sit counts away from the lens.
+                    .onScrollGeometryChange(for: CGFloat.self, of: { $0.contentInsets.leading + $0.containerSize.width }) { _, _ in
+                        scale.scrollTo(value, anchor: .center)
+                    }
+                    // The lens: the count under it is the answer.
+                    Text(value, format: .number)
+                        .font(.custom(Font.archivoName, size: 30, relativeTo: .title))
+                        .monospacedDigit()
+                        // Two digits stay whole in the lens at the largest text sizes.
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+                        .foregroundStyle(Color.ink)
+                        .contentTransition(reduce ? .opacity : .numericText(value: Double(value)))
+                        .modifier(InFlight(id: flightId, space: space, reduce: reduce))
+                        .frame(width: step + 6, height: 62)
+                        .background(Color.surface, in: .rect(cornerRadius: 18))
+                        .overlay(RoundedRectangle(cornerRadius: 18).strokeBorder(Color.ink, lineWidth: 2))
+                        .allowsHitTesting(false)
                 }
-                .scrollIndicators(.hidden)
-                .scrollTargetBehavior(.viewAligned)
-                .scrollPosition(id: Binding(get: { value }, set: { if let n = $0 { value = n } }), anchor: .center)
-                .contentMargins(.horizontal, max(0, (box.size.width - step) / 2), for: .scrollContent)
-                // The lens: the count under it is the answer.
-                Text(value, format: .number)
-                    .font(.custom(Font.archivoName, size: 30, relativeTo: .title))
-                    .monospacedDigit()
-                    // Two digits stay whole in the lens at the largest text sizes.
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.5)
-                    .foregroundStyle(Color.ink)
-                    .contentTransition(reduce ? .opacity : .numericText(value: Double(value)))
-                    .modifier(InFlight(id: flightId, space: space, reduce: reduce))
-                    .frame(width: step + 6, height: 62)
-                    .background(Color.surface, in: .rect(cornerRadius: 18))
-                    .overlay(RoundedRectangle(cornerRadius: 18).strokeBorder(Color.ink, lineWidth: 2))
-                    .allowsHitTesting(false)
+                // Each set puts the scale under the lens on its own count: a slide starts from there.
+                .onChange(of: flightId, initial: true) { scale.scrollTo(value, anchor: .center) }
             }
         }
         .sensoryFeedback(.selection, trigger: value)

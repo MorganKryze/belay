@@ -341,6 +341,30 @@ final class SessionFlowTests: XCTestCase {
         XCTAssertEqual(ruler.value as? String, "8", "the next set opens on last time's count")
     }
 
+    /// After a set logged at a slid count, the next set's scale stands on its own count: one step up
+    /// from its prefill logs the prefill plus one, whatever the set before was slid to.
+    func testOneStepOnTheNextSetLogsItsCountPlusOne() {
+        let app = launch("history")
+        openCover(app)
+        passWarmups(app)
+        let ruler = element(app, "rep-ruler")
+        slide(ruler, by: 1)
+        XCTAssertEqual(ruler.value as? String, "9")
+        element(app, "log-set").tap()
+        let skip = element(app, "skip-rest")
+        XCTAssertTrue(skip.waitForExistence(timeout: 3), "the rest starts")
+        skip.tap()
+        XCTAssertTrue(element(app, "set-title").waitFor(NSPredicate(format: "label == %@", "Série 2 sur 4")))
+        XCTAssertEqual(ruler.value as? String, "8", "the next set's prefill")
+        Thread.sleep(forTimeInterval: 1.5)
+        slide(ruler, by: 1)
+        Thread.sleep(forTimeInterval: 1.5)
+        element(app, "log-set").tap()
+        XCTAssertTrue(element(app, "skip-rest").waitForExistence(timeout: 3), "the rest starts")
+        let logged = element(app, "done-0-4").label
+        XCTAssertTrue(logged.contains("× 9"), "one step up from 8 logs 9: \(logged)")
+    }
+
     /// Paused past an hour, the clock reads as it ran: hours, minutes, seconds.
     func testPausedClockPastAnHour() {
         let app = launch("pausedLong")
