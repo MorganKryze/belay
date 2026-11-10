@@ -214,7 +214,7 @@ final class SessionFlowTests: XCTestCase {
         let header = button(app, beginning: "Exercice 1 sur ")
         XCTAssertTrue(header.label.hasSuffix(", voir le programme"), header.label)
         header.tap()
-        XCTAssertTrue(element(app, "programme-sheet").waitForExistence(timeout: 3), "the programme opens")
+        XCTAssertTrue(app.buttons["programme-close"].waitForExistence(timeout: 3), "the programme opens")
     }
 
     func testBarHoldsThreeControls() {
@@ -386,12 +386,5 @@ final class SessionFlowTests: XCTestCase {
         XCTAssertLessThanOrEqual(large.clock, base.clock * 1.6, "the clock is capped")
         XCTAssertLessThanOrEqual(large.foot, base.foot * 1.35, "the foot is capped")
         XCTAssertGreaterThan(large.row, base.row * 1.8, "a done row goes on two lines")
-    }
-}
-
-private extension XCUIElement {
-    func waitFor(_ predicate: NSPredicate, timeout: TimeInterval = 3) -> Bool {
-        XCTWaiter().wait(for: [XCTNSPredicateExpectation(predicate: predicate, object: self)], timeout: timeout)
-            == .completed
     }
 }

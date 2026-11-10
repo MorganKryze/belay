@@ -13,9 +13,12 @@ import Synchronization
 /// launch left, so a test can relaunch onto it. `expired` starts empty on an instance that refuses
 /// the token at each sync. From `history`: `warmups` as it is, its first exercise's warm-ups due;
 /// `timed` with a dead hang in place of the first exercise; `group` with the first two exercises
-/// in one group; `lastSet` with every planned set logged but the last; `paused` paused at once;
-/// `lockLogged` with the first work set logged from the lock screen, its rest running.
-/// `-BelayReduceMotion YES` forces Reduce Motion on the session's cover.
+/// in one group; `lastSet` with every planned set logged but the last, `twoLeft` but the last two;
+/// `exerciseEnd` with the first exercise's last work set due and a last time for the second, so it
+/// has a warm-up; `paused` paused at once; `lockLogged` with the first work set logged from the lock
+/// screen, its rest running; `workSet` with the warm-ups logged; `full` as `workSet` with the plan
+/// grown to the most slots it holds. `-BelayReduceMotion YES` forces Reduce Motion on the session's
+/// cover, `-BelayVoiceOver YES` makes it behave as under VoiceOver.
 enum Fixture {
     nonisolated fileprivate static let origin = "https://belay.example"
     nonisolated fileprivate static let userId = "fixture"
@@ -54,6 +57,9 @@ enum Fixture {
                 let id = try TrainingModel(store: store, didWrite: {}, now: { startedAt }, timeZone: .current).start()
                 let model = TrainingModel(store: store, didWrite: {}, now: Date.init, timeZone: .current)
                 if mode != "running" { try doneYesterday(like: id, in: store) }
+                if mode == "exerciseEnd" {
+                    try doneYesterday(like: id, in: store, daysAgo: 2, slotIndex: 1, kg: 40, reps: [10, 10, 10])
+                }
                 // Yesterday's session was written beside the model: it reads it before acting.
                 model.refresh()
                 try prepare(mode, model: model, store: store, workoutId: id)
@@ -70,7 +76,8 @@ enum Fixture {
     }
 
     private static let openModes: Set = [
-        "running", "history", "finished", "warmups", "timed", "group", "lastSet", "paused", "pausedLong", "lockLogged", "workSet",
+        "running", "history", "finished", "warmups", "timed", "group", "lastSet", "twoLeft", "exerciseEnd", "paused",
+        "pausedLong", "lockLogged", "workSet", "full",
     ]
 
     /// Seconds the ruler waits before keeping its count as the draft, when a test stretches it.
@@ -78,6 +85,9 @@ enum Fixture {
 
     /// Reduce Motion forced on, for the test that checks the cover only fades.
     static var reduceMotion: Bool { UserDefaults.standard.bool(forKey: "BelayReduceMotion") }
+
+    /// VoiceOver taken as running, for the test that checks the recap waits for a tap.
+    static var voiceOver: Bool { UserDefaults.standard.bool(forKey: "BelayVoiceOver") }
 
     /// The open session brought to the mode's state, through the session's actions.
     private static func prepare(_ mode: String, model: TrainingModel, store: AccountStore, workoutId: String) throws {
@@ -105,8 +115,9 @@ enum Fixture {
             plan[1].groupKey = "a"
             let at = Instant.string(.now)
             try store.recordChanges([.workout(WorkoutChange(id: workoutId, at: at, edit: .plan(plan)))], active: .keep)
-        case "lastSet":
-            while let open = model.open, open.setsPlanned - open.setsDone > 1 {
+        case "lastSet", "twoLeft":
+            let left = mode == "lastSet" ? 1 : 2
+            while let open = model.open, open.setsPlanned - open.setsDone > left {
                 try model.act {
                     _ = try $0.logNext(count: nil, weightKg: nil, expecting: nil)
                     try $0.skipRest()
@@ -114,6 +125,21 @@ enum Fixture {
             }
         case "workSet":
             try passWarmups(model)
+        case "full":
+            try passWarmups(model)
+            while let count = try store.history().workouts.first(where: { $0.id == workoutId })?.plan.count,
+                  count < Bounds.maxSlots
+            {
+                try model.act { try $0.addExercise("ds:0313") }
+            }
+        case "exerciseEnd":
+            try passWarmups(model)
+            while case .due(let due)? = model.session?.phase, due.place.slotIndex == 0, due.number < due.of {
+                try model.act {
+                    _ = try $0.logNext(count: nil, weightKg: nil, expecting: nil)
+                    try $0.skipRest()
+                }
+            }
         case "paused", "pausedLong":
             try model.act { try $0.pause() }
         case "lockLogged":
@@ -147,22 +173,26 @@ enum Fixture {
         }
     }
 
-    /// The same session done a day earlier, or `daysAgo`, its first exercise at 62,5 kg for 8, 8, 7 and 6.
-    private static func doneYesterday(like openId: String, in store: AccountStore, daysAgo: Double = 1) throws {
+    /// The same session done a day earlier, or `daysAgo`, its first exercise at 62,5 kg for 8, 8, 7 and 6,
+    /// or the exercise of `slotIndex` at the load and counts given.
+    private static func doneYesterday(
+        like openId: String, in store: AccountStore, daysAgo: Double = 1, slotIndex: Int = 0, kg: Double = 62.5,
+        reps: [Int] = [8, 8, 7, 6]
+    ) throws {
         guard let open = try store.history().workouts.first(where: { $0.id == openId }) else { return }
         let start = Date.now.addingTimeInterval(-86_400 * daysAgo)
         let id = UUIDv7.make(at: start)
         let at = { (minutes: Double) in Instant.string(start.addingTimeInterval(minutes * 60)) }
-        let exercise = open.plan[0].exerciseId
-        let sets = [8, 8, 7, 6].enumerated().map { round, reps in
+        let exercise = open.plan[slotIndex].exerciseId
+        let sets = reps.enumerated().map { round, reps in
             Change.set(
                 SetChange(
                     id: UUIDv7.make(at: start.addingTimeInterval(Double(round + 1) * 180)), workoutId: id,
                     at: at(Double(round + 1) * 3),
                     edit: .create(
                         .init(
-                            slotIndex: 0, position: Bounds.maxWarmups + round, exerciseId: exercise,
-                            warmup: false, values: SetValues(weightKg: 62.5, reps: reps, seconds: .null, rir: 2),
+                            slotIndex: slotIndex, position: Bounds.maxWarmups + round, exerciseId: exercise,
+                            warmup: false, values: SetValues(weightKg: kg, reps: reps, seconds: .null, rir: 2),
                             doneAt: at(Double(round + 1) * 3)))))
         }
         let started = Change.workout(

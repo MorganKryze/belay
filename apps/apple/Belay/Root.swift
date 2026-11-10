@@ -44,7 +44,7 @@ final class ShellModel {
 
 struct RootView: View {
     @State private var model = ShellModel()
-    @State private var training: TrainingModel
+    @State private var box = TrainingBox()
     @Namespace private var space
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     private let account: AccountModel
@@ -55,9 +55,10 @@ struct RootView: View {
     init(store: AccountStore, account: AccountModel) {
         self.account = account
         self.store = store
-        _training = State(
-            initialValue: TrainingModel(
-                store: store, didWrite: account.didWrite, now: Date.init, timeZone: .current))
+    }
+
+    private var training: TrainingModel {
+        box.model { TrainingModel(store: store, didWrite: account.didWrite, now: Date.init, timeZone: .current) }
     }
 
     var body: some View {
@@ -143,4 +144,20 @@ enum Morph {
     static let accessory = "accessory"
     static let card = "card"
     static let start = "start"
+}
+
+/// The shell's session model, built once, the first time the shell's body asks for it. Built in
+/// the shell's `init`, a new one would be made at each pass of the parent's body, and its first
+/// read of the store would make that body depend on it: each new model's first value would call
+/// for another model, and the app would never rest.
+@MainActor
+private final class TrainingBox {
+    private var built: TrainingModel?
+
+    func model(_ make: () -> TrainingModel) -> TrainingModel {
+        if let built { return built }
+        let made = make()
+        built = made
+        return made
+    }
 }

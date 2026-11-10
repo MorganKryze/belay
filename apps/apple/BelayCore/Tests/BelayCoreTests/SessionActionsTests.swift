@@ -458,6 +458,37 @@ struct Seance {
     #expect(try s.active?.chrono == nil)
   }
 
+  @Test func logDuringHoldTakesTimeHeld() throws {
+    let s = try Seance([Seance.slot(Seance.hang)])
+    try s.actions.startHold()
+    s.clock.advance(seconds: 7)
+    let set = try #require(try s.actions.logNext(count: nil, weightKg: nil, expecting: nil))
+    guard case .create(let create) = set.edit else {
+      Issue.record("a creation")
+      return
+    }
+    // ✓ while the ring still runs logs what was held, never the whole target.
+    #expect(create.values.seconds == .value(7))
+  }
+
+  @Test func addedSetStartsTheRest() throws {
+    let s = try Seance([Seance.slot(sets: 1, rest: 90)])
+    try s.actions.logNext(count: 8, weightKg: 60, expecting: nil)
+    try s.actions.skipRest()
+    try s.actions.addSet(slotIndex: 0)
+    s.clock.advance(seconds: 30)
+    try s.actions.logNext(count: 8, weightKg: 60, expecting: nil)
+    #expect(try s.active?.restEndsAt == Instant.string(s.clock.now.addingTimeInterval(90)))
+  }
+
+  @Test func correctionKeepsTheNewWeight() throws {
+    let s = try Seance()
+    let set = try #require(try s.actions.logNext(count: 8, weightKg: 60, expecting: nil))
+    try s.actions.correct(setId: set.id, weightKg: 62.5, count: 8, rir: nil)
+    let stored = try #require(try s.sets.first { $0.id == set.id })
+    #expect(stored.weightKg == 62.5 && stored.reps == 8)
+  }
+
   @Test func holdNeverLogsItself() throws {
     let s = try Seance([Seance.slot(Seance.hang)])
     try s.actions.startHold()
