@@ -86,6 +86,15 @@ struct Cover: View {
     @State private var answered = 0
 
     private var reduce: Bool { Motion.reduced(systemReduce) }
+
+    /// VoiceOver as the system runs it, or as a debug launch takes it as running for the tests.
+    private var voiceOverOn: Bool {
+        #if DEBUG
+        voiceOver || Fixture.voiceOver
+        #else
+        voiceOver
+        #endif
+    }
     private var motion: Animation { Motion.change(reduce: reduce) }
     private var actions: CoverActions { CoverActions(training: training) { failed = true } }
 
@@ -115,7 +124,9 @@ struct Cover: View {
         .background { Wall() }
         .safeAreaBar(edge: .bottom) { foot }
         .toolbar {
-            SessionBar(state: state, lower: lower, pause: { withAnimation(motion) { _ = actions.run { try $0.pause() } } }, onStop: {})
+            SessionBar(
+                state: state, lower: lower, pause: { withAnimation(motion) { _ = actions.run { try $0.pause() } } },
+                stop: stopAsk)
         }
         .animation(motion, value: stateKey)
         .sheet(isPresented: $programme) { ProgrammeSheet(state: state, actions: actions) }
@@ -138,7 +149,11 @@ struct Cover: View {
             guard !Task.isCancelled else { return }
             withAnimation(motion) { noted = nil }
         }
-        .onChange(of: voiceOver, initial: true) { training.mark { $0.voiceOver = voiceOver } }
+        .onChange(of: voiceOverOn, initial: true) { training.mark { $0.voiceOver = voiceOverOn } }
+        // Each new state is said once: the next exercise, the pause.
+        .onChange(of: spoken) { _, said in
+            if let said { AccessibilityNotification.Announcement(said).post() }
+        }
         .onChange(of: restStarted) { _, started in
             if started { AccessibilityNotification.Announcement(String(localized: "Repos commencé", table: "Session")).post() }
         }
@@ -172,9 +187,9 @@ struct Cover: View {
         case .resting(let rest):
             RestCard(rest: rest, from: training.restFrom ?? .now, training: training, actions: actions, reduce: reduce)
         case .recap, .announce, .allDone:
-            ExerciseEndCard(state: state)
+            ExerciseEndCard(state: state, training: training, reduce: reduce)
         case .paused(let paused):
-            PausedCard(paused: paused)
+            PausedCard(paused: paused, reduce: reduce)
         }
     }
 
@@ -182,6 +197,17 @@ struct Cover: View {
         switch state.phase {
         case .due, .holding, .held, .resting: true
         default: false
+        }
+    }
+
+    /// What VoiceOver says as the phase turns to the next exercise or to the pause.
+    private var spoken: String? {
+        switch state.phase {
+        case .announce(let announce):
+            String(localized: "Ensuite, \(training.exerciseName(announce.next.exerciseId))", table: "SessionEnd")
+        case .paused:
+            String(localized: "En pause", table: "SessionEnd")
+        default: nil
         }
     }
 
@@ -408,6 +434,26 @@ struct Cover: View {
         AccessibilityNotification.Announcement(
             String(localized: "Réserve \(Self.rir(value)) notée", table: "Session")
         ).post()
+    }
+
+    /// ■'s question, counted on the work sets the plan holds.
+    private var stopAsk: StopAsk {
+        StopAsk(
+            done: training.open?.setsDone ?? 0, planned: training.open?.setsPlanned ?? 0,
+            holdsSets: training.restFrom != nil,
+            stop: { withAnimation(motion) { finish() } },
+            leave: {
+                do {
+                    try training.stopEmpty()
+                } catch SessionError.notEmpty {
+                    return false
+                } catch {
+                    failed = true
+                    return true
+                }
+                lower()
+                return true
+            })
     }
 
     private func finish() {
