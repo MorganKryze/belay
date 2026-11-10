@@ -77,7 +77,9 @@ final class AccueilTests: XCTestCase {
         XCTAssertTrue(start.waitForExistence(timeout: 5))
         start.tap()
         XCTAssertTrue(app.buttons["log-set"].waitForExistence(timeout: 5), "the cover shows")
-        app.finishSession()
+        // One set noted, so ■ ends the session onto its summary rather than dropping it.
+        app.buttons["log-set"].tap()
+        app.finishSession(by: .stop)
         let close = app.buttons["summary-close"]
         XCTAssertTrue(close.waitForExistence(timeout: 5))
         close.tap()

@@ -76,7 +76,7 @@ final class SyncNoticeTests: XCTestCase {
         XCTAssertTrue(alert.staticTexts["Ce n’est pas noté. Réessaie."].exists, "as not saved")
         XCTAssertEqual(queuedSets(app), "0", "nothing is queued")
         alert.buttons.firstMatch.tap()
-        XCTAssertFalse(element(app, "done-0-0").label.contains("Montée"), "the set is not done")
+        XCTAssertFalse(element(app, "done-0-0").exists, "the set is not done")
     }
 
     /// A session the instance refused: the line says so and offers to sign in again.
