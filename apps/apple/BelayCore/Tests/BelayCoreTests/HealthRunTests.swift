@@ -19,11 +19,21 @@ private actor FakeHealth: HealthWriting {
   private(set) var related: [(score: Int, syncId: String)] = []
   private(set) var looked = 0
   private(set) var calls = 0
+  /// Runs inside the first save, or the first relate: what the person does while Health works.
+  private var duringSave: (@Sendable () throws -> Void)?
+  private var duringRelate: (@Sendable () throws -> Void)?
 
   func set(access: HealthAccess? = nil, covered: Bool? = nil, saving: HealthOutcome? = nil) {
     if let access { answer = access }
     if let covered { self.covered = covered }
     if let saving { self.saving = saving }
+  }
+
+  func during(
+    save: (@Sendable () throws -> Void)? = nil, relate: (@Sendable () throws -> Void)? = nil
+  ) {
+    duringSave = save
+    duringRelate = relate
   }
 
   func access() async -> HealthAccess {
@@ -35,6 +45,8 @@ private actor FakeHealth: HealthWriting {
 
   func save(_ w: HealthObject, syncId: String) async -> HealthOutcome {
     calls += 1
+    try? duringSave?()
+    duringSave = nil
     if saving == .written { saved.append((w, syncId)) }
     return saving
   }
@@ -53,6 +65,8 @@ private actor FakeHealth: HealthWriting {
 
   func relateEffort(score: Int, syncId: String) async -> HealthOutcome {
     calls += 1
+    try? duringRelate?()
+    duringRelate = nil
     related.append((score, syncId))
     return .written
   }
@@ -339,6 +353,58 @@ private actor FakeHealth: HealthWriting {
       Issue.record("the record is kept")
       return
     }
+  }
+
+  /// Turned off while Health is writing, or off and on again: the plan of that run was made with
+  /// the person's consent of before, so nothing more of it goes, not a write, a deletion or an
+  /// effort.
+  @Test(arguments: [false, true])
+  func turnedOffMidRunNothingMoreGoes(onAgain: Bool) async throws {
+    let store = try storeOn()
+    let other = Fixture.id(40)
+    try finished(store, w)
+    try finished(store, other, start: 40, end: 70)
+    let health = FakeHealth()
+    await run(store, health)
+    for id in [w, other] {
+      try store.giveEffort(workoutId: id, floor: 3)
+      try store.settleEffort(workoutId: id)
+    }
+    try edit(store, w, at: 46, .ended(Fixture.time(45)))
+    try edit(store, other, at: 80, .removed(true))
+    let turnOff: @Sendable () throws -> Void = { [store] in
+      try store.setHealthOn(false, now: Fixture.t0.addingTimeInterval(100 * 60))
+      if onAgain { try store.setHealthOn(true, now: Fixture.t0.addingTimeInterval(101 * 60)) }
+    }
+    await health.during(save: turnOff)
+
+    await run(store, health)
+
+    #expect(await health.saved.count == 3)
+    #expect(await health.deleted.isEmpty)
+    #expect(await health.related.isEmpty)
+  }
+
+  @Test(arguments: [false, true])
+  func turnedOffWhileAnEffortGoesNoOtherEffortGoes(onAgain: Bool) async throws {
+    let store = try storeOn()
+    let other = Fixture.id(40)
+    try finished(store, w)
+    try finished(store, other, start: 40, end: 70)
+    let health = FakeHealth()
+    await run(store, health)
+    for id in [w, other] {
+      try store.giveEffort(workoutId: id, floor: 3)
+      try store.settleEffort(workoutId: id)
+    }
+    await health.during(relate: { [store] in
+      try store.setHealthOn(false, now: Fixture.t0.addingTimeInterval(100 * 60))
+      if onAgain { try store.setHealthOn(true, now: Fixture.t0.addingTimeInterval(101 * 60)) }
+    })
+
+    await run(store, health)
+
+    #expect(await health.related.count == 1)
   }
 
   @Test func turningOnAgainStartsFromThatMoment() throws {
