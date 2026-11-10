@@ -91,6 +91,9 @@ struct SummaryView: View {
         .scrollDismissesKeyboard(.interactively)
         // The app's large-title rule, with no title at all here: no bar and no band once scrolled.
         .scrollEdgeEffectHidden(true, for: .top)
+        // With no bar and no band, the content stops under the status bar instead of running
+        // behind the clock; at the foot it still passes under the ✓.
+        .mask { Rectangle().ignoresSafeArea(edges: .bottom) }
         .toolbarVisibility(.hidden, for: .navigationBar)
         .background { Wall() }
         .safeAreaBar(edge: .bottom) {
