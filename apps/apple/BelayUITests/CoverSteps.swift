@@ -25,6 +25,9 @@ extension XCUIApplication {
                 control.tap()
             }
             XCTAssertTrue(finish.exists, "🏁 shows once everything is noted", file: file, line: line)
+            // The foot's glass morphs into 🏁 on the session's spring; a tap mid-morph lands on
+            // the shape that is leaving.
+            Thread.sleep(forTimeInterval: 1)
             finish.tap()
         case .stop:
             buttons["Mettre la séance en pause"].tap()
