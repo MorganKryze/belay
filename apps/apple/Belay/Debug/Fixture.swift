@@ -14,7 +14,8 @@ import Synchronization
 /// the token at each sync. From `history`: `warmups` as it is, its first exercise's warm-ups due;
 /// `timed` with a dead hang in place of the first exercise; `group` with the first two exercises
 /// in one group; `lastSet` with every planned set logged but the last; `paused` paused at once;
-/// `lockLogged` with the first work set logged from the lock screen, its rest running.
+/// `lockLogged` with the first work set logged from the lock screen, its rest running; `workSet`
+/// with the warm-ups logged; `full` as `workSet` with the plan grown to the most slots it holds.
 /// `-BelayReduceMotion YES` forces Reduce Motion on the session's cover.
 enum Fixture {
     nonisolated fileprivate static let origin = "https://belay.example"
@@ -70,7 +71,7 @@ enum Fixture {
     }
 
     private static let openModes: Set = [
-        "running", "history", "finished", "warmups", "timed", "group", "lastSet", "paused", "pausedLong", "lockLogged", "workSet",
+        "running", "history", "finished", "warmups", "timed", "group", "lastSet", "paused", "pausedLong", "lockLogged", "workSet", "full",
     ]
 
     /// Seconds the ruler waits before keeping its count as the draft, when a test stretches it.
@@ -114,6 +115,13 @@ enum Fixture {
             }
         case "workSet":
             try passWarmups(model)
+        case "full":
+            try passWarmups(model)
+            while let count = try store.history().workouts.first(where: { $0.id == workoutId })?.plan.count,
+                  count < Bounds.maxSlots
+            {
+                try model.act { try $0.addExercise("ds:0313") }
+            }
         case "paused", "pausedLong":
             try model.act { try $0.pause() }
         case "lockLogged":

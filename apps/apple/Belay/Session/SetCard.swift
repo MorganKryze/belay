@@ -14,28 +14,10 @@ struct SetCard: View {
     @State private var typing = false
     @State private var typed = ""
     @State private var detail = false
-    @State private var note = false
 
     var body: some View {
         SessionCard {
-            VStack(alignment: .leading, spacing: 6) {
-                ProgrammeHeader(index: state.exerciseIndex, count: state.exerciseCount, open: openProgramme)
-                HStack(alignment: .firstTextBaseline) {
-                    Text(verbatim: training.exerciseName(due.exerciseId))
-                        .font(.title2.weight(.bold))
-                        .foregroundStyle(.ink)
-                    Spacer(minLength: 4)
-                    if state.note != nil {
-                        Button { note = true } label: {
-                            Image(systemName: "note.text").font(.title3).foregroundStyle(.ink)
-                                .frame(width: 44, height: 44).contentShape(.rect)
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel(Text("Note", tableName: "Session"))
-                    }
-                }
-                WorkBars(bars: state.bars)
-            }
+            CardHeading(state: state, exerciseId: due.exerciseId, training: training, actions: actions, open: openProgramme)
             Rectangle().fill(Color.line).frame(height: 0.5).padding(.vertical, 16)
             Text(SetText.title(due))
                 .font(.subheadline.weight(.semibold))
@@ -44,7 +26,6 @@ struct SetCard: View {
             load
             progression
         }
-        .sheet(isPresented: $note) { NoteSheet(slotIndex: due.place.slotIndex, actions: actions) }
         .alert(Text("Autre charge", tableName: "Session"), isPresented: $typing) {
             TextField(text: $typed) { Text("Charge en kg", tableName: "Session") }
                 .keyboardType(.decimalPad)
@@ -129,6 +110,53 @@ struct SetCard: View {
             .frame(maxWidth: 290, alignment: .leading)
             .fixedSize(horizontal: false, vertical: true)
             .presentationCompactAdaptation(.popover)
+        }
+    }
+}
+
+/// The top of a set's card: where it sits in the session, the exercise with its note when it
+/// has one, and one bar per work set.
+struct CardHeading: View {
+    let state: SessionState
+    let exerciseId: String
+    let training: TrainingModel
+    let actions: CoverActions
+    let open: () -> Void
+    @State private var note = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            ProgrammeHeader(index: state.exerciseIndex, count: state.exerciseCount, open: open)
+            HStack(alignment: .firstTextBaseline) {
+                Text(verbatim: training.exerciseName(exerciseId))
+                    .font(.title2.weight(.bold))
+                    .foregroundStyle(.ink)
+                Spacer(minLength: 4)
+                if state.note != nil {
+                    Button { note = true } label: {
+                        Image(systemName: "note.text").font(.title3).foregroundStyle(.ink)
+                            .frame(width: 44, height: 44).contentShape(.rect)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(Text("Note", tableName: "Session"))
+                    .accessibilityIdentifier("card-note")
+                }
+            }
+            WorkBars(bars: state.bars)
+        }
+        .sheet(isPresented: $note) {
+            if let slot = slotIndex {
+                NoteSheet(slotIndex: slot, exerciseId: exerciseId, note: state.note, actions: actions)
+            }
+        }
+    }
+
+    private var slotIndex: Int? {
+        switch state.phase {
+        case .due(let due): due.place.slotIndex
+        case .holding(let hold): hold.due.place.slotIndex
+        case .held(let held): held.due.place.slotIndex
+        default: nil
         }
     }
 }

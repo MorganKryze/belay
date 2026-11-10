@@ -21,3 +21,11 @@ extension XCUIApplication {
             buttons["Enregistrer et fermer"].waitForExistence(timeout: 5), "the summary shows", file: file, line: line)
     }
 }
+
+extension XCUIElement {
+    /// Whether the element meets the predicate within the timeout.
+    func waitFor(_ predicate: NSPredicate, timeout: TimeInterval = 3) -> Bool {
+        XCTWaiter().wait(for: [XCTNSPredicateExpectation(predicate: predicate, object: self)], timeout: timeout)
+            == .completed
+    }
+}

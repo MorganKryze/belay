@@ -97,6 +97,35 @@ struct SessionSummary: Equatable {
     let exercises: [Logged]
 }
 
+/// One exercise of the open session, as the programme lists it.
+struct ProgrammeExercise: Equatable, Identifiable {
+    /// A set of the exercise: done, up next, or to come.
+    struct Row: Equatable, Identifiable {
+        let place: SetPlace
+        let warmup: Bool
+        /// Its number among the warm-ups or among the work sets, from 1.
+        let number: Int
+        /// Past the plan.
+        let added: Bool
+        let state: BarState
+        /// What was logged, or what ✓ would log for the set up next; nil for a set to come.
+        let weightKg: Double?
+        let count: Int?
+
+        var id: String { "\(place.slotIndex)-\(place.position)" }
+    }
+
+    let slotIndex: Int
+    let exerciseId: String
+    let skipped: Bool
+    let note: String?
+    let timed: Bool
+    let target: [Int]
+    let rows: [Row]
+
+    var id: Int { slotIndex }
+}
+
 /// Why a session did not start, or a set was not taken.
 enum TrainingError: Error {
     /// No active program, or one with no session that can be started.
@@ -123,6 +152,8 @@ final class TrainingModel {
     private(set) var marks = SessionMarks()
     /// The session just finished here, until the person closes its summary.
     private(set) var summary: SessionSummary?
+    /// The open session's whole plan, as its programme lists it.
+    private(set) var programme: [ProgrammeExercise] = []
 
     private let store: AccountStore
     /// Every write to the open session goes through these, each one transaction of the store.
@@ -235,6 +266,59 @@ final class TrainingModel {
               plan.indices.contains(slotIndex)
         else { return [] }
         return plan[slotIndex].rirTarget
+    }
+
+    /// The open session's whole plan as stored now: each exercise with its sets.
+    private func readProgramme() -> [ProgrammeExercise] {
+        guard let state = session, let snapshot = last,
+              let workout = snapshot.history.workouts.first(where: { $0.id == state.workoutId })
+        else { return [] }
+        let sets = snapshot.history.sets.filter { $0.workoutId == workout.id && !$0.removed }
+        let due: DueSet? =
+            switch state.phase {
+            case .due(let due): due
+            case .holding(let hold): hold.due
+            case .held(let held): held.due
+            case .resting(let rest): rest.next
+            case .announce(let announce): announce.next
+            default: nil
+            }
+        let added = snapshot.active?.added
+        return workout.plan.enumerated().map { index, slot in
+            let own = sets.filter { $0.slotIndex == index }
+            let warmups = own.filter(\.warmup).sorted { $0.position < $1.position }
+            var rows = warmups.enumerated().map { i, set in
+                ProgrammeExercise.Row(
+                    place: SetPlace(slotIndex: index, position: set.position), warmup: true, number: i + 1, added: false,
+                    state: .done, weightKg: set.weightKg, count: countOf(set))
+            }
+            if let due, due.warmup, due.place.slotIndex == index {
+                rows.append(
+                    .init(
+                        place: due.place, warmup: true, number: warmups.count + 1, added: false, state: .current,
+                        weightKg: due.weightKg, count: due.count))
+            }
+            let planned = Bounds.maxWarmups + slot.sets - 1
+            let last = ([planned] + own.filter { !$0.warmup }.map(\.position)
+                + [added, due?.place].compactMap { $0?.slotIndex == index ? $0?.position : nil }).max() ?? planned
+            for position in Bounds.maxWarmups...max(planned, last) {
+                let place = SetPlace(slotIndex: index, position: position)
+                let done = own.first { !$0.warmup && $0.position == position }
+                let next = due.map { !$0.warmup && $0.place == place } ?? false
+                // A set past the plan shows once it is done or asked for.
+                if position > planned, done == nil, !next, added != place { continue }
+                rows.append(
+                    .init(
+                        place: place, warmup: false, number: position - Bounds.maxWarmups + 1, added: position > planned,
+                        state: done != nil ? .done : next ? .current : .toCome,
+                        weightKg: done?.weightKg ?? (next ? due?.weightKg : nil),
+                        count: done.map(countOf) ?? (next ? due?.count : nil)))
+            }
+            return ProgrammeExercise(
+                slotIndex: index, exerciseId: slot.exerciseId, skipped: slot.skipped == true,
+                note: workout.exerciseNotes[String(index)], timed: slot.measure == .seconds, target: slot.repRange,
+                rows: rows)
+        }
     }
 
     /// Ends the open session now, as the web does, and keeps its summary for the cover.
@@ -381,6 +465,7 @@ final class TrainingModel {
         wake?.cancel()
         guard let snapshot = last, let open, let active = snapshot.active, active.workoutId == open.workoutId else {
             session = nil
+            programme = []
             return
         }
         let at = now()
@@ -400,6 +485,8 @@ final class TrainingModel {
         default: break
         }
         if session != state { session = state }
+        let plan = readProgramme()
+        if programme != plan { programme = plan }
         let restEnd = active.restEndsAt.flatMap(Instant.date)
         guard let next = Self.nextMoment(state, marks: marks, restEnd: restEnd, after: at) else { return }
         wake = Task { [weak self] in

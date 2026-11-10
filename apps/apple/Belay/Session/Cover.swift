@@ -164,11 +164,11 @@ struct Cover: View {
     @ViewBuilder private var card: some View {
         switch state.phase {
         case .due(let due) where due.timed:
-            HoldCard(phase: state.phase)
+            HoldCard(state: state, training: training, actions: actions) { programme = true }
         case .due(let due):
             SetCard(state: state, due: due, training: training, actions: actions) { programme = true }
         case .holding, .held:
-            HoldCard(phase: state.phase)
+            HoldCard(state: state, training: training, actions: actions) { programme = true }
         case .resting(let rest):
             RestCard(rest: rest, from: training.restFrom ?? .now, training: training, actions: actions, reduce: reduce)
         case .recap, .announce, .allDone:
