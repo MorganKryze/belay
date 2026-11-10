@@ -256,9 +256,9 @@ final class SessionToolsTests: XCTestCase {
         let app = launch("workSet")
         openProgramme(app)
         pick("Mettre de côté", for: 1, in: app)
-        XCTAssertTrue(text(app, containing: "Retiré de cette séance").waitForExistence(timeout: 3), "set aside")
+        XCTAssertTrue(text(app, containing: "Mis de côté pour cette séance").waitForExistence(timeout: 3), "set aside")
         pick("Remettre", for: 1, in: app)
-        XCTAssertTrue(text(app, containing: "Retiré de cette séance").waitForNonExistence(timeout: 3), "put back")
+        XCTAssertTrue(text(app, containing: "Mis de côté pour cette séance").waitForNonExistence(timeout: 3), "put back")
     }
 
     func testAddExerciseAndFull() {
@@ -344,7 +344,7 @@ final class SessionToolsTests: XCTestCase {
         let aside = app.buttons["Mettre de côté"]
         XCTAssertTrue(aside.exists, "and to set aside")
         aside.tap()
-        XCTAssertTrue(text(app, containing: "Retiré de cette séance").waitForExistence(timeout: 3), "set aside")
+        XCTAssertTrue(text(app, containing: "Mis de côté pour cette séance").waitForExistence(timeout: 3), "set aside")
     }
 
     func testAx3Sheets() {

@@ -26,7 +26,7 @@ struct ProgrammeSheet: View {
                 ForEach(training.programme) { exercise in
                     Section {
                         if exercise.skipped {
-                            Text("Retiré de cette séance", tableName: "SessionTools")
+                            Text("Mis de côté pour cette séance", tableName: "SessionTools")
                                 .font(.subheadline)
                                 .foregroundStyle(.muted)
                                 .frame(minHeight: 44)

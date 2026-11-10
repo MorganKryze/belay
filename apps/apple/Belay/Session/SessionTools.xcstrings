@@ -202,12 +202,12 @@
         }
       }
     },
-    "Retiré de cette séance": {
+    "Mis de côté pour cette séance": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Left out of this session"
+            "value": "Set aside for this session"
           }
         }
       }
