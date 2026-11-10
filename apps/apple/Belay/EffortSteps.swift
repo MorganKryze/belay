@@ -24,9 +24,20 @@ struct EffortSteps: View {
 
     var body: some View {
         GeometryReader { box in
-            HStack(alignment: .bottom, spacing: 4) {
-                ForEach(1...5, id: \.self) { floor in
-                    step(floor)
+            VStack(spacing: 6) {
+                HStack(alignment: .bottom, spacing: 4) {
+                    ForEach(1...5, id: \.self) { floor in
+                        step(floor)
+                    }
+                }
+                .frame(maxHeight: .infinity, alignment: .bottom)
+                // The five words at one size, the largest at which every one fits its column.
+                ViewThatFits(in: .horizontal) {
+                    words(upTo: .xxLarge)
+                    words(upTo: .xLarge)
+                    words(upTo: .large)
+                    words(upTo: .medium)
+                    words(upTo: .small)
                 }
             }
             .contentShape(.rect)
@@ -56,22 +67,30 @@ struct EffortSteps: View {
     }
 
     private func step(_ floor: Int) -> some View {
-        let on = floor <= (value ?? 0)
-        let chosen = floor == value
-        return VStack(spacing: 6) {
-            Spacer(minLength: 0)
-            UnevenRoundedRectangle(topLeadingRadius: 8, topTrailingRadius: 8)
-                .fill(on ? Color.ink : Color.muted.opacity(0.72))
-                .frame(height: 16 + CGFloat(floor) * 14)
-                .scaleEffect(y: chosen && !reduceMotion ? 1.05 : 1, anchor: .bottom)
-            Text(EffortText.word(floor))
-                .font(.caption.weight(chosen ? .bold : .medium))
-                .foregroundStyle(chosen ? Color.ink : Color.muted)
+        UnevenRoundedRectangle(topLeadingRadius: 8, topTrailingRadius: 8)
+            .fill(floor <= (value ?? 0) ? Color.ink : Color.muted.opacity(0.72))
+            .frame(height: 16 + CGFloat(floor) * 14)
+            .scaleEffect(y: floor == value && !reduceMotion ? 1.05 : 1, anchor: .bottom)
+            .frame(maxWidth: .infinity)
+    }
+
+    /// The words under the steps, each column as wide as the widest word, so the row fits only
+    /// when every word fits whole.
+    private func words(upTo size: DynamicTypeSize) -> some View {
+        HStack(spacing: 4) {
+            ForEach(1...5, id: \.self) { floor in
+                let chosen = floor == value
+                ZStack {
+                    ForEach(1...5, id: \.self) { Text(EffortText.word($0)).font(.caption.weight(.bold)).hidden() }
+                    Text(EffortText.word(floor))
+                        .font(.caption.weight(chosen ? .bold : .medium))
+                        .foregroundStyle(chosen ? Color.ink : Color.muted)
+                }
                 .lineLimit(1)
-                .minimumScaleFactor(0.7)
-                .dynamicTypeSize(...DynamicTypeSize.xxLarge)
+                .frame(maxWidth: .infinity)
+            }
         }
-        .frame(maxWidth: .infinity)
+        .dynamicTypeSize(...size)
     }
 }
 
