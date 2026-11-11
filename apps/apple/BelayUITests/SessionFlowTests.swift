@@ -69,8 +69,10 @@ final class SessionFlowTests: XCTestCase {
         XCTAssertTrue(element(app, "rest-clock").waitForExistence(timeout: 3), "the rest starts")
     }
 
-    /// Drags the ruler by `steps` counts, slowly enough that it snaps where the finger stops; a
-    /// count is 50 points wide, and the drag goes a little further for the slop a touch takes.
+    /// Presses the ruler, drags it `steps` counts (50 points each) and holds before letting go, so
+    /// no momentum is left and the scale snaps where the finger stopped. The scroll does not follow
+    /// the first points of a touch: an exact 50 pt leaves the scale where it was, 200 pt moves it 3
+    /// counts, so the drag goes 20 pt further.
     private func slide(_ ruler: XCUIElement, by steps: Int) {
         let start = ruler.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
         start.press(
