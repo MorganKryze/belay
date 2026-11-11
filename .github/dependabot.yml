@@ -27,6 +27,11 @@ updates:
       interval: weekly
     cooldown:
       default-days: 7
+    # Node majors are a deliberate move: Node 25+ ships without corepack, which
+    # the Dockerfile uses to install pnpm, and .nvmrc and CI pin the same major.
+    ignore:
+      - dependency-name: "library/node"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: docker-compose
     directory: /docker
@@ -34,3 +39,8 @@ updates:
       interval: weekly
     cooldown:
       default-days: 7
+    # A Postgres major cannot read the previous major's data directory: it needs
+    # a dump and restore, so it is never an automatic bump.
+    ignore:
+      - dependency-name: "library/postgres"
+        update-types: ["version-update:semver-major"]
