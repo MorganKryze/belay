@@ -320,6 +320,10 @@ struct Cover: View {
                 value: Binding(get: { reps(due) }, set: { moved = MovedCount(place: due.place, count: $0) }),
                 target: due.target, flightId: DoneList.flightId(due.place), space: flow, reduce: reduce
             )
+            // Each set gets a ruler of its own, made on its count; the one before goes at once, so
+            // its scale is never seen nor slid.
+            .id(due.place)
+            .transition(.identity)
             .frame(height: 70)
             .padding(.bottom, 6)
         }

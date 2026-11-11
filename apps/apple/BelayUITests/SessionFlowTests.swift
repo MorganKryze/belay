@@ -15,12 +15,18 @@ final class SessionFlowTests: XCTestCase {
         return app
     }
 
-    /// Accueil's Reprendre opens the cover.
+    /// Accueil's Reprendre opens the cover. Right after launch the card can show before it takes a
+    /// tap, so the test taps it once it can be hit, and again only while the cover has not come.
     private func openCover(_ app: XCUIApplication) {
         let resume = app.buttons["Reprendre"]
+        let clock = element(app, "session-clock")
         XCTAssertTrue(resume.waitForExistence(timeout: 10), "the session is open")
-        resume.tap()
-        XCTAssertTrue(element(app, "session-clock").waitForExistence(timeout: 5), "the cover shows")
+        let deadline = Date.now.addingTimeInterval(10)
+        while !clock.exists, Date.now < deadline {
+            if resume.exists, resume.isHittable { resume.tap() }
+            _ = clock.waitForExistence(timeout: 2)
+        }
+        XCTAssertTrue(clock.exists, "the cover shows")
     }
 
     private func element(_ app: XCUIApplication, _ id: String) -> XCUIElement {
@@ -52,7 +58,8 @@ final class SessionFlowTests: XCTestCase {
         }
         let title = element(app, "set-title")
         XCTAssertTrue(
-            title.waitFor(NSPredicate(format: "label == %@", "Série 1 sur 4")), "the first work set: \(title.label)")
+            title.waitFor(NSPredicate(format: "label == %@", "Série 1 sur 4"), timeout: 10),
+            "the first work set: \(title.label)")
     }
 
     /// Logs the first work set and waits for its rest.
@@ -354,7 +361,9 @@ final class SessionFlowTests: XCTestCase {
         let skip = element(app, "skip-rest")
         XCTAssertTrue(skip.waitForExistence(timeout: 3), "the rest starts")
         skip.tap()
-        XCTAssertTrue(element(app, "set-title").waitFor(NSPredicate(format: "label == %@", "Série 2 sur 4")))
+        XCTAssertTrue(
+            element(app, "set-title").waitFor(NSPredicate(format: "label == %@", "Série 2 sur 4"), timeout: 10),
+            "the next set is due")
         XCTAssertEqual(ruler.value as? String, "8", "the next set's prefill")
         Thread.sleep(forTimeInterval: 1.5)
         slide(ruler, by: 1)
