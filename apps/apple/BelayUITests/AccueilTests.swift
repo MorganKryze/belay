@@ -14,7 +14,7 @@ final class AccueilTests: XCTestCase {
         if increasedContrast {
             app.launchArguments += ["-BelayContrast", "increased"]
         }
-        app.launch()
+        app.launchFixture()
         return app
     }
 
@@ -142,13 +142,10 @@ final class AccueilTests: XCTestCase {
         let start = app.buttons["Commencer la séance"]
         XCTAssertTrue(start.waitForExistence(timeout: 5))
         start.tap()
-        let tick = app.buttons["tick"]
-        XCTAssertTrue(tick.waitForExistence(timeout: 5))
-        tick.tap()
-        app.buttons["Terminer"].tap()
-        let save = app.buttons["Terminer et enregistrer"]
-        XCTAssertTrue(save.waitForExistence(timeout: 3))
-        save.tap()
+        XCTAssertTrue(app.buttons["log-set"].waitForExistence(timeout: 5), "the cover shows")
+        // One set noted, so ■ ends the session onto its summary rather than dropping it.
+        app.buttons["log-set"].tap()
+        app.finishSession(by: .stop)
         let close = app.buttons["summary-close"]
         XCTAssertTrue(close.waitForExistence(timeout: 5))
         close.tap()
@@ -159,7 +156,8 @@ final class AccueilTests: XCTestCase {
     /// Under way, the card and the accessory say where the session stands: the load on the bar,
     /// the exercise, the set.
     func testRunningCardLeadsWithTheLoad() {
-        let app = launch("history")
+        // Past the warm-ups, so the set up is the first work set at last time's load.
+        let app = launch("workSet")
         let resume = app.buttons["Reprendre"]
         XCTAssertTrue(resume.waitForExistence(timeout: 10))
         XCTAssertTrue(text(app, containing: "62,5\u{202F}kg × 8").exists, "the card leads with the load on the bar")
@@ -169,6 +167,18 @@ final class AccueilTests: XCTestCase {
         let accessory = app.buttons["resume-accessory"]
         XCTAssertTrue(accessory.label.contains("Barbell bench press"), "the accessory names the exercise: \(accessory.label)")
         XCTAssertTrue(accessory.label.contains("Série 1 sur 4 · Séance A"), "and the set: \(accessory.label)")
+    }
+
+    /// On a warm-up the card and the accessory call the set « Montée », as the cover does.
+    func testRunningCardNamesAWarmup() {
+        let app = launch("warmups")
+        XCTAssertTrue(app.buttons["Reprendre"].waitForExistence(timeout: 10))
+        let line = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Montée 1 sur ")).firstMatch
+        XCTAssertTrue(line.exists, "the card names the warm-up")
+        XCTAssertTrue(line.label.hasSuffix(" · Séance A"), line.label)
+        XCTAssertFalse(app.staticTexts["Série 1 sur 2 · Séance A"].exists, "never as a work set")
+        let accessory = app.buttons["resume-accessory"]
+        XCTAssertTrue(accessory.label.contains("Montée 1 sur "), "and the accessory: \(accessory.label)")
     }
 
     /// The preview's start opens the session; lowered, it waits above the tab bar; a relaunch finds it open.
@@ -202,12 +212,13 @@ final class AccueilTests: XCTestCase {
     }
 
     /// At the largest text size the session path is held to, the card keeps its button in reach.
+    /// The card can sit below the fold there, and a list makes a row only once it scrolls into
+    /// view, so the button is reached by scrolling rather than awaited where it stands.
     func testCardAtLargestText() {
         let app = launch("fresh", largestText: true)
+        XCTAssertTrue(app.buttons["settings"].waitForExistence(timeout: 10), "Accueil shows")
         let start = app.buttons["Voir la séance"]
-        XCTAssertTrue(start.waitForExistence(timeout: 10))
-        if !start.isHittable { app.swipeUp() }
-        XCTAssertTrue(start.isHittable, "Voir la séance can be tapped at AX3")
+        XCTAssertTrue(app.swipeUpUntil(start), "Voir la séance can be tapped at AX3")
         XCTAssertGreaterThanOrEqual(start.frame.height, 44, "a 44 pt target")
     }
 }

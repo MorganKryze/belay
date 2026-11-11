@@ -7,10 +7,18 @@ import Synchronization
 /// The UI tests' account, in a debug build only: `-BelayFixture <mode>` signs in a made-up person
 /// on a made-up instance that never syncs, with a store of its own in the app's caches.
 /// `fresh` starts from an empty store, `running` from one with a session started, `history` from
-/// one where session A was done yesterday and is open again, `past` from one where every session
+/// one where session A was done yesterday and is open again, `finished` from `history` with one set
+/// of the first exercise logged at 65 kg for 8, a record over yesterday's, `past` from one where every session
 /// of the program was done once, A first, so A comes next with a last time, `keep` from the store the previous
 /// launch left, so a test can relaunch onto it. `expired` starts empty on an instance that refuses
-/// the token at each sync.
+/// the token at each sync. From `history`: `warmups` as it is, its first exercise's warm-ups due;
+/// `timed` with a dead hang in place of the first exercise; `group` with the first two exercises
+/// in one group; `lastSet` with every planned set logged but the last, `twoLeft` but the last two;
+/// `exerciseEnd` with the first exercise's last work set due and a last time for the second, so it
+/// has a warm-up; `paused` paused at once; `lockLogged` with the first work set logged from the lock
+/// screen, its rest running; `workSet` with the warm-ups logged; `full` as `workSet` with the plan
+/// grown to the most slots it holds. `-BelayReduceMotion YES` forces Reduce Motion on the session's
+/// cover, `-BelayVoiceOver YES` makes it behave as under VoiceOver.
 enum Fixture {
     nonisolated fileprivate static let origin = "https://belay.example"
     nonisolated fileprivate static let userId = "fixture"
@@ -36,16 +44,25 @@ enum Fixture {
                 for round in 0..<8 {
                     let id = try model.start()
                     let code = try store.history().workouts.first(where: { $0.id == id })?.sessionCode
-                    if round > 0, code == "A" { try model.delete(); break }
+                    if round > 0, code == "A" { try model.stopEmpty(); break }
                     try doneYesterday(like: id, in: store, daysAgo: Double(10 - round))
-                    try model.delete()
+                    try model.stopEmpty()
                 }
             }
-            if mode == "running" || mode == "history" {
-                // Through the same start a tap makes, so the store holds what the app writes.
+            if openModes.contains(mode) {
+                // Through the same start and actions a tap makes, so the store holds what the app writes.
                 let store = try AccountStore.open(userId: userId, origin: url, in: folder)
-                let id = try TrainingModel(store: store, didWrite: {}, now: Date.init, timeZone: .current).start()
-                if mode == "history" { try doneYesterday(like: id, in: store) }
+                // `pausedLong` starts 75 minutes back, so its pause stands past the hour.
+                let startedAt = mode == "pausedLong" ? Date.now.addingTimeInterval(-75 * 60) : Date.now
+                let id = try TrainingModel(store: store, didWrite: {}, now: { startedAt }, timeZone: .current).start()
+                let model = TrainingModel(store: store, didWrite: {}, now: Date.init, timeZone: .current)
+                if mode != "running" { try doneYesterday(like: id, in: store) }
+                if mode == "exerciseEnd" {
+                    try doneYesterday(like: id, in: store, daysAgo: 2, slotIndex: 1, kg: 40, reps: [10, 10, 10])
+                }
+                // Yesterday's session was written beside the model: it reads it before acting.
+                model.refresh()
+                try prepare(mode, model: model, store: store, workoutId: id)
             }
             defaults.set(origin, forKey: StoredInstance.key)
             try session.keep(origin: origin, token: "fixture-token")
@@ -58,22 +75,124 @@ enum Fixture {
             defaults: defaults, storeFolder: folder)
     }
 
-    /// The same session done a day earlier, or `daysAgo`, its first exercise at 62,5 kg for 8, 8, 7 and 6.
-    private static func doneYesterday(like openId: String, in store: AccountStore, daysAgo: Double = 1) throws {
+    private static let openModes: Set = [
+        "running", "history", "finished", "warmups", "timed", "group", "lastSet", "twoLeft", "exerciseEnd", "paused",
+        "pausedLong", "lockLogged", "workSet", "full",
+    ]
+
+    /// Seconds the ruler waits before keeping its count as the draft, when a test stretches it.
+    static var draftDelay: Double { UserDefaults.standard.double(forKey: "BelayDraftDelay") }
+
+    /// Reduce Motion forced on, for the test that checks the cover only fades.
+    static var reduceMotion: Bool { UserDefaults.standard.bool(forKey: "BelayReduceMotion") }
+
+    /// VoiceOver taken as running, for the test that checks the recap waits for a tap.
+    static var voiceOver: Bool { UserDefaults.standard.bool(forKey: "BelayVoiceOver") }
+
+    /// The open session brought to the mode's state, through the session's actions.
+    private static func prepare(_ mode: String, model: TrainingModel, store: AccountStore, workoutId: String) throws {
+        switch mode {
+        case "finished":
+            try passWarmups(model)
+            var logged: SetChange?
+            try model.act {
+                try $0.choose(weightKg: 65, count: 8)
+                logged = try $0.logNext(count: nil, weightKg: nil, expecting: nil)
+            }
+            if let logged { try model.answerRIR(setId: logged.id, rir: 2) }
+            // The other sets as prefilled, so the cover opens on the finish flag.
+            while model.open?.current != nil {
+                try model.act {
+                    _ = try $0.logNext(count: nil, weightKg: nil, expecting: nil)
+                    try $0.skipRest()
+                }
+            }
+        case "timed":
+            try model.act { try $0.replace(slotIndex: 0, with: "belay:dead-hang") }
+        case "group":
+            guard var plan = try store.history().workouts.first(where: { $0.id == workoutId })?.plan else { return }
+            plan[0].groupKey = "a"
+            plan[1].groupKey = "a"
+            let at = Instant.string(.now)
+            try store.recordChanges([.workout(WorkoutChange(id: workoutId, at: at, edit: .plan(plan)))], active: .keep)
+        case "lastSet", "twoLeft":
+            let left = mode == "lastSet" ? 1 : 2
+            while let open = model.open, open.setsPlanned - open.setsDone > left {
+                try model.act {
+                    _ = try $0.logNext(count: nil, weightKg: nil, expecting: nil)
+                    try $0.skipRest()
+                }
+            }
+        case "workSet":
+            try passWarmups(model)
+        case "full":
+            try passWarmups(model)
+            while let count = try store.history().workouts.first(where: { $0.id == workoutId })?.plan.count,
+                  count < Bounds.maxSlots
+            {
+                try model.act { try $0.addExercise("ds:0313") }
+            }
+        case "exerciseEnd":
+            try passWarmups(model)
+            while case .due(let due)? = model.session?.phase, due.place.slotIndex == 0, due.number < due.of {
+                try model.act {
+                    _ = try $0.logNext(count: nil, weightKg: nil, expecting: nil)
+                    try $0.skipRest()
+                }
+            }
+        case "paused", "pausedLong":
+            try model.act { try $0.pause() }
+        case "lockLogged":
+            try passWarmups(model)
+            guard case .due(let due)? = model.session?.phase else { return }
+            try model.act { _ = try LockScreenActions.logShown(due.place, workoutId: workoutId, using: $0) }
+        default:
+            break
+        }
+    }
+
+    /// Logs the warm-ups due, as their ✓ would.
+    private static func passWarmups(_ model: TrainingModel) throws {
+        while case .due(let due)? = model.session?.phase, due.warmup {
+            try model.act { _ = try $0.logNext(count: nil, weightKg: nil, expecting: nil) }
+        }
+    }
+
+    /// Whether the cover runs its changes on the spring or the fade, for a test to read;
+    /// nothing a person sees or hears.
+    struct MotionProbe: View {
+        /// The animation the cover runs its changes on.
+        let animation: Animation
+
+        var body: some View {
+            Color.clear
+                .frame(width: 1, height: 1)
+                .accessibilityElement()
+                .accessibilityIdentifier("fixture-motion")
+                .accessibilityValue(animation == Motion.fade ? "fade" : animation == Motion.spring ? "spring" : "other")
+        }
+    }
+
+    /// The same session done a day earlier, or `daysAgo`, its first exercise at 62,5 kg for 8, 8, 7 and 6,
+    /// or the exercise of `slotIndex` at the load and counts given.
+    private static func doneYesterday(
+        like openId: String, in store: AccountStore, daysAgo: Double = 1, slotIndex: Int = 0, kg: Double = 62.5,
+        reps: [Int] = [8, 8, 7, 6]
+    ) throws {
         guard let open = try store.history().workouts.first(where: { $0.id == openId }) else { return }
         let start = Date.now.addingTimeInterval(-86_400 * daysAgo)
         let id = UUIDv7.make(at: start)
         let at = { (minutes: Double) in Instant.string(start.addingTimeInterval(minutes * 60)) }
-        let exercise = open.plan[0].exerciseId
-        let sets = [8, 8, 7, 6].enumerated().map { round, reps in
+        let exercise = open.plan[slotIndex].exerciseId
+        let sets = reps.enumerated().map { round, reps in
             Change.set(
                 SetChange(
                     id: UUIDv7.make(at: start.addingTimeInterval(Double(round + 1) * 180)), workoutId: id,
                     at: at(Double(round + 1) * 3),
                     edit: .create(
                         .init(
-                            slotIndex: 0, position: Bounds.maxWarmups + round, exerciseId: exercise,
-                            warmup: false, values: SetValues(weightKg: 62.5, reps: reps, seconds: .null, rir: 2),
+                            slotIndex: slotIndex, position: Bounds.maxWarmups + round, exerciseId: exercise,
+                            warmup: false, values: SetValues(weightKg: kg, reps: reps, seconds: .null, rir: 2),
                             doneAt: at(Double(round + 1) * 3)))))
         }
         let started = Change.workout(
@@ -110,6 +229,33 @@ enum Fixture {
                         for try await value in counts { count = value }
                     } catch {
                         preconditionFailure("the fixture's queue is not followed: \(error)")
+                    }
+                }
+        }
+    }
+
+    /// The effort and note the store holds for the latest session, for a test to read:
+    /// « floor=4 settled=true note=… ». Nothing a person sees or hears.
+    struct SummaryProbe: View {
+        let store: AccountStore
+        @State private var line = ""
+
+        var body: some View {
+            Color.clear
+                .frame(width: 1, height: 1)
+                .accessibilityElement()
+                .accessibilityIdentifier("fixture-summary")
+                .accessibilityValue(line)
+                .task {
+                    let lines = store.observe { db in
+                        let effort = try AccountStore.efforts(db).last
+                        let note = try AccountStore.history(db).workouts.last?.note
+                        return "floor=\(effort?.floor.map(String.init) ?? "none") settled=\(effort?.settled ?? false) note=\(note ?? "")"
+                    }
+                    do {
+                        for try await value in lines { line = value }
+                    } catch {
+                        preconditionFailure("the fixture's summary is not followed: \(error)")
                     }
                 }
         }

@@ -104,9 +104,11 @@ enum SessionText {
         String(localized: "En cours · \(done) séries sur \(planned)")
     }
 
-    /// « Série 3 sur 4 · Séance A ».
+    /// « Série 3 sur 4 · Séance A », or « Montée 1 sur 2 · Séance A » on a warm-up, as the cover says.
     static func setLine(_ set: CurrentSet, code: String) -> String {
-        String(localized: "Série \(set.number) sur \(set.of) · \(short(code))")
+        set.warmup
+            ? String(localized: "Montée \(set.number) sur \(set.of) · \(short(code))")
+            : String(localized: "Série \(set.number) sur \(set.of) · \(short(code))")
     }
 
     /// « 62,5 kg × 8 », « 45 s », « 5 kg · 45 s »; nil while the load is still to type.

@@ -7,7 +7,7 @@ final class SignOutTests: XCTestCase {
     private func launch(_ fixture: String) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = ["-AppleLanguages", "(fr)", "-AppleLocale", "fr_FR", "-BelayFixture", fixture]
-        app.launch()
+        app.launchFixture()
         return app
     }
 
@@ -23,14 +23,14 @@ final class SignOutTests: XCTestCase {
         let resume = app.buttons["Reprendre"]
         XCTAssertTrue(resume.waitForExistence(timeout: 10), "the session is open")
         resume.tap()
-        XCTAssertTrue(app.buttons["tick"].waitForExistence(timeout: 5), "the cover shows the next set")
+        XCTAssertTrue(app.buttons["log-set"].waitForExistence(timeout: 5), "the cover shows the next set")
     }
 
     func testSignOutKeepsTheTickedSetForTheNextSignIn() {
         let app = launch("history")
         openCover(app)
-        app.buttons["tick"].tap()
-        XCTAssertTrue(element(app, "set-0-3").label.contains("faite"), "the set is done")
+        app.buttons["log-set"].tap()
+        XCTAssertTrue(element(app, "done-0-0").label.contains("Montée"), "the set is done, the first warm-up")
         XCTAssertEqual(queuedSets(app), "1", "and queued once")
         app.buttons["Réduire la séance"].tap()
         XCTAssertTrue(app.buttons["resume-accessory"].waitForExistence(timeout: 5), "back on Accueil")
@@ -55,9 +55,9 @@ final class SignOutTests: XCTestCase {
         app.buttons["signin-submit"].tap()
 
         openCover(app)
-        let row = element(app, "set-0-3")
+        let row = element(app, "done-0-0")
         XCTAssertTrue(row.waitForExistence(timeout: 3))
-        XCTAssertTrue(row.label.contains("faite"), "signed in again, the set is still done: \(row.label)")
+        XCTAssertTrue(row.label.contains("Montée"), "signed in again, the set is still done: \(row.label)")
         XCTAssertEqual(queuedSets(app), "1", "and still queued once")
     }
 }

@@ -120,6 +120,20 @@ private func isLoad(_ v: SetValues) -> Bool {
 /// Counted in UTF-16 units, as the web counts them, so never more than the database holds.
 private func isNote(_ note: String) -> Bool { note.utf16.count <= Bounds.noteMax }
 
+/// The longest start of `note` the bound allows, cut between characters: a cut inside an emoji's
+/// pair of units would leave no valid string, and a longer note is refused when written.
+public func fitNote(_ note: String) -> String {
+  var units = 0
+  var end = note.startIndex
+  for index in note.indices {
+    let next = note.index(after: index)
+    units += note.utf16.distance(from: index, to: next)
+    guard units <= Bounds.noteMax else { break }
+    end = next
+  }
+  return String(note[..<end])
+}
+
 /// What JavaScript's `trim()` takes away: its white space and line terminators.
 private func isJSSpace(_ scalar: Unicode.Scalar) -> Bool {
   switch scalar.value {

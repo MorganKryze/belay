@@ -1,0 +1,56 @@
+{
+  "sourceLanguage": "fr",
+  "version": "1.0",
+  "strings": {
+    "Apple Santé": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Health"
+          }
+        }
+      }
+    },
+    "Sur cet iPhone": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On this iPhone"
+          }
+        }
+      }
+    },
+    "Tes séances terminées vont dans Santé avec leur intensité, à partir du moment où tu actives. Désactiver laisse dans Santé ce qui y est déjà.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your finished sessions go to Health with their effort, from the moment you turn this on. Turning it off leaves in Health what is already there."
+          }
+        }
+      }
+    },
+    "Santé n’autorise pas Belay à y écrire tes séances. Autorise-le dans l’app Santé, puis réessaie.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Health does not let Belay write your sessions. Allow it in the Health app, then try again."
+          }
+        }
+      }
+    },
+    "Enregistrée dans Santé": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saved to Health"
+          }
+        }
+      }
+    }
+  }
+}

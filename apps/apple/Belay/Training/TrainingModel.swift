@@ -34,6 +34,8 @@ struct CurrentSet: Equatable {
     /// Its number among the exercise's work sets, from 1, and how many there are.
     let number: Int
     let of: Int
+    /// A warm-up counts among the exercise's warm-ups instead, and is named « Montée ».
+    let warmup: Bool
     let timed: Bool
     /// Nil when the person has to type it.
     let weightKg: Double?
@@ -53,54 +55,10 @@ struct OpenSession: Equatable {
     let current: CurrentSet?
 }
 
-/// The open session as its cover shows it: each exercise of the plan with its work sets, and the
-/// set up next by the shared turn rule.
-struct CoverState: Equatable {
-    let workoutId: String
-    let code: String
-    let name: String?
-    let startedAt: Date
-    let exercises: [CoverExercise]
-    let next: Turn?
-    let setsPlanned: Int
-    let setsDone: Int
-}
-
-/// One exercise of the cover: a slot of the plan not skipped today.
-struct CoverExercise: Equatable, Identifiable {
-    let slotIndex: Int
-    let exerciseId: String
-    let name: String
-    /// Seconds for a timed exercise; repetitions otherwise.
-    let timed: Bool
-    let repRange: [Int]
-    let rirTarget: [Int]
-    /// Last time's work sets, the counts of equal loads in a row grouped.
-    let lastTime: [LoadGroup]
-    let sets: [CoverSet]
-
-    var id: Int { slotIndex }
-}
-
 /// Last time's sets at one load: « 62,5 kg × 8, 8 ».
 struct LoadGroup: Equatable {
     let weightKg: Double
     let counts: [Int]
-}
-
-/// A work set of the cover: what was done, or what is offered for it.
-struct CoverSet: Equatable, Identifiable {
-    let slotIndex: Int
-    let position: Int
-    /// Its number among the slot's work sets, from 1.
-    let number: Int
-    let done: Bool
-    /// Nil when nothing done before tells the load: the person types it.
-    let weightKg: Double?
-    let count: Int?
-    let rir: Int?
-
-    var id: String { "\(slotIndex)-\(position)" }
 }
 
 /// A session just finished, as its summary shows it.
@@ -124,8 +82,13 @@ struct SessionSummary: Equatable {
         var id: String { name }
     }
 
+    let workoutId: String
     let code: String
     let name: String?
+    /// The session's note as the summary opened on it.
+    let note: String?
+    /// The floor given here, 1 to 5, or none yet.
+    var effort: Int?
     let endedAt: Date
     let duration: TimeInterval
     let workSets: Int
@@ -136,12 +99,39 @@ struct SessionSummary: Equatable {
     let exercises: [Logged]
 }
 
+/// One exercise of the open session, as the programme lists it.
+struct ProgrammeExercise: Equatable, Identifiable {
+    /// A set of the exercise: done, up next, or to come.
+    struct Row: Equatable, Identifiable {
+        let place: SetPlace
+        let warmup: Bool
+        /// Its number among the warm-ups or among the work sets, from 1.
+        let number: Int
+        /// Past the plan.
+        let added: Bool
+        let state: BarState
+        /// What was logged, or what ✓ would log for the set up next; nil for a set to come.
+        let weightKg: Double?
+        let count: Int?
+
+        var id: String { "\(place.slotIndex)-\(place.position)" }
+    }
+
+    let slotIndex: Int
+    let exerciseId: String
+    let skipped: Bool
+    let note: String?
+    let timed: Bool
+    let target: [Int]
+    let rows: [Row]
+
+    var id: Int { slotIndex }
+}
+
 /// Why a session did not start, or a set was not taken.
 enum TrainingError: Error {
     /// No active program, or one with no session that can be started.
     case nothingToStart
-    /// The set asked for is not a work set of the open session.
-    case noSuchSet
 }
 
 /// What the store holds that the session screens read.
@@ -158,29 +148,43 @@ private nonisolated struct Snapshot: Sendable {
 final class TrainingModel {
     private(set) var next: NextSession?
     private(set) var open: OpenSession?
-    private(set) var cover: CoverState?
-    /// When the rest after the last set ends, as the store holds it; it may be past.
-    private(set) var restEnd: Date?
-    /// When the open session's last set was done: where the rest after it starts.
-    private(set) var restFrom: Date?
+    /// What the cover shows of the open session now, read from the store by the core's rule.
+    private(set) var session: SessionState?
+    /// What the cover remembers of its own, which the core's rule reads with the store.
+    private(set) var marks = SessionMarks()
     /// The session just finished here, until the person closes its summary.
     private(set) var summary: SessionSummary?
+    /// The open session's whole plan, as its programme lists it.
+    private(set) var programme: [ProgrammeExercise] = []
 
     private let store: AccountStore
+    /// Every write to the open session goes through these, each one transaction of the store.
+    private let actions: SessionActions
     private let didWrite: () -> Void
-    private let now: () -> Date
+    /// Told when Health may have something new: a session finished, a summary left.
+    private let health: () -> Void
+    private let now: @Sendable () -> Date
     private let timeZone: TimeZone
     @ObservationIgnored private var watch: Task<Void, Never>?
+    /// Wakes the cover at its next moment: a rest's end, a hold's end, the recap's turn.
+    @ObservationIgnored private var wake: Task<Void, Never>?
+    @ObservationIgnored private var last: Snapshot?
 
     private static let log = Logger(subsystem: "cloud.libresoftware.belay", category: "training")
 
-    init(store: AccountStore, didWrite: @escaping () -> Void, now: @escaping () -> Date, timeZone: TimeZone) {
+    init(
+        store: AccountStore, didWrite: @escaping () -> Void, health: @escaping () -> Void = {},
+        now: @escaping @Sendable () -> Date, timeZone: TimeZone
+    ) {
         self.store = store
+        actions = SessionActions(store: store, library: BundledLibrary.library, now: now, newId: UUIDv7.make)
         self.didWrite = didWrite
+        self.health = health
         self.now = now
         self.timeZone = timeZone
         // Read once now, so the first frame already shows the card; then follow every write.
         refresh()
+        settleEndedEfforts(except: nil)
         watch = Task { [weak self, store] in
             do {
                 let snapshots = store.observe { db in
@@ -197,6 +201,7 @@ final class TrainingModel {
 
     isolated deinit {
         watch?.cancel()
+        wake?.cancel()
     }
 
     /// Starts the next session, or takes up the one already open, here or elsewhere; its id.
@@ -222,82 +227,174 @@ final class TrainingModel {
     /// The exercise's name, as the library holds it (English in both languages, as on the web);
     /// its id when this build's library does not know it.
     func exerciseName(_ id: String) -> String {
-        Self.names[id] ?? id
+        BundledLibrary.library.exercise(id)?.name ?? id
     }
 
-    /// Records a work set of the open session, its change in the queue and the rest after it, in
-    /// one write; the cover shows it done once that write returns.
-    func tick(slotIndex: Int, position: Int, weightKg: Double, count: Int, rir: Int?) throws {
-        let snapshot = try store.read()
-        let at = now()
-        let history = snapshot.history
-        guard let workout = openWorkout(history.workouts, forgotten: (history.sets, at)),
-              workout.plan.indices.contains(slotIndex)
-        else { throw TrainingError.noSuchSet }
-        let slot = workout.plan[slotIndex]
-        let turn = Turn(slotIndex: slotIndex, round: position - Bounds.maxWarmups)
-        guard turn.round >= 0, turn.round < slot.sets else { throw TrainingError.noSuchSet }
-        let timed = slot.measure == .seconds
-        let doneAt = Instant.string(at)
-        let own = history.sets.filter { $0.workoutId == workout.id && !$0.removed }
-        var done = sessionProgress(workout.plan, sets: own).done
-        done.insert(turnKey(turn))
-        let next = nextTurn(workout.plan, done: done, from: turn)
-        let input = SetInput(
-            id: UUIDv7.make(at: at), workoutId: workout.id, slotIndex: slotIndex, position: position,
-            exerciseId: slot.exerciseId, warmup: false,
-            values: SetValues(
-                weightKg: weightKg, reps: timed ? nil : count, seconds: timed ? .value(count) : .null,
-                rir: timed ? nil : rir),
-            doneAt: doneAt)
-        let active = ActiveSession(
-            workoutId: workout.id, slotIndex: next?.slotIndex ?? slotIndex,
-            restEndsAt: restEndsAt(workout.plan, done: done, after: turn, doneAt: doneAt))
-        _ = try store.recordSet(input, at: doneAt, active: active)
+    /// Runs one action on the open session, then lets the sync know and reads the store again, so
+    /// the cover shows the write once it returns, and only then.
+    func act(_ action: (SessionActions) throws -> Void) throws {
+        try action(actions)
         didWrite()
         refresh()
     }
 
-    /// Moves the end of the open session's rest, or ends the rest with nil.
-    func moveRest(to end: Date?) throws {
-        guard let workoutId = open?.workoutId,
-              try store.moveRest(of: workoutId, to: end.map(Instant.string))
-        else { return }
-        didWrite()
-        refresh()
+    /// The RIR given for a set during its rest or its recap, remembered for the recap's turn.
+    func answerRIR(setId: String, rir: Int) throws {
+        try act { try $0.answerRIR(setId: setId, rir: rir) }
+        mark { $0.rirAnsweredAt = now() }
+    }
+
+    /// Changes what the cover remembers (VoiceOver, a tap on the recap) and reads the state again.
+    func mark(_ change: (inout SessionMarks) -> Void) {
+        var marks = self.marks
+        change(&marks)
+        guard marks != self.marks else { return }
+        self.marks = marks
+        recompute()
+    }
+
+    /// The exercise's sets last time, grouped by load: « 62,5 kg × 8, 8, 7, 6 ».
+    func lastTime(exerciseId: String, timed: Bool) -> [LoadGroup] {
+        guard let history = last?.history else { return [] }
+        return BelayCore.lastTime(history, exerciseId: exerciseId, measure: timed ? .seconds : nil)
+            .map { LoadGroup(weightKg: $0.weightKg, counts: $0.counts) }
+    }
+
+    /// When the open session's latest set was done: where the rest after it starts.
+    var restFrom: Date? {
+        guard let workoutId = session?.workoutId else { return nil }
+        return last?.history.sets.filter { $0.workoutId == workoutId && !$0.removed }
+            .compactMap { Instant.date($0.doneAt) }.max()
+    }
+
+    /// The plan's RIR target for a slot of the open session.
+    func rirTarget(slotIndex: Int) -> [Int] {
+        guard let workoutId = session?.workoutId,
+              let plan = last?.history.workouts.first(where: { $0.id == workoutId })?.plan,
+              plan.indices.contains(slotIndex)
+        else { return [] }
+        return plan[slotIndex].rirTarget
+    }
+
+    /// The open session's whole plan as stored now: each exercise with its sets.
+    private func readProgramme() -> [ProgrammeExercise] {
+        guard let state = session, let snapshot = last,
+              let workout = snapshot.history.workouts.first(where: { $0.id == state.workoutId })
+        else { return [] }
+        let sets = snapshot.history.sets.filter { $0.workoutId == workout.id && !$0.removed }
+        let due: DueSet? =
+            switch state.phase {
+            case .due(let due): due
+            case .holding(let hold): hold.due
+            case .held(let held): held.due
+            case .resting(let rest): rest.next
+            case .announce(let announce): announce.next
+            default: nil
+            }
+        let added = snapshot.active?.added
+        return workout.plan.enumerated().map { index, slot in
+            let own = sets.filter { $0.slotIndex == index }
+            let warmups = own.filter(\.warmup).sorted { $0.position < $1.position }
+            var rows = warmups.enumerated().map { i, set in
+                ProgrammeExercise.Row(
+                    place: SetPlace(slotIndex: index, position: set.position), warmup: true, number: i + 1, added: false,
+                    state: .done, weightKg: set.weightKg, count: countOf(set))
+            }
+            if let due, due.warmup, due.place.slotIndex == index {
+                rows.append(
+                    .init(
+                        place: due.place, warmup: true, number: warmups.count + 1, added: false, state: .current,
+                        weightKg: due.weightKg, count: due.count))
+            }
+            let planned = Bounds.maxWarmups + slot.sets - 1
+            let last = ([planned] + own.filter { !$0.warmup }.map(\.position)
+                + [added, due?.place].compactMap { $0?.slotIndex == index ? $0?.position : nil }).max() ?? planned
+            for position in Bounds.maxWarmups...max(planned, last) {
+                let place = SetPlace(slotIndex: index, position: position)
+                let done = own.first { !$0.warmup && $0.position == position }
+                let next = due.map { !$0.warmup && $0.place == place } ?? false
+                // A set past the plan shows once it is done or asked for.
+                if position > planned, done == nil, !next, added != place { continue }
+                rows.append(
+                    .init(
+                        place: place, warmup: false, number: position - Bounds.maxWarmups + 1, added: position > planned,
+                        state: done != nil ? .done : next ? .current : .toCome,
+                        weightKg: done?.weightKg ?? (next ? due?.weightKg : nil),
+                        count: done.map(countOf) ?? (next ? due?.count : nil)))
+            }
+            return ProgrammeExercise(
+                slotIndex: index, exerciseId: slot.exerciseId, skipped: slot.skipped == true,
+                note: workout.exerciseNotes[String(index)], timed: slot.measure == .seconds, target: slot.repRange,
+                rows: rows)
+        }
     }
 
     /// Ends the open session now, as the web does, and keeps its summary for the cover.
     func finish() throws {
-        let snapshot = try store.read()
-        let at = now()
-        let history = snapshot.history
-        guard let workout = openWorkout(history.workouts, forgotten: (history.sets, at)) else { return }
-        let time = Instant.string(at)
-        try store.recordChanges(
-            [.workout(WorkoutChange(id: workout.id, at: time, edit: .ended(time)))], active: .clear)
+        let id = try actions.finish()
         didWrite()
-        var ended = workout
-        ended.endedAt = time
-        summary = summarize(ended, history: history, endedAt: at)
+        let history = try store.history()
+        if let workout = history.workouts.first(where: { $0.id == id }) {
+            summary = summarize(workout, history: history, endedAt: workout.endedAt.flatMap(Instant.date) ?? now())
+        }
+        settleEndedEfforts(except: id)
         refresh()
+        health()
     }
 
-    /// Removes the open session as the web's « Supprimer la séance » does: one change, its sets
-    /// going with it, queued in the write that forgets it as this device's open session.
-    func delete() throws {
-        let snapshot = try store.read()
-        let at = now()
-        guard let workout = openWorkout(snapshot.history.workouts, forgotten: (snapshot.history.sets, at)) else { return }
-        let time = Instant.string(at)
-        try store.recordChanges([.workout(WorkoutChange(id: workout.id, at: time, edit: .removed(true)))], active: .clear)
-        didWrite()
-        refresh()
+    /// Drops the open session while it holds no set: nothing of it is kept.
+    func stopEmpty() throws {
+        try act { try $0.stopEmpty() }
     }
 
-    /// The summary is read: the cover can close.
-    func closeSummary() {
+    /// The floor given on the summary, or none: kept on this phone at once, never queued.
+    func giveEffort(_ floor: Int?) throws {
+        guard let workoutId = summary?.workoutId else { return }
+        try store.giveEffort(workoutId: workoutId, floor: floor)
+        summary?.effort = floor
+    }
+
+    /// The summary is left: its note, when changed, is written and queued, and the effort, given
+    /// or not, is settled. Only then is the summary let go, so a write that fails keeps it, and the
+    /// note typed, on screen.
+    func closeSummary(note: String) throws {
+        guard let left = summary else { return }
+        let trimmed = fitNote(note.trimmingCharacters(in: .whitespacesAndNewlines))
+        let written: String? = trimmed.isEmpty ? nil : trimmed
+        var unwritten: (any Error)?
+        if written != left.note {
+            do {
+                try store.recordChanges(
+                    [.workout(WorkoutChange(id: left.workoutId, at: Instant.string(now()), edit: .note(written)))],
+                    active: .keep)
+                didWrite()
+            } catch {
+                unwritten = error
+            }
+        }
+        // Settled even when the note was not written: the floor given does not depend on it.
+        try store.settleEffort(workoutId: left.workoutId)
+        // The effort is settled now, so Health can take it, whatever became of the note.
+        health()
+        if let unwritten { throw unwritten }
         summary = nil
+    }
+
+    /// Whether Health holds the workout of `workoutId`, now and after each change of the record.
+    func heldInHealth(_ workoutId: String) -> AsyncThrowingStream<Bool, any Error> {
+        store.observe { db in
+            if case .workout = try AccountStore.healthWritten(db, key: sessionKey(workoutId)) { true } else { false }
+        }
+    }
+
+    /// A summary the app's end, or a failed write, closed without settling its effort: no screen
+    /// will show it again, so its effort is settled as it stands.
+    private func settleEndedEfforts(except workoutId: String?) {
+        do {
+            try store.settleEndedEfforts(except: workoutId)
+        } catch {
+            Self.log.error("efforts not settled: \(AccountStore.logLabel(error), privacy: .public)")
+        }
     }
 
     /// The shared summary rule's figures, read against the history the session ends in.
@@ -315,14 +412,16 @@ final class TrainingModel {
         }
         let started = Instant.date(workout.startedAt) ?? endedAt
         return SessionSummary(
-            code: workout.sessionCode, name: workout.sessionName.value, endedAt: endedAt,
+            workoutId: workout.id, code: workout.sessionCode, name: workout.sessionName.value, note: workout.note,
+            effort: nil, endedAt: endedAt,
             duration: max(0, endedAt.timeIntervalSince(started)), workSets: work.count,
             warmupSets: totals.warmupSets, volumeKg: totals.volumeKg,
             records: totals.records.map { .init(name: exerciseName($0.exerciseId), load: $0.load) },
             exercises: logged)
     }
 
-    private func refresh() {
+    /// Reads the store now, without waiting for its next observed value.
+    func refresh() {
         do {
             show(try store.read())
         } catch {
@@ -340,23 +439,28 @@ final class TrainingModel {
     private func show(_ snapshot: Snapshot) {
         let at = now()
         let sets = snapshot.history.sets
+        last = snapshot
         if let workout = openWorkout(snapshot.history.workouts, forgotten: (sets, at)) {
             let own = sets.filter { $0.workoutId == workout.id && !$0.removed }
-            let cover = coverOf(workout, sets: own, history: snapshot.history)
+            let due = snapshot.active.flatMap { active in
+                active.workoutId == workout.id
+                    ? dueSet(history: snapshot.history, workout: workout, active: active, library: BundledLibrary.library, bar: .gym)
+                    : nil
+            }
             open = OpenSession(
                 workoutId: workout.id, code: workout.sessionCode, name: workout.sessionName.value,
-                startedAt: Instant.date(workout.startedAt) ?? at, setsPlanned: cover.setsPlanned,
-                setsDone: cover.setsDone, current: Self.current(cover))
-            self.cover = cover
-            restEnd = snapshot.active.flatMap { $0.workoutId == workout.id ? $0.restEndsAt : nil }
-                .flatMap(Instant.date)
-            restFrom = own.compactMap { Instant.date($0.doneAt) }.max()
+                startedAt: Instant.date(workout.startedAt) ?? at, setsPlanned: plannedWorkSets(workout.plan),
+                setsDone: sessionProgress(workout.plan, sets: own).done.count,
+                current: due.map { set in
+                    CurrentSet(
+                        exercise: exerciseName(set.exerciseId), number: set.number, of: set.of, warmup: set.warmup,
+                        timed: set.timed,
+                        weightKg: set.weightKg, count: set.count)
+                })
         } else {
             open = nil
-            cover = nil
-            restEnd = nil
-            restFrom = nil
         }
+        recompute()
         next = template(snapshot, at: at).map { template in
             let plan = planFor(template, activities: snapshot.activities, date: toISODate(at, timeZone: timeZone))
             return NextSession(
@@ -368,81 +472,65 @@ final class TrainingModel {
                     return PlannedExercise(
                         slotIndex: index, name: exerciseName(slot.exerciseId), sets: slot.sets,
                         timed: measure != nil, repRange: slot.repRange,
-                        lastTime: lastTime(snapshot.history, exerciseId: slot.exerciseId, measure: measure)
+                        lastTime: BelayCore.lastTime(snapshot.history, exerciseId: slot.exerciseId, measure: measure)
                             .map { LoadGroup(weightKg: $0.weightKg, counts: $0.counts) })
                 })
         }
     }
 
-    /// The set the turn rule offers next, with what the cover offers for it.
-    private static func current(_ cover: CoverState) -> CurrentSet? {
-        guard let turn = cover.next,
-              let exercise = cover.exercises.first(where: { $0.slotIndex == turn.slotIndex }),
-              exercise.sets.indices.contains(turn.round)
-        else { return nil }
-        let set = exercise.sets[turn.round]
-        return CurrentSet(
-            exercise: exercise.name, number: set.number, of: exercise.sets.count, timed: exercise.timed,
-            weightKg: set.weightKg, count: set.count)
-    }
-
-    /// The plan's live slots with their work sets: a done set as it was logged; one to do with last
-    /// time's same set, else the set just done before it here, else the plan's low count.
-    private func coverOf(_ workout: WorkoutRow, sets own: [SetRow], history: History) -> CoverState {
-        let plan = workout.plan
-        let progress = sessionProgress(plan, sets: own)
-        let exercises = liveSlots(plan).map { index in
-            let slot = plan[index]
-            let timed = slot.measure == .seconds
-            let measure: Measure? = timed ? .seconds : nil
-            let work = own.filter { !$0.warmup && $0.slotIndex == index }
-            var before: SetRow?
-            let rows = (0..<slot.sets).map { round in
-                let position = Bounds.maxWarmups + round
-                if let set = work.first(where: { $0.position == position }) {
-                    before = set
-                    return CoverSet(
-                        slotIndex: index, position: position, number: round + 1, done: true,
-                        weightKg: set.weightKg, count: countOf(set), rir: set.rir)
-                }
-                let offered = prefill(history, exerciseId: slot.exerciseId, setIndex: round, measure: measure)
-                    ?? before.map { Load(weightKg: $0.weightKg, reps: $0.reps, seconds: $0.seconds) }
-                // With nothing done before, a timed hold starts with no added load; a load is typed.
-                return CoverSet(
-                    slotIndex: index, position: position, number: round + 1, done: false,
-                    weightKg: offered?.weightKg ?? (timed ? 0 : nil),
-                    count: offered.map { $0.seconds ?? $0.reps ?? slot.repRange[0] } ?? slot.repRange.first,
-                    rir: slot.rirTarget.first)
+    /// The cover's state at this moment. The recap's marks are set as it shows and cleared once a
+    /// set is due again; the next moment the state changes by itself wakes this again.
+    private func recompute() {
+        wake?.cancel()
+        guard let snapshot = last, let open, let active = snapshot.active, active.workoutId == open.workoutId else {
+            session = nil
+            programme = []
+            return
+        }
+        let at = now()
+        func read() -> SessionState {
+            sessionState(history: snapshot.history, active: active, now: at, library: BundledLibrary.library, bar: .gym, marks: marks)
+        }
+        var state = read()
+        switch state.phase {
+        case .recap where marks.recapShownAt == nil:
+            marks.recapShownAt = at
+            state = read()
+        case .due, .holding, .held:
+            if marks != SessionMarks(voiceOver: marks.voiceOver) {
+                marks = SessionMarks(voiceOver: marks.voiceOver)
+                state = read()
             }
-            return CoverExercise(
-                slotIndex: index, exerciseId: slot.exerciseId, name: exerciseName(slot.exerciseId),
-                timed: timed, repRange: slot.repRange, rirTarget: slot.rirTarget,
-                lastTime: lastTime(history, exerciseId: slot.exerciseId, measure: measure)
-                    .map { LoadGroup(weightKg: $0.weightKg, counts: $0.counts) },
-                sets: rows)
+        default: break
         }
-        return CoverState(
-            workoutId: workout.id, code: workout.sessionCode, name: workout.sessionName.value,
-            startedAt: Instant.date(workout.startedAt) ?? now(), exercises: exercises, next: progress.next,
-            setsPlanned: plannedWorkSets(plan), setsDone: progress.done.count)
+        if session != state { session = state }
+        let plan = readProgramme()
+        if programme != plan { programme = plan }
+        let restEnd = active.restEndsAt.flatMap(Instant.date)
+        guard let next = Self.nextMoment(state, marks: marks, restEnd: restEnd, after: at) else { return }
+        wake = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(next.timeIntervalSince(at)))
+            guard !Task.isCancelled else { return }
+            self?.recompute()
+        }
     }
 
-    /// Exercise names by id, from the library bundled with the app.
-    private static let names: [String: String] = {
-        // The library ships inside the app; a build without it shows ids, and says so in the log.
-        guard let url = Bundle.main.url(forResource: "index", withExtension: "json"),
-              let data = try? Data(contentsOf: url),
-              let rows = try? JSONSerialization.jsonObject(with: data) as? [[Any]]
-        else {
-            log.error("exercise library not read")
-            return [:]
+    /// When the state turns by itself: a rest or a hold ends, the recap gives way.
+    private static func nextMoment(_ state: SessionState, marks: SessionMarks, restEnd: Date?, after at: Date)
+        -> Date?
+    {
+        // A rest that ends under the recap shows the next set directly.
+        var moments: [Date] = restEnd.map { [$0] } ?? []
+        switch state.phase {
+        case .resting(let rest): moments.append(rest.endsAt)
+        case .announce(let announce): moments.append(announce.restEndsAt)
+        case .holding(let hold): moments.append(hold.endsAt)
+        default: break
         }
-        var names: [String: String] = [:]
-        for row in rows {
-            if row.count > 1, let id = row[0] as? String, let name = row[1] as? String { names[id] = name }
-        }
-        return names
-    }()
+        if let shown = marks.recapShownAt { moments.append(shown + 2.6) }
+        if let answered = marks.rirAnsweredAt { moments.append(answered + 0.9) }
+        return moments.filter { $0 > at }.min()
+    }
 }
 
 private extension AccountStore {

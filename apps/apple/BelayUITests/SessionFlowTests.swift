@@ -1,30 +1,44 @@
 import XCTest
 
 /// The session cover on a fixture account whose last session A logged the bench press at 62,5 kg
-/// for 8, 8, 7 and 6, with a new session A open: tick a set, rest, finish.
+/// for 8, 8, 7 and 6, with a new session A open: two warm-ups come first, then the work sets. One
+/// set at a time: the ruler and ✓, then the rest that asks the reserve.
 @MainActor
 final class SessionFlowTests: XCTestCase {
+    private static let ax3 = ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityL"]
+
     /// `history` opens the store described above, `keep` the one the previous launch left.
-    private func launch(_ fixture: String, large: Bool = false) -> XCUIApplication {
+    private func launch(_ fixture: String, extra: [String] = []) -> XCUIApplication {
         let app = XCUIApplication()
-        app.launchArguments = ["-AppleLanguages", "(fr)", "-AppleLocale", "fr_FR", "-BelayFixture", fixture]
-        if large {
-            app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXL"]
-        }
-        app.launch()
+        app.launchArguments = ["-AppleLanguages", "(fr)", "-AppleLocale", "fr_FR", "-BelayFixture", fixture] + extra
+        app.launchFixture()
         return app
     }
 
-    /// Accueil's Reprendre opens the cover.
+    /// Accueil's Reprendre opens the cover. Right after launch the card can show before it takes a
+    /// tap, so the test taps it once it can be hit, and again only while the cover has not come.
     private func openCover(_ app: XCUIApplication) {
         let resume = app.buttons["Reprendre"]
+        let clock = element(app, "session-clock")
         XCTAssertTrue(resume.waitForExistence(timeout: 10), "the session is open")
-        resume.tap()
-        XCTAssertTrue(app.buttons["tick"].waitForExistence(timeout: 5), "the cover shows the next set")
+        let deadline = Date.now.addingTimeInterval(10)
+        while !clock.exists, Date.now < deadline {
+            if resume.exists, resume.isHittable { resume.tap() }
+            _ = clock.waitForExistence(timeout: 2)
+        }
+        XCTAssertTrue(clock.exists, "the cover shows")
     }
 
     private func element(_ app: XCUIApplication, _ id: String) -> XCUIElement {
         app.descendants(matching: .any)[id].firstMatch
+    }
+
+    private func button(_ app: XCUIApplication, beginning part: String) -> XCUIElement {
+        app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", part)).firstMatch
+    }
+
+    private func text(_ app: XCUIApplication, containing part: String) -> XCUIElement {
+        app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", part)).firstMatch
     }
 
     /// How many set changes of the open session the queue holds, as the fixture reports it.
@@ -32,9 +46,38 @@ final class SessionFlowTests: XCTestCase {
         element(app, "fixture-queue").value as? String
     }
 
-    /// One tap on the next set's tick records what was prefilled, with the RIR already chosen.
-    private func tickFirstSet(_ app: XCUIApplication) {
-        app.buttons["tick"].tap()
+    private func setTitle(_ app: XCUIApplication) -> String {
+        element(app, "set-title").label
+    }
+
+    /// The two warm-ups of the bench press, each with one ✓, until its first work set is up.
+    private func passWarmups(_ app: XCUIApplication) {
+        for _ in 0..<2 {
+            XCTAssertTrue(setTitle(app).hasPrefix("Montée"), "a warm-up is due: \(setTitle(app))")
+            element(app, "log-set").tap()
+        }
+        let title = element(app, "set-title")
+        XCTAssertTrue(
+            title.waitFor(NSPredicate(format: "label == %@", "Série 1 sur 4"), timeout: 10),
+            "the first work set: \(title.label)")
+    }
+
+    /// Logs the first work set and waits for its rest.
+    private func logFirstWorkSet(_ app: XCUIApplication) {
+        passWarmups(app)
+        element(app, "log-set").tap()
+        XCTAssertTrue(element(app, "rest-clock").waitForExistence(timeout: 3), "the rest starts")
+    }
+
+    /// Presses the ruler, drags it `steps` counts (50 points each) and holds before letting go, so
+    /// no momentum is left and the scale snaps where the finger stopped. The scroll does not follow
+    /// the first points of a touch: an exact 50 pt leaves the scale where it was, 200 pt moves it 3
+    /// counts, so the drag goes 20 pt further.
+    private func slide(_ ruler: XCUIElement, by steps: Int) {
+        let start = ruler.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        start.press(
+            forDuration: 0.1, thenDragTo: start.withOffset(CGVector(dx: -50 * steps - 20, dy: 0)), withVelocity: .slow,
+            thenHoldForDuration: 0.5)
     }
 
     /// Seconds on a « m:ss » clock.
@@ -46,45 +89,104 @@ final class SessionFlowTests: XCTestCase {
     func testOneTapLogsPrefilled() {
         let app = launch("history")
         openCover(app)
-        XCTAssertEqual(app.textFields["load-kg"].value as? String, "62,5", "last time's load")
-        XCTAssertEqual(app.textFields["load-count"].value as? String, "8", "and last time's count")
+        let ruler = element(app, "rep-ruler")
+        let prefilled = ruler.value as? String ?? ""
+        XCTAssertFalse(prefilled.isEmpty, "the ruler opens on a count")
         XCTAssertEqual(queuedSets(app), "0", "nothing is queued for this session yet")
-        // The RIR is under the next set before any tap, the plan's low target chosen.
-        let picker = app.segmentedControls.firstMatch
-        XCTAssertTrue(picker.exists, "the RIR is shown under the next set")
-        XCTAssertTrue(picker.buttons["1"].isSelected, "the plan's RIR 1–2 starts on 1")
 
-        app.buttons["tick"].tap()
-        XCTAssertFalse(app.buttons["rir-confirm"].exists, "no second step")
-        let row = element(app, "set-0-3")
-        XCTAssertTrue(row.waitForExistence(timeout: 3))
-        XCTAssertTrue(row.label.contains("faite"), "the row shows done: \(row.label)")
-        XCTAssertTrue(row.label.contains("62,5"), "with the load: \(row.label)")
+        element(app, "log-set").tap()
+        let row = element(app, "done-0-0")
+        XCTAssertTrue(row.waitForExistence(timeout: 3), "the set shows in « Faites »")
+        XCTAssertTrue(app.staticTexts["Faites"].exists)
+        XCTAssertTrue(row.label.contains("Montée"), "the warm-up: \(row.label)")
+        XCTAssertTrue(row.label.contains("× \(prefilled)"), "with the ruler's count \(prefilled): \(row.label)")
         XCTAssertEqual(queuedSets(app), "1", "the set is stored and queued once")
-        XCTAssertTrue(app.textFields["load-kg"].exists, "the next set comes up")
     }
 
-    func testTickSurvivesRelaunch() {
-        var app = launch("history")
+    func testRulerReachesTwelve() {
+        let app = launch("history")
         openCover(app)
-        tickFirstSet(app)
-        XCTAssertTrue(element(app, "set-0-3").label.contains("faite"))
-
-        app.terminate()
-        app = launch("keep")
-        openCover(app)
-        let row = element(app, "set-0-3")
+        passWarmups(app)
+        let ruler = element(app, "rep-ruler")
+        XCTAssertEqual(ruler.value as? String, "8", "last time's count")
+        slide(ruler, by: 4)
+        XCTAssertEqual(ruler.value as? String, "12")
+        XCTAssertTrue(app.buttons["Noter la série 1, 12 reps"].exists, "✓ says what it logs")
+        element(app, "log-set").tap()
+        let row = element(app, "done-0-3")
         XCTAssertTrue(row.waitForExistence(timeout: 3))
-        XCTAssertTrue(row.label.contains("faite"), "the set is still done: \(row.label)")
-        XCTAssertEqual(queuedSets(app), "1", "and queued once")
+        XCTAssertTrue(row.label.contains("× 12"), "the done row reads 12: \(row.label)")
+    }
+
+    func testLoadChoicesAndKeypad() {
+        let app = launch("history")
+        openCover(app)
+        passWarmups(app)
+        let load = element(app, "load")
+        XCTAssertTrue(load.label.contains("62,5"), load.label)
+        load.tap()
+        // One increment of the bench press below, the load, one and two above.
+        for kg in ["60", "62,5", "65", "67,5"] {
+            XCTAssertTrue(app.buttons["\(kg)\u{202F}kg"].waitForExistence(timeout: 2), "\(kg) kg is offered")
+        }
+        app.buttons["65\u{202F}kg"].tap()
+        XCTAssertTrue(load.waitFor(NSPredicate(format: "label CONTAINS %@", "65")), load.label)
+
+        load.tap()
+        app.buttons["Autre charge…"].tap()
+        let keypad = app.alerts.textFields.firstMatch
+        XCTAssertTrue(keypad.waitForExistence(timeout: 2), "a keypad opens")
+        keypad.typeText("70,5")
+        app.alerts.buttons["OK"].tap()
+        XCTAssertTrue(load.waitFor(NSPredicate(format: "label CONTAINS %@", "70,5")), load.label)
+
+        element(app, "log-set").tap()
+        XCTAssertTrue(element(app, "skip-rest").waitForExistence(timeout: 3))
+        element(app, "skip-rest").tap()
+        XCTAssertTrue(element(app, "set-title").waitFor(NSPredicate(format: "label == %@", "Série 2 sur 4")))
+        XCTAssertTrue(element(app, "load").label.contains("70,5"), "the next set starts from it")
+    }
+
+    func testProgressionLine() {
+        let app = launch("history")
+        openCover(app)
+        XCTAssertEqual(element(app, "progression").label, "Montée légère, sans forcer")
+        passWarmups(app)
+        let line = element(app, "progression")
+        XCTAssertEqual(line.label, "Même charge, vise 8 reps")
+        element(app, "load").tap()
+        app.buttons["65\u{202F}kg"].tap()
+        XCTAssertTrue(
+            line.waitFor(NSPredicate(format: "label == %@", "+2,5\u{202F}kg depuis la dernière fois")), line.label)
+        line.tap()
+        XCTAssertTrue(
+            text(app, containing: "62,5\u{202F}kg × 8, 8, 7, 6").waitForExistence(timeout: 2),
+            "last time's sets show")
+    }
+
+    func testRestAsksRIRThenCapsuleFades() {
+        let app = launch("history")
+        openCover(app)
+        logFirstWorkSet(app)
+        XCTAssertTrue(app.staticTexts["Série 1\u{202F}: combien en réserve\u{202F}?"].exists, "the foot asks")
+        for rir in 0...4 {
+            XCTAssertFalse(element(app, "rir-\(rir)").isSelected, "nothing chosen")
+        }
+        XCTAssertTrue(text(app, containing: "Cible").exists, "the target as a hint")
+        element(app, "rir-1").tap()
+        let noted = app.staticTexts["Réserve 1 notée"]
+        XCTAssertTrue(noted.waitForExistence(timeout: 2), "the answer shows in a capsule")
+        XCTAssertTrue(noted.waitForNonExistence(timeout: 4), "and fades")
+        XCTAssertTrue(element(app, "rest-clock").exists, "leaving the clock alone")
+        XCTAssertFalse(element(app, "rir-1").exists, "asked once")
+        XCTAssertTrue(element(app, "done-0-3").label.contains("RIR 1"), element(app, "done-0-3").label)
     }
 
     func testRestCountsToAbsoluteEnd() throws {
         let app = launch("history")
         openCover(app)
-        tickFirstSet(app)
+        logFirstWorkSet(app)
         let clock = element(app, "rest-clock")
-        XCTAssertTrue(clock.waitForExistence(timeout: 3), "the rest starts")
         let first = try XCTUnwrap(seconds(clock.label), "a clock: \(clock.label)")
         let read = Date.now
         // The bench press rests 150 s; a second or two goes by before the label is read.
@@ -95,252 +197,248 @@ final class SessionFlowTests: XCTestCase {
         app.activate()
         XCTAssertTrue(clock.waitForExistence(timeout: 5))
         let later = try XCTUnwrap(seconds(clock.label), "a clock: \(clock.label)")
-        // The 20 s away plus what going and coming back took, read on the test's own clock.
         let away = Int(Date.now.timeIntervalSince(read).rounded())
         XCTAssertGreaterThanOrEqual(away, 20)
         XCTAssertTrue((first - away - 3...first - away + 2).contains(later), "\(away) s less: \(first) then \(later)")
     }
 
-    func testFinishShowsSummary() {
+    func testAddThirtyAndSkip() throws {
         let app = launch("history")
         openCover(app)
-        tickFirstSet(app)
-        app.buttons["Terminer"].tap()
-        let save = app.buttons["Terminer et enregistrer"]
-        XCTAssertTrue(save.waitForExistence(timeout: 3), "Terminer asks first")
-        // The web's words: what is kept, what is not, and that the program stays as it is.
-        let message = "1 série notée sur 19. Les 18 séries non cochées ne seront pas enregistrées\u{202F}; ton programme ne change pas."
-        XCTAssertTrue(app.staticTexts[message].exists, "the dialog says what is kept: \(app.staticTexts.allElementsBoundByIndex.map(\.label))")
-        save.tap()
-
-        XCTAssertTrue(element(app, "summary-close").waitForExistence(timeout: 5), "the summary shows")
-        XCTAssertTrue(
-            app.staticTexts.containing(NSPredicate(format: "label BEGINSWITH %@", "Séance terminée")).firstMatch.exists,
-            "saying the session is done: \(app.navigationBars.debugDescription)")
-        let sets = element(app, "summary-sets")
-        XCTAssertTrue(sets.label.contains("1"), "one set done: \(sets.label)")
-        XCTAssertTrue(app.staticTexts["Barbell bench press"].exists, "what was logged")
-        app.buttons["Fermer"].tap()
-        XCTAssertTrue(app.buttons["Voir la séance"].waitForExistence(timeout: 5), "the session is ended")
-    }
-
-    /// Wet hands on the narrowest phone: every RIR segment is a 44 pt target at the default size.
-    func testRIRSegmentsAreTargets() {
-        let app = launch("history")
-        openCover(app)
-        let picker = app.segmentedControls.firstMatch
-        XCTAssertTrue(picker.waitForExistence(timeout: 3), "the RIR is under the next set")
-        let segments = picker.buttons.allElementsBoundByIndex
-        XCTAssertEqual(segments.count, 5)
-        for segment in segments {
-            let frame = segment.frame
-            XCTAssertGreaterThanOrEqual(frame.width, 44, "segment \(segment.label) is \(frame.size)")
-            XCTAssertGreaterThanOrEqual(frame.height, 44, "segment \(segment.label) is \(frame.size)")
-        }
-    }
-
-    /// The whole load box is the target: a tap on its « kg » or « reps » line focuses its field.
-    func testLoadBoxFocusesItsField() {
-        let app = launch("history")
-        openCover(app)
-        for id in ["load-kg", "load-count"] {
-            let field = app.textFields[id]
-            // The unit line sits under the figure, 30 pt below the field's middle.
-            field.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).withOffset(CGVector(dx: 0, dy: 30)).tap()
-            let focused = NSPredicate(format: "hasKeyboardFocus == true")
-            XCTAssertEqual(
-                XCTWaiter.wait(for: [expectation(for: focused, evaluatedWith: field)], timeout: 3), .completed,
-                "a tap on the unit line of \(id) focuses it")
-        }
-    }
-
-    /// « +30 s » moves the rest's end 30 s later and « Passer » ends it, each a 44 pt target.
-    func testRestMovesAndSkips() throws {
-        let app = launch("history")
-        openCover(app)
-        tickFirstSet(app)
+        logFirstWorkSet(app)
         let clock = element(app, "rest-clock")
-        XCTAssertTrue(clock.waitForExistence(timeout: 3), "the rest starts")
-        let more = app.buttons["rest-more"]
-        let skip = app.buttons["rest-skip"]
-        XCTAssertTrue(more.exists && skip.exists, "the rest row offers +30 s and Passer")
-        XCTAssertEqual(more.label, "+30\u{202F}s")
-        XCTAssertEqual(skip.label, "Passer")
-        for button in [more, skip] {
-            XCTAssertGreaterThanOrEqual(button.frame.width, 44, "\(button.label) is \(button.frame.size)")
-            XCTAssertGreaterThanOrEqual(button.frame.height, 44, "\(button.label) is \(button.frame.size)")
-        }
+        let before = try XCTUnwrap(seconds(clock.label))
+        element(app, "add-thirty").tap()
+        XCTAssertTrue(clock.waitFor(NSPredicate { object, _ in
+            (object as? XCUIElement).flatMap { self.seconds($0.label) }.map { $0 >= before + 26 } ?? false
+        }), "30 s more: \(before) then \(clock.label)")
+        element(app, "skip-rest").tap()
+        XCTAssertTrue(clock.waitForNonExistence(timeout: 3), "the rest ends")
+        XCTAssertTrue(element(app, "set-title").waitFor(NSPredicate(format: "label == %@", "Série 2 sur 4")))
+    }
 
-        let before = try XCTUnwrap(seconds(clock.label), "a clock: \(clock.label)")
-        more.tap()
-        let moved = NSPredicate { _, _ in (self.seconds(clock.label) ?? 0) >= before + 25 }
-        XCTAssertEqual(
-            XCTWaiter.wait(for: [expectation(for: moved, evaluatedWith: nil)], timeout: 3), .completed,
-            "30 s more: \(before) then \(clock.label)")
+    func testCardHeaderOpensProgramme() {
+        let app = launch("history")
+        openCover(app)
+        let header = button(app, beginning: "Exercice 1 sur ")
+        XCTAssertTrue(header.label.hasSuffix(", voir le programme"), header.label)
+        header.tap()
+        XCTAssertTrue(app.buttons["programme-close"].waitForExistence(timeout: 3), "the programme opens")
+    }
 
-        skip.tap()
-        let gone = NSPredicate(format: "exists == false")
-        XCTAssertEqual(
-            XCTWaiter.wait(for: [expectation(for: gone, evaluatedWith: clock)], timeout: 3), .completed,
-            "Passer ends the rest")
+    func testBarHoldsThreeControls() {
+        var app = launch("history")
+        openCover(app)
+        XCTAssertTrue(app.buttons["Réduire la séance"].exists)
+        XCTAssertTrue(app.buttons["Mettre la séance en pause"].exists)
+        XCTAssertFalse(app.buttons["Terminer"].exists, "no Terminer in the bar")
+
+        app.buttons["Mettre la séance en pause"].tap()
+        let stop = app.buttons["Arrêter la séance"]
+        XCTAssertTrue(stop.waitForExistence(timeout: 3), "pause becomes ■")
+        let clock = element(app, "session-clock")
+        let still = clock.label
+        Thread.sleep(forTimeInterval: 2)
+        XCTAssertEqual(clock.label, still, "the clock stands still")
+
+        // The pause is kept through the cover's own updates and a relaunch.
         app.terminate()
-        let again = launch("keep")
-        openCover(again)
-        XCTAssertFalse(element(again, "rest-clock").waitForExistence(timeout: 2), "the rest stays ended: it was stored")
+        app = launch("keep")
+        openCover(app)
+        XCTAssertTrue(app.buttons["Arrêter la séance"].waitForExistence(timeout: 3), "still paused")
+    }
+
+    /// Scrolled, the cover draws no band under the bar: the card's title that went up shows
+    /// through it in its own ink. A band, even a glassy one, leaves only a pale ghost of it there
+    /// (184 of 255 at its darkest, measured with the hard edge effect).
+    func testNoBarOnScroll() {
+        let app = launch("history", extra: Self.ax3)
+        openCover(app)
+        passWarmups(app)
+        let strip = barStrip(app)
+        XCTAssertGreaterThan(darkest(pixels(app, in: strip)), 200, "nothing under the bar at rest")
+        app.swipeUp()
+        app.swipeUp()
+        let titled = app.navigationBars.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "Séance"))
+        XCTAssertEqual(titled.count, 0, "no compact title: \(app.navigationBars.debugDescription)")
+        XCTAssertLessThan(darkest(pixels(app, in: strip)), 100, "the title's ink shows under the bar, no band over it")
+    }
+
+    /// The bar's height, between ⌄ and the clock: nothing of the bar's own is drawn there.
+    private func barStrip(_ app: XCUIApplication) -> CGRect {
+        let bar = app.navigationBars.firstMatch.frame
+        let lower = app.buttons["Réduire la séance"].frame
+        let clock = element(app, "session-clock").frame
+        return CGRect(x: lower.maxX + 6, y: bar.minY, width: clock.minX - lower.maxX - 12, height: bar.height)
+    }
+
+    /// The screen's pixels in `rect`, in points, as RGBA bytes.
+    private func pixels(_ app: XCUIApplication, in rect: CGRect) -> [UInt8] {
+        let image = app.screenshot().image
+        let scale = image.scale
+        let crop = CGRect(x: rect.minX * scale, y: rect.minY * scale, width: rect.width * scale, height: rect.height * scale)
+        guard let cg = image.cgImage?.cropping(to: crop.integral) else { return [] }
+        var bytes = [UInt8](repeating: 0, count: cg.width * cg.height * 4)
+        bytes.withUnsafeMutableBytes { buffer in
+            let context = CGContext(
+                data: buffer.baseAddress, width: cg.width, height: cg.height, bitsPerComponent: 8,
+                bytesPerRow: cg.width * 4, space: CGColorSpaceCreateDeviceRGB(),
+                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+            context?.draw(cg, in: CGRect(x: 0, y: 0, width: cg.width, height: cg.height))
+        }
+        return bytes
+    }
+
+    /// The darkest pixel's gray, 0 for black to 255 for white.
+    private func darkest(_ rgba: [UInt8]) -> Int {
+        stride(from: 0, to: rgba.count - 3, by: 4).map { (Int(rgba[$0]) + Int(rgba[$0 + 1]) + Int(rgba[$0 + 2])) / 3 }
+            .min() ?? 255
+    }
+
+    func testDraftSurvivesRelaunch() {
+        var app = launch("history")
+        openCover(app)
+        passWarmups(app)
+        element(app, "load").tap()
+        app.buttons["65\u{202F}kg"].tap()
+        let ruler = element(app, "rep-ruler")
+        slide(ruler, by: 2)
+        XCTAssertEqual(ruler.value as? String, "10")
+        Thread.sleep(forTimeInterval: 1.5)
+
+        app.terminate()
+        app = launch("keep")
+        openCover(app)
+        XCTAssertTrue(element(app, "load").label.contains("65"), element(app, "load").label)
+        XCTAssertEqual(element(app, "rep-ruler").value as? String, "10", "the count chosen")
+    }
+
+    /// A ✓ right after the ruler moved logs that count, and the next set keeps last time's. The
+    /// launch stretches the ruler's wait to 4 s so the ✓ lands inside it.
+    func testRulerThenCheckKeepsNextPrefill() {
+        let app = launch("history", extra: ["-BelayDraftDelay", "4"])
+        openCover(app)
+        passWarmups(app)
+        let ruler = element(app, "rep-ruler")
+        slide(ruler, by: 2)
+        element(app, "log-set").tap()
+        let skip = element(app, "skip-rest")
+        XCTAssertTrue(skip.waitForExistence(timeout: 3), "the rest starts")
+        XCTAssertTrue(element(app, "done-0-3").label.contains("× 10"), element(app, "done-0-3").label)
+        Thread.sleep(forTimeInterval: 5)
+        skip.tap()
+        XCTAssertTrue(element(app, "set-title").waitFor(NSPredicate(format: "label == %@", "Série 2 sur 4")))
+        XCTAssertEqual(ruler.value as? String, "8", "the next set opens on last time's count")
+    }
+
+    /// The count slid to and kept as the draft goes with its set: after ✓, the next set opens on
+    /// its own prefill, with no touch on the ruler.
+    func testSlidCountStaysWithItsSet() {
+        let app = launch("history")
+        openCover(app)
+        passWarmups(app)
+        let ruler = element(app, "rep-ruler")
+        slide(ruler, by: 1)
+        XCTAssertEqual(ruler.value as? String, "9")
+        Thread.sleep(forTimeInterval: 1.5)
+        element(app, "log-set").tap()
+        let skip = element(app, "skip-rest")
+        XCTAssertTrue(skip.waitForExistence(timeout: 3), "the rest starts")
+        XCTAssertTrue(element(app, "done-0-3").label.contains("× 9"), element(app, "done-0-3").label)
+        skip.tap()
+        XCTAssertTrue(element(app, "set-title").waitFor(NSPredicate(format: "label == %@", "Série 2 sur 4")))
+        XCTAssertEqual(ruler.value as? String, "8", "the next set opens on last time's count")
+    }
+
+    /// After a set logged at a slid count, the next set's scale stands on its own count: one step up
+    /// from its prefill logs the prefill plus one, whatever the set before was slid to.
+    func testOneStepOnTheNextSetLogsItsCountPlusOne() {
+        let app = launch("history")
+        openCover(app)
+        passWarmups(app)
+        let ruler = element(app, "rep-ruler")
+        slide(ruler, by: 1)
+        XCTAssertEqual(ruler.value as? String, "9")
+        element(app, "log-set").tap()
+        let skip = element(app, "skip-rest")
+        XCTAssertTrue(skip.waitForExistence(timeout: 3), "the rest starts")
+        skip.tap()
+        XCTAssertTrue(
+            element(app, "set-title").waitFor(NSPredicate(format: "label == %@", "Série 2 sur 4"), timeout: 10),
+            "the next set is due")
+        XCTAssertEqual(ruler.value as? String, "8", "the next set's prefill")
+        Thread.sleep(forTimeInterval: 1.5)
+        slide(ruler, by: 1)
+        Thread.sleep(forTimeInterval: 1.5)
+        element(app, "log-set").tap()
+        XCTAssertTrue(element(app, "skip-rest").waitForExistence(timeout: 3), "the rest starts")
+        let logged = element(app, "done-0-4").label
+        XCTAssertTrue(logged.contains("× 9"), "one step up from 8 logs 9: \(logged)")
+    }
+
+    /// Paused past an hour, the clock reads as it ran: hours, minutes, seconds.
+    func testPausedClockPastAnHour() {
+        let app = launch("pausedLong")
+        openCover(app)
+        let clock = element(app, "session-clock")
+        XCTAssertTrue(app.buttons["Arrêter la séance"].waitForExistence(timeout: 3), "paused")
+        XCTAssertTrue(clock.label.hasPrefix("1:15:"), clock.label)
+    }
+
+    func testLockLoggedAsksRIR() {
+        let app = launch("lockLogged")
+        openCover(app)
+        XCTAssertTrue(element(app, "rest-clock").waitForExistence(timeout: 3), "the rest of the set runs")
+        XCTAssertTrue(app.staticTexts["Série 1\u{202F}: combien en réserve\u{202F}?"].exists, "its RIR is asked")
+    }
+
+    func testReduceMotionCrossfades() {
+        var app = launch("history")
+        openCover(app)
+        XCTAssertEqual(element(app, "fixture-motion").value as? String, "spring", "the cover moves on the spring by default")
+        app.terminate()
+        app = launch("history", extra: ["-BelayReduceMotion", "YES"])
+        openCover(app)
+        XCTAssertEqual(element(app, "fixture-motion").value as? String, "fade", "the cover only fades")
+        logFirstWorkSet(app)
     }
 
     func testVoiceOverLabels() {
         let app = launch("history")
         openCover(app)
-        let next = element(app, "set-0-3").label
-        for part in ["Barbell bench press", "série 1 sur 4", "62,5 kg", "8 répétitions", "à faire"] {
-            XCTAssertTrue(next.contains(part), "the next set reads \(part): \(next)")
+        XCTAssertTrue(button(app, beginning: "Noter la montée 1, ").exists, "✓ names the warm-up")
+        XCTAssertTrue(button(app, beginning: "Exercice 1 sur ").exists)
+        XCTAssertTrue(app.buttons["Réduire la séance"].exists)
+        XCTAssertTrue(app.buttons["Mettre la séance en pause"].exists)
+        XCTAssertEqual(element(app, "rep-ruler").label, "Répétitions faites")
+        passWarmups(app)
+        XCTAssertTrue(app.buttons["Noter la série 1, 8 reps"].exists)
+        XCTAssertTrue(element(app, "load").label.hasPrefix("Charge, 62,5"), element(app, "load").label)
+        element(app, "log-set").tap()
+        XCTAssertTrue(app.buttons["Ajouter 30 secondes"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.buttons["Passer le repos"].exists)
+        XCTAssertEqual(element(app, "rir-4").label, "4 ou plus en réserve")
+        XCTAssertEqual(element(app, "rir-0").label, "0 en réserve")
+    }
+
+    func testAx3Caps() {
+        func measure(_ extra: [String]) -> (figure: CGFloat, clock: CGFloat, foot: CGFloat, row: CGFloat) {
+            let app = launch("history", extra: extra)
+            openCover(app)
+            element(app, "log-set").tap()
+            let row = element(app, "done-0-0")
+            XCTAssertTrue(row.waitForExistence(timeout: 3))
+            let sizes = (
+                element(app, "load").frame.height, element(app, "session-clock").frame.height,
+                element(app, "log-set").frame.height, row.frame.height)
+            app.terminate()
+            return sizes
         }
-        let later = element(app, "set-0-4").label
-        for part in ["Barbell bench press", "série 2 sur 4", "62,5 kg", "8 répétitions", "à faire"] {
-            XCTAssertTrue(later.contains(part), "a later set reads \(part): \(later)")
-        }
-        tickFirstSet(app)
-        let done = element(app, "set-0-3")
-        XCTAssertTrue(done.waitForExistence(timeout: 3))
-        for part in ["Barbell bench press", "série 1 sur 4", "62,5 kg", "8 répétitions", "faite"] {
-            XCTAssertTrue(done.label.contains(part), "a done set reads \(part): \(done.label)")
-        }
-    }
-
-    /// The foot says what it logs, and logs it in the one tap the row's tick takes.
-    func testFootSaysWhatItLogs() {
-        let app = launch("history")
-        openCover(app)
-        let foot = app.buttons["foot"]
-        XCTAssertEqual(foot.label, "Valider la série 1 · 62,5\u{202F}kg × 8")
-        foot.tap()
-        let row = element(app, "set-0-3")
-        XCTAssertTrue(row.label.contains("faite"), "one tap logs the set: \(row.label)")
-        XCTAssertEqual(queuedSets(app), "1", "stored and queued once")
-        XCTAssertEqual(foot.label, "Valider la série 2 · 62,5\u{202F}kg × 8", "the foot moves to the next set")
-    }
-
-    /// At the largest sizes the row above holds the values; the foot keeps the set alone.
-    func testFootLeavesValuesOutAtAccessibilitySizes() {
-        let app = launch("history", large: true)
-        openCover(app)
-        XCTAssertEqual(app.buttons["foot"].label, "Valider la série 1")
-    }
-
-    /// A set with no history shows a dash in its empty load, never the field's spoken label.
-    func testEmptyLoadShowsADash() {
-        let app = launch("running")
-        openCover(app)
-        let kg = app.textFields["load-kg"]
-        XCTAssertEqual(kg.placeholderValue, "–", "a dash, not « Charge de la série 1, kg »")
-        XCTAssertEqual(kg.label, "Charge de la série 1, kg", "VoiceOver still hears what the field is")
-        XCTAssertFalse((app.textFields["load-count"].value as? String ?? "").isEmpty, "the count is prefilled")
-    }
-
-    /// The next set and its RIR take the prototype's 165 pt from « Série 1 sur 4 » to the hairline
-    /// of the row after, whose own label sits 26 pt lower in its 52 pt row of boxes: 191 pt, as
-    /// measured on both. Armed with its « Noter » pill, the block took 74 pt more.
-    func testNextSetBlockKeepsItsHeight() {
-        let app = launch("history")
-        openCover(app)
-        let next = element(app, "set-0-3").frame
-        let rir = app.segmentedControls.firstMatch.frame
-        let after = element(app, "set-0-4").frame
-        XCTAssertTrue(next.maxY < rir.minY && rir.maxY < after.minY, "the RIR sits under the next set: \(next) \(rir) \(after)")
-        XCTAssertLessThanOrEqual(after.minY - next.minY, 192, "next set \(next), the one after \(after)")
-    }
-
-    /// The sets after the next are boxes holding what is offered, and their own tick logs them.
-    func testComingSetsAreEditableBoxes() {
-        let app = launch("history")
-        openCover(app)
-        XCTAssertEqual(app.textFields["kg-0-4"].value as? String, "62,5", "set 2 offers last time's load")
-        XCTAssertEqual(app.textFields["count-0-4"].value as? String, "8", "and its count")
-        XCTAssertEqual(app.textFields["kg-0-4"].label, "Charge de la série 2, kg")
-        app.buttons["tick-0-4"].tap()
-        let row = element(app, "set-0-4")
-        XCTAssertTrue(row.waitForExistence(timeout: 3))
-        XCTAssertTrue(row.label.contains("faite"), "set 2 is logged from its own row: \(row.label)")
-        XCTAssertEqual(queuedSets(app), "1")
-    }
-
-    /// The navigation bar's bottom edge: the exercise up next is held right under it.
-    private func barBottom(_ app: XCUIApplication) -> CGFloat {
-        app.navigationBars.firstMatch.frame.maxY
-    }
-
-    /// The exercise up next opens anchored under the bar, its header a button that folds it.
-    func testExerciseHeaderFoldsAndIsAnchored() {
-        let app = launch("history")
-        openCover(app)
-        let header = app.buttons["exercise-0"]
-        XCTAssertTrue(header.exists, "the exercise's header is a button")
-        XCTAssertLessThanOrEqual(header.frame.minY - barBottom(app), 24, "anchored under the bar: \(header.frame)")
-        XCTAssertEqual(header.value as? String, "ouvert")
-        XCTAssertEqual(app.buttons["exercise-1"].value as? String, "replié", "the others start folded")
-
-        header.tap()
-        XCTAssertEqual(header.value as? String, "replié")
-        XCTAssertFalse(app.buttons["tick"].exists, "folded, its sets are hidden")
-        XCTAssertTrue(header.label.contains("4 × 6–8 · à venir"), "with where it stands: \(header.label)")
-        header.tap()
-        XCTAssertTrue(app.buttons["tick"].waitForExistence(timeout: 2), "open again")
-    }
-
-    /// An exercise whose four sets are done folds with its count, and the next one takes the top.
-    func testDoneExerciseFoldsAndTheNextTakesTheTop() {
-        let app = launch("history")
-        openCover(app)
-        let foot = app.buttons["foot"]
-        for _ in 0..<4 { foot.tap() }
-        let done = app.buttons["exercise-0"]
-        let folded = NSPredicate(format: "value == 'replié'")
-        XCTAssertEqual(
-            XCTWaiter.wait(for: [expectation(for: folded, evaluatedWith: done)], timeout: 3), .completed,
-            "the done exercise folds")
-        XCTAssertTrue(done.label.contains("4 séries notées"), "saying so: \(done.label)")
-        let next = app.buttons["exercise-1"]
-        XCTAssertEqual(next.value as? String, "ouvert", "the next exercise opens")
-        let anchored = NSPredicate { _, _ in abs(next.frame.minY - self.barBottom(app)) <= 24 }
-        XCTAssertEqual(
-            XCTWaiter.wait(for: [expectation(for: anchored, evaluatedWith: nil)], timeout: 3), .completed,
-            "and is anchored under the bar: \(next.frame), bar \(barBottom(app))")
-    }
-
-    /// At the largest sizes the next set takes the middle of the screen, the header above it.
-    func testNextSetTakesTheMiddleAtAccessibilitySizes() {
-        let app = launch("history", large: true)
-        openCover(app)
-        let window = app.windows.firstMatch.frame
-        let centred = { (id: String) in
-            NSPredicate { _, _ in abs(app.buttons[id].frame.midY - window.midY) <= window.height * 0.2 }
-        }
-        XCTAssertEqual(
-            XCTWaiter.wait(for: [expectation(for: centred("tick"), evaluatedWith: nil)], timeout: 3), .completed,
-            "the next set's tick near the middle: \(app.buttons["tick"].frame) in \(window)")
-    }
-
-    /// « Supprimer la séance… » in Terminer's dialog, drawn from its button, asks again, then the
-    /// session is gone and stays gone.
-    func testDeleteRemovesTheSession() {
-        let app = launch("history")
-        openCover(app)
-        tickFirstSet(app)
-        app.buttons["Terminer"].tap()
-        let ask = app.buttons["Supprimer la séance…"]
-        XCTAssertTrue(ask.waitForExistence(timeout: 3), "Terminer offers the delete")
-        let window = app.windows.firstMatch.frame
-        XCTAssertLessThan(ask.frame.midY, window.midY, "the dialog comes from its button at the top: \(ask.frame)")
-        ask.tap()
-        let confirm = app.buttons["Supprimer la séance"]
-        XCTAssertTrue(confirm.waitForExistence(timeout: 3), "asked again before anything goes")
-        let message = "La série notée ne sera pas gardée\u{202F}; ton programme ne change pas."
-        XCTAssertTrue(app.staticTexts[message].exists, "saying what goes: \(app.staticTexts.allElementsBoundByIndex.map(\.label))")
-        confirm.tap()
-        XCTAssertTrue(app.buttons["Voir la séance"].waitForExistence(timeout: 5), "the session is gone")
-        app.terminate()
-        let again = launch("keep")
-        XCTAssertTrue(again.buttons["Voir la séance"].waitForExistence(timeout: 10), "and stays gone: it was stored")
+        let base = measure([])
+        let large = measure(Self.ax3)
+        XCTAssertLessThanOrEqual(large.figure, base.figure * 1.35, "the figure is capped")
+        XCTAssertLessThanOrEqual(large.clock, base.clock * 1.6, "the clock is capped")
+        XCTAssertLessThanOrEqual(large.foot, base.foot * 1.35, "the foot is capped")
+        XCTAssertGreaterThan(large.row, base.row * 1.8, "a done row goes on two lines")
     }
 }

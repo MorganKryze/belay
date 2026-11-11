@@ -1,0 +1,40 @@
+{
+  "sourceLanguage": "fr",
+  "version": "1.0",
+  "strings": {
+    "NSHealthShareUsageDescription": {
+      "comment": "Why Belay reads workouts from Health",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Belay lit tes autres entraînements pour ne pas compter deux fois une séance déjà enregistrée par ta montre."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Belay reads your other workouts so a session your watch already recorded is not counted twice."
+          }
+        }
+      }
+    },
+    "NSHealthUpdateUsageDescription": {
+      "comment": "Why Belay writes workouts and their effort to Health",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Belay ajoute à Santé tes séances terminées et l’intensité que tu leur donnes."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Belay adds your finished sessions, and the effort you give them, to Health."
+          }
+        }
+      }
+    }
+  }
+}

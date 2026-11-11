@@ -49,6 +49,26 @@ enum Schema {
         t.column("value", .text).notNull()
       }
     }
+    // The effort given on a session's summary. The server has no field for it, so it lives on
+    // this phone only and never enters the queue; the cursor stays where it is.
+    migrator.registerMigration("v2") { db in
+      try db.create(table: "efforts") { t in
+        t.primaryKey("workoutId", .text)
+        t.column("row", .blob).notNull()
+      }
+    }
+    // Apple Health: the switch, at key 1, and what this phone wrote there, by session key. Both
+    // belong to this phone and this account only, so neither is queued; the cursor stays.
+    migrator.registerMigration("v3") { db in
+      try db.create(table: "healthSettings") { t in
+        t.primaryKey("key", .integer).check { $0 == 1 }
+        t.column("row", .blob).notNull()
+      }
+      try db.create(table: "healthWritten") { t in
+        t.primaryKey("key", .text)
+        t.column("row", .blob).notNull()
+      }
+    }
     return migrator
   }
 }

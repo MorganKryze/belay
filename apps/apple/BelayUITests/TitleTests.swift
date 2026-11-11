@@ -10,7 +10,7 @@ final class TitleTests: XCTestCase {
         if largestText {
             app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXL"]
         }
-        app.launch()
+        app.launchFixture()
         return app
     }
 

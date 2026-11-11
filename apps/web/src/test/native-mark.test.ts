@@ -77,7 +77,7 @@ describe("the iPhone icon", () => {
 });
 
 describe("the native mark", () => {
-  const source = read(join(app, "BelayMark.swift"));
+  const source = read(join(apple, "Shared", "BelayMark.swift"));
   const points = (d: string) =>
     [...d.matchAll(/(-?[\d.]+) (-?[\d.]+)/g)].map((m) => `CGPoint(x: ${m[1]}, y: ${m[2]})`);
 
@@ -100,9 +100,8 @@ describe("the native mark", () => {
 
   it("leaves no drawing of the old hooks anywhere in the native apps", () => {
     // Every target counts, shared code and extensions too; only build output is skipped.
-    const built = /[\\/](\.build|build|DerivedData)[\\/]/;
-    const found = walk(apple)
-      .filter((p) => /\.(swift|json|svg)$/.test(p) && !built.test(p.slice(apple.length)))
+    const found = walk(apple, /^(\.build|build|DerivedData)$/)
+      .filter((p) => /\.(swift|json|svg)$/.test(p))
       .flatMap((p) => oldHooksIn(p, read(p)));
     expect(found).toEqual([]);
   });

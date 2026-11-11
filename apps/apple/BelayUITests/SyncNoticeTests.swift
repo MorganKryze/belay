@@ -10,7 +10,7 @@ final class SyncNoticeTests: XCTestCase {
     private func launch(_ fixture: String) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = ["-AppleLanguages", "(fr)", "-AppleLocale", "fr_FR", "-BelayFixture", fixture]
-        app.launch()
+        app.launchFixture()
         return app
     }
 
@@ -26,12 +26,12 @@ final class SyncNoticeTests: XCTestCase {
         let resume = app.buttons["Reprendre"]
         XCTAssertTrue(resume.waitForExistence(timeout: 10), "the session is open")
         resume.tap()
-        XCTAssertTrue(app.buttons["tick"].waitForExistence(timeout: 5), "the cover shows the next set")
+        XCTAssertTrue(app.buttons["log-set"].waitForExistence(timeout: 5), "the cover shows the next set")
     }
 
-    /// Ticks the next set with the RIR shown under it, in one tap.
+    /// Logs the next set with ✓, as prefilled, in one tap.
     private func tick(_ app: XCUIApplication) {
-        app.buttons["tick"].tap()
+        app.buttons["log-set"].tap()
     }
 
     /// Offline is said once, on Accueil only, through a return to the foreground and a tick that
@@ -64,18 +64,19 @@ final class SyncNoticeTests: XCTestCase {
     func testALoadTheRulesRefuseIsNotSaved() {
         let app = launch("history")
         openCover(app)
-        let kg = app.textFields["load-kg"]
-        kg.tap()
-        kg.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 6) + "62,3")
+        element(app, "load").tap()
+        app.buttons["Autre charge…"].tap()
+        let keypad = app.alerts.textFields.firstMatch
+        XCTAssertTrue(keypad.waitForExistence(timeout: 2), "a keypad opens")
+        keypad.typeText("62,3")
+        app.alerts.buttons["OK"].tap()
         tick(app)
         let alert = app.alerts.firstMatch
         XCTAssertTrue(alert.waitForExistence(timeout: 3), "the refusal is said")
-        XCTAssertTrue(
-            alert.staticTexts.containing(NSPredicate(format: "label BEGINSWITH %@", "La série n’a pas été notée"))
-                .firstMatch.exists, "as not saved")
+        XCTAssertTrue(alert.staticTexts["Ce n’est pas noté. Réessaie."].exists, "as not saved")
         XCTAssertEqual(queuedSets(app), "0", "nothing is queued")
         alert.buttons.firstMatch.tap()
-        XCTAssertFalse(element(app, "set-0-3").label.contains("faite"), "the set is not done")
+        XCTAssertFalse(element(app, "done-0-0").exists, "the set is not done")
     }
 
     /// A session the instance refused: the line says so and offers to sign in again.
