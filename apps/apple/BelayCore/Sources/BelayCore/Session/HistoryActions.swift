@@ -65,6 +65,15 @@ public struct HistoryActions: Sendable {
       let values = SetValues(
         weightKg: weightKg, reps: timed ? nil : count, seconds: timed ? .value(count) : .null,
         rir: set.warmup || timed ? nil : rir)
+      // A sheet saved unchanged, on a device that has not pulled yet: a change stamped now
+      // would overwrite a newer correction from another device.
+      if values
+        == SetValues(
+          weightKg: set.weightKg, reps: set.reps,
+          seconds: set.seconds.map { .value($0) } ?? .null, rir: set.rir)
+      {
+        return
+      }
       try AccountStore.write(
         db,
         [

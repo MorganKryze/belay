@@ -176,6 +176,18 @@ import Testing
     #expect(untouched.weightKg == 60 && untouched.reps == 8 && untouched.rir == 2)
   }
 
+  /// A sheet saved unchanged, on a phone that has not pulled another device's correction yet,
+  /// writes nothing: a change stamped now would undo that correction on the server.
+  @Test func correctWithTheStoredValuesWritesNothing() throws {
+    let stored = try #require(try store.history().sets.first { $0.id == first })
+
+    try actions.correct(
+      setId: first, weightKg: stored.weightKg, count: try #require(stored.reps), rir: stored.rir)
+
+    #expect(try queued().isEmpty)
+    #expect(try store.history().sets.first { $0.id == first } == stored)
+  }
+
   @Test func removePastSetLeavesOthers() throws {
     try actions.remove(setId: first)
 
