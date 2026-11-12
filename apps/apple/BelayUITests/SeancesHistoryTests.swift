@@ -59,11 +59,11 @@ final class SeancesHistoryTests: XCTestCase {
     }
 
     private func type(_ value: String, into field: XCUIElement) {
-        // At the right edge, after the figures: the deletes then clear them.
-        field.coordinate(withNormalizedOffset: CGVector(dx: 0.97, dy: 0.5)).tap()
-        if let current = field.value as? String, !current.isEmpty {
-            field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: current.count + 2))
-        }
+        // A tap left the cursor before the figure, where the deletes clear nothing (« 98 » for 9,
+        // twice in a row): once the field has the focus, a double tap selects the figure, and the typing
+        // replaces it.
+        field.tap()
+        field.doubleTap()
         field.typeText(value)
     }
 
