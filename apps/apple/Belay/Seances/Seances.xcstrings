@@ -97,10 +97,10 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%#@sessions@ et %#@rest@ par semaine."
+            "value" : "%#@seances@ et %#@rest@ par semaine."
           },
           "substitutions" : {
-            "sessions" : {
+            "seances" : {
               "argNum" : 1,
               "formatSpecifier" : "lld",
               "variations" : {
