@@ -77,8 +77,13 @@ public func summary(_ workout: WorkoutRow, sets: [SetRow], history: History) -> 
     } else { 0 }
   return SessionTotals(
     durationMs: duration, workSets: work.count, warmupSets: own.count - work.count,
-    volumeKg: work.reduce(0) { sum, s in sum + (s.reps.map { s.weightKg * Double($0) } ?? 0) },
+    volumeKg: volumeOf(work),
     records: records)
+}
+
+/// Σ kg × reps of work sets counted in reps; a timed set adds nothing.
+func volumeOf(_ work: [SetRow]) -> Double {
+  work.reduce(0) { sum, s in sum + (s.reps.map { s.weightKg * Double($0) } ?? 0) }
 }
 
 /// How many work sets a session holds: kept, warm-ups left out.
