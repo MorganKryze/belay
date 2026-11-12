@@ -212,13 +212,14 @@ enum Days {
     #expect(next == nil)
   }
 
-  /// The effort shows only when this phone holds a floor for that session.
+  /// The effort shows only when this phone holds a floor for that session, never another
+  /// session's, even one stored before it.
   @Test(arguments: [(Int?.some(3), Int?.some(3)), (nil, nil)])
   func effortOnlyWhenHeld(floor: Int?, shown: Int?) {
     let done = Days.workout("w1", "A", Days.a, start: Days.at("2026-11-12T08:00"))
     let held = [
-      SessionEffort(workoutId: "w1", floor: floor, settled: true, relatedAt: nil),
       SessionEffort(workoutId: "other", floor: 5, settled: true, relatedAt: nil),
+      SessionEffort(workoutId: "w1", floor: floor, settled: true, relatedAt: nil),
     ]
     for efforts in [held, []] {
       guard
