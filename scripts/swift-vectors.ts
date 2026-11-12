@@ -1410,6 +1410,10 @@ function readVectors() {
     "A twice a week, D with no day",
     fx.stored(4, fx.fixed([fx.S(0), null, fx.S(1), fx.S(0), null, fx.S(2), null])),
   );
+  const undated = named(
+    "Monday A, three sessions with no day",
+    fx.stored(4, fx.fixed([fx.S(0), null, null, null, null, null, null])),
+  );
 
   const dayPlanCases = ZONES.flatMap((zone) =>
     inZone(zone, () => {
@@ -1567,7 +1571,11 @@ function readVectors() {
   // today or the day before, or another one done today.
   const weekOrderCases = ZONES.flatMap((zone) =>
     inZone(zone, () =>
-      [...starters, [twice, programs[twice]!] as [string, StoredPrograms]].flatMap(([program, p]) =>
+      [
+        ...starters,
+        [twice, programs[twice]!] as [string, StoredPrograms],
+        [undated, programs[undated]!] as [string, StoredPrograms],
+      ].flatMap(([program, p]) =>
         [...READ_DAYS, fx.THU].flatMap((today) => {
           const rotation = rotationOf(p);
           const week = fixedWeek(p, rotation);
@@ -1631,7 +1639,23 @@ function readVectors() {
         startedAt: "2026-10-26T09:00:00.000+09:00",
         endedAt: "2026-10-26T01:00:00.000Z",
       });
+      // Started at the same instant as the morning's, ended earlier. Its ids are fixed, so the
+      // cases after it keep theirs.
+      const twin = { ...morning, id: seedId(0x1fff), endedAt: fx.local(fx.NEXT_MON, 7, 40) };
       const sets = [
+        {
+          id: seedId(0x2fff),
+          workoutId: twin.id,
+          slotIndex: 0,
+          position: workPosition(1),
+          exerciseId: BENCH,
+          warmup: false,
+          weightKg: 70,
+          reps: 5,
+          rir: 1,
+          doneAt: twin.startedAt,
+          removed: false,
+        },
         done(night, 1, 60, 8),
         done(night, 2, 60, 7),
         warm(night, 0, 40, 5),
@@ -1646,6 +1670,8 @@ function readVectors() {
         ["two on Monday, the other order", [evening, morning]],
         ["open and removed aside", [morning, open, gone]],
         ["a start written with an offset", [offset, morning]],
+        ["two started at one instant", [morning, twin]],
+        ["two started at one instant, the other order", [twin, morning]],
       ];
       return histories.flatMap(([name, workouts]) =>
         [fx.SUN, fx.NEXT_MON, "2026-10-27"].map((day) => {
@@ -1701,6 +1727,19 @@ function readVectors() {
       endedAt: `${day}T18:00:00.000Z`,
       ...patch,
     });
+  // Started at one instant, the second ended earlier. Their ids are fixed, so the cases after
+  // them keep theirs.
+  const sameStart = [0x1ffd, 0x1ffe].map((n, i) => ({
+    id: seedId(n),
+    sessionCode: "A",
+    sessionId: fx.S(0),
+    plan: [],
+    startedAt: `${fx.MON}T17:00:00.000Z`,
+    endedAt: `${fx.MON}T${i ? "17:30" : "18:00"}:00.000Z`,
+    note: null,
+    exerciseNotes: {},
+    removed: false,
+  }));
   const lastHistories: [string, Workout[]][] = [
     ["nothing done", []],
     ["by its id", [ended("A", fx.S(0), fx.MON), ended("A", fx.S(0), fx.WED)]],
@@ -1716,6 +1755,8 @@ function readVectors() {
     ],
     ["the latest last in the list", [ended("C", fx.S(2), fx.THU), ended("C", fx.S(2), fx.SAT)]],
     ["the latest first in the list", [ended("C", fx.S(2), fx.SAT), ended("C", fx.S(2), fx.THU)]],
+    ["two started at one instant", sameStart],
+    ["two started at one instant, the other order", [...sameStart].reverse()],
   ];
   const lastFinishedCases = lastHistories.flatMap(([name, workouts]) =>
     rot.map((t) => ({
