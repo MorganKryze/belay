@@ -17,6 +17,7 @@ struct ProgramChoiceSheet: View {
     var body: some View {
         NavigationStack {
             List {
+                SheetTitle(title: Text("Programme actif", tableName: "Accueil"))
                 Section {
                     ForEach(programs) { program in
                         row(program)
@@ -31,8 +32,8 @@ struct ProgramChoiceSheet: View {
                 .listRowBackground(Color.surface)
             }
             .belayList()
-            .navigationTitle(Text("Programme actif", tableName: "Accueil"))
-            .navigationBarTitleDisplayMode(.inline)
+            // Its title is the list's first row, as the session sheets have it: no bar above.
+            .sheetWithoutBar()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(role: .close) { dismiss() }

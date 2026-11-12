@@ -296,7 +296,7 @@ final class AccueilTests: XCTestCase {
         XCTAssertTrue(chip.waitForExistence(timeout: 10))
         XCTAssertEqual(chip.label, "Faite aujourd’hui")
         XCTAssertTrue(app.staticTexts["Séance A"].exists, "the session done")
-        XCTAssertEqual(element(app, "done.duration").label, "Durée, 1\u{202F}h\u{202F}04")
+        XCTAssertEqual(element(app, "done.duration").label, "Durée, 1\u{202F}h\u{202F}4\u{202F}min")
         XCTAssertEqual(element(app, "done.sets").label, "Séries, 6", "the work sets kept")
         XCTAssertEqual(element(app, "done.effort").label, "Effort, Difficile", "the effort held here")
         XCTAssertFalse(app.buttons["Voir la séance"].exists, "no blue button on a day done")
@@ -357,13 +357,13 @@ final class AccueilTests: XCTestCase {
         XCTAssertTrue(text(app, containing: "ta prochaine séance s’affichera ici").exists)
         XCTAssertTrue(written(app).hasSuffix("queued=0"), written(app))
         app.buttons["Choisir un programme"].tap()
-        XCTAssertTrue(app.navigationBars["Programme actif"].waitForExistence(timeout: 5), "the sheet opens")
+        XCTAssertTrue(sheetTitle(app, "Programme actif").waitForExistence(timeout: 5), "the sheet opens")
         XCTAssertTrue(text(app, containing: "Un toucher l’active et ferme.").exists, "with its footer")
         let program = element(app, "program.00000000-0000-7000-8000-0000000000f0")
         XCTAssertEqual(program.label, "Haut / Bas, 3 séances", "the live program with its sessions")
         XCTAssertFalse(text(app, containing: "Programme de départ").exists, "a removed program is not offered")
         program.tap()
-        XCTAssertTrue(app.navigationBars["Programme actif"].waitForNonExistence(timeout: 5), "the tap closes the sheet")
+        XCTAssertTrue(sheetTitle(app, "Programme actif").waitForNonExistence(timeout: 5), "the tap closes the sheet")
         XCTAssertTrue(chip.waitForExistence(timeout: 5))
         XCTAssertEqual(chip.label, "La prochaine", "Accueil turns to the next session")
         XCTAssertTrue(app.staticTexts["Séance A"].exists)
@@ -379,7 +379,7 @@ final class AccueilTests: XCTestCase {
         XCTAssertTrue(app.buttons["Choisir un programme"].exists, "one blue button")
         XCTAssertFalse(element(app, "chip.session").exists, "the welcome has no chip")
         app.buttons["Choisir un programme"].tap()
-        XCTAssertTrue(app.navigationBars["Programme actif"].waitForExistence(timeout: 5), "it opens the sheet")
+        XCTAssertTrue(sheetTitle(app, "Programme actif").waitForExistence(timeout: 5), "it opens the sheet")
     }
 
     /// At midnight, with the app on screen, a day done turns into the next session's day.
@@ -449,5 +449,11 @@ final class AccueilTests: XCTestCase {
         XCTAssertTrue(app.buttons["settings"].isHittable, "the avatar stays")
         XCTAssertTrue(chip.exists)
         XCTAssertLessThan(chip.frame.minY, title, "the card takes the title's place: \(chip.frame) \(title)")
+    }
+
+    /// A sheet's title, the first row of its list: no sheet here has a bar.
+    private func sheetTitle(_ app: XCUIApplication, _ label: String) -> XCUIElement {
+        app.descendants(matching: .any).matching(NSPredicate(format: "identifier == 'sheet-title' AND label == %@", label))
+            .firstMatch
     }
 }

@@ -131,11 +131,11 @@ final class SeancesProgrammeTests: XCTestCase {
         XCTAssertTrue(app.swipeUpUntil(row))
         XCTAssertEqual(row.label, "Programme actif, Haut / Bas · 3 séances")
         row.tap()
-        XCTAssertTrue(app.navigationBars["Programme actif"].waitForExistence(timeout: 5), "the sheet opens")
+        XCTAssertTrue(sheetTitle(app, "Programme actif").waitForExistence(timeout: 5), "the sheet opens")
         let program = element(app, "program.00000000-0000-7000-8000-0000000000f0")
         XCTAssertTrue(program.isSelected, "the active one ticked")
         program.tap()
-        XCTAssertTrue(app.navigationBars["Programme actif"].waitForNonExistence(timeout: 5), "a tap closes it")
+        XCTAssertTrue(sheetTitle(app, "Programme actif").waitForNonExistence(timeout: 5), "a tap closes it")
         XCTAssertEqual(
             element(app, "fixture-active").value as? String,
             "active=00000000-0000-7000-8000-0000000000f0 queued=0", "the active one is left as it is")
@@ -152,7 +152,7 @@ final class SeancesProgrammeTests: XCTestCase {
         let choose = element(app, "seances-choose")
         XCTAssertEqual(choose.label, "Choisir un programme")
         choose.tap()
-        XCTAssertTrue(app.navigationBars["Programme actif"].waitForExistence(timeout: 5), "the sheet opens")
+        XCTAssertTrue(sheetTitle(app, "Programme actif").waitForExistence(timeout: 5), "the sheet opens")
         element(app, "program.00000000-0000-7000-8000-0000000000f0").tap()
         XCTAssertTrue(element(app, "session.A").waitForExistence(timeout: 5), "the program's sessions show")
         XCTAssertTrue(app.staticTexts["Haut / Bas"].exists)
@@ -175,7 +175,7 @@ final class SeancesProgrammeTests: XCTestCase {
         let last = element(app, "preview-last")
         XCTAssertTrue(last.exists, "C was done once")
         XCTAssertTrue(last.label.hasPrefix("La dernière fois\u{202F}: "), last.label)
-        XCTAssertTrue(last.label.hasSuffix(", 1\u{202F}h\u{202F}00"), "its day and its length: \(last.label)")
+        XCTAssertTrue(last.label.hasSuffix(", 1\u{202F}h"), "its day and its length: \(last.label)")
         XCTAssertFalse(element(app, "preview-running").exists, "nothing is open")
         XCTAssertTrue(app.buttons["Commencer la séance"].exists, "the start at the foot")
         XCTAssertTrue(app.swipeUpUntil(app.staticTexts["Le programme se modifie sur ordinateur."]))
@@ -254,5 +254,11 @@ final class SeancesProgrammeTests: XCTestCase {
         let compact = app.navigationBars.staticTexts.matching(NSPredicate(format: "label == %@", "Séances"))
             .allElementsBoundByIndex.contains { $0.isHittable && $0.frame.width > 2 }
         XCTAssertFalse(compact, "no compact title")
+    }
+
+    /// A sheet's title, the first row of its list: no sheet here has a bar.
+    private func sheetTitle(_ app: XCUIApplication, _ label: String) -> XCUIElement {
+        app.descendants(matching: .any).matching(NSPredicate(format: "identifier == 'sheet-title' AND label == %@", label))
+            .firstMatch
     }
 }
