@@ -217,6 +217,82 @@ import Testing
     #expect(try queued() == before)
   }
 
+  /// A session ended at minute 50 with a warm-up and a timed set; the device still holds it
+  /// open when `held`, as right after its end before the summary is left.
+  private func warmupAndTimed(held: Bool = false) throws -> (session: String, warmup: String, timed: String) {
+    let session = Fixture.id(40)
+    _ = try store.startWorkout(Fixture.start(session, at: 40), now: Fixture.t0.addingTimeInterval(40 * 60))
+    let warmup = try store.recordSet(
+      SetInput(
+        id: Fixture.id(41), workoutId: session, slotIndex: 0, position: 0,
+        exerciseId: Fixture.slot.exerciseId, warmup: true,
+        values: SetValues(weightKg: 40, reps: 8, seconds: .null, rir: nil), doneAt: Fixture.time(41)),
+      at: Fixture.time(41), active: Fixture.active(session)
+    ).id
+    let timed = try store.recordSet(
+      SetInput(
+        id: Fixture.id(42), workoutId: session, slotIndex: 1, position: 3,
+        exerciseId: Fixture.slot.exerciseId, warmup: false,
+        values: SetValues(weightKg: 0, reps: nil, seconds: .value(30), rir: nil),
+        doneAt: Fixture.time(42)),
+      at: Fixture.time(42), active: Fixture.active(session)
+    ).id
+    try store.recordChanges(
+      [.workout(WorkoutChange(id: session, at: Fixture.time(50), edit: .ended(Fixture.time(50))))],
+      active: held ? .keep : .clear)
+    // Sent, so a test reads only its own changes; a pull would close the session held open.
+    if !held { try store.applyServer(sent: try store.outbox(limit: nil), response: Fixture.response()) }
+    return (session, warmup, timed)
+  }
+
+  /// A warm-up keeps no RIR; a timed set takes the count as its seconds and keeps no RIR.
+  @Test func correctPastWarmupAndTimedSet() throws {
+    let (_, warmup, timed) = try warmupAndTimed()
+
+    try actions.correct(setId: warmup, weightKg: 42.5, count: 6, rir: 2)
+    try actions.correct(setId: timed, weightKg: 10, count: 45, rir: 1)
+
+    let sets = try store.history().sets
+    let w = try #require(sets.first { $0.id == warmup })
+    #expect(w.weightKg == 42.5 && w.reps == 6 && w.rir == nil && w.seconds == nil)
+    let t = try #require(sets.first { $0.id == timed })
+    #expect(t.weightKg == 10 && t.seconds == 45 && t.reps == nil && t.rir == nil)
+    #expect(try queued().count == 2)
+  }
+
+  /// A timed set saved as it is queues nothing, whatever reserve the sheet still holds.
+  @Test func unchangedTimedSetWritesNothing() throws {
+    let (_, _, timed) = try warmupAndTimed()
+
+    try actions.correct(setId: timed, weightKg: 0, count: 30, rir: 2)
+
+    #expect(try queued().isEmpty)
+  }
+
+  /// Once its session is deleted, a set is no longer the history's to change.
+  @Test func aSetOfARemovedSessionIsRefused() throws {
+    try actions.removeSession(workoutId: done)
+    let before = try queued()
+
+    #expect(throws: HistoryError.noSuchSet) {
+      try actions.correct(setId: first, weightKg: 70, count: 5, rir: 1)
+    }
+    #expect(throws: HistoryError.noSuchSet) { try actions.remove(setId: second) }
+    #expect(try queued() == before)
+  }
+
+  /// A session ended but still the one this device holds open stays the session screen's: it
+  /// cannot be deleted, nor its sets changed, from the history.
+  @Test func theActiveWorkoutIsRefused() throws {
+    let (session, warmup, _) = try warmupAndTimed(held: true)
+    let before = try queued()
+
+    #expect(throws: HistoryError.sessionOpen) { try actions.removeSession(workoutId: session) }
+    #expect(throws: HistoryError.noSuchSet) { try actions.remove(setId: warmup) }
+    #expect(try queued() == before)
+    #expect(try store.history().workouts.first { $0.id == session }?.removed == false)
+  }
+
   // MARK: Offline
 
   @Test func offlineWritesSentOnce() async throws {
