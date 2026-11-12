@@ -38,8 +38,8 @@ enum Route: Hashable {
 @MainActor @Observable
 final class ShellModel {
     var tab: AppTab = .home
-    // One stored path per tab, as each tab's stack is its own: a stack bound through a
-    // dictionary of paths lost the large title on the screens Séances pushed.
+    // One stored path per tab: a push in one tab changes only that tab's path, and only its
+    // stack redraws.
     var homePath: [Route] = []
     var seancesPath: [Route] = []
     var corpsPath: [Route] = []
@@ -104,41 +104,14 @@ struct RootView: View {
 
     var body: some View {
         TabView(selection: $model.tab) {
-            Tab(value: AppTab.home) {
-                NavigationStack(path: $model.homePath) {
-                    AccueilView(
-                        training: training,
-                        notice: SyncNotice(
-                            status: account.syncStatus,
-                            reconnect: { Task { await account.reconnect() } },
-                            retry: account.refresh),
-                        displayName: account.displayName,
-                        openPreview: { openPreview($0, in: .home) },
-                        openCover: openCover
-                    ).navigationDestination(for: Route.self, destination: destination)
+            ForEach(AppTab.allCases, id: \.self) { tab in
+                Tab(value: tab) {
+                    NavigationStack(path: path(tab)) {
+                        root(tab).navigationDestination(for: Route.self, destination: destination)
+                    }
+                } label: {
+                    tabLabel(tab)
                 }
-            } label: {
-                tabLabel(.home)
-            }
-            Tab(value: AppTab.seances) {
-                NavigationStack(path: $model.seancesPath) {
-                    SeancesView(
-                        training: training, segment: $model.segment,
-                        openPreview: { openPreview($0, in: .seances) }
-                    ).navigationDestination(for: Route.self, destination: destination)
-                }
-            } label: {
-                tabLabel(.seances)
-            }
-            Tab(value: AppTab.corps) {
-                NavigationStack(path: $model.corpsPath) { WebForNow(tab: .corps).navigationDestination(for: Route.self, destination: destination) }
-            } label: {
-                tabLabel(.corps)
-            }
-            Tab(value: AppTab.outils) {
-                NavigationStack(path: $model.outilsPath) { WebForNow(tab: .outils).navigationDestination(for: Route.self, destination: destination) }
-            } label: {
-                tabLabel(.outils)
             }
         }
         .tabViewStyle(.sidebarAdaptable)
@@ -170,6 +143,31 @@ struct RootView: View {
                 model[path: tab].removeAll { if case .preview = $0 { true } else { false } }
             }
             if training.summary == nil { model.coverOpen = false }
+        }
+    }
+
+    /// A tab's own stack, bound to its stored path.
+    private func path(_ tab: AppTab) -> Binding<[Route]> {
+        Binding(get: { model[path: tab] }, set: { model[path: tab] = $0 })
+    }
+
+    /// The first screen of each tab.
+    @ViewBuilder private func root(_ tab: AppTab) -> some View {
+        switch tab {
+        case .home:
+            AccueilView(
+                training: training,
+                notice: SyncNotice(
+                    status: account.syncStatus,
+                    reconnect: { Task { await account.reconnect() } },
+                    retry: account.refresh),
+                displayName: account.displayName,
+                openPreview: { openPreview($0, in: .home) },
+                openCover: openCover)
+        case .seances:
+            SeancesView(training: training, segment: $model.segment, openPreview: { openPreview($0, in: .seances) })
+        case .corps, .outils:
+            WebForNow(tab: tab)
         }
     }
 
