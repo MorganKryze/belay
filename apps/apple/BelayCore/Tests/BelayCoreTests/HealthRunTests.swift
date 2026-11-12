@@ -301,6 +301,47 @@ private actor FakeHealth: HealthWriting {
     }
   }
 
+  /// Effort access withdrawn: the score cannot be deleted, so the workout's removal is recorded
+  /// anyway, and the next run tries neither again.
+  @Test func effortDeniedStillRecordsTheRemoval() async throws {
+    let store = try storeOn()
+    try finished(store, w)
+    try store.giveEffort(workoutId: w, floor: 3)
+    try store.settleEffort(workoutId: w)
+    let health = FakeHealth()
+    await run(store, health)
+    #expect(await health.related.count == 1)
+
+    try edit(store, w, at: 40, .removed(true))
+    await health.set(
+      access: HealthAccess(available: true, workouts: .allowed, effort: .denied),
+      deleting: [healthEffortSyncId(w): .denied])
+    await run(store, health)
+    await run(store, health)
+    #expect(await health.deleted == [sessionKey(w)])
+    guard case .removed = try store.healthWritten()[sessionKey(w)] else {
+      Issue.record("the record says removed")
+      return
+    }
+  }
+
+  /// An effort the store never marked related may still sit in Health (related, then the mark
+  /// failed): its score is deleted all the same.
+  @Test func anUnmarkedEffortIsDeletedToo() async throws {
+    let store = try storeOn()
+    try finished(store, w)
+    try store.giveEffort(workoutId: w, floor: 3)
+    try store.settleEffort(workoutId: w)
+    let health = FakeHealth()
+    await health.set(relating: .failed)
+    await run(store, health)
+    #expect(try store.effort(workoutId: w)?.relatedAt == nil)
+
+    try edit(store, w, at: 40, .removed(true))
+    await run(store, health)
+    #expect(await health.deleted == [sessionKey(w), healthEffortSyncId(w)])
+  }
+
   @Test func anOverlapIsSkippedAndLookedAtAgainOnlyAfterAChange() async throws {
     let store = try storeOn()
     try finished(store, w, end: 30)

@@ -123,9 +123,12 @@ private struct HealthRun {
         }
       case .workoutRemoved:
         outcome = await writer.delete(syncId: syncId)
-        // The effort score related to it goes too, or it would stay in Health with no workout.
-        // Health keeping it leaves the removal unrecorded, so the next run tries both again.
-        if outcome == .removed, try store.effort(workoutId: id)?.relatedAt != nil,
+        // The effort score goes too, or it would stay in Health with no workout: tried for any
+        // effort the phone holds, since one related whose mark failed sits there unmarked. Health
+        // keeping it leaves the removal unrecorded, so the next run tries both again; with effort
+        // access withdrawn no delete can succeed, so the removal is recorded rather than retried
+        // forever.
+        if outcome == .removed, access.effort == .allowed, try store.effort(workoutId: id) != nil,
           await writer.delete(syncId: healthEffortSyncId(id)) != .removed
         {
           continue
