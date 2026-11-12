@@ -38,7 +38,31 @@ enum Route: Hashable {
 @MainActor @Observable
 final class ShellModel {
     var tab: AppTab = .home
-    var paths: [AppTab: [Route]] = [:]
+    // One stored path per tab, as each tab's stack is its own: a stack bound through a
+    // dictionary of paths lost the large title on the screens Séances pushed.
+    var homePath: [Route] = []
+    var seancesPath: [Route] = []
+    var corpsPath: [Route] = []
+    var outilsPath: [Route] = []
+
+    subscript(path tab: AppTab) -> [Route] {
+        get {
+            switch tab {
+            case .home: homePath
+            case .seances: seancesPath
+            case .corps: corpsPath
+            case .outils: outilsPath
+            }
+        }
+        set {
+            switch tab {
+            case .home: homePath = newValue
+            case .seances: seancesPath = newValue
+            case .corps: corpsPath = newValue
+            case .outils: outilsPath = newValue
+            }
+        }
+    }
     /// Séances' segment, kept while the app runs.
     var segment = SeancesView.Segment.programme
     /// The session cover, and the element its zoom opens from.
@@ -79,11 +103,9 @@ struct RootView: View {
     }
 
     var body: some View {
-        // One stack per tab, each written out: a stack built in a loop over the tabs lost the
-        // large title on the screens Séances pushed.
         TabView(selection: $model.tab) {
             Tab(value: AppTab.home) {
-                stack(.home) {
+                NavigationStack(path: $model.homePath) {
                     AccueilView(
                         training: training,
                         notice: SyncNotice(
@@ -92,27 +114,29 @@ struct RootView: View {
                             retry: account.refresh),
                         displayName: account.displayName,
                         openPreview: { openPreview($0, in: .home) },
-                        openCover: openCover)
+                        openCover: openCover
+                    ).navigationDestination(for: Route.self, destination: destination)
                 }
             } label: {
                 tabLabel(.home)
             }
             Tab(value: AppTab.seances) {
-                stack(.seances) {
+                NavigationStack(path: $model.seancesPath) {
                     SeancesView(
                         training: training, segment: $model.segment,
-                        openPreview: { openPreview($0, in: .seances) })
+                        openPreview: { openPreview($0, in: .seances) }
+                    ).navigationDestination(for: Route.self, destination: destination)
                 }
             } label: {
                 tabLabel(.seances)
             }
             Tab(value: AppTab.corps) {
-                stack(.corps) { WebForNow(tab: .corps) }
+                NavigationStack(path: $model.corpsPath) { WebForNow(tab: .corps).navigationDestination(for: Route.self, destination: destination) }
             } label: {
                 tabLabel(.corps)
             }
             Tab(value: AppTab.outils) {
-                stack(.outils) { WebForNow(tab: .outils) }
+                NavigationStack(path: $model.outilsPath) { WebForNow(tab: .outils).navigationDestination(for: Route.self, destination: destination) }
             } label: {
                 tabLabel(.outils)
             }
@@ -143,45 +167,34 @@ struct RootView: View {
         .onChange(of: training.open == nil) { _, closed in
             guard closed else { return }
             for tab in AppTab.allCases {
-                model.paths[tab]?.removeAll { if case .preview = $0 { true } else { false } }
+                model[path: tab].removeAll { if case .preview = $0 { true } else { false } }
             }
             if training.summary == nil { model.coverOpen = false }
         }
     }
 
-    /// A tab's stack: its first screen, and every route it can push.
-    private func stack(_ tab: AppTab, @ViewBuilder root: () -> some View) -> some View {
-        NavigationStack(path: path(of: tab)) {
-            root().navigationDestination(for: Route.self) { route in
-                switch route {
-                case .settings: ReglagesView(account: account, store: store)
-                case .preview(let sessionId):
-                    SessionPreview(training: training, sessionId: sessionId, openCover: openCover)
-                case .past(let workoutId):
-                    PastSessionView(
-                        training: training,
-                        model: PastSessionModel(
-                            workoutId: workoutId, store: store, didWrite: account.didWrite,
-                            health: account.runHealth, now: Self.clock))
-                }
-            }
+    /// Every route a tab can push.
+    @ViewBuilder private func destination(_ route: Route) -> some View {
+        switch route {
+        case .settings: ReglagesView(account: account, store: store)
+        case .preview(let sessionId):
+            SessionPreview(training: training, sessionId: sessionId, openCover: openCover)
+        case .past(let workoutId):
+            PastSessionView(
+                training: training,
+                model: PastSessionModel(
+                    workoutId: workoutId, store: store, didWrite: account.didWrite,
+                    health: account.runHealth, now: Self.clock))
         }
     }
 
     private func openPreview(_ sessionId: String, in tab: AppTab) {
-        model.paths[tab, default: []].append(.preview(sessionId: sessionId))
+        model[path: tab].append(.preview(sessionId: sessionId))
     }
 
     private func openCover(_ source: String) {
         model.coverSource = source
         model.coverOpen = true
-    }
-
-    private func path(of tab: AppTab) -> Binding<[Route]> {
-        Binding(
-            get: { model.paths[tab] ?? [] },
-            set: { model.paths[tab] = $0 }
-        )
     }
 
     /// The tab bar stays in ink, so colour cannot say which tab is active: the filled symbol does,
