@@ -56,6 +56,8 @@ struct CurrentSet: Equatable {
 /// The session open on this phone, or on another device, as the card and the accessory show it.
 struct OpenSession: Equatable {
     let workoutId: String
+    /// The program session it was started from; nil for one started from none.
+    let sessionId: String?
     let code: String
     let name: String?
     let startedAt: Date
@@ -545,7 +547,8 @@ final class TrainingModel {
                     : nil
             }
             open = OpenSession(
-                workoutId: workout.id, code: workout.sessionCode, name: workout.sessionName.value,
+                workoutId: workout.id, sessionId: workout.sessionId.value, code: workout.sessionCode,
+                name: workout.sessionName.value,
                 startedAt: Instant.date(workout.startedAt) ?? at, setsPlanned: plannedWorkSets(workout.plan),
                 setsDone: sessionProgress(workout.plan, sets: own).done.count,
                 current: due.map { set in

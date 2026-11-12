@@ -34,7 +34,7 @@ struct SessionPreview: View {
         let size = Self.size(next)
         List {
             TitleLines(name: next.name, line: size)
-            if next.last != nil || running(other: next) != nil {
+            if next.last != nil || otherOpen != nil {
                 Section {
                     if let last = next.last {
                         Text(Self.last(last))
@@ -43,7 +43,7 @@ struct SessionPreview: View {
                             .monospacedDigit()
                             .accessibilityIdentifier("preview-last")
                     }
-                    if let open = running(other: next) {
+                    if let open = otherOpen {
                         Text(String(localized: "\(SessionText.short(open.code)) est en cours.", table: "Seances"))
                             .font(.subheadline)
                             .foregroundStyle(.muted)
@@ -104,9 +104,10 @@ struct SessionPreview: View {
 }
 
 extension SessionPreview {
-    /// Another session open while this one is seen; nil when none is, or when it is this one.
-    private func running(other session: NextSession) -> OpenSession? {
-        guard let open = training.open, open.code != session.code else { return nil }
+    /// Another session open while this one is seen; nil when none is, or when it is this one. Two
+    /// programs can each have a session A, so the program session tells them apart, not the letter.
+    private var otherOpen: OpenSession? {
+        guard let open = training.open, open.sessionId != sessionId else { return nil }
         return open
     }
 
