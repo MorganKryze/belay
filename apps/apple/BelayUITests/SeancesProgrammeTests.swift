@@ -31,14 +31,6 @@ final class SeancesProgrammeTests: XCTestCase {
         app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", part)).firstMatch
     }
 
-    /// The French name of a weekday `offset` days from today, capitalized as a label starts.
-    private func weekday(_ offset: Int) -> String {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "fr_FR")
-        formatter.dateFormat = "EEEE"
-        let day = Calendar.current.date(byAdding: .day, value: offset, to: .now) ?? .now
-        return formatter.string(from: day).capitalized
-    }
 
     /// Today's place in the week, Monday 0.
     private var today: Int { (Calendar.current.component(.weekday, from: .now) + 5) % 7 }
@@ -66,9 +58,9 @@ final class SeancesProgrammeTests: XCTestCase {
         let days = (0..<7).map { element(app, "week.\($0)") }
         XCTAssertTrue(days.allSatisfy(\.exists), "seven days")
         XCTAssertLessThan(days[0].frame.minX, days[6].frame.minX, "Monday first")
-        XCTAssertEqual(days[today].label, "\(weekday(0)), aujourd’hui, séance A", "today circled and named")
-        XCTAssertEqual(days[(today + 1) % 7].label, "\(weekday(1)), repos")
-        XCTAssertEqual(days[(today + 2) % 7].label, "\(weekday(2)), séance B")
+        XCTAssertEqual(days[today].label, "\(frenchWeekday(0).capitalized), aujourd’hui, séance A", "today circled and named")
+        XCTAssertEqual(days[(today + 1) % 7].label, "\(frenchWeekday(1).capitalized), repos")
+        XCTAssertEqual(days[(today + 2) % 7].label, "\(frenchWeekday(2).capitalized), séance B")
         XCTAssertTrue(app.staticTexts["3 séances et 4 jours de repos par semaine."].exists, "the week in words")
         let rhythm = element(app, "rhythm")
         XCTAssertTrue(app.swipeUpUntil(rhythm))
@@ -131,11 +123,11 @@ final class SeancesProgrammeTests: XCTestCase {
         XCTAssertTrue(app.swipeUpUntil(row))
         XCTAssertEqual(row.label, "Programme actif, Haut / Bas · 3 séances")
         row.tap()
-        XCTAssertTrue(sheetTitle(app, "Programme actif").waitForExistence(timeout: 5), "the sheet opens")
+        XCTAssertTrue(app.sheetTitle("Programme actif").waitForExistence(timeout: 5), "the sheet opens")
         let program = element(app, "program.00000000-0000-7000-8000-0000000000f0")
         XCTAssertTrue(program.isSelected, "the active one ticked")
         program.tap()
-        XCTAssertTrue(sheetTitle(app, "Programme actif").waitForNonExistence(timeout: 5), "a tap closes it")
+        XCTAssertTrue(app.sheetTitle("Programme actif").waitForNonExistence(timeout: 5), "a tap closes it")
         XCTAssertEqual(
             element(app, "fixture-active").value as? String,
             "active=00000000-0000-7000-8000-0000000000f0 queued=0", "the active one is left as it is")
@@ -152,7 +144,7 @@ final class SeancesProgrammeTests: XCTestCase {
         let choose = element(app, "seances-choose")
         XCTAssertEqual(choose.label, "Choisir un programme")
         choose.tap()
-        XCTAssertTrue(sheetTitle(app, "Programme actif").waitForExistence(timeout: 5), "the sheet opens")
+        XCTAssertTrue(app.sheetTitle("Programme actif").waitForExistence(timeout: 5), "the sheet opens")
         element(app, "program.00000000-0000-7000-8000-0000000000f0").tap()
         XCTAssertTrue(element(app, "session.A").waitForExistence(timeout: 5), "the program's sessions show")
         XCTAssertTrue(app.staticTexts["Haut / Bas"].exists)
@@ -259,9 +251,4 @@ final class SeancesProgrammeTests: XCTestCase {
         XCTAssertFalse(compact, "no compact title")
     }
 
-    /// A sheet's title, the first row of its list: no sheet here has a bar.
-    private func sheetTitle(_ app: XCUIApplication, _ label: String) -> XCUIElement {
-        app.descendants(matching: .any).matching(NSPredicate(format: "identifier == 'sheet-title' AND label == %@", label))
-            .firstMatch
-    }
 }

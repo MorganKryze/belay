@@ -147,9 +147,7 @@ enum HistoryText {
 
     /// « Lundi 5 octobre », where the person is.
     static func day(_ startedAt: String) -> String {
-        guard let date = Instant.date(startedAt) else { return "" }
-        let text = date.formatted(.dateTime.weekday(.wide).day().month(.wide))
-        return text.prefix(1).localizedUppercase + text.dropFirst()
+        Instant.date(startedAt).map { WeekdayText.day($0).capitalizedFirst } ?? ""
     }
 
     /// « 41 min · 6 140 kg ».

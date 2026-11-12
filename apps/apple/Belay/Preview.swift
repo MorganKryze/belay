@@ -122,7 +122,7 @@ extension SessionPreview {
 
     /// « La dernière fois : jeudi 1 octobre, 58 min ».
     private static func last(_ last: LastKept) -> String {
-        let day = last.startedAt.formatted(.dateTime.weekday(.wide).day().month(.wide))
+        let day = WeekdayText.day(last.startedAt)
         return String(
             localized: "La dernière fois\u{202F}: \(day), \(SessionText.duration(ms: last.durationMs))", table: "Seances")
     }

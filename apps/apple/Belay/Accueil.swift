@@ -34,7 +34,7 @@ struct AccueilView: View {
         .safeAreaInset(edge: .top, spacing: 0) { notice }
         .navigationTitle(title)
         .largeTitleOnly()
-        .belaySubtitle(Self.dayName(training.readAt))
+        .belaySubtitle(WeekdayText.day(training.readAt).capitalizedFirst)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 // In the toolbar's own style: with `.plain` a tap on the simulator never reached
@@ -131,7 +131,7 @@ struct AccueilView: View {
         case .today?: String(localized: "Aujourd’hui", table: "Accueil")
         case .tomorrow?: String(localized: "Demain", table: "Accueil")
         case .weekday(let day)?:
-            WeekdayText.name(day).prefix(1).localizedUppercase + WeekdayText.name(day).dropFirst()
+            WeekdayText.name(day).capitalizedFirst
         }
     }
 
@@ -147,21 +147,34 @@ struct AccueilView: View {
 
     private static let log = Logger(subsystem: "cloud.libresoftware.belay", category: "accueil")
 
-    /// « Mercredi 7 octobre », in the person's language.
-    private static func dayName(_ date: Date) -> String {
-        let text = date.formatted(.dateTime.weekday(.wide).day().month(.wide))
-        return text.prefix(1).localizedUppercase + text.dropFirst()
-    }
 
 }
 
-/// A schedule's weekday, Monday 0 to Sunday 6, in the person's language.
+/// Days as the screens write them, in the person's language; a schedule's weekday runs Monday 0
+/// to Sunday 6.
 enum WeekdayText {
     /// « mercredi », as it reads inside a sentence.
     static func name(_ weekday: Int) -> String {
-        // The calendar counts from Sunday.
-        Calendar.current.weekdaySymbols[(weekday + 1) % 7]
+        Calendar.current.weekdaySymbols[calendarIndex(weekday)]
     }
+
+    /// « M », the weekday's initial.
+    static func initial(_ weekday: Int) -> String {
+        Calendar.current.veryShortStandaloneWeekdaySymbols[calendarIndex(weekday)]
+    }
+
+    /// « mercredi 7 octobre », as it reads inside a sentence.
+    static func day(_ date: Date) -> String {
+        date.formatted(.dateTime.weekday(.wide).day().month(.wide))
+    }
+
+    /// The calendar counts from Sunday.
+    private static func calendarIndex(_ weekday: Int) -> Int { (weekday + 1) % 7 }
+}
+
+extension String {
+    /// « Mercredi 7 octobre »: the text as a label starts, the rest left as it is.
+    var capitalizedFirst: String { prefix(1).localizedUppercase + dropFirst() }
 }
 
 /// How a session is named and sized, the same on the card, the accessory and the cover.
