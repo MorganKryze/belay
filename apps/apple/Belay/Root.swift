@@ -28,8 +28,8 @@ enum AppTab: String, Hashable, CaseIterable {
 enum Route: Hashable {
     /// Réglages, from Accueil's avatar: for now only the way to sign out.
     case settings
-    /// The next session before it starts, from Accueil's card.
-    case preview
+    /// A session of the active program before it starts, from Accueil or Séances.
+    case preview(sessionId: String)
 }
 
 /// The tab in front and what each tab has pushed, kept across tab switches.
@@ -37,6 +37,8 @@ enum Route: Hashable {
 final class ShellModel {
     var tab: AppTab = .home
     var paths: [AppTab: [Route]] = [:]
+    /// Séances' segment, kept while the app runs.
+    var segment = SeancesView.Segment.programme
     /// The session cover, and the element its zoom opens from.
     var coverOpen = false
     var coverSource: String?
@@ -88,8 +90,12 @@ struct RootView: View {
                                         reconnect: { Task { await account.reconnect() } },
                                         retry: account.refresh),
                                     displayName: account.displayName,
-                                    openPreview: { model.paths[.home, default: []].append(.preview) },
+                                    openPreview: { openPreview($0, in: .home) },
                                     openCover: openCover)
+                            } else if tab == .seances {
+                                SeancesView(
+                                    training: training, segment: $model.segment,
+                                    openPreview: { openPreview($0, in: .seances) })
                             } else {
                                 WebForNow(tab: tab)
                             }
@@ -97,7 +103,8 @@ struct RootView: View {
                         .navigationDestination(for: Route.self) { route in
                             switch route {
                             case .settings: ReglagesView(account: account, store: store)
-                            case .preview: SessionPreview(training: training, openCover: openCover)
+                            case .preview(let sessionId):
+                                SessionPreview(training: training, sessionId: sessionId, openCover: openCover)
                             }
                         }
                     }
@@ -124,16 +131,22 @@ struct RootView: View {
         }
         // A session closed elsewhere (another device, a forgotten one) takes its cover with it; one
         // finished here keeps it for its summary. Either way its preview is done with: the cover
-        // closes onto Accueil, as on the web.
+        // closes onto the first screen of the tab it was started from.
         // Back in front, the day may have turned while the app was away.
         .onChange(of: scenePhase) { _, phase in
             if phase == .active { training.refresh() }
         }
         .onChange(of: training.open == nil) { _, closed in
             guard closed else { return }
-            model.paths[.home]?.removeAll { $0 == .preview }
+            for tab in AppTab.allCases {
+                model.paths[tab]?.removeAll { if case .preview = $0 { true } else { false } }
+            }
             if training.summary == nil { model.coverOpen = false }
         }
+    }
+
+    private func openPreview(_ sessionId: String, in tab: AppTab) {
+        model.paths[tab, default: []].append(.preview(sessionId: sessionId))
     }
 
     private func openCover(_ source: String) {

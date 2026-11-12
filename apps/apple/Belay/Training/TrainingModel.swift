@@ -2,16 +2,27 @@ import BelayCore
 import Foundation
 import os
 
-/// The session the schedule offers next, as Accueil's card shows it.
+/// A session of the active program as it would start today, as Accueil's card and its preview
+/// show it.
 struct NextSession: Equatable {
     let sessionId: String?
     let code: String
     let name: String?
     /// The slots of the day's plan, the no-climbing ones included when the week asks for them.
     let exercises: Int
+    /// The plan's work sets.
+    let sets: Int
     let minutes: Int
+    /// When it was last kept and how long it lasted; nil the first time.
+    let last: LastKept?
     /// The live slots of that plan, as the preview lists them.
     let plan: [PlannedExercise]
+}
+
+/// The last time a session was kept: the day it started and its length.
+struct LastKept: Equatable {
+    let startedAt: Date
+    let durationMs: Int
 }
 
 /// One exercise of the next session, before it starts.
@@ -152,11 +163,10 @@ struct ProgramChoice: Equatable, Identifiable {
     let sessions: Int
 }
 
-/// The session screens' view of the account's store: the next session, the open one, and the
-/// start. It follows the store, so a write from anywhere (a sync, another screen) shows here.
+/// The session screens' view of the account's store: the program's sessions, the open one, and
+/// the start. It follows the store, so a write from anywhere (a sync, another screen) shows here.
 @MainActor @Observable
 final class TrainingModel {
-    private(set) var next: NextSession?
     private(set) var open: OpenSession?
     /// What the cover shows of the open session now, read from the store by the core's rule.
     private(set) var session: SessionState?
@@ -168,6 +178,10 @@ final class TrainingModel {
     private(set) var programme: [ProgrammeExercise] = []
     /// What Accueil shows for the day, decided by the core's rule.
     private(set) var accueil: AccueilState?
+    /// What Séances' Programme segment shows, decided by the core's rule.
+    private(set) var programmeState: ProgrammeState?
+    /// Every session of the active program as it would start today, in the rotation's order.
+    private(set) var sessions: [NextSession] = []
     /// The moment the day was last read, so the screens name the day it was read for.
     private(set) var readAt: Date
     /// The live programs in the shared order, and the active one.
@@ -253,8 +267,27 @@ final class TrainingModel {
     /// Starts the next session, or takes up the one already open, here or elsewhere; its id.
     func start() throws -> String {
         let snapshot = try store.read()
+        guard let template = template(snapshot, at: now()) else { throw TrainingError.nothingToStart }
+        return try start(template, snapshot: snapshot)
+    }
+
+    /// Starts a session of the active program, in turn or not, with today's plan for it; or takes
+    /// up the one already open, here or elsewhere, so there is never a second. Its id.
+    func start(sessionId: String) throws -> String {
+        let snapshot = try store.read()
+        guard let template = rotationOf(snapshot.programs).first(where: { $0.sessionId == sessionId }) else {
+            throw TrainingError.nothingToStart
+        }
+        return try start(template, snapshot: snapshot)
+    }
+
+    /// A session of the active program as it would start today, or nil when it is not one.
+    func preview(_ sessionId: String) -> NextSession? {
+        sessions.first { $0.sessionId == sessionId }
+    }
+
+    private func start(_ template: LetteredTemplate, snapshot: Snapshot) throws -> String {
         let at = now()
-        guard let template = template(snapshot, at: at) else { throw TrainingError.nothingToStart }
         let plan = planFor(template, activities: snapshot.activities, date: toISODate(at, timeZone: timeZone))
         let time = Instant.string(at)
         // The store writes the session's name as it stands now, so the name here is a placeholder.
@@ -523,21 +556,35 @@ final class TrainingModel {
             open = nil
         }
         recompute()
-        next = template(snapshot, at: at).map { template in
-            let plan = planFor(template, activities: snapshot.activities, date: toISODate(at, timeZone: timeZone))
-            return NextSession(
-                sessionId: template.sessionId, code: template.code, name: template.name,
-                exercises: plan.count, minutes: estimatedMinutes(plan),
-                plan: liveSlots(plan).map { index in
-                    let slot = plan[index]
-                    let measure: Measure? = slot.measure == .seconds ? .seconds : nil
-                    return PlannedExercise(
-                        slotIndex: index, name: exerciseName(slot.exerciseId), sets: slot.sets,
-                        timed: measure != nil, repRange: slot.repRange,
-                        lastTime: BelayCore.lastTime(snapshot.history, exerciseId: slot.exerciseId, measure: measure)
-                            .map { LoadGroup(weightKg: $0.weightKg, counts: $0.counts) })
-                })
+        let programme = BelayCore.programmeState(
+            history: snapshot.history, programs: snapshot.programs, activities: snapshot.activities, now: at,
+            timeZone: timeZone)
+        if programmeState != programme { programmeState = programme }
+        let described = rotationOf(snapshot.programs).map { describe($0, snapshot: snapshot, at: at) }
+        if sessions != described { sessions = described }
+    }
+
+    /// A session as it would start at `at`: today's plan for it, each exercise's last time, and
+    /// when it was last kept.
+    private func describe(_ template: LetteredTemplate, snapshot: Snapshot, at: Date) -> NextSession {
+        let plan = planFor(template, activities: snapshot.activities, date: toISODate(at, timeZone: timeZone))
+        let last = lastFinished(snapshot.history.workouts, session: template).flatMap { workout -> LastKept? in
+            guard let started = Instant.date(workout.startedAt) else { return nil }
+            let ended = workout.endedAt.flatMap(Instant.date) ?? started
+            return LastKept(startedAt: started, durationMs: Int(ended.timeIntervalSince(started) * 1_000))
         }
+        return NextSession(
+            sessionId: template.sessionId, code: template.code, name: template.name,
+            exercises: plan.count, sets: plannedWorkSets(plan), minutes: estimatedMinutes(plan), last: last,
+            plan: liveSlots(plan).map { index in
+                let slot = plan[index]
+                let measure: Measure? = slot.measure == .seconds ? .seconds : nil
+                return PlannedExercise(
+                    slotIndex: index, name: exerciseName(slot.exerciseId), sets: slot.sets,
+                    timed: measure != nil, repRange: slot.repRange,
+                    lastTime: BelayCore.lastTime(snapshot.history, exerciseId: slot.exerciseId, measure: measure)
+                        .map { LoadGroup(weightKg: $0.weightKg, counts: $0.counts) })
+            })
     }
 
     /// The cover's state at this moment. The recap's marks are set as it shows and cleared once a

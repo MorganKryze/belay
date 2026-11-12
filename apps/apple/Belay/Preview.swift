@@ -1,10 +1,11 @@
 import os
 import SwiftUI
 
-/// The session Accueil offers next, seen before it starts: its exercises, each with its sets and
-/// last time's, and the start at the foot.
+/// A session of the active program seen before it starts: when it was last kept, its exercises,
+/// each with its sets and last time's, and the start at the foot.
 struct SessionPreview: View {
     let training: TrainingModel
+    let sessionId: String
     /// Opens the session cover, zooming from the element named.
     let openCover: (String) -> Void
     @State private var startFailed = false
@@ -14,10 +15,13 @@ struct SessionPreview: View {
 
     var body: some View {
         Group {
-            if let next = training.next {
-                content(next)
+            if let session = training.preview(sessionId) {
+                content(session)
             } else {
-                ContentUnavailableView("Aucune séance prévue. Choisis un programme sur le web.", systemImage: "dumbbell")
+                // Another program chosen, or this one edited elsewhere, while the preview was open.
+                ContentUnavailableView(
+                    String(localized: "Cette séance n’est plus dans ton programme.", table: "Seances"),
+                    systemImage: "dumbbell")
             }
         }
         .background { Wall() }
@@ -27,8 +31,26 @@ struct SessionPreview: View {
     }
 
     @ViewBuilder private func content(_ next: NextSession) -> some View {
-        let size = SessionText.size(exercises: next.exercises, minutes: next.minutes)
+        let size = Self.size(next)
         List {
+            if next.last != nil || running(other: next) != nil {
+                Section {
+                    if let last = next.last {
+                        Text(Self.last(last))
+                            .font(.subheadline)
+                            .foregroundStyle(.muted)
+                            .monospacedDigit()
+                            .accessibilityIdentifier("preview-last")
+                    }
+                    if let open = running(other: next) {
+                        Text(String(localized: "\(SessionText.short(open.code)) est en cours.", table: "Seances"))
+                            .font(.subheadline)
+                            .foregroundStyle(.muted)
+                            .accessibilityIdentifier("preview-running")
+                    }
+                }
+                .listRowBackground(Color.surface)
+            }
             Section {
                 ForEach(next.plan) { exercise in
                     VStack(alignment: .leading, spacing: 2) {
@@ -58,7 +80,7 @@ struct SessionPreview: View {
         .scrollEdgeEffectStyle(.hard, for: .bottom)
         .safeAreaBar(edge: .bottom) {
             FootBar {
-                // Started here and lowered, the session waits above the tab bar: the foot takes it up.
+                // A session already open, this one or another, is taken up: never a second one.
                 if training.open != nil {
                     PrimaryButton(title: "Reprendre la séance", place: .foot) { openCover(Morph.start) }
                         .zoomSource(Morph.start, in: space, radius: 30)
@@ -72,12 +94,36 @@ struct SessionPreview: View {
 
     private func start() {
         do {
-            _ = try training.start()
+            _ = try training.start(sessionId: sessionId)
             openCover(Morph.start)
         } catch {
             Self.log.error("session not started: \(String(describing: error), privacy: .public)")
             startFailed = true
         }
+    }
+}
+
+extension SessionPreview {
+    /// Another session open while this one is seen; nil when none is, or when it is this one.
+    private func running(other session: NextSession) -> OpenSession? {
+        guard let open = training.open, open.code != session.code else { return nil }
+        return open
+    }
+
+    /// « 6 exercices · 19 séries · environ 55 min ».
+    private static func size(_ session: NextSession) -> String {
+        [
+            String(localized: "\(session.exercises) exercices"),
+            String(localized: "\(session.sets) séries", table: "Seances"),
+            String(localized: "environ \(session.minutes)\u{202F}min"),
+        ].joined(separator: " · ")
+    }
+
+    /// « La dernière fois : jeudi 1 octobre, 58 min ».
+    private static func last(_ last: LastKept) -> String {
+        let day = last.startedAt.formatted(.dateTime.weekday(.wide).day().month(.wide))
+        return String(
+            localized: "La dernière fois\u{202F}: \(day), \(DoneTiles.duration(last.durationMs))", table: "Seances")
     }
 }
 

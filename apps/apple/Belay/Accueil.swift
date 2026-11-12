@@ -9,8 +9,8 @@ struct AccueilView: View {
     let notice: SyncNotice
     /// How the instance names the person; nil until it has said so.
     let displayName: String?
-    /// Pushes the next session's preview.
-    let openPreview: () -> Void
+    /// Pushes a session's preview.
+    let openPreview: (String) -> Void
     /// Opens the session cover, zooming from the element named.
     let openCover: (String) -> Void
     /// How far the list has scrolled, so the band behind the title leaves with it.
@@ -21,7 +21,7 @@ struct AccueilView: View {
         List {
             Section {
                 card
-                if let ahead { NextRow(when: when(ahead), session: ahead, action: openPreview) }
+                if let ahead { NextRow(when: when(ahead), session: ahead) { openPreview(ahead.sessionId) } }
             }
             .listRowBackground(Color.surface)
         }
@@ -112,8 +112,10 @@ struct AccueilView: View {
         DayCard(
             state: state, lead: SessionText.short(next.code), name: next.name,
             line: SessionText.size(exercises: next.exercises, minutes: next.minutes),
-            button: "Voir la séance", source: Morph.card, action: openPreview
-        )
+            button: "Voir la séance", source: Morph.card
+        ) {
+            openPreview(next.sessionId)
+        }
     }
 
     /// « Faite aujourd'hui », or the weekday a fixed day's session was done early on.

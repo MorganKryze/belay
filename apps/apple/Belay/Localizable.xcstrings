@@ -182,16 +182,6 @@
         }
       }
     },
-    "Aucune séance prévue. Choisis un programme sur le web.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No session planned. Pick a program on the web."
-          }
-        }
-      }
-    },
     "La séance n’a pas démarré. Réessaie.": {
       "localizations": {
         "en": {

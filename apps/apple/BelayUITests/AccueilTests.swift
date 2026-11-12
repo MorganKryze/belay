@@ -122,7 +122,7 @@ final class AccueilTests: XCTestCase {
         XCTAssertTrue(open.waitForExistence(timeout: 10))
         open.tap()
         XCTAssertTrue(fresh.navigationBars["Séance A"].waitForExistence(timeout: 5), "the preview is titled by the session")
-        XCTAssertTrue(text(fresh, containing: "6 exercices · environ 55\u{202F}min").exists, "with its size")
+        XCTAssertTrue(text(fresh, containing: "6 exercices · 19 séries · environ 55\u{202F}min").exists, "with its size")
         XCTAssertTrue(fresh.staticTexts["Barbell bench press"].exists, "and its exercises")
         XCTAssertTrue(text(fresh, containing: "4 × 6–8").exists, "each with its sets and reps")
         XCTAssertFalse(fresh.buttons["resume-accessory"].exists, "nothing has started yet")

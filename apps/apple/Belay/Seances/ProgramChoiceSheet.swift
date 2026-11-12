@@ -44,7 +44,7 @@ struct ProgramChoiceSheet: View {
 
     private func row(_ program: ProgramChoice) -> some View {
         let active = program.id == activeId
-        let name = Self.name(program)
+        let name = program.title
         let count = String(localized: "\(program.sessions) séances", table: "Accueil")
         return Button {
             // The one already active is left as it is: a new time would move where its rotation
@@ -78,10 +78,13 @@ struct ProgramChoiceSheet: View {
         .accessibilityIdentifier("program.\(program.id)")
     }
 
+}
+
+extension ProgramChoice {
     /// The program's name, « Programme de départ » for the starting one, or « Programme sans nom ».
-    private static func name(_ program: ProgramChoice) -> String {
-        if let name = program.name, !name.isEmpty { return name }
-        return program.starter
+    var title: String {
+        if let name, !name.isEmpty { return name }
+        return starter
             ? String(localized: "Programme de départ", table: "Accueil")
             : String(localized: "Programme sans nom", table: "Accueil")
     }
