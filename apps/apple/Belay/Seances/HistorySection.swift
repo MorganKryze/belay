@@ -55,12 +55,14 @@ struct HistorySection: View {
     private static func name(_ week: HistoryWeek) -> String {
         guard !week.isCurrent else { return String(localized: "Cette semaine", table: "Seances") }
         guard let start = HistoryText.date(week.start), let end = HistoryText.date(week.end) else { return week.start }
-        return (start..<end).formatted(.interval.day().month(.abbreviated))
+        // Written out rather than as an interval, whose spacing around the dash varies by system.
+        let day = Date.FormatStyle().day().month(.abbreviated)
+        return "\(start.formatted(day)) – \(end.formatted(day))"
     }
 
     /// « 3 séances · 2 h 40 ».
     private static func size(_ week: HistoryWeek) -> String {
-        "\(String(localized: "\(week.count) séances", table: "Seances")) · \(DoneTiles.duration(week.durationMs))"
+        "\(String(localized: "\(week.count) séances", table: "Seances")) · \(SessionText.duration(ms: week.durationMs))"
     }
 }
 
@@ -152,7 +154,7 @@ enum HistoryText {
 
     /// « 41 min · 6 140 kg ».
     static func figures(durationMs: Int, volumeKg: Double) -> String {
-        "\(DoneTiles.duration(durationMs)) · \(volume(volumeKg))"
+        "\(SessionText.duration(ms: durationMs)) · \(volume(volumeKg))"
     }
 
     /// « 6 140 kg », whole kilograms.

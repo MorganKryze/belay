@@ -120,7 +120,10 @@ enum Fixture {
         let seed = rotationOf(try store.programs())
         switch mode {
         case "doneToday":
-            let id = try kept(seed[0], startedAt: now.addingTimeInterval(-70 * 60), in: store)
+            // Kept today at any hour: just after midnight when 70 minutes ago was still yesterday.
+            let midnight = Calendar.current.startOfDay(for: now)
+            let startedAt = max(now.addingTimeInterval(-70 * 60), midnight.addingTimeInterval(60))
+            let id = try kept(seed[0], startedAt: startedAt, in: store)
             try store.giveEffort(workoutId: id, floor: 4)
         case "fixedWeek":
             try serve(program(fixed: [day(0): 0, day(2): 1, day(4): 2]), to: store, active: true)

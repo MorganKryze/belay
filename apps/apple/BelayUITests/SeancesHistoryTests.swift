@@ -59,7 +59,8 @@ final class SeancesHistoryTests: XCTestCase {
     }
 
     private func type(_ value: String, into field: XCUIElement) {
-        field.tap()
+        // At the right edge, after the figures: the deletes then clear them.
+        field.coordinate(withNormalizedOffset: CGVector(dx: 0.97, dy: 0.5)).tap()
         if let current = field.value as? String, !current.isEmpty {
             field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: current.count + 2))
         }
@@ -71,14 +72,14 @@ final class SeancesHistoryTests: XCTestCase {
     func testWeeksNewestFirst() {
         let app = history("weeks", now: Self.wednesday)
         XCTAssertTrue(app.staticTexts["Cette semaine"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["3 séances · 3\u{202F}h\u{202F}12"].exists, "three of 64 minutes")
+        XCTAssertTrue(app.staticTexts["3 séances · 3\u{202F}h\u{202F}12\u{202F}min"].exists, "three of 64 minutes")
         let first = rows(app).element(boundBy: 0)
         XCTAssertTrue(first.label.hasPrefix("Séance C, Mercredi 7 octobre"), first.label)
-        XCTAssertTrue(first.label.contains("1\u{202F}h\u{202F}04 · "), "its length and volume: \(first.label)")
+        XCTAssertTrue(first.label.contains("1\u{202F}h\u{202F}4\u{202F}min · "), "its length and volume: \(first.label)")
         XCTAssertTrue(rows(app).element(boundBy: 2).label.contains("Lundi 5 octobre"))
         let before = app.staticTexts["28 sept. – 4 oct."]
         XCTAssertTrue(app.swipeUpUntil(before), "the week before follows")
-        XCTAssertTrue(app.staticTexts["5 séances · 5\u{202F}h\u{202F}20"].exists)
+        XCTAssertTrue(app.staticTexts["5 séances · 5\u{202F}h\u{202F}20\u{202F}min"].exists)
         XCTAssertFalse(app.descendants(matching: .any)["month-calendar"].exists, "no month calendar")
     }
 
@@ -107,7 +108,7 @@ final class SeancesHistoryTests: XCTestCase {
         let app = history("weeks", now: Self.wednesday, largestText: true)
         let name = app.staticTexts["Cette semaine"]
         XCTAssertTrue(name.waitForExistence(timeout: 5))
-        let count = app.staticTexts["3 séances · 3\u{202F}h\u{202F}12"]
+        let count = app.staticTexts["3 séances · 3\u{202F}h\u{202F}12\u{202F}min"]
         XCTAssertGreaterThanOrEqual(count.frame.minY, name.frame.maxY - 1, "the count under the week")
         let row = rows(app).firstMatch
         XCTAssertTrue(app.swipeUpUntil(row))
@@ -119,7 +120,7 @@ final class SeancesHistoryTests: XCTestCase {
     /// The title, its day and hour, the tiles, the sets by exercise, the deletion at the foot.
     func testPastSessionTilesAndSets() {
         let app = past()
-        XCTAssertEqual(element(app, "past.duration").label, "Durée, 1\u{202F}h\u{202F}04")
+        XCTAssertEqual(element(app, "past.duration").label, "Durée, 1\u{202F}h\u{202F}4\u{202F}min")
         XCTAssertEqual(element(app, "past.sets").label, "Séries, 6")
         XCTAssertTrue(element(app, "past.volume").label.hasPrefix("Volume, 2\u{202F}51"), element(app, "past.volume").label)
         XCTAssertEqual(element(app, "past.effort").label, "Effort, Soutenu")
