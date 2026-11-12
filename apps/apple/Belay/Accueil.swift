@@ -363,10 +363,13 @@ struct DoneTiles: View {
         .accessibilityIdentifier("done.\(id)")
     }
 
-    /// « 48 min », « 1 h 4 min », as the summary writes it.
-    private static func duration(_ ms: Int) -> String {
-        Duration.seconds(ms / 1000).formatted(
-            .units(allowed: [.hours, .minutes], width: .abbreviated, zeroValueUnits: .hide))
+    /// « 48 min », « 1 h 04 »: the tile is narrow, so past the hour the minutes go bare, as a
+    /// clock writes them.
+    static func duration(_ ms: Int) -> String {
+        let minutes = max(ms, 0) / 60_000
+        guard minutes >= 60 else { return "\(minutes)\u{202F}min" }
+        let rest = minutes % 60
+        return "\(minutes / 60)\u{202F}h\u{202F}\(rest < 10 ? "0" : "")\(rest)"
     }
 }
 

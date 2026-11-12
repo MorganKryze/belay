@@ -296,7 +296,7 @@ final class AccueilTests: XCTestCase {
         XCTAssertTrue(chip.waitForExistence(timeout: 10))
         XCTAssertEqual(chip.label, "Faite aujourd’hui")
         XCTAssertTrue(app.staticTexts["Séance A"].exists, "the session done")
-        XCTAssertEqual(element(app, "done.duration").label, "Durée, 1\u{00A0}h 4\u{00A0}min")
+        XCTAssertEqual(element(app, "done.duration").label, "Durée, 1\u{202F}h\u{202F}04")
         XCTAssertEqual(element(app, "done.sets").label, "Séries, 6", "the work sets kept")
         XCTAssertEqual(element(app, "done.effort").label, "Effort, Difficile", "the effort held here")
         XCTAssertFalse(app.buttons["Voir la séance"].exists, "no blue button on a day done")
