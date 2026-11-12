@@ -47,6 +47,7 @@ struct RootView: View {
     @State private var box = TrainingBox()
     @Namespace private var space
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var scenePhase
     private let account: AccountModel
     private let store: AccountStore
 
@@ -60,9 +61,17 @@ struct RootView: View {
     private var training: TrainingModel {
         box.model {
             TrainingModel(
-                store: store, didWrite: account.didWrite, health: account.runHealth, now: Date.init,
+                store: store, didWrite: account.didWrite, health: account.runHealth, now: Self.clock,
                 timeZone: .current)
         }
+    }
+
+    /// The phone's clock; in a debug build, the UI tests' when the launch sets one.
+    private static var clock: @Sendable () -> Date {
+        #if DEBUG
+            if let clock = Fixture.clock { return clock }
+        #endif
+        return Date.init
     }
 
     var body: some View {
@@ -116,6 +125,10 @@ struct RootView: View {
         // A session closed elsewhere (another device, a forgotten one) takes its cover with it; one
         // finished here keeps it for its summary. Either way its preview is done with: the cover
         // closes onto Accueil, as on the web.
+        // Back in front, the day may have turned while the app was away.
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { training.refresh() }
+        }
         .onChange(of: training.open == nil) { _, closed in
             guard closed else { return }
             model.paths[.home]?.removeAll { $0 == .preview }

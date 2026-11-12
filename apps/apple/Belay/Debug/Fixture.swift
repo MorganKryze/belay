@@ -19,6 +19,14 @@ import Synchronization
 /// screen, its rest running; `workSet` with the warm-ups logged; `full` as `workSet` with the plan
 /// grown to the most slots it holds. `-BelayReduceMotion YES` forces Reduce Motion on the session's
 /// cover, `-BelayVoiceOver YES` makes it behave as under VoiceOver.
+///
+/// The day's modes, each on the clock `-BelayNow yyyy-MM-ddTHH:mm:ss` sets (local time) or the
+/// phone's: `doneToday` with session A kept today at effort 4; `fixedWeek` on a fixed week with
+/// session A due today, `restDay` with today a rest day and A tomorrow, `doneEarly` with today's
+/// session B kept yesterday; `noProgram` with the starting program removed, another one to choose
+/// and a session kept once, `firstLaunch` the same with none kept; `weeks` with 60 sessions over
+/// the last 12 weeks, one across a DST change where the zone has one; `pastSession` with session A
+/// kept yesterday, its warm-up, its sets and an effort.
 enum Fixture {
     nonisolated fileprivate static let origin = "https://belay.example"
     nonisolated fileprivate static let userId = "fixture"
@@ -48,6 +56,10 @@ enum Fixture {
                     try doneYesterday(like: id, in: store, daysAgo: Double(10 - round))
                     try model.stopEmpty()
                 }
+            }
+            if dayModes.contains(mode) {
+                let store = try AccountStore.open(userId: userId, origin: url, in: folder)
+                try prepareDay(mode, store: store)
             }
             if openModes.contains(mode) {
                 // Through the same start and actions a tap makes, so the store holds what the app writes.
@@ -79,6 +91,157 @@ enum Fixture {
         "running", "history", "finished", "warmups", "timed", "group", "lastSet", "twoLeft", "exerciseEnd", "paused",
         "pausedLong", "lockLogged", "workSet", "full",
     ]
+
+    private static let dayModes: Set = [
+        "doneToday", "fixedWeek", "restDay", "doneEarly", "noProgram", "firstLaunch", "weeks", "pastSession",
+    ]
+
+    /// The clock `-BelayNow` sets: that local time at launch, running on from there.
+    nonisolated static let clock: (@Sendable () -> Date)? = {
+        guard let text = UserDefaults.standard.string(forKey: "BelayNow") else { return nil }
+        let parser = DateFormatter()
+        parser.locale = Locale(identifier: "en_US_POSIX")
+        parser.timeZone = .current
+        parser.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
+        guard let start = parser.date(from: text) else { preconditionFailure("-BelayNow does not read: \(text)") }
+        let launch = Date.now
+        return { start.addingTimeInterval(Date.now.timeIntervalSince(launch)) }
+    }()
+
+    /// The fixture's now: the launch's clock, or the phone's.
+    nonisolated static var now: Date { clock?() ?? .now }
+
+    /// The store brought to a day's mode, with what the server would send and what the phone writes.
+    private static func prepareDay(_ mode: String, store: AccountStore) throws {
+        let now = Self.now
+        // Monday 0, as the week's days are stored.
+        let today = (Calendar.current.component(.weekday, from: now) + 5) % 7
+        let day = { (offset: Int) in (today + offset + 7) % 7 }
+        let seed = rotationOf(try store.programs())
+        switch mode {
+        case "doneToday":
+            let id = try kept(seed[0], startedAt: now.addingTimeInterval(-70 * 60), in: store)
+            try store.giveEffort(workoutId: id, floor: 4)
+        case "fixedWeek":
+            try serve(program(fixed: [day(0): 0, day(2): 1, day(4): 2]), to: store, active: true)
+        case "restDay":
+            try serve(program(fixed: [day(1): 0, day(3): 1, day(5): 2]), to: store, active: true)
+        case "doneEarly":
+            try serve(program(fixed: [day(-2): 0, day(0): 1, day(2): 2]), to: store, active: true)
+            let rotation = rotationOf(try store.programs())
+            _ = try kept(rotation[1], startedAt: now.addingTimeInterval(-86_400), in: store)
+        case "noProgram", "firstLaunch":
+            try serve(program(fixed: nil), to: store, active: false)
+            if mode == "noProgram" {
+                _ = try kept(seed[0], startedAt: now.addingTimeInterval(-3 * 86_400), in: store)
+            }
+        case "weeks":
+            var calendar = Calendar.current
+            calendar.timeZone = .current
+            let shift = TimeZone.current.nextDaylightSavingTimeTransition(after: now.addingTimeInterval(-84 * 86_400))
+            var round = 0
+            for back in stride(from: 83, through: 0, by: -1) where ((today - back) % 7 + 7) % 7 < 5 {
+                guard let date = calendar.date(byAdding: .day, value: -back, to: calendar.startOfDay(for: now)) else {
+                    continue
+                }
+                // An hour before the clocks change on that day, so the session runs across it.
+                let start =
+                    shift.map { calendar.isDate($0, inSameDayAs: date) } == true
+                    ? shift!.addingTimeInterval(-3_600) : date.addingTimeInterval(18 * 3_600)
+                guard start < now else { continue }
+                let id = try kept(seed[round % seed.count], startedAt: start, in: store)
+                if round % 3 == 0 { try store.giveEffort(workoutId: id, floor: round % 5 + 1) }
+                round += 1
+            }
+        case "pastSession":
+            let id = try kept(seed[0], startedAt: now.addingTimeInterval(-86_400), in: store, warmup: true)
+            try store.giveEffort(workoutId: id, floor: 3)
+        default:
+            break
+        }
+        try store.settleEndedEfforts(except: nil)
+    }
+
+    /// « Haut / Bas »: three sessions with the starting program's slots, rotating or on the
+    /// weekdays given (Monday 0, to the session's index). The starting program is removed, so
+    /// unless this one is made active nothing is planned.
+    private static func program(fixed: [Int: Int]?) throws -> [String: Any] {
+        let seed = try JSONSerialization.jsonObject(with: JSONEncoder().encode(Seed.programs)) as? [String: Any]
+        guard let seed, var starter = (seed["programs"] as? [[String: Any]])?.first,
+              let sessions = seed["sessions"] as? [[String: Any]], let slots = seed["slots"] as? [[String: Any]]
+        else { preconditionFailure("the starting program does not read") }
+        let programId = "00000000-0000-7000-8000-0000000000f0"
+        let sessionIds = sessions.indices.map { String(format: "00000000-0000-7000-8000-0000000000f%d", $0 + 1) }
+        let days: [Any] = (0..<7).map { day in fixed?[day].map { sessionIds[$0] as Any } ?? NSNull() }
+        starter["removed"] = true
+        starter["removedAt"] = "2026-01-01T00:00:00.000Z"
+        let mine: [String: Any] = [
+            "id": programId, "name": "Haut / Bas", "removed": false,
+            "schedule": ["mode": fixed == nil ? "rotation" : "fixed", "days": days],
+        ]
+        let ownSessions = sessions.enumerated().map { index, session in
+            session.merging(["id": sessionIds[index], "programId": programId]) { $1 }
+        }
+        let ownSlots = slots.enumerated().compactMap { index, slot -> [String: Any]? in
+            guard let place = sessions.firstIndex(where: { $0["id"] as? String == slot["sessionId"] as? String })
+            else { return nil }
+            return slot.merging([
+                "id": String(format: "00000000-0000-7000-8000-%012lx", 0x100 + index), "sessionId": sessionIds[place],
+            ]) { $1 }
+        }
+        return [
+            "cursor": "fixture", "workouts": [], "sets": [], "activities": [], "rejected": [], "hasMore": false,
+            "programs": [starter, mine], "programSessions": ownSessions, "programSlots": ownSlots,
+            "activeProgram": ["programId": programId, "at": "2026-01-01T00:00:00.000Z"],
+        ]
+    }
+
+    /// The answer applied as a sync's; `active` false leaves the starting program's pointer, on
+    /// the removed program.
+    private static func serve(_ answer: [String: Any], to store: AccountStore, active: Bool) throws {
+        var answer = answer
+        if !active { answer["activeProgram"] = nil }
+        let data = try JSONSerialization.data(withJSONObject: answer)
+        try store.applyServer(sent: [], response: JSONDecoder().decode(SyncResponse.self, from: data))
+    }
+
+    /// A session kept: started at `startedAt`, three work sets of its first exercise (a warm-up
+    /// first when asked) and three of its second, ended 64 minutes later; its id.
+    private static func kept(
+        _ session: LetteredTemplate, startedAt start: Date, in store: AccountStore, warmup: Bool = false
+    ) throws -> String {
+        let id = UUIDv7.make(at: start)
+        let at = { (minutes: Double) in Instant.string(start.addingTimeInterval(minutes * 60)) }
+        var sets: [Change] = []
+        let rows: [(slot: Int, position: Int, warmup: Bool, kg: Double, reps: Int)] =
+            (warmup ? [(0, 0, true, 40, 8)] : [])
+            + (0..<3).map { (0, Bounds.maxWarmups + $0, false, 62.5, 8 - $0) }
+            + (0..<3).map { (1, Bounds.maxWarmups + $0, false, 40, 10) }
+        for (index, row) in rows.enumerated() where session.slots.indices.contains(row.slot) {
+            let done = at(Double(index + 1) * 4)
+            sets.append(
+                .set(
+                    SetChange(
+                        id: UUIDv7.make(at: start.addingTimeInterval(Double(index + 1) * 240)), workoutId: id, at: done,
+                        edit: .create(
+                            .init(
+                                slotIndex: row.slot, position: row.position,
+                                exerciseId: session.slots[row.slot].exerciseId, warmup: row.warmup,
+                                values: SetValues(
+                                    weightKg: row.kg, reps: row.reps, seconds: .null, rir: row.warmup ? nil : 2),
+                                doneAt: done)))))
+        }
+        let started = Change.workout(
+            WorkoutChange(
+                id: id, at: at(0),
+                edit: .start(
+                    .init(
+                        sessionCode: session.code, sessionId: .value(session.sessionId), sessionName: .null,
+                        plan: session.slots, startedAt: at(0)))))
+        let ended = Change.workout(WorkoutChange(id: id, at: at(64), edit: .ended(at(64))))
+        try store.recordChanges([started] + sets + [ended], active: .keep)
+        return id
+    }
 
     /// Seconds the ruler waits before keeping its count as the draft, when a test stretches it.
     static var draftDelay: Double { UserDefaults.standard.double(forKey: "BelayDraftDelay") }
@@ -256,6 +419,34 @@ enum Fixture {
                         for try await value in lines { line = value }
                     } catch {
                         preconditionFailure("the fixture's summary is not followed: \(error)")
+                    }
+                }
+        }
+    }
+
+    /// The active program the store holds and how many active-program changes wait in the
+    /// queue, for a test to read: « active=<id> queued=1 ». Nothing a person sees or hears.
+    struct ActiveProbe: View {
+        let store: AccountStore
+        @State private var line = ""
+
+        var body: some View {
+            Color.clear
+                .frame(width: 1, height: 1)
+                .accessibilityElement()
+                .accessibilityIdentifier("fixture-active")
+                .accessibilityValue(line)
+                .task {
+                    let lines = store.observe { db in
+                        let queued = try AccountStore.outbox(db, limit: nil).filter { entry in
+                            if case .activeProgram = entry.change { true } else { false }
+                        }.count
+                        return "active=\(try AccountStore.programs(db).activeId ?? "none") queued=\(queued)"
+                    }
+                    do {
+                        for try await value in lines { line = value }
+                    } catch {
+                        preconditionFailure("the fixture's active program is not followed: \(error)")
                     }
                 }
         }
