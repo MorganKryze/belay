@@ -48,7 +48,7 @@ struct PastSessionView: View {
                 Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 14) {
                     GridRow {
                         tile(String(localized: "Durée", table: "Accueil"), id: "duration") {
-                            Text(DoneTiles.duration(session.durationMs))
+                            Text(SessionText.duration(ms: session.durationMs))
                         }
                         tile(String(localized: "Séries", table: "Accueil"), id: "sets") {
                             Text(session.workSets.formatted())

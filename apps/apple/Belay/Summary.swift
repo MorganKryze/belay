@@ -207,9 +207,7 @@ struct SummaryView: View {
         kg.formatted(.number.precision(.fractionLength(0)))
     }
 
-    /// « 48 min », « 1 h 5 min ».
     private static func duration(_ seconds: TimeInterval) -> String {
-        Duration.seconds(Int(seconds)).formatted(
-            .units(allowed: [.hours, .minutes], width: .abbreviated, zeroValueUnits: .hide))
+        SessionText.duration(ms: Int(seconds * 1000))
     }
 }

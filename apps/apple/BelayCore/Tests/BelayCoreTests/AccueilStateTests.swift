@@ -148,7 +148,8 @@ enum Days {
   @Test func restOnlyOnAFixedWeek() {
     #expect(
       state(programs: Days.fixed, now: thursday)
-        == .rest(next: NextLine(Days.session(Days.fixed, "C"), day: "2026-11-13")))
+        == .rest(next: NextLine(Days.session(Days.fixed, "C"), day: "2026-11-13", today: "2026-11-12")))
+    #expect(NextLine(Days.session(Days.fixed, "C"), day: "2026-11-13", today: "2026-11-12").mark == .tomorrow)
     guard case .next = state(programs: Days.rotation, now: thursday) else {
       Issue.record("no rest day in rotation")
       return
@@ -168,7 +169,7 @@ enum Days {
           DoneCard(
             workoutId: "w1", code: "A", name: "Name A", on: "2026-11-12", durationMs: 50 * 60_000,
             workSets: 1, effort: nil),
-          next: NextLine(Days.session(Days.rotation, "B"), day: nil)))
+          next: NextLine(Days.session(Days.rotation, "B"), day: nil, today: "2026-11-12")))
   }
 
   @Test func doneTodayOnAFixedDayNamesTheNextDay() {
@@ -181,7 +182,10 @@ enum Days {
       return
     }
     #expect(card.workoutId == "w1" && card.on == "2026-11-11")
-    #expect(next == NextLine(Days.session(Days.fixed, "C"), day: "2026-11-13"))
+    #expect(next == NextLine(Days.session(Days.fixed, "C"), day: "2026-11-13", today: "2026-11-11"))
+    #expect(card.mark == .today)
+    // Friday, two days on: its weekday, never « Demain ».
+    #expect(next?.mark == .weekday(4))
   }
 
   /// Today's session done early, on the rest day before, is today's session done: never due
@@ -196,6 +200,7 @@ enum Days {
       return
     }
     #expect(card.on == "2026-11-10")
+    #expect(card.mark == .weekday(1), "done on Tuesday")
     #expect(next?.day == "2026-11-13")
   }
 

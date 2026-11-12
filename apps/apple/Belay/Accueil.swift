@@ -93,10 +93,10 @@ struct AccueilView: View {
             }
         case .next(let next)?:
             nextCard(next, state: String(localized: "La prochaine"))
-        case .due(let next, _)?:
-            nextCard(next, state: String(localized: "Prévue ce \(Self.weekday(training.readAt))", table: "Accueil"))
+        case .due(let next, let weekday)?:
+            nextCard(next, state: String(localized: "Prévue ce \(WeekdayText.name(weekday))", table: "Accueil"))
         case .doneToday(let done, _)?:
-            DoneDayCard(done: done, state: doneState(done.on))
+            DoneDayCard(done: done, state: doneState(done.mark))
         case .rest?:
             RestDayCard()
         case .some(.none):
@@ -119,29 +119,20 @@ struct AccueilView: View {
     }
 
     /// « Faite aujourd'hui », or the weekday a fixed day's session was done early on.
-    private func doneState(_ on: String) -> String {
-        if on == today { return String(localized: "Faite aujourd’hui", table: "Accueil") }
-        return String(localized: "Faite \(Self.weekday(date(on)))", table: "Accueil")
+    private func doneState(_ mark: DayMark) -> String {
+        guard case .weekday(let day) = mark else { return String(localized: "Faite aujourd’hui", table: "Accueil") }
+        return String(localized: "Faite \(WeekdayText.name(day))", table: "Accueil")
     }
 
     /// « Demain », the weekday within the week, or « La prochaine » in rotation, as the web says.
     private func when(_ line: NextLine) -> String {
-        guard let day = line.day else { return String(localized: "La prochaine") }
-        let apart = Calendar.current.dateComponents([.day], from: date(today), to: date(day)).day ?? 0
-        if apart <= 0 { return String(localized: "Aujourd’hui", table: "Accueil") }
-        if apart == 1 { return String(localized: "Demain", table: "Accueil") }
-        let name = date(day).formatted(.dateTime.weekday(.wide))
-        return name.prefix(1).localizedUppercase + name.dropFirst()
-    }
-
-    private var today: String { toISODate(training.readAt, timeZone: .current) }
-
-    /// The local noon of a `YYYY-MM-DD` day: away from any DST change at midnight.
-    private func date(_ day: String) -> Date {
-        let parts = day.split(separator: "-").compactMap { Int($0) }
-        guard parts.count == 3 else { return training.readAt }
-        let components = DateComponents(year: parts[0], month: parts[1], day: parts[2], hour: 12)
-        return Calendar.current.date(from: components) ?? training.readAt
+        switch line.mark {
+        case nil: String(localized: "La prochaine")
+        case .today?: String(localized: "Aujourd’hui", table: "Accueil")
+        case .tomorrow?: String(localized: "Demain", table: "Accueil")
+        case .weekday(let day)?:
+            WeekdayText.name(day).prefix(1).localizedUppercase + WeekdayText.name(day).dropFirst()
+        }
     }
 
     private func choose(_ id: String) {
@@ -162,14 +153,28 @@ struct AccueilView: View {
         return text.prefix(1).localizedUppercase + text.dropFirst()
     }
 
+}
+
+/// A schedule's weekday, Monday 0 to Sunday 6, in the person's language.
+enum WeekdayText {
     /// « mercredi », as it reads inside a sentence.
-    private static func weekday(_ date: Date) -> String {
-        date.formatted(.dateTime.weekday(.wide))
+    static func name(_ weekday: Int) -> String {
+        // The calendar counts from Sunday.
+        Calendar.current.weekdaySymbols[(weekday + 1) % 7]
     }
 }
 
 /// How a session is named and sized, the same on the card, the accessory and the cover.
 enum SessionText {
+    /// « 48 min », « 1 h 5 min », « 1 h »: one way to say a length, on Accueil, the history and
+    /// the summary alike.
+    static func duration(ms: Int) -> String {
+        let minutes = max(ms, 0) / 60_000
+        guard minutes >= 60 else { return "\(minutes)\u{202F}min" }
+        let hours = "\(minutes / 60)\u{202F}h"
+        return minutes % 60 == 0 ? hours : "\(hours)\u{202F}\(minutes % 60)\u{202F}min"
+    }
+
     /// « Séance A ».
     static func short(_ code: String) -> String {
         String(localized: "Séance \(code)")
@@ -333,7 +338,7 @@ struct DoneTiles: View {
 
     @ViewBuilder private var tiles: some View {
         tile(String(localized: "Durée", table: "Accueil"), id: "duration") {
-            Text(Self.duration(durationMs))
+            Text(SessionText.duration(ms: durationMs))
         }
         tile(String(localized: "Séries", table: "Accueil"), id: "sets") {
             Text(sets.formatted())
@@ -365,14 +370,6 @@ struct DoneTiles: View {
         .accessibilityIdentifier("done.\(id)")
     }
 
-    /// « 48 min », « 1 h 04 »: the tile is narrow, so past the hour the minutes go bare, as a
-    /// clock writes them.
-    static func duration(_ ms: Int) -> String {
-        let minutes = max(ms, 0) / 60_000
-        guard minutes >= 60 else { return "\(minutes)\u{202F}min" }
-        let rest = minutes % 60
-        return "\(minutes / 60)\u{202F}h\u{202F}\(rest < 10 ? "0" : "")\(rest)"
-    }
 }
 
 /// The effort's five floors, filled up to the one given; the word always comes with it.

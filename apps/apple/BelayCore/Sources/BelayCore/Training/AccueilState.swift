@@ -30,11 +30,32 @@ public struct OpenCard: Sendable, Equatable {
 /// Today's session done: the session kept, the day it counts on (today, or an earlier day for a
 /// fixed day's session done early), its length, its work sets, and its effort when this phone
 /// holds one.
+/// A day as Accueil names it against today: « Aujourd'hui », « Demain », or its weekday.
+public enum DayMark: Sendable, Equatable {
+  case today
+  case tomorrow
+  /// Monday 0 to Sunday 6, as a schedule's days.
+  case weekday(Int)
+
+  /// A day not after today reads as today, as the web says; the day after, tomorrow.
+  init(_ day: String, today: String) {
+    if !precedes(today, day) {
+      self = .today
+    } else if day == Day.add(today, 1) {
+      self = .tomorrow
+    } else {
+      self = .weekday(Day.weekday(day))
+    }
+  }
+}
+
 public struct DoneCard: Sendable, Equatable {
   public var workoutId: String
   public var code: String
   public var name: String?
   public var on: String
+  /// Today, or the weekday an early session was done on.
+  public var mark: DayMark = .today
   public var durationMs: Int
   public var workSets: Int
   /// The floor, 1 to 5, given on this phone; nil when it holds none.
@@ -81,12 +102,15 @@ public struct NextLine: Sendable, Equatable {
   public var code: String
   public var name: String?
   public var day: String?
+  /// How its day reads against today; nil in rotation, with no day.
+  public var mark: DayMark?
 
-  public init(_ session: LetteredTemplate, day: String?) {
+  public init(_ session: LetteredTemplate, day: String?, today: String) {
     sessionId = session.sessionId
     code = session.code
     name = session.name
     self.day = day
+    mark = day.map { DayMark($0, today: today) }
   }
 }
 
@@ -127,17 +151,20 @@ public func accueilState(
   let rotation = rotationOf(programs)
   let plan = dayPlan(workouts, programs, rotation: rotation, today: today, timeZone: timeZone)
   func done(_ w: WorkoutRow, on: String, durationMs: Int, workSets: Int) -> DoneCard {
-    DoneCard(
+    var card = DoneCard(
       workoutId: w.id, code: w.sessionCode, name: w.sessionName.value, on: on,
       durationMs: durationMs, workSets: workSets, effort: effortOf(w.id, in: efforts))
+    // Done before today only when a fixed day's session was done early: named by its weekday.
+    card.mark = on == today ? .today : .weekday(Day.weekday(on))
+    return card
   }
   // As the web names the next session under a card: today's while it is due, else the next
   // session day's, or the next in rotation with no day.
   let ahead: NextLine? =
     switch plan {
-    case .rotation(let next): next.map { NextLine($0, day: nil) }
-    case .due(let session, _): NextLine(session, day: today)
-    case .done(_, _, _, let next), .rest(let next): NextLine(next.session, day: next.day)
+    case .rotation(let next): next.map { NextLine($0, day: nil, today: today) }
+    case .due(let session, _): NextLine(session, day: today, today: today)
+    case .done(_, _, _, let next), .rest(let next): NextLine(next.session, day: next.day, today: today)
     }
   if let finished = finishedOn(history, day: today, timeZone: timeZone) {
     return .doneToday(
@@ -150,7 +177,7 @@ public func accueilState(
   }
   switch plan {
   case .rest(let next):
-    return .rest(next: NextLine(next.session, day: next.day))
+    return .rest(next: NextLine(next.session, day: next.day, today: today))
   case .done(_, let workout, let on, _):
     return .doneToday(
       done(

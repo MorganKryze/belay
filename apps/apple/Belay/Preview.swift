@@ -123,7 +123,7 @@ extension SessionPreview {
     private static func last(_ last: LastKept) -> String {
         let day = last.startedAt.formatted(.dateTime.weekday(.wide).day().month(.wide))
         return String(
-            localized: "La dernière fois\u{202F}: \(day), \(DoneTiles.duration(last.durationMs))", table: "Seances")
+            localized: "La dernière fois\u{202F}: \(day), \(SessionText.duration(ms: last.durationMs))", table: "Seances")
     }
 }
 
