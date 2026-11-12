@@ -105,7 +105,8 @@ public func finishedOn(_ h: History, day: String, timeZone: TimeZone)
   // Ended, so endedAt is set; a time that does not read counts as no length.
   let duration =
     Instant.milliseconds(last.endedAt!).flatMap { ended in
-      Instant.milliseconds(last.startedAt).map { Int(ended - $0) }
+      // Clamped: Int is 32 bits on the Watch, and a session past 24 days would overflow it.
+      Instant.milliseconds(last.startedAt).map { Int(clamping: ended - $0) }
     } ?? 0
   return (last, duration, workSetsOf(h, workoutId: last.id))
 }
