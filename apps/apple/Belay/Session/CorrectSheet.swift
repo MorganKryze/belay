@@ -1,11 +1,25 @@
 import BelayCore
 import SwiftUI
+import os
+
+/// What the correction sheet writes through: the open session's model on the cover, a past
+/// session's in the history. Each call is one change, queued for the next sync.
+protocol SetCorrecting {
+    func correct(setId: String, weightKg: Double, count: Int, rir: Int?) throws
+    func remove(setId: String) throws
+}
 
 /// A done set, to correct or remove: the load, the count and the reserve, as Health enters a
 /// number. ✓ turns blue once a value changes and writes one change.
 struct CorrectSheet: View {
     let set: DoneSet
-    let actions: CoverActions
+    /// The exercise's name, under the set's.
+    let exercise: String
+    let correcting: any SetCorrecting
+    /// Under the removal's question: what becomes of the set once removed.
+    let removal: Text
+    /// Told when a write fails, so the screen under the sheet can say it.
+    let failed: () -> Void
     @Environment(\.dismiss) private var dismiss
     @Environment(\.dynamicTypeSize) private var type
     @Environment(\.accessibilityReduceMotion) private var systemReduce
@@ -34,7 +48,7 @@ struct CorrectSheet: View {
             List {
                 SheetTitle(
                     title: Text(verbatim: SetName.of(set)),
-                    subtitle: Text(verbatim: actions.training.exerciseName(set.exerciseId)))
+                    subtitle: Text(verbatim: exercise))
                 Section {
                     field(Text("kg", tableName: "Session"), $kg, keyboard: .decimalPad, id: "correct-kg")
                     field(
@@ -54,9 +68,9 @@ struct CorrectSheet: View {
                             .frame(minHeight: 44)
                     }
                     .accessibilityIdentifier("correct-remove")
-                    .removalQuestion(set, isPresented: $asking) {
+                    .removalQuestion(set, isPresented: $asking, message: removal) {
                         dismiss()
-                        actions.run { try $0.remove(setId: set.id) }
+                        run { try correcting.remove(setId: set.id) }
                     }
                 }
             }
@@ -137,8 +151,23 @@ struct CorrectSheet: View {
 
     private func save() {
         guard let typed else { return }
-        guard actions.run({ try $0.correct(setId: set.id, weightKg: typed.kg, count: typed.count, rir: rir) }) else { return }
+        guard run({ try correcting.correct(setId: set.id, weightKg: typed.kg, count: typed.count, rir: rir) })
+        else { return }
         dismiss()
+    }
+
+    private static let log = Logger(subsystem: "cloud.libresoftware.belay", category: "session")
+
+    @discardableResult
+    private func run(_ write: () throws -> Void) -> Bool {
+        do {
+            try write()
+            return true
+        } catch {
+            Self.log.error("set not corrected: \(AccountStore.logLabel(error), privacy: .public)")
+            failed()
+            return false
+        }
     }
 }
 
@@ -162,7 +191,11 @@ extension View {
     }
 
     /// The question before a set goes, in a bubble anchored to the control that asked it.
-    func removalQuestion(_ set: DoneSet, isPresented: Binding<Bool>, remove: @escaping () -> Void) -> some View {
+    func removalQuestion(
+        _ set: DoneSet, isPresented: Binding<Bool>,
+        message: Text = Text("Elle redevient la prochaine à noter.", tableName: "SessionTools"),
+        remove: @escaping () -> Void
+    ) -> some View {
         confirmationDialog(
             set.warmup
                 ? Text("Supprimer la montée \(set.place.position + 1)\u{202F}?", tableName: "SessionTools")
@@ -171,7 +204,7 @@ extension View {
         ) {
             Button(role: .destructive, action: remove) { Text("Supprimer", tableName: "SessionTools") }
         } message: {
-            Text("Elle redevient la prochaine à noter.", tableName: "SessionTools")
+            message
         }
     }
 }

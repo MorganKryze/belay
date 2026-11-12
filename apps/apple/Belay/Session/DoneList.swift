@@ -24,7 +24,11 @@ struct DoneList: View {
                 row(set)
             }
         }
-        .sheet(item: $correcting) { set in CorrectSheet(set: set, actions: actions) }
+        .sheet(item: $correcting) { set in
+            CorrectSheet(
+                set: set, exercise: actions.training.exerciseName(set.exerciseId), correcting: actions.training,
+                removal: Text("Elle redevient la prochaine à noter.", tableName: "SessionTools"), failed: actions.failed)
+        }
     }
 
     private func row(_ set: DoneSet) -> some View {

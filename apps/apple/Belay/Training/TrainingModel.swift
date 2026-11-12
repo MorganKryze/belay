@@ -180,6 +180,8 @@ final class TrainingModel {
     private(set) var accueil: AccueilState?
     /// What Séances' Programme segment shows, decided by the core's rule.
     private(set) var programmeState: ProgrammeState?
+    /// Séances' Historique: the sessions kept, by week, newest first.
+    private(set) var weeks: [HistoryWeek] = []
     /// Every session of the active program as it would start today, in the rotation's order.
     private(set) var sessions: [NextSession] = []
     /// The moment the day was last read, so the screens name the day it was read for.
@@ -560,6 +562,8 @@ final class TrainingModel {
             history: snapshot.history, programs: snapshot.programs, activities: snapshot.activities, now: at,
             timeZone: timeZone)
         if programmeState != programme { programmeState = programme }
+        let kept = historyWeeks(snapshot.history, efforts: snapshot.efforts, now: at, timeZone: timeZone)
+        if weeks != kept { weeks = kept }
         let described = rotationOf(snapshot.programs).map { describe($0, snapshot: snapshot, at: at) }
         if sessions != described { sessions = described }
     }
@@ -639,6 +643,17 @@ final class TrainingModel {
         if let shown = marks.recapShownAt { moments.append(shown + 2.6) }
         if let answered = marks.rirAnsweredAt { moments.append(answered + 0.9) }
         return moments.filter { $0 > at }.min()
+    }
+}
+
+/// The cover's correction sheet writes through the open session's actions.
+extension TrainingModel: SetCorrecting {
+    func correct(setId: String, weightKg: Double, count: Int, rir: Int?) throws {
+        try act { try $0.correct(setId: setId, weightKg: weightKg, count: count, rir: rir) }
+    }
+
+    func remove(setId: String) throws {
+        try act { try $0.remove(setId: setId) }
     }
 }
 
