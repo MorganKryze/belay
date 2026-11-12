@@ -92,14 +92,15 @@ public struct PastSet: Sendable, Equatable, Identifiable {
   public var id: String { setId }
 }
 
-/// An exercise of a past session, in its plan's place, with the sets done: warm-ups first.
+/// An exercise of a past session, in its plan's place, with the sets done: warm-ups first. A slot
+/// replaced during the session gives one per exercise done in it.
 public struct PastExercise: Sendable, Equatable, Identifiable {
   public var slotIndex: Int
   /// The exercise really done.
   public var exerciseId: String
   public var sets: [PastSet]
 
-  public var id: Int { slotIndex }
+  public var id: String { "\(slotIndex)-\(exerciseId)" }
 }
 
 public struct PastSession: Sendable, Equatable {
@@ -123,15 +124,20 @@ public func pastSession(_ h: History, workoutId: String, effort: SessionEffort?)
   // Its records are not shown here, so it is read against no earlier session.
   let figures = summary(w, sets: own, history: History(workouts: [], sets: []))
   let bySlot = Dictionary(grouping: own, by: \.slotIndex)
-  let exercises = bySlot.keys.sorted().map { slot in
+  let exercises = bySlot.keys.sorted().flatMap { slot in
     // Positions below the warm-up bound are warm-ups: in order, they come before the work sets.
     let sets = bySlot[slot]!.sorted { $0.position < $1.position }
-    let warmups = sets.filter(\.warmup)
-    let work = sets.filter { !$0.warmup }
-    let shown =
-      warmups.enumerated().map { i, s in past(s, number: i + 1) }
-      + work.map { past($0, number: $0.position - Bounds.maxWarmups + 1) }
-    return PastExercise(slotIndex: slot, exerciseId: sets[0].exerciseId, sets: shown)
+    // A slot replaced during the session keeps each exercise's sets apart, in the order first
+    // done, as the web shows them; each counts its own sets from 1.
+    var order: [String] = []
+    for s in sets where !order.contains(s.exerciseId) { order.append(s.exerciseId) }
+    return order.map { exerciseId in
+      let mine = sets.filter { $0.exerciseId == exerciseId }
+      let shown =
+        mine.filter(\.warmup).enumerated().map { i, s in past(s, number: i + 1) }
+        + mine.filter { !$0.warmup }.enumerated().map { i, s in past(s, number: i + 1) }
+      return PastExercise(slotIndex: slot, exerciseId: exerciseId, sets: shown)
+    }
   }
   return PastSession(
     workoutId: w.id, code: w.sessionCode, name: w.sessionName.value, startedAt: w.startedAt,

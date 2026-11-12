@@ -149,6 +149,34 @@ import Testing
     #expect(past.exercises[1].sets.map(\.setId) == ["b1"])
   }
 
+  /// A slot replaced during the session shows each exercise apart, in the order first done, each
+  /// with its own sets counted from 1: the replacement's sets never read as the first exercise's.
+  @Test func pastSessionReplacedSlotKeepsEachExercise() throws {
+    let w = Days.workout("w1", "A", Days.a, start: Days.at("2026-11-10T10:00"))
+    var press = Days.set("y1", "w1", position: 5, kg: 200, reps: 10)
+    press.exerciseId = "belay:leg-press"
+    var pressWarmup = Days.set("y0", "w1", position: 2, kg: 100, reps: 5)
+    pressWarmup.exerciseId = "belay:leg-press"
+    let sets = [
+      press, pressWarmup,
+      Days.set("x2", "w1", position: 4, kg: 100, reps: 5),
+      Days.set("x1", "w1", position: 3, kg: 100, reps: 5),
+      Days.set("m1", "w1", position: 0, kg: 40, reps: 5),
+      Days.set("b1", "w1", slot: 1, position: 3, kg: 40, reps: 10),
+    ]
+    let past = try #require(pastSession(History(workouts: [w], sets: sets), workoutId: "w1", effort: nil))
+    #expect(past.exercises.map(\.slotIndex) == [0, 0, 1])
+    #expect(
+      past.exercises.map(\.exerciseId)
+        == [Fixture.slot.exerciseId, "belay:leg-press", Days.bench.exerciseId])
+    #expect(Set(past.exercises.map(\.id)).count == 3)
+    #expect(past.exercises[0].sets.map(\.setId) == ["m1", "x1", "x2"])
+    #expect(past.exercises[0].sets.map(\.number) == [1, 1, 2])
+    #expect(past.exercises[1].sets.map(\.setId) == ["y0", "y1"])
+    #expect(past.exercises[1].sets.map(\.number) == [1, 1])
+    #expect(past.exercises[1].sets.map(\.weightKg) == [100, 200])
+  }
+
   /// A timed set reads in seconds; an exercise with no set left is not shown.
   @Test func pastSessionTimedAndEmptyExercises() throws {
     let w = Days.workout("w1", "A", Days.a, start: Days.at("2026-11-10T10:00"))
