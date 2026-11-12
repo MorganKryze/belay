@@ -34,7 +34,7 @@ final class PastSessionModel: SetCorrecting {
         let sessions = store.observe { db in
             pastSession(
                 try AccountStore.history(db), workoutId: workoutId,
-                effort: try AccountStore.efforts(db).first { $0.workoutId == workoutId })
+                efforts: try AccountStore.efforts(db))
         }
         do {
             for try await value in sessions where value != session { session = value }

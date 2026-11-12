@@ -51,6 +51,20 @@ import Testing
     #expect(weeks.map { $0.rows.map(\.workoutId) } == [["kept"]])
   }
 
+  /// Two sessions started at the same instant keep one order on every device: the greater id
+  /// first, whatever order the store gives them in.
+  @Test func sameInstantByGreaterId() {
+    let start = Days.at("2026-11-10T10:00")
+    let a = Days.workout("w-a", "A", Days.a, start: start)
+    let b = Days.workout("w-b", "B", Days.b, start: start)
+    for workouts in [[a, b], [b, a]] {
+      let weeks = historyWeeks(
+        History(workouts: workouts, sets: []), efforts: [], now: Days.at("2026-11-12T10:00"),
+        timeZone: Days.paris)
+      #expect(weeks.map { $0.rows.map(\.workoutId) } == [["w-b", "w-a"]])
+    }
+  }
+
   /// « Cette semaine » only for the week holding today; an earlier week alone is not current.
   @Test func onlyThisWeekIsCurrent() {
     let old = Days.workout("w1", "A", Days.a, start: Days.at("2026-11-03T10:00"))
@@ -136,7 +150,7 @@ import Testing
       Days.set("other", "w2", position: 3),
     ]
     let effort = SessionEffort(workoutId: "w1", floor: 2, settled: true, relatedAt: nil)
-    let past = try #require(pastSession(History(workouts: [w], sets: sets), workoutId: "w1", effort: effort))
+    let past = try #require(pastSession(History(workouts: [w], sets: sets), workoutId: "w1", efforts: [effort]))
     #expect(past.workoutId == "w1" && past.code == "B" && past.name == "Name B")
     #expect(past.startedAt == w.startedAt)
     #expect(past.durationMs == 50 * 60_000 && past.workSets == 3 && past.volumeKg == 1_400)
@@ -164,7 +178,7 @@ import Testing
       Days.set("m1", "w1", position: 0, kg: 40, reps: 5),
       Days.set("b1", "w1", slot: 1, position: 3, kg: 40, reps: 10),
     ]
-    let past = try #require(pastSession(History(workouts: [w], sets: sets), workoutId: "w1", effort: nil))
+    let past = try #require(pastSession(History(workouts: [w], sets: sets), workoutId: "w1", efforts: []))
     #expect(past.exercises.map(\.slotIndex) == [0, 0, 1])
     #expect(
       past.exercises.map(\.exerciseId)
@@ -181,10 +195,41 @@ import Testing
   @Test func pastSessionTimedAndEmptyExercises() throws {
     let w = Days.workout("w1", "A", Days.a, start: Days.at("2026-11-10T10:00"))
     let sets = [Days.set("t1", "w1", slot: 1, kg: 0, reps: nil, seconds: 30)]
-    let past = try #require(pastSession(History(workouts: [w], sets: sets), workoutId: "w1", effort: nil))
+    let past = try #require(pastSession(History(workouts: [w], sets: sets), workoutId: "w1", efforts: []))
     #expect(past.exercises.map(\.slotIndex) == [1])
     #expect(past.exercises[0].sets[0].seconds == 30 && past.exercises[0].sets[0].reps == nil)
     #expect(past.effort == nil)
+  }
+
+  /// A work set removed between two others leaves no gap: the ones shown count 1, 2.
+  @Test func pastSessionNumbersTheSetsShown() throws {
+    let w = Days.workout("w1", "A", Days.a, start: Days.at("2026-11-10T10:00"))
+    let sets = [
+      Days.set("m1", "w1", position: 0, kg: 40, reps: 5),
+      Days.set("m2", "w1", position: 1, kg: 40, reps: 5, removed: true),
+      Days.set("m3", "w1", position: 2, kg: 40, reps: 5),
+      Days.set("a1", "w1", position: 3, kg: 100, reps: 5, removed: true),
+      Days.set("a2", "w1", position: 4, kg: 100, reps: 5),
+      Days.set("a3", "w1", position: 5, kg: 100, reps: 5),
+    ]
+    let past = try #require(pastSession(History(workouts: [w], sets: sets), workoutId: "w1", efforts: []))
+    #expect(past.exercises[0].sets.map(\.setId) == ["m1", "m3", "a2", "a3"])
+    #expect(past.exercises[0].sets.map(\.number) == [1, 2, 1, 2])
+  }
+
+  /// The effort shown is the one the history's rows read: the phone's first floor for the
+  /// session, another session's never.
+  @Test func pastSessionEffortAsTheRowsReadIt() throws {
+    let w = Days.workout("w1", "A", Days.a, start: Days.at("2026-11-10T10:00"))
+    let h = History(workouts: [w], sets: [])
+    let efforts = [
+      SessionEffort(workoutId: "w2", floor: 5, settled: true, relatedAt: nil),
+      SessionEffort(workoutId: "w1", floor: 3, settled: true, relatedAt: nil),
+    ]
+    let past = try #require(pastSession(h, workoutId: "w1", efforts: efforts))
+    let row = historyWeeks(h, efforts: efforts, now: Days.at("2026-11-12T10:00"), timeZone: Days.paris)
+    #expect(past.effort == 3)
+    #expect(row.first?.rows.first?.effort == past.effort)
   }
 
   /// Only a session kept and ended opens: not one removed, still open or unknown.
@@ -192,8 +237,8 @@ import Testing
     let removed = Days.workout("w1", "A", Days.a, start: Days.at("2026-11-10T10:00"), removed: true)
     let open = Days.workout("w2", "A", Days.a, start: Days.at("2026-11-12T09:00"), minutes: nil)
     let h = History(workouts: [removed, open], sets: [])
-    #expect(pastSession(h, workoutId: "w1", effort: nil) == nil)
-    #expect(pastSession(h, workoutId: "w2", effort: nil) == nil)
-    #expect(pastSession(h, workoutId: "none", effort: nil) == nil)
+    #expect(pastSession(h, workoutId: "w1", efforts: []) == nil)
+    #expect(pastSession(h, workoutId: "w2", efforts: []) == nil)
+    #expect(pastSession(h, workoutId: "none", efforts: []) == nil)
   }
 }

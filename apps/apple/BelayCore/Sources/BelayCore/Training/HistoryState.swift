@@ -39,8 +39,6 @@ public func historyWeeks(
   _ h: History, efforts: [SessionEffort], now: Date, timeZone: TimeZone
 ) -> [HistoryWeek] {
   let sets = Dictionary(grouping: h.sets.filter { !$0.removed }, by: \.workoutId)
-  let floors = Dictionary(
-    efforts.compactMap { e in e.floor.map { (e.workoutId, $0) } }, uniquingKeysWith: { a, _ in a })
   // Kept and ended, with a start that reads (one that does not falls on no day); newest first by
   // instant, two at the same instant by the greater id, on every device.
   let past = h.workouts
@@ -56,7 +54,7 @@ public func historyWeeks(
       workoutId: w.id, code: w.sessionCode, name: w.sessionName.value,
       sessionId: recordedSession(w), day: day, startedAt: w.startedAt,
       durationMs: w.endedAt.flatMap(Instant.milliseconds).map { Int(clamping: $0 - started) } ?? 0,
-      volumeKg: volumeOf((sets[w.id] ?? []).filter { !$0.warmup }), effort: floors[w.id])
+      volumeKg: volumeOf((sets[w.id] ?? []).filter { !$0.warmup }), effort: effortOf(w.id, in: efforts))
     // Newest first, so a day before the last week's Monday opens the next week down.
     if let last = weeks.last, !precedes(day, last.start) {
       weeks[weeks.count - 1].rows.append(row)
@@ -117,7 +115,7 @@ public struct PastSession: Sendable, Equatable {
 }
 
 /// A session kept and ended, opened from the history; nil for any other.
-public func pastSession(_ h: History, workoutId: String, effort: SessionEffort?) -> PastSession? {
+public func pastSession(_ h: History, workoutId: String, efforts: [SessionEffort]) -> PastSession? {
   guard let w = h.workouts.first(where: { $0.id == workoutId }), w.endedAt != nil, !w.removed
   else { return nil }
   let own = h.sets.filter { $0.workoutId == w.id && !$0.removed }
@@ -142,7 +140,7 @@ public func pastSession(_ h: History, workoutId: String, effort: SessionEffort?)
   return PastSession(
     workoutId: w.id, code: w.sessionCode, name: w.sessionName.value, startedAt: w.startedAt,
     durationMs: lengthMs(w), workSets: figures.workSets, volumeKg: figures.volumeKg,
-    effort: effort?.workoutId == w.id ? effort?.floor : nil, exercises: exercises)
+    effort: effortOf(w.id, in: efforts), exercises: exercises)
 }
 
 private func past(_ s: SetRow, number: Int) -> PastSet {
