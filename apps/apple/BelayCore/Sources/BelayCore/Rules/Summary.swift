@@ -80,3 +80,38 @@ public func summary(_ workout: WorkoutRow, sets: [SetRow], history: History) -> 
     volumeKg: work.reduce(0) { sum, s in sum + (s.reps.map { s.weightKg * Double($0) } ?? 0) },
     records: records)
 }
+
+/// How many work sets a session holds: kept, warm-ups left out.
+public func workSetsOf(_ h: History, workoutId: String) -> Int {
+  liveSets(h).count(where: { $0.workoutId == workoutId && !$0.warmup })
+}
+
+/// The latest start of those kept and ended, by its text as the web compares it.
+private func latest(_ workouts: [WorkoutRow], where keep: (WorkoutRow) -> Bool) -> WorkoutRow? {
+  workouts.reduce(nil) { last, w in
+    guard w.endedAt != nil, !w.removed, keep(w) else { return last }
+    return last.map { precedes($0.startedAt, w.startedAt) ? w : $0 } ?? w
+  }
+}
+
+/// The last session kept and ended whose day (the day it started, in `timeZone`) is `day`, with
+/// its length and its work sets: Accueil's "done today". Nil when there is none.
+public func finishedOn(_ h: History, day: String, timeZone: TimeZone)
+  -> (workout: WorkoutRow, durationMs: Int, workSets: Int)?
+{
+  guard let last = latest(h.workouts, where: { dayOf($0, timeZone: timeZone) == day }) else {
+    return nil
+  }
+  // Ended, so endedAt is set; a time that does not read counts as no length.
+  let duration =
+    Instant.milliseconds(last.endedAt!).flatMap { ended in
+      Instant.milliseconds(last.startedAt).map { Int(ended - $0) }
+    } ?? 0
+  return (last, duration, workSetsOf(h, workoutId: last.id))
+}
+
+/// The last session done as this rotation session (`startedAs`) that ended and was kept, if any:
+/// the preview's "last time" and the program card's day.
+public func lastFinished(_ workouts: [WorkoutRow], session: LetteredTemplate) -> WorkoutRow? {
+  latest(workouts, where: { startedAs($0, session) })
+}

@@ -178,3 +178,18 @@ public func nextInRotation(
   let at = last.flatMap { last in rotation.firstIndex { startedAs(last, $0) } } ?? -1
   return rotation[(at + 1) % rotation.count]
 }
+
+/// The live programs in creation order: ids are version 7 UUIDs, which sort by their time, and
+/// the starting program's zero-time id comes first.
+public func programOrder(_ p: StoredPrograms) -> [ProgramRow] {
+  p.programs.filter { !$0.removed }.sorted { precedes($0.id, $1.id) }
+}
+
+/// The change that makes a live program the active one at `at`; nil for a program the account
+/// does not hold or has removed.
+public func chooseActive(_ p: StoredPrograms, programId: String, at: String)
+  -> ActiveProgramChange?
+{
+  p.programs.contains { $0.id == programId && !$0.removed }
+    ? ActiveProgramChange(programId: programId, at: at) : nil
+}

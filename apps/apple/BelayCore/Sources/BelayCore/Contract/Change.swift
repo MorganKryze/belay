@@ -71,6 +71,17 @@ public enum Change: Codable, Sendable, Equatable {
   }
 }
 
+/// The active program chosen, from `at` on; the server keeps the newer pointer.
+public struct ActiveProgramChange: Sendable, Equatable {
+  public var programId: String
+  public var at: String
+
+  public init(programId: String, at: String) {
+    self.programId = programId
+    self.at = at
+  }
+}
+
 /// The JSON a change is queued and sent as.
 public enum ChangeJSON {
   /// The change's bytes, equal as JSON to what the web writes for it. The queue keeps these
