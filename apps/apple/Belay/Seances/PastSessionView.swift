@@ -44,6 +44,7 @@ struct PastSessionView: View {
 
     @ViewBuilder private func content(_ session: PastSession) -> some View {
         List {
+            TitleLines(name: session.name, line: Self.when(session.startedAt))
             Section {
                 Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 14) {
                     GridRow {
@@ -98,7 +99,6 @@ struct PastSessionView: View {
         .navigationTitle(SessionText.short(session.code))
         .navigationBarTitleDisplayMode(.large)
         .largeTitleOnly()
-        .modifier(Subtitle(name: session.name, line: Self.when(session.startedAt)))
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {

@@ -120,6 +120,8 @@ final class SeancesHistoryTests: XCTestCase {
     /// The title, its day and hour, the tiles, the sets by exercise, the deletion at the foot.
     func testPastSessionTilesAndSets() {
         let app = past()
+        let bar = app.navigationBars["Séance A"]
+        XCTAssertGreaterThan(bar.frame.height, 80, "a large title, not a compact bar: \(bar.frame)")
         XCTAssertEqual(element(app, "past.duration").label, "Durée, 1\u{202F}h\u{202F}4\u{202F}min")
         XCTAssertEqual(element(app, "past.sets").label, "Séries, 6")
         XCTAssertTrue(element(app, "past.volume").label.hasPrefix("Volume, 2\u{202F}51"), element(app, "past.volume").label)

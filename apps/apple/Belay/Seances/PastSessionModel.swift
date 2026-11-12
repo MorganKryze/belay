@@ -26,6 +26,13 @@ final class PastSessionModel: SetCorrecting {
         actions = HistoryActions(store: store, now: now)
         self.didWrite = didWrite
         self.health = health
+        // Read now, for the push's first frame: a screen with no title nor list while the push runs
+        // keeps the compact bar once they come, its large title gone.
+        do {
+            session = pastSession(try store.history(), workoutId: workoutId, efforts: try store.efforts())
+        } catch {
+            Self.log.error("past session not read: \(AccountStore.logLabel(error), privacy: .public)")
+        }
     }
 
     /// Follows the store while the screen shows, so a write from here or from a sync shows at once.

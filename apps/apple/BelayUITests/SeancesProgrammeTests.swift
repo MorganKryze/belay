@@ -168,10 +168,10 @@ final class SeancesProgrammeTests: XCTestCase {
         let c = element(app, "session.C")
         XCTAssertTrue(c.waitForExistence(timeout: 5))
         c.tap()
-        XCTAssertTrue(app.navigationBars["Séance C"].waitForExistence(timeout: 5))
-        let size = text(app, containing: " séries · environ ")
-        if !size.exists { print("TREE-DUMP", app.debugDescription) }
-        XCTAssertTrue(size.exists, "its size, its sets and its time")
+        let bar = app.navigationBars["Séance C"]
+        XCTAssertTrue(bar.waitForExistence(timeout: 5))
+        XCTAssertGreaterThan(bar.frame.height, 80, "a large title, not a compact bar: \(bar.frame)")
+        XCTAssertTrue(text(app, containing: " séries · environ ").exists, "its size, its sets and its time")
         let last = element(app, "preview-last")
         XCTAssertTrue(last.exists, "C was done once")
         XCTAssertTrue(last.label.hasPrefix("La dernière fois\u{202F}: "), last.label)
@@ -182,7 +182,10 @@ final class SeancesProgrammeTests: XCTestCase {
 
         let fresh = seances("fresh")
         element(fresh, "session.B").tap()
-        XCTAssertTrue(fresh.navigationBars["Séance B"].waitForExistence(timeout: 5))
+        let freshBar = fresh.navigationBars["Séance B"]
+        XCTAssertTrue(freshBar.waitForExistence(timeout: 5))
+        XCTAssertGreaterThan(freshBar.frame.height, 80, "a large title, not a compact bar: \(freshBar.frame)")
+        XCTAssertTrue(text(fresh, containing: " séries · environ ").exists, "its size line")
         XCTAssertFalse(element(fresh, "preview-last").exists, "a first time says nothing")
     }
 

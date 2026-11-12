@@ -33,6 +33,7 @@ struct SessionPreview: View {
     @ViewBuilder private func content(_ next: NextSession) -> some View {
         let size = Self.size(next)
         List {
+            TitleLines(name: next.name, line: size)
             if next.last != nil || running(other: next) != nil {
                 Section {
                     if let last = next.last {
@@ -76,7 +77,6 @@ struct SessionPreview: View {
         .navigationTitle(SessionText.short(next.code))
         .navigationBarTitleDisplayMode(.large)
         .largeTitleOnly()
-        .modifier(Subtitle(name: next.name, line: size))
         .scrollEdgeEffectStyle(.hard, for: .bottom)
         .safeAreaBar(edge: .bottom) {
             FootBar {
@@ -127,16 +127,26 @@ extension SessionPreview {
     }
 }
 
-/// Under a large title, the session's name then its line; the line alone for a session with no name.
-struct Subtitle: ViewModifier {
+/// The lines under a large title, as the list's first row: the session's name, then its line; the
+/// line alone for a session with no name. Not in the bar's subtitle slot: a pushed screen whose bar
+/// needs more height than the one it leaves (Séances' title has no subtitle) opens on the compact
+/// bar, its large title and lines gone. The title in the wide face holds « Séance C » at any text
+/// size, where « Séance C · Fessiers + tirage léger » would truncate.
+struct TitleLines: View {
     let name: String?
     let line: String
 
-    func body(content: Content) -> some View {
-        if let name, !name.isEmpty {
-            content.belaySubtitle(name: name, line)
-        } else {
-            content.belaySubtitle(line)
+    var body: some View {
+        Section {
+            VStack(alignment: .leading, spacing: 4) {
+                if let name, !name.isEmpty {
+                    Text(name).font(.title3.weight(.semibold)).foregroundStyle(.ink)
+                }
+                Text(line).font(.subheadline).foregroundStyle(.muted).monospacedDigit()
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .listRowBackground(Color.clear)
+            .listRowInsets(.init(top: 6, leading: 0, bottom: 0, trailing: 0))
         }
     }
 }
