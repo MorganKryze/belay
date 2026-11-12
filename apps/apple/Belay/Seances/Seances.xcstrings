@@ -478,22 +478,6 @@
         }
       }
     },
-    "Montée" : {
-      "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Montée"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Warm-up"
-          }
-        }
-      }
-    },
     "OK" : {
       "localizations" : {
         "fr" : {

@@ -34,7 +34,8 @@ struct PastSessionView: View {
         .sheet(item: $correcting) { set in
             CorrectSheet(
                 set: set, exercise: training.exerciseName(set.exerciseId), correcting: model,
-                removal: Text("Les autres séries de la séance restent.", tableName: "Seances")
+                removal: Text("Les autres séries de la séance restent.", tableName: "Seances"),
+                loneWarmup: Self.lone(set, in: model.session)
             ) { failed = true }
         }
         .alert(Text("La modification n’a pas été enregistrée. Réessaie.", tableName: "Seances"), isPresented: $failed) {
@@ -113,7 +114,7 @@ struct PastSessionView: View {
 
     /// A set's rank and its load; while editing, a tap opens its correction.
     @ViewBuilder private func row(_ set: PastSet, of exercise: PastExercise) -> some View {
-        let name = Self.name(set, warmups: exercise.sets.count(where: \.warmup))
+        let name = SetName.of(Self.done(set, of: exercise), loneWarmup: exercise.sets.count(where: \.warmup) == 1)
         let load = SessionText.load(Load(weightKg: set.weightKg, reps: set.reps, seconds: set.seconds))
         let content = LabeledContent {
             Text(load).font(.body.weight(.semibold)).foregroundStyle(.ink).monospacedDigit()
@@ -163,12 +164,11 @@ struct PastSessionView: View {
 }
 
 extension PastSessionView {
-    /// « Montée » alone, « Montée 2 » among several, « Série 3 »: the rank among the sets shown.
-    private static func name(_ set: PastSet, warmups: Int) -> String {
-        guard set.warmup else { return String(localized: "Série \(set.number)", table: "SessionTools") }
-        return warmups > 1
-            ? String(localized: "Montée \(set.number)", table: "SessionTools")
-            : String(localized: "Montée", table: "Seances")
+    /// Whether the set is its exercise's only warm-up, so its sheet names it as its row does.
+    private static func lone(_ set: DoneSet, in session: PastSession?) -> Bool {
+        guard set.warmup else { return false }
+        let exercise = session?.exercises.first { $0.slotIndex == set.place.slotIndex && $0.exerciseId == set.exerciseId }
+        return exercise?.sets.count(where: \.warmup) == 1
     }
 
     /// The set as the correction sheet takes it. Its place carries the rank shown, which is all

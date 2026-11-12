@@ -186,6 +186,20 @@ final class SeancesHistoryTests: XCTestCase {
         XCTAssertFalse(element(app, "correct-count").waitForExistence(timeout: 1), "read only again after « OK »")
     }
 
+    /// A lone warm-up is « Montée » on its row, as its sheet's title and in its removal's question.
+    func testLoneWarmupNamedAsItsRow() {
+        let app = past()
+        let warmup = app.descendants(matching: .any).matching(identifier: "past.set").element(boundBy: 0)
+        XCTAssertTrue(warmup.waitForExistence(timeout: 5))
+        XCTAssertEqual(warmup.label, "Montée, 40\u{202F}kg × 8")
+        app.navigationBars.buttons["Modifier"].tap()
+        warmup.tap()
+        XCTAssertTrue(app.staticTexts["Montée"].waitForExistence(timeout: 3), "the sheet names it as its row")
+        element(app, "correct-remove").tap()
+        XCTAssertTrue(
+            app.staticTexts["Supprimer la montée\u{202F}?"].waitForExistence(timeout: 3), "and so does the question")
+    }
+
     /// Once a past session scrolls, no compact title.
     func testNoBarOnScroll() {
         let app = past(largestText: true)

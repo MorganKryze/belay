@@ -19,6 +19,8 @@ struct CorrectSheet: View {
     /// Under the removal's question: what becomes of the set once removed; nil in a session, where
     /// the question says it.
     var removal: Text?
+    /// The set is its exercise's only warm-up, named « Montée » with no rank, as on its row.
+    var loneWarmup = false
     /// Told when a write fails, so the screen under the sheet can say it.
     let failed: () -> Void
     @Environment(\.dismiss) private var dismiss
@@ -48,7 +50,7 @@ struct CorrectSheet: View {
         NavigationStack {
             List {
                 SheetTitle(
-                    title: Text(verbatim: SetName.of(set)),
+                    title: Text(verbatim: SetName.of(set, loneWarmup: loneWarmup)),
                     subtitle: Text(verbatim: exercise))
                 Section {
                     field(Text("kg", tableName: "Session"), $kg, keyboard: .decimalPad, id: "correct-kg")
@@ -69,7 +71,7 @@ struct CorrectSheet: View {
                             .frame(minHeight: 44)
                     }
                     .accessibilityIdentifier("correct-remove")
-                    .removalQuestion(set, isPresented: $asking, message: removal) {
+                    .removalQuestion(set, isPresented: $asking, loneWarmup: loneWarmup, message: removal) {
                         dismiss()
                         run { try correcting.remove(setId: set.id) }
                     }
@@ -172,12 +174,26 @@ struct CorrectSheet: View {
     }
 }
 
-/// « Série 2 » or « Montée 1 », from the set's place.
+/// How a done set is named, the same on its row, its sheet's title and its removal's question.
 enum SetName {
-    static func of(_ set: DoneSet) -> String {
-        set.warmup
-            ? String(localized: "Montée \(set.place.position + 1)", table: "SessionTools")
-            : String(localized: "Série \(set.place.position - Bounds.maxWarmups + 1)", table: "SessionTools")
+    /// « Série 3 », « Montée 2 »; « Montée » alone when it is its exercise's only warm-up.
+    static func of(_ set: DoneSet, loneWarmup: Bool = false) -> String {
+        guard set.warmup else {
+            return String(localized: "Série \(set.place.position - Bounds.maxWarmups + 1)", table: "SessionTools")
+        }
+        return loneWarmup
+            ? String(localized: "Montée", table: "SessionTools")
+            : String(localized: "Montée \(set.place.position + 1)", table: "SessionTools")
+    }
+
+    /// « Supprimer la série 3 ? », « Supprimer la montée ? »: the set named as on its row.
+    static func question(_ set: DoneSet, loneWarmup: Bool = false) -> Text {
+        guard set.warmup else {
+            return Text("Supprimer la série \(set.place.position - Bounds.maxWarmups + 1)\u{202F}?", tableName: "SessionTools")
+        }
+        return loneWarmup
+            ? Text("Supprimer la montée\u{202F}?", tableName: "SessionTools")
+            : Text("Supprimer la montée \(set.place.position + 1)\u{202F}?", tableName: "SessionTools")
     }
 }
 
@@ -194,14 +210,11 @@ extension View {
     /// The question before a set goes, in a bubble anchored to the control that asked it, with what
     /// becomes of the set under it: by default, in a session, it is the next to log again.
     func removalQuestion(
-        _ set: DoneSet, isPresented: Binding<Bool>, message: Text? = nil,
+        _ set: DoneSet, isPresented: Binding<Bool>, loneWarmup: Bool = false, message: Text? = nil,
         remove: @escaping () -> Void
     ) -> some View {
         confirmationDialog(
-            set.warmup
-                ? Text("Supprimer la montée \(set.place.position + 1)\u{202F}?", tableName: "SessionTools")
-                : Text("Supprimer la série \(set.place.position - Bounds.maxWarmups + 1)\u{202F}?", tableName: "SessionTools"),
-            isPresented: isPresented, titleVisibility: .visible
+            SetName.question(set, loneWarmup: loneWarmup), isPresented: isPresented, titleVisibility: .visible
         ) {
             Button(role: .destructive, action: remove) { Text("Supprimer", tableName: "SessionTools") }
         } message: {
