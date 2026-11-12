@@ -181,6 +181,19 @@ final class SeancesProgrammeTests: XCTestCase {
         XCTAssertFalse(element(fresh, "preview-last").exists, "a first time says nothing")
     }
 
+    /// The size line sits right under the letter, as the bar's subtitle would, at the default size.
+    func testPreviewLineCloseUnderTitle() {
+        let app = seances("fresh")
+        let b = element(app, "session.B")
+        XCTAssertTrue(b.waitForExistence(timeout: 5))
+        b.tap()
+        XCTAssertTrue(app.navigationBars["Séance B"].waitForExistence(timeout: 5))
+        let line = text(app, containing: " séries · environ ")
+        XCTAssertTrue(line.exists)
+        let gap = app.gapUnderTitle("Séance B", to: line)
+        XCTAssertLessThan(gap, 18, "the size line close under the title: \(gap) pt")
+    }
+
     /// With A open, B's preview says A is under way, and its foot takes A up rather than starting B.
     func testPreviewWhileOpenResumes() {
         let app = seances("workSet")

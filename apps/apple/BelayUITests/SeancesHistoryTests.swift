@@ -32,8 +32,8 @@ final class SeancesHistoryTests: XCTestCase {
     }
 
     /// The newest session of the history opened.
-    private func past(_ fixture: String = "pastSession", largestText: Bool = false) -> XCUIApplication {
-        let app = history(fixture, largestText: largestText)
+    private func past(_ fixture: String = "pastSession", now: String? = nil, largestText: Bool = false) -> XCUIApplication {
+        let app = history(fixture, now: now, largestText: largestText)
         let row = rows(app).firstMatch
         XCTAssertTrue(row.waitForExistence(timeout: 5), "the session kept is listed")
         row.tap()
@@ -134,6 +134,25 @@ final class SeancesHistoryTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(delete.frame.height, 44)
     }
 
+    /// Under the letter, the session's name, then its day and hour.
+    func testPastSessionNameAndDay() {
+        let app = past(now: Self.wednesday)
+        let name = app.staticTexts["Pectoraux et dos"]
+        XCTAssertTrue(name.exists, "its name under the letter")
+        let when = app.staticTexts["Mardi 6 octobre · 20:00"]
+        XCTAssertTrue(when.exists, "its day and hour")
+        XCTAssertGreaterThan(when.frame.minY, name.frame.minY, "the day under the name")
+    }
+
+    /// The name sits right under the letter, as the bar's subtitle would, at the default size.
+    func testPastSessionLinesCloseUnderTitle() {
+        let app = past()
+        let name = app.staticTexts["Pectoraux et dos"]
+        XCTAssertTrue(name.exists)
+        let gap = app.gapUnderTitle("Séance A", to: name)
+        XCTAssertLessThan(gap, 18, "the name close under the title: \(gap) pt")
+    }
+
     /// The deletion asks in a bubble at the button, then the history goes on without it, its
     /// removal queued once.
     func testDeleteAsksThenLeavesHistory() {
@@ -198,6 +217,17 @@ final class SeancesHistoryTests: XCTestCase {
         element(app, "correct-remove").tap()
         XCTAssertTrue(
             app.staticTexts["Supprimer la montée\u{202F}?"].waitForExistence(timeout: 3), "and so does the question")
+    }
+
+    /// Once the history scrolls, no compact title.
+    func testHistoryNoBarOnScroll() {
+        let app = history("weeks", now: Self.wednesday, largestText: true)
+        XCTAssertTrue(rows(app).firstMatch.waitForExistence(timeout: 5))
+        app.swipeUp(velocity: .slow)
+        app.swipeUp(velocity: .slow)
+        let compact = app.navigationBars.staticTexts.matching(NSPredicate(format: "label == %@", "Séances"))
+            .allElementsBoundByIndex.contains { $0.isHittable && $0.frame.width > 2 }
+        XCTAssertFalse(compact, "no compact title")
     }
 
     /// Once a past session scrolls, no compact title.

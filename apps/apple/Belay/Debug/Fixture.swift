@@ -157,7 +157,8 @@ enum Fixture {
                 round += 1
             }
         case "pastSession":
-            let id = try kept(seed[0], startedAt: now.addingTimeInterval(-86_400), in: store, warmup: true)
+            let id = try kept(
+                seed[0], startedAt: now.addingTimeInterval(-86_400), in: store, warmup: true, name: "Pectoraux et dos")
             try store.giveEffort(workoutId: id, floor: 3)
         default:
             break
@@ -209,9 +210,11 @@ enum Fixture {
     }
 
     /// A session kept: started at `startedAt`, three work sets of its first exercise (a warm-up
-    /// first when asked) and three of its second, ended 64 minutes later; its id.
+    /// first when asked) and three of its second, ended 64 minutes later, under `name` when given;
+    /// its id.
     private static func kept(
-        _ session: LetteredTemplate, startedAt start: Date, in store: AccountStore, warmup: Bool = false
+        _ session: LetteredTemplate, startedAt start: Date, in store: AccountStore, warmup: Bool = false,
+        name: String? = nil
     ) throws -> String {
         let id = UUIDv7.make(at: start)
         let at = { (minutes: Double) in Instant.string(start.addingTimeInterval(minutes * 60)) }
@@ -239,8 +242,10 @@ enum Fixture {
                 id: id, at: at(0),
                 edit: .start(
                     .init(
-                        sessionCode: session.code, sessionId: .value(session.sessionId), sessionName: .null,
-                        plan: session.slots, startedAt: at(0)))))
+                        // The store names a start after its program session, and the seed's have no
+                        // name: a named one is kept with no program session.
+                        sessionCode: session.code, sessionId: name == nil ? .value(session.sessionId) : .null,
+                        sessionName: name.map { .value($0) } ?? .null, plan: session.slots, startedAt: at(0)))))
         let ended = Change.workout(WorkoutChange(id: id, at: at(64), edit: .ended(at(64))))
         try store.recordChanges([started] + sets + [ended], active: .keep)
         return id
