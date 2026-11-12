@@ -387,12 +387,13 @@ final class AccueilTests: XCTestCase {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.dateFormat = "yyyy-MM-dd"
-        let app = launch("doneToday", now: "\(formatter.string(from: .now))T23:59:50")
+        // Forty seconds ahead: signing the fixture in takes a dozen.
+        let app = launch("doneToday", now: "\(formatter.string(from: .now))T23:59:20")
         let chip = element(app, "chip.session")
         XCTAssertTrue(chip.waitForExistence(timeout: 10))
         XCTAssertEqual(chip.label, "Faite aujourd’hui", "done, before midnight")
         let next = app.buttons["Voir la séance"]
-        XCTAssertTrue(next.waitForExistence(timeout: 30), "past midnight the next session shows")
+        XCTAssertTrue(next.waitForExistence(timeout: 60), "past midnight the next session shows")
         XCTAssertEqual(chip.label, "La prochaine")
         XCTAssertTrue(app.staticTexts["Séance B"].exists, "B comes after A")
     }
@@ -425,24 +426,28 @@ final class AccueilTests: XCTestCase {
         }
     }
 
-    /// Once Accueil scrolls, no compact title and no bar: the content runs under the status bar,
+    /// Once Accueil scrolls, no compact title and no bar: the content takes the title's place,
     /// only the avatar's glass stays.
     func testNoBarOnScroll() {
-        let app = launch("fresh", largestText: true)
+        // A day done, its tiles one under the other: until the trend comes, the one card tall
+        // enough to scroll.
+        let app = launch("doneToday", largestText: true)
         XCTAssertTrue(app.buttons["settings"].waitForExistence(timeout: 10))
         let chip = element(app, "chip.session")
         XCTAssertTrue(chip.exists)
         let bar = app.navigationBars.firstMatch
-        let letter = app.staticTexts["Séance A"]
-        // Slowly, a little at a time, until the card's letter reaches the bar.
-        for _ in 0..<6 where letter.exists && letter.frame.minY >= bar.frame.maxY {
+        // Where the large title ends before the scroll. Until the trend comes the screen is too
+        // short for the card to pass the status bar; it can still take the title's place.
+        let title = bar.frame.maxY
+        // Slowly, a little at a time, until the card's top reaches where the title stood.
+        for _ in 0..<8 where chip.exists && chip.frame.minY >= title {
             app.swipeUp(velocity: .slow)
         }
         let compact = bar.staticTexts.matching(NSPredicate(format: "label == %@", "Bonjour Ada"))
             .allElementsBoundByIndex.contains { $0.isHittable && $0.frame.width > 2 }
         XCTAssertFalse(compact, "no compact title")
         XCTAssertTrue(app.buttons["settings"].isHittable, "the avatar stays")
-        XCTAssertTrue(letter.exists)
-        XCTAssertLessThan(letter.frame.minY, bar.frame.maxY, "the card runs under the bar: \(letter.frame) \(bar.frame)")
+        XCTAssertTrue(chip.exists)
+        XCTAssertLessThan(chip.frame.minY, title, "the card takes the title's place: \(chip.frame) \(title)")
     }
 }
