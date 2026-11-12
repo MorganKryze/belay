@@ -16,8 +16,9 @@ struct CorrectSheet: View {
     /// The exercise's name, under the set's.
     let exercise: String
     let correcting: any SetCorrecting
-    /// Under the removal's question: what becomes of the set once removed.
-    let removal: Text
+    /// Under the removal's question: what becomes of the set once removed; nil in a session, where
+    /// the question says it.
+    var removal: Text?
     /// Told when a write fails, so the screen under the sheet can say it.
     let failed: () -> Void
     @Environment(\.dismiss) private var dismiss
@@ -190,10 +191,10 @@ extension View {
         }
     }
 
-    /// The question before a set goes, in a bubble anchored to the control that asked it.
+    /// The question before a set goes, in a bubble anchored to the control that asked it, with what
+    /// becomes of the set under it: by default, in a session, it is the next to log again.
     func removalQuestion(
-        _ set: DoneSet, isPresented: Binding<Bool>,
-        message: Text = Text("Elle redevient la prochaine à noter.", tableName: "SessionTools"),
+        _ set: DoneSet, isPresented: Binding<Bool>, message: Text? = nil,
         remove: @escaping () -> Void
     ) -> some View {
         confirmationDialog(
@@ -204,7 +205,7 @@ extension View {
         ) {
             Button(role: .destructive, action: remove) { Text("Supprimer", tableName: "SessionTools") }
         } message: {
-            message
+            message ?? Text("Elle redevient la prochaine à noter.", tableName: "SessionTools")
         }
     }
 }

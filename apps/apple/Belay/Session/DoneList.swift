@@ -27,7 +27,7 @@ struct DoneList: View {
         .sheet(item: $correcting) { set in
             CorrectSheet(
                 set: set, exercise: actions.training.exerciseName(set.exerciseId), correcting: actions.training,
-                removal: Text("Elle redevient la prochaine à noter.", tableName: "SessionTools"), failed: actions.failed)
+                failed: actions.failed)
         }
     }
 
