@@ -64,11 +64,12 @@ nonisolated struct HealthKitWriter: HealthWriting {
     /// Only Belay's own workouts carry its sync identifiers, and iOS lets an app delete only what
     /// it wrote; the source is matched too, so neither rule alone decides. Nothing left to match
     /// (the person already deleted it in Health) is the same outcome, not a failure retried at
-    /// every run.
+    /// every run. An effort score is a sample of its own type, named by its identifier.
     func delete(syncId: String) async -> HealthOutcome {
-        guard Self.permission(Self.workouts) == .allowed else { return .denied }
+        let type: HKObjectType = syncId.hasPrefix(healthEffortSyncId("")) ? Self.effort : Self.workouts
+        guard Self.permission(type) == .allowed else { return .denied }
         do {
-            _ = try await Self.store.deleteObjects(of: Self.workouts, predicate: Self.own(syncId))
+            _ = try await Self.store.deleteObjects(of: type, predicate: Self.own(syncId))
             return .removed
         } catch let error as HKError where error.code == .errorNoData {
             return .removed

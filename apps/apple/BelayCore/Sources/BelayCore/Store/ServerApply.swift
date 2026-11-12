@@ -89,6 +89,8 @@ extension AccountStore {
         (row.removed, row.removedAt) = (false, nil)
         try Rows.putSet(db, row)
       }
+    // As the web does: the pointer goes, the starting one shows until the server's comes back.
+    case .activeProgram: try Rows.clearSingle(db, "activeProgram")
     }
   }
 }
@@ -99,6 +101,7 @@ extension Change {
     switch self {
     case .workout(let c): c.at
     case .set(let c): c.at
+    case .activeProgram(let c): c.at
     }
   }
 }

@@ -129,6 +129,40 @@ struct ContractVectorTests {
     }
   }
 
+  /// The active program's cases, which the phone queues as the very bytes the web writes.
+  private func activeProgramCases() throws -> [Vectors.ChangeCase] {
+    let cases = try Vectors.load().changes.filter { $0.name.hasPrefix("activeProgram:") }
+    try #require(cases.count >= 10)
+    return cases
+  }
+
+  @Test func activeProgramEncodesLikeTypeScript() throws {
+    for vector in try activeProgramCases() where vector.valid {
+      let change = try ChangeJSON.decode(Data(vector.json.utf8))
+      guard case .activeProgram(let pointer) = change else {
+        Issue.record("not read as an active program: \(vector.name)")
+        continue
+      }
+      // Byte for byte, key order included: the queue sends what it holds as it is.
+      let text = String(decoding: try ChangeJSON.encode(change), as: UTF8.self)
+      #expect(text == vector.json, "\(vector.name)")
+      let built = ActiveProgramChange(programId: pointer.programId, at: pointer.at)
+      #expect(try ChangeJSON.encode(.activeProgram(built)) == Data(vector.json.utf8))
+    }
+  }
+
+  @Test func activeProgramValidity() throws {
+    // Its time is any change's: never held to the clock, so a phone ahead of the server, or a
+    // pointer from 1899, gets the verdict the web gives.
+    let clocks = [date(ms: 0), date(ms: 1_793_957_400_123), date(ms: 4_102_444_800_000)]
+    for vector in try activeProgramCases() {
+      let change = try? ChangeJSON.decode(Data(vector.json.utf8))
+      for now in clocks {
+        #expect((change.map { isValid($0, now: now) } ?? false) == vector.valid, "\(vector.name)")
+      }
+    }
+  }
+
   @Test func instants() throws {
     for vector in try Vectors.load().instants {
       #expect(Instant.string(date(ms: vector.ms)) == vector.iso, "\(vector.ms)")

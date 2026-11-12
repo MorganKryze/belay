@@ -817,6 +817,71 @@
       "name": "set: unknown field",
       "valid": false,
       "json": "{\"kind\":\"set\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f02\",\"workoutId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"moved\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "activeProgram: as the phone writes it",
+      "valid": true,
+      "json": "{\"kind\":\"activeProgram\",\"programId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f03\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "activeProgram: the starting program",
+      "valid": true,
+      "json": "{\"kind\":\"activeProgram\",\"programId\":\"00000000-0000-7000-8000-000000000010\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "activeProgram: program id in upper case",
+      "valid": false,
+      "json": "{\"kind\":\"activeProgram\",\"programId\":\"019A5A3C-7B2E-7D41-9C3F-2B8E4D6A1F03\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "activeProgram: program id not a UUID",
+      "valid": false,
+      "json": "{\"kind\":\"activeProgram\",\"programId\":\"push-pull\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "activeProgram: nil program id",
+      "valid": false,
+      "json": "{\"kind\":\"activeProgram\",\"programId\":\"00000000-0000-0000-0000-000000000000\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "activeProgram: no program id",
+      "valid": false,
+      "json": "{\"kind\":\"activeProgram\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "activeProgram: program id null",
+      "valid": false,
+      "json": "{\"kind\":\"activeProgram\",\"programId\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "activeProgram: at the floor",
+      "valid": true,
+      "json": "{\"kind\":\"activeProgram\",\"programId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f03\",\"at\":\"1900-01-01T00:00:00.000Z\"}"
+    },
+    {
+      "name": "activeProgram: one millisecond before the floor",
+      "valid": true,
+      "json": "{\"kind\":\"activeProgram\",\"programId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f03\",\"at\":\"1899-12-31T23:59:59.999Z\"}"
+    },
+    {
+      "name": "activeProgram: at the clock's slack",
+      "valid": true,
+      "json": "{\"kind\":\"activeProgram\",\"programId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f03\",\"at\":\"2026-11-06T09:35:00.123Z\"}"
+    },
+    {
+      "name": "activeProgram: one millisecond past the slack",
+      "valid": true,
+      "json": "{\"kind\":\"activeProgram\",\"programId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f03\",\"at\":\"2026-11-06T09:35:00.124Z\"}"
+    },
+    {
+      "name": "activeProgram: at without milliseconds",
+      "valid": false,
+      "json": "{\"kind\":\"activeProgram\",\"programId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f03\",\"at\":\"2026-11-06T09:30:00Z\"}"
+    },
+    {
+      "name": "activeProgram: at not a time",
+      "valid": false,
+      "json": "{\"kind\":\"activeProgram\",\"programId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f03\",\"at\":\"yesterday\"}"
     }
   ],
   "isNewer": [

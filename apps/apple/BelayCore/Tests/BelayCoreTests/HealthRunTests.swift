@@ -26,10 +26,14 @@ private actor FakeHealth: HealthWriting {
   private var duringSave: (@Sendable () throws -> Void)?
   private var duringRelate: (@Sendable () throws -> Void)?
 
+  /// What a delete answers by sync id; `.removed` for any other.
+  var deleting: [String: HealthOutcome] = [:]
+
   func set(
     access: HealthAccess? = nil, covered: Bool? = nil, saving: HealthOutcome? = nil,
-    relating: HealthOutcome? = nil
+    relating: HealthOutcome? = nil, deleting: [String: HealthOutcome]? = nil
   ) {
+    if let deleting { self.deleting = deleting }
     if let relating { self.relating = relating }
     if let access { answer = access }
     if let covered { self.covered = covered }
@@ -61,7 +65,7 @@ private actor FakeHealth: HealthWriting {
   func delete(syncId: String) async -> HealthOutcome {
     calls += 1
     deleted.append(syncId)
-    return .removed
+    return deleting[syncId] ?? .removed
   }
 
   func overlaps(startedAt: Int64, endedAt: Int64) async -> Bool {
@@ -234,6 +238,63 @@ private actor FakeHealth: HealthWriting {
     await run(store, health)
 
     #expect(await health.deleted == [sessionKey(w)])
+    guard case .removed = try store.healthWritten()[sessionKey(w)] else {
+      Issue.record("the record says removed")
+      return
+    }
+  }
+
+  /// A deleted session takes its effort score with it: left alone, the score would stay in Health
+  /// with no workout. A session whose effort never went deletes its workout only.
+  @Test func deletedSessionTakesItsEffort() async throws {
+    let store = try storeOn()
+    let without = Fixture.id(40)
+    try finished(store, w)
+    try finished(store, without, start: 40, end: 70)
+    try store.giveEffort(workoutId: w, floor: 3)
+    try store.settleEffort(workoutId: w)
+    let health = FakeHealth()
+    await run(store, health)
+    #expect(await health.related.count == 1)
+    #expect(await health.saved.count == 2)
+
+    try edit(store, w, at: 80, .removed(true))
+    try edit(store, without, at: 80, .removed(true))
+    await run(store, health)
+    await run(store, health)
+
+    let deleted = await health.deleted
+    #expect(Set(deleted) == [sessionKey(w), healthEffortSyncId(w), sessionKey(without)])
+    #expect(deleted.count == 3)
+    guard case .removed = try store.healthWritten()[sessionKey(w)] else {
+      Issue.record("the record says removed")
+      return
+    }
+  }
+
+  /// A score Health would not delete keeps the session's removal for the next run, which tries
+  /// both again: deleting a workout already gone is answered as done.
+  @Test func anEffortHealthKeepsIsTriedAgain() async throws {
+    let store = try storeOn()
+    try finished(store, w)
+    try store.giveEffort(workoutId: w, floor: 3)
+    try store.settleEffort(workoutId: w)
+    let health = FakeHealth()
+    await run(store, health)
+
+    try edit(store, w, at: 40, .removed(true))
+    await health.set(deleting: [healthEffortSyncId(w): .failed])
+    await run(store, health)
+    guard case .workout = try store.healthWritten()[sessionKey(w)] else {
+      Issue.record("the record still holds the workout")
+      return
+    }
+
+    await health.set(deleting: [:])
+    await run(store, health)
+    #expect(
+      await health.deleted
+        == [sessionKey(w), healthEffortSyncId(w), sessionKey(w), healthEffortSyncId(w)])
     guard case .removed = try store.healthWritten()[sessionKey(w)] else {
       Issue.record("the record says removed")
       return

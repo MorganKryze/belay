@@ -130,6 +130,7 @@ const MIN_MS = Date.parse(MIN_TIME);
 const WORKOUT = "019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00";
 const SESSION = "019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f01";
 const SET = "019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f02";
+const PROGRAM = "019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f03";
 const EXERCISE = "belay:barbell-hip-thrust";
 const TIMED = "belay:dead-hang";
 
@@ -193,6 +194,12 @@ const setValues = (over: Fields = {}) => ({
   weightKg: 100,
   reps: 5,
   rir: 2,
+  at: AT,
+  ...over,
+});
+const activeProgram = (over: Fields = {}) => ({
+  kind: "activeProgram",
+  programId: PROGRAM,
   at: AT,
   ...over,
 });
@@ -385,6 +392,26 @@ const changes: Record<string, unknown> = {
     at: AT,
   },
   "set: unknown field": { kind: "set", id: SET, workoutId: WORKOUT, field: "moved", at: AT },
+  // The active program: the id rule, and its time read like any change's, whatever the clock.
+  "activeProgram: as the phone writes it": activeProgram(),
+  "activeProgram: the starting program": activeProgram({
+    programId: "00000000-0000-7000-8000-000000000010",
+  }),
+  "activeProgram: program id in upper case": activeProgram({ programId: PROGRAM.toUpperCase() }),
+  "activeProgram: program id not a UUID": activeProgram({ programId: "push-pull" }),
+  "activeProgram: nil program id": activeProgram({
+    programId: "00000000-0000-0000-0000-000000000000",
+  }),
+  "activeProgram: no program id": activeProgram({ programId: undefined }),
+  "activeProgram: program id null": activeProgram({ programId: null }),
+  "activeProgram: at the floor": activeProgram({ at: MIN_TIME }),
+  "activeProgram: one millisecond before the floor": activeProgram({ at: iso(MIN_MS - 1) }),
+  "activeProgram: at the clock's slack": activeProgram({ at: iso(T0 + CLOCK_SLACK_MS) }),
+  "activeProgram: one millisecond past the slack": activeProgram({
+    at: iso(T0 + CLOCK_SLACK_MS + 1),
+  }),
+  "activeProgram: at without milliseconds": activeProgram({ at: "2026-11-06T09:30:00Z" }),
+  "activeProgram: at not a time": activeProgram({ at: "yesterday" }),
 };
 
 const SECOND = "2026-11-06T09:30:00";
@@ -1748,7 +1775,9 @@ function readVectors() {
     stored,
     programId,
     at: AT,
-    result: chooseActive(stored, programId, AT),
+    // The web's switcher returns before the rule for the program already active; the native rule
+    // holds that check itself, so a second tap never moves the time the rotation counts from.
+    result: programId === stored.activeId ? null : chooseActive(stored, programId, AT),
   }));
 
   return {

@@ -52,14 +52,16 @@ extension KeyedEncodingContainer {
 public enum Change: Codable, Sendable, Equatable {
   case workout(WorkoutChange)
   case set(SetChange)
+  case activeProgram(ActiveProgramChange)
 
-  private enum Kind: String, Codable { case workout, set }
+  private enum Kind: String, Codable { case workout, set, activeProgram }
   private enum KindKey: String, CodingKey { case kind }
 
   public init(from decoder: any Decoder) throws {
     switch try decoder.container(keyedBy: KindKey.self).decode(Kind.self, forKey: .kind) {
     case .workout: self = .workout(try WorkoutChange(from: decoder))
     case .set: self = .set(try SetChange(from: decoder))
+    case .activeProgram: self = .activeProgram(try ActiveProgramChange(from: decoder))
     }
   }
 
@@ -67,18 +69,44 @@ public enum Change: Codable, Sendable, Equatable {
     switch self {
     case .workout(let change): try change.encode(to: encoder)
     case .set(let change): try change.encode(to: encoder)
+    case .activeProgram(let change): try change.encode(to: encoder)
     }
   }
 }
 
 /// The active program chosen, from `at` on; the server keeps the newer pointer.
-public struct ActiveProgramChange: Sendable, Equatable {
+public struct ActiveProgramChange: Codable, Sendable, Equatable {
   public var programId: String
   public var at: String
 
   public init(programId: String, at: String) {
     self.programId = programId
     self.at = at
+  }
+
+  private enum Keys: String, CodingKey { case kind, programId, at }
+
+  public init(from decoder: any Decoder) throws {
+    let c = try decoder.container(keyedBy: Keys.self)
+    programId = try c.decode(String.self, forKey: .programId)
+    at = try c.decode(String.self, forKey: .at)
+  }
+
+  public func encode(to encoder: any Encoder) throws {
+    var c = encoder.container(keyedBy: Keys.self)
+    try c.encode("activeProgram", forKey: .kind)
+    try c.encode(programId, forKey: .programId)
+    try c.encode(at, forKey: .at)
+  }
+
+  /// The bytes JSON.stringify writes for it, its keys in the web's order: a keyed encoder does
+  /// not keep the order keys were written in.
+  fileprivate func json() throws -> Data {
+    let encoder = JSONEncoder()
+    encoder.outputFormatting = [.withoutEscapingSlashes]
+    let id = String(decoding: try encoder.encode(programId), as: UTF8.self)
+    let time = String(decoding: try encoder.encode(at), as: UTF8.self)
+    return Data(#"{"kind":"activeProgram","programId":\#(id),"at":\#(time)}"#.utf8)
   }
 }
 
@@ -87,6 +115,7 @@ public enum ChangeJSON {
   /// The change's bytes, equal as JSON to what the web writes for it. The queue keeps these
   /// bytes and sends them as they are.
   public static func encode(_ change: Change) throws -> Data {
+    if case .activeProgram(let pointer) = change { return try pointer.json() }
     let encoder = JSONEncoder()
     // JSON.stringify leaves "/" alone; ids of the library are not made of it, but notes may be.
     encoder.outputFormatting = [.withoutEscapingSlashes]

@@ -186,10 +186,11 @@ public func programOrder(_ p: StoredPrograms) -> [ProgramRow] {
 }
 
 /// The change that makes a live program the active one at `at`; nil for a program the account
-/// does not hold or has removed.
+/// does not hold or has removed, and for the one already active: a new time there would move the
+/// point the rotation counts sessions recorded by letter from.
 public func chooseActive(_ p: StoredPrograms, programId: String, at: String)
   -> ActiveProgramChange?
 {
-  p.programs.contains { $0.id == programId && !$0.removed }
+  programId != p.activeId && p.programs.contains { $0.id == programId && !$0.removed }
     ? ActiveProgramChange(programId: programId, at: at) : nil
 }
