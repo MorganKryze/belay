@@ -400,6 +400,8 @@ struct RestDayCard: View {
             Text("Prévu par ton programme", tableName: "Accueil")
                 .font(.title3.weight(.semibold))
                 .foregroundStyle(.ink)
+                // At AX3 the list cut it short on one line.
+                .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, 4)
             Text("Tes muscles se reconstruisent aujourd’hui.", tableName: "Accueil")
                 .font(.subheadline)
