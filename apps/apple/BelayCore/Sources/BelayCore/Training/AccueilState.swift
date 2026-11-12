@@ -27,9 +27,6 @@ public struct OpenCard: Sendable, Equatable {
   }
 }
 
-/// Today's session done: the session kept, the day it counts on (today, or an earlier day for a
-/// fixed day's session done early), its length, its work sets, and its effort when this phone
-/// holds one.
 /// A day as Accueil names it against today: « Aujourd'hui », « Demain », or its weekday.
 public enum DayMark: Sendable, Equatable {
   case today
@@ -49,6 +46,9 @@ public enum DayMark: Sendable, Equatable {
   }
 }
 
+/// Today's session done: the session kept, the day it counts on (today, or an earlier day for a
+/// fixed day's session done early), its length, its work sets, and its effort when this phone
+/// holds one.
 public struct DoneCard: Sendable, Equatable {
   public var workoutId: String
   public var code: String
