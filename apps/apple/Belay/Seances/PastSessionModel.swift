@@ -29,7 +29,7 @@ final class PastSessionModel: SetCorrecting {
         // Read now, for the push's first frame: a screen with no title nor list while the push runs
         // keeps the compact bar once they come, its large title gone.
         do {
-            session = pastSession(try store.history(), workoutId: workoutId, efforts: try store.efforts())
+            session = try store.pastSession(workoutId: workoutId)
         } catch {
             Self.log.error("past session not read: \(AccountStore.logLabel(error), privacy: .public)")
         }
@@ -38,11 +38,7 @@ final class PastSessionModel: SetCorrecting {
     /// Follows the store while the screen shows, so a write from here or from a sync shows at once.
     func follow() async {
         let workoutId = workoutId
-        let sessions = store.observe { db in
-            pastSession(
-                try AccountStore.history(db), workoutId: workoutId,
-                efforts: try AccountStore.efforts(db))
-        }
+        let sessions = store.observe { db in try AccountStore.pastSession(db, workoutId: workoutId) }
         do {
             for try await value in sessions where value != session { session = value }
         } catch {

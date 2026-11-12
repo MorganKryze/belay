@@ -6,7 +6,10 @@ import os
 /// deletion at the foot. « Modifier » makes each set open the correction sheet, until « OK ».
 struct PastSessionView: View {
     let training: TrainingModel
-    @State private var model: PastSessionModel
+    private let make: () -> PastSessionModel
+    /// The model, built at the first pass of the body: the destination makes this view again at
+    /// each pass of the shell, and a model made in `init` would read the store each time.
+    @State private var built = Once<PastSessionModel>()
     @State private var editing = false
     @State private var correcting: DoneSet?
     @State private var deleting = false
@@ -15,10 +18,12 @@ struct PastSessionView: View {
 
     private static let log = Logger(subsystem: "cloud.libresoftware.belay", category: "past")
 
-    init(training: TrainingModel, model: PastSessionModel) {
+    init(training: TrainingModel, model: @escaping () -> PastSessionModel) {
         self.training = training
-        _model = State(initialValue: model)
+        make = model
     }
+
+    private var model: PastSessionModel { built.value(make) }
 
     var body: some View {
         Group {

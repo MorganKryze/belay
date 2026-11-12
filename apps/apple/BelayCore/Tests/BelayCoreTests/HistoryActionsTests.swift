@@ -320,4 +320,13 @@ import Testing
     #expect(try store.programs().activeId == other)
     #expect(try store.history().workouts.first { $0.id == done }?.removed == true)
   }
+
+  /// A past session read from its own rows is the one read from the whole history.
+  @Test func pastSessionReadAlone() throws {
+    try store.giveEffort(workoutId: done, floor: 3)
+    let alone = try #require(try store.pastSession(workoutId: done))
+    #expect(alone == pastSession(try store.history(), workoutId: done, efforts: try store.efforts()))
+    #expect(alone.exercises.flatMap(\.sets).count == 2)
+    #expect(try store.pastSession(workoutId: other) == nil)
+  }
 }

@@ -72,7 +72,7 @@ final class ShellModel {
 
 struct RootView: View {
     @State private var model = ShellModel()
-    @State private var box = TrainingBox()
+    @State private var box = Once<TrainingModel>()
     @Namespace private var space
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.scenePhase) private var scenePhase
@@ -87,7 +87,7 @@ struct RootView: View {
     }
 
     private var training: TrainingModel {
-        box.model {
+        box.value {
             TrainingModel(
                 store: store, didWrite: account.didWrite, health: account.runHealth, now: Self.clock,
                 timeZone: .current)
@@ -180,9 +180,11 @@ struct RootView: View {
         case .past(let workoutId):
             PastSessionView(
                 training: training,
-                model: PastSessionModel(
-                    workoutId: workoutId, store: store, didWrite: account.didWrite,
-                    health: account.runHealth, now: Self.clock))
+                model: {
+                    PastSessionModel(
+                        workoutId: workoutId, store: store, didWrite: account.didWrite,
+                        health: account.runHealth, now: Self.clock)
+                })
         }
     }
 
@@ -210,15 +212,15 @@ enum Morph {
     static let start = "start"
 }
 
-/// The shell's session model, built once, the first time the shell's body asks for it. Built in
-/// the shell's `init`, a new one would be made at each pass of the parent's body, and its first
-/// read of the store would make that body depend on it: each new model's first value would call
-/// for another model, and the app would never rest.
+/// A model built once, the first time a body asks for it. Built in a view's `init`, a new one
+/// would be made at each pass of the parent's body, and its first read of the store would make
+/// that body depend on it: each new model's first value would call for another model, and the app
+/// would never rest.
 @MainActor
-private final class TrainingBox {
-    private var built: TrainingModel?
+final class Once<Value: AnyObject> {
+    private var built: Value?
 
-    func model(_ make: () -> TrainingModel) -> TrainingModel {
+    func value(_ make: () -> Value) -> Value {
         if let built { return built }
         let made = make()
         built = made
