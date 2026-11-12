@@ -1,8 +1,9 @@
 import BelayCore
 import SwiftUI
+import os
 
-/// Accueil: the day's session, next or under way, and what the sync waits for, said here only.
-/// The trend and the day's entries come with the screens they open.
+/// Accueil: the day's session in whichever state the day is in, and what the sync waits for, said
+/// here only. The trend and the day's entries come with the screens they open.
 struct AccueilView: View {
     let training: TrainingModel
     let notice: SyncNotice
@@ -14,16 +15,18 @@ struct AccueilView: View {
     let openCover: (String) -> Void
     /// How far the list has scrolled, so the band behind the title leaves with it.
     @State private var scrolled: CGFloat = 0
+    @State private var choosing = false
 
     var body: some View {
         List {
             Section {
                 card
+                if let ahead { NextRow(when: when(ahead), session: ahead, action: openPreview) }
             }
             .listRowBackground(Color.surface)
         }
         // Inside the list's wall, so the wall lies under the band and the rows over it.
-        .background(alignment: .top) { AccueilBand(scrolled: scrolled) }
+        .background(alignment: .top) { AccueilBand(domain: domain, scrolled: scrolled) }
         .belayList()
         .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y + $0.contentInsets.top } action: { _, y in
             scrolled = y
@@ -31,7 +34,7 @@ struct AccueilView: View {
         .safeAreaInset(edge: .top, spacing: 0) { notice }
         .navigationTitle(title)
         .largeTitleOnly()
-        .belaySubtitle(Self.today())
+        .belaySubtitle(Self.dayName(training.readAt))
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 // In the toolbar's own style: with `.plain` a tap on the simulator never reached
@@ -46,6 +49,11 @@ struct AccueilView: View {
             }
             .sharedBackgroundVisibility(.hidden)
         }
+        .sheet(isPresented: $choosing) {
+            ProgramChoiceSheet(programs: training.programs, activeId: training.activeProgramId) { id in
+                choose(id)
+            }
+        }
     }
 
     /// « Bonjour Ada », or the tab's name before the instance has named the person.
@@ -54,35 +62,107 @@ struct AccueilView: View {
         return Text("Bonjour \(name)")
     }
 
-    @ViewBuilder private var card: some View {
-        if let open = training.open {
-            // Under way, the load leads: what is on the bar, not the session's name.
-            DayCard(
-                state: SessionText.progress(done: open.setsDone, of: open.setsPlanned),
-                lead: open.current.flatMap(SessionText.load) ?? SessionText.short(open.code),
-                name: open.current?.exercise ?? open.name,
-                line: open.current.map { SessionText.setLine($0, code: open.code) } ?? SessionText.short(open.code),
-                button: "Reprendre", source: Morph.card
-            ) {
-                openCover(Morph.card)
-            }
-        } else if let next = training.next {
-            DayCard(
-                state: String(localized: "La prochaine"), lead: SessionText.short(next.code), name: next.name,
-                line: SessionText.size(exercises: next.exercises, minutes: next.minutes),
-                button: "Voir la séance", source: Morph.card, action: openPreview
-            )
-        } else {
-            Text("Aucune séance prévue. Choisis un programme sur le web.")
-                .foregroundStyle(.ink)
-                .padding(.vertical, 12)
+    /// A rest day reads in the rest colour; every other state is the session's.
+    private var domain: Domain {
+        if case .rest = training.accueil { .rest } else { .session }
+    }
+
+    /// The next session named under the card on a day already done or at rest.
+    private var ahead: NextLine? {
+        switch training.accueil {
+        case .doneToday(_, let next)?: next
+        case .rest(let next)?: next
+        default: nil
         }
     }
 
+    @ViewBuilder private var card: some View {
+        switch training.accueil {
+        case .running?:
+            if let open = training.open {
+                // Under way, the load leads: what is on the bar, not the session's name.
+                DayCard(
+                    state: SessionText.progress(done: open.setsDone, of: open.setsPlanned),
+                    lead: open.current.flatMap(SessionText.load) ?? SessionText.short(open.code),
+                    name: open.current?.exercise ?? open.name,
+                    line: open.current.map { SessionText.setLine($0, code: open.code) } ?? SessionText.short(open.code),
+                    button: "Reprendre", source: Morph.card
+                ) {
+                    openCover(Morph.card)
+                }
+            }
+        case .next(let next)?:
+            nextCard(next, state: String(localized: "La prochaine"))
+        case .due(let next, _)?:
+            nextCard(next, state: String(localized: "Prévue ce \(Self.weekday(training.readAt))", table: "Accueil"))
+        case .doneToday(let done, _)?:
+            DoneDayCard(done: done, state: doneState(done.on))
+        case .rest?:
+            RestDayCard()
+        case .some(.none):
+            ChooseCard(first: false) { choosing = true }
+        case .first?:
+            ChooseCard(first: true) { choosing = true }
+        case nil:
+            EmptyView()
+        }
+    }
+
+    private func nextCard(_ next: NextCard, state: String) -> some View {
+        DayCard(
+            state: state, lead: SessionText.short(next.code), name: next.name,
+            line: SessionText.size(exercises: next.exercises, minutes: next.minutes),
+            button: "Voir la séance", source: Morph.card, action: openPreview
+        )
+    }
+
+    /// « Faite aujourd'hui », or the weekday a fixed day's session was done early on.
+    private func doneState(_ on: String) -> String {
+        if on == today { return String(localized: "Faite aujourd’hui", table: "Accueil") }
+        return String(localized: "Faite \(Self.weekday(date(on)))", table: "Accueil")
+    }
+
+    /// « Demain », the weekday within the week, or « La prochaine » in rotation, as the web says.
+    private func when(_ line: NextLine) -> String {
+        guard let day = line.day else { return String(localized: "La prochaine") }
+        let apart = Calendar.current.dateComponents([.day], from: date(today), to: date(day)).day ?? 0
+        if apart <= 0 { return String(localized: "Aujourd’hui", table: "Accueil") }
+        if apart == 1 { return String(localized: "Demain", table: "Accueil") }
+        let name = date(day).formatted(.dateTime.weekday(.wide))
+        return name.prefix(1).localizedUppercase + name.dropFirst()
+    }
+
+    private var today: String { toISODate(training.readAt, timeZone: .current) }
+
+    /// The local noon of a `YYYY-MM-DD` day: away from any DST change at midnight.
+    private func date(_ day: String) -> Date {
+        let parts = day.split(separator: "-").compactMap { Int($0) }
+        guard parts.count == 3 else { return training.readAt }
+        let components = DateComponents(year: parts[0], month: parts[1], day: parts[2], hour: 12)
+        return Calendar.current.date(from: components) ?? training.readAt
+    }
+
+    private func choose(_ id: String) {
+        do {
+            try training.chooseProgram(id)
+            choosing = false
+        } catch {
+            // The sheet stays open on the list as it stands: the tap can be tried again.
+            Self.log.error("program not chosen: \(String(describing: error), privacy: .public)")
+        }
+    }
+
+    private static let log = Logger(subsystem: "cloud.libresoftware.belay", category: "accueil")
+
     /// « Mercredi 7 octobre », in the person's language.
-    private static func today() -> String {
-        let text = Date.now.formatted(.dateTime.weekday(.wide).day().month(.wide))
+    private static func dayName(_ date: Date) -> String {
+        let text = date.formatted(.dateTime.weekday(.wide).day().month(.wide))
         return text.prefix(1).localizedUppercase + text.dropFirst()
+    }
+
+    /// « mercredi », as it reads inside a sentence.
+    private static func weekday(_ date: Date) -> String {
+        date.formatted(.dateTime.weekday(.wide))
     }
 }
 
@@ -186,10 +266,11 @@ struct DayCard: View {
     }
 }
 
-/// Accueil's band: the session's tint at the top of the screen fading to the wall, behind the
-/// title. It moves with the list, as the title does, and goes wherever plainer grounds are asked
-/// for, as the wall's dust does.
+/// Accueil's band: the day's domain tint at the top of the screen fading to the wall, behind the
+/// title: violet on a rest day, the session's blue otherwise. It moves with the list, as the title
+/// does, and goes wherever plainer grounds are asked for, as the wall's dust does.
 struct AccueilBand: View {
+    let domain: Domain
     let scrolled: CGFloat
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @Environment(\.colorSchemeContrast) private var contrast
@@ -197,13 +278,231 @@ struct AccueilBand: View {
 
     var body: some View {
         if !reduceTransparency && contrast != .increased && !contrastIncreased {
-            LinearGradient(colors: [.sessionTint, .sessionTint.opacity(0)], startPoint: .top, endPoint: .bottom)
+            LinearGradient(colors: [domain.tint, domain.tint.opacity(0)], startPoint: .top, endPoint: .bottom)
                 .frame(height: 280)
                 .offset(y: -max(scrolled, 0))
                 .ignoresSafeArea(edges: .top)
                 .allowsHitTesting(false)
                 .accessibilityHidden(true)
         }
+    }
+}
+
+/// Today's session done: the record stands in ink with no blue button, its figures in tiles.
+struct DoneDayCard: View {
+    let done: DoneCard
+    let state: String
+    @Environment(\.zoomSpace) private var space
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            DomainChip(domain: .session, text: state, symbol: "checkmark")
+            DayHero(text: SessionText.short(done.code))
+                .padding(.top, 10)
+            if let name = done.name, !name.isEmpty {
+                Text(name)
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(.ink)
+                    .padding(.top, 4)
+            }
+            DoneTiles(durationMs: done.durationMs, sets: done.workSets, effort: done.effort)
+                .padding(.top, 16)
+        }
+        .padding(.top, 12)
+        .padding(.bottom, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .zoomSource(Morph.card, in: space)
+    }
+}
+
+/// Duration, sets and the effort when this phone holds it: side by side while they fit, one under
+/// the other at the largest text sizes, so no figure ever covers another.
+struct DoneTiles: View {
+    let durationMs: Int
+    let sets: Int
+    let effort: Int?
+
+    var body: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(alignment: .top, spacing: 12) { tiles }
+            VStack(alignment: .leading, spacing: 10) { tiles }
+        }
+    }
+
+    @ViewBuilder private var tiles: some View {
+        tile(String(localized: "Durée", table: "Accueil"), id: "duration") {
+            Text(Self.duration(durationMs))
+        }
+        tile(String(localized: "Séries", table: "Accueil"), id: "sets") {
+            Text(sets.formatted())
+        }
+        if let effort {
+            tile(String(localized: "Effort", table: "Accueil"), id: "effort") {
+                HStack(alignment: .lastTextBaseline, spacing: 6) {
+                    EffortGlyph(floor: effort)
+                    Text(EffortText.word(effort))
+                }
+            }
+        }
+    }
+
+    private func tile(_ label: String, id: String, @ViewBuilder value: () -> some View) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(label)
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(.muted)
+            value()
+                .font(.title3.weight(.bold))
+                .foregroundStyle(.ink)
+                .monospacedDigit()
+                .lineLimit(1)
+                .fixedSize()
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("done.\(id)")
+    }
+
+    /// « 48 min », « 1 h 4 min », as the summary writes it.
+    private static func duration(_ ms: Int) -> String {
+        Duration.seconds(ms / 1000).formatted(
+            .units(allowed: [.hours, .minutes], width: .abbreviated, zeroValueUnits: .hide))
+    }
+}
+
+/// The effort's five floors, filled up to the one given; the word always comes with it.
+struct EffortGlyph: View {
+    let floor: Int
+    @ScaledMetric(relativeTo: .subheadline) private var unit: CGFloat = 3
+
+    var body: some View {
+        HStack(alignment: .bottom, spacing: unit * 0.7) {
+            ForEach(1...5, id: \.self) { step in
+                RoundedRectangle(cornerRadius: unit * 0.5)
+                    .fill(step <= floor ? Color.ink : Color.line)
+                    .frame(width: unit * 1.6, height: unit * (1.2 + Double(step) * 0.9))
+            }
+        }
+        .accessibilityHidden(true)
+    }
+}
+
+/// A rest day on a fixed week says so plainly, in the rest colour: nothing to do, so nothing blue.
+struct RestDayCard: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            DomainChip(domain: .rest, text: String(localized: "Jour de repos", table: "Accueil"), symbol: "moon.zzz.fill")
+            DayHero(text: String(localized: "Repos", table: "Accueil"))
+                .padding(.top, 10)
+            Text("Prévu par ton programme", tableName: "Accueil")
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(.ink)
+                .padding(.top, 4)
+            Text("Tes muscles se reconstruisent aujourd’hui.", tableName: "Accueil")
+                .font(.subheadline)
+                .foregroundStyle(.muted)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 4)
+        }
+        .padding(.top, 12)
+        .padding(.bottom, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+/// Nothing planned: the card keeps its place and offers the one way to fill it. On the first
+/// launch it welcomes with the mark instead of a chip.
+struct ChooseCard: View {
+    let first: Bool
+    let choose: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            if first {
+                HStack(alignment: .center, spacing: 14) {
+                    WelcomeMark(side: 52)
+                    Text("Bienvenue", tableName: "Accueil")
+                        .font(.displayCard)
+                        .foregroundStyle(.ink)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+                        .accessibilityAddTraits(.isHeader)
+                }
+                Text("Choisis un programme pour ta première séance.", tableName: "Accueil")
+                    .font(.body)
+                    .foregroundStyle(.muted)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 14)
+            } else {
+                DomainChip(
+                    domain: .session, text: String(localized: "Aucune séance prévue", table: "Accueil"),
+                    symbol: "calendar")
+                Text("Choisis un programme\u{202F}: ta prochaine séance s’affichera ici.", tableName: "Accueil")
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(.ink)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 12)
+            }
+            PrimaryButton(title: "Choisir un programme", tableName: "Accueil", action: choose)
+                .padding(.top, 20)
+        }
+        .padding(.top, first ? 14 : 12)
+        .padding(.bottom, 8)
+    }
+}
+
+/// « Demain » and the session, quiet, under the card: the next one is a tap away, never a second
+/// blue button. It reads as one element that opens the session's preview.
+struct NextRow: View {
+    let when: String
+    let session: NextLine
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                LetterTile(letter: session.code)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(when)
+                        .font(.subheadline)
+                        .foregroundStyle(.muted)
+                    Text(SessionText.title(session.code, name: session.name))
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(.muted)
+                    .accessibilityHidden(true)
+            }
+            .padding(.vertical, 4)
+            .frame(minHeight: 52)
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(when), \(SessionText.title(session.code, name: session.name))")
+        .accessibilityHint(Text("Ouvre la séance", tableName: "Accueil"))
+        .accessibilityAddTraits(.isButton)
+        .accessibilityIdentifier("next-row")
+    }
+}
+
+/// A session's letter on the session tint: the tile a row leads with.
+struct LetterTile: View {
+    let letter: String
+    var domain = Domain.session
+    @ScaledMetric(relativeTo: .title2) private var side: CGFloat = 48
+
+    var body: some View {
+        Text(letter)
+            .font(.custom(Font.archivoName, size: 24, relativeTo: .title2))
+            .foregroundStyle(domain.shade)
+            .frame(width: side, height: side)
+            .background(domain.tint, in: .rect(cornerRadius: 13))
+            .accessibilityHidden(true)
     }
 }
 

@@ -4,10 +4,14 @@ import XCTest
 /// first session comes next, starts, and is still open after a relaunch.
 @MainActor
 final class AccueilTests: XCTestCase {
-    /// `fresh` opens an empty store, `keep` the one the previous launch left.
-    private func launch(_ fixture: String, largestText: Bool = false, increasedContrast: Bool = false) -> XCUIApplication {
+    /// `fresh` opens an empty store, `keep` the one the previous launch left; `now` sets the
+    /// app's clock, a local `yyyy-MM-ddTHH:mm:ss`.
+    private func launch(
+        _ fixture: String, largestText: Bool = false, increasedContrast: Bool = false, now: String? = nil
+    ) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = ["-AppleLanguages", "(fr)", "-AppleLocale", "fr_FR", "-BelayFixture", fixture]
+        if let now { app.launchArguments += ["-BelayNow", now] }
         if largestText {
             app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXL"]
         }
@@ -47,16 +51,23 @@ final class AccueilTests: XCTestCase {
     /// title, in 0-255 steps: the session's tint is about 20 bluer in both appearances, the wall
     /// and the paper are grey.
     private func blueCast(_ app: XCUIApplication) -> Int {
+        cast(app).blue
+    }
+
+    /// How much bluer and how much greener than red the top left of the screen reads, in 0-255
+    /// steps. The session's blue is greener than red (+9 light, +13 dark), the rest violet is not
+    /// (-3, -2); both are bluer than red.
+    private func cast(_ app: XCUIApplication) -> (blue: Int, green: Int) {
         let shot = app.screenshot().image
         guard let image = shot.cgImage else {
             XCTFail("the screenshot has no bitmap")
-            return 0
+            return (0, 0)
         }
         let scale = shot.scale
         let box = CGRect(x: 16 * scale, y: 70 * scale, width: 80 * scale, height: 20 * scale).integral
         guard let crop = image.cropping(to: box) else {
             XCTFail("the sample falls off the screen")
-            return 0
+            return (0, 0)
         }
         let width = crop.width, height = crop.height
         var pixels = [UInt8](repeating: 0, count: width * height * 4)
@@ -71,12 +82,13 @@ final class AccueilTests: XCTestCase {
             return true
         }
         XCTAssertTrue(drawn, "the sample draws")
-        var red = 0, blue = 0
+        var red = 0, green = 0, blue = 0
         for pixel in stride(from: 0, to: pixels.count, by: 4) {
             red += Int(pixels[pixel])
+            green += Int(pixels[pixel + 1])
             blue += Int(pixels[pixel + 2])
         }
-        return (blue - red) / (width * height)
+        return ((blue - red) / (width * height), (green - red) / (width * height))
     }
 
     /// The session's tint washes the top of Accueil behind the title, as on the web.
@@ -220,5 +232,217 @@ final class AccueilTests: XCTestCase {
         let start = app.buttons["Voir la séance"]
         XCTAssertTrue(app.swipeUpUntil(start), "Voir la séance can be tapped at AX3")
         XCTAssertGreaterThanOrEqual(start.frame.height, 44, "a 44 pt target")
+    }
+
+    // MARK: The day's states
+
+    /// The French name of a weekday `offset` days from today, as the app writes it in a sentence.
+    private func weekday(_ offset: Int, from day: Date = .now) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "fr_FR")
+        formatter.dateFormat = "EEEE"
+        return formatter.string(from: Calendar.current.date(byAdding: .day, value: offset, to: day) ?? day)
+    }
+
+    private func element(_ app: XCUIApplication, _ id: String) -> XCUIElement {
+        app.descendants(matching: .any)[id]
+    }
+
+    /// The active program and the active-program changes queued, as the store holds them.
+    private func written(_ app: XCUIApplication) -> String {
+        (element(app, "fixture-active").value as? String) ?? ""
+    }
+
+    /// In rotation the card says « La prochaine », the session large, its size, and opens its
+    /// preview.
+    func testNextOpensPreview() {
+        let app = launch("fresh")
+        let chip = element(app, "chip.session")
+        XCTAssertTrue(chip.waitForExistence(timeout: 10))
+        XCTAssertEqual(chip.label, "La prochaine")
+        XCTAssertTrue(app.staticTexts["Séance A"].exists, "the session's letter leads")
+        XCTAssertTrue(text(app, containing: "6 exercices · environ 55\u{202F}min").exists, "with its size")
+        XCTAssertFalse(element(app, "next-row").exists, "no quiet row under a session to do")
+        app.buttons["Voir la séance"].tap()
+        XCTAssertTrue(app.navigationBars["Séance A"].waitForExistence(timeout: 5), "the preview opens")
+    }
+
+    /// On a fixed week, today's session is « Prévue ce {jour} » and opens its preview.
+    func testDueOnFixedDay() {
+        let app = launch("fixedWeek")
+        let chip = element(app, "chip.session")
+        XCTAssertTrue(chip.waitForExistence(timeout: 10))
+        XCTAssertEqual(chip.label, "Prévue ce \(weekday(0))", "the web's words, today's weekday")
+        XCTAssertTrue(app.staticTexts["Séance A"].exists, "today's session is A")
+        app.buttons["Voir la séance"].tap()
+        XCTAssertTrue(app.navigationBars["Séance A"].waitForExistence(timeout: 5), "its preview opens")
+    }
+
+    /// An open session keeps its running card, and « Reprendre » opens it.
+    func testRunningResumes() {
+        let app = launch("workSet")
+        let resume = app.buttons["Reprendre"]
+        XCTAssertTrue(resume.waitForExistence(timeout: 10))
+        XCTAssertTrue(element(app, "chip.session").label.hasPrefix("En cours"), "the chip says it is under way")
+        resume.tap()
+        XCTAssertTrue(app.buttons["Réduire la séance"].waitForExistence(timeout: 5), "Reprendre opens the session")
+    }
+
+    /// Today's session done: the chip, the session, its tiles with the effort this phone holds, no
+    /// blue button, and a quiet row to the next session that opens its preview.
+    func testDoneTodayTilesAndNextRow() {
+        let app = launch("doneToday")
+        let chip = element(app, "chip.session")
+        XCTAssertTrue(chip.waitForExistence(timeout: 10))
+        XCTAssertEqual(chip.label, "Faite aujourd’hui")
+        XCTAssertTrue(app.staticTexts["Séance A"].exists, "the session done")
+        XCTAssertEqual(element(app, "done.duration").label, "Durée, 1\u{00A0}h 4\u{00A0}min")
+        XCTAssertEqual(element(app, "done.sets").label, "Séries, 6", "the work sets kept")
+        XCTAssertEqual(element(app, "done.effort").label, "Effort, Difficile", "the effort held here")
+        XCTAssertFalse(app.buttons["Voir la séance"].exists, "no blue button on a day done")
+        XCTAssertFalse(app.buttons["Reprendre"].exists)
+        let row = element(app, "next-row")
+        XCTAssertEqual(row.label, "La prochaine, Séance B", "in rotation, the next one with no day")
+        row.tap()
+        XCTAssertTrue(app.navigationBars["Séance B"].waitForExistence(timeout: 5), "the row opens its preview")
+    }
+
+    /// A fixed day's session done the day before says the day it was done on.
+    func testDoneEarlyNamesItsDay() {
+        let app = launch("doneEarly")
+        let chip = element(app, "chip.session")
+        XCTAssertTrue(chip.waitForExistence(timeout: 10))
+        XCTAssertEqual(chip.label, "Faite \(weekday(-1))", "not « aujourd’hui »")
+        XCTAssertTrue(app.staticTexts["Séance B"].exists, "today's session, done yesterday")
+        XCTAssertFalse(element(app, "done.effort").exists, "no effort held: no tile, no dash")
+        let row = element(app, "next-row")
+        XCTAssertEqual(row.label, "\(weekday(2).capitalized), Séance C", "the next session day, by name")
+    }
+
+    /// A rest day reads in the rest colour, band and chip, says so, and names tomorrow's session.
+    func testRestDayBandAndNextRow() {
+        let app = launch("restDay")
+        let chip = element(app, "chip.rest")
+        XCTAssertTrue(chip.waitForExistence(timeout: 10), "the chip carries the rest domain")
+        XCTAssertEqual(chip.label, "Jour de repos")
+        XCTAssertFalse(element(app, "chip.session").exists)
+        XCTAssertTrue(app.staticTexts["Repos"].exists)
+        XCTAssertTrue(app.staticTexts["Prévu par ton programme"].exists)
+        XCTAssertTrue(app.staticTexts["Tes muscles se reconstruisent aujourd’hui."].exists)
+        XCTAssertFalse(app.buttons["Voir la séance"].exists, "nothing to do, nothing blue")
+        let band = cast(app)
+        XCTAssertGreaterThanOrEqual(band.blue, 5, "the top carries a tint: \(band)")
+        XCTAssertLessThanOrEqual(band.green, 2, "the rest violet, not the session's blue: \(band)")
+        let row = element(app, "next-row")
+        XCTAssertEqual(row.label, "Demain, Séance A")
+        row.tap()
+        XCTAssertTrue(app.navigationBars["Séance A"].waitForExistence(timeout: 5), "the row opens its preview")
+    }
+
+    /// The session's band is the session's blue, not the rest violet.
+    func testSessionBandIsBlue() {
+        let app = launch("fixedWeek")
+        XCTAssertTrue(app.navigationBars["Bonjour Ada"].waitForExistence(timeout: 10))
+        let band = cast(app)
+        XCTAssertGreaterThanOrEqual(band.green, 4, "the session's blue: \(band)")
+    }
+
+    /// Nothing planned after a session kept: one blue button opens the program sheet; a tap there
+    /// writes one active-program change, closes the sheet, and Accueil turns to the next session.
+    func testNoProgramChoosesInSheet() {
+        let app = launch("noProgram")
+        let chip = element(app, "chip.session")
+        XCTAssertTrue(chip.waitForExistence(timeout: 10))
+        XCTAssertEqual(chip.label, "Aucune séance prévue")
+        XCTAssertTrue(text(app, containing: "ta prochaine séance s’affichera ici").exists)
+        XCTAssertTrue(written(app).hasSuffix("queued=0"), written(app))
+        app.buttons["Choisir un programme"].tap()
+        XCTAssertTrue(app.navigationBars["Programme actif"].waitForExistence(timeout: 5), "the sheet opens")
+        XCTAssertTrue(text(app, containing: "Un toucher l’active et ferme.").exists, "with its footer")
+        let program = element(app, "program.00000000-0000-7000-8000-0000000000f0")
+        XCTAssertEqual(program.label, "Haut / Bas, 3 séances", "the live program with its sessions")
+        XCTAssertFalse(text(app, containing: "Programme de départ").exists, "a removed program is not offered")
+        program.tap()
+        XCTAssertTrue(app.navigationBars["Programme actif"].waitForNonExistence(timeout: 5), "the tap closes the sheet")
+        XCTAssertTrue(chip.waitForExistence(timeout: 5))
+        XCTAssertEqual(chip.label, "La prochaine", "Accueil turns to the next session")
+        XCTAssertTrue(app.staticTexts["Séance A"].exists)
+        XCTAssertEqual(
+            written(app), "active=00000000-0000-7000-8000-0000000000f0 queued=1", "one change, queued once")
+    }
+
+    /// The first launch welcomes with the mark and one way in, no chip.
+    func testFirstLaunchWelcome() {
+        let app = launch("firstLaunch")
+        XCTAssertTrue(app.staticTexts["Bienvenue"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["Choisis un programme pour ta première séance."].exists)
+        XCTAssertTrue(app.buttons["Choisir un programme"].exists, "one blue button")
+        XCTAssertFalse(element(app, "chip.session").exists, "the welcome has no chip")
+        app.buttons["Choisir un programme"].tap()
+        XCTAssertTrue(app.navigationBars["Programme actif"].waitForExistence(timeout: 5), "it opens the sheet")
+    }
+
+    /// At midnight, with the app on screen, a day done turns into the next session's day.
+    func testMidnightTurnsDoneIntoNext() {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd"
+        let app = launch("doneToday", now: "\(formatter.string(from: .now))T23:59:50")
+        let chip = element(app, "chip.session")
+        XCTAssertTrue(chip.waitForExistence(timeout: 10))
+        XCTAssertEqual(chip.label, "Faite aujourd’hui", "done, before midnight")
+        let next = app.buttons["Voir la séance"]
+        XCTAssertTrue(next.waitForExistence(timeout: 30), "past midnight the next session shows")
+        XCTAssertEqual(chip.label, "La prochaine")
+        XCTAssertTrue(app.staticTexts["Séance B"].exists, "B comes after A")
+    }
+
+    /// At AX3 the letter stays on one line inside the card, the button is whole, and the done
+    /// tiles never cover one another.
+    func testAx3NoCutNoOverlap() {
+        let app = launch("fresh", largestText: true)
+        XCTAssertTrue(app.buttons["settings"].waitForExistence(timeout: 10))
+        let button = app.buttons["Voir la séance"]
+        XCTAssertTrue(app.swipeUpUntil(button), "the button can be reached")
+        let window = app.windows.firstMatch.frame
+        let letter = app.staticTexts["Séance A"]
+        XCTAssertTrue(letter.exists)
+        XCTAssertLessThanOrEqual(letter.frame.maxX, window.maxX - 16, "the letter stays inside the card")
+        XCTAssertLessThan(letter.frame.height, 120, "on one line: \(letter.frame)")
+        XCTAssertGreaterThanOrEqual(button.frame.height, 44)
+        XCTAssertGreaterThanOrEqual(button.frame.minX, window.minX, "the button is whole")
+        XCTAssertLessThanOrEqual(button.frame.maxX, window.maxX, "the button is whole")
+
+        let done = launch("doneToday", largestText: true)
+        XCTAssertTrue(done.buttons["settings"].waitForExistence(timeout: 10))
+        let tiles = ["done.duration", "done.sets", "done.effort"].map { element(done, $0) }
+        XCTAssertTrue(done.swipeUpUntil(tiles[2]), "the tiles can be reached")
+        for (i, a) in tiles.enumerated() {
+            XCTAssertLessThanOrEqual(a.frame.maxX, window.maxX, "\(a.identifier) is whole")
+            for b in tiles[(i + 1)...] {
+                XCTAssertFalse(a.frame.intersects(b.frame), "\(a.identifier) and \(b.identifier) overlap")
+            }
+        }
+    }
+
+    /// Once Accueil scrolls, no compact title and no bar: the content runs under the status bar,
+    /// only the avatar's glass stays.
+    func testNoBarOnScroll() {
+        let app = launch("fresh", largestText: true)
+        XCTAssertTrue(app.buttons["settings"].waitForExistence(timeout: 10))
+        let chip = element(app, "chip.session")
+        XCTAssertTrue(chip.exists)
+        let bar = app.navigationBars.firstMatch
+        let letter = app.staticTexts["Séance A"]
+        // Slowly, a little at a time, until the card's letter reaches the bar.
+        for _ in 0..<6 where letter.exists && letter.frame.minY >= bar.frame.maxY {
+            app.swipeUp(velocity: .slow)
+        }
+        let compact = bar.staticTexts.matching(NSPredicate(format: "label == %@", "Bonjour Ada"))
+            .allElementsBoundByIndex.contains { $0.isHittable && $0.frame.width > 2 }
+        XCTAssertFalse(compact, "no compact title")
+        XCTAssertTrue(app.buttons["settings"].isHittable, "the avatar stays")
+        XCTAssertTrue(letter.exists)
+        XCTAssertLessThan(letter.frame.minY, bar.frame.maxY, "the card runs under the bar: \(letter.frame) \(bar.frame)")
     }
 }
