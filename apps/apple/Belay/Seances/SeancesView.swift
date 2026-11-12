@@ -1,8 +1,8 @@
 import SwiftUI
 import os
 
-/// Séances: the program and, from the next change, the sessions kept. The segment chosen is the
-/// shell's, so it stays while the app runs.
+/// Séances: the program and the sessions kept. The segment chosen is the shell's, so it stays
+/// while the app runs.
 struct SeancesView: View {
     enum Segment: Hashable, CaseIterable {
         case programme, historique
@@ -45,8 +45,7 @@ struct SeancesView: View {
                     activeId: training.activeProgramId, openPreview: openPreview
                 ) { choosing = true }
             case .historique:
-                // The sessions kept come with their own screens; until then the segment is empty.
-                EmptyView()
+                HistorySection(weeks: training.weeks)
             }
         }
         .belayList()

@@ -452,6 +452,42 @@ enum Fixture {
         }
     }
 
+    /// The past-session changes waiting in the queue, for a test to read: « removed=1 sets=0 », a
+    /// session's removal and a set's correction or removal. Nothing a person sees or hears.
+    struct HistoryProbe: View {
+        let store: AccountStore
+        @State private var line = ""
+
+        var body: some View {
+            Color.clear
+                .frame(width: 1, height: 1)
+                .accessibilityElement()
+                .accessibilityIdentifier("fixture-history")
+                .accessibilityValue(line)
+                .task {
+                    let lines = store.observe { db in
+                        let queued = try AccountStore.outbox(db, limit: nil).map(\.change)
+                        let removed = queued.filter { change in
+                            if case .workout(let workout) = change, case .removed = workout.edit { true } else { false }
+                        }.count
+                        let sets = queued.filter { change in
+                            guard case .set(let set) = change else { return false }
+                            switch set.edit {
+                            case .values, .removed: return true
+                            case .create: return false
+                            }
+                        }.count
+                        return "removed=\(removed) sets=\(sets)"
+                    }
+                    do {
+                        for try await value in lines { line = value }
+                    } catch {
+                        preconditionFailure("the fixture's history is not followed: \(error)")
+                    }
+                }
+        }
+    }
+
     /// Whether `-BelayContrast increased` asks for increased contrast, which a test cannot set.
     static var contrastIncreased: Bool { UserDefaults.standard.string(forKey: "BelayContrast") == "increased" }
 

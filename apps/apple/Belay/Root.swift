@@ -30,6 +30,8 @@ enum Route: Hashable {
     case settings
     /// A session of the active program before it starts, from Accueil or Séances.
     case preview(sessionId: String)
+    /// A session kept, from Séances' Historique.
+    case past(workoutId: String)
 }
 
 /// The tab in front and what each tab has pushed, kept across tab switches.
@@ -77,40 +79,42 @@ struct RootView: View {
     }
 
     var body: some View {
+        // One stack per tab, each written out: a stack built in a loop over the tabs lost the
+        // large title on the screens Séances pushed.
         TabView(selection: $model.tab) {
-            ForEach(AppTab.allCases, id: \.self) { tab in
-                Tab(value: tab) {
-                    NavigationStack(path: path(of: tab)) {
-                        Group {
-                            if tab == .home {
-                                AccueilView(
-                                    training: training,
-                                    notice: SyncNotice(
-                                        status: account.syncStatus,
-                                        reconnect: { Task { await account.reconnect() } },
-                                        retry: account.refresh),
-                                    displayName: account.displayName,
-                                    openPreview: { openPreview($0, in: .home) },
-                                    openCover: openCover)
-                            } else if tab == .seances {
-                                SeancesView(
-                                    training: training, segment: $model.segment,
-                                    openPreview: { openPreview($0, in: .seances) })
-                            } else {
-                                WebForNow(tab: tab)
-                            }
-                        }
-                        .navigationDestination(for: Route.self) { route in
-                            switch route {
-                            case .settings: ReglagesView(account: account, store: store)
-                            case .preview(let sessionId):
-                                SessionPreview(training: training, sessionId: sessionId, openCover: openCover)
-                            }
-                        }
-                    }
-                } label: {
-                    tabLabel(tab)
+            Tab(value: AppTab.home) {
+                stack(.home) {
+                    AccueilView(
+                        training: training,
+                        notice: SyncNotice(
+                            status: account.syncStatus,
+                            reconnect: { Task { await account.reconnect() } },
+                            retry: account.refresh),
+                        displayName: account.displayName,
+                        openPreview: { openPreview($0, in: .home) },
+                        openCover: openCover)
                 }
+            } label: {
+                tabLabel(.home)
+            }
+            Tab(value: AppTab.seances) {
+                stack(.seances) {
+                    SeancesView(
+                        training: training, segment: $model.segment,
+                        openPreview: { openPreview($0, in: .seances) })
+                }
+            } label: {
+                tabLabel(.seances)
+            }
+            Tab(value: AppTab.corps) {
+                stack(.corps) { WebForNow(tab: .corps) }
+            } label: {
+                tabLabel(.corps)
+            }
+            Tab(value: AppTab.outils) {
+                stack(.outils) { WebForNow(tab: .outils) }
+            } label: {
+                tabLabel(.outils)
             }
         }
         .tabViewStyle(.sidebarAdaptable)
@@ -142,6 +146,25 @@ struct RootView: View {
                 model.paths[tab]?.removeAll { if case .preview = $0 { true } else { false } }
             }
             if training.summary == nil { model.coverOpen = false }
+        }
+    }
+
+    /// A tab's stack: its first screen, and every route it can push.
+    private func stack(_ tab: AppTab, @ViewBuilder root: () -> some View) -> some View {
+        NavigationStack(path: path(of: tab)) {
+            root().navigationDestination(for: Route.self) { route in
+                switch route {
+                case .settings: ReglagesView(account: account, store: store)
+                case .preview(let sessionId):
+                    SessionPreview(training: training, sessionId: sessionId, openCover: openCover)
+                case .past(let workoutId):
+                    PastSessionView(
+                        training: training,
+                        model: PastSessionModel(
+                            workoutId: workoutId, store: store, didWrite: account.didWrite,
+                            health: account.runHealth, now: Self.clock))
+                }
+            }
         }
     }
 

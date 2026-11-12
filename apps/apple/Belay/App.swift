@@ -48,6 +48,7 @@ struct BelayApp: App {
                         Fixture.QueueProbe(store: store)
                         Fixture.SummaryProbe(store: store)
                         Fixture.ActiveProbe(store: store)
+                        Fixture.HistoryProbe(store: store)
                     }
                 }
                 .environment(\.contrastIncreased, Fixture.contrastIncreased)
