@@ -168,6 +168,17 @@ enum WeekdayText {
         date.formatted(.dateTime.weekday(.wide).day().month(.wide))
     }
 
+    /// « 18 h 00 » in French, as a length reads « 1 h 4 min »; the locale's own clock elsewhere,
+    /// « 6:00 PM » in English.
+    static func time(_ date: Date) -> String {
+        guard Bundle.main.preferredLocalizations.first == "fr" else {
+            return date.formatted(date: .omitted, time: .shortened)
+        }
+        let parts = Calendar.current.dateComponents([.hour, .minute], from: date)
+        let minute = (parts.minute ?? 0).formatted(.number.precision(.integerLength(2)))
+        return "\(parts.hour ?? 0)\u{202F}h\u{202F}\(minute)"
+    }
+
     /// The calendar counts from Sunday.
     private static func calendarIndex(_ weekday: Int) -> Int { (weekday + 1) % 7 }
 }

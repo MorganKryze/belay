@@ -139,7 +139,7 @@ final class SeancesHistoryTests: XCTestCase {
         let app = past(now: Self.wednesday)
         let name = app.staticTexts["Pectoraux et dos"]
         XCTAssertTrue(name.exists, "its name under the letter")
-        let when = app.staticTexts["Mardi 6 octobre · 20:00"]
+        let when = app.staticTexts["Mardi 6 octobre · 20\u{202F}h\u{202F}00"]
         XCTAssertTrue(when.exists, "its day and hour")
         XCTAssertGreaterThan(when.frame.minY, name.frame.minY, "the day under the name")
     }

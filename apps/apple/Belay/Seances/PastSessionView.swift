@@ -188,9 +188,9 @@ extension PastSessionView {
             weightKg: set.weightKg, count: set.seconds ?? set.reps ?? 0, rir: set.rir)
     }
 
-    /// « Lundi 5 octobre · 18:00 ».
+    /// « Lundi 5 octobre · 18 h 00 ».
     private static func when(_ startedAt: String) -> String {
         guard let date = Instant.date(startedAt) else { return "" }
-        return "\(HistoryText.day(startedAt)) · \(date.formatted(date: .omitted, time: .shortened))"
+        return "\(HistoryText.day(startedAt)) · \(WeekdayText.time(date))"
     }
 }
