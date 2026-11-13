@@ -183,24 +183,15 @@ private struct ActiveProgramRow: View {
     var body: some View {
         let line = "\(program.title) · \(String(localized: "\(program.sessions) séances", table: "Seances"))"
         Button(action: action) {
-            HStack(spacing: 14) {
-                SymbolTile(domain: .session, symbol: "list.bullet.rectangle")
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Programme actif", tableName: "Seances")
-                        .font(.body.weight(.medium))
-                        .foregroundStyle(.ink)
-                    Text(line)
-                        .font(.subheadline)
-                        .foregroundStyle(.muted)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                Spacer(minLength: 0)
+            TiledRow(
+                tile: SymbolTile(domain: .session, symbol: "list.bullet.rectangle"),
+                title: Text("Programme actif", tableName: "Seances"), line: Text(line)
+            ) {
                 Image(systemName: "chevron.up.chevron.down")
                     .font(.footnote.weight(.semibold))
                     .foregroundStyle(.muted)
                     .accessibilityHidden(true)
             }
-            .frame(minHeight: 52)
             .contentShape(.rect)
         }
         .buttonStyle(.plain)
@@ -216,20 +207,12 @@ private struct RhythmRow: View {
     let rhythm: Rhythm
 
     var body: some View {
-        HStack(spacing: 14) {
-            SymbolTile(domain: .rest, symbol: "moon.zzz.fill")
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Rythme", tableName: "Seances")
-                    .font(.body.weight(.medium))
-                    .foregroundStyle(.ink)
-                Text(words)
-                    .font(.subheadline)
-                    .foregroundStyle(.muted)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            Spacer(minLength: 0)
+        TiledRow(
+            tile: SymbolTile(domain: .rest, symbol: "moon.zzz.fill"), title: Text("Rythme", tableName: "Seances"),
+            line: Text(words)
+        ) {
+            EmptyView()
         }
-        .frame(minHeight: 52)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(String(localized: "Rythme", table: "Seances")), \(words)")
         .accessibilityIdentifier("rhythm")
@@ -242,6 +225,55 @@ private struct RhythmRow: View {
             String(localized: "\(letters.joined(separator: ", ")) à la suite", table: "Seances")
         case .fixed(let sessions):
             String(localized: "\(sessions) séances par semaine", table: "Seances")
+        }
+    }
+}
+
+/// A row of the program's card: its tile, its title over its line, and what trails. At the
+/// largest sizes the tile rises above the words, as on a session's row, so they keep the row's
+/// width: beside it « Programme actif » broke inside its first word.
+private struct TiledRow<Tile: View, Trailing: View>: View {
+    let tile: Tile
+    let title: Text
+    let line: Text
+    let trailing: Trailing
+    @Environment(\.dynamicTypeSize) private var typeSize
+
+    init(tile: Tile, title: Text, line: Text, @ViewBuilder trailing: () -> Trailing) {
+        self.tile = tile
+        self.title = title
+        self.line = line
+        self.trailing = trailing()
+    }
+
+    var body: some View {
+        Group {
+            if typeSize.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack {
+                        tile
+                        Spacer(minLength: 0)
+                        trailing
+                    }
+                    words
+                }
+                .padding(.vertical, 8)
+            } else {
+                HStack(spacing: 14) {
+                    tile
+                    words
+                    Spacer(minLength: 0)
+                    trailing
+                }
+            }
+        }
+        .frame(minHeight: 52)
+    }
+
+    private var words: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            title.font(.body.weight(.medium)).foregroundStyle(.ink)
+            line.font(.subheadline).foregroundStyle(.muted).fixedSize(horizontal: false, vertical: true)
         }
     }
 }
