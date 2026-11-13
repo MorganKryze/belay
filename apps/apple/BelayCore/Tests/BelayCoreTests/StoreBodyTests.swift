@@ -213,15 +213,111 @@ final class MovingClock: Sendable {
     try body.weigh(date: day, kg: 80.4)
     try body.take(supplementId: Fixture.id(20), date: day, taken: true)
     try body.annotate(AnnotationInput(id: Fixture.id(30), date: day, type: .note, label: "x"))
+    try body.measure(date: day, waist: 85, neck: nil, hip: nil)
+    try body.intake(date: day, kcal: 2000, protein: nil)
     let sent = try store.outbox(limit: nil)
+    try store.applyServer(
+      sent: sent,
+      response: Fixture.response(
+        rejected: sent.indices.map { Rejected(index: $0, reason: "refused") }))
+    #expect(try store.body() == BodyRead.empty)
+    #expect(try store.rejected().count == 5)
+  }
+
+  @Test func aRefusedMeasureFieldGoesAloneWhileStillTheLastWrite() throws {
+    try body.measure(date: day, waist: 85, neck: 38, hip: 95)
+    let sent = try store.outbox(limit: nil)
+    clock.move(minutes: 1)
+    try body.measure(date: day, waist: 85, neck: 37, hip: 95)
+    // The waist and the first neck are refused; the hip went through.
     try store.applyServer(
       sent: sent,
       response: Fixture.response(rejected: [
         Rejected(index: 0, reason: "refused"), Rejected(index: 1, reason: "refused"),
-        Rejected(index: 2, reason: "refused"),
       ]))
-    #expect(try store.body() == BodyRead.empty)
-    #expect(try store.rejected().count == 3)
+    #expect(
+      try store.body().measures == [
+        MeasureRow(
+          date: day, waistCm: nil, waistAt: nil, neckCm: 37, neckAt: Fixture.time(1), hipCm: 95,
+          hipAt: Fixture.time(0))
+      ])
+  }
+
+  @Test func aQueuedMeasureFieldWeighsOnlyAgainstItsOwnField() throws {
+    clock.move(minutes: 5)
+    try body.measure(date: day, waist: nil, neck: 38, hip: nil)
+
+    // Another device wrote the waist later and the neck earlier than this queued neck.
+    var answer = Fixture.response()
+    answer.measures = [
+      MeasureRow(
+        date: day, waistCm: 85, waistAt: Fixture.time(7), neckCm: 39, neckAt: Fixture.time(3),
+        hipCm: nil, hipAt: nil)
+    ]
+    try store.applyServer(sent: [], response: answer)
+    #expect(
+      try store.body().measures == [
+        MeasureRow(
+          date: day, waistCm: 85, waistAt: Fixture.time(7), neckCm: 38, neckAt: Fixture.time(5),
+          hipCm: nil, hipAt: nil)
+      ])
+
+    answer.measures = [
+      MeasureRow(
+        date: day, waistCm: 85, waistAt: Fixture.time(7), neckCm: 40, neckAt: Fixture.time(9),
+        hipCm: nil, hipAt: nil)
+    ]
+    try store.applyServer(sent: [], response: answer)
+    #expect(try store.body().measures == answer.measures)
+  }
+
+  @Test func aQueuedIntakeMergesByTime() throws {
+    clock.move(minutes: 5)
+    try body.intake(date: day, kcal: 2100, protein: nil)
+
+    var older = Fixture.response()
+    older.intake = [
+      IntakeRow(
+        date: day, kcal: 1800, kcalAt: Fixture.time(3), proteinG: 120, proteinAt: Fixture.time(3))
+    ]
+    try store.applyServer(sent: [], response: older)
+    #expect(
+      try store.body().intake == [
+        IntakeRow(
+          date: day, kcal: 2100, kcalAt: Fixture.time(5), proteinG: 120,
+          proteinAt: Fixture.time(3))
+      ])
+
+    var newer = Fixture.response()
+    newer.intake = [
+      IntakeRow(
+        date: day, kcal: 2400, kcalAt: Fixture.time(7), proteinG: 120, proteinAt: Fixture.time(3))
+    ]
+    try store.applyServer(sent: [], response: newer)
+    #expect(try store.body().intake == newer.intake)
+  }
+
+  @Test func aQueuedRemovalOutranksALaterEditOfTheFields() throws {
+    let id = Fixture.id(30)
+    try body.annotate(AnnotationInput(id: id, date: day, type: .note, label: "x"))
+    try store.applyServer(sent: try store.outbox(limit: nil), response: Fixture.response())
+    clock.move(minutes: 2)
+    try body.removeAnnotation(id: id)
+
+    // The label was edited elsewhere after the removal: the two fields merge on their own.
+    var answer = Fixture.response()
+    answer.annotations = [
+      AnnotationRow(
+        id: id, date: day, type: .note, label: "y", fieldsAt: Fixture.time(3), removed: false,
+        removedAt: nil)
+    ]
+    try store.applyServer(sent: [], response: answer)
+    #expect(try store.body().annotations.isEmpty)
+    #expect(
+      try store.writer.read { try BodyRows.annotation($0, id: id) }
+        == AnnotationRow(
+          id: id, date: day, type: .note, label: "y", fieldsAt: Fixture.time(3), removed: true,
+          removedAt: Fixture.time(2)))
   }
 
   @Test func theBodyRowsReceivedAreStored() throws {
