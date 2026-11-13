@@ -103,7 +103,7 @@ extension AccountStore {
   }
 
   static func check(_ changes: [Change]) throws {
-    // Neither kind is dated by the local day, so the clock does not sway the verdict.
+    // No kind written here is dated by the local day, so the clock does not sway the verdict.
     guard changes.allSatisfy({ isValid($0, now: Date()) }) else { throw StoreError.invalidChange }
   }
 
@@ -186,6 +186,8 @@ extension AccountStore {
       case .values: return row?.fieldsAt
       case .removed: return row?.removedAt
       }
+    case .activeProgram:
+      return try Rows.single(ActiveProgramRow.self, db, "activeProgram")?.at
     }
   }
 
@@ -238,16 +240,19 @@ extension AccountStore {
       case .removed(let removed): (row.removed, row.removedAt) = (removed, c.at)
       }
       try Rows.putSet(db, row)
+    case .activeProgram(let c):
+      try Rows.putSingle(db, "activeProgram", ActiveProgramRow(programId: c.programId, at: c.at))
     }
   }
 }
 
 extension Change {
-  /// The session a change belongs to.
-  var workoutId: String {
+  /// The session a change belongs to; nil for the active program.
+  var workoutId: String? {
     switch self {
     case .workout(let c): c.id
     case .set(let c): c.workoutId
+    case .activeProgram: nil
     }
   }
 }

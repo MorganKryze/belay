@@ -71,6 +71,21 @@ public struct DoneSet: Sendable, Equatable, Identifiable {
   public var weightKg: Double
   public var count: Int
   public var rir: Int?
+
+  /// A set kept, for the correction sheet, which reads a past session's sets as it reads this one's.
+  public init(
+    id: String, place: SetPlace, exerciseId: String, warmup: Bool, timed: Bool, weightKg: Double,
+    count: Int, rir: Int?
+  ) {
+    self.id = id
+    self.place = place
+    self.exerciseId = exerciseId
+    self.warmup = warmup
+    self.timed = timed
+    self.weightKg = weightKg
+    self.count = count
+    self.rir = rir
+  }
 }
 
 /// One bar per work set of the exercise shown.

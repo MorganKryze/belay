@@ -2,8 +2,8 @@ import Foundation
 
 /// The phone's own check before a change enters its queue, the web's rule ported: stricter than
 /// what the server accepts, so a queued change is never refused for its shape, which would block
-/// the whole queue. `now` is the phone's clock, for the kinds dated by the local day; neither
-/// a session nor a set is, so their verdict never depends on it.
+/// the whole queue. `now` is the phone's clock, for the kinds dated by the local day; no kind
+/// written here is, so the verdict never depends on it.
 public func isValid(_ change: Change, now: Date) -> Bool {
   switch change {
   case .workout(let c):
@@ -11,6 +11,8 @@ public func isValid(_ change: Change, now: Date) -> Bool {
   case .set(let c):
     return Instant.isCanonical(c.at) && isId(c.id) && isId(c.workoutId)
       && isValid(c.edit, at: c.at)
+  case .activeProgram(let c):
+    return Instant.isCanonical(c.at) && isId(c.programId)
   }
 }
 

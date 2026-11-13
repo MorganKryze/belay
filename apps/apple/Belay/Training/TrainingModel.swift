@@ -2,16 +2,27 @@ import BelayCore
 import Foundation
 import os
 
-/// The session the schedule offers next, as Accueil's card shows it.
+/// A session of the active program as it would start today, as Accueil's card and its preview
+/// show it.
 struct NextSession: Equatable {
     let sessionId: String?
     let code: String
     let name: String?
     /// The slots of the day's plan, the no-climbing ones included when the week asks for them.
     let exercises: Int
+    /// The plan's work sets.
+    let sets: Int
     let minutes: Int
+    /// When it was last kept and how long it lasted; nil the first time.
+    let last: LastKept?
     /// The live slots of that plan, as the preview lists them.
     let plan: [PlannedExercise]
+}
+
+/// The last time a session was kept: the day it started and its length.
+struct LastKept: Equatable {
+    let startedAt: Date
+    let durationMs: Int
 }
 
 /// One exercise of the next session, before it starts.
@@ -45,6 +56,8 @@ struct CurrentSet: Equatable {
 /// The session open on this phone, or on another device, as the card and the accessory show it.
 struct OpenSession: Equatable {
     let workoutId: String
+    /// The program session it was started from; nil for one started from none.
+    let sessionId: String?
     let code: String
     let name: String?
     let startedAt: Date
@@ -140,13 +153,22 @@ private nonisolated struct Snapshot: Sendable {
     let programs: StoredPrograms
     let activities: [ActivityRow]
     let active: ActiveSession?
+    let efforts: [SessionEffort]
 }
 
-/// The session screens' view of the account's store: the next session, the open one, and the
-/// start. It follows the store, so a write from anywhere (a sync, another screen) shows here.
+/// A live program as the program sheet lists it: its name and how many sessions it rotates.
+struct ProgramChoice: Equatable, Identifiable {
+    let id: String
+    /// Nil for a program the person never named.
+    let name: String?
+    let starter: Bool
+    let sessions: Int
+}
+
+/// The session screens' view of the account's store: the program's sessions, the open one, and
+/// the start. It follows the store, so a write from anywhere (a sync, another screen) shows here.
 @MainActor @Observable
 final class TrainingModel {
-    private(set) var next: NextSession?
     private(set) var open: OpenSession?
     /// What the cover shows of the open session now, read from the store by the core's rule.
     private(set) var session: SessionState?
@@ -156,10 +178,25 @@ final class TrainingModel {
     private(set) var summary: SessionSummary?
     /// The open session's whole plan, as its programme lists it.
     private(set) var programme: [ProgrammeExercise] = []
+    /// What Accueil shows for the day, decided by the core's rule.
+    private(set) var accueil: AccueilState?
+    /// What Séances' Programme segment shows, decided by the core's rule.
+    private(set) var programmeState: ProgrammeState?
+    /// Séances' Historique: the sessions kept, by week, newest first.
+    private(set) var weeks: [HistoryWeek] = []
+    /// Every session of the active program as it would start today, in the rotation's order.
+    private(set) var sessions: [NextSession] = []
+    /// The moment the day was last read, so the screens name the day it was read for.
+    private(set) var readAt: Date
+    /// The live programs in the shared order, and the active one.
+    private(set) var programs: [ProgramChoice] = []
+    private(set) var activeProgramId: String?
 
     private let store: AccountStore
     /// Every write to the open session goes through these, each one transaction of the store.
     private let actions: SessionActions
+    /// The writes outside a session: the active program, a past session.
+    private let history: HistoryActions
     private let didWrite: () -> Void
     /// Told when Health may have something new: a session finished, a summary left.
     private let health: () -> Void
@@ -169,6 +206,8 @@ final class TrainingModel {
     /// Wakes the cover at its next moment: a rest's end, a hold's end, the recap's turn.
     @ObservationIgnored private var wake: Task<Void, Never>?
     @ObservationIgnored private var last: Snapshot?
+    /// Reads the day again at each local midnight, while the app is on screen.
+    @ObservationIgnored private var midnight: Task<Void, Never>?
 
     private static let log = Logger(subsystem: "cloud.libresoftware.belay", category: "training")
 
@@ -178,6 +217,8 @@ final class TrainingModel {
     ) {
         self.store = store
         actions = SessionActions(store: store, library: BundledLibrary.library, now: now, newId: UUIDv7.make)
+        history = HistoryActions(store: store, now: now)
+        readAt = now()
         self.didWrite = didWrite
         self.health = health
         self.now = now
@@ -190,11 +231,26 @@ final class TrainingModel {
                 let snapshots = store.observe { db in
                     Snapshot(
                         history: try AccountStore.history(db), programs: try AccountStore.programs(db),
-                        activities: try AccountStore.activities(db), active: try AccountStore.activeSession(db))
+                        activities: try AccountStore.activities(db), active: try AccountStore.activeSession(db),
+                        efforts: try AccountStore.efforts(db))
                 }
                 for try await snapshot in snapshots { self?.show(snapshot) }
             } catch {
                 Self.log.error("store not followed: \(AccountStore.logLabel(error), privacy: .public)")
+            }
+        }
+        midnight = Task { [weak self, now, timeZone] in
+            while !Task.isCancelled {
+                var calendar = Calendar(identifier: .gregorian)
+                calendar.timeZone = timeZone
+                let at = now()
+                let next = calendar.nextDate(
+                    after: at, matching: DateComponents(hour: 0, minute: 0, second: 0), matchingPolicy: .nextTime)
+                // A second past midnight, so the day read is surely the new one.
+                let wait = (next ?? at.addingTimeInterval(3_600)).timeIntervalSince(at) + 1
+                try? await Task.sleep(for: .seconds(wait))
+                guard !Task.isCancelled else { return }
+                self?.refresh()
             }
         }
     }
@@ -202,13 +258,40 @@ final class TrainingModel {
     isolated deinit {
         watch?.cancel()
         wake?.cancel()
+        midnight?.cancel()
+    }
+
+    /// Makes a live program the active one, as one change sent on the next sync.
+    func chooseProgram(_ programId: String) throws {
+        try history.chooseProgram(programId)
+        didWrite()
+        refresh()
     }
 
     /// Starts the next session, or takes up the one already open, here or elsewhere; its id.
     func start() throws -> String {
         let snapshot = try store.read()
+        guard let template = template(snapshot, at: now()) else { throw TrainingError.nothingToStart }
+        return try start(template, snapshot: snapshot)
+    }
+
+    /// Starts a session of the active program, in turn or not, with today's plan for it; or takes
+    /// up the one already open, here or elsewhere, so there is never a second. Its id.
+    func start(sessionId: String) throws -> String {
+        let snapshot = try store.read()
+        guard let template = rotationOf(snapshot.programs).first(where: { $0.sessionId == sessionId }) else {
+            throw TrainingError.nothingToStart
+        }
+        return try start(template, snapshot: snapshot)
+    }
+
+    /// A session of the active program as it would start today, or nil when it is not one.
+    func preview(_ sessionId: String) -> NextSession? {
+        sessions.first { $0.sessionId == sessionId }
+    }
+
+    private func start(_ template: LetteredTemplate, snapshot: Snapshot) throws -> String {
         let at = now()
-        guard let template = template(snapshot, at: at) else { throw TrainingError.nothingToStart }
         let plan = planFor(template, activities: snapshot.activities, date: toISODate(at, timeZone: timeZone))
         let time = Instant.string(at)
         // The store writes the session's name as it stands now, so the name here is a placeholder.
@@ -440,6 +523,22 @@ final class TrainingModel {
         let at = now()
         let sets = snapshot.history.sets
         last = snapshot
+        readAt = at
+        let state = accueilState(
+            history: snapshot.history, programs: snapshot.programs, activities: snapshot.activities,
+            efforts: snapshot.efforts, now: at, timeZone: timeZone)
+        if accueil != state { accueil = state }
+        let choices = programOrder(snapshot.programs).map { program in
+            var alone = snapshot.programs
+            alone.activeId = program.id
+            return ProgramChoice(
+                id: program.id, name: program.name, starter: program.id == Seed.programs.activeId,
+                sessions: rotationOf(alone).count)
+        }
+        if programs != choices { programs = choices }
+        let active = snapshot.programs.programs.contains { $0.id == snapshot.programs.activeId && !$0.removed }
+            ? snapshot.programs.activeId : nil
+        if activeProgramId != active { activeProgramId = active }
         if let workout = openWorkout(snapshot.history.workouts, forgotten: (sets, at)) {
             let own = sets.filter { $0.workoutId == workout.id && !$0.removed }
             let due = snapshot.active.flatMap { active in
@@ -448,7 +547,8 @@ final class TrainingModel {
                     : nil
             }
             open = OpenSession(
-                workoutId: workout.id, code: workout.sessionCode, name: workout.sessionName.value,
+                workoutId: workout.id, sessionId: workout.sessionId.value, code: workout.sessionCode,
+                name: workout.sessionName.value,
                 startedAt: Instant.date(workout.startedAt) ?? at, setsPlanned: plannedWorkSets(workout.plan),
                 setsDone: sessionProgress(workout.plan, sets: own).done.count,
                 current: due.map { set in
@@ -461,21 +561,37 @@ final class TrainingModel {
             open = nil
         }
         recompute()
-        next = template(snapshot, at: at).map { template in
-            let plan = planFor(template, activities: snapshot.activities, date: toISODate(at, timeZone: timeZone))
-            return NextSession(
-                sessionId: template.sessionId, code: template.code, name: template.name,
-                exercises: plan.count, minutes: estimatedMinutes(plan),
-                plan: liveSlots(plan).map { index in
-                    let slot = plan[index]
-                    let measure: Measure? = slot.measure == .seconds ? .seconds : nil
-                    return PlannedExercise(
-                        slotIndex: index, name: exerciseName(slot.exerciseId), sets: slot.sets,
-                        timed: measure != nil, repRange: slot.repRange,
-                        lastTime: BelayCore.lastTime(snapshot.history, exerciseId: slot.exerciseId, measure: measure)
-                            .map { LoadGroup(weightKg: $0.weightKg, counts: $0.counts) })
-                })
+        let programme = BelayCore.programmeState(
+            history: snapshot.history, programs: snapshot.programs, activities: snapshot.activities, now: at,
+            timeZone: timeZone)
+        if programmeState != programme { programmeState = programme }
+        let kept = historyWeeks(snapshot.history, efforts: snapshot.efforts, now: at, timeZone: timeZone)
+        if weeks != kept { weeks = kept }
+        let described = rotationOf(snapshot.programs).map { describe($0, snapshot: snapshot, at: at) }
+        if sessions != described { sessions = described }
+    }
+
+    /// A session as it would start at `at`: today's plan for it, each exercise's last time, and
+    /// when it was last kept.
+    private func describe(_ template: LetteredTemplate, snapshot: Snapshot, at: Date) -> NextSession {
+        let plan = planFor(template, activities: snapshot.activities, date: toISODate(at, timeZone: timeZone))
+        let last = lastFinished(snapshot.history.workouts, session: template).flatMap { workout -> LastKept? in
+            guard let started = Instant.date(workout.startedAt) else { return nil }
+            let ended = workout.endedAt.flatMap(Instant.date) ?? started
+            return LastKept(startedAt: started, durationMs: Int(ended.timeIntervalSince(started) * 1_000))
         }
+        return NextSession(
+            sessionId: template.sessionId, code: template.code, name: template.name,
+            exercises: plan.count, sets: plannedWorkSets(plan), minutes: estimatedMinutes(plan), last: last,
+            plan: liveSlots(plan).map { index in
+                let slot = plan[index]
+                let measure: Measure? = slot.measure == .seconds ? .seconds : nil
+                return PlannedExercise(
+                    slotIndex: index, name: exerciseName(slot.exerciseId), sets: slot.sets,
+                    timed: measure != nil, repRange: slot.repRange,
+                    lastTime: BelayCore.lastTime(snapshot.history, exerciseId: slot.exerciseId, measure: measure)
+                        .map { LoadGroup(weightKg: $0.weightKg, counts: $0.counts) })
+            })
     }
 
     /// The cover's state at this moment. The recap's marks are set as it shows and cleared once a
@@ -533,11 +649,22 @@ final class TrainingModel {
     }
 }
 
+/// The cover's correction sheet writes through the open session's actions.
+extension TrainingModel: SetCorrecting {
+    func correct(setId: String, weightKg: Double, count: Int, rir: Int?) throws {
+        try act { try $0.correct(setId: setId, weightKg: weightKg, count: count, rir: rir) }
+    }
+
+    func remove(setId: String) throws {
+        try act { try $0.remove(setId: setId) }
+    }
+}
+
 private extension AccountStore {
     /// The snapshot outside an observation, for the first frame and right after a write.
     func read() throws -> Snapshot {
         Snapshot(
             history: try history(), programs: try programs(), activities: try activities(),
-            active: try activeSession())
+            active: try activeSession(), efforts: try efforts())
     }
 }

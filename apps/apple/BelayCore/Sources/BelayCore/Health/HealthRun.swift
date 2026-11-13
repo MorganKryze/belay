@@ -41,7 +41,8 @@ public protocol HealthWriting: Sendable {
   func authorize() async throws
   /// Saves the workout of `w` under `syncId`, replacing one of a lower version.
   func save(_ w: HealthObject, syncId: String) async -> HealthOutcome
-  /// Deletes this app's workout under `syncId`; none left to delete is `.removed` too.
+  /// Deletes this app's workout, or effort score (`healthEffortSyncId`), under `syncId`; none
+  /// left to delete is `.removed` too.
   func delete(syncId: String) async -> HealthOutcome
   /// Whether another source's workout covers at least half of the span.
   func overlaps(startedAt: Int64, endedAt: Int64) async -> Bool
@@ -122,6 +123,16 @@ private struct HealthRun {
         }
       case .workoutRemoved:
         outcome = await writer.delete(syncId: syncId)
+        // The effort score goes too, or it would stay in Health with no workout: tried for any
+        // effort the phone holds, since one related whose mark failed sits there unmarked. Health
+        // keeping it leaves the removal unrecorded, so the next run tries both again; with effort
+        // access withdrawn no delete can succeed, so the removal is recorded rather than retried
+        // forever.
+        if outcome == .removed, access.effort == .allowed, try store.effort(workoutId: id) != nil,
+          await writer.delete(syncId: healthEffortSyncId(id)) != .removed
+        {
+          continue
+        }
       }
       if let kept = afterOutcome(object, outcome, kept: written[key]) {
         if case .workout = kept {

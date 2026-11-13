@@ -26,8 +26,8 @@
     "science:check": "tsx scripts/science-doc.ts --check",
     "exercises:import": "tsx scripts/exercises-import.ts",
     "exercises:check": "tsx scripts/exercises-import.ts --check",
-    "vectors": "tsx scripts/swift-vectors.ts",
-    "vectors:check": "tsx scripts/swift-vectors.ts --check"
+    "vectors": "TZ=Europe/Paris tsx scripts/swift-vectors.ts",
+    "vectors:check": "TZ=Europe/Paris tsx scripts/swift-vectors.ts --check"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

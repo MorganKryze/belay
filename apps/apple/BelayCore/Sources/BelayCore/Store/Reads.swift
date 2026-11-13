@@ -32,6 +32,18 @@ extension AccountStore {
       sets: try Rows.all(SetRow.self, db, "sets"))
   }
 
+  /// One past session, read from its own rows: opening it does not decode every session kept.
+  public static func pastSession(_ db: Database, workoutId: String) throws -> PastSession? {
+    guard let workout = try Rows.get(WorkoutRow.self, db, "workouts", id: workoutId) else { return nil }
+    let sets = try Data.fetchAll(
+      db, sql: "SELECT row FROM sets WHERE json_extract(CAST(row AS TEXT), '$.workoutId') = ? ORDER BY id",
+      arguments: [workoutId]
+    ).map { try Rows.decode(SetRow.self, $0) }
+    let effort = try Self.effort(db, workoutId: workoutId)
+    return BelayCore.pastSession(
+      History(workouts: [workout], sets: sets), workoutId: workoutId, efforts: effort.map { [$0] } ?? [])
+  }
+
   /// The programs as the screens read them: what this device holds, over the starting rows.
   public static func programs(_ db: Database) throws -> StoredPrograms {
     let pointer = try Rows.single(ActiveProgramRow.self, db, "activeProgram")
@@ -69,6 +81,9 @@ extension AccountStore {
 
   public func cursor() throws -> String { try writer.read(Self.cursor) }
   public func history() throws -> History { try writer.read(Self.history) }
+  public func pastSession(workoutId: String) throws -> PastSession? {
+    try writer.read { try Self.pastSession($0, workoutId: workoutId) }
+  }
   public func programs() throws -> StoredPrograms { try writer.read(Self.programs) }
   public func activities() throws -> [ActivityRow] { try writer.read(Self.activities) }
   public func activeSession() throws -> ActiveSession? { try writer.read(Self.activeSession) }

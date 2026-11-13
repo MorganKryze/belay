@@ -10,6 +10,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { isDeepStrictEqual } from "node:util";
+import { addDays } from "../packages/shared/src/body/dates";
 import { EXERCISE_ID } from "../packages/shared/src/exercises/library";
 import {
   DAY,
@@ -57,7 +58,9 @@ import {
 import {
   autoClose,
   FORGOTTEN_MS,
+  finishedOn as finishedOnDay,
   type History,
+  lastFinished,
   lastTime,
   liveSets,
   nextTurn,
@@ -71,8 +74,20 @@ import {
   turnKey,
   warmups,
   workOrder,
+  workSetsOf,
 } from "../packages/shared/src/training/rules";
-import { plannedNext } from "../packages/shared/src/training/schedule";
+import { chooseActive, programOrder } from "../packages/shared/src/training/program-edits";
+import {
+  type DayPlan,
+  dayPlan,
+  daysOf,
+  fixedWeek,
+  plannedNext,
+  sessionDays,
+  type Week,
+  weekdayOf,
+} from "../packages/shared/src/training/schedule";
+import { STARTING_DAYS, weekOrder } from "../packages/shared/src/training/schedule-week";
 import * as fx from "../packages/shared/src/training/schedule-fixtures";
 import {
   type LetteredTemplate,
@@ -115,6 +130,7 @@ const MIN_MS = Date.parse(MIN_TIME);
 const WORKOUT = "019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00";
 const SESSION = "019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f01";
 const SET = "019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f02";
+const PROGRAM = "019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f03";
 const EXERCISE = "belay:barbell-hip-thrust";
 const TIMED = "belay:dead-hang";
 
@@ -178,6 +194,12 @@ const setValues = (over: Fields = {}) => ({
   weightKg: 100,
   reps: 5,
   rir: 2,
+  at: AT,
+  ...over,
+});
+const activeProgram = (over: Fields = {}) => ({
+  kind: "activeProgram",
+  programId: PROGRAM,
   at: AT,
   ...over,
 });
@@ -370,6 +392,26 @@ const changes: Record<string, unknown> = {
     at: AT,
   },
   "set: unknown field": { kind: "set", id: SET, workoutId: WORKOUT, field: "moved", at: AT },
+  // The active program: the id rule, and its time read like any change's, whatever the clock.
+  "activeProgram: as the phone writes it": activeProgram(),
+  "activeProgram: the starting program": activeProgram({
+    programId: "00000000-0000-7000-8000-000000000010",
+  }),
+  "activeProgram: program id in upper case": activeProgram({ programId: PROGRAM.toUpperCase() }),
+  "activeProgram: program id not a UUID": activeProgram({ programId: "push-pull" }),
+  "activeProgram: nil program id": activeProgram({
+    programId: "00000000-0000-0000-0000-000000000000",
+  }),
+  "activeProgram: no program id": activeProgram({ programId: undefined }),
+  "activeProgram: program id null": activeProgram({ programId: null }),
+  "activeProgram: at the floor": activeProgram({ at: MIN_TIME }),
+  "activeProgram: one millisecond before the floor": activeProgram({ at: iso(MIN_MS - 1) }),
+  "activeProgram: at the clock's slack": activeProgram({ at: iso(T0 + CLOCK_SLACK_MS) }),
+  "activeProgram: one millisecond past the slack": activeProgram({
+    at: iso(T0 + CLOCK_SLACK_MS + 1),
+  }),
+  "activeProgram: at without milliseconds": activeProgram({ at: "2026-11-06T09:30:00Z" }),
+  "activeProgram: at not a time": activeProgram({ at: "yesterday" }),
 };
 
 const SECOND = "2026-11-06T09:30:00";
@@ -1294,6 +1336,504 @@ function scheduleVectors() {
   };
 }
 
+// What Accueil and Séances read of the schedule: the day's plan in full, the fixed week, the
+// week's cards, the session done on a day and the program list. The starting programs, in
+// rotation and on 1 to 7 fixed days, meet every kind of history on a midweek day, the Sunday Paris
+// leaves summer time, the Monday after and the Monday after Los Angeles does, in every zone. A
+// program is written once by name; a case sets its activation time.
+const READ_DAYS = [fx.WED, fx.SUN, fx.NEXT_MON, "2026-11-02"];
+
+// A fixed week as the rhythm sheet first offers it: the starting pattern, sessions in order.
+const startingWeek = (rotation: readonly LetteredTemplate[], n: number) => {
+  const days: (string | null)[] = Array<string | null>(7).fill(null);
+  STARTING_DAYS[n - 1]!.forEach((day, at) => (days[day] = rotation[at]!.sessionId));
+  return fx.fixed(days);
+};
+const withSchedule = (p: StoredPrograms, schedule: ReturnType<typeof fx.fixed>) => ({
+  ...p,
+  programs: p.programs.map((x) => (x.id === p.activeId ? { ...x, schedule } : x)),
+});
+
+// The last session day before `today`; in rotation, which has none, two days back.
+function previousSessionDay(week: Week | null, today: string): string {
+  if (!week) return addDays(today, -2);
+  const k = [1, 2, 3, 4, 5, 6, 7].find((k) => week[weekdayOf(addDays(today, -k))])!;
+  return addDays(today, -k);
+}
+
+type Planned = { session: LetteredTemplate; day: string };
+const planned = (n: Planned) => ({ next: pick(n.session), nextDay: n.day });
+// A plan as the native core reads it, flat: its kind, its session and workout, the next session
+// and, off rotation, its day.
+const planOf = (r: DayPlan) =>
+  r.kind === "rotation"
+    ? { kind: r.kind, next: pick(r.next) }
+    : r.kind === "rest"
+      ? { kind: r.kind, ...planned(r.next) }
+      : r.kind === "due"
+        ? { kind: r.kind, session: pick(r.session), ...planned(r.next) }
+        : {
+            kind: r.kind,
+            session: pick(r.session),
+            workout: r.workout.id,
+            on: r.on,
+            ...planned(r.next),
+          };
+
+function readVectors() {
+  const programs: Record<string, StoredPrograms> = {};
+  const named = (name: string, p: StoredPrograms) => {
+    const had = programs[name];
+    if (had && !isDeepStrictEqual(had, p)) throw new Error(`two programs named ${name}`);
+    programs[name] = p;
+    return name;
+  };
+  const seedRotation = rotationOf(SEED);
+  const starters: [string, StoredPrograms][] = [
+    ["the starting program", SEED],
+    ["the starting program on fixed days", withSchedule(SEED, startingWeek(seedRotation, 3))],
+    ...[1, 2, 3, 4, 5, 6, 7].map((n): [string, StoredPrograms] => {
+      const p = fx.stored(n);
+      return [`${n} session days`, withSchedule(p, startingWeek(rotationOf(p), n))];
+    }),
+  ];
+  for (const [name, p] of starters) named(name, p);
+  // The schedule suites' programs: Monday A, Wednesday B, Saturday C; Monday A alone; Monday A
+  // and Sunday C; Monday and Thursday A, Wednesday B, Saturday C, D with no day.
+  const mws = named("Monday, Wednesday, Saturday", fx.stored(3, fx.MWS));
+  const mondays = named("Mondays", fx.stored(3, fx.MONDAYS));
+  const sunMon = named(
+    "Monday and Sunday",
+    fx.stored(3, fx.fixed([fx.S(0), null, null, null, null, null, fx.S(2)])),
+  );
+  const twice = named(
+    "A twice a week, D with no day",
+    fx.stored(4, fx.fixed([fx.S(0), null, fx.S(1), fx.S(0), null, fx.S(2), null])),
+  );
+  const undated = named(
+    "Monday A, three sessions with no day",
+    fx.stored(4, fx.fixed([fx.S(0), null, null, null, null, null, null])),
+  );
+
+  const dayPlanCases = ZONES.flatMap((zone) =>
+    inZone(zone, () => {
+      const cases: [string, string, string | null, Done[], string][] = [];
+      for (const [program, p] of starters)
+        for (const today of READ_DAYS) {
+          const rotation = rotationOf(p);
+          const week = fixedWeek(p, rotation);
+          const s = week?.[weekdayOf(today)] ?? week?.find((t) => t !== null) ?? rotation[0]!;
+          const other = rotation.find((t) => t.sessionId !== s.sessionId) ?? s;
+          const as = (t: LetteredTemplate, day: string, patch: Partial<Done> = {}) =>
+            fx.did(t.code, t.sessionId, day, patch);
+          const yesterday = addDays(today, -1);
+          const byLetter = fx.did(s.code, null, yesterday);
+          const instant = fx.local(today, 7);
+          const twin = (id: number) =>
+            as(s, today, {
+              id: seedId(0xd000 + id),
+              startedAt: instant,
+              endedAt: fx.local(today, 8),
+            });
+          const histories: [string, Done[], string | null][] = [
+            ["nothing done", [], null],
+            ["its session done today", [as(s, today)], null],
+            ["its session done the day before", [as(s, yesterday)], null],
+            [
+              "its session done on the previous session day",
+              [as(s, previousSessionDay(week, today))],
+              null,
+            ],
+            ["another session done today", [as(other, today)], null],
+            [
+              "its session started at 23:30 the night before",
+              [
+                as(s, yesterday, {
+                  startedAt: fx.local(yesterday, 23, 30),
+                  endedAt: fx.local(today, 0, 30),
+                }),
+              ],
+              null,
+            ],
+            ["its letter only, before activation", [byLetter], fx.local(today, 0)],
+            ["its letter only, after activation", [byLetter], fx.local(yesterday, 12)],
+            ["two starts at one instant", [twin(1), twin(2)], null],
+            ["two starts at one instant, the other order", [twin(2), twin(1)], null],
+          ];
+          for (const [name, workouts, activeAt] of histories)
+            cases.push([`${program}, on ${today}: ${name}`, program, activeAt, workouts, today]);
+        }
+      // The schedule suites' cases, each day read where the person is.
+      const lateSunday = fx.A(fx.SUN, {
+        startedAt: fx.local(fx.SUN, 23, 30),
+        endedAt: fx.local(fx.NEXT_MON, 0, 30),
+      });
+      const first = fx.B(fx.WED, { startedAt: fx.local(fx.WED, 8), endedAt: fx.local(fx.WED, 9) });
+      const open = fx.B(fx.WED, { startedAt: fx.local(fx.WED, 20), endedAt: null });
+      const removed = fx.B(fx.WED, { startedAt: fx.local(fx.WED, 21), removed: true });
+      cases.push(
+        ["due today", mws, null, [], fx.WED],
+        ["done the day before", mws, null, [fx.A(fx.MON), fx.B(fx.TUE)], fx.WED],
+        ["done today, the latest kept", mws, null, [fx.B(fx.WED), first, open, removed], fx.WED],
+        ["only open and removed today", mws, null, [open, removed], fx.WED],
+        ["done on the previous session day", mws, null, [fx.B(fx.MON)], fx.WED],
+        ["another session in the window", mws, null, [fx.A(fx.TUE), fx.C(fx.TUE)], fx.WED],
+        ["done after today", mws, null, [fx.B(fx.THU)], fx.WED],
+        ["a rest day", mws, null, [], fx.TUE],
+        ["Sunday", mws, null, [], fx.SUN],
+        ["one day a week, done last Tuesday", mondays, null, [fx.A(fx.TUE)], fx.NEXT_MON],
+        ["one day a week, done last Monday", mondays, null, [fx.A(fx.MON)], fx.NEXT_MON],
+        ["one day a week, done today", mondays, null, [fx.A(fx.MON)], fx.MON],
+        ["one day a week, a rest day", mondays, null, [], fx.TUE],
+        [
+          "started late on the Sunday summer time ends",
+          sunMon,
+          null,
+          [fx.A(fx.MON), lateSunday],
+          fx.NEXT_MON,
+        ],
+        ["recorded, before activation", mws, fx.local(fx.TUE, 19), [fx.B(fx.TUE)], fx.WED],
+        ["a letter elsewhere", mws, null, [fx.did("C", null, fx.TUE)], fx.WED],
+        ["A twice a week, on Thursday", twice, null, [fx.A(fx.MON)], fx.THU],
+      );
+      return cases.map(([name, program, activeAt, workouts, today]) => {
+        const stored = { ...programs[program]!, activeAt };
+        return {
+          name: `${zone}: ${name}`,
+          timeZone: zone,
+          program,
+          activeAt,
+          workouts: workouts.map(asRow),
+          today,
+          result: planOf(dayPlan(workouts, stored, rotationOf(stored), today)),
+        };
+      });
+    }),
+  );
+
+  // The fixed week of every program above, and of the schedule suites' edge cases: a session set
+  // aside, removed, emptied, in the other program or unknown; no session day; another program
+  // active or the active one removed; a reorder.
+  const base7 = fx.stored(7);
+  const base3 = fx.stored(3);
+  named(
+    "a set-aside, removed, emptied, other-program and unknown day",
+    fx.stored(7, fx.fixed([fx.S(0), fx.S(2), fx.S(3), fx.S(4), fx.S(5), fx.S(1), fx.UNKNOWN]), {
+      sessions: base7.sessions.map((s) =>
+        s.id === fx.S(2)
+          ? { ...s, programId: null }
+          : s.id === fx.S(3)
+            ? { ...s, removed: true }
+            : s.id === fx.S(5)
+              ? { ...s, programId: fx.P2 }
+              : s,
+      ),
+      slots: base7.slots.filter((s) => s.sessionId !== fx.S(4)),
+    }),
+  );
+  named(
+    "no day holds a session",
+    fx.stored(3, fx.fixed([fx.S(2), null, fx.UNKNOWN, null, null, null, null]), {
+      sessions: base3.sessions.map((s) => (s.id === fx.S(2) ? { ...s, programId: null } : s)),
+    }),
+  );
+  named("every day a rest day", fx.stored(3, fx.fixed(Array<null>(7).fill(null))));
+  named("on fixed days, another program active", { ...fx.stored(3, fx.MWS), activeId: fx.P2 });
+  const mwsStored = fx.stored(3, fx.MWS);
+  named("on fixed days, the program removed", {
+    ...mwsStored,
+    programs: mwsStored.programs.map((x) => ({ ...x, removed: true })),
+  });
+  named("on fixed days, A and B reordered", {
+    ...mwsStored,
+    sessions: mwsStored.sessions.map((s) =>
+      s.id === fx.S(0) ? { ...s, position: 1 } : s.id === fx.S(1) ? { ...s, position: 0 } : s,
+    ),
+  });
+  const fixedWeekCases = Object.entries(programs).map(([program, p]) => {
+    const rotation = rotationOf(p);
+    const week = fixedWeek(p, rotation);
+    return {
+      name: program,
+      program,
+      result: week && {
+        week: week.map(pick),
+        sessionDays: sessionDays(week),
+        daysOf: [...rotation.map((t) => t.sessionId), fx.UNKNOWN].map((id) => ({
+          sessionId: id,
+          days: daysOf(week, id),
+        })),
+      },
+    };
+  });
+
+  // The week's cards on every fixed program and read day, nothing done, today's session done
+  // today or the day before, or another one done today.
+  const weekOrderCases = ZONES.flatMap((zone) =>
+    inZone(zone, () =>
+      [
+        ...starters,
+        [twice, programs[twice]!] as [string, StoredPrograms],
+        [undated, programs[undated]!] as [string, StoredPrograms],
+      ].flatMap(([program, p]) =>
+        [...READ_DAYS, fx.THU].flatMap((today) => {
+          const rotation = rotationOf(p);
+          const week = fixedWeek(p, rotation);
+          const s = week?.[weekdayOf(today)] ?? rotation[0]!;
+          const other = rotation.find((t) => t.sessionId !== s.sessionId) ?? s;
+          const histories: [string, Done[]][] = [
+            ["nothing done", []],
+            ["its session done today", [fx.did(s.code, s.sessionId, today)]],
+            ["its session done the day before", [fx.did(s.code, s.sessionId, addDays(today, -1))]],
+            ["another session done today", [fx.did(other.code, other.sessionId, today)]],
+          ];
+          return histories.map(([name, workouts]) => ({
+            name: `${zone}: ${program}, on ${today}: ${name}`,
+            timeZone: zone,
+            program,
+            workouts: workouts.map(asRow),
+            today,
+            result:
+              weekOrder(workouts, p, rotation, today)?.map((c) => ({
+                session: pick(c.session),
+                next: c.next,
+                days: c.days,
+              })) ?? null,
+          }));
+        }),
+      ),
+    ),
+  );
+
+  // The session done on a day, its length and work sets: across midnight, open, removed, two on
+  // one day, a start written with an offset, and sets warm-up, removed or in a removed session.
+  const finishedOnCases = ZONES.flatMap((zone) =>
+    inZone(zone, () => {
+      const night = session({
+        plan: [],
+        startedAt: fx.local(fx.SUN, 23, 30),
+        endedAt: fx.local(fx.NEXT_MON, 0, 45),
+      });
+      const morning = session({
+        plan: [],
+        startedAt: fx.local(fx.NEXT_MON, 7),
+        endedAt: fx.local(fx.NEXT_MON, 8),
+      });
+      const evening = session({
+        plan: [],
+        startedAt: fx.local(fx.NEXT_MON, 18),
+        endedAt: fx.local(fx.NEXT_MON, 19, 10),
+      });
+      const open = session({
+        plan: [],
+        startedAt: fx.local(fx.NEXT_MON, 20),
+        endedAt: null,
+      });
+      const gone = session({
+        plan: [],
+        startedAt: fx.local(fx.NEXT_MON, 21),
+        removed: true,
+      });
+      const offset = session({
+        plan: [],
+        startedAt: "2026-10-26T09:00:00.000+09:00",
+        endedAt: "2026-10-26T01:00:00.000Z",
+      });
+      // Started at the same instant as the morning's, ended earlier. Its ids are fixed, so the
+      // cases after it keep theirs.
+      const twin = { ...morning, id: seedId(0x1fff), endedAt: fx.local(fx.NEXT_MON, 7, 40) };
+      const sets = [
+        {
+          id: seedId(0x2fff),
+          workoutId: twin.id,
+          slotIndex: 0,
+          position: workPosition(1),
+          exerciseId: BENCH,
+          warmup: false,
+          weightKg: 70,
+          reps: 5,
+          rir: 1,
+          doneAt: twin.startedAt,
+          removed: false,
+        },
+        done(night, 1, 60, 8),
+        done(night, 2, 60, 7),
+        warm(night, 0, 40, 5),
+        done(night, 3, 60, 6, { removed: true }),
+        done(evening, 1, 80, 5),
+        done(gone, 1, 80, 5),
+      ];
+      const histories: [string, Done[]][] = [
+        ["nothing", []],
+        ["started late on Sunday", [night]],
+        ["two on Monday, the evening last", [night, morning, evening]],
+        ["two on Monday, the other order", [evening, morning]],
+        ["open and removed aside", [morning, open, gone]],
+        ["a start written with an offset", [offset, morning]],
+        ["two started at one instant", [morning, twin]],
+        ["two started at one instant, the other order", [twin, morning]],
+      ];
+      return histories.flatMap(([name, workouts]) =>
+        [fx.SUN, fx.NEXT_MON, "2026-10-27"].map((day) => {
+          const h = { workouts: workouts as Workout[], sets };
+          const r = finishedOnDay(h, day);
+          return {
+            name: `${zone}: ${name}, on ${day}`,
+            timeZone: zone,
+            history: asHistory(h),
+            day,
+            result: r && { workout: r.workout.id, durationMs: r.durationMs, workSets: r.workSets },
+          };
+        }),
+      );
+    }),
+  );
+
+  // Work sets of each session of a history: warm-ups and removed sets left out, a removed session
+  // holds none.
+  const counted = session({ plan: [], startedAt: fx.local(fx.MON, 18) });
+  const dropped = session({ plan: [], startedAt: fx.local(fx.TUE, 18), removed: true });
+  const setsHistory = {
+    workouts: [counted, dropped] as Workout[],
+    sets: [
+      done(counted, 1, 60, 8),
+      done(counted, 2, 60, 8),
+      warm(counted, 0, 40, 5),
+      done(counted, 3, 60, 8, { removed: true }),
+      done(dropped, 1, 60, 8),
+    ],
+  };
+  const workSetsCases = [counted.id, dropped.id, fx.UNKNOWN].map((workoutId, i) => ({
+    name: ["a session kept", "a session removed", "no such session"][i]!,
+    history: asHistory(setsHistory),
+    workoutId,
+    result: workSetsOf(setsHistory, workoutId),
+  }));
+
+  // The last session done as a rotation session: by its id or, with none, its letter; open,
+  // removed and other sessions aside; the latest start as text.
+  const rot = rotationOf(fx.stored(3));
+  const ended = (
+    code: string,
+    sessionId: string | null,
+    day: string,
+    patch: Partial<Workout> = {},
+  ) =>
+    session({
+      plan: [],
+      sessionCode: code,
+      sessionId,
+      startedAt: `${day}T17:00:00.000Z`,
+      endedAt: `${day}T18:00:00.000Z`,
+      ...patch,
+    });
+  // Started at one instant, the second ended earlier. Their ids are fixed, so the cases after
+  // them keep theirs.
+  const sameStart = [0x1ffd, 0x1ffe].map((n, i) => ({
+    id: seedId(n),
+    sessionCode: "A",
+    sessionId: fx.S(0),
+    plan: [],
+    startedAt: `${fx.MON}T17:00:00.000Z`,
+    endedAt: `${fx.MON}T${i ? "17:30" : "18:00"}:00.000Z`,
+    note: null,
+    exerciseNotes: {},
+    removed: false,
+  }));
+  const lastHistories: [string, Workout[]][] = [
+    ["nothing done", []],
+    ["by its id", [ended("A", fx.S(0), fx.MON), ended("A", fx.S(0), fx.WED)]],
+    ["by its letter", [ended("B", null, fx.TUE)]],
+    ["its letter under another id", [ended("A", fx.S(1), fx.TUE)]],
+    [
+      "open and removed after it",
+      [
+        ended("A", fx.S(0), fx.MON),
+        ended("A", fx.S(0), fx.TUE, { endedAt: null }),
+        ended("A", fx.S(0), fx.WED, { removed: true }),
+      ],
+    ],
+    ["the latest last in the list", [ended("C", fx.S(2), fx.THU), ended("C", fx.S(2), fx.SAT)]],
+    ["the latest first in the list", [ended("C", fx.S(2), fx.SAT), ended("C", fx.S(2), fx.THU)]],
+    ["two started at one instant", sameStart],
+    ["two started at one instant, the other order", [...sameStart].reverse()],
+  ];
+  const lastFinishedCases = lastHistories.flatMap(([name, workouts]) =>
+    rot.map((t) => ({
+      name: `${name}, session ${t.code}`,
+      workouts: workouts.map(asRow),
+      session: pick(t),
+      result: lastFinished(workouts, t)?.id ?? null,
+    })),
+  );
+
+  // The live programs by id, and choosing one: live, removed, unknown, already active.
+  const two = fx.stored(1);
+  const listed: [string, StoredPrograms][] = [
+    ["the starting program", SEED],
+    ["two programs", two],
+    [
+      "programs out of order, one removed",
+      {
+        ...two,
+        programs: [
+          { ...two.programs[1]!, id: seedId(0xa05) },
+          { ...two.programs[0]!, removed: true },
+          { ...two.programs[1]!, id: seedId(0xa03) },
+          ...SEED.programs,
+          two.programs[1]!,
+        ],
+      },
+    ],
+    [
+      "every program removed",
+      { ...two, programs: two.programs.map((x) => ({ ...x, removed: true })) },
+    ],
+  ];
+  const programOrderCases = listed.map(([name, stored]) => ({
+    name,
+    stored,
+    result: programOrder(stored).map((x) => x.id),
+  }));
+  const removedP2 = {
+    ...two,
+    programs: two.programs.map((x) => (x.id === fx.P2 ? { ...x, removed: true } : x)),
+  };
+  const chooseCases = (
+    [
+      ["another live program", two, fx.P2],
+      ["the active program", two, two.activeId!],
+      ["a removed program", removedP2, fx.P2],
+      ["an unknown program", two, fx.UNKNOWN],
+      [
+        "the starting program",
+        { ...two, programs: [...two.programs, ...SEED.programs] },
+        SEED.activeId!,
+      ],
+    ] as [string, StoredPrograms, string][]
+  ).map(([name, stored, programId]) => ({
+    name,
+    stored,
+    programId,
+    at: AT,
+    // The web's switcher returns before the rule for the program already active; the native rule
+    // holds that check itself, so a second tap never moves the time the rotation counts from.
+    result: programId === stored.activeId ? null : chooseActive(stored, programId, AT),
+  }));
+
+  return {
+    programs,
+    dayPlan: dayPlanCases,
+    fixedWeek: fixedWeekCases,
+    weekOrder: weekOrderCases,
+    finishedOn: finishedOnCases,
+    workSetsOf: workSetsCases,
+    lastFinished: lastFinishedCases,
+    programOrder: programOrderCases,
+    chooseActive: chooseCases,
+  };
+}
+
 // The session's tools: loading a bar, warm-ups, the day's plan edited, a pause. Loads span under
 // the bar to past the plate table's bound, on three kinds of equipment.
 const BARBELL = {
@@ -1755,7 +2295,10 @@ const files = [
     data: { ...rules, ...tools, bounds: { ...rules.bounds, ...tools.bounds } },
   },
   { path: core("Tests/BelayCoreTests/Vectors/health.json"), data: healthVectors() },
-  { path: core("Tests/BelayCoreTests/Vectors/schedule.json"), data: scheduleVectors() },
+  {
+    path: core("Tests/BelayCoreTests/Vectors/schedule.json"),
+    data: { ...scheduleVectors(), ...readVectors() },
+  },
   { path: core("Sources/BelayCore/Resources/seed.json"), data: SEED },
 ].map(({ path, data }) => ({ path, expected: `${JSON.stringify(data, null, 2)}\n` }));
 

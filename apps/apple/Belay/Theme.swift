@@ -87,21 +87,6 @@ extension View {
         }
     }
 
-    /// Two lines under a large title: the session's name, then its size. A title in the wide face
-    /// holds « Séance C » at any text size, where « Séance C · Fessiers + tirage léger » truncates.
-    func belaySubtitle(name: String, _ text: String) -> some View {
-        toolbar {
-            ToolbarItem(placement: .largeSubtitle) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(name).font(.title3.weight(.semibold)).foregroundStyle(.ink)
-                    Text(text).font(.subheadline).foregroundStyle(.muted).monospacedDigit()
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.top, 6)
-            }
-        }
-    }
-
     /// The system's zoom, or the plain transition under Reduce Motion.
     @ViewBuilder func zoomed(from id: String?, in space: Namespace.ID?, reduceMotion: Bool) -> some View {
         if let id, let space, !reduceMotion {
