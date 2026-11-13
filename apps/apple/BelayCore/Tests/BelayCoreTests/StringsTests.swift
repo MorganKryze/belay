@@ -20,24 +20,37 @@ private func catalogs() throws -> [URL] {
   return urls.filter { $0.pathExtension == "xcstrings" }.sorted { $0.path < $1.path }
 }
 
-/// One language's text for a key: a single value, or one per plural category.
+/// A plural inside a format, `%#@name@`: its argument's forms, one per plural category.
+private struct Substitution {
+  /// The argument it counts, from 1.
+  let argument: Int
+  let forms: [String: String]
+}
+
+/// One language's text for a key: a single value, one per plural category, or a format whose
+/// `%#@name@` parts are each a plural of their own argument.
 private enum Localized {
   case single(String)
   case plural([String: String])
+  case substituted(String, [String: Substitution])
 
   init?(_ json: Any?) {
     guard let json = json as? [String: Any] else { return nil }
     if let unit = json["stringUnit"] as? [String: Any], let value = unit["value"] as? String {
-      self = .single(value)
-    } else if let variations = json["variations"] as? [String: Any],
-      let plural = variations["plural"] as? [String: Any]
-    {
-      var forms: [String: String] = [:]
-      for (category, form) in plural {
-        let unit = (form as? [String: Any])?["stringUnit"] as? [String: Any]
-        if let value = unit?["value"] as? String { forms[category] = value }
+      let substitutions = json["substitutions"] as? [String: Any] ?? [:]
+      guard !substitutions.isEmpty else {
+        self = .single(value)
+        return
       }
-      self = .plural(forms)
+      var parts: [String: Substitution] = [:]
+      for (name, part) in substitutions {
+        let part = part as? [String: Any] ?? [:]
+        parts[name] = Substitution(
+          argument: part["argNum"] as? Int ?? 0, forms: pluralForms(part["variations"]))
+      }
+      self = .substituted(value, parts)
+    } else if (json["variations"] as? [String: Any])?["plural"] != nil {
+      self = .plural(pluralForms(json["variations"]))
     } else {
       return nil
     }
@@ -47,7 +60,66 @@ private enum Localized {
     switch self {
     case .single(let value): [value]
     case .plural(let forms): Array(forms.values)
+    case .substituted(let format, let parts): [format] + parts.values.flatMap(\.forms.values)
     }
+  }
+
+  /// Each plural it holds, by its forms; empty for a single value.
+  var plurals: [[String: String]] {
+    switch self {
+    case .single: []
+    case .plural(let forms): [forms]
+    case .substituted(_, let parts): parts.values.map(\.forms)
+    }
+  }
+}
+
+/// A `variations` object's plural forms, by category.
+private func pluralForms(_ variations: Any?) -> [String: String] {
+  let plural = (variations as? [String: Any])?["plural"] as? [String: Any] ?? [:]
+  var forms: [String: String] = [:]
+  for (category, form) in plural {
+    let unit = (form as? [String: Any])?["stringUnit"] as? [String: Any]
+    if let value = unit?["value"] as? String { forms[category] = value }
+  }
+  return forms
+}
+
+/// The CLDR plural category of a whole count: French puts 0 and 1 in « one », English only 1.
+private func category(_ count: Int, in language: String) -> String {
+  switch language {
+  case "fr": count == 0 || count == 1 ? "one" : "other"
+  default: count == 1 ? "one" : "other"
+  }
+}
+
+/// The text shown for `counts`, its plurals' forms chosen by `language`'s rule.
+private func render(_ text: Localized, in language: String, _ counts: [Int]) -> String {
+  switch text {
+  case .single(let format):
+    return fill(format, counts)
+  case .plural(let forms):
+    return fill(forms[category(counts[0], in: language)] ?? "<no form>", counts)
+  case .substituted(let format, let parts):
+    let chosen = format.replacing(/%(?:\d+\$)?#@(\w+)@/) { match in
+      guard let part = parts[String(match.1)], counts.indices.contains(part.argument - 1) else {
+        return "<no part \(match.1)>"
+      }
+      let count = counts[part.argument - 1]
+      let form = part.forms[category(count, in: language)] ?? "<no form>"
+      return form.replacing("%arg", with: "\(count)")
+    }
+    return fill(chosen, counts)
+  }
+}
+
+/// `format` with its `%lld` and `%n$lld` arguments written out.
+private func fill(_ format: String, _ counts: [Int]) -> String {
+  var next = 0
+  return format.replacing(/%(?:(\d+)\$)?lld/) { match in
+    let index = match.1.flatMap { Int($0) }.map { $0 - 1 } ?? next
+    next += 1
+    return counts.indices.contains(index) ? "\(counts[index])" : "<no argument>"
   }
 }
 
@@ -119,25 +191,96 @@ func frenchTypographyFaults(_ text: String) -> [String] {
     }
   }
 
-  /// A plural in one language is a plural in the other, each with its `one` and `other` forms.
+  /// A plural in one language is a plural in the other, each with its `one` and `other` forms,
+  /// whether the whole text is plural or only a part written through `substitutions`.
   @Test func pluralsHaveEveryForm() throws {
     for url in try catalogs() {
       for entry in try entries(of: url) {
         let languages = [("fr", entry.french), ("en", entry.english)]
-        guard languages.contains(where: { if case .plural = $0.1 { true } else { false } }) else {
-          continue
-        }
+        guard languages.contains(where: { !($0.1?.plurals.isEmpty ?? true) }) else { continue }
         for (language, text) in languages {
-          guard case .plural(let forms) = text else {
+          let plurals = text?.plurals ?? []
+          if plurals.isEmpty {
             Issue.record("\(url.lastPathComponent): \(entry.key) has no \(language) plural")
-            continue
           }
-          #expect(
-            forms["one"] != nil && forms["other"] != nil,
-            "\(url.lastPathComponent): \(entry.key) has \(language) one and other")
+          for forms in plurals {
+            #expect(
+              forms["one"] != nil && forms["other"] != nil,
+              "\(url.lastPathComponent): \(entry.key) has \(language) one and other")
+          }
+          if case .substituted(let format, let parts) = text {
+            for match in format.matches(of: /#@(\w+)@/) {
+              #expect(
+                parts[String(match.1)] != nil,
+                "\(url.lastPathComponent): \(entry.key) has its \(language) part \(match.1)")
+            }
+          }
         }
       }
     }
+  }
+
+  /// Every count of Accueil, Séances and the session's tools, tried at 0, 1 and 2: the form each
+  /// language's rule chooses reads right. A new count with no line here fails.
+  @Test func countsReadRightAtZeroOneAndTwo() throws {
+    // Key, then French and English at 0, 1 and 2; a key with two counts gets the same at each.
+    let expected: [String: (fr: [String], en: [String])] = [
+      "Accueil.xcstrings: %lld séances": (
+        ["0 séance", "1 séance", "2 séances"], ["0 sessions", "1 session", "2 sessions"]
+      ),
+      "Seances.xcstrings: %lld séances": (
+        ["0 séance", "1 séance", "2 séances"], ["0 sessions", "1 session", "2 sessions"]
+      ),
+      "Seances.xcstrings: %lld séances par semaine": (
+        ["0 séance par semaine", "1 séance par semaine", "2 séances par semaine"],
+        ["0 sessions a week", "1 session a week", "2 sessions a week"]
+      ),
+      "Seances.xcstrings: %lld séances et %lld jours de repos par semaine.": (
+        [
+          "0 séance et 0 jour de repos par semaine.", "1 séance et 1 jour de repos par semaine.",
+          "2 séances et 2 jours de repos par semaine.",
+        ],
+        [
+          "0 sessions and 0 rest days a week.", "1 session and 1 rest day a week.",
+          "2 sessions and 2 rest days a week.",
+        ]
+      ),
+      "Seances.xcstrings: %lld séries": (
+        ["0 série", "1 série", "2 séries"], ["0 sets", "1 set", "2 sets"]
+      ),
+      "SessionTools.xcstrings: %lld secondes restantes": (
+        ["0 seconde restante", "1 seconde restante", "2 secondes restantes"],
+        ["0 seconds left", "1 second left", "2 seconds left"]
+      ),
+    ]
+    var counts: Set<String> = []
+    for url in try catalogs()
+    where ["Accueil.xcstrings", "Seances.xcstrings", "SessionTools.xcstrings"]
+      .contains(url.lastPathComponent)
+    {
+      for entry in try entries(of: url) where !entry.french.plurals.isEmpty {
+        let name = "\(url.lastPathComponent): \(entry.key)"
+        counts.insert(name)
+        guard let want = expected[name], let english = entry.english else { continue }
+        let arguments = entry.key.matches(of: /%lld/).count
+        for (n, (fr, en)) in zip(want.fr, want.en).enumerated() {
+          let at = Array(repeating: n, count: arguments)
+          #expect(render(entry.french, in: "fr", at) == fr, "\(name) at \(n) in French")
+          #expect(render(english, in: "en", at) == en, "\(name) at \(n) in English")
+        }
+      }
+    }
+    #expect(counts == Set(expected.keys), "every count has its line, and every line its count")
+  }
+
+  /// The rule and the reading themselves, on a text written for them.
+  @Test func renderChoosesEachLanguagesForm() {
+    let text = Localized.substituted(
+      "%#@a@ sur %2$lld", ["a": Substitution(argument: 1, forms: ["one": "%arg x", "other": "%arg xs"])])
+    #expect(render(text, in: "fr", [0, 5]) == "0 x sur 5")
+    #expect(render(text, in: "en", [0, 5]) == "0 xs sur 5")
+    #expect(render(text, in: "en", [1, 5]) == "1 x sur 5")
+    #expect(render(.plural(["one": "%lld y", "other": "%lld ys"]), in: "fr", [2]) == "2 ys")
   }
 
   @Test func frenchTypography() throws {
