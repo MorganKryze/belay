@@ -44,7 +44,7 @@ public import Foundation
     let task = Task { [weak self] in
       let count = await runHealth(
         store: store, writer: writer, owner: owner, now: now(), imports: imports)
-      if count > 0 { self?.imported?() }
+      if count > 0, !Task.isCancelled { self?.imported?() }
       self?.ended()
     }
     running = (store, task)

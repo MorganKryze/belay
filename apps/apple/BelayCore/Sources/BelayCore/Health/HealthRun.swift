@@ -231,6 +231,8 @@ private struct HealthRun {
     guard settings.on, settings.importOn,
       let read = await writer.readWeighIns(anchor: settings.anchor, since: healthEarliest)
     else { return 0 }
+    // Signed out while Health was read: the store is no longer the person's to write to.
+    guard !Task.isCancelled else { return 0 }
     return try store.importWeighIns(
       read.samples, anchor: read.anchor, from: settings.anchor, now: now, timeZone: timeZone)
   }
