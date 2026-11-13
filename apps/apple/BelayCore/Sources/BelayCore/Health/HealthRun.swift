@@ -142,7 +142,7 @@ private struct HealthRun {
         workouts: history.workouts, sets: history.sets, on: true,
         turnedOnAt: settings.turnedOnAt, written: written, allowed: access.workouts == .allowed,
         now: Instant.milliseconds(now), owner: owner, weights: try store.weights(),
-        filled: Set(settings.filled.keys), allowedWeighIns: access.weighIns == .allowed,
+        allowedWeighIns: access.weighIns == .allowed,
         timeZone: timeZone))
     // A type whose writing iOS withdrew during the run: the rest of it waits for a run that
     // finds it back.

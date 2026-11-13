@@ -48,12 +48,14 @@ private struct HealthFile: Decodable, Sendable {
   struct WeighInBounds: Decodable, Sendable {
     let weighingKey: String
     let historyDay: String
+    let importStampMs: Int64
   }
   struct WeighInCase: Decodable, Sendable, CustomTestStringConvertible {
     let name: String
     let turnedOnAt: Int64?
     let written: [String: HealthWritten]
-    let filled: [String: Filled]
+    /// The file's weigh-ins unless the case brings its own.
+    let weights: [WeightRow]?
     let allowed: Bool
     let owner: String
     let now: Int64
@@ -127,6 +129,7 @@ struct HealthPlanVectorTests {
     let bounds = try HealthFile.load().weighInBounds
     #expect(BelayCore.weighingKey("2026-10-10") == bounds.weighingKey)
     #expect(toISODate(Date(ms: healthEarliest), timeZone: paris) == bounds.historyDay)
+    #expect(BelayCore.importStampMs == bounds.importStampMs)
   }
 
   @Test(arguments: try HealthFile.load().planWeighIns)
@@ -134,8 +137,8 @@ struct HealthPlanVectorTests {
     let file = try HealthFile.load()
     let input = HealthPlanInput(
       workouts: [], sets: [], on: true, turnedOnAt: c.turnedOnAt, written: c.written,
-      allowed: false, now: c.now, owner: c.owner, weights: file.weights,
-      filled: Set(c.filled.keys), allowedWeighIns: c.allowed, timeZone: paris)
+      allowed: false, now: c.now, owner: c.owner, weights: c.weights ?? file.weights,
+      allowedWeighIns: c.allowed, timeZone: paris)
     #expect(BelayCore.planHealth(input) == c.result)
   }
 

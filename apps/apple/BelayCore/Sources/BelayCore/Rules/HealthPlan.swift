@@ -165,8 +165,6 @@ public struct HealthPlanInput: Sendable {
   public var sets: [SetRow]
   /// A nil weight is a deleted day.
   public var weights: [WeightRow]
-  /// The days the import wrote: Health already holds them, as the scale's reading.
-  public var filled: Set<String>
   /// The Santé switch.
   public var on: Bool
   /// When the switch went on; nil, no session is new since.
@@ -186,13 +184,12 @@ public struct HealthPlanInput: Sendable {
   public init(
     workouts: [WorkoutRow], sets: [SetRow], on: Bool, turnedOnAt: Int64?,
     written: [String: HealthWritten], allowed: Bool, now: Int64, owner: String,
-    weights: [WeightRow] = [], filled: Set<String> = [], allowedWeighIns: Bool = false,
+    weights: [WeightRow] = [], allowedWeighIns: Bool = false,
     timeZone: TimeZone = .current
   ) {
     self.workouts = workouts
     self.sets = sets
     self.weights = weights
-    self.filled = filled
     self.on = on
     self.turnedOnAt = turnedOnAt
     self.written = written
@@ -221,6 +218,24 @@ public func finishedSpan(_ w: WorkoutRow, liveSets: Int) -> (startedAt: Int64, e
     let start = Instant.milliseconds(w.startedAt), let end = Instant.milliseconds(endedAt)
   else { return nil }
   return end > start ? (start, end) : nil
+}
+
+/// The import stamps a weigh-in at the start of its day, and each earlier reading that replaces
+/// it moves that stamp on by 1 ms (`importChoice`). Such a day is already in Health as the scale's
+/// own sample, whichever device or app imported it; once the person changes it, its time moves off
+/// the stamp and it goes to Health like a typed one. A second holds far more replacements than a
+/// day has readings, and nobody types a weigh-in in the first second of a day.
+public let importStampMs: Int64 = 1000
+
+func isImportStamp(_ r: WeightRow, timeZone: TimeZone) -> Bool {
+  let parts = r.date.split(separator: "-").compactMap { Int($0) }
+  var calendar = Calendar(identifier: .gregorian)
+  calendar.timeZone = timeZone
+  guard parts.count == 3, let at = Instant.milliseconds(r.at),
+    let start = calendar.date(from: DateComponents(year: parts[0], month: parts[1], day: parts[2]))
+  else { return false }
+  let offset = at - Instant.milliseconds(start)
+  return offset >= 0 && offset < importStampMs
 }
 
 /// Always above the last version this phone wrote, even with a clock set back; otherwise the
@@ -252,7 +267,7 @@ private func planWeighIns(_ input: HealthPlanInput) -> [HealthObject] {
   let fromDay =
     input.turnedOnAt.map { toISODate(Date(ms: $0), timeZone: input.timeZone) } ?? "9999-12-31"
   var objects: [HealthObject] = []
-  for r in input.weights where !input.filled.contains(r.date) {
+  for r in input.weights where !isImportStamp(r, timeZone: input.timeZone) {
     let kept = input.written[weighingKey(r.date)]
     let at = sampleTime(r.date, now: input.now, timeZone: input.timeZone)
     if let kg = r.weightKg, kg >= Bounds.weighInKgMin, kg <= Bounds.weighInKgMax,

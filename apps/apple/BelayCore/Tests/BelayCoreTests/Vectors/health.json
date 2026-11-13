@@ -898,7 +898,8 @@
   ],
   "weighInBounds": {
     "weighingKey": "belay-weighing-2026-10-10",
-    "historyDay": "1899-12-31"
+    "historyDay": "1899-12-31",
+    "importStampMs": 1000
   },
   "weights": [
     {
@@ -952,12 +953,6 @@
       "name": "new since the switch",
       "turnedOnAt": 1790812800000,
       "written": {},
-      "filled": {
-        "2026-10-08": {
-          "at": "2026-10-07T22:00:00.000Z",
-          "startedAt": 0
-        }
-      },
       "allowed": true,
       "owner": "0442a7f3",
       "now": 1791633600000,
@@ -977,6 +972,14 @@
           "kg": 79.8,
           "at": 1791266400000,
           "version": 1791266400000
+        },
+        {
+          "kind": "weighing",
+          "owner": "0442a7f3",
+          "date": "2026-10-08",
+          "kg": 79.5,
+          "at": 1791439200000,
+          "version": 1791439200000
         },
         {
           "kind": "weighing",
@@ -1046,7 +1049,6 @@
           "kg": 79
         }
       },
-      "filled": {},
       "allowed": true,
       "owner": "0442a7f3",
       "now": 1791633600000,
@@ -1073,7 +1075,6 @@
           "kg": 80
         }
       },
-      "filled": {},
       "allowed": true,
       "owner": "0442a7f3",
       "now": 1791633600000,
@@ -1135,7 +1136,6 @@
           "kg": 81
         }
       },
-      "filled": {},
       "allowed": true,
       "owner": "0442a7f3",
       "now": 1791633600000,
@@ -1196,7 +1196,6 @@
       "name": "today before 08:00",
       "turnedOnAt": 1790812800000,
       "written": {},
-      "filled": {},
       "allowed": true,
       "owner": "0442a7f3",
       "now": 1791608400000,
@@ -1247,7 +1246,6 @@
       "name": "the daylight-saving days",
       "turnedOnAt": 1772323200000,
       "written": {},
-      "filled": {},
       "allowed": true,
       "owner": "0442a7f3",
       "now": 1793016000000,
@@ -1320,7 +1318,6 @@
           "kg": 80
         }
       },
-      "filled": {},
       "allowed": true,
       "owner": "0442a7f3",
       "now": 1791633600000,
@@ -1379,7 +1376,6 @@
       "name": "another owner",
       "turnedOnAt": 1790812800000,
       "written": {},
-      "filled": {},
       "allowed": true,
       "owner": "0542a986",
       "now": 1791633600000,
@@ -1423,6 +1419,77 @@
           "kg": 79,
           "at": 1791633600000,
           "version": 1792908000000
+        }
+      ]
+    },
+    {
+      "name": "imported elsewhere on and after the switch's day",
+      "turnedOnAt": 1790812800000,
+      "written": {},
+      "weights": [
+        {
+          "date": "2026-10-01",
+          "weightKg": 80.3,
+          "at": "2026-09-30T22:00:00.000Z"
+        },
+        {
+          "date": "2026-10-08",
+          "weightKg": 79.5,
+          "at": "2026-10-07T22:00:00.002Z"
+        }
+      ],
+      "allowed": true,
+      "owner": "0442a7f3",
+      "now": 1791633600000,
+      "result": []
+    },
+    {
+      "name": "an imported day corrected by the person",
+      "turnedOnAt": 1790812800000,
+      "written": {},
+      "weights": [
+        {
+          "date": "2026-10-08",
+          "weightKg": 79.7,
+          "at": "2026-10-08T07:15:00.000Z"
+        }
+      ],
+      "allowed": true,
+      "owner": "0442a7f3",
+      "now": 1791633600000,
+      "result": [
+        {
+          "kind": "weighing",
+          "owner": "0442a7f3",
+          "date": "2026-10-08",
+          "kg": 79.7,
+          "at": 1791439200000,
+          "version": 1791443700000
+        }
+      ]
+    },
+    {
+      "name": "a typed day at an ordinary time",
+      "turnedOnAt": 1790812800000,
+      "written": {},
+      "weights": [
+        {
+          "date": "2026-10-08",
+          "weightKg": 79.5,
+          "at": "2026-10-08T19:40:00.000Z"
+        }
+      ],
+      "allowed": true,
+      "owner": "0442a7f3",
+      "now": 1791633600000,
+      "result": [
+        {
+          "kind": "weighing",
+          "owner": "0442a7f3",
+          "date": "2026-10-08",
+          "kg": 79.5,
+          "at": 1791439200000,
+          "version": 1791488400000
         }
       ]
     },
@@ -1476,7 +1543,6 @@
           "kg": 79
         }
       },
-      "filled": {},
       "allowed": false,
       "owner": "0442a7f3",
       "now": 1791633600000,

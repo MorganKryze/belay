@@ -64,6 +64,7 @@ import {
   DAY,
   EARLIEST,
   finishedSpan,
+  IMPORT_STAMP_MS,
   ownerOf,
   planHealth,
   sampleTime,
@@ -2618,7 +2619,6 @@ function healthVectors() {
         importSince: null,
       },
       written: c.written,
-      filled: {},
       allowed: { workouts: c.allowed, weighings: false },
       now: NOW,
       owner: c.owner,
@@ -2680,7 +2680,6 @@ async function weighInVectors() {
     weight("2026-10-10", 79.4),
     weight("2026-10-25", 79.0),
   ];
-  const filledDay = { "2026-10-08": { at: "2026-10-07T22:00:00.000Z", startedAt: 0 } };
   const weighing = (kg: number, version: number): Written => ({ state: "weighing", version, kg });
   const every = Object.fromEntries(
     weights.map((r) => [weighingKey(r.date), weighing(r.weightKg ?? 80, 3)]),
@@ -2691,26 +2690,19 @@ async function weighInVectors() {
     {
       turnedOnAt: number | null;
       written: Record<string, Written>;
-      filled: Record<string, { at: string; startedAt: number }>;
+      weights?: WeightRow[];
       allowed: boolean;
       owner: string;
       now: number;
     },
   ][] = [
-    [
-      "new since the switch",
-      { turnedOnAt: on, written: {}, filled: filledDay, allowed: true, owner, now: NOW },
-    ],
-    [
-      "each one written before",
-      { turnedOnAt: on, written: every, filled: {}, allowed: true, owner, now: NOW },
-    ],
+    ["new since the switch", { turnedOnAt: on, written: {}, allowed: true, owner, now: NOW }],
+    ["each one written before", { turnedOnAt: on, written: every, allowed: true, owner, now: NOW }],
     [
       "a changed value",
       {
         turnedOnAt: on,
         written: { [weighingKey("2026-10-05")]: weighing(80, ms("2027-01-01T00:00:00.000Z")) },
-        filled: {},
         allowed: true,
         owner,
         now: NOW,
@@ -2724,7 +2716,6 @@ async function weighInVectors() {
           [weighingKey("2026-10-07")]: weighing(80, 2),
           [weighingKey("2026-10-09")]: weighing(81, 2),
         },
-        filled: {},
         allowed: true,
         owner,
         now: NOW,
@@ -2735,7 +2726,6 @@ async function weighInVectors() {
       {
         turnedOnAt: on,
         written: {},
-        filled: {},
         allowed: true,
         owner,
         now: ms("2026-10-10T05:00:00.000Z"),
@@ -2746,7 +2736,6 @@ async function weighInVectors() {
       {
         turnedOnAt: ms("2026-03-01T00:00:00.000Z"),
         written: {},
-        filled: {},
         allowed: true,
         owner,
         now: ms("2026-10-26T12:00:00.000Z"),
@@ -2757,7 +2746,6 @@ async function weighInVectors() {
       {
         turnedOnAt: on,
         written: { [weighingKey("2026-09-20")]: weighing(80, 2) },
-        filled: {},
         allowed: true,
         owner,
         now: NOW,
@@ -2765,11 +2753,48 @@ async function weighInVectors() {
     ],
     [
       "another owner",
-      { turnedOnAt: on, written: {}, filled: {}, allowed: true, owner: ownerOf("u2"), now: NOW },
+      { turnedOnAt: on, written: {}, allowed: true, owner: ownerOf("u2"), now: NOW },
+    ],
+    [
+      "imported elsewhere on and after the switch's day",
+      {
+        turnedOnAt: on,
+        written: {},
+        // The import's stamp in Paris, and the same moved on where an earlier reading replaced it.
+        weights: [
+          weight("2026-10-01", 80.3, "2026-09-30T22:00:00.000Z"),
+          weight("2026-10-08", 79.5, "2026-10-07T22:00:00.002Z"),
+        ],
+        allowed: true,
+        owner,
+        now: NOW,
+      },
+    ],
+    [
+      "an imported day corrected by the person",
+      {
+        turnedOnAt: on,
+        written: {},
+        weights: [weight("2026-10-08", 79.7, "2026-10-08T07:15:00.000Z")],
+        allowed: true,
+        owner,
+        now: NOW,
+      },
+    ],
+    [
+      "a typed day at an ordinary time",
+      {
+        turnedOnAt: on,
+        written: {},
+        weights: [weight("2026-10-08", 79.5, "2026-10-08T19:40:00.000Z")],
+        allowed: true,
+        owner,
+        now: NOW,
+      },
     ],
     [
       "writing weigh-ins not allowed",
-      { turnedOnAt: on, written: every, filled: {}, allowed: false, owner, now: NOW },
+      { turnedOnAt: on, written: every, allowed: false, owner, now: NOW },
     ],
   ];
   const planCases = cases.map(([name, c]) => ({
@@ -2778,7 +2803,7 @@ async function weighInVectors() {
     result: planHealth({
       workouts: [],
       sets: [],
-      weights,
+      weights: c.weights ?? weights,
       settings: {
         on: true,
         turnedOnAt: c.turnedOnAt,
@@ -2787,7 +2812,6 @@ async function weighInVectors() {
         importSince: null,
       },
       written: c.written,
-      filled: c.filled,
       allowed: { workouts: false, weighings: c.allowed },
       now: c.now,
       owner: c.owner,
@@ -2920,7 +2944,11 @@ async function weighInVectors() {
   }
 
   return {
-    weighInBounds: { weighingKey: weighingKey("2026-10-10"), historyDay: floor },
+    weighInBounds: {
+      weighingKey: weighingKey("2026-10-10"),
+      historyDay: floor,
+      importStampMs: IMPORT_STAMP_MS,
+    },
     weights,
     planWeighIns: planCases,
     sampleTime: times.map(([date, now]) => ({ date, now, result: sampleTime(date, now) })),
@@ -3065,7 +3093,21 @@ function bodyVectors() {
   const weekStarts = days.map((date) => ({ date, result: isoWeekStart(date) }));
 
   const kgs = [
-    20, 19.9, 20.1, 400, 400.1, 79.8, 79.85, 80.3, 0.1 + 79.7, 80.01, 79.99, 80.04, 0, -80, 1e9,
+    20,
+    19.9,
+    20.1,
+    400,
+    400.1,
+    79.8,
+    79.85,
+    80.3,
+    0.1 + 79.7,
+    80.01,
+    79.99,
+    80.04,
+    0,
+    -80,
+    1e9,
   ];
   const ranges: [number, number][] = [
     [0.25, 1],
@@ -3146,7 +3188,20 @@ function bodyVectors() {
     ["nothing at all", [m("2026-10-06", null, null, null)], "2026-10-05"],
   ];
   const cmValues = [
-    19.9, 20, 39.9, 40, 44.31, 49.9, 50, 84.5, 84.55, 80, 80.1, 200, 200.1, 0.1 + 84.4,
+    19.9,
+    20,
+    39.9,
+    40,
+    44.31,
+    49.9,
+    50,
+    84.5,
+    84.55,
+    80,
+    80.1,
+    200,
+    200.1,
+    0.1 + 84.4,
   ];
 
   const l = (date: string, kcal: number | null, proteinG: number | null): IntakeLog => ({

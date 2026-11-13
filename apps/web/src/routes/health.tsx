@@ -482,7 +482,6 @@ function HistoryOffer({ account, onAsk }: { account: OpenAccount; onAsk: () => P
         weights,
         settings: state.settings,
         written: state.written,
-        filled: state.imported.filled,
       });
     },
     networkMode: "always",
