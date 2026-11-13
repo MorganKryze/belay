@@ -221,6 +221,26 @@ private actor FakeReader: HealthWriting {
     #expect(try store.healthSettings().anchor == nil)
     #expect(try weights(store).isEmpty)
   }
+
+  /// The import reads through Santé's switch: it goes on only with it, and off with it.
+  @Test func theImportFollowsSante() throws {
+    let store = try AccountStore.inMemory(userId: userId)
+    try store.setHealthImportOn(true)
+    #expect(try store.healthSettings().importOn == false)
+
+    try store.setHealthOn(true, now: now)
+    try store.setHealthImportOn(true)
+    #expect(try store.healthSettings().importOn)
+    try store.setHealthOn(false, now: now)
+    #expect(try store.healthSettings().importOn == false)
+  }
+
+  /// A record written before the import decodes with it off and no place.
+  @Test func anEarlierRecordDecodesWithTheImportOff() throws {
+    let json = Data(#"{"on":true,"turnedOnAt":5}"#.utf8)
+    #expect(
+      try Rows.decode(HealthSettings.self, json) == HealthSettings(on: true, turnedOnAt: 5))
+  }
 }
 
 extension Change {

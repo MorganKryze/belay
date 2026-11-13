@@ -22,12 +22,22 @@
         }
       }
     },
-    "Tes séances terminées vont dans Santé avec leur intensité, à partir du moment où tu actives. Désactiver laisse dans Santé ce qui y est déjà.": {
+    "Importer les pesées de Santé": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Your finished sessions go to Health with their effort, from the moment you turn this on. Turning it off leaves in Health what is already there."
+            "value": "Import weigh-ins from Health"
+          }
+        }
+      }
+    },
+    "Tes séances terminées, avec leur intensité, et tes pesées vont dans Santé à partir du moment où tu actives. Importer ajoute à Belay les pesées d’une balance connectée ou saisies dans Santé ; une pesée déjà dans Belay n’est jamais remplacée. Si aucune n’arrive, vérifie que Belay peut lire le poids dans l’app Santé › ta photo › Confidentialité › Apps › Belay. Désactiver laisse dans Santé ce qui y est déjà.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your finished sessions, with their effort, and your weigh-ins go to Health from the moment you turn this on. Importing adds to Belay the weigh-ins from a connected scale or typed in Health; a weigh-in already in Belay is never replaced. If none arrive, check that Belay may read weight in the Health app › your photo › Privacy › Apps › Belay. Turning it off leaves in Health what is already there."
           }
         }
       }

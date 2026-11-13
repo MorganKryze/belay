@@ -7,20 +7,24 @@ public import Foundation
   private let writer: any HealthWriting
   private let now: @Sendable () -> Date
   private var running: (store: AccountStore, task: Task<Void, Never>)?
-  private var next: (store: AccountStore, owner: String)?
+  private var next: (store: AccountStore, owner: String, imports: Bool)?
+  /// A run imported weigh-ins: the sync sends them.
+  public var imported: (@MainActor () -> Void)?
 
   public init(writer: any HealthWriting, now: @escaping @Sendable () -> Date = { Date() }) {
     self.writer = writer
     self.now = now
   }
 
-  /// A run for `store`, whose `ownerOf` is `owner`, now or once the run going has stopped.
-  public func trigger(store: AccountStore, owner: String) {
+  /// A run for `store`, whose `ownerOf` is `owner`, now or once the run going has stopped;
+  /// `imports` after a landed sync. A waiting run keeps the import a trigger before it asked.
+  public func trigger(store: AccountStore, owner: String, imports: Bool = false) {
     guard running == nil else {
-      next = (store, owner)
+      let asked = next.map { $0.store === store && $0.imports } ?? false
+      next = (store, owner, imports || asked)
       return
     }
-    start(store, owner)
+    start(store, owner, imports)
   }
 
   /// The store closed: its run stops between two objects, and no run waits for it.
@@ -34,11 +38,13 @@ public import Foundation
     while let task = running?.task { await task.value }
   }
 
-  private func start(_ store: AccountStore, _ owner: String) {
+  private func start(_ store: AccountStore, _ owner: String, _ imports: Bool) {
     let writer = writer
     let now = now
     let task = Task { [weak self] in
-      await runHealth(store: store, writer: writer, owner: owner, now: now())
+      let count = await runHealth(
+        store: store, writer: writer, owner: owner, now: now(), imports: imports)
+      if count > 0 { self?.imported?() }
       self?.ended()
     }
     running = (store, task)
@@ -48,6 +54,6 @@ public import Foundation
     running = nil
     guard let next else { return }
     self.next = nil
-    start(next.store, next.owner)
+    start(next.store, next.owner, next.imports)
   }
 }

@@ -62,15 +62,18 @@ extension AccountStore {
       var settings = try Rows.single(HealthSettings.self, db, "healthSettings") ?? .off
       if on && !settings.on { settings.turnedOnAt = Instant.milliseconds(now) }
       settings.on = on
+      // The import reads through the same switch: off stops it too.
+      if !on { settings.importOn = false }
       try Rows.putSingle(db, "healthSettings", settings)
     }
   }
 
-  /// The import's switch. On starts a new read from the whole history, keeping the days it filled
-  /// before; either way its card has had its answer.
+  /// The import's switch, which goes on only with Santé's. On starts a new read from the whole
+  /// history, keeping the days it filled before; either way its card has had its answer.
   public func setHealthImportOn(_ on: Bool) throws {
     try writer.write { db in
       var settings = try Rows.single(HealthSettings.self, db, "healthSettings") ?? .off
+      guard !on || settings.on else { return }
       if on && !settings.importOn { settings.anchor = nil }
       settings.importOn = on
       settings.offered = true
