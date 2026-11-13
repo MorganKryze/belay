@@ -3018,6 +3018,7 @@ function bodyVectors() {
       ],
       "2026-10-07",
     ],
+    ["near the grid", run("2026-10-05", [80.01, 79.99, 80.04, 44.31]), "2026-10-08"],
   ];
   // 0 to 30 weigh-ins over the 6 weeks to today, with gaps where the draw leaves days out.
   const draw = random(20261113);
@@ -3063,7 +3064,9 @@ function bodyVectors() {
   );
   const weekStarts = days.map((date) => ({ date, result: isoWeekStart(date) }));
 
-  const kgs = [20, 19.9, 20.1, 400, 400.1, 79.8, 79.85, 80.3, 0.1 + 79.7, 0, -80, 1e9];
+  const kgs = [
+    20, 19.9, 20.1, 400, 400.1, 79.8, 79.85, 80.3, 0.1 + 79.7, 80.01, 79.99, 80.04, 0, -80, 1e9,
+  ];
   const ranges: [number, number][] = [
     [0.25, 1],
     [0.85, 0.95],
@@ -3142,7 +3145,9 @@ function bodyVectors() {
     ],
     ["nothing at all", [m("2026-10-06", null, null, null)], "2026-10-05"],
   ];
-  const cmValues = [19.9, 20, 39.9, 40, 49.9, 50, 84.5, 84.55, 80, 80.1, 200, 200.1, 0.1 + 84.4];
+  const cmValues = [
+    19.9, 20, 39.9, 40, 44.31, 49.9, 50, 84.5, 84.55, 80, 80.1, 200, 200.1, 0.1 + 84.4,
+  ];
 
   const l = (date: string, kcal: number | null, proteinG: number | null): IntakeLog => ({
     date,
@@ -3231,6 +3236,7 @@ function bodyVectors() {
       "2026-10-28",
     ],
     ["across the autumn change", ["2026-10-24", "2026-10-25", "2026-10-26"], "2026-10-28"],
+    ["a tick 24 days after the last", ["2026-09-01", "2026-09-02", "2026-09-26"], "2026-10-28"],
   ];
 
   const man: MifflinInput = { formula: "male", ageYears: 30, heightCm: 180, weightKg: 80 };
@@ -3310,6 +3316,16 @@ function bodyVectors() {
     ],
     ["one after today", [w("2026-10-27", 79), w("2026-10-29", 78)], []],
     ["heavy", [w("2026-10-27", 301)], [m("2026-10-25", 200, 80, 200)]],
+    [
+      "the average and the last weigh-in both today",
+      run("2026-10-24", [80.2, 80.1, 80, 79.9, 79.7]),
+      [],
+    ],
+    [
+      "near the grid",
+      run("2026-10-26", [80.01, 79.99, 80.04]),
+      [m("2026-10-27", 84.55, 44.31, null)],
+    ],
   ];
   const defaults = profiles.flatMap(([pname, profile]) =>
     bodies.map(([bname, ws, ms]) => ({

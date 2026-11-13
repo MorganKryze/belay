@@ -143,7 +143,8 @@ struct ContractVectorTests {
 
     #expect(Bounds.weighInKgMin == ts.weighInKg.min)
     #expect(Bounds.weighInKgMax == ts.weighInKg.max)
-    #expect(Bounds.weighInKgStep == ts.weighInKg.step)
+    // isWeighingKg and isMeasureCm count tenths, as TS does: a new step must be ported there.
+    #expect(ts.weighInKg.step == 0.1)
     for field in MeasureField.allCases {
       let range = try #require(ts.measureCm[field.rawValue])
       #expect(Bounds.measureCm(field) == range.min...range.max, "\(field)")

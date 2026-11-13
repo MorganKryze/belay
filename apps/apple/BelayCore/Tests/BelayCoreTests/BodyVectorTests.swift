@@ -106,24 +106,29 @@ private struct BodyFile: Decodable, Sendable {
       "\(weightKg) kg, \(goal.rawValue), \(bodyFatPct.map { "\($0) %" } ?? "no body fat")"
     }
   }
+  /// A source this file does not know fails the decoding, so a new one in TS cannot pass unseen.
   struct Source: Decodable, Sendable {
-    let from: String
-    let date: String?
-    var source: ToolSource? {
+    let source: ToolSource
+    private enum Keys: String, CodingKey { case from, date }
+    init(from decoder: any Decoder) throws {
+      let c = try decoder.container(keyedBy: Keys.self)
+      let from = try c.decode(String.self, forKey: .from)
       switch from {
-      case "profile": .profile
-      case "birthYear": .birthYear
-      case "average": .average
-      case "weighing": .weighing
-      case "measures": date.map(ToolSource.measures)
-      default: nil
+      case "profile": source = .profile
+      case "birthYear": source = .birthYear
+      case "average": source = .average
+      case "weighing": source = .weighing
+      case "measures": source = .measures(try c.decode(String.self, forKey: .date))
+      default:
+        throw DecodingError.dataCorruptedError(
+          forKey: .from, in: c, debugDescription: "unknown tool source \(from)")
       }
     }
   }
   struct Default<V: Decodable & Sendable & Equatable>: Decodable, Sendable {
     let value: V
     let source: Source
-    var toolDefault: ToolDefault<V>? { source.source.map { ToolDefault(value: value, source: $0) } }
+    var toolDefault: ToolDefault<V> { ToolDefault(value: value, source: source.source) }
   }
   struct Defaults: Decodable, Sendable {
     let formula: Default<ProfileFormula>?
@@ -267,5 +272,24 @@ struct BodyVectorTests {
     let defaults = BelayCore.toolDefaults(
       profile: c.profile, weighings: c.weighings, measures: c.measures, today: c.today)
     #expect(defaults == c.result.toolDefaults)
+  }
+
+  @Test(arguments: ["{\"from\":\"scale\"}", "{\"from\":\"measures\"}"])
+  func anUnknownToolSourceFailsTheDecoding(_ json: String) {
+    #expect(throws: DecodingError.self) {
+      try JSONDecoder().decode(BodyFile.Source.self, from: Data(json.utf8))
+    }
+  }
+
+  /// The web cannot hold another formula, and Mifflin would read one as female: it is left out.
+  @Test func aFormulaThisVersionDoesNotKnowIsLeftOut() {
+    let profile = ProfileRow(
+      formula: .unknown("other"), formulaAt: nil, birthYear: 1990, birthYearAt: nil,
+      heightCm: 170, heightAt: nil)
+    let defaults = BelayCore.toolDefaults(
+      profile: profile, weighings: [], measures: [], today: "2026-10-28")
+    #expect(defaults.formula == nil)
+    #expect(defaults.ageYears?.value == 36)
+    #expect(defaults.heightCm?.value == 170)
   }
 }

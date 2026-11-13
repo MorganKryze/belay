@@ -684,6 +684,18 @@
       "result": true
     },
     {
+      "value": 80.01,
+      "result": false
+    },
+    {
+      "value": 79.99,
+      "result": false
+    },
+    {
+      "value": 80.04,
+      "result": false
+    },
+    {
       "value": 0,
       "result": false
     },
@@ -2087,6 +2099,50 @@
           "count": 1,
           "status": "insufficient",
           "averageKg": null,
+          "lossPct": null
+        }
+      ]
+    },
+    {
+      "name": "near the grid",
+      "weighings": [
+        {
+          "date": "2026-10-05",
+          "weightKg": 80.01
+        },
+        {
+          "date": "2026-10-06",
+          "weightKg": 79.99
+        },
+        {
+          "date": "2026-10-07",
+          "weightKg": 80.04
+        },
+        {
+          "date": "2026-10-08",
+          "weightKg": 44.31
+        }
+      ],
+      "today": "2026-10-08",
+      "from": "2026-10-02",
+      "series": [
+        {
+          "date": "2026-10-08",
+          "averageKg": 71.0875
+        }
+      ],
+      "average7": 71.0875,
+      "latest": {
+        "date": "2026-10-08",
+        "averageKg": 71.0875
+      },
+      "weeks": [
+        {
+          "start": "2026-10-05",
+          "end": "2026-10-11",
+          "count": 4,
+          "status": "in_progress",
+          "averageKg": 71.0875,
           "lossPct": null
         }
       ]
@@ -11836,6 +11892,11 @@
     },
     {
       "field": "waist",
+      "value": 44.31,
+      "result": false
+    },
+    {
+      "field": "waist",
       "value": 49.9,
       "result": true
     },
@@ -11901,6 +11962,11 @@
     },
     {
       "field": "neck",
+      "value": 44.31,
+      "result": false
+    },
+    {
+      "field": "neck",
       "value": 49.9,
       "result": true
     },
@@ -11962,6 +12028,11 @@
     {
       "field": "hip",
       "value": 40,
+      "result": false
+    },
+    {
+      "field": "hip",
+      "value": 44.31,
       "result": false
     },
     {
@@ -12674,6 +12745,25 @@
         {
           "start": "2026-10-24",
           "end": "2026-11-06"
+        }
+      ]
+    },
+    {
+      "name": "a tick 24 days after the last",
+      "takenDays": [
+        "2026-09-01",
+        "2026-09-02",
+        "2026-09-26"
+      ],
+      "today": "2026-10-28",
+      "result": [
+        {
+          "start": "2026-09-01",
+          "end": "2026-09-14"
+        },
+        {
+          "start": "2026-09-26",
+          "end": "2026-10-09"
         }
       ]
     }
@@ -19982,6 +20072,99 @@
       }
     },
     {
+      "name": "empty, the average and the last weigh-in both today",
+      "profile": {
+        "formula": null,
+        "birthYear": null,
+        "heightCm": null
+      },
+      "weighings": [
+        {
+          "date": "2026-10-24",
+          "weightKg": 80.2
+        },
+        {
+          "date": "2026-10-25",
+          "weightKg": 80.1
+        },
+        {
+          "date": "2026-10-26",
+          "weightKg": 80
+        },
+        {
+          "date": "2026-10-27",
+          "weightKg": 79.9
+        },
+        {
+          "date": "2026-10-28",
+          "weightKg": 79.7
+        }
+      ],
+      "measures": [],
+      "today": "2026-10-28",
+      "result": {
+        "weightKg": {
+          "value": 80,
+          "source": {
+            "from": "average"
+          }
+        }
+      }
+    },
+    {
+      "name": "empty, near the grid",
+      "profile": {
+        "formula": null,
+        "birthYear": null,
+        "heightCm": null
+      },
+      "weighings": [
+        {
+          "date": "2026-10-26",
+          "weightKg": 80.01
+        },
+        {
+          "date": "2026-10-27",
+          "weightKg": 79.99
+        },
+        {
+          "date": "2026-10-28",
+          "weightKg": 80.04
+        }
+      ],
+      "measures": [
+        {
+          "date": "2026-10-27",
+          "waistCm": 84.55,
+          "neckCm": 44.31,
+          "hipCm": null
+        }
+      ],
+      "today": "2026-10-28",
+      "result": {
+        "weightKg": {
+          "value": 80.04,
+          "source": {
+            "from": "weighing"
+          }
+        },
+        "neckCm": {
+          "value": 44.31,
+          "source": {
+            "from": "measures",
+            "date": "2026-10-27"
+          }
+        },
+        "waistCm": {
+          "value": 84.55,
+          "source": {
+            "from": "measures",
+            "date": "2026-10-27"
+          }
+        }
+      }
+    },
+    {
       "name": "full, nothing",
       "profile": {
         "formula": "female",
@@ -20311,6 +20494,135 @@
           "source": {
             "from": "measures",
             "date": "2026-10-25"
+          }
+        }
+      }
+    },
+    {
+      "name": "full, the average and the last weigh-in both today",
+      "profile": {
+        "formula": "female",
+        "birthYear": 1990,
+        "heightCm": 168
+      },
+      "weighings": [
+        {
+          "date": "2026-10-24",
+          "weightKg": 80.2
+        },
+        {
+          "date": "2026-10-25",
+          "weightKg": 80.1
+        },
+        {
+          "date": "2026-10-26",
+          "weightKg": 80
+        },
+        {
+          "date": "2026-10-27",
+          "weightKg": 79.9
+        },
+        {
+          "date": "2026-10-28",
+          "weightKg": 79.7
+        }
+      ],
+      "measures": [],
+      "today": "2026-10-28",
+      "result": {
+        "formula": {
+          "value": "female",
+          "source": {
+            "from": "profile"
+          }
+        },
+        "ageYears": {
+          "value": 36,
+          "source": {
+            "from": "birthYear"
+          }
+        },
+        "heightCm": {
+          "value": 168,
+          "source": {
+            "from": "profile"
+          }
+        },
+        "weightKg": {
+          "value": 80,
+          "source": {
+            "from": "average"
+          }
+        }
+      }
+    },
+    {
+      "name": "full, near the grid",
+      "profile": {
+        "formula": "female",
+        "birthYear": 1990,
+        "heightCm": 168
+      },
+      "weighings": [
+        {
+          "date": "2026-10-26",
+          "weightKg": 80.01
+        },
+        {
+          "date": "2026-10-27",
+          "weightKg": 79.99
+        },
+        {
+          "date": "2026-10-28",
+          "weightKg": 80.04
+        }
+      ],
+      "measures": [
+        {
+          "date": "2026-10-27",
+          "waistCm": 84.55,
+          "neckCm": 44.31,
+          "hipCm": null
+        }
+      ],
+      "today": "2026-10-28",
+      "result": {
+        "formula": {
+          "value": "female",
+          "source": {
+            "from": "profile"
+          }
+        },
+        "ageYears": {
+          "value": 36,
+          "source": {
+            "from": "birthYear"
+          }
+        },
+        "heightCm": {
+          "value": 168,
+          "source": {
+            "from": "profile"
+          }
+        },
+        "weightKg": {
+          "value": 80.04,
+          "source": {
+            "from": "weighing"
+          }
+        },
+        "neckCm": {
+          "value": 44.31,
+          "source": {
+            "from": "measures",
+            "date": "2026-10-27"
+          }
+        },
+        "waistCm": {
+          "value": 84.55,
+          "source": {
+            "from": "measures",
+            "date": "2026-10-27"
           }
         }
       }
@@ -20650,6 +20962,135 @@
       }
     },
     {
+      "name": "age 15 and 100, the average and the last weigh-in both today",
+      "profile": {
+        "formula": "male",
+        "birthYear": 2011,
+        "heightCm": 230
+      },
+      "weighings": [
+        {
+          "date": "2026-10-24",
+          "weightKg": 80.2
+        },
+        {
+          "date": "2026-10-25",
+          "weightKg": 80.1
+        },
+        {
+          "date": "2026-10-26",
+          "weightKg": 80
+        },
+        {
+          "date": "2026-10-27",
+          "weightKg": 79.9
+        },
+        {
+          "date": "2026-10-28",
+          "weightKg": 79.7
+        }
+      ],
+      "measures": [],
+      "today": "2026-10-28",
+      "result": {
+        "formula": {
+          "value": "male",
+          "source": {
+            "from": "profile"
+          }
+        },
+        "ageYears": {
+          "value": 15,
+          "source": {
+            "from": "birthYear"
+          }
+        },
+        "heightCm": {
+          "value": 230,
+          "source": {
+            "from": "profile"
+          }
+        },
+        "weightKg": {
+          "value": 80,
+          "source": {
+            "from": "average"
+          }
+        }
+      }
+    },
+    {
+      "name": "age 15 and 100, near the grid",
+      "profile": {
+        "formula": "male",
+        "birthYear": 2011,
+        "heightCm": 230
+      },
+      "weighings": [
+        {
+          "date": "2026-10-26",
+          "weightKg": 80.01
+        },
+        {
+          "date": "2026-10-27",
+          "weightKg": 79.99
+        },
+        {
+          "date": "2026-10-28",
+          "weightKg": 80.04
+        }
+      ],
+      "measures": [
+        {
+          "date": "2026-10-27",
+          "waistCm": 84.55,
+          "neckCm": 44.31,
+          "hipCm": null
+        }
+      ],
+      "today": "2026-10-28",
+      "result": {
+        "formula": {
+          "value": "male",
+          "source": {
+            "from": "profile"
+          }
+        },
+        "ageYears": {
+          "value": 15,
+          "source": {
+            "from": "birthYear"
+          }
+        },
+        "heightCm": {
+          "value": 230,
+          "source": {
+            "from": "profile"
+          }
+        },
+        "weightKg": {
+          "value": 80.04,
+          "source": {
+            "from": "weighing"
+          }
+        },
+        "neckCm": {
+          "value": 44.31,
+          "source": {
+            "from": "measures",
+            "date": "2026-10-27"
+          }
+        },
+        "waistCm": {
+          "value": 84.55,
+          "source": {
+            "from": "measures",
+            "date": "2026-10-27"
+          }
+        }
+      }
+    },
+    {
       "name": "age 14, nothing",
       "profile": {
         "formula": "male",
@@ -20948,6 +21389,123 @@
       }
     },
     {
+      "name": "age 14, the average and the last weigh-in both today",
+      "profile": {
+        "formula": "male",
+        "birthYear": 2012,
+        "heightCm": 120
+      },
+      "weighings": [
+        {
+          "date": "2026-10-24",
+          "weightKg": 80.2
+        },
+        {
+          "date": "2026-10-25",
+          "weightKg": 80.1
+        },
+        {
+          "date": "2026-10-26",
+          "weightKg": 80
+        },
+        {
+          "date": "2026-10-27",
+          "weightKg": 79.9
+        },
+        {
+          "date": "2026-10-28",
+          "weightKg": 79.7
+        }
+      ],
+      "measures": [],
+      "today": "2026-10-28",
+      "result": {
+        "formula": {
+          "value": "male",
+          "source": {
+            "from": "profile"
+          }
+        },
+        "heightCm": {
+          "value": 120,
+          "source": {
+            "from": "profile"
+          }
+        },
+        "weightKg": {
+          "value": 80,
+          "source": {
+            "from": "average"
+          }
+        }
+      }
+    },
+    {
+      "name": "age 14, near the grid",
+      "profile": {
+        "formula": "male",
+        "birthYear": 2012,
+        "heightCm": 120
+      },
+      "weighings": [
+        {
+          "date": "2026-10-26",
+          "weightKg": 80.01
+        },
+        {
+          "date": "2026-10-27",
+          "weightKg": 79.99
+        },
+        {
+          "date": "2026-10-28",
+          "weightKg": 80.04
+        }
+      ],
+      "measures": [
+        {
+          "date": "2026-10-27",
+          "waistCm": 84.55,
+          "neckCm": 44.31,
+          "hipCm": null
+        }
+      ],
+      "today": "2026-10-28",
+      "result": {
+        "formula": {
+          "value": "male",
+          "source": {
+            "from": "profile"
+          }
+        },
+        "heightCm": {
+          "value": 120,
+          "source": {
+            "from": "profile"
+          }
+        },
+        "weightKg": {
+          "value": 80.04,
+          "source": {
+            "from": "weighing"
+          }
+        },
+        "neckCm": {
+          "value": 44.31,
+          "source": {
+            "from": "measures",
+            "date": "2026-10-27"
+          }
+        },
+        "waistCm": {
+          "value": 84.55,
+          "source": {
+            "from": "measures",
+            "date": "2026-10-27"
+          }
+        }
+      }
+    },
+    {
       "name": "age 101, nothing",
       "profile": {
         "formula": "male",
@@ -21210,6 +21768,111 @@
       }
     },
     {
+      "name": "age 101, the average and the last weigh-in both today",
+      "profile": {
+        "formula": "male",
+        "birthYear": 1925,
+        "heightCm": 119
+      },
+      "weighings": [
+        {
+          "date": "2026-10-24",
+          "weightKg": 80.2
+        },
+        {
+          "date": "2026-10-25",
+          "weightKg": 80.1
+        },
+        {
+          "date": "2026-10-26",
+          "weightKg": 80
+        },
+        {
+          "date": "2026-10-27",
+          "weightKg": 79.9
+        },
+        {
+          "date": "2026-10-28",
+          "weightKg": 79.7
+        }
+      ],
+      "measures": [],
+      "today": "2026-10-28",
+      "result": {
+        "formula": {
+          "value": "male",
+          "source": {
+            "from": "profile"
+          }
+        },
+        "weightKg": {
+          "value": 80,
+          "source": {
+            "from": "average"
+          }
+        }
+      }
+    },
+    {
+      "name": "age 101, near the grid",
+      "profile": {
+        "formula": "male",
+        "birthYear": 1925,
+        "heightCm": 119
+      },
+      "weighings": [
+        {
+          "date": "2026-10-26",
+          "weightKg": 80.01
+        },
+        {
+          "date": "2026-10-27",
+          "weightKg": 79.99
+        },
+        {
+          "date": "2026-10-28",
+          "weightKg": 80.04
+        }
+      ],
+      "measures": [
+        {
+          "date": "2026-10-27",
+          "waistCm": 84.55,
+          "neckCm": 44.31,
+          "hipCm": null
+        }
+      ],
+      "today": "2026-10-28",
+      "result": {
+        "formula": {
+          "value": "male",
+          "source": {
+            "from": "profile"
+          }
+        },
+        "weightKg": {
+          "value": 80.04,
+          "source": {
+            "from": "weighing"
+          }
+        },
+        "neckCm": {
+          "value": 44.31,
+          "source": {
+            "from": "measures",
+            "date": "2026-10-27"
+          }
+        },
+        "waistCm": {
+          "value": 84.55,
+          "source": {
+            "from": "measures",
+            "date": "2026-10-27"
+          }
+        }
+      }
+    },
+    {
       "name": "age 100, nothing",
       "profile": {
         "formula": null,
@@ -21467,6 +22130,111 @@
           "source": {
             "from": "measures",
             "date": "2026-10-25"
+          }
+        }
+      }
+    },
+    {
+      "name": "age 100, the average and the last weigh-in both today",
+      "profile": {
+        "formula": null,
+        "birthYear": 1926,
+        "heightCm": 231
+      },
+      "weighings": [
+        {
+          "date": "2026-10-24",
+          "weightKg": 80.2
+        },
+        {
+          "date": "2026-10-25",
+          "weightKg": 80.1
+        },
+        {
+          "date": "2026-10-26",
+          "weightKg": 80
+        },
+        {
+          "date": "2026-10-27",
+          "weightKg": 79.9
+        },
+        {
+          "date": "2026-10-28",
+          "weightKg": 79.7
+        }
+      ],
+      "measures": [],
+      "today": "2026-10-28",
+      "result": {
+        "ageYears": {
+          "value": 100,
+          "source": {
+            "from": "birthYear"
+          }
+        },
+        "weightKg": {
+          "value": 80,
+          "source": {
+            "from": "average"
+          }
+        }
+      }
+    },
+    {
+      "name": "age 100, near the grid",
+      "profile": {
+        "formula": null,
+        "birthYear": 1926,
+        "heightCm": 231
+      },
+      "weighings": [
+        {
+          "date": "2026-10-26",
+          "weightKg": 80.01
+        },
+        {
+          "date": "2026-10-27",
+          "weightKg": 79.99
+        },
+        {
+          "date": "2026-10-28",
+          "weightKg": 80.04
+        }
+      ],
+      "measures": [
+        {
+          "date": "2026-10-27",
+          "waistCm": 84.55,
+          "neckCm": 44.31,
+          "hipCm": null
+        }
+      ],
+      "today": "2026-10-28",
+      "result": {
+        "ageYears": {
+          "value": 100,
+          "source": {
+            "from": "birthYear"
+          }
+        },
+        "weightKg": {
+          "value": 80.04,
+          "source": {
+            "from": "weighing"
+          }
+        },
+        "neckCm": {
+          "value": 44.31,
+          "source": {
+            "from": "measures",
+            "date": "2026-10-27"
+          }
+        },
+        "waistCm": {
+          "value": 84.55,
+          "source": {
+            "from": "measures",
+            "date": "2026-10-27"
           }
         }
       }
