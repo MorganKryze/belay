@@ -192,6 +192,8 @@ final class SeancesProgrammeTests: XCTestCase {
         XCTAssertTrue(line.exists)
         let gap = app.gapUnderTitle("Séance B", to: line)
         XCTAssertLessThan(gap, 18, "the size line close under the title: \(gap) pt")
+        let indent = app.indentFromTitle("Séance B", to: line)
+        XCTAssertEqual(indent, 0, accuracy: 1, "the size line starts under the letter: \(indent) pt")
     }
 
     /// With A open, B's preview says A is under way, and its foot takes A up rather than starting B.

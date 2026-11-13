@@ -128,25 +128,28 @@ extension SessionPreview {
     }
 }
 
-/// The lines under a large title, as the list's first row: the session's name, then its line; the
-/// line alone for a session with no name. Not in the bar's subtitle slot: a pushed screen whose bar
-/// needs more height than the one it leaves (Séances' title has no subtitle) opens on the compact
-/// bar, its large title and lines gone. The title in the wide face holds « Séance C » at any text
-/// size, where « Séance C · Fessiers + tirage léger » would truncate.
+/// The lines under a large title, as the header of the list's first section: the session's name,
+/// then its line; the line alone for a session with no name. Not in the bar's subtitle slot: a
+/// pushed screen whose bar needs more height than the one it leaves (Séances' title has no
+/// subtitle) opens on the compact bar, its large title and lines gone. Not in a row either: a row
+/// clips to its rounded card, and lines flush with the title lost their first letters to its
+/// corners. The title in the wide face holds « Séance C » at any text size, where
+/// « Séance C · Fessiers + tirage léger » would truncate.
 struct TitleLines: View {
     let name: String?
     let line: String
 
     var body: some View {
         Section {
+        } header: {
             VStack(alignment: .leading, spacing: 4) {
                 if let name, !name.isEmpty {
                     Text(name).font(.title3.weight(.semibold)).foregroundStyle(.ink)
                 }
                 Text(line).font(.subheadline).foregroundStyle(.muted).monospacedDigit()
             }
+            .textCase(nil)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .listRowBackground(Color.clear)
             .listRowInsets(.init(top: 6, leading: 0, bottom: 0, trailing: 0))
         }
     }

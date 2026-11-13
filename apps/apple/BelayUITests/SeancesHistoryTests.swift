@@ -153,6 +153,17 @@ final class SeancesHistoryTests: XCTestCase {
         XCTAssertLessThan(gap, 18, "the name close under the title: \(gap) pt")
     }
 
+    /// The name and the day start where the letter starts. Whole too, which no frame shows: a row's
+    /// rounded card clipped their first letters, which only a screenshot shows.
+    func testPastSessionLinesAlignWithTitle() {
+        let app = past(now: Self.wednesday)
+        for line in [app.staticTexts["Pectoraux et dos"], app.staticTexts["Mardi 6 octobre · 20\u{202F}h\u{202F}00"]] {
+            XCTAssertTrue(line.exists)
+            let indent = app.indentFromTitle("Séance A", to: line)
+            XCTAssertEqual(indent, 0, accuracy: 1, "\(line.label) starts under the letter: \(indent) pt")
+        }
+    }
+
     /// The deletion asks in a bubble at the button, then the history goes on without it, its
     /// removal queued once.
     func testDeleteAsksThenLeavesHistory() {

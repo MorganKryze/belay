@@ -13,6 +13,13 @@ extension XCUIApplication {
             .allElementsBoundByIndex.filter { $0.frame.width > 2 }.map(\.frame.maxY).max() ?? 0
         return line.frame.minY - large
     }
+
+    /// From the leading edge of the large title `title` to that of `line`, in points.
+    func indentFromTitle(_ title: String, to line: XCUIElement) -> CGFloat {
+        let large = navigationBars[title].staticTexts.matching(NSPredicate(format: "label == %@", title))
+            .allElementsBoundByIndex.filter { $0.frame.width > 2 }.map(\.frame.minX).min() ?? 0
+        return line.frame.minX - large
+    }
 }
 
 /// The French name of the weekday `offset` days from `day`, as the app writes it in a sentence.
