@@ -632,10 +632,13 @@ private actor FakeHealth: HealthWriting {
             try Rows.encode(SessionEffort(workoutId: w, floor: 4, settled: true, relatedAt: nil)),
           ])
       }
+      // This step keeps the cursor; only v4 restarts the pull.
+      try Schema.migrator.migrate(old, upTo: "v3")
+      #expect(try old.read(AccountStore.cursor) == "7")
       try old.close()
     }
     let store = try AccountStore.open(userId: userId, origin: origin, in: folder)
-    #expect(try store.cursor() == "7")
+    #expect(try store.cursor() == "0")
     #expect(try store.effort(workoutId: w)?.floor == 4)
     #expect(try store.healthSettings() == HealthSettings(on: false, turnedOnAt: nil))
     try store.recordHealthWritten(sessionKey(w), .removed(version: 3))

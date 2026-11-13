@@ -102,9 +102,12 @@ extension AccountStore {
     }
   }
 
+  /// The session kinds only: none is dated by the local day, so neither the clock nor the zone
+  /// sways the verdict. A body entry is refused here, as only `writeBody` knows the person's day.
   static func check(_ changes: [Change]) throws {
-    // No kind written here is dated by the local day, so the clock does not sway the verdict.
-    guard changes.allSatisfy({ isValid($0, now: Date()) }) else { throw StoreError.invalidChange }
+    guard changes.allSatisfy({ !$0.isBody && isValid($0, now: Date(), timeZone: .gmt) }) else {
+      throw StoreError.invalidChange
+    }
   }
 
   /// Applied here and queued as the bytes it is sent as.
@@ -188,9 +191,8 @@ extension AccountStore {
       }
     case .activeProgram:
       return try Rows.single(ActiveProgramRow.self, db, "activeProgram")?.at
-    // This store version keeps no body row: nothing here holds one.
     case .weight, .measure, .intake, .supplementLog, .annotation:
-      return nil
+      return try bodyLocalAt(db, change)
     }
   }
 
@@ -245,9 +247,8 @@ extension AccountStore {
       try Rows.putSet(db, row)
     case .activeProgram(let c):
       try Rows.putSingle(db, "activeProgram", ActiveProgramRow(programId: c.programId, at: c.at))
-    // This store version keeps no body row.
     case .weight, .measure, .intake, .supplementLog, .annotation:
-      return
+      try applyBody(db, change)
     }
   }
 }

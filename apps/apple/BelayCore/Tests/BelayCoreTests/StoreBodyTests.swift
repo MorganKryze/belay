@@ -1,0 +1,308 @@
+import Foundation
+import GRDB
+import Synchronization
+import Testing
+
+@testable import BelayCore
+
+// The body entries in the store: the version that adds them pulls everything again, each entry
+// is written with its queued change or not at all, keyed as the server keys it, and sent once.
+
+/// A clock the test moves by hand.
+final class MovingClock: Sendable {
+  private let value: Mutex<Date>
+  init(_ start: Date) { value = Mutex(start) }
+  var now: Date { value.withLock { $0 } }
+  func move(minutes: Double) { value.withLock { $0 = $0.addingTimeInterval(minutes * 60) } }
+}
+
+@Suite struct StoreBodyTests {
+  let store: AccountStore
+  let clock = MovingClock(Fixture.t0)
+  let body: BodyActions
+  let day = "2026-11-05"
+
+  init() throws {
+    store = try AccountStore.inMemory(userId: "u1")
+    let clock = clock
+    body = BodyActions(store: store, now: { clock.now }, timeZone: Days.paris)
+  }
+
+  private func weightRow(_ date: String) throws -> WeightRow? {
+    try store.writer.read { try BodyRows.weight($0, date: date) }
+  }
+
+  @Test func v4OpensV3StoreAndRestartsCursor() throws {
+    let folder = try Fixture.folder()
+    let origin = URL(string: "https://belay.example")!
+    let w = Fixture.id()
+    do {
+      let old = try DatabaseQueue(
+        path: AccountStore.fileURL(userId: "u1", origin: origin, in: folder).path)
+      try Schema.migrator.migrate(old, upTo: "v3")
+      try old.write { db in
+        try db.execute(sql: "INSERT INTO meta (key, value) VALUES ('cursor', '42')")
+        try Rows.put(db, "workouts", id: w, Fixture.workoutRow(w))
+      }
+    }
+
+    let opened = try AccountStore.open(userId: "u1", origin: origin, in: folder)
+    #expect(try opened.cursor() == "0")
+    #expect(try opened.history().workouts.map(\.id) == [w])
+    #expect(try opened.body() == BodyRead.empty)
+    try BodyActions(store: opened, now: { Fixture.t0 }, timeZone: Days.paris)
+      .weigh(date: day, kg: 80.4)
+    #expect(try opened.body().weights.map(\.weightKg) == [80.4])
+
+    // Only the step itself restarts the pull: a later open keeps the cursor reached.
+    try opened.applyServer(sent: [], response: Fixture.response(cursor: "7"))
+    let again = try AccountStore.open(userId: "u1", origin: origin, in: folder)
+    #expect(try again.cursor() == "7")
+  }
+
+  @Test func weighWritesRowAndQueueTogether() throws {
+    try body.weigh(date: day, kg: 80.4)
+    let change = WeightChange(date: day, weightKg: 80.4, at: Fixture.time(0))
+    #expect(try store.body().weights == [WeightRow(date: day, weightKg: 80.4, at: Fixture.time(0))])
+    #expect(try Fixture.changes(store) == [.weight(change)])
+    let queued = try #require(try store.outbox(limit: nil).first)
+    let json = { (data: Data) in try JSONDecoder().decode(JSONValue.self, from: data) }
+    #expect(try json(queued.bytes) == json(ChangeJSON.encode(.weight(change))))
+
+    try Fixture.refuseInserts(into: "outbox", in: store)
+    #expect(throws: (any Error).self) { try body.weigh(date: "2026-11-06", kg: 80) }
+    #expect(try store.body().weights.map(\.date) == [day])
+    #expect(try store.outbox(limit: nil).count == 1)
+  }
+
+  @Test func theDayIsThePersonsToday() throws {
+    // 23:30 UTC on the 6th is already the 7th in Paris.
+    clock.move(minutes: 14 * 60 + 30)
+    try body.weigh(date: "2026-11-07", kg: 80)
+    let utc = BodyActions(store: store, now: { [clock] in clock.now }, timeZone: .gmt)
+    #expect(throws: StoreError.invalidChange) { try utc.weigh(date: "2026-11-07", kg: 79.9) }
+    #expect(throws: StoreError.invalidChange) { try body.weigh(date: "2026-11-08", kg: 80) }
+    #expect(throws: StoreError.invalidChange) { try body.weigh(date: day, kg: 80.05) }
+    #expect(try store.body().weights.map(\.weightKg) == [80])
+    #expect(try Fixture.changes(store).count == 1)
+  }
+
+  @Test func oneWeighInPerDay() throws {
+    try body.weigh(date: day, kg: 80.4)
+    clock.move(minutes: 1)
+    try body.weigh(date: day, kg: 80.2)
+    #expect(try store.body().weights == [WeightRow(date: day, weightKg: 80.2, at: Fixture.time(1))])
+    #expect(try Fixture.changes(store).count == 2)
+  }
+
+  @Test func deleteWritesNull() throws {
+    try body.weigh(date: day, kg: 80.4)
+    clock.move(minutes: 1)
+    try body.deleteWeight(date: day)
+    #expect(try store.body().weights.isEmpty)
+    // The day stays, empty, so the deletion outranks an older weigh-in from elsewhere.
+    #expect(try weightRow(day) == WeightRow(date: day, weightKg: nil, at: Fixture.time(1)))
+    #expect(
+      try Fixture.changes(store).last
+        == .weight(WeightChange(date: day, weightKg: nil, at: Fixture.time(1))))
+
+    // A day with no weigh-in has nothing to delete.
+    try body.deleteWeight(date: "2026-11-04")
+    try body.deleteWeight(date: day)
+    #expect(try Fixture.changes(store).count == 2)
+  }
+
+  @Test func measureKeepsUntypedFields() throws {
+    try body.measure(date: day, waist: 85, neck: nil, hip: nil)
+    #expect(
+      try Fixture.changes(store) == [
+        .measure(MeasureChange(date: day, field: .waist, value: 85, at: Fixture.time(0)))
+      ])
+    clock.move(minutes: 1)
+    try body.measure(date: day, waist: 84.5, neck: 38, hip: nil)
+    #expect(
+      try store.body().measures == [
+        MeasureRow(
+          date: day, waistCm: 84.5, waistAt: Fixture.time(1), neckCm: 38, neckAt: Fixture.time(1),
+          hipCm: nil, hipAt: nil)
+      ])
+    #expect(try Fixture.changes(store).count == 3)
+
+    // Saved again with the neck emptied: only the neck is written, as a deletion.
+    clock.move(minutes: 1)
+    try body.measure(date: day, waist: 84.5, neck: nil, hip: nil)
+    #expect(
+      try Fixture.changes(store).last
+        == .measure(MeasureChange(date: day, field: .neck, value: nil, at: Fixture.time(2))))
+    #expect(try Fixture.changes(store).count == 4)
+    let row = try #require(try store.body().measures.first)
+    #expect(row.waistCm == 84.5 && row.waistAt == Fixture.time(1))
+    #expect(row.neckCm == nil && row.neckAt == Fixture.time(2))
+
+    #expect(throws: StoreError.invalidChange) {
+      try body.measure(date: day, waist: 39.9, neck: nil, hip: nil)
+    }
+  }
+
+  @Test func intakeIsDayTotal() throws {
+    try body.intake(date: day, kcal: 1800, protein: 120)
+    clock.move(minutes: 1)
+    try body.intake(date: day, kcal: 2100, protein: 120)
+    #expect(
+      try store.body().intake == [
+        IntakeRow(
+          date: day, kcal: 2100, kcalAt: Fixture.time(1), proteinG: 120,
+          proteinAt: Fixture.time(0))
+      ])
+    #expect(try Fixture.changes(store).count == 3)
+    #expect(throws: StoreError.invalidChange) {
+      try body.intake(date: day, kcal: 10_001, protein: nil)
+    }
+  }
+
+  @Test func takeTwiceSameDayOneLog() throws {
+    let creatine = Fixture.id(20)
+    try body.take(supplementId: creatine, date: day, taken: true)
+    clock.move(minutes: 1)
+    try body.take(supplementId: creatine, date: day, taken: true)
+    #expect(
+      try store.body().logs == [
+        SupplementLogRow(supplementId: creatine, date: day, taken: true, at: Fixture.time(0))
+      ])
+    #expect(try Fixture.changes(store).count == 1)
+
+    try body.take(supplementId: creatine, date: day, taken: false)
+    #expect(try store.body().logs.isEmpty)
+    #expect(
+      try Fixture.changes(store).last
+        == .supplementLog(
+          SupplementLogChange(
+            supplementId: creatine, date: day, taken: false, at: Fixture.time(1))))
+  }
+
+  @Test func annotationEditAndRemove() throws {
+    let id = Fixture.id(30)
+    try body.annotate(AnnotationInput(id: id, date: day, type: .deload, label: "Semaine légère"))
+    clock.move(minutes: 1)
+    try body.annotate(AnnotationInput(id: id, date: "2026-11-04", type: .note, label: nil))
+    #expect(
+      try store.body().annotations == [
+        AnnotationRow(
+          id: id, date: "2026-11-04", type: .note, label: nil, fieldsAt: Fixture.time(1),
+          removed: false, removedAt: nil)
+      ])
+
+    clock.move(minutes: 1)
+    try body.removeAnnotation(id: id)
+    #expect(try store.body().annotations.isEmpty)
+    #expect(
+      try Fixture.changes(store).last
+        == .annotation(AnnotationChange(id: id, at: Fixture.time(2), edit: .removed(true))))
+    // Removed already: nothing more to write.
+    try body.removeAnnotation(id: id)
+    #expect(try Fixture.changes(store).count == 3)
+    #expect(throws: BodyError.noSuchAnnotation) { try body.removeAnnotation(id: Fixture.id(31)) }
+    #expect(throws: StoreError.invalidChange) {
+      try body.annotate(
+        AnnotationInput(
+          id: Fixture.id(32), date: day, type: .note, label: String(repeating: "a", count: 81)))
+    }
+  }
+
+  @Test func aRefusedEntryGoesUnlessRewritten() throws {
+    try body.weigh(date: day, kg: 80.4)
+    try body.take(supplementId: Fixture.id(20), date: day, taken: true)
+    try body.annotate(AnnotationInput(id: Fixture.id(30), date: day, type: .note, label: "x"))
+    let sent = try store.outbox(limit: nil)
+    try store.applyServer(
+      sent: sent,
+      response: Fixture.response(rejected: [
+        Rejected(index: 0, reason: "refused"), Rejected(index: 1, reason: "refused"),
+        Rejected(index: 2, reason: "refused"),
+      ]))
+    #expect(try store.body() == BodyRead.empty)
+    #expect(try store.rejected().count == 3)
+  }
+
+  @Test func theBodyRowsReceivedAreStored() throws {
+    let supplement = SupplementRow(
+      id: Fixture.id(20), name: "Créatine", nameAt: Fixture.time(0), kind: .creatine,
+      removed: false, removedAt: nil)
+    let log = SupplementLogRow(
+      supplementId: supplement.id, date: day, taken: true, at: Fixture.time(0))
+    let target = TargetRow(minPct: 0.5, maxPct: 1, at: Fixture.time(0))
+    let profile = ProfileRow(
+      formula: .male, formulaAt: Fixture.time(0), birthYear: 1990, birthYearAt: Fixture.time(0),
+      heightCm: 180, heightAt: Fixture.time(0))
+    let (kept, removed) = (Fixture.id(31), Fixture.id(32))
+    var response = Fixture.response(cursor: "3")
+    response.weights = [
+      WeightRow(date: day, weightKg: 80.4, at: Fixture.time(0)),
+      WeightRow(date: "2026-11-04", weightKg: 80.8, at: Fixture.time(0)),
+      WeightRow(date: "2026-11-03", weightKg: nil, at: Fixture.time(0)),
+    ]
+    response.measures = [
+      MeasureRow(
+        date: day, waistCm: 85, waistAt: Fixture.time(0), neckCm: nil, neckAt: nil, hipCm: nil,
+        hipAt: nil)
+    ]
+    response.intake = [
+      IntakeRow(date: day, kcal: 2000, kcalAt: Fixture.time(0), proteinG: nil, proteinAt: nil)
+    ]
+    response.supplements = [supplement]
+    response.supplementLogs = [log]
+    response.annotations = [
+      AnnotationRow(
+        id: kept, date: day, type: .dietBreak, label: nil, fieldsAt: Fixture.time(0),
+        removed: false, removedAt: nil),
+      AnnotationRow(
+        id: removed, date: day, type: .note, label: "x", fieldsAt: Fixture.time(0),
+        removed: true, removedAt: Fixture.time(1)),
+    ]
+    response.target = target
+    response.profile = profile
+    try store.applyServer(sent: [], response: response)
+
+    let read = try store.body()
+    #expect(read.weights.map(\.date) == ["2026-11-04", day])
+    #expect(read.measures == response.measures)
+    #expect(read.intake == response.intake)
+    #expect(read.supplements == [supplement])
+    #expect(read.logs == [log])
+    #expect(read.annotations.map(\.id) == [kept])
+    #expect(read.target == target)
+    #expect(read.profile == profile)
+  }
+
+  @Test func offlineSentOnce() async throws {
+    try body.weigh(date: day, kg: 80.4)
+    let echoed = WeightRow(date: day, weightKg: 80.4, at: Fixture.time(0))
+    var answer = Fixture.response(cursor: "8")
+    answer.weights = [echoed]
+    let echo = answer
+    let transport = ScriptedTransport { _, i in i == 0 ? .offline : .ok(echo) }
+    let engine = SyncEngine(userId: "u1", store: store, transport: transport, onLanded: {})
+
+    await engine.sync()
+    #expect(try Fixture.changes(store).count == 1)
+    #expect(try store.cursor() == "0")
+    #expect(try store.body().weights == [echoed])
+
+    await engine.sync()
+    await engine.sync()
+    let requests = await transport.requests
+    // The offline attempt never reached the server; the next one took it, and nothing after.
+    #expect(requests.count == 3)
+    #expect(requests[0].changes.count == 1 && requests[1].changes == requests[0].changes)
+    #expect(requests[2].changes.isEmpty)
+    #expect(try store.outbox(limit: nil).isEmpty)
+    #expect(try store.cursor() == "8")
+    #expect(try store.body().weights == [echoed])
+  }
+}
+
+extension BodyRead {
+  static let empty = BodyRead(
+    weights: [], measures: [], intake: [], supplements: [], logs: [], annotations: [],
+    target: nil, profile: nil)
+}

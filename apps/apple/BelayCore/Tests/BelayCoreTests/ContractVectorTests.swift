@@ -348,7 +348,8 @@ struct ContractVectorTests {
     for vector in try activeProgramCases() {
       let change = try? ChangeJSON.decode(Data(vector.json.utf8))
       for now in clocks {
-        #expect((change.map { isValid($0, now: now) } ?? false) == vector.valid, "\(vector.name)")
+        let verdict = change.map { isValid($0, now: now, timeZone: paris) } ?? false
+        #expect(verdict == vector.valid, "\(vector.name)")
       }
     }
   }
@@ -467,12 +468,18 @@ struct ContractVectorTests {
     known.rule = nil
     let at = "2026-11-06T09:30:00.123Z"
     let id = "019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00"
-    #expect(isValid(.workout(.init(id: id, at: at, edit: .plan([known]))), now: Date()))
+    #expect(
+      isValid(
+        .workout(.init(id: id, at: at, edit: .plan([known]))), now: Date(), timeZone: paris))
     var measure = known
     measure.measure = .unknown("kg")
-    #expect(!isValid(.workout(.init(id: id, at: at, edit: .plan([measure]))), now: Date()))
+    #expect(
+      !isValid(
+        .workout(.init(id: id, at: at, edit: .plan([measure]))), now: Date(), timeZone: paris))
     var rule = known
     rule.rule = .unknown("rest")
-    #expect(!isValid(.workout(.init(id: id, at: at, edit: .plan([rule]))), now: Date()))
+    #expect(
+      !isValid(
+        .workout(.init(id: id, at: at, edit: .plan([rule]))), now: Date(), timeZone: paris))
   }
 }

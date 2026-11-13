@@ -4,7 +4,7 @@ import Foundation
 /// what the server accepts, so a queued change is never refused for its shape, which would block
 /// the whole queue. A body entry is never dated after the person's today: `now` read in
 /// `timeZone`, as the web reads the device's clock where it is.
-public func isValid(_ change: Change, now: Date, timeZone: TimeZone = .current) -> Bool {
+public func isValid(_ change: Change, now: Date, timeZone: TimeZone) -> Bool {
   switch change {
   case .workout(let c):
     return Instant.isCanonical(c.at) && isId(c.id) && isValid(c.edit, at: c.at)

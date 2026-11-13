@@ -39,6 +39,14 @@ extension AccountStore {
       for row in response.programSlots ?? [] { try Rows.put(db, "programSlots", id: row.id, row) }
       if let pointer = response.activeProgram { try Rows.putSingle(db, "activeProgram", pointer) }
       for row in response.activities { try Rows.put(db, "activities", id: row.id, row) }
+      for row in response.weights ?? [] { try BodyRows.put(db, row) }
+      for row in response.measures ?? [] { try BodyRows.put(db, row) }
+      for row in response.intake ?? [] { try BodyRows.put(db, row) }
+      for row in response.supplements ?? [] { try Rows.put(db, "supplements", id: row.id, row) }
+      for row in response.supplementLogs ?? [] { try BodyRows.put(db, row) }
+      for row in response.annotations ?? [] { try Rows.put(db, "annotations", id: row.id, row) }
+      if let target = response.target { try Rows.putSingle(db, "target", target) }
+      if let profile = response.profile { try Rows.putSingle(db, "profile", profile) }
       // Only after the rows: a change queued while the request was out is newer than what the
       // server sent, and must stay what the screen shows.
       for entry in try Self.outbox(db, limit: nil) {
@@ -91,8 +99,7 @@ extension AccountStore {
       }
     // As the web does: the pointer goes, the starting one shows until the server's comes back.
     case .activeProgram: try Rows.clearSingle(db, "activeProgram")
-    // This store version keeps no body row: nothing to take back.
-    case .weight, .measure, .intake, .supplementLog, .annotation: return
+    case .weight, .measure, .intake, .supplementLog, .annotation: try revertBody(db, change)
     }
   }
 }
