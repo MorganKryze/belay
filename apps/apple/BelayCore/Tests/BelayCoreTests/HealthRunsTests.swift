@@ -37,6 +37,16 @@ private actor HeldHealth: HealthWriting {
     .written
   }
 
+  func saveWeighIn(kg: Double, at: Int64, syncId: String, version: Int64) async -> HealthOutcome {
+    .written
+  }
+
+  func deleteWeighIn(syncId: String) async -> HealthOutcome { .removed }
+
+  func readWeighIns(anchor: String?, since: Int64) async -> (
+    samples: [HealthSample], anchor: String
+  )? { nil }
+
   /// Returns once the first save is under way.
   func firstSaveStarted() async {
     if !first { return }

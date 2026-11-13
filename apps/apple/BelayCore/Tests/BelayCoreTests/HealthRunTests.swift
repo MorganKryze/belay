@@ -82,6 +82,27 @@ private actor FakeHealth: HealthWriting {
     if relating == .written { related.append((score, syncId, effortSyncId)) }
     return relating
   }
+
+  private(set) var weighed: [(kg: Double, at: Int64, syncId: String, version: Int64)] = []
+
+  func saveWeighIn(kg: Double, at: Int64, syncId: String, version: Int64) async -> HealthOutcome {
+    calls += 1
+    weighed.append((kg, at, syncId, version))
+    return .written
+  }
+
+  func deleteWeighIn(syncId: String) async -> HealthOutcome {
+    calls += 1
+    deleted.append(syncId)
+    return .removed
+  }
+
+  func readWeighIns(anchor: String?, since: Int64) async -> (
+    samples: [HealthSample], anchor: String
+  )? {
+    calls += 1
+    return nil
+  }
 }
 
 @Suite struct HealthRunTests {
@@ -119,7 +140,8 @@ private actor FakeHealth: HealthWriting {
   }
 
   private func run(_ store: AccountStore, _ health: FakeHealth, at: Date? = nil) async {
-    await runHealth(store: store, writer: health, owner: owner, now: at ?? now)
+    await runHealth(
+      store: store, writer: health, owner: owner, now: at ?? now, timeZone: Days.paris)
   }
 
   @Test func theSwitchStartsOffAndRemembersWhenItWentOn() throws {
@@ -607,13 +629,6 @@ private actor FakeHealth: HealthWriting {
     #expect(try store.healthWritten().isEmpty)
   }
 
-  /// The one request made at turn-on: workouts and their effort to write, workouts to read for
-  /// the overlap check. A request naming fewer types to write takes back the right to write them.
-  @Test func theRequestNamesWorkoutAndEffortToShareAndWorkoutToRead() {
-    #expect(HealthAccessRequest.share == [.workouts, .effort])
-    #expect(HealthAccessRequest.read == [.workouts])
-  }
-
   @Test func v3OpensOnAFileTheV2SchemaMade() throws {
     let folder = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
     defer { try? FileManager.default.removeItem(at: folder) }
@@ -643,6 +658,86 @@ private actor FakeHealth: HealthWriting {
     #expect(try store.healthSettings() == HealthSettings(on: false, turnedOnAt: nil))
     try store.recordHealthWritten(sessionKey(w), .removed(version: 3))
     #expect(try store.healthWritten() == [sessionKey(w): .removed(version: 3)])
+  }
+
+  // Weigh-ins: the day's weigh-in at 08:00 in Paris, under the account-tagged identifier.
+
+  private func weighing(_ store: AccountStore, at minutes: Double = 0) -> BodyActions {
+    BodyActions(
+      store: store, now: { Fixture.t0.addingTimeInterval(minutes * 60) }, timeZone: Days.paris)
+  }
+
+  private var weighInsAllowed: HealthAccess {
+    HealthAccess(available: true, workouts: .allowed, effort: .allowed, weighIns: .allowed)
+  }
+
+  @Test func weighInWrittenOnce() async throws {
+    let store = try storeOn()
+    try weighing(store).weigh(date: "2026-11-06", kg: 80.4)
+    let health = FakeHealth()
+    await health.set(access: weighInsAllowed)
+
+    await run(store, health)
+    await run(store, health)
+
+    let weighed = await health.weighed
+    #expect(weighed.count == 1)
+    #expect(weighed.first?.kg == 80.4)
+    #expect(weighed.first?.at == Instant.milliseconds("2026-11-06T07:00:00.000Z"))
+    #expect(weighed.first?.syncId == "belay-weighing-\(owner)-2026-11-06")
+    #expect(try store.healthWritten()[weighingKey("2026-11-06")] != nil)
+  }
+
+  @Test func weighInSampleReplaced() async throws {
+    let store = try storeOn()
+    try weighing(store).weigh(date: "2026-11-06", kg: 80.4)
+    let health = FakeHealth()
+    await health.set(access: weighInsAllowed)
+    await run(store, health)
+
+    try weighing(store, at: 5).weigh(date: "2026-11-06", kg: 80.1)
+    await run(store, health)
+
+    let weighed = await health.weighed
+    #expect(weighed.count == 2)
+    #expect(weighed.last?.kg == 80.1)
+    #expect(weighed.last?.syncId == weighed.first?.syncId)
+    #expect((weighed.last?.version ?? 0) > (weighed.first?.version ?? 0))
+  }
+
+  @Test func deletedDayDeleted() async throws {
+    let store = try storeOn()
+    try weighing(store).weigh(date: "2026-11-06", kg: 80.4)
+    let health = FakeHealth()
+    await health.set(access: weighInsAllowed)
+    await run(store, health)
+
+    try weighing(store, at: 5).deleteWeight(date: "2026-11-06")
+    await run(store, health)
+    await run(store, health)
+
+    #expect(await health.deleted == ["belay-weighing-\(owner)-2026-11-06"])
+    guard case .removed = try store.healthWritten()[weighingKey("2026-11-06")] else {
+      Issue.record("the record holds the removal")
+      return
+    }
+  }
+
+  @Test func weighInsWaitWhileWritingThemIsNotAllowed() async throws {
+    let store = try storeOn()
+    try weighing(store).weigh(date: "2026-11-06", kg: 80.4)
+    let health = FakeHealth()
+
+    await run(store, health)
+
+    #expect(await health.weighed.isEmpty)
+  }
+
+  /// A request naming a type only to read takes back the right to write it: every request names
+  /// every written type, and reads what the overlap check and the import need.
+  @Test func requestNamesFullSet() {
+    #expect(HealthAccessRequest.share == [.workouts, .effort, .bodyMass])
+    #expect(HealthAccessRequest.read == [.workouts, .bodyMass])
   }
 
   @Test func anUnknownWrittenStateIsRefused() {

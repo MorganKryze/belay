@@ -66,10 +66,21 @@ import {
   finishedSpan,
   ownerOf,
   planHealth,
+  sampleTime,
   sessionKey,
   versionOf,
+  weighingKey,
 } from "../apps/web/src/native/health-plan";
-import type { Written } from "../apps/web/src/native/health";
+import {
+  HISTORY_SINCE,
+  IMPORT_KEY,
+  SETTINGS_KEY,
+  type HealthImport,
+  type HealthSample,
+  type Written,
+} from "../apps/web/src/native/health";
+import { earliestPerDay, importWeighings } from "../apps/web/src/native/health-import";
+import type { WeightRow } from "../packages/shared/src/sync/schema";
 import { MAX_CHANGES } from "../packages/shared/src/sync/limits";
 import { clampAt, isNewer, mergeFields } from "../packages/shared/src/sync/merge";
 import { ChangeSchema, type Change, SyncResponseSchema } from "../packages/shared/src/sync/schema";
@@ -2646,6 +2657,283 @@ function healthVectors() {
   };
 }
 
+// Weigh-ins to Health and back: which ones Health should hold, the time a weigh-in's sample
+// takes, each day's earliest reading, and which days the import fills. The import runs the web's
+// own `importWeighings` on an in-memory account database, so the choice it made is the vector.
+async function weighInVectors() {
+  const ms = (s: string) => Date.parse(s);
+  const NOW = ms("2026-10-10T12:00:00.000Z");
+  const owner = ownerOf("u1");
+  const weight = (date: string, weightKg: number | null, at = `${date}T06:00:00.000Z`) => ({
+    date,
+    weightKg,
+    at,
+  });
+  const weights: WeightRow[] = [
+    weight("2026-03-29", 81.2),
+    weight("2026-09-20", 80.6),
+    weight("2026-10-05", 80.1),
+    weight("2026-10-06", 79.8),
+    weight("2026-10-07", null, "2026-10-07T19:00:00.000Z"),
+    weight("2026-10-08", 79.5),
+    weight("2026-10-09", 410),
+    weight("2026-10-10", 79.4),
+    weight("2026-10-25", 79.0),
+  ];
+  const filledDay = { "2026-10-08": { at: "2026-10-07T22:00:00.000Z", startedAt: 0 } };
+  const weighing = (kg: number, version: number): Written => ({ state: "weighing", version, kg });
+  const every = Object.fromEntries(
+    weights.map((r) => [weighingKey(r.date), weighing(r.weightKg ?? 80, 3)]),
+  );
+  const on = ms("2026-10-01T00:00:00.000Z");
+  const cases: [
+    string,
+    {
+      turnedOnAt: number | null;
+      written: Record<string, Written>;
+      filled: Record<string, { at: string; startedAt: number }>;
+      allowed: boolean;
+      owner: string;
+      now: number;
+    },
+  ][] = [
+    [
+      "new since the switch",
+      { turnedOnAt: on, written: {}, filled: filledDay, allowed: true, owner, now: NOW },
+    ],
+    [
+      "each one written before",
+      { turnedOnAt: on, written: every, filled: {}, allowed: true, owner, now: NOW },
+    ],
+    [
+      "a changed value",
+      {
+        turnedOnAt: on,
+        written: { [weighingKey("2026-10-05")]: weighing(80, ms("2027-01-01T00:00:00.000Z")) },
+        filled: {},
+        allowed: true,
+        owner,
+        now: NOW,
+      },
+    ],
+    [
+      "deleted and out of range once written",
+      {
+        turnedOnAt: on,
+        written: {
+          [weighingKey("2026-10-07")]: weighing(80, 2),
+          [weighingKey("2026-10-09")]: weighing(81, 2),
+        },
+        filled: {},
+        allowed: true,
+        owner,
+        now: NOW,
+      },
+    ],
+    [
+      "today before 08:00",
+      {
+        turnedOnAt: on,
+        written: {},
+        filled: {},
+        allowed: true,
+        owner,
+        now: ms("2026-10-10T05:00:00.000Z"),
+      },
+    ],
+    [
+      "the daylight-saving days",
+      {
+        turnedOnAt: ms("2026-03-01T00:00:00.000Z"),
+        written: {},
+        filled: {},
+        allowed: true,
+        owner,
+        now: ms("2026-10-26T12:00:00.000Z"),
+      },
+    ],
+    [
+      "an old day written before",
+      {
+        turnedOnAt: on,
+        written: { [weighingKey("2026-09-20")]: weighing(80, 2) },
+        filled: {},
+        allowed: true,
+        owner,
+        now: NOW,
+      },
+    ],
+    [
+      "another owner",
+      { turnedOnAt: on, written: {}, filled: {}, allowed: true, owner: ownerOf("u2"), now: NOW },
+    ],
+    [
+      "writing weigh-ins not allowed",
+      { turnedOnAt: on, written: every, filled: {}, allowed: false, owner, now: NOW },
+    ],
+  ];
+  const planCases = cases.map(([name, c]) => ({
+    name,
+    ...c,
+    result: planHealth({
+      workouts: [],
+      sets: [],
+      weights,
+      settings: {
+        on: true,
+        turnedOnAt: c.turnedOnAt,
+        history: "no",
+        importOn: false,
+        importSince: null,
+      },
+      written: c.written,
+      filled: c.filled,
+      allowed: { workouts: false, weighings: c.allowed },
+      now: c.now,
+      owner: c.owner,
+    }),
+  }));
+
+  const times = [
+    ["2026-10-05", NOW],
+    ["2026-10-10", NOW],
+    ["2026-10-10", ms("2026-10-10T05:00:00.000Z")],
+    ["2026-03-29", NOW],
+    ["2026-10-25", NOW],
+    ["1900-01-01", NOW],
+  ] as const;
+
+  const sample = (iso: string, kg: number): HealthSample => ({ startedAt: ms(iso), kg });
+  const readings = [
+    sample("2026-10-05T05:10:00.000Z", 80.04),
+    sample("2026-10-05T04:50:00.000Z", 80.21),
+    sample("2026-10-05T20:00:00.000Z", 79.6),
+    sample("2026-10-05T22:30:00.000Z", 79.96),
+    sample("2026-10-06T07:00:00.000Z", 19.9),
+    sample("2026-10-06T08:00:00.000Z", 400.04),
+    sample("2026-10-06T09:00:00.000Z", 400.06),
+    sample("2026-09-30T21:59:00.000Z", 81),
+  ];
+  const sorted = (m: Map<string, HealthSample>) => Object.fromEntries([...m].sort());
+  const earliest = [
+    ["readings of a few days", readings, "2026-10-01"],
+    ["from a later day", readings, "2026-10-06"],
+    ["none", [], "2026-10-01"],
+  ] as const;
+
+  // The import against an account database held in memory: the weigh-ins, the queue and the
+  // Health state, as the web's import reads and writes them.
+  const floor = toISODate(new Date(HISTORY_SINCE));
+  async function imported(
+    rows: WeightRow[],
+    filled: HealthImport["filled"],
+    samples: HealthSample[],
+    now: number,
+  ) {
+    const stores: Record<string, Map<unknown, unknown>> = {
+      weights: new Map(rows.map((r) => [r.date, r])),
+      outbox: new Map(),
+      meta: new Map<unknown, unknown>([
+        [
+          SETTINGS_KEY,
+          { on: true, turnedOnAt: 0, history: "no", importOn: true, importSince: HISTORY_SINCE },
+        ],
+        [IMPORT_KEY, { anchor: null, filled, historyDone: false }],
+      ]),
+    };
+    const queued: Change[] = [];
+    const db = {
+      transaction: () => ({
+        objectStore: (name: string) => ({
+          get: async (key: unknown) => stores[name]!.get(key),
+          put: async (value: { date?: string }, key?: unknown) => {
+            stores[name]!.set(key ?? value.date, value);
+          },
+          add: async (value: { change: Change }) => {
+            queued.push(value.change);
+          },
+        }),
+        done: Promise.resolve(),
+      }),
+    };
+    await importWeighings(db as never, samples, "next", new Date(now), {
+      anchor: null,
+      since: HISTORY_SINCE,
+      historyDone: false,
+    });
+    return queued;
+  }
+  const typed = weight("2026-10-05", 81.5, "2026-10-05T18:00:00.000Z");
+  const mine = { at: "2026-10-04T22:00:00.000Z", startedAt: ms("2026-10-05T06:00:00.000Z") };
+  const ownRow = weight("2026-10-05", 80.5, mine.at);
+  const importCases: [string, WeightRow[], HealthImport["filled"], HealthSample[], number][] = [
+    ["empty days filled", [], {}, readings, NOW],
+    ["a typed day kept", [typed], {}, readings, NOW],
+    ["a deleted day kept", [weight("2026-10-05", null)], {}, readings, NOW],
+    [
+      "an earlier reading replaces this import's own",
+      [ownRow],
+      { "2026-10-05": mine },
+      readings,
+      NOW,
+    ],
+    [
+      "a later reading leaves this import's own",
+      [ownRow],
+      { "2026-10-05": mine },
+      [sample("2026-10-05T07:00:00.000Z", 79)],
+      NOW,
+    ],
+    [
+      "an import's day edited since kept",
+      [weight("2026-10-05", 80.5, "2026-10-05T07:30:00.000Z")],
+      { "2026-10-05": mine },
+      readings,
+      NOW,
+    ],
+    [
+      "tomorrow's reading waits",
+      [],
+      {},
+      [sample("2026-10-10T23:30:00.000Z", 79.3), sample("2026-10-10T08:00:00.000Z", 79.4)],
+      NOW,
+    ],
+    ["a reading days ahead dropped", [], {}, [sample("2026-10-14T08:00:00.000Z", 79.3)], NOW],
+    [
+      "the first read from the history floor",
+      [],
+      {},
+      [sample("1899-12-31T12:00:00.000Z", 70), sample("1900-01-01T07:00:00.000Z", 70.1)],
+      NOW,
+    ],
+  ];
+  const importChoice = [];
+  for (const [name, rows, filled, samples, now] of importCases) {
+    importChoice.push({
+      name,
+      rows,
+      filled,
+      samples,
+      now,
+      result: await imported(rows, filled, samples, now),
+    });
+  }
+
+  return {
+    weighInBounds: { weighingKey: weighingKey("2026-10-10"), historyDay: floor },
+    weights,
+    planWeighIns: planCases,
+    sampleTime: times.map(([date, now]) => ({ date, now, result: sampleTime(date, now) })),
+    earliestPerDay: earliest.map(([name, samples, fromDay]) => ({
+      name,
+      samples,
+      fromDay,
+      result: sorted(earliestPerDay(samples, fromDay)),
+    })),
+    importChoice,
+  };
+}
+
 // The body rules: the weigh-ins' averages and weeks, the loss range, measures, intake, creatine
 // and the tools intake reads its figures from. The day rules run on calendar days alone, so the
 // cases cross a week boundary and both of Paris's daylight-saving changes without a zone.
@@ -3094,7 +3382,10 @@ const files = [
     path: core("Tests/BelayCoreTests/Vectors/rules.json"),
     data: { ...rules, ...tools, bounds: { ...rules.bounds, ...tools.bounds } },
   },
-  { path: core("Tests/BelayCoreTests/Vectors/health.json"), data: healthVectors() },
+  {
+    path: core("Tests/BelayCoreTests/Vectors/health.json"),
+    data: { ...healthVectors(), ...(await weighInVectors()) },
+  },
   {
     path: core("Tests/BelayCoreTests/Vectors/schedule.json"),
     data: { ...scheduleVectors(), ...readVectors() },
