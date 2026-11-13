@@ -53,8 +53,15 @@ public enum Change: Codable, Sendable, Equatable {
   case workout(WorkoutChange)
   case set(SetChange)
   case activeProgram(ActiveProgramChange)
+  case weight(WeightChange)
+  case measure(MeasureChange)
+  case intake(IntakeChange)
+  case supplementLog(SupplementLogChange)
+  case annotation(AnnotationChange)
 
-  private enum Kind: String, Codable { case workout, set, activeProgram }
+  private enum Kind: String, Codable {
+    case workout, set, activeProgram, weight, measure, intake, supplementLog, annotation
+  }
   private enum KindKey: String, CodingKey { case kind }
 
   public init(from decoder: any Decoder) throws {
@@ -62,6 +69,11 @@ public enum Change: Codable, Sendable, Equatable {
     case .workout: self = .workout(try WorkoutChange(from: decoder))
     case .set: self = .set(try SetChange(from: decoder))
     case .activeProgram: self = .activeProgram(try ActiveProgramChange(from: decoder))
+    case .weight: self = .weight(try WeightChange(from: decoder))
+    case .measure: self = .measure(try MeasureChange(from: decoder))
+    case .intake: self = .intake(try IntakeChange(from: decoder))
+    case .supplementLog: self = .supplementLog(try SupplementLogChange(from: decoder))
+    case .annotation: self = .annotation(try AnnotationChange(from: decoder))
     }
   }
 
@@ -70,6 +82,11 @@ public enum Change: Codable, Sendable, Equatable {
     case .workout(let change): try change.encode(to: encoder)
     case .set(let change): try change.encode(to: encoder)
     case .activeProgram(let change): try change.encode(to: encoder)
+    case .weight(let change): try change.encode(to: encoder)
+    case .measure(let change): try change.encode(to: encoder)
+    case .intake(let change): try change.encode(to: encoder)
+    case .supplementLog(let change): try change.encode(to: encoder)
+    case .annotation(let change): try change.encode(to: encoder)
     }
   }
 }
@@ -132,6 +149,7 @@ private enum Key: String, CodingKey {
   case kind, id, field, at, value
   case sessionCode, sessionId, sessionName, plan, startedAt
   case workoutId, slotIndex, position, exerciseId, warmup, weightKg, reps, seconds, rir, doneAt
+  case date, supplementId, taken, type, label
 }
 
 private func unknownField(_ field: String, _ c: KeyedDecodingContainer<Key>) -> DecodingError {
@@ -360,6 +378,233 @@ public struct SetChange: Codable, Sendable, Equatable {
     case .values(let values):
       try c.encode("values", forKey: .field)
       try values.encode(&c)
+    case .removed(let removed):
+      try c.encode("removed", forKey: .field)
+      try c.encode(removed, forKey: .value)
+    }
+    try c.encode(at, forKey: .at)
+  }
+}
+
+// The body entries. Each is dated by the person's day, `YYYY-MM-DD`, and merged on its own key:
+// a day, a day's field, a supplement's day, an annotation's field.
+
+/// A day's weigh-in; nil deletes it.
+public struct WeightChange: Codable, Sendable, Equatable, KeyedChange {
+  public var date: String
+  public var weightKg: Double?
+  public var at: String
+
+  public init(date: String, weightKg: Double?, at: String) {
+    self.date = date
+    self.weightKg = weightKg
+    self.at = at
+  }
+
+  public var mergeKey: String { date }
+
+  public init(from decoder: any Decoder) throws {
+    let c = try decoder.container(keyedBy: Key.self)
+    date = try c.decode(String.self, forKey: .date)
+    weightKg = try c.decodeNullable(Double.self, forKey: .weightKg)
+    at = try c.decode(String.self, forKey: .at)
+  }
+
+  public func encode(to encoder: any Encoder) throws {
+    var c = encoder.container(keyedBy: Key.self)
+    try c.encode("weight", forKey: .kind)
+    try c.encode(date, forKey: .date)
+    try c.encode(weightKg, forKey: .weightKg)
+    try c.encode(at, forKey: .at)
+  }
+}
+
+public enum MeasureField: String, Codable, Sendable, CaseIterable {
+  case waist, neck, hip
+}
+
+/// One measure of a day, in centimetres; nil deletes it.
+public struct MeasureChange: Codable, Sendable, Equatable, KeyedChange {
+  public var date: String
+  public var field: MeasureField
+  public var value: Double?
+  public var at: String
+
+  public init(date: String, field: MeasureField, value: Double?, at: String) {
+    self.date = date
+    self.field = field
+    self.value = value
+    self.at = at
+  }
+
+  public var mergeKey: String { "\(date)|\(field.rawValue)" }
+
+  public init(from decoder: any Decoder) throws {
+    let c = try decoder.container(keyedBy: Key.self)
+    date = try c.decode(String.self, forKey: .date)
+    field = try c.decode(MeasureField.self, forKey: .field)
+    value = try c.decodeNullable(Double.self, forKey: .value)
+    at = try c.decode(String.self, forKey: .at)
+  }
+
+  public func encode(to encoder: any Encoder) throws {
+    var c = encoder.container(keyedBy: Key.self)
+    try c.encode("measure", forKey: .kind)
+    try c.encode(date, forKey: .date)
+    try c.encode(field, forKey: .field)
+    try c.encode(value, forKey: .value)
+    try c.encode(at, forKey: .at)
+  }
+}
+
+public enum IntakeField: String, Codable, Sendable, CaseIterable {
+  case kcal, protein
+}
+
+/// One total of a day's intake, in whole kilocalories or grams of protein; nil deletes it.
+public struct IntakeChange: Codable, Sendable, Equatable, KeyedChange {
+  public var date: String
+  public var field: IntakeField
+  public var value: Int?
+  public var at: String
+
+  public init(date: String, field: IntakeField, value: Int?, at: String) {
+    self.date = date
+    self.field = field
+    self.value = value
+    self.at = at
+  }
+
+  public var mergeKey: String { "\(date)|\(field.rawValue)" }
+
+  public init(from decoder: any Decoder) throws {
+    let c = try decoder.container(keyedBy: Key.self)
+    date = try c.decode(String.self, forKey: .date)
+    field = try c.decode(IntakeField.self, forKey: .field)
+    value = try c.decodeNullable(Int.self, forKey: .value)
+    at = try c.decode(String.self, forKey: .at)
+  }
+
+  public func encode(to encoder: any Encoder) throws {
+    var c = encoder.container(keyedBy: Key.self)
+    try c.encode("intake", forKey: .kind)
+    try c.encode(date, forKey: .date)
+    try c.encode(field, forKey: .field)
+    try c.encode(value, forKey: .value)
+    try c.encode(at, forKey: .at)
+  }
+}
+
+/// A supplement's box of the day, ticked or unticked.
+public struct SupplementLogChange: Codable, Sendable, Equatable, KeyedChange {
+  public var supplementId: String
+  public var date: String
+  public var taken: Bool
+  public var at: String
+
+  public init(supplementId: String, date: String, taken: Bool, at: String) {
+    self.supplementId = supplementId
+    self.date = date
+    self.taken = taken
+    self.at = at
+  }
+
+  public var mergeKey: String { "\(supplementId)|\(date)" }
+
+  public init(from decoder: any Decoder) throws {
+    let c = try decoder.container(keyedBy: Key.self)
+    supplementId = try c.decode(String.self, forKey: .supplementId)
+    date = try c.decode(String.self, forKey: .date)
+    taken = try c.decode(Bool.self, forKey: .taken)
+    at = try c.decode(String.self, forKey: .at)
+  }
+
+  public func encode(to encoder: any Encoder) throws {
+    var c = encoder.container(keyedBy: Key.self)
+    try c.encode("supplementLog", forKey: .kind)
+    try c.encode(supplementId, forKey: .supplementId)
+    try c.encode(date, forKey: .date)
+    try c.encode(taken, forKey: .taken)
+    try c.encode(at, forKey: .at)
+  }
+}
+
+/// A mark on the weight chart (see `Measure` for `unknown`).
+public enum AnnotationKind: RawRepresentable, Codable, Sendable, Hashable {
+  case deload, dietBreak, note
+  /// A type this version does not know, as the server wrote it.
+  case unknown(String)
+
+  public init(rawValue: String) {
+    switch rawValue {
+    case "deload": self = .deload
+    case "diet_break": self = .dietBreak
+    case "note": self = .note
+    default: self = .unknown(rawValue)
+    }
+  }
+
+  public var rawValue: String {
+    switch self {
+    case .deload: "deload"
+    case .dietBreak: "diet_break"
+    case .note: "note"
+    case .unknown(let raw): raw
+    }
+  }
+}
+
+/// An annotation: its day, type and label change together; its removal on its own.
+public struct AnnotationChange: Codable, Sendable, Equatable, KeyedChange {
+  public var id: String
+  public var at: String
+  public var edit: Edit
+
+  public enum Edit: Sendable, Equatable {
+    /// Nil: no label.
+    case fields(date: String, type: AnnotationKind, label: String?)
+    case removed(Bool)
+  }
+
+  public init(id: String, at: String, edit: Edit) {
+    self.id = id
+    self.at = at
+    self.edit = edit
+  }
+
+  public var mergeKey: String {
+    switch edit {
+    case .fields: "\(id)|fields"
+    case .removed: "\(id)|removed"
+    }
+  }
+
+  public init(from decoder: any Decoder) throws {
+    let c = try decoder.container(keyedBy: Key.self)
+    id = try c.decode(String.self, forKey: .id)
+    at = try c.decode(String.self, forKey: .at)
+    let field = try c.decode(String.self, forKey: .field)
+    switch field {
+    case "fields":
+      edit = .fields(
+        date: try c.decode(String.self, forKey: .date),
+        type: try c.decode(AnnotationKind.self, forKey: .type),
+        label: try c.decodeNullable(String.self, forKey: .label))
+    case "removed": edit = .removed(try c.decode(Bool.self, forKey: .value))
+    default: throw unknownField(field, c)
+    }
+  }
+
+  public func encode(to encoder: any Encoder) throws {
+    var c = encoder.container(keyedBy: Key.self)
+    try c.encode("annotation", forKey: .kind)
+    try c.encode(id, forKey: .id)
+    switch edit {
+    case .fields(let date, let type, let label):
+      try c.encode("fields", forKey: .field)
+      try c.encode(date, forKey: .date)
+      try c.encode(type, forKey: .type)
+      try c.encode(label, forKey: .label)
     case .removed(let removed):
       try c.encode("removed", forKey: .field)
       try c.encode(removed, forKey: .value)

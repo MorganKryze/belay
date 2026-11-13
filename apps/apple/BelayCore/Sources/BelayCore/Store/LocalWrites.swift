@@ -188,6 +188,9 @@ extension AccountStore {
       }
     case .activeProgram:
       return try Rows.single(ActiveProgramRow.self, db, "activeProgram")?.at
+    // This store version keeps no body row: nothing here holds one.
+    case .weight, .measure, .intake, .supplementLog, .annotation:
+      return nil
     }
   }
 
@@ -242,17 +245,20 @@ extension AccountStore {
       try Rows.putSet(db, row)
     case .activeProgram(let c):
       try Rows.putSingle(db, "activeProgram", ActiveProgramRow(programId: c.programId, at: c.at))
+    // This store version keeps no body row.
+    case .weight, .measure, .intake, .supplementLog, .annotation:
+      return
     }
   }
 }
 
 extension Change {
-  /// The session a change belongs to; nil for the active program.
+  /// The session a change belongs to; nil for the active program and the body entries.
   var workoutId: String? {
     switch self {
     case .workout(let c): c.id
     case .set(let c): c.workoutId
-    case .activeProgram: nil
+    case .activeProgram, .weight, .measure, .intake, .supplementLog, .annotation: nil
     }
   }
 }

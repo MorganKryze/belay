@@ -10,7 +10,11 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { isDeepStrictEqual } from "node:util";
-import { addDays } from "../packages/shared/src/body/dates";
+import { ANNOTATION_LABEL_MAX } from "../packages/shared/src/body/annotations";
+import { addDays, toISODate } from "../packages/shared/src/body/dates";
+import { INTAKE_BOUNDS } from "../packages/shared/src/body/intake";
+import { MEASURE_BOUNDS, MEASURE_FIELDS } from "../packages/shared/src/body/measures";
+import { MIN_WEIGH_IN_DATE, WEIGHING_RANGE_KG } from "../packages/shared/src/body/weighings";
 import { EXERCISE_ID } from "../packages/shared/src/exercises/library";
 import {
   DAY,
@@ -23,9 +27,9 @@ import {
 } from "../apps/web/src/native/health-plan";
 import type { Written } from "../apps/web/src/native/health";
 import { MAX_CHANGES } from "../packages/shared/src/sync/limits";
-import { clampAt, isNewer } from "../packages/shared/src/sync/merge";
-import { ChangeSchema, type Change } from "../packages/shared/src/sync/schema";
-import { isValidChange } from "../packages/shared/src/sync/valid";
+import { clampAt, isNewer, mergeFields } from "../packages/shared/src/sync/merge";
+import { ChangeSchema, type Change, SyncResponseSchema } from "../packages/shared/src/sync/schema";
+import { isRecordable, isValidChange } from "../packages/shared/src/sync/valid";
 import { type Activity, climbedThisWeek } from "../packages/shared/src/training/activities";
 import { MAX_TARGET_KG, nearestLoading, PLATE_PRESETS } from "../packages/shared/src/tools/plates";
 import {
@@ -210,6 +214,78 @@ const step = SET_KG.step;
 const text = (n: number) => "x".repeat(n);
 // Two UTF-16 units each: the bounds count units, as the database does.
 const emoji = (n: number) => "\u{1F4AA}".repeat(n);
+
+// The body entries are dated by the person's day, read in the zone the vectors are made in: an
+// entry is never dated after it.
+const TODAY = toISODate(new Date(T0));
+const TOMORROW = addDays(TODAY, 1);
+const BEFORE_FLOOR = addDays(MIN_WEIGH_IN_DATE, -1);
+const SUPPLEMENT = "019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06";
+const ANNOTATION = "019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07";
+const weight = (over: Fields = {}) => ({
+  kind: "weight",
+  date: TODAY,
+  weightKg: 80.2,
+  at: AT,
+  ...over,
+});
+const measure = (field: string, value: unknown, over: Fields = {}) => ({
+  kind: "measure",
+  date: TODAY,
+  field,
+  value,
+  at: AT,
+  ...over,
+});
+const intake = (field: string, value: unknown, over: Fields = {}) => ({
+  kind: "intake",
+  date: TODAY,
+  field,
+  value,
+  at: AT,
+  ...over,
+});
+const supplementLog = (over: Fields = {}) => ({
+  kind: "supplementLog",
+  supplementId: SUPPLEMENT,
+  date: TODAY,
+  taken: true,
+  at: AT,
+  ...over,
+});
+const annotation = (over: Fields = {}) => ({
+  kind: "annotation",
+  id: ANNOTATION,
+  field: "fields",
+  date: TODAY,
+  type: "deload",
+  label: "Semaine légère",
+  at: AT,
+  ...over,
+});
+const annotationRemoved = (value: unknown) => ({
+  kind: "annotation",
+  id: ANNOTATION,
+  field: "removed",
+  value,
+  at: AT,
+});
+const KG = WEIGHING_RANGE_KG;
+// Every measure is kept to the tenth, whatever its field's bounds.
+const measureCases = Object.fromEntries(
+  MEASURE_FIELDS.flatMap((field) => {
+    const { min, max } = MEASURE_BOUNDS[field];
+    return [
+      [`measure: ${field} at its floor`, measure(field, min)],
+      [`measure: ${field} a tenth under its floor`, measure(field, min - 0.1)],
+      [`measure: ${field} at its ceiling`, measure(field, max)],
+      [`measure: ${field} a tenth past its ceiling`, measure(field, max + 0.1)],
+      [`measure: ${field} on the tenth`, measure(field, min + 4.3)],
+      [`measure: ${field} between two tenths`, measure(field, min + 4.35)],
+      [`measure: ${field} deleted`, measure(field, null)],
+    ];
+  }),
+);
 
 const changes: Record<string, unknown> = {
   "start: as the phone writes it": start(),
@@ -412,6 +488,83 @@ const changes: Record<string, unknown> = {
   }),
   "activeProgram: at without milliseconds": activeProgram({ at: "2026-11-06T09:30:00Z" }),
   "activeProgram: at not a time": activeProgram({ at: "yesterday" }),
+  // The body entries: a weigh-in on the 0.1 kg grid from 20 to 400 kg, null deleting the day's.
+  "weight: as the phone writes it": weight(),
+  "weight: deleted": weight({ weightKg: null }),
+  "weight: no weight": weight({ weightKg: undefined }),
+  "weight: at its floor": weight({ weightKg: KG.min }),
+  "weight: a step under its floor": weight({ weightKg: KG.min - KG.step }),
+  "weight: at its ceiling": weight({ weightKg: KG.max }),
+  "weight: a step past its ceiling": weight({ weightKg: KG.max + KG.step }),
+  "weight: on the grid with binary noise": weight({ weightKg: 79.8 }),
+  "weight: half a step off the grid": weight({ weightKg: 80.25 }),
+  "weight: a twentieth off the grid": weight({ weightKg: 80.05 }),
+  "weight: whole": weight({ weightKg: 80 }),
+  "weight: as text": weight({ weightKg: "80.2" }),
+  "weight: dated today": weight({ date: TODAY }),
+  "weight: dated tomorrow": weight({ date: TOMORROW }),
+  "weight: dated at the floor": weight({ date: MIN_WEIGH_IN_DATE }),
+  "weight: dated the day before the floor": weight({ date: BEFORE_FLOOR }),
+  "weight: dated on a leap day": weight({ date: "2024-02-29" }),
+  "weight: dated on a day past the month's end": weight({ date: "2026-02-29" }),
+  "weight: dated without padding": weight({ date: "2026-11-6" }),
+  "weight: dated with a time": weight({ date: `${TODAY}T08:00:00` }),
+  "weight: at without milliseconds": weight({ at: "2026-11-06T09:30:00Z" }),
+  ...measureCases,
+  "measure: unknown field": measure("thigh", 55),
+  "measure: as text": measure("waist", "84.5"),
+  "measure: dated tomorrow": measure("waist", 84.5, { date: TOMORROW }),
+  "measure: dated at the floor": measure("waist", 84.5, { date: MIN_WEIGH_IN_DATE }),
+  "measure: dated the day before the floor": measure("waist", 84.5, { date: BEFORE_FLOOR }),
+  "intake: kcal as the phone writes it": intake("kcal", 1850),
+  "intake: no kcal": intake("kcal", INTAKE_BOUNDS.kcal.min),
+  "intake: kcal at its bound": intake("kcal", INTAKE_BOUNDS.kcal.max),
+  "intake: kcal one past": intake("kcal", INTAKE_BOUNDS.kcal.max + 1),
+  "intake: kcal below zero": intake("kcal", -1),
+  "intake: kcal off the stepper": intake("kcal", 2130),
+  "intake: kcal not whole": intake("kcal", 1850.5),
+  "intake: kcal deleted": intake("kcal", null),
+  "intake: protein as the phone writes it": intake("protein", 128),
+  "intake: no protein": intake("protein", INTAKE_BOUNDS.protein.min),
+  "intake: protein at its bound": intake("protein", INTAKE_BOUNDS.protein.max),
+  "intake: protein one past": intake("protein", INTAKE_BOUNDS.protein.max + 1),
+  "intake: protein not whole": intake("protein", 127.5),
+  "intake: protein deleted": intake("protein", null),
+  "intake: unknown field": intake("fat", 60),
+  "intake: dated tomorrow": intake("kcal", 1850, { date: TOMORROW }),
+  "intake: dated the day before the floor": intake("kcal", 1850, { date: BEFORE_FLOOR }),
+  "supplementLog: taken": supplementLog(),
+  "supplementLog: untaken": supplementLog({ taken: false }),
+  "supplementLog: taken as text": supplementLog({ taken: "yes" }),
+  "supplementLog: supplement id in upper case": supplementLog({
+    supplementId: SUPPLEMENT.toUpperCase(),
+  }),
+  "supplementLog: dated tomorrow": supplementLog({ date: TOMORROW }),
+  "supplementLog: dated at the floor": supplementLog({ date: MIN_WEIGH_IN_DATE }),
+  "supplementLog: dated the day before the floor": supplementLog({ date: BEFORE_FLOOR }),
+  "annotation: as the phone writes it": annotation(),
+  "annotation: diet break": annotation({ type: "diet_break" }),
+  "annotation: note without a label": annotation({ type: "note", label: null }),
+  "annotation: no label": annotation({ label: undefined }),
+  "annotation: unknown type": annotation({ type: "travel" }),
+  "annotation: label at its bound": annotation({ label: text(ANNOTATION_LABEL_MAX) }),
+  "annotation: label one past": annotation({ label: text(ANNOTATION_LABEL_MAX + 1) }),
+  "annotation: label in emoji at its bound": annotation({
+    label: emoji(ANNOTATION_LABEL_MAX / 2),
+  }),
+  "annotation: label in emoji one past": annotation({
+    label: emoji(ANNOTATION_LABEL_MAX / 2 + 1),
+  }),
+  "annotation: label empty": annotation({ label: "" }),
+  "annotation: label on two lines": annotation({ label: "Semaine\nlégère" }),
+  "annotation: label with a carriage return": annotation({ label: "Semaine\rlégère" }),
+  "annotation: id in upper case": annotation({ id: ANNOTATION.toUpperCase() }),
+  "annotation: dated tomorrow": annotation({ date: TOMORROW }),
+  "annotation: dated the day before the floor": annotation({ date: BEFORE_FLOOR }),
+  "annotation removed: true": annotationRemoved(true),
+  "annotation removed: false": annotationRemoved(false),
+  "annotation removed: not a boolean": annotationRemoved("yes"),
+  "annotation: unknown field": { kind: "annotation", id: ANNOTATION, field: "moved", at: AT },
 };
 
 const SECOND = "2026-11-06T09:30:00";
@@ -452,6 +605,158 @@ const merge = {
   ].map(([at, now]) => ({ at, now, result: clampAt(at!, new Date(now!)) })),
 };
 
+// The body merge, one key per stored time as the server keys them: two writes for one key, a
+// deletion against a later value, ties, and a clock ahead.
+type Body = Change & { at: string };
+const bodyMerge = (
+  kind: string,
+  key: (c: Body) => string,
+  write: (at: string) => Body,
+  remove: (at: string) => Body,
+  other: Body,
+) => {
+  const k = key(write(AT));
+  const minute = (n: number) => iso(T0 + n * 60_000);
+  return [
+    ["two writes for one key", {}, [write(minute(-1)), write(AT)]],
+    ["two writes at one time, the later sent wins", {}, [write(AT), remove(AT)]],
+    ["a deletion against a later value", { [k]: minute(1) }, [remove(AT)]],
+    ["a deletion after the stored value", { [k]: minute(-1) }, [remove(AT)]],
+    ["a write at the stored time", { [k]: AT }, [write(AT)]],
+    ["a key never written", { [k]: null }, [write(AT)]],
+    ["a time ahead of the clock", {}, [write(minute(60))]],
+    ["a past write and an older one", { [k]: minute(-5) }, [write(minute(-2)), remove(minute(-3))]],
+    ["another key at the same time", { [k]: minute(1) }, [write(AT), other]],
+  ].map(([name, stored, list]) => {
+    const kept = mergeFields(
+      new Map(Object.entries(stored as Record<string, string | null>)),
+      list as Body[],
+      key,
+      new Date(T0),
+    );
+    return {
+      name: `${kind}: ${name as string}`,
+      stored,
+      now: AT,
+      changes: (list as Body[]).map((c) => JSON.stringify(c)),
+      kept: kept.map((c) => JSON.stringify(c)),
+    };
+  });
+};
+const asBody = <T>(c: T) => c as unknown as Body;
+const mergeBody = [
+  ...bodyMerge(
+    "weight",
+    (c) => (c as { date: string }).date,
+    (at) => asBody(weight({ at })),
+    (at) => asBody(weight({ weightKg: null, at })),
+    asBody(weight({ date: addDays(TODAY, -1) })),
+  ),
+  ...bodyMerge(
+    "measure",
+    (c) => `${(c as { date: string }).date}|${(c as { field: string }).field}`,
+    (at) => asBody(measure("waist", 84.5, { at })),
+    (at) => asBody(measure("waist", null, { at })),
+    asBody(measure("hip", 98)),
+  ),
+  ...bodyMerge(
+    "intake",
+    (c) => `${(c as { date: string }).date}|${(c as { field: string }).field}`,
+    (at) => asBody(intake("protein", 128, { at })),
+    (at) => asBody(intake("protein", null, { at })),
+    asBody(intake("kcal", 1850)),
+  ),
+  ...bodyMerge(
+    "supplementLog",
+    (c) => `${(c as { supplementId: string }).supplementId}|${(c as { date: string }).date}`,
+    (at) => asBody(supplementLog({ at })),
+    (at) => asBody(supplementLog({ taken: false, at })),
+    asBody(supplementLog({ supplementId: ANNOTATION })),
+  ),
+  ...bodyMerge(
+    "annotation",
+    (c) => `${(c as { id: string }).id}|${(c as { field: string }).field}`,
+    (at) => asBody({ ...annotationRemoved(false), at }),
+    (at) => asBody({ ...annotationRemoved(true), at }),
+    asBody(annotation()),
+  ),
+];
+// An answer carrying every body row, each written and unwritten, checked against the server's
+// contract so the phone reads what the server really sends.
+const bodyAnswer = SyncResponseSchema.parse({
+  cursor: "45",
+  weights: [
+    { date: TODAY, weightKg: 80.2, at: AT },
+    { date: addDays(TODAY, -1), weightKg: null, at: AT },
+  ],
+  measures: [
+    {
+      date: TODAY,
+      waistCm: 84.5,
+      waistAt: AT,
+      neckCm: null,
+      neckAt: null,
+      hipCm: null,
+      hipAt: AT,
+    },
+  ],
+  intake: [{ date: TODAY, kcal: 1850, kcalAt: AT, proteinG: null, proteinAt: null }],
+  supplements: [
+    {
+      id: SUPPLEMENT,
+      name: "Créatine",
+      nameAt: AT,
+      kind: "creatine",
+      removed: false,
+      removedAt: null,
+    },
+    { id: ANNOTATION, name: "Oméga 3", nameAt: AT, kind: "other", removed: true, removedAt: AT },
+  ],
+  supplementLogs: [{ supplementId: SUPPLEMENT, date: TODAY, taken: true, at: AT }],
+  annotations: [
+    {
+      id: ANNOTATION,
+      date: TODAY,
+      type: "diet_break",
+      label: null,
+      fieldsAt: AT,
+      removed: false,
+      removedAt: null,
+    },
+  ],
+  steps: [],
+  activities: [],
+  workouts: [],
+  sets: [],
+  target: { minPct: 0.5, maxPct: 1, at: null },
+  profile: {
+    formula: "male",
+    formulaAt: AT,
+    birthYear: 1990,
+    birthYearAt: AT,
+    heightCm: null,
+    heightAt: null,
+  },
+  rejected: [],
+  hasMore: false,
+});
+
+// The phone's today against the instant, in the zone the vectors are made in, either side of
+// midnight.
+const days = [
+  T0,
+  Date.UTC(2026, 10, 6, 22, 59, 59, 999),
+  Date.UTC(2026, 10, 6, 23, 0, 0, 0),
+  // Either side of the spring change: the zone's offset moves from one hour to two.
+  Date.UTC(2026, 2, 28, 22, 59, 59, 999),
+  Date.UTC(2026, 2, 28, 23, 0, 0, 0),
+  Date.UTC(2026, 2, 29, 21, 59, 59, 999),
+  Date.UTC(2026, 2, 29, 22, 0, 0, 0),
+].map((ms) => {
+  const today = toISODate(new Date(ms));
+  return { now: iso(ms), today, tomorrow: addDays(today, 1) };
+});
+
 const ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 // The id rule as validity applies it, read through a change so the vector follows valid.ts.
 const isIdOf = (id: string) => isValidChange(workout("removed", true, { id }) as Change);
@@ -489,7 +794,8 @@ const instants = [
 ].map((ms) => ({ ms, iso: iso(ms) }));
 
 const cases = Object.entries(changes).map(([name, change]) => {
-  const valid = isValidChange(change as Change);
+  // Recordable: valid, and not dated after the phone's today, as the phone checks it.
+  const valid = isRecordable(change as Change, TODAY);
   const json = JSON.stringify(change);
   // The phone's rule is a subset of the server's, and a change it accepts reaches the server
   // as written: a case where either is not so would test the wrong thing.
@@ -516,9 +822,19 @@ const vectors = {
     minTime: MIN_TIME,
     clockSlackMs: CLOCK_SLACK_MS,
     maxChanges: MAX_CHANGES,
+    weighInKg: WEIGHING_RANGE_KG,
+    measureCm: MEASURE_BOUNDS,
+    intake: INTAKE_BOUNDS,
+    annotationLabelMax: ANNOTATION_LABEL_MAX,
+    minDate: MIN_WEIGH_IN_DATE,
   },
+  // The phone's clock and zone the verdicts were made with.
+  clock: { now: AT, zone: Intl.DateTimeFormat().resolvedOptions().timeZone, today: TODAY },
+  days,
   changes: cases,
   ...merge,
+  mergeBody,
+  bodyAnswer: JSON.stringify(bodyAnswer),
   ids,
   instants,
 };

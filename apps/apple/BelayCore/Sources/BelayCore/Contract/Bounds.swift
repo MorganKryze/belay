@@ -35,4 +35,25 @@ public enum Bounds {
   public static let maxChanges = 500
   /// How far ahead of its own clock the server takes a session's time, in milliseconds.
   public static let clockSlackMs = 5 * 60_000
+
+  /// A weigh-in: 20 to 400 kg, on a 0.1 kg grid.
+  public static let weighInKgMin = 20.0
+  public static let weighInKgMax = 400.0
+  public static let weighInKgStep = 0.1
+  /// A measure is kept to the tenth of a centimetre within its field's bounds.
+  public static let measureCmStep = 0.1
+  public static func measureCm(_ field: MeasureField) -> ClosedRange<Double> {
+    switch field {
+    case .waist: 40...200
+    case .neck: 20...80
+    case .hip: 50...200
+    }
+  }
+  /// A day's intake, in whole kilocalories and grams of protein, from 0.
+  public static let kcalMax = 10_000
+  public static let proteinGMax = 500
+  /// Counted in UTF-16 units, as the web counts them.
+  public static let annotationLabelMax = 80
+  /// No body entry is dated before 1900.
+  public static let minDate = "1900-01-01"
 }

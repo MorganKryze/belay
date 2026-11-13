@@ -103,6 +103,16 @@ public struct SyncResponse: Decodable, Sendable {
   /// Nil when absent, or when no pointer was written since the cursor.
   public var activeProgram: ActiveProgramRow?
   public var activities: [ActivityRow]
+  /// The body rows; the server always sends them, a fixture or a test answer may leave them out.
+  public var weights: [WeightRow]?
+  public var measures: [MeasureRow]?
+  public var intake: [IntakeRow]?
+  public var supplements: [SupplementRow]?
+  public var supplementLogs: [SupplementLogRow]?
+  public var annotations: [AnnotationRow]?
+  /// Nil when absent, or when neither was written since the cursor.
+  public var target: TargetRow?
+  public var profile: ProfileRow?
   public var rejected: [Rejected]
   /// More rows were waiting: call again.
   public var hasMore: Bool

@@ -2,9 +2,9 @@ import Foundation
 
 /// The phone's own check before a change enters its queue, the web's rule ported: stricter than
 /// what the server accepts, so a queued change is never refused for its shape, which would block
-/// the whole queue. `now` is the phone's clock, for the kinds dated by the local day; no kind
-/// written here is, so the verdict never depends on it.
-public func isValid(_ change: Change, now: Date) -> Bool {
+/// the whole queue. A body entry is never dated after the person's today: `now` read in
+/// `timeZone`, as the web reads the device's clock where it is.
+public func isValid(_ change: Change, now: Date, timeZone: TimeZone = .current) -> Bool {
   switch change {
   case .workout(let c):
     return Instant.isCanonical(c.at) && isId(c.id) && isValid(c.edit, at: c.at)
@@ -13,7 +13,63 @@ public func isValid(_ change: Change, now: Date) -> Bool {
       && isValid(c.edit, at: c.at)
   case .activeProgram(let c):
     return Instant.isCanonical(c.at) && isId(c.programId)
+  case .weight(let c):
+    return Instant.isCanonical(c.at) && isDay(c.date, now, timeZone)
+      && (c.weightKg.map(isWeighInKg) ?? true)
+  case .measure(let c):
+    return Instant.isCanonical(c.at) && isDay(c.date, now, timeZone)
+      && (c.value.map { isMeasureCm(c.field, $0) } ?? true)
+  case .intake(let c):
+    let most = c.field == .kcal ? Bounds.kcalMax : Bounds.proteinGMax
+    return Instant.isCanonical(c.at) && isDay(c.date, now, timeZone)
+      && (c.value.map { (0...most).contains($0) } ?? true)
+  case .supplementLog(let c):
+    return Instant.isCanonical(c.at) && isId(c.supplementId) && isDay(c.date, now, timeZone)
+  case .annotation(let c):
+    guard Instant.isCanonical(c.at), isId(c.id) else { return false }
+    switch c.edit {
+    case .fields(let date, let type, let label):
+      return isDay(date, now, timeZone)
+        && [AnnotationKind.deload, .dietBreak, .note].contains(type)
+        && (label.map(isAnnotationLabel) ?? true)
+    case .removed: return true
+    }
   }
+}
+
+/// A real calendar day as `YYYY-MM-DD`, from 1900 on and not after today where the person is.
+/// The text compares as the days do.
+private func isDay(_ date: String, _ now: Date, _ timeZone: TimeZone) -> Bool {
+  let bytes = Array(date.utf8)
+  guard bytes.count == 10, bytes[4] == UInt8(ascii: "-"), bytes[7] == UInt8(ascii: "-"),
+    bytes.enumerated().allSatisfy({ $0.offset == 4 || $0.offset == 7 || isDigit($0.element) }),
+    let year = Int(date.prefix(4)), let month = Int(date.dropFirst(5).prefix(2)),
+    let day = Int(date.suffix(2))
+  else { return false }
+  let leap = year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)
+  let lengths = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+  guard (1...12).contains(month), (1...lengths[month - 1]).contains(day) else { return false }
+  return date >= Bounds.minDate && date <= toISODate(now, timeZone: timeZone)
+}
+
+/// On `step`'s grid within `bounds`; the tolerance absorbs binary noise such as 79.8.
+private func isOnGrid(_ value: Double, _ bounds: ClosedRange<Double>, step: Double) -> Bool {
+  let steps = value / step
+  return value.isFinite && bounds.contains(value) && abs(steps - steps.rounded()) < 1e-6
+}
+
+func isWeighInKg(_ kg: Double) -> Bool {
+  isOnGrid(kg, Bounds.weighInKgMin...Bounds.weighInKgMax, step: Bounds.weighInKgStep)
+}
+
+func isMeasureCm(_ field: MeasureField, _ cm: Double) -> Bool {
+  isOnGrid(cm, Bounds.measureCm(field), step: Bounds.measureCmStep)
+}
+
+/// 80 units at most, on one line.
+func isAnnotationLabel(_ label: String) -> Bool {
+  label.utf16.count <= Bounds.annotationLabelMax
+    && !label.unicodeScalars.contains { $0 == "\n" || $0 == "\r" }
 }
 
 private func isValid(_ edit: WorkoutChange.Edit, at: String) -> Bool {

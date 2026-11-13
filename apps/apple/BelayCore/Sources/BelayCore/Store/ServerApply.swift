@@ -91,6 +91,8 @@ extension AccountStore {
       }
     // As the web does: the pointer goes, the starting one shows until the server's comes back.
     case .activeProgram: try Rows.clearSingle(db, "activeProgram")
+    // This store version keeps no body row: nothing to take back.
+    case .weight, .measure, .intake, .supplementLog, .annotation: return
     }
   }
 }
@@ -102,6 +104,11 @@ extension Change {
     case .workout(let c): c.at
     case .set(let c): c.at
     case .activeProgram(let c): c.at
+    case .weight(let c): c.at
+    case .measure(let c): c.at
+    case .intake(let c): c.at
+    case .supplementLog(let c): c.at
+    case .annotation(let c): c.at
     }
   }
 }

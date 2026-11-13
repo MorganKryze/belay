@@ -218,3 +218,121 @@ public struct ActivityRow: Codable, Sendable, Equatable {
     case removed
   }
 }
+
+// The body rows. A day holds one of each; every field keeps its own time.
+
+/// A day's weigh-in; a nil weight is the day's deletion, kept so other devices learn of it.
+public struct WeightRow: Codable, Sendable, Equatable {
+  public var date: String
+  public var weightKg: Double?
+  public var at: String
+}
+
+/// The loss range, in percent of the body weight per week; `at` nil: the defaults, never written.
+public struct TargetRow: Codable, Sendable, Equatable {
+  public var minPct: Double
+  public var maxPct: Double
+  public var at: String?
+}
+
+/// A day's measures in centimetres, each nil when not taken or deleted.
+public struct MeasureRow: Codable, Sendable, Equatable {
+  public var date: String
+  public var waistCm: Double?
+  public var waistAt: String?
+  public var neckCm: Double?
+  public var neckAt: String?
+  public var hipCm: Double?
+  public var hipAt: String?
+}
+
+/// A day's intake as two totals, never food by food.
+public struct IntakeRow: Codable, Sendable, Equatable {
+  public var date: String
+  public var kcal: Int?
+  public var kcalAt: String?
+  public var proteinG: Int?
+  public var proteinAt: String?
+}
+
+/// The formula a body-fat and energy estimate takes (see `Measure` for `unknown`).
+public enum ProfileFormula: RawRepresentable, Codable, Sendable, Hashable {
+  case female, male
+  case unknown(String)
+
+  public init(rawValue: String) {
+    switch rawValue {
+    case "female": self = .female
+    case "male": self = .male
+    default: self = .unknown(rawValue)
+    }
+  }
+
+  public var rawValue: String {
+    switch self {
+    case .female: "female"
+    case .male: "male"
+    case .unknown(let raw): raw
+    }
+  }
+}
+
+public struct ProfileRow: Codable, Sendable, Equatable {
+  public var formula: ProfileFormula?
+  public var formulaAt: String?
+  public var birthYear: Int?
+  public var birthYearAt: String?
+  public var heightCm: Int?
+  public var heightAt: String?
+}
+
+/// Creatine has its own band on the chart (see `Measure` for `unknown`).
+public enum SupplementKind: RawRepresentable, Codable, Sendable, Hashable {
+  case creatine, other
+  case unknown(String)
+
+  public init(rawValue: String) {
+    switch rawValue {
+    case "creatine": self = .creatine
+    case "other": self = .other
+    default: self = .unknown(rawValue)
+    }
+  }
+
+  public var rawValue: String {
+    switch self {
+    case .creatine: "creatine"
+    case .other: "other"
+    case .unknown(let raw): raw
+    }
+  }
+}
+
+/// A supplement of the person's list.
+public struct SupplementRow: Codable, Sendable, Equatable {
+  public var id: String
+  public var name: String
+  public var nameAt: String
+  public var kind: SupplementKind
+  public var removed: Bool
+  public var removedAt: String?
+}
+
+/// A supplement's box of a day.
+public struct SupplementLogRow: Codable, Sendable, Equatable {
+  public var supplementId: String
+  public var date: String
+  public var taken: Bool
+  public var at: String
+}
+
+/// A mark on the weight chart; its day, type and label were written together at `fieldsAt`.
+public struct AnnotationRow: Codable, Sendable, Equatable {
+  public var id: String
+  public var date: String
+  public var type: AnnotationKind
+  public var label: String?
+  public var fieldsAt: String
+  public var removed: Bool
+  public var removedAt: String?
+}
