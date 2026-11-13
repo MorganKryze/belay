@@ -308,6 +308,28 @@ func frenchTypographyFaults(_ text: String) -> [String] {
     }
   }
 
+  /// iOS asks for Health access with these texts: they name every type Belay reads and writes,
+  /// weigh-ins included, and the project's own French copy is the catalog's.
+  @Test func healthPermissionsNameTheWeighIns() throws {
+    let url = appFolder.appending(path: "InfoPlist.xcstrings")
+    let texts = Dictionary(uniqueKeysWithValues: try entries(of: url).map { ($0.key, $0) })
+    let project = try String(
+      contentsOf: appleFolder.appending(path: "Belay.xcodeproj/project.pbxproj"), encoding: .utf8)
+    for key in ["NSHealthShareUsageDescription", "NSHealthUpdateUsageDescription"] {
+      let entry = try #require(texts[key], "\(key) is in the catalog")
+      let french = entry.french.values.joined()
+      #expect(french.contains("tes pesées"), "\(key): \(french)")
+      #expect(
+        entry.english?.values.joined().contains("weigh-ins") == true, "\(key) in English")
+      let settings = project.components(separatedBy: "\n")
+        .filter { $0.contains("INFOPLIST_KEY_\(key) = ") }
+      #expect(settings.count == 2, "\(key) in Debug and Release")
+      for line in settings {
+        #expect(line.contains("\"\(french)\""), "\(key) in the project: \(line)")
+      }
+    }
+  }
+
   /// The check itself: it would catch what a catalog could get wrong.
   @Test func typographyCheckCatchesFaults() {
     #expect(!frenchTypographyFaults("Exemple : belay.fr").isEmpty)
