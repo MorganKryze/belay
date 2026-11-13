@@ -222,9 +222,10 @@ enum SessionText {
             : String(localized: "Série \(set.number) sur \(set.of) · \(short(code))")
     }
 
-    /// « 62,5 kg × 8 », « 45 s », « 5 kg · 45 s »; nil while the load is still to type.
+    /// « 62,5 kg × 8 », « 45 s », « 5 kg · 45 s »; nil while the load is still to type, and for
+    /// a set of reps with no load: a first time knows none yet, and « 0 kg × 6 » reads as one.
     static func load(_ set: CurrentSet) -> String? {
-        guard let weightKg = set.weightKg, let count = set.count else { return nil }
+        guard let weightKg = set.weightKg, let count = set.count, weightKg > 0 || set.timed else { return nil }
         return set.timed
             ? load(Load(weightKg: weightKg, reps: nil, seconds: count))
             : load(Load(weightKg: weightKg, reps: count, seconds: nil))

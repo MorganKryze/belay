@@ -181,6 +181,15 @@ final class AccueilTests: XCTestCase {
         XCTAssertTrue(accessory.label.contains("Série 1 sur 4 · Séance A"), "and the set: \(accessory.label)")
     }
 
+    /// A first time knows no load yet: the card leads with the session, never « 0 kg ».
+    func testRunningCardWithNoLoadKnown() {
+        let app = launch("running")
+        XCTAssertTrue(app.buttons["Reprendre"].waitForExistence(timeout: 10))
+        XCTAssertFalse(text(app, containing: "0\u{202F}kg").exists, "no load is made up")
+        XCTAssertTrue(app.staticTexts["Séance A"].exists, "the session leads")
+        XCTAssertTrue(app.staticTexts["Barbell bench press"].exists, "names the exercise under way")
+    }
+
     /// On a warm-up the card and the accessory call the set « Montée », as the cover does.
     func testRunningCardNamesAWarmup() {
         let app = launch("warmups")
