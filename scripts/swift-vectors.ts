@@ -3,18 +3,62 @@
 // merge and time clamping, the instant and id formats; then the session rules (order of sets,
 // rest, prefill, closing a forgotten session) and the schedule rules (plan of the day, rotation,
 // fixed days, in several time zones), the session's tools (loading a bar, warm-ups, editing the
-// day's plan, pausing), which workouts Health should hold, and the starting program the native
-// core ships. With
+// day's plan, pausing), which workouts Health should hold, the body rules (weigh-in averages and
+// weeks, the loss range, measures, intake, creatine, the energy and protein tools), and the
+// starting program the native core ships. With
 // --check, fails if a committed file is not what the rules give today, so a rule changed here
 // cannot drift from the Swift port.
 import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { isDeepStrictEqual } from "node:util";
-import { ANNOTATION_LABEL_MAX } from "../packages/shared/src/body/annotations";
-import { addDays, toISODate } from "../packages/shared/src/body/dates";
-import { INTAKE_BOUNDS } from "../packages/shared/src/body/intake";
-import { MEASURE_BOUNDS, MEASURE_FIELDS } from "../packages/shared/src/body/measures";
-import { MIN_WEIGH_IN_DATE, WEIGHING_RANGE_KG } from "../packages/shared/src/body/weighings";
+import { ANNOTATION_LABEL_MAX, isAnnotationLabel } from "../packages/shared/src/body/annotations";
+import { addDays, isoWeekStart, toISODate } from "../packages/shared/src/body/dates";
+import {
+  INTAKE_BOUNDS,
+  type IntakeLog,
+  isKcal,
+  isProteinG,
+  weeklyIntake,
+} from "../packages/shared/src/body/intake";
+import {
+  isMeasureCm,
+  latestMeasures,
+  type Measure,
+  MEASURE_BOUNDS,
+  MEASURE_FIELDS,
+  weeklyWaist,
+} from "../packages/shared/src/body/measures";
+import type { Profile } from "../packages/shared/src/body/profile";
+import {
+  CREATINE_DAYS,
+  creatineWindows,
+  isCreatineName,
+} from "../packages/shared/src/body/supplements";
+import { DEFAULT_TARGET, inTargetRange, isTargetRange } from "../packages/shared/src/body/target";
+import { toolDefaults } from "../packages/shared/src/body/tool-defaults";
+import {
+  isWeighingKg,
+  latestMovingAverage,
+  MIN_WEIGH_IN_DATE,
+  MIN_WEIGHINGS,
+  movingAverage7,
+  movingAverageSeries,
+  type Weighing,
+  WEIGHING_RANGE_KG,
+  weeklySummaries,
+} from "../packages/shared/src/body/weighings";
+import {
+  dailyEnergy,
+  type MifflinInput,
+  mifflinStJeor,
+  PAL_LEVELS,
+} from "../packages/shared/src/tools/energy";
+import {
+  CUT_FLOOR_G_PER_KG,
+  type ProteinGoal,
+  proteinRange,
+} from "../packages/shared/src/tools/protein";
+import { roundTo } from "../packages/shared/src/tools/round";
 import { EXERCISE_ID } from "../packages/shared/src/exercises/library";
 import {
   DAY,
@@ -2602,6 +2646,446 @@ function healthVectors() {
   };
 }
 
+// The body rules: the weigh-ins' averages and weeks, the loss range, measures, intake, creatine
+// and the tools intake reads its figures from. The day rules run on calendar days alone, so the
+// cases cross a week boundary and both of Paris's daylight-saving changes without a zone.
+function bodyVectors() {
+  const w = (date: string, weightKg: number): Weighing => ({ date, weightKg });
+  const run = (monday: string, kgs: number[]) => kgs.map((kg, i) => w(addDays(monday, i), kg));
+  // A seeded generator (mulberry32), so the random cases are the same on every run.
+  const random = (seed: number) => () => {
+    seed = (seed + 0x6d2b79f5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4_294_967_296;
+  };
+  // Wednesday after the autumn change (25 October 2026); the current week runs from 26 October.
+  const TODAY = "2026-10-28";
+  const before = run("2026-09-21", [80, 80.4, 80.2, 80.6]);
+  const last = run("2026-09-28", [79.8, 79.6, 80, 79.8]);
+  const named: [string, Weighing[], string][] = [
+    ["none", [], TODAY],
+    [
+      "three in the 7 days",
+      [w("2026-10-01", 80), w("2026-10-03", 81), w("2026-10-07", 82)],
+      "2026-10-07",
+    ],
+    [
+      "four in the 7 days",
+      [w("2026-10-01", 80), w("2026-10-03", 81), w("2026-10-07", 82), w("2026-10-05", 79)],
+      "2026-10-07",
+    ],
+    [
+      "one older than 6 days",
+      [w("2026-09-30", 90), ...run("2026-10-04", [80, 80, 80, 80])],
+      "2026-10-07",
+    ],
+    ["through 29 February", run("2028-02-26", [80, 81, 82, 83]), "2028-03-04"],
+    ["two complete weeks", [...before, ...last], "2026-10-07"],
+    [
+      "seven in the current week",
+      [...last, ...run("2026-10-05", [79, 79, 79, 79, 79, 79, 79])],
+      "2026-10-11",
+    ],
+    ["one in the current week", [...last, w("2026-10-06", 79.4)], "2026-10-07"],
+    [
+      "two in the current week",
+      [...last, w("2026-10-06", 79.4), w("2026-10-07", 79)],
+      "2026-10-07",
+    ],
+    ["the current week empty", last, "2026-10-07"],
+    [
+      "a loss never from a week in progress",
+      [w("2026-10-06", 80), w("2026-10-12", 79)],
+      "2026-10-11",
+    ],
+    [
+      "an insufficient week before",
+      [...run("2026-09-21", [80, 80.4, 80.2]), ...last],
+      "2026-10-07",
+    ],
+    ["a gain", [...before, ...run("2026-09-28", [80.5, 80.5, 80.5, 80.5])], "2026-10-07"],
+    ["an empty week between two", [...run("2026-09-14", [81, 81, 81, 81]), ...last], "2026-10-07"],
+    ["a week across the new year", run("2026-12-28", [80, 80, 80, 80, 80, 80, 80]), "2027-01-04"],
+    ["a weigh-in after today", [w("2026-10-12", 80)], "2026-10-11"],
+    [
+      "across the spring change",
+      run("2026-03-26", [70.2, 70.1, 70, 69.9, 69.8, 69.9, 69.7]),
+      "2026-04-01",
+    ],
+    ["across the autumn change", run("2026-10-22", [80.3, 80.1, 80, 79.9, 79.8, 79.6]), TODAY],
+    [
+      "a Sunday and the Monday after",
+      [...run("2026-10-15", [81, 81.2, 81.1, 80.9]), w("2026-10-19", 80.8)],
+      "2026-10-19",
+    ],
+    [
+      "out of order with two on one day",
+      [
+        w("2026-10-07", 81),
+        w("2026-10-05", 80.1),
+        w("2026-10-06", 80.3),
+        w("2026-10-05", 80.7),
+        w("2026-10-04", 80),
+      ],
+      "2026-10-07",
+    ],
+  ];
+  // 0 to 30 weigh-ins over the 6 weeks to today, with gaps where the draw leaves days out.
+  const draw = random(20261113);
+  const generated: [string, Weighing[], string][] = Array.from({ length: 31 }, (_, n) => {
+    const days = new Set<number>();
+    while (days.size < n) days.add(Math.floor(draw() * 42));
+    const ws = [...days].map((d) => w(addDays(TODAY, -d), roundTo(76 + draw() * 8, 0.1)));
+    return [`${n} drawn`, ws, TODAY];
+  });
+  const weighings = [...named, ...generated].map(([name, ws, today]) => {
+    const first = ws.reduce((m, x) => (x.date < m ? x.date : m), today);
+    const from = addDays(first, -3);
+    return {
+      name,
+      weighings: ws,
+      today,
+      from,
+      series: movingAverageSeries(ws, from, today),
+      average7: movingAverage7(ws, today),
+      latest: latestMovingAverage(ws, today),
+      weeks: weeklySummaries(ws, today),
+    };
+  });
+
+  const days = [
+    "2025-12-29",
+    "2026-01-01",
+    "2026-03-28",
+    "2026-03-29",
+    "2026-03-30",
+    "2026-10-05",
+    "2026-10-11",
+    "2026-10-24",
+    "2026-10-25",
+    "2026-10-26",
+    "2027-01-03",
+    "2028-02-28",
+    "2028-02-29",
+    "1900-01-01",
+  ];
+  const addCases = days.flatMap((date) =>
+    [-366, -7, -1, 0, 1, 6, 7, 365].map((n) => ({ date, days: n, result: addDays(date, n) })),
+  );
+  const weekStarts = days.map((date) => ({ date, result: isoWeekStart(date) }));
+
+  const kgs = [20, 19.9, 20.1, 400, 400.1, 79.8, 79.85, 80.3, 0.1 + 79.7, 0, -80, 1e9];
+  const ranges: [number, number][] = [
+    [0.25, 1],
+    [0.85, 0.95],
+    [0.9, 1],
+    [0.2, 1],
+    [0.5, 1.05],
+    [0.9, 0.95],
+    [0.33, 1],
+    [0.5, 1],
+    [0.25, 0.35],
+    [0.25, 0.3],
+    [1, 1],
+    [0.95, 0.85],
+    [0.3, 0.4],
+    [0.7, 0.8],
+    [0, 1],
+  ];
+  const losses = [
+    ...Array.from({ length: 161 }, (_, i) => roundTo(-0.3 + i * 0.01, 0.01)),
+    0.45,
+    0.449,
+    0.4499999,
+    0.44,
+    1.04,
+    1.049,
+    1.05,
+    0.95,
+    0.25,
+    0.249,
+    0.2,
+    0.15,
+    1e-9,
+    -0.05,
+    -0.04,
+    ((80.3 - 79.8) / 80.3) * 100,
+  ];
+  const targets = [DEFAULT_TARGET, { minPct: 0.25, maxPct: 0.35 }, { minPct: 0.9, maxPct: 1 }];
+
+  const m = (
+    date: string,
+    waistCm: number | null,
+    neckCm: number | null,
+    hipCm: number | null,
+  ): Measure => ({ date, waistCm, neckCm, hipCm });
+  const measureCases: [string, Measure[], string][] = [
+    ["none", [], "2026-10-05"],
+    ["all three", [m("2026-10-06", 84.5, 38, 98)], "2026-10-05"],
+    [
+      "each on its own day",
+      [
+        m("2026-10-01", 85, null, null),
+        m("2026-10-03", null, 38.5, null),
+        m("2026-10-06", null, null, 97.5),
+      ],
+      "2026-10-05",
+    ],
+    [
+      "a newer day without a waist",
+      [m("2026-10-05", 85, 38, null), m("2026-10-07", null, 37.5, 99)],
+      "2026-10-05",
+    ],
+    [
+      "the waist of another week",
+      [m("2026-09-28", 86, null, null), m("2026-10-12", 84, null, null)],
+      "2026-10-05",
+    ],
+    [
+      "two in the week",
+      [m("2026-10-11", 84, null, null), m("2026-10-05", 85.5, null, null)],
+      "2026-10-05",
+    ],
+    [
+      "on the Sunday and the Monday after",
+      [m("2026-10-11", 84, null, null), m("2026-10-12", 83.5, null, null)],
+      "2026-10-05",
+    ],
+    ["nothing at all", [m("2026-10-06", null, null, null)], "2026-10-05"],
+  ];
+  const cmValues = [19.9, 20, 39.9, 40, 49.9, 50, 84.5, 84.55, 80, 80.1, 200, 200.1, 0.1 + 84.4];
+
+  const l = (date: string, kcal: number | null, proteinG: number | null): IntakeLog => ({
+    date,
+    kcal,
+    proteinG,
+  });
+  const intakeCases: [string, IntakeLog[], string][] = [
+    ["none", [], "2026-10-05"],
+    ["at the bounds", [l("2026-10-05", 0, 0), l("2026-10-06", 10_000, 500)], "2026-10-05"],
+    [
+      "protein on fewer days",
+      [l("2026-10-05", 1850, 128), l("2026-10-06", 2100, null), l("2026-10-07", null, 140)],
+      "2026-10-05",
+    ],
+    [
+      "outside the week",
+      [
+        l("2026-10-04", 3000, 200),
+        l("2026-10-05", 1800, 120),
+        l("2026-10-11", 2000, 130),
+        l("2026-10-12", 2500, 150),
+      ],
+      "2026-10-05",
+    ],
+    [
+      "across the autumn change",
+      [l("2026-10-25", 1900, 125), l("2026-10-26", 2050, 131)],
+      "2026-10-19",
+    ],
+    ["deleted values", [l("2026-10-06", null, null)], "2026-10-05"],
+  ];
+  const intakeValues = [-1, 0, 0.5, 5, 100.5, 128, 499, 500, 501, 2130, 9999, 10_000, 10_001];
+
+  const names = [
+    "Créatine",
+    "creatine",
+    "CREATINE monohydrate",
+    "Creatine HCl",
+    "Ma créatine du matin",
+    "créatine-monohydrate",
+    "CRÉATINE",
+    "Créatine",
+    "creatines",
+    "procreatine",
+    "Kreatin",
+    "Monohydrate",
+    "Vitamine D",
+    "",
+    "  creatine  ",
+    "crèatine",
+    "creatine2",
+    "2creatine",
+  ];
+  const labels = [
+    null,
+    "",
+    "Semaine allégée",
+    "x".repeat(80),
+    "x".repeat(81),
+    "\u{1F4AA}".repeat(40),
+    "\u{1F4AA}".repeat(41),
+    "a\nb",
+    "a\rb",
+    "a b",
+  ];
+
+  const creatineCases: [string, string[], string][] = [
+    ["none", [], "2026-10-28"],
+    ["one day", ["2026-10-01"], "2026-10-28"],
+    ["daily", Array.from({ length: 20 }, (_, i) => addDays("2026-10-01", i)), "2026-10-28"],
+    ["a gap of 14 days", ["2026-10-01", "2026-10-15"], "2026-10-28"],
+    ["a gap of 15 days", ["2026-10-01", "2026-10-16"], "2026-10-28"],
+    [
+      "a gap past 14 days, then daily",
+      [
+        "2026-09-01",
+        "2026-09-02",
+        ...Array.from({ length: 10 }, (_, i) => addDays("2026-09-20", i)),
+      ],
+      "2026-10-28",
+    ],
+    ["a day after today", ["2026-10-20", "2026-10-29"], "2026-10-28"],
+    [
+      "repeated and out of order",
+      ["2026-10-10", "2026-10-02", "2026-10-02", "2026-10-25"],
+      "2026-10-28",
+    ],
+    ["across the autumn change", ["2026-10-24", "2026-10-25", "2026-10-26"], "2026-10-28"],
+  ];
+
+  const man: MifflinInput = { formula: "male", ageYears: 30, heightCm: 180, weightKg: 80 };
+  const woman: MifflinInput = { formula: "female", ageYears: 40, heightCm: 165, weightKg: 60 };
+  const attempt = <T>(f: () => T): T | null => {
+    try {
+      return f();
+    } catch {
+      return null;
+    }
+  };
+  const inputs: [string, MifflinInput][] = [
+    ["man", man],
+    ["woman", woman],
+    ["youngest", { ...man, ageYears: 15 }],
+    ["oldest", { ...woman, ageYears: 100 }],
+    ["shortest", { ...woman, heightCm: 120 }],
+    ["tallest", { ...man, heightCm: 230 }],
+    ["lightest", { ...woman, weightKg: 30 }],
+    ["heaviest", { ...man, weightKg: 300 }],
+    ["an average to the tenth", { ...woman, weightKg: 63.4 }],
+    ["age 14", { ...man, ageYears: 14 }],
+    ["age 101", { ...man, ageYears: 101 }],
+    ["height 119", { ...man, heightCm: 119 }],
+    ["height 231", { ...man, heightCm: 231 }],
+    ["weight 29", { ...man, weightKg: 29 }],
+    ["weight 301", { ...man, weightKg: 301 }],
+  ];
+  const pals = [...PAL_LEVELS.map((p) => p.pal), 0, -1];
+  const energy = inputs.flatMap(([name, input]) =>
+    pals.map((pal) => ({
+      name: `${name} at ${pal}`,
+      input,
+      pal,
+      bmr: attempt(() => mifflinStJeor(input)),
+      result: attempt(() => dailyEnergy(input, pal)),
+    })),
+  );
+
+  const goals: ProteinGoal[] = ["maintain", "cut", "gain"];
+  const fats = [undefined, 1.9, 2, 15, 25, 28.5, 40, 45, 75, 75.1];
+  const protein = [30, 40, 41, 63, 63.4, 70, 80, 82, 100, 150, 300, 0, -5].flatMap((weightKg) =>
+    goals.flatMap((goal) =>
+      fats.map((bodyFatPct) => ({
+        weightKg,
+        goal,
+        bodyFatPct: bodyFatPct ?? null,
+        result: attempt(() => proteinRange(weightKg, goal, bodyFatPct)),
+      })),
+    ),
+  );
+
+  const profiles: [string, Profile][] = [
+    ["empty", { formula: null, birthYear: null, heightCm: null }],
+    ["full", { formula: "female", birthYear: 1990, heightCm: 168 }],
+    ["age 15 and 100", { formula: "male", birthYear: 2011, heightCm: 230 }],
+    ["age 14", { formula: "male", birthYear: 2012, heightCm: 120 }],
+    ["age 101", { formula: "male", birthYear: 1925, heightCm: 119 }],
+    ["age 100", { formula: null, birthYear: 1926, heightCm: 231 }],
+  ];
+  const bodies: [string, Weighing[], Measure[]][] = [
+    ["nothing", [], []],
+    [
+      "an average",
+      run("2026-10-22", [80.33, 80.1, 80, 79.9, 79.8]),
+      [m("2026-10-26", 84.5, 38, 98)],
+    ],
+    [
+      "an average older than the last weigh-in",
+      [...run("2026-10-01", [80, 80, 80, 80]), w("2026-10-27", 79.4)],
+      [],
+    ],
+    [
+      "one weigh-in",
+      [w("2026-10-27", 25)],
+      [m("2026-10-26", 30, 19.5, null), m("2026-10-29", 90, null, null)],
+    ],
+    ["one after today", [w("2026-10-27", 79), w("2026-10-29", 78)], []],
+    ["heavy", [w("2026-10-27", 301)], [m("2026-10-25", 200, 80, 200)]],
+  ];
+  const defaults = profiles.flatMap(([pname, profile]) =>
+    bodies.map(([bname, ws, ms]) => ({
+      name: `${pname}, ${bname}`,
+      profile,
+      weighings: ws,
+      measures: ms,
+      today: TODAY,
+      result: toolDefaults({ profile, weighings: ws, measures: ms, today: TODAY }),
+    })),
+  );
+
+  return {
+    bounds: {
+      minWeighings: MIN_WEIGHINGS,
+      creatineDays: CREATINE_DAYS,
+      defaultTarget: DEFAULT_TARGET,
+      palLevels: PAL_LEVELS,
+      cutFloorGPerKg: CUT_FLOOR_G_PER_KG,
+    },
+    addDays: addCases,
+    isoWeekStart: weekStarts,
+    isWeighingKg: kgs.map((value) => ({ value, result: isWeighingKg(value) })),
+    weighings,
+    isTargetRange: ranges.map(([minPct, maxPct]) => ({
+      minPct,
+      maxPct,
+      result: isTargetRange({ minPct, maxPct }),
+    })),
+    inTargetRange: targets.flatMap((target) =>
+      losses.map((lossPct) => ({ lossPct, target, result: inTargetRange(lossPct, target) })),
+    ),
+    isMeasureCm: MEASURE_FIELDS.flatMap((field) =>
+      cmValues.map((value) => ({ field, value, result: isMeasureCm(field, value) })),
+    ),
+    measures: measureCases.map(([name, ms, weekStart]) => ({
+      name,
+      measures: ms,
+      weekStart,
+      latest: latestMeasures(ms),
+      waist: weeklyWaist(ms, weekStart),
+    })),
+    isKcal: intakeValues.map((value) => ({ value, result: isKcal(value) })),
+    isProteinG: intakeValues.map((value) => ({ value, result: isProteinG(value) })),
+    intake: intakeCases.map(([name, logs, weekStart]) => ({
+      name,
+      logs,
+      weekStart,
+      result: weeklyIntake(logs, weekStart),
+    })),
+    isCreatineName: names.map((name) => ({ name, result: isCreatineName(name) })),
+    creatineWindows: creatineCases.map(([name, takenDays, today]) => ({
+      name,
+      takenDays,
+      today,
+      result: creatineWindows(takenDays, today),
+    })),
+    isAnnotationLabel: labels.map((label) => ({ label, result: isAnnotationLabel(label) })),
+    energy,
+    protein,
+    toolDefaults: defaults,
+  };
+}
+
 const rules = rulesVectors();
 const tools = toolVectors();
 const files = [
@@ -2615,6 +3099,7 @@ const files = [
     path: core("Tests/BelayCoreTests/Vectors/schedule.json"),
     data: { ...scheduleVectors(), ...readVectors() },
   },
+  { path: core("Tests/BelayCoreTests/Vectors/body.json"), data: bodyVectors() },
   { path: core("Sources/BelayCore/Resources/seed.json"), data: SEED },
 ].map(({ path, data }) => ({ path, expected: `${JSON.stringify(data, null, 2)}\n` }));
 

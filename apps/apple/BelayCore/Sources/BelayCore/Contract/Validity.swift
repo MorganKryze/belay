@@ -15,7 +15,7 @@ public func isValid(_ change: Change, now: Date, timeZone: TimeZone) -> Bool {
     return Instant.isCanonical(c.at) && isId(c.programId)
   case .weight(let c):
     return Instant.isCanonical(c.at) && isDay(c.date, now, timeZone)
-      && (c.weightKg.map(isWeighInKg) ?? true)
+      && (c.weightKg.map(isWeighingKg) ?? true)
   case .measure(let c):
     return Instant.isCanonical(c.at) && isDay(c.date, now, timeZone)
       && (c.value.map { isMeasureCm(c.field, $0) } ?? true)
@@ -31,7 +31,7 @@ public func isValid(_ change: Change, now: Date, timeZone: TimeZone) -> Bool {
     case .fields(let date, let type, let label):
       return isDay(date, now, timeZone)
         && [AnnotationKind.deload, .dietBreak, .note].contains(type)
-        && (label.map(isAnnotationLabel) ?? true)
+        && isAnnotationLabel(label)
     case .removed: return true
     }
   }
@@ -50,26 +50,6 @@ private func isDay(_ date: String, _ now: Date, _ timeZone: TimeZone) -> Bool {
   let lengths = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
   guard (1...12).contains(month), (1...lengths[month - 1]).contains(day) else { return false }
   return date >= Bounds.minDate && date <= toISODate(now, timeZone: timeZone)
-}
-
-/// On `step`'s grid within `bounds`; the tolerance absorbs binary noise such as 79.8.
-private func isOnGrid(_ value: Double, _ bounds: ClosedRange<Double>, step: Double) -> Bool {
-  let steps = value / step
-  return value.isFinite && bounds.contains(value) && abs(steps - steps.rounded()) < 1e-6
-}
-
-func isWeighInKg(_ kg: Double) -> Bool {
-  isOnGrid(kg, Bounds.weighInKgMin...Bounds.weighInKgMax, step: Bounds.weighInKgStep)
-}
-
-func isMeasureCm(_ field: MeasureField, _ cm: Double) -> Bool {
-  isOnGrid(cm, Bounds.measureCm(field), step: Bounds.measureCmStep)
-}
-
-/// 80 units at most, on one line.
-func isAnnotationLabel(_ label: String) -> Bool {
-  label.utf16.count <= Bounds.annotationLabelMax
-    && !label.unicodeScalars.contains { $0 == "\n" || $0 == "\r" }
 }
 
 private func isValid(_ edit: WorkoutChange.Edit, at: String) -> Bool {
