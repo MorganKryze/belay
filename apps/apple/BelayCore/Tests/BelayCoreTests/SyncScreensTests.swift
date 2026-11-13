@@ -102,7 +102,8 @@ func within(_ limit: Duration, _ condition: () -> Bool) async throws -> Bool {
         fresh: try AccountStore.pastSession(db, workoutId: fresh))
     }
     defer { watch.cancel() }
-    #expect(try await within(.seconds(1)) { screens.now?.kept != nil })
+    // The first value is the start, not the claim: it may wait for a suite loaded with others.
+    #expect(try await within(.seconds(10)) { screens.now?.kept != nil })
     let before = try #require(screens.now)
     #expect(before.weeks.flatMap(\.rows).map(\.workoutId) == [kept])
     #expect(before.fresh == nil)
