@@ -464,7 +464,7 @@ describe("the editor's sessions", () => {
     fireEvent.keyDown(document.activeElement!, { key: "ArrowRight" });
     // The chips read as they would after the drop, the lifted one already B.
     await rotationIs(["A · Legs", "B · Push", "C · Fessiers + tirage léger"]);
-    expect(document.activeElement!.getAttribute("aria-label")).toBe("B · Push");
+    expect(document.activeElement).toBe(within(list).getByRole("tab", { name: "B · Push" }));
     await said("position 2 sur 3, Legs devient A ; Push devient B");
     // Nothing is written before the drop.
     expect((await stored()).sessions.find((s) => s.id === PUSH)!.position).toBe(0);

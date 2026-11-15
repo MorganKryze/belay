@@ -344,11 +344,6 @@ function ChipList({
         role="tab"
         aria-selected={on}
         aria-controls={on ? PANEL : undefined}
-        aria-label={
-          p.letter !== null && name !== null
-            ? t("editor.chips.named", { code: p.letter, name })
-            : undefined
-        }
         tabIndex={on || (!holdsShown && i === 0) ? 0 : -1}
         onFocus={() => show(p.session.id)}
         onClick={() => show(p.session.id)}
@@ -369,6 +364,13 @@ function ChipList({
         ) : (
           <>
             <span className={on ? "font-bold" : "font-bold text-foreground"}>{p.letter}</span>
+            {/* The name comes from the visible text (WCAG 2.5.3): the separator is for screen readers only. */}
+            {name !== null && (
+              <>
+                {" "}
+                <span className="sr-only">·</span>{" "}
+              </>
+            )}
             {name}
           </>
         )}
