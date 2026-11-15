@@ -414,6 +414,26 @@
         }
       }
     },
+    "Ta première est déjà là.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your first one is already in."
+          }
+        }
+      }
+    },
+    "Tes %@ premières sont déjà là.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your first %@ are already in."
+          }
+        }
+      }
+    },
     "Tes pesées de Santé": {
       "localizations": {
         "en": {

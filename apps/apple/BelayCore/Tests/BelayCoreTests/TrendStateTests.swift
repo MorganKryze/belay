@@ -32,6 +32,15 @@ import Testing
     #expect(series(body, .month).points.count == 30)
   }
 
+  /// The first days' chart reads its days by name while they fit in a week, by date past it.
+  @Test func earlyPointsWithinAWeekReadByWeekday() {
+    let points = { (dates: [String]) in dates.map { Point(date: $0, value: 80) } }
+    #expect(earlySpan(points(["2026-11-10", "2026-11-11", "2026-11-12"])) == .week)
+    #expect(earlySpan(points(["2026-11-07", "2026-11-13"])) == .week)
+    #expect(earlySpan(points(["2026-11-06", "2026-11-13"])) == .month)
+    #expect(earlySpan(points(["2026-11-13"])) == .week)
+  }
+
   @Test func atMostThreeHundredSixtyFivePoints() {
     let s = series(Bodies.body(weights: daily(800)), .year)
     #expect(s.points.count == 365)

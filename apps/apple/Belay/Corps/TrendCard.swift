@@ -35,8 +35,8 @@ struct TrendCard: View {
                 }
             case .early(let count, let points):
                 heading(Text("Encore \(count) pesées cette semaine", tableName: "Corps"))
-                line(Text("La moyenne apparaît dès 4 pesées sur 7 jours.", tableName: "Corps"))
-                if place == .corps { WeightChart(points: points, average: [], span: .month) }
+                line(Text(verbatim: early(count)))
+                if place == .corps { WeightChart(points: points, average: [], span: earlySpan(points)) }
             case .usual(let trend):
                 Figure(text: BodyText.number(trend.averageKg), value: trend.averageKg, unit: "kg")
                 change(trend)
@@ -67,6 +67,20 @@ struct TrendCard: View {
             }
         }
         .padding(.vertical, 10)
+    }
+
+    /// The rule, then the weigh-ins this week already holds, their number in words as French
+    /// writes a small number in a sentence.
+    private func early(_ count: Int) -> String {
+        let rule = String(localized: "La moyenne apparaît dès 4 pesées sur 7 jours.", table: "Corps")
+        let there = minWeighings - count
+        switch there {
+        case ...0: return rule
+        case 1: return rule + " " + String(localized: "Ta première est déjà là.", table: "Corps")
+        default:
+            let words = NumberFormatter.localizedString(from: NSNumber(value: there), number: .spellOut)
+            return rule + " " + String(localized: "Tes \(words) premières sont déjà là.", table: "Corps")
+        }
     }
 
     private func heading(_ text: Text) -> some View {

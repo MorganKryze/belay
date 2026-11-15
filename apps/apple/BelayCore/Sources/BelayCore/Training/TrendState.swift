@@ -34,6 +34,13 @@ public struct TrendSeries: Sendable, Equatable {
   public var annotations: [AnnotationMark]
 }
 
+/// The first days' chart: its days by name while the weigh-ins fit in one week, by date past it.
+public func earlySpan(_ points: [Point]) -> TrendSpan {
+  let dates = points.map(\.date)
+  guard let first = dates.min(), let last = dates.max() else { return .week }
+  return last <= addDays(first, TrendSpan.week.days - 1) ? .week : .month
+}
+
 public func trendSeries(_ body: BodyRead, span: TrendSpan, now: Date, timeZone: TimeZone)
   -> TrendSeries
 {

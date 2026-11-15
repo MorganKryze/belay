@@ -188,7 +188,7 @@ struct WeightChart: View {
             if let day = BodyText.date(p.date) {
                 PointMark(x: .value("Jour", day, unit: .day), y: .value("Pesée", p.value))
                     .symbolSize(pointSize)
-                    .foregroundStyle(Color.bodyShade.opacity(0.35))
+                    .foregroundStyle(Color.chartDay)
             }
         }
     }
@@ -254,7 +254,7 @@ struct ChartLegend: View {
     private var items: [Item] {
         var items = [
             Item(
-                id: "legend-day", sign: AnyView(Circle().fill(Color.bodyShade.opacity(0.35)).frame(width: 8, height: 8)),
+                id: "legend-day", sign: AnyView(Circle().fill(Color.chartDay).frame(width: 8, height: 8)),
                 words: String(localized: "Pesée du jour", table: "Trend"),
                 label: String(localized: "Pesée du jour", table: "Trend")),
             Item(

@@ -94,11 +94,23 @@ final class CorpsTests: XCTestCase {
         let app = corps("bodyEarly")
         XCTAssertTrue(
             app.staticTexts["Encore 1 pesée cette semaine"].waitForExistence(timeout: 5), "one more weigh-in for the average")
-        XCTAssertTrue(app.staticTexts["La moyenne apparaît dès 4 pesées sur 7 jours."].exists)
+        XCTAssertTrue(
+            app.staticTexts["La moyenne apparaît dès 4 pesées sur 7 jours. Tes trois premières sont déjà là."].exists)
         let chart = element(app, "trend-chart")
         XCTAssertTrue(chart.exists, "the points show")
         XCTAssertFalse(chart.label.contains("Moyenne"), "no average line yet: \(chart.label)")
         XCTAssertFalse(app.staticTexts["80,2"].exists)
+    }
+
+    /// Ta tendance's daily weigh-ins in grey, the line alone in the body's colour.
+    func testDailyWeighInsInGrey() {
+        let app = corps("trend")
+        let row = element(app, "corps-weeks")
+        XCTAssertTrue(app.swipeUpUntil(row))
+        row.tap()
+        let legend = element(app, "legend-day")
+        XCTAssertTrue(app.swipeUpUntil(legend))
+        XCTAssertLessThan(redness(app, in: legend.frame), 15, "the day's dot is grey")
     }
 
     /// CO10: no weigh-in: the words, the empty grid's sentence, and the one blue button.
