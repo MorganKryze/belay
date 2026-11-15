@@ -234,8 +234,8 @@ enum Fixture {
             for back in 0..<35 {
                 try actions.weigh(date: addDays(today, -back), kg: tenth(79.9 + 0.1 * Double(back) + ripple[back % 7]))
             }
-            try actions.measure(date: addDays(today, -3), waist: 84.5, neck: nil, hip: nil)
-            try actions.intake(date: today, kcal: 1850, protein: 128)
+            try actions.measure(date: addDays(today, -3), waist: .set(84.5), neck: .clear, hip: .clear)
+            try actions.intake(date: today, kcal: .set(1850), protein: .set(128))
             let supplements: [[String: Any]] = [
                 ["id": creatineId, "name": "Créatine", "nameAt": "2026-01-01T00:00:00.000Z", "kind": "creatine", "removed": false],
                 [
@@ -263,8 +263,8 @@ enum Fixture {
             if mode == "measures" {
                 for week in 1..<5 {
                     try actions.measure(
-                        date: addDays(today, -3 - 7 * week), waist: 84.5 + 0.4 * Double(week), neck: week == 4 ? 38 : nil,
-                        hip: week == 4 ? 98 : nil)
+                        date: addDays(today, -3 - 7 * week), waist: .set(84.5 + 0.4 * Double(week)),
+                        neck: week == 4 ? .set(38) : .keep, hip: week == 4 ? .set(98) : .keep)
                 }
             }
         case "bodyOutOfRange":

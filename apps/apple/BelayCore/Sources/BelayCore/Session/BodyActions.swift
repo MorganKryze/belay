@@ -35,6 +35,24 @@ public struct AnnotationInput: Sendable, Equatable {
   }
 }
 
+/// A sheet's field as saved. A field left as the sheet opened is `keep`, distinct from one the
+/// person emptied: the day may have changed on another device since the sheet read it, and only
+/// what was typed here should land.
+public enum FieldEdit<Value: Sendable & Equatable>: Sendable, Equatable {
+  case keep
+  case set(Value)
+  case clear
+
+  /// The value to write over `held`, wrapped; nil when nothing changes.
+  func value(over held: Value?) -> Value?? {
+    switch self {
+    case .keep: nil
+    case .set(let value): value == held ? nil : .some(value)
+    case .clear: held == nil ? nil : .some(nil)
+    }
+  }
+}
+
 /// Why a body action wrote nothing.
 public enum BodyError: Error, Sendable, Equatable {
   /// No annotation of that id.
@@ -72,27 +90,31 @@ public struct BodyActions: Sendable {
     }
   }
 
-  /// The day's measures as the sheet holds them: a field left empty that the day holds is
-  /// deleted, one never typed stays unwritten.
-  public func measure(date: String, waist: Double?, neck: Double?, hip: Double?) throws {
+  /// The day's measures as the sheet leaves them: a field typed is written, one emptied that the
+  /// day holds is deleted, one left as it opened is not touched.
+  public func measure(
+    date: String, waist: FieldEdit<Double>, neck: FieldEdit<Double>, hip: FieldEdit<Double>
+  ) throws {
     try write { db, at in
       let held = try BodyRows.measure(db, date: date) ?? MeasureRow(empty: date)
-      let typed: [(MeasureField, Double?)] = [(.waist, waist), (.neck, neck), (.hip, hip)]
-      return typed.compactMap { field, value in
-        value == held[field].cm
-          ? nil : .measure(MeasureChange(date: date, field: field, value: value, at: at))
+      let typed: [(MeasureField, FieldEdit<Double>)] = [(.waist, waist), (.neck, neck), (.hip, hip)]
+      return typed.compactMap { field, edit in
+        edit.value(over: held[field].cm).map {
+          .measure(MeasureChange(date: date, field: field, value: $0, at: at))
+        }
       }
     }
   }
 
-  /// The day's totals, which replace what the day held; empty fields as for `measure`.
-  public func intake(date: String, kcal: Int?, protein: Int?) throws {
+  /// The day's totals, which replace what the day held; the fields as for `measure`.
+  public func intake(date: String, kcal: FieldEdit<Int>, protein: FieldEdit<Int>) throws {
     try write { db, at in
       let held = try BodyRows.intake(db, date: date) ?? IntakeRow(empty: date)
-      let typed: [(IntakeField, Int?)] = [(.kcal, kcal), (.protein, protein)]
-      return typed.compactMap { field, value in
-        value == held[field].value
-          ? nil : .intake(IntakeChange(date: date, field: field, value: value, at: at))
+      let typed: [(IntakeField, FieldEdit<Int>)] = [(.kcal, kcal), (.protein, protein)]
+      return typed.compactMap { field, edit in
+        edit.value(over: held[field].value).map {
+          .intake(IntakeChange(date: date, field: field, value: $0, at: at))
+        }
       }
     }
   }

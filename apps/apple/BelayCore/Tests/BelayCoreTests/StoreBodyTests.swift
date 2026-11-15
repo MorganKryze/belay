@@ -113,13 +113,13 @@ final class MovingClock: Sendable {
   }
 
   @Test func measureKeepsUntypedFields() throws {
-    try body.measure(date: day, waist: 85, neck: nil, hip: nil)
+    try body.measure(date: day, waist: .set(85), neck: .clear, hip: .clear)
     #expect(
       try Fixture.changes(store) == [
         .measure(MeasureChange(date: day, field: .waist, value: 85, at: Fixture.time(0)))
       ])
     clock.move(minutes: 1)
-    try body.measure(date: day, waist: 84.5, neck: 38, hip: nil)
+    try body.measure(date: day, waist: .set(84.5), neck: .set(38), hip: .clear)
     #expect(
       try store.body().measures == [
         MeasureRow(
@@ -130,7 +130,7 @@ final class MovingClock: Sendable {
 
     // Saved again with the neck emptied: only the neck is written, as a deletion.
     clock.move(minutes: 1)
-    try body.measure(date: day, waist: 84.5, neck: nil, hip: nil)
+    try body.measure(date: day, waist: .set(84.5), neck: .clear, hip: .clear)
     #expect(
       try Fixture.changes(store).last
         == .measure(MeasureChange(date: day, field: .neck, value: nil, at: Fixture.time(2))))
@@ -140,14 +140,14 @@ final class MovingClock: Sendable {
     #expect(row.neckCm == nil && row.neckAt == Fixture.time(2))
 
     #expect(throws: StoreError.invalidChange) {
-      try body.measure(date: day, waist: 39.9, neck: nil, hip: nil)
+      try body.measure(date: day, waist: .set(39.9), neck: .clear, hip: .clear)
     }
   }
 
   @Test func intakeIsDayTotal() throws {
-    try body.intake(date: day, kcal: 1800, protein: 120)
+    try body.intake(date: day, kcal: .set(1800), protein: .set(120))
     clock.move(minutes: 1)
-    try body.intake(date: day, kcal: 2100, protein: 120)
+    try body.intake(date: day, kcal: .set(2100), protein: .set(120))
     #expect(
       try store.body().intake == [
         IntakeRow(
@@ -156,8 +156,36 @@ final class MovingClock: Sendable {
       ])
     #expect(try Fixture.changes(store).count == 3)
     #expect(throws: StoreError.invalidChange) {
-      try body.intake(date: day, kcal: 10_001, protein: nil)
+      try body.intake(date: day, kcal: .set(10_001), protein: .clear)
     }
+  }
+
+  /// A field the sheet left as it opened is not written: a value another device wrote since
+  /// the sheet read the day stays, while the fields typed land.
+  @Test func untouchedFieldKeepsAnotherDevicesValue() throws {
+    try body.intake(date: day, kcal: .set(1800), protein: .set(120))
+    try body.measure(date: day, waist: .set(85), neck: .set(38), hip: .clear)
+    var answer = Fixture.response()
+    answer.intake = [
+      IntakeRow(
+        date: day, kcal: 1800, kcalAt: Fixture.time(0), proteinG: 135, proteinAt: Fixture.time(2))
+    ]
+    answer.measures = [
+      MeasureRow(
+        date: day, waistCm: 85, waistAt: Fixture.time(0), neckCm: 39, neckAt: Fixture.time(2),
+        hipCm: nil, hipAt: nil)
+    ]
+    try store.applyServer(sent: try store.outbox(limit: nil), response: answer)
+    clock.move(minutes: 3)
+    let queued = try Fixture.changes(store).count
+
+    try body.intake(date: day, kcal: .set(2000), protein: .keep)
+    try body.measure(date: day, waist: .set(84.5), neck: .keep, hip: .keep)
+    #expect(try store.body().intake.first?.proteinG == 135)
+    #expect(try store.body().intake.first?.kcal == 2000)
+    #expect(try store.body().measures.first?.neckCm == 39)
+    #expect(try store.body().measures.first?.waistCm == 84.5)
+    #expect(try Fixture.changes(store).count == queued + 2, "only the typed fields are queued")
   }
 
   @Test func takeTwiceSameDayOneLog() throws {
@@ -240,8 +268,8 @@ final class MovingClock: Sendable {
     try body.weigh(date: day, kg: 80.4)
     try body.take(supplementId: Fixture.id(20), date: day, taken: true)
     try body.annotate(AnnotationInput(id: Fixture.id(30), date: day, type: .note, label: "x"))
-    try body.measure(date: day, waist: 85, neck: nil, hip: nil)
-    try body.intake(date: day, kcal: 2000, protein: nil)
+    try body.measure(date: day, waist: .set(85), neck: .clear, hip: .clear)
+    try body.intake(date: day, kcal: .set(2000), protein: .clear)
     let sent = try store.outbox(limit: nil)
     try store.applyServer(
       sent: sent,
@@ -252,10 +280,10 @@ final class MovingClock: Sendable {
   }
 
   @Test func aRefusedMeasureFieldGoesAloneWhileStillTheLastWrite() throws {
-    try body.measure(date: day, waist: 85, neck: 38, hip: 95)
+    try body.measure(date: day, waist: .set(85), neck: .set(38), hip: .set(95))
     let sent = try store.outbox(limit: nil)
     clock.move(minutes: 1)
-    try body.measure(date: day, waist: 85, neck: 37, hip: 95)
+    try body.measure(date: day, waist: .set(85), neck: .set(37), hip: .set(95))
     // The waist and the first neck are refused; the hip went through.
     try store.applyServer(
       sent: sent,
@@ -272,7 +300,7 @@ final class MovingClock: Sendable {
 
   @Test func aQueuedMeasureFieldWeighsOnlyAgainstItsOwnField() throws {
     clock.move(minutes: 5)
-    try body.measure(date: day, waist: nil, neck: 38, hip: nil)
+    try body.measure(date: day, waist: .clear, neck: .set(38), hip: .clear)
 
     // Another device wrote the waist later and the neck earlier than this queued neck.
     var answer = Fixture.response()
@@ -300,7 +328,7 @@ final class MovingClock: Sendable {
 
   @Test func aQueuedIntakeMergesByTime() throws {
     clock.move(minutes: 5)
-    try body.intake(date: day, kcal: 2100, protein: nil)
+    try body.intake(date: day, kcal: .set(2100), protein: .clear)
 
     var older = Fixture.response()
     older.intake = [
