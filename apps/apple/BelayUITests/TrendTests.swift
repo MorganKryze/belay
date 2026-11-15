@@ -227,12 +227,4 @@ final class TrendTests: XCTestCase {
             XCTAssertGreaterThanOrEqual(item.frame.height, 20, "\(id) is readable")
         }
     }
-
-    func testZDump() {
-        let app = trend()
-        app.swipeUp(); app.swipeUp()
-        print("DUMP-START"); print(app.debugDescription); print("DUMP-END")
-        app.swipeUp(); app.swipeUp()
-        print("DUMP2-START"); print(app.debugDescription); print("DUMP2-END")
-    }
 }

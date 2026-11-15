@@ -1,6 +1,7 @@
 import BelayCore
 import Charts
 import SwiftUI
+import UIKit
 
 /// Ta tendance: the trend card with creatine's band, the annotations and the legend over the
 /// curve, then the weeks and the annotations' list. The range opens how it is read.
@@ -94,16 +95,18 @@ struct WeightChart: View {
             line
             pickedRule
         }
-        .chartXSelection(value: $selected)
-        // A tap reads a day at once; a press then a drag moves along the curve, and the day read
-        // stays once the finger lifts. A plain swipe still scrolls the list.
-        .chartGesture { proxy in
-            LongPressGesture(minimumDuration: 0.2)
-                .sequenced(before: DragGesture(minimumDistance: 0))
-                .onChanged { value in
-                    if case .second(true, let drag?) = value { proxy.selectXValue(at: drag.location.x) }
+        // A tap reads the day under it; a press then a drag moves along the curve, and the day read
+        // stays once the finger lifts. UIKit's long press, as SwiftUI's own gestures here took the list's swipes.
+        .chartOverlay { proxy in
+            GeometryReader { geometry in
+                let pick = { (x: CGFloat) in
+                    guard let plot = proxy.plotFrame else { return }
+                    selected = proxy.value(atX: x - geometry[plot].origin.x, as: Date.self)
                 }
-                .exclusively(before: SpatialTapGesture().onEnded { proxy.selectXValue(at: $0.location.x) })
+                Rectangle().fill(.clear).contentShape(.rect)
+                    .onTapGesture { pick($0.x) }
+                    .gesture(PressThenDrag { pick($0.x) })
+            }
         }
         .sensoryFeedback(.selection, trigger: picked?.date)
         .onChange(of: span) { selected = nil }
@@ -310,5 +313,21 @@ struct ChartLegend: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(item.label)
         .accessibilityIdentifier(item.id)
+    }
+}
+
+/// A press held a quarter of a second, then followed as it moves: UIKit's long press, which gives
+/// way to the list's scroll when the finger moves first.
+private struct PressThenDrag: UIGestureRecognizerRepresentable {
+    let moved: @MainActor (CGPoint) -> Void
+
+    func makeUIGestureRecognizer(context: Context) -> UILongPressGestureRecognizer {
+        let press = UILongPressGestureRecognizer()
+        press.minimumPressDuration = 0.25
+        return press
+    }
+
+    func handleUIGestureRecognizerAction(_ recognizer: UILongPressGestureRecognizer, context: Context) {
+        if recognizer.state == .began || recognizer.state == .changed { moved(context.converter.localLocation) }
     }
 }
