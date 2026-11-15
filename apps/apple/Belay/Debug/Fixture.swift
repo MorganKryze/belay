@@ -35,8 +35,8 @@ import Synchronization
 /// weigh-ins, the last yesterday at 79,8 kg; `bodyFirst` with none; `healthCard` empty;
 /// `weighedFromHealth` with today's weigh-in filled by the Health import; `measures`, `intake` and
 /// `supplements` as `bodyUsual` with five weeks of waists, a full profile, and creatine ticked
-/// every day of the last 23; `trend` as `supplements` with a « Semaine allégée » from 19 days back
-/// and a « Note · voyage » 9 days back.
+/// every day of the last 9; `trend` as `supplements` with creatine ticked every day of the last
+/// 23, a « Semaine allégée » from 19 days back and a « Note · voyage » 9 days back.
 enum Fixture {
     nonisolated fileprivate static let origin = "https://belay.example"
     nonisolated fileprivate static let userId = "fixture"
@@ -254,7 +254,11 @@ enum Fixture {
             try serve(answer, to: store, active: true)
             try actions.take(supplementId: creatineId, date: today, taken: true)
             if mode == "supplements" || mode == "trend" {
-                for back in 1..<23 { try actions.take(supplementId: creatineId, date: addDays(today, -back), taken: true) }
+                // Ta tendance's band needs a course begun before it, Compléments one still in its
+                // first 14 days, which « depuis n jours » counts.
+                for back in 1..<(mode == "trend" ? 23 : 9) {
+                    try actions.take(supplementId: creatineId, date: addDays(today, -back), taken: true)
+                }
             }
             if mode == "trend" {
                 try actions.annotate(AnnotationInput(id: deloadId, date: addDays(today, -19), type: .deload, label: nil))

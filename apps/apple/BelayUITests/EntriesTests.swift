@@ -3,7 +3,7 @@ import XCTest
 /// Mensurations, Apports and Compléments, and their sheets, on the fixture's body modes:
 /// `measures` holds five waists a week apart from 86,1 cm down to 84,5 cm three days ago, the
 /// oldest with a neck and hips; `intake` holds today's 1 850 kcal and 128 g with a full profile;
-/// `supplements` has creatine ticked every day of the last 23 and Vitamine D not yet; `bodyUsual`
+/// `supplements` has creatine ticked every day of the last 9 and Vitamine D not yet; `bodyUsual`
 /// has today's intake and no profile; `bodyEarly` has no supplement.
 @MainActor
 final class EntriesTests: XCTestCase {
@@ -27,6 +27,10 @@ final class EntriesTests: XCTestCase {
         XCTAssertTrue(button.waitForExistence(timeout: 10))
         button.tap()
         XCTAssertTrue(app.swipeUpUntil(element(app, row), swipes: 10), "\(row) can be reached")
+        // At the largest sizes the row may sit under the tab bar, which takes the tap: once more,
+        // a swipe higher.
+        let bar = app.tabBars.firstMatch.frame
+        if element(app, row).frame.maxY > bar.minY { app.swipeUp(velocity: .slow) }
         element(app, row).tap()
         XCTAssertTrue(app.navigationBars[title].waitForExistence(timeout: 5), "\(row) opens \(title)")
         return app
@@ -162,7 +166,7 @@ final class EntriesTests: XCTestCase {
     func testSupplementTickWritesLog() {
         let app = open("Compléments", row: "today.supplements", fixture: "supplements")
         let creatine = element(app, "supplement-0")
-        XCTAssertEqual(creatine.label, "Créatine, pris · depuis 23 jours")
+        XCTAssertEqual(creatine.label, "Créatine, pris · depuis 9 jours")
         let vitamin = element(app, "supplement-1")
         XCTAssertEqual(vitamin.label, "Vitamine D, pas encore pris")
         XCTAssertTrue(app.staticTexts["Belay note ce que tu prends, sans conseil de dose."].exists)
@@ -244,8 +248,9 @@ final class EntriesTests: XCTestCase {
             XCTAssertGreaterThan(large, 30, "\(title) opens large")
             app.swipeUp()
             app.swipeUp()
+            // A short list does not scroll and keeps its large title; a compact one would be smaller.
             let compact = app.navigationBars.staticTexts.matching(NSPredicate(format: "label == %@", title))
-                .allElementsBoundByIndex.contains { $0.isHittable && $0.frame.width > 2 }
+                .allElementsBoundByIndex.contains { $0.isHittable && $0.frame.width > 2 && $0.frame.height < large - 5 }
             XCTAssertFalse(compact, "\(title): no compact title once scrolled")
         }
     }
