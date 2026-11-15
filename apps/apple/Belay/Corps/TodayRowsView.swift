@@ -17,13 +17,15 @@ struct TodayRowsView: View {
 
     var body: some View {
         Section {
-            row("today.weighIn", .body, "scalemass.fill", String(localized: "Pesée", table: "Corps"), weighIn, logged: rows.weighIn.kg != nil) {
+            row("today.weighIn", .body, "scalemass.fill", String(localized: "Pesée", table: "Corps"), weighIn, logged: rows.weighIn.kg != nil,
+                done: rows.weighIn.kg == nil ? nil : String(localized: "saisie", table: "Corps")) {
                 open(.weighIn)
             }
             row("today.measures", .body, "ruler.fill", String(localized: "Mensurations", table: "Corps"), measures, logged: rows.measures != nil) {
                 open(.screen(.measures))
             }
-            row("today.intake", .intake, "fork.knife", String(localized: "Apports", table: "Corps"), intake, logged: rows.intake.kcal != nil) {
+            row("today.intake", .intake, "fork.knife", String(localized: "Apports", table: "Corps"), intake, logged: rows.intake.kcal != nil,
+                done: rows.intake.kcal == nil && rows.intake.proteinG == nil ? nil : String(localized: "saisis", table: "Corps")) {
                 open(.screen(.intake))
             }
             row("today.supplements", .intake, "pills.fill", String(localized: "Compléments", table: "Corps"), supplements, logged: rows.supplements.taken > 0) {
@@ -38,12 +40,13 @@ struct TodayRowsView: View {
 
     private func row(
         _ id: String, _ domain: Domain, _ symbol: String, _ title: String, _ detail: String,
-        logged: Bool, action: @escaping () -> Void
+        logged: Bool, done: String? = nil, action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
-            TodayRow(domain: domain, symbol: symbol, title: title, detail: detail, logged: logged)
+            TodayRow(domain: domain, symbol: symbol, title: title, detail: detail, logged: logged, done: done != nil)
         }
         .buttonStyle(.plain)
+        .accessibilityValue(done ?? "")
         .accessibilityIdentifier(id)
     }
 
@@ -88,6 +91,8 @@ private struct TodayRow: View {
     let title: String
     let detail: String
     let logged: Bool
+    /// The day's entry is in: a ✓ before its value, said by the row's value.
+    let done: Bool
     @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
@@ -97,11 +102,19 @@ private struct TodayRow: View {
             DomainTile(domain: domain, symbol: symbol)
             VStack(alignment: .leading, spacing: 1) {
                 Text(title).font(.body.weight(.medium)).foregroundStyle(.ink)
-                Text(detail)
-                    .font(.subheadline)
-                    .foregroundStyle(logged ? .ink : .muted)
-                    .monospacedDigit()
-                    .fixedSize(horizontal: false, vertical: true)
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    if done {
+                        Image(systemName: "checkmark")
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(.ink)
+                            .accessibilityHidden(true)
+                    }
+                    Text(detail)
+                        .font(.subheadline)
+                        .foregroundStyle(logged ? .ink : .muted)
+                        .monospacedDigit()
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
             Spacer(minLength: 0)
         }

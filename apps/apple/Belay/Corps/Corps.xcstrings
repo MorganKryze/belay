@@ -592,6 +592,26 @@
         }
       }
     },
+    "saisie": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "logged"
+          }
+        }
+      }
+    },
+    "saisis": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "logged"
+          }
+        }
+      }
+    },
     "taille %@ · %@": {
       "localizations": {
         "en": {

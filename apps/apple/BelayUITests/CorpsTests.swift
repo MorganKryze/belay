@@ -135,6 +135,10 @@ final class CorpsTests: XCTestCase {
         XCTAssertEqual(element(app, "today.measures").label, "Mensurations, taille 84,5\u{202F}cm · \(frenchWeekday(-3))")
         XCTAssertEqual(element(app, "today.intake").label, "Apports, 1\u{202F}850\u{202F}kcal · 128\u{202F}g de protéines")
         XCTAssertEqual(element(app, "today.supplements").label, "Compléments, 1 sur 2")
+        // The day's weigh-in and intake done carry a ✓, said « saisie » and « saisis ».
+        XCTAssertEqual(weighIn.value as? String, "saisie")
+        XCTAssertEqual(element(app, "today.intake").value as? String, "saisis")
+        XCTAssertEqual(element(app, "today.measures").value as? String ?? "", "")
 
         weighIn.tap()
         XCTAssertTrue(app.sheetTitle("Pesée").waitForExistence(timeout: 5), "Pesée opens its sheet")
@@ -239,6 +243,7 @@ final class CorpsTests: XCTestCase {
         let app = corps("weighedFromHealth")
         XCTAssertTrue(app.swipeUpUntil(element(app, "today.weighIn")))
         XCTAssertEqual(element(app, "today.weighIn").label, "Pesée, 79,9\u{202F}kg · depuis Santé")
+        XCTAssertEqual(element(app, "today.weighIn").value as? String, "saisie", "with its ✓")
     }
 
     /// CO13: at AX3 the average holds one line, the span and the rows stay whole.

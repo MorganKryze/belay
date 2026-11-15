@@ -410,6 +410,8 @@ final class AccueilTests: XCTestCase {
         XCTAssertTrue(app.swipeUpUntil(element(app, "today.supplements")))
         XCTAssertEqual(weighIn.label, "Pesée, 79,9\u{202F}kg")
         XCTAssertEqual(element(app, "today.supplements").label, "Compléments, 1 sur 2")
+        XCTAssertEqual(weighIn.value as? String, "saisie", "the weigh-in done carries its ✓")
+        XCTAssertEqual(element(app, "today.intake").value as? String, "saisis", "the intake done carries its ✓")
         XCTAssertTrue(element(app, "today.measures").exists)
         XCTAssertTrue(element(app, "today.intake").exists)
         weighIn.tap()
