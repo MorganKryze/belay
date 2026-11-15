@@ -184,7 +184,7 @@ private struct ActiveProgramRow: View {
         let line = "\(program.title) · \(String(localized: "\(program.sessions) séances", table: "Seances"))"
         Button(action: action) {
             TiledRow(
-                tile: SymbolTile(domain: .session, symbol: "list.bullet.rectangle"),
+                tile: DomainTile(domain: .session, symbol: "list.bullet.rectangle", side: 36, corner: 10),
                 title: Text("Programme actif", tableName: "Seances"), line: Text(line)
             ) {
                 Image(systemName: "chevron.up.chevron.down")
@@ -208,7 +208,7 @@ private struct RhythmRow: View {
 
     var body: some View {
         TiledRow(
-            tile: SymbolTile(domain: .rest, symbol: "moon.zzz.fill"), title: Text("Rythme", tableName: "Seances"),
+            tile: DomainTile(domain: .rest, symbol: "moon.zzz.fill", side: 36, corner: 10), title: Text("Rythme", tableName: "Seances"),
             line: Text(words)
         ) {
             EmptyView()
@@ -275,21 +275,5 @@ private struct TiledRow<Tile: View, Trailing: View>: View {
             title.font(.body.weight(.medium)).foregroundStyle(.ink)
             line.font(.subheadline).foregroundStyle(.muted).fixedSize(horizontal: false, vertical: true)
         }
-    }
-}
-
-/// A row's symbol on its domain's tint, the size of a session's letter tile.
-private struct SymbolTile: View {
-    let domain: Domain
-    let symbol: String
-    @ScaledMetric(relativeTo: .body) private var side: CGFloat = 36
-
-    var body: some View {
-        Image(systemName: symbol)
-            .font(.body.weight(.semibold))
-            .foregroundStyle(domain.shade)
-            .frame(width: side, height: side)
-            .background(domain.tint, in: .rect(cornerRadius: 10))
-            .accessibilityHidden(true)
     }
 }

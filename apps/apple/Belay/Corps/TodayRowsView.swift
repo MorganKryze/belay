@@ -111,23 +111,6 @@ private struct TodayRow: View {
     }
 }
 
-/// A domain's symbol on its tint, the rows' tile. It says where an entry belongs, never that it
-/// can be tapped, so it stays silent.
-struct DomainTile: View {
-    let domain: Domain
-    let symbol: String
-    @ScaledMetric(relativeTo: .body) private var side: CGFloat = 32
-
-    var body: some View {
-        Image(systemName: symbol)
-            .font(.body.weight(.semibold))
-            .foregroundStyle(domain.shade)
-            .frame(width: side, height: side)
-            .background(domain.tint, in: .rect(cornerRadius: 8))
-            .accessibilityHidden(true)
-    }
-}
-
 /// The body's figures in the person's language: tenths of kg and cm, whole kcal and g.
 enum BodyText {
     /// « 79,9 », the tenth always shown.
