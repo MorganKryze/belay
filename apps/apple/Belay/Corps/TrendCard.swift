@@ -69,7 +69,7 @@ struct TrendCard: View {
     /// « perte 0,7 %/sem la semaine dernière », or « prise » for a gain, in ink, never judged.
     @ViewBuilder private func change(_ trend: TrendCardState) -> some View {
         if let loss = trend.lossPct {
-            let figure = "\(BodyText.number(abs(loss)))\u{202F}%/sem"
+            let figure = "\(BodyText.number(abs(loss)))\u{202F}%" + String(localized: "/sem", table: "Corps")
             let words =
                 loss < 0
                 ? String(localized: "prise \(figure) la semaine dernière", table: "Corps")
@@ -93,8 +93,8 @@ struct TrendCard: View {
                 .accessibilityElement(children: .combine)
                 .accessibilityIdentifier("trend-range")
         case false?:
-            let bounds = "\(BodyText.percent(trend.range.minPct)) à \(BodyText.percent(trend.range.maxPct))\u{202F}%"
-            Text(String(localized: "hors de ta fourchette, \(bounds)", table: "Corps"))
+            let low = BodyText.percent(trend.range.minPct), high = "\(BodyText.percent(trend.range.maxPct))\u{202F}%"
+            Text(String(localized: "hors de ta fourchette, \(low) à \(high)", table: "Corps"))
                 .font(.footnote.weight(.semibold))
                 .foregroundStyle(.muted)
                 .monospacedDigit()

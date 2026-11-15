@@ -225,6 +225,10 @@ func frenchTypographyFaults(_ text: String) -> [String] {
   @Test func countsReadRightAtZeroOneAndTwo() throws {
     // Key, then French and English at 0, 1 and 2; a key with two counts gets the same at each.
     let expected: [String: (fr: [String], en: [String])] = [
+      "Corps.xcstrings: Encore %lld pesées cette semaine": (
+        ["Encore 0 pesée cette semaine", "Encore 1 pesée cette semaine", "Encore 2 pesées cette semaine"],
+        ["0 more weigh-ins this week", "1 more weigh-in this week", "2 more weigh-ins this week"]
+      ),
       "Accueil.xcstrings: %lld séances": (
         ["0 séance", "1 séance", "2 séances"], ["0 sessions", "1 session", "2 sessions"]
       ),
@@ -255,7 +259,7 @@ func frenchTypographyFaults(_ text: String) -> [String] {
     ]
     var counts: Set<String> = []
     for url in try catalogs()
-    where ["Accueil.xcstrings", "Seances.xcstrings", "SessionTools.xcstrings"]
+    where ["Accueil.xcstrings", "Corps.xcstrings", "Seances.xcstrings", "SessionTools.xcstrings"]
       .contains(url.lastPathComponent)
     {
       for entry in try entries(of: url) where !entry.french.plurals.isEmpty {
