@@ -5,13 +5,16 @@
 // fixed days, in several time zones), the session's tools (loading a bar, warm-ups, editing the
 // day's plan, pausing), which workouts Health should hold, the body rules (weigh-in averages and
 // weeks, the loss range, measures, intake, creatine, the energy and protein tools), and the
-// starting program the native core ships. With
+// starting program and the science catalogue the native core ships. With
 // --check, fails if a committed file is not what the rules give today, so a rule changed here
 // cannot drift from the Swift port.
 import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { isDeepStrictEqual } from "node:util";
 import { ANNOTATION_LABEL_MAX, isAnnotationLabel } from "../packages/shared/src/body/annotations";
+import { identifierHref, identifierLabel, shortAuthors } from "../packages/shared/src/science/render";
+import { sourceById } from "../packages/shared/src/science/sources";
+import { SCIENCE_IDS, TOOL_SCIENCE } from "../packages/shared/src/science/tools";
 import { addDays, isoWeekStart, toISODate } from "../packages/shared/src/body/dates";
 import {
   INTAKE_BOUNDS,
@@ -3445,6 +3448,35 @@ function bodyVectors() {
   };
 }
 
+// The science catalogue as the phone shows it in « Comment c'est calculé »: each entry's words in
+// French and English, its sources cited as the web cites them, with their resolvable links.
+function scienceCatalogue() {
+  return Object.fromEntries(
+    SCIENCE_IDS.map((id) => {
+      const science = TOOL_SCIENCE[id];
+      return [
+        id,
+        {
+          label: science.label,
+          sources: science.sourceIds.map((sid) => {
+            const source = sourceById(sid);
+            return {
+              cite: `${shortAuthors(source)} ${source.year}`,
+              title: source.title,
+              venue: source.venue,
+              links: source.identifier.map((i) => ({
+                label: identifierLabel(i),
+                url: identifierHref(i),
+              })),
+            };
+          }),
+          content: science.content,
+        },
+      ];
+    }),
+  );
+}
+
 const rules = rulesVectors();
 const tools = toolVectors();
 const files = [
@@ -3463,6 +3495,7 @@ const files = [
   },
   { path: core("Tests/BelayCoreTests/Vectors/body.json"), data: bodyVectors() },
   { path: core("Sources/BelayCore/Resources/seed.json"), data: SEED },
+  { path: core("Sources/BelayCore/Resources/science.json"), data: scienceCatalogue() },
 ].map(({ path, data }) => ({ path, expected: `${JSON.stringify(data, null, 2)}\n` }));
 
 if (process.argv.includes("--check")) {
