@@ -239,20 +239,7 @@ final class TrainingModel {
                 Self.log.error("store not followed: \(AccountStore.logLabel(error), privacy: .public)")
             }
         }
-        midnight = Task { [weak self, now, timeZone] in
-            while !Task.isCancelled {
-                var calendar = Calendar(identifier: .gregorian)
-                calendar.timeZone = timeZone
-                let at = now()
-                let next = calendar.nextDate(
-                    after: at, matching: DateComponents(hour: 0, minute: 0, second: 0), matchingPolicy: .nextTime)
-                // A second past midnight, so the day read is surely the new one.
-                let wait = (next ?? at.addingTimeInterval(3_600)).timeIntervalSince(at) + 1
-                try? await Task.sleep(for: .seconds(wait))
-                guard !Task.isCancelled else { return }
-                self?.refresh()
-            }
-        }
+        midnight = everyMidnight(now: now, timeZone: timeZone) { [weak self] in self?.refresh() }
     }
 
     isolated deinit {
