@@ -2,9 +2,11 @@ import XCTest
 
 extension XCUIApplication {
     /// The app launched on the fixture mode `fixture`, in French unless `english`; `now` sets its
-    /// clock, a local `yyyy-MM-ddTHH:mm:ss`.
+    /// clock, a local `yyyy-MM-ddTHH:mm:ss`; `health` stands in for Health's answer, `allowed` or
+    /// `refused`.
     static func fixture(
-        _ fixture: String, largestText: Bool = false, now: String? = nil, english: Bool = false
+        _ fixture: String, largestText: Bool = false, now: String? = nil, english: Bool = false,
+        health: String? = nil
     ) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments =
@@ -12,6 +14,7 @@ extension XCUIApplication {
             ? ["-AppleLanguages", "(en)", "-AppleLocale", "en_US", "-BelayFixture", fixture]
             : ["-AppleLanguages", "(fr)", "-AppleLocale", "fr_FR", "-BelayFixture", fixture]
         if let now { app.launchArguments += ["-BelayNow", now] }
+        if let health { app.launchArguments += ["-BelayHealth", health] }
         if largestText {
             app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXL"]
         }

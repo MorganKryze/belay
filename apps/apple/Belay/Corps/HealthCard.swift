@@ -1,8 +1,10 @@
 import SwiftUI
 
 /// « Tes pesées de Santé »: the import offered once, on Corps's first opening on a phone with
-/// Health. Either answer puts it away for good; Réglages keeps the switch.
+/// Health. Either answer puts it away for good; Réglages keeps the switch. Santé refused, the card
+/// stays and says where to allow it, so the button can try again.
 struct HealthCard: View {
+    let refused: Bool
     let accept: () -> Void
     let decline: () -> Void
 
@@ -30,6 +32,16 @@ struct HealthCard: View {
                 .font(.subheadline)
                 .foregroundStyle(.muted)
                 .fixedSize(horizontal: false, vertical: true)
+                if refused {
+                    // Réglages's own sentence for the same refusal.
+                    Text(
+                        "Santé n’autorise pas Belay à y écrire tes séances. Autorise-le dans l’app Santé, puis réessaie.",
+                        tableName: "Health"
+                    )
+                    .font(.subheadline)
+                    .foregroundStyle(.ink)
+                    .fixedSize(horizontal: false, vertical: true)
+                }
                 PrimaryButton(title: "Importer les pesées", tableName: "Corps", action: accept)
                 Button(action: decline) {
                     Text("Pas maintenant", tableName: "Corps")

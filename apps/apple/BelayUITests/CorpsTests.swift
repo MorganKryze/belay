@@ -10,9 +10,10 @@ import XCTest
 final class CorpsTests: XCTestCase {
     /// Launches on `fixture` and opens the Corps tab.
     private func corps(
-        _ fixture: String, largestText: Bool = false, now: String? = nil, english: Bool = false
+        _ fixture: String, largestText: Bool = false, now: String? = nil, english: Bool = false,
+        health: String? = nil
     ) -> XCUIApplication {
-        let app = XCUIApplication.fixture(fixture, largestText: largestText, now: now, english: english)
+        let app = XCUIApplication.fixture(fixture, largestText: largestText, now: now, english: english, health: health)
         let name = english ? "Body" : "Corps"
         let tab = app.tabBars.firstMatch.buttons[name]
         XCTAssertTrue(tab.waitForExistence(timeout: 10))
@@ -225,19 +226,53 @@ final class CorpsTests: XCTestCase {
         XCTAssertFalse(again.staticTexts["Tes pesées de Santé"].exists, "never again")
     }
 
-    /// CO17: « Importer les pesées » asks iOS, then puts the card away for good.
-    func testImportAnswersTheCard() {
-        let app = corps("healthCard")
+    /// The Santé section of Réglages, reached from Accueil's avatar.
+    private func reglages(_ app: XCUIApplication) -> (health: XCUIElement, imports: XCUIElement) {
+        app.tabBars.firstMatch.buttons["Accueil"].tap()
+        let settings = app.buttons["settings"]
+        XCTAssertTrue(settings.waitForExistence(timeout: 5))
+        settings.tap()
+        let health = app.switches["health-switch"]
+        XCTAssertTrue(health.waitForExistence(timeout: 5))
+        return (health, app.switches["health-import-switch"])
+    }
+
+    /// CO17, CO18: with Santé off, « Importer les pesées » turns Santé and its import on once iOS
+    /// lets Belay in, and the import brings Health's weigh-in of today. The card then leaves for
+    /// good. Health's answer is the fixture's: the system's own sheet is proved on the phone.
+    func testImportTurnsSanteAndItsImportOn() {
+        let app = corps("healthCard", health: "allowed")
         let accept = app.buttons["Importer les pesées"]
         XCTAssertTrue(accept.waitForExistence(timeout: 5))
         accept.tap()
-        // Health's own sheet asks on a simulator that never answered; one that did shows nothing.
-        let deny = app.buttons["Ne pas autoriser"].firstMatch
-        if deny.waitForExistence(timeout: 5) { deny.tap() }
-        XCTAssertTrue(app.staticTexts["Tes pesées de Santé"].waitFor(NSPredicate(format: "exists == false"), timeout: 5), "the card leaves")
+        XCTAssertTrue(
+            app.staticTexts["Tes pesées de Santé"].waitFor(NSPredicate(format: "exists == false"), timeout: 5), "the card leaves")
+        XCTAssertTrue(app.swipeUpUntil(element(app, "today.weighIn")))
+        XCTAssertTrue(
+            element(app, "today.weighIn").comesToRead("Pesée, 79,9\u{202F}kg · depuis Santé"), "Health's weigh-in came in")
+        let switches = reglages(app)
+        XCTAssertEqual(switches.health.value as? String, "1", "Santé is on")
+        XCTAssertEqual(switches.imports.value as? String, "1", "the import is on")
         let again = corps("keep")
-        XCTAssertTrue(again.staticTexts["Pas encore de pesée"].waitForExistence(timeout: 5))
-        XCTAssertFalse(again.staticTexts["Tes pesées de Santé"].exists, "never again")
+        XCTAssertFalse(again.staticTexts["Tes pesées de Santé"].waitForExistence(timeout: 3), "never again")
+    }
+
+    /// CO17, R24: iOS refused, nothing is imported, so the card stays, says why and can be tapped again.
+    func testRefusedImportKeepsTheCard() {
+        let app = corps("healthCard", health: "refused")
+        let accept = app.buttons["Importer les pesées"]
+        XCTAssertTrue(accept.waitForExistence(timeout: 5))
+        accept.tap()
+        XCTAssertTrue(
+            app.staticTexts[
+                "Santé n’autorise pas Belay à y écrire tes séances. Autorise-le dans l’app Santé, puis réessaie."
+            ].waitForExistence(timeout: 5), "the card says why")
+        XCTAssertTrue(app.staticTexts["Tes pesées de Santé"].exists, "the card stays")
+        XCTAssertTrue(accept.isHittable, "to try again")
+        XCTAssertTrue(app.staticTexts["Pas encore de pesée"].exists, "nothing imported")
+        let switches = reglages(app)
+        XCTAssertEqual(switches.health.value as? String, "0", "Santé stays off")
+        XCTAssertEqual(switches.imports.value as? String, "0", "the import stays off")
     }
 
     /// In English the percent sign follows the figure with no space.

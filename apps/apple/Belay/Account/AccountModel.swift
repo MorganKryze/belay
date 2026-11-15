@@ -188,18 +188,32 @@ final class AccountModel {
         return true
     }
 
-    /// The import's switch turned on: iOS is asked to let Belay read body mass, a sheet it shows
-    /// only for a type never asked, and never says whether it did. The import then runs after the
-    /// sync this starts. Whether the switch was kept.
+    /// The import's switch turned on: the import reads through Santé's switch, so Santé goes on
+    /// first when it is off, as its own switch would. iOS is asked to let Belay read body mass, a
+    /// sheet it shows only for a type never asked, and never says whether it did. The import then
+    /// runs after the sync this starts. Whether the import is on.
     func turnHealthImportOn() async -> Bool {
         guard let store else { return false }
+        let healthOn: Bool
         do {
-            try await health.authorize()
+            healthOn = try store.healthSettings().on
         } catch {
-            Self.log.error("health not asked: \(AccountStore.logLabel(error), privacy: .public)")
+            Self.log.error("health switch not read: \(AccountStore.logLabel(error), privacy: .public)")
+            return false
+        }
+        if !healthOn {
+            // Santé's turn-on asks iOS with the full request, body mass included.
+            guard await turnHealthOn() else { return false }
+        } else {
+            do {
+                try await health.authorize()
+            } catch {
+                Self.log.error("health not asked: \(AccountStore.logLabel(error), privacy: .public)")
+            }
         }
         do {
             try store.setHealthImportOn(true)
+            guard try store.healthSettings().importOn else { return false }
         } catch {
             Self.log.error("health import switch not kept: \(AccountStore.logLabel(error), privacy: .public)")
             return false

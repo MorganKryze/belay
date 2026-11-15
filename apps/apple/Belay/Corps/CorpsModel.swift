@@ -26,6 +26,8 @@ final class CorpsModel {
     private(set) var supplements: [SupplementToday] = []
     /// Whether the import's card shows: Health is on this phone and the card was never answered.
     private(set) var offersImport = false
+    /// The card's last « Importer les pesées » found Santé refused: the card stays and says why.
+    private(set) var importRefused = false
     /// Corps opens on M (R11).
     var span: TrendSpan = .month {
         didSet { series = trendSeries(body, span: span, now: now(), timeZone: timeZone) }
@@ -175,10 +177,12 @@ final class CorpsModel {
         write("annotation not removed") { try actions.removeAnnotation(id: id) }
     }
 
-    /// « Importer les pesées »: the import's switch, asked of iOS now; the card is answered either way.
+    /// « Importer les pesées »: Santé and its import turned on, iOS asked now. The import's switch
+    /// answers the card, so it leaves once the import is on; refused, it stays and says why.
     func importWeighIns() async {
-        _ = await turnImportOn()
-        answerImport()
+        let on = await turnImportOn()
+        importRefused = !on
+        if on { refresh() }
     }
 
     /// « Pas maintenant »: the card never shows again; Réglages keeps the switch.

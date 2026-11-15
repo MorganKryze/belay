@@ -14,7 +14,9 @@ struct CorpsView: View {
         @Bindable var corps = corps
         List {
             if corps.offersImport {
-                HealthCard(accept: { Task { await corps.importWeighIns() } }, decline: corps.answerImport)
+                HealthCard(
+                    refused: corps.importRefused, accept: { Task { await corps.importWeighIns() } },
+                    decline: corps.answerImport)
             }
             Section {
                 TrendCard(state: corps.state, series: corps.series, place: .corps, span: $corps.span) { weighing = true }

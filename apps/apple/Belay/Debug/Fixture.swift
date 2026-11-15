@@ -18,7 +18,10 @@ import Synchronization
 /// has a warm-up; `paused` paused at once; `lockLogged` with the first work set logged from the lock
 /// screen, its rest running; `workSet` with the warm-ups logged; `full` as `workSet` with the plan
 /// grown to the most slots it holds. `-BelayReduceMotion YES` forces Reduce Motion on the session's
-/// cover, `-BelayVoiceOver YES` makes it behave as under VoiceOver.
+/// cover, `-BelayVoiceOver YES` makes it behave as under VoiceOver. `-BelayHealth allowed` stands
+/// in for a Health that lets Belay in and holds a weigh-in of this morning at 79,9 kg, and makes
+/// the sync land an empty answer, after which the import runs; `-BelayHealth refused` for one that
+/// lets Belay write nothing. Without it the app asks the simulator's own Health.
 ///
 /// The day's modes, each on the clock `-BelayNow yyyy-MM-ddTHH:mm:ss` sets (local time) or the
 /// phone's: `doneToday` with session A kept today at effort 4; `fixedWeek` on a fixed week with
@@ -96,9 +99,15 @@ enum Fixture {
         } catch {
             preconditionFailure("the fixture did not set up: \(error)")
         }
+        let health = UserDefaults.standard.string(forKey: "BelayHealth")
+        let client = FixtureClient(refusesSync: mode == "expired", answersSync: health == "allowed")
+        guard let health else {
+            return AccountModel(secrets: secrets, http: client, sheet: FixtureSheet(), defaults: defaults, storeFolder: folder)
+        }
+        guard health == "allowed" || health == "refused" else { preconditionFailure("-BelayHealth does not read: \(health)") }
         return AccountModel(
-            secrets: secrets, http: FixtureClient(refusesSync: mode == "expired"), sheet: FixtureSheet(),
-            defaults: defaults, storeFolder: folder)
+            secrets: secrets, http: client, sheet: FixtureSheet(), defaults: defaults, storeFolder: folder,
+            health: FixtureHealth(allowed: health == "allowed"))
     }
 
     private static let openModes: Set = [
@@ -619,11 +628,12 @@ private nonisolated final class FixtureSecrets: SecretStore {
     }
 }
 
-/// An instance whose sync is never reachable, as on a phone with no network, or refuses the token
-/// when `refusesSync`, but that still answers a sign-in, so a test can sign out and back in as the
-/// same person.
+/// An instance whose sync is never reachable, as on a phone with no network, refuses the token
+/// when `refusesSync`, or lands with nothing new when `answersSync`, but that still answers a
+/// sign-in, so a test can sign out and back in as the same person.
 private nonisolated struct FixtureClient: HTTPClient {
     let refusesSync: Bool
+    let answersSync: Bool
 
     func send(_ request: URLRequest) async throws -> (Data, HTTPURLResponse) {
         let answer: String
@@ -632,6 +642,8 @@ private nonisolated struct FixtureClient: HTTPClient {
         case "/api/sync" where refusesSync:
             answer = "{}"
             status = 401
+        case "/api/sync" where answersSync:
+            answer = #"{"cursor":"fixture","workouts":[],"sets":[],"activities":[],"rejected":[],"hasMore":false}"#
         case "/api/instance": answer = #"{"app":"belay","api":1,"origin":"\#(Fixture.origin)"}"#
         case "/auth/native/token": answer = #"{"token":"fixture-token"}"#
         case "/api/me": answer = #"{"id":"\#(Fixture.userId)","displayName":"Ada"}"#
@@ -642,6 +654,43 @@ private nonisolated struct FixtureClient: HTTPClient {
               let response = HTTPURLResponse(url: url, statusCode: status, httpVersion: nil, headerFields: nil)
         else { throw URLError(.badURL) }
         return (Data(answer.utf8), response)
+    }
+}
+
+/// Health as `-BelayHealth` says it answers: allowed, it takes every write and holds one weigh-in
+/// from a scale, this morning at 79,9 kg; refused, it lets Belay write nothing and reads as empty,
+/// as iOS answers a refused read.
+private nonisolated struct FixtureHealth: HealthWriting {
+    let allowed: Bool
+
+    func access() async -> HealthAccess {
+        let permission: HealthPermission = allowed ? .allowed : .denied
+        return HealthAccess(available: true, workouts: permission, effort: permission, weighIns: permission)
+    }
+
+    func authorize() async throws {}
+
+    func save(_ w: HealthObject, syncId: String) async -> HealthOutcome { allowed ? .written : .denied }
+
+    func delete(syncId: String) async -> HealthOutcome { allowed ? .removed : .denied }
+
+    func overlaps(startedAt: Int64, endedAt: Int64) async -> Bool { false }
+
+    func relateEffort(score: Int, syncId: String, effortSyncId: String) async -> HealthOutcome {
+        allowed ? .written : .denied
+    }
+
+    func saveWeighIn(kg: Double, at: Int64, syncId: String, version: Int64) async -> HealthOutcome {
+        allowed ? .written : .denied
+    }
+
+    func deleteWeighIn(syncId: String) async -> HealthOutcome { allowed ? .removed : .denied }
+
+    func readWeighIns(anchor: String?, since: Int64) async -> (samples: [HealthSample], anchor: String)? {
+        let now = Fixture.now
+        let morning = Calendar.current.startOfDay(for: now).addingTimeInterval(7 * 3_600)
+        let sample = HealthSample(startedAt: Int64(min(morning, now).timeIntervalSince1970 * 1_000), kg: 79.9)
+        return (allowed && anchor == nil ? [sample] : [], "fixture-health")
     }
 }
 
