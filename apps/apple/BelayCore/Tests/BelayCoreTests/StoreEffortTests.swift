@@ -97,10 +97,13 @@ import Testing
       try old.write { db in
         try db.execute(sql: "INSERT INTO meta (key, value) VALUES ('cursor', '7')")
       }
+      // This step keeps the cursor; only v4 restarts the pull.
+      try Schema.migrator.migrate(old, upTo: "v2")
+      #expect(try old.read(AccountStore.cursor) == "7")
       try old.close()
     }
     let store = try AccountStore.open(userId: "u", origin: origin, in: folder)
-    #expect(try store.cursor() == "7")
+    #expect(try store.cursor() == "0")
     try store.giveEffort(workoutId: workoutId, floor: 1)
     #expect(try store.effort(workoutId: workoutId)?.floor == 1)
   }

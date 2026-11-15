@@ -30,7 +30,6 @@ export type HealthPlanInput = {
   weights: readonly WeightRow[]; // a null weight is a deleted day
   settings: HealthSettings;
   written: Readonly<Record<string, Written>>;
-  filled: Readonly<Record<string, unknown>>; // the days the import wrote
   allowed: { workouts: boolean; weighings: boolean };
   now: number;
   owner: string; // ownerOf the account's id
@@ -64,6 +63,18 @@ const healthTakesSpan = (s: { startedAt: number; endedAt: number }, now: number)
   isTime(s.startedAt, now) && isTime(s.endedAt, now) && s.endedAt - s.startedAt <= DAY;
 const healthTakesKg = (kg: number) => kg >= HEALTH_KG_MIN && kg <= HEALTH_KG_MAX;
 
+// The import stamps a weigh-in at the start of its day, and each earlier reading that replaces it
+// moves that stamp on by 1 ms (health-import.ts). Such a day is already in Health as the scale's
+// own sample, whichever device or app imported it; once the person changes it, its time moves off
+// the stamp and it goes to Health like a typed one. A second holds far more replacements than a
+// day has readings, and nobody types a weigh-in in the first second of a day.
+export const IMPORT_STAMP_MS = 1000;
+export function isImportStamp(r: WeightRow): boolean {
+  const [y, m, d] = r.date.split("-").map(Number) as [number, number, number];
+  const offset = Date.parse(r.at) - new Date(y, m - 1, d).getTime();
+  return offset >= 0 && offset < IMPORT_STAMP_MS;
+}
+
 // Always above the last version this phone wrote, even with a clock set back; otherwise the
 // latest time written on the row, which every device derives alike from the merged data.
 export const versionOf = (latest: number, last: number | undefined): number =>
@@ -79,7 +90,7 @@ export function sampleTime(date: string, now: number): number {
 // What Health is asked to do, in the order the rows come: every write and removal that would
 // bring it in line with the phone's data, the types it refuses left out.
 export function planHealth(input: HealthPlanInput): HealthObject[] {
-  const { settings, written, filled, allowed, owner } = input;
+  const { settings, written, allowed, owner } = input;
   if (!settings.on) return [];
   const everything = settings.history !== "no";
   const from = settings.turnedOnAt ?? Infinity;
@@ -126,8 +137,7 @@ export function planHealth(input: HealthPlanInput): HealthObject[] {
 
   if (allowed.weighings) {
     for (const r of input.weights) {
-      // A day the import filled is already in Health, as the scale's reading.
-      if (r.date in filled) continue;
+      if (isImportStamp(r)) continue;
       const key = weighingKey(r.date);
       const kept = written[key];
       const at = sampleTime(r.date, input.now);
@@ -177,7 +187,7 @@ export function afterOutcome(
 // What « Envoyer l’historique » would add: the finished sessions and weigh-ins from before the
 // setting went on that this phone has not written.
 export function historyCounts(
-  input: Pick<HealthPlanInput, "workouts" | "sets" | "weights" | "settings" | "written" | "filled">,
+  input: Pick<HealthPlanInput, "workouts" | "sets" | "weights" | "settings" | "written">,
 ): { sessions: number; weighings: number } {
   const plan = planHealth({
     ...input,

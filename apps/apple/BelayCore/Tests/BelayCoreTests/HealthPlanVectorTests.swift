@@ -45,7 +45,53 @@ private struct HealthFile: Decodable, Sendable {
     var testDescription: String { userId.isEmpty ? "empty" : userId }
   }
 
+  struct WeighInBounds: Decodable, Sendable {
+    let weighingKey: String
+    let historyDay: String
+    let importStampMs: Int64
+  }
+  struct WeighInCase: Decodable, Sendable, CustomTestStringConvertible {
+    let name: String
+    let turnedOnAt: Int64?
+    let written: [String: HealthWritten]
+    /// The file's weigh-ins unless the case brings its own.
+    let weights: [WeightRow]?
+    let allowed: Bool
+    let owner: String
+    let now: Int64
+    let result: [HealthObject]
+    var testDescription: String { name }
+  }
+  struct SampleTimeCase: Decodable, Sendable, CustomTestStringConvertible {
+    let date: String
+    let now: Int64
+    let result: Int64
+    var testDescription: String { "\(date) at \(now)" }
+  }
+  struct EarliestCase: Decodable, Sendable, CustomTestStringConvertible {
+    let name: String
+    let samples: [HealthSample]
+    let fromDay: String
+    let result: [String: HealthSample]
+    var testDescription: String { name }
+  }
+  struct ImportCase: Decodable, Sendable, CustomTestStringConvertible {
+    let name: String
+    let rows: [WeightRow]
+    let filled: [String: Filled]
+    let samples: [HealthSample]
+    let now: Int64
+    let result: [WeightChange]
+    var testDescription: String { name }
+  }
+
   let bounds: Bounds
+  let weighInBounds: WeighInBounds
+  let weights: [WeightRow]
+  let planWeighIns: [WeighInCase]
+  let sampleTime: [SampleTimeCase]
+  let earliestPerDay: [EarliestCase]
+  let importChoice: [ImportCase]
   let workouts: [WorkoutRow]
   let sets: [SetRow]
   let planHealth: [PlanCase]
@@ -59,6 +105,8 @@ private struct HealthFile: Decodable, Sendable {
     return try JSONDecoder().decode(HealthFile.self, from: Data(contentsOf: url))
   }
 }
+
+private let paris = TimeZone(identifier: "Europe/Paris")!
 
 struct HealthPlanVectorTests {
   @Test func bounds() throws {
@@ -75,6 +123,46 @@ struct HealthPlanVectorTests {
       workouts: file.workouts, sets: file.sets, on: c.on, turnedOnAt: c.turnedOnAt,
       written: c.written, allowed: c.allowed, now: c.now, owner: c.owner)
     #expect(BelayCore.planHealth(input) == c.result)
+  }
+
+  @Test func weighInBounds() throws {
+    let bounds = try HealthFile.load().weighInBounds
+    #expect(BelayCore.weighingKey("2026-10-10") == bounds.weighingKey)
+    #expect(toISODate(Date(ms: healthEarliest), timeZone: paris) == bounds.historyDay)
+    #expect(BelayCore.importStampMs == bounds.importStampMs)
+  }
+
+  @Test(arguments: try HealthFile.load().planWeighIns)
+  fileprivate func planWeighIns(_ c: HealthFile.WeighInCase) throws {
+    let file = try HealthFile.load()
+    let input = HealthPlanInput(
+      workouts: [], sets: [], on: true, turnedOnAt: c.turnedOnAt, written: c.written,
+      allowed: false, now: c.now, owner: c.owner, weights: c.weights ?? file.weights,
+      allowedWeighIns: c.allowed, timeZone: paris)
+    #expect(BelayCore.planHealth(input) == c.result)
+  }
+
+  @Test(arguments: try HealthFile.load().sampleTime)
+  fileprivate func sampleTime(_ c: HealthFile.SampleTimeCase) {
+    #expect(BelayCore.sampleTime(c.date, now: c.now, timeZone: paris) == c.result)
+  }
+
+  @Test(arguments: try HealthFile.load().earliestPerDay)
+  fileprivate func earliestPerDay(_ c: HealthFile.EarliestCase) {
+    #expect(BelayCore.earliestPerDay(c.samples, fromDay: c.fromDay, timeZone: paris) == c.result)
+  }
+
+  /// The days the web's import filled, from the same rows and readings: the import reads from
+  /// the history's floor.
+  @Test(arguments: try HealthFile.load().importChoice)
+  fileprivate func importChoice(_ c: HealthFile.ImportCase) throws {
+    let floor = try HealthFile.load().weighInBounds.historyDay
+    let now = Date(ms: c.now)
+    let choice = BelayCore.importChoice(
+      BelayCore.earliestPerDay(c.samples, fromDay: floor, timeZone: paris),
+      rows: Dictionary(uniqueKeysWithValues: c.rows.map { ($0.date, $0) }), filled: c.filled,
+      today: toISODate(now, timeZone: paris), now: now, timeZone: paris)
+    #expect(choice == c.result.sorted { $0.date < $1.date })
   }
 
   @Test(arguments: try HealthFile.load().finishedSpan)

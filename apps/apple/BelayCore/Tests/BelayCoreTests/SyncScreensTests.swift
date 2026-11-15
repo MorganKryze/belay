@@ -139,4 +139,42 @@ func within(_ limit: Duration, _ condition: () -> Bool) async throws -> Bool {
     }
     #expect(landed, "the screens after the pull: \(String(describing: screens.now))")
   }
+
+  /// Corps's and Accueil's body reads: a weigh-in, a measure and an intake typed on the web land
+  /// through the engine and show in « Aujourd'hui » within a second.
+  @Test func aPulledBodyEntryReachesCorpsWithinASecond() async throws {
+    let today = toISODate(Self.now, timeZone: Self.utc)
+    let (screens, watch) = follow(store) { db in
+      let body = try AccountStore.body(db)
+      return (body, corpsState(body, health: .off, now: Self.now, timeZone: Self.utc).1)
+    }
+    defer { watch.cancel() }
+    #expect(try await within(.seconds(10)) { screens.now != nil })
+    #expect(screens.now?.1.weighIn.kg == nil)
+
+    let at = Fixture.time(24 * 60 - 10)
+    let transport = ScriptedTransport { _, _ in
+      var answer = Fixture.response(cursor: "2")
+      answer.weights = [WeightRow(date: today, weightKg: 79.9, at: at)]
+      answer.measures = [
+        MeasureRow(
+          date: today, waistCm: 84.5, waistAt: at, neckCm: nil, neckAt: nil, hipCm: nil,
+          hipAt: nil)
+      ]
+      answer.intake = [
+        IntakeRow(date: today, kcal: 1850, kcalAt: at, proteinG: 128, proteinAt: at)
+      ]
+      return .ok(answer)
+    }
+    await SyncEngine(userId: "u1", store: store, transport: transport, onLanded: {}).sync()
+    #expect(try store.cursor() == "2")
+
+    let landed = try await within(.seconds(1)) {
+      guard let (body, rows) = screens.now else { return false }
+      return body.weights.map(\.weightKg) == [79.9] && rows.weighIn.kg == 79.9
+        && rows.measures == LastMeasure(field: .waist, cm: 84.5, date: today)
+        && rows.intake == TodayIntake(kcal: 1850, proteinG: 128)
+    }
+    #expect(landed, "Corps after the pull: \(String(describing: screens.now))")
+  }
 }

@@ -18,7 +18,10 @@ import Synchronization
 /// has a warm-up; `paused` paused at once; `lockLogged` with the first work set logged from the lock
 /// screen, its rest running; `workSet` with the warm-ups logged; `full` as `workSet` with the plan
 /// grown to the most slots it holds. `-BelayReduceMotion YES` forces Reduce Motion on the session's
-/// cover, `-BelayVoiceOver YES` makes it behave as under VoiceOver.
+/// cover, `-BelayVoiceOver YES` makes it behave as under VoiceOver. `-BelayHealth allowed` stands
+/// in for a Health that lets Belay in and holds a weigh-in of this morning at 79,9 kg, and makes
+/// the sync land an empty answer, after which the import runs; `-BelayHealth refused` for one that
+/// lets Belay write nothing. Without it the app asks the simulator's own Health.
 ///
 /// The day's modes, each on the clock `-BelayNow yyyy-MM-ddTHH:mm:ss` sets (local time) or the
 /// phone's: `doneToday` with session A kept today at effort 4; `fixedWeek` on a fixed week with
@@ -27,6 +30,16 @@ import Synchronization
 /// and a session kept once, `firstLaunch` the same with none kept; `weeks` with 60 sessions over
 /// the last 12 weeks, one across a DST change where the zone has one; `pastSession` with session A
 /// kept yesterday, its warm-up, its sets and an effort.
+///
+/// The body's modes, on the same clock, each with the Health import's card answered but
+/// `healthCard`'s: `bodyUsual` with five weeks of weigh-ins losing 0,1 kg a day, today's at
+/// 79,9 kg, a waist of 84,5 cm three days ago, today's intake at 1 850 kcal and 128 g, and one of
+/// two supplements ticked; `bodyOutOfRange` with five weeks gaining slowly; `bodyEarly` with three
+/// weigh-ins, the last yesterday at 79,8 kg; `bodyFirst` with none; `healthCard` empty;
+/// `weighedFromHealth` with today's weigh-in filled by the Health import; `measures`, `intake` and
+/// `supplements` as `bodyUsual` with five weeks of waists, a full profile, and creatine ticked
+/// every day of the last 9; `trend` as `supplements` with creatine ticked every day of the last
+/// 23, a « Semaine allégée » from 19 days back and a « Note · voyage » 9 days back.
 enum Fixture {
     nonisolated fileprivate static let origin = "https://belay.example"
     nonisolated fileprivate static let userId = "fixture"
@@ -61,6 +74,10 @@ enum Fixture {
                 let store = try AccountStore.open(userId: userId, origin: url, in: folder)
                 try prepareDay(mode, store: store)
             }
+            if bodyModes.contains(mode) {
+                let store = try AccountStore.open(userId: userId, origin: url, in: folder)
+                try prepareBody(mode, store: store)
+            }
             if openModes.contains(mode) {
                 // Through the same start and actions a tap makes, so the store holds what the app writes.
                 let store = try AccountStore.open(userId: userId, origin: url, in: folder)
@@ -82,9 +99,15 @@ enum Fixture {
         } catch {
             preconditionFailure("the fixture did not set up: \(error)")
         }
+        let health = UserDefaults.standard.string(forKey: "BelayHealth")
+        let client = FixtureClient(refusesSync: mode == "expired", answersSync: health == "allowed")
+        guard let health else {
+            return AccountModel(secrets: secrets, http: client, sheet: FixtureSheet(), defaults: defaults, storeFolder: folder)
+        }
+        guard health == "allowed" || health == "refused" else { preconditionFailure("-BelayHealth does not read: \(health)") }
         return AccountModel(
-            secrets: secrets, http: FixtureClient(refusesSync: mode == "expired"), sheet: FixtureSheet(),
-            defaults: defaults, storeFolder: folder)
+            secrets: secrets, http: client, sheet: FixtureSheet(), defaults: defaults, storeFolder: folder,
+            health: FixtureHealth(allowed: health == "allowed"))
     }
 
     private static let openModes: Set = [
@@ -94,6 +117,11 @@ enum Fixture {
 
     private static let dayModes: Set = [
         "doneToday", "fixedWeek", "restDay", "doneEarly", "noProgram", "firstLaunch", "weeks", "pastSession",
+    ]
+
+    private static let bodyModes: Set = [
+        "bodyUsual", "bodyOutOfRange", "bodyEarly", "bodyFirst", "healthCard", "weighedFromHealth", "measures", "intake",
+        "supplements", "trend",
     ]
 
     /// The clock `-BelayNow` sets: that local time at launch, running on from there.
@@ -198,6 +226,86 @@ enum Fixture {
             "programs": [starter, mine], "programSessions": ownSessions, "programSlots": ownSlots,
             "activeProgram": ["programId": programId, "at": "2026-01-01T00:00:00.000Z"],
         ]
+    }
+
+    /// The store brought to a body mode, through the same actions the sheets write with, its days
+    /// counted back from the fixture's today.
+    private static func prepareBody(_ mode: String, store: AccountStore) throws {
+        let now = Self.now
+        let today = toISODate(now, timeZone: .current)
+        let actions = BodyActions(store: store, now: { now }, timeZone: .current)
+        let tenth = { (kg: Double) in (kg * 10).rounded() / 10 }
+        if mode != "healthCard" { try store.setHealthImportOffered() }
+        switch mode {
+        case "bodyUsual", "measures", "intake", "supplements", "trend":
+            // Seven-day ripples that cancel out, so each 7-day average stays on the line.
+            let ripple = [0, 0.2, -0.1, 0.1, -0.2, 0, 0]
+            for back in 0..<35 {
+                try actions.weigh(date: addDays(today, -back), kg: tenth(79.9 + 0.1 * Double(back) + ripple[back % 7]))
+            }
+            try actions.measure(date: addDays(today, -3), waist: .set(84.5), neck: .clear, hip: .clear)
+            try actions.intake(date: today, kcal: .set(1850), protein: .set(128))
+            let supplements: [[String: Any]] = [
+                ["id": creatineId, "name": "Créatine", "nameAt": "2026-01-01T00:00:00.000Z", "kind": "creatine", "removed": false],
+                [
+                    "id": "00000000-0000-7000-8000-0000000000d2", "name": "Vitamine D", "nameAt": "2026-01-01T00:00:00.000Z",
+                    "kind": "other", "removed": false,
+                ],
+            ]
+            var answer = emptyAnswer
+            answer["supplements"] = supplements
+            if mode == "intake" {
+                answer["profile"] = [
+                    "formula": "male", "formulaAt": "2026-01-01T00:00:00.000Z", "birthYear": 1990,
+                    "birthYearAt": "2026-01-01T00:00:00.000Z", "heightCm": 180, "heightAt": "2026-01-01T00:00:00.000Z",
+                ]
+            }
+            try serve(answer, to: store, active: true)
+            try actions.take(supplementId: creatineId, date: today, taken: true)
+            if mode == "supplements" || mode == "trend" {
+                // Ta tendance's band needs a course begun before it, Compléments one still in its
+                // first 14 days, which « depuis n jours » counts.
+                for back in 1..<(mode == "trend" ? 23 : 9) {
+                    try actions.take(supplementId: creatineId, date: addDays(today, -back), taken: true)
+                }
+            }
+            if mode == "trend" {
+                try actions.annotate(AnnotationInput(id: deloadId, date: addDays(today, -19), type: .deload, label: nil))
+                try actions.annotate(AnnotationInput(id: noteId, date: addDays(today, -9), type: .note, label: "voyage"))
+            }
+            if mode == "measures" {
+                for week in 1..<5 {
+                    try actions.measure(
+                        date: addDays(today, -3 - 7 * week), waist: .set(84.5 + 0.4 * Double(week)),
+                        neck: week == 4 ? .set(38) : .keep, hip: week == 4 ? .set(98) : .keep)
+                }
+            }
+        case "bodyOutOfRange":
+            for back in 0..<35 {
+                try actions.weigh(date: addDays(today, -back), kg: tenth(80.2 - 0.1 * Double(back / 5)))
+            }
+        case "bodyEarly":
+            for (back, kg) in [(1, 79.8), (2, 79.9), (3, 80.0)] {
+                try actions.weigh(date: addDays(today, -back), kg: kg)
+            }
+        case "weighedFromHealth":
+            try store.setHealthOn(true, now: now)
+            try store.setHealthImportOn(true)
+            let morning = Calendar.current.startOfDay(for: now).addingTimeInterval(7 * 3_600)
+            let sample = HealthSample(startedAt: Int64(min(morning, now).timeIntervalSince1970 * 1_000), kg: 79.9)
+            _ = try store.importWeighIns([sample], anchor: "fixture", from: nil, now: now, timeZone: .current)
+        default:
+            break
+        }
+    }
+
+    private static let creatineId = "00000000-0000-7000-8000-0000000000d1"
+    private static let deloadId = "00000000-0000-7000-8000-0000000000e1"
+    private static let noteId = "00000000-0000-7000-8000-0000000000e2"
+
+    /// A sync's answer with nothing in it, for a mode to add its rows to.
+    private static var emptyAnswer: [String: Any] {
+        ["cursor": "fixture", "workouts": [], "sets": [], "activities": [], "rejected": [], "hasMore": false]
     }
 
     /// The answer applied as a sync's; `active` false leaves the starting program's pointer, on
@@ -520,11 +628,12 @@ private nonisolated final class FixtureSecrets: SecretStore {
     }
 }
 
-/// An instance whose sync is never reachable, as on a phone with no network, or refuses the token
-/// when `refusesSync`, but that still answers a sign-in, so a test can sign out and back in as the
-/// same person.
+/// An instance whose sync is never reachable, as on a phone with no network, refuses the token
+/// when `refusesSync`, or lands with nothing new when `answersSync`, but that still answers a
+/// sign-in, so a test can sign out and back in as the same person.
 private nonisolated struct FixtureClient: HTTPClient {
     let refusesSync: Bool
+    let answersSync: Bool
 
     func send(_ request: URLRequest) async throws -> (Data, HTTPURLResponse) {
         let answer: String
@@ -533,6 +642,8 @@ private nonisolated struct FixtureClient: HTTPClient {
         case "/api/sync" where refusesSync:
             answer = "{}"
             status = 401
+        case "/api/sync" where answersSync:
+            answer = #"{"cursor":"fixture","workouts":[],"sets":[],"activities":[],"rejected":[],"hasMore":false}"#
         case "/api/instance": answer = #"{"app":"belay","api":1,"origin":"\#(Fixture.origin)"}"#
         case "/auth/native/token": answer = #"{"token":"fixture-token"}"#
         case "/api/me": answer = #"{"id":"\#(Fixture.userId)","displayName":"Ada"}"#
@@ -543,6 +654,43 @@ private nonisolated struct FixtureClient: HTTPClient {
               let response = HTTPURLResponse(url: url, statusCode: status, httpVersion: nil, headerFields: nil)
         else { throw URLError(.badURL) }
         return (Data(answer.utf8), response)
+    }
+}
+
+/// Health as `-BelayHealth` says it answers: allowed, it takes every write and holds one weigh-in
+/// from a scale, this morning at 79,9 kg; refused, it lets Belay write nothing and reads as empty,
+/// as iOS answers a refused read.
+private nonisolated struct FixtureHealth: HealthWriting {
+    let allowed: Bool
+
+    func access() async -> HealthAccess {
+        let permission: HealthPermission = allowed ? .allowed : .denied
+        return HealthAccess(available: true, workouts: permission, effort: permission, weighIns: permission)
+    }
+
+    func authorize() async throws {}
+
+    func save(_ w: HealthObject, syncId: String) async -> HealthOutcome { allowed ? .written : .denied }
+
+    func delete(syncId: String) async -> HealthOutcome { allowed ? .removed : .denied }
+
+    func overlaps(startedAt: Int64, endedAt: Int64) async -> Bool { false }
+
+    func relateEffort(score: Int, syncId: String, effortSyncId: String) async -> HealthOutcome {
+        allowed ? .written : .denied
+    }
+
+    func saveWeighIn(kg: Double, at: Int64, syncId: String, version: Int64) async -> HealthOutcome {
+        allowed ? .written : .denied
+    }
+
+    func deleteWeighIn(syncId: String) async -> HealthOutcome { allowed ? .removed : .denied }
+
+    func readWeighIns(anchor: String?, since: Int64) async -> (samples: [HealthSample], anchor: String)? {
+        let now = Fixture.now
+        let morning = Calendar.current.startOfDay(for: now).addingTimeInterval(7 * 3_600)
+        let sample = HealthSample(startedAt: Int64(min(morning, now).timeIntervalSince1970 * 1_000), kg: 79.9)
+        return (allowed && anchor == nil ? [sample] : [], "fixture-health")
     }
 }
 

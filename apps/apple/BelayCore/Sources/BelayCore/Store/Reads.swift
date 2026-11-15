@@ -75,6 +75,28 @@ extension AccountStore {
     }
   }
 
+  /// The body entries as the screens read them: the days weighed, measured or with an intake
+  /// value, each by day; every supplement, removed ones too, as their boxes still count; the boxes
+  /// ticked; the annotations still in place, by day.
+  public static func body(_ db: Database) throws -> BodyRead {
+    BodyRead(
+      weights: try BodyRows.all(WeightRow.self, db, "weights").filter { $0.weightKg != nil },
+      measures: try BodyRows.all(MeasureRow.self, db, "measures").filter {
+        $0.waistCm != nil || $0.neckCm != nil || $0.hipCm != nil
+      },
+      intake: try BodyRows.all(IntakeRow.self, db, "intake").filter {
+        $0.kcal != nil || $0.proteinG != nil
+      },
+      supplements: try Rows.all(SupplementRow.self, db, "supplements"),
+      logs: try Data.fetchAll(
+        db, sql: "SELECT row FROM supplementLogs ORDER BY date, supplementId"
+      ).map { try Rows.decode(SupplementLogRow.self, $0) }.filter(\.taken),
+      annotations: try Rows.all(AnnotationRow.self, db, "annotations").filter { !$0.removed }
+        .sorted { ($0.date, $0.id) < ($1.date, $1.id) },
+      target: try Rows.single(TargetRow.self, db, "target"),
+      profile: try Rows.single(ProfileRow.self, db, "profile"))
+  }
+
   public func outbox(limit: Int?) throws -> [OutboxEntry] {
     try writer.read { try Self.outbox($0, limit: limit) }
   }
@@ -88,4 +110,5 @@ extension AccountStore {
   public func activities() throws -> [ActivityRow] { try writer.read(Self.activities) }
   public func activeSession() throws -> ActiveSession? { try writer.read(Self.activeSession) }
   public func rejected() throws -> [RejectedEntry] { try writer.read(Self.rejected) }
+  public func body() throws -> BodyRead { try writer.read(Self.body) }
 }

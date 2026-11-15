@@ -74,6 +74,8 @@ final class AccountModel {
             state = .signedIn(Account(userId: userId, instance: instance, token: token))
             displayName = session.displayName
         }
+        // Weigh-ins the import wrote go with the next sync.
+        healthRuns.imported = { [weak self] in self?.didWrite() }
         // An assignment in init does not run didSet.
         followState()
         path.pathUpdateHandler = { [weak self] path in
@@ -150,15 +152,19 @@ final class AccountModel {
         } catch {
             Self.log.error("forgotten sessions not closed: \(AccountStore.logLabel(error), privacy: .public)")
         }
-        // What other devices finished, changed or removed is here now.
-        runHealth()
+        // What other devices finished, changed or removed is here now, so the import fills only
+        // the days no device holds.
+        triggerHealth(imports: true)
     }
 
     /// Brings Health in line with the open store: after a landed sync, a finish and a summary left.
     /// Each run reads the store as it is, so a trigger missed is caught by the next one.
-    func runHealth() {
+    func runHealth() { triggerHealth(imports: false) }
+
+    /// `imports` after a landed sync only.
+    private func triggerHealth(imports: Bool) {
         guard let store, case .signedIn(let account) = state else { return }
-        healthRuns.trigger(store: store, owner: ownerOf(account.userId))
+        healthRuns.trigger(store: store, owner: ownerOf(account.userId), imports: imports)
     }
 
     /// The Santé switch turned on: iOS is asked now, never at launch, and the switch stays on only
@@ -182,7 +188,53 @@ final class AccountModel {
         return true
     }
 
-    /// Off stops every write and deletion and leaves what Health holds. Whether it was kept.
+    /// The import's switch turned on: the import reads through Santé's switch, so Santé goes on
+    /// first when it is off, as its own switch would. iOS is asked to let Belay read body mass, a
+    /// sheet it shows only for a type never asked, and never says whether it did. The import then
+    /// runs after the sync this starts. Whether the import is on.
+    func turnHealthImportOn() async -> Bool {
+        guard let store else { return false }
+        let healthOn: Bool
+        do {
+            healthOn = try store.healthSettings().on
+        } catch {
+            Self.log.error("health switch not read: \(AccountStore.logLabel(error), privacy: .public)")
+            return false
+        }
+        if !healthOn {
+            // Santé's turn-on asks iOS with the full request, body mass included.
+            guard await turnHealthOn() else { return false }
+        } else {
+            do {
+                try await health.authorize()
+            } catch {
+                Self.log.error("health not asked: \(AccountStore.logLabel(error), privacy: .public)")
+            }
+        }
+        do {
+            try store.setHealthImportOn(true)
+            guard try store.healthSettings().importOn else { return false }
+        } catch {
+            Self.log.error("health import switch not kept: \(AccountStore.logLabel(error), privacy: .public)")
+            return false
+        }
+        refresh()
+        return true
+    }
+
+    /// The import stops; the weigh-ins it brought stay. Whether it was kept.
+    func turnHealthImportOff() -> Bool {
+        do {
+            try store?.setHealthImportOn(false)
+            return true
+        } catch {
+            Self.log.error("health import switch not kept: \(AccountStore.logLabel(error), privacy: .public)")
+            return false
+        }
+    }
+
+    /// Off stops every write and deletion, and the import, and leaves what Health holds. Whether it
+    /// was kept.
     func turnHealthOff() -> Bool {
         do {
             try store?.setHealthOn(false, now: Date())

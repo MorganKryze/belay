@@ -227,6 +227,26 @@ import Testing
     #expect(try row()?.note == "theirs")
   }
 
+  /// A weigh-in queued while the request was out stays over an older one from the server, and
+  /// gives way to a newer one: the day holds the later write, never two.
+  @Test func bodyRowsMergeByTime() throws {
+    let day = "2026-11-05"
+    let body = BodyActions(
+      store: store, now: { Fixture.t0.addingTimeInterval(5 * 60) }, timeZone: Days.paris)
+    try body.weigh(date: day, kg: 80.4)
+    let mine = WeightRow(date: day, weightKg: 80.4, at: Fixture.time(5))
+
+    var older = Fixture.response()
+    older.weights = [WeightRow(date: day, weightKg: 81, at: Fixture.time(3))]
+    try store.applyServer(sent: [], response: older)
+    #expect(try store.body().weights == [mine])
+
+    var newer = Fixture.response()
+    newer.weights = [WeightRow(date: day, weightKg: 79.9, at: Fixture.time(7))]
+    try store.applyServer(sent: [], response: newer)
+    #expect(try store.body().weights == newer.weights)
+  }
+
   @Test func theOpenSessionGoesWhenTheServerShowsItEnded() throws {
     #expect(try store.activeSession() == Fixture.active(w))
     try store.applyServer(
@@ -288,7 +308,8 @@ import Testing
     let tables = try store.writer.read { db in
       try String.fetchAll(db, sql: "SELECT name FROM sqlite_master WHERE type = 'table'")
     }
-    #expect(!tables.contains("weights") && !tables.contains("steps"))
+    #expect(!tables.contains("steps"))
+    #expect(try store.body().weights.map(\.date) == ["2026-11-05"])
   }
 
   /// The store keeps a row as this build reads it. A later build that reads a new field of a kept

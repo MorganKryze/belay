@@ -3,13 +3,15 @@ import Foundation
 import HealthKit
 
 /// Apple Health for the core's run: a finished session as a workout, its effort as a score
-/// related to it. Which session and which version is the core's call; this side carries out one
-/// object and answers how it went. Nothing but the span, the identifiers, the version and the
-/// score reaches Health.
+/// related to it, a weigh-in as a body-mass sample; and the body-mass readings of other apps and
+/// scales for the import. Which object and which version is the core's call; this side carries
+/// out one object and answers how it went. Nothing but the span, the identifiers, the version,
+/// the score and the weight reaches Health.
 nonisolated struct HealthKitWriter: HealthWriting {
     private static let store = HKHealthStore()
     private static let workouts = HKObjectType.workoutType()
     private static let effort = HKQuantityType(.workoutEffortScore)
+    private static let bodyMass = HKQuantityType(.bodyMass)
     // Carried by every workout Belay writes, so a later watch app can recognise them.
     static let sessionKey = "BelaySessionID"
     // Another source's workout covering this share of the session or more means a watch, or
@@ -25,7 +27,8 @@ nonisolated struct HealthKitWriter: HealthWriting {
             return HealthAccess(available: false, workouts: .undetermined, effort: .undetermined)
         }
         return HealthAccess(
-            available: true, workouts: Self.permission(Self.workouts), effort: Self.permission(Self.effort))
+            available: true, workouts: Self.permission(Self.workouts), effort: Self.permission(Self.effort),
+            weighIns: Self.permission(Self.bodyMass))
     }
 
     /// iOS shows its sheet only for the types never asked; the request still names every type each
@@ -124,6 +127,71 @@ nonisolated struct HealthKitWriter: HealthWriting {
         }
     }
 
+    /// One sample at the weigh-in's time, in kilograms. The sync identifier and a greater version
+    /// make a second save replace the first, the one the web app's writer left included.
+    func saveWeighIn(kg: Double, at: Int64, syncId: String, version: Int64) async -> HealthOutcome {
+        guard Self.permission(Self.bodyMass) == .allowed else { return .denied }
+        let sample = HKQuantitySample(
+            type: Self.bodyMass, quantity: HKQuantity(unit: .gramUnit(with: .kilo), doubleValue: kg),
+            start: Self.date(at), end: Self.date(at),
+            metadata: [
+                HKMetadataKeySyncIdentifier: syncId,
+                HKMetadataKeySyncVersion: NSNumber(value: version),
+                HKMetadataKeyWasUserEntered: true,
+            ])
+        do {
+            try await Self.store.save(sample)
+            return .written
+        } catch {
+            return Self.outcome(of: error)
+        }
+    }
+
+    /// As `delete`: only this app's sample under that identifier; none left is removed too.
+    func deleteWeighIn(syncId: String) async -> HealthOutcome {
+        guard Self.permission(Self.bodyMass) == .allowed else { return .denied }
+        do {
+            _ = try await Self.store.deleteObjects(of: Self.bodyMass, predicate: Self.own(syncId))
+            return .removed
+        } catch let error as HKError where error.code == .errorNoData {
+            return .removed
+        } catch {
+            return Self.outcome(of: error)
+        }
+    }
+
+    /// Body-mass samples from `since` that Health received after the anchor, this app's own left
+    /// out; the core also drops any carrying a Belay weigh-in's identifier, from another of the
+    /// person's phones. Deletions are not followed: a weigh-in once in Belay stays the person's
+    /// there. iOS answers a refused read as an empty Health.
+    func readWeighIns(anchor: String?, since: Int64) async -> (samples: [HealthSample], anchor: String)? {
+        let start = anchor
+            .flatMap { Data(base64Encoded: $0) }
+            .flatMap { try? NSKeyedUnarchiver.unarchivedObject(ofClass: HKQueryAnchor.self, from: $0) }
+        let descriptor = HKAnchoredObjectQueryDescriptor(
+            predicates: [
+                .quantitySample(
+                    type: Self.bodyMass,
+                    predicate: HKQuery.predicateForSamples(
+                        withStart: Self.date(since), end: nil, options: .strictStartDate))
+            ],
+            anchor: start)
+        guard let result = try? await descriptor.result(for: Self.store),
+            let next = try? NSKeyedArchiver.archivedData(
+                withRootObject: result.newAnchor, requiringSecureCoding: true)
+        else { return nil }
+        let own = HKSource.default()
+        let samples = result.addedSamples
+            .filter { $0.sourceRevision.source != own }
+            .map { sample in
+                HealthSample(
+                    startedAt: Int64((sample.startDate.timeIntervalSince1970 * 1000).rounded()),
+                    kg: sample.quantity.doubleValue(for: .gramUnit(with: .kilo)),
+                    syncId: sample.metadata?[HKMetadataKeySyncIdentifier] as? String)
+            }
+        return (samples, next.base64EncodedString())
+    }
+
     private static func own(_ syncId: String) -> NSPredicate {
         NSCompoundPredicate(andPredicateWithSubpredicates: [
             HKQuery.predicateForObjects(withMetadataKey: HKMetadataKeySyncIdentifier, allowedValues: [syncId]),
@@ -143,6 +211,7 @@ nonisolated struct HealthKitWriter: HealthWriting {
         switch type {
         case .workouts: workouts
         case .effort: effort
+        case .bodyMass: bodyMass
         }
     }
 

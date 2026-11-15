@@ -30,8 +30,86 @@
     "exerciseId": "^(ds|belay):[a-z0-9-]{1,40}$",
     "minTime": "1900-01-01T00:00:00.000Z",
     "clockSlackMs": 300000,
-    "maxChanges": 500
+    "maxChanges": 500,
+    "weighInKg": {
+      "min": 20,
+      "max": 400,
+      "step": 0.1
+    },
+    "measureCm": {
+      "waist": {
+        "min": 40,
+        "max": 200,
+        "step": 0.5
+      },
+      "neck": {
+        "min": 20,
+        "max": 80,
+        "step": 0.5
+      },
+      "hip": {
+        "min": 50,
+        "max": 200,
+        "step": 0.5
+      }
+    },
+    "intake": {
+      "kcal": {
+        "min": 0,
+        "max": 10000,
+        "step": 50
+      },
+      "protein": {
+        "min": 0,
+        "max": 500,
+        "step": 5
+      }
+    },
+    "annotationLabelMax": 80,
+    "minDate": "1900-01-01"
   },
+  "clock": {
+    "now": "2026-11-06T09:30:00.123Z",
+    "zone": "Europe/Paris",
+    "today": "2026-11-06"
+  },
+  "days": [
+    {
+      "now": "2026-11-06T09:30:00.123Z",
+      "today": "2026-11-06",
+      "tomorrow": "2026-11-07"
+    },
+    {
+      "now": "2026-11-06T22:59:59.999Z",
+      "today": "2026-11-06",
+      "tomorrow": "2026-11-07"
+    },
+    {
+      "now": "2026-11-06T23:00:00.000Z",
+      "today": "2026-11-07",
+      "tomorrow": "2026-11-08"
+    },
+    {
+      "now": "2026-03-28T22:59:59.999Z",
+      "today": "2026-03-28",
+      "tomorrow": "2026-03-29"
+    },
+    {
+      "now": "2026-03-28T23:00:00.000Z",
+      "today": "2026-03-29",
+      "tomorrow": "2026-03-30"
+    },
+    {
+      "now": "2026-03-29T21:59:59.999Z",
+      "today": "2026-03-29",
+      "tomorrow": "2026-03-30"
+    },
+    {
+      "now": "2026-03-29T22:00:00.000Z",
+      "today": "2026-03-30",
+      "tomorrow": "2026-03-31"
+    }
+  ],
   "changes": [
     {
       "name": "start: as the phone writes it",
@@ -882,6 +960,456 @@
       "name": "activeProgram: at not a time",
       "valid": false,
       "json": "{\"kind\":\"activeProgram\",\"programId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f03\",\"at\":\"yesterday\"}"
+    },
+    {
+      "name": "weight: as the phone writes it",
+      "valid": true,
+      "json": "{\"kind\":\"weight\",\"date\":\"2026-11-06\",\"weightKg\":80.2,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "weight: deleted",
+      "valid": true,
+      "json": "{\"kind\":\"weight\",\"date\":\"2026-11-06\",\"weightKg\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "weight: no weight",
+      "valid": false,
+      "json": "{\"kind\":\"weight\",\"date\":\"2026-11-06\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "weight: at its floor",
+      "valid": true,
+      "json": "{\"kind\":\"weight\",\"date\":\"2026-11-06\",\"weightKg\":20,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "weight: a step under its floor",
+      "valid": false,
+      "json": "{\"kind\":\"weight\",\"date\":\"2026-11-06\",\"weightKg\":19.9,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "weight: at its ceiling",
+      "valid": true,
+      "json": "{\"kind\":\"weight\",\"date\":\"2026-11-06\",\"weightKg\":400,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "weight: a step past its ceiling",
+      "valid": false,
+      "json": "{\"kind\":\"weight\",\"date\":\"2026-11-06\",\"weightKg\":400.1,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "weight: on the grid with binary noise",
+      "valid": true,
+      "json": "{\"kind\":\"weight\",\"date\":\"2026-11-06\",\"weightKg\":79.8,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "weight: half a step off the grid",
+      "valid": false,
+      "json": "{\"kind\":\"weight\",\"date\":\"2026-11-06\",\"weightKg\":80.25,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "weight: a twentieth off the grid",
+      "valid": false,
+      "json": "{\"kind\":\"weight\",\"date\":\"2026-11-06\",\"weightKg\":80.05,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "weight: whole",
+      "valid": true,
+      "json": "{\"kind\":\"weight\",\"date\":\"2026-11-06\",\"weightKg\":80,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "weight: as text",
+      "valid": false,
+      "json": "{\"kind\":\"weight\",\"date\":\"2026-11-06\",\"weightKg\":\"80.2\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "weight: dated today",
+      "valid": true,
+      "json": "{\"kind\":\"weight\",\"date\":\"2026-11-06\",\"weightKg\":80.2,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "weight: dated tomorrow",
+      "valid": false,
+      "json": "{\"kind\":\"weight\",\"date\":\"2026-11-07\",\"weightKg\":80.2,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "weight: dated at the floor",
+      "valid": true,
+      "json": "{\"kind\":\"weight\",\"date\":\"1900-01-01\",\"weightKg\":80.2,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "weight: dated the day before the floor",
+      "valid": false,
+      "json": "{\"kind\":\"weight\",\"date\":\"1899-12-31\",\"weightKg\":80.2,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "weight: dated on a leap day",
+      "valid": true,
+      "json": "{\"kind\":\"weight\",\"date\":\"2024-02-29\",\"weightKg\":80.2,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "weight: dated on a day past the month's end",
+      "valid": false,
+      "json": "{\"kind\":\"weight\",\"date\":\"2026-02-29\",\"weightKg\":80.2,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "weight: dated without padding",
+      "valid": false,
+      "json": "{\"kind\":\"weight\",\"date\":\"2026-11-6\",\"weightKg\":80.2,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "weight: dated with a time",
+      "valid": false,
+      "json": "{\"kind\":\"weight\",\"date\":\"2026-11-06T08:00:00\",\"weightKg\":80.2,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "weight: at without milliseconds",
+      "valid": false,
+      "json": "{\"kind\":\"weight\",\"date\":\"2026-11-06\",\"weightKg\":80.2,\"at\":\"2026-11-06T09:30:00Z\"}"
+    },
+    {
+      "name": "measure: waist at its floor",
+      "valid": true,
+      "json": "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"waist\",\"value\":40,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "measure: waist a tenth under its floor",
+      "valid": false,
+      "json": "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"waist\",\"value\":39.9,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "measure: waist at its ceiling",
+      "valid": true,
+      "json": "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"waist\",\"value\":200,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "measure: waist a tenth past its ceiling",
+      "valid": false,
+      "json": "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"waist\",\"value\":200.1,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "measure: waist on the tenth",
+      "valid": true,
+      "json": "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"waist\",\"value\":44.3,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "measure: waist between two tenths",
+      "valid": false,
+      "json": "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"waist\",\"value\":44.35,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "measure: waist deleted",
+      "valid": true,
+      "json": "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"waist\",\"value\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "measure: neck at its floor",
+      "valid": true,
+      "json": "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"neck\",\"value\":20,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "measure: neck a tenth under its floor",
+      "valid": false,
+      "json": "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"neck\",\"value\":19.9,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "measure: neck at its ceiling",
+      "valid": true,
+      "json": "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"neck\",\"value\":80,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "measure: neck a tenth past its ceiling",
+      "valid": false,
+      "json": "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"neck\",\"value\":80.1,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "measure: neck on the tenth",
+      "valid": true,
+      "json": "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"neck\",\"value\":24.3,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "measure: neck between two tenths",
+      "valid": false,
+      "json": "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"neck\",\"value\":24.35,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "measure: neck deleted",
+      "valid": true,
+      "json": "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"neck\",\"value\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "measure: hip at its floor",
+      "valid": true,
+      "json": "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"hip\",\"value\":50,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "measure: hip a tenth under its floor",
+      "valid": false,
+      "json": "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"hip\",\"value\":49.9,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "measure: hip at its ceiling",
+      "valid": true,
+      "json": "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"hip\",\"value\":200,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "measure: hip a tenth past its ceiling",
+      "valid": false,
+      "json": "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"hip\",\"value\":200.1,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "measure: hip on the tenth",
+      "valid": true,
+      "json": "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"hip\",\"value\":54.3,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "measure: hip between two tenths",
+      "valid": false,
+      "json": "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"hip\",\"value\":54.35,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "measure: hip deleted",
+      "valid": true,
+      "json": "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"hip\",\"value\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "measure: unknown field",
+      "valid": false,
+      "json": "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"thigh\",\"value\":55,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "measure: as text",
+      "valid": false,
+      "json": "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"waist\",\"value\":\"84.5\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "measure: dated tomorrow",
+      "valid": false,
+      "json": "{\"kind\":\"measure\",\"date\":\"2026-11-07\",\"field\":\"waist\",\"value\":84.5,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "measure: dated at the floor",
+      "valid": true,
+      "json": "{\"kind\":\"measure\",\"date\":\"1900-01-01\",\"field\":\"waist\",\"value\":84.5,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "measure: dated the day before the floor",
+      "valid": false,
+      "json": "{\"kind\":\"measure\",\"date\":\"1899-12-31\",\"field\":\"waist\",\"value\":84.5,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "intake: kcal as the phone writes it",
+      "valid": true,
+      "json": "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"kcal\",\"value\":1850,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "intake: no kcal",
+      "valid": true,
+      "json": "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"kcal\",\"value\":0,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "intake: kcal at its bound",
+      "valid": true,
+      "json": "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"kcal\",\"value\":10000,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "intake: kcal one past",
+      "valid": false,
+      "json": "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"kcal\",\"value\":10001,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "intake: kcal below zero",
+      "valid": false,
+      "json": "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"kcal\",\"value\":-1,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "intake: kcal off the stepper",
+      "valid": true,
+      "json": "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"kcal\",\"value\":2130,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "intake: kcal not whole",
+      "valid": false,
+      "json": "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"kcal\",\"value\":1850.5,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "intake: kcal deleted",
+      "valid": true,
+      "json": "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"kcal\",\"value\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "intake: protein as the phone writes it",
+      "valid": true,
+      "json": "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"protein\",\"value\":128,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "intake: no protein",
+      "valid": true,
+      "json": "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"protein\",\"value\":0,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "intake: protein at its bound",
+      "valid": true,
+      "json": "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"protein\",\"value\":500,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "intake: protein one past",
+      "valid": false,
+      "json": "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"protein\",\"value\":501,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "intake: protein not whole",
+      "valid": false,
+      "json": "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"protein\",\"value\":127.5,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "intake: protein deleted",
+      "valid": true,
+      "json": "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"protein\",\"value\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "intake: unknown field",
+      "valid": false,
+      "json": "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"fat\",\"value\":60,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "intake: dated tomorrow",
+      "valid": false,
+      "json": "{\"kind\":\"intake\",\"date\":\"2026-11-07\",\"field\":\"kcal\",\"value\":1850,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "intake: dated the day before the floor",
+      "valid": false,
+      "json": "{\"kind\":\"intake\",\"date\":\"1899-12-31\",\"field\":\"kcal\",\"value\":1850,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "supplementLog: taken",
+      "valid": true,
+      "json": "{\"kind\":\"supplementLog\",\"supplementId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"date\":\"2026-11-06\",\"taken\":true,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "supplementLog: untaken",
+      "valid": true,
+      "json": "{\"kind\":\"supplementLog\",\"supplementId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"date\":\"2026-11-06\",\"taken\":false,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "supplementLog: taken as text",
+      "valid": false,
+      "json": "{\"kind\":\"supplementLog\",\"supplementId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"date\":\"2026-11-06\",\"taken\":\"yes\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "supplementLog: supplement id in upper case",
+      "valid": false,
+      "json": "{\"kind\":\"supplementLog\",\"supplementId\":\"019A5A3C-7B2E-7D41-9C3F-2B8E4D6A1F06\",\"date\":\"2026-11-06\",\"taken\":true,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "supplementLog: dated tomorrow",
+      "valid": false,
+      "json": "{\"kind\":\"supplementLog\",\"supplementId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"date\":\"2026-11-07\",\"taken\":true,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "supplementLog: dated at the floor",
+      "valid": true,
+      "json": "{\"kind\":\"supplementLog\",\"supplementId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"date\":\"1900-01-01\",\"taken\":true,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "supplementLog: dated the day before the floor",
+      "valid": false,
+      "json": "{\"kind\":\"supplementLog\",\"supplementId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"date\":\"1899-12-31\",\"taken\":true,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "annotation: as the phone writes it",
+      "valid": true,
+      "json": "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"deload\",\"label\":\"Semaine légère\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "annotation: diet break",
+      "valid": true,
+      "json": "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"diet_break\",\"label\":\"Semaine légère\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "annotation: note without a label",
+      "valid": true,
+      "json": "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"note\",\"label\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "annotation: no label",
+      "valid": false,
+      "json": "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"deload\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "annotation: unknown type",
+      "valid": false,
+      "json": "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"travel\",\"label\":\"Semaine légère\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "annotation: label at its bound",
+      "valid": true,
+      "json": "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"deload\",\"label\":\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "annotation: label one past",
+      "valid": false,
+      "json": "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"deload\",\"label\":\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "annotation: label in emoji at its bound",
+      "valid": true,
+      "json": "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"deload\",\"label\":\"💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "annotation: label in emoji one past",
+      "valid": false,
+      "json": "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"deload\",\"label\":\"💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "annotation: label empty",
+      "valid": true,
+      "json": "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"deload\",\"label\":\"\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "annotation: label on two lines",
+      "valid": false,
+      "json": "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"deload\",\"label\":\"Semaine\\nlégère\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "annotation: label with a carriage return",
+      "valid": false,
+      "json": "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"deload\",\"label\":\"Semaine\\rlégère\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "annotation: id in upper case",
+      "valid": false,
+      "json": "{\"kind\":\"annotation\",\"id\":\"019A5A3C-7B2E-7D41-9C3F-2B8E4D6A1F07\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"deload\",\"label\":\"Semaine légère\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "annotation: dated tomorrow",
+      "valid": false,
+      "json": "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"fields\",\"date\":\"2026-11-07\",\"type\":\"deload\",\"label\":\"Semaine légère\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "annotation: dated the day before the floor",
+      "valid": false,
+      "json": "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"fields\",\"date\":\"1899-12-31\",\"type\":\"deload\",\"label\":\"Semaine légère\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "annotation removed: true",
+      "valid": true,
+      "json": "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"removed\",\"value\":true,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "annotation removed: false",
+      "valid": true,
+      "json": "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"removed\",\"value\":false,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "annotation removed: not a boolean",
+      "valid": false,
+      "json": "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"removed\",\"value\":\"yes\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "annotation: unknown field",
+      "valid": false,
+      "json": "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"moved\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
     }
   ],
   "isNewer": [
@@ -1018,6 +1546,564 @@
       "result": "yesterday"
     }
   ],
+  "mergeBody": [
+    {
+      "name": "weight: two writes for one key",
+      "stored": {},
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"weight\",\"date\":\"2026-11-06\",\"weightKg\":80.2,\"at\":\"2026-11-06T09:29:00.123Z\"}",
+        "{\"kind\":\"weight\",\"date\":\"2026-11-06\",\"weightKg\":80.2,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"weight\",\"date\":\"2026-11-06\",\"weightKg\":80.2,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "weight: two writes at one time, the later sent wins",
+      "stored": {},
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"weight\",\"date\":\"2026-11-06\",\"weightKg\":80.2,\"at\":\"2026-11-06T09:30:00.123Z\"}",
+        "{\"kind\":\"weight\",\"date\":\"2026-11-06\",\"weightKg\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"weight\",\"date\":\"2026-11-06\",\"weightKg\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "weight: a deletion against a later value",
+      "stored": {
+        "2026-11-06": "2026-11-06T09:31:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"weight\",\"date\":\"2026-11-06\",\"weightKg\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": []
+    },
+    {
+      "name": "weight: a deletion after the stored value",
+      "stored": {
+        "2026-11-06": "2026-11-06T09:29:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"weight\",\"date\":\"2026-11-06\",\"weightKg\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"weight\",\"date\":\"2026-11-06\",\"weightKg\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "weight: a write at the stored time",
+      "stored": {
+        "2026-11-06": "2026-11-06T09:30:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"weight\",\"date\":\"2026-11-06\",\"weightKg\":80.2,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": []
+    },
+    {
+      "name": "weight: a key never written",
+      "stored": {
+        "2026-11-06": null
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"weight\",\"date\":\"2026-11-06\",\"weightKg\":80.2,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"weight\",\"date\":\"2026-11-06\",\"weightKg\":80.2,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "weight: a time ahead of the clock",
+      "stored": {},
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"weight\",\"date\":\"2026-11-06\",\"weightKg\":80.2,\"at\":\"2026-11-06T10:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"weight\",\"date\":\"2026-11-06\",\"weightKg\":80.2,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "weight: a past write and an older one",
+      "stored": {
+        "2026-11-06": "2026-11-06T09:25:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"weight\",\"date\":\"2026-11-06\",\"weightKg\":80.2,\"at\":\"2026-11-06T09:28:00.123Z\"}",
+        "{\"kind\":\"weight\",\"date\":\"2026-11-06\",\"weightKg\":null,\"at\":\"2026-11-06T09:27:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"weight\",\"date\":\"2026-11-06\",\"weightKg\":80.2,\"at\":\"2026-11-06T09:28:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "weight: another key at the same time",
+      "stored": {
+        "2026-11-06": "2026-11-06T09:31:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"weight\",\"date\":\"2026-11-06\",\"weightKg\":80.2,\"at\":\"2026-11-06T09:30:00.123Z\"}",
+        "{\"kind\":\"weight\",\"date\":\"2026-11-05\",\"weightKg\":80.2,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"weight\",\"date\":\"2026-11-05\",\"weightKg\":80.2,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "measure: two writes for one key",
+      "stored": {},
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"waist\",\"value\":84.5,\"at\":\"2026-11-06T09:29:00.123Z\"}",
+        "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"waist\",\"value\":84.5,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"waist\",\"value\":84.5,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "measure: two writes at one time, the later sent wins",
+      "stored": {},
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"waist\",\"value\":84.5,\"at\":\"2026-11-06T09:30:00.123Z\"}",
+        "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"waist\",\"value\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"waist\",\"value\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "measure: a deletion against a later value",
+      "stored": {
+        "2026-11-06|waist": "2026-11-06T09:31:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"waist\",\"value\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": []
+    },
+    {
+      "name": "measure: a deletion after the stored value",
+      "stored": {
+        "2026-11-06|waist": "2026-11-06T09:29:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"waist\",\"value\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"waist\",\"value\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "measure: a write at the stored time",
+      "stored": {
+        "2026-11-06|waist": "2026-11-06T09:30:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"waist\",\"value\":84.5,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": []
+    },
+    {
+      "name": "measure: a key never written",
+      "stored": {
+        "2026-11-06|waist": null
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"waist\",\"value\":84.5,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"waist\",\"value\":84.5,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "measure: a time ahead of the clock",
+      "stored": {},
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"waist\",\"value\":84.5,\"at\":\"2026-11-06T10:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"waist\",\"value\":84.5,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "measure: a past write and an older one",
+      "stored": {
+        "2026-11-06|waist": "2026-11-06T09:25:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"waist\",\"value\":84.5,\"at\":\"2026-11-06T09:28:00.123Z\"}",
+        "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"waist\",\"value\":null,\"at\":\"2026-11-06T09:27:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"waist\",\"value\":84.5,\"at\":\"2026-11-06T09:28:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "measure: another key at the same time",
+      "stored": {
+        "2026-11-06|waist": "2026-11-06T09:31:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"waist\",\"value\":84.5,\"at\":\"2026-11-06T09:30:00.123Z\"}",
+        "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"hip\",\"value\":98,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"hip\",\"value\":98,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "intake: two writes for one key",
+      "stored": {},
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"protein\",\"value\":128,\"at\":\"2026-11-06T09:29:00.123Z\"}",
+        "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"protein\",\"value\":128,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"protein\",\"value\":128,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "intake: two writes at one time, the later sent wins",
+      "stored": {},
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"protein\",\"value\":128,\"at\":\"2026-11-06T09:30:00.123Z\"}",
+        "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"protein\",\"value\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"protein\",\"value\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "intake: a deletion against a later value",
+      "stored": {
+        "2026-11-06|protein": "2026-11-06T09:31:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"protein\",\"value\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": []
+    },
+    {
+      "name": "intake: a deletion after the stored value",
+      "stored": {
+        "2026-11-06|protein": "2026-11-06T09:29:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"protein\",\"value\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"protein\",\"value\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "intake: a write at the stored time",
+      "stored": {
+        "2026-11-06|protein": "2026-11-06T09:30:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"protein\",\"value\":128,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": []
+    },
+    {
+      "name": "intake: a key never written",
+      "stored": {
+        "2026-11-06|protein": null
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"protein\",\"value\":128,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"protein\",\"value\":128,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "intake: a time ahead of the clock",
+      "stored": {},
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"protein\",\"value\":128,\"at\":\"2026-11-06T10:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"protein\",\"value\":128,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "intake: a past write and an older one",
+      "stored": {
+        "2026-11-06|protein": "2026-11-06T09:25:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"protein\",\"value\":128,\"at\":\"2026-11-06T09:28:00.123Z\"}",
+        "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"protein\",\"value\":null,\"at\":\"2026-11-06T09:27:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"protein\",\"value\":128,\"at\":\"2026-11-06T09:28:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "intake: another key at the same time",
+      "stored": {
+        "2026-11-06|protein": "2026-11-06T09:31:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"protein\",\"value\":128,\"at\":\"2026-11-06T09:30:00.123Z\"}",
+        "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"kcal\",\"value\":1850,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"kcal\",\"value\":1850,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "supplementLog: two writes for one key",
+      "stored": {},
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"supplementLog\",\"supplementId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"date\":\"2026-11-06\",\"taken\":true,\"at\":\"2026-11-06T09:29:00.123Z\"}",
+        "{\"kind\":\"supplementLog\",\"supplementId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"date\":\"2026-11-06\",\"taken\":true,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"supplementLog\",\"supplementId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"date\":\"2026-11-06\",\"taken\":true,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "supplementLog: two writes at one time, the later sent wins",
+      "stored": {},
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"supplementLog\",\"supplementId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"date\":\"2026-11-06\",\"taken\":true,\"at\":\"2026-11-06T09:30:00.123Z\"}",
+        "{\"kind\":\"supplementLog\",\"supplementId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"date\":\"2026-11-06\",\"taken\":false,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"supplementLog\",\"supplementId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"date\":\"2026-11-06\",\"taken\":false,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "supplementLog: a deletion against a later value",
+      "stored": {
+        "019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06|2026-11-06": "2026-11-06T09:31:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"supplementLog\",\"supplementId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"date\":\"2026-11-06\",\"taken\":false,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": []
+    },
+    {
+      "name": "supplementLog: a deletion after the stored value",
+      "stored": {
+        "019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06|2026-11-06": "2026-11-06T09:29:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"supplementLog\",\"supplementId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"date\":\"2026-11-06\",\"taken\":false,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"supplementLog\",\"supplementId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"date\":\"2026-11-06\",\"taken\":false,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "supplementLog: a write at the stored time",
+      "stored": {
+        "019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06|2026-11-06": "2026-11-06T09:30:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"supplementLog\",\"supplementId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"date\":\"2026-11-06\",\"taken\":true,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": []
+    },
+    {
+      "name": "supplementLog: a key never written",
+      "stored": {
+        "019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06|2026-11-06": null
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"supplementLog\",\"supplementId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"date\":\"2026-11-06\",\"taken\":true,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"supplementLog\",\"supplementId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"date\":\"2026-11-06\",\"taken\":true,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "supplementLog: a time ahead of the clock",
+      "stored": {},
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"supplementLog\",\"supplementId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"date\":\"2026-11-06\",\"taken\":true,\"at\":\"2026-11-06T10:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"supplementLog\",\"supplementId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"date\":\"2026-11-06\",\"taken\":true,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "supplementLog: a past write and an older one",
+      "stored": {
+        "019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06|2026-11-06": "2026-11-06T09:25:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"supplementLog\",\"supplementId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"date\":\"2026-11-06\",\"taken\":true,\"at\":\"2026-11-06T09:28:00.123Z\"}",
+        "{\"kind\":\"supplementLog\",\"supplementId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"date\":\"2026-11-06\",\"taken\":false,\"at\":\"2026-11-06T09:27:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"supplementLog\",\"supplementId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"date\":\"2026-11-06\",\"taken\":true,\"at\":\"2026-11-06T09:28:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "supplementLog: another key at the same time",
+      "stored": {
+        "019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06|2026-11-06": "2026-11-06T09:31:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"supplementLog\",\"supplementId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"date\":\"2026-11-06\",\"taken\":true,\"at\":\"2026-11-06T09:30:00.123Z\"}",
+        "{\"kind\":\"supplementLog\",\"supplementId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"date\":\"2026-11-06\",\"taken\":true,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"supplementLog\",\"supplementId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"date\":\"2026-11-06\",\"taken\":true,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "annotation: two writes for one key",
+      "stored": {},
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"removed\",\"value\":false,\"at\":\"2026-11-06T09:29:00.123Z\"}",
+        "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"removed\",\"value\":false,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"removed\",\"value\":false,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "annotation: two writes at one time, the later sent wins",
+      "stored": {},
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"removed\",\"value\":false,\"at\":\"2026-11-06T09:30:00.123Z\"}",
+        "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"removed\",\"value\":true,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"removed\",\"value\":true,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "annotation: a deletion against a later value",
+      "stored": {
+        "019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07|removed": "2026-11-06T09:31:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"removed\",\"value\":true,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": []
+    },
+    {
+      "name": "annotation: a deletion after the stored value",
+      "stored": {
+        "019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07|removed": "2026-11-06T09:29:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"removed\",\"value\":true,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"removed\",\"value\":true,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "annotation: a write at the stored time",
+      "stored": {
+        "019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07|removed": "2026-11-06T09:30:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"removed\",\"value\":false,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": []
+    },
+    {
+      "name": "annotation: a key never written",
+      "stored": {
+        "019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07|removed": null
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"removed\",\"value\":false,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"removed\",\"value\":false,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "annotation: a time ahead of the clock",
+      "stored": {},
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"removed\",\"value\":false,\"at\":\"2026-11-06T10:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"removed\",\"value\":false,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "annotation: a past write and an older one",
+      "stored": {
+        "019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07|removed": "2026-11-06T09:25:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"removed\",\"value\":false,\"at\":\"2026-11-06T09:28:00.123Z\"}",
+        "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"removed\",\"value\":true,\"at\":\"2026-11-06T09:27:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"removed\",\"value\":false,\"at\":\"2026-11-06T09:28:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "annotation: another key at the same time",
+      "stored": {
+        "019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07|removed": "2026-11-06T09:31:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"removed\",\"value\":false,\"at\":\"2026-11-06T09:30:00.123Z\"}",
+        "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"deload\",\"label\":\"Semaine légère\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"deload\",\"label\":\"Semaine légère\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    }
+  ],
+  "bodyAnswer": "{\"cursor\":\"45\",\"weights\":[{\"date\":\"2026-11-06\",\"weightKg\":80.2,\"at\":\"2026-11-06T09:30:00.123Z\"},{\"date\":\"2026-11-05\",\"weightKg\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}],\"measures\":[{\"date\":\"2026-11-06\",\"waistCm\":84.5,\"waistAt\":\"2026-11-06T09:30:00.123Z\",\"neckCm\":null,\"neckAt\":null,\"hipCm\":null,\"hipAt\":\"2026-11-06T09:30:00.123Z\"}],\"intake\":[{\"date\":\"2026-11-06\",\"kcal\":1850,\"kcalAt\":\"2026-11-06T09:30:00.123Z\",\"proteinG\":null,\"proteinAt\":null}],\"supplements\":[{\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"name\":\"Créatine\",\"nameAt\":\"2026-11-06T09:30:00.123Z\",\"kind\":\"creatine\",\"removed\":false,\"removedAt\":null},{\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"name\":\"Oméga 3\",\"nameAt\":\"2026-11-06T09:30:00.123Z\",\"kind\":\"other\",\"removed\":true,\"removedAt\":\"2026-11-06T09:30:00.123Z\"}],\"supplementLogs\":[{\"supplementId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"date\":\"2026-11-06\",\"taken\":true,\"at\":\"2026-11-06T09:30:00.123Z\"}],\"annotations\":[{\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"date\":\"2026-11-06\",\"type\":\"diet_break\",\"label\":null,\"fieldsAt\":\"2026-11-06T09:30:00.123Z\",\"removed\":false,\"removedAt\":null}],\"steps\":[],\"activities\":[],\"workouts\":[],\"sets\":[],\"target\":{\"minPct\":0.5,\"maxPct\":1,\"at\":null},\"profile\":{\"formula\":\"male\",\"formulaAt\":\"2026-11-06T09:30:00.123Z\",\"birthYear\":1990,\"birthYearAt\":\"2026-11-06T09:30:00.123Z\",\"heightCm\":null,\"heightAt\":null},\"rejected\":[],\"hasMore\":false}",
   "ids": [
     {
       "id": "019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00",

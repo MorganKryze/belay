@@ -102,9 +102,12 @@ extension AccountStore {
     }
   }
 
+  /// The session kinds only: none is dated by the local day, so neither the clock nor the zone
+  /// sways the verdict. A body entry is refused here, as only `writeBody` knows the person's day.
   static func check(_ changes: [Change]) throws {
-    // No kind written here is dated by the local day, so the clock does not sway the verdict.
-    guard changes.allSatisfy({ isValid($0, now: Date()) }) else { throw StoreError.invalidChange }
+    guard changes.allSatisfy({ !$0.isBody && isValid($0, now: Date(), timeZone: .gmt) }) else {
+      throw StoreError.invalidChange
+    }
   }
 
   /// Applied here and queued as the bytes it is sent as.
@@ -188,6 +191,8 @@ extension AccountStore {
       }
     case .activeProgram:
       return try Rows.single(ActiveProgramRow.self, db, "activeProgram")?.at
+    case .weight, .measure, .intake, .supplementLog, .annotation:
+      return try bodyLocalAt(db, change)
     }
   }
 
@@ -242,17 +247,19 @@ extension AccountStore {
       try Rows.putSet(db, row)
     case .activeProgram(let c):
       try Rows.putSingle(db, "activeProgram", ActiveProgramRow(programId: c.programId, at: c.at))
+    case .weight, .measure, .intake, .supplementLog, .annotation:
+      try applyBody(db, change)
     }
   }
 }
 
 extension Change {
-  /// The session a change belongs to; nil for the active program.
+  /// The session a change belongs to; nil for the active program and the body entries.
   var workoutId: String? {
     switch self {
     case .workout(let c): c.id
     case .set(let c): c.workoutId
-    case .activeProgram: nil
+    case .activeProgram, .weight, .measure, .intake, .supplementLog, .annotation: nil
     }
   }
 }

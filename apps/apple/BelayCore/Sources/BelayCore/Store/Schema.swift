@@ -69,6 +69,36 @@ enum Schema {
         t.column("row", .blob).notNull()
       }
     }
+    // The body entries, each table keyed as the server keys the kind: a day, a supplement's day,
+    // an id; the loss range and the profile at key 1. The rows pulled so far never held them, so
+    // the pull starts over.
+    migrator.registerMigration("v4") { db in
+      for table in ["weights", "measures", "intake"] {
+        try db.create(table: table) { t in
+          t.primaryKey("date", .text)
+          t.column("row", .blob).notNull()
+        }
+      }
+      for table in ["supplements", "annotations"] {
+        try db.create(table: table) { t in
+          t.primaryKey("id", .text)
+          t.column("row", .blob).notNull()
+        }
+      }
+      try db.create(table: "supplementLogs") { t in
+        t.column("supplementId", .text).notNull()
+        t.column("date", .text).notNull()
+        t.column("row", .blob).notNull()
+        t.primaryKey(["supplementId", "date"])
+      }
+      for table in ["target", "profile"] {
+        try db.create(table: table) { t in
+          t.primaryKey("key", .integer).check { $0 == 1 }
+          t.column("row", .blob).notNull()
+        }
+      }
+      try db.execute(sql: "INSERT OR REPLACE INTO meta (key, value) VALUES ('cursor', '0')")
+    }
     return migrator
   }
 }

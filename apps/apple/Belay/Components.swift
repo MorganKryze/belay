@@ -219,3 +219,37 @@ struct Avatar: View {
         .background(Color.track, in: .circle)
     }
 }
+
+/// A domain's symbol on its tint, a row's tile: 32 pt beside a body row, 36 pt, the size of a
+/// session's letter tile, in Séances. It says where an entry belongs, never that it can be
+/// tapped, so it stays silent.
+struct DomainTile: View {
+    let domain: Domain
+    let symbol: String
+    private let side: CGFloat
+    private let corner: CGFloat
+    /// The text size's factor: the tile grows with the symbol it holds.
+    @ScaledMetric(relativeTo: .body) private var scale: CGFloat = 1
+
+    init(domain: Domain, symbol: String, side: CGFloat = 32, corner: CGFloat = 8) {
+        self.domain = domain
+        self.symbol = symbol
+        self.side = side
+        self.corner = corner
+    }
+
+    var body: some View {
+        Image(systemName: symbol)
+            .font(.body.weight(.semibold))
+            .foregroundStyle(domain.shade)
+            .frame(width: side * scale, height: side * scale)
+            .background(domain.tint, in: .rect(cornerRadius: corner))
+            .accessibilityHidden(true)
+    }
+}
+
+extension Double {
+    /// « 62,5 », « 0,5 », « 1 »: at most two decimals, in the person's language; a load and a
+    /// range's bound read alike.
+    var upToHundredths: String { formatted(.number.precision(.fractionLength(0...2))) }
+}

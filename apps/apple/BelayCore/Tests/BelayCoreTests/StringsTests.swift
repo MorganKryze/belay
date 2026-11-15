@@ -225,6 +225,21 @@ func frenchTypographyFaults(_ text: String) -> [String] {
   @Test func countsReadRightAtZeroOneAndTwo() throws {
     // Key, then French and English at 0, 1 and 2; a key with two counts gets the same at each.
     let expected: [String: (fr: [String], en: [String])] = [
+      "Corps.xcstrings: Encore %lld pesées cette semaine": (
+        ["Encore 0 pesée cette semaine", "Encore 1 pesée cette semaine", "Encore 2 pesées cette semaine"],
+        ["0 more weigh-ins this week", "1 more weigh-in this week", "2 more weigh-ins this week"]
+      ),
+      "Entries.xcstrings: pris · depuis %lld jours": (
+        ["pris · depuis 0 jour", "pris · depuis 1 jour", "pris · depuis 2 jours"],
+        ["taken · for 0 days", "taken · for 1 day", "taken · for 2 days"]
+      ),
+      "Trend.xcstrings: %lld pesées": (
+        ["0 pesée", "1 pesée", "2 pesées"], ["0 weigh-ins", "1 weigh-in", "2 weigh-ins"]
+      ),
+      "Trend.xcstrings: %lld annotations": (
+        ["0 annotation", "1 annotation", "2 annotations"],
+        ["0 annotations", "1 annotation", "2 annotations"]
+      ),
       "Accueil.xcstrings: %lld séances": (
         ["0 séance", "1 séance", "2 séances"], ["0 sessions", "1 session", "2 sessions"]
       ),
@@ -255,7 +270,10 @@ func frenchTypographyFaults(_ text: String) -> [String] {
     ]
     var counts: Set<String> = []
     for url in try catalogs()
-    where ["Accueil.xcstrings", "Seances.xcstrings", "SessionTools.xcstrings"]
+    where [
+      "Accueil.xcstrings", "Corps.xcstrings", "Entries.xcstrings", "Seances.xcstrings",
+      "SessionTools.xcstrings", "Trend.xcstrings",
+    ]
       .contains(url.lastPathComponent)
     {
       for entry in try entries(of: url) where !entry.french.plurals.isEmpty {
@@ -294,6 +312,23 @@ func frenchTypographyFaults(_ text: String) -> [String] {
     }
   }
 
+  /// English writes « 0.7% » where French writes « 0,7 % »: the sign sits in the catalog per
+  /// language, and no English percent takes a space.
+  @Test func englishPercentTakesNoSpace() throws {
+    let url = try #require(try catalogs().first { $0.lastPathComponent == "Corps.xcstrings" })
+    let sign = try #require(
+      try entries(of: url).first { $0.key == "%@\u{202F}%%" }, "the percent sign is in Corps's catalog")
+    #expect(sign.english?.values == ["%@%%"])
+    for url in try catalogs() {
+      for entry in try entries(of: url) {
+        for value in entry.english?.values ?? [] {
+          #expect(
+            !value.contains("\u{202F}%%") && !value.contains(" %%"), "\(url.lastPathComponent): \(value)")
+        }
+      }
+    }
+  }
+
   /// In French a workout is a « séance »: the word « session » never reaches the screen, the
   /// sign-in's own included.
   @Test func frenchSaysSeance() throws {
@@ -304,6 +339,28 @@ func frenchTypographyFaults(_ text: String) -> [String] {
             value.range(of: "session", options: .caseInsensitive) == nil,
             "\(url.lastPathComponent): \(value)")
         }
+      }
+    }
+  }
+
+  /// iOS asks for Health access with these texts: they name every type Belay reads and writes,
+  /// weigh-ins included, and the project's own French copy is the catalog's.
+  @Test func healthPermissionsNameTheWeighIns() throws {
+    let url = appFolder.appending(path: "InfoPlist.xcstrings")
+    let texts = Dictionary(uniqueKeysWithValues: try entries(of: url).map { ($0.key, $0) })
+    let project = try String(
+      contentsOf: appleFolder.appending(path: "Belay.xcodeproj/project.pbxproj"), encoding: .utf8)
+    for key in ["NSHealthShareUsageDescription", "NSHealthUpdateUsageDescription"] {
+      let entry = try #require(texts[key], "\(key) is in the catalog")
+      let french = entry.french.values.joined()
+      #expect(french.contains("tes pesées"), "\(key): \(french)")
+      #expect(
+        entry.english?.values.joined().contains("weigh-ins") == true, "\(key) in English")
+      let settings = project.components(separatedBy: "\n")
+        .filter { $0.contains("INFOPLIST_KEY_\(key) = ") }
+      #expect(settings.count == 2, "\(key) in Debug and Release")
+      for line in settings {
+        #expect(line.contains("\"\(french)\""), "\(key) in the project: \(line)")
       }
     }
   }

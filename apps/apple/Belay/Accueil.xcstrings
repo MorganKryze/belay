@@ -82,12 +82,12 @@
         }
       }
     },
-    "Choisis un programme pour ta première séance.": {
+    "Choisis un programme pour ta première séance. Ta tendance commence à ta première pesée.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Choose a program for your first session."
+            "value": "Choose a program for your first session. Your trend starts with your first weigh-in."
           }
         }
       }

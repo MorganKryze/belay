@@ -2,7 +2,7 @@ import BelayCore
 import os
 import SwiftUI
 
-/// Réglages, reached from Accueil's avatar: the Santé switch, then the way out. Signing out asks
+/// Réglages, reached from Accueil's avatar: the Santé switches, then the way out. Signing out asks
 /// first, as the system does for a destructive action, and says what still waits to be sent, since
 /// it leaves with the next sign-in of this account only.
 struct ReglagesView: View {
@@ -11,6 +11,8 @@ struct ReglagesView: View {
     @State private var asking = false
     /// The switch as the store keeps it, read when the page opens.
     @State private var healthOn = false
+    /// The import's switch, which goes on only with Santé's.
+    @State private var importOn = false
     /// iOS did not let Belay write workouts at the last turn-on; the switch can try again.
     @State private var refused = false
     /// What the queue holds when the person asks; nil when the store could not say.
@@ -27,6 +29,12 @@ struct ReglagesView: View {
                     }
                     .frame(minHeight: 44)
                     .accessibilityIdentifier("health-switch")
+                    Toggle(isOn: Binding(get: { importOn }, set: switchImport)) {
+                        Text("Importer les pesées de Santé", tableName: "Health")
+                    }
+                    .frame(minHeight: 44)
+                    .disabled(!healthOn)
+                    .accessibilityIdentifier("health-import-switch")
                 } header: {
                     Text("Sur cet iPhone", tableName: "Health")
                 } footer: {
@@ -36,7 +44,7 @@ struct ReglagesView: View {
                             tableName: "Health")
                     } else {
                         Text(
-                            "Tes séances terminées vont dans Santé avec leur intensité, à partir du moment où tu actives. Désactiver laisse dans Santé ce qui y est déjà.",
+                            "Tes séances terminées, avec leur intensité, et tes pesées vont dans Santé à partir du moment où tu actives. Importer ajoute à Belay les pesées d’une balance connectée ou saisies dans Santé ; une pesée déjà dans Belay n’est jamais remplacée. Si aucune n’arrive, vérifie que Belay peut lire le poids dans l’app Santé › ta photo › Confidentialité › Apps › Belay. Désactiver laisse dans Santé ce qui y est déjà.",
                             tableName: "Health")
                     }
                 }
@@ -83,7 +91,9 @@ struct ReglagesView: View {
 
     private func readHealth() {
         do {
-            healthOn = try store.healthSettings().on
+            let settings = try store.healthSettings()
+            healthOn = settings.on
+            importOn = settings.importOn
         } catch {
             Self.log.error("health switch not read: \(AccountStore.logLabel(error), privacy: .public)")
         }
@@ -92,7 +102,7 @@ struct ReglagesView: View {
     /// On asks iOS at that moment; it shows as on only once iOS lets Belay write workouts.
     private func switchHealth(_ on: Bool) {
         guard on else {
-            if account.turnHealthOff() { healthOn = false }
+            if account.turnHealthOff() { (healthOn, importOn) = (false, false) }
             return
         }
         healthOn = true
@@ -101,6 +111,17 @@ struct ReglagesView: View {
             healthOn = allowed
             refused = !allowed
         }
+    }
+
+    /// On asks iOS to let Belay read body mass; iOS never says whether it did, so the switch stays
+    /// on and the footer says where to allow it.
+    private func switchImport(_ on: Bool) {
+        guard on else {
+            if account.turnHealthImportOff() { importOn = false }
+            return
+        }
+        importOn = true
+        Task { importOn = await account.turnHealthImportOn() }
     }
 
     private func ask() {
