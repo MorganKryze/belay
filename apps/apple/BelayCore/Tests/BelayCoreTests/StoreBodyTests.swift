@@ -75,6 +75,22 @@ final class MovingClock: Sendable {
     #expect(try store.outbox(limit: nil).count == 1)
   }
 
+  /// The day's measures and its intake are each one write with their queued changes: a refused
+  /// second queue entry leaves neither field written nor queued.
+  @Test func multiFieldEntriesWriteAllOrNothing() throws {
+    try Fixture.refuseInserts(
+      into: "outbox", in: store, when: "(SELECT count(*) FROM main.outbox) >= 1")
+    #expect(throws: (any Error).self) {
+      try body.intake(date: day, kcal: .set(1800), protein: .set(120))
+    }
+    #expect(try store.body().intake.isEmpty)
+    #expect(throws: (any Error).self) {
+      try body.measure(date: day, waist: .set(85), neck: .set(38), hip: .keep)
+    }
+    #expect(try store.body().measures.isEmpty)
+    #expect(try store.outbox(limit: nil).isEmpty)
+  }
+
   @Test func theDayIsThePersonsToday() throws {
     // 23:30 UTC on the 6th is already the 7th in Paris.
     clock.move(minutes: 14 * 60 + 30)
