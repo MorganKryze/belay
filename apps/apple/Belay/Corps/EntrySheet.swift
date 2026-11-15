@@ -8,6 +8,8 @@ struct EntrySheet<Rows: View>: View {
     let symbol: String
     var domain = Domain.body
     @Binding var date: Date
+    /// Now by the model's clock: the latest day the picker offers.
+    let latest: Date
     /// Whether ✓ writes: the rows hold a value within the bounds.
     let canSave: Bool
     /// The identifiers' stem, « weighin » for `weighin-save`.
@@ -24,7 +26,7 @@ struct EntrySheet<Rows: View>: View {
     /// Never in the future, never before 1900.
     private var days: ClosedRange<Date> {
         let earliest = Calendar.current.date(from: DateComponents(year: 1900, month: 1, day: 1)) ?? .distantPast
-        return earliest...Date.now
+        return earliest...latest
     }
 
     var body: some View {

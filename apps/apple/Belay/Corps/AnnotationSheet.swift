@@ -26,7 +26,7 @@ struct AnnotationSheet: View {
         self.corps = corps
         self.target = target
         let row: AnnotationRow? = if case .edit(let row) = target { row } else { nil }
-        _date = State(initialValue: row.flatMap { BodyText.date($0.date) } ?? .now)
+        _date = State(initialValue: row.flatMap { BodyText.date($0.date) } ?? corps.now())
         _kind = State(initialValue: row?.type ?? .deload)
         _label = State(initialValue: row?.label ?? "")
     }
@@ -43,12 +43,12 @@ struct AnnotationSheet: View {
 
     var body: some View {
         EntrySheet(
-            title: Text("Annotation", tableName: "Trend"), symbol: kind.symbol, domain: .rest, date: $date,
+            title: Text("Annotation", tableName: "Trend"), symbol: kind.symbol, domain: .rest, date: $date, latest: corps.now(),
             canSave: isAnnotationLabel(saved), id: "annotation",
             save: {
                 corps.annotate(
                     AnnotationInput(
-                        id: editing?.id ?? UUIDv7.make(at: .now), date: toISODate(date, timeZone: .current), type: kind,
+                        id: editing?.id ?? UUIDv7.make(at: corps.now()), date: toISODate(date, timeZone: corps.timeZone), type: kind,
                         label: saved))
             },
             deletion: editing.map { row in

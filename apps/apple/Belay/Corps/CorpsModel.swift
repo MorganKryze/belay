@@ -19,6 +19,10 @@ final class CorpsModel {
     private(set) var annotations: [AnnotationRow] = []
     /// The local day the state was read for.
     private(set) var today: String
+    /// Mensurations, Apports and Compléments.
+    private(set) var measures: MeasuresState
+    private(set) var intake: IntakeState
+    private(set) var supplements: [SupplementToday] = []
     /// Whether the import's card shows: Health is on this phone and the card was never answered.
     private(set) var offersImport = false
     /// Corps opens on M (R11).
@@ -33,8 +37,9 @@ final class CorpsModel {
     private let didWrite: () -> Void
     private let runHealth: () -> Void
     private let turnImportOn: () async -> Bool
-    private let now: @Sendable () -> Date
-    private let timeZone: TimeZone
+    /// The clock and zone the day is read in; the sheets date their entries by them too.
+    let now: @Sendable () -> Date
+    let timeZone: TimeZone
     @ObservationIgnored private var watch: Task<Void, Never>?
     @ObservationIgnored private var midnight: Task<Void, Never>?
 
@@ -42,7 +47,7 @@ final class CorpsModel {
 
     init(
         store: AccountStore, didWrite: @escaping () -> Void, runHealth: @escaping () -> Void,
-        turnHealthOn: @escaping () async -> Bool, turnImportOn: @escaping () async -> Bool,
+        turnImportOn: @escaping () async -> Bool,
         now: @escaping @Sendable () -> Date, timeZone: TimeZone
     ) {
         self.store = store
@@ -56,6 +61,8 @@ final class CorpsModel {
         today = toISODate(now(), timeZone: timeZone)
         rows = corpsState(.empty, health: .off, now: now(), timeZone: timeZone).1
         series = trendSeries(.empty, span: .month, now: now(), timeZone: timeZone)
+        measures = measuresState(.empty, now: now(), timeZone: timeZone)
+        intake = intakeState(.empty, now: now(), timeZone: timeZone)
         refresh()
         watch = Task { [weak self, store] in
             do {
@@ -107,6 +114,9 @@ final class CorpsModel {
         series = trendSeries(body, span: span, now: at, timeZone: timeZone)
         weekRows = weeks(body, now: at, timeZone: timeZone)
         range = targetRange(body)
+        measures = measuresState(body, now: at, timeZone: timeZone)
+        intake = intakeState(body, now: at, timeZone: timeZone)
+        supplements = supplementsToday(body, now: at, timeZone: timeZone)
         annotations = body.annotations.filter { !$0.removed }.sorted { ($0.date, $0.id) < ($1.date, $1.id) }
         offersImport = HealthKitWriter.available && !health.offered
     }
@@ -127,6 +137,30 @@ final class CorpsModel {
 
     func deleteWeighIn(date: String) {
         write("weigh-in not deleted") { try actions.deleteWeight(date: date) }
+    }
+
+    /// The measures of `date`, if the day holds any.
+    func measure(on date: String) -> MeasureRow? {
+        body.measures.first { $0.date == date }
+    }
+
+    /// The intake of `date`, if the day holds one.
+    func intake(on date: String) -> IntakeRow? {
+        body.intake.first { $0.date == date }
+    }
+
+    func measure(date: String, waist: FieldEdit<Double>, neck: FieldEdit<Double>, hip: FieldEdit<Double>) {
+        write("measures not saved") { try actions.measure(date: date, waist: waist, neck: neck, hip: hip) }
+    }
+
+    /// The day's total, both fields in one write.
+    func logIntake(date: String, kcal: FieldEdit<Int>, protein: FieldEdit<Int>) {
+        write("intake not saved") { try actions.intake(date: date, kcal: kcal, protein: protein) }
+    }
+
+    /// Today's box of a supplement, ticked or not (R20).
+    func take(supplementId: String, taken: Bool) {
+        write("supplement not logged") { try actions.take(supplementId: supplementId, date: today, taken: taken) }
     }
 
     /// A new annotation, or an edit of the one with `input`'s id.

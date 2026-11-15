@@ -105,7 +105,6 @@ struct RootView: View {
         bodyBox.value {
             CorpsModel(
                 store: store, didWrite: account.didWrite, runHealth: account.runHealth,
-                turnHealthOn: { [account] in await account.turnHealthOn() },
                 turnImportOn: { [account] in await account.turnHealthImportOn() }, now: Self.clock, timeZone: .current)
         }
     }
@@ -211,9 +210,9 @@ struct RootView: View {
                 })
         case .trend: TrendView(corps: corps) { model.corpsPath.append($0) }
         case .science(let id): ScienceView(id: id)
-        case .measures: WebForNow(title: "Mensurations", tableName: "Corps")
-        case .intake: WebForNow(title: "Apports", tableName: "Corps")
-        case .supplements: WebForNow(title: "Compléments", tableName: "Corps")
+        case .measures: MeasuresView(corps: corps)
+        case .intake: IntakeView(corps: corps)
+        case .supplements: SupplementsView(corps: corps)
         }
     }
 

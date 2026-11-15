@@ -6,11 +6,16 @@ import SwiftUI
 /// No « Heure » row: the contract keeps one weigh-in a day (R2).
 struct WeighInSheet: View {
     let corps: CorpsModel
-    @State private var date = Date.now
+    @State private var date: Date
     @State private var text = ""
     @FocusState private var typing: Bool
 
-    private var day: String { toISODate(date, timeZone: .current) }
+    init(corps: CorpsModel) {
+        self.corps = corps
+        _date = State(initialValue: corps.now())
+    }
+
+    private var day: String { toISODate(date, timeZone: corps.timeZone) }
 
     private var value: Double? {
         SetText.parseKg(text).flatMap { isWeighingKg($0) ? $0 : nil }
@@ -18,7 +23,7 @@ struct WeighInSheet: View {
 
     var body: some View {
         EntrySheet(
-            title: Text("Pesée", tableName: "Corps"), symbol: "scalemass.fill", date: $date, canSave: value != nil,
+            title: Text("Pesée", tableName: "Corps"), symbol: "scalemass.fill", date: $date, latest: corps.now(), canSave: value != nil,
             id: "weighin",
             save: { if let value { corps.weigh(date: day, kg: value) } },
             deletion: corps.weighIn(on: day) == nil
