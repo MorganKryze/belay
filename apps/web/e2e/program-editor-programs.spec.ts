@@ -136,7 +136,7 @@ const toast = (page: Page, text: RegExp) => page.getByRole("status").filter({ ha
 const nameField = (page: Page) => page.getByRole("textbox", { name: "Nom du programme" });
 const overflow = (page: Page) =>
   page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
-const FORCE_CHIPS = [/^A\s*Haut lourd$/, /^B\s*Bas lourd$/, /^C\s*Haut léger$/, /^D\s*Bas léger$/];
+const FORCE_CHIPS = ["A · Haut lourd", "B · Bas lourd", "C · Haut léger", "D · Bas léger"];
 
 test("switching to « Été léger » names its next session, and Annuler brings Force back with C next", async ({
   page,
@@ -168,7 +168,7 @@ test("switching to « Été léger » names its next session, and Annuler brings
 
   await rows.nth(2).click();
   await expect(menu(page)).toBeHidden();
-  await expect(chips(page)).toHaveText([/^A\s*Jambes$/, /^B\s*Dos$/]);
+  await expect(chips(page)).toHaveText(["A · Jambes", "B · Dos"]);
   const switched = toast(page, /^Été léger est actif\s:\sla prochaine séance est A · Jambes\./);
   await expect(switched).toBeVisible();
   await expect(selector(page, "Été léger")).toBeVisible();
