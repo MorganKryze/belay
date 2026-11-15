@@ -229,6 +229,13 @@ func frenchTypographyFaults(_ text: String) -> [String] {
         ["Encore 0 pesée cette semaine", "Encore 1 pesée cette semaine", "Encore 2 pesées cette semaine"],
         ["0 more weigh-ins this week", "1 more weigh-in this week", "2 more weigh-ins this week"]
       ),
+      "Trend.xcstrings: %lld pesées": (
+        ["0 pesée", "1 pesée", "2 pesées"], ["0 weigh-ins", "1 weigh-in", "2 weigh-ins"]
+      ),
+      "Trend.xcstrings: %lld annotations": (
+        ["0 annotation", "1 annotation", "2 annotations"],
+        ["0 annotations", "1 annotation", "2 annotations"]
+      ),
       "Accueil.xcstrings: %lld séances": (
         ["0 séance", "1 séance", "2 séances"], ["0 sessions", "1 session", "2 sessions"]
       ),
@@ -259,7 +266,10 @@ func frenchTypographyFaults(_ text: String) -> [String] {
     ]
     var counts: Set<String> = []
     for url in try catalogs()
-    where ["Accueil.xcstrings", "Corps.xcstrings", "Seances.xcstrings", "SessionTools.xcstrings"]
+    where [
+      "Accueil.xcstrings", "Corps.xcstrings", "Seances.xcstrings", "SessionTools.xcstrings",
+      "Trend.xcstrings",
+    ]
       .contains(url.lastPathComponent)
     {
       for entry in try entries(of: url) where !entry.french.plurals.isEmpty {

@@ -75,7 +75,7 @@ func weighings(_ body: BodyRead) -> [Weighing] {
 }
 
 /// The person's range, or the default before one is written.
-func targetRange(_ body: BodyRead) -> TargetRange {
+public func targetRange(_ body: BodyRead) -> TargetRange {
   body.target.map { TargetRange(minPct: $0.minPct, maxPct: $0.maxPct) } ?? defaultTarget
 }
 

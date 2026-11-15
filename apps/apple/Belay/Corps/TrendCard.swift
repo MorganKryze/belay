@@ -5,7 +5,8 @@ import SwiftUI
 /// The 7-day average, its last week and its range in words; on Corps the span and the curve under
 /// them. The body's accent is the same for a loss and a gain, never red (R9).
 struct TrendCard: View {
-    enum Place { case corps, accueil }
+    /// Accueil shows no curve; Ta tendance adds creatine's band, the annotations and the legend.
+    enum Place { case corps, accueil, trend }
     let state: CorpsState
     let series: TrendSeries
     let place: Place
@@ -13,6 +14,8 @@ struct TrendCard: View {
     var span: Binding<TrendSpan>? = nil
     /// « Ajouter une pesée », on Corps before the first weigh-in.
     var add: (() -> Void)? = nil
+    /// Opens « Comment c’est calculé » from the range, on Ta tendance.
+    var explain: (() -> Void)? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -38,7 +41,7 @@ struct TrendCard: View {
                 Figure(text: BodyText.number(trend.averageKg), value: trend.averageKg, unit: "kg")
                 change(trend)
                 range(trend)
-                if place == .corps, let span {
+                if place != .accueil, let span {
                     Picker(String(localized: "Période", table: "Corps"), selection: span) {
                         ForEach(TrendSpan.allCases, id: \.self) { s in
                             Text(s.letter).accessibilityLabel(s.name).tag(s)
@@ -51,7 +54,15 @@ struct TrendCard: View {
                     .sensoryFeedback(.selection, trigger: span.wrappedValue)
                     .accessibilityIdentifier("trend-span")
                     .padding(.top, 6)
-                    WeightChart(points: series.points, average: series.average, span: span.wrappedValue)
+                    if place == .trend {
+                        WeightChart(
+                            points: series.points, average: series.average, span: span.wrappedValue,
+                            creatine: series.creatine, annotations: series.annotations)
+                        Divider().overlay(Color.line).padding(.top, 8)
+                        ChartLegend(series: series).padding(.vertical, 6)
+                    } else {
+                        WeightChart(points: series.points, average: series.average, span: span.wrappedValue)
+                    }
                 }
             }
         }
@@ -85,8 +96,31 @@ struct TrendCard: View {
         }
     }
 
-    /// In range on a pill; out of it in grey words with the range, so the words carry it.
+    /// In range on a pill; out of it in grey words with the range, so the words carry it. On Ta
+    /// tendance, with its « ? », it opens how the range is read.
     @ViewBuilder private func range(_ trend: TrendCardState) -> some View {
+        if let explain, trend.inRange != nil {
+            Button(action: explain) {
+                HStack(spacing: 8) {
+                    rangeWords(trend)
+                    Image(systemName: "questionmark.circle")
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(.muted)
+                        .accessibilityHidden(true)
+                }
+                .frame(minHeight: 44)
+                .contentShape(.rect)
+            }
+            .buttonStyle(.plain)
+            .accessibilityElement(children: .combine)
+            .accessibilityHint(Text("Comment c’est calculé", tableName: "Trend"))
+            .accessibilityIdentifier("trend-range")
+        } else {
+            rangeWords(trend)
+        }
+    }
+
+    @ViewBuilder private func rangeWords(_ trend: TrendCardState) -> some View {
         switch trend.inRange {
         case true?:
             RangePill(text: LocalizedStringKey(String(localized: "dans ta fourchette", table: "Corps")))
@@ -150,74 +184,3 @@ struct EmptyChart: View {
     }
 }
 
-/// The weigh-ins as pale points, the 7-day average as the body's line, the axis on the right.
-struct WeightChart: View {
-    let points: [BelayCore.Point]
-    let average: [BelayCore.Point]
-    let span: TrendSpan
-    @ScaledMetric(relativeTo: .body) private var height: CGFloat = 200
-    @Environment(\.dynamicTypeSize) private var typeSize
-
-    private var domain: ClosedRange<Double> {
-        let values = (points + average).map(\.value)
-        return ((values.min() ?? 79) - 0.4).rounded(.down)...((values.max() ?? 82) + 0.4).rounded(.up)
-    }
-
-    var body: some View {
-        Chart {
-            ForEach(points, id: \.date) { p in
-                if let day = BodyText.date(p.date) {
-                    PointMark(x: .value("Jour", day, unit: .day), y: .value("Pesée", p.value))
-                        .symbolSize(span == .year ? 6 : span == .week ? 46 : 20)
-                        .foregroundStyle(Color.bodyShade.opacity(0.35))
-                }
-            }
-            ForEach(average, id: \.date) { p in
-                if let day = BodyText.date(p.date) {
-                    LineMark(x: .value("Jour", day, unit: .day), y: .value("Moyenne", p.value))
-                        .interpolationMethod(.monotone)
-                        .lineStyle(StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
-                        .foregroundStyle(Color.bodyShade)
-                }
-            }
-        }
-        .chartYScale(domain: domain)
-        .chartXAxis {
-            switch span {
-            case .week:
-                AxisMarks(values: .stride(by: .day)) { _ in
-                    AxisValueLabel(format: .dateTime.weekday(.abbreviated)).foregroundStyle(.muted)
-                }
-            case .month:
-                AxisMarks(values: .stride(by: .day, count: 7)) { _ in
-                    AxisGridLine().foregroundStyle(.line)
-                    AxisValueLabel(format: .dateTime.day().month(.abbreviated)).foregroundStyle(.muted)
-                }
-            case .year:
-                AxisMarks(values: .stride(by: .month, count: 2)) { _ in
-                    AxisGridLine().foregroundStyle(.line)
-                    AxisValueLabel(format: .dateTime.month(.abbreviated)).foregroundStyle(.muted)
-                }
-            }
-        }
-        .chartYAxis {
-            AxisMarks(position: .trailing, values: .automatic(desiredCount: 4)) { _ in
-                AxisGridLine().foregroundStyle(.line)
-                AxisValueLabel().foregroundStyle(.muted)
-            }
-        }
-        .frame(height: typeSize.isAccessibilitySize ? 220 : height)
-        // As Santé does at the largest sizes: the chart's labels stop growing, so they never overlap.
-        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-        .accessibilityElement()
-        .accessibilityLabel(label)
-        .accessibilityIdentifier("trend-chart")
-    }
-
-    private var label: String {
-        if let last = average.last {
-            return String(localized: "Moyenne 7 jours et pesées, \(span.name.lowercased()), \(BodyText.kg(last.value))", table: "Corps")
-        }
-        return String(localized: "Tes pesées, \(span.name.lowercased())", table: "Corps")
-    }
-}

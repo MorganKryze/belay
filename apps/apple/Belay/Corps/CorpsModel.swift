@@ -11,6 +11,12 @@ final class CorpsModel {
     private(set) var rows: TodayRows
     /// The curve over `span`, recomputed when the entries or the span change.
     private(set) var series: TrendSeries
+    /// Tes semaines, newest first.
+    private(set) var weekRows: [WeekRow] = []
+    /// The loss range the weeks are read against.
+    private(set) var range = defaultTarget
+    /// Every annotation in place, oldest first: the list under the weeks.
+    private(set) var annotations: [AnnotationRow] = []
     /// The local day the state was read for.
     private(set) var today: String
     /// Whether the import's card shows: Health is on this phone and the card was never answered.
@@ -99,6 +105,9 @@ final class CorpsModel {
         today = toISODate(at, timeZone: timeZone)
         (state, rows) = corpsState(body, health: health, now: at, timeZone: timeZone)
         series = trendSeries(body, span: span, now: at, timeZone: timeZone)
+        weekRows = weeks(body, now: at, timeZone: timeZone)
+        range = targetRange(body)
+        annotations = body.annotations.filter { !$0.removed }.sorted { ($0.date, $0.id) < ($1.date, $1.id) }
         offersImport = HealthKitWriter.available && !health.offered
     }
 
@@ -118,6 +127,15 @@ final class CorpsModel {
 
     func deleteWeighIn(date: String) {
         write("weigh-in not deleted") { try actions.deleteWeight(date: date) }
+    }
+
+    /// A new annotation, or an edit of the one with `input`'s id.
+    func annotate(_ input: AnnotationInput) {
+        write("annotation not saved") { try actions.annotate(input) }
+    }
+
+    func removeAnnotation(id: String) {
+        write("annotation not removed") { try actions.removeAnnotation(id: id) }
     }
 
     /// « Importer les pesées »: the import's switch, asked of iOS now; the card is answered either way.

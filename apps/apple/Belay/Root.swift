@@ -32,8 +32,12 @@ enum Route: Hashable {
     case preview(sessionId: String)
     /// A session kept, from Séances' Historique.
     case past(workoutId: String)
+    /// Ta tendance and its weeks, from Corps's « Tes semaines ».
+    case trend
+    /// « Comment c’est calculé » for an entry of the science catalogue (« target-rate »).
+    case science(id: String)
     /// Corps's screens, from its rows and Accueil's; on the web until each comes to the phone.
-    case weeks, measures, intake, supplements
+    case measures, intake, supplements
 }
 
 /// The tab in front and what each tab has pushed, kept across tab switches.
@@ -205,7 +209,8 @@ struct RootView: View {
                         workoutId: workoutId, store: store, didWrite: account.didWrite,
                         health: account.runHealth, now: Self.clock)
                 })
-        case .weeks: WebForNow(title: "Tes semaines", tableName: "Corps")
+        case .trend: TrendView(corps: corps) { model.corpsPath.append($0) }
+        case .science(let id): ScienceView(id: id)
         case .measures: WebForNow(title: "Mensurations", tableName: "Corps")
         case .intake: WebForNow(title: "Apports", tableName: "Corps")
         case .supplements: WebForNow(title: "Compléments", tableName: "Corps")

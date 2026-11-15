@@ -14,8 +14,8 @@ public struct TargetRange: Codable, Sendable, Equatable {
 public let defaultTarget = TargetRange(minPct: 0.5, maxPct: 1)
 
 /// 0.25 to 1 % in steps of 0.05, at least 0.1 apart. Published recommendations stop at 1 %.
-private let targetMin = 0.25
-private let targetMax = 1.0
+public let targetMin = 0.25
+public let targetMax = 1.0
 private let targetGap = 0.1
 
 /// Checked in hundredths, so 0.85 ≤ 0.95 − 0.1 holds although 0.95 − 0.1 is 0.8499… in floats.

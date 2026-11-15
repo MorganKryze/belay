@@ -19,7 +19,7 @@ struct CorpsView: View {
             Section {
                 TrendCard(state: corps.state, series: corps.series, place: .corps, span: $corps.span) { weighing = true }
                 if case .usual = corps.state {
-                    Button { open(.weeks) } label: {
+                    Button { open(.trend) } label: {
                         HStack(spacing: 14) {
                             DomainTile(domain: .body, symbol: "calendar")
                             VStack(alignment: .leading, spacing: 2) {

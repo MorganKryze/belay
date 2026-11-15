@@ -35,7 +35,8 @@ import Synchronization
 /// weigh-ins, the last yesterday at 79,8 kg; `bodyFirst` with none; `healthCard` empty;
 /// `weighedFromHealth` with today's weigh-in filled by the Health import; `measures`, `intake` and
 /// `supplements` as `bodyUsual` with five weeks of waists, a full profile, and creatine ticked
-/// every day of the last 23.
+/// every day of the last 23; `trend` as `supplements` with a « Semaine allégée » from 19 days back
+/// and a « Note · voyage » 9 days back.
 enum Fixture {
     nonisolated fileprivate static let origin = "https://belay.example"
     nonisolated fileprivate static let userId = "fixture"
@@ -111,7 +112,7 @@ enum Fixture {
 
     private static let bodyModes: Set = [
         "bodyUsual", "bodyOutOfRange", "bodyEarly", "bodyFirst", "healthCard", "weighedFromHealth", "measures", "intake",
-        "supplements",
+        "supplements", "trend",
     ]
 
     /// The clock `-BelayNow` sets: that local time at launch, running on from there.
@@ -227,7 +228,7 @@ enum Fixture {
         let tenth = { (kg: Double) in (kg * 10).rounded() / 10 }
         if mode != "healthCard" { try store.setHealthImportOffered() }
         switch mode {
-        case "bodyUsual", "measures", "intake", "supplements":
+        case "bodyUsual", "measures", "intake", "supplements", "trend":
             // Seven-day ripples that cancel out, so each 7-day average stays on the line.
             let ripple = [0, 0.2, -0.1, 0.1, -0.2, 0, 0]
             for back in 0..<35 {
@@ -252,8 +253,12 @@ enum Fixture {
             }
             try serve(answer, to: store, active: true)
             try actions.take(supplementId: creatineId, date: today, taken: true)
-            if mode == "supplements" {
+            if mode == "supplements" || mode == "trend" {
                 for back in 1..<23 { try actions.take(supplementId: creatineId, date: addDays(today, -back), taken: true) }
+            }
+            if mode == "trend" {
+                try actions.annotate(AnnotationInput(id: deloadId, date: addDays(today, -19), type: .deload, label: nil))
+                try actions.annotate(AnnotationInput(id: noteId, date: addDays(today, -9), type: .note, label: "voyage"))
             }
             if mode == "measures" {
                 for week in 1..<5 {
@@ -282,6 +287,8 @@ enum Fixture {
     }
 
     private static let creatineId = "00000000-0000-7000-8000-0000000000d1"
+    private static let deloadId = "00000000-0000-7000-8000-0000000000e1"
+    private static let noteId = "00000000-0000-7000-8000-0000000000e2"
 
     /// A sync's answer with nothing in it, for a mode to add its rows to.
     private static var emptyAnswer: [String: Any] {
