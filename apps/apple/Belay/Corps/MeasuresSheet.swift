@@ -47,7 +47,8 @@ struct MeasuresSheet: View {
             ForEach(Self.fields, id: \.self) { field in
                 EntryField(
                     label: label(field), unit: Text("cm", tableName: "Entries"), text: binding(field),
-                    keyboard: .decimalPad, id: "measures-\(field.rawValue)"
+                    keyboard: .decimalPad, id: "measures-\(field.rawValue)",
+                    prompt: corps.lastMeasure(field).map(BodyText.number) ?? ""
                 )
                 .focused($typing, equals: field)
             }
@@ -88,6 +89,9 @@ struct EntryField: View {
     @Binding var text: String
     let keyboard: UIKeyboardType
     let id: String
+    /// The grey value while the field is empty, as the weigh-in shows the last one; nil shows the
+    /// field's name.
+    var prompt: String? = nil
     @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
@@ -97,7 +101,7 @@ struct EntryField: View {
             label.foregroundStyle(.ink)
             HStack(spacing: 6) {
                 Spacer(minLength: 0)
-                TextField(text: $text) { label }
+                TextField(text: $text, prompt: prompt.map { Text(verbatim: $0) }) { label }
                     .keyboardType(keyboard)
                     .multilineTextAlignment(.trailing)
                     .font(.title3.weight(.semibold))

@@ -68,6 +68,10 @@ final class EntriesTests: XCTestCase {
         let save = element(app, "measures-save")
         XCTAssertFalse(save.isEnabled, "✓ is grey while empty")
         let waist = element(app, "measures-waist")
+        // The last value of each field in grey, the label said once beside it.
+        XCTAssertEqual(waist.placeholderValue, "84,5")
+        XCTAssertEqual(element(app, "measures-neck").placeholderValue, "38,0")
+        XCTAssertEqual(element(app, "measures-hip").placeholderValue, "98,0")
         XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5), "the keypad is open")
         waist.typeText("39,9")
         XCTAssertFalse(save.isEnabled, "under the bound is refused")

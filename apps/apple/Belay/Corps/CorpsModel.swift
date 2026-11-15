@@ -135,6 +135,18 @@ final class CorpsModel {
         body.measures.first { $0.date == date }
     }
 
+    /// The latest value of `field` up to today, the measures sheet's grey placeholder.
+    func lastMeasure(_ field: MeasureField) -> Double? {
+        let cm = { (row: MeasureRow) -> Double? in
+            switch field {
+            case .waist: row.waistCm
+            case .neck: row.neckCm
+            case .hip: row.hipCm
+            }
+        }
+        return body.measures.filter { $0.date <= today && cm($0) != nil }.max { $0.date < $1.date }.flatMap(cm)
+    }
+
     /// The intake of `date`, if the day holds one.
     func intake(on date: String) -> IntakeRow? {
         body.intake.first { $0.date == date }
