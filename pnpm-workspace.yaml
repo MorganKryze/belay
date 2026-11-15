@@ -6,3 +6,9 @@ allowBuilds:
   esbuild: true
   protobufjs: false
   ssh2: false
+# Security floors for build and test tooling pulled in by older parents (GHSA-g3hv-75wg-m249,
+# GHSA-3g3m-2fjr-6pw4, GHSA-67mh-4wv8-2f99). Drop each once its parents require the fixed line.
+overrides:
+  "minimatch@>=7.0.0 <11.0.1": "^11.0.1"
+  "glob@>=9.0.0 <14.0.2": "^14.0.2"
+  "esbuild@<0.25.0": "^0.25.0"
