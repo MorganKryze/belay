@@ -12,7 +12,11 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { isDeepStrictEqual } from "node:util";
 import { ANNOTATION_LABEL_MAX, isAnnotationLabel } from "../packages/shared/src/body/annotations";
-import { identifierHref, identifierLabel, shortAuthors } from "../packages/shared/src/science/render";
+import {
+  identifierHref,
+  identifierLabel,
+  shortAuthors,
+} from "../packages/shared/src/science/render";
 import { sourceById } from "../packages/shared/src/science/sources";
 import { SCIENCE_IDS, TOOL_SCIENCE } from "../packages/shared/src/science/tools";
 import { addDays, isoWeekStart, toISODate } from "../packages/shared/src/body/dates";
