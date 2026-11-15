@@ -18,7 +18,7 @@ struct WeeksView: View {
         } header: {
             Text("Tes semaines", tableName: "Corps").textCase(nil).foregroundStyle(.ink)
         } footer: {
-            let low = BodyText.percent(targetMin), high = "\(BodyText.percent(targetMax))\u{202F}%"
+            let low = targetMin.upToHundredths, high = BodyText.percent(targetMax.upToHundredths)
             Text("Ta fourchette se règle dans ton profil, de \(low) à \(high) par semaine.", tableName: "Trend")
                 .foregroundStyle(.muted)
         }
@@ -80,7 +80,7 @@ private struct WeekLine: View {
     private var change: String? {
         if week.isCurrent { return String(localized: "à suivre", table: "Trend") }
         guard let loss = week.summary.lossPct else { return nil }
-        let figure = "\(BodyText.number(abs(loss)))\u{202F}%"
+        let figure = BodyText.percent(BodyText.number(abs(loss)))
         return loss < 0
             ? String(localized: "prise \(figure)", table: "Trend") : String(localized: "perte \(figure)", table: "Trend")
     }
@@ -121,7 +121,7 @@ private struct WeekLine: View {
                 case true?:
                     RangePill(text: LocalizedStringKey(String(localized: "dans ta fourchette", table: "Corps")))
                 case false?:
-                    let low = BodyText.percent(range.minPct), high = "\(BodyText.percent(range.maxPct))\u{202F}%"
+                    let low = range.minPct.upToHundredths, high = BodyText.percent(range.maxPct.upToHundredths)
                     Text(String(localized: "hors de ta fourchette, \(low) à \(high)", table: "Corps"))
                         .font(.footnote.weight(.semibold))
                         .foregroundStyle(.muted)

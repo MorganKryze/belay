@@ -312,6 +312,23 @@ func frenchTypographyFaults(_ text: String) -> [String] {
     }
   }
 
+  /// English writes « 0.7% » where French writes « 0,7 % »: the sign sits in the catalog per
+  /// language, and no English percent takes a space.
+  @Test func englishPercentTakesNoSpace() throws {
+    let url = try #require(try catalogs().first { $0.lastPathComponent == "Corps.xcstrings" })
+    let sign = try #require(
+      try entries(of: url).first { $0.key == "%@\u{202F}%%" }, "the percent sign is in Corps's catalog")
+    #expect(sign.english?.values == ["%@%%"])
+    for url in try catalogs() {
+      for entry in try entries(of: url) {
+        for value in entry.english?.values ?? [] {
+          #expect(
+            !value.contains("\u{202F}%%") && !value.contains(" %%"), "\(url.lastPathComponent): \(value)")
+        }
+      }
+    }
+  }
+
   /// In French a workout is a « séance »: the word « session » never reaches the screen, the
   /// sign-in's own included.
   @Test func frenchSaysSeance() throws {

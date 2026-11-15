@@ -214,6 +214,16 @@ final class CorpsTests: XCTestCase {
         XCTAssertFalse(again.staticTexts["Tes pesées de Santé"].exists, "never again")
     }
 
+    /// In English the percent sign follows the figure with no space.
+    func testEnglishPercentTakesNoSpace() {
+        let app = corps("bodyOutOfRange", english: true)
+        let range = element(app, "trend-range")
+        XCTAssertTrue(range.waitForExistence(timeout: 5))
+        XCTAssertEqual(range.label, "outside your range, 0.5 to 1%")
+        let change = element(app, "trend-change").label
+        XCTAssertTrue(change.range(of: #"^up \d\.\d%/wk last week$"#, options: .regularExpression) != nil, change)
+    }
+
     /// A weigh-in the import filled says where it came from.
     func testImportedRowSaysFromHealth() {
         let app = corps("weighedFromHealth")

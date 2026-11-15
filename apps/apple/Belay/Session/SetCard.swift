@@ -225,9 +225,7 @@ struct SessionCard<Content: View>: View {
 /// How a set reads on the cover, on screen and to VoiceOver.
 enum SetText {
     /// « 62,5 », in the person's language.
-    static func kg(_ value: Double) -> String {
-        value.formatted(.number.precision(.fractionLength(0...2)))
-    }
+    static func kg(_ value: Double) -> String { value.upToHundredths }
 
     /// A load typed with a comma or a point.
     static func parseKg(_ text: String) -> Double? {

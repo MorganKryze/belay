@@ -125,9 +125,9 @@ enum BodyText {
     /// « 1 850 », grouped as the language groups.
     static func whole(_ value: Int) -> String { value.formatted(.number) }
 
-    /// « 0,5 », « 1 »: a range's bound as the person set it.
-    static func percent(_ value: Double) -> String {
-        value.formatted(.number.precision(.fractionLength(0...2)))
+    /// « 0,7 % » in French, « 0.7% » in English: the sign as each language writes it.
+    static func percent(_ figure: String) -> String {
+        String(localized: "\(figure)\u{202F}%", table: "Corps")
     }
 
     /// A day as a word: « aujourd’hui », a weekday within the week, else its date.

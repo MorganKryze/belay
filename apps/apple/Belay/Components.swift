@@ -247,3 +247,9 @@ struct DomainTile: View {
             .accessibilityHidden(true)
     }
 }
+
+extension Double {
+    /// « 62,5 », « 0,5 », « 1 »: at most two decimals, in the person's language; a load and a
+    /// range's bound read alike.
+    var upToHundredths: String { formatted(.number.precision(.fractionLength(0...2))) }
+}
