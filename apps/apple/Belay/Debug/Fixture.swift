@@ -27,6 +27,15 @@ import Synchronization
 /// and a session kept once, `firstLaunch` the same with none kept; `weeks` with 60 sessions over
 /// the last 12 weeks, one across a DST change where the zone has one; `pastSession` with session A
 /// kept yesterday, its warm-up, its sets and an effort.
+///
+/// The body's modes, on the same clock, each with the Health import's card answered but
+/// `healthCard`'s: `bodyUsual` with five weeks of weigh-ins losing 0,1 kg a day, today's at
+/// 79,9 kg, a waist of 84,5 cm three days ago, today's intake at 1 850 kcal and 128 g, and one of
+/// two supplements ticked; `bodyOutOfRange` with five weeks gaining slowly; `bodyEarly` with three
+/// weigh-ins, the last yesterday at 79,8 kg; `bodyFirst` with none; `healthCard` empty;
+/// `weighedFromHealth` with today's weigh-in filled by the Health import; `measures`, `intake` and
+/// `supplements` as `bodyUsual` with five weeks of waists, a full profile, and creatine ticked
+/// every day of the last 23.
 enum Fixture {
     nonisolated fileprivate static let origin = "https://belay.example"
     nonisolated fileprivate static let userId = "fixture"
@@ -61,6 +70,10 @@ enum Fixture {
                 let store = try AccountStore.open(userId: userId, origin: url, in: folder)
                 try prepareDay(mode, store: store)
             }
+            if bodyModes.contains(mode) {
+                let store = try AccountStore.open(userId: userId, origin: url, in: folder)
+                try prepareBody(mode, store: store)
+            }
             if openModes.contains(mode) {
                 // Through the same start and actions a tap makes, so the store holds what the app writes.
                 let store = try AccountStore.open(userId: userId, origin: url, in: folder)
@@ -94,6 +107,11 @@ enum Fixture {
 
     private static let dayModes: Set = [
         "doneToday", "fixedWeek", "restDay", "doneEarly", "noProgram", "firstLaunch", "weeks", "pastSession",
+    ]
+
+    private static let bodyModes: Set = [
+        "bodyUsual", "bodyOutOfRange", "bodyEarly", "bodyFirst", "healthCard", "weighedFromHealth", "measures", "intake",
+        "supplements",
     ]
 
     /// The clock `-BelayNow` sets: that local time at launch, running on from there.
@@ -198,6 +216,76 @@ enum Fixture {
             "programs": [starter, mine], "programSessions": ownSessions, "programSlots": ownSlots,
             "activeProgram": ["programId": programId, "at": "2026-01-01T00:00:00.000Z"],
         ]
+    }
+
+    /// The store brought to a body mode, through the same actions the sheets write with, its days
+    /// counted back from the fixture's today.
+    private static func prepareBody(_ mode: String, store: AccountStore) throws {
+        let now = Self.now
+        let today = toISODate(now, timeZone: .current)
+        let actions = BodyActions(store: store, now: { now }, timeZone: .current)
+        let tenth = { (kg: Double) in (kg * 10).rounded() / 10 }
+        if mode != "healthCard" { try store.setHealthImportOffered() }
+        switch mode {
+        case "bodyUsual", "measures", "intake", "supplements":
+            // Seven-day ripples that cancel out, so each 7-day average stays on the line.
+            let ripple = [0, 0.2, -0.1, 0.1, -0.2, 0, 0]
+            for back in 0..<35 {
+                try actions.weigh(date: addDays(today, -back), kg: tenth(79.9 + 0.1 * Double(back) + ripple[back % 7]))
+            }
+            try actions.measure(date: addDays(today, -3), waist: 84.5, neck: nil, hip: nil)
+            try actions.intake(date: today, kcal: 1850, protein: 128)
+            let supplements: [[String: Any]] = [
+                ["id": creatineId, "name": "Créatine", "nameAt": "2026-01-01T00:00:00.000Z", "kind": "creatine", "removed": false],
+                [
+                    "id": "00000000-0000-7000-8000-0000000000d2", "name": "Vitamine D", "nameAt": "2026-01-01T00:00:00.000Z",
+                    "kind": "other", "removed": false,
+                ],
+            ]
+            var answer = emptyAnswer
+            answer["supplements"] = supplements
+            if mode == "intake" {
+                answer["profile"] = [
+                    "formula": "male", "formulaAt": "2026-01-01T00:00:00.000Z", "birthYear": 1990,
+                    "birthYearAt": "2026-01-01T00:00:00.000Z", "heightCm": 180, "heightAt": "2026-01-01T00:00:00.000Z",
+                ]
+            }
+            try serve(answer, to: store, active: true)
+            try actions.take(supplementId: creatineId, date: today, taken: true)
+            if mode == "supplements" {
+                for back in 1..<23 { try actions.take(supplementId: creatineId, date: addDays(today, -back), taken: true) }
+            }
+            if mode == "measures" {
+                for week in 1..<5 {
+                    try actions.measure(
+                        date: addDays(today, -3 - 7 * week), waist: 84.5 + 0.4 * Double(week), neck: week == 4 ? 38 : nil,
+                        hip: week == 4 ? 98 : nil)
+                }
+            }
+        case "bodyOutOfRange":
+            for back in 0..<35 {
+                try actions.weigh(date: addDays(today, -back), kg: tenth(80.2 - 0.1 * Double(back / 5)))
+            }
+        case "bodyEarly":
+            for (back, kg) in [(1, 79.8), (2, 79.9), (3, 80.0)] {
+                try actions.weigh(date: addDays(today, -back), kg: kg)
+            }
+        case "weighedFromHealth":
+            try store.setHealthOn(true, now: now)
+            try store.setHealthImportOn(true)
+            let morning = Calendar.current.startOfDay(for: now).addingTimeInterval(7 * 3_600)
+            let sample = HealthSample(startedAt: Int64(min(morning, now).timeIntervalSince1970 * 1_000), kg: 79.9)
+            _ = try store.importWeighIns([sample], anchor: "fixture", from: nil, now: now, timeZone: .current)
+        default:
+            break
+        }
+    }
+
+    private static let creatineId = "00000000-0000-7000-8000-0000000000d1"
+
+    /// A sync's answer with nothing in it, for a mode to add its rows to.
+    private static var emptyAnswer: [String: Any] {
+        ["cursor": "fixture", "workouts": [], "sets": [], "activities": [], "rejected": [], "hasMore": false]
     }
 
     /// The answer applied as a sync's; `active` false leaves the starting program's pointer, on

@@ -1,9 +1,11 @@
 import SwiftUI
 
-/// The stand-in for a tab that is not built natively yet: it says so plainly and opens the
+/// The stand-in for a tab or a screen that is not built natively yet: it says so plainly and opens the
 /// person's instance in Safari, at its home screen. It never shows sample numbers, weights are sensitive.
 struct WebForNow: View {
-    let tab: AppTab
+    let title: LocalizedStringKey
+    /// The string table the title is read from, for a screen that keeps its own.
+    var tableName: String? = nil
 
     var body: some View {
         VStack(spacing: 20) {
@@ -29,7 +31,7 @@ struct WebForNow: View {
         .padding(24)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background { Wall() }
-        .navigationTitle(tab.title)
+        .navigationTitle(Text(title, tableName: tableName))
     }
 }
 

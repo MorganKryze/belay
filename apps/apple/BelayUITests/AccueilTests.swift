@@ -44,7 +44,8 @@ final class AccueilTests: XCTestCase {
         XCTAssertTrue(chip.waitForExistence(timeout: 10), "the day card carries the session chip")
         XCTAssertEqual(chip.label, "La prochaine", "the chip reads the state as is")
         let chips = app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH 'chip.'"))
-        XCTAssertEqual(chips.count, 1, "the session is the only domain on Accueil")
+        XCTAssertEqual(chips.count, 2, "the day's session, then the trend's body chip")
+        XCTAssertEqual(element(app, "chip.body").label, "Moyenne 7 jours")
     }
 
     /// How much bluer than red the top left of the screen reads, between the status bar and the
@@ -377,11 +378,47 @@ final class AccueilTests: XCTestCase {
     func testFirstLaunchWelcome() {
         let app = launch("firstLaunch")
         XCTAssertTrue(app.staticTexts["Bienvenue"].waitForExistence(timeout: 10))
-        XCTAssertTrue(app.staticTexts["Choisis un programme pour ta première séance."].exists)
+        XCTAssertTrue(
+            app.staticTexts["Choisis un programme pour ta première séance. Ta tendance commence à ta première pesée."]
+                .exists, "the welcome's two sentences")
         XCTAssertTrue(app.buttons["Choisir un programme"].exists, "one blue button")
         XCTAssertFalse(element(app, "chip.session").exists, "the welcome has no chip")
         app.buttons["Choisir un programme"].tap()
         XCTAssertTrue(app.sheetTitle("Programme actif").waitForExistence(timeout: 5), "it opens the sheet")
+    }
+
+    /// CO32: the trend card under the day's card reads the average and its week, and opens Corps.
+    func testTrendCardOpensCorps() {
+        let app = launch("bodyUsual")
+        let card = element(app, "accueil-trend")
+        XCTAssertTrue(card.waitForExistence(timeout: 10))
+        XCTAssertTrue(card.label.contains("Moyenne 7 jours"), card.label)
+        XCTAssertTrue(card.label.contains("80,2"), "the average: \(card.label)")
+        XCTAssertTrue(card.label.contains("dans ta fourchette"), "the range in words: \(card.label)")
+        XCTAssertTrue(app.swipeUpUntil(card))
+        card.tap()
+        XCTAssertTrue(app.navigationBars["Corps"].waitForExistence(timeout: 5), "a tap opens Corps")
+    }
+
+    /// CO33: « Aujourd'hui » on Accueil holds Corps's four rows, the weigh-in opening its sheet.
+    func testTodayRowsOnAccueil() {
+        let app = launch("bodyUsual")
+        let weighIn = element(app, "today.weighIn")
+        XCTAssertTrue(weighIn.waitForExistence(timeout: 10))
+        XCTAssertTrue(app.swipeUpUntil(element(app, "today.supplements")))
+        XCTAssertEqual(weighIn.label, "Pesée, 79,9\u{202F}kg")
+        XCTAssertEqual(element(app, "today.supplements").label, "Compléments, 1 sur 2")
+        XCTAssertTrue(element(app, "today.measures").exists)
+        XCTAssertTrue(element(app, "today.intake").exists)
+        weighIn.tap()
+        XCTAssertTrue(app.sheetTitle("Pesée").waitForExistence(timeout: 5), "the same sheet as on Corps")
+    }
+
+    /// CO34: the first launch's card gets its second sentence back.
+    func testFirstLaunchSecondSentence() {
+        let app = launch("firstLaunch")
+        XCTAssertTrue(app.staticTexts["Bienvenue"].waitForExistence(timeout: 10))
+        XCTAssertTrue(text(app, containing: "Ta tendance commence à ta première pesée.").exists)
     }
 
     /// At midnight, with the app on screen, a day done turns into the next session's day.

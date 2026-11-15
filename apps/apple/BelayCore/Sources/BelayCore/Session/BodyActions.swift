@@ -12,6 +12,11 @@ public struct BodyRead: Sendable, Equatable {
   /// Nil: never written, the defaults apply.
   public var target: TargetRow?
   public var profile: ProfileRow?
+
+  /// No entry yet: what a screen shows before its first read.
+  public static let empty = BodyRead(
+    weights: [], measures: [], intake: [], supplements: [], logs: [], annotations: [], target: nil,
+    profile: nil)
 }
 
 /// An annotation as its sheet saves it: a new one takes a fresh id, an edit keeps its own.

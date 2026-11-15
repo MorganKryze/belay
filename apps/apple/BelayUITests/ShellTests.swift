@@ -1,6 +1,6 @@
 import XCTest
 
-/// The shell: four tabs, Accueil and Séances native, the others saying they live on the web for now.
+/// The shell: four tabs, Accueil, Séances and Corps native, Outils saying it lives on the web for now.
 @MainActor
 final class ShellTests: XCTestCase {
     private func launch() -> XCUIApplication {
@@ -26,7 +26,10 @@ final class ShellTests: XCTestCase {
         bar.buttons["Séances"].tap()
         XCTAssertTrue(app.navigationBars["Séances"].waitForExistence(timeout: 3), "Séances is native")
 
-        for name in ["Corps", "Outils"] {
+        bar.buttons["Corps"].tap()
+        XCTAssertTrue(app.navigationBars["Corps"].waitForExistence(timeout: 3), "Corps is native")
+
+        for name in ["Outils"] {
             let tab = bar.buttons[name]
             XCTAssertTrue(tab.exists, "the \(name) tab is in the bar")
             tab.tap()

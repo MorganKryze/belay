@@ -32,6 +32,8 @@ enum Route: Hashable {
     case preview(sessionId: String)
     /// A session kept, from Séances' Historique.
     case past(workoutId: String)
+    /// Corps's screens, from its rows and Accueil's; on the web until each comes to the phone.
+    case weeks, measures, intake, supplements
 }
 
 /// The tab in front and what each tab has pushed, kept across tab switches.
@@ -73,6 +75,7 @@ final class ShellModel {
 struct RootView: View {
     @State private var model = ShellModel()
     @State private var box = Once<TrainingModel>()
+    @State private var bodyBox = Once<CorpsModel>()
     @Namespace private var space
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.scenePhase) private var scenePhase
@@ -91,6 +94,15 @@ struct RootView: View {
             TrainingModel(
                 store: store, didWrite: account.didWrite, health: account.runHealth, now: Self.clock,
                 timeZone: .current)
+        }
+    }
+
+    private var corps: CorpsModel {
+        bodyBox.value {
+            CorpsModel(
+                store: store, didWrite: account.didWrite, runHealth: account.runHealth,
+                turnHealthOn: { [account] in await account.turnHealthOn() },
+                turnImportOn: { [account] in await account.turnHealthImportOn() }, now: Self.clock, timeZone: .current)
         }
     }
 
@@ -135,7 +147,10 @@ struct RootView: View {
         // closes onto the first screen of the tab it was started from.
         // Back in front, the day may have turned while the app was away.
         .onChange(of: scenePhase) { _, phase in
-            if phase == .active { training.refresh() }
+            if phase == .active {
+                training.refresh()
+                corps.refresh()
+            }
         }
         .onChange(of: training.open == nil) { _, closed in
             guard closed else { return }
@@ -162,12 +177,17 @@ struct RootView: View {
                     reconnect: { Task { await account.reconnect() } },
                     retry: account.refresh),
                 displayName: account.displayName,
+                corps: corps,
                 openPreview: { openPreview($0, in: .home) },
-                openCover: openCover)
+                openCover: openCover,
+                open: { model.homePath.append($0) },
+                openCorps: { model.tab = .corps })
         case .seances:
             SeancesView(training: training, segment: $model.segment, openPreview: { openPreview($0, in: .seances) })
-        case .corps, .outils:
-            WebForNow(tab: tab)
+        case .corps:
+            CorpsView(corps: corps) { model.corpsPath.append($0) }
+        case .outils:
+            WebForNow(title: tab.title)
         }
     }
 
@@ -185,6 +205,10 @@ struct RootView: View {
                         workoutId: workoutId, store: store, didWrite: account.didWrite,
                         health: account.runHealth, now: Self.clock)
                 })
+        case .weeks: WebForNow(title: "Tes semaines", tableName: "Corps")
+        case .measures: WebForNow(title: "Mensurations", tableName: "Corps")
+        case .intake: WebForNow(title: "Apports", tableName: "Corps")
+        case .supplements: WebForNow(title: "Compléments", tableName: "Corps")
         }
     }
 

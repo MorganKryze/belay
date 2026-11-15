@@ -2,20 +2,27 @@ import BelayCore
 import SwiftUI
 import os
 
-/// Accueil: the day's session in whichever state the day is in, and what the sync waits for, said
-/// here only. The trend and the day's entries come with the screens they open.
+/// Accueil: the day's session in whichever state the day is in, the trend under it, then the day's
+/// body entries, and what the sync waits for, said here only.
 struct AccueilView: View {
     let training: TrainingModel
     let notice: SyncNotice
     /// How the instance names the person; nil until it has said so.
     let displayName: String?
+    /// The trend and « Aujourd'hui », the same as Corps's.
+    let corps: CorpsModel
     /// Pushes a session's preview.
     let openPreview: (String) -> Void
     /// Opens the session cover, zooming from the element named.
     let openCover: (String) -> Void
+    /// Pushes one of the rows' screens.
+    let open: (Route) -> Void
+    /// Brings the Corps tab in front.
+    let openCorps: () -> Void
     /// How far the list has scrolled, so the band behind the title leaves with it.
     @State private var scrolled: CGFloat = 0
     @State private var choosing = false
+    @State private var weighing = false
 
     var body: some View {
         List {
@@ -24,6 +31,29 @@ struct AccueilView: View {
                 if let ahead { NextRow(when: when(ahead), session: ahead) { openPreview(ahead.sessionId) } }
             }
             .listRowBackground(Color.surface)
+            Section {
+                Button(action: openCorps) {
+                    HStack(alignment: .center, spacing: 6) {
+                        TrendCard(state: corps.state, series: corps.series, place: .accueil)
+                        Image(systemName: "chevron.right")
+                            .font(.footnote.weight(.semibold))
+                            .foregroundStyle(.muted)
+                            .accessibilityHidden(true)
+                    }
+                    .contentShape(.rect)
+                }
+                .buttonStyle(.plain)
+                .accessibilityElement(children: .combine)
+                .accessibilityHint(Text("Ouvre Corps", tableName: "Corps"))
+                .accessibilityIdentifier("accueil-trend")
+            }
+            .listRowBackground(Color.surface)
+            TodayRowsView(rows: corps.rows, today: corps.today) { entry in
+                switch entry {
+                case .weighIn: weighing = true
+                case .screen(let route): open(route)
+                }
+            }
         }
         // Inside the list's wall, so the wall lies under the band and the rows over it.
         .background(alignment: .top) { AccueilBand(domain: domain, scrolled: scrolled) }
@@ -49,6 +79,7 @@ struct AccueilView: View {
             }
             .sharedBackgroundVisibility(.hidden)
         }
+        .sheet(isPresented: $weighing) { WeighInSheet(corps: corps) }
         .sheet(isPresented: $choosing) {
             ProgramChoiceSheet(programs: training.programs, activeId: training.activeProgramId) { id in
                 choose(id)
@@ -457,7 +488,9 @@ struct ChooseCard: View {
                         .minimumScaleFactor(0.5)
                         .accessibilityAddTraits(.isHeader)
                 }
-                Text("Choisis un programme pour ta première séance.", tableName: "Accueil")
+                Text(
+                    "Choisis un programme pour ta première séance. Ta tendance commence à ta première pesée.",
+                    tableName: "Accueil")
                     .font(.body)
                     .foregroundStyle(.muted)
                     .fixedSize(horizontal: false, vertical: true)
