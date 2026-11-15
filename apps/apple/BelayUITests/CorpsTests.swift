@@ -116,6 +116,16 @@ final class CorpsTests: XCTestCase {
         XCTAssertTrue(app.sheetTitle("Pesée").waitForExistence(timeout: 5), "it opens the weigh-in sheet")
     }
 
+    /// The day under the large title, as on Accueil.
+    func testDateUnderTheTitle() {
+        let app = corps("bodyUsual")
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "fr_FR")
+        formatter.dateFormat = "EEEE d MMMM"
+        let day = formatter.string(from: .now)
+        XCTAssertTrue(app.staticTexts[day.prefix(1).uppercased() + day.dropFirst()].waitForExistence(timeout: 5))
+    }
+
     /// CO11, CO12: each row in words, each opening its sheet or screen; « + » opens the sheet.
     func testTodayRowsOpenTheirScreens() {
         let app = corps("bodyUsual")

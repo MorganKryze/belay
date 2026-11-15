@@ -17,8 +17,9 @@ final class CorpsModel {
     private(set) var range = defaultTarget
     /// Every annotation in place, oldest first: the list under the weeks.
     private(set) var annotations: [AnnotationRow] = []
-    /// The local day the state was read for.
+    /// The local day the state was read for, and when it was read, for the date under the title.
     private(set) var today: String
+    private(set) var readAt: Date
     /// Mensurations, Apports and Compléments.
     private(set) var measures: MeasuresState
     private(set) var intake: IntakeState
@@ -58,7 +59,9 @@ final class CorpsModel {
         self.now = now
         self.timeZone = timeZone
         body = BodyRead.empty
-        today = toISODate(now(), timeZone: timeZone)
+        let at = now()
+        readAt = at
+        today = toISODate(at, timeZone: timeZone)
         rows = corpsState(.empty, health: .off, now: now(), timeZone: timeZone).1
         series = trendSeries(.empty, span: .month, now: now(), timeZone: timeZone)
         measures = measuresState(.empty, now: now(), timeZone: timeZone)
@@ -96,6 +99,7 @@ final class CorpsModel {
         }
         let at = now()
         self.body = body
+        readAt = at
         today = toISODate(at, timeZone: timeZone)
         (state, rows) = corpsState(body, health: health, now: at, timeZone: timeZone)
         series = trendSeries(body, span: span, now: at, timeZone: timeZone)

@@ -57,6 +57,7 @@ struct CorpsView: View {
         }
         .navigationTitle(Text("Corps", tableName: "Corps"))
         .largeTitleOnly()
+        .belaySubtitle(WeekdayText.day(corps.readAt).capitalizedFirst)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button { weighing = true } label: {
