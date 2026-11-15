@@ -209,6 +209,33 @@ final class MovingClock: Sendable {
     }
   }
 
+  // As the web's undo: saving a removed annotation brings it back, not a change no screen shows.
+  @Test func annotatingARemovedAnnotationRestoresIt() throws {
+    let id = Fixture.id(30)
+    try body.annotate(AnnotationInput(id: id, date: day, type: .note, label: "x"))
+    clock.move(minutes: 1)
+    try body.removeAnnotation(id: id)
+    clock.move(minutes: 1)
+    try body.annotate(AnnotationInput(id: id, date: day, type: .note, label: "x"))
+    #expect(try store.body().annotations.map(\.id) == [id])
+    #expect(
+      try Fixture.changes(store).last
+        == .annotation(AnnotationChange(id: id, at: Fixture.time(2), edit: .removed(false))))
+
+    clock.move(minutes: 1)
+    try body.removeAnnotation(id: id)
+    clock.move(minutes: 1)
+    try body.annotate(AnnotationInput(id: id, date: day, type: .deload, label: nil))
+    #expect(try store.body().annotations.map(\.type) == [.deload])
+    #expect(
+      try Fixture.changes(store).suffix(2) == [
+        .annotation(AnnotationChange(id: id, at: Fixture.time(4), edit: .removed(false))),
+        .annotation(
+          AnnotationChange(
+            id: id, at: Fixture.time(4), edit: .fields(date: day, type: .deload, label: nil))),
+      ])
+  }
+
   @Test func aRefusedEntryGoesUnlessRewritten() throws {
     try body.weigh(date: day, kg: 80.4)
     try body.take(supplementId: Fixture.id(20), date: day, taken: true)

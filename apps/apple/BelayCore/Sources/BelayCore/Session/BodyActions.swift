@@ -109,14 +109,18 @@ public struct BodyActions: Sendable {
     }
   }
 
-  /// A new annotation, or an edit of one: its day, type and label are written together.
+  /// A new annotation, or an edit of one: its day, type and label are written together. One
+  /// removed comes back first, as the web's undo does, so the save shows.
   public func annotate(_ a: AnnotationInput) throws {
     try write { db, at in
       let held = try BodyRows.annotation(db, id: a.id)
-      if let held, !held.removed, (held.date, held.type, held.label) == (a.date, a.type, a.label) {
-        return []
+      let restore: [Change] =
+        held?.removed == true
+        ? [.annotation(AnnotationChange(id: a.id, at: at, edit: .removed(false)))] : []
+      if let held, (held.date, held.type, held.label) == (a.date, a.type, a.label) {
+        return restore
       }
-      return [
+      return restore + [
         .annotation(
           AnnotationChange(
             id: a.id, at: at, edit: .fields(date: a.date, type: a.type, label: a.label)))
