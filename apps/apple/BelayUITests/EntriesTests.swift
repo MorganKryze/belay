@@ -7,22 +7,12 @@ import XCTest
 /// has today's intake and no profile; `bodyEarly` has no supplement.
 @MainActor
 final class EntriesTests: XCTestCase {
-    private func launch(_ fixture: String, largestText: Bool = false) -> XCUIApplication {
-        let app = XCUIApplication()
-        app.launchArguments = ["-AppleLanguages", "(fr)", "-AppleLocale", "fr_FR", "-BelayFixture", fixture]
-        if largestText {
-            app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXL"]
-        }
-        app.launchFixture()
-        return app
-    }
-
     /// Launches on `fixture`, opens `tab` and taps its « Aujourd'hui » row `row`, then waits for
     /// the screen `title`.
     private func open(
         _ title: String, row: String, fixture: String, tab: String = "Corps", largestText: Bool = false
     ) -> XCUIApplication {
-        let app = launch(fixture, largestText: largestText)
+        let app = XCUIApplication.fixture(fixture, largestText: largestText)
         let button = app.tabBars.firstMatch.buttons[tab]
         XCTAssertTrue(button.waitForExistence(timeout: 10))
         button.tap()
@@ -40,12 +30,6 @@ final class EntriesTests: XCTestCase {
         app.descendants(matching: .any)[id].firstMatch
     }
 
-    /// Whether `element` comes to read `label` within `timeout` seconds.
-    private func labels(_ element: XCUIElement, _ label: String, timeout: TimeInterval = 3) -> Bool {
-        let expectation = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label == %@", label), object: element)
-        return XCTWaiter().wait(for: [expectation], timeout: timeout) == .completed
-    }
-
     /// A day as the history writes it, « Lundi 5 octobre », `offset` days from today.
     private func longDay(_ offset: Int) -> String {
         let formatter = DateFormatter()
@@ -55,14 +39,6 @@ final class EntriesTests: XCTestCase {
         return text.prefix(1).uppercased() + text.dropFirst()
     }
 
-    /// « 7 septembre », `offset` days from today.
-    private func dayMonth(_ offset: Int) -> String {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "fr_FR")
-        formatter.dateFormat = "d MMMM"
-        return formatter.string(from: Calendar.current.date(byAdding: .day, value: offset, to: .now) ?? .now)
-    }
-
     /// CO26: the last waist large, its change since the first in words, the curve, the history
     /// newest first with each day's fields, and the footer.
     func testMeasuresWaistChangeAndHistory() {
@@ -70,7 +46,7 @@ final class EntriesTests: XCTestCase {
         XCTAssertEqual(element(app, "chip.body").label, "Tour de taille")
         XCTAssertTrue(app.staticTexts["84,5"].exists, "the last waist, large")
         XCTAssertEqual(
-            element(app, "measures-change").label, "1,6\u{202F}cm de moins depuis le \(dayMonth(-31))")
+            element(app, "measures-change").label, "1,6\u{202F}cm de moins depuis le \(frenchDayMonth(-31))")
         XCTAssertTrue(element(app, "measures-curve").exists, "the waist's curve")
         XCTAssertEqual(element(app, "measure-0").label, "\(longDay(-3)), taille 84,5\u{202F}cm")
         let oldest = element(app, "measure-4")
@@ -99,7 +75,7 @@ final class EntriesTests: XCTestCase {
         waist.typeText("84,1")
         XCTAssertTrue(save.isEnabled, "84,1 turns ✓ on")
         save.tap()
-        XCTAssertTrue(labels(element(app, "measure-0"), "Aujourd’hui, taille 84,1\u{202F}cm"), "read back")
+        XCTAssertTrue(element(app, "measure-0").comesToRead("Aujourd’hui, taille 84,1\u{202F}cm"), "read back")
         XCTAssertTrue(app.staticTexts["84,1"].exists, "the last waist is today's")
     }
 
@@ -171,7 +147,7 @@ final class EntriesTests: XCTestCase {
         XCTAssertEqual(vitamin.label, "Vitamine D, pas encore pris")
         XCTAssertTrue(app.staticTexts["Belay note ce que tu prends, sans conseil de dose."].exists)
         vitamin.tap()
-        XCTAssertTrue(labels(vitamin, "Vitamine D, pris"), "ticked")
+        XCTAssertTrue(vitamin.comesToRead("Vitamine D, pris"), "ticked")
         XCTAssertTrue(vitamin.isSelected)
         app.navigationBars["Compléments"].buttons.firstMatch.tap()
         XCTAssertTrue(app.swipeUpUntil(element(app, "today.supplements")))
@@ -179,7 +155,7 @@ final class EntriesTests: XCTestCase {
         element(app, "today.supplements").tap()
         XCTAssertTrue(app.navigationBars["Compléments"].waitForExistence(timeout: 5))
         element(app, "supplement-1").tap()
-        XCTAssertTrue(labels(element(app, "supplement-1"), "Vitamine D, pas encore pris"), "unticked")
+        XCTAssertTrue(element(app, "supplement-1").comesToRead("Vitamine D, pas encore pris"), "unticked")
         app.navigationBars["Compléments"].buttons.firstMatch.tap()
         XCTAssertTrue(app.swipeUpUntil(element(app, "today.supplements")))
         XCTAssertEqual(element(app, "today.supplements").label, "Compléments, 1 sur 2", "written not taken")
@@ -243,8 +219,7 @@ final class EntriesTests: XCTestCase {
             ("Compléments", "today.supplements", "supplements"),
         ] {
             let app = open(title, row: row, fixture: fixture, largestText: true)
-            let large = app.navigationBars[title].staticTexts.matching(NSPredicate(format: "label == %@", title))
-                .allElementsBoundByIndex.filter { $0.frame.width > 2 }.map(\.frame.height).max() ?? 0
+            let large = app.largeTitleHeight(title)
             XCTAssertGreaterThan(large, 30, "\(title) opens large")
             app.swipeUp()
             app.swipeUp()

@@ -398,9 +398,11 @@ final class AccueilTests: XCTestCase {
         XCTAssertTrue(app.swipeUpUntil(card))
         card.tap()
         XCTAssertTrue(app.navigationBars["Corps"].waitForExistence(timeout: 5), "a tap opens Corps")
+        XCTAssertGreaterThan(app.largeTitleHeight("Corps"), 30, "Corps opens on its large title")
     }
 
-    /// CO33: « Aujourd'hui » on Accueil holds Corps's four rows, the weigh-in opening its sheet.
+    /// CO33: « Aujourd'hui » on Accueil holds Corps's four rows, the weigh-in opening its sheet
+    /// and each other row its screen.
     func testTodayRowsOnAccueil() {
         let app = launch("bodyUsual")
         let weighIn = element(app, "today.weighIn")
@@ -412,6 +414,17 @@ final class AccueilTests: XCTestCase {
         XCTAssertTrue(element(app, "today.intake").exists)
         weighIn.tap()
         XCTAssertTrue(app.sheetTitle("Pesée").waitForExistence(timeout: 5), "the same sheet as on Corps")
+        element(app, "weighin-close").tap()
+        for (id, title) in [("today.measures", "Mensurations"), ("today.intake", "Apports"), ("today.supplements", "Compléments")] {
+            let row = element(app, id)
+            XCTAssertTrue(app.swipeUpUntil(row), "\(id) can be reached")
+            // A row under the tab bar would give the bar the tap: a swipe higher first.
+            if row.frame.maxY > app.tabBars.firstMatch.frame.minY { app.swipeUp(velocity: .slow) }
+            row.tap()
+            XCTAssertTrue(app.navigationBars[title].waitForExistence(timeout: 5), "\(id) opens \(title)")
+            app.navigationBars[title].buttons.firstMatch.tap()
+            XCTAssertTrue(app.buttons["settings"].waitForExistence(timeout: 5), "back on Accueil")
+        }
     }
 
     /// CO34: the first launch's card gets its second sentence back.

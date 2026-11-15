@@ -7,12 +7,7 @@ import XCTest
 final class TrendTests: XCTestCase {
     /// Launches on `fixture`, opens Corps, then Ta tendance through « Tes semaines ».
     private func trend(_ fixture: String = "trend", largestText: Bool = false) -> XCUIApplication {
-        let app = XCUIApplication()
-        app.launchArguments = ["-AppleLanguages", "(fr)", "-AppleLocale", "fr_FR", "-BelayFixture", fixture]
-        if largestText {
-            app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXL"]
-        }
-        app.launchFixture()
+        let app = XCUIApplication.fixture(fixture, largestText: largestText)
         let tab = app.tabBars.firstMatch.buttons["Corps"]
         XCTAssertTrue(tab.waitForExistence(timeout: 10))
         tab.tap()
@@ -27,20 +22,6 @@ final class TrendTests: XCTestCase {
         app.descendants(matching: .any)[id].firstMatch
     }
 
-    /// Whether `element` comes to read `value` within `timeout` seconds.
-    private func reads(_ element: XCUIElement, _ format: String, _ value: String, timeout: TimeInterval = 3) -> Bool {
-        let expectation = XCTNSPredicateExpectation(predicate: NSPredicate(format: format, value), object: element)
-        return XCTWaiter().wait(for: [expectation], timeout: timeout) == .completed
-    }
-
-    /// The day `offset` days from today as the app writes it in a sentence, « 24 octobre ».
-    private func frenchDay(_ offset: Int) -> String {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "fr_FR")
-        formatter.dateFormat = "d MMMM"
-        return formatter.string(from: Calendar.current.date(byAdding: .day, value: offset, to: .now) ?? .now)
-    }
-
     /// The span's segment named `name` tapped.
     private func pick(_ app: XCUIApplication, _ name: String) {
         app.segmentedControls["trend-span"].buttons[name].tap()
@@ -53,9 +34,9 @@ final class TrendTests: XCTestCase {
         XCTAssertTrue(chart.waitForExistence(timeout: 5))
         XCTAssertEqual(chart.value as? String, "30 pesées", "M: the last 30 days")
         pick(app, "Semaine")
-        XCTAssertTrue(reads(chart, "value == %@", "7 pesées"), "S: the last 7 days")
+        XCTAssertTrue(chart.waitFor(NSPredicate(format: "value == %@", "7 pesées")), "S: the last 7 days")
         pick(app, "Année")
-        XCTAssertTrue(reads(chart, "value == %@", "35 pesées"), "A: every weigh-in of the year")
+        XCTAssertTrue(chart.waitFor(NSPredicate(format: "value == %@", "35 pesées")), "A: every weigh-in of the year")
     }
 
     /// CO22: a tap, then a drag on the curve reads the day's weigh-in and average.
@@ -66,11 +47,11 @@ final class TrendTests: XCTestCase {
         XCTAssertTrue(chart.waitForExistence(timeout: 5))
         let pattern = ".*Pesée [0-9]+,[0-9]\u{202F}kg · Moyenne 7 j [0-9]+,[0-9]\u{202F}kg"
         chart.coordinate(withNormalizedOffset: CGVector(dx: 0.3, dy: 0.5)).tap()
-        XCTAssertTrue(reads(chart, "value MATCHES %@", pattern), "a tap reads a day: \(chart.value ?? "")")
+        XCTAssertTrue(chart.waitFor(NSPredicate(format: "value MATCHES %@", pattern)), "a tap reads a day: \(chart.value ?? "")")
         let first = chart.value as? String
         chart.coordinate(withNormalizedOffset: CGVector(dx: 0.3, dy: 0.5))
             .press(forDuration: 0.4, thenDragTo: chart.coordinate(withNormalizedOffset: CGVector(dx: 0.85, dy: 0.5)))
-        XCTAssertTrue(reads(chart, "value MATCHES %@", pattern), "a drag reads a day")
+        XCTAssertTrue(chart.waitFor(NSPredicate(format: "value MATCHES %@", pattern)), "a drag reads a day")
         XCTAssertNotEqual(chart.value as? String, first, "the drag moved to another day")
     }
 
@@ -80,7 +61,7 @@ final class TrendTests: XCTestCase {
         let app = trend()
         let creatine = element(app, "legend-creatine")
         XCTAssertTrue(creatine.waitForExistence(timeout: 5))
-        XCTAssertEqual(creatine.label, "Créatine, du \(frenchDay(-22)) au \(frenchDay(-9))")
+        XCTAssertEqual(creatine.label, "Créatine, du \(frenchDayMonth(-22)) au \(frenchDayMonth(-9))")
         for (id, words) in [("legend-day", "Pesée du jour"), ("legend-average", "Moyenne 7 jours")] {
             XCTAssertEqual(element(app, id).label, words)
         }
@@ -109,7 +90,7 @@ final class TrendTests: XCTestCase {
         XCTAssertTrue(chart.waitForExistence(timeout: 5))
         XCTAssertEqual(chart.label, "Moyenne 7 jours et pesées, mois, 80,2\u{202F}kg")
         pick(app, "Année")
-        XCTAssertTrue(reads(chart, "label == %@", "Moyenne 7 jours et pesées, année, 80,2\u{202F}kg"))
+        XCTAssertTrue(chart.waitFor(NSPredicate(format: "label == %@", "Moyenne 7 jours et pesées, année, 80,2\u{202F}kg")))
     }
 
     /// CO23: the range pill opens « Comment c'est calculé » with the shared catalogue's words.
@@ -202,14 +183,10 @@ final class TrendTests: XCTestCase {
     /// CO36: Ta tendance and « Comment c'est calculé » open on their large titles.
     func testPushOpensOnLargeTitle() {
         let app = trend()
-        let large = { (title: String) in
-            app.navigationBars[title].staticTexts.matching(NSPredicate(format: "label == %@", title))
-                .allElementsBoundByIndex.filter { $0.frame.width > 2 }.map(\.frame.height).max() ?? 0
-        }
-        XCTAssertGreaterThan(large("Ta tendance"), 30, "Ta tendance opens large")
+        XCTAssertGreaterThan(app.largeTitleHeight("Ta tendance"), 30, "Ta tendance opens large")
         element(app, "trend-range").tap()
         XCTAssertTrue(app.navigationBars["Comment c’est calculé"].waitForExistence(timeout: 5))
-        XCTAssertGreaterThan(large("Comment c’est calculé"), 30, "the page opens large")
+        XCTAssertGreaterThan(app.largeTitleHeight("Comment c’est calculé"), 30, "the page opens large")
     }
 
     /// CO22, CO24 at AX3: the span and the legend stay whole, every week and the add row can be

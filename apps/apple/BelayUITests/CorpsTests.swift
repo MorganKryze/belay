@@ -8,24 +8,16 @@ import XCTest
 /// filled by the Health import.
 @MainActor
 final class CorpsTests: XCTestCase {
-    private func launch(_ fixture: String, largestText: Bool = false, now: String? = nil) -> XCUIApplication {
-        let app = XCUIApplication()
-        app.launchArguments = ["-AppleLanguages", "(fr)", "-AppleLocale", "fr_FR", "-BelayFixture", fixture]
-        if let now { app.launchArguments += ["-BelayNow", now] }
-        if largestText {
-            app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXL"]
-        }
-        app.launchFixture()
-        return app
-    }
-
     /// Launches on `fixture` and opens the Corps tab.
-    private func corps(_ fixture: String, largestText: Bool = false, now: String? = nil) -> XCUIApplication {
-        let app = launch(fixture, largestText: largestText, now: now)
-        let tab = app.tabBars.firstMatch.buttons["Corps"]
+    private func corps(
+        _ fixture: String, largestText: Bool = false, now: String? = nil, english: Bool = false
+    ) -> XCUIApplication {
+        let app = XCUIApplication.fixture(fixture, largestText: largestText, now: now, english: english)
+        let name = english ? "Body" : "Corps"
+        let tab = app.tabBars.firstMatch.buttons[name]
         XCTAssertTrue(tab.waitForExistence(timeout: 10))
         tab.tap()
-        XCTAssertTrue(app.navigationBars["Corps"].waitForExistence(timeout: 5), "Corps is native")
+        XCTAssertTrue(app.navigationBars[name].waitForExistence(timeout: 5), "Corps is native")
         return app
     }
 
@@ -35,12 +27,6 @@ final class CorpsTests: XCTestCase {
 
     private func text(_ app: XCUIApplication, containing part: String) -> XCUIElement {
         app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", part)).firstMatch
-    }
-
-    /// Whether `element` comes to read `label` within `timeout` seconds.
-    private func labels(_ element: XCUIElement, _ label: String, timeout: TimeInterval = 3) -> Bool {
-        let expectation = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label == %@", label), object: element)
-        return XCTWaiter().wait(for: [expectation], timeout: timeout) == .completed
     }
 
     /// The largest amount by which red rises above green and blue inside `frame`, in 0-255 steps:
@@ -193,7 +179,7 @@ final class CorpsTests: XCTestCase {
         confirm.tap()
         XCTAssertTrue(app.swipeUpUntil(element(app, "today.weighIn")))
         XCTAssertTrue(
-            labels(element(app, "today.weighIn"), "Pesée, pas encore saisie"),
+            element(app, "today.weighIn").comesToRead("Pesée, pas encore saisie"),
             "the day's weigh-in is gone")
     }
 
@@ -208,6 +194,21 @@ final class CorpsTests: XCTestCase {
         XCTAssertTrue(app.buttons["Importer les pesées"].exists)
         app.buttons["Pas maintenant"].tap()
         XCTAssertFalse(app.staticTexts["Tes pesées de Santé"].waitForExistence(timeout: 2), "the card leaves")
+        let again = corps("keep")
+        XCTAssertTrue(again.staticTexts["Pas encore de pesée"].waitForExistence(timeout: 5))
+        XCTAssertFalse(again.staticTexts["Tes pesées de Santé"].exists, "never again")
+    }
+
+    /// CO17: « Importer les pesées » asks iOS, then puts the card away for good.
+    func testImportAnswersTheCard() {
+        let app = corps("healthCard")
+        let accept = app.buttons["Importer les pesées"]
+        XCTAssertTrue(accept.waitForExistence(timeout: 5))
+        accept.tap()
+        // Health's own sheet asks on a simulator that never answered; one that did shows nothing.
+        let deny = app.buttons["Ne pas autoriser"].firstMatch
+        if deny.waitForExistence(timeout: 5) { deny.tap() }
+        XCTAssertTrue(app.staticTexts["Tes pesées de Santé"].waitFor(NSPredicate(format: "exists == false"), timeout: 5), "the card leaves")
         let again = corps("keep")
         XCTAssertTrue(again.staticTexts["Pas encore de pesée"].waitForExistence(timeout: 5))
         XCTAssertFalse(again.staticTexts["Tes pesées de Santé"].exists, "never again")
@@ -262,7 +263,7 @@ final class CorpsTests: XCTestCase {
         XCTAssertTrue(app.swipeUpUntil(row))
         XCTAssertEqual(row.label, "Pesée, 79,9\u{202F}kg", "weighed, before midnight")
         XCTAssertTrue(
-            labels(row, "Pesée, pas encore saisie", timeout: 70),
+            row.comesToRead("Pesée, pas encore saisie", timeout: 70),
             "past midnight, the new day is not weighed yet")
     }
 
