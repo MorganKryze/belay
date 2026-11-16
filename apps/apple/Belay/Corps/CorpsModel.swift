@@ -28,6 +28,11 @@ final class CorpsModel {
     private(set) var offersImport = false
     /// The card's last « Importer les pesées » found Santé refused: the card stays and says why.
     private(set) var importRefused = false
+    /// The activity level and the protein goal chosen in the tools on this phone, which Apports
+    /// reads; « sédentaire » and maintenance until the person chooses.
+    var choices = IntakeChoices() {
+        didSet { if choices != oldValue { intake = intakeState(body, choices, now: now(), timeZone: timeZone) } }
+    }
     /// Corps opens on M (R11).
     var span: TrendSpan = .month {
         didSet { series = trendSeries(body, span: span, now: now(), timeZone: timeZone) }
@@ -67,7 +72,7 @@ final class CorpsModel {
         rows = corpsState(.empty, health: .off, now: now(), timeZone: timeZone).1
         series = trendSeries(.empty, span: .month, now: now(), timeZone: timeZone)
         measures = measuresState(.empty, now: now(), timeZone: timeZone)
-        intake = intakeState(.empty, now: now(), timeZone: timeZone)
+        intake = intakeState(.empty, IntakeChoices(), now: now(), timeZone: timeZone)
         refresh()
         watch = Task { [weak self, store] in
             do {
@@ -108,7 +113,7 @@ final class CorpsModel {
         weekRows = weeks(body, now: at, timeZone: timeZone)
         range = targetRange(body)
         measures = measuresState(body, now: at, timeZone: timeZone)
-        intake = intakeState(body, now: at, timeZone: timeZone)
+        intake = intakeState(body, choices, now: at, timeZone: timeZone)
         supplements = supplementsToday(body, now: at, timeZone: timeZone)
         annotations = body.annotations.filter { !$0.removed }.sorted { ($0.date, $0.id) < ($1.date, $1.id) }
         offersImport = HealthKitWriter.available && !health.offered
@@ -205,4 +210,14 @@ final class CorpsModel {
         }
         refresh()
     }
+}
+
+/// What Apports reads from the tools: the level's PAL and the protein goal.
+struct IntakeChoices: Equatable {
+    var pal = ToolMemory().pal.pal
+    var goal = ToolMemory().goal
+}
+
+private func intakeState(_ body: BodyRead, _ choices: IntakeChoices, now: Date, timeZone: TimeZone) -> IntakeState {
+    intakeState(body, pal: choices.pal, goal: choices.goal, now: now, timeZone: timeZone)
 }

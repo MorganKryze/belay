@@ -452,6 +452,16 @@
         }
       }
     },
+    "Quand tu peux atteindre ton objectif, sous forme de fourchette de dates.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When you could reach your goal, as a range of dates."
+          }
+        }
+      }
+    },
     "Quoi charger sur la barre": {
       "localizations": {
         "en": {
@@ -592,6 +602,16 @@
         }
       }
     },
+    "Ton indice de masse corporelle, placé sur les plages de l’OMS.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your body mass index, placed on the WHO ranges."
+          }
+        }
+      }
+    },
     "Ton max à partir d’une série": {
       "localizations": {
         "en": {
@@ -608,6 +628,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Your max from a set taken close to failure."
+          }
+        }
+      }
+    },
+    "Ton métabolisme au repos et ce que tu dépenses dans la journée.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your resting metabolism and what you burn in a day."
           }
         }
       }
@@ -668,6 +698,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "An estimate from a tape measure"
+          }
+        }
+      }
+    },
+    "Une estimation au mètre ruban, avec des repères publiés.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "An estimate from a tape measure, with published reference values."
+          }
+        }
+      }
+    },
+    "Une fourchette par jour et par repas, selon ton objectif.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A range per day and per meal, for your goal."
           }
         }
       }

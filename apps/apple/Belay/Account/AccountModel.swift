@@ -85,6 +85,11 @@ final class AccountModel {
         path.start(queue: .main)
     }
 
+    /// The tools' memory of the account whose store is open, beside that store; nil while none is.
+    var toolMemory: URL? {
+        openedFor.map { ToolMemoryFile.url(userId: $0.userId, origin: $0.instance.origin, in: storeFolder) }
+    }
+
     /// The store and its sync are open exactly while signed in. Signing out closes them and keeps
     /// the file, queue included, for that account's next sign-in.
     private func followState() {
@@ -360,6 +365,8 @@ final class AccountModel {
     func signOut() async {
         guard case .signedIn(let account) = state else { return }
         forget()
+        // What the tools remember is health data kept for this account only: it goes with it.
+        ToolMemoryFile.remove(userId: account.userId, origin: account.instance.origin, in: storeFolder)
         state = .signedOut(nil)
         await logout(token: account.token, at: account.instance, using: http)
     }

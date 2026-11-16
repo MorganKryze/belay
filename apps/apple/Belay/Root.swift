@@ -84,7 +84,7 @@ struct RootView: View {
     @State private var model = ShellModel()
     @State private var box = Once<TrainingModel>()
     @State private var bodyBox = Once<CorpsModel>()
-    @State private var outils = OutilsModel()
+    @State private var outilsBox = Once<OutilsModel>()
     @Namespace private var space
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.scenePhase) private var scenePhase
@@ -108,10 +108,17 @@ struct RootView: View {
 
     private var corps: CorpsModel {
         bodyBox.value {
-            CorpsModel(
+            let corps = CorpsModel(
                 store: store, didWrite: account.didWrite, runHealth: account.runHealth,
                 turnImportOn: { [account] in await account.turnHealthImportOn() }, now: Self.clock, timeZone: .current)
+            corps.choices = outils.choices
+            return corps
         }
+    }
+
+    /// The tools, remembering their inputs for this account on this phone.
+    private var outils: OutilsModel {
+        outilsBox.value { OutilsModel(memoryAt: account.toolMemory) }
     }
 
     /// The phone's clock; in a debug build, the UI tests' when the launch sets one.
@@ -160,6 +167,8 @@ struct RootView: View {
                 corps.refresh()
             }
         }
+        // A level or a goal chosen in the tools is the one Apports reads next.
+        .onChange(of: outils.choices) { _, choices in corps.choices = choices }
         .onChange(of: training.open == nil) { _, closed in
             guard closed else { return }
             for tab in AppTab.allCases {

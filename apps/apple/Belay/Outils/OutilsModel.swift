@@ -1,4 +1,5 @@
 import BelayCore
+import os
 import SwiftUI
 
 /// The eight tools, under the web's ids, which are also their science entries'.
@@ -39,13 +40,17 @@ enum ToolId: String, CaseIterable, Hashable {
         }
     }
 
-    /// The web's lead under the tool's name, for the tools this phone has.
+    /// The web's lead under the tool's name.
     var lead: LocalizedStringKey? {
         switch self {
         case .oneRepMax: "Ton max à partir d’une série menée près de l’échec."
         case .plates: "Quoi mettre de chaque côté de la barre."
         case .warmup: "Tes séries d’échauffement, arrondies à ton matériel."
-        case .energy, .protein, .projection, .bmi, .bodyFat: nil
+        case .energy: "Ton métabolisme au repos et ce que tu dépenses dans la journée."
+        case .protein: "Une fourchette par jour et par repas, selon ton objectif."
+        case .projection: "Quand tu peux atteindre ton objectif, sous forme de fourchette de dates."
+        case .bmi: "Ton indice de masse corporelle, placé sur les plages de l’OMS."
+        case .bodyFat: "Une estimation au mètre ruban, avec des repères publiés."
         }
     }
 
@@ -72,63 +77,129 @@ enum ToolId: String, CaseIterable, Hashable {
     }
 }
 
-/// Mon matériel: a preset, or the person's own bar and plates. The presets never change; « Modifier »
-/// copies one into the custom set.
-struct EquipmentChoice: Equatable {
-    enum Preset: String, CaseIterable {
-        case competition, gym, custom
-
-        var name: LocalizedStringResource {
-            switch self {
-            case .competition: LocalizedStringResource("Compétition", table: "Outils")
-            case .gym: LocalizedStringResource("Salle", table: "Outils")
-            case .custom: LocalizedStringResource("Sur mesure", table: "Outils")
-            }
+extension EquipmentChoice.Preset {
+    var name: LocalizedStringResource {
+        switch self {
+        case .competition: LocalizedStringResource("Compétition", table: "Outils")
+        case .gym: LocalizedStringResource("Salle", table: "Outils")
+        case .custom: LocalizedStringResource("Sur mesure", table: "Outils")
         }
     }
+}
 
-    var preset = Preset.gym
-    /// The custom set, the gym's until the person makes it theirs.
-    var custom = Plates.gym
-
-    /// What Disques and Montée en charge load with.
-    var plates: Plates {
-        switch preset {
-        case .competition: .competition
-        case .gym: .gym
-        case .custom: custom
-        }
-    }
-
+extension EquipmentChoice {
     var name: LocalizedStringResource { preset.name }
 }
 
-/// What the tools hold while the app runs: each tool's fields as typed, and Mon matériel. A page
-/// that closes and opens again finds its values.
+/// What the tools hold: each tool's fields as last typed, Mon matériel, the activity level and the
+/// protein goal, kept for the signed-in account on this phone (`ToolMemory`) and never sent. A
+/// page that closes and opens again, or the app relaunched, finds its values.
 @MainActor @Observable
 final class OutilsModel {
-    var oneRepMaxLoad = ""
-    var oneRepMaxReps = 5
-    var platesTarget = ""
-    /// A new working load follows its own count again, as on the web.
-    var warmupWork = "" { didSet { if warmupWork != oldValue { warmupCount = nil } } }
-    /// The count the person chose; nil follows the load.
-    var warmupCount: Int?
-    var equipment = EquipmentChoice()
-    /// The prefilled fields the person has changed, by the tool's field key (« energy.weight »):
-    /// their source lines go.
-    var edited: Set<String> = []
-    /// The values last typed on this phone, by the same keys, for « Reprendre mes dernières saisies ».
-    var typed: [String: String] = [:]
+    private(set) var memory: ToolMemory {
+        didSet { save() }
+    }
+    /// The prefilled fields the person has changed, or brought back to their own values, by
+    /// « tool.field » (« energy.weight »): their source lines go. For this run only, as on the web.
+    private(set) var edited: Set<String> = []
+    @ObservationIgnored private let file: URL?
 
-    /// A field's source line: its default's source until the person changes it.
-    func source(_ key: String, _ prefill: ToolSource?) -> ToolSource? {
-        edited.contains(key) ? nil : prefill
+    private static let log = Logger(subsystem: "cloud.libresoftware.belay", category: "outils")
+
+    /// `file` nil keeps the memory for this run only.
+    init(memoryAt file: URL? = nil) {
+        self.file = file
+        memory = file.map(ToolMemoryFile.read) ?? ToolMemory()
     }
 
-    /// What the person types in `key`: kept for « Reprendre », and the source line gone.
-    func type(_ key: String, _ text: String) {
-        edited.insert(key)
-        typed[key] = text
+    private func save() {
+        guard let file else { return }
+        do {
+            try ToolMemoryFile.write(memory, to: file)
+        } catch {
+            // The label only: the inputs are health data and never reach the log.
+            Self.log.error("tool memory not written: \(AccountStore.logLabel(error), privacy: .public)")
+        }
+    }
+
+    /// The text last typed in a tool's field on this phone, empty if none.
+    func input(_ tool: ToolId, _ field: String) -> String {
+        memory.inputs[tool.rawValue]?[field] ?? ""
+    }
+
+    func setInput(_ tool: ToolId, _ field: String, _ text: String) {
+        guard input(tool, field) != text else { return }
+        memory.inputs[tool.rawValue, default: [:]][field] = text
+    }
+
+    var oneRepMaxLoad: String {
+        get { input(.oneRepMax, "load") }
+        set { setInput(.oneRepMax, "load", newValue) }
+    }
+    var oneRepMaxReps: Int {
+        get { Int(input(.oneRepMax, "reps")) ?? 5 }
+        set { setInput(.oneRepMax, "reps", String(newValue)) }
+    }
+    var platesTarget: String {
+        get { input(.plates, "target") }
+        set { setInput(.plates, "target", newValue) }
+    }
+    /// A new working load follows its own count again, as on the web.
+    var warmupWork: String {
+        get { input(.warmup, "work") }
+        set {
+            guard newValue != warmupWork else { return }
+            setInput(.warmup, "work", newValue)
+            warmupCount = nil
+        }
+    }
+    /// The count the person chose; nil follows the load.
+    var warmupCount: Int? {
+        get { Int(input(.warmup, "count")) }
+        set { setInput(.warmup, "count", newValue.map(String.init) ?? "") }
+    }
+    var equipment: EquipmentChoice {
+        get { memory.equipment ?? EquipmentChoice() }
+        set { memory.equipment = newValue }
+    }
+    /// « Ton activité », which Apports reads too.
+    var pal: PalLevel {
+        get { memory.pal }
+        set { memory.palId = newValue.id }
+    }
+    /// What Apports reads of the two.
+    var choices: IntakeChoices { IntakeChoices(pal: memory.pal.pal, goal: memory.goal) }
+    /// The Protéines goal, which Apports reads too.
+    var proteinGoal: ProteinGoal {
+        get { memory.goal }
+        set { memory.proteinGoal = newValue }
+    }
+
+    /// A field a value may prefill: the prefill until the person changes the field, then what
+    /// they typed on this phone.
+    func field(_ tool: ToolId, _ field: String, prefill: String?) -> String {
+        if let prefill, !edited.contains("\(tool.rawValue).\(field)") { return prefill }
+        return input(tool, field)
+    }
+
+    /// A field's source line: its default's source until the person changes it.
+    func source(_ tool: ToolId, _ field: String, _ prefill: ToolSource?) -> ToolSource? {
+        edited.contains("\(tool.rawValue).\(field)") ? nil : prefill
+    }
+
+    /// What the person types in a field: kept, and its source line gone.
+    func type(_ tool: ToolId, _ field: String, _ text: String) {
+        edited.insert("\(tool.rawValue).\(field)")
+        setInput(tool, field, text)
+    }
+
+    /// « Reprendre mes dernières saisies »: the tool's fields go back to the values typed here.
+    func restore(_ tool: ToolId, _ fields: [String]) {
+        edited.formUnion(fields.map { "\(tool.rawValue).\($0)" })
+    }
+
+    /// Whether any of `fields` still shows a prefilled value, so « Reprendre » has work to do.
+    func anyPrefilled(_ tool: ToolId, _ fields: [String: Bool]) -> Bool {
+        fields.contains { field, prefilled in prefilled && !edited.contains("\(tool.rawValue).\(field)") }
     }
 }
