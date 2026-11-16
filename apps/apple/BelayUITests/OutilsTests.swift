@@ -193,8 +193,10 @@ final class OutilsTests: XCTestCase {
         app.navigationBars.buttons.firstMatch.tap()
         XCTAssertTrue(
             app.staticTexts["25 + 10 + 2,5 + 0,5\u{202F}kg par côté"].waitForExistence(timeout: 3), "Compétition loads 96")
-        // Back from Mon matériel the keypad may stand over the row: a drag down puts it away.
-        if app.keyboards.firstMatch.exists { app.swipeDown(velocity: .slow) }
+        // Back from Mon matériel the field takes its focus back and the keypad stands over the
+        // row; a swipe above it leaves it up, a drag down into it puts it away.
+        app.putKeypadAway()
+        XCTAssertFalse(app.keyboards.firstMatch.exists, "the keypad is away")
         XCTAssertTrue(app.swipeUpUntil(equipment), "Mon matériel's row is reached again")
         XCTAssertTrue(equipment.label.contains("Compétition"))
         equipment.tap()
