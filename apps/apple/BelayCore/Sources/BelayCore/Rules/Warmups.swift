@@ -77,7 +77,7 @@ private func decimalsOf(_ step: Double) -> Int {
 
 /// The nearest multiple of `step`, without binary noise. Scales by a power of ten rather than
 /// dividing by the step, as the web does, so x.x5 ties round up as printed.
-func roundTo(_ value: Double, step: Double) -> Double {
+public func roundTo(_ value: Double, step: Double) -> Double {
   let scale = pow(10, Double(decimalsOf(step)))
   let scaledStep = jsRound(step * scale)
   return jsRound(jsRound(value * scale / scaledStep) * scaledStep) / scale

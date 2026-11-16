@@ -25135,5 +25135,8462 @@
       "stops": "session",
       "result": "2026-10-07T17:21:00.000Z"
     }
-  ]
+  ],
+  "toolkit": {
+    "bounds": {
+      "reliableMaxReps": 10,
+      "maxReps": 12,
+      "lbPlates": {
+        "bar": 45,
+        "plates": [
+          45,
+          35,
+          25,
+          10,
+          5,
+          2.5
+        ]
+      },
+      "standardPlatesKg": [
+        25,
+        20,
+        15,
+        10,
+        5,
+        2.5,
+        2,
+        1.5,
+        1.25,
+        1,
+        0.5
+      ],
+      "standardBarsKg": [
+        20,
+        15,
+        10
+      ],
+      "ratePresets": [
+        {
+          "id": "gentle",
+          "pct": 0.5
+        },
+        {
+          "id": "balanced",
+          "pct": 0.75
+        },
+        {
+          "id": "steady",
+          "pct": 1
+        }
+      ],
+      "rateMinPct": 0.25,
+      "rateMaxPct": 2.5,
+      "rateStepPct": 0.05,
+      "bmiThresholds": {
+        "low": 18.5,
+        "reference": 25,
+        "high": 30
+      },
+      "navyRangePct": {
+        "min": 2,
+        "max": 75
+      }
+    },
+    "oneRepMax": [
+      {
+        "weightKg": 80,
+        "reps": 0,
+        "epley": 80,
+        "brzycki": 77.83783783783784,
+        "result": null
+      },
+      {
+        "weightKg": 80,
+        "reps": 1,
+        "epley": 80,
+        "brzycki": 80,
+        "result": {
+          "epleyKg": 80,
+          "brzyckiKg": 80,
+          "lessReliable": false
+        }
+      },
+      {
+        "weightKg": 80,
+        "reps": 2.5,
+        "epley": 86.66666666666666,
+        "brzycki": 83.47826086956522,
+        "result": null
+      },
+      {
+        "weightKg": 80,
+        "reps": 5,
+        "epley": 93.33333333333334,
+        "brzycki": 90,
+        "result": {
+          "epleyKg": 93.33333333333334,
+          "brzyckiKg": 90,
+          "lessReliable": false
+        }
+      },
+      {
+        "weightKg": 80,
+        "reps": 6,
+        "epley": 96,
+        "brzycki": 92.90322580645162,
+        "result": {
+          "epleyKg": 96,
+          "brzyckiKg": 92.90322580645162,
+          "lessReliable": false
+        }
+      },
+      {
+        "weightKg": 80,
+        "reps": 10,
+        "epley": 106.66666666666666,
+        "brzycki": 106.66666666666667,
+        "result": {
+          "epleyKg": 106.66666666666666,
+          "brzyckiKg": 106.66666666666667,
+          "lessReliable": false
+        }
+      },
+      {
+        "weightKg": 80,
+        "reps": 11,
+        "epley": 109.33333333333334,
+        "brzycki": 110.76923076923077,
+        "result": {
+          "epleyKg": 109.33333333333334,
+          "brzyckiKg": 110.76923076923077,
+          "lessReliable": true
+        }
+      },
+      {
+        "weightKg": 80,
+        "reps": 12,
+        "epley": 112,
+        "brzycki": 115.2,
+        "result": {
+          "epleyKg": 112,
+          "brzyckiKg": 115.2,
+          "lessReliable": true
+        }
+      },
+      {
+        "weightKg": 80,
+        "reps": 13,
+        "epley": 114.66666666666667,
+        "brzycki": 120,
+        "result": null
+      },
+      {
+        "weightKg": 100,
+        "reps": 0,
+        "epley": 100,
+        "brzycki": 97.29729729729729,
+        "result": null
+      },
+      {
+        "weightKg": 100,
+        "reps": 1,
+        "epley": 100,
+        "brzycki": 100,
+        "result": {
+          "epleyKg": 100,
+          "brzyckiKg": 100,
+          "lessReliable": false
+        }
+      },
+      {
+        "weightKg": 100,
+        "reps": 2.5,
+        "epley": 108.33333333333333,
+        "brzycki": 104.34782608695652,
+        "result": null
+      },
+      {
+        "weightKg": 100,
+        "reps": 5,
+        "epley": 116.66666666666667,
+        "brzycki": 112.5,
+        "result": {
+          "epleyKg": 116.66666666666667,
+          "brzyckiKg": 112.5,
+          "lessReliable": false
+        }
+      },
+      {
+        "weightKg": 100,
+        "reps": 6,
+        "epley": 120,
+        "brzycki": 116.12903225806451,
+        "result": {
+          "epleyKg": 120,
+          "brzyckiKg": 116.12903225806451,
+          "lessReliable": false
+        }
+      },
+      {
+        "weightKg": 100,
+        "reps": 10,
+        "epley": 133.33333333333331,
+        "brzycki": 133.33333333333334,
+        "result": {
+          "epleyKg": 133.33333333333331,
+          "brzyckiKg": 133.33333333333334,
+          "lessReliable": false
+        }
+      },
+      {
+        "weightKg": 100,
+        "reps": 11,
+        "epley": 136.66666666666666,
+        "brzycki": 138.46153846153845,
+        "result": {
+          "epleyKg": 136.66666666666666,
+          "brzyckiKg": 138.46153846153845,
+          "lessReliable": true
+        }
+      },
+      {
+        "weightKg": 100,
+        "reps": 12,
+        "epley": 140,
+        "brzycki": 144,
+        "result": {
+          "epleyKg": 140,
+          "brzyckiKg": 144,
+          "lessReliable": true
+        }
+      },
+      {
+        "weightKg": 100,
+        "reps": 13,
+        "epley": 143.33333333333334,
+        "brzycki": 150,
+        "result": null
+      },
+      {
+        "weightKg": 62.5,
+        "reps": 0,
+        "epley": 62.5,
+        "brzycki": 60.810810810810814,
+        "result": null
+      },
+      {
+        "weightKg": 62.5,
+        "reps": 1,
+        "epley": 62.5,
+        "brzycki": 62.5,
+        "result": {
+          "epleyKg": 62.5,
+          "brzyckiKg": 62.5,
+          "lessReliable": false
+        }
+      },
+      {
+        "weightKg": 62.5,
+        "reps": 2.5,
+        "epley": 67.70833333333333,
+        "brzycki": 65.21739130434783,
+        "result": null
+      },
+      {
+        "weightKg": 62.5,
+        "reps": 5,
+        "epley": 72.91666666666667,
+        "brzycki": 70.3125,
+        "result": {
+          "epleyKg": 72.91666666666667,
+          "brzyckiKg": 70.3125,
+          "lessReliable": false
+        }
+      },
+      {
+        "weightKg": 62.5,
+        "reps": 6,
+        "epley": 75,
+        "brzycki": 72.58064516129032,
+        "result": {
+          "epleyKg": 75,
+          "brzyckiKg": 72.58064516129032,
+          "lessReliable": false
+        }
+      },
+      {
+        "weightKg": 62.5,
+        "reps": 10,
+        "epley": 83.33333333333333,
+        "brzycki": 83.33333333333333,
+        "result": {
+          "epleyKg": 83.33333333333333,
+          "brzyckiKg": 83.33333333333333,
+          "lessReliable": false
+        }
+      },
+      {
+        "weightKg": 62.5,
+        "reps": 11,
+        "epley": 85.41666666666667,
+        "brzycki": 86.53846153846153,
+        "result": {
+          "epleyKg": 85.41666666666667,
+          "brzyckiKg": 86.53846153846153,
+          "lessReliable": true
+        }
+      },
+      {
+        "weightKg": 62.5,
+        "reps": 12,
+        "epley": 87.5,
+        "brzycki": 90,
+        "result": {
+          "epleyKg": 87.5,
+          "brzyckiKg": 90,
+          "lessReliable": true
+        }
+      },
+      {
+        "weightKg": 62.5,
+        "reps": 13,
+        "epley": 89.58333333333333,
+        "brzycki": 93.75,
+        "result": null
+      },
+      {
+        "weightKg": 0,
+        "reps": 0,
+        "epley": 0,
+        "brzycki": 0,
+        "result": null
+      },
+      {
+        "weightKg": 0,
+        "reps": 1,
+        "epley": 0,
+        "brzycki": 0,
+        "result": null
+      },
+      {
+        "weightKg": 0,
+        "reps": 2.5,
+        "epley": 0,
+        "brzycki": 0,
+        "result": null
+      },
+      {
+        "weightKg": 0,
+        "reps": 5,
+        "epley": 0,
+        "brzycki": 0,
+        "result": null
+      },
+      {
+        "weightKg": 0,
+        "reps": 6,
+        "epley": 0,
+        "brzycki": 0,
+        "result": null
+      },
+      {
+        "weightKg": 0,
+        "reps": 10,
+        "epley": 0,
+        "brzycki": 0,
+        "result": null
+      },
+      {
+        "weightKg": 0,
+        "reps": 11,
+        "epley": 0,
+        "brzycki": 0,
+        "result": null
+      },
+      {
+        "weightKg": 0,
+        "reps": 12,
+        "epley": 0,
+        "brzycki": 0,
+        "result": null
+      },
+      {
+        "weightKg": 0,
+        "reps": 13,
+        "epley": 0,
+        "brzycki": 0,
+        "result": null
+      },
+      {
+        "weightKg": -80,
+        "reps": 0,
+        "epley": -80,
+        "brzycki": -77.83783783783784,
+        "result": null
+      },
+      {
+        "weightKg": -80,
+        "reps": 1,
+        "epley": -80,
+        "brzycki": -80,
+        "result": null
+      },
+      {
+        "weightKg": -80,
+        "reps": 2.5,
+        "epley": -86.66666666666666,
+        "brzycki": -83.47826086956522,
+        "result": null
+      },
+      {
+        "weightKg": -80,
+        "reps": 5,
+        "epley": -93.33333333333334,
+        "brzycki": -90,
+        "result": null
+      },
+      {
+        "weightKg": -80,
+        "reps": 6,
+        "epley": -96,
+        "brzycki": -92.90322580645162,
+        "result": null
+      },
+      {
+        "weightKg": -80,
+        "reps": 10,
+        "epley": -106.66666666666666,
+        "brzycki": -106.66666666666667,
+        "result": null
+      },
+      {
+        "weightKg": -80,
+        "reps": 11,
+        "epley": -109.33333333333334,
+        "brzycki": -110.76923076923077,
+        "result": null
+      },
+      {
+        "weightKg": -80,
+        "reps": 12,
+        "epley": -112,
+        "brzycki": -115.2,
+        "result": null
+      },
+      {
+        "weightKg": -80,
+        "reps": 13,
+        "epley": -114.66666666666667,
+        "brzycki": -120,
+        "result": null
+      }
+    ],
+    "loadBar": [
+      {
+        "name": "competition: 0",
+        "targetKg": 0,
+        "barKg": 20,
+        "platesKg": [
+          25,
+          20,
+          15,
+          10,
+          5,
+          2.5,
+          2,
+          1.5,
+          1,
+          0.5
+        ],
+        "result": {
+          "kind": "unreachable",
+          "below": null,
+          "above": {
+            "totalKg": 20,
+            "perSideKg": []
+          }
+        },
+        "nearest": {
+          "totalKg": 20,
+          "perSideKg": []
+        }
+      },
+      {
+        "name": "competition: 15",
+        "targetKg": 15,
+        "barKg": 20,
+        "platesKg": [
+          25,
+          20,
+          15,
+          10,
+          5,
+          2.5,
+          2,
+          1.5,
+          1,
+          0.5
+        ],
+        "result": {
+          "kind": "unreachable",
+          "below": null,
+          "above": {
+            "totalKg": 20,
+            "perSideKg": []
+          }
+        },
+        "nearest": {
+          "totalKg": 20,
+          "perSideKg": []
+        }
+      },
+      {
+        "name": "competition: 20",
+        "targetKg": 20,
+        "barKg": 20,
+        "platesKg": [
+          25,
+          20,
+          15,
+          10,
+          5,
+          2.5,
+          2,
+          1.5,
+          1,
+          0.5
+        ],
+        "result": {
+          "kind": "exact",
+          "loading": {
+            "totalKg": 20,
+            "perSideKg": []
+          }
+        },
+        "nearest": {
+          "totalKg": 20,
+          "perSideKg": []
+        }
+      },
+      {
+        "name": "competition: 20.5",
+        "targetKg": 20.5,
+        "barKg": 20,
+        "platesKg": [
+          25,
+          20,
+          15,
+          10,
+          5,
+          2.5,
+          2,
+          1.5,
+          1,
+          0.5
+        ],
+        "result": {
+          "kind": "unreachable",
+          "below": {
+            "totalKg": 20,
+            "perSideKg": []
+          },
+          "above": {
+            "totalKg": 21,
+            "perSideKg": [
+              0.5
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 20,
+          "perSideKg": []
+        }
+      },
+      {
+        "name": "competition: 21",
+        "targetKg": 21,
+        "barKg": 20,
+        "platesKg": [
+          25,
+          20,
+          15,
+          10,
+          5,
+          2.5,
+          2,
+          1.5,
+          1,
+          0.5
+        ],
+        "result": {
+          "kind": "exact",
+          "loading": {
+            "totalKg": 21,
+            "perSideKg": [
+              0.5
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 21,
+          "perSideKg": [
+            0.5
+          ]
+        }
+      },
+      {
+        "name": "competition: 22.5",
+        "targetKg": 22.5,
+        "barKg": 20,
+        "platesKg": [
+          25,
+          20,
+          15,
+          10,
+          5,
+          2.5,
+          2,
+          1.5,
+          1,
+          0.5
+        ],
+        "result": {
+          "kind": "unreachable",
+          "below": {
+            "totalKg": 22,
+            "perSideKg": [
+              1
+            ]
+          },
+          "above": {
+            "totalKg": 23,
+            "perSideKg": [
+              1.5
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 22,
+          "perSideKg": [
+            1
+          ]
+        }
+      },
+      {
+        "name": "competition: 41.2",
+        "targetKg": 41.2,
+        "barKg": 20,
+        "platesKg": [
+          25,
+          20,
+          15,
+          10,
+          5,
+          2.5,
+          2,
+          1.5,
+          1,
+          0.5
+        ],
+        "result": {
+          "kind": "unreachable",
+          "below": {
+            "totalKg": 41,
+            "perSideKg": [
+              10,
+              0.5
+            ]
+          },
+          "above": {
+            "totalKg": 42,
+            "perSideKg": [
+              10,
+              1
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 41,
+          "perSideKg": [
+            10,
+            0.5
+          ]
+        }
+      },
+      {
+        "name": "competition: 60",
+        "targetKg": 60,
+        "barKg": 20,
+        "platesKg": [
+          25,
+          20,
+          15,
+          10,
+          5,
+          2.5,
+          2,
+          1.5,
+          1,
+          0.5
+        ],
+        "result": {
+          "kind": "exact",
+          "loading": {
+            "totalKg": 60,
+            "perSideKg": [
+              20
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 60,
+          "perSideKg": [
+            20
+          ]
+        }
+      },
+      {
+        "name": "competition: 62.5",
+        "targetKg": 62.5,
+        "barKg": 20,
+        "platesKg": [
+          25,
+          20,
+          15,
+          10,
+          5,
+          2.5,
+          2,
+          1.5,
+          1,
+          0.5
+        ],
+        "result": {
+          "kind": "unreachable",
+          "below": {
+            "totalKg": 62,
+            "perSideKg": [
+              20,
+              1
+            ]
+          },
+          "above": {
+            "totalKg": 63,
+            "perSideKg": [
+              20,
+              1.5
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 62,
+          "perSideKg": [
+            20,
+            1
+          ]
+        }
+      },
+      {
+        "name": "competition: 75",
+        "targetKg": 75,
+        "barKg": 20,
+        "platesKg": [
+          25,
+          20,
+          15,
+          10,
+          5,
+          2.5,
+          2,
+          1.5,
+          1,
+          0.5
+        ],
+        "result": {
+          "kind": "exact",
+          "loading": {
+            "totalKg": 75,
+            "perSideKg": [
+              25,
+              2.5
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 75,
+          "perSideKg": [
+            25,
+            2.5
+          ]
+        }
+      },
+      {
+        "name": "competition: 90",
+        "targetKg": 90,
+        "barKg": 20,
+        "platesKg": [
+          25,
+          20,
+          15,
+          10,
+          5,
+          2.5,
+          2,
+          1.5,
+          1,
+          0.5
+        ],
+        "result": {
+          "kind": "exact",
+          "loading": {
+            "totalKg": 90,
+            "perSideKg": [
+              25,
+              10
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 90,
+          "perSideKg": [
+            25,
+            10
+          ]
+        }
+      },
+      {
+        "name": "competition: 100",
+        "targetKg": 100,
+        "barKg": 20,
+        "platesKg": [
+          25,
+          20,
+          15,
+          10,
+          5,
+          2.5,
+          2,
+          1.5,
+          1,
+          0.5
+        ],
+        "result": {
+          "kind": "exact",
+          "loading": {
+            "totalKg": 100,
+            "perSideKg": [
+              25,
+              15
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 100,
+          "perSideKg": [
+            25,
+            15
+          ]
+        }
+      },
+      {
+        "name": "competition: 101",
+        "targetKg": 101,
+        "barKg": 20,
+        "platesKg": [
+          25,
+          20,
+          15,
+          10,
+          5,
+          2.5,
+          2,
+          1.5,
+          1,
+          0.5
+        ],
+        "result": {
+          "kind": "exact",
+          "loading": {
+            "totalKg": 101,
+            "perSideKg": [
+              25,
+              15,
+              0.5
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 101,
+          "perSideKg": [
+            25,
+            15,
+            0.5
+          ]
+        }
+      },
+      {
+        "name": "competition: 135",
+        "targetKg": 135,
+        "barKg": 20,
+        "platesKg": [
+          25,
+          20,
+          15,
+          10,
+          5,
+          2.5,
+          2,
+          1.5,
+          1,
+          0.5
+        ],
+        "result": {
+          "kind": "exact",
+          "loading": {
+            "totalKg": 135,
+            "perSideKg": [
+              25,
+              25,
+              5,
+              2.5
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 135,
+          "perSideKg": [
+            25,
+            25,
+            5,
+            2.5
+          ]
+        }
+      },
+      {
+        "name": "competition: 225",
+        "targetKg": 225,
+        "barKg": 20,
+        "platesKg": [
+          25,
+          20,
+          15,
+          10,
+          5,
+          2.5,
+          2,
+          1.5,
+          1,
+          0.5
+        ],
+        "result": {
+          "kind": "exact",
+          "loading": {
+            "totalKg": 225,
+            "perSideKg": [
+              25,
+              25,
+              25,
+              25,
+              2.5
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 225,
+          "perSideKg": [
+            25,
+            25,
+            25,
+            25,
+            2.5
+          ]
+        }
+      },
+      {
+        "name": "competition: 315",
+        "targetKg": 315,
+        "barKg": 20,
+        "platesKg": [
+          25,
+          20,
+          15,
+          10,
+          5,
+          2.5,
+          2,
+          1.5,
+          1,
+          0.5
+        ],
+        "result": {
+          "kind": "exact",
+          "loading": {
+            "totalKg": 315,
+            "perSideKg": [
+              25,
+              25,
+              25,
+              25,
+              25,
+              20,
+              2.5
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 315,
+          "perSideKg": [
+            25,
+            25,
+            25,
+            25,
+            25,
+            20,
+            2.5
+          ]
+        }
+      },
+      {
+        "name": "competition: 333.3",
+        "targetKg": 333.3,
+        "barKg": 20,
+        "platesKg": [
+          25,
+          20,
+          15,
+          10,
+          5,
+          2.5,
+          2,
+          1.5,
+          1,
+          0.5
+        ],
+        "result": {
+          "kind": "unreachable",
+          "below": {
+            "totalKg": 333,
+            "perSideKg": [
+              25,
+              25,
+              25,
+              25,
+              25,
+              25,
+              5,
+              1.5
+            ]
+          },
+          "above": {
+            "totalKg": 334,
+            "perSideKg": [
+              25,
+              25,
+              25,
+              25,
+              25,
+              25,
+              5,
+              2
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 333,
+          "perSideKg": [
+            25,
+            25,
+            25,
+            25,
+            25,
+            25,
+            5,
+            1.5
+          ]
+        }
+      },
+      {
+        "name": "competition: 1000",
+        "targetKg": 1000,
+        "barKg": 20,
+        "platesKg": [
+          25,
+          20,
+          15,
+          10,
+          5,
+          2.5,
+          2,
+          1.5,
+          1,
+          0.5
+        ],
+        "result": {
+          "kind": "exact",
+          "loading": {
+            "totalKg": 1000,
+            "perSideKg": [
+              25,
+              25,
+              25,
+              25,
+              25,
+              25,
+              25,
+              25,
+              25,
+              25,
+              25,
+              25,
+              25,
+              25,
+              25,
+              25,
+              25,
+              25,
+              25,
+              15
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 1000,
+          "perSideKg": [
+            25,
+            25,
+            25,
+            25,
+            25,
+            25,
+            25,
+            25,
+            25,
+            25,
+            25,
+            25,
+            25,
+            25,
+            25,
+            25,
+            25,
+            25,
+            25,
+            15
+          ]
+        }
+      },
+      {
+        "name": "competition: 1000.5",
+        "targetKg": 1000.5,
+        "barKg": 20,
+        "platesKg": [
+          25,
+          20,
+          15,
+          10,
+          5,
+          2.5,
+          2,
+          1.5,
+          1,
+          0.5
+        ],
+        "result": null,
+        "nearest": null
+      },
+      {
+        "name": "gym: 0",
+        "targetKg": 0,
+        "barKg": 20,
+        "platesKg": [
+          20,
+          10,
+          5,
+          2.5
+        ],
+        "result": {
+          "kind": "unreachable",
+          "below": null,
+          "above": {
+            "totalKg": 20,
+            "perSideKg": []
+          }
+        },
+        "nearest": {
+          "totalKg": 20,
+          "perSideKg": []
+        }
+      },
+      {
+        "name": "gym: 15",
+        "targetKg": 15,
+        "barKg": 20,
+        "platesKg": [
+          20,
+          10,
+          5,
+          2.5
+        ],
+        "result": {
+          "kind": "unreachable",
+          "below": null,
+          "above": {
+            "totalKg": 20,
+            "perSideKg": []
+          }
+        },
+        "nearest": {
+          "totalKg": 20,
+          "perSideKg": []
+        }
+      },
+      {
+        "name": "gym: 20",
+        "targetKg": 20,
+        "barKg": 20,
+        "platesKg": [
+          20,
+          10,
+          5,
+          2.5
+        ],
+        "result": {
+          "kind": "exact",
+          "loading": {
+            "totalKg": 20,
+            "perSideKg": []
+          }
+        },
+        "nearest": {
+          "totalKg": 20,
+          "perSideKg": []
+        }
+      },
+      {
+        "name": "gym: 20.5",
+        "targetKg": 20.5,
+        "barKg": 20,
+        "platesKg": [
+          20,
+          10,
+          5,
+          2.5
+        ],
+        "result": {
+          "kind": "unreachable",
+          "below": {
+            "totalKg": 20,
+            "perSideKg": []
+          },
+          "above": {
+            "totalKg": 25,
+            "perSideKg": [
+              2.5
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 20,
+          "perSideKg": []
+        }
+      },
+      {
+        "name": "gym: 21",
+        "targetKg": 21,
+        "barKg": 20,
+        "platesKg": [
+          20,
+          10,
+          5,
+          2.5
+        ],
+        "result": {
+          "kind": "unreachable",
+          "below": {
+            "totalKg": 20,
+            "perSideKg": []
+          },
+          "above": {
+            "totalKg": 25,
+            "perSideKg": [
+              2.5
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 20,
+          "perSideKg": []
+        }
+      },
+      {
+        "name": "gym: 22.5",
+        "targetKg": 22.5,
+        "barKg": 20,
+        "platesKg": [
+          20,
+          10,
+          5,
+          2.5
+        ],
+        "result": {
+          "kind": "unreachable",
+          "below": {
+            "totalKg": 20,
+            "perSideKg": []
+          },
+          "above": {
+            "totalKg": 25,
+            "perSideKg": [
+              2.5
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 20,
+          "perSideKg": []
+        }
+      },
+      {
+        "name": "gym: 41.2",
+        "targetKg": 41.2,
+        "barKg": 20,
+        "platesKg": [
+          20,
+          10,
+          5,
+          2.5
+        ],
+        "result": {
+          "kind": "unreachable",
+          "below": {
+            "totalKg": 40,
+            "perSideKg": [
+              10
+            ]
+          },
+          "above": {
+            "totalKg": 45,
+            "perSideKg": [
+              10,
+              2.5
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 40,
+          "perSideKg": [
+            10
+          ]
+        }
+      },
+      {
+        "name": "gym: 60",
+        "targetKg": 60,
+        "barKg": 20,
+        "platesKg": [
+          20,
+          10,
+          5,
+          2.5
+        ],
+        "result": {
+          "kind": "exact",
+          "loading": {
+            "totalKg": 60,
+            "perSideKg": [
+              20
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 60,
+          "perSideKg": [
+            20
+          ]
+        }
+      },
+      {
+        "name": "gym: 62.5",
+        "targetKg": 62.5,
+        "barKg": 20,
+        "platesKg": [
+          20,
+          10,
+          5,
+          2.5
+        ],
+        "result": {
+          "kind": "unreachable",
+          "below": {
+            "totalKg": 60,
+            "perSideKg": [
+              20
+            ]
+          },
+          "above": {
+            "totalKg": 65,
+            "perSideKg": [
+              20,
+              2.5
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 60,
+          "perSideKg": [
+            20
+          ]
+        }
+      },
+      {
+        "name": "gym: 75",
+        "targetKg": 75,
+        "barKg": 20,
+        "platesKg": [
+          20,
+          10,
+          5,
+          2.5
+        ],
+        "result": {
+          "kind": "exact",
+          "loading": {
+            "totalKg": 75,
+            "perSideKg": [
+              20,
+              5,
+              2.5
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 75,
+          "perSideKg": [
+            20,
+            5,
+            2.5
+          ]
+        }
+      },
+      {
+        "name": "gym: 90",
+        "targetKg": 90,
+        "barKg": 20,
+        "platesKg": [
+          20,
+          10,
+          5,
+          2.5
+        ],
+        "result": {
+          "kind": "exact",
+          "loading": {
+            "totalKg": 90,
+            "perSideKg": [
+              20,
+              10,
+              5
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 90,
+          "perSideKg": [
+            20,
+            10,
+            5
+          ]
+        }
+      },
+      {
+        "name": "gym: 100",
+        "targetKg": 100,
+        "barKg": 20,
+        "platesKg": [
+          20,
+          10,
+          5,
+          2.5
+        ],
+        "result": {
+          "kind": "exact",
+          "loading": {
+            "totalKg": 100,
+            "perSideKg": [
+              20,
+              20
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 100,
+          "perSideKg": [
+            20,
+            20
+          ]
+        }
+      },
+      {
+        "name": "gym: 101",
+        "targetKg": 101,
+        "barKg": 20,
+        "platesKg": [
+          20,
+          10,
+          5,
+          2.5
+        ],
+        "result": {
+          "kind": "unreachable",
+          "below": {
+            "totalKg": 100,
+            "perSideKg": [
+              20,
+              20
+            ]
+          },
+          "above": {
+            "totalKg": 105,
+            "perSideKg": [
+              20,
+              20,
+              2.5
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 100,
+          "perSideKg": [
+            20,
+            20
+          ]
+        }
+      },
+      {
+        "name": "gym: 135",
+        "targetKg": 135,
+        "barKg": 20,
+        "platesKg": [
+          20,
+          10,
+          5,
+          2.5
+        ],
+        "result": {
+          "kind": "exact",
+          "loading": {
+            "totalKg": 135,
+            "perSideKg": [
+              20,
+              20,
+              10,
+              5,
+              2.5
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 135,
+          "perSideKg": [
+            20,
+            20,
+            10,
+            5,
+            2.5
+          ]
+        }
+      },
+      {
+        "name": "gym: 225",
+        "targetKg": 225,
+        "barKg": 20,
+        "platesKg": [
+          20,
+          10,
+          5,
+          2.5
+        ],
+        "result": {
+          "kind": "exact",
+          "loading": {
+            "totalKg": 225,
+            "perSideKg": [
+              20,
+              20,
+              20,
+              20,
+              20,
+              2.5
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 225,
+          "perSideKg": [
+            20,
+            20,
+            20,
+            20,
+            20,
+            2.5
+          ]
+        }
+      },
+      {
+        "name": "gym: 315",
+        "targetKg": 315,
+        "barKg": 20,
+        "platesKg": [
+          20,
+          10,
+          5,
+          2.5
+        ],
+        "result": {
+          "kind": "exact",
+          "loading": {
+            "totalKg": 315,
+            "perSideKg": [
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              5,
+              2.5
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 315,
+          "perSideKg": [
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            5,
+            2.5
+          ]
+        }
+      },
+      {
+        "name": "gym: 333.3",
+        "targetKg": 333.3,
+        "barKg": 20,
+        "platesKg": [
+          20,
+          10,
+          5,
+          2.5
+        ],
+        "result": {
+          "kind": "unreachable",
+          "below": {
+            "totalKg": 330,
+            "perSideKg": [
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              10,
+              5
+            ]
+          },
+          "above": {
+            "totalKg": 335,
+            "perSideKg": [
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              10,
+              5,
+              2.5
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 335,
+          "perSideKg": [
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            10,
+            5,
+            2.5
+          ]
+        }
+      },
+      {
+        "name": "gym: 1000",
+        "targetKg": 1000,
+        "barKg": 20,
+        "platesKg": [
+          20,
+          10,
+          5,
+          2.5
+        ],
+        "result": {
+          "kind": "exact",
+          "loading": {
+            "totalKg": 1000,
+            "perSideKg": [
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              10
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 1000,
+          "perSideKg": [
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            10
+          ]
+        }
+      },
+      {
+        "name": "gym: 1000.5",
+        "targetKg": 1000.5,
+        "barKg": 20,
+        "platesKg": [
+          20,
+          10,
+          5,
+          2.5
+        ],
+        "result": null,
+        "nearest": null
+      },
+      {
+        "name": "with 1.25 kg plates: 0",
+        "targetKg": 0,
+        "barKg": 20,
+        "platesKg": [
+          20,
+          10,
+          5,
+          2.5,
+          1.25
+        ],
+        "result": {
+          "kind": "unreachable",
+          "below": null,
+          "above": {
+            "totalKg": 20,
+            "perSideKg": []
+          }
+        },
+        "nearest": {
+          "totalKg": 20,
+          "perSideKg": []
+        }
+      },
+      {
+        "name": "with 1.25 kg plates: 15",
+        "targetKg": 15,
+        "barKg": 20,
+        "platesKg": [
+          20,
+          10,
+          5,
+          2.5,
+          1.25
+        ],
+        "result": {
+          "kind": "unreachable",
+          "below": null,
+          "above": {
+            "totalKg": 20,
+            "perSideKg": []
+          }
+        },
+        "nearest": {
+          "totalKg": 20,
+          "perSideKg": []
+        }
+      },
+      {
+        "name": "with 1.25 kg plates: 20",
+        "targetKg": 20,
+        "barKg": 20,
+        "platesKg": [
+          20,
+          10,
+          5,
+          2.5,
+          1.25
+        ],
+        "result": {
+          "kind": "exact",
+          "loading": {
+            "totalKg": 20,
+            "perSideKg": []
+          }
+        },
+        "nearest": {
+          "totalKg": 20,
+          "perSideKg": []
+        }
+      },
+      {
+        "name": "with 1.25 kg plates: 20.5",
+        "targetKg": 20.5,
+        "barKg": 20,
+        "platesKg": [
+          20,
+          10,
+          5,
+          2.5,
+          1.25
+        ],
+        "result": {
+          "kind": "unreachable",
+          "below": {
+            "totalKg": 20,
+            "perSideKg": []
+          },
+          "above": {
+            "totalKg": 22.5,
+            "perSideKg": [
+              1.25
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 20,
+          "perSideKg": []
+        }
+      },
+      {
+        "name": "with 1.25 kg plates: 21",
+        "targetKg": 21,
+        "barKg": 20,
+        "platesKg": [
+          20,
+          10,
+          5,
+          2.5,
+          1.25
+        ],
+        "result": {
+          "kind": "unreachable",
+          "below": {
+            "totalKg": 20,
+            "perSideKg": []
+          },
+          "above": {
+            "totalKg": 22.5,
+            "perSideKg": [
+              1.25
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 20,
+          "perSideKg": []
+        }
+      },
+      {
+        "name": "with 1.25 kg plates: 22.5",
+        "targetKg": 22.5,
+        "barKg": 20,
+        "platesKg": [
+          20,
+          10,
+          5,
+          2.5,
+          1.25
+        ],
+        "result": {
+          "kind": "exact",
+          "loading": {
+            "totalKg": 22.5,
+            "perSideKg": [
+              1.25
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 22.5,
+          "perSideKg": [
+            1.25
+          ]
+        }
+      },
+      {
+        "name": "with 1.25 kg plates: 41.2",
+        "targetKg": 41.2,
+        "barKg": 20,
+        "platesKg": [
+          20,
+          10,
+          5,
+          2.5,
+          1.25
+        ],
+        "result": {
+          "kind": "unreachable",
+          "below": {
+            "totalKg": 40,
+            "perSideKg": [
+              10
+            ]
+          },
+          "above": {
+            "totalKg": 42.5,
+            "perSideKg": [
+              10,
+              1.25
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 40,
+          "perSideKg": [
+            10
+          ]
+        }
+      },
+      {
+        "name": "with 1.25 kg plates: 60",
+        "targetKg": 60,
+        "barKg": 20,
+        "platesKg": [
+          20,
+          10,
+          5,
+          2.5,
+          1.25
+        ],
+        "result": {
+          "kind": "exact",
+          "loading": {
+            "totalKg": 60,
+            "perSideKg": [
+              20
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 60,
+          "perSideKg": [
+            20
+          ]
+        }
+      },
+      {
+        "name": "with 1.25 kg plates: 62.5",
+        "targetKg": 62.5,
+        "barKg": 20,
+        "platesKg": [
+          20,
+          10,
+          5,
+          2.5,
+          1.25
+        ],
+        "result": {
+          "kind": "exact",
+          "loading": {
+            "totalKg": 62.5,
+            "perSideKg": [
+              20,
+              1.25
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 62.5,
+          "perSideKg": [
+            20,
+            1.25
+          ]
+        }
+      },
+      {
+        "name": "with 1.25 kg plates: 75",
+        "targetKg": 75,
+        "barKg": 20,
+        "platesKg": [
+          20,
+          10,
+          5,
+          2.5,
+          1.25
+        ],
+        "result": {
+          "kind": "exact",
+          "loading": {
+            "totalKg": 75,
+            "perSideKg": [
+              20,
+              5,
+              2.5
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 75,
+          "perSideKg": [
+            20,
+            5,
+            2.5
+          ]
+        }
+      },
+      {
+        "name": "with 1.25 kg plates: 90",
+        "targetKg": 90,
+        "barKg": 20,
+        "platesKg": [
+          20,
+          10,
+          5,
+          2.5,
+          1.25
+        ],
+        "result": {
+          "kind": "exact",
+          "loading": {
+            "totalKg": 90,
+            "perSideKg": [
+              20,
+              10,
+              5
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 90,
+          "perSideKg": [
+            20,
+            10,
+            5
+          ]
+        }
+      },
+      {
+        "name": "with 1.25 kg plates: 100",
+        "targetKg": 100,
+        "barKg": 20,
+        "platesKg": [
+          20,
+          10,
+          5,
+          2.5,
+          1.25
+        ],
+        "result": {
+          "kind": "exact",
+          "loading": {
+            "totalKg": 100,
+            "perSideKg": [
+              20,
+              20
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 100,
+          "perSideKg": [
+            20,
+            20
+          ]
+        }
+      },
+      {
+        "name": "with 1.25 kg plates: 101",
+        "targetKg": 101,
+        "barKg": 20,
+        "platesKg": [
+          20,
+          10,
+          5,
+          2.5,
+          1.25
+        ],
+        "result": {
+          "kind": "unreachable",
+          "below": {
+            "totalKg": 100,
+            "perSideKg": [
+              20,
+              20
+            ]
+          },
+          "above": {
+            "totalKg": 102.5,
+            "perSideKg": [
+              20,
+              20,
+              1.25
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 100,
+          "perSideKg": [
+            20,
+            20
+          ]
+        }
+      },
+      {
+        "name": "with 1.25 kg plates: 135",
+        "targetKg": 135,
+        "barKg": 20,
+        "platesKg": [
+          20,
+          10,
+          5,
+          2.5,
+          1.25
+        ],
+        "result": {
+          "kind": "exact",
+          "loading": {
+            "totalKg": 135,
+            "perSideKg": [
+              20,
+              20,
+              10,
+              5,
+              2.5
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 135,
+          "perSideKg": [
+            20,
+            20,
+            10,
+            5,
+            2.5
+          ]
+        }
+      },
+      {
+        "name": "with 1.25 kg plates: 225",
+        "targetKg": 225,
+        "barKg": 20,
+        "platesKg": [
+          20,
+          10,
+          5,
+          2.5,
+          1.25
+        ],
+        "result": {
+          "kind": "exact",
+          "loading": {
+            "totalKg": 225,
+            "perSideKg": [
+              20,
+              20,
+              20,
+              20,
+              20,
+              2.5
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 225,
+          "perSideKg": [
+            20,
+            20,
+            20,
+            20,
+            20,
+            2.5
+          ]
+        }
+      },
+      {
+        "name": "with 1.25 kg plates: 315",
+        "targetKg": 315,
+        "barKg": 20,
+        "platesKg": [
+          20,
+          10,
+          5,
+          2.5,
+          1.25
+        ],
+        "result": {
+          "kind": "exact",
+          "loading": {
+            "totalKg": 315,
+            "perSideKg": [
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              5,
+              2.5
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 315,
+          "perSideKg": [
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            5,
+            2.5
+          ]
+        }
+      },
+      {
+        "name": "with 1.25 kg plates: 333.3",
+        "targetKg": 333.3,
+        "barKg": 20,
+        "platesKg": [
+          20,
+          10,
+          5,
+          2.5,
+          1.25
+        ],
+        "result": {
+          "kind": "unreachable",
+          "below": {
+            "totalKg": 332.5,
+            "perSideKg": [
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              10,
+              5,
+              1.25
+            ]
+          },
+          "above": {
+            "totalKg": 335,
+            "perSideKg": [
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              10,
+              5,
+              2.5
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 332.5,
+          "perSideKg": [
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            10,
+            5,
+            1.25
+          ]
+        }
+      },
+      {
+        "name": "with 1.25 kg plates: 1000",
+        "targetKg": 1000,
+        "barKg": 20,
+        "platesKg": [
+          20,
+          10,
+          5,
+          2.5,
+          1.25
+        ],
+        "result": {
+          "kind": "exact",
+          "loading": {
+            "totalKg": 1000,
+            "perSideKg": [
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              10
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 1000,
+          "perSideKg": [
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            10
+          ]
+        }
+      },
+      {
+        "name": "with 1.25 kg plates: 1000.5",
+        "targetKg": 1000.5,
+        "barKg": 20,
+        "platesKg": [
+          20,
+          10,
+          5,
+          2.5,
+          1.25
+        ],
+        "result": null,
+        "nearest": null
+      },
+      {
+        "name": "no plates: 0",
+        "targetKg": 0,
+        "barKg": 20,
+        "platesKg": [],
+        "result": {
+          "kind": "unreachable",
+          "below": null,
+          "above": {
+            "totalKg": 20,
+            "perSideKg": []
+          }
+        },
+        "nearest": {
+          "totalKg": 20,
+          "perSideKg": []
+        }
+      },
+      {
+        "name": "no plates: 15",
+        "targetKg": 15,
+        "barKg": 20,
+        "platesKg": [],
+        "result": {
+          "kind": "unreachable",
+          "below": null,
+          "above": {
+            "totalKg": 20,
+            "perSideKg": []
+          }
+        },
+        "nearest": {
+          "totalKg": 20,
+          "perSideKg": []
+        }
+      },
+      {
+        "name": "no plates: 20",
+        "targetKg": 20,
+        "barKg": 20,
+        "platesKg": [],
+        "result": {
+          "kind": "exact",
+          "loading": {
+            "totalKg": 20,
+            "perSideKg": []
+          }
+        },
+        "nearest": {
+          "totalKg": 20,
+          "perSideKg": []
+        }
+      },
+      {
+        "name": "no plates: 20.5",
+        "targetKg": 20.5,
+        "barKg": 20,
+        "platesKg": [],
+        "result": {
+          "kind": "unreachable",
+          "below": {
+            "totalKg": 20,
+            "perSideKg": []
+          },
+          "above": null
+        },
+        "nearest": {
+          "totalKg": 20,
+          "perSideKg": []
+        }
+      },
+      {
+        "name": "no plates: 21",
+        "targetKg": 21,
+        "barKg": 20,
+        "platesKg": [],
+        "result": {
+          "kind": "unreachable",
+          "below": {
+            "totalKg": 20,
+            "perSideKg": []
+          },
+          "above": null
+        },
+        "nearest": {
+          "totalKg": 20,
+          "perSideKg": []
+        }
+      },
+      {
+        "name": "no plates: 22.5",
+        "targetKg": 22.5,
+        "barKg": 20,
+        "platesKg": [],
+        "result": {
+          "kind": "unreachable",
+          "below": {
+            "totalKg": 20,
+            "perSideKg": []
+          },
+          "above": null
+        },
+        "nearest": {
+          "totalKg": 20,
+          "perSideKg": []
+        }
+      },
+      {
+        "name": "no plates: 41.2",
+        "targetKg": 41.2,
+        "barKg": 20,
+        "platesKg": [],
+        "result": {
+          "kind": "unreachable",
+          "below": {
+            "totalKg": 20,
+            "perSideKg": []
+          },
+          "above": null
+        },
+        "nearest": {
+          "totalKg": 20,
+          "perSideKg": []
+        }
+      },
+      {
+        "name": "no plates: 60",
+        "targetKg": 60,
+        "barKg": 20,
+        "platesKg": [],
+        "result": {
+          "kind": "unreachable",
+          "below": {
+            "totalKg": 20,
+            "perSideKg": []
+          },
+          "above": null
+        },
+        "nearest": {
+          "totalKg": 20,
+          "perSideKg": []
+        }
+      },
+      {
+        "name": "no plates: 62.5",
+        "targetKg": 62.5,
+        "barKg": 20,
+        "platesKg": [],
+        "result": {
+          "kind": "unreachable",
+          "below": {
+            "totalKg": 20,
+            "perSideKg": []
+          },
+          "above": null
+        },
+        "nearest": {
+          "totalKg": 20,
+          "perSideKg": []
+        }
+      },
+      {
+        "name": "no plates: 75",
+        "targetKg": 75,
+        "barKg": 20,
+        "platesKg": [],
+        "result": {
+          "kind": "unreachable",
+          "below": {
+            "totalKg": 20,
+            "perSideKg": []
+          },
+          "above": null
+        },
+        "nearest": {
+          "totalKg": 20,
+          "perSideKg": []
+        }
+      },
+      {
+        "name": "no plates: 90",
+        "targetKg": 90,
+        "barKg": 20,
+        "platesKg": [],
+        "result": {
+          "kind": "unreachable",
+          "below": {
+            "totalKg": 20,
+            "perSideKg": []
+          },
+          "above": null
+        },
+        "nearest": {
+          "totalKg": 20,
+          "perSideKg": []
+        }
+      },
+      {
+        "name": "no plates: 100",
+        "targetKg": 100,
+        "barKg": 20,
+        "platesKg": [],
+        "result": {
+          "kind": "unreachable",
+          "below": {
+            "totalKg": 20,
+            "perSideKg": []
+          },
+          "above": null
+        },
+        "nearest": {
+          "totalKg": 20,
+          "perSideKg": []
+        }
+      },
+      {
+        "name": "no plates: 101",
+        "targetKg": 101,
+        "barKg": 20,
+        "platesKg": [],
+        "result": {
+          "kind": "unreachable",
+          "below": {
+            "totalKg": 20,
+            "perSideKg": []
+          },
+          "above": null
+        },
+        "nearest": {
+          "totalKg": 20,
+          "perSideKg": []
+        }
+      },
+      {
+        "name": "no plates: 135",
+        "targetKg": 135,
+        "barKg": 20,
+        "platesKg": [],
+        "result": {
+          "kind": "unreachable",
+          "below": {
+            "totalKg": 20,
+            "perSideKg": []
+          },
+          "above": null
+        },
+        "nearest": {
+          "totalKg": 20,
+          "perSideKg": []
+        }
+      },
+      {
+        "name": "no plates: 225",
+        "targetKg": 225,
+        "barKg": 20,
+        "platesKg": [],
+        "result": {
+          "kind": "unreachable",
+          "below": {
+            "totalKg": 20,
+            "perSideKg": []
+          },
+          "above": null
+        },
+        "nearest": {
+          "totalKg": 20,
+          "perSideKg": []
+        }
+      },
+      {
+        "name": "no plates: 315",
+        "targetKg": 315,
+        "barKg": 20,
+        "platesKg": [],
+        "result": {
+          "kind": "unreachable",
+          "below": {
+            "totalKg": 20,
+            "perSideKg": []
+          },
+          "above": null
+        },
+        "nearest": {
+          "totalKg": 20,
+          "perSideKg": []
+        }
+      },
+      {
+        "name": "no plates: 333.3",
+        "targetKg": 333.3,
+        "barKg": 20,
+        "platesKg": [],
+        "result": {
+          "kind": "unreachable",
+          "below": {
+            "totalKg": 20,
+            "perSideKg": []
+          },
+          "above": null
+        },
+        "nearest": {
+          "totalKg": 20,
+          "perSideKg": []
+        }
+      },
+      {
+        "name": "no plates: 1000",
+        "targetKg": 1000,
+        "barKg": 20,
+        "platesKg": [],
+        "result": {
+          "kind": "unreachable",
+          "below": {
+            "totalKg": 20,
+            "perSideKg": []
+          },
+          "above": null
+        },
+        "nearest": {
+          "totalKg": 20,
+          "perSideKg": []
+        }
+      },
+      {
+        "name": "no plates: 1000.5",
+        "targetKg": 1000.5,
+        "barKg": 20,
+        "platesKg": [],
+        "result": null,
+        "nearest": null
+      },
+      {
+        "name": "repeated, zero and negative plates: 0",
+        "targetKg": 0,
+        "barKg": 20,
+        "platesKg": [
+          20,
+          20,
+          0,
+          -5
+        ],
+        "result": {
+          "kind": "unreachable",
+          "below": null,
+          "above": {
+            "totalKg": 20,
+            "perSideKg": []
+          }
+        },
+        "nearest": {
+          "totalKg": 20,
+          "perSideKg": []
+        }
+      },
+      {
+        "name": "repeated, zero and negative plates: 15",
+        "targetKg": 15,
+        "barKg": 20,
+        "platesKg": [
+          20,
+          20,
+          0,
+          -5
+        ],
+        "result": {
+          "kind": "unreachable",
+          "below": null,
+          "above": {
+            "totalKg": 20,
+            "perSideKg": []
+          }
+        },
+        "nearest": {
+          "totalKg": 20,
+          "perSideKg": []
+        }
+      },
+      {
+        "name": "repeated, zero and negative plates: 20",
+        "targetKg": 20,
+        "barKg": 20,
+        "platesKg": [
+          20,
+          20,
+          0,
+          -5
+        ],
+        "result": {
+          "kind": "exact",
+          "loading": {
+            "totalKg": 20,
+            "perSideKg": []
+          }
+        },
+        "nearest": {
+          "totalKg": 20,
+          "perSideKg": []
+        }
+      },
+      {
+        "name": "repeated, zero and negative plates: 20.5",
+        "targetKg": 20.5,
+        "barKg": 20,
+        "platesKg": [
+          20,
+          20,
+          0,
+          -5
+        ],
+        "result": {
+          "kind": "unreachable",
+          "below": {
+            "totalKg": 20,
+            "perSideKg": []
+          },
+          "above": {
+            "totalKg": 60,
+            "perSideKg": [
+              20
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 20,
+          "perSideKg": []
+        }
+      },
+      {
+        "name": "repeated, zero and negative plates: 21",
+        "targetKg": 21,
+        "barKg": 20,
+        "platesKg": [
+          20,
+          20,
+          0,
+          -5
+        ],
+        "result": {
+          "kind": "unreachable",
+          "below": {
+            "totalKg": 20,
+            "perSideKg": []
+          },
+          "above": {
+            "totalKg": 60,
+            "perSideKg": [
+              20
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 20,
+          "perSideKg": []
+        }
+      },
+      {
+        "name": "repeated, zero and negative plates: 22.5",
+        "targetKg": 22.5,
+        "barKg": 20,
+        "platesKg": [
+          20,
+          20,
+          0,
+          -5
+        ],
+        "result": {
+          "kind": "unreachable",
+          "below": {
+            "totalKg": 20,
+            "perSideKg": []
+          },
+          "above": {
+            "totalKg": 60,
+            "perSideKg": [
+              20
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 20,
+          "perSideKg": []
+        }
+      },
+      {
+        "name": "repeated, zero and negative plates: 41.2",
+        "targetKg": 41.2,
+        "barKg": 20,
+        "platesKg": [
+          20,
+          20,
+          0,
+          -5
+        ],
+        "result": {
+          "kind": "unreachable",
+          "below": {
+            "totalKg": 20,
+            "perSideKg": []
+          },
+          "above": {
+            "totalKg": 60,
+            "perSideKg": [
+              20
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 60,
+          "perSideKg": [
+            20
+          ]
+        }
+      },
+      {
+        "name": "repeated, zero and negative plates: 60",
+        "targetKg": 60,
+        "barKg": 20,
+        "platesKg": [
+          20,
+          20,
+          0,
+          -5
+        ],
+        "result": {
+          "kind": "exact",
+          "loading": {
+            "totalKg": 60,
+            "perSideKg": [
+              20
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 60,
+          "perSideKg": [
+            20
+          ]
+        }
+      },
+      {
+        "name": "repeated, zero and negative plates: 62.5",
+        "targetKg": 62.5,
+        "barKg": 20,
+        "platesKg": [
+          20,
+          20,
+          0,
+          -5
+        ],
+        "result": {
+          "kind": "unreachable",
+          "below": {
+            "totalKg": 60,
+            "perSideKg": [
+              20
+            ]
+          },
+          "above": {
+            "totalKg": 100,
+            "perSideKg": [
+              20,
+              20
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 60,
+          "perSideKg": [
+            20
+          ]
+        }
+      },
+      {
+        "name": "repeated, zero and negative plates: 75",
+        "targetKg": 75,
+        "barKg": 20,
+        "platesKg": [
+          20,
+          20,
+          0,
+          -5
+        ],
+        "result": {
+          "kind": "unreachable",
+          "below": {
+            "totalKg": 60,
+            "perSideKg": [
+              20
+            ]
+          },
+          "above": {
+            "totalKg": 100,
+            "perSideKg": [
+              20,
+              20
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 60,
+          "perSideKg": [
+            20
+          ]
+        }
+      },
+      {
+        "name": "repeated, zero and negative plates: 90",
+        "targetKg": 90,
+        "barKg": 20,
+        "platesKg": [
+          20,
+          20,
+          0,
+          -5
+        ],
+        "result": {
+          "kind": "unreachable",
+          "below": {
+            "totalKg": 60,
+            "perSideKg": [
+              20
+            ]
+          },
+          "above": {
+            "totalKg": 100,
+            "perSideKg": [
+              20,
+              20
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 100,
+          "perSideKg": [
+            20,
+            20
+          ]
+        }
+      },
+      {
+        "name": "repeated, zero and negative plates: 100",
+        "targetKg": 100,
+        "barKg": 20,
+        "platesKg": [
+          20,
+          20,
+          0,
+          -5
+        ],
+        "result": {
+          "kind": "exact",
+          "loading": {
+            "totalKg": 100,
+            "perSideKg": [
+              20,
+              20
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 100,
+          "perSideKg": [
+            20,
+            20
+          ]
+        }
+      },
+      {
+        "name": "repeated, zero and negative plates: 101",
+        "targetKg": 101,
+        "barKg": 20,
+        "platesKg": [
+          20,
+          20,
+          0,
+          -5
+        ],
+        "result": {
+          "kind": "unreachable",
+          "below": {
+            "totalKg": 100,
+            "perSideKg": [
+              20,
+              20
+            ]
+          },
+          "above": {
+            "totalKg": 140,
+            "perSideKg": [
+              20,
+              20,
+              20
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 100,
+          "perSideKg": [
+            20,
+            20
+          ]
+        }
+      },
+      {
+        "name": "repeated, zero and negative plates: 135",
+        "targetKg": 135,
+        "barKg": 20,
+        "platesKg": [
+          20,
+          20,
+          0,
+          -5
+        ],
+        "result": {
+          "kind": "unreachable",
+          "below": {
+            "totalKg": 100,
+            "perSideKg": [
+              20,
+              20
+            ]
+          },
+          "above": {
+            "totalKg": 140,
+            "perSideKg": [
+              20,
+              20,
+              20
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 140,
+          "perSideKg": [
+            20,
+            20,
+            20
+          ]
+        }
+      },
+      {
+        "name": "repeated, zero and negative plates: 225",
+        "targetKg": 225,
+        "barKg": 20,
+        "platesKg": [
+          20,
+          20,
+          0,
+          -5
+        ],
+        "result": {
+          "kind": "unreachable",
+          "below": {
+            "totalKg": 220,
+            "perSideKg": [
+              20,
+              20,
+              20,
+              20,
+              20
+            ]
+          },
+          "above": {
+            "totalKg": 260,
+            "perSideKg": [
+              20,
+              20,
+              20,
+              20,
+              20,
+              20
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 220,
+          "perSideKg": [
+            20,
+            20,
+            20,
+            20,
+            20
+          ]
+        }
+      },
+      {
+        "name": "repeated, zero and negative plates: 315",
+        "targetKg": 315,
+        "barKg": 20,
+        "platesKg": [
+          20,
+          20,
+          0,
+          -5
+        ],
+        "result": {
+          "kind": "unreachable",
+          "below": {
+            "totalKg": 300,
+            "perSideKg": [
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20
+            ]
+          },
+          "above": {
+            "totalKg": 340,
+            "perSideKg": [
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 300,
+          "perSideKg": [
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20
+          ]
+        }
+      },
+      {
+        "name": "repeated, zero and negative plates: 333.3",
+        "targetKg": 333.3,
+        "barKg": 20,
+        "platesKg": [
+          20,
+          20,
+          0,
+          -5
+        ],
+        "result": {
+          "kind": "unreachable",
+          "below": {
+            "totalKg": 300,
+            "perSideKg": [
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20
+            ]
+          },
+          "above": {
+            "totalKg": 340,
+            "perSideKg": [
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 340,
+          "perSideKg": [
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20
+          ]
+        }
+      },
+      {
+        "name": "repeated, zero and negative plates: 1000",
+        "targetKg": 1000,
+        "barKg": 20,
+        "platesKg": [
+          20,
+          20,
+          0,
+          -5
+        ],
+        "result": {
+          "kind": "unreachable",
+          "below": {
+            "totalKg": 980,
+            "perSideKg": [
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20
+            ]
+          },
+          "above": {
+            "totalKg": 1020,
+            "perSideKg": [
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20,
+              20
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 980,
+          "perSideKg": [
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20
+          ]
+        }
+      },
+      {
+        "name": "repeated, zero and negative plates: 1000.5",
+        "targetKg": 1000.5,
+        "barKg": 20,
+        "platesKg": [
+          20,
+          20,
+          0,
+          -5
+        ],
+        "result": null,
+        "nearest": null
+      },
+      {
+        "name": "pounds: 0",
+        "targetKg": 0,
+        "barKg": 45,
+        "platesKg": [
+          45,
+          35,
+          25,
+          10,
+          5,
+          2.5
+        ],
+        "result": {
+          "kind": "unreachable",
+          "below": null,
+          "above": {
+            "totalKg": 45,
+            "perSideKg": []
+          }
+        },
+        "nearest": {
+          "totalKg": 45,
+          "perSideKg": []
+        }
+      },
+      {
+        "name": "pounds: 15",
+        "targetKg": 15,
+        "barKg": 45,
+        "platesKg": [
+          45,
+          35,
+          25,
+          10,
+          5,
+          2.5
+        ],
+        "result": {
+          "kind": "unreachable",
+          "below": null,
+          "above": {
+            "totalKg": 45,
+            "perSideKg": []
+          }
+        },
+        "nearest": {
+          "totalKg": 45,
+          "perSideKg": []
+        }
+      },
+      {
+        "name": "pounds: 20",
+        "targetKg": 20,
+        "barKg": 45,
+        "platesKg": [
+          45,
+          35,
+          25,
+          10,
+          5,
+          2.5
+        ],
+        "result": {
+          "kind": "unreachable",
+          "below": null,
+          "above": {
+            "totalKg": 45,
+            "perSideKg": []
+          }
+        },
+        "nearest": {
+          "totalKg": 45,
+          "perSideKg": []
+        }
+      },
+      {
+        "name": "pounds: 20.5",
+        "targetKg": 20.5,
+        "barKg": 45,
+        "platesKg": [
+          45,
+          35,
+          25,
+          10,
+          5,
+          2.5
+        ],
+        "result": {
+          "kind": "unreachable",
+          "below": null,
+          "above": {
+            "totalKg": 45,
+            "perSideKg": []
+          }
+        },
+        "nearest": {
+          "totalKg": 45,
+          "perSideKg": []
+        }
+      },
+      {
+        "name": "pounds: 21",
+        "targetKg": 21,
+        "barKg": 45,
+        "platesKg": [
+          45,
+          35,
+          25,
+          10,
+          5,
+          2.5
+        ],
+        "result": {
+          "kind": "unreachable",
+          "below": null,
+          "above": {
+            "totalKg": 45,
+            "perSideKg": []
+          }
+        },
+        "nearest": {
+          "totalKg": 45,
+          "perSideKg": []
+        }
+      },
+      {
+        "name": "pounds: 22.5",
+        "targetKg": 22.5,
+        "barKg": 45,
+        "platesKg": [
+          45,
+          35,
+          25,
+          10,
+          5,
+          2.5
+        ],
+        "result": {
+          "kind": "unreachable",
+          "below": null,
+          "above": {
+            "totalKg": 45,
+            "perSideKg": []
+          }
+        },
+        "nearest": {
+          "totalKg": 45,
+          "perSideKg": []
+        }
+      },
+      {
+        "name": "pounds: 41.2",
+        "targetKg": 41.2,
+        "barKg": 45,
+        "platesKg": [
+          45,
+          35,
+          25,
+          10,
+          5,
+          2.5
+        ],
+        "result": {
+          "kind": "unreachable",
+          "below": null,
+          "above": {
+            "totalKg": 45,
+            "perSideKg": []
+          }
+        },
+        "nearest": {
+          "totalKg": 45,
+          "perSideKg": []
+        }
+      },
+      {
+        "name": "pounds: 60",
+        "targetKg": 60,
+        "barKg": 45,
+        "platesKg": [
+          45,
+          35,
+          25,
+          10,
+          5,
+          2.5
+        ],
+        "result": {
+          "kind": "exact",
+          "loading": {
+            "totalKg": 60,
+            "perSideKg": [
+              5,
+              2.5
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 60,
+          "perSideKg": [
+            5,
+            2.5
+          ]
+        }
+      },
+      {
+        "name": "pounds: 62.5",
+        "targetKg": 62.5,
+        "barKg": 45,
+        "platesKg": [
+          45,
+          35,
+          25,
+          10,
+          5,
+          2.5
+        ],
+        "result": {
+          "kind": "unreachable",
+          "below": {
+            "totalKg": 60,
+            "perSideKg": [
+              5,
+              2.5
+            ]
+          },
+          "above": {
+            "totalKg": 65,
+            "perSideKg": [
+              10
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 60,
+          "perSideKg": [
+            5,
+            2.5
+          ]
+        }
+      },
+      {
+        "name": "pounds: 75",
+        "targetKg": 75,
+        "barKg": 45,
+        "platesKg": [
+          45,
+          35,
+          25,
+          10,
+          5,
+          2.5
+        ],
+        "result": {
+          "kind": "exact",
+          "loading": {
+            "totalKg": 75,
+            "perSideKg": [
+              10,
+              5
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 75,
+          "perSideKg": [
+            10,
+            5
+          ]
+        }
+      },
+      {
+        "name": "pounds: 90",
+        "targetKg": 90,
+        "barKg": 45,
+        "platesKg": [
+          45,
+          35,
+          25,
+          10,
+          5,
+          2.5
+        ],
+        "result": {
+          "kind": "exact",
+          "loading": {
+            "totalKg": 90,
+            "perSideKg": [
+              10,
+              10,
+              2.5
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 90,
+          "perSideKg": [
+            10,
+            10,
+            2.5
+          ]
+        }
+      },
+      {
+        "name": "pounds: 100",
+        "targetKg": 100,
+        "barKg": 45,
+        "platesKg": [
+          45,
+          35,
+          25,
+          10,
+          5,
+          2.5
+        ],
+        "result": {
+          "kind": "exact",
+          "loading": {
+            "totalKg": 100,
+            "perSideKg": [
+              25,
+              2.5
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 100,
+          "perSideKg": [
+            25,
+            2.5
+          ]
+        }
+      },
+      {
+        "name": "pounds: 101",
+        "targetKg": 101,
+        "barKg": 45,
+        "platesKg": [
+          45,
+          35,
+          25,
+          10,
+          5,
+          2.5
+        ],
+        "result": {
+          "kind": "unreachable",
+          "below": {
+            "totalKg": 100,
+            "perSideKg": [
+              25,
+              2.5
+            ]
+          },
+          "above": {
+            "totalKg": 105,
+            "perSideKg": [
+              25,
+              5
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 100,
+          "perSideKg": [
+            25,
+            2.5
+          ]
+        }
+      },
+      {
+        "name": "pounds: 135",
+        "targetKg": 135,
+        "barKg": 45,
+        "platesKg": [
+          45,
+          35,
+          25,
+          10,
+          5,
+          2.5
+        ],
+        "result": {
+          "kind": "exact",
+          "loading": {
+            "totalKg": 135,
+            "perSideKg": [
+              45
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 135,
+          "perSideKg": [
+            45
+          ]
+        }
+      },
+      {
+        "name": "pounds: 225",
+        "targetKg": 225,
+        "barKg": 45,
+        "platesKg": [
+          45,
+          35,
+          25,
+          10,
+          5,
+          2.5
+        ],
+        "result": {
+          "kind": "exact",
+          "loading": {
+            "totalKg": 225,
+            "perSideKg": [
+              45,
+              45
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 225,
+          "perSideKg": [
+            45,
+            45
+          ]
+        }
+      },
+      {
+        "name": "pounds: 315",
+        "targetKg": 315,
+        "barKg": 45,
+        "platesKg": [
+          45,
+          35,
+          25,
+          10,
+          5,
+          2.5
+        ],
+        "result": {
+          "kind": "exact",
+          "loading": {
+            "totalKg": 315,
+            "perSideKg": [
+              45,
+              45,
+              45
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 315,
+          "perSideKg": [
+            45,
+            45,
+            45
+          ]
+        }
+      },
+      {
+        "name": "pounds: 333.3",
+        "targetKg": 333.3,
+        "barKg": 45,
+        "platesKg": [
+          45,
+          35,
+          25,
+          10,
+          5,
+          2.5
+        ],
+        "result": {
+          "kind": "unreachable",
+          "below": {
+            "totalKg": 330,
+            "perSideKg": [
+              45,
+              45,
+              45,
+              5,
+              2.5
+            ]
+          },
+          "above": {
+            "totalKg": 335,
+            "perSideKg": [
+              45,
+              45,
+              45,
+              10
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 335,
+          "perSideKg": [
+            45,
+            45,
+            45,
+            10
+          ]
+        }
+      },
+      {
+        "name": "pounds: 1000",
+        "targetKg": 1000,
+        "barKg": 45,
+        "platesKg": [
+          45,
+          35,
+          25,
+          10,
+          5,
+          2.5
+        ],
+        "result": {
+          "kind": "exact",
+          "loading": {
+            "totalKg": 1000,
+            "perSideKg": [
+              45,
+              45,
+              45,
+              45,
+              45,
+              45,
+              45,
+              45,
+              45,
+              45,
+              25,
+              2.5
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 1000,
+          "perSideKg": [
+            45,
+            45,
+            45,
+            45,
+            45,
+            45,
+            45,
+            45,
+            45,
+            45,
+            25,
+            2.5
+          ]
+        }
+      },
+      {
+        "name": "pounds: 1000.5",
+        "targetKg": 1000.5,
+        "barKg": 45,
+        "platesKg": [
+          45,
+          35,
+          25,
+          10,
+          5,
+          2.5
+        ],
+        "result": null,
+        "nearest": null
+      },
+      {
+        "name": "a 15 kg bar: 0",
+        "targetKg": 0,
+        "barKg": 15,
+        "platesKg": [
+          25,
+          20,
+          15,
+          10,
+          5,
+          2.5,
+          2,
+          1.5,
+          1.25,
+          1,
+          0.5
+        ],
+        "result": {
+          "kind": "unreachable",
+          "below": null,
+          "above": {
+            "totalKg": 15,
+            "perSideKg": []
+          }
+        },
+        "nearest": {
+          "totalKg": 15,
+          "perSideKg": []
+        }
+      },
+      {
+        "name": "a 15 kg bar: 15",
+        "targetKg": 15,
+        "barKg": 15,
+        "platesKg": [
+          25,
+          20,
+          15,
+          10,
+          5,
+          2.5,
+          2,
+          1.5,
+          1.25,
+          1,
+          0.5
+        ],
+        "result": {
+          "kind": "exact",
+          "loading": {
+            "totalKg": 15,
+            "perSideKg": []
+          }
+        },
+        "nearest": {
+          "totalKg": 15,
+          "perSideKg": []
+        }
+      },
+      {
+        "name": "a 15 kg bar: 20",
+        "targetKg": 20,
+        "barKg": 15,
+        "platesKg": [
+          25,
+          20,
+          15,
+          10,
+          5,
+          2.5,
+          2,
+          1.5,
+          1.25,
+          1,
+          0.5
+        ],
+        "result": {
+          "kind": "exact",
+          "loading": {
+            "totalKg": 20,
+            "perSideKg": [
+              2.5
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 20,
+          "perSideKg": [
+            2.5
+          ]
+        }
+      },
+      {
+        "name": "a 15 kg bar: 20.5",
+        "targetKg": 20.5,
+        "barKg": 15,
+        "platesKg": [
+          25,
+          20,
+          15,
+          10,
+          5,
+          2.5,
+          2,
+          1.5,
+          1.25,
+          1,
+          0.5
+        ],
+        "result": {
+          "kind": "exact",
+          "loading": {
+            "totalKg": 20.5,
+            "perSideKg": [
+              1.5,
+              1.25
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 20.5,
+          "perSideKg": [
+            1.5,
+            1.25
+          ]
+        }
+      },
+      {
+        "name": "a 15 kg bar: 21",
+        "targetKg": 21,
+        "barKg": 15,
+        "platesKg": [
+          25,
+          20,
+          15,
+          10,
+          5,
+          2.5,
+          2,
+          1.5,
+          1.25,
+          1,
+          0.5
+        ],
+        "result": {
+          "kind": "exact",
+          "loading": {
+            "totalKg": 21,
+            "perSideKg": [
+              2.5,
+              0.5
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 21,
+          "perSideKg": [
+            2.5,
+            0.5
+          ]
+        }
+      },
+      {
+        "name": "a 15 kg bar: 22.5",
+        "targetKg": 22.5,
+        "barKg": 15,
+        "platesKg": [
+          25,
+          20,
+          15,
+          10,
+          5,
+          2.5,
+          2,
+          1.5,
+          1.25,
+          1,
+          0.5
+        ],
+        "result": {
+          "kind": "exact",
+          "loading": {
+            "totalKg": 22.5,
+            "perSideKg": [
+              2.5,
+              1.25
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 22.5,
+          "perSideKg": [
+            2.5,
+            1.25
+          ]
+        }
+      },
+      {
+        "name": "a 15 kg bar: 41.2",
+        "targetKg": 41.2,
+        "barKg": 15,
+        "platesKg": [
+          25,
+          20,
+          15,
+          10,
+          5,
+          2.5,
+          2,
+          1.5,
+          1.25,
+          1,
+          0.5
+        ],
+        "result": {
+          "kind": "unreachable",
+          "below": {
+            "totalKg": 41,
+            "perSideKg": [
+              10,
+              2.5,
+              0.5
+            ]
+          },
+          "above": {
+            "totalKg": 41.5,
+            "perSideKg": [
+              10,
+              2,
+              1.25
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 41,
+          "perSideKg": [
+            10,
+            2.5,
+            0.5
+          ]
+        }
+      },
+      {
+        "name": "a 15 kg bar: 60",
+        "targetKg": 60,
+        "barKg": 15,
+        "platesKg": [
+          25,
+          20,
+          15,
+          10,
+          5,
+          2.5,
+          2,
+          1.5,
+          1.25,
+          1,
+          0.5
+        ],
+        "result": {
+          "kind": "exact",
+          "loading": {
+            "totalKg": 60,
+            "perSideKg": [
+              20,
+              2.5
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 60,
+          "perSideKg": [
+            20,
+            2.5
+          ]
+        }
+      },
+      {
+        "name": "a 15 kg bar: 62.5",
+        "targetKg": 62.5,
+        "barKg": 15,
+        "platesKg": [
+          25,
+          20,
+          15,
+          10,
+          5,
+          2.5,
+          2,
+          1.5,
+          1.25,
+          1,
+          0.5
+        ],
+        "result": {
+          "kind": "exact",
+          "loading": {
+            "totalKg": 62.5,
+            "perSideKg": [
+              20,
+              2.5,
+              1.25
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 62.5,
+          "perSideKg": [
+            20,
+            2.5,
+            1.25
+          ]
+        }
+      },
+      {
+        "name": "a 15 kg bar: 75",
+        "targetKg": 75,
+        "barKg": 15,
+        "platesKg": [
+          25,
+          20,
+          15,
+          10,
+          5,
+          2.5,
+          2,
+          1.5,
+          1.25,
+          1,
+          0.5
+        ],
+        "result": {
+          "kind": "exact",
+          "loading": {
+            "totalKg": 75,
+            "perSideKg": [
+              25,
+              5
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 75,
+          "perSideKg": [
+            25,
+            5
+          ]
+        }
+      },
+      {
+        "name": "a 15 kg bar: 90",
+        "targetKg": 90,
+        "barKg": 15,
+        "platesKg": [
+          25,
+          20,
+          15,
+          10,
+          5,
+          2.5,
+          2,
+          1.5,
+          1.25,
+          1,
+          0.5
+        ],
+        "result": {
+          "kind": "exact",
+          "loading": {
+            "totalKg": 90,
+            "perSideKg": [
+              25,
+              10,
+              2.5
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 90,
+          "perSideKg": [
+            25,
+            10,
+            2.5
+          ]
+        }
+      },
+      {
+        "name": "a 15 kg bar: 100",
+        "targetKg": 100,
+        "barKg": 15,
+        "platesKg": [
+          25,
+          20,
+          15,
+          10,
+          5,
+          2.5,
+          2,
+          1.5,
+          1.25,
+          1,
+          0.5
+        ],
+        "result": {
+          "kind": "exact",
+          "loading": {
+            "totalKg": 100,
+            "perSideKg": [
+              25,
+              15,
+              2.5
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 100,
+          "perSideKg": [
+            25,
+            15,
+            2.5
+          ]
+        }
+      },
+      {
+        "name": "a 15 kg bar: 101",
+        "targetKg": 101,
+        "barKg": 15,
+        "platesKg": [
+          25,
+          20,
+          15,
+          10,
+          5,
+          2.5,
+          2,
+          1.5,
+          1.25,
+          1,
+          0.5
+        ],
+        "result": {
+          "kind": "exact",
+          "loading": {
+            "totalKg": 101,
+            "perSideKg": [
+              25,
+              15,
+              2.5,
+              0.5
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 101,
+          "perSideKg": [
+            25,
+            15,
+            2.5,
+            0.5
+          ]
+        }
+      },
+      {
+        "name": "a 15 kg bar: 135",
+        "targetKg": 135,
+        "barKg": 15,
+        "platesKg": [
+          25,
+          20,
+          15,
+          10,
+          5,
+          2.5,
+          2,
+          1.5,
+          1.25,
+          1,
+          0.5
+        ],
+        "result": {
+          "kind": "exact",
+          "loading": {
+            "totalKg": 135,
+            "perSideKg": [
+              25,
+              25,
+              10
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 135,
+          "perSideKg": [
+            25,
+            25,
+            10
+          ]
+        }
+      },
+      {
+        "name": "a 15 kg bar: 225",
+        "targetKg": 225,
+        "barKg": 15,
+        "platesKg": [
+          25,
+          20,
+          15,
+          10,
+          5,
+          2.5,
+          2,
+          1.5,
+          1.25,
+          1,
+          0.5
+        ],
+        "result": {
+          "kind": "exact",
+          "loading": {
+            "totalKg": 225,
+            "perSideKg": [
+              25,
+              25,
+              25,
+              25,
+              5
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 225,
+          "perSideKg": [
+            25,
+            25,
+            25,
+            25,
+            5
+          ]
+        }
+      },
+      {
+        "name": "a 15 kg bar: 315",
+        "targetKg": 315,
+        "barKg": 15,
+        "platesKg": [
+          25,
+          20,
+          15,
+          10,
+          5,
+          2.5,
+          2,
+          1.5,
+          1.25,
+          1,
+          0.5
+        ],
+        "result": {
+          "kind": "exact",
+          "loading": {
+            "totalKg": 315,
+            "perSideKg": [
+              25,
+              25,
+              25,
+              25,
+              25,
+              25
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 315,
+          "perSideKg": [
+            25,
+            25,
+            25,
+            25,
+            25,
+            25
+          ]
+        }
+      },
+      {
+        "name": "a 15 kg bar: 333.3",
+        "targetKg": 333.3,
+        "barKg": 15,
+        "platesKg": [
+          25,
+          20,
+          15,
+          10,
+          5,
+          2.5,
+          2,
+          1.5,
+          1.25,
+          1,
+          0.5
+        ],
+        "result": {
+          "kind": "unreachable",
+          "below": {
+            "totalKg": 333,
+            "perSideKg": [
+              25,
+              25,
+              25,
+              25,
+              25,
+              25,
+              5,
+              2.5,
+              1.5
+            ]
+          },
+          "above": {
+            "totalKg": 333.5,
+            "perSideKg": [
+              25,
+              25,
+              25,
+              25,
+              25,
+              25,
+              5,
+              2.5,
+              1.25,
+              0.5
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 333.5,
+          "perSideKg": [
+            25,
+            25,
+            25,
+            25,
+            25,
+            25,
+            5,
+            2.5,
+            1.25,
+            0.5
+          ]
+        }
+      },
+      {
+        "name": "a 15 kg bar: 1000",
+        "targetKg": 1000,
+        "barKg": 15,
+        "platesKg": [
+          25,
+          20,
+          15,
+          10,
+          5,
+          2.5,
+          2,
+          1.5,
+          1.25,
+          1,
+          0.5
+        ],
+        "result": {
+          "kind": "exact",
+          "loading": {
+            "totalKg": 1000,
+            "perSideKg": [
+              25,
+              25,
+              25,
+              25,
+              25,
+              25,
+              25,
+              25,
+              25,
+              25,
+              25,
+              25,
+              25,
+              25,
+              25,
+              25,
+              25,
+              25,
+              25,
+              15,
+              2.5
+            ]
+          }
+        },
+        "nearest": {
+          "totalKg": 1000,
+          "perSideKg": [
+            25,
+            25,
+            25,
+            25,
+            25,
+            25,
+            25,
+            25,
+            25,
+            25,
+            25,
+            25,
+            25,
+            25,
+            25,
+            25,
+            25,
+            25,
+            25,
+            15,
+            2.5
+          ]
+        }
+      },
+      {
+        "name": "a 15 kg bar: 1000.5",
+        "targetKg": 1000.5,
+        "barKg": 15,
+        "platesKg": [
+          25,
+          20,
+          15,
+          10,
+          5,
+          2.5,
+          2,
+          1.5,
+          1.25,
+          1,
+          0.5
+        ],
+        "result": null,
+        "nearest": null
+      },
+      {
+        "name": "a bar of 0",
+        "targetKg": 60,
+        "barKg": 0,
+        "platesKg": [
+          20,
+          10,
+          5,
+          2.5
+        ],
+        "result": null,
+        "nearest": null
+      },
+      {
+        "name": "a bar of -20",
+        "targetKg": 60,
+        "barKg": -20,
+        "platesKg": [
+          20,
+          10,
+          5,
+          2.5
+        ],
+        "result": null,
+        "nearest": null
+      }
+    ],
+    "iwfColor": [
+      {
+        "kg": 25,
+        "color": "red"
+      },
+      {
+        "kg": 20,
+        "color": "blue"
+      },
+      {
+        "kg": 15,
+        "color": "yellow"
+      },
+      {
+        "kg": 10,
+        "color": "green"
+      },
+      {
+        "kg": 5,
+        "color": "white"
+      },
+      {
+        "kg": 2.5,
+        "color": "red"
+      },
+      {
+        "kg": 2,
+        "color": "blue"
+      },
+      {
+        "kg": 1.5,
+        "color": "yellow"
+      },
+      {
+        "kg": 1.25,
+        "color": null
+      },
+      {
+        "kg": 1,
+        "color": "green"
+      },
+      {
+        "kg": 0.5,
+        "color": "white"
+      },
+      {
+        "kg": 7.5,
+        "color": null
+      },
+      {
+        "kg": 45,
+        "color": null
+      },
+      {
+        "kg": 0,
+        "color": null
+      }
+    ],
+    "projectLoss": [
+      {
+        "name": "2026-10-24: 82 to 75 kg at 0.2 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 82,
+        "targetKg": 75,
+        "pctPerWeek": 0.2,
+        "result": null
+      },
+      {
+        "name": "2026-10-24: 82 to 75 kg at 0.25 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 82,
+        "targetKg": 75,
+        "pctPerWeek": 0.25,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 36,
+          "weeksHigh": 47,
+          "dateLow": "2027-07-03",
+          "dateHigh": "2027-09-18"
+        }
+      },
+      {
+        "name": "2026-10-24: 82 to 75 kg at 0.5 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 82,
+        "targetKg": 75,
+        "pctPerWeek": 0.5,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 18,
+          "weeksHigh": 24,
+          "dateLow": "2027-02-27",
+          "dateHigh": "2027-04-10"
+        }
+      },
+      {
+        "name": "2026-10-24: 82 to 75 kg at 0.7 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 82,
+        "targetKg": 75,
+        "pctPerWeek": 0.7,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 13,
+          "weeksHigh": 17,
+          "dateLow": "2027-01-23",
+          "dateHigh": "2027-02-20"
+        }
+      },
+      {
+        "name": "2026-10-24: 82 to 75 kg at 0.75 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 82,
+        "targetKg": 75,
+        "pctPerWeek": 0.75,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 12,
+          "weeksHigh": 16,
+          "dateLow": "2027-01-16",
+          "dateHigh": "2027-02-13"
+        }
+      },
+      {
+        "name": "2026-10-24: 82 to 75 kg at 1 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 82,
+        "targetKg": 75,
+        "pctPerWeek": 1,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 9,
+          "weeksHigh": 12,
+          "dateLow": "2026-12-26",
+          "dateHigh": "2027-01-16"
+        }
+      },
+      {
+        "name": "2026-10-24: 82 to 75 kg at 1.05 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 82,
+        "targetKg": 75,
+        "pctPerWeek": 1.05,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 9,
+          "weeksHigh": 12,
+          "dateLow": "2026-12-26",
+          "dateHigh": "2027-01-16"
+        }
+      },
+      {
+        "name": "2026-10-24: 82 to 75 kg at 1.5 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 82,
+        "targetKg": 75,
+        "pctPerWeek": 1.5,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 6,
+          "weeksHigh": 8,
+          "dateLow": "2026-12-05",
+          "dateHigh": "2026-12-19"
+        }
+      },
+      {
+        "name": "2026-10-24: 82 to 75 kg at 1.55 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 82,
+        "targetKg": 75,
+        "pctPerWeek": 1.55,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 6,
+          "weeksHigh": 8,
+          "dateLow": "2026-12-05",
+          "dateHigh": "2026-12-19"
+        }
+      },
+      {
+        "name": "2026-10-24: 82 to 75 kg at 2.5 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 82,
+        "targetKg": 75,
+        "pctPerWeek": 2.5,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 4,
+          "weeksHigh": 6,
+          "dateLow": "2026-11-21",
+          "dateHigh": "2026-12-05"
+        }
+      },
+      {
+        "name": "2026-10-24: 82 to 75 kg at 2.55 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 82,
+        "targetKg": 75,
+        "pctPerWeek": 2.55,
+        "result": null
+      },
+      {
+        "name": "2026-10-24: 85 to 78 kg at 0.2 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 85,
+        "targetKg": 78,
+        "pctPerWeek": 0.2,
+        "result": null
+      },
+      {
+        "name": "2026-10-24: 85 to 78 kg at 0.25 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 85,
+        "targetKg": 78,
+        "pctPerWeek": 0.25,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 35,
+          "weeksHigh": 46,
+          "dateLow": "2027-06-26",
+          "dateHigh": "2027-09-11"
+        }
+      },
+      {
+        "name": "2026-10-24: 85 to 78 kg at 0.5 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 85,
+        "targetKg": 78,
+        "pctPerWeek": 0.5,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 18,
+          "weeksHigh": 24,
+          "dateLow": "2027-02-27",
+          "dateHigh": "2027-04-10"
+        }
+      },
+      {
+        "name": "2026-10-24: 85 to 78 kg at 0.7 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 85,
+        "targetKg": 78,
+        "pctPerWeek": 0.7,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 13,
+          "weeksHigh": 17,
+          "dateLow": "2027-01-23",
+          "dateHigh": "2027-02-20"
+        }
+      },
+      {
+        "name": "2026-10-24: 85 to 78 kg at 0.75 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 85,
+        "targetKg": 78,
+        "pctPerWeek": 0.75,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 12,
+          "weeksHigh": 16,
+          "dateLow": "2027-01-16",
+          "dateHigh": "2027-02-13"
+        }
+      },
+      {
+        "name": "2026-10-24: 85 to 78 kg at 1 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 85,
+        "targetKg": 78,
+        "pctPerWeek": 1,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 9,
+          "weeksHigh": 12,
+          "dateLow": "2026-12-26",
+          "dateHigh": "2027-01-16"
+        }
+      },
+      {
+        "name": "2026-10-24: 85 to 78 kg at 1.05 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 85,
+        "targetKg": 78,
+        "pctPerWeek": 1.05,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 9,
+          "weeksHigh": 12,
+          "dateLow": "2026-12-26",
+          "dateHigh": "2027-01-16"
+        }
+      },
+      {
+        "name": "2026-10-24: 85 to 78 kg at 1.5 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 85,
+        "targetKg": 78,
+        "pctPerWeek": 1.5,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 6,
+          "weeksHigh": 8,
+          "dateLow": "2026-12-05",
+          "dateHigh": "2026-12-19"
+        }
+      },
+      {
+        "name": "2026-10-24: 85 to 78 kg at 1.55 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 85,
+        "targetKg": 78,
+        "pctPerWeek": 1.55,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 6,
+          "weeksHigh": 8,
+          "dateLow": "2026-12-05",
+          "dateHigh": "2026-12-19"
+        }
+      },
+      {
+        "name": "2026-10-24: 85 to 78 kg at 2.5 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 85,
+        "targetKg": 78,
+        "pctPerWeek": 2.5,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 4,
+          "weeksHigh": 6,
+          "dateLow": "2026-11-21",
+          "dateHigh": "2026-12-05"
+        }
+      },
+      {
+        "name": "2026-10-24: 85 to 78 kg at 2.55 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 85,
+        "targetKg": 78,
+        "pctPerWeek": 2.55,
+        "result": null
+      },
+      {
+        "name": "2026-10-24: 80 to 79.9 kg at 0.2 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 80,
+        "targetKg": 79.9,
+        "pctPerWeek": 0.2,
+        "result": null
+      },
+      {
+        "name": "2026-10-24: 80 to 79.9 kg at 0.25 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 80,
+        "targetKg": 79.9,
+        "pctPerWeek": 0.25,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 1,
+          "weeksHigh": 2,
+          "dateLow": "2026-10-31",
+          "dateHigh": "2026-11-07"
+        }
+      },
+      {
+        "name": "2026-10-24: 80 to 79.9 kg at 0.5 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 80,
+        "targetKg": 79.9,
+        "pctPerWeek": 0.5,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 1,
+          "weeksHigh": 2,
+          "dateLow": "2026-10-31",
+          "dateHigh": "2026-11-07"
+        }
+      },
+      {
+        "name": "2026-10-24: 80 to 79.9 kg at 0.7 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 80,
+        "targetKg": 79.9,
+        "pctPerWeek": 0.7,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 1,
+          "weeksHigh": 2,
+          "dateLow": "2026-10-31",
+          "dateHigh": "2026-11-07"
+        }
+      },
+      {
+        "name": "2026-10-24: 80 to 79.9 kg at 0.75 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 80,
+        "targetKg": 79.9,
+        "pctPerWeek": 0.75,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 1,
+          "weeksHigh": 2,
+          "dateLow": "2026-10-31",
+          "dateHigh": "2026-11-07"
+        }
+      },
+      {
+        "name": "2026-10-24: 80 to 79.9 kg at 1 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 80,
+        "targetKg": 79.9,
+        "pctPerWeek": 1,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 1,
+          "weeksHigh": 2,
+          "dateLow": "2026-10-31",
+          "dateHigh": "2026-11-07"
+        }
+      },
+      {
+        "name": "2026-10-24: 80 to 79.9 kg at 1.05 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 80,
+        "targetKg": 79.9,
+        "pctPerWeek": 1.05,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 1,
+          "weeksHigh": 2,
+          "dateLow": "2026-10-31",
+          "dateHigh": "2026-11-07"
+        }
+      },
+      {
+        "name": "2026-10-24: 80 to 79.9 kg at 1.5 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 80,
+        "targetKg": 79.9,
+        "pctPerWeek": 1.5,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 1,
+          "weeksHigh": 2,
+          "dateLow": "2026-10-31",
+          "dateHigh": "2026-11-07"
+        }
+      },
+      {
+        "name": "2026-10-24: 80 to 79.9 kg at 1.55 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 80,
+        "targetKg": 79.9,
+        "pctPerWeek": 1.55,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 1,
+          "weeksHigh": 2,
+          "dateLow": "2026-10-31",
+          "dateHigh": "2026-11-07"
+        }
+      },
+      {
+        "name": "2026-10-24: 80 to 79.9 kg at 2.5 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 80,
+        "targetKg": 79.9,
+        "pctPerWeek": 2.5,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 1,
+          "weeksHigh": 2,
+          "dateLow": "2026-10-31",
+          "dateHigh": "2026-11-07"
+        }
+      },
+      {
+        "name": "2026-10-24: 80 to 79.9 kg at 2.55 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 80,
+        "targetKg": 79.9,
+        "pctPerWeek": 2.55,
+        "result": null
+      },
+      {
+        "name": "2026-10-24: 80 to 80 kg at 0.2 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 80,
+        "targetKg": 80,
+        "pctPerWeek": 0.2,
+        "result": null
+      },
+      {
+        "name": "2026-10-24: 80 to 80 kg at 0.25 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 80,
+        "targetKg": 80,
+        "pctPerWeek": 0.25,
+        "result": {
+          "kind": "target-not-below"
+        }
+      },
+      {
+        "name": "2026-10-24: 80 to 80 kg at 0.5 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 80,
+        "targetKg": 80,
+        "pctPerWeek": 0.5,
+        "result": {
+          "kind": "target-not-below"
+        }
+      },
+      {
+        "name": "2026-10-24: 80 to 80 kg at 0.7 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 80,
+        "targetKg": 80,
+        "pctPerWeek": 0.7,
+        "result": {
+          "kind": "target-not-below"
+        }
+      },
+      {
+        "name": "2026-10-24: 80 to 80 kg at 0.75 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 80,
+        "targetKg": 80,
+        "pctPerWeek": 0.75,
+        "result": {
+          "kind": "target-not-below"
+        }
+      },
+      {
+        "name": "2026-10-24: 80 to 80 kg at 1 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 80,
+        "targetKg": 80,
+        "pctPerWeek": 1,
+        "result": {
+          "kind": "target-not-below"
+        }
+      },
+      {
+        "name": "2026-10-24: 80 to 80 kg at 1.05 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 80,
+        "targetKg": 80,
+        "pctPerWeek": 1.05,
+        "result": {
+          "kind": "target-not-below"
+        }
+      },
+      {
+        "name": "2026-10-24: 80 to 80 kg at 1.5 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 80,
+        "targetKg": 80,
+        "pctPerWeek": 1.5,
+        "result": {
+          "kind": "target-not-below"
+        }
+      },
+      {
+        "name": "2026-10-24: 80 to 80 kg at 1.55 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 80,
+        "targetKg": 80,
+        "pctPerWeek": 1.55,
+        "result": {
+          "kind": "target-not-below"
+        }
+      },
+      {
+        "name": "2026-10-24: 80 to 80 kg at 2.5 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 80,
+        "targetKg": 80,
+        "pctPerWeek": 2.5,
+        "result": {
+          "kind": "target-not-below"
+        }
+      },
+      {
+        "name": "2026-10-24: 80 to 80 kg at 2.55 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 80,
+        "targetKg": 80,
+        "pctPerWeek": 2.55,
+        "result": null
+      },
+      {
+        "name": "2026-10-24: 80 to 85 kg at 0.2 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 80,
+        "targetKg": 85,
+        "pctPerWeek": 0.2,
+        "result": null
+      },
+      {
+        "name": "2026-10-24: 80 to 85 kg at 0.25 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 80,
+        "targetKg": 85,
+        "pctPerWeek": 0.25,
+        "result": {
+          "kind": "target-not-below"
+        }
+      },
+      {
+        "name": "2026-10-24: 80 to 85 kg at 0.5 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 80,
+        "targetKg": 85,
+        "pctPerWeek": 0.5,
+        "result": {
+          "kind": "target-not-below"
+        }
+      },
+      {
+        "name": "2026-10-24: 80 to 85 kg at 0.7 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 80,
+        "targetKg": 85,
+        "pctPerWeek": 0.7,
+        "result": {
+          "kind": "target-not-below"
+        }
+      },
+      {
+        "name": "2026-10-24: 80 to 85 kg at 0.75 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 80,
+        "targetKg": 85,
+        "pctPerWeek": 0.75,
+        "result": {
+          "kind": "target-not-below"
+        }
+      },
+      {
+        "name": "2026-10-24: 80 to 85 kg at 1 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 80,
+        "targetKg": 85,
+        "pctPerWeek": 1,
+        "result": {
+          "kind": "target-not-below"
+        }
+      },
+      {
+        "name": "2026-10-24: 80 to 85 kg at 1.05 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 80,
+        "targetKg": 85,
+        "pctPerWeek": 1.05,
+        "result": {
+          "kind": "target-not-below"
+        }
+      },
+      {
+        "name": "2026-10-24: 80 to 85 kg at 1.5 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 80,
+        "targetKg": 85,
+        "pctPerWeek": 1.5,
+        "result": {
+          "kind": "target-not-below"
+        }
+      },
+      {
+        "name": "2026-10-24: 80 to 85 kg at 1.55 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 80,
+        "targetKg": 85,
+        "pctPerWeek": 1.55,
+        "result": {
+          "kind": "target-not-below"
+        }
+      },
+      {
+        "name": "2026-10-24: 80 to 85 kg at 2.5 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 80,
+        "targetKg": 85,
+        "pctPerWeek": 2.5,
+        "result": {
+          "kind": "target-not-below"
+        }
+      },
+      {
+        "name": "2026-10-24: 80 to 85 kg at 2.55 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 80,
+        "targetKg": 85,
+        "pctPerWeek": 2.55,
+        "result": null
+      },
+      {
+        "name": "2026-10-24: 120 to 70 kg at 0.2 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 120,
+        "targetKg": 70,
+        "pctPerWeek": 0.2,
+        "result": null
+      },
+      {
+        "name": "2026-10-24: 120 to 70 kg at 0.25 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 120,
+        "targetKg": 70,
+        "pctPerWeek": 0.25,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 216,
+          "weeksHigh": 281,
+          "dateLow": "2030-12-14",
+          "dateHigh": "2032-03-13"
+        }
+      },
+      {
+        "name": "2026-10-24: 120 to 70 kg at 0.5 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 120,
+        "targetKg": 70,
+        "pctPerWeek": 0.5,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 108,
+          "weeksHigh": 141,
+          "dateLow": "2028-11-18",
+          "dateHigh": "2029-07-07"
+        }
+      },
+      {
+        "name": "2026-10-24: 120 to 70 kg at 0.7 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 120,
+        "targetKg": 70,
+        "pctPerWeek": 0.7,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 77,
+          "weeksHigh": 101,
+          "dateLow": "2028-04-15",
+          "dateHigh": "2028-09-30"
+        }
+      },
+      {
+        "name": "2026-10-24: 120 to 70 kg at 0.75 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 120,
+        "targetKg": 70,
+        "pctPerWeek": 0.75,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 72,
+          "weeksHigh": 94,
+          "dateLow": "2028-03-11",
+          "dateHigh": "2028-08-12"
+        }
+      },
+      {
+        "name": "2026-10-24: 120 to 70 kg at 1 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 120,
+        "targetKg": 70,
+        "pctPerWeek": 1,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 54,
+          "weeksHigh": 71,
+          "dateLow": "2027-11-06",
+          "dateHigh": "2028-03-04"
+        }
+      },
+      {
+        "name": "2026-10-24: 120 to 70 kg at 1.05 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 120,
+        "targetKg": 70,
+        "pctPerWeek": 1.05,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 52,
+          "weeksHigh": 68,
+          "dateLow": "2027-10-23",
+          "dateHigh": "2028-02-12"
+        }
+      },
+      {
+        "name": "2026-10-24: 120 to 70 kg at 1.5 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 120,
+        "targetKg": 70,
+        "pctPerWeek": 1.5,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 36,
+          "weeksHigh": 47,
+          "dateLow": "2027-07-03",
+          "dateHigh": "2027-09-18"
+        }
+      },
+      {
+        "name": "2026-10-24: 120 to 70 kg at 1.55 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 120,
+        "targetKg": 70,
+        "pctPerWeek": 1.55,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 35,
+          "weeksHigh": 46,
+          "dateLow": "2027-06-26",
+          "dateHigh": "2027-09-11"
+        }
+      },
+      {
+        "name": "2026-10-24: 120 to 70 kg at 2.5 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 120,
+        "targetKg": 70,
+        "pctPerWeek": 2.5,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 22,
+          "weeksHigh": 29,
+          "dateLow": "2027-03-27",
+          "dateHigh": "2027-05-15"
+        }
+      },
+      {
+        "name": "2026-10-24: 120 to 70 kg at 2.55 %",
+        "zone": "Europe/Paris",
+        "today": "2026-10-24",
+        "currentKg": 120,
+        "targetKg": 70,
+        "pctPerWeek": 2.55,
+        "result": null
+      },
+      {
+        "name": "2026-12-28: 82 to 75 kg at 0.2 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 82,
+        "targetKg": 75,
+        "pctPerWeek": 0.2,
+        "result": null
+      },
+      {
+        "name": "2026-12-28: 82 to 75 kg at 0.25 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 82,
+        "targetKg": 75,
+        "pctPerWeek": 0.25,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 36,
+          "weeksHigh": 47,
+          "dateLow": "2027-09-06",
+          "dateHigh": "2027-11-22"
+        }
+      },
+      {
+        "name": "2026-12-28: 82 to 75 kg at 0.5 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 82,
+        "targetKg": 75,
+        "pctPerWeek": 0.5,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 18,
+          "weeksHigh": 24,
+          "dateLow": "2027-05-03",
+          "dateHigh": "2027-06-14"
+        }
+      },
+      {
+        "name": "2026-12-28: 82 to 75 kg at 0.7 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 82,
+        "targetKg": 75,
+        "pctPerWeek": 0.7,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 13,
+          "weeksHigh": 17,
+          "dateLow": "2027-03-29",
+          "dateHigh": "2027-04-26"
+        }
+      },
+      {
+        "name": "2026-12-28: 82 to 75 kg at 0.75 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 82,
+        "targetKg": 75,
+        "pctPerWeek": 0.75,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 12,
+          "weeksHigh": 16,
+          "dateLow": "2027-03-22",
+          "dateHigh": "2027-04-19"
+        }
+      },
+      {
+        "name": "2026-12-28: 82 to 75 kg at 1 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 82,
+        "targetKg": 75,
+        "pctPerWeek": 1,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 9,
+          "weeksHigh": 12,
+          "dateLow": "2027-03-01",
+          "dateHigh": "2027-03-22"
+        }
+      },
+      {
+        "name": "2026-12-28: 82 to 75 kg at 1.05 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 82,
+        "targetKg": 75,
+        "pctPerWeek": 1.05,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 9,
+          "weeksHigh": 12,
+          "dateLow": "2027-03-01",
+          "dateHigh": "2027-03-22"
+        }
+      },
+      {
+        "name": "2026-12-28: 82 to 75 kg at 1.5 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 82,
+        "targetKg": 75,
+        "pctPerWeek": 1.5,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 6,
+          "weeksHigh": 8,
+          "dateLow": "2027-02-08",
+          "dateHigh": "2027-02-22"
+        }
+      },
+      {
+        "name": "2026-12-28: 82 to 75 kg at 1.55 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 82,
+        "targetKg": 75,
+        "pctPerWeek": 1.55,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 6,
+          "weeksHigh": 8,
+          "dateLow": "2027-02-08",
+          "dateHigh": "2027-02-22"
+        }
+      },
+      {
+        "name": "2026-12-28: 82 to 75 kg at 2.5 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 82,
+        "targetKg": 75,
+        "pctPerWeek": 2.5,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 4,
+          "weeksHigh": 6,
+          "dateLow": "2027-01-25",
+          "dateHigh": "2027-02-08"
+        }
+      },
+      {
+        "name": "2026-12-28: 82 to 75 kg at 2.55 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 82,
+        "targetKg": 75,
+        "pctPerWeek": 2.55,
+        "result": null
+      },
+      {
+        "name": "2026-12-28: 85 to 78 kg at 0.2 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 85,
+        "targetKg": 78,
+        "pctPerWeek": 0.2,
+        "result": null
+      },
+      {
+        "name": "2026-12-28: 85 to 78 kg at 0.25 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 85,
+        "targetKg": 78,
+        "pctPerWeek": 0.25,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 35,
+          "weeksHigh": 46,
+          "dateLow": "2027-08-30",
+          "dateHigh": "2027-11-15"
+        }
+      },
+      {
+        "name": "2026-12-28: 85 to 78 kg at 0.5 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 85,
+        "targetKg": 78,
+        "pctPerWeek": 0.5,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 18,
+          "weeksHigh": 24,
+          "dateLow": "2027-05-03",
+          "dateHigh": "2027-06-14"
+        }
+      },
+      {
+        "name": "2026-12-28: 85 to 78 kg at 0.7 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 85,
+        "targetKg": 78,
+        "pctPerWeek": 0.7,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 13,
+          "weeksHigh": 17,
+          "dateLow": "2027-03-29",
+          "dateHigh": "2027-04-26"
+        }
+      },
+      {
+        "name": "2026-12-28: 85 to 78 kg at 0.75 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 85,
+        "targetKg": 78,
+        "pctPerWeek": 0.75,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 12,
+          "weeksHigh": 16,
+          "dateLow": "2027-03-22",
+          "dateHigh": "2027-04-19"
+        }
+      },
+      {
+        "name": "2026-12-28: 85 to 78 kg at 1 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 85,
+        "targetKg": 78,
+        "pctPerWeek": 1,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 9,
+          "weeksHigh": 12,
+          "dateLow": "2027-03-01",
+          "dateHigh": "2027-03-22"
+        }
+      },
+      {
+        "name": "2026-12-28: 85 to 78 kg at 1.05 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 85,
+        "targetKg": 78,
+        "pctPerWeek": 1.05,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 9,
+          "weeksHigh": 12,
+          "dateLow": "2027-03-01",
+          "dateHigh": "2027-03-22"
+        }
+      },
+      {
+        "name": "2026-12-28: 85 to 78 kg at 1.5 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 85,
+        "targetKg": 78,
+        "pctPerWeek": 1.5,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 6,
+          "weeksHigh": 8,
+          "dateLow": "2027-02-08",
+          "dateHigh": "2027-02-22"
+        }
+      },
+      {
+        "name": "2026-12-28: 85 to 78 kg at 1.55 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 85,
+        "targetKg": 78,
+        "pctPerWeek": 1.55,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 6,
+          "weeksHigh": 8,
+          "dateLow": "2027-02-08",
+          "dateHigh": "2027-02-22"
+        }
+      },
+      {
+        "name": "2026-12-28: 85 to 78 kg at 2.5 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 85,
+        "targetKg": 78,
+        "pctPerWeek": 2.5,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 4,
+          "weeksHigh": 6,
+          "dateLow": "2027-01-25",
+          "dateHigh": "2027-02-08"
+        }
+      },
+      {
+        "name": "2026-12-28: 85 to 78 kg at 2.55 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 85,
+        "targetKg": 78,
+        "pctPerWeek": 2.55,
+        "result": null
+      },
+      {
+        "name": "2026-12-28: 80 to 79.9 kg at 0.2 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 80,
+        "targetKg": 79.9,
+        "pctPerWeek": 0.2,
+        "result": null
+      },
+      {
+        "name": "2026-12-28: 80 to 79.9 kg at 0.25 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 80,
+        "targetKg": 79.9,
+        "pctPerWeek": 0.25,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 1,
+          "weeksHigh": 2,
+          "dateLow": "2027-01-04",
+          "dateHigh": "2027-01-11"
+        }
+      },
+      {
+        "name": "2026-12-28: 80 to 79.9 kg at 0.5 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 80,
+        "targetKg": 79.9,
+        "pctPerWeek": 0.5,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 1,
+          "weeksHigh": 2,
+          "dateLow": "2027-01-04",
+          "dateHigh": "2027-01-11"
+        }
+      },
+      {
+        "name": "2026-12-28: 80 to 79.9 kg at 0.7 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 80,
+        "targetKg": 79.9,
+        "pctPerWeek": 0.7,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 1,
+          "weeksHigh": 2,
+          "dateLow": "2027-01-04",
+          "dateHigh": "2027-01-11"
+        }
+      },
+      {
+        "name": "2026-12-28: 80 to 79.9 kg at 0.75 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 80,
+        "targetKg": 79.9,
+        "pctPerWeek": 0.75,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 1,
+          "weeksHigh": 2,
+          "dateLow": "2027-01-04",
+          "dateHigh": "2027-01-11"
+        }
+      },
+      {
+        "name": "2026-12-28: 80 to 79.9 kg at 1 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 80,
+        "targetKg": 79.9,
+        "pctPerWeek": 1,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 1,
+          "weeksHigh": 2,
+          "dateLow": "2027-01-04",
+          "dateHigh": "2027-01-11"
+        }
+      },
+      {
+        "name": "2026-12-28: 80 to 79.9 kg at 1.05 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 80,
+        "targetKg": 79.9,
+        "pctPerWeek": 1.05,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 1,
+          "weeksHigh": 2,
+          "dateLow": "2027-01-04",
+          "dateHigh": "2027-01-11"
+        }
+      },
+      {
+        "name": "2026-12-28: 80 to 79.9 kg at 1.5 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 80,
+        "targetKg": 79.9,
+        "pctPerWeek": 1.5,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 1,
+          "weeksHigh": 2,
+          "dateLow": "2027-01-04",
+          "dateHigh": "2027-01-11"
+        }
+      },
+      {
+        "name": "2026-12-28: 80 to 79.9 kg at 1.55 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 80,
+        "targetKg": 79.9,
+        "pctPerWeek": 1.55,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 1,
+          "weeksHigh": 2,
+          "dateLow": "2027-01-04",
+          "dateHigh": "2027-01-11"
+        }
+      },
+      {
+        "name": "2026-12-28: 80 to 79.9 kg at 2.5 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 80,
+        "targetKg": 79.9,
+        "pctPerWeek": 2.5,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 1,
+          "weeksHigh": 2,
+          "dateLow": "2027-01-04",
+          "dateHigh": "2027-01-11"
+        }
+      },
+      {
+        "name": "2026-12-28: 80 to 79.9 kg at 2.55 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 80,
+        "targetKg": 79.9,
+        "pctPerWeek": 2.55,
+        "result": null
+      },
+      {
+        "name": "2026-12-28: 80 to 80 kg at 0.2 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 80,
+        "targetKg": 80,
+        "pctPerWeek": 0.2,
+        "result": null
+      },
+      {
+        "name": "2026-12-28: 80 to 80 kg at 0.25 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 80,
+        "targetKg": 80,
+        "pctPerWeek": 0.25,
+        "result": {
+          "kind": "target-not-below"
+        }
+      },
+      {
+        "name": "2026-12-28: 80 to 80 kg at 0.5 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 80,
+        "targetKg": 80,
+        "pctPerWeek": 0.5,
+        "result": {
+          "kind": "target-not-below"
+        }
+      },
+      {
+        "name": "2026-12-28: 80 to 80 kg at 0.7 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 80,
+        "targetKg": 80,
+        "pctPerWeek": 0.7,
+        "result": {
+          "kind": "target-not-below"
+        }
+      },
+      {
+        "name": "2026-12-28: 80 to 80 kg at 0.75 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 80,
+        "targetKg": 80,
+        "pctPerWeek": 0.75,
+        "result": {
+          "kind": "target-not-below"
+        }
+      },
+      {
+        "name": "2026-12-28: 80 to 80 kg at 1 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 80,
+        "targetKg": 80,
+        "pctPerWeek": 1,
+        "result": {
+          "kind": "target-not-below"
+        }
+      },
+      {
+        "name": "2026-12-28: 80 to 80 kg at 1.05 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 80,
+        "targetKg": 80,
+        "pctPerWeek": 1.05,
+        "result": {
+          "kind": "target-not-below"
+        }
+      },
+      {
+        "name": "2026-12-28: 80 to 80 kg at 1.5 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 80,
+        "targetKg": 80,
+        "pctPerWeek": 1.5,
+        "result": {
+          "kind": "target-not-below"
+        }
+      },
+      {
+        "name": "2026-12-28: 80 to 80 kg at 1.55 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 80,
+        "targetKg": 80,
+        "pctPerWeek": 1.55,
+        "result": {
+          "kind": "target-not-below"
+        }
+      },
+      {
+        "name": "2026-12-28: 80 to 80 kg at 2.5 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 80,
+        "targetKg": 80,
+        "pctPerWeek": 2.5,
+        "result": {
+          "kind": "target-not-below"
+        }
+      },
+      {
+        "name": "2026-12-28: 80 to 80 kg at 2.55 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 80,
+        "targetKg": 80,
+        "pctPerWeek": 2.55,
+        "result": null
+      },
+      {
+        "name": "2026-12-28: 80 to 85 kg at 0.2 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 80,
+        "targetKg": 85,
+        "pctPerWeek": 0.2,
+        "result": null
+      },
+      {
+        "name": "2026-12-28: 80 to 85 kg at 0.25 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 80,
+        "targetKg": 85,
+        "pctPerWeek": 0.25,
+        "result": {
+          "kind": "target-not-below"
+        }
+      },
+      {
+        "name": "2026-12-28: 80 to 85 kg at 0.5 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 80,
+        "targetKg": 85,
+        "pctPerWeek": 0.5,
+        "result": {
+          "kind": "target-not-below"
+        }
+      },
+      {
+        "name": "2026-12-28: 80 to 85 kg at 0.7 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 80,
+        "targetKg": 85,
+        "pctPerWeek": 0.7,
+        "result": {
+          "kind": "target-not-below"
+        }
+      },
+      {
+        "name": "2026-12-28: 80 to 85 kg at 0.75 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 80,
+        "targetKg": 85,
+        "pctPerWeek": 0.75,
+        "result": {
+          "kind": "target-not-below"
+        }
+      },
+      {
+        "name": "2026-12-28: 80 to 85 kg at 1 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 80,
+        "targetKg": 85,
+        "pctPerWeek": 1,
+        "result": {
+          "kind": "target-not-below"
+        }
+      },
+      {
+        "name": "2026-12-28: 80 to 85 kg at 1.05 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 80,
+        "targetKg": 85,
+        "pctPerWeek": 1.05,
+        "result": {
+          "kind": "target-not-below"
+        }
+      },
+      {
+        "name": "2026-12-28: 80 to 85 kg at 1.5 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 80,
+        "targetKg": 85,
+        "pctPerWeek": 1.5,
+        "result": {
+          "kind": "target-not-below"
+        }
+      },
+      {
+        "name": "2026-12-28: 80 to 85 kg at 1.55 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 80,
+        "targetKg": 85,
+        "pctPerWeek": 1.55,
+        "result": {
+          "kind": "target-not-below"
+        }
+      },
+      {
+        "name": "2026-12-28: 80 to 85 kg at 2.5 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 80,
+        "targetKg": 85,
+        "pctPerWeek": 2.5,
+        "result": {
+          "kind": "target-not-below"
+        }
+      },
+      {
+        "name": "2026-12-28: 80 to 85 kg at 2.55 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 80,
+        "targetKg": 85,
+        "pctPerWeek": 2.55,
+        "result": null
+      },
+      {
+        "name": "2026-12-28: 120 to 70 kg at 0.2 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 120,
+        "targetKg": 70,
+        "pctPerWeek": 0.2,
+        "result": null
+      },
+      {
+        "name": "2026-12-28: 120 to 70 kg at 0.25 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 120,
+        "targetKg": 70,
+        "pctPerWeek": 0.25,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 216,
+          "weeksHigh": 281,
+          "dateLow": "2031-02-17",
+          "dateHigh": "2032-05-17"
+        }
+      },
+      {
+        "name": "2026-12-28: 120 to 70 kg at 0.5 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 120,
+        "targetKg": 70,
+        "pctPerWeek": 0.5,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 108,
+          "weeksHigh": 141,
+          "dateLow": "2029-01-22",
+          "dateHigh": "2029-09-10"
+        }
+      },
+      {
+        "name": "2026-12-28: 120 to 70 kg at 0.7 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 120,
+        "targetKg": 70,
+        "pctPerWeek": 0.7,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 77,
+          "weeksHigh": 101,
+          "dateLow": "2028-06-19",
+          "dateHigh": "2028-12-04"
+        }
+      },
+      {
+        "name": "2026-12-28: 120 to 70 kg at 0.75 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 120,
+        "targetKg": 70,
+        "pctPerWeek": 0.75,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 72,
+          "weeksHigh": 94,
+          "dateLow": "2028-05-15",
+          "dateHigh": "2028-10-16"
+        }
+      },
+      {
+        "name": "2026-12-28: 120 to 70 kg at 1 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 120,
+        "targetKg": 70,
+        "pctPerWeek": 1,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 54,
+          "weeksHigh": 71,
+          "dateLow": "2028-01-10",
+          "dateHigh": "2028-05-08"
+        }
+      },
+      {
+        "name": "2026-12-28: 120 to 70 kg at 1.05 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 120,
+        "targetKg": 70,
+        "pctPerWeek": 1.05,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 52,
+          "weeksHigh": 68,
+          "dateLow": "2027-12-27",
+          "dateHigh": "2028-04-17"
+        }
+      },
+      {
+        "name": "2026-12-28: 120 to 70 kg at 1.5 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 120,
+        "targetKg": 70,
+        "pctPerWeek": 1.5,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 36,
+          "weeksHigh": 47,
+          "dateLow": "2027-09-06",
+          "dateHigh": "2027-11-22"
+        }
+      },
+      {
+        "name": "2026-12-28: 120 to 70 kg at 1.55 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 120,
+        "targetKg": 70,
+        "pctPerWeek": 1.55,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 35,
+          "weeksHigh": 46,
+          "dateLow": "2027-08-30",
+          "dateHigh": "2027-11-15"
+        }
+      },
+      {
+        "name": "2026-12-28: 120 to 70 kg at 2.5 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 120,
+        "targetKg": 70,
+        "pctPerWeek": 2.5,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 22,
+          "weeksHigh": 29,
+          "dateLow": "2027-05-31",
+          "dateHigh": "2027-07-19"
+        }
+      },
+      {
+        "name": "2026-12-28: 120 to 70 kg at 2.55 %",
+        "zone": "Europe/Paris",
+        "today": "2026-12-28",
+        "currentKg": 120,
+        "targetKg": 70,
+        "pctPerWeek": 2.55,
+        "result": null
+      },
+      {
+        "name": "2028-02-27: 82 to 75 kg at 0.2 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 82,
+        "targetKg": 75,
+        "pctPerWeek": 0.2,
+        "result": null
+      },
+      {
+        "name": "2028-02-27: 82 to 75 kg at 0.25 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 82,
+        "targetKg": 75,
+        "pctPerWeek": 0.25,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 36,
+          "weeksHigh": 47,
+          "dateLow": "2028-11-05",
+          "dateHigh": "2029-01-21"
+        }
+      },
+      {
+        "name": "2028-02-27: 82 to 75 kg at 0.5 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 82,
+        "targetKg": 75,
+        "pctPerWeek": 0.5,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 18,
+          "weeksHigh": 24,
+          "dateLow": "2028-07-02",
+          "dateHigh": "2028-08-13"
+        }
+      },
+      {
+        "name": "2028-02-27: 82 to 75 kg at 0.7 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 82,
+        "targetKg": 75,
+        "pctPerWeek": 0.7,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 13,
+          "weeksHigh": 17,
+          "dateLow": "2028-05-28",
+          "dateHigh": "2028-06-25"
+        }
+      },
+      {
+        "name": "2028-02-27: 82 to 75 kg at 0.75 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 82,
+        "targetKg": 75,
+        "pctPerWeek": 0.75,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 12,
+          "weeksHigh": 16,
+          "dateLow": "2028-05-21",
+          "dateHigh": "2028-06-18"
+        }
+      },
+      {
+        "name": "2028-02-27: 82 to 75 kg at 1 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 82,
+        "targetKg": 75,
+        "pctPerWeek": 1,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 9,
+          "weeksHigh": 12,
+          "dateLow": "2028-04-30",
+          "dateHigh": "2028-05-21"
+        }
+      },
+      {
+        "name": "2028-02-27: 82 to 75 kg at 1.05 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 82,
+        "targetKg": 75,
+        "pctPerWeek": 1.05,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 9,
+          "weeksHigh": 12,
+          "dateLow": "2028-04-30",
+          "dateHigh": "2028-05-21"
+        }
+      },
+      {
+        "name": "2028-02-27: 82 to 75 kg at 1.5 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 82,
+        "targetKg": 75,
+        "pctPerWeek": 1.5,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 6,
+          "weeksHigh": 8,
+          "dateLow": "2028-04-09",
+          "dateHigh": "2028-04-23"
+        }
+      },
+      {
+        "name": "2028-02-27: 82 to 75 kg at 1.55 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 82,
+        "targetKg": 75,
+        "pctPerWeek": 1.55,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 6,
+          "weeksHigh": 8,
+          "dateLow": "2028-04-09",
+          "dateHigh": "2028-04-23"
+        }
+      },
+      {
+        "name": "2028-02-27: 82 to 75 kg at 2.5 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 82,
+        "targetKg": 75,
+        "pctPerWeek": 2.5,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 4,
+          "weeksHigh": 6,
+          "dateLow": "2028-03-26",
+          "dateHigh": "2028-04-09"
+        }
+      },
+      {
+        "name": "2028-02-27: 82 to 75 kg at 2.55 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 82,
+        "targetKg": 75,
+        "pctPerWeek": 2.55,
+        "result": null
+      },
+      {
+        "name": "2028-02-27: 85 to 78 kg at 0.2 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 85,
+        "targetKg": 78,
+        "pctPerWeek": 0.2,
+        "result": null
+      },
+      {
+        "name": "2028-02-27: 85 to 78 kg at 0.25 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 85,
+        "targetKg": 78,
+        "pctPerWeek": 0.25,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 35,
+          "weeksHigh": 46,
+          "dateLow": "2028-10-29",
+          "dateHigh": "2029-01-14"
+        }
+      },
+      {
+        "name": "2028-02-27: 85 to 78 kg at 0.5 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 85,
+        "targetKg": 78,
+        "pctPerWeek": 0.5,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 18,
+          "weeksHigh": 24,
+          "dateLow": "2028-07-02",
+          "dateHigh": "2028-08-13"
+        }
+      },
+      {
+        "name": "2028-02-27: 85 to 78 kg at 0.7 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 85,
+        "targetKg": 78,
+        "pctPerWeek": 0.7,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 13,
+          "weeksHigh": 17,
+          "dateLow": "2028-05-28",
+          "dateHigh": "2028-06-25"
+        }
+      },
+      {
+        "name": "2028-02-27: 85 to 78 kg at 0.75 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 85,
+        "targetKg": 78,
+        "pctPerWeek": 0.75,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 12,
+          "weeksHigh": 16,
+          "dateLow": "2028-05-21",
+          "dateHigh": "2028-06-18"
+        }
+      },
+      {
+        "name": "2028-02-27: 85 to 78 kg at 1 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 85,
+        "targetKg": 78,
+        "pctPerWeek": 1,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 9,
+          "weeksHigh": 12,
+          "dateLow": "2028-04-30",
+          "dateHigh": "2028-05-21"
+        }
+      },
+      {
+        "name": "2028-02-27: 85 to 78 kg at 1.05 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 85,
+        "targetKg": 78,
+        "pctPerWeek": 1.05,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 9,
+          "weeksHigh": 12,
+          "dateLow": "2028-04-30",
+          "dateHigh": "2028-05-21"
+        }
+      },
+      {
+        "name": "2028-02-27: 85 to 78 kg at 1.5 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 85,
+        "targetKg": 78,
+        "pctPerWeek": 1.5,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 6,
+          "weeksHigh": 8,
+          "dateLow": "2028-04-09",
+          "dateHigh": "2028-04-23"
+        }
+      },
+      {
+        "name": "2028-02-27: 85 to 78 kg at 1.55 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 85,
+        "targetKg": 78,
+        "pctPerWeek": 1.55,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 6,
+          "weeksHigh": 8,
+          "dateLow": "2028-04-09",
+          "dateHigh": "2028-04-23"
+        }
+      },
+      {
+        "name": "2028-02-27: 85 to 78 kg at 2.5 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 85,
+        "targetKg": 78,
+        "pctPerWeek": 2.5,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 4,
+          "weeksHigh": 6,
+          "dateLow": "2028-03-26",
+          "dateHigh": "2028-04-09"
+        }
+      },
+      {
+        "name": "2028-02-27: 85 to 78 kg at 2.55 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 85,
+        "targetKg": 78,
+        "pctPerWeek": 2.55,
+        "result": null
+      },
+      {
+        "name": "2028-02-27: 80 to 79.9 kg at 0.2 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 80,
+        "targetKg": 79.9,
+        "pctPerWeek": 0.2,
+        "result": null
+      },
+      {
+        "name": "2028-02-27: 80 to 79.9 kg at 0.25 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 80,
+        "targetKg": 79.9,
+        "pctPerWeek": 0.25,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 1,
+          "weeksHigh": 2,
+          "dateLow": "2028-03-05",
+          "dateHigh": "2028-03-12"
+        }
+      },
+      {
+        "name": "2028-02-27: 80 to 79.9 kg at 0.5 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 80,
+        "targetKg": 79.9,
+        "pctPerWeek": 0.5,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 1,
+          "weeksHigh": 2,
+          "dateLow": "2028-03-05",
+          "dateHigh": "2028-03-12"
+        }
+      },
+      {
+        "name": "2028-02-27: 80 to 79.9 kg at 0.7 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 80,
+        "targetKg": 79.9,
+        "pctPerWeek": 0.7,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 1,
+          "weeksHigh": 2,
+          "dateLow": "2028-03-05",
+          "dateHigh": "2028-03-12"
+        }
+      },
+      {
+        "name": "2028-02-27: 80 to 79.9 kg at 0.75 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 80,
+        "targetKg": 79.9,
+        "pctPerWeek": 0.75,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 1,
+          "weeksHigh": 2,
+          "dateLow": "2028-03-05",
+          "dateHigh": "2028-03-12"
+        }
+      },
+      {
+        "name": "2028-02-27: 80 to 79.9 kg at 1 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 80,
+        "targetKg": 79.9,
+        "pctPerWeek": 1,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 1,
+          "weeksHigh": 2,
+          "dateLow": "2028-03-05",
+          "dateHigh": "2028-03-12"
+        }
+      },
+      {
+        "name": "2028-02-27: 80 to 79.9 kg at 1.05 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 80,
+        "targetKg": 79.9,
+        "pctPerWeek": 1.05,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 1,
+          "weeksHigh": 2,
+          "dateLow": "2028-03-05",
+          "dateHigh": "2028-03-12"
+        }
+      },
+      {
+        "name": "2028-02-27: 80 to 79.9 kg at 1.5 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 80,
+        "targetKg": 79.9,
+        "pctPerWeek": 1.5,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 1,
+          "weeksHigh": 2,
+          "dateLow": "2028-03-05",
+          "dateHigh": "2028-03-12"
+        }
+      },
+      {
+        "name": "2028-02-27: 80 to 79.9 kg at 1.55 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 80,
+        "targetKg": 79.9,
+        "pctPerWeek": 1.55,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 1,
+          "weeksHigh": 2,
+          "dateLow": "2028-03-05",
+          "dateHigh": "2028-03-12"
+        }
+      },
+      {
+        "name": "2028-02-27: 80 to 79.9 kg at 2.5 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 80,
+        "targetKg": 79.9,
+        "pctPerWeek": 2.5,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 1,
+          "weeksHigh": 2,
+          "dateLow": "2028-03-05",
+          "dateHigh": "2028-03-12"
+        }
+      },
+      {
+        "name": "2028-02-27: 80 to 79.9 kg at 2.55 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 80,
+        "targetKg": 79.9,
+        "pctPerWeek": 2.55,
+        "result": null
+      },
+      {
+        "name": "2028-02-27: 80 to 80 kg at 0.2 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 80,
+        "targetKg": 80,
+        "pctPerWeek": 0.2,
+        "result": null
+      },
+      {
+        "name": "2028-02-27: 80 to 80 kg at 0.25 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 80,
+        "targetKg": 80,
+        "pctPerWeek": 0.25,
+        "result": {
+          "kind": "target-not-below"
+        }
+      },
+      {
+        "name": "2028-02-27: 80 to 80 kg at 0.5 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 80,
+        "targetKg": 80,
+        "pctPerWeek": 0.5,
+        "result": {
+          "kind": "target-not-below"
+        }
+      },
+      {
+        "name": "2028-02-27: 80 to 80 kg at 0.7 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 80,
+        "targetKg": 80,
+        "pctPerWeek": 0.7,
+        "result": {
+          "kind": "target-not-below"
+        }
+      },
+      {
+        "name": "2028-02-27: 80 to 80 kg at 0.75 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 80,
+        "targetKg": 80,
+        "pctPerWeek": 0.75,
+        "result": {
+          "kind": "target-not-below"
+        }
+      },
+      {
+        "name": "2028-02-27: 80 to 80 kg at 1 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 80,
+        "targetKg": 80,
+        "pctPerWeek": 1,
+        "result": {
+          "kind": "target-not-below"
+        }
+      },
+      {
+        "name": "2028-02-27: 80 to 80 kg at 1.05 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 80,
+        "targetKg": 80,
+        "pctPerWeek": 1.05,
+        "result": {
+          "kind": "target-not-below"
+        }
+      },
+      {
+        "name": "2028-02-27: 80 to 80 kg at 1.5 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 80,
+        "targetKg": 80,
+        "pctPerWeek": 1.5,
+        "result": {
+          "kind": "target-not-below"
+        }
+      },
+      {
+        "name": "2028-02-27: 80 to 80 kg at 1.55 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 80,
+        "targetKg": 80,
+        "pctPerWeek": 1.55,
+        "result": {
+          "kind": "target-not-below"
+        }
+      },
+      {
+        "name": "2028-02-27: 80 to 80 kg at 2.5 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 80,
+        "targetKg": 80,
+        "pctPerWeek": 2.5,
+        "result": {
+          "kind": "target-not-below"
+        }
+      },
+      {
+        "name": "2028-02-27: 80 to 80 kg at 2.55 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 80,
+        "targetKg": 80,
+        "pctPerWeek": 2.55,
+        "result": null
+      },
+      {
+        "name": "2028-02-27: 80 to 85 kg at 0.2 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 80,
+        "targetKg": 85,
+        "pctPerWeek": 0.2,
+        "result": null
+      },
+      {
+        "name": "2028-02-27: 80 to 85 kg at 0.25 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 80,
+        "targetKg": 85,
+        "pctPerWeek": 0.25,
+        "result": {
+          "kind": "target-not-below"
+        }
+      },
+      {
+        "name": "2028-02-27: 80 to 85 kg at 0.5 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 80,
+        "targetKg": 85,
+        "pctPerWeek": 0.5,
+        "result": {
+          "kind": "target-not-below"
+        }
+      },
+      {
+        "name": "2028-02-27: 80 to 85 kg at 0.7 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 80,
+        "targetKg": 85,
+        "pctPerWeek": 0.7,
+        "result": {
+          "kind": "target-not-below"
+        }
+      },
+      {
+        "name": "2028-02-27: 80 to 85 kg at 0.75 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 80,
+        "targetKg": 85,
+        "pctPerWeek": 0.75,
+        "result": {
+          "kind": "target-not-below"
+        }
+      },
+      {
+        "name": "2028-02-27: 80 to 85 kg at 1 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 80,
+        "targetKg": 85,
+        "pctPerWeek": 1,
+        "result": {
+          "kind": "target-not-below"
+        }
+      },
+      {
+        "name": "2028-02-27: 80 to 85 kg at 1.05 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 80,
+        "targetKg": 85,
+        "pctPerWeek": 1.05,
+        "result": {
+          "kind": "target-not-below"
+        }
+      },
+      {
+        "name": "2028-02-27: 80 to 85 kg at 1.5 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 80,
+        "targetKg": 85,
+        "pctPerWeek": 1.5,
+        "result": {
+          "kind": "target-not-below"
+        }
+      },
+      {
+        "name": "2028-02-27: 80 to 85 kg at 1.55 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 80,
+        "targetKg": 85,
+        "pctPerWeek": 1.55,
+        "result": {
+          "kind": "target-not-below"
+        }
+      },
+      {
+        "name": "2028-02-27: 80 to 85 kg at 2.5 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 80,
+        "targetKg": 85,
+        "pctPerWeek": 2.5,
+        "result": {
+          "kind": "target-not-below"
+        }
+      },
+      {
+        "name": "2028-02-27: 80 to 85 kg at 2.55 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 80,
+        "targetKg": 85,
+        "pctPerWeek": 2.55,
+        "result": null
+      },
+      {
+        "name": "2028-02-27: 120 to 70 kg at 0.2 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 120,
+        "targetKg": 70,
+        "pctPerWeek": 0.2,
+        "result": null
+      },
+      {
+        "name": "2028-02-27: 120 to 70 kg at 0.25 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 120,
+        "targetKg": 70,
+        "pctPerWeek": 0.25,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 216,
+          "weeksHigh": 281,
+          "dateLow": "2032-04-18",
+          "dateHigh": "2033-07-17"
+        }
+      },
+      {
+        "name": "2028-02-27: 120 to 70 kg at 0.5 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 120,
+        "targetKg": 70,
+        "pctPerWeek": 0.5,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 108,
+          "weeksHigh": 141,
+          "dateLow": "2030-03-24",
+          "dateHigh": "2030-11-10"
+        }
+      },
+      {
+        "name": "2028-02-27: 120 to 70 kg at 0.7 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 120,
+        "targetKg": 70,
+        "pctPerWeek": 0.7,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 77,
+          "weeksHigh": 101,
+          "dateLow": "2029-08-19",
+          "dateHigh": "2030-02-03"
+        }
+      },
+      {
+        "name": "2028-02-27: 120 to 70 kg at 0.75 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 120,
+        "targetKg": 70,
+        "pctPerWeek": 0.75,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 72,
+          "weeksHigh": 94,
+          "dateLow": "2029-07-15",
+          "dateHigh": "2029-12-16"
+        }
+      },
+      {
+        "name": "2028-02-27: 120 to 70 kg at 1 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 120,
+        "targetKg": 70,
+        "pctPerWeek": 1,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 54,
+          "weeksHigh": 71,
+          "dateLow": "2029-03-11",
+          "dateHigh": "2029-07-08"
+        }
+      },
+      {
+        "name": "2028-02-27: 120 to 70 kg at 1.05 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 120,
+        "targetKg": 70,
+        "pctPerWeek": 1.05,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 52,
+          "weeksHigh": 68,
+          "dateLow": "2029-02-25",
+          "dateHigh": "2029-06-17"
+        }
+      },
+      {
+        "name": "2028-02-27: 120 to 70 kg at 1.5 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 120,
+        "targetKg": 70,
+        "pctPerWeek": 1.5,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 36,
+          "weeksHigh": 47,
+          "dateLow": "2028-11-05",
+          "dateHigh": "2029-01-21"
+        }
+      },
+      {
+        "name": "2028-02-27: 120 to 70 kg at 1.55 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 120,
+        "targetKg": 70,
+        "pctPerWeek": 1.55,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 35,
+          "weeksHigh": 46,
+          "dateLow": "2028-10-29",
+          "dateHigh": "2029-01-14"
+        }
+      },
+      {
+        "name": "2028-02-27: 120 to 70 kg at 2.5 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 120,
+        "targetKg": 70,
+        "pctPerWeek": 2.5,
+        "result": {
+          "kind": "ok",
+          "weeksLow": 22,
+          "weeksHigh": 29,
+          "dateLow": "2028-07-30",
+          "dateHigh": "2028-09-17"
+        }
+      },
+      {
+        "name": "2028-02-27: 120 to 70 kg at 2.55 %",
+        "zone": "Europe/Paris",
+        "today": "2028-02-27",
+        "currentKg": 120,
+        "targetKg": 70,
+        "pctPerWeek": 2.55,
+        "result": null
+      }
+    ],
+    "rateWarning": [
+      {
+        "pct": 0.2,
+        "warning": "none",
+        "kgPerWeek": 0.16400000000000003
+      },
+      {
+        "pct": 0.25,
+        "warning": "none",
+        "kgPerWeek": 0.205
+      },
+      {
+        "pct": 0.5,
+        "warning": "none",
+        "kgPerWeek": 0.41
+      },
+      {
+        "pct": 0.7,
+        "warning": "none",
+        "kgPerWeek": 0.574
+      },
+      {
+        "pct": 0.75,
+        "warning": "none",
+        "kgPerWeek": 0.615
+      },
+      {
+        "pct": 1,
+        "warning": "none",
+        "kgPerWeek": 0.82
+      },
+      {
+        "pct": 1.05,
+        "warning": "above-1",
+        "kgPerWeek": 0.8610000000000001
+      },
+      {
+        "pct": 1.5,
+        "warning": "above-1",
+        "kgPerWeek": 1.23
+      },
+      {
+        "pct": 1.55,
+        "warning": "above-1.5",
+        "kgPerWeek": 1.2710000000000001
+      },
+      {
+        "pct": 2.5,
+        "warning": "above-1.5",
+        "kgPerWeek": 2.05
+      },
+      {
+        "pct": 2.55,
+        "warning": "above-1.5",
+        "kgPerWeek": 2.0909999999999997
+      }
+    ],
+    "slowWeeks": [
+      {
+        "weeks": 1,
+        "slow": 2
+      },
+      {
+        "weeks": 2,
+        "slow": 3
+      },
+      {
+        "weeks": 3,
+        "slow": 4
+      },
+      {
+        "weeks": 10,
+        "slow": 13
+      },
+      {
+        "weeks": 12,
+        "slow": 16
+      },
+      {
+        "weeks": 13,
+        "slow": 17
+      },
+      {
+        "weeks": 52,
+        "slow": 68
+      },
+      {
+        "weeks": 100,
+        "slow": 130
+      }
+    ],
+    "bmi": [
+      {
+        "weightKg": 77,
+        "heightCm": 178,
+        "result": 24.3
+      },
+      {
+        "weightKg": 75,
+        "heightCm": 175,
+        "result": 24.5
+      },
+      {
+        "weightKg": 80.9,
+        "heightCm": 180,
+        "result": 25
+      },
+      {
+        "weightKg": 99.8,
+        "heightCm": 200,
+        "result": 25
+      },
+      {
+        "weightKg": 73.8,
+        "heightCm": 200,
+        "result": 18.5
+      },
+      {
+        "weightKg": 30,
+        "heightCm": 230,
+        "result": 5.7
+      },
+      {
+        "weightKg": 300,
+        "heightCm": 120,
+        "result": 208.3
+      },
+      {
+        "weightKg": 29,
+        "heightCm": 180,
+        "result": null
+      },
+      {
+        "weightKg": 301,
+        "heightCm": 180,
+        "result": null
+      },
+      {
+        "weightKg": 80,
+        "heightCm": 119,
+        "result": null
+      },
+      {
+        "weightKg": 80,
+        "heightCm": 231,
+        "result": null
+      }
+    ],
+    "bmiBand": [
+      {
+        "value": 10,
+        "band": "below",
+        "professional": true
+      },
+      {
+        "value": 18.49,
+        "band": "below",
+        "professional": true
+      },
+      {
+        "value": 18.5,
+        "band": "reference",
+        "professional": false
+      },
+      {
+        "value": 24.99,
+        "band": "reference",
+        "professional": false
+      },
+      {
+        "value": 25,
+        "band": "above",
+        "professional": false
+      },
+      {
+        "value": 29.99,
+        "band": "above",
+        "professional": false
+      },
+      {
+        "value": 30,
+        "band": "well-above",
+        "professional": false
+      },
+      {
+        "value": 34.99,
+        "band": "well-above",
+        "professional": false
+      },
+      {
+        "value": 35,
+        "band": "well-above",
+        "professional": true
+      },
+      {
+        "value": 60,
+        "band": "well-above",
+        "professional": true
+      }
+    ],
+    "navyBodyFat": [
+      {
+        "input": {
+          "formula": "male",
+          "heightCm": 177.8,
+          "neckCm": 39.37,
+          "waistCm": 86.36
+        },
+        "result": {
+          "kind": "ok",
+          "percent": 17,
+          "exact": 16.516718160008438
+        }
+      },
+      {
+        "input": {
+          "formula": "female",
+          "heightCm": 165.1,
+          "neckCm": 33.02,
+          "waistCm": 76.2,
+          "hipCm": 99.06
+        },
+        "result": {
+          "kind": "ok",
+          "percent": 30,
+          "exact": 29.833508563901177
+        }
+      },
+      {
+        "input": {
+          "formula": "male",
+          "heightCm": 178,
+          "neckCm": 40,
+          "waistCm": 40
+        },
+        "result": {
+          "kind": "invalid-girths"
+        }
+      },
+      {
+        "input": {
+          "formula": "male",
+          "heightCm": 178,
+          "neckCm": 45,
+          "waistCm": 40
+        },
+        "result": {
+          "kind": "invalid-girths"
+        }
+      },
+      {
+        "input": {
+          "formula": "female",
+          "heightCm": 165,
+          "neckCm": 200,
+          "waistCm": 70,
+          "hipCm": 90
+        },
+        "result": {
+          "kind": "invalid-girths"
+        }
+      },
+      {
+        "input": {
+          "formula": "female",
+          "heightCm": 165,
+          "neckCm": 33,
+          "waistCm": 70
+        },
+        "result": {
+          "kind": "invalid-girths"
+        }
+      },
+      {
+        "input": {
+          "formula": "male",
+          "heightCm": 178,
+          "neckCm": 40,
+          "waistCm": 41
+        },
+        "result": {
+          "kind": "out-of-range",
+          "exact": -127.32666738171723
+        }
+      },
+      {
+        "input": {
+          "formula": "male",
+          "heightCm": 0,
+          "neckCm": 40,
+          "waistCm": 90
+        },
+        "result": {
+          "kind": "invalid-girths"
+        }
+      },
+      {
+        "input": {
+          "formula": "male",
+          "heightCm": 178,
+          "neckCm": 40,
+          "waistCm": 71.46
+        },
+        "result": {
+          "kind": "out-of-range",
+          "exact": 1.4955599781707036
+        }
+      },
+      {
+        "input": {
+          "formula": "male",
+          "heightCm": 178,
+          "neckCm": 40,
+          "waistCm": 71.47
+        },
+        "result": {
+          "kind": "ok",
+          "percent": 2,
+          "exact": 1.5074314762488399
+        }
+      },
+      {
+        "input": {
+          "formula": "male",
+          "heightCm": 178,
+          "neckCm": 40,
+          "waistCm": 268.12
+        },
+        "result": {
+          "kind": "ok",
+          "percent": 75,
+          "exact": 75.49896346243575
+        }
+      },
+      {
+        "input": {
+          "formula": "male",
+          "heightCm": 178,
+          "neckCm": 40,
+          "waistCm": 268.13
+        },
+        "result": {
+          "kind": "out-of-range",
+          "exact": 75.50060088351607
+        }
+      },
+      {
+        "input": {
+          "formula": "female",
+          "heightCm": 165,
+          "neckCm": 33,
+          "waistCm": 38.33,
+          "hipCm": 90
+        },
+        "result": {
+          "kind": "out-of-range",
+          "exact": 1.4954641225896523
+        }
+      },
+      {
+        "input": {
+          "formula": "female",
+          "heightCm": 165,
+          "neckCm": 33,
+          "waistCm": 38.34,
+          "hipCm": 90
+        },
+        "result": {
+          "kind": "ok",
+          "percent": 2,
+          "exact": 1.5028988560017922
+        }
+      },
+      {
+        "input": {
+          "formula": "female",
+          "heightCm": 165,
+          "neckCm": 33,
+          "waistCm": 213.81,
+          "hipCm": 90
+        },
+        "result": {
+          "kind": "ok",
+          "percent": 75,
+          "exact": 75.49834029657367
+        }
+      },
+      {
+        "input": {
+          "formula": "female",
+          "heightCm": 165,
+          "neckCm": 33,
+          "waistCm": 213.82,
+          "hipCm": 90
+        },
+        "result": {
+          "kind": "out-of-range",
+          "exact": 75.50095754565243
+        }
+      }
+    ],
+    "gallagher": [
+      {
+        "formula": "female",
+        "reference": "standard",
+        "ageYears": -1,
+        "group": null,
+        "result": null
+      },
+      {
+        "formula": "female",
+        "reference": "standard",
+        "ageYears": 18,
+        "group": null,
+        "result": null
+      },
+      {
+        "formula": "female",
+        "reference": "standard",
+        "ageYears": 19,
+        "group": null,
+        "result": null
+      },
+      {
+        "formula": "female",
+        "reference": "standard",
+        "ageYears": 19.5,
+        "group": null,
+        "result": null
+      },
+      {
+        "formula": "female",
+        "reference": "standard",
+        "ageYears": 20,
+        "group": "20-39",
+        "result": {
+          "group": "20-39",
+          "thresholds": {
+            "at18_5": 21,
+            "at25": 33,
+            "at30": 39
+          }
+        }
+      },
+      {
+        "formula": "female",
+        "reference": "standard",
+        "ageYears": 39,
+        "group": "20-39",
+        "result": {
+          "group": "20-39",
+          "thresholds": {
+            "at18_5": 21,
+            "at25": 33,
+            "at30": 39
+          }
+        }
+      },
+      {
+        "formula": "female",
+        "reference": "standard",
+        "ageYears": 39.5,
+        "group": "20-39",
+        "result": {
+          "group": "20-39",
+          "thresholds": {
+            "at18_5": 21,
+            "at25": 33,
+            "at30": 39
+          }
+        }
+      },
+      {
+        "formula": "female",
+        "reference": "standard",
+        "ageYears": 40,
+        "group": "40-59",
+        "result": {
+          "group": "40-59",
+          "thresholds": {
+            "at18_5": 23,
+            "at25": 34,
+            "at30": 40
+          }
+        }
+      },
+      {
+        "formula": "female",
+        "reference": "standard",
+        "ageYears": 59,
+        "group": "40-59",
+        "result": {
+          "group": "40-59",
+          "thresholds": {
+            "at18_5": 23,
+            "at25": 34,
+            "at30": 40
+          }
+        }
+      },
+      {
+        "formula": "female",
+        "reference": "standard",
+        "ageYears": 60,
+        "group": "60-79",
+        "result": {
+          "group": "60-79",
+          "thresholds": {
+            "at18_5": 24,
+            "at25": 36,
+            "at30": 42
+          }
+        }
+      },
+      {
+        "formula": "female",
+        "reference": "standard",
+        "ageYears": 79,
+        "group": "60-79",
+        "result": {
+          "group": "60-79",
+          "thresholds": {
+            "at18_5": 24,
+            "at25": 36,
+            "at30": 42
+          }
+        }
+      },
+      {
+        "formula": "female",
+        "reference": "standard",
+        "ageYears": 79.5,
+        "group": "60-79",
+        "result": {
+          "group": "60-79",
+          "thresholds": {
+            "at18_5": 24,
+            "at25": 36,
+            "at30": 42
+          }
+        }
+      },
+      {
+        "formula": "female",
+        "reference": "standard",
+        "ageYears": 80,
+        "group": null,
+        "result": null
+      },
+      {
+        "formula": "female",
+        "reference": "standard",
+        "ageYears": 85,
+        "group": null,
+        "result": null
+      },
+      {
+        "formula": "female",
+        "reference": "asian",
+        "ageYears": -1,
+        "group": null,
+        "result": null
+      },
+      {
+        "formula": "female",
+        "reference": "asian",
+        "ageYears": 18,
+        "group": null,
+        "result": null
+      },
+      {
+        "formula": "female",
+        "reference": "asian",
+        "ageYears": 19,
+        "group": null,
+        "result": null
+      },
+      {
+        "formula": "female",
+        "reference": "asian",
+        "ageYears": 19.5,
+        "group": null,
+        "result": null
+      },
+      {
+        "formula": "female",
+        "reference": "asian",
+        "ageYears": 20,
+        "group": "20-39",
+        "result": {
+          "group": "20-39",
+          "thresholds": {
+            "at18_5": 25,
+            "at25": 35,
+            "at30": 40
+          }
+        }
+      },
+      {
+        "formula": "female",
+        "reference": "asian",
+        "ageYears": 39,
+        "group": "20-39",
+        "result": {
+          "group": "20-39",
+          "thresholds": {
+            "at18_5": 25,
+            "at25": 35,
+            "at30": 40
+          }
+        }
+      },
+      {
+        "formula": "female",
+        "reference": "asian",
+        "ageYears": 39.5,
+        "group": "20-39",
+        "result": {
+          "group": "20-39",
+          "thresholds": {
+            "at18_5": 25,
+            "at25": 35,
+            "at30": 40
+          }
+        }
+      },
+      {
+        "formula": "female",
+        "reference": "asian",
+        "ageYears": 40,
+        "group": "40-59",
+        "result": {
+          "group": "40-59",
+          "thresholds": {
+            "at18_5": 25,
+            "at25": 35,
+            "at30": 41
+          }
+        }
+      },
+      {
+        "formula": "female",
+        "reference": "asian",
+        "ageYears": 59,
+        "group": "40-59",
+        "result": {
+          "group": "40-59",
+          "thresholds": {
+            "at18_5": 25,
+            "at25": 35,
+            "at30": 41
+          }
+        }
+      },
+      {
+        "formula": "female",
+        "reference": "asian",
+        "ageYears": 60,
+        "group": "60-79",
+        "result": {
+          "group": "60-79",
+          "thresholds": {
+            "at18_5": 25,
+            "at25": 36,
+            "at30": 41
+          }
+        }
+      },
+      {
+        "formula": "female",
+        "reference": "asian",
+        "ageYears": 79,
+        "group": "60-79",
+        "result": {
+          "group": "60-79",
+          "thresholds": {
+            "at18_5": 25,
+            "at25": 36,
+            "at30": 41
+          }
+        }
+      },
+      {
+        "formula": "female",
+        "reference": "asian",
+        "ageYears": 79.5,
+        "group": "60-79",
+        "result": {
+          "group": "60-79",
+          "thresholds": {
+            "at18_5": 25,
+            "at25": 36,
+            "at30": 41
+          }
+        }
+      },
+      {
+        "formula": "female",
+        "reference": "asian",
+        "ageYears": 80,
+        "group": null,
+        "result": null
+      },
+      {
+        "formula": "female",
+        "reference": "asian",
+        "ageYears": 85,
+        "group": null,
+        "result": null
+      },
+      {
+        "formula": "male",
+        "reference": "standard",
+        "ageYears": -1,
+        "group": null,
+        "result": null
+      },
+      {
+        "formula": "male",
+        "reference": "standard",
+        "ageYears": 18,
+        "group": null,
+        "result": null
+      },
+      {
+        "formula": "male",
+        "reference": "standard",
+        "ageYears": 19,
+        "group": null,
+        "result": null
+      },
+      {
+        "formula": "male",
+        "reference": "standard",
+        "ageYears": 19.5,
+        "group": null,
+        "result": null
+      },
+      {
+        "formula": "male",
+        "reference": "standard",
+        "ageYears": 20,
+        "group": "20-39",
+        "result": {
+          "group": "20-39",
+          "thresholds": {
+            "at18_5": 8,
+            "at25": 20,
+            "at30": 25
+          }
+        }
+      },
+      {
+        "formula": "male",
+        "reference": "standard",
+        "ageYears": 39,
+        "group": "20-39",
+        "result": {
+          "group": "20-39",
+          "thresholds": {
+            "at18_5": 8,
+            "at25": 20,
+            "at30": 25
+          }
+        }
+      },
+      {
+        "formula": "male",
+        "reference": "standard",
+        "ageYears": 39.5,
+        "group": "20-39",
+        "result": {
+          "group": "20-39",
+          "thresholds": {
+            "at18_5": 8,
+            "at25": 20,
+            "at30": 25
+          }
+        }
+      },
+      {
+        "formula": "male",
+        "reference": "standard",
+        "ageYears": 40,
+        "group": "40-59",
+        "result": {
+          "group": "40-59",
+          "thresholds": {
+            "at18_5": 11,
+            "at25": 22,
+            "at30": 28
+          }
+        }
+      },
+      {
+        "formula": "male",
+        "reference": "standard",
+        "ageYears": 59,
+        "group": "40-59",
+        "result": {
+          "group": "40-59",
+          "thresholds": {
+            "at18_5": 11,
+            "at25": 22,
+            "at30": 28
+          }
+        }
+      },
+      {
+        "formula": "male",
+        "reference": "standard",
+        "ageYears": 60,
+        "group": "60-79",
+        "result": {
+          "group": "60-79",
+          "thresholds": {
+            "at18_5": 13,
+            "at25": 25,
+            "at30": 30
+          }
+        }
+      },
+      {
+        "formula": "male",
+        "reference": "standard",
+        "ageYears": 79,
+        "group": "60-79",
+        "result": {
+          "group": "60-79",
+          "thresholds": {
+            "at18_5": 13,
+            "at25": 25,
+            "at30": 30
+          }
+        }
+      },
+      {
+        "formula": "male",
+        "reference": "standard",
+        "ageYears": 79.5,
+        "group": "60-79",
+        "result": {
+          "group": "60-79",
+          "thresholds": {
+            "at18_5": 13,
+            "at25": 25,
+            "at30": 30
+          }
+        }
+      },
+      {
+        "formula": "male",
+        "reference": "standard",
+        "ageYears": 80,
+        "group": null,
+        "result": null
+      },
+      {
+        "formula": "male",
+        "reference": "standard",
+        "ageYears": 85,
+        "group": null,
+        "result": null
+      },
+      {
+        "formula": "male",
+        "reference": "asian",
+        "ageYears": -1,
+        "group": null,
+        "result": null
+      },
+      {
+        "formula": "male",
+        "reference": "asian",
+        "ageYears": 18,
+        "group": null,
+        "result": null
+      },
+      {
+        "formula": "male",
+        "reference": "asian",
+        "ageYears": 19,
+        "group": null,
+        "result": null
+      },
+      {
+        "formula": "male",
+        "reference": "asian",
+        "ageYears": 19.5,
+        "group": null,
+        "result": null
+      },
+      {
+        "formula": "male",
+        "reference": "asian",
+        "ageYears": 20,
+        "group": "20-39",
+        "result": {
+          "group": "20-39",
+          "thresholds": {
+            "at18_5": 13,
+            "at25": 23,
+            "at30": 28
+          }
+        }
+      },
+      {
+        "formula": "male",
+        "reference": "asian",
+        "ageYears": 39,
+        "group": "20-39",
+        "result": {
+          "group": "20-39",
+          "thresholds": {
+            "at18_5": 13,
+            "at25": 23,
+            "at30": 28
+          }
+        }
+      },
+      {
+        "formula": "male",
+        "reference": "asian",
+        "ageYears": 39.5,
+        "group": "20-39",
+        "result": {
+          "group": "20-39",
+          "thresholds": {
+            "at18_5": 13,
+            "at25": 23,
+            "at30": 28
+          }
+        }
+      },
+      {
+        "formula": "male",
+        "reference": "asian",
+        "ageYears": 40,
+        "group": "40-59",
+        "result": {
+          "group": "40-59",
+          "thresholds": {
+            "at18_5": 13,
+            "at25": 24,
+            "at30": 29
+          }
+        }
+      },
+      {
+        "formula": "male",
+        "reference": "asian",
+        "ageYears": 59,
+        "group": "40-59",
+        "result": {
+          "group": "40-59",
+          "thresholds": {
+            "at18_5": 13,
+            "at25": 24,
+            "at30": 29
+          }
+        }
+      },
+      {
+        "formula": "male",
+        "reference": "asian",
+        "ageYears": 60,
+        "group": "60-79",
+        "result": {
+          "group": "60-79",
+          "thresholds": {
+            "at18_5": 14,
+            "at25": 24,
+            "at30": 29
+          }
+        }
+      },
+      {
+        "formula": "male",
+        "reference": "asian",
+        "ageYears": 79,
+        "group": "60-79",
+        "result": {
+          "group": "60-79",
+          "thresholds": {
+            "at18_5": 14,
+            "at25": 24,
+            "at30": 29
+          }
+        }
+      },
+      {
+        "formula": "male",
+        "reference": "asian",
+        "ageYears": 79.5,
+        "group": "60-79",
+        "result": {
+          "group": "60-79",
+          "thresholds": {
+            "at18_5": 14,
+            "at25": 24,
+            "at30": 29
+          }
+        }
+      },
+      {
+        "formula": "male",
+        "reference": "asian",
+        "ageYears": 80,
+        "group": null,
+        "result": null
+      },
+      {
+        "formula": "male",
+        "reference": "asian",
+        "ageYears": 85,
+        "group": null,
+        "result": null
+      }
+    ],
+    "bodyFatBand": [
+      {
+        "percent": 2,
+        "thresholds": {
+          "at18_5": 8,
+          "at25": 20,
+          "at30": 25
+        },
+        "band": "below"
+      },
+      {
+        "percent": 7,
+        "thresholds": {
+          "at18_5": 8,
+          "at25": 20,
+          "at30": 25
+        },
+        "band": "below"
+      },
+      {
+        "percent": 8,
+        "thresholds": {
+          "at18_5": 8,
+          "at25": 20,
+          "at30": 25
+        },
+        "band": "reference"
+      },
+      {
+        "percent": 19,
+        "thresholds": {
+          "at18_5": 8,
+          "at25": 20,
+          "at30": 25
+        },
+        "band": "reference"
+      },
+      {
+        "percent": 20,
+        "thresholds": {
+          "at18_5": 8,
+          "at25": 20,
+          "at30": 25
+        },
+        "band": "above"
+      },
+      {
+        "percent": 24,
+        "thresholds": {
+          "at18_5": 8,
+          "at25": 20,
+          "at30": 25
+        },
+        "band": "above"
+      },
+      {
+        "percent": 25,
+        "thresholds": {
+          "at18_5": 8,
+          "at25": 20,
+          "at30": 25
+        },
+        "band": "well-above"
+      },
+      {
+        "percent": 75,
+        "thresholds": {
+          "at18_5": 8,
+          "at25": 20,
+          "at30": 25
+        },
+        "band": "well-above"
+      }
+    ]
+  }
 }

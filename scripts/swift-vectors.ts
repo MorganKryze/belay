@@ -122,7 +122,48 @@ import {
   isSteps,
   STEPS,
 } from "../packages/shared/src/training/activities";
-import { MAX_TARGET_KG, nearestLoading, PLATE_PRESETS } from "../packages/shared/src/tools/plates";
+import {
+  iwfColor,
+  LB_PLATES,
+  loadBar,
+  MAX_TARGET_KG,
+  nearestLoading,
+  PLATE_PRESETS,
+  STANDARD_BARS_KG,
+  STANDARD_PLATES_KG,
+} from "../packages/shared/src/tools/plates";
+import {
+  brzycki,
+  epley,
+  MAX_REPS,
+  oneRepMax,
+  RELIABLE_MAX_REPS,
+} from "../packages/shared/src/tools/one-rep-max";
+import {
+  kgPerWeek,
+  projectLoss,
+  RATE_MAX_PCT,
+  RATE_MIN_PCT,
+  RATE_PRESETS,
+  RATE_STEP_PCT,
+  rateWarning,
+  slowWeeks,
+} from "../packages/shared/src/tools/projection";
+import {
+  bmi,
+  bmiBand,
+  bmiSuggestsProfessional,
+  BMI_THRESHOLDS,
+} from "../packages/shared/src/tools/bmi";
+import {
+  ageGroup,
+  type BodyFatReference,
+  bodyFatBand,
+  gallagherThresholds,
+  NAVY_RANGE_PCT,
+  type NavyInput,
+  navyBodyFat,
+} from "../packages/shared/src/tools/body-fat";
 import {
   defaultWarmupCount,
   WARMUP_SCHEMES,
@@ -2847,6 +2888,230 @@ function toolVectors() {
   };
 }
 
+// The toolkit's own rules: the one-rep max, a bar's loading, the loss projection, BMI and body
+// fat. A case whose input the rule refuses has a null result. The projection reads a day, so its
+// cases carry the zone they were computed in.
+const refused = <T>(make: () => T): T | null => {
+  try {
+    return make();
+  } catch {
+    return null;
+  }
+};
+
+function toolkitVectors() {
+  const oneRepMaxCases = [80, 100, 62.5, 0, -80].flatMap((weightKg) =>
+    [0, 1, 2.5, 5, 6, 10, 11, 12, 13].map((reps) => ({
+      weightKg,
+      reps,
+      epley: epley(weightKg, reps),
+      brzycki: brzycki(weightKg, reps),
+      result: refused(() => oneRepMax(weightKg, reps)),
+    })),
+  );
+
+  const presets = Object.entries(PLATE_PRESETS);
+  const custom: [string, number, readonly number[]][] = [
+    ["with 1.25 kg plates", 20, [20, 10, 5, 2.5, 1.25]],
+    ["no plates", 20, []],
+    ["repeated, zero and negative plates", 20, [20, 20, 0, -5]],
+    ["pounds", LB_PLATES.bar, LB_PLATES.plates],
+    ["a 15 kg bar", 15, STANDARD_PLATES_KG],
+  ];
+  const bars: [string, number, readonly number[]][] = [
+    ...presets.map(([name, p]): [string, number, readonly number[]] => [name, p.barKg, p.platesKg]),
+    ...custom,
+  ];
+  const targets = [
+    0, 15, 20, 20.5, 21, 22.5, 41.2, 60, 62.5, 75, 90, 100, 101, 135, 225, 315, 333.3, 1000, 1000.5,
+  ];
+  const loadBarCases = bars.flatMap(([name, barKg, platesKg]) =>
+    targets.map((targetKg) => ({
+      name: `${name}: ${targetKg}`,
+      targetKg,
+      barKg,
+      platesKg,
+      result: refused(() => loadBar(targetKg, barKg, platesKg)),
+      nearest: refused(() => nearestLoading(targetKg, barKg, platesKg)),
+    })),
+  );
+  const refusedBars = [0, -20].map((barKg) => ({
+    name: `a bar of ${barKg}`,
+    targetKg: 60,
+    barKg,
+    platesKg: PLATE_PRESETS.gym.platesKg,
+    result: refused(() => loadBar(60, barKg, PLATE_PRESETS.gym.platesKg)),
+    nearest: null,
+  }));
+  const iwfColorCases = [...STANDARD_PLATES_KG, 7.5, 45, 0].map((kg) => ({
+    kg,
+    color: iwfColor(kg),
+  }));
+
+  // The projection starts from a day in Paris: the day before summer time ends, the last week of
+  // the year and a day of February in a leap year.
+  const zone = "Europe/Paris";
+  const days = ["2026-10-24", "2026-12-28", "2028-02-27"];
+  const losses: [number, number][] = [
+    [82, 75],
+    [85, 78],
+    [80, 79.9],
+    [80, 80],
+    [80, 85],
+    [120, 70],
+  ];
+  const rates = [0.2, 0.25, 0.5, 0.7, 0.75, 1, 1.05, 1.5, 1.55, 2.5, 2.55];
+  const projectLossCases = inZone(zone, () =>
+    days.flatMap((today) =>
+      losses.flatMap(([currentKg, targetKg]) =>
+        rates.map((pctPerWeek) => {
+          const local = new Date(
+            Number(today.slice(0, 4)),
+            Number(today.slice(5, 7)) - 1,
+            Number(today.slice(8, 10)),
+          );
+          const p = refused(() => projectLoss(currentKg, targetKg, pctPerWeek, local));
+          return {
+            name: `${today}: ${currentKg} to ${targetKg} kg at ${pctPerWeek} %`,
+            zone,
+            today,
+            currentKg,
+            targetKg,
+            pctPerWeek,
+            result:
+              p === null || p.kind !== "ok"
+                ? p
+                : {
+                    kind: p.kind,
+                    weeksLow: p.weeksLow,
+                    weeksHigh: p.weeksHigh,
+                    dateLow: toISODate(p.dateLow),
+                    dateHigh: toISODate(p.dateHigh),
+                  },
+          };
+        }),
+      ),
+    ),
+  );
+  const rateCases = rates.map((pct) => ({
+    pct,
+    warning: rateWarning(pct),
+    kgPerWeek: kgPerWeek(82, pct),
+  }));
+  const slowWeeksCases = [1, 2, 3, 10, 12, 13, 52, 100].map((weeks) => ({
+    weeks,
+    slow: slowWeeks(weeks),
+  }));
+
+  const bmiCases = [
+    [77, 178],
+    [75, 175],
+    [80.9, 180],
+    [99.8, 200],
+    [73.8, 200],
+    [30, 230],
+    [300, 120],
+    [29, 180],
+    [301, 180],
+    [80, 119],
+    [80, 231],
+  ].map(([weightKg, heightCm]) => ({
+    weightKg,
+    heightCm,
+    result: refused(() => bmi(weightKg!, heightCm!)),
+  }));
+  const bmiBandCases = [10, 18.49, 18.5, 24.99, 25, 29.99, 30, 34.99, 35, 60].map((value) => ({
+    value,
+    band: bmiBand(value),
+    professional: bmiSuggestsProfessional(value),
+  }));
+
+  // Each formula's girths at the edges of the range shown: the waist in hundredths of a
+  // centimetre where the rounded percent first reaches 2 and last stays at 75.
+  const bases: NavyInput[] = [
+    { formula: "male", heightCm: 178, neckCm: 40, waistCm: 0 },
+    { formula: "female", heightCm: 165, neckCm: 33, waistCm: 0, hipCm: 90 },
+  ];
+  const edges = bases.flatMap((base) => {
+    const percentAt = (waistCm: number) => {
+      const r = navyBodyFat({ ...base, waistCm });
+      return r.kind === "invalid-girths" ? null : Math.round(r.exact);
+    };
+    const waists: number[] = [];
+    let previous: number | null = null;
+    for (let c = 1; c <= 40_000; c++) {
+      const p = percentAt(c / 100);
+      const crosses = (edge: number) =>
+        previous !== null && p !== null && previous < edge && p >= edge;
+      if (crosses(NAVY_RANGE_PCT.min) || crosses(NAVY_RANGE_PCT.max + 1)) {
+        waists.push((c - 1) / 100, c / 100);
+      }
+      previous = p;
+    }
+    return waists.map((waistCm) => ({ ...base, waistCm }));
+  });
+  const navyInputs: NavyInput[] = [
+    { formula: "male", heightCm: 177.8, neckCm: 39.37, waistCm: 86.36 },
+    { formula: "female", heightCm: 165.1, neckCm: 33.02, waistCm: 76.2, hipCm: 99.06 },
+    { formula: "male", heightCm: 178, neckCm: 40, waistCm: 40 },
+    { formula: "male", heightCm: 178, neckCm: 45, waistCm: 40 },
+    { formula: "female", heightCm: 165, neckCm: 200, waistCm: 70, hipCm: 90 },
+    { formula: "female", heightCm: 165, neckCm: 33, waistCm: 70 },
+    { formula: "male", heightCm: 178, neckCm: 40, waistCm: 41 },
+    { formula: "male", heightCm: 0, neckCm: 40, waistCm: 90 },
+    ...edges,
+  ];
+  const navyCases = navyInputs.map((input) => ({ input, result: navyBodyFat(input) }));
+  const ages = [-1, 18, 19, 19.5, 20, 39, 39.5, 40, 59, 60, 79, 79.5, 80, 85];
+  const references: BodyFatReference[] = ["standard", "asian"];
+  const gallagherCases = (["female", "male"] as const).flatMap((formula) =>
+    references.flatMap((reference) =>
+      ages.map((ageYears) => ({
+        formula,
+        reference,
+        ageYears,
+        group: ageGroup(ageYears),
+        result: gallagherThresholds(formula, ageYears, reference),
+      })),
+    ),
+  );
+  const thresholds = { at18_5: 8, at25: 20, at30: 25 };
+  const bodyFatBandCases = [2, 7, 8, 19, 20, 24, 25, 75].map((percent) => ({
+    percent,
+    thresholds,
+    band: bodyFatBand(percent, thresholds),
+  }));
+
+  return {
+    toolkit: {
+      bounds: {
+        reliableMaxReps: RELIABLE_MAX_REPS,
+        maxReps: MAX_REPS,
+        lbPlates: LB_PLATES,
+        standardPlatesKg: STANDARD_PLATES_KG,
+        standardBarsKg: STANDARD_BARS_KG,
+        ratePresets: RATE_PRESETS,
+        rateMinPct: RATE_MIN_PCT,
+        rateMaxPct: RATE_MAX_PCT,
+        rateStepPct: RATE_STEP_PCT,
+        bmiThresholds: BMI_THRESHOLDS,
+        navyRangePct: NAVY_RANGE_PCT,
+      },
+      oneRepMax: oneRepMaxCases,
+      loadBar: [...loadBarCases, ...refusedBars],
+      iwfColor: iwfColorCases,
+      projectLoss: projectLossCases,
+      rateWarning: rateCases,
+      slowWeeks: slowWeeksCases,
+      bmi: bmiCases,
+      bmiBand: bmiBandCases,
+      navyBodyFat: navyCases,
+      gallagher: gallagherCases,
+      bodyFatBand: bodyFatBandCases,
+    },
+  };
+}
+
 // Which workouts Health should hold. Only the session part runs on the phone here: no history
 // sent, no weigh-in, so those settings stay at their defaults.
 function healthVectors() {
@@ -3898,7 +4163,12 @@ const files = [
   { path: core("Tests/BelayCoreTests/Vectors/contract.json"), data: vectors },
   {
     path: core("Tests/BelayCoreTests/Vectors/rules.json"),
-    data: { ...rules, ...tools, bounds: { ...rules.bounds, ...tools.bounds } },
+    data: {
+      ...rules,
+      ...tools,
+      bounds: { ...rules.bounds, ...tools.bounds },
+      ...toolkitVectors(),
+    },
   },
   {
     path: core("Tests/BelayCoreTests/Vectors/health.json"),

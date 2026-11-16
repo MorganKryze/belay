@@ -7,15 +7,25 @@ public struct OutOfRange: Error, Equatable, Sendable {
 }
 
 // The tools' ranges for a body: their steppers never go outside them.
-private let ageRangeYears = 15.0...100.0
-private let heightRangeCm = 120.0...230.0
-private let weightRangeKg = 30.0...300.0
-/// The body-fat tool's range, in percent.
-private let navyRangePct = 2.0...75.0
+public let ageRangeYears = 15.0...100.0
+public let heightRangeCm = 120.0...230.0
+public let weightRangeKg = 30.0...300.0
+/// Belay's guard on the body-fat tool, in percent: outside it the equation is extrapolating, so
+/// no number is shown.
+public let navyRangePct = 2.0...75.0
 
 private func within(_ value: Double, _ range: ClosedRange<Double>) -> Bool {
   value.isFinite && range.contains(value)
 }
+
+/// A weight and a height the body tools take.
+func assertBody(weightKg: Double, heightCm: Double) throws(OutOfRange) {
+  guard within(weightKg, weightRangeKg) else { throw OutOfRange(message: "weight") }
+  guard within(heightCm, heightRangeCm) else { throw OutOfRange(message: "height") }
+}
+
+/// The age is never stored: it comes from the birth year and today's year.
+public func ageIn(birthYear: Int, today: String) -> Int { (Int(today.prefix(4)) ?? 0) - birthYear }
 
 /// An activity level and its PAL multiplier.
 public struct PalLevel: Codable, Sendable, Equatable {
@@ -173,7 +183,7 @@ public func toolDefaults(
   case .unknown?, nil: break
   }
   if let birthYear = profile.birthYear {
-    let age = Double((Int(today.prefix(4)) ?? 0) - birthYear)
+    let age = Double(ageIn(birthYear: birthYear, today: today))
     if within(age, ageRangeYears) { out.ageYears = ToolDefault(value: age, source: .birthYear) }
   }
   if let height = profile.heightCm.map(Double.init), within(height, heightRangeCm) {
