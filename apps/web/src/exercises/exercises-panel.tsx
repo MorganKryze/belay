@@ -1,13 +1,7 @@
 import { EXERCISES } from "@belay/shared/exercises/catalog";
 import type { Exercise } from "@belay/shared/exercises/library";
 import { type Filters, filterExercises } from "@belay/shared/exercises/search";
-import {
-  EQUIPMENT,
-  type Equipment,
-  LOWER_MUSCLES,
-  type Muscle,
-  UPPER_MUSCLES,
-} from "@belay/shared/exercises/muscles";
+import { EQUIPMENT, LOWER_MUSCLES, UPPER_MUSCLES } from "@belay/shared/exercises/muscles";
 import type { LetteredTemplate } from "@belay/shared/training/stored-program";
 import { Link } from "@tanstack/react-router";
 import { ChevronDown, ChevronRight, Search, X } from "lucide-react";
