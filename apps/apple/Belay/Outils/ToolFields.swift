@@ -10,6 +10,8 @@ struct KeypadField: View {
     var unit: LocalizedStringKey = "kg"
     /// The grey value while the field is empty.
     var prompt = ""
+    /// Where a prefilled value comes from, under the name.
+    var source: SourceLine? = nil
     let id: String
     @FocusState private var typing: Bool
     @Environment(\.dynamicTypeSize) private var typeSize
@@ -19,7 +21,10 @@ struct KeypadField: View {
             typeSize.isAccessibilitySize
             ? AnyLayout(VStackLayout(alignment: .leading, spacing: 4)) : AnyLayout(HStackLayout(spacing: 8))
         layout {
-            Text(label, tableName: "Outils").foregroundStyle(.ink)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(label, tableName: "Outils").foregroundStyle(.ink)
+                source
+            }
             HStack(spacing: 6) {
                 Spacer(minLength: 0)
                 TextField(text: $text, prompt: Text(verbatim: prompt)) { Text(label, tableName: "Outils") }

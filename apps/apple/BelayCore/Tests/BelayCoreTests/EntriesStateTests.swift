@@ -73,6 +73,19 @@ import Testing
     #expect(state.proteinFigure == 155)
   }
 
+  @Test func toolsOpenOnTheEntries() {
+    let body = Bodies.body(weights: Bodies.usualWeights, profile: profile)
+    let today = toISODate(Bodies.now, timeZone: zone)
+    let defaults = toolDefaults(body, now: Bodies.now, timeZone: zone)
+    #expect(
+      defaults
+        == toolDefaults(
+          profile: profile, weighings: weighings(body), measures: body.measures, today: today))
+    #expect(defaults.formula?.value == .male)
+    #expect(defaults.weightKg != nil)
+    #expect(toolDefaults(.empty, now: Bodies.now, timeZone: zone) == ToolDefaults())
+  }
+
   @Test func defaultsSedentaryMaintain() {
     let body = Bodies.body(weights: Bodies.usualWeights, profile: profile)
     let unchosen = ToolMemory()

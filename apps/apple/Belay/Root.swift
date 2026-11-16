@@ -232,13 +232,17 @@ struct RootView: View {
         }
     }
 
-    /// A tool's page; the tools still on the web say so.
+    /// A tool's page.
     @ViewBuilder private func toolPage(_ tool: ToolId) -> some View {
         switch tool {
         case .oneRepMax: OneRepMaxTool(outils: outils)
         case .plates: PlatesTool(outils: outils)
         case .warmup: WarmupTool(outils: outils)
-        case .energy, .protein, .projection, .bmi, .bodyFat: WebForNow(title: tool.name, tableName: "Outils")
+        case .energy: EnergyTool(outils: outils, corps: corps)
+        case .protein: ProteinTool(outils: outils, corps: corps)
+        case .projection: ProjectionTool(outils: outils, corps: corps)
+        case .bmi: BmiTool(outils: outils, corps: corps)
+        case .bodyFat: BodyFatTool(outils: outils, corps: corps)
         }
     }
 

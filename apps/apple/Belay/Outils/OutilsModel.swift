@@ -203,3 +203,72 @@ final class OutilsModel {
         fields.contains { field, prefilled in prefilled && !edited.contains("\(tool.rawValue).\(field)") }
     }
 }
+
+/// A field a tool may open on from the profile, the weigh-ins or the measures, under its key in
+/// the memory.
+enum ToolField: String {
+    case formula, age, height, weight, neck, waist, hip
+
+    /// The value `defaults` holds for it, as the field shows it, and where it comes from.
+    func prefill(_ defaults: ToolDefaults) -> (text: String, source: ToolSource)? {
+        let number = { (value: ToolDefault<Double>?) in value.map { (ToolNumber.text($0.value), $0.source) } }
+        return switch self {
+        case .formula: defaults.formula.map { ($0.value.rawValue, $0.source) }
+        case .age: number(defaults.ageYears)
+        case .height: number(defaults.heightCm)
+        case .weight: number(defaults.weightKg)
+        case .neck: number(defaults.neckCm)
+        case .waist: number(defaults.waistCm)
+        case .hip: number(defaults.hipCm)
+        }
+    }
+}
+
+/// The figures the body tools' fields hold, as the decimal keypad types them.
+enum ToolNumber {
+    /// « 80,1 », « 180 »: at most a tenth and never grouped, so the keypad can go on from it.
+    static func text(_ value: Double) -> String {
+        value.formatted(.number.precision(.fractionLength(0...1)).grouping(.never))
+    }
+
+    /// The figure typed; nil while empty or unreadable.
+    static func value(_ text: String) -> Double? {
+        SetText.parseKg(text).flatMap { $0.isFinite ? $0 : nil }
+    }
+}
+
+extension OutilsModel {
+    /// What `field` of `tool` shows: its prefill from `defaults` until the person changes it.
+    func text(_ tool: ToolId, _ field: ToolField, _ defaults: ToolDefaults) -> String {
+        self.field(tool, field.rawValue, prefill: field.prefill(defaults)?.text)
+    }
+
+    func number(_ tool: ToolId, _ field: ToolField, _ defaults: ToolDefaults) -> Double? {
+        ToolNumber.value(text(tool, field, defaults))
+    }
+
+    func source(_ tool: ToolId, _ field: ToolField, _ defaults: ToolDefaults) -> ToolSource? {
+        source(tool, field.rawValue, field.prefill(defaults)?.source)
+    }
+
+    /// The field as a keypad or a segment edits it; a pass that changes nothing keeps the prefill.
+    func binding(_ tool: ToolId, _ field: ToolField, _ defaults: ToolDefaults) -> Binding<String> {
+        Binding(
+            get: { self.text(tool, field, defaults) },
+            set: { text in
+                guard text != self.text(tool, field, defaults) else { return }
+                self.type(tool, field.rawValue, text)
+            })
+    }
+
+    /// Whether the person changed `field` in this run, which the profile proposal waits for.
+    func changed(_ tool: ToolId, _ field: ToolField) -> Bool {
+        edited.contains("\(tool.rawValue).\(field.rawValue)")
+    }
+
+    func restore(_ tool: ToolId, _ fields: [ToolField]) { restore(tool, fields.map(\.rawValue)) }
+
+    func anyPrefilled(_ tool: ToolId, _ fields: [ToolField], _ defaults: ToolDefaults) -> Bool {
+        anyPrefilled(tool, Dictionary(uniqueKeysWithValues: fields.map { ($0.rawValue, $0.prefill(defaults) != nil) }))
+    }
+}

@@ -124,6 +124,22 @@ final class CorpsModel {
         body.weights.first { $0.date == date }?.weightKg
     }
 
+    /// What the tools open on: the profile, the 7-day average or the last weigh-in, the last
+    /// measures. A tool reads it once, when its page opens.
+    var toolDefaults: ToolDefaults { BelayCore.toolDefaults(body, now: now(), timeZone: timeZone) }
+
+    /// The profile as it stands, for the update a tool offers when its value differs.
+    var profile: ProfileRow? { body.profile }
+
+    /// « Mettre à jour » in a tool: the profile takes the formula or the height typed there.
+    func setFormula(_ formula: ProfileFormula) {
+        write("profile not saved") { try actions.setProfile(.formula, .set(formula)) }
+    }
+
+    func setHeight(_ cm: Int) {
+        write("profile not saved") { try actions.setProfile(.height, .set(cm)) }
+    }
+
     /// The latest weigh-in up to today, the sheet's grey placeholder.
     var lastWeighIn: Double? {
         body.weights.filter { $0.date <= today && $0.weightKg != nil }.max { $0.date < $1.date }?.weightKg
