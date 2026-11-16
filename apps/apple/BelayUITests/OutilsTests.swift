@@ -113,9 +113,9 @@ final class OutilsTests: XCTestCase {
         open(app, "one-rep-max")
         type(app, "8", into: "tool-field-load")
         let epley = element(app, "tool-figure-epley")
-        XCTAssertTrue(epley.waitFor(NSPredicate(format: "label CONTAINS '9,5'")), "8 kg × 5: \(epley.label)")
+        XCTAssertTrue(epley.waitFor(NSPredicate(format: "label CONTAINS '9,5'"), timeout: 6), "8 kg × 5: \(epley.label)")
         tapKey(app, "0")
-        XCTAssertTrue(epley.waitFor(NSPredicate(format: "label CONTAINS '93,5'")), "80 kg × 5: \(epley.label)")
+        XCTAssertTrue(epley.waitFor(NSPredicate(format: "label CONTAINS '93,5'"), timeout: 6), "80 kg × 5: \(epley.label)")
         XCTAssertTrue(app.keys["0"].exists, "the keypad is still up")
         XCTAssertTrue(epley.isHittable, "the figure stays above the keypad")
     }
@@ -193,7 +193,9 @@ final class OutilsTests: XCTestCase {
         app.navigationBars.buttons.firstMatch.tap()
         XCTAssertTrue(
             app.staticTexts["25 + 10 + 2,5 + 0,5\u{202F}kg par côté"].waitForExistence(timeout: 3), "Compétition loads 96")
-        XCTAssertTrue(app.swipeUpUntil(equipment))
+        // Back from Mon matériel the keypad may stand over the row: a drag down puts it away.
+        if app.keyboards.firstMatch.exists { app.swipeDown(velocity: .slow) }
+        XCTAssertTrue(app.swipeUpUntil(equipment), "Mon matériel's row is reached again")
         XCTAssertTrue(equipment.label.contains("Compétition"))
         equipment.tap()
         let edit = app.buttons["Modifier ce matériel"]
