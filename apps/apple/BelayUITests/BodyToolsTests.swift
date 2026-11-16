@@ -18,9 +18,7 @@ final class BodyToolsTests: XCTestCase {
 
     /// Opens Outils on `app`.
     private func outils(_ app: XCUIApplication) {
-        let tab = app.tabBars.firstMatch.buttons["Outils"]
-        XCTAssertTrue(tab.waitForExistence(timeout: 10))
-        tab.tap()
+        app.tab("Outils")
         XCTAssertTrue(app.navigationBars["Outils"].waitForExistence(timeout: 5), "Outils is native")
     }
 
@@ -47,7 +45,7 @@ final class BodyToolsTests: XCTestCase {
         let field = element(app, id)
         hideKeypad(app)
         XCTAssertTrue(app.swipeUpUntil(field), "\(id) is reached")
-        field.tap()
+        field.tapAtEnd()
         for key in digits {
             let button = app.keys[String(key)]
             XCTAssertTrue(button.waitForExistence(timeout: 3), "the keypad shows « \(key) »")
@@ -60,15 +58,12 @@ final class BodyToolsTests: XCTestCase {
         let field = element(app, id)
         hideKeypad(app)
         XCTAssertTrue(app.swipeUpUntil(field), "\(id) is reached")
-        field.tap()
+        field.tapAtEnd()
         let count = (field.value as? String)?.count ?? 0
         field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: count + 1))
     }
 
-    /// The keypad may stand over a row: a drag down on the list puts it away.
-    private func hideKeypad(_ app: XCUIApplication) {
-        if app.keyboards.firstMatch.exists { app.swipeDown(velocity: .slow) }
-    }
+    private func hideKeypad(_ app: XCUIApplication) { app.putKeypadAway() }
 
     /// Picks `choice` in the segmented control `id`.
     private func choose(_ app: XCUIApplication, _ choice: String, in id: String) {
@@ -98,7 +93,7 @@ final class BodyToolsTests: XCTestCase {
 
     /// Opens Apports from Corps, or brings it back if Corps still shows it.
     private func apports(_ app: XCUIApplication) -> XCUIElement {
-        app.tabBars.firstMatch.buttons["Corps"].tap()
+        app.tab("Corps")
         let meter = element(app, "intake-kcal")
         if !meter.waitForExistence(timeout: 2) {
             let row = element(app, "today.intake")
@@ -167,9 +162,11 @@ final class BodyToolsTests: XCTestCase {
         XCTAssertFalse(element(app, "tool-field-fat").exists, "no body fat outside a cut")
         choose(app, "Sèche", in: "tool-goal")
         XCTAssertTrue(element(app, "tool-field-fat").waitForExistence(timeout: 3), "a cut asks for the body fat")
-        XCTAssertTrue(
-            app.staticTexts.containing(NSPredicate(format: "label BEGINSWITH %@", "Sans masse grasse, Belay prend"))
-                .firstMatch.exists, "and says what it takes without one")
+        let without = app.staticTexts.containing(
+            NSPredicate(format: "label BEGINSWITH %@", "Sans masse grasse, Belay prend")
+        ).firstMatch
+        hideKeypad(app)
+        XCTAssertTrue(app.swipeUpUntil(without), "and says what it takes without one")
         toTop(app)
         XCTAssertEqual(element(app, "tool-figure-protein").label, "Par jour, 145 à 200\u{202F}g")
     }
@@ -282,10 +279,11 @@ final class BodyToolsTests: XCTestCase {
         XCTAssertEqual(element(app, "tool-figure-body-fat").label, "Ta masse grasse estimée, 28\u{202F}%")
 
         choose(app, "Asiatique", in: "tool-reference")
-        XCTAssertTrue(
-            app.staticTexts[
-                "Pour la formule femme, de 20 à 39 ans, personnes d’origine asiatique (Gallagher 2000, tableau 5)."
-            ].waitForExistence(timeout: 3), "the Asian set")
+        toTop(app)
+        let asian = app.staticTexts[
+            "Pour la formule femme, de 20 à 39 ans, personnes d’origine asiatique (Gallagher 2000, tableau 5)."
+        ]
+        XCTAssertTrue(app.swipeUpUntil(asian), "the Asian set")
     }
 
     /// A23: the inputs typed and the level chosen are still there after a relaunch.
@@ -326,7 +324,7 @@ final class BodyToolsTests: XCTestCase {
         XCTAssertTrue(element(app, "tool-figure-bmi").waitForExistence(timeout: 5))
         hideKeypad(app)
 
-        app.tabBars.firstMatch.buttons["Accueil"].tap()
+        app.tab("Accueil")
         let settings = app.buttons["settings"]
         XCTAssertTrue(settings.waitForExistence(timeout: 5))
         settings.tap()
@@ -445,5 +443,37 @@ final class BodyToolsTests: XCTestCase {
         XCTAssertTrue(proposal.waitForNonExistence(timeout: 5), "the profile now says 182 cm")
         // 182 cm in place of 180 adds 12,5 kcal at rest: 2 730 a sedentary day.
         XCTAssertTrue(apports(app).label.contains("sur 2\u{202F}730"), "Apports reads the profile written")
+    }
+}
+
+extension XCUIApplication {
+    /// Opens the tab `name`. A scrolled page folds the tab bar down to its own tab: a tap on it
+    /// unfolds the others first.
+    func tab(_ name: String) {
+        let bar = tabBars.firstMatch
+        XCTAssertTrue(bar.waitForExistence(timeout: 10), "the tab bar shows")
+        let button = bar.buttons[name]
+        if !button.waitForExistence(timeout: 2) { bar.buttons.firstMatch.tap() }
+        XCTAssertTrue(button.waitForExistence(timeout: 5), "« \(name) » is in the tab bar")
+        button.tap()
+    }
+
+    /// The decimal keypad has no key to close it and may stand over a row, or come back with the
+    /// field's focus after a pushed page: a drag from the list down into it puts it away, as the
+    /// lists' interactive dismissal does. A swipe that stays above the keypad leaves it up.
+    func putKeypadAway() {
+        for _ in 0..<3 where keyboards.firstMatch.exists {
+            let from = coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.3))
+            from.press(forDuration: 0.05, thenDragTo: coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.98)))
+            _ = keyboards.firstMatch.waitForNonExistence(timeout: 1)
+        }
+    }
+}
+
+extension XCUIElement {
+    /// A tap at the field's trailing end, where its right-aligned figure ends: the cursor lands
+    /// after the last digit, so what follows is typed after it.
+    func tapAtEnd() {
+        coordinate(withNormalizedOffset: CGVector(dx: 0.97, dy: 0.5)).tap()
     }
 }
