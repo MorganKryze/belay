@@ -486,6 +486,7 @@ final class MovingClock: Sendable {
   @Test func v5OpensV4StoreKeepsQueue() throws {
     let folder = try Fixture.folder()
     let origin = URL(string: "https://belay.example")!
+    let climbId = Fixture.id(10)
     var queued: [Data] = []
     do {
       let old = try DatabaseQueue(
@@ -501,8 +502,8 @@ final class MovingClock: Sendable {
         try db.execute(
           sql: "INSERT INTO activities (id, row) VALUES (?, ?)",
           arguments: [
-            Fixture.id(10),
-            Data(#"{"id":"\#(Fixture.id(10))","date":"\#(day)","type":"climbing","removed":false}"#.utf8),
+            climbId,
+            Data(#"{"id":"\#(climbId)","date":"\#(day)","type":"climbing","removed":false}"#.utf8),
           ])
         queued = try Data.fetchAll(db, sql: "SELECT bytes FROM outbox ORDER BY id")
       }
@@ -512,13 +513,28 @@ final class MovingClock: Sendable {
     #expect(try opened.outbox(limit: nil).map(\.bytes) == queued)
     #expect(queued.count == 3)
     #expect(try opened.cursor() == "0")
-    // The pull from 0 brings every activity back whole; the partial one is not read meanwhile.
-    #expect(try opened.activities().isEmpty)
+    // Before the pull from 0 lands, the climb still counts: a session started offline keeps the
+    // no-climbing slots out.
+    let kept = try opened.activities()
+    #expect(kept.map(\.id) == [climbId])
+    #expect(kept.first?.kind == "climbing" && kept.first?.date == day)
+    #expect(kept.first?.durationMin == 0 && kept.first?.fieldsAt == "1970-01-01T00:00:00.000Z")
+    let c = Days.session(Days.rotation, "C")
+    try #require(c.noClimbing?.isEmpty == false)
+    #expect(planFor(c, activities: kept, date: day) == c.slots)
     #expect(try opened.body().steps.isEmpty)
     #expect(try opened.stepsWritten().isEmpty)
     #expect(try opened.healthSettings().stepsOn == false)
 
-    try opened.applyServer(sent: [], response: Fixture.response(cursor: "7"))
+    // The pull from 0 brings the row whole, and it replaces the one kept.
+    var answer = Fixture.response(cursor: "7")
+    let whole = ActivityRow(
+      id: climbId, date: day, kind: "climbing", durationMin: 90, cardioType: nil,
+      climbStyle: "boulder", climbRuns: 12, climbGrade: "6a", climbColor: nil,
+      fieldsAt: Fixture.time(0), removed: false, removedAt: nil)
+    answer.activities = [whole]
+    try opened.applyServer(sent: [], response: answer)
+    #expect(try opened.activities() == [whole])
     let again = try AccountStore.open(userId: "u1", origin: origin, in: folder)
     #expect(try again.cursor() == "7")
   }
