@@ -125,11 +125,20 @@ final class ReglagesTests: XCTestCase {
     func testAx3StacksValues() {
         let app = launch("fresh", extra: Self.ax3)
         reglages(app)
-        for id in ["reglages-theme", "reglages-pause", "reglages-one-rep-max"] {
+        // A one-word switch row holds one line; a choice row with its value under the name, two.
+        // Read in the list's order, each row as it comes into reach.
+        var heights: [String: CGFloat] = [:]
+        for (id, value) in [
+            ("reglages-theme", "Système"), ("reglages-trend", nil), ("reglages-pause", "Tout s’arrête"),
+            ("reglages-one-rep-max", "Deux formules"),
+        ] as [(String, String?)] {
             let row = reach(app, id)
-            let value = element(app, "\(id)-value")
-            XCTAssertTrue(value.exists, "\(id) shows its value")
-            XCTAssertGreaterThan(value.frame.minY, row.frame.minY + 20, "\(id)'s value under its name")
+            if let value { XCTAssertTrue(row.label.contains(value), "\(id) says its value: \(row.label)") }
+            heights[id] = row.frame.height
+        }
+        let line = heights["reglages-trend"] ?? 0
+        for id in ["reglages-theme", "reglages-pause", "reglages-one-rep-max"] {
+            XCTAssertGreaterThan(heights[id] ?? 0, line * 1.5, "\(id)'s value under its name, against \(line)")
         }
     }
 
@@ -139,12 +148,6 @@ final class ReglagesTests: XCTestCase {
         let app = launch("bodyUsual")
         reglages(app)
         choose(app, "reglages-theme", "Sombre")
-        let signOut = reach(app, "signout")
-        signOut.tap()
-        let confirm = app.buttons["signout-confirm"].firstMatch
-        XCTAssertTrue(confirm.waitForExistence(timeout: 3))
-        XCTAssertLessThan(lightness(app, of: confirm), 0.35, "the sign-out question is dark")
-        app.buttons["Annuler"].firstMatch.tap()
         back(app)
         let weighIn = element(app, "today.weighIn")
         XCTAssertTrue(app.swipeUpUntil(weighIn))
@@ -152,6 +155,14 @@ final class ReglagesTests: XCTestCase {
         let title = app.sheetTitle("Pesée")
         XCTAssertTrue(title.waitForExistence(timeout: 5), "the weigh-in sheet opens")
         XCTAssertLessThan(lightness(app, of: title), 0.35, "the sheet is dark")
+
+        // The sign-out question, on a launch that keeps the choice: nothing to put away first.
+        let again = launch("keep")
+        reglages(again)
+        reach(again, "signout").tap()
+        let confirm = again.buttons["signout-confirm"].firstMatch
+        XCTAssertTrue(confirm.waitForExistence(timeout: 3))
+        XCTAssertLessThan(lightness(again, of: confirm), 0.35, "the sign-out question is dark")
     }
 
     func testThemeKeptAfterRelaunch() {
@@ -227,7 +238,7 @@ final class ReglagesTests: XCTestCase {
         reglages(app)
         switchOff(app, "reglages-volume")
         back(app)
-        app.tabBars.firstMatch.buttons["Séances"].tap()
+        app.tab("Séances")
         let segment = app.segmentedControls.firstMatch.buttons["Historique"]
         XCTAssertTrue(segment.waitForExistence(timeout: 5))
         segment.tap()
@@ -255,7 +266,7 @@ final class ReglagesTests: XCTestCase {
         XCTAssertTrue(element(app, "accueil-trend").waitForExistence(timeout: 5))
         XCTAssertFalse(element(app, "trend-range").exists, "no pill on Accueil")
         XCTAssertTrue(element(app, "accueil-trend").label.contains("kg"), "the figure stays")
-        app.tabBars.firstMatch.buttons["Corps"].tap()
+        app.tab("Corps")
         XCTAssertTrue(element(app, "trend-change").waitForExistence(timeout: 5), "Corps's figure stays")
         XCTAssertFalse(element(app, "trend-range").exists, "no pill on Corps")
     }
@@ -265,7 +276,7 @@ final class ReglagesTests: XCTestCase {
         reglages(app)
         choose(app, "reglages-one-rep-max", "Epley seule")
         back(app)
-        app.tabBars.firstMatch.buttons["Outils"].tap()
+        app.tab("Outils")
         reach(app, "tool-row-one-rep-max").tap()
         XCTAssertTrue(element(app, "tool-header").waitForExistence(timeout: 5))
         reach(app, "tool-field-load").tap()
@@ -280,7 +291,7 @@ final class ReglagesTests: XCTestCase {
         reglages(app)
         switchOff(app, "reglages-sources")
         back(app)
-        app.tabBars.firstMatch.buttons["Outils"].tap()
+        app.tab("Outils")
         reach(app, "tool-row-energy").tap()
         XCTAssertTrue(element(app, "tool-figure-energy").waitForExistence(timeout: 5), "still prefilled")
         XCTAssertEqual(app.staticTexts.matching(identifier: "tool-source").count, 0, "no source line")
