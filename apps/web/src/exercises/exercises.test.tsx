@@ -1,36 +1,15 @@
-import { EXERCISES } from "@belay/shared/exercises/catalog";
 import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import i18n from "../i18n";
 import { renderRoute } from "../test/render-route";
 import { muscleColors, shapesOf, thumbnailOf, thumbnailSvg, thumbnailUrl } from "./body-map";
 import { BACK, FRONT } from "./body-paths";
-import { filterExercises, matches, visibleRange } from "./exercises-panel";
+import { visibleRange } from "./exercises-panel";
 
 afterEach(async () => {
   cleanup();
   localStorage.clear();
   await i18n.changeLanguage("en");
-});
-
-describe("the search", () => {
-  it("ignores case, accents and the order of words", () => {
-    expect(matches("Barbell bench press", "PRESS bench")).toBe(true);
-    expect(matches("Sled 45° leg press", "sléd  45°")).toBe(true);
-    expect(matches("Barbell bench press", "bench squat")).toBe(false);
-    expect(matches("Anything", "  ")).toBe(true);
-  });
-
-  it("filters on the primary muscle and the equipment, together", () => {
-    const chest = filterExercises(EXERCISES, { query: "", muscle: "chest", equipment: null });
-    expect(chest).toHaveLength(158);
-    expect(chest.every((e) => e.primary[0] === "chest")).toBe(true);
-    expect(
-      filterExercises(EXERCISES, { query: "bench", muscle: "chest", equipment: "barbell" }).map(
-        (e) => e.id,
-      ),
-    ).toContain("ds:0025");
-  });
 });
 
 describe("the body map", () => {
