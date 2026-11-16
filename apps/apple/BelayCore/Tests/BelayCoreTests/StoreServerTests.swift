@@ -154,7 +154,11 @@ import Testing
     let activity = try JSONDecoder().decode(
       ActivityRow.self,
       from: Data(
-        #"{"id":"\#(Fixture.id(10))","date":"2026-11-05","type":"climbing","removed":false}"#.utf8))
+        #"""
+        {"id":"\#(Fixture.id(10))","date":"2026-11-05","type":"climbing","durationMin":90,
+        "cardioType":null,"climbStyle":null,"climbRuns":null,"climbGrade":null,"climbColor":null,
+        "fieldsAt":"2026-11-05T20:00:00.000Z","removed":false,"removedAt":null}
+        """#.utf8))
     let response = Fixture.response(
       cursor: "43", workouts: [Fixture.workoutRow(other, startedAt: 5, ended: Fixture.time(30))],
       sets: [set], programs: [program], programSessions: [session], programSlots: [slot],

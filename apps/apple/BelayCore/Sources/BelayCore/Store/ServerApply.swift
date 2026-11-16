@@ -99,7 +99,9 @@ extension AccountStore {
       }
     // As the web does: the pointer goes, the starting one shows until the server's comes back.
     case .activeProgram: try Rows.clearSingle(db, "activeProgram")
-    case .weight, .measure, .intake, .supplementLog, .annotation: try revertBody(db, change)
+    case .weight, .measure, .intake, .supplementLog, .annotation, .profile, .target, .supplement,
+      .activity, .steps:
+      try revertBody(db, change)
     }
   }
 }
@@ -116,6 +118,11 @@ extension Change {
     case .intake(let c): c.at
     case .supplementLog(let c): c.at
     case .annotation(let c): c.at
+    case .profile(let c): c.at
+    case .target(let c): c.at
+    case .supplement(let c): c.at
+    case .activity(let c): c.at
+    case .steps(let c): c.at
     }
   }
 }

@@ -34,7 +34,84 @@ public func isValid(_ change: Change, now: Date, timeZone: TimeZone) -> Bool {
         && isAnnotationLabel(label)
     case .removed: return true
     }
+  case .profile(let c):
+    guard Instant.isCanonical(c.at) else { return false }
+    switch c.edit {
+    case .formula(let formula): return formula.map { [.female, .male].contains($0) } ?? true
+    // The birth year against the year of the change: the server allows one year either way.
+    case .birthYear(let year):
+      return year.map { isBirthYear($0, today: String(c.at.prefix(10))) } ?? true
+    case .height(let cm): return cm.map(isProfileHeight) ?? true
+    }
+  case .target(let c):
+    return Instant.isCanonical(c.at)
+      && isTargetRange(TargetRange(minPct: c.minPct, maxPct: c.maxPct))
+  case .supplement(let c):
+    guard Instant.isCanonical(c.at), isId(c.id) else { return false }
+    switch c.edit {
+    case .name(let name): return isSupplementName(name) && jsTrim(name) == name
+    case .removed: return true
+    }
+  case .activity(let c):
+    guard Instant.isCanonical(c.at), isId(c.id) else { return false }
+    switch c.edit {
+    case .fields(let date, let fields):
+      return isDay(date, now, timeZone) && isActivityFields(fields)
+    case .removed: return true
+    }
+  case .steps(let c):
+    return Instant.isCanonical(c.at) && isDay(c.date, now, timeZone)
+      && (c.value.map(isSteps) ?? true)
   }
+}
+
+// The rules behind the kinds written from the settings and the tools, as the shared rules hold
+// them; screens and rules call these, never a copy.
+
+/// The birth years the tools take on `today` (`YYYY-MM-DD`): ages 15 to 100.
+public func birthYearRange(today: String) -> ClosedRange<Int> {
+  let year = Int(today.prefix(4)) ?? 0
+  return (year - Bounds.ageYears.upperBound)...(year - Bounds.ageYears.lowerBound)
+}
+
+public func isBirthYear(_ year: Int, today: String) -> Bool {
+  birthYearRange(today: today).contains(year)
+}
+
+/// In whole centimetres, within the tools' range.
+public func isProfileHeight(_ cm: Int) -> Bool { Bounds.heightCm.contains(cm) }
+
+/// 1 to 40 units once trimmed, on one line.
+public func isSupplementName(_ name: String) -> Bool {
+  let trimmed = jsTrim(name).utf16.count
+  return (1...Bounds.supplementNameMax).contains(trimmed)
+    && !name.unicodeScalars.contains { $0 == "\n" || $0 == "\r" }
+}
+
+public func isActivityMinutes(_ minutes: Int) -> Bool {
+  Bounds.activityMinutes.contains(minutes) && minutes % Bounds.activityMinutesStep == 0
+}
+
+public func isClimbRuns(_ runs: Int) -> Bool { Bounds.climbRuns.contains(runs) }
+
+public func isSteps(_ steps: Int) -> Bool { Bounds.steps.contains(steps) }
+
+/// A cardio type for cardio only, the climbing fields for climbing only, each optional there, a
+/// grade or a colour but not both.
+public func isActivityFields(_ f: ActivityFields) -> Bool {
+  guard Bounds.activityKinds.contains(f.type), isActivityMinutes(f.durationMin) else {
+    return false
+  }
+  if f.type == "cardio" {
+    return f.cardioType.map(Bounds.cardioTypes.contains) == true && f.climbStyle == nil
+      && f.climbRuns == nil && f.climbGrade == nil && f.climbColor == nil
+  }
+  return f.cardioType == nil
+    && (f.climbStyle.map(Bounds.climbStyles.contains) ?? true)
+    && (f.climbRuns.map(isClimbRuns) ?? true)
+    && (f.climbGrade.map(Bounds.climbGrades.contains) ?? true)
+    && (f.climbColor.map(Bounds.climbColors.contains) ?? true)
+    && (f.climbGrade == nil || f.climbColor == nil)
 }
 
 /// A real calendar day as `YYYY-MM-DD`, from 1900 on and not after today where the person is.
@@ -181,6 +258,15 @@ private func isJSSpace(_ scalar: Unicode.Scalar) -> Bool {
 }
 
 private func isBlank(_ text: String) -> Bool { text.unicodeScalars.allSatisfy(isJSSpace) }
+
+/// `text` as JavaScript's `trim()` leaves it.
+func jsTrim(_ text: String) -> String {
+  let scalars = text.unicodeScalars
+  guard let first = scalars.firstIndex(where: { !isJSSpace($0) }),
+    let last = scalars.lastIndex(where: { !isJSSpace($0) })
+  else { return "" }
+  return String(scalars[first...last])
+}
 
 /// 1 to 40 units, nothing `trim()` would take away, no control character.
 func isSessionName(_ name: String) -> Bool {

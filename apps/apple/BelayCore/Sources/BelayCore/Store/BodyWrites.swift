@@ -146,6 +146,7 @@ extension AccountStore {
       case .removed: return row?.removedAt
       }
     case .workout, .set, .activeProgram: return nil
+    case .profile, .target, .supplement, .activity, .steps: return nil
     }
   }
 
@@ -180,6 +181,7 @@ extension AccountStore {
         try Rows.put(db, "annotations", id: c.id, row)
       }
     case .workout, .set, .activeProgram: return
+    case .profile, .target, .supplement, .activity, .steps: return
     }
   }
 
@@ -210,6 +212,7 @@ extension AccountStore {
         try Rows.put(db, "annotations", id: c.id, row)
       }
     case .workout, .set, .activeProgram: return
+    case .profile, .target, .supplement, .activity, .steps: return
     }
   }
 }
@@ -218,7 +221,9 @@ extension Change {
   /// A body entry, dated by the person's day.
   var isBody: Bool {
     switch self {
-    case .weight, .measure, .intake, .supplementLog, .annotation: true
+    case .weight, .measure, .intake, .supplementLog, .annotation, .profile, .target, .supplement,
+      .activity, .steps:
+      true
     case .workout, .set, .activeProgram: false
     }
   }

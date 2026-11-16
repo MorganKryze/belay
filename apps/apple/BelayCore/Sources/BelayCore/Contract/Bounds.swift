@@ -54,4 +54,30 @@ public enum Bounds {
   public static let annotationLabelMax = 80
   /// No body entry is dated before 1900.
   public static let minDate = "1900-01-01"
+
+  /// The loss range, in percent per week: 0.25 to 1 on a 0.05 grid, its bounds 0.1 apart at least.
+  public static let target = (min: 0.25, max: 1.0, step: 0.05)
+  public static let targetGap = 0.1
+  /// The tools take ages 15 to 100; the profile's birth year follows from them.
+  public static let ageYears = 15...100
+  /// The profile's height, in whole centimetres.
+  public static let heightCm = 120...230
+  /// Counted in UTF-16 units once trimmed, as the web counts them.
+  public static let supplementNameMax = 40
+  /// An activity lasts 5 to 480 minutes, by 5.
+  public static let activityMinutes = 5...480
+  public static let activityMinutesStep = 5
+  public static let climbRuns = 0...200
+  /// Whole steps; the stepper's 100 is only its nudge, a typed 8 437 is fine.
+  public static let steps = 0...100_000
+  public static let stepsStep = 100
+  /// The contract's words for an activity, in the web's order.
+  public static let activityKinds = ["cardio", "climbing"]
+  public static let cardioTypes = ["run", "bike", "row", "walk", "swim", "other"]
+  public static let climbStyles = ["boulder", "route"]
+  public static let climbColors = ["yellow", "green", "blue", "red", "black", "purple", "white"]
+  /// The French scale, the same list for boulders and routes: 5a, 5a+, 5b … 8c, 8c+.
+  public static let climbGrades = ["5", "6", "7", "8"].flatMap { n in
+    ["a", "b", "c"].flatMap { l in ["\(n)\(l)", "\(n)\(l)+"] }
+  }
 }
