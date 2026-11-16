@@ -181,6 +181,16 @@
         }
       }
     },
+    "Heuristique Belay": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Belay heuristic"
+          }
+        }
+      }
+    },
     "La formule": {
       "localizations": {
         "en": {
@@ -287,6 +297,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Deload week"
+          }
+        }
+      }
+    },
+    "Source et heuristique Belay": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Source and Belay heuristic"
+          }
+        }
+      }
+    },
+    "Source scientifique": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scientific source"
           }
         }
       }

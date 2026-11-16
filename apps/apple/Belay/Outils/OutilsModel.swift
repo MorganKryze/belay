@@ -115,4 +115,20 @@ final class OutilsModel {
     /// The count the person chose; nil follows the load.
     var warmupCount: Int?
     var equipment = EquipmentChoice()
+    /// The prefilled fields the person has changed, by the tool's field key (« energy.weight »):
+    /// their source lines go.
+    var edited: Set<String> = []
+    /// The values last typed on this phone, by the same keys, for « Reprendre mes dernières saisies ».
+    var typed: [String: String] = [:]
+
+    /// A field's source line: its default's source until the person changes it.
+    func source(_ key: String, _ prefill: ToolSource?) -> ToolSource? {
+        edited.contains(key) ? nil : prefill
+    }
+
+    /// What the person types in `key`: kept for « Reprendre », and the source line gone.
+    func type(_ key: String, _ text: String) {
+        edited.insert(key)
+        typed[key] = text
+    }
 }

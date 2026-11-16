@@ -40,6 +40,9 @@ import Synchronization
 /// `supplements` as `bodyUsual` with five weeks of waists, a full profile, and creatine ticked
 /// every day of the last 9; `trend` as `supplements` with creatine ticked every day of the last
 /// 23, a « Semaine allégée » from 19 days back and a « Note · voyage » 9 days back.
+///
+/// The tools' modes: `tools` with a full profile, a week of weigh-ins around 80 kg and a waist of
+/// 84,5 cm two days ago, for the fields a tool opens on; `toolsEmpty` with none of them.
 enum Fixture {
     nonisolated fileprivate static let origin = "https://belay.example"
     nonisolated fileprivate static let userId = "fixture"
@@ -121,7 +124,7 @@ enum Fixture {
 
     private static let bodyModes: Set = [
         "bodyUsual", "bodyOutOfRange", "bodyEarly", "bodyFirst", "healthCard", "weighedFromHealth", "measures", "intake",
-        "supplements", "trend",
+        "supplements", "trend", "tools", "toolsEmpty",
     ]
 
     /// The clock `-BelayNow` sets: that local time at launch, running on from there.
@@ -280,6 +283,17 @@ enum Fixture {
                         neck: week == 4 ? .set(38) : .keep, hip: week == 4 ? .set(98) : .keep)
                 }
             }
+        case "tools":
+            for back in 0..<7 {
+                try actions.weigh(date: addDays(today, -back), kg: tenth(80 + 0.1 * Double(back % 3)))
+            }
+            try actions.measure(date: addDays(today, -2), waist: .set(84.5), neck: .clear, hip: .clear)
+            var answer = emptyAnswer
+            answer["profile"] = [
+                "formula": "male", "formulaAt": "2026-01-01T00:00:00.000Z", "birthYear": 1990,
+                "birthYearAt": "2026-01-01T00:00:00.000Z", "heightCm": 180, "heightAt": "2026-01-01T00:00:00.000Z",
+            ]
+            try serve(answer, to: store, active: true)
         case "bodyOutOfRange":
             for back in 0..<35 {
                 try actions.weigh(date: addDays(today, -back), kg: tenth(80.2 - 0.1 * Double(back / 5)))

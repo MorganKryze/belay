@@ -14,6 +14,17 @@ struct ScienceView: View {
     var body: some View {
         List {
             if let entry {
+                Section {
+                    Self.label(entry.label)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.ink)
+                        .padding(.horizontal, 12)
+                        .frame(minHeight: 32)
+                        .background(Color.track, in: .capsule)
+                        .accessibilityIdentifier("science-label")
+                        .listRowBackground(Color.clear)
+                        .listRowInsets(EdgeInsets(top: 0, leading: 10, bottom: 0, trailing: 4))
+                }
                 section(Text("En bref", tableName: "Trend")) {
                     Text(entry.brief).accessibilityIdentifier("science-brief")
                 }
@@ -57,6 +68,15 @@ struct ScienceView: View {
         .belayList()
         .navigationTitle(Text("Comment c’est calculé", tableName: "Trend"))
         .largeTitleOnly()
+    }
+
+    /// The entry's chip, as the web names it: from a source, Belay's own, or both.
+    private static func label(_ kind: String) -> Text {
+        switch kind {
+        case "heuristic": Text("Heuristique Belay", tableName: "Trend")
+        case "mixed": Text("Source et heuristique Belay", tableName: "Trend")
+        default: Text("Source scientifique", tableName: "Trend")
+        }
     }
 
     private func section<Content: View>(_ title: Text, @ViewBuilder _ content: () -> Content)

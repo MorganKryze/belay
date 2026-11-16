@@ -29,6 +29,7 @@ struct KeypadField: View {
                     .monospacedDigit()
                     .foregroundStyle(.ink)
                     .focused($typing)
+                    .accessibilityLabel(Text(label, tableName: "Outils"))
                     .accessibilityIdentifier(id)
                 Text(unit, tableName: "Outils").foregroundStyle(.muted).accessibilityHidden(true)
             }
@@ -92,5 +93,105 @@ enum TypedLoad: Equatable {
             return
         }
         self = .kg(kg)
+    }
+}
+
+/// Where a prefilled field's value comes from, under the field in muted words: « depuis ton
+/// profil », « ta moyenne 7 jours ». Réglages › Outils › « Origine des champs » hides every one;
+/// a field the person changes drops its own.
+struct SourceLine: View {
+    let source: ToolSource
+    /// The zone the measures' day is read in.
+    let timeZone: TimeZone
+    @State private var shown = DevicePrefs.fieldSources.value == .shown
+
+    var body: some View {
+        if shown {
+            text.font(.footnote).foregroundStyle(.muted).accessibilityIdentifier("tool-source")
+        }
+    }
+
+    private var text: Text {
+        switch source {
+        case .profile: Text("depuis ton profil", tableName: "Outils")
+        case .birthYear: Text("depuis ton année de naissance", tableName: "Outils")
+        case .average: Text("ta moyenne 7 jours", tableName: "Outils")
+        case .weighing: Text("ta dernière pesée", tableName: "Outils")
+        case .measures(let day): Text("mensurations du \(Self.day(day, in: timeZone))", tableName: "Outils")
+        }
+    }
+
+    /// « 14 nov. » for « 2026-11-14 », read in `zone`.
+    private static func day(_ iso: String, in zone: TimeZone) -> String {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = zone
+        let parts = iso.split(separator: "-").compactMap { Int($0) }
+        guard parts.count == 3,
+            let date = calendar.date(from: DateComponents(year: parts[0], month: parts[1], day: parts[2], hour: 12))
+        else { return iso }
+        var style = Date.FormatStyle(date: .abbreviated, time: .omitted).day().month(.abbreviated)
+        style.timeZone = zone
+        return date.formatted(style)
+    }
+}
+
+/// « Reprendre mes dernières saisies »: back to the values typed on this phone, over the
+/// profile's and the weigh-ins'.
+struct RestoreRow: View {
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Label {
+                Text("Reprendre mes dernières saisies", tableName: "Outils").foregroundStyle(.ink)
+            } icon: {
+                Image(systemName: "arrow.uturn.backward").foregroundStyle(.muted)
+            }
+            .frame(minHeight: 44)
+        }
+        .accessibilityIdentifier("tool-restore")
+    }
+}
+
+/// The web's proposal when a value typed differs from the profile's: « Mettre à jour » writes the
+/// profile fact, « Non, juste ici » keeps the value to this tool.
+struct ProfileProposal: View {
+    /// The profile's value and the one typed, as they read: « 180 cm », « 182 cm ».
+    let profile: String
+    let value: String
+    let update: () -> Void
+    let justHere: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Ton profil indique **\(profile)**. Mettre à jour ton profil avec **\(value)**\u{202F}?", tableName: "Outils")
+                .foregroundStyle(.ink)
+                .fixedSize(horizontal: false, vertical: true)
+            ViewThatFits {
+                HStack(spacing: 10) { buttons }
+                VStack(alignment: .leading, spacing: 8) { buttons }
+            }
+        }
+        .padding(.vertical, 6)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(Text("Mise à jour du profil", tableName: "Outils"))
+        .accessibilityIdentifier("tool-proposal")
+    }
+
+    @ViewBuilder private var buttons: some View {
+        Button(action: update) {
+            Text("Mettre à jour", tableName: "Outils").font(.subheadline.weight(.semibold))
+                .foregroundStyle(.surface).padding(.horizontal, 16).frame(minHeight: 44)
+                .background(Color.ink, in: .capsule)
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("tool-proposal-update")
+        Button(action: justHere) {
+            Text("Non, juste ici", tableName: "Outils").font(.subheadline.weight(.semibold))
+                .foregroundStyle(.ink).padding(.horizontal, 16).frame(minHeight: 44)
+                .background(Color.track, in: .capsule)
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("tool-proposal-here")
     }
 }

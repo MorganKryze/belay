@@ -342,6 +342,26 @@
         }
       }
     },
+    "Mettre à jour": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Update"
+          }
+        }
+      }
+    },
+    "Mise à jour du profil": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Profile update"
+          }
+        }
+      }
+    },
     "Modifier ce matériel": {
       "localizations": {
         "en": {
@@ -378,6 +398,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Resting and daily energy"
+          }
+        }
+      }
+    },
+    "Non, juste ici": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No, just here"
           }
         }
       }
@@ -438,6 +468,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "What to put on each side of the bar."
+          }
+        }
+      }
+    },
+    "Reprendre mes dernières saisies": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back to my last entries"
           }
         }
       }
@@ -572,6 +612,16 @@
         }
       }
     },
+    "Ton profil indique **%@**. Mettre à jour ton profil avec **%@** ?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your profile says **%1$@**. Update your profile with **%2$@**?"
+          }
+        }
+      }
+    },
     "Ton échauffement": {
       "localizations": {
         "en": {
@@ -642,6 +692,26 @@
         }
       }
     },
+    "depuis ton année de naissance": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "from your year of birth"
+          }
+        }
+      }
+    },
+    "depuis ton profil": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "from your profile"
+          }
+        }
+      }
+    },
     "kg": {
       "localizations": {
         "en": {
@@ -652,12 +722,42 @@
         }
       }
     },
+    "mensurations du %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "measured on %@"
+          }
+        }
+      }
+    },
     "séries de travail, à toi": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "working sets, your call"
+          }
+        }
+      }
+    },
+    "ta dernière pesée": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "your last weigh-in"
+          }
+        }
+      }
+    },
+    "ta moyenne 7 jours": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "your 7-day average"
           }
         }
       }

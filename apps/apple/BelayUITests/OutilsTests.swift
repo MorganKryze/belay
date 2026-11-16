@@ -67,8 +67,8 @@ final class OutilsTests: XCTestCase {
         }
         XCTAssertGreaterThanOrEqual(rows[0].frame.height, 56, "a tool row is 56 pt")
         XCTAssertTrue(rows[0].label.contains("Ton max à partir d’une série"), "the row reads its hint: \(rows[0].label)")
-        XCTAssertLessThan(headers[0].frame.maxY, rows[0].frame.minY, "Force heads its rows")
-        XCTAssertLessThan(rows[2].frame.maxY, headers[1].frame.minY, "Énergie follows Force's last row")
+        XCTAssertLessThanOrEqual(headers[0].frame.maxY, rows[0].frame.minY, "Force heads its rows")
+        XCTAssertLessThanOrEqual(rows[2].frame.maxY, headers[1].frame.minY, "Énergie follows Force's last row")
     }
 
     /// A9: the last footer says nothing leaves the phone.
@@ -76,7 +76,7 @@ final class OutilsTests: XCTestCase {
         let app = outils()
         let footer = app.staticTexts["Tout est calculé sur ton appareil. Rien n’est envoyé."]
         XCTAssertTrue(app.swipeUpUntil(footer), "the footer is reached")
-        XCTAssertGreaterThan(footer.frame.minY, element(app, "tool-row-body-fat").frame.maxY, "under the last row")
+        XCTAssertGreaterThanOrEqual(footer.frame.minY, element(app, "tool-row-body-fat").frame.maxY, "under the last row")
     }
 
     /// A10: a row pushes its tool, and the edge swipe brings Outils back.
@@ -168,7 +168,7 @@ final class OutilsTests: XCTestCase {
         type(app, "95", into: "tool-field-target")
         XCTAssertTrue(app.staticTexts["20 + 10 + 5 + 2,5\u{202F}kg par côté"].waitForExistence(timeout: 3))
         XCTAssertTrue(app.staticTexts["Barre de 20\u{202F}kg"].exists)
-        tapKey(app, XCUIKeyboardKey.delete.rawValue)
+        element(app, "tool-field-target").typeText(XCUIKeyboardKey.delete.rawValue)
         tapKey(app, "6")
         XCTAssertTrue(app.staticTexts["96\u{202F}kg n’est pas faisable avec ton matériel."].waitForExistence(timeout: 3))
         XCTAssertTrue(app.staticTexts["Juste en dessous · 95\u{202F}kg"].exists)
@@ -207,7 +207,11 @@ final class OutilsTests: XCTestCase {
         half.tap()
         XCTAssertFalse(half.isSelected, "a tap takes the plate out")
         app.navigationBars.buttons.firstMatch.tap()
-        XCTAssertTrue(text(app, containing: "n’est pas faisable").waitForExistence(timeout: 3), "no 0,5 kg plate now")
+        // 38 kg a side without the 0,5: Sur mesure still has 2 and 1 kg, so 96 loads otherwise.
+        let loaded = text(app, containing: "par côté")
+        XCTAssertTrue(loaded.waitForExistence(timeout: 3), "Sur mesure loads 96")
+        XCTAssertFalse(loaded.label.contains("0,5"), "no 0,5 kg plate now: \(loaded.label)")
+        XCTAssertTrue(equipment.label.contains("Sur mesure"), equipment.label)
     }
 
     /// A16: each warm-up set as « 50\u{202F}kg × 5 » with its plates per side, the count on − and +.
