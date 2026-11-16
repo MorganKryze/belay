@@ -298,7 +298,7 @@ import Testing
     #expect(try store.cursor() == "0")
   }
 
-  @Test func kindsTheStoreDoesNotKeepAreIgnored() throws {
+  @Test func aPullOfEveryKindIsStored() throws {
     let answer = """
       {"cursor":"5","weights":[{"date":"2026-11-05","weightKg":80,"at":"\(Fixture.time(0))"}],
       "measures":[],"intake":[],"supplements":[],"supplementLogs":[],"annotations":[],
@@ -309,10 +309,9 @@ import Testing
     try store.applyServer(
       sent: [], response: JSONDecoder().decode(SyncResponse.self, from: Data(answer.utf8)))
     #expect(try store.cursor() == "5")
-    let tables = try store.writer.read { db in
-      try String.fetchAll(db, sql: "SELECT name FROM sqlite_master WHERE type = 'table'")
-    }
-    #expect(!tables.contains("steps"))
+    // Since v5 a day's steps are kept too.
+    #expect(
+      try store.body().steps == [StepsRow(date: "2026-11-05", steps: 1200, stepsAt: Fixture.time(0))])
     #expect(try store.body().weights.map(\.date) == ["2026-11-05"])
   }
 

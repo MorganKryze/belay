@@ -99,6 +99,22 @@ enum Schema {
       }
       try db.execute(sql: "INSERT OR REPLACE INTO meta (key, value) VALUES ('cursor', '0')")
     }
+    // Every field of an activity is read from here on, a day's steps are kept by day, and the
+    // steps import notes the value it last wrote for a day (this phone's own, never queued). The
+    // activities kept so far held only what the plan read: they go, and the pull, started over,
+    // brings each back whole. The previous version wrote none, so no queued change is lost.
+    migrator.registerMigration("v5") { db in
+      try db.execute(sql: "DELETE FROM activities")
+      try db.create(table: "steps") { t in
+        t.primaryKey("date", .text)
+        t.column("row", .blob).notNull()
+      }
+      try db.create(table: "stepsWritten") { t in
+        t.primaryKey("date", .text)
+        t.column("value", .integer).notNull()
+      }
+      try db.execute(sql: "INSERT OR REPLACE INTO meta (key, value) VALUES ('cursor', '0')")
+    }
     return migrator
   }
 }

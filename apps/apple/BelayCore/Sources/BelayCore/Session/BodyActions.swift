@@ -12,6 +12,10 @@ public struct BodyRead: Sendable, Equatable {
   /// Nil: never written, the defaults apply.
   public var target: TargetRow?
   public var profile: ProfileRow?
+  /// The activities still in place, by day.
+  public var activities: [ActivityRow] = []
+  /// The days with steps, by day.
+  public var steps: [StepsRow] = []
 
   /// No entry yet: what a screen shows before its first read.
   public static let empty = BodyRead(
@@ -33,6 +37,34 @@ public struct AnnotationInput: Sendable, Equatable {
     self.type = type
     self.label = label
   }
+}
+
+/// An activity as its sheet saves it: a new one takes a fresh id, an edit keeps its own.
+public struct ActivityInput: Sendable, Equatable {
+  public var id: String
+  public var date: String
+  public var fields: ActivityFields
+
+  public init(id: String, date: String, fields: ActivityFields) {
+    self.id = id
+    self.date = date
+    self.fields = fields
+  }
+}
+
+/// A fact of the profile, typed by its value: `.formula`, `.birthYear`, `.height` (cm).
+public struct ProfileField<Value: Sendable & Equatable>: Sendable {
+  let held: @Sendable (ProfileRow?) -> Value?
+  let edit: @Sendable (Value?) -> ProfileChange.Edit
+}
+
+extension ProfileField where Value == ProfileFormula {
+  public static var formula: Self { Self(held: { $0?.formula }, edit: { .formula($0) }) }
+}
+
+extension ProfileField where Value == Int {
+  public static var birthYear: Self { Self(held: { $0?.birthYear }, edit: { .birthYear($0) }) }
+  public static var height: Self { Self(held: { $0?.heightCm }, edit: { .height($0) }) }
 }
 
 /// A sheet's field as saved. A field left as the sheet opened is `keep`, distinct from one the
@@ -57,6 +89,8 @@ public enum FieldEdit<Value: Sendable & Equatable>: Sendable, Equatable {
 public enum BodyError: Error, Sendable, Equatable {
   /// No annotation of that id.
   case noSuchAnnotation
+  case noSuchSupplement
+  case noSuchActivity
 }
 
 /// What Corps writes. Each action is one write of the store that reads the day as stored at that
@@ -161,13 +195,104 @@ public struct BodyActions: Sendable {
     }
   }
 
-  /// One write: the changes `decide` makes from the day as stored, checked, applied and queued.
-  private func write(_ decide: (Database, String) throws -> [Change]) throws {
+  /// A fact of the profile, as `measure` takes a field: typed, emptied or left as it opened.
+  public func setProfile<Value>(_ field: ProfileField<Value>, _ value: FieldEdit<Value>) throws {
+    try write { db, at in
+      guard let next = value.value(over: field.held(try BodyRows.profile(db))) else { return [] }
+      return [.profile(ProfileChange(at: at, edit: field.edit(next)))]
+    }
+  }
+
+  /// The loss range; the one shown, the defaults when none was written, writes nothing.
+  public func setTarget(minPct: Double, maxPct: Double) throws {
+    try write { db, at in
+      let shown =
+        try Rows.single(TargetRow.self, db, "target").map {
+          TargetRange(minPct: $0.minPct, maxPct: $0.maxPct)
+        } ?? defaultTarget
+      guard shown != TargetRange(minPct: minPct, maxPct: maxPct) else { return [] }
+      return [.target(TargetChange(minPct: minPct, maxPct: maxPct, at: at))]
+    }
+  }
+
+  /// A supplement added to the list, its name trimmed as the web trims it.
+  public func addSupplement(id: String, name: String) throws {
+    try write { db, at in
+      let name = jsTrim(name)
+      guard try BodyRows.supplement(db, id: id)?.name != name else { return [] }
+      return [.supplement(SupplementChange(id: id, at: at, edit: .name(name)))]
+    }
+  }
+
+  public func renameSupplement(id: String, name: String) throws {
+    try write { db, at in
+      guard let held = try BodyRows.supplement(db, id: id) else {
+        throw BodyError.noSuchSupplement
+      }
+      let name = jsTrim(name)
+      if held.name == name { return [] }
+      return [.supplement(SupplementChange(id: id, at: at, edit: .name(name)))]
+    }
+  }
+
+  /// A supplement leaves the list; its ticked days still count.
+  public func removeSupplement(id: String) throws {
+    try write { db, at in
+      guard let held = try BodyRows.supplement(db, id: id) else {
+        throw BodyError.noSuchSupplement
+      }
+      if held.removed { return [] }
+      return [.supplement(SupplementChange(id: id, at: at, edit: .removed(true)))]
+    }
+  }
+
+  /// A new activity, or an edit of one: its day and block are written together. One removed
+  /// comes back first, as the web's undo does, so the save shows.
+  public func logActivity(_ a: ActivityInput) throws {
+    try write { db, at in
+      let held = try BodyRows.activity(db, id: a.id)
+      let restore: [Change] =
+        held?.removed == true
+        ? [.activity(ActivityChange(id: a.id, at: at, edit: .removed(false)))] : []
+      if let held, held.date == a.date, held.fields == a.fields { return restore }
+      return restore + [
+        .activity(ActivityChange(id: a.id, at: at, edit: .fields(date: a.date, a.fields)))
+      ]
+    }
+  }
+
+  /// An activity goes; one removed already writes nothing.
+  public func removeActivity(id: String) throws {
+    try write { db, at in
+      guard let held = try BodyRows.activity(db, id: id) else { throw BodyError.noSuchActivity }
+      if held.removed { return [] }
+      return [.activity(ActivityChange(id: id, at: at, edit: .removed(true)))]
+    }
+  }
+
+  /// The day's steps; nil deletes them. `own`: written by the steps import, which notes the value
+  /// in the same write, so only a day it wrote last may follow Health again (R4). Any other write
+  /// of the day takes that note away.
+  public func writeSteps(date: String, value: Int?, own: Bool) throws {
+    try write(
+      { db, at in
+        guard try BodyRows.steps(db, date: date)?.steps != value else { return [] }
+        return [.steps(StepsChange(date: date, value: value, at: at))]
+      },
+      then: { db in try BodyRows.putStepsWritten(db, date: date, value: own ? value : nil) })
+  }
+
+  /// One write: the changes `decide` makes from the day as stored, checked, applied and queued,
+  /// then `then` when there were any.
+  private func write(
+    _ decide: (Database, String) throws -> [Change], then: (Database) throws -> Void = { _ in }
+  ) throws {
     let now = now()
     try store.writer.write { db in
       let changes = try decide(db, Instant.string(now))
       if changes.isEmpty { return }
       try AccountStore.writeBody(db, changes, now: now, timeZone: timeZone)
+      try then(db)
     }
   }
 }

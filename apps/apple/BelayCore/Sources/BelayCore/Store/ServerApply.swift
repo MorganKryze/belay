@@ -45,6 +45,7 @@ extension AccountStore {
       for row in response.supplements ?? [] { try Rows.put(db, "supplements", id: row.id, row) }
       for row in response.supplementLogs ?? [] { try BodyRows.put(db, row) }
       for row in response.annotations ?? [] { try Rows.put(db, "annotations", id: row.id, row) }
+      for row in response.steps ?? [] { try BodyRows.put(db, row) }
       if let target = response.target { try Rows.putSingle(db, "target", target) }
       if let profile = response.profile { try Rows.putSingle(db, "profile", profile) }
       // Only after the rows: a change queued while the request was out is newer than what the
