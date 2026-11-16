@@ -81,3 +81,8 @@ public enum Bounds {
     ["a", "b", "c"].flatMap { l in ["\(n)\(l)", "\(n)\(l)+"] }
   }
 }
+
+extension ClosedRange<Int> {
+  /// The same bounds for a value typed with decimals: an age of 15 to 100 is 15.0 to 100.0.
+  var asDoubles: ClosedRange<Double> { Double(lowerBound)...Double(upperBound) }
+}

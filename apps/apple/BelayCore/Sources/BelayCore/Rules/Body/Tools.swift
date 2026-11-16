@@ -7,8 +7,8 @@ public struct OutOfRange: Error, Equatable, Sendable {
 }
 
 // The tools' ranges for a body: their steppers never go outside them.
-public let ageRangeYears = 15.0...100.0
-public let heightRangeCm = 120.0...230.0
+public let ageRangeYears = Bounds.ageYears.asDoubles
+public let heightRangeCm = Bounds.heightCm.asDoubles
 public let weightRangeKg = 30.0...300.0
 /// Belay's guard on the body-fat tool, in percent: outside it the equation is extrapolating, so
 /// no number is shown.
@@ -25,7 +25,7 @@ func assertBody(weightKg: Double, heightCm: Double) throws(OutOfRange) {
 }
 
 /// The age is never stored: it comes from the birth year and today's year.
-public func ageIn(birthYear: Int, today: String) -> Int { (Int(today.prefix(4)) ?? 0) - birthYear }
+public func ageIn(birthYear: Int, today: String) -> Int { calendarYear(today) - birthYear }
 
 /// An activity level and its PAL multiplier.
 public struct PalLevel: Codable, Sendable, Equatable {

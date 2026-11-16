@@ -70,9 +70,13 @@ public func isValid(_ change: Change, now: Date, timeZone: TimeZone) -> Bool {
 
 /// The birth years the tools take on `today` (`YYYY-MM-DD`): ages 15 to 100.
 public func birthYearRange(today: String) -> ClosedRange<Int> {
-  let year = Int(today.prefix(4)) ?? 0
+  let year = calendarYear(today)
   return (year - Bounds.ageYears.upperBound)...(year - Bounds.ageYears.lowerBound)
 }
+
+/// The year of a local day (`YYYY-MM-DD`), 0 when it does not read: the age and the birth years
+/// both count from it.
+func calendarYear(_ today: String) -> Int { Int(today.prefix(4)) ?? 0 }
 
 public func isBirthYear(_ year: Int, today: String) -> Bool {
   birthYearRange(today: today).contains(year)
