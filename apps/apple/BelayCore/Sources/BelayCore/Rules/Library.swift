@@ -16,15 +16,19 @@ public struct LibraryExercise: Sendable, Equatable, Identifiable {
   public let incrementKg: Double
   /// As a slot writes it: nil for repetitions.
   public let measure: Measure?
+  /// The muscles it works first, as the library names them; the search filters on these.
+  public let primary: [String]
 
   public init(
-    id: String, name: String, equipment: Equipment, incrementKg: Double, measure: Measure?
+    id: String, name: String, equipment: Equipment, incrementKg: Double, measure: Measure?,
+    primary: [String] = []
   ) {
     self.id = id
     self.name = name
     self.equipment = equipment
     self.incrementKg = incrementKg
     self.measure = measure
+    self.primary = primary
   }
 }
 
@@ -32,9 +36,11 @@ public struct LibraryExercise: Sendable, Equatable, Identifiable {
 public struct ExerciseLibrary: Sendable {
   public let exercises: [LibraryExercise]
   private let byId: [String: LibraryExercise]
+  /// Each name folded once, not once per keystroke.
+  private let folded: [String]
 
   /// Reads the index: a list of `[id, name, primary, secondary, equipment, incrementKg,
-  /// measure]`. The muscles are not read here.
+  /// measure]`. The secondary muscles are not read here.
   public init(indexJSON: Data) throws {
     self.init(exercises: try JSONDecoder().decode([Row].self, from: indexJSON).map(\.exercise))
   }
@@ -42,6 +48,7 @@ public struct ExerciseLibrary: Sendable {
   private init(exercises: [LibraryExercise]) {
     self.exercises = exercises
     byId = Dictionary(exercises.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+    folded = exercises.map { Self.fold($0.name) }
   }
 
   /// The index the app ships, read once at launch. A build that lacks it, or holds a broken one,
@@ -72,6 +79,27 @@ public struct ExerciseLibrary: Sendable {
     }
   }
 
+  /// The exercises Exercices lists, in index order, as the web's search: every word of the query
+  /// in the name, case, accents and word order aside; the muscle among the primary ones; the
+  /// equipment. A nil filter keeps them all.
+  public func filter(query: String, muscle: String?, equipment: Equipment?) -> [LibraryExercise] {
+    let words = Self.fold(query).split(whereSeparator: \.isWhitespace)
+    return exercises.indices.filter { i in
+      let e = exercises[i]
+      return words.allSatisfy { folded[i].contains($0) }
+        && (muscle.map { e.primary.contains($0) } ?? true)
+        && (equipment.map { e.equipment == $0 } ?? true)
+    }.map { exercises[$0] }
+  }
+
+  /// "Sléd 45°" is "sled 45°": decomposed, its diacritics dropped, in lower case.
+  private static func fold(_ text: String) -> String {
+    let bare = text.decomposedStringWithCanonicalMapping.unicodeScalars.filter {
+      !$0.properties.isDiacritic
+    }
+    return String(String.UnicodeScalarView(bare)).lowercased()
+  }
+
   private static func folded(_ text: String) -> String {
     text.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: nil)
   }
@@ -83,14 +111,15 @@ public struct ExerciseLibrary: Sendable {
       var c = try decoder.unkeyedContainer()
       let id = try c.decode(String.self)
       let name = try c.decode(String.self)
-      _ = try c.decode([String].self)
+      let primary = try c.decode([String].self)
       _ = try c.decode([String].self)
       let equipment = try c.decode(String.self)
       let incrementKg = try c.decode(Double.self)
       let measure = try c.decode(String.self)
       exercise = LibraryExercise(
         id: id, name: name, equipment: Equipment(rawValue: equipment) ?? .other,
-        incrementKg: incrementKg, measure: measure == "reps" ? nil : Measure(rawValue: measure))
+        incrementKg: incrementKg, measure: measure == "reps" ? nil : Measure(rawValue: measure),
+        primary: primary)
     }
   }
 }

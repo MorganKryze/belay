@@ -81,7 +81,9 @@ import {
   proteinRange,
 } from "../packages/shared/src/tools/protein";
 import { roundTo } from "../packages/shared/src/tools/round";
-import { EXERCISE_ID } from "../packages/shared/src/exercises/library";
+import { EXERCISES } from "../packages/shared/src/exercises/catalog";
+import { EXERCISE_ID, type Exercise, toRow } from "../packages/shared/src/exercises/library";
+import { type Filters, filterExercises } from "../packages/shared/src/exercises/search";
 import {
   DAY,
   EARLIEST,
@@ -3192,8 +3194,44 @@ function toolkitVectors() {
     };
   });
 
+  // The library's search on a slice of the library, plus one accented name the library lacks:
+  // accents, case, two words in any order, a muscle, an equipment, all three, and no match.
+  const library: Exercise[] = [
+    ...EXERCISES.filter((e) => /bench|curl|45°|squat/i.test(e.name)),
+    {
+      id: "belay:elevation-laterale",
+      name: "Élévation latérale",
+      primary: ["side_delts"],
+      secondary: [],
+      equipment: "dumbbell",
+      incrementKg: 1,
+      measure: "reps",
+    },
+  ];
+  const searches: [string, Filters][] = [
+    ["everything", { query: "", muscle: null, equipment: null }],
+    ["blank", { query: "   ", muscle: null, equipment: null }],
+    ["case", { query: "BENCH", muscle: null, equipment: null }],
+    ["accents in the query", { query: "sléd  45°", muscle: null, equipment: null }],
+    ["accents in the name", { query: "elevation LATERALE", muscle: null, equipment: null }],
+    ["two words, any order", { query: "press bench", muscle: null, equipment: null }],
+    ["every word, not any", { query: "bench squat", muscle: null, equipment: null }],
+    ["a muscle", { query: "", muscle: "chest", equipment: null }],
+    ["a word and a muscle", { query: "curl", muscle: "forearms", equipment: null }],
+    ["an equipment", { query: "", muscle: null, equipment: "barbell" }],
+    ["all three", { query: "bench", muscle: "chest", equipment: "barbell" }],
+    ["no match", { query: "zzz", muscle: null, equipment: null }],
+  ];
+  const filterCases = searches.map(([name, filters]) => ({
+    name,
+    ...filters,
+    result: filterExercises(library, filters).map((e) => e.id),
+  }));
+
   return {
     toolkit: {
+      library: library.map(toRow),
+      filterExercises: filterCases,
       bounds: {
         supplementSuggestions: SUPPLEMENT_SUGGESTIONS,
         reliableMaxReps: RELIABLE_MAX_REPS,
