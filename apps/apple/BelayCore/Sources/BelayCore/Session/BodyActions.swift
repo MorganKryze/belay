@@ -272,11 +272,15 @@ public struct BodyActions: Sendable {
 
   /// The day's steps; nil deletes them. `own`: written by the steps import, which notes the value
   /// in the same write, so only a day it wrote last may follow Health again (R4). Any other write
-  /// of the day takes that note away.
+  /// of the day takes that note away, even one of the value already stored: the person has typed
+  /// it, so the day is theirs.
   public func writeSteps(date: String, value: Int?, own: Bool) throws {
     try write(
       { db, at in
-        guard try BodyRows.steps(db, date: date)?.steps != value else { return [] }
+        guard try BodyRows.steps(db, date: date)?.steps != value else {
+          if !own { try BodyRows.putStepsWritten(db, date: date, value: nil) }
+          return []
+        }
         return [.steps(StepsChange(date: date, value: value, at: at))]
       },
       then: { db in try BodyRows.putStepsWritten(db, date: date, value: own ? value : nil) })

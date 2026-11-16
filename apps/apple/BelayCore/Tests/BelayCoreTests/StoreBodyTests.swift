@@ -677,6 +677,18 @@ final class MovingClock: Sendable {
     #expect(try Fixture.changes(store).count == 5)
   }
 
+  @Test func typedStepsEqualToImportTakeTheDay() throws {
+    try body.writeSteps(date: day, value: 8437, own: true)
+    #expect(try store.stepsWritten() == [day: 8437])
+    // The person types the value the import wrote: nothing new is queued, but the day is now
+    // theirs, so the import (which follows Health only on a day noted as its own) leaves it.
+    clock.move(minutes: 1)
+    try body.writeSteps(date: day, value: 8437, own: false)
+    #expect(try store.stepsWritten().isEmpty)
+    #expect(try store.body().steps.map(\.steps) == [8437])
+    #expect(try Fixture.changes(store).count == 1)
+  }
+
   @Test func serverRowsMergeByTime() throws {
     let (supplement, activity) = (Fixture.id(20), Fixture.id(40))
     clock.move(minutes: 5)
