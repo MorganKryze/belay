@@ -32,6 +32,11 @@ enum DevicePrefs {
     static let brzycki = Choice(key: "belay.oneRepMaxBrzycki", initial: Shown.shown)
     /// The line under a prefilled tool field that says where its value comes from.
     static let fieldSources = Choice(key: "belay.fieldSources", initial: Shown.shown)
+    /// Every key above, which a fixture launch clears so each test starts from the web's defaults.
+    static var keys: [String] {
+        [theme.key, pauseStops.key, homeTrend.key, rangePill.key, sessionVolume.key, brzycki.key, fieldSources.key,
+         activityKind.key]
+    }
     /// The Activité sheet's last kind.
     static let activityKind = Choice(key: "belay.activity.tab", initial: ActivityKind.climbing)
 }

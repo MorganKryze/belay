@@ -22,6 +22,7 @@ struct ReglagesView: View {
 
     var body: some View {
         List {
+            DisplayRows()
             if HealthKitWriter.available {
                 Section {
                     Toggle(isOn: Binding(get: { healthOn }, set: switchHealth)) {

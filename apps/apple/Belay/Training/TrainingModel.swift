@@ -334,6 +334,15 @@ final class TrainingModel {
             .map { LoadGroup(weightKg: $0.weightKg, counts: $0.counts) }
     }
 
+    /// When the open session's rest ends, as stored: under a pause that leaves the rest running,
+    /// the paused card counts down to it.
+    var restEndsAt: Date? {
+        guard let workoutId = session?.workoutId, let active = last?.active, active.workoutId == workoutId else {
+            return nil
+        }
+        return active.restEndsAt.flatMap(Instant.date)
+    }
+
     /// When the open session's latest set was done: where the rest after it starts.
     var restFrom: Date? {
         guard let workoutId = session?.workoutId else { return nil }

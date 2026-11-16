@@ -60,6 +60,8 @@ enum Fixture {
             if mode != "keep", FileManager.default.fileExists(atPath: folder.path) {
                 try FileManager.default.removeItem(at: folder)
             }
+            // A choice made by an earlier test stays for `keep` only; a launch argument still wins.
+            if mode != "keep" { DevicePrefs.keys.forEach(UserDefaults.standard.removeObject(forKey:)) }
             if mode == "past" {
                 let store = try AccountStore.open(userId: userId, origin: url, in: folder)
                 let model = TrainingModel(store: store, didWrite: {}, now: Date.init, timeZone: .current)

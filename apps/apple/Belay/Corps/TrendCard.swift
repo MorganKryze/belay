@@ -5,6 +5,8 @@ import SwiftUI
 /// The 7-day average, its last week and its range in words; on Corps the span and the curve under
 /// them. The body's accent is the same for a loss and a gain, never red (R9).
 struct TrendCard: View {
+    /// Réglages › Corps › Pastille: off leaves the figure alone when it is in range.
+    @AppStorage(DevicePrefs.rangePill.key) private var pill = DevicePrefs.rangePill.initial
     /// Accueil shows no curve; Ta tendance adds creatine's band, the annotations and the legend.
     enum Place { case corps, accueil, trend }
     let state: CorpsState
@@ -113,7 +115,9 @@ struct TrendCard: View {
     /// In range on a pill; out of it in grey words with the range, so the words carry it. On Ta
     /// tendance, with its « ? », it opens how the range is read.
     @ViewBuilder private func range(_ trend: TrendCardState) -> some View {
-        if let explain, trend.inRange != nil {
+        if trend.inRange == true && pill == .hidden {
+            EmptyView()
+        } else if let explain, trend.inRange != nil {
             Button(action: explain) {
                 HStack(spacing: 8) {
                     rangeWords(trend)

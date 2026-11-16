@@ -23,6 +23,28 @@ struct AccueilView: View {
     @State private var scrolled: CGFloat = 0
     @State private var choosing = false
     @State private var weighing = false
+    @AppStorage(DevicePrefs.homeTrend.key) private var trend = DevicePrefs.homeTrend.initial
+
+    /// The trend, the same card as Corps's; Réglages › Accueil › Tendance can leave it out.
+    private var trendSection: some View {
+        Section {
+            Button(action: openCorps) {
+                HStack(alignment: .center, spacing: 6) {
+                    TrendCard(state: corps.state, series: corps.series, place: .accueil)
+                    Image(systemName: "chevron.right")
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(.muted)
+                        .accessibilityHidden(true)
+                }
+                .contentShape(.rect)
+            }
+            .buttonStyle(.plain)
+            .accessibilityElement(children: .combine)
+            .accessibilityHint(Text("Ouvre Corps", tableName: "Corps"))
+            .accessibilityIdentifier("accueil-trend")
+        }
+        .listRowBackground(Color.surface)
+    }
 
     var body: some View {
         List {
@@ -31,23 +53,7 @@ struct AccueilView: View {
                 if let ahead { NextRow(when: when(ahead), session: ahead) { openPreview(ahead.sessionId) } }
             }
             .listRowBackground(Color.surface)
-            Section {
-                Button(action: openCorps) {
-                    HStack(alignment: .center, spacing: 6) {
-                        TrendCard(state: corps.state, series: corps.series, place: .accueil)
-                        Image(systemName: "chevron.right")
-                            .font(.footnote.weight(.semibold))
-                            .foregroundStyle(.muted)
-                            .accessibilityHidden(true)
-                    }
-                    .contentShape(.rect)
-                }
-                .buttonStyle(.plain)
-                .accessibilityElement(children: .combine)
-                .accessibilityHint(Text("Ouvre Corps", tableName: "Corps"))
-                .accessibilityIdentifier("accueil-trend")
-            }
-            .listRowBackground(Color.surface)
+            if trend == .shown { trendSection }
             TodayRowsView(rows: corps.rows, today: corps.today) { entry in
                 switch entry {
                 case .weighIn: weighing = true
