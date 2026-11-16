@@ -1,4 +1,5 @@
 public import Foundation
+import os
 
 /// Mon matériel: a preset, or the person's own bar and plates. The presets never change;
 /// « Modifier » copies one into the custom set.
@@ -59,7 +60,9 @@ public struct ToolMemory: Codable, Sendable, Equatable {
 /// is and under the same protection class. Not a store table, so nothing in it can reach the queue.
 public enum ToolMemoryFile {
   /// The store's own class: readable once the phone was unlocked after a restart.
-  static let options: Data.WritingOptions = [.atomic, .completeFileProtectionUntilFirstUserAuthentication]
+  static let options: Data.WritingOptions = [
+    .atomic, .completeFileProtectionUntilFirstUserAuthentication,
+  ]
 
   public static func url(userId: String, origin: URL, in folder: URL) -> URL {
     AccountStore.fileURL(userId: userId, origin: origin, in: folder)
@@ -90,7 +93,16 @@ public enum ToolMemoryFile {
     do {
       try FileManager.default.removeItem(at: url)
     } catch {
-      try? JSONEncoder().encode(ToolMemory()).write(to: url, options: options)
+      // The label only: the path holds the account's id.
+      log.error(
+        "tool memory not removed, emptied: \(AccountStore.logLabel(error), privacy: .public)")
+      do {
+        try JSONEncoder().encode(ToolMemory()).write(to: url, options: options)
+      } catch {
+        log.error("tool memory not emptied: \(AccountStore.logLabel(error), privacy: .public)")
+      }
     }
   }
+
+  private static let log = Logger(subsystem: "cloud.libresoftware.belay", category: "outils")
 }

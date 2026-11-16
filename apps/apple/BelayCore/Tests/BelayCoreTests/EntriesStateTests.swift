@@ -110,8 +110,8 @@ import Testing
     ]
     for profile in incomplete + [nil] as [ProfileRow?] {
       let state = intakeState(
-        Bodies.body(weights: Bodies.usualWeights, profile: profile), pal: sedentary, goal: .maintain, now: Bodies.now,
-        timeZone: zone)
+        Bodies.body(weights: Bodies.usualWeights, profile: profile), pal: sedentary,
+        goal: .maintain, now: Bodies.now, timeZone: zone)
       #expect(state.kcalFigure == nil)
       // The protein needs the weight only.
       #expect(state.proteinFigure == 135)
@@ -119,7 +119,9 @@ import Testing
   }
 
   @Test func intakeWithoutAWeighInHasNoFigure() {
-    let state = intakeState(Bodies.body(profile: profile), pal: sedentary, goal: .maintain, now: Bodies.now, timeZone: zone)
+    let state = intakeState(
+      Bodies.body(profile: profile), pal: sedentary, goal: .maintain, now: Bodies.now,
+      timeZone: zone)
     #expect(state.kcalFigure == nil)
     #expect(state.protein == nil)
     #expect(state.proteinFigure == nil)
@@ -132,7 +134,8 @@ import Testing
     #expect(state.proteinFigure == 135)
     // 83 kg: 116.2 to 166 g, shown 115 to 165; the middle 140.
     let other = intakeState(
-      Bodies.body(weights: Bodies.weights([Bodies.today], kg: 83)), pal: sedentary, goal: .maintain, now: Bodies.now,
+      Bodies.body(weights: Bodies.weights([Bodies.today], kg: 83)), pal: sedentary,
+      goal: .maintain, now: Bodies.now,
       timeZone: zone)
     #expect(other.proteinFigure == 140)
   }
@@ -144,7 +147,9 @@ import Testing
       IntakeRow(date: "2026-11-12", kcal: 2000, kcalAt: nil, proteinG: 120, proteinAt: nil),
       IntakeRow(date: "2026-11-14", kcal: 2100, kcalAt: nil, proteinG: 100, proteinAt: nil),
     ]
-    let state = intakeState(Bodies.body(intake: intake), pal: sedentary, goal: .maintain, now: Bodies.now, timeZone: zone)
+    let state = intakeState(
+      Bodies.body(intake: intake), pal: sedentary, goal: .maintain, now: Bodies.now,
+      timeZone: zone)
     #expect(state.today == TodayIntake(kcal: 1850, proteinG: 128))
     #expect(state.previous.map(\.date) == ["2026-11-12", "2026-11-10"])
   }

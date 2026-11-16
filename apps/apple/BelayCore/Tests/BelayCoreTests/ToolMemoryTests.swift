@@ -63,7 +63,8 @@ import Testing
   }
 
   private func protection(of url: URL) throws -> FileProtectionType? {
-    try FileManager.default.attributesOfItem(atPath: url.path)[.protectionKey] as? FileProtectionType
+    try FileManager.default.attributesOfItem(atPath: url.path)[.protectionKey]
+      as? FileProtectionType
   }
 
   @Test func removedAtSignOut() throws {
