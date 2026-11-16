@@ -51,10 +51,8 @@ private struct SearchVectors: Decodable {
   }
 
   @Test func filterMatchesVectors() throws {
-    let url = try #require(
-      Bundle.module.url(forResource: "rules", withExtension: "json", subdirectory: "Vectors"))
-    let raw = try Data(contentsOf: url)
-    let vectors = try JSONDecoder().decode(SearchVectors.self, from: raw).toolkit
+    let raw = try vectorData("rules")
+    let vectors = try load("rules", as: SearchVectors.self).toolkit
     // The library slice the cases ran on, as index rows.
     let file = try #require(try JSONSerialization.jsonObject(with: raw) as? [String: Any])
     let toolkit = try #require(file["toolkit"] as? [String: Any])

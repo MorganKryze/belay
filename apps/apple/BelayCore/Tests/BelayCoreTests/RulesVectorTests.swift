@@ -6,12 +6,6 @@ import Testing
 // The session, tool and schedule cases the shared TypeScript rules computed (`pnpm vectors`),
 // each rule checked over every one of its cases.
 
-private func load<T: Decodable>(_ name: String, as type: T.Type = T.self) throws -> T {
-  let url = try #require(
-    Bundle.module.url(forResource: name, withExtension: "json", subdirectory: "Vectors"))
-  return try JSONDecoder().decode(T.self, from: Data(contentsOf: url))
-}
-
 /// A measure as the rules name it: nil for repetitions.
 private func measure(_ name: String) -> Measure? {
   name == "reps" ? nil : Measure(rawValue: name)

@@ -169,11 +169,7 @@ private struct BodyFile: Decodable, Sendable {
   let protein: [ProteinCase]
   let toolDefaults: [DefaultsCase]
 
-  static func load() throws -> BodyFile {
-    let url = try #require(
-      Bundle.module.url(forResource: "body", withExtension: "json", subdirectory: "Vectors"))
-    return try JSONDecoder().decode(BodyFile.self, from: Data(contentsOf: url))
-  }
+  static func load() throws -> BodyFile { try BelayCoreTests.load("body") }
 }
 
 struct BodyVectorTests {

@@ -6,12 +6,6 @@ import Testing
 // The toolkit's rules as the shared rules computed them (`pnpm vectors`): the one-rep max, a
 // bar's loading, the loss projection, BMI and body fat. A null result is an input the web refuses.
 
-private func load<T: Decodable>(_ name: String, as type: T.Type = T.self) throws -> T {
-  let url = try #require(
-    Bundle.module.url(forResource: name, withExtension: "json", subdirectory: "Vectors"))
-  return try JSONDecoder().decode(T.self, from: Data(contentsOf: url))
-}
-
 private struct ToolkitFile: Decodable, Sendable {
   let toolkit: Toolkit
 
