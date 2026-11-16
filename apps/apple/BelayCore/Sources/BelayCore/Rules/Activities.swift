@@ -45,8 +45,9 @@ public struct StepsWrite: Sendable, Equatable {
 }
 
 /// Which days of steps a Health import writes (R4). The caller reads Health for today and the 6
-/// days before; a total is written while the stored steps (`rows`) are empty or are this phone's
-/// own last write (`own`), so a value typed on the web is never silently replaced.
+/// days before; a total is written while the day holds no row in `rows` or holds this phone's own
+/// last write (`own`), so a value typed on the web is never silently replaced and a day deleted
+/// there (a row holding nil) stays deleted.
 public func stepsToWrite(days: [StepsTotal], rows: [String: Int?], own: [String: Int])
   -> [StepsWrite]
 {
@@ -56,6 +57,7 @@ public func stepsToWrite(days: [StepsTotal], rows: [String: Int?], own: [String:
     let value = jsRound(total)
     // Past the 100 000 steps a day holds.
     guard value.isFinite, let steps = Int(exactly: value), isSteps(steps) else { continue }
+    if case .some(.none) = rows[day.date] { continue }  // deleted on purpose
     let stored = rows[day.date] ?? nil
     if let stored, stored != own[day.date] { continue }  // typed elsewhere
     if stored == steps { continue }
