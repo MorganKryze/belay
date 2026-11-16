@@ -108,6 +108,7 @@ import { MAX_CHANGES } from "../packages/shared/src/sync/limits";
 import { clampAt, isNewer, mergeFields } from "../packages/shared/src/sync/merge";
 import { ChangeSchema, type Change, SyncResponseSchema } from "../packages/shared/src/sync/schema";
 import { isRecordable, isValidChange } from "../packages/shared/src/sync/valid";
+import { stepsToWrite } from "../packages/shared/src/training/steps-import";
 import {
   type Activity,
   ACTIVITY_KINDS,
@@ -3153,6 +3154,44 @@ function toolkitVectors() {
     result: ageIn(birthYear as number, today as string),
   }));
 
+  // The steps a Health import writes over today and the 6 days before: an empty day, a deleted
+  // one, the phone's own value followed, a value typed elsewhere kept, past the bound, no
+  // samples, unchanged, and a fractional total.
+  const week = Array.from({ length: 7 }, (_, i) => addDays(DAY, i - 6));
+  const importCases: [string, (number | null)[], [string, number | null][], [string, number][]][] =
+    [
+      ["empty days", [8437, 8436.6, 0, 100_000, 100_001, null, 12.5], [], []],
+      [
+        "stored values",
+        [9120, 9120, 9120, 9120, 9120, 9120, 9120],
+        [
+          [week[0]!, null],
+          [week[1]!, 8437],
+          [week[2]!, 6000],
+          [week[3]!, 6000],
+          [week[4]!, 9120],
+          [week[5]!, 9120],
+        ],
+        [
+          [week[1]!, 8437],
+          [week[3]!, 8437],
+          [week[4]!, 9120],
+          [week[6]!, 500],
+        ],
+      ],
+      ["no samples", [null, null, null, null, null, null, null], [[week[6]!, 3000]], []],
+    ];
+  const stepsToWriteCases = importCases.map(([name, totals, stored, written]) => {
+    const days = week.map((date, i) => ({ date, total: totals[i] ?? null }));
+    return {
+      name,
+      days,
+      rows: Object.fromEntries(stored),
+      own: Object.fromEntries(written),
+      result: stepsToWrite(days, new Map(stored), new Map(written)),
+    };
+  });
+
   return {
     toolkit: {
       bounds: {
@@ -3183,6 +3222,7 @@ function toolkitVectors() {
       activitySummary: activitySummaryCases,
       stepsOf: stepsOfCases,
       ageIn: ageInCases,
+      stepsToWrite: stepsToWriteCases,
     },
   };
 }

@@ -26,3 +26,40 @@ public func activitySummary(_ activities: [ActivityRow], _ logs: [StepsRow], day
   if let steps { return .steps(steps) }
   return .activity(own[0])
 }
+
+/// A day's step total as Health gives it; nil when the day holds no samples.
+public struct StepsTotal: Sendable, Equatable {
+  public let date: String
+  public let total: Double?
+
+  public init(date: String, total: Double?) {
+    self.date = date
+    self.total = total
+  }
+}
+
+/// A day's steps the import writes.
+public struct StepsWrite: Sendable, Equatable {
+  public let date: String
+  public let value: Int
+}
+
+/// Which days of steps a Health import writes (R4). The caller reads Health for today and the 6
+/// days before; a total is written while the stored steps (`rows`) are empty or are this phone's
+/// own last write (`own`), so a value typed on the web is never silently replaced.
+public func stepsToWrite(days: [StepsTotal], rows: [String: Int?], own: [String: Int])
+  -> [StepsWrite]
+{
+  var out: [StepsWrite] = []
+  for day in days {
+    guard let total = day.total else { continue }  // no samples that day
+    let value = jsRound(total)
+    // Past the 100 000 steps a day holds.
+    guard value.isFinite, let steps = Int(exactly: value), isSteps(steps) else { continue }
+    let stored = rows[day.date] ?? nil
+    if let stored, stored != own[day.date] { continue }  // typed elsewhere
+    if stored == steps { continue }
+    out.append(StepsWrite(date: day.date, value: steps))
+  }
+  return out
+}

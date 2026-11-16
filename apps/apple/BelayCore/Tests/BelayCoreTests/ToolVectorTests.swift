@@ -188,6 +188,22 @@ private struct Toolkit: Decodable, Sendable {
     let today: String
     let result: Int
   }
+  struct DayTotal: Decodable, Sendable {
+    let date: String
+    let total: Double?
+  }
+  struct Write: Decodable, Sendable {
+    let date: String
+    let value: Int
+  }
+  struct StepsImportCase: Decodable, Sendable, CustomTestStringConvertible {
+    let name: String
+    let days: [DayTotal]
+    let rows: [String: Int?]
+    let own: [String: Int]
+    let result: [Write]
+    var testDescription: String { name }
+  }
   let bounds: Bounds
   let oneRepMax: [OneRepMaxCase]
   let loadBar: [LoadBarCase]
@@ -203,6 +219,7 @@ private struct Toolkit: Decodable, Sendable {
   let activitySummary: [SummaryCase]
   let stepsOf: [StepsOfCase]
   let ageIn: [AgeCase]
+  let stepsToWrite: [StepsImportCase]
 }
 
 struct ToolVectorTests {
@@ -362,5 +379,13 @@ struct ToolVectorTests {
     for c in try ToolkitFile.load().ageIn {
       #expect(BelayCore.ageIn(birthYear: c.birthYear, today: c.today) == c.result, "\(c.today)")
     }
+  }
+
+  @Test(arguments: try ToolkitFile.load().stepsToWrite)
+  fileprivate func stepsToWrite(_ c: Toolkit.StepsImportCase) {
+    let writes = BelayCore.stepsToWrite(
+      days: c.days.map { StepsTotal(date: $0.date, total: $0.total) }, rows: c.rows, own: c.own)
+    #expect(writes.map(\.date) == c.result.map(\.date))
+    #expect(writes.map(\.value) == c.result.map(\.value))
   }
 }
