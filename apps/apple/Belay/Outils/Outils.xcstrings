@@ -1,0 +1,716 @@
+{
+  "sourceLanguage": "fr",
+  "version": "1.0",
+  "strings": {
+    "%@ par côté": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ per side"
+          }
+        }
+      }
+    },
+    "%@ kg n’est pas faisable avec ton matériel.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ kg can’t be loaded with your equipment."
+          }
+        }
+      }
+    },
+    "%@ kg par côté": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ kg per side"
+          }
+        }
+      }
+    },
+    "%lld séries": {
+      "localizations": {
+        "fr": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld série"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld séries"
+                }
+              }
+            }
+          }
+        },
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld set"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld sets"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "1RM estimé": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "One-rep max"
+          }
+        }
+      }
+    },
+    "Au-delà de 10 répétitions, l’estimation est moins fiable.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beyond 10 reps, the estimate is less reliable."
+          }
+        }
+      }
+    },
+    "Avec 1 répétition, ton 1RM est la charge soulevée.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "With 1 rep, your 1RM is the load you lifted."
+          }
+        }
+      }
+    },
+    "Barre": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bar"
+          }
+        }
+      }
+    },
+    "Barre de %@ kg": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ kg bar"
+          }
+        }
+      }
+    },
+    "Barre seule": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bar only"
+          }
+        }
+      }
+    },
+    "Charge": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Load"
+          }
+        }
+      }
+    },
+    "Charge de travail": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Working load"
+          }
+        }
+      }
+    },
+    "Charge visée": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Target load"
+          }
+        }
+      }
+    },
+    "Compétition": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Competition"
+          }
+        }
+      }
+    },
+    "Copié depuis « %@ ». Touche un disque pour l’ajouter ou le retirer.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copied from “%@”. Tap a plate to add or remove it."
+          }
+        }
+      }
+    },
+    "Corps": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Body"
+          }
+        }
+      }
+    },
+    "De chaque côté": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On each side"
+          }
+        }
+      }
+    },
+    "Disques": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plates"
+          }
+        }
+      }
+    },
+    "Dépense énergétique": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Energy expenditure"
+          }
+        }
+      }
+    },
+    "Enregistré sur cet appareil.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saved on this device."
+          }
+        }
+      }
+    },
+    "Force": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Strength"
+          }
+        }
+      }
+    },
+    "Heuristique Belay": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Belay heuristic"
+          }
+        }
+      }
+    },
+    "IMC": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "BMI"
+          }
+        }
+      }
+    },
+    "Il manque la charge de travail.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The working load is missing."
+          }
+        }
+      }
+    },
+    "Il manque la charge visée.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The target load is missing."
+          }
+        }
+      }
+    },
+    "Il manque la charge.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The load is missing."
+          }
+        }
+      }
+    },
+    "Juste au-dessus · %@ kg": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Just above · %@ kg"
+          }
+        }
+      }
+    },
+    "Juste en dessous · %@ kg": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Just below · %@ kg"
+          }
+        }
+      }
+    },
+    "La barre seule pèse déjà %@ kg.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The bar alone already weighs %@ kg."
+          }
+        }
+      }
+    },
+    "Les charges sont arrondies à ton matériel (« %@ »). Aucune étude ne fixe un schéma unique : c’est une progression courante, à ajuster comme tu veux.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loads are rounded to your equipment (“%@”). No study sets a single scheme: this is a common progression, adjust it as you like."
+          }
+        }
+      }
+    },
+    "Masse grasse": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Body fat"
+          }
+        }
+      }
+    },
+    "Modifier ce matériel": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit this equipment"
+          }
+        }
+      }
+    },
+    "Mon matériel": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "My equipment"
+          }
+        }
+      }
+    },
+    "Montée en charge": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Warm-up"
+          }
+        }
+      }
+    },
+    "Métabolisme et dépense du jour": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resting and daily energy"
+          }
+        }
+      }
+    },
+    "Point de départ": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Starting point"
+          }
+        }
+      }
+    },
+    "Projection": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Projection"
+          }
+        }
+      }
+    },
+    "Protéines": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Protein"
+          }
+        }
+      }
+    },
+    "Quand tu peux atteindre ton objectif": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When you could reach your goal"
+          }
+        }
+      }
+    },
+    "Quoi charger sur la barre": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What to load on the bar"
+          }
+        }
+      }
+    },
+    "Quoi mettre de chaque côté de la barre.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What to put on each side of the bar."
+          }
+        }
+      }
+    },
+    "Répétitions": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reps"
+          }
+        }
+      }
+    },
+    "Salle": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gym"
+          }
+        }
+      }
+    },
+    "Source et heuristique Belay": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Source and Belay heuristic"
+          }
+        }
+      }
+    },
+    "Source scientifique": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scientific source"
+          }
+        }
+      }
+    },
+    "Sur mesure": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Custom"
+          }
+        }
+      }
+    },
+    "Ta charge de travail est la barre seule ou plus légère : il n’y a pas d’échauffement à calculer.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your working load is the bar alone or lighter: there is no warm-up to work out."
+          }
+        }
+      }
+    },
+    "Ta fourchette par jour et par repas": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your range per day and per meal"
+          }
+        }
+      }
+    },
+    "Ta place sur les plages de l’OMS": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your place on the WHO ranges"
+          }
+        }
+      }
+    },
+    "Tes séries d’échauffement": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your warm-up sets"
+          }
+        }
+      }
+    },
+    "Tes séries d’échauffement, arrondies à ton matériel.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your warm-up sets, rounded to your equipment."
+          }
+        }
+      }
+    },
+    "Ton 1RM estimé": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your estimated 1RM"
+          }
+        }
+      }
+    },
+    "Ton max à partir d’une série": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your max from one set"
+          }
+        }
+      }
+    },
+    "Ton max à partir d’une série menée près de l’échec.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your max from a set taken close to failure."
+          }
+        }
+      }
+    },
+    "Ton échauffement": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your warm-up"
+          }
+        }
+      }
+    },
+    "Touche un disque pour l’ajouter ou le retirer.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap a plate to add or remove it."
+          }
+        }
+      }
+    },
+    "Tout est calculé sur ton appareil. Rien n’est envoyé.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Everything is calculated on your device. Nothing is sent."
+          }
+        }
+      }
+    },
+    "Une charge va de 1 à 500 kg.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A load goes from 1 to 500 kg."
+          }
+        }
+      }
+    },
+    "Une estimation au mètre ruban": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "An estimate from a tape measure"
+          }
+        }
+      }
+    },
+    "aucune série": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "no sets"
+          }
+        }
+      }
+    },
+    "barre seule": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "bar only"
+          }
+        }
+      }
+    },
+    "kg": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "kg"
+          }
+        }
+      }
+    },
+    "séries de travail, à toi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "working sets, your call"
+          }
+        }
+      }
+    },
+    "une répétition": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "a rep"
+          }
+        }
+      }
+    },
+    "une série": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "a set"
+          }
+        }
+      }
+    },
+    "« Modifier » copie ce préréglage dans « Sur mesure » : les préréglages ne changent jamais.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“Edit” copies this preset into “Custom”: presets never change."
+          }
+        }
+      }
+    },
+    "Échauffement": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Warm-up"
+          }
+        }
+      }
+    },
+    "Énergie": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Energy"
+          }
+        }
+      }
+    }
+  }
+}

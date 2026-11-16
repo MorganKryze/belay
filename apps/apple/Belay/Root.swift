@@ -38,6 +38,10 @@ enum Route: Hashable {
     case science(id: String)
     /// Corps's screens, from its rows and Accueil's; on the web until each comes to the phone.
     case measures, intake, supplements
+    /// A tool's page, from Outils.
+    case tool(ToolId)
+    /// Mon matériel, from Disques.
+    case equipment
 }
 
 /// The tab in front and what each tab has pushed, kept across tab switches.
@@ -80,6 +84,7 @@ struct RootView: View {
     @State private var model = ShellModel()
     @State private var box = Once<TrainingModel>()
     @State private var bodyBox = Once<CorpsModel>()
+    @State private var outils = OutilsModel()
     @Namespace private var space
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.scenePhase) private var scenePhase
@@ -190,7 +195,7 @@ struct RootView: View {
         case .corps:
             CorpsView(corps: corps) { model.corpsPath.append($0) }
         case .outils:
-            WebForNow(title: tab.title)
+            OutilsView()
         }
     }
 
@@ -213,6 +218,18 @@ struct RootView: View {
         case .measures: MeasuresView(corps: corps)
         case .intake: IntakeView(corps: corps)
         case .supplements: SupplementsView(corps: corps)
+        case .tool(let tool): toolPage(tool)
+        case .equipment: EquipmentView(outils: outils)
+        }
+    }
+
+    /// A tool's page; the tools still on the web say so.
+    @ViewBuilder private func toolPage(_ tool: ToolId) -> some View {
+        switch tool {
+        case .oneRepMax: OneRepMaxTool(outils: outils)
+        case .plates: PlatesTool(outils: outils)
+        case .warmup: WarmupTool(outils: outils)
+        case .energy, .protein, .projection, .bmi, .bodyFat: WebForNow(title: tool.name, tableName: "Outils")
         }
     }
 
