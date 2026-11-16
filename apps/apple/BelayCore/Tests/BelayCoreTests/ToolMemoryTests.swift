@@ -40,14 +40,30 @@ import Testing
     #expect(url.lastPathComponent.hasPrefix(store.deletingPathExtension().lastPathComponent))
     #expect(url != store)
 
-    // Written atomically under the store's own class.
-    #expect(ToolMemoryFile.options.contains(.completeFileProtectionUntilFirstUserAuthentication))
-    #expect(ToolMemoryFile.options.contains(.atomic))
-    try ToolMemoryFile.write(typed, to: url)
-    #if os(iOS) || os(watchOS)
-      let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
-      #expect(attributes[.protectionKey] as? FileProtectionType == AccountStore.protection)
-    #endif
+    // A new file takes its folder's class unless the write names one, and the store's class is
+    // also the usual default. In a folder of another class, only a write that names the store's
+    // own lands under it, so the check reads the file back on the Mac too.
+    let other = folder.appendingPathComponent("unless-open", isDirectory: true)
+    try FileManager.default.createDirectory(
+      at: other, withIntermediateDirectories: false,
+      attributes: [.protectionKey: FileProtectionType.completeUnlessOpen])
+    let inOther = ToolMemoryFile.url(userId: "u1", origin: origin, in: other)
+    let unnamed = other.appendingPathComponent("unnamed.json")
+    try Data("{}".utf8).write(to: unnamed, options: .atomic)
+    try #require(
+      try protection(of: unnamed) == .completeUnlessOpen,
+      "this volume keeps protection classes, so the read-back below can tell them apart")
+
+    try ToolMemoryFile.write(typed, to: inOther)
+    #expect(try protection(of: inOther) == AccountStore.protection)
+    #expect(ToolMemoryFile.read(inOther) == typed)
+    // The second write replaces the file: it keeps the class too.
+    try ToolMemoryFile.write(ToolMemory(), to: inOther)
+    #expect(try protection(of: inOther) == AccountStore.protection)
+  }
+
+  private func protection(of url: URL) throws -> FileProtectionType? {
+    try FileManager.default.attributesOfItem(atPath: url.path)[.protectionKey] as? FileProtectionType
   }
 
   @Test func removedAtSignOut() throws {
