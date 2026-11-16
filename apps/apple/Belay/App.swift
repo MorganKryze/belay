@@ -103,7 +103,8 @@ private nonisolated struct StoreLockScreen: LockScreenHandler {
     @MainActor private func run(_ write: (SessionActions) throws -> Bool) -> Bool {
         guard let store = account.store else { return false }
         let actions = SessionActions(
-            store: store, library: BundledLibrary.library, now: { Date() }, newId: { UUIDv7.make(at: $0) })
+            store: store, library: BundledLibrary.library, stops: DevicePrefs.pauseStops.value, now: { Date() },
+            newId: { UUIDv7.make(at: $0) })
         do {
             let wrote = try write(actions)
             if wrote { account.didWrite() }

@@ -194,7 +194,12 @@ final class TrainingModel {
 
     private let store: AccountStore
     /// Every write to the open session goes through these, each one transaction of the store.
-    private let actions: SessionActions
+    /// Made at each action, so a change of what a pause stops counts from the next tap.
+    private var actions: SessionActions {
+        SessionActions(
+            store: store, library: BundledLibrary.library, stops: DevicePrefs.pauseStops.value, now: now,
+            newId: UUIDv7.make)
+    }
     /// The writes outside a session: the active program, a past session.
     private let history: HistoryActions
     private let didWrite: () -> Void
@@ -216,7 +221,6 @@ final class TrainingModel {
         now: @escaping @Sendable () -> Date, timeZone: TimeZone
     ) {
         self.store = store
-        actions = SessionActions(store: store, library: BundledLibrary.library, now: now, newId: UUIDv7.make)
         history = HistoryActions(store: store, now: now)
         readAt = now()
         self.didWrite = didWrite
@@ -592,7 +596,9 @@ final class TrainingModel {
         }
         let at = now()
         func read() -> SessionState {
-            sessionState(history: snapshot.history, active: active, now: at, library: BundledLibrary.library, bar: .gym, marks: marks)
+            sessionState(
+                history: snapshot.history, active: active, now: at, library: BundledLibrary.library, bar: .gym,
+                marks: marks, stops: DevicePrefs.pauseStops.value)
         }
         var state = read()
         switch state.phase {

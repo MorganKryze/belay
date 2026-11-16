@@ -45,3 +45,56 @@ import Testing
         == bad)
   }
 }
+
+// What a pause stops is this device's choice: everything by default, or the session's time while
+// the rest keeps running. Tried on a store that already holds finished sessions, through the
+// actions the cover and the lock screen call.
+
+extension PauseTests {
+  /// The rest left on the cover while paused, in ms.
+  private func restLeft(_ s: Seance) throws -> Int? {
+    guard case .paused(let paused) = try s.state().phase else {
+      Issue.record("the session reads as paused")
+      return nil
+    }
+    return paused.restLeftMs
+  }
+
+  /// One set logged at minute 1, so the rest runs to minute 3, then a pause at minute 2.
+  private func pausedDuringRest(_ stops: PauseStops?) throws -> Seance {
+    let s = try Seance(past: [(Seance.squat, 60, 8), (Seance.bench, 40, 10)], stops: stops)
+    s.clock.advance(seconds: 60)
+    try s.actions.logNext(count: 8, weightKg: 60, expecting: nil)
+    #expect(try s.active?.restEndsAt == Fixture.time(3))
+    s.clock.advance(seconds: 60)
+    try s.actions.pause()
+    s.clock.advance(seconds: 30)
+    return s
+  }
+
+  @Test func restRunsWhenSessionOnly() throws {
+    let s = try pausedDuringRest(.session)
+    // Half a minute into the pause, the rest has gone on counting.
+    #expect(try restLeft(s) == 30_000)
+    #expect(try s.actions.addRest(seconds: 30))
+    s.clock.advance(seconds: 300)
+    #expect(try restLeft(s) == nil)
+
+    try s.actions.resume()
+    #expect(try s.workout.startedAt == Fixture.time(5.5))
+    #expect(try s.active?.restEndsAt == Fixture.time(3.5))
+    #expect(try s.active?.pausedAt == nil)
+  }
+
+  @Test func restStopsByDefault() throws {
+    let s = try pausedDuringRest(nil)
+    #expect(try restLeft(s) == 60_000)
+    s.clock.advance(seconds: 300)
+    #expect(try restLeft(s) == 60_000)
+
+    try s.actions.resume()
+    #expect(try s.workout.startedAt == Fixture.time(5.5))
+    #expect(try s.active?.restEndsAt == Fixture.time(8.5))
+    #expect(try s.active?.pausedAt == nil)
+  }
+}

@@ -1,3 +1,4 @@
+import BelayCore
 import Foundation
 
 /// The choices this phone keeps for itself, as the web keeps them in each browser: under the
@@ -17,8 +18,6 @@ enum DevicePrefs {
 
     enum Shown: String, Sendable { case shown, hidden }
     enum Theme: String, Sendable { case light, dark, system }
-    /// What a pause stops: everything, or the session only while the rest runs on.
-    enum PauseStops: String, Sendable { case all, session }
     enum ActivityKind: String, Sendable { case cardio, climbing, steps }
 
     static let theme = Choice(key: "belay.theme", initial: Theme.system)

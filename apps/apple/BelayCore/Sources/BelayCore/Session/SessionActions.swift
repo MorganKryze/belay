@@ -8,11 +8,11 @@ public struct SessionActions: Sendable {
   let ctx: SessionContext
 
   public init(
-    store: AccountStore, library: ExerciseLibrary, bar: Plates = .gym,
+    store: AccountStore, library: ExerciseLibrary, bar: Plates = .gym, stops: PauseStops = .all,
     now: @escaping @Sendable () -> Date, newId: @escaping @Sendable (Date) -> String
   ) {
     self.store = store
-    ctx = SessionContext(library: library, bar: bar, now: now, newId: newId)
+    ctx = SessionContext(library: library, bar: bar, stops: stops, now: now, newId: newId)
   }
 
   /// Logs the set due; nil when nothing is due or `expecting` names another set. A set already
