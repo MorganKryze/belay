@@ -200,7 +200,7 @@ struct BodyFatTool: View {
                 .padding(.vertical, 6)
             } footer: {
                 Text(
-                    "« Asiatique » utilise le tableau 5 de Gallagher, établi sur des personnes vivant au Japon. Ce choix reste sur ton appareil.",
+                    "«\u{202F}Asiatique\u{202F}» utilise le tableau 5 de Gallagher, établi sur des personnes vivant au Japon. Ce choix reste sur ton appareil.",
                     tableName: "Outils"
                 )
                 .foregroundStyle(.muted)
