@@ -48,6 +48,7 @@ private struct Toolkit: Decodable, Sendable {
     let rateStepPct: Double
     let bmiThresholds: BmiThresholds
     let navyRangePct: Range
+    let supplementSuggestions: [String]
   }
   struct OneRepMaxCase: Decodable, Sendable, CustomTestStringConvertible {
     let weightKg: Double
@@ -162,6 +163,31 @@ private struct Toolkit: Decodable, Sendable {
     let thresholds: GallagherThresholds
     let band: Band
   }
+  struct SummaryVector: Decodable, Sendable {
+    let kind: String
+    let steps: Int?
+    let id: String?
+    let count: Int?
+  }
+  struct SummaryCase: Decodable, Sendable, CustomTestStringConvertible {
+    let name: String
+    let activities: [ActivityRow]
+    let logs: [StepsRow]
+    let day: String
+    let result: SummaryVector
+    var testDescription: String { name }
+  }
+  struct StepsOfCase: Decodable, Sendable {
+    let name: String
+    let logs: [StepsRow]
+    let day: String
+    let result: Int?
+  }
+  struct AgeCase: Decodable, Sendable {
+    let birthYear: Int
+    let today: String
+    let result: Int
+  }
   let bounds: Bounds
   let oneRepMax: [OneRepMaxCase]
   let loadBar: [LoadBarCase]
@@ -174,6 +200,9 @@ private struct Toolkit: Decodable, Sendable {
   let navyBodyFat: [NavyCase]
   let gallagher: [GallagherCase]
   let bodyFatBand: [BodyFatBandCase]
+  let activitySummary: [SummaryCase]
+  let stepsOf: [StepsOfCase]
+  let ageIn: [AgeCase]
 }
 
 struct ToolVectorTests {
@@ -193,6 +222,7 @@ struct ToolVectorTests {
     #expect(bmiThresholds.reference == b.bmiThresholds.reference)
     #expect(bmiThresholds.high == b.bmiThresholds.high)
     #expect(navyRangePct == b.navyRangePct.min...b.navyRangePct.max)
+    #expect(supplementSuggestions == b.supplementSuggestions)
   }
 
   @Test func platePresetsAreTheSessionsPlates() {
@@ -302,6 +332,35 @@ struct ToolVectorTests {
   @Test func bodyFatBands() throws {
     for c in try ToolkitFile.load().bodyFatBand {
       #expect(bodyFatBand(c.percent, c.thresholds) == c.band, "\(c.percent) %")
+    }
+  }
+
+  @Test(arguments: try ToolkitFile.load().activitySummary)
+  fileprivate func activitySummary(_ c: Toolkit.SummaryCase) {
+    let summary = BelayCore.activitySummary(c.activities, c.logs, day: c.day)
+    switch summary {
+    case .none: #expect(c.result.kind == "none")
+    case .steps(let steps):
+      #expect(c.result.kind == "steps")
+      #expect(steps == c.result.steps)
+    case .activity(let activity):
+      #expect(c.result.kind == "activity")
+      #expect(activity.id == c.result.id)
+    case .many(let count):
+      #expect(c.result.kind == "many")
+      #expect(count == c.result.count)
+    }
+  }
+
+  @Test func stepsOfADay() throws {
+    for c in try ToolkitFile.load().stepsOf {
+      #expect(BelayCore.stepsOf(c.logs, day: c.day) == c.result, "\(c.name)")
+    }
+  }
+
+  @Test func ageFromTheBirthYear() throws {
+    for c in try ToolkitFile.load().ageIn {
+      #expect(BelayCore.ageIn(birthYear: c.birthYear, today: c.today) == c.result, "\(c.today)")
     }
   }
 }

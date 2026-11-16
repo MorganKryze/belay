@@ -1,4 +1,11 @@
-// Creatine's own band on the weight chart, ported from the shared rules.
+// The supplements' suggestions and creatine's own band on the weight chart, ported from the
+// shared rules.
+
+/// The suggestions of Réglages › Mes compléments, as string keys. Belay notes what is taken,
+/// never a dose or advice.
+public let supplementSuggestions = [
+  "creatine", "vitaminD", "omega3", "magnesium", "iron", "zinc", "caffeine", "melatonin",
+]
 
 /// "Créatine", "creatine", "CREATINE monohydrate": case and accents aside, the word creatine.
 public func isCreatineName(_ name: String) -> Bool {

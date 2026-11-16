@@ -36,6 +36,7 @@ import {
   weeklyWaist,
 } from "../packages/shared/src/body/measures";
 import {
+  ageIn,
   birthYearRange,
   isBirthYear,
   isProfileHeight,
@@ -47,6 +48,7 @@ import {
   isCreatineName,
   isSupplementName,
   SUPPLEMENT_NAME_MAX,
+  SUPPLEMENT_SUGGESTIONS,
 } from "../packages/shared/src/body/supplements";
 import {
   DEFAULT_TARGET,
@@ -110,6 +112,7 @@ import {
   type Activity,
   ACTIVITY_KINDS,
   ACTIVITY_MINUTES,
+  activitySummary,
   CARDIO_TYPES,
   CLIMB_COLORS,
   CLIMB_GRADES,
@@ -121,6 +124,8 @@ import {
   isClimbRuns,
   isSteps,
   STEPS,
+  type StepsLog,
+  stepsOf,
 } from "../packages/shared/src/training/activities";
 import {
   iwfColor,
@@ -3082,9 +3087,76 @@ function toolkitVectors() {
     band: bodyFatBand(percent, thresholds),
   }));
 
+  // Home's « Activité » line for one day: activities of other days and removed ones left out,
+  // the steps counted as one. Rows travel as the server sends them.
+  const DAY = "2026-11-06";
+  type Row = ReturnType<typeof asActivity>;
+  const activity = (date: string, kind: Activity["kind"], removed = false, i = 0): Row =>
+    asActivity({ date, kind, removed }, i);
+  const asRule = ({ type, cardioType, climbColor, ...row }: Row): Activity => ({
+    ...row,
+    kind: type,
+    cardioType: cardioType as Activity["cardioType"],
+    climbColor: climbColor as Activity["climbColor"],
+  });
+  const steps = (date: string, value: number | null): StepsLog => ({ date, steps: value });
+  const summaries: [string, Row[], StepsLog[]][] = [
+    ["none", [], []],
+    ["one climb", [activity(DAY, "climbing")], []],
+    ["steps only", [], [steps(DAY, 8437)]],
+    [
+      "three, the steps counted as one",
+      [activity(DAY, "climbing", false, 1), activity(DAY, "cardio", false, 2)],
+      [steps(DAY, 8437)],
+    ],
+    ["one and the steps", [activity(DAY, "cardio", false, 3)], [steps(DAY, 12000)]],
+    [
+      "another day's and a removed one left out",
+      [activity(addDays(DAY, -1), "climbing", false, 4), activity(DAY, "cardio", true, 5)],
+      [steps(addDays(DAY, 1), 5000)],
+    ],
+    ["deleted steps", [], [steps(DAY, null)]],
+    ["zero steps", [], [steps(DAY, 0)]],
+  ];
+  const activitySummaryCases = summaries.map(([name, activities, logs]) => {
+    const r = activitySummary(activities.map(asRule), logs, DAY);
+    return {
+      name,
+      activities,
+      logs: logs.map((l) => ({ ...l, stepsAt: AT })),
+      day: DAY,
+      result: r.kind === "activity" ? { kind: r.kind, id: r.activity.id } : r,
+    };
+  });
+  const stepsOfCases = [
+    ["absent", [steps(addDays(DAY, -1), 3000)]],
+    ["typed", [steps(addDays(DAY, -1), 3000), steps(DAY, 8437)]],
+    ["deleted", [steps(DAY, null)]],
+    ["no day", []],
+  ].map(([name, logs]) => ({
+    name,
+    logs: (logs as StepsLog[]).map((l) => ({ ...l, stepsAt: AT })),
+    day: DAY,
+    result: stepsOf(logs as StepsLog[], DAY),
+  }));
+  // The year alone counts: the day before and after a birthday, and either side of New Year.
+  const ageInCases = [
+    [1990, "2026-03-14"],
+    [1990, "2026-03-15"],
+    [1990, "2026-12-31"],
+    [1990, "2027-01-01"],
+    [2011, "2026-01-01"],
+    [1926, "2026-12-31"],
+  ].map(([birthYear, today]) => ({
+    birthYear,
+    today,
+    result: ageIn(birthYear as number, today as string),
+  }));
+
   return {
     toolkit: {
       bounds: {
+        supplementSuggestions: SUPPLEMENT_SUGGESTIONS,
         reliableMaxReps: RELIABLE_MAX_REPS,
         maxReps: MAX_REPS,
         lbPlates: LB_PLATES,
@@ -3108,6 +3180,9 @@ function toolkitVectors() {
       navyBodyFat: navyCases,
       gallagher: gallagherCases,
       bodyFatBand: bodyFatBandCases,
+      activitySummary: activitySummaryCases,
+      stepsOf: stepsOfCases,
+      ageIn: ageInCases,
     },
   };
 }

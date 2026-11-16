@@ -25138,6 +25138,16 @@
   ],
   "toolkit": {
     "bounds": {
+      "supplementSuggestions": [
+        "creatine",
+        "vitaminD",
+        "omega3",
+        "magnesium",
+        "iron",
+        "zinc",
+        "caffeine",
+        "melatonin"
+      ],
       "reliableMaxReps": 10,
       "maxReps": 12,
       "lbPlates": {
@@ -33590,6 +33600,290 @@
           "at30": 25
         },
         "band": "well-above"
+      }
+    ],
+    "activitySummary": [
+      {
+        "name": "none",
+        "activities": [],
+        "logs": [],
+        "day": "2026-11-06",
+        "result": {
+          "kind": "none"
+        }
+      },
+      {
+        "name": "one climb",
+        "activities": [
+          {
+            "id": "00000000-0000-7000-8000-000000003000",
+            "date": "2026-11-06",
+            "type": "climbing",
+            "durationMin": 60,
+            "cardioType": null,
+            "climbStyle": null,
+            "climbRuns": null,
+            "climbGrade": null,
+            "climbColor": null,
+            "fieldsAt": "2026-11-06T18:00:00.000Z",
+            "removed": false,
+            "removedAt": null
+          }
+        ],
+        "logs": [],
+        "day": "2026-11-06",
+        "result": {
+          "kind": "activity",
+          "id": "00000000-0000-7000-8000-000000003000"
+        }
+      },
+      {
+        "name": "steps only",
+        "activities": [],
+        "logs": [
+          {
+            "date": "2026-11-06",
+            "steps": 8437,
+            "stepsAt": "2026-11-06T09:30:00.123Z"
+          }
+        ],
+        "day": "2026-11-06",
+        "result": {
+          "kind": "steps",
+          "steps": 8437
+        }
+      },
+      {
+        "name": "three, the steps counted as one",
+        "activities": [
+          {
+            "id": "00000000-0000-7000-8000-000000003001",
+            "date": "2026-11-06",
+            "type": "climbing",
+            "durationMin": 60,
+            "cardioType": null,
+            "climbStyle": null,
+            "climbRuns": null,
+            "climbGrade": null,
+            "climbColor": null,
+            "fieldsAt": "2026-11-06T18:00:00.000Z",
+            "removed": false,
+            "removedAt": null
+          },
+          {
+            "id": "00000000-0000-7000-8000-000000003002",
+            "date": "2026-11-06",
+            "type": "cardio",
+            "durationMin": 60,
+            "cardioType": "run",
+            "climbStyle": null,
+            "climbRuns": null,
+            "climbGrade": null,
+            "climbColor": null,
+            "fieldsAt": "2026-11-06T18:00:00.000Z",
+            "removed": false,
+            "removedAt": null
+          }
+        ],
+        "logs": [
+          {
+            "date": "2026-11-06",
+            "steps": 8437,
+            "stepsAt": "2026-11-06T09:30:00.123Z"
+          }
+        ],
+        "day": "2026-11-06",
+        "result": {
+          "kind": "many",
+          "count": 3
+        }
+      },
+      {
+        "name": "one and the steps",
+        "activities": [
+          {
+            "id": "00000000-0000-7000-8000-000000003003",
+            "date": "2026-11-06",
+            "type": "cardio",
+            "durationMin": 60,
+            "cardioType": "run",
+            "climbStyle": null,
+            "climbRuns": null,
+            "climbGrade": null,
+            "climbColor": null,
+            "fieldsAt": "2026-11-06T18:00:00.000Z",
+            "removed": false,
+            "removedAt": null
+          }
+        ],
+        "logs": [
+          {
+            "date": "2026-11-06",
+            "steps": 12000,
+            "stepsAt": "2026-11-06T09:30:00.123Z"
+          }
+        ],
+        "day": "2026-11-06",
+        "result": {
+          "kind": "many",
+          "count": 2
+        }
+      },
+      {
+        "name": "another day's and a removed one left out",
+        "activities": [
+          {
+            "id": "00000000-0000-7000-8000-000000003004",
+            "date": "2026-11-05",
+            "type": "climbing",
+            "durationMin": 60,
+            "cardioType": null,
+            "climbStyle": null,
+            "climbRuns": null,
+            "climbGrade": null,
+            "climbColor": null,
+            "fieldsAt": "2026-11-05T18:00:00.000Z",
+            "removed": false,
+            "removedAt": null
+          },
+          {
+            "id": "00000000-0000-7000-8000-000000003005",
+            "date": "2026-11-06",
+            "type": "cardio",
+            "durationMin": 60,
+            "cardioType": "run",
+            "climbStyle": null,
+            "climbRuns": null,
+            "climbGrade": null,
+            "climbColor": null,
+            "fieldsAt": "2026-11-06T18:00:00.000Z",
+            "removed": true,
+            "removedAt": "2026-11-06T19:00:00.000Z"
+          }
+        ],
+        "logs": [
+          {
+            "date": "2026-11-07",
+            "steps": 5000,
+            "stepsAt": "2026-11-06T09:30:00.123Z"
+          }
+        ],
+        "day": "2026-11-06",
+        "result": {
+          "kind": "none"
+        }
+      },
+      {
+        "name": "deleted steps",
+        "activities": [],
+        "logs": [
+          {
+            "date": "2026-11-06",
+            "steps": null,
+            "stepsAt": "2026-11-06T09:30:00.123Z"
+          }
+        ],
+        "day": "2026-11-06",
+        "result": {
+          "kind": "none"
+        }
+      },
+      {
+        "name": "zero steps",
+        "activities": [],
+        "logs": [
+          {
+            "date": "2026-11-06",
+            "steps": 0,
+            "stepsAt": "2026-11-06T09:30:00.123Z"
+          }
+        ],
+        "day": "2026-11-06",
+        "result": {
+          "kind": "steps",
+          "steps": 0
+        }
+      }
+    ],
+    "stepsOf": [
+      {
+        "name": "absent",
+        "logs": [
+          {
+            "date": "2026-11-05",
+            "steps": 3000,
+            "stepsAt": "2026-11-06T09:30:00.123Z"
+          }
+        ],
+        "day": "2026-11-06",
+        "result": null
+      },
+      {
+        "name": "typed",
+        "logs": [
+          {
+            "date": "2026-11-05",
+            "steps": 3000,
+            "stepsAt": "2026-11-06T09:30:00.123Z"
+          },
+          {
+            "date": "2026-11-06",
+            "steps": 8437,
+            "stepsAt": "2026-11-06T09:30:00.123Z"
+          }
+        ],
+        "day": "2026-11-06",
+        "result": 8437
+      },
+      {
+        "name": "deleted",
+        "logs": [
+          {
+            "date": "2026-11-06",
+            "steps": null,
+            "stepsAt": "2026-11-06T09:30:00.123Z"
+          }
+        ],
+        "day": "2026-11-06",
+        "result": null
+      },
+      {
+        "name": "no day",
+        "logs": [],
+        "day": "2026-11-06",
+        "result": null
+      }
+    ],
+    "ageIn": [
+      {
+        "birthYear": 1990,
+        "today": "2026-03-14",
+        "result": 36
+      },
+      {
+        "birthYear": 1990,
+        "today": "2026-03-15",
+        "result": 36
+      },
+      {
+        "birthYear": 1990,
+        "today": "2026-12-31",
+        "result": 36
+      },
+      {
+        "birthYear": 1990,
+        "today": "2027-01-01",
+        "result": 37
+      },
+      {
+        "birthYear": 2011,
+        "today": "2026-01-01",
+        "result": 15
+      },
+      {
+        "birthYear": 1926,
+        "today": "2026-12-31",
+        "result": 100
       }
     ]
   }
