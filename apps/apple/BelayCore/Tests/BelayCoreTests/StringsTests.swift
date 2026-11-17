@@ -353,8 +353,8 @@ private func literal(_ code: [Character], from start: Int) -> ([LiteralPart], In
     }
   }
 
-  /// Every count of Accueil, Séances and the session's tools, tried at 0, 1 and 2: the form each
-  /// language's rule chooses reads right. A new count with no line here fails.
+  /// Every count of the app's screens, Réglages, the account and the tools included, tried at 0, 1
+  /// and 2: the form each language's rule chooses reads right. A new count with no line here fails.
   @Test func countsReadRightAtZeroOneAndTwo() throws {
     // Key, then French and English at 0, 1 and 2; a key with two counts gets the same at each.
     let expected: [String: (fr: [String], en: [String])] = [
@@ -402,6 +402,25 @@ private func literal(_ code: [Character], from start: Int) -> ([LiteralPart], In
       "Seances.xcstrings: %lld séries": (
         ["0 série", "1 série", "2 séries"], ["0 sets", "1 set", "2 sets"]
       ),
+      "Account.xcstrings: %lld saisies pas encore envoyées\u{202F}: elles partiront à ta prochaine connexion sur cet appareil.":
+        (
+          [
+            "0 saisie pas encore envoyée\u{202F}: elle partira à ta prochaine connexion sur cet appareil.",
+            "1 saisie pas encore envoyée\u{202F}: elle partira à ta prochaine connexion sur cet appareil.",
+            "2 saisies pas encore envoyées\u{202F}: elles partiront à ta prochaine connexion sur cet appareil.",
+          ],
+          [
+            "0 entries not sent yet: they will go at your next sign-in on this device.",
+            "1 entry not sent yet: it will go at your next sign-in on this device.",
+            "2 entries not sent yet: they will go at your next sign-in on this device.",
+          ]
+        ),
+      "Reglages.xcstrings: %lld jours marqués": (
+        ["0 jour marqué", "1 jour marqué", "2 jours marqués"], ["0 days ticked", "1 day ticked", "2 days ticked"]
+      ),
+      "Outils.xcstrings: %lld séries": (
+        ["0 série", "1 série", "2 séries"], ["0 sets", "1 set", "2 sets"]
+      ),
       "SessionTools.xcstrings: %lld secondes restantes": (
         ["0 seconde restante", "1 seconde restante", "2 secondes restantes"],
         ["0 seconds left", "1 second left", "2 seconds left"]
@@ -410,8 +429,9 @@ private func literal(_ code: [Character], from start: Int) -> ([LiteralPart], In
     var counts: Set<String> = []
     for url in try catalogs()
     where [
-      "Accueil.xcstrings", "Activity.xcstrings", "Corps.xcstrings", "Entries.xcstrings", "Exercices.xcstrings",
-      "Seances.xcstrings", "SessionTools.xcstrings", "Trend.xcstrings",
+      "Account.xcstrings", "Accueil.xcstrings", "Activity.xcstrings", "Corps.xcstrings", "Entries.xcstrings",
+      "Exercices.xcstrings", "Outils.xcstrings", "Reglages.xcstrings", "Seances.xcstrings", "SessionTools.xcstrings",
+      "Trend.xcstrings",
     ]
       .contains(url.lastPathComponent)
     {
