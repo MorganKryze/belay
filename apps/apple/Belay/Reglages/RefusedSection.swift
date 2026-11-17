@@ -4,20 +4,14 @@ import SwiftUI
 
 /// « Saisies refusées », first in Réglages while the server has refused anything: each entry in
 /// the web's words for its kind and day, the reason under it, the web's note, and « Effacer la
-/// liste », which forgets them on this phone. A refusal is never silent (A5).
+/// liste », which forgets on this phone the entries it shows. A refusal is never silent (A5).
 struct RefusedSection: View {
     let store: AccountStore
     let corps: CorpsModel
-    @State private var entries: [RejectedEntry]
+    /// As the store holds them, which Réglages follows through each sync.
+    let entries: [RejectedEntry]
 
     private static let log = Logger(subsystem: "cloud.libresoftware.belay", category: "settings")
-
-    /// Read as Réglages opens: an empty section has no view whose appearance could read it.
-    init(store: AccountStore, corps: CorpsModel) {
-        self.store = store
-        self.corps = corps
-        _entries = State(initialValue: Self.read(store))
-    }
 
     var body: some View {
         Group {
@@ -49,19 +43,10 @@ struct RefusedSection: View {
         }
     }
 
-    private static func read(_ store: AccountStore) -> [RejectedEntry] {
-        do {
-            return try store.rejected()
-        } catch {
-            log.error("refusals not read: \(AccountStore.logLabel(error), privacy: .public)")
-            return []
-        }
-    }
-
+    /// Only the entries on screen: one a sync recorded since stays until it is shown.
     private func clear() {
         do {
-            try store.clearRejected()
-            entries = []
+            try store.clearRejected(ids: entries.map(\.id))
         } catch {
             Self.log.error("refusals not cleared: \(AccountStore.logLabel(error), privacy: .public)")
         }

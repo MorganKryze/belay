@@ -73,9 +73,25 @@ import Testing
       response: Fixture.response(rejected: [Rejected(index: 1, reason: "refused")]))
     #expect(try store.rejected().count == 1)
 
-    try store.clearRejected()
+    try store.clearRejected(ids: try store.rejected().map(\.id))
     #expect(try store.rejected().isEmpty)
     #expect(try store.outbox(limit: nil).isEmpty)
+  }
+
+  /// « Effacer la liste » forgets the refusals on screen; one recorded since was never read.
+  @Test func clearingKeepsARefusalNotShown() throws {
+    try store.recordChanges([note("a", at: 1)], active: .keep)
+    try store.applyServer(
+      sent: try store.outbox(limit: nil),
+      response: Fixture.response(rejected: [Rejected(index: 0, reason: "refused")]))
+    let shown = try store.rejected().map(\.id)
+    try store.recordChanges([note("b", at: 2)], active: .keep)
+    try store.applyServer(
+      sent: try store.outbox(limit: nil),
+      response: Fixture.response(rejected: [Rejected(index: 0, reason: "unknown")]))
+
+    try store.clearRejected(ids: shown)
+    #expect(try store.rejected().map(\.reason) == ["unknown"])
   }
 
   @Test func twoRefusalsOfOneSessionAreRevertedInOrder() throws {

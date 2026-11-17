@@ -179,6 +179,23 @@ final class ReglagesTests: XCTestCase {
         XCTAssertFalse(app.staticTexts["Saisies refusées"].exists)
     }
 
+    /// A refusal a sync records while Réglages is open shows there, and « Effacer la liste »
+    /// forgets what it shows.
+    func testRefusalRecordedWhileOpenShows() {
+        let app = launch("refused", extra: ["-BelayPull", "refusal"])
+        reglages(app)
+        XCTAssertTrue(element(app, "rejected-4").waitForExistence(timeout: 5), "the five refusals show")
+        XCTAssertFalse(element(app, "rejected-5").exists)
+        XCUIDevice.shared.press(.home)
+        app.activate()
+        let weighIn = element(app, "rejected-5")
+        XCTAssertTrue(weighIn.waitForExistence(timeout: 5), "the refusal recorded meanwhile shows")
+        XCTAssertTrue(weighIn.label.contains("Pesée du \(frenchDayMonth(0))"), weighIn.label)
+        XCTAssertTrue(app.swipeUpUntil(app.buttons["rejected-clear"]))
+        app.buttons["rejected-clear"].tap()
+        XCTAssertFalse(element(app, "rejected-0").waitForExistence(timeout: 2), "the list is emptied")
+    }
+
     // MARK: A27
 
     func testThemeReachesSheetAndAlert() {

@@ -16,12 +16,14 @@ struct ReglagesView: View {
     @State private var importOn = false
     /// iOS did not let Belay write workouts at the last turn-on; the switch can try again.
     @State private var refused = false
+    /// The server's refusals, read again at each sync that records one.
+    @State private var refusals: [RejectedEntry] = []
 
     private static let log = Logger(subsystem: "cloud.libresoftware.belay", category: "settings")
 
     var body: some View {
         List {
-            RefusedSection(store: store, corps: corps)
+            RefusedSection(store: store, corps: corps, entries: refusals)
             profileCell
             DisplayRows()
             suivi
@@ -60,6 +62,15 @@ struct ReglagesView: View {
         .navigationTitle("Réglages")
         .largeTitleOnly()
         .onAppear(perform: readHealth)
+        .task(followRefusals)
+    }
+
+    private func followRefusals() async {
+        do {
+            for try await entries in store.observe({ try AccountStore.rejected($0) }) { refusals = entries }
+        } catch {
+            Self.log.error("refusals not followed: \(AccountStore.logLabel(error), privacy: .public)")
+        }
     }
 
     /// The initial in its disc, the name, and what Profil holds.

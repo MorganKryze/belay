@@ -684,8 +684,9 @@ enum Fixture {
         }
     }
 
-    /// `-BelayPull range`: as the app goes to the background, a sync lands what another device
-    /// wrote meanwhile, a range of 0,3 to 0,6 %, so a test sees a pull land on a page left open.
+    /// `-BelayPull range|refusal`: as the app goes to the background, a sync lands what another
+    /// device wrote meanwhile, a range of 0,3 to 0,6 %, or the server refuses a weigh-in of today,
+    /// so a test sees a pull land on a page left open.
     struct PullOnLeave: View {
         let store: AccountStore
 
@@ -705,12 +706,18 @@ enum Fixture {
         private func pull() throws {
             let at = Instant.string(Fixture.now)
             var answer = Fixture.emptyAnswer
+            var sent: [OutboxEntry] = []
             switch UserDefaults.standard.string(forKey: "BelayPull") {
             case "range": answer["target"] = ["minPct": 0.3, "maxPct": 0.6, "at": at]
+            case "refusal":
+                let actions = BodyActions(store: store, now: { Fixture.now }, timeZone: .current)
+                try actions.weigh(date: toISODate(Fixture.now, timeZone: .current), kg: 81)
+                sent = try store.outbox(limit: nil)
+                answer["rejected"] = sent.indices.map { ["index": $0, "reason": "refused"] }
             default: return
             }
             let data = try JSONSerialization.data(withJSONObject: answer)
-            try store.applyServer(sent: [], response: JSONDecoder().decode(SyncResponse.self, from: data))
+            try store.applyServer(sent: sent, response: JSONDecoder().decode(SyncResponse.self, from: data))
         }
     }
 
