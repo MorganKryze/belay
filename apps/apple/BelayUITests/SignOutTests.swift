@@ -39,8 +39,10 @@ final class SignOutTests: XCTestCase {
         XCTAssertTrue(settings.waitForExistence(timeout: 5), "Accueil leads to Réglages")
         XCTAssertEqual(settings.label, "Réglages", "the avatar is named for VoiceOver")
         settings.tap()
+        XCTAssertTrue(app.navigationBars["Réglages"].waitForExistence(timeout: 5), "Réglages opens")
+        // Compte is the list's last section (A26): the list scrolls to it.
         let signOut = app.buttons["signout"]
-        XCTAssertTrue(signOut.waitForExistence(timeout: 5), "Réglages offers to sign out")
+        XCTAssertTrue(app.swipeUpUntil(signOut), "Réglages offers to sign out")
         signOut.tap()
         let sure = app.buttons["signout-confirm"].firstMatch
         XCTAssertTrue(sure.waitForExistence(timeout: 3), "signing out asks first")
