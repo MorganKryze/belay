@@ -457,6 +457,19 @@ final class BodyToolsTests: XCTestCase {
         XCTAssertTrue(app.swipeUpUntil(band))
         XCTAssertLessThan(element(app, "tool-field-weight").frame.minY, band.frame.minY, "the fields come first")
     }
+
+    /// A19: the pace in its own card, titled, « perte par semaine » under its name.
+    func testProjectionPaceTitledInCard() {
+        let app = launch("toolsEmpty", arguments: ["-BelayNow", "2026-10-07T09:00:00"])
+        outils(app)
+        open(app, "projection")
+        type(app, "80,2", into: "tool-field-weight")
+        type(app, "75", into: "tool-field-target")
+        hideKeypad(app)
+        let hint = app.staticTexts["perte par semaine"]
+        XCTAssertTrue(app.swipeUpUntil(hint), "the pace says what it measures")
+        XCTAssertTrue(app.staticTexts["Ton rythme"].exists)
+    }
 }
 
 extension XCUIApplication {

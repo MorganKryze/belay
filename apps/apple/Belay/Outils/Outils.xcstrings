@@ -122,16 +122,6 @@
         }
       }
     },
-    "(perte par semaine)": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "(loss per week)"
-          }
-        }
-      }
-    },
     "1RM estimé": {
       "localizations": {
         "en": {
@@ -892,6 +882,16 @@
         }
       }
     },
+    "perte par semaine": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "loss per week"
+          }
+        }
+      }
+    },
     "Plage de référence de l’OMS": {
       "localizations": {
         "en": {
@@ -1398,16 +1398,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Your pace"
-          }
-        }
-      }
-    },
-    "Ton rythme %@": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Your pace %@"
           }
         }
       }

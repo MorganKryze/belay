@@ -60,9 +60,6 @@ struct ProjectionTool: View {
             Section {
                 pace(weight)
                 warning
-            } header: {
-                Text("Ton rythme \(Text("(perte par semaine)", tableName: "Outils").foregroundStyle(.muted))", tableName: "Outils")
-                    .font(.subheadline.weight(.semibold)).foregroundStyle(.ink).textCase(nil)
             }
             .listRowBackground(Color.surface)
         }
@@ -83,6 +80,10 @@ struct ProjectionTool: View {
                 .accessibilityIdentifier("tool-rate-presets")
         } else {
             VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Ton rythme", tableName: "Outils").foregroundStyle(.ink)
+                    Text("perte par semaine", tableName: "Outils").font(.footnote).foregroundStyle(.muted)
+                }
                 Picker(selection: Binding(get: { pct }, set: { pct = $0 })) {
                     ForEach(ratePresets, id: \.id) { preset in
                         Text(Self.presetName(preset.id)).tag(preset.pct)
@@ -168,17 +169,17 @@ struct ProjectionTool: View {
             localized: "Entre le \(ToolDay.text(low, zone)) et le \(ToolDay.text(high, zone))", table: "Outils")
         return VStack(alignment: .leading, spacing: 6) {
             ResultLabel(text: "Objectif atteint")
-            Text(verbatim: between).font(.title2.weight(.bold)).foregroundStyle(.ink)
+            Text(verbatim: between).font(.custom(Font.archivoName, size: 24, relativeTo: .title2)).foregroundStyle(.ink)
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityLabel(Text(verbatim: between))
                 .accessibilityIdentifier("tool-projection-dates")
+            MonthBand(today: today, low: low, high: high, timeZone: zone).padding(.vertical, 4)
             Text(
                 "Dans \(weeksLow) à \(weeksHigh) semaines. La perte ralentit à mesure que tu perds du poids, d’où une fourchette.",
                 tableName: "Outils"
             )
             .font(.subheadline).foregroundStyle(.muted).fixedSize(horizontal: false, vertical: true)
             .accessibilityIdentifier("tool-projection-weeks")
-            MonthBand(today: today, low: low, high: high, timeZone: zone).padding(.top, 8)
         }
         .padding(.vertical, 6)
     }
@@ -197,38 +198,55 @@ struct ProjectionTool: View {
     }
 }
 
-/// The months from today to the late date, the arrival window filled in ink.
+/// The months ahead, six at least: today a ring, the arrival window a band in the tool's shade,
+/// each month named under its start. Never a colour that judges.
 private struct MonthBand: View {
     let today: String
     let low: String
     let high: String
     let timeZone: TimeZone
 
+    private var calendar: Calendar {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = timeZone
+        return calendar
+    }
+
     var body: some View {
-        let start = ToolDay.date(today, timeZone) ?? .distantPast
-        let end = ToolDay.date(high, timeZone) ?? start
-        let from = ToolDay.date(low, timeZone) ?? start
-        let span = max(1, end.timeIntervalSince(start))
+        let now = ToolDay.date(today, timeZone) ?? .now
+        let first = calendar.dateInterval(of: .month, for: now)?.start ?? now
+        let end = ToolDay.date(high, timeZone) ?? now
+        let reach = (calendar.dateComponents([.month], from: first, to: end).month ?? 0) + 1
+        let months = (0..<max(6, reach)).compactMap { calendar.date(byAdding: .month, value: $0, to: first) }
+        let last = calendar.date(byAdding: .month, value: months.count, to: first) ?? end
+        let span = max(1, last.timeIntervalSince(first))
+        let at = { (date: Date) in min(1, max(0, date.timeIntervalSince(first) / span)) }
+        let from = at(ToolDay.date(low, timeZone) ?? now)
         let words = String(
             localized: "Fenêtre d’arrivée\u{202F}: de \(ToolDay.text(low, timeZone)) à \(ToolDay.text(high, timeZone))",
             table: "Outils")
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 6) {
             GeometryReader { geometry in
                 let width = geometry.size.width
                 ZStack(alignment: .leading) {
-                    Capsule().fill(Color.track)
-                    Capsule().fill(Color.ink)
-                        .frame(width: max(8, width * (end.timeIntervalSince(from) / span)))
-                        .offset(x: width * (from.timeIntervalSince(start) / span))
+                    Capsule().fill(Color.track).frame(height: 10)
+                    Capsule().fill(ToolId.projection.domain.shade)
+                        .frame(width: max(10, width * (at(end) - from)), height: 10)
+                        .offset(x: width * from)
+                    Circle().strokeBorder(Color.ink, lineWidth: 2.5).background(Circle().fill(Color.surface))
+                        .frame(width: 16, height: 16)
+                        .offset(x: min(width - 16, max(0, width * at(now) - 8)))
+                }
+                .frame(height: 18)
+            }
+            .frame(height: 18)
+            HStack(spacing: 0) {
+                ForEach(months, id: \.self) { month in
+                    Text(verbatim: month.formatted(Date.FormatStyle(timeZone: timeZone).month(.abbreviated)))
+                        .font(.caption).foregroundStyle(.muted).lineLimit(1).minimumScaleFactor(0.7)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
-            .frame(height: 10)
-            HStack {
-                Text(verbatim: ToolDay.month(today, timeZone))
-                Spacer()
-                Text(verbatim: ToolDay.month(high, timeZone))
-            }
-            .font(.footnote).foregroundStyle(.muted)
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(verbatim: words))
@@ -249,11 +267,6 @@ enum ToolDay {
     /// « 9 décembre ».
     static func text(_ iso: String, _ zone: TimeZone) -> String {
         format(iso, zone, Date.FormatStyle().day().month(.wide))
-    }
-
-    /// « oct. ».
-    static func month(_ iso: String, _ zone: TimeZone) -> String {
-        format(iso, zone, Date.FormatStyle().month(.abbreviated))
     }
 
     private static func format(_ iso: String, _ zone: TimeZone, _ style: Date.FormatStyle) -> String {
