@@ -4346,6 +4346,16 @@ if (process.argv.includes("--check")) {
     }
   });
   if (stale.length > 0) {
+    // Say where each file first differs, so a run on another machine shows what moved.
+    for (const { path, expected } of stale) {
+      let committed: string[] = [];
+      try {
+        committed = readFileSync(path, "utf8").split("\n");
+      } catch {}
+      const lines = expected.split("\n");
+      const at = lines.findIndex((line, i) => line !== committed[i]);
+      console.error(`${path}:${at + 1}\n  committed: ${committed[at]}\n  generated: ${lines[at]}`);
+    }
     console.error("The native vectors are out of date. Run `pnpm vectors` and commit the result.");
     process.exit(1);
   }
