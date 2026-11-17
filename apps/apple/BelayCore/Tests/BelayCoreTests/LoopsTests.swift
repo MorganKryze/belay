@@ -7,15 +7,19 @@ import Testing
 // An exercise's loop: asked of the person's instance only, with the session's token, never while
 // the instance serves no media; kept for offline, capped, and gone at sign-out.
 
-/// Answers every request with one status and body, and keeps what it was sent.
+/// Answers every request with one status, type and body, and keeps what it was sent.
 private final class LoopServer: HTTPClient, Sendable {
   let sent = Mutex<[URLRequest]>([])
   private let status: Int
   private let offline: Bool
+  private let type: String
+  private let body: Data
 
-  init(status: Int = 200, offline: Bool = false) {
+  init(status: Int = 200, offline: Bool = false, type: String = "video/mp4", body: Data = Data("loop".utf8)) {
     self.status = status
     self.offline = offline
+    self.type = type
+    self.body = body
   }
 
   var requests: [URLRequest] { sent.withLock { $0 } }
@@ -25,8 +29,9 @@ private final class LoopServer: HTTPClient, Sendable {
     // Long enough for a second fetch to start while this one is out.
     try await Task.sleep(for: .milliseconds(50))
     if offline { throw URLError(.notConnectedToInternet) }
-    let response = HTTPURLResponse(url: request.url!, statusCode: status, httpVersion: nil, headerFields: nil)!
-    return (Data("loop".utf8), response)
+    let response = HTTPURLResponse(
+      url: request.url!, statusCode: status, httpVersion: nil, headerFields: ["Content-Type": type])!
+    return (body, response)
   }
 }
 
@@ -157,6 +162,30 @@ private func scratch() -> URL {
     #expect(await loops.fetch("ds:0042", token: token, at: instance, media: true) == nil)
     #expect(server.requests.count == 1)
     #expect(loops.kept("ds:0042") == nil)
+  }
+
+  /// A page the instance answers in place of the loop, a login form say, is a failure, never kept.
+  @Test func onlyAnMp4IsKept() async {
+    let server = LoopServer(type: "text/html; charset=utf-8", body: Data("<html></html>".utf8))
+    let loops = Loops(folder: scratch(), userId: "ana", origin: instance.origin, client: server)
+    #expect(await loops.fetch("ds:0042", token: token, at: instance, media: true) == nil)
+    #expect(loops.kept("ds:0042") == nil)
+    #expect(await loops.fetch("ds:0042", token: token, at: instance, media: true) == nil)
+    #expect(server.requests.count == 1, "a failure, not asked again in the run")
+  }
+
+  /// At most the 8 MiB the instance serves (`MEDIA_MAX_BYTES`).
+  @Test func atMostEightMebibytes() async throws {
+    let limit = 8 * 1024 * 1024
+    let over = Loops(
+      folder: scratch(), userId: "ana", origin: instance.origin,
+      client: LoopServer(body: Data(count: limit + 1)))
+    #expect(await over.fetch("ds:0042", token: token, at: instance, media: true) == nil)
+    #expect(over.kept("ds:0042") == nil)
+    let at = Loops(
+      folder: scratch(), userId: "ana", origin: instance.origin, client: LoopServer(body: Data(count: limit)))
+    let url = try #require(await at.fetch("ds:0042", token: token, at: instance, media: true))
+    #expect(try Data(contentsOf: url).count == limit)
   }
 
   /// A row's thumbnail and the page asking at once make one request.

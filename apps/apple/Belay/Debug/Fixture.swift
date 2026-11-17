@@ -803,7 +803,9 @@ private nonisolated struct FixtureClient: HTTPClient {
     func send(_ request: URLRequest) async throws -> (Data, HTTPURLResponse) {
         if let url = request.url, url.path().hasPrefix("/media/exercises/") {
             let (data, status) = try await loops.answer(url.path())
-            guard let response = HTTPURLResponse(url: url, statusCode: status, httpVersion: nil, headerFields: nil)
+            // As the instance types it: only an mp4 is kept.
+            guard let response = HTTPURLResponse(
+                url: url, statusCode: status, httpVersion: nil, headerFields: ["Content-Type": "video/mp4"])
             else { throw URLError(.badURL) }
             return (data, response)
         }

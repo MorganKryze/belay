@@ -17,6 +17,8 @@ public struct Loops: Sendable {
   /// As the web's `KEPT_LOOPS`: kept by count, the oldest out. A size budget would need each
   /// file's bytes read at every write; at about 100 KB a loop this stays near 15 MB.
   static let cap = 150
+  /// The instance's own ceiling (`MEDIA_MAX_BYTES`): a bigger body is not one of its loops.
+  static let maxBytes = 8 * 1024 * 1024
 
   private let folder: URL
   private let client: HTTPClient
@@ -58,7 +60,10 @@ public struct Loops: Sendable {
   {
     do {
       let (data, response) = try await client.send(request(path, token: token, at: instance))
-      guard response.statusCode == 200, !data.isEmpty else {
+      // Only a loop is kept: a page served in its place, a login form say, is a failure.
+      guard response.statusCode == 200, response.mimeType?.lowercased() == "video/mp4", !data.isEmpty,
+        data.count <= Self.maxBytes
+      else {
         failed.insert(id)
         Self.log.info("loop refused: \(response.statusCode, privacy: .public)")
         return nil
