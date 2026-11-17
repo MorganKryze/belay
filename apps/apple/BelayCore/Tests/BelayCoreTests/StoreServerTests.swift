@@ -66,6 +66,18 @@ import Testing
     #expect(try store.outbox(limit: nil).isEmpty)
   }
 
+  @Test func clearingTheRefusalsEmptiesTheListAndQueuesNothing() throws {
+    _ = try store.recordSet(Fixture.set(w), at: Fixture.time(1), active: Fixture.active(w))
+    try store.applyServer(
+      sent: try store.outbox(limit: nil),
+      response: Fixture.response(rejected: [Rejected(index: 1, reason: "refused")]))
+    #expect(try store.rejected().count == 1)
+
+    try store.clearRejected()
+    #expect(try store.rejected().isEmpty)
+    #expect(try store.outbox(limit: nil).isEmpty)
+  }
+
   @Test func twoRefusalsOfOneSessionAreRevertedInOrder() throws {
     let ended = Change.workout(
       WorkoutChange(id: w, at: Fixture.time(2), edit: .ended(Fixture.time(2))))
