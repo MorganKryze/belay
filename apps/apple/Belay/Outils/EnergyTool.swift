@@ -61,6 +61,7 @@ struct EnergyTool: View {
             }
             .listRowBackground(Color.surface)
         }
+        .wallUnderSheet(picking)
         .sheet(isPresented: $picking) {
             PalSheet(chosen: outils.pal) { outils.pal = $0 }
         }

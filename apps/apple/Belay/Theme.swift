@@ -72,6 +72,16 @@ extension View {
         .scrollEdgeEffectHidden(true, for: .top)
     }
 
+    /// The wall over the status bar while a sheet is up: a page with `largeTitleOnly` runs its
+    /// content to the top, and the large sheet leaves that strip of it in sight above its edge.
+    func wallUnderSheet(_ presented: Bool) -> some View {
+        overlay(alignment: .top) {
+            if presented {
+                Wall().frame(height: 0).ignoresSafeArea(edges: .top).accessibilityHidden(true)
+            }
+        }
+    }
+
     /// The subtitle under a large title, in the toolbar's own slot: `navigationSubtitle` paints lighter
     /// than 4.5:1 on the wall.
     func belaySubtitle(_ text: String) -> some View {
