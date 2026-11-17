@@ -93,11 +93,8 @@ struct ProteinTool: View {
     }
 
     private func result(_ range: ProteinRange, weight: Double) -> some View {
-        // To the tenth, written to the hundredth unless whole, as designed: « 1,40 à 2 ».
-        let perKg = { (grams: Double) in
-            let value = roundTo(grams / weight, step: 0.1)
-            return value.formatted(.number.precision(.fractionLength(value == value.rounded() ? 0 : 2)))
-        }
+        // To the tenth, as the web writes it: « 1,4 à 2 ».
+        let perKg = { (grams: Double) in roundTo(grams / weight, step: 0.1).formatted(.number.precision(.fractionLength(0...1))) }
         let day = Self.grams(range.lowG, range.highG)
         return VStack(alignment: .leading, spacing: 4) {
             VStack(alignment: .leading, spacing: 4) {

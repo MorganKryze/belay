@@ -489,14 +489,14 @@ final class BodyToolsTests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Ton rythme"].exists)
     }
 
-    /// A18: per kilo to the hundredth, as Proto writes it: « 1,40 à 2 ».
-    func testProteinPerKiloHundredths() {
+    /// A18: per kilo to the tenth, as the web writes it: « 1,4 à 2 », never « 1,40 ».
+    func testProteinPerKiloTenths() {
         let app = launch("toolsEmpty")
         outils(app)
         open(app, "protein")
         type(app, "80,2", into: "tool-field-weight")
         toTop(app)
-        XCTAssertTrue(app.staticTexts["soit 1,40 à 2\u{00A0}g par kg de poids"].exists)
+        XCTAssertTrue(app.staticTexts["soit 1,4 à 2\u{00A0}g par kg de poids"].exists)
     }
 }
 
