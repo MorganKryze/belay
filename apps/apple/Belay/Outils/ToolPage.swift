@@ -153,6 +153,6 @@ enum LoadLine {
     static func missing(_ typed: TypedLoad, _ empty: LocalizedStringKey) -> Text {
         typed == .empty
             ? Text(empty, tableName: "Outils")
-            : Text("Une charge va de 1 à 500 kg.", tableName: "Outils")
+            : Text("Une charge va de 1 à 500\u{202F}kg.", tableName: "Outils")
     }
 }
