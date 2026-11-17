@@ -114,7 +114,8 @@ struct RootView: View {
         bodyBox.value {
             let corps = CorpsModel(
                 store: store, didWrite: account.didWrite, runHealth: account.runHealth,
-                turnImportOn: { [account] in await account.turnHealthImportOn() }, now: Self.clock, timeZone: .current)
+                turnImportOn: { [account] in await account.turnHealthImportOn() },
+                turnStepsOn: { [account] in await account.turnHealthStepsOn() }, now: Self.clock, timeZone: .current)
             corps.choices = outils.choices
             return corps
         }

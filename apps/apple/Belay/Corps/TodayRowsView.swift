@@ -1,22 +1,33 @@
 import BelayCore
 import SwiftUI
 
-/// Where a row of « Aujourd'hui » leads: the weigh-in's sheet, or a pushed screen.
+/// Where a row of « Aujourd'hui » leads: the Activité or weigh-in sheet, or a pushed screen.
 enum TodayEntry {
+    case activity
     case weighIn
     case screen(Route)
 }
 
 /// « Aujourd'hui »: the day's four body entries, the same rows on Corps and on Accueil (R13), each
-/// in words with its domain tile, each one element that opens its sheet or screen.
+/// in words with its domain tile, each one element that opens its sheet or screen. Accueil heads
+/// them with « Activité » (A38).
 struct TodayRowsView: View {
     let rows: TodayRows
     /// The local day the rows were read for, so the last measure's day reads as a word.
     let today: String
+    /// What the day's « Activité » row says; nil leaves the row out.
+    var activity: DaySummary? = nil
     let open: (TodayEntry) -> Void
 
     var body: some View {
         Section {
+            if let activity {
+                row("today.activity", .activity, "figure.walk", String(localized: "Activité", table: "Activity"),
+                    ActivityText.summary(activity), logged: activity != .none,
+                    done: activity == .none ? nil : String(localized: "saisie", table: "Activity")) {
+                    open(.activity)
+                }
+            }
             row("today.weighIn", .body, "scalemass.fill", String(localized: "Pesée", table: "Corps"), weighIn, logged: rows.weighIn.kg != nil,
                 done: rows.weighIn.kg == nil ? nil : String(localized: "saisie", table: "Corps")) {
                 open(.weighIn)

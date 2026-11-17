@@ -240,6 +240,9 @@ func frenchTypographyFaults(_ text: String) -> [String] {
         ["0 annotation", "1 annotation", "2 annotations"],
         ["0 annotations", "1 annotation", "2 annotations"]
       ),
+      "Activity.xcstrings: %lld activités": (
+        ["0 activité", "1 activité", "2 activités"], ["0 activities", "1 activity", "2 activities"]
+      ),
       "Accueil.xcstrings: %lld séances": (
         ["0 séance", "1 séance", "2 séances"], ["0 sessions", "1 session", "2 sessions"]
       ),
@@ -271,7 +274,7 @@ func frenchTypographyFaults(_ text: String) -> [String] {
     var counts: Set<String> = []
     for url in try catalogs()
     where [
-      "Accueil.xcstrings", "Corps.xcstrings", "Entries.xcstrings", "Seances.xcstrings",
+      "Accueil.xcstrings", "Activity.xcstrings", "Corps.xcstrings", "Entries.xcstrings", "Seances.xcstrings",
       "SessionTools.xcstrings", "Trend.xcstrings",
     ]
       .contains(url.lastPathComponent)

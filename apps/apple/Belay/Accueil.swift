@@ -23,6 +23,7 @@ struct AccueilView: View {
     @State private var scrolled: CGFloat = 0
     @State private var choosing = false
     @State private var weighing = false
+    @State private var logging = false
     @AppStorage(DevicePrefs.homeTrend.key) private var trend = DevicePrefs.homeTrend.initial
 
     /// The trend, the same card as Corps's; Réglages › Accueil › Tendance can leave it out.
@@ -54,8 +55,9 @@ struct AccueilView: View {
             }
             .listRowBackground(Color.surface)
             if trend == .shown { trendSection }
-            TodayRowsView(rows: corps.rows, today: corps.today) { entry in
+            TodayRowsView(rows: corps.rows, today: corps.today, activity: corps.activity) { entry in
                 switch entry {
+                case .activity: logging = true
                 case .weighIn: weighing = true
                 case .screen(let route): open(route)
                 }
@@ -86,6 +88,7 @@ struct AccueilView: View {
             .sharedBackgroundVisibility(.hidden)
         }
         .sheet(isPresented: $weighing) { WeighInSheet(corps: corps) }
+        .sheet(isPresented: $logging) { ActivitySheet(corps: corps) }
         .sheet(isPresented: $choosing) {
             ProgramChoiceSheet(programs: training.programs, activeId: training.activeProgramId) { id in
                 choose(id)

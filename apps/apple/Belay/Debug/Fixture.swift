@@ -46,6 +46,11 @@ import Synchronization
 /// today's activity and steps) refused by the server; `pending0`, `pending1` and `pending2` with
 /// that many changes waiting to be sent; `queueUnreadable` as `pending2`, its queue unreadable.
 ///
+/// Accueil's « Activité » modes: `activityNone` with nothing logged, `activityOne` with a climb of
+/// 1 h 30 today, `activityMany` with that climb and 8 437 steps typed today; `stepsOff` with Santé on
+/// and its steps import off, `stepsNone` with both on and no steps. With `-BelayHealth allowed`
+/// Santé holds 8 437 steps today, which the import brings in after the first sync.
+///
 /// The tools' modes: `tools` with a full profile, a week of weigh-ins around 80 kg and a waist of
 /// 84,5 cm two days ago, for the fields a tool opens on; `toolsEmpty` with none of them.
 enum Fixture {
@@ -135,7 +140,8 @@ enum Fixture {
     private static let bodyModes: Set = [
         "bodyUsual", "bodyOutOfRange", "bodyEarly", "bodyFirst", "healthCard", "weighedFromHealth", "measures", "intake",
         "supplements", "trend", "tools", "toolsEmpty", "profileEmpty", "supplementsEmpty", "refused", "pending0",
-        "pending1", "pending2", "queueUnreadable",
+        "pending1", "pending2", "queueUnreadable", "activityNone", "activityOne", "activityMany", "stepsOff",
+        "stepsNone",
     ]
 
     /// The clock `-BelayNow` sets: that local time at launch, running on from there.
@@ -333,6 +339,17 @@ enum Fixture {
             for back in 0..<(mode == "pending1" ? 1 : 2) {
                 try actions.weigh(date: addDays(today, -back), kg: 80)
             }
+        case "activityOne", "activityMany":
+            try actions.logActivity(
+                ActivityInput(
+                    id: "00000000-0000-7000-8000-0000000000f2", date: today,
+                    fields: ActivityFields(type: "climbing", durationMin: 90, climbStyle: "boulder")))
+            if mode == "activityMany" { try actions.writeSteps(date: today, value: 8_437, own: false) }
+        case "stepsOff":
+            try store.setHealthOn(true, now: now)
+        case "stepsNone":
+            try store.setHealthOn(true, now: now)
+            try store.setHealthStepsOn(true)
         case "weighedFromHealth":
             try store.setHealthOn(true, now: now)
             try store.setHealthImportOn(true)

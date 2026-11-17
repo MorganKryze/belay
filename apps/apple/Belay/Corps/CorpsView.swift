@@ -49,6 +49,8 @@ struct CorpsView: View {
                 switch entry {
                 case .weighIn: weighing = true
                 case .screen(let route): open(route)
+                // Corps lists no « Activité » row: it is Accueil's.
+                case .activity: break
                 }
             }
         }

@@ -24,6 +24,12 @@ final class CorpsModel {
     private(set) var measures: MeasuresState
     private(set) var intake: IntakeState
     private(set) var supplements: [SupplementToday] = []
+    /// What Accueil's « Activité » says about today (A38).
+    private(set) var activity: DaySummary = .none
+    /// The day's steps are imported from Santé on this phone.
+    private(set) var stepsOn = false
+    /// The steps the import last wrote, by day: those days read « depuis Santé ».
+    private var stepsWritten: [String: Int] = [:]
     /// Whether the import's card shows: Health is on this phone and the card was never answered.
     private(set) var offersImport = false
     /// The card's last « Importer les pesées » found Santé refused: the card stays and says why.
@@ -45,6 +51,7 @@ final class CorpsModel {
     private let didWrite: () -> Void
     private let runHealth: () -> Void
     private let turnImportOn: () async -> Bool
+    private let turnStepsOn: () async -> Bool
     /// The clock and zone the day is read in; the sheets date their entries by them too.
     let now: @Sendable () -> Date
     let timeZone: TimeZone
@@ -55,7 +62,7 @@ final class CorpsModel {
 
     init(
         store: AccountStore, didWrite: @escaping () -> Void, runHealth: @escaping () -> Void,
-        turnImportOn: @escaping () async -> Bool,
+        turnImportOn: @escaping () async -> Bool, turnStepsOn: @escaping () async -> Bool,
         now: @escaping @Sendable () -> Date, timeZone: TimeZone
     ) {
         self.store = store
@@ -63,6 +70,7 @@ final class CorpsModel {
         self.didWrite = didWrite
         self.runHealth = runHealth
         self.turnImportOn = turnImportOn
+        self.turnStepsOn = turnStepsOn
         self.now = now
         self.timeZone = timeZone
         body = BodyRead.empty
@@ -101,6 +109,7 @@ final class CorpsModel {
     private func show(_ body: BodyRead) {
         do {
             health = try store.healthSettings()
+            stepsWritten = try store.stepsWritten()
         } catch {
             Self.log.error("health settings not read: \(AccountStore.logLabel(error), privacy: .public)")
         }
@@ -117,6 +126,43 @@ final class CorpsModel {
         supplements = supplementsToday(body, now: at, timeZone: timeZone)
         annotations = body.annotations.filter { !$0.removed }.sorted { ($0.date, $0.id) < ($1.date, $1.id) }
         offersImport = HealthKitWriter.available && !health.offered
+        activity = activitySummary(body.activities, body.steps, day: today)
+        stepsOn = health.on && health.stepsOn
+    }
+
+    /// The day's activities of one kind, `cardio` or `climbing`, in the order they were written.
+    func activities(on date: String, kind: String) -> [ActivityRow] {
+        body.activities.filter { $0.date == date && $0.kind == kind && !$0.removed }
+    }
+
+    /// The last activity of a kind up to `date`, which a new one starts from, as on the web.
+    func lastActivity(kind: String, upTo date: String) -> ActivityRow? {
+        body.activities.filter { $0.kind == kind && $0.date <= date && !$0.removed }.last
+    }
+
+    /// The day's steps, and whether this phone's import wrote them.
+    func steps(on date: String) -> (value: Int, fromHealth: Bool)? {
+        guard let value = stepsOf(body.steps, day: date) else { return nil }
+        return (value, stepsWritten[date] == value)
+    }
+
+    /// A new activity, or the one picked edited: one write through the store.
+    func logActivity(id: String?, date: String, _ fields: ActivityFields) {
+        write("activity not logged") {
+            try actions.logActivity(ActivityInput(id: id ?? UUIDv7.make(at: now()), date: date, fields: fields))
+        }
+    }
+
+    func removeActivity(id: String) {
+        write("activity not removed") { try actions.removeActivity(id: id) }
+    }
+
+    /// The Pas segment's « Importer les pas de Santé »: as Réglages' switch, Santé first. Whether
+    /// the import is on.
+    func importSteps() async -> Bool {
+        let on = await turnStepsOn()
+        refresh()
+        return on
     }
 
     /// The weigh-in of `date`, if the day holds one.
