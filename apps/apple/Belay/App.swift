@@ -47,6 +47,7 @@ struct BelayApp: App {
                 .overlay(alignment: .topLeading) {
                     if Fixture.isOn, let store = account.store {
                         Fixture.QueueProbe(store: store)
+                        Fixture.LoopProbe()
                         Fixture.SummaryProbe(store: store)
                         Fixture.ActiveProbe(store: store)
                         Fixture.HistoryProbe(store: store)

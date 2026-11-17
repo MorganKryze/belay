@@ -33,6 +33,13 @@ final class AccountModel {
     private(set) var syncStatus: SyncStatus = .idle
     /// How the instance names the person, for Accueil's greeting; nil before it has said so.
     private(set) var displayName: String?
+    /// Whether the instance serves exercise loops, as `/api/me` last said; kept across launches.
+    private(set) var media: Bool
+    /// The loops of the open store's instance; nil while none is open.
+    private(set) var loops: Loops?
+
+    /// Under the web's own preference name.
+    static let mediaKey = "belay.media"
 
     /// Whom the open store and its sync were opened for. Another person, instance or token closes
     /// both first, so one account's queue never goes out under another's token.
@@ -50,6 +57,8 @@ final class AccountModel {
     private let defaults: UserDefaults
     /// Where each account's store lives: the app's own Application Support, never a shared container.
     private let storeFolder: URL
+    /// Where the loops are kept: the caches folder, which iOS may empty when space runs short.
+    private let loopsFolder: URL
     private let health: any HealthWriting
     /// One Health run at a time, cancelled when the store closes.
     private let healthRuns: HealthRuns
@@ -60,6 +69,7 @@ final class AccountModel {
         secrets: SecretStore = KeychainStore(), http: HTTPClient = URLSessionClient(),
         sheet: SignInSheet = SystemSignInSheet(), defaults: UserDefaults = .standard,
         storeFolder: URL = URL.applicationSupportDirectory.appending(path: "Stores", directoryHint: .isDirectory),
+        loopsFolder: URL = URL.cachesDirectory.appending(path: "Loops", directoryHint: .isDirectory),
         health: any HealthWriting = HealthKitWriter()
     ) {
         session = StoredSession(store: secrets, defaults: defaults)
@@ -67,6 +77,8 @@ final class AccountModel {
         self.sheet = sheet
         self.defaults = defaults
         self.storeFolder = storeFolder
+        self.loopsFolder = loopsFolder
+        media = defaults.bool(forKey: Self.mediaKey)
         self.health = health
         healthRuns = HealthRuns(writer: health)
         if let instance = storedInstance, let token = session.token(origin: instance.origin.absoluteString),
@@ -111,6 +123,7 @@ final class AccountModel {
         }
         self.store = store
         openedFor = account
+        loops = Loops(folder: loopsFolder, instanceKey: account.instance.origin.absoluteString, client: http)
         let engine = SyncEngine(
             userId: account.userId, store: store,
             transport: HTTPTransport(instance: account.instance, token: account.token, client: http),
@@ -133,7 +146,19 @@ final class AccountModel {
         following = nil
         store = nil
         openedFor = nil
+        loops = nil
         syncStatus = .idle
+    }
+
+    /// The loop of `exerciseId` already on this phone, while the instance serves loops.
+    func keptLoop(_ exerciseId: String) -> URL? {
+        media ? loops?.kept(exerciseId) : nil
+    }
+
+    /// The loop of `exerciseId`, kept or fetched from the signed-in instance with its token.
+    func loop(_ exerciseId: String) async -> URL? {
+        guard let loops, case .signedIn(let account) = state else { return nil }
+        return await loops.fetch(exerciseId, token: account.token, at: account.instance, media: media)
     }
 
     /// After a write to the store: the sync follows once writes pause.
@@ -361,6 +386,8 @@ final class AccountModel {
     private func remember(_ me: Me) {
         session.remember(userId: me.id, displayName: me.displayName)
         displayName = me.displayName
+        defaults.set(me.media, forKey: Self.mediaKey)
+        media = me.media
     }
 
     /// Signed in once the instance names who `token` belongs to; a token it refuses is dropped.
@@ -385,6 +412,8 @@ final class AccountModel {
         forget()
         // What the tools remember is health data kept for this account only: it goes with it.
         ToolMemoryFile.remove(userId: account.userId, origin: account.instance.origin, in: storeFolder)
+        // The loops seen tell which exercises this person looked at: they go too.
+        Loops.removeAll(in: loopsFolder)
         state = .signedOut(nil)
         await logout(token: account.token, at: account.instance, using: http)
     }

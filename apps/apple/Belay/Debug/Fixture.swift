@@ -1,4 +1,5 @@
 #if DEBUG
+import AVFoundation
 import BelayCore
 import Foundation
 import SwiftUI
@@ -53,6 +54,10 @@ import Synchronization
 ///
 /// The tools' modes: `tools` with a full profile, a week of weigh-ins around 80 kg and a waist of
 /// 84,5 cm two days ago, for the fields a tool opens on; `toolsEmpty` with none of them.
+///
+/// The instance serves loops in every mode: each one a short video made on the phone, sent 3 s
+/// after it is asked, since no media ships with the app. `loopLoading` never answers for one, and
+/// `loopFailed` answers each with a 404 after the same wait.
 enum Fixture {
     nonisolated fileprivate static let origin = "https://belay.example"
     nonisolated fileprivate static let userId = "fixture"
@@ -118,14 +123,19 @@ enum Fixture {
             preconditionFailure("the fixture did not set up: \(error)")
         }
         let health = UserDefaults.standard.string(forKey: "BelayHealth")
-        let client = FixtureClient(refusesSync: mode == "expired", answersSync: health == "allowed")
+        let client = FixtureClient(
+            refusesSync: mode == "expired", answersSync: health == "allowed", loops: FixtureLoops(mode: mode))
+        defaults.set(true, forKey: AccountModel.mediaKey)
+        let loops = folder.appending(path: "Loops", directoryHint: .isDirectory)
         guard let health else {
-            return AccountModel(secrets: secrets, http: client, sheet: FixtureSheet(), defaults: defaults, storeFolder: folder)
+            return AccountModel(
+                secrets: secrets, http: client, sheet: FixtureSheet(), defaults: defaults, storeFolder: folder,
+                loopsFolder: loops)
         }
         guard health == "allowed" || health == "refused" else { preconditionFailure("-BelayHealth does not read: \(health)") }
         return AccountModel(
             secrets: secrets, http: client, sheet: FixtureSheet(), defaults: defaults, storeFolder: folder,
-            health: FixtureHealth(allowed: health == "allowed"))
+            loopsFolder: loops, health: FixtureHealth(allowed: health == "allowed"))
     }
 
     private static let openModes: Set = [
@@ -547,6 +557,21 @@ enum Fixture {
         try store.recordChanges([started] + sets + [ended], active: .keep)
     }
 
+    /// How many times the bench press's loop was asked of the instance, for a test to read; nothing
+    /// a person sees or hears.
+    struct LoopProbe: View {
+        var body: some View {
+            TimelineView(.periodic(from: .now, by: 0.5)) { _ in
+                let asked = FixtureLoops.asked.withLock { $0["/media/exercises/0025", default: 0] }
+                Color.clear
+                    .frame(width: 1, height: 1)
+                    .accessibilityElement()
+                    .accessibilityIdentifier("loop-asked")
+                    .accessibilityValue(String(asked))
+            }
+        }
+    }
+
     /// How many set changes of the open session wait in the queue, for a test to read; nothing a
     /// person sees or hears.
     struct QueueProbe: View {
@@ -773,8 +798,15 @@ private nonisolated final class FixtureSecrets: SecretStore {
 private nonisolated struct FixtureClient: HTTPClient {
     let refusesSync: Bool
     let answersSync: Bool
+    let loops: FixtureLoops
 
     func send(_ request: URLRequest) async throws -> (Data, HTTPURLResponse) {
+        if let url = request.url, url.path().hasPrefix("/media/exercises/") {
+            let (data, status) = try await loops.answer(url.path())
+            guard let response = HTTPURLResponse(url: url, statusCode: status, httpVersion: nil, headerFields: nil)
+            else { throw URLError(.badURL) }
+            return (data, response)
+        }
         let answer: String
         var status = 200
         switch request.url?.path() {
@@ -793,6 +825,61 @@ private nonisolated struct FixtureClient: HTTPClient {
               let response = HTTPURLResponse(url: url, statusCode: status, httpVersion: nil, headerFields: nil)
         else { throw URLError(.badURL) }
         return (Data(answer.utf8), response)
+    }
+}
+
+/// The fixture instance's loops: what each request gets, and how many times each path was asked.
+nonisolated final class FixtureLoops: Sendable {
+    /// Read by the probe: a test counts the requests for the bench press's loop.
+    static let asked = Mutex<[String: Int]>([:])
+    private let mode: String
+
+    init(mode: String) { self.mode = mode }
+
+    func answer(_ path: String) async throws -> (Data, Int) {
+        Self.asked.withLock { $0[path, default: 0] += 1 }
+        if mode == "loopLoading" { try await Task.sleep(for: .seconds(3_600)) }
+        try await Task.sleep(for: .seconds(3))
+        if mode == "loopFailed" { return (Data(), 404) }
+        return (try await Self.video.value, 200)
+    }
+
+    /// Made once per launch, however many rows ask at once.
+    private static let video = Task { try await make() }
+
+    /// Eight frames of a square fading from grey to ink.
+    private static func make() async throws -> Data {
+        let url = FileManager.default.temporaryDirectory.appending(path: "fixture-loop.mp4")
+        if FileManager.default.fileExists(atPath: url.path) { try FileManager.default.removeItem(at: url) }
+        let side = 96
+        let writer = try AVAssetWriter(outputURL: url, fileType: .mp4)
+        let input = AVAssetWriterInput(
+            mediaType: .video,
+            outputSettings: [AVVideoCodecKey: AVVideoCodecType.h264, AVVideoWidthKey: side, AVVideoHeightKey: side])
+        let adaptor = AVAssetWriterInputPixelBufferAdaptor(
+            assetWriterInput: input,
+            sourcePixelBufferAttributes: [
+                kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
+                kCVPixelBufferWidthKey as String: side, kCVPixelBufferHeightKey as String: side,
+            ])
+        writer.add(input)
+        writer.startWriting()
+        writer.startSession(atSourceTime: .zero)
+        for frame in 0..<8 {
+            while !input.isReadyForMoreMediaData { try await Task.sleep(for: .milliseconds(10)) }
+            var buffer: CVPixelBuffer?
+            CVPixelBufferCreate(nil, side, side, kCVPixelFormatType_32BGRA, nil, &buffer)
+            guard let buffer else { throw URLError(.cannotCreateFile) }
+            CVPixelBufferLockBaseAddress(buffer, [])
+            let shade = UInt8(200 - frame * 20)
+            memset(CVPixelBufferGetBaseAddress(buffer), Int32(shade), CVPixelBufferGetDataSize(buffer))
+            CVPixelBufferUnlockBaseAddress(buffer, [])
+            adaptor.append(buffer, withPresentationTime: CMTime(value: CMTimeValue(frame), timescale: 4))
+        }
+        input.markAsFinished()
+        await writer.finishWriting()
+        guard writer.status == .completed else { throw writer.error ?? URLError(.cannotCreateFile) }
+        return try Data(contentsOf: url)
     }
 }
 

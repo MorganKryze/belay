@@ -46,6 +46,8 @@ enum Route: Hashable {
     case tool(ToolId)
     /// Mon matériel, from Disques.
     case equipment
+    /// An exercise's page, from Séances › Exercices and from a session's preview.
+    case exercise(id: String)
 }
 
 /// The tab in front and what each tab has pushed, kept across tab switches.
@@ -155,6 +157,7 @@ struct RootView: View {
             }
         }
         .environment(\.zoomSpace, space)
+        .environment(\.loops, LoopSource(kept: account.keptLoop, fetch: account.loop))
         .environment(\.push, PushAction { [model] route in model[path: model.tab].append(route) })
         .tint(.ink)
         .fullScreenCover(isPresented: $model.coverOpen) {
@@ -238,6 +241,7 @@ struct RootView: View {
         case .supplements: SupplementsView(corps: corps) { model[path: model.tab].append($0) }
         case .tool(let tool): toolPage(tool)
         case .equipment: EquipmentView(outils: outils)
+        case .exercise(let id): ExercisePage(training: training, exerciseId: id)
         }
     }
 

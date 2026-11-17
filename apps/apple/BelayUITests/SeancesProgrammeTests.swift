@@ -40,7 +40,7 @@ final class SeancesProgrammeTests: XCTestCase {
         let app = seances("fresh")
         let segments = app.segmentedControls.firstMatch
         XCTAssertTrue(segments.waitForExistence(timeout: 5))
-        XCTAssertEqual(segments.buttons.count, 2, "Programme and Historique, no Exercices yet")
+        XCTAssertEqual(segments.buttons.count, 3, "Programme, Historique and Exercices")
         XCTAssertTrue(segments.buttons["Programme"].isSelected, "Programme first")
         XCTAssertFalse(text(app, containing: "sur le web pour l’instant").exists, "no longer on the web")
         segments.buttons["Historique"].tap()

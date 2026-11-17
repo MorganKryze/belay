@@ -28,11 +28,15 @@ struct LastKept: Equatable {
 /// One exercise of the next session, before it starts.
 struct PlannedExercise: Equatable, Identifiable {
     let slotIndex: Int
+    let exerciseId: String
     let name: String
     let sets: Int
     /// Seconds for a timed exercise; repetitions otherwise.
     let timed: Bool
     let repRange: [Int]
+    let rirTarget: [Int]
+    /// The rest after each set; 0 inside a group until its last exercise.
+    let restSec: Int
     /// Last time's work sets, the counts of equal loads in a row grouped.
     let lastTime: [LoadGroup]
 
@@ -587,8 +591,9 @@ final class TrainingModel {
                 let slot = plan[index]
                 let measure: Measure? = slot.measure == .seconds ? .seconds : nil
                 return PlannedExercise(
-                    slotIndex: index, name: exerciseName(slot.exerciseId), sets: slot.sets,
-                    timed: measure != nil, repRange: slot.repRange,
+                    slotIndex: index, exerciseId: slot.exerciseId, name: exerciseName(slot.exerciseId),
+                    sets: slot.sets, timed: measure != nil, repRange: slot.repRange, rirTarget: slot.rirTarget,
+                    restSec: slot.restSec,
                     lastTime: BelayCore.lastTime(snapshot.history, exerciseId: slot.exerciseId, measure: measure)
                         .map { LoadGroup(weightKg: $0.weightKg, counts: $0.counts) })
             })
