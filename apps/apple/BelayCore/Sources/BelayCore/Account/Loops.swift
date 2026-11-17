@@ -21,6 +21,7 @@ public struct Loops: Sendable {
   private let folder: URL
   private let client: HTTPClient
   private let failed = Failed()
+  private let inFlight = InFlight()
 
   public init(folder: URL, instanceKey: String, client: HTTPClient) {
     let safe = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "-._"))
@@ -38,11 +39,23 @@ public struct Loops: Sendable {
 
   /// The loop of `id`: kept, else fetched from `instance` with the session's token and kept. Nil
   /// when the instance serves no media, the exercise has no loop, or the fetch failed now or
-  /// earlier in this run.
+  /// earlier in this run. A fetch already out for `id`, a row's thumbnail and its page asking at
+  /// once, is awaited rather than sent again.
   public func fetch(_ id: String, token: String, at instance: Instance, media: Bool) async -> URL? {
     guard media, let path = loopPath(id), let url = file(id) else { return nil }
     if let kept = kept(id) { return kept }
     guard !failed.contains(id) else { return nil }
+    let task = inFlight.task(id) {
+      Task { await download(id, path: path, to: url, token: token, at: instance) }
+    }
+    let fetched = await task.value
+    inFlight.done(id)
+    return fetched
+  }
+
+  private func download(_ id: String, path: String, to url: URL, token: String, at instance: Instance) async
+    -> URL?
+  {
     do {
       let (data, response) = try await client.send(request(path, token: token, at: instance))
       guard response.statusCode == 200, !data.isEmpty else {
@@ -93,6 +106,23 @@ public struct Loops: Sendable {
   }
 
   private static let log = Logger(subsystem: "cloud.libresoftware.belay", category: "loops")
+}
+
+/// The fetches out now, by exercise, shared by every copy of a `Loops`.
+private final class InFlight: Sendable {
+  private let tasks = Mutex<[String: Task<URL?, Never>]>([:])
+
+  /// The task out for `id`, else the one `start` makes.
+  func task(_ id: String, start: () -> Task<URL?, Never>) -> Task<URL?, Never> {
+    tasks.withLock { tasks in
+      if let task = tasks[id] { return task }
+      let task = start()
+      tasks[id] = task
+      return task
+    }
+  }
+
+  func done(_ id: String) { _ = tasks.withLock { $0.removeValue(forKey: id) } }
 }
 
 /// The exercises whose loop failed in this run, shared by every copy of a `Loops`.

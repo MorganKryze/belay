@@ -22,6 +22,8 @@ private final class LoopServer: HTTPClient, Sendable {
 
   func send(_ request: URLRequest) async throws -> (Data, HTTPURLResponse) {
     sent.withLock { $0.append(request) }
+    // Long enough for a second fetch to start while this one is out.
+    try await Task.sleep(for: .milliseconds(50))
     if offline { throw URLError(.notConnectedToInternet) }
     let response = HTTPURLResponse(url: request.url!, statusCode: status, httpVersion: nil, headerFields: nil)!
     return (Data("loop".utf8), response)
@@ -126,6 +128,17 @@ private func scratch() -> URL {
     #expect(await loops.fetch("ds:0042", token: token, at: instance, media: true) == nil)
     #expect(server.requests.count == 1)
     #expect(loops.kept("ds:0042") == nil)
+  }
+
+  /// A row's thumbnail and the page asking at once make one request.
+  @Test func concurrentFetchesAskOnce() async throws {
+    let server = LoopServer()
+    let loops = Loops(folder: scratch(), instanceKey: "belay.example.org", client: server)
+    async let first = loops.fetch("ds:0042", token: token, at: instance, media: true)
+    async let second = loops.fetch("ds:0042", token: token, at: instance, media: true)
+    let (a, b) = await (first, second)
+    #expect(a != nil && a == b)
+    #expect(server.requests.count == 1)
   }
 
   @Test func mediaReadFromMe() throws {
