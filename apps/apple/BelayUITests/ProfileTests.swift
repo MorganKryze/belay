@@ -76,8 +76,10 @@ final class ProfileTests: XCTestCase {
         let year = element(app, "profile-birth-year")
         XCTAssertTrue(year.waitForExistence(timeout: 3))
         year.tap()
+        XCTAssertTrue(app.buttons["2000"].firstMatch.waitForExistence(timeout: 3), "a menu of years")
+        // The menu builds its rows as they scroll in, newest first: scroll down to 1990.
         let choice = app.buttons["1990"].firstMatch
-        XCTAssertTrue(choice.waitForExistence(timeout: 3), "a menu of years")
+        XCTAssertTrue(app.swipeUpUntil(choice), "1990 is in the menu")
         choice.tap()
         XCTAssertTrue(year.waitFor(NSPredicate(format: "label CONTAINS '1990'"), timeout: 3), year.label)
 
