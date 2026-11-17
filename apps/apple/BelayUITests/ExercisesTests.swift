@@ -228,6 +228,18 @@ final class ExercisesTests: XCTestCase {
         return XCTWaiter.wait(for: [met], timeout: timeout) == .completed
     }
 
+    /// A46: the loops kept for the account go at its sign-out.
+    func testKeptLoopsGoAtSignOut() {
+        let app = exercices()
+        _ = page(app, "ds:0025", search: "barbell bench press")
+        let kept = element(app, "loops-kept")
+        let landed = expectation(for: NSPredicate(format: "value != '0'"), evaluatedWith: kept)
+        XCTAssertEqual(XCTWaiter.wait(for: [landed], timeout: 30), .completed, "the loop is kept")
+        signOutAndBack(app)
+        XCTAssertTrue(kept.waitForExistence(timeout: 5))
+        XCTAssertEqual(kept.value as? String, "0", "signed in again, no loop is left from before")
+    }
+
     /// A row's thumbnail drawn before a sign-out is not shown from memory after it: signed in again,
     /// the row asks the instance anew.
     func testThumbnailsGoAtSignOut() {

@@ -61,6 +61,8 @@ import Synchronization
 enum Fixture {
     nonisolated fileprivate static let origin = "https://belay.example"
     nonisolated fileprivate static let userId = "fixture"
+    /// Where the fixture's account keeps its loops, every account's beneath it.
+    nonisolated static let loopsFolder = URL.cachesDirectory.appending(path: "BelayFixture/Loops", directoryHint: .isDirectory)
 
     /// `queueUnreadable`: Réglages cannot read what waits to be sent, as when the store fails.
     static var queueUnreadable: Bool { UserDefaults.standard.string(forKey: "BelayFixture") == "queueUnreadable" }
@@ -125,7 +127,7 @@ enum Fixture {
         let health = UserDefaults.standard.string(forKey: "BelayHealth")
         let client = FixtureClient(
             refusesSync: mode == "expired", answersSync: health == "allowed", loops: FixtureLoops(mode: mode))
-        let loops = folder.appending(path: "Loops", directoryHint: .isDirectory)
+        let loops = loopsFolder
         guard let health else {
             return AccountModel(
                 secrets: secrets, http: client, sheet: FixtureSheet(), defaults: defaults, storeFolder: folder,
@@ -556,17 +558,26 @@ enum Fixture {
         try store.recordChanges([started] + sets + [ended], active: .keep)
     }
 
-    /// How many times the bench press's loop was asked of the instance, for a test to read; nothing
-    /// a person sees or hears.
+    /// How many times the bench press's loop was asked of the instance, and how many loops the
+    /// phone keeps, for a test to read; nothing a person sees or hears.
     struct LoopProbe: View {
         var body: some View {
             TimelineView(.periodic(from: .now, by: 0.5)) { _ in
                 let asked = FixtureLoops.asked.withLock { $0["/media/exercises/0025", default: 0] }
-                Color.clear
-                    .frame(width: 1, height: 1)
-                    .accessibilityElement()
-                    .accessibilityIdentifier("loop-asked")
-                    .accessibilityValue(String(asked))
+                let walk = FileManager.default.enumerator(at: Fixture.loopsFolder, includingPropertiesForKeys: nil)
+                let kept = ((walk?.allObjects as? [URL]) ?? []).filter { $0.pathExtension == "mp4" }.count
+                ZStack {
+                    Color.clear
+                        .frame(width: 1, height: 1)
+                        .accessibilityElement()
+                        .accessibilityIdentifier("loop-asked")
+                        .accessibilityValue(String(asked))
+                    Color.clear
+                        .frame(width: 1, height: 1)
+                        .accessibilityElement()
+                        .accessibilityIdentifier("loops-kept")
+                        .accessibilityValue(String(kept))
+                }
             }
         }
     }
