@@ -87,7 +87,10 @@ final class ProfileTests: XCTestCase {
         let height = app.textFields["profile-height"]
         XCTAssertTrue(height.waitForExistence(timeout: 3))
         for key in ["1", "7", "2"] { app.keys[key].tap() }
-        app.staticTexts["Ton corps"].tap()
+        // The number pad has no return key: a drag down the list puts it away, and the height is
+        // written as it leaves.
+        app.putKeypadAway()
+        XCTAssertFalse(app.keyboards.firstMatch.exists, "the keypad goes away")
 
         // Read again from the store a relaunch opens.
         let again = XCUIApplication.fixture("keep")

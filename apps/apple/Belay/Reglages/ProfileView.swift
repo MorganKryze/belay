@@ -43,6 +43,9 @@ struct ProfileView: View {
             rangeSection
         }
         .belayList()
+        // The number pad has no return key: a drag down the list puts it away, as on the tools'
+        // pages, and the height is written as it leaves.
+        .scrollDismissesKeyboard(.interactively)
         .navigationTitle(Text("Profil", tableName: "Reglages"))
         .largeTitleOnly()
         .onAppear {
