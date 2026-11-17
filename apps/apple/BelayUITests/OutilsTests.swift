@@ -321,7 +321,7 @@ final class OutilsTests: XCTestCase {
         let other = element(app, "bar-other")
         XCTAssertTrue(other.waitForExistence(timeout: 5), "the bar offers « Autre »")
         XCTAssertEqual(other.label, "Autre")
-        XCTAssertEqual(element(app, "plate-25").label, "25\u{202F}kg", "a bare 25 still says its unit")
+        XCTAssertEqual(element(app, "plate-25.0").label, "25\u{202F}kg", "a bare 25 still says its unit")
         let edit = app.buttons["Modifier ce matériel"]
         XCTAssertTrue(app.swipeUpUntil(edit))
         edit.tap()
