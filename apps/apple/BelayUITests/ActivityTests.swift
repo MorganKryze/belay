@@ -241,7 +241,7 @@ final class ActivityTests: XCTestCase {
         kind(app, "Escalade")
         XCTAssertTrue(app.staticTexts["Date de l’activité"].waitForExistence(timeout: 3))
         XCTAssertTrue(app.staticTexts["Type"].exists, "the segment is named")
-        XCTAssertLessThan(element(app, "activity-duration").frame.minY, element(app, "climb-runs").frame.minY)
+        XCTAssertLessThan(element(app, "activity-duration-plus").frame.minY, element(app, "climb-runs").frame.minY)
         kind(app, "Pas")
         XCTAssertTrue(app.staticTexts["Jour"].waitForExistence(timeout: 3))
     }
