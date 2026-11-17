@@ -12,10 +12,11 @@ struct ReglagesView: View {
     let open: (Route) -> Void
     /// The switch as the store keeps it, read when the page opens.
     @State private var healthOn = false
-    /// The import's switch, which goes on only with Santé's.
+    /// The imports' switches, which go on only with Santé's, and turn it on first.
     @State private var importOn = false
-    /// iOS did not let Belay write workouts at the last turn-on; the switch can try again.
-    @State private var refused = false
+    @State private var stepsOn = false
+    /// The switch whose last turn-on iOS refused, Santé's own or one turning it on; it can try again.
+    @State private var refused: HealthSwitch?
     /// The server's refusals, read again at each sync that records one.
     @State private var refusals: [RejectedEntry] = []
 
@@ -38,20 +39,25 @@ struct ReglagesView: View {
                         Text("Importer les pesées de Santé", tableName: "Health")
                     }
                     .frame(minHeight: 44)
-                    .disabled(!healthOn)
                     .accessibilityIdentifier("health-import-switch")
+                    Toggle(isOn: Binding(get: { stepsOn }, set: switchSteps)) {
+                        Text("Importer les pas de Santé", tableName: "Health")
+                    }
+                    .frame(minHeight: 44)
+                    .accessibilityIdentifier("health-steps-switch")
                 } header: {
                     Text("Sur cet iPhone", tableName: "Health")
                 } footer: {
-                    if refused {
-                        Text(
-                            "Santé n’autorise pas Belay à y écrire tes séances. Autorise-le dans l’app Santé, puis réessaie.",
-                            tableName: "Health")
-                    } else {
-                        Text(
-                            "Tes séances terminées, avec leur intensité, et tes pesées vont dans Santé à partir du moment où tu actives. Importer ajoute à Belay les pesées d’une balance connectée ou saisies dans Santé ; une pesée déjà dans Belay n’est jamais remplacée. Si aucune n’arrive, vérifie que Belay peut lire le poids dans l’app Santé › ta photo › Confidentialité › Apps › Belay. Désactiver laisse dans Santé ce qui y est déjà.",
-                            tableName: "Health")
+                    Group {
+                        if let refused {
+                            refused.refusal
+                        } else {
+                            Text(
+                                "Tes séances terminées, avec leur intensité, et tes pesées vont dans Santé à partir du moment où tu actives. Importer les pesées ajoute à Belay celles d’une balance connectée ou saisies dans Santé ; une pesée déjà dans Belay n’est jamais remplacée. Importer les pas ajoute tes pas de Santé des 7 derniers jours ; des pas saisis ailleurs ne sont jamais remplacés. Si rien n’arrive, vérifie que Belay peut lire le poids et les pas dans l’app Santé › ta photo › Confidentialité › Apps › Belay. Désactiver laisse dans Santé ce qui y est déjà.",
+                                tableName: "Health")
+                        }
                     }
+                    .accessibilityIdentifier("health-footer")
                 }
                 .listRowBackground(Color.surface)
             }
@@ -150,6 +156,7 @@ struct ReglagesView: View {
             let settings = try store.healthSettings()
             healthOn = settings.on
             importOn = settings.importOn
+            stepsOn = settings.stepsOn
         } catch {
             Self.log.error("health switch not read: \(AccountStore.logLabel(error), privacy: .public)")
         }
@@ -158,14 +165,14 @@ struct ReglagesView: View {
     /// On asks iOS at that moment; it shows as on only once iOS lets Belay write workouts.
     private func switchHealth(_ on: Bool) {
         guard on else {
-            if account.turnHealthOff() { (healthOn, importOn) = (false, false) }
+            if account.turnHealthOff() { (healthOn, importOn, stepsOn) = (false, false, false) }
             return
         }
         healthOn = true
         Task {
             let allowed = await account.turnHealthOn()
             healthOn = allowed
-            refused = !allowed
+            refused = allowed ? nil : .sante
         }
     }
 
@@ -177,7 +184,52 @@ struct ReglagesView: View {
             return
         }
         importOn = true
-        Task { importOn = await account.turnHealthImportOn() }
+        Task { importOn = await turnedOn(.weighIns, account.turnHealthImportOn) }
+    }
+
+    /// As the weigh-in import's, for the step count.
+    private func switchSteps(_ on: Bool) {
+        guard on else {
+            if account.turnHealthStepsOff() { stepsOn = false }
+            return
+        }
+        stepsOn = true
+        Task { stepsOn = await turnedOn(.steps, account.turnHealthStepsOn) }
+    }
+
+    /// An import's turn-on, which turns Santé on first: Santé's switch follows, and a refusal is
+    /// said in that import's words.
+    private func turnedOn(_ which: HealthSwitch, _ turnOn: () async -> Bool) async -> Bool {
+        let on = await turnOn()
+        do {
+            healthOn = try store.healthSettings().on
+        } catch {
+            Self.log.error("health switch not read: \(AccountStore.logLabel(error), privacy: .public)")
+        }
+        refused = healthOn ? nil : which
+        return on
+    }
+}
+
+/// The switches of « Sur cet iPhone », each saying in its own words what iOS refused (R18).
+private enum HealthSwitch {
+    case sante, weighIns, steps
+
+    var refusal: Text {
+        switch self {
+        case .sante:
+            Text(
+                "Santé n’autorise pas Belay à y écrire tes séances. Autorise-le dans l’app Santé, puis réessaie.",
+                tableName: "Health")
+        case .weighIns:
+            Text(
+                "Pour importer tes pesées, Belay a besoin de l’accès à Santé. Autorise-le dans l’app Santé, puis réessaie.",
+                tableName: "Health")
+        case .steps:
+            Text(
+                "Pour importer tes pas, Belay a besoin de l’accès à Santé. Autorise-le dans l’app Santé, puis réessaie.",
+                tableName: "Health")
+        }
     }
 }
 

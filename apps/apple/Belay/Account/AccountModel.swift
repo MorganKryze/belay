@@ -193,11 +193,29 @@ final class AccountModel {
         return true
     }
 
-    /// The import's switch turned on: the import reads through Santé's switch, so Santé goes on
-    /// first when it is off, as its own switch would. iOS is asked to let Belay read body mass, a
-    /// sheet it shows only for a type never asked, and never says whether it did. The import then
-    /// runs after the sync this starts. Whether the import is on.
+    /// The weigh-in import's switch turned on: the import reads through Santé's switch, so Santé
+    /// goes on first when it is off, as its own switch would. iOS is asked to let Belay read body
+    /// mass, a sheet it shows only for a type never asked, and never says whether it did. The import
+    /// then runs after the sync this starts. Whether the import is on.
     func turnHealthImportOn() async -> Bool {
+        await turnImportOn({ try $0.setHealthImportOn($1) }, isOn: \.importOn)
+    }
+
+    /// The weigh-in import stops; the weigh-ins it brought stay. Whether it was kept.
+    func turnHealthImportOff() -> Bool { turnImportOff { try $0.setHealthImportOn(false) } }
+
+    /// The steps import's switch turned on, as the weigh-in import's (R5): the day's steps then come
+    /// from Health after each landed sync. Whether the import is on.
+    func turnHealthStepsOn() async -> Bool {
+        await turnImportOn({ try $0.setHealthStepsOn($1) }, isOn: \.stepsOn)
+    }
+
+    /// The steps import stops; the steps it brought stay. Whether it was kept.
+    func turnHealthStepsOff() -> Bool { turnImportOff { try $0.setHealthStepsOn(false) } }
+
+    private func turnImportOn(
+        _ set: (AccountStore, Bool) throws -> Void, isOn: KeyPath<HealthSettings, Bool>
+    ) async -> Bool {
         guard let store else { return false }
         let healthOn: Bool
         do {
@@ -207,7 +225,7 @@ final class AccountModel {
             return false
         }
         if !healthOn {
-            // Santé's turn-on asks iOS with the full request, body mass included.
+            // Santé's turn-on asks iOS with the full request, the read types included.
             guard await turnHealthOn() else { return false }
         } else {
             do {
@@ -217,8 +235,8 @@ final class AccountModel {
             }
         }
         do {
-            try store.setHealthImportOn(true)
-            guard try store.healthSettings().importOn else { return false }
+            try set(store, true)
+            guard try store.healthSettings()[keyPath: isOn] else { return false }
         } catch {
             Self.log.error("health import switch not kept: \(AccountStore.logLabel(error), privacy: .public)")
             return false
@@ -227,10 +245,10 @@ final class AccountModel {
         return true
     }
 
-    /// The import stops; the weigh-ins it brought stay. Whether it was kept.
-    func turnHealthImportOff() -> Bool {
+    private func turnImportOff(_ set: (AccountStore) throws -> Void) -> Bool {
+        guard let store else { return false }
         do {
-            try store?.setHealthImportOn(false)
+            try set(store)
             return true
         } catch {
             Self.log.error("health import switch not kept: \(AccountStore.logLabel(error), privacy: .public)")

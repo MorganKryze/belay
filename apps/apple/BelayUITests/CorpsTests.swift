@@ -267,7 +267,7 @@ final class CorpsTests: XCTestCase {
         accept.tap()
         XCTAssertTrue(
             app.staticTexts[
-                "Santé n’autorise pas Belay à y écrire tes séances. Autorise-le dans l’app Santé, puis réessaie."
+                "Pour importer tes pesées, Belay a besoin de l’accès à Santé. Autorise-le dans l’app Santé, puis réessaie."
             ].waitForExistence(timeout: 5), "the card says why")
         XCTAssertTrue(app.staticTexts["Tes pesées de Santé"].exists, "the card stays")
         XCTAssertTrue(accept.isHittable, "to try again")

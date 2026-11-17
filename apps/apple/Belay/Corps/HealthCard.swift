@@ -33,9 +33,9 @@ struct HealthCard: View {
                 .foregroundStyle(.muted)
                 .fixedSize(horizontal: false, vertical: true)
                 if refused {
-                    // Réglages's own sentence for the same refusal.
+                    // Réglages's sentence for the weigh-in import's refusal: the card turns that import on.
                     Text(
-                        "Santé n’autorise pas Belay à y écrire tes séances. Autorise-le dans l’app Santé, puis réessaie.",
+                        "Pour importer tes pesées, Belay a besoin de l’accès à Santé. Autorise-le dans l’app Santé, puis réessaie.",
                         tableName: "Health"
                     )
                     .font(.subheadline)
