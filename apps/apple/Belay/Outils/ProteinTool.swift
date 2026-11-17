@@ -93,7 +93,11 @@ struct ProteinTool: View {
     }
 
     private func result(_ range: ProteinRange, weight: Double) -> some View {
-        let perKg = { (grams: Double) in roundTo(grams / weight, step: 0.1).formatted(.number.precision(.fractionLength(0...1))) }
+        // To the tenth, written to the hundredth unless whole, as designed: « 1,40 à 2 ».
+        let perKg = { (grams: Double) in
+            let value = roundTo(grams / weight, step: 0.1)
+            return value.formatted(.number.precision(.fractionLength(value == value.rounded() ? 0 : 2)))
+        }
         let day = Self.grams(range.lowG, range.highG)
         return VStack(alignment: .leading, spacing: 4) {
             VStack(alignment: .leading, spacing: 4) {
@@ -105,7 +109,7 @@ struct ProteinTool: View {
             .accessibilityIdentifier("tool-figure-protein")
             Text("soit \(perKg(range.lowG)) à \(perKg(range.highG))\u{00A0}g par kg de poids", tableName: "Outils")
                 .font(.subheadline).foregroundStyle(.muted)
-            Divider().overlay(Color.line).padding(.vertical, 8)
+            Divider().overlay(Color.line).padding(.top, 8).padding(.bottom, 12)
             HStack(alignment: .top, spacing: 16) {
                 meal(String(localized: "Sur 3 repas", table: "Outils"), range.perMeal3, id: "tool-meals-3")
                 meal(String(localized: "Sur 4 repas", table: "Outils"), range.perMeal4, id: "tool-meals-4")

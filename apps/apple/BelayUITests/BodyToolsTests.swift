@@ -488,6 +488,16 @@ final class BodyToolsTests: XCTestCase {
         XCTAssertTrue(app.swipeUpUntil(hint), "the pace says what it measures")
         XCTAssertTrue(app.staticTexts["Ton rythme"].exists)
     }
+
+    /// A18: per kilo to the hundredth, as Proto writes it: « 1,40 à 2 ».
+    func testProteinPerKiloHundredths() {
+        let app = launch("toolsEmpty")
+        outils(app)
+        open(app, "protein")
+        type(app, "80,2", into: "tool-field-weight")
+        toTop(app)
+        XCTAssertTrue(app.staticTexts["soit 1,40 à 2\u{00A0}g par kg de poids"].exists)
+    }
 }
 
 extension XCUIApplication {
