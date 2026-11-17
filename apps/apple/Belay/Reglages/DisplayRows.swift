@@ -26,14 +26,14 @@ struct DisplayRows: View {
                     }
                 }
             } header: {
-                Text("Général", tableName: "Reglages")
+                Text("Général", tableName: "Reglages").textCase(nil).foregroundStyle(.ink)
             } footer: {
                 Text("La langue se choisit dans les Réglages de l’iPhone, comme pour toute app.", tableName: "Reglages")
             }
             Section {
                 switchRow("Tendance", "chart.line.downtrend.xyaxis", $homeTrend, id: "reglages-trend")
             } header: {
-                Text("Accueil", tableName: "Reglages")
+                Text("Accueil", tableName: "Reglages").textCase(nil).foregroundStyle(.ink)
             }
             Section {
                 MenuRow(title: "En pause", symbol: "pause.circle", value: pauseName(pauseStops), id: "reglages-pause") {
@@ -45,12 +45,12 @@ struct DisplayRows: View {
                 }
                 switchRow("Volume", "scalemass", $sessionVolume, id: "reglages-volume")
             } header: {
-                Text("Séances", tableName: "Reglages")
+                Text("Séances", tableName: "Reglages").textCase(nil).foregroundStyle(.ink)
             }
             Section {
                 switchRow("Pastille", "checkmark.seal", $rangePill, id: "reglages-pill")
             } header: {
-                Text("Corps", tableName: "Reglages")
+                Text("Corps", tableName: "Reglages").textCase(nil).foregroundStyle(.ink)
             }
             Section {
                 MenuRow(title: "1RM", symbol: "function", value: formulasName(brzycki), id: "reglages-one-rep-max") {
@@ -62,7 +62,7 @@ struct DisplayRows: View {
                 }
                 switchRow("Origine des champs", "info.circle", $fieldSources, id: "reglages-sources")
             } header: {
-                Text("Outils", tableName: "Reglages")
+                Text("Outils", tableName: "Reglages").textCase(nil).foregroundStyle(.ink)
             }
         }
         .listRowBackground(Color.surface)

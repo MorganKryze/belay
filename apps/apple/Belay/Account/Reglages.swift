@@ -46,7 +46,7 @@ struct ReglagesView: View {
                     .frame(minHeight: 44)
                     .accessibilityIdentifier("health-steps-switch")
                 } header: {
-                    Text("Sur cet iPhone", tableName: "Health")
+                    Text("Sur cet iPhone", tableName: "Health").textCase(nil).foregroundStyle(.ink)
                 } footer: {
                     Group {
                         if let refused {
@@ -88,13 +88,21 @@ struct ReglagesView: View {
                         .font(.title2)
                         .accessibilityHidden(true)
                 } words: {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(verbatim: account.displayName ?? String(localized: "Profil", table: "Reglages"))
-                            .font(.title3.weight(.semibold))
-                            .foregroundStyle(.ink)
-                        Text("Profil · taille, âge, fourchette de perte", tableName: "Reglages")
-                            .font(.subheadline)
+                    HStack(spacing: 8) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(verbatim: account.displayName ?? String(localized: "Profil", table: "Reglages"))
+                                .font(.title3.weight(.semibold))
+                                .foregroundStyle(.ink)
+                            Text("Profil · taille, âge, fourchette de perte", tableName: "Reglages")
+                                .font(.subheadline)
+                                .foregroundStyle(.muted)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        // The only cue that the card opens a page.
+                        Image(systemName: "chevron.forward")
+                            .font(.footnote.weight(.semibold))
                             .foregroundStyle(.muted)
+                            .accessibilityHidden(true)
                     }
                 }
                 .padding(.vertical, 4)
@@ -132,7 +140,7 @@ struct ReglagesView: View {
             .accessibilityAddTraits(.isButton)
             .accessibilityIdentifier("reglages-supplements")
         } header: {
-            Text("Suivi", tableName: "Reglages")
+            Text("Suivi", tableName: "Reglages").textCase(nil).foregroundStyle(.ink)
         }
         .listRowBackground(Color.surface)
     }
