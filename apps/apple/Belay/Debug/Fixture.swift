@@ -118,14 +118,13 @@ enum Fixture {
             }
             defaults.set(origin, forKey: StoredInstance.key)
             try session.keep(origin: origin, token: "fixture-token")
-            session.remember(userId: userId, displayName: "Ada")
+            session.remember(userId: userId, displayName: "Ada", media: true)
         } catch {
             preconditionFailure("the fixture did not set up: \(error)")
         }
         let health = UserDefaults.standard.string(forKey: "BelayHealth")
         let client = FixtureClient(
             refusesSync: mode == "expired", answersSync: health == "allowed", loops: FixtureLoops(mode: mode))
-        defaults.set(true, forKey: AccountModel.mediaKey)
         let loops = folder.appending(path: "Loops", directoryHint: .isDirectory)
         guard let health else {
             return AccountModel(
@@ -819,7 +818,7 @@ private nonisolated struct FixtureClient: HTTPClient {
             answer = #"{"cursor":"fixture","workouts":[],"sets":[],"activities":[],"rejected":[],"hasMore":false}"#
         case "/api/instance": answer = #"{"app":"belay","api":1,"origin":"\#(Fixture.origin)"}"#
         case "/auth/native/token": answer = #"{"token":"fixture-token"}"#
-        case "/api/me": answer = #"{"id":"\#(Fixture.userId)","displayName":"Ada"}"#
+        case "/api/me": answer = #"{"id":"\#(Fixture.userId)","displayName":"Ada","media":true}"#
         case "/auth/logout": answer = "{}"
         default: throw URLError(.notConnectedToInternet)
         }

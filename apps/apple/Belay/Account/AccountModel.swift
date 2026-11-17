@@ -33,13 +33,11 @@ final class AccountModel {
     private(set) var syncStatus: SyncStatus = .idle
     /// How the instance names the person, for Accueil's greeting; nil before it has said so.
     private(set) var displayName: String?
-    /// Whether the instance serves exercise loops, as `/api/me` last said; kept across launches.
+    /// Whether the instance serves exercise loops, as `/api/me` last said; kept across launches
+    /// with the account, and forgotten with it.
     private(set) var media: Bool
     /// The loops of the open store's account; nil while none is open.
     private(set) var loops: Loops?
-
-    /// Under the web's own preference name.
-    static let mediaKey = "belay.media"
 
     /// Whom the open store and its sync were opened for. Another person, instance or token closes
     /// both first, so one account's queue never goes out under another's token.
@@ -78,7 +76,7 @@ final class AccountModel {
         self.defaults = defaults
         self.storeFolder = storeFolder
         self.loopsFolder = loopsFolder
-        media = defaults.bool(forKey: Self.mediaKey)
+        media = session.media
         self.health = health
         healthRuns = HealthRuns(writer: health)
         if let instance = storedInstance, let token = session.token(origin: instance.origin.absoluteString),
@@ -386,9 +384,8 @@ final class AccountModel {
     }
 
     private func remember(_ me: Me) {
-        session.remember(userId: me.id, displayName: me.displayName)
+        session.remember(userId: me.id, displayName: me.displayName, media: me.media)
         displayName = me.displayName
-        defaults.set(me.media, forKey: Self.mediaKey)
         media = me.media
     }
 
@@ -428,6 +425,7 @@ final class AccountModel {
     /// A token the Keychain fails to drop is still never restored: the sign-out is marked first.
     private func forget() {
         displayName = nil
+        media = false
         do {
             try session.drop()
         } catch {
