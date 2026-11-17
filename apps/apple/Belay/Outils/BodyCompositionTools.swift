@@ -120,7 +120,7 @@ struct BmiTool: View {
 
 /// Masse grasse: the formula, the age, the neck, the waist, the hips for the female formula only,
 /// and the height, each opening on the profile or the measures. The estimate large with its ±4
-/// points, then Gallagher's bands for the person's age group, in the set chosen on this phone.
+/// points and the formula's bias, then the fields, then Gallagher's bands for the person's age group, in the set chosen on this phone.
 struct BodyFatTool: View {
     @Bindable var outils: OutilsModel
     let corps: CorpsModel
@@ -152,11 +152,6 @@ struct BodyFatTool: View {
             case .failure(let line): ResultWaiting(label: "Ta masse grasse estimée", line: line)
             }
         } fields: {
-            if case .success(let percent) = estimate, let set {
-                BandList(
-                    title: "Repères", rows: Self.bands(set.thresholds), current: bodyFatBand(percent, set.thresholds),
-                    caption: caption(formula, set.group))
-            }
             Section {
                 FormulaRow(formula: outils.binding(.bodyFat, .formula, defaults), source: source(.formula))
                 ProfileOffer(corps: corps, outils: outils, tool: .bodyFat, field: .formula, defaults: defaults)
@@ -184,6 +179,11 @@ struct BodyFatTool: View {
                 }
             }
             .listRowBackground(Color.surface)
+            if case .success(let percent) = estimate, let set {
+                BandList(
+                    title: "Repères", rows: Self.bands(set.thresholds), current: bodyFatBand(percent, set.thresholds),
+                    caption: caption(formula, set.group))
+            }
             Section {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Jeu de repères", tableName: "Outils").foregroundStyle(.ink)
@@ -253,20 +253,21 @@ struct BodyFatTool: View {
             .accessibilityLabel(Text(verbatim: "\(String(localized: "Ta masse grasse estimée", table: "Outils")), \(shown)"))
             .accessibilityIdentifier("tool-figure-body-fat")
             Text("estimation ±4 points", tableName: "Outils").font(.subheadline).foregroundStyle(.muted)
+            Text(
+                "Elle surestime souvent les personnes minces et sous-estime les personnes à forte masse grasse.",
+                tableName: "Outils"
+            )
+            .font(.subheadline).foregroundStyle(.muted).fixedSize(horizontal: false, vertical: true)
         }
         .padding(.vertical, 6)
     }
 
-    /// The formula's bias, and why no band shows outside 20 to 79 years.
-    private func note(_ estimate: Result<Int, BodyLine>, age: Double?, set: Bool) -> Text {
-        let bias = Text(
-            "Elle surestime souvent les personnes minces et sous-estime les personnes à forte masse grasse.",
-            tableName: "Outils")
-        guard case .success = estimate, age != nil, !set else { return bias }
-        let none = Text(
+    /// Why no band shows outside 20 to 79 years; the formula's bias sits under the estimate.
+    private func note(_ estimate: Result<Int, BodyLine>, age: Double?, set: Bool) -> Text? {
+        guard case .success = estimate, age != nil, !set else { return nil }
+        return Text(
             "Les repères publiés couvrent 20 à 79 ans\u{202F}: pour ton âge, seule l’estimation s’affiche.",
             tableName: "Outils")
-        return Text("\(none) \(bias)", tableName: "Outils")
     }
 
     /// « Pour la formule homme, de 20 à 39 ans (Gallagher 2000, tableau 4). »

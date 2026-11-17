@@ -458,6 +458,24 @@ final class BodyToolsTests: XCTestCase {
         XCTAssertLessThan(element(app, "tool-field-weight").frame.minY, band.frame.minY, "the fields come first")
     }
 
+    /// A21: the formula's bias under the estimate; the fields, then the bands.
+    func testBodyFatCaveatThenFieldsThenBands() {
+        let app = launch("toolsEmpty")
+        outils(app)
+        open(app, "body-fat")
+        choose(app, "Homme", in: "tool-formula")
+        type(app, "34", into: "tool-field-age")
+        type(app, "38", into: "tool-field-neck")
+        type(app, "84,5", into: "tool-field-waist")
+        type(app, "178", into: "tool-field-height")
+        toTop(app)
+        let bias = "Elle surestime souvent les personnes minces et sous-estime les personnes à forte masse grasse."
+        XCTAssertTrue(element(app, "tool-result").staticTexts[bias].exists, "the bias under the estimate")
+        let band = element(app, "band-below")
+        XCTAssertTrue(app.swipeUpUntil(band))
+        XCTAssertLessThan(element(app, "tool-field-height").frame.minY, band.frame.minY, "the fields come first")
+    }
+
     /// A19: the pace in its own card, titled, « perte par semaine » under its name.
     func testProjectionPaceTitledInCard() {
         let app = launch("toolsEmpty", arguments: ["-BelayNow", "2026-10-07T09:00:00"])
