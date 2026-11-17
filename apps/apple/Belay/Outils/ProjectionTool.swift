@@ -213,7 +213,9 @@ private struct MonthBand: View {
     }
 
     var body: some View {
-        let now = ToolDay.date(today, timeZone) ?? .now
+        // ponytail: `today` is always a valid ISO day, built from the injected clock; the epoch only
+        // keeps the band drawable if it ever is not, never the phone's own clock.
+        let now = ToolDay.date(today, timeZone) ?? Date(timeIntervalSince1970: 0)
         let first = calendar.dateInterval(of: .month, for: now)?.start ?? now
         let end = ToolDay.date(high, timeZone) ?? now
         let reach = (calendar.dateComponents([.month], from: first, to: end).month ?? 0) + 1

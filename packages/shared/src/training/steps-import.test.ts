@@ -14,7 +14,9 @@ describe("the steps a Health import writes", () => {
   });
 
   it("leaves alone a day whose steps were deleted", () => {
-    expect(stepsToWrite([day("2026-11-10", 8437)], rows([["2026-11-10", null]]), own())).toEqual([]);
+    expect(stepsToWrite([day("2026-11-10", 8437)], rows([["2026-11-10", null]]), own())).toEqual(
+      [],
+    );
   });
 
   it("follows Health on a day it wrote itself", () => {
