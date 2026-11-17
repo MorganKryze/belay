@@ -19,6 +19,8 @@ public struct Loops: Sendable {
   static let cap = 150
   /// The instance's own ceiling (`MEDIA_MAX_BYTES`): a bigger body is not one of its loops.
   static let maxBytes = 8 * 1024 * 1024
+  /// The store's own class, named at each write: a loop tells which exercise was opened.
+  static let options: Data.WritingOptions = [.atomic, .completeFileProtectionUntilFirstUserAuthentication]
 
   private let folder: URL
   private let client: HTTPClient
@@ -70,7 +72,7 @@ public struct Loops: Sendable {
       }
       let written = try closed.unlessClosed {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        try data.write(to: url, options: .atomic)
+        try data.write(to: url, options: Self.options)
       }
       guard written else { return nil }
       prune()

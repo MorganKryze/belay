@@ -118,6 +118,28 @@ private func scratch() -> URL {
     #expect(names.contains("0500.mp4"))
   }
 
+  /// A loop tells which exercise the person opened: it is kept under the store's own class, not
+  /// whatever its folder has.
+  @Test func keptUnderTheStoresProtection() async throws {
+    let folder = scratch()
+    try FileManager.default.createDirectory(
+      at: folder, withIntermediateDirectories: true,
+      attributes: [.protectionKey: FileProtectionType.completeUnlessOpen])
+    let unnamed = folder.appending(path: "unnamed.mp4")
+    try Data("loop".utf8).write(to: unnamed, options: .atomic)
+    try #require(
+      try protection(of: unnamed) == .completeUnlessOpen,
+      "this volume keeps protection classes, so the read-back below can tell them apart")
+
+    let loops = Loops(folder: folder, userId: "ana", origin: instance.origin, client: LoopServer())
+    let url = try #require(await loops.fetch("ds:0042", token: token, at: instance, media: true))
+    #expect(try protection(of: url) == AccountStore.protection)
+  }
+
+  private func protection(of url: URL) throws -> FileProtectionType? {
+    try FileManager.default.attributesOfItem(atPath: url.path)[.protectionKey] as? FileProtectionType
+  }
+
   @Test func removedAtSignOut() async throws {
     let folder = scratch()
     let loops = Loops(folder: folder, userId: "ana", origin: instance.origin, client: LoopServer())
