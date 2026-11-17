@@ -43,9 +43,12 @@ final class ReglagesTests: XCTestCase {
         let row = element(app, id)
         XCTAssertTrue(app.swipeUpUntil(row), "the row \(id) is reached")
         // A row can be hittable at its centre while its end sits under the floating tab bar, where
-        // a tap would switch tabs: bring it clear of the bar first.
+        // a tap would switch tabs, or under the open session's bar above it, which the tab bar no
+        // longer folds away: bring it clear of both first.
         let bar = app.tabBars.firstMatch
-        for _ in 0..<3 where bar.exists && row.frame.maxY > bar.frame.minY - 8 {
+        let accessory = element(app, "resume-accessory")
+        func top() -> CGFloat { accessory.exists ? accessory.frame.minY : bar.frame.minY }
+        for _ in 0..<3 where bar.exists && row.frame.maxY > top() - 8 {
             app.swipeUp(velocity: .slow)
         }
         return row
