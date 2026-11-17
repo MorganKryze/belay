@@ -202,6 +202,16 @@
         }
       }
     },
+    "Autre": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Other"
+          }
+        }
+      }
+    },
     "Avec 1 répétition, ton 1RM est la charge soulevée.": {
       "localizations": {
         "en": {
@@ -908,6 +918,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Weight"
+          }
+        }
+      }
+    },
+    "Poids de la barre": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bar weight"
           }
         }
       }

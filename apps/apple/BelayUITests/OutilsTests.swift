@@ -310,4 +310,26 @@ final class OutilsTests: XCTestCase {
         XCTAssertTrue(app.swipeUpUntil(method))
         XCTAssertEqual(method.label, "Comment c’est calculé")
     }
+
+    /// A15: « Autre » follows the standard bars; in Sur mesure it takes the bar's weight on − and +.
+    func testEquipmentOtherBar() {
+        let app = outils()
+        open(app, "plates")
+        let equipment = element(app, "tool-equipment")
+        XCTAssertTrue(app.swipeUpUntil(equipment))
+        equipment.tap()
+        let other = element(app, "bar-other")
+        XCTAssertTrue(other.waitForExistence(timeout: 5), "the bar offers « Autre »")
+        XCTAssertEqual(other.label, "Autre")
+        XCTAssertEqual(element(app, "plate-25").label, "25\u{202F}kg", "a bare 25 still says its unit")
+        let edit = app.buttons["Modifier ce matériel"]
+        XCTAssertTrue(app.swipeUpUntil(edit))
+        edit.tap()
+        other.tap()
+        let weight = element(app, "bar-weight")
+        XCTAssertTrue(weight.waitForExistence(timeout: 3), "« Autre » asks the bar's weight")
+        app.buttons["bar-weight-plus"].tap()
+        XCTAssertTrue(weight.label.contains("20,5"), weight.label)
+        XCTAssertTrue(other.isSelected, "« Autre » is the bar chosen")
+    }
 }

@@ -8,6 +8,8 @@ struct EquipmentView: View {
     @Bindable var outils: OutilsModel
     /// The preset the custom set was last copied from, said in the footer once.
     @State private var copiedFrom: EquipmentChoice.Preset?
+    /// « Autre » tapped in Sur mesure: the bar's weight on − and +, as the web's.
+    @State private var otherBar = false
 
     private var custom: Bool { outils.equipment.preset == .custom }
 
@@ -42,12 +44,36 @@ struct EquipmentView: View {
             }
             .listRowBackground(Color.surface)
             Section {
+                let other = otherBar || !standardBarsKg.contains(plates.barKg)
                 ChipFlow {
                     ForEach(standardBarsKg, id: \.self) { kg in
-                        chip(kg, selected: plates.barKg == kg, id: "bar-\(kg)") { setBar(kg) }
+                        chip(
+                            Text(verbatim: "\(kg.upToHundredths)\u{202F}kg"), spoken: nil, selected: !other && plates.barKg == kg,
+                            id: "bar-\(kg)"
+                        ) {
+                            otherBar = false
+                            setBar(kg)
+                        }
                     }
+                    chip(Text("Autre", tableName: "Outils"), spoken: nil, selected: other, id: "bar-other") { otherBar = true }
                 }
                 .padding(.vertical, 6)
+                if custom, other {
+                    HStack(spacing: 8) {
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text("Poids de la barre", tableName: "Outils").foregroundStyle(.ink)
+                            Text(verbatim: "\(plates.barKg.upToHundredths)\u{202F}kg")
+                                .font(.title3.weight(.semibold)).monospacedDigit().foregroundStyle(.ink)
+                        }
+                        .accessibilityElement(children: .combine)
+                        .accessibilityIdentifier("bar-weight")
+                        Spacer(minLength: 8)
+                        Nudge(
+                            value: Binding(get: { plates.barKg }, set: setBar), range: 1...50, step: 0.5,
+                            what: "0,5\u{202F}kg", id: "bar-weight")
+                    }
+                    .frame(minHeight: 52)
+                }
             } header: {
                 Text("Barre", tableName: "Outils").textCase(nil).foregroundStyle(.ink)
             }
@@ -55,7 +81,11 @@ struct EquipmentView: View {
             Section {
                 ChipFlow {
                     ForEach(standardPlatesKg, id: \.self) { kg in
-                        chip(kg, selected: plates.platesKg.contains(kg), id: "plate-\(kg)") { toggle(kg) }
+                        // Bare numbers, as the section is in kilos; VoiceOver still hears the unit.
+                        chip(
+                            Text(verbatim: kg.upToHundredths), spoken: Text(verbatim: "\(kg.upToHundredths)\u{202F}kg"),
+                            selected: plates.platesKg.contains(kg), id: "plate-\(kg)"
+                        ) { toggle(kg) }
                     }
                 }
                 .padding(.vertical, 6)
@@ -99,9 +129,11 @@ struct EquipmentView: View {
                 tableName: "Outils")
     }
 
-    /// A chip for one weight: filled while chosen. A preset's chips read only, at full contrast:
-    /// a tap on one does nothing.
-    private func chip(_ kg: Double, selected: Bool, id: String, action: @escaping () -> Void) -> some View {
+    /// A chip for one weight, or « Autre »: filled while chosen. A preset's chips read only, at full
+    /// contrast: a tap on one does nothing. `spoken` replaces the words for VoiceOver.
+    private func chip(
+        _ words: Text, spoken: Text?, selected: Bool, id: String, action: @escaping () -> Void
+    ) -> some View {
         Button {
             if custom { action() }
         } label: {
@@ -109,7 +141,7 @@ struct EquipmentView: View {
                 if selected {
                     Image(systemName: "checkmark").font(.caption.weight(.bold)).accessibilityHidden(true)
                 }
-                Text(verbatim: "\(kg.upToHundredths)\u{202F}kg").monospacedDigit()
+                words.monospacedDigit()
             }
             .font(.subheadline.weight(.semibold))
             .foregroundStyle(selected ? Color.surface : Color.ink)
@@ -118,6 +150,7 @@ struct EquipmentView: View {
             .background(selected ? Color.ink : Color.track, in: .capsule)
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(spoken ?? words)
         .accessibilityAddTraits(selected ? .isSelected : [])
         .accessibilityIdentifier(id)
     }
