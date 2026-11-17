@@ -11,6 +11,9 @@ struct ToolPage<Result: View, Fields: View>: View {
     @ViewBuilder let result: Result
     /// The fields' sections, and any row the tool adds after them.
     @ViewBuilder let fields: Fields
+    /// The field the keypad types into, one for the whole page. Its links clear it before they
+    /// push: a field still focused under a pushed page brings the keypad back on return.
+    @FocusState private var focus: String?
 
     var body: some View {
         List {
@@ -25,7 +28,7 @@ struct ToolPage<Result: View, Fields: View>: View {
             .listRowBackground(Color.surface)
             fields
             Section {
-                NavigationLink(value: Route.science(id: tool.rawValue)) {
+                ToolLink(route: .science(id: tool.rawValue)) {
                     Label {
                         Text("Comment c’est calculé", tableName: "Trend").foregroundStyle(.ink)
                     } icon: {
@@ -40,11 +43,51 @@ struct ToolPage<Result: View, Fields: View>: View {
             .listRowBackground(Color.surface)
         }
         .belayList()
+        .environment(\.toolFocus, $focus)
         .scrollDismissesKeyboard(.interactively)
         .navigationTitle(Text(tool.name, tableName: "Outils"))
         .navigationBarTitleDisplayMode(.inline)
         .largeTitleOnly()
     }
+}
+
+/// A tool page's row that opens another page, with the list's chevron. It puts the keypad away,
+/// then pushes on the next turn of the run loop, so no field is focused when the page goes under.
+struct ToolLink<Content: View>: View {
+    let route: Route
+    @ViewBuilder let content: Content
+    @Environment(\.toolFocus) private var focus
+    @Environment(\.push) private var push
+
+    var body: some View {
+        Button {
+            focus?.wrappedValue = nil
+            DispatchQueue.main.async { push(route) }
+        } label: {
+            HStack(spacing: 8) {
+                content.frame(maxWidth: .infinity, alignment: .leading)
+                Image(systemName: "chevron.forward")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+                    .accessibilityHidden(true)
+            }
+            .contentShape(.rect)
+        }
+    }
+}
+
+extension EnvironmentValues {
+    /// The tool page's focus, which its keypad fields share.
+    @Entry var toolFocus: FocusState<String?>.Binding? = nil
+    /// Pushes a page on the tab in front.
+    @Entry var push = PushAction { _ in }
+}
+
+/// Pushes a route, as `dismiss` pops: called as a function.
+struct PushAction {
+    let run: (Route) -> Void
+
+    func callAsFunction(_ route: Route) { run(route) }
 }
 
 /// The tool's disc, its name and the web's lead, on the wall above the cards.

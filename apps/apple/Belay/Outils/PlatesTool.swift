@@ -28,7 +28,7 @@ struct PlatesTool: View {
             }
             .listRowBackground(Color.surface)
             Section {
-                NavigationLink(value: Route.equipment) {
+                ToolLink(route: .equipment) {
                     HStack {
                         Text("Mon matériel", tableName: "Outils").foregroundStyle(.ink)
                         Spacer()

@@ -13,6 +13,8 @@ struct KeypadField: View {
     /// Where a prefilled value comes from, under the name.
     var source: SourceLine? = nil
     let id: String
+    /// The page's focus, shared by its fields; the field's own outside a tool page.
+    @Environment(\.toolFocus) private var pageFocus
     @FocusState private var typing: Bool
     @Environment(\.dynamicTypeSize) private var typeSize
 
@@ -27,13 +29,12 @@ struct KeypadField: View {
             }
             HStack(spacing: 6) {
                 Spacer(minLength: 0)
-                TextField(text: $text, prompt: Text(verbatim: prompt)) { Text(label, tableName: "Outils") }
+                withFocus(TextField(text: $text, prompt: Text(verbatim: prompt)) { Text(label, tableName: "Outils") })
                     .keyboardType(.decimalPad)
                     .multilineTextAlignment(.trailing)
                     .font(.title3.weight(.semibold))
                     .monospacedDigit()
                     .foregroundStyle(.ink)
-                    .focused($typing)
                     .accessibilityLabel(Text(label, tableName: "Outils"))
                     .accessibilityIdentifier(id)
                 Text(unit, tableName: "Outils").foregroundStyle(.muted).accessibilityHidden(true)
@@ -42,7 +43,13 @@ struct KeypadField: View {
         .frame(minHeight: 52)
         .contentShape(.rect)
         // The whole row opens the keypad, not only the figure at its end.
-        .onTapGesture { typing = true }
+        .onTapGesture {
+            if let pageFocus { pageFocus.wrappedValue = id } else { typing = true }
+        }
+    }
+
+    @ViewBuilder private func withFocus(_ field: some View) -> some View {
+        if let pageFocus { field.focused(pageFocus, equals: id) } else { field.focused($typing) }
     }
 }
 

@@ -193,10 +193,8 @@ final class OutilsTests: XCTestCase {
         app.navigationBars.buttons.firstMatch.tap()
         XCTAssertTrue(
             app.staticTexts["25 + 10 + 2,5 + 0,5\u{202F}kg par côté"].waitForExistence(timeout: 3), "Compétition loads 96")
-        // Back from Mon matériel the field takes its focus back and the keypad stands over the
-        // row; a swipe above it leaves it up, a drag down into it puts it away.
-        app.putKeypadAway()
-        XCTAssertFalse(app.keyboards.firstMatch.exists, "the keypad is away")
+        // The page puts the keypad away before it pushes Mon matériel, and nothing brings it back.
+        XCTAssertFalse(app.keyboards.firstMatch.exists, "the keypad stays away on return")
         XCTAssertTrue(app.swipeUpUntil(equipment), "Mon matériel's row is reached again")
         XCTAssertTrue(equipment.label.contains("Compétition"))
         equipment.tap()
@@ -251,6 +249,14 @@ final class OutilsTests: XCTestCase {
                 + "Epley et Brzycki, traduisent ça en un chiffre. Belay affiche les deux côte à côte pour que tu voies l'écart.")
         XCTAssertEqual(element(app, "science-label").label, "Source scientifique")
         app.navigationBars.buttons.firstMatch.tap()
+        // Typing, then the method: it still opens, and the keypad does not come back on return.
+        type(app, "80", into: "tool-field-load")
+        XCTAssertTrue(app.swipeUpUntil(method))
+        method.tap()
+        XCTAssertTrue(element(app, "science-brief").waitForExistence(timeout: 5), "the method opens while typing")
+        app.navigationBars.buttons.firstMatch.tap()
+        XCTAssertTrue(element(app, "tool-header").waitForExistence(timeout: 5))
+        XCTAssertFalse(app.keyboards.firstMatch.waitForExistence(timeout: 1), "the keypad stays away on return")
         app.navigationBars.buttons.firstMatch.tap()
         open(app, "warmup")
         XCTAssertTrue(app.swipeUpUntil(method))

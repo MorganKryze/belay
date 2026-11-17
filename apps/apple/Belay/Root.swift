@@ -150,6 +150,7 @@ struct RootView: View {
             }
         }
         .environment(\.zoomSpace, space)
+        .environment(\.push, PushAction { [model] route in model[path: model.tab].append(route) })
         .tint(.ink)
         .fullScreenCover(isPresented: $model.coverOpen) {
             SessionCover(training: training) { model.coverOpen = false }
