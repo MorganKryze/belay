@@ -57,7 +57,9 @@ struct ActivitySheet: View {
             deletion: picked.map { id in
                 (Text("Supprimer l’activité", tableName: "Activity"), { corps.removeActivity(id: id) })
             },
-            heading: AnyView(kinds)
+            heading: AnyView(kinds),
+            dateLabel: kind == .steps
+                ? Text("Jour", tableName: "Activity") : Text("Date de l’activité", tableName: "Activity")
         ) {
             switch kind {
             case .cardio:
@@ -149,15 +151,33 @@ struct ActivitySheet: View {
 
     // MARK: Cardio and Escalade
 
+    /// « Durée » over its value, bold, as a count reads; − and + on the right.
     private var duration: some View {
-        HStack {
-            Text("Durée", tableName: "Activity").foregroundStyle(.ink)
+        HStack(spacing: 8) {
+            VStack(alignment: .leading, spacing: 1) {
+                Text("Durée", tableName: "Activity").foregroundStyle(.ink)
+                Text(ActivityText.minutes(Int(minutes)))
+                    .font(.title3.weight(.semibold)).foregroundStyle(.ink).monospacedDigit()
+            }
+            .accessibilityElement(children: .combine)
             Spacer(minLength: 8)
-            Text(ActivityText.minutes(Int(minutes))).foregroundStyle(.ink).monospacedDigit()
             Nudge(value: $minutes, range: 5...480, step: 5, what: "5 minutes", id: "activity-duration")
         }
         .frame(minHeight: 52)
         .accessibilityElement(children: .contain)
+    }
+
+    /// A segment's row: its name, and a muted hint under it, on the left; the segment on the right.
+    private func segmentRow(_ title: LocalizedStringKey, hint: LocalizedStringKey? = nil, picker: some View) -> some View {
+        HStack(spacing: 8) {
+            VStack(alignment: .leading, spacing: 1) {
+                Text(title, tableName: "Activity").foregroundStyle(.ink)
+                if let hint { Text(hint, tableName: "Activity").font(.footnote).foregroundStyle(.muted) }
+            }
+            Spacer(minLength: 8)
+            picker.labelsHidden().frame(maxWidth: 190)
+        }
+        .frame(minHeight: 52)
     }
 
     private var cardioFields: some View {
@@ -176,28 +196,33 @@ struct ActivitySheet: View {
         .listRowBackground(Color.surface)
     }
 
+    /// Type, Durée, Voies ou blocs; then « Le plus dur », by grade or by colour, all optional.
     @ViewBuilder private var climbingFields: some View {
         Section {
-            Picker(selection: $style) {
-                Text("Bloc", tableName: "Activity").tag(String?.some("boulder"))
-                Text("Voie", tableName: "Activity").tag(String?.some("route"))
-            } label: {
-                Text("Type", tableName: "Activity")
-            }
-            .pickerStyle(.segmented)
-            .frame(minHeight: 44)
-            .accessibilityIdentifier("climb-style")
+            segmentRow(
+                "Type",
+                picker: Picker(selection: $style) {
+                    Text("Bloc", tableName: "Activity").tag(String?.some("boulder"))
+                    Text("Voie", tableName: "Activity").tag(String?.some("route"))
+                } label: {
+                    Text("Type", tableName: "Activity")
+                }
+                .pickerStyle(.segmented)
+                .accessibilityIdentifier("climb-style"))
+            duration
             HStack {
-                Text("Voies ou blocs", tableName: "Activity").foregroundStyle(.ink)
-                TextField(String(localized: "Voies ou blocs", table: "Activity"), text: $runs,
-                          prompt: Text("facultatif", tableName: "Activity"))
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Voies ou blocs", tableName: "Activity").foregroundStyle(.ink)
+                    Text("facultatif", tableName: "Activity").font(.footnote).foregroundStyle(.muted)
+                }
+                TextField(String(localized: "Voies ou blocs", table: "Activity"), text: $runs, prompt: Text(verbatim: "12"))
+                    .font(.title3.weight(.semibold))
                     .keyboardType(.numberPad)
                     .multilineTextAlignment(.trailing)
                     .monospacedDigit()
                     .accessibilityIdentifier("climb-runs")
             }
-            .frame(minHeight: 44)
-            duration
+            .frame(minHeight: 52)
         } footer: {
             if fields == nil {
                 Text("Saisis un nombre entier entre 0 et 200.", tableName: "Activity").foregroundStyle(.muted)
@@ -205,15 +230,16 @@ struct ActivitySheet: View {
         }
         .listRowBackground(Color.surface)
         Section {
-            Picker(selection: $byColour) {
-                Text("Cotation", tableName: "Activity").tag(false)
-                Text("Couleur", tableName: "Activity").tag(true)
-            } label: {
-                Text("Le plus dur", tableName: "Activity")
-            }
-            .pickerStyle(.segmented)
-            .frame(minHeight: 44)
-            .accessibilityIdentifier("climb-by")
+            segmentRow(
+                "Le plus dur", hint: "facultatif",
+                picker: Picker(selection: $byColour) {
+                    Text("Cotation", tableName: "Activity").tag(false)
+                    Text("Couleur", tableName: "Activity").tag(true)
+                } label: {
+                    Text("Le plus dur", tableName: "Activity")
+                }
+                .pickerStyle(.segmented)
+                .accessibilityIdentifier("climb-by"))
             if byColour {
                 ChipFlow {
                     ForEach(Bounds.climbColors, id: \.self) { c in
@@ -234,10 +260,6 @@ struct ActivitySheet: View {
                 .frame(minHeight: 44)
                 .accessibilityIdentifier("climb-grade")
             }
-        } header: {
-            Text("Le plus dur", tableName: "Activity")
-        } footer: {
-            Text("Facultatif, comme chaque champ de l’escalade.", tableName: "Activity").foregroundStyle(.muted)
         }
         .listRowBackground(Color.surface)
     }

@@ -23,6 +23,8 @@ struct EntrySheet<Rows: View>: View {
     /// A segment in place of the title, as Calendrier's « Évènement | Rappel »; the date then has
     /// its section, and the rows bring theirs.
     var heading: AnyView? = nil
+    /// The date row's name, « Date » unless the sheet says otherwise.
+    var dateLabel: Text? = nil
     @ViewBuilder let rows: Rows
     @Environment(\.dismiss) private var dismiss
     @State private var asking = false
@@ -92,7 +94,7 @@ struct EntrySheet<Rows: View>: View {
 
     private var datePicker: some View {
         DatePicker(selection: $date, in: days, displayedComponents: .date) {
-            Text("Date", tableName: "Corps")
+            dateLabel ?? Text("Date", tableName: "Corps")
         }
         .frame(minHeight: 44)
     }

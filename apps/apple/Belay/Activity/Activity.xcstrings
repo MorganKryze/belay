@@ -181,6 +181,16 @@
         }
       }
     },
+    "Date de l’activité": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activity date"
+          }
+        }
+      }
+    },
     "Durée": {
       "localizations": {
         "en": {
@@ -201,22 +211,22 @@
         }
       }
     },
-    "Facultatif, comme chaque champ de l’escalade.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Optional, as every climbing field is."
-          }
-        }
-      }
-    },
     "Importer les pas de Santé": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Import steps from Health"
+          }
+        }
+      }
+    },
+    "Jour": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Day"
           }
         }
       }

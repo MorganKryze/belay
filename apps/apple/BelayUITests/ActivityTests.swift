@@ -232,4 +232,17 @@ final class ActivityTests: XCTestCase {
         XCTAssertTrue(refusal.label.contains("tes pesées"), refusal.label)
         XCTAssertFalse(refusal.label.contains("séances"), refusal.label)
     }
+
+
+    /// A39: Escalade as Proto: « Date de l’activité », then Type, Durée, Voies ou blocs; Pas says « Jour ».
+    func testEscaladeOrderAndLabels() {
+        let app = XCUIApplication.fixture("activityOne")
+        sheet(app)
+        kind(app, "Escalade")
+        XCTAssertTrue(app.staticTexts["Date de l’activité"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts["Type"].exists, "the segment is named")
+        XCTAssertLessThan(element(app, "activity-duration").frame.minY, element(app, "climb-runs").frame.minY)
+        kind(app, "Pas")
+        XCTAssertTrue(app.staticTexts["Jour"].waitForExistence(timeout: 3))
+    }
 }
