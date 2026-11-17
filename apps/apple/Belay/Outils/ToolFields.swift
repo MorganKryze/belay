@@ -64,12 +64,18 @@ struct CountStepper: View {
     /// Spoken after the verb: « Ajouter une répétition ».
     let what: String
     let id: String
+    /// A muted line under the value: what the count follows.
+    var hint: LocalizedStringKey? = nil
     @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
         let words = VStack(alignment: .leading, spacing: 1) {
             Text(label, tableName: "Outils").foregroundStyle(.ink)
             shown.font(.title3.weight(.semibold)).monospacedDigit().foregroundStyle(.ink)
+            if let hint {
+                Text(hint, tableName: "Outils").font(.footnote).foregroundStyle(.muted)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
         .accessibilityElement(children: .combine)
         .accessibilityIdentifier(id)

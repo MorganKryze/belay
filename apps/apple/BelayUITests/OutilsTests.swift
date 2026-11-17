@@ -332,4 +332,15 @@ final class OutilsTests: XCTestCase {
         XCTAssertTrue(weight.label.contains("20,5"), weight.label)
         XCTAssertTrue(other.isSelected, "« Autre » is the bar chosen")
     }
+
+    /// A16: the count says it follows the load; the working sets read « à toi ».
+    func testWarmupCountSaysItFollows() {
+        let app = outils()
+        open(app, "warmup")
+        type(app, "100", into: "tool-field-work")
+        let count = element(app, "tool-count")
+        XCTAssertTrue(count.waitForExistence(timeout: 3))
+        XCTAssertTrue(count.label.contains("suit la charge tant que tu n’y touches pas"), count.label)
+        XCTAssertEqual(element(app, "warmup-work").label, "100\u{202F}kg, séries de travail, à toi")
+    }
 }

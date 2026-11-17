@@ -40,7 +40,8 @@ struct WarmupTool: View {
                     CountStepper(
                         label: "Échauffement", shown: Self.countText(count(kg)),
                         value: Binding(get: { count(kg) }, set: { outils.warmupCount = $0 }), range: 0...3,
-                        what: String(localized: "une série", table: "Outils"), id: "tool-count")
+                        what: String(localized: "une série", table: "Outils"), id: "tool-count",
+                        hint: "suit la charge tant que tu n’y touches pas")
                 }
             }
             .listRowBackground(Color.surface)
@@ -62,10 +63,11 @@ struct WarmupTool: View {
                 line(
                     tile: Text(verbatim: "\(index + 1)").font(.subheadline.weight(.bold)).foregroundStyle(.sessionShade)
                         .frame(width: 30, height: 30).background(Color.sessionTint, in: .rect(cornerRadius: 8)),
-                    load: "\(set.loadKg.upToHundredths)\u{202F}kg × \(set.reps)",
+                    load: "\(set.loadKg.upToHundredths)\u{202F}kg",
                     detail: set.perSideKg.isEmpty
                         ? String(localized: "barre seule", table: "Outils")
-                        : String(localized: "\(PlateText.plates(set.perSideKg)) par côté", table: "Outils")
+                        : String(localized: "\(PlateText.plates(set.perSideKg)) par côté", table: "Outils"),
+                    end: "× \(set.reps)"
                 )
                 .accessibilityIdentifier("warmup-set-\(index)")
                 Divider().overlay(Color.line)
@@ -74,23 +76,29 @@ struct WarmupTool: View {
                 tile: Image(systemName: "checkmark").font(.subheadline.weight(.bold)).foregroundStyle(.ink)
                     .frame(width: 30, height: 30).background(Color.track, in: .rect(cornerRadius: 8)),
                 load: "\(kg.upToHundredths)\u{202F}kg",
-                detail: String(localized: "séries de travail, à toi", table: "Outils"))
+                detail: String(localized: "séries de travail", table: "Outils"),
+                end: String(localized: "à toi", table: "Outils")
+            )
+            .accessibilityIdentifier("warmup-work")
         }
     }
 
-    /// One set: its tile, the load and reps, the plates under them; read as one element.
-    private func line(tile: some View, load: String, detail: String) -> some View {
-        HStack(spacing: 12) {
+    /// One set: its tile, the load with the plates under it, the reps on the right; read as one
+    /// element, « 50 kg × 5, 10 + 5 par côté » or « 100 kg, séries de travail, à toi ».
+    private func line(tile: some View, load: String, detail: String, end: String) -> some View {
+        let reps = end.hasPrefix("×")
+        return HStack(spacing: 12) {
             tile.accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 1) {
                 Text(verbatim: load).font(.body.weight(.semibold)).monospacedDigit().foregroundStyle(.ink)
                     .lineLimit(1).minimumScaleFactor(0.6)
                 Text(verbatim: detail).font(.subheadline).foregroundStyle(.muted)
             }
-            Spacer(minLength: 0)
+            Spacer(minLength: 8)
+            Text(verbatim: end).font(.body.weight(.semibold)).monospacedDigit().foregroundStyle(.ink)
         }
         .frame(minHeight: 56)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text(verbatim: "\(load), \(detail)"))
+        .accessibilityLabel(Text(verbatim: reps ? "\(load) \(end), \(detail)" : "\(load), \(detail), \(end)"))
     }
 }

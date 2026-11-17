@@ -1172,6 +1172,16 @@
         }
       }
     },
+    "suit la charge tant que tu n’y touches pas": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "follows the load until you change it"
+          }
+        }
+      }
+    },
     "Sur 3 repas": {
       "localizations": {
         "en": {
@@ -1228,6 +1238,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Sedentary, plus about an hour of moderate to vigorous exercise a day."
+          }
+        }
+      }
+    },
+    "séries de travail": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "working sets"
           }
         }
       }
@@ -1832,16 +1852,6 @@
         }
       }
     },
-    "séries de travail, à toi": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "working sets, your call"
-          }
-        }
-      }
-    },
     "ta dernière pesée": {
       "localizations": {
         "en": {
@@ -1918,6 +1928,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "At this pace, Belay suggests being followed by a doctor or a dietitian."
+          }
+        }
+      }
+    },
+    "à toi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "your call"
           }
         }
       }
