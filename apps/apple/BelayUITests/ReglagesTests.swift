@@ -142,6 +142,37 @@ final class ReglagesTests: XCTestCase {
         }
     }
 
+    // MARK: A5
+
+    /// One refusal of each kind the phone now writes, listed first in the web's words, then gone
+    /// once the list is cleared.
+    func testRefusedListedFirstAndCleared() {
+        let app = launch("refused")
+        reglages(app)
+        let first = element(app, "rejected-0")
+        XCTAssertTrue(first.waitForExistence(timeout: 5), "the refusals show")
+        XCTAssertLessThan(first.frame.minY, element(app, "reglages-profile").frame.minY, "before the profile cell")
+        XCTAssertTrue(app.staticTexts["Saisies refusées"].exists)
+        let day = frenchDayMonth(0)
+        let expected = [
+            "Profil\u{202F}: taille", "Fourchette de perte", "Complément\u{202F}: Magnésium", "Activité du \(day)",
+            "Pas du \(day)",
+        ]
+        for (index, words) in expected.enumerated() {
+            let row = element(app, "rejected-\(index)")
+            XCTAssertTrue(app.swipeUpUntil(row), "refusal \(index)")
+            XCTAssertTrue(row.label.contains(words), "« \(words) » in \(row.label)")
+            XCTAssertTrue(row.label.contains("Refusée par le serveur"), row.label)
+        }
+        XCTAssertTrue(
+            app.staticTexts[
+                "Le serveur les a refusées\u{202F}: elles ne sont plus en attente. Saisis-les à nouveau si besoin."
+            ].exists, "the web's note")
+        app.buttons["rejected-clear"].tap()
+        XCTAssertFalse(element(app, "rejected-0").waitForExistence(timeout: 2), "the list is emptied")
+        XCTAssertFalse(app.staticTexts["Saisies refusées"].exists)
+    }
+
     // MARK: A27
 
     func testThemeReachesSheetAndAlert() {

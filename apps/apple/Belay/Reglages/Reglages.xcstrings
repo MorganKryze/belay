@@ -231,6 +231,876 @@
           }
         }
       }
+    },
+    "Profil": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Profile"
+          }
+        }
+      }
+    },
+    "Profil · taille, âge, fourchette de perte": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Profile · height, age, loss range"
+          }
+        }
+      }
+    },
+    "Suivi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tracking"
+          }
+        }
+      }
+    },
+    "Compléments": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Supplements"
+          }
+        }
+      }
+    },
+    "aucun": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "none"
+          }
+        }
+      }
+    },
+    "%lld dans ta liste": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld on your list"
+          }
+        }
+      }
+    },
+    "Saisies refusées": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Refused entries"
+          }
+        }
+      }
+    },
+    "Le serveur les a refusées : elles ne sont plus en attente. Saisis-les à nouveau si besoin.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The server refused them, so they are no longer waiting. Enter them again if you need to."
+          }
+        }
+      }
+    },
+    "Effacer la liste": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear the list"
+          }
+        }
+      }
+    },
+    "Pesée du %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weigh-in for %@"
+          }
+        }
+      }
+    },
+    "Fourchette de perte": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loss range"
+          }
+        }
+      }
+    },
+    "Tour de taille du %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waist on %@"
+          }
+        }
+      }
+    },
+    "Tour de cou du %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neck on %@"
+          }
+        }
+      }
+    },
+    "Tour de hanches du %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hips on %@"
+          }
+        }
+      }
+    },
+    "Apports du %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Intake for %@"
+          }
+        }
+      }
+    },
+    "Profil : %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Profile: %@"
+          }
+        }
+      }
+    },
+    "formule": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "formula"
+          }
+        }
+      }
+    },
+    "année de naissance": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "year of birth"
+          }
+        }
+      }
+    },
+    "taille": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "height"
+          }
+        }
+      }
+    },
+    "Complément : %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Supplement: %@"
+          }
+        }
+      }
+    },
+    "%@ (coche du %@)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ (ticked on %2$@)"
+          }
+        }
+      }
+    },
+    "Complément": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Supplement"
+          }
+        }
+      }
+    },
+    "Annotation": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Annotation"
+          }
+        }
+      }
+    },
+    "Annotation du %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Annotation for %@"
+          }
+        }
+      }
+    },
+    "Pas du %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Steps for %@"
+          }
+        }
+      }
+    },
+    "Activité": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activity"
+          }
+        }
+      }
+    },
+    "Activité du %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activity on %@"
+          }
+        }
+      }
+    },
+    "Séance": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Session"
+          }
+        }
+      }
+    },
+    "Séance du %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Session on %@"
+          }
+        }
+      }
+    },
+    "Série": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Set"
+          }
+        }
+      }
+    },
+    "Série du %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Set on %@"
+          }
+        }
+      }
+    },
+    "Programme": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Program"
+          }
+        }
+      }
+    },
+    "Introuvable sur le serveur": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not found on the server"
+          }
+        }
+      }
+    },
+    "Exercice inconnu du serveur": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exercise unknown to the server"
+          }
+        }
+      }
+    },
+    "Plus de 150 séries dans la séance": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "More than 150 sets in the session"
+          }
+        }
+      }
+    },
+    "Compté en répétitions pour un exercice chronométré, ou l’inverse": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Counted in reps for a timed exercise, or the other way round"
+          }
+        }
+      }
+    },
+    "Moins d’exercices que la séance enregistrée (un exercice n’est jamais retiré)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fewer exercises than the stored session (an exercise is never removed)"
+          }
+        }
+      }
+    },
+    "Refusée par le serveur": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Refused by the server"
+          }
+        }
+      }
+    },
+    "Ton corps": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your body"
+          }
+        }
+      }
+    },
+    "Formule": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Formula"
+          }
+        }
+      }
+    },
+    "Année de naissance": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Year of birth"
+          }
+        }
+      }
+    },
+    "Taille": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Height"
+          }
+        }
+      }
+    },
+    "Femme": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Female"
+          }
+        }
+      }
+    },
+    "Homme": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Male"
+          }
+        }
+      }
+    },
+    "cm": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "cm"
+          }
+        }
+      }
+    },
+    "Sert à : Dépense énergétique, Masse grasse": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Used by: Energy expenditure, Body fat"
+          }
+        }
+      }
+    },
+    "Sert à : Dépense énergétique": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Used by: Energy expenditure"
+          }
+        }
+      }
+    },
+    "Sert à : IMC, Masse grasse, Dépense énergétique": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Used by: BMI, Body fat, Energy expenditure"
+          }
+        }
+      }
+    },
+    "Tout est facultatif. Chaque information ne sert qu’aux outils indiqués.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Everything is optional. Each detail is used only by the tools listed."
+          }
+        }
+      }
+    },
+    "Effacer": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear"
+          }
+        }
+      }
+    },
+    "Renseigner": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fill in"
+          }
+        }
+      }
+    },
+    "Renseigner formule": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fill in formula"
+          }
+        }
+      }
+    },
+    "Renseigner année de naissance": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fill in year of birth"
+          }
+        }
+      }
+    },
+    "Renseigner taille": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fill in height"
+          }
+        }
+      }
+    },
+    "Ta fourchette de perte": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your loss range"
+          }
+        }
+      }
+    },
+    "Par semaine, en % de ton poids moyen. Sert à dire « dans ta fourchette » sur Corps.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Per week, as a % of your average weight. Used to say “in your range” on Body."
+          }
+        }
+      }
+    },
+    "Réglable de 0,25 à 1 %. Les recommandations publiées s’arrêtent à 1 % : l’app ne propose pas plus.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adjustable from 0.25 to 1%. Published guidance stops at 1%, so the app offers no more."
+          }
+        }
+      }
+    },
+    "Au moins": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "At least"
+          }
+        }
+      }
+    },
+    "Au plus": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "At most"
+          }
+        }
+      }
+    },
+    "Comment c’est choisi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How it is chosen"
+          }
+        }
+      }
+    },
+    "Mes compléments": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "My supplements"
+          }
+        }
+      }
+    },
+    "Aucun complément dans ta liste pour l’instant.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No supplements on your list yet."
+          }
+        }
+      }
+    },
+    "Ajouter un complément": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add a supplement"
+          }
+        }
+      }
+    },
+    "Ta liste": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your list"
+          }
+        }
+      }
+    },
+    "Belay note ce que tu prends, sans conseil de dose. Les rappels quotidiens arriveront avec les notifications.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Belay records what you take, with no dose advice. Daily reminders will come with notifications."
+          }
+        }
+      }
+    },
+    "Renommer": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rename"
+          }
+        }
+      }
+    },
+    "Retirer": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove"
+          }
+        }
+      }
+    },
+    "Nom du complément": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Supplement name"
+          }
+        }
+      }
+    },
+    "Annuler": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel"
+          }
+        }
+      }
+    },
+    "Enregistrer": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save"
+          }
+        }
+      }
+    },
+    "Nouveau nom pour %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New name for %@"
+          }
+        }
+      }
+    },
+    "%lld jours marqués": {
+      "localizations": {
+        "fr": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld jour marqué"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld jours marqués"
+                }
+              }
+            }
+          }
+        },
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld day ticked"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld days ticked"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Créatine, magnésium…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Creatine, magnesium…"
+          }
+        }
+      }
+    },
+    "Ce complément est déjà dans ta liste.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This supplement is already on your list."
+          }
+        }
+      }
+    },
+    "De 1 à 40 caractères, sur une ligne.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "From 1 to 40 characters, on one line."
+          }
+        }
+      }
+    },
+    "Suggestions": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suggestions"
+          }
+        }
+      }
+    },
+    "Créatine": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Creatine"
+          }
+        }
+      }
+    },
+    "Vitamine D": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vitamin D"
+          }
+        }
+      }
+    },
+    "Oméga-3": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Omega-3"
+          }
+        }
+      }
+    },
+    "Magnésium": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Magnesium"
+          }
+        }
+      }
+    },
+    "Fer": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Iron"
+          }
+        }
+      }
+    },
+    "Zinc": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zinc"
+          }
+        }
+      }
+    },
+    "Caféine": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Caffeine"
+          }
+        }
+      }
+    },
+    "Mélatonine": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Melatonin"
+          }
+        }
+      }
     }
   }
 }

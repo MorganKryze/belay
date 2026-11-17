@@ -135,7 +135,7 @@ struct DisplayRows: View {
 }
 
 /// A row's name with its symbol.
-private struct RowName: View {
+struct RowName: View {
     /// The key in the Reglages table.
     let title: String
     let symbol: String
@@ -151,7 +151,7 @@ private struct RowName: View {
 
 /// The name, then its value at the trailing edge; at the accessibility sizes the value goes under
 /// the name, so no word breaks.
-private struct ValueRowLayout<Name: View, Value: View>: View {
+struct ValueRowLayout<Name: View, Value: View>: View {
     @ViewBuilder let name: Name
     @ViewBuilder let value: Value
     @Environment(\.dynamicTypeSize) private var type

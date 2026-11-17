@@ -140,6 +140,51 @@ final class CorpsModel {
         write("profile not saved") { try actions.setProfile(.height, .set(cm)) }
     }
 
+    func setBirthYear(_ year: Int) {
+        write("profile not saved") { try actions.setProfile(.birthYear, .set(year)) }
+    }
+
+    /// Profil's « Effacer »: the fact is written empty, so every device learns of it.
+    func clearProfile(_ fact: ProfileFact) {
+        write("profile not cleared") {
+            switch fact {
+            case .formula: try actions.setProfile(.formula, .clear)
+            case .birthYear: try actions.setProfile(.birthYear, .clear)
+            case .height: try actions.setProfile(.height, .clear)
+            }
+        }
+    }
+
+    /// The loss range as Profil leaves it; one already shown writes nothing.
+    func setRange(_ range: TargetRange) {
+        guard isTargetRange(range) else { return }
+        write("range not saved") { try actions.setTarget(minPct: range.minPct, maxPct: range.maxPct) }
+    }
+
+    /// Mes compléments: the supplements still on the list, in the order they came.
+    var supplementList: [SupplementRow] { body.supplements.filter { !$0.removed } }
+
+    /// A supplement's name, removed or not, for a refusal that names it.
+    func supplementName(_ id: String) -> String? { body.supplements.first { $0.id == id }?.name }
+
+    /// The days a supplement was ticked, which stay once it leaves the list.
+    func daysMarked(supplementId: String) -> Int {
+        Set(body.logs.filter { $0.supplementId == supplementId }.map(\.date)).count
+    }
+
+    /// A new supplement, with an id of its own.
+    func addSupplement(name: String) {
+        write("supplement not added") { try actions.addSupplement(id: UUIDv7.make(at: now()), name: name) }
+    }
+
+    func renameSupplement(id: String, name: String) {
+        write("supplement not renamed") { try actions.renameSupplement(id: id, name: name) }
+    }
+
+    func removeSupplement(id: String) {
+        write("supplement not removed") { try actions.removeSupplement(id: id) }
+    }
+
     /// The latest weigh-in up to today, the sheet's grey placeholder.
     var lastWeighIn: Double? {
         body.weights.filter { $0.date <= today && $0.weightKg != nil }.max { $0.date < $1.date }?.weightKg
@@ -226,6 +271,11 @@ final class CorpsModel {
         }
         refresh()
     }
+}
+
+/// A fact of Profil, for its « Effacer ».
+enum ProfileFact: String, CaseIterable {
+    case formula, birthYear, height
 }
 
 /// What Apports reads from the tools: the level's PAL and the protein goal.

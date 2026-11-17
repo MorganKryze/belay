@@ -41,11 +41,19 @@ import Synchronization
 /// every day of the last 9; `trend` as `supplements` with creatine ticked every day of the last
 /// 23, a « Semaine allégée » from 19 days back and a « Note · voyage » 9 days back.
 ///
+/// Réglages' modes: `profileEmpty` and `supplementsEmpty` with no profile and no supplement;
+/// `refused` with one change of each new kind (the height, the range, a supplement « Magnésium »,
+/// today's activity and steps) refused by the server; `pending0`, `pending1` and `pending2` with
+/// that many changes waiting to be sent; `queueUnreadable` as `pending2`, its queue unreadable.
+///
 /// The tools' modes: `tools` with a full profile, a week of weigh-ins around 80 kg and a waist of
 /// 84,5 cm two days ago, for the fields a tool opens on; `toolsEmpty` with none of them.
 enum Fixture {
     nonisolated fileprivate static let origin = "https://belay.example"
     nonisolated fileprivate static let userId = "fixture"
+
+    /// `queueUnreadable`: Réglages cannot read what waits to be sent, as when the store fails.
+    static var queueUnreadable: Bool { UserDefaults.standard.string(forKey: "BelayFixture") == "queueUnreadable" }
 
     static func account() -> AccountModel? {
         guard let mode = UserDefaults.standard.string(forKey: "BelayFixture") else { return nil }
@@ -126,7 +134,8 @@ enum Fixture {
 
     private static let bodyModes: Set = [
         "bodyUsual", "bodyOutOfRange", "bodyEarly", "bodyFirst", "healthCard", "weighedFromHealth", "measures", "intake",
-        "supplements", "trend", "tools", "toolsEmpty",
+        "supplements", "trend", "tools", "toolsEmpty", "profileEmpty", "supplementsEmpty", "refused", "pending0",
+        "pending1", "pending2", "queueUnreadable",
     ]
 
     /// The clock `-BelayNow` sets: that local time at launch, running on from there.
@@ -303,6 +312,26 @@ enum Fixture {
         case "bodyEarly":
             for (back, kg) in [(1, 79.8), (2, 79.9), (3, 80.0)] {
                 try actions.weigh(date: addDays(today, -back), kg: kg)
+            }
+        case "refused":
+            // One change of each kind the phone now writes, all refused by the server.
+            try actions.setProfile(.height, .set(172))
+            try actions.setTarget(minPct: 0.4, maxPct: 0.8)
+            try actions.addSupplement(id: "00000000-0000-7000-8000-0000000000d3", name: "Magnésium")
+            try actions.logActivity(
+                ActivityInput(
+                    id: "00000000-0000-7000-8000-0000000000f1", date: today,
+                    fields: ActivityFields(type: "climbing", durationMin: 90, climbStyle: "boulder")))
+            try actions.writeSteps(date: today, value: 8_437, own: true)
+            let sent = try store.outbox(limit: nil)
+            var answer = emptyAnswer
+            answer["rejected"] = sent.indices.map { ["index": $0, "reason": "refused"] }
+            let data = try JSONSerialization.data(withJSONObject: answer)
+            try store.applyServer(sent: sent, response: JSONDecoder().decode(SyncResponse.self, from: data))
+        case "pending1", "pending2", "queueUnreadable":
+            // Weigh-ins the queue still holds, the sync never reaching the instance.
+            for back in 0..<(mode == "pending1" ? 1 : 2) {
+                try actions.weigh(date: addDays(today, -back), kg: 80)
             }
         case "weighedFromHealth":
             try store.setHealthOn(true, now: now)

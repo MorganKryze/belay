@@ -99,12 +99,16 @@ struct Nudge: View {
     let step: Double
     /// Spoken after the verb: « Retirer 0,1 kg ».
     let what: String
+    /// The buttons' identifiers' stem, « range-min » for `range-min-minus`.
+    var id: String? = nil
     @ScaledMetric(relativeTo: .title3) private var side: CGFloat = 36
 
     var body: some View {
         HStack(spacing: 8) {
             button("minus", "Retirer \(what)", -step, enabled: value > range.lowerBound)
+                .accessibilityIdentifier(id.map { "\($0)-minus" } ?? "")
             button("plus", "Ajouter \(what)", step, enabled: value < range.upperBound)
+                .accessibilityIdentifier(id.map { "\($0)-plus" } ?? "")
         }
         .fixedSize()
         .sensoryFeedback(trigger: value) { old, new in new > old ? .increase : .decrease }

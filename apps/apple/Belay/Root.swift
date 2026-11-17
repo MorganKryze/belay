@@ -26,8 +26,12 @@ enum AppTab: String, Hashable, CaseIterable {
 /// Where a tab can push to; each native screen adds its case here, with the destination that
 /// shows it.
 enum Route: Hashable {
-    /// Réglages, from Accueil's avatar: for now only the way to sign out.
+    /// Réglages, from Accueil's avatar.
     case settings
+    /// Profil and the loss range, from Réglages' profile cell.
+    case profile
+    /// Mes compléments, from Réglages › Suivi and from Compléments' « Gérer ma liste ».
+    case manageSupplements
     /// A session of the active program before it starts, from Accueil or Séances.
     case preview(sessionId: String)
     /// A session kept, from Séances' Historique.
@@ -212,7 +216,10 @@ struct RootView: View {
     /// Every route a tab can push.
     @ViewBuilder private func destination(_ route: Route) -> some View {
         switch route {
-        case .settings: ReglagesView(account: account, store: store)
+        case .settings:
+            ReglagesView(account: account, store: store, corps: corps) { model[path: model.tab].append($0) }
+        case .profile: ProfileView(corps: corps)
+        case .manageSupplements: SupplementsManageView(corps: corps)
         case .preview(let sessionId):
             SessionPreview(training: training, sessionId: sessionId, openCover: openCover)
         case .past(let workoutId):
@@ -227,7 +234,7 @@ struct RootView: View {
         case .science(let id): ScienceView(id: id)
         case .measures: MeasuresView(corps: corps)
         case .intake: IntakeView(corps: corps)
-        case .supplements: SupplementsView(corps: corps)
+        case .supplements: SupplementsView(corps: corps) { model[path: model.tab].append($0) }
         case .tool(let tool): toolPage(tool)
         case .equipment: EquipmentView(outils: outils)
         }

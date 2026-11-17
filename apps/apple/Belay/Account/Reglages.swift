@@ -2,27 +2,29 @@ import BelayCore
 import os
 import SwiftUI
 
-/// Réglages, reached from Accueil's avatar: the Santé switches, then the way out. Signing out asks
-/// first, as the system does for a destructive action, and says what still waits to be sent, since
-/// it leaves with the next sign-in of this account only.
+/// Réglages, reached from Accueil's avatar: the refused entries while there are any, the profile
+/// cell, the display rows, Suivi, the Santé switches, then the account and the way out.
 struct ReglagesView: View {
     let account: AccountModel
     let store: AccountStore
-    @State private var asking = false
+    let corps: CorpsModel
+    /// Pushes Profil or Mes compléments on the stack Réglages sits in.
+    let open: (Route) -> Void
     /// The switch as the store keeps it, read when the page opens.
     @State private var healthOn = false
     /// The import's switch, which goes on only with Santé's.
     @State private var importOn = false
     /// iOS did not let Belay write workouts at the last turn-on; the switch can try again.
     @State private var refused = false
-    /// What the queue holds when the person asks; nil when the store could not say.
-    @State private var waiting: Int?
 
     private static let log = Logger(subsystem: "cloud.libresoftware.belay", category: "settings")
 
     var body: some View {
         List {
+            RefusedSection(store: store, corps: corps)
+            profileCell
             DisplayRows()
+            suivi
             if HealthKitWriter.available {
                 Section {
                     Toggle(isOn: Binding(get: { healthOn }, set: switchHealth)) {
@@ -51,43 +53,85 @@ struct ReglagesView: View {
                 }
                 .listRowBackground(Color.surface)
             }
-            Section {
-                Button(role: .destructive, action: ask) {
-                    Text("Se déconnecter", tableName: "Account")
-                        .frame(maxWidth: .infinity, minHeight: 44)
-                }
-                .accessibilityIdentifier("signout")
-            }
-            .listRowBackground(Color.surface)
+            AccountSection(account: account, pending: pending)
         }
         .belayList()
         .background { Wall() }
         .navigationTitle("Réglages")
         .largeTitleOnly()
         .onAppear(perform: readHealth)
-        .confirmationDialog(
-            Text("Se déconnecter\u{202F}?", tableName: "Account"), isPresented: $asking, titleVisibility: .visible
-        ) {
-            Button(role: .destructive) {
-                Task { await account.signOut() }
-            } label: {
-                Text("Se déconnecter", tableName: "Account")
-            }
-            .accessibilityIdentifier("signout-confirm")
-            Button(role: .cancel) {} label: {
-                Text("Annuler", tableName: "Account")
-            }
-        } message: {
-            message
-        }
     }
 
-    private var message: Text {
-        switch waiting {
-        case 0: Text("Rien n’attend d’être envoyé.", tableName: "Account")
-        case let count?: Text("\(count) saisies partiront à ta prochaine connexion.", tableName: "Account")
-        case nil: Text("Ce qui attend d’être envoyé partira à ta prochaine connexion.", tableName: "Account")
+    /// The initial in its disc, the name, and what Profil holds.
+    private var profileCell: some View {
+        Section {
+            Button { open(.profile) } label: {
+                ProfileCellLayout {
+                    Avatar(letter: account.displayName?.first.map { String($0).localizedUppercase }, size: 52)
+                        .font(.title2)
+                        .accessibilityHidden(true)
+                } words: {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(verbatim: account.displayName ?? String(localized: "Profil", table: "Reglages"))
+                            .font(.title3.weight(.semibold))
+                            .foregroundStyle(.ink)
+                        Text("Profil · taille, âge, fourchette de perte", tableName: "Reglages")
+                            .font(.subheadline)
+                            .foregroundStyle(.muted)
+                    }
+                }
+                .padding(.vertical, 4)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(.rect)
+            }
+            .buttonStyle(.plain)
+            .accessibilityElement(children: .combine)
+            .accessibilityAddTraits(.isButton)
+            .accessibilityIdentifier("reglages-profile")
         }
+        .listRowBackground(Color.surface)
+    }
+
+    /// Suivi: Mes compléments, with how many the list holds.
+    private var suivi: some View {
+        Section {
+            Button { open(.manageSupplements) } label: {
+                ValueRowLayout {
+                    RowName(title: "Compléments", symbol: "pills")
+                } value: {
+                    HStack(spacing: 5) {
+                        Text(supplementsCount).foregroundStyle(.muted)
+                        Image(systemName: "chevron.forward")
+                            .font(.footnote.weight(.semibold))
+                            .foregroundStyle(.muted)
+                            .accessibilityHidden(true)
+                    }
+                }
+                .frame(minHeight: 52)
+                .contentShape(.rect)
+            }
+            .buttonStyle(.plain)
+            .accessibilityElement(children: .combine)
+            .accessibilityAddTraits(.isButton)
+            .accessibilityIdentifier("reglages-supplements")
+        } header: {
+            Text("Suivi", tableName: "Reglages")
+        }
+        .listRowBackground(Color.surface)
+    }
+
+    private var supplementsCount: String {
+        let count = corps.supplementList.count
+        return count == 0
+            ? String(localized: "aucun", table: "Reglages") : String(localized: "\(count) dans ta liste", table: "Reglages")
+    }
+
+    /// What waits to be sent; in a debug build the UI tests can make it unreadable.
+    private func pending() throws -> Int {
+        #if DEBUG
+            if Fixture.queueUnreadable { throw CocoaError(.fileReadUnknown) }
+        #endif
+        return try store.outbox(limit: nil).count
     }
 
     private func readHealth() {
@@ -124,14 +168,19 @@ struct ReglagesView: View {
         importOn = true
         Task { importOn = await account.turnHealthImportOn() }
     }
+}
 
-    private func ask() {
-        do {
-            waiting = try store.outbox(limit: nil).count
-        } catch {
-            Self.log.error("queue not read: \(AccountStore.logLabel(error), privacy: .public)")
-            waiting = nil
+/// The profile cell's disc beside its words; at the accessibility sizes, above them.
+private struct ProfileCellLayout<Disc: View, Words: View>: View {
+    @ViewBuilder let disc: Disc
+    @ViewBuilder let words: Words
+    @Environment(\.dynamicTypeSize) private var type
+
+    var body: some View {
+        if type.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: 8) { disc; words }
+        } else {
+            HStack(spacing: 14) { disc; words }
         }
-        asking = true
     }
 }

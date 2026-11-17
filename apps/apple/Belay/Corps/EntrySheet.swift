@@ -84,7 +84,7 @@ struct EntrySheet<Rows: View>: View {
 
 /// A sheet's head: the domain's icon in a round tile, the title under it. At the largest sizes the
 /// title alone heads the sheet, so the field stays above the keypad.
-private struct SheetHead: View {
+struct SheetHead: View {
     let title: Text
     let symbol: String
     let domain: Domain
