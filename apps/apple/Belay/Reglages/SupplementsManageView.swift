@@ -9,6 +9,8 @@ struct SupplementsManageView: View {
     @State private var adding = false
     @State private var renaming: SupplementRow?
     @State private var newName = ""
+    /// Why the last name typed was refused, said in the alert opened again on it.
+    @State private var refusal: LocalizedStringKey?
 
     var body: some View {
         List {
@@ -71,12 +73,27 @@ struct SupplementsManageView: View {
             TextField(text: $newName) { Text("Nom du complément", tableName: "Reglages") }
             Button(role: .cancel) {} label: { Text("Annuler", tableName: "Reglages") }
             Button {
-                if canRename(supplement) { corps.renameSupplement(id: supplement.id, name: newName) }
+                if let problem = problem(renaming: supplement) {
+                    // Any button closes the alert: it opens again on the name typed, with the web's
+                    // reason, so the name can be corrected. An alert shown while the last one is
+                    // still leaving is dropped, hence the wait for its exit.
+                    refusal = problem
+                    Task {
+                        try? await Task.sleep(for: .milliseconds(500))
+                        renaming = supplement
+                    }
+                } else {
+                    corps.renameSupplement(id: supplement.id, name: newName)
+                }
             } label: {
                 Text("Enregistrer", tableName: "Reglages")
             }
         } message: { supplement in
-            Text("Nouveau nom pour \(supplement.name)", tableName: "Reglages")
+            if let refusal {
+                Text(refusal, tableName: "Reglages")
+            } else {
+                Text("Nouveau nom pour \(supplement.name)", tableName: "Reglages")
+            }
         }
     }
 
@@ -88,14 +105,18 @@ struct SupplementsManageView: View {
         .foregroundStyle(.muted)
     }
 
-    /// A valid name that no other supplement on the list holds.
-    private func canRename(_ supplement: SupplementRow) -> Bool {
-        isSupplementName(newName)
-            && !corps.supplementList.contains { $0.id != supplement.id && sameSupplementName($0.name, newName) }
+    /// The web's words for a name it refuses: not a name, or another supplement's on the list.
+    private func problem(renaming supplement: SupplementRow) -> LocalizedStringKey? {
+        if !isSupplementName(newName) { return "De 1 à 40 caractères, sur une ligne." }
+        if corps.supplementList.contains(where: { $0.id != supplement.id && sameSupplementName($0.name, newName) }) {
+            return "Ce complément est déjà dans ta liste."
+        }
+        return nil
     }
 
     private func rename(_ supplement: SupplementRow) {
         newName = supplement.name
+        refusal = nil
         renaming = supplement
     }
 

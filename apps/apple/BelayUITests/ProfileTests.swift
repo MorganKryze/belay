@@ -253,6 +253,30 @@ final class ProfileTests: XCTestCase {
         XCTAssertTrue(app.navigationBars["Mes compléments"].waitForExistence(timeout: 5), "Corps leads to the list")
     }
 
+    /// A rename to a name another supplement holds, or to none, is refused in the web's words,
+    /// the name typed kept to correct.
+    func testRenameRefusedInWords() {
+        let app = manage("supplements")
+        let creatine = element(app, "manage-0")
+        XCTAssertTrue(creatine.waitForExistence(timeout: 5))
+        creatine.tap()
+        let alert = app.alerts.firstMatch
+        XCTAssertTrue(alert.waitForExistence(timeout: 3))
+        let field = alert.textFields.firstMatch
+        field.tap()
+        field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 12) + "vitamine d")
+        alert.buttons["Enregistrer"].tap()
+        XCTAssertTrue(
+            app.alerts.staticTexts["Ce complément est déjà dans ta liste."].waitForExistence(timeout: 3), "a duplicate is said")
+        XCTAssertEqual(app.alerts.textFields.firstMatch.value as? String, "vitamine d", "the name typed stays")
+        app.alerts.textFields.firstMatch.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 12))
+        app.alerts.buttons["Enregistrer"].tap()
+        XCTAssertTrue(
+            app.alerts.staticTexts["De 1 à 40 caractères, sur une ligne."].waitForExistence(timeout: 3), "an empty name is said")
+        app.alerts.buttons["Annuler"].tap()
+        XCTAssertEqual(creatine.label, "Créatine, 9 jours marqués", "nothing renamed")
+    }
+
     // MARK: A36
 
     func testAddSheetRefusesDuplicate() {
