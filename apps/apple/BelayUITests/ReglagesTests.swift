@@ -42,6 +42,12 @@ final class ReglagesTests: XCTestCase {
     private func reach(_ app: XCUIApplication, _ id: String) -> XCUIElement {
         let row = element(app, id)
         XCTAssertTrue(app.swipeUpUntil(row), "the row \(id) is reached")
+        // A row can be hittable at its centre while its end sits under the floating tab bar, where
+        // a tap would switch tabs: bring it clear of the bar first.
+        let bar = app.tabBars.firstMatch
+        for _ in 0..<3 where bar.exists && row.frame.maxY > bar.frame.minY - 8 {
+            app.swipeUp(velocity: .slow)
+        }
         return row
     }
 
