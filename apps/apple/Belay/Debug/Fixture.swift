@@ -57,7 +57,7 @@ import Synchronization
 ///
 /// The instance serves loops in every mode: each one a short video made on the phone, sent 3 s
 /// after it is asked, since no media ships with the app. `loopLoading` never answers for one, and
-/// `loopFailed` answers each with a 404 after the same wait.
+/// `loopFailed` answers each with a 404 after the same wait, `loopBroken` with a body no player reads.
 enum Fixture {
     nonisolated fileprivate static let origin = "https://belay.example"
     nonisolated fileprivate static let userId = "fixture"
@@ -853,6 +853,7 @@ nonisolated final class FixtureLoops: Sendable {
         if mode == "loopLoading" { try await Task.sleep(for: .seconds(3_600)) }
         try await Task.sleep(for: .seconds(3))
         if mode == "loopFailed" { return (Data(), 404) }
+        if mode == "loopBroken" { return (Data("not a video".utf8), 200) }
         return (try await Self.video.value, 200)
     }
 

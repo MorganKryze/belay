@@ -86,7 +86,7 @@ struct ExerciseRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            LoopThumb(exerciseId: exercise.id)
+            LoopThumb(exerciseId: exercise.id, primary: exercise.primary)
             VStack(alignment: .leading, spacing: 2) {
                 Text(verbatim: exercise.name).font(.body.weight(.medium)).foregroundStyle(.ink)
                 Text(verbatim: ExerciseText.line(exercise)).font(.subheadline).foregroundStyle(.muted)

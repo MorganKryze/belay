@@ -276,4 +276,14 @@ final class ExercisesTests: XCTestCase {
         XCTAssertFalse(inBar, "no compact title once scrolled")
         XCTAssertTrue(app.navigationBars.buttons.firstMatch.isHittable, "the back button stays")
     }
+
+
+    /// A46: a loop the player cannot read shows the stand-in, never a blank square.
+    func testUnreadableLoopShowsStandIn() {
+        let app = exercices("loopBroken")
+        _ = page(app, "ds:0025", search: "barbell bench press")
+        let loop = element(app, "loop")
+        XCTAssertTrue(loop.comesToRead("Démonstration de Barbell bench press, indisponible", timeout: 15))
+        XCTAssertFalse(app.buttons["Mettre en pause"].exists)
+    }
 }

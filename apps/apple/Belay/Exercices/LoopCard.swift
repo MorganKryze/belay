@@ -34,6 +34,8 @@ struct LoopCard: View {
     @State private var phase = LoopPhase.loading
     /// Nil until the person taps: then their choice wins over Reduce Motion.
     @State private var chosen: Bool?
+    /// The player has its first frame: until then the spinner stays on the light square.
+    @State private var shown = false
 
     private var playing: Bool { chosen ?? !Motion.reduced(reduceMotion) }
 
@@ -46,7 +48,11 @@ struct LoopCard: View {
             case .none:
                 StandIn()
             case .ready(let url):
-                LoopPlayer(url: url, playing: playing)
+                LoopPlayer(url: url, playing: playing, ready: { shown = true }, failed: { phase = .none })
+                    .opacity(shown ? 1 : 0)
+                if !shown {
+                    ProgressView().controlSize(.large).frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
                 Button {
                     chosen = !playing
                 } label: {
@@ -62,6 +68,7 @@ struct LoopCard: View {
                     playing
                         ? Text("Mettre en pause", tableName: "Exercices")
                         : Text("Lire la démonstration", tableName: "Exercices"))
+                }
             }
         }
         .aspectRatio(1, contentMode: .fit)
@@ -77,6 +84,7 @@ struct LoopCard: View {
         switch phase {
         case .loading: String(localized: "chargement", table: "Exercices")
         case .none: String(localized: "indisponible", table: "Exercices")
+        case .ready where !shown: String(localized: "chargement", table: "Exercices")
         case .ready: playing
             ? String(localized: "en lecture", table: "Exercices")
             : String(localized: "en pause", table: "Exercices")
@@ -86,6 +94,7 @@ struct LoopCard: View {
     /// A loop kept plays at once; otherwise the instance is asked once in this visit. An exercise
     /// with no loop shows the stand-in without waiting.
     private func load() async {
+        shown = false
         if let kept = loops.kept(exerciseId) {
             phase = .ready(kept)
             return
@@ -100,18 +109,25 @@ struct LoopCard: View {
     }
 }
 
-/// The video, looping and muted, drawn by the system's layer without its controls.
+/// The video, looping and muted, drawn by the system's layer without its controls. It says when
+/// its first frame is ready, and when the file cannot be played.
 private struct LoopPlayer: UIViewRepresentable {
     let url: URL
     let playing: Bool
+    let ready: @MainActor () -> Void
+    let failed: @MainActor () -> Void
 
     func makeUIView(context: Context) -> PlayerView {
         let view = PlayerView()
+        view.ready = ready
+        view.failed = failed
         view.play(url)
         return view
     }
 
     func updateUIView(_ view: PlayerView, context: Context) {
+        view.ready = ready
+        view.failed = failed
         view.play(url)
         if playing { view.player.play() } else { view.player.pause() }
     }
@@ -123,8 +139,11 @@ private struct LoopPlayer: UIViewRepresentable {
 
     final class PlayerView: UIView {
         let player = AVQueuePlayer()
+        var ready: @MainActor () -> Void = {}
+        var failed: @MainActor () -> Void = {}
         private var looper: AVPlayerLooper?
         private var url: URL?
+        private var watches: [NSKeyValueObservation] = []
 
         override static var layerClass: AnyClass { AVPlayerLayer.self }
 
@@ -143,8 +162,29 @@ private struct LoopPlayer: UIViewRepresentable {
         func play(_ url: URL) {
             guard url != self.url else { return }
             self.url = url
-            looper = AVPlayerLooper(player: player, templateItem: AVPlayerItem(url: url))
+            let looper = AVPlayerLooper(player: player, templateItem: AVPlayerItem(url: url))
+            self.looper = looper
+            guard let shown = layer as? AVPlayerLayer else { return }
+            watches = [
+                shown.observe(\.isReadyForDisplay, options: [.initial, .new]) { [weak self] layer, _ in
+                    guard layer.isReadyForDisplay else { return }
+                    Task { @MainActor in self?.ready() }
+                },
+                looper.observe(\.status, options: [.initial, .new]) { [weak self] looper, _ in
+                    guard looper.status == .failed else { return }
+                    Task { @MainActor in self?.failed() }
+                },
+            ]
         }
+    }
+}
+
+/// A stand-in figure by movement, as the body map will draw it: the legs' muscles squat, the
+/// others stand.
+enum StandInFigure {
+    static func symbol(_ primary: [String]) -> String {
+        let legs: Set = ["glutes", "quads", "hamstrings", "adductors", "calves"]
+        return primary.first.map(legs.contains) == true ? "figure.strengthtraining.functional" : "figure.arms.open"
     }
 }
 
@@ -163,6 +203,8 @@ private struct StandIn: View {
 /// shows, else the stand-in figure.
 struct LoopThumb: View {
     let exerciseId: String
+    /// The exercise's main muscles, for the stand-in figure.
+    var primary: [String] = []
     @Environment(\.loops) private var loops
     @Environment(\.displayScale) private var scale
     @ScaledMetric(relativeTo: .body) private var side: CGFloat = 44
@@ -173,7 +215,7 @@ struct LoopThumb: View {
             if let frame {
                 Image(uiImage: frame).resizable().scaledToFill()
             } else {
-                Image(systemName: "figure.strengthtraining.traditional")
+                Image(systemName: StandInFigure.symbol(primary))
                     .font(.system(size: side * 0.5, weight: .medium))
                     .foregroundStyle(.muted)
             }
