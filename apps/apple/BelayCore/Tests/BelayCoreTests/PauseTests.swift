@@ -72,6 +72,22 @@ extension PauseTests {
     return s
   }
 
+  /// A resume moves the session's start and nothing else: its sets and its frozen plan stay, and
+  /// the queue gains exactly the new start.
+  private func resumeKeepsTheSession(_ s: Seance, startedAt: String) throws {
+    let (sets, plan, queued) = (try s.sets, try s.workout.plan, try s.queued)
+    #expect(sets.count == 1)
+    try s.actions.resume()
+    #expect(try s.sets == sets)
+    #expect(try s.workout.plan == plan)
+    #expect(try s.queued == queued + 1)
+    guard case .workout(let change)? = try s.lastChange, case .startedAt(let at) = change.edit else {
+      Issue.record("the queued change is the session's start")
+      return
+    }
+    #expect(at == startedAt)
+  }
+
   @Test func restRunsWhenSessionOnly() throws {
     let s = try pausedDuringRest(.session)
     // Half a minute into the pause, the rest has gone on counting.
@@ -80,7 +96,7 @@ extension PauseTests {
     s.clock.advance(seconds: 300)
     #expect(try restLeft(s) == nil)
 
-    try s.actions.resume()
+    try resumeKeepsTheSession(s, startedAt: Fixture.time(5.5))
     #expect(try s.workout.startedAt == Fixture.time(5.5))
     #expect(try s.active?.restEndsAt == Fixture.time(3.5))
     #expect(try s.active?.pausedAt == nil)
@@ -92,7 +108,7 @@ extension PauseTests {
     s.clock.advance(seconds: 300)
     #expect(try restLeft(s) == 60_000)
 
-    try s.actions.resume()
+    try resumeKeepsTheSession(s, startedAt: Fixture.time(5.5))
     #expect(try s.workout.startedAt == Fixture.time(5.5))
     #expect(try s.active?.restEndsAt == Fixture.time(8.5))
     #expect(try s.active?.pausedAt == nil)
