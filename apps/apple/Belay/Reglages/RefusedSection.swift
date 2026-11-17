@@ -8,9 +8,16 @@ import SwiftUI
 struct RefusedSection: View {
     let store: AccountStore
     let corps: CorpsModel
-    @State private var entries: [RejectedEntry] = []
+    @State private var entries: [RejectedEntry]
 
     private static let log = Logger(subsystem: "cloud.libresoftware.belay", category: "settings")
+
+    /// Read as Réglages opens: an empty section has no view whose appearance could read it.
+    init(store: AccountStore, corps: CorpsModel) {
+        self.store = store
+        self.corps = corps
+        _entries = State(initialValue: Self.read(store))
+    }
 
     var body: some View {
         Group {
@@ -40,14 +47,14 @@ struct RefusedSection: View {
                 .listRowBackground(Color.surface)
             }
         }
-        .onAppear(perform: read)
     }
 
-    private func read() {
+    private static func read(_ store: AccountStore) -> [RejectedEntry] {
         do {
-            entries = try store.rejected()
+            return try store.rejected()
         } catch {
-            Self.log.error("refusals not read: \(AccountStore.logLabel(error), privacy: .public)")
+            log.error("refusals not read: \(AccountStore.logLabel(error), privacy: .public)")
+            return []
         }
     }
 

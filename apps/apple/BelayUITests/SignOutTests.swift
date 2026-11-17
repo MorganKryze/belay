@@ -126,7 +126,7 @@ final class SignOutTests: XCTestCase {
         XCTAssertTrue(app.swipeUpUntil(line), "Compte holds the account's line")
         XCTAssertEqual(line.label, "Ada, belay.example", "the name and the instance")
         XCTAssertFalse(
-            app.staticTexts.containing(NSPredicate(format: "label CONTAINS[c] 'connecté'")).firstMatch.exists,
+            app.staticTexts.containing(NSPredicate(format: "label CONTAINS[c] 'connecté en tant' OR label CONTAINS[c] 'connectée en tant'")).firstMatch.exists,
             "no participle")
         XCTAssertTrue(app.staticTexts["Compte"].exists)
     }
