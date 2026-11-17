@@ -47,6 +47,8 @@ private actor HeldHealth: HealthWriting {
     samples: [HealthSample], anchor: String
   )? { nil }
 
+  func readDaySteps(days: [String], timeZone: TimeZone) async -> [String: Double?]? { nil }
+
   /// Returns once the first save is under way.
   func firstSaveStarted() async {
     if !first { return }
@@ -101,6 +103,8 @@ private actor HeldReader: HealthWriting {
   }
 
   func letGo() { held?.resume() }
+
+  func readDaySteps(days: [String], timeZone: TimeZone) async -> [String: Double?]? { nil }
 }
 
 @MainActor @Suite struct HealthRunsTests {

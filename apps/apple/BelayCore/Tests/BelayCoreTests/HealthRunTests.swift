@@ -103,6 +103,11 @@ private actor FakeHealth: HealthWriting {
     calls += 1
     return nil
   }
+
+  func readDaySteps(days: [String], timeZone: TimeZone) async -> [String: Double?]? {
+    calls += 1
+    return nil
+  }
 }
 
 @Suite struct HealthRunTests {
@@ -737,7 +742,29 @@ private actor FakeHealth: HealthWriting {
   /// every written type, and reads what the overlap check and the import need.
   @Test func requestNamesFullSet() {
     #expect(HealthAccessRequest.share == [.workouts, .effort, .bodyMass])
-    #expect(HealthAccessRequest.read == [.workouts, .bodyMass])
+    #expect(HealthAccessRequest.read == [.workouts, .bodyMass, .stepCount])
+  }
+
+  /// Activities stay on the phone and the server: a run with Health fully allowed writes none.
+  @Test func activityNeverWrittenToHealth() async throws {
+    let store = try storeOn()
+    try weighing(store).logActivity(
+      ActivityInput(
+        id: Fixture.id(40), date: "2026-11-06",
+        fields: ActivityFields(type: "climbing", durationMin: 90, climbStyle: "boulder")))
+    try weighing(store).logActivity(
+      ActivityInput(
+        id: Fixture.id(41), date: "2026-11-06",
+        fields: ActivityFields(type: "cardio", durationMin: 30, cardioType: "run")))
+    let health = FakeHealth()
+    await health.set(access: weighInsAllowed)
+
+    await run(store, health)
+
+    #expect(await health.saved.isEmpty)
+    #expect(await health.weighed.isEmpty)
+    #expect(await health.related.isEmpty)
+    #expect(try store.healthWritten().isEmpty)
   }
 
   @Test func anUnknownWrittenStateIsRefused() {

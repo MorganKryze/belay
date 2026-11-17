@@ -395,7 +395,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Belay/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Belay;
-				INFOPLIST_KEY_NSHealthShareUsageDescription = "Belay lit tes autres entraînements et tes pesées : une séance déjà enregistrée par ta montre ne compte pas deux fois, et tes pesées s’ajoutent à Belay si tu actives leur import.";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "Belay lit tes autres entraînements, tes pesées et tes pas : une séance déjà enregistrée par ta montre ne compte pas deux fois, et tes pesées et tes pas s’ajoutent à Belay si tu actives leur import.";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Belay ajoute à Santé tes séances, leur effort et tes pesées.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -422,7 +422,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Belay/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Belay;
-				INFOPLIST_KEY_NSHealthShareUsageDescription = "Belay lit tes autres entraînements et tes pesées : une séance déjà enregistrée par ta montre ne compte pas deux fois, et tes pesées s’ajoutent à Belay si tu actives leur import.";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "Belay lit tes autres entraînements, tes pesées et tes pas : une séance déjà enregistrée par ta montre ne compte pas deux fois, et tes pesées et tes pas s’ajoutent à Belay si tu actives leur import.";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Belay ajoute à Santé tes séances, leur effort et tes pesées.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;

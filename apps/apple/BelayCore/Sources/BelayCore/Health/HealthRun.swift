@@ -1,11 +1,13 @@
 public import Foundation
+import GRDB
 import os
 
 // Brings Apple Health in line with the store: the plan decides which workouts and weigh-ins to
 // write or remove, Health answers object by object, and only what it confirmed is recorded, so a
 // run cut short starts again where it was. Then the efforts the person is done with go to the
-// workouts Health holds, and after a landed sync the scale's weigh-ins come in. Health itself
-// stays behind `HealthWriting`, so all of this runs in tests.
+// workouts Health holds, and after a landed sync the scale's weigh-ins and the week's steps come
+// in. Health itself stays behind `HealthWriting`, so all of this runs in tests. Activities are
+// never written to Health: only sessions and weigh-ins are.
 
 /// Whether iOS lets the app write one type. It never tells whether the app may read.
 public enum HealthPermission: Sendable, Equatable { case undetermined, denied, allowed }
@@ -32,14 +34,14 @@ public struct HealthAccess: Sendable, Equatable {
 /// Health's answer to one object.
 public enum HealthOutcome: String, Sendable { case written, removed, overlap, denied, unavailable, failed }
 
-public enum HealthType: Sendable, Hashable { case workouts, effort, bodyMass }
+public enum HealthType: Sendable, Hashable { case workouts, effort, bodyMass, stepCount }
 
 /// The request made when a switch goes on. A request naming a type only to read takes back the
 /// right to write it, so it always names every written type; workouts are read for the overlap
-/// check, body mass for the import.
+/// check, body mass and the step count for the imports.
 public enum HealthAccessRequest {
   public static let share: Set<HealthType> = [.workouts, .effort, .bodyMass]
-  public static let read: Set<HealthType> = [.workouts, .bodyMass]
+  public static let read: Set<HealthType> = [.workouts, .bodyMass, .stepCount]
 }
 
 /// Apple Health as the run uses it. Times in ms since the epoch.
@@ -66,6 +68,9 @@ public protocol HealthWriting: Sendable {
   /// with the place to go on from. Nil when Health could not be read.
   func readWeighIns(anchor: String?, since: Int64) async
     -> (samples: [HealthSample], anchor: String)?
+  /// Each day's step total (`YYYY-MM-DD` in `timeZone`), as Health sums it across the iPhone and
+  /// the watch; nil for a day with no samples. Nil when Health could not be read.
+  func readDaySteps(days: [String], timeZone: TimeZone) async -> [String: Double?]?
 }
 
 /// The effort score of a session: one per session, so a retry replaces it. Like its workout's
@@ -93,9 +98,9 @@ private let log = Logger(subsystem: "cloud.libresoftware.belay", category: "heal
 
 /// One run for the account of `store`, whose `ownerOf` is `owner`, where the person is in
 /// `timeZone`. Off, or Health unavailable: not one call that writes. `imports` after a landed sync
-/// only: the phone then holds what the other devices wrote. The caller runs one at a time
-/// (`HealthRuns`); cancelled, the run stops before the next object. Returns how many weigh-ins it
-/// imported.
+/// only: the phone then holds what the other devices wrote, so a day's steps typed on the web is
+/// seen before Health's figure could replace it (R4). The caller runs one at a time (`HealthRuns`);
+/// cancelled, the run stops before the next object. Returns how many weigh-ins it imported.
 @discardableResult
 public func runHealth(
   store: AccountStore, writer: any HealthWriting, owner: String, now: Date,
@@ -128,7 +133,9 @@ private struct HealthRun {
       try await relateEfforts(settings: settings, written: written)
     }
     guard imports, !Task.isCancelled else { return 0 }
-    return try await importWeighIns()
+    let imported = try await importWeighIns()
+    if !Task.isCancelled { try await importSteps() }
+    return imported
   }
 
   /// The plan, object by object; what Health holds once it answered.
@@ -237,6 +244,19 @@ private struct HealthRun {
       read.samples, anchor: read.anchor, from: settings.anchor, now: now, timeZone: timeZone)
   }
 
+  /// After a landed sync, with the steps import on: Health's totals for today and the 6 days
+  /// before. A read that fails takes nothing.
+  private func importSteps() async throws {
+    guard try store.healthSettings().stepsOn else { return }
+    let today = toISODate(now, timeZone: timeZone)
+    let days = (0..<stepsDays).reversed().map { Day.add(today, -$0) }
+    guard let totals = await writer.readDaySteps(days: days, timeZone: timeZone),
+      !Task.isCancelled
+    else { return }
+    try store.importSteps(
+      days.map { StepsTotal(date: $0, total: totals[$0] ?? nil) }, now: now, timeZone: timeZone)
+  }
+
   /// Each effort the person is done with, given a floor, whose workout Health holds: one score of
   /// the floor × 2, once. An effort without a written workout stays on the phone.
   private func relateEfforts(settings: HealthSettings, written: [String: HealthWritten])
@@ -261,6 +281,37 @@ private struct HealthRun {
     switch object {
     case .workout(let id, _, _, _), .workoutRemoved(let id): (id, sessionKey(id))
     case .weighing(_, let date, _, _, _), .weighingRemoved(_, let date): (date, weighingKey(date))
+    }
+  }
+}
+
+/// Today and the 6 days before (R4): older steps are not imported.
+let stepsDays = 7
+
+extension AccountStore {
+  /// Writes the days `stepsToWrite` picks from Health's totals, each with its queued change and
+  /// the note that this phone wrote it, in one write that reads the days as they stand: a value
+  /// pulled while Health was read is never replaced. Turned off meanwhile, nothing is taken.
+  func importSteps(_ totals: [StepsTotal], now: Date, timeZone: TimeZone) throws {
+    try writer.write { db in
+      let settings = try Rows.single(HealthSettings.self, db, "healthSettings") ?? .off
+      guard settings.on, settings.stepsOn else { return }
+      var rows: [String: Int?] = [:]
+      for total in totals {
+        if let row = try BodyRows.steps(db, date: total.date) { rows[total.date] = row.steps }
+      }
+      var own: [String: Int] = [:]
+      for row in try Row.fetchAll(db, sql: "SELECT date, value FROM stepsWritten") {
+        own[row["date"]] = row["value"]
+      }
+      let at = Instant.string(now)
+      let writes = stepsToWrite(days: totals, rows: rows, own: own)
+      try Self.writeBody(
+        db, writes.map { .steps(StepsChange(date: $0.date, value: $0.value, at: at)) }, now: now,
+        timeZone: timeZone)
+      for write in writes {
+        try BodyRows.putStepsWritten(db, date: write.date, value: write.value)
+      }
     }
   }
 }

@@ -4,7 +4,7 @@ import HealthKit
 
 /// Apple Health for the core's run: a finished session as a workout, its effort as a score
 /// related to it, a weigh-in as a body-mass sample; and the body-mass readings of other apps and
-/// scales for the import. Which object and which version is the core's call; this side carries
+/// scales, and the day's step totals, for the imports. Which object and which version is the core's call; this side carries
 /// out one object and answers how it went. Nothing but the span, the identifiers, the version,
 /// the score and the weight reaches Health.
 nonisolated struct HealthKitWriter: HealthWriting {
@@ -12,6 +12,7 @@ nonisolated struct HealthKitWriter: HealthWriting {
     private static let workouts = HKObjectType.workoutType()
     private static let effort = HKQuantityType(.workoutEffortScore)
     private static let bodyMass = HKQuantityType(.bodyMass)
+    private static let stepCount = HKQuantityType(.stepCount)
     // Carried by every workout Belay writes, so a later watch app can recognise them.
     static let sessionKey = "BelaySessionID"
     // Another source's workout covering this share of the session or more means a watch, or
@@ -192,6 +193,30 @@ nonisolated struct HealthKitWriter: HealthWriting {
         return (samples, next.base64EncodedString())
     }
 
+    /// One cumulative sum per day of the person's zone: Health counts a step the iPhone and the watch
+    /// both recorded once. A day with no samples answers nil. iOS answers a refused read as an empty
+    /// Health, so every day is then nil and nothing is written.
+    func readDaySteps(days: [String], timeZone: TimeZone) async -> [String: Double?]? {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = timeZone
+        let format = Date.ISO8601FormatStyle(timeZone: timeZone).year().month().day()
+        let starts = days.compactMap { try? format.parse($0) }
+        guard starts.count == days.count, let first = starts.min(), let last = starts.max(),
+            let end = calendar.date(byAdding: .day, value: 1, to: last)
+        else { return nil }
+        let descriptor = HKStatisticsCollectionQueryDescriptor(
+            predicate: .quantitySample(
+                type: Self.stepCount,
+                predicate: HKQuery.predicateForSamples(withStart: first, end: end, options: .strictStartDate)),
+            options: .cumulativeSum, anchorDate: first, intervalComponents: DateComponents(day: 1))
+        guard let collection = try? await descriptor.result(for: Self.store) else { return nil }
+        var totals: [String: Double?] = [:]
+        for (day, start) in zip(days, starts) {
+            totals[day] = collection.statistics(for: start)?.sumQuantity()?.doubleValue(for: .count())
+        }
+        return totals
+    }
+
     private static func own(_ syncId: String) -> NSPredicate {
         NSCompoundPredicate(andPredicateWithSubpredicates: [
             HKQuery.predicateForObjects(withMetadataKey: HKMetadataKeySyncIdentifier, allowedValues: [syncId]),
@@ -212,6 +237,7 @@ nonisolated struct HealthKitWriter: HealthWriting {
         case .workouts: workouts
         case .effort: effort
         case .bodyMass: bodyMass
+        case .stepCount: stepCount
         }
     }
 

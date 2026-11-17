@@ -814,6 +814,13 @@ private nonisolated struct FixtureHealth: HealthWriting {
         let sample = HealthSample(startedAt: Int64(min(morning, now).timeIntervalSince1970 * 1_000), kg: 79.9)
         return (allowed && anchor == nil ? [sample] : [], "fixture-health")
     }
+
+    /// Allowed, today holds 8 437 steps and the days before none; refused, iOS answers as an empty
+    /// Health.
+    func readDaySteps(days: [String], timeZone: TimeZone) async -> [String: Double?]? {
+        let today = toISODate(Fixture.now, timeZone: timeZone)
+        return Dictionary(uniqueKeysWithValues: days.map { ($0, allowed && $0 == today ? 8_437 : nil) })
+    }
 }
 
 /// The sign-in sheet, answered at once with a code the fixture's instance takes.

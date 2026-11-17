@@ -345,6 +345,15 @@ func frenchTypographyFaults(_ text: String) -> [String] {
 
   /// iOS asks for Health access with these texts: they name every type Belay reads and writes,
   /// weigh-ins included, and the project's own French copy is the catalog's.
+  /// The read text names the steps the import reads, in both languages (A43).
+  @Test func healthReadNamesTheSteps() throws {
+    let url = appFolder.appending(path: "InfoPlist.xcstrings")
+    let texts = Dictionary(uniqueKeysWithValues: try entries(of: url).map { ($0.key, $0) })
+    let entry = try #require(texts["NSHealthShareUsageDescription"])
+    #expect(entry.french.values.joined().contains("tes pas"))
+    #expect(entry.english?.values.joined().contains("steps") == true)
+  }
+
   @Test func healthPermissionsNameTheWeighIns() throws {
     let url = appFolder.appending(path: "InfoPlist.xcstrings")
     let texts = Dictionary(uniqueKeysWithValues: try entries(of: url).map { ($0.key, $0) })
