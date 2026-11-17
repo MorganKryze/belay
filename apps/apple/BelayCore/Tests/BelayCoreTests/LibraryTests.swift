@@ -33,6 +33,24 @@ private struct SearchVectors: Decodable {
     #expect(failures.isEmpty)
   }
 
+  /// The exercise page names the secondary muscles too.
+  @Test func readsTheSecondaryMuscles() throws {
+    let json = #"[["belay:barbell-hip-thrust","Barbell hip thrust",["glutes"],["hamstrings","quads"],"barbell",2.5,"reps"]]"#
+    let library = try ExerciseLibrary(indexJSON: Data(json.utf8))
+    #expect(library.exercise("belay:barbell-hip-thrust")?.secondary == ["hamstrings", "quads"])
+  }
+
+  /// The picker's search and Exercices' filter fold a name the same way, and as creatine's name is
+  /// read: accents and case aside.
+  @Test func searchAndFilterFoldAlike() throws {
+    let json = #"[["ds:0001","Sléd PUSH",["quads"],[],"machine",5,"reps"]]"#
+    let library = try ExerciseLibrary(indexJSON: Data(json.utf8))
+    #expect(library.search("sled push").map(\.id) == ["ds:0001"])
+    #expect(library.filter(query: "SLED push", muscle: nil, equipment: nil).map(\.id) == ["ds:0001"])
+    #expect(library.search("SLÉD").map(\.id) == ["ds:0001"])
+    #expect(isCreatineName("CRÉATINE"))
+  }
+
   @Test func missingIndexIsEmptyAndSaid() {
     var failures: [String] = []
     let library = ExerciseLibrary.bundled(at: nil) { failures.append($0) }

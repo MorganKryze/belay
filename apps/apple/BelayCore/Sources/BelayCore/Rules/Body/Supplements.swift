@@ -9,10 +9,7 @@ public let supplementSuggestions = [
 
 /// "Créatine", "creatine", "CREATINE monohydrate": case and accents aside, the word creatine.
 public func isCreatineName(_ name: String) -> Bool {
-  let bare = name.decomposedStringWithCanonicalMapping.unicodeScalars.filter {
-    !$0.properties.isDiacritic
-  }
-  let plain = Array(String(String.UnicodeScalarView(bare)).lowercased().unicodeScalars)
+  let plain = Array(fold(name).unicodeScalars)
   let word = Array("creatine".unicodeScalars)
   let isLetter = { (s: Unicode.Scalar) in ("a"..."z").contains(s) }
   guard plain.count >= word.count else { return false }

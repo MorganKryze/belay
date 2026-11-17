@@ -18,10 +18,12 @@ public struct LibraryExercise: Sendable, Equatable, Identifiable {
   public let measure: Measure?
   /// The muscles it works first, as the library names them; the search filters on these.
   public let primary: [String]
+  /// The muscles it works besides, as the exercise page names them.
+  public let secondary: [String]
 
   public init(
     id: String, name: String, equipment: Equipment, incrementKg: Double, measure: Measure?,
-    primary: [String] = []
+    primary: [String] = [], secondary: [String] = []
   ) {
     self.id = id
     self.name = name
@@ -29,6 +31,7 @@ public struct LibraryExercise: Sendable, Equatable, Identifiable {
     self.incrementKg = incrementKg
     self.measure = measure
     self.primary = primary
+    self.secondary = secondary
   }
 }
 
@@ -40,7 +43,7 @@ public struct ExerciseLibrary: Sendable {
   private let folded: [String]
 
   /// Reads the index: a list of `[id, name, primary, secondary, equipment, incrementKg,
-  /// measure]`. The secondary muscles are not read here.
+  /// measure]`.
   public init(indexJSON: Data) throws {
     self.init(exercises: try JSONDecoder().decode([Row].self, from: indexJSON).map(\.exercise))
   }
@@ -48,7 +51,7 @@ public struct ExerciseLibrary: Sendable {
   private init(exercises: [LibraryExercise]) {
     self.exercises = exercises
     byId = Dictionary(exercises.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-    folded = exercises.map { Self.fold($0.name) }
+    folded = exercises.map { fold($0.name) }
   }
 
   /// The index the app ships, read once at launch. A build that lacks it, or holds a broken one,
@@ -72,18 +75,18 @@ public struct ExerciseLibrary: Sendable {
   /// The exercises whose name or id holds the text, in index order, ignoring case and accents.
   /// Blank text gives them all.
   public func search(_ text: String) -> [LibraryExercise] {
-    let needle = Self.folded(text.trimmingCharacters(in: .whitespacesAndNewlines))
+    let needle = fold(text.trimmingCharacters(in: .whitespacesAndNewlines))
     guard !needle.isEmpty else { return exercises }
-    return exercises.filter {
-      Self.folded($0.name).contains(needle) || $0.id.contains(needle)
-    }
+    return exercises.indices.filter {
+      folded[$0].contains(needle) || exercises[$0].id.contains(needle)
+    }.map { exercises[$0] }
   }
 
   /// The exercises Exercices lists, in index order, as the web's search: every word of the query
   /// in the name, case, accents and word order aside; the muscle among the primary ones; the
   /// equipment. A nil filter keeps them all.
   public func filter(query: String, muscle: String?, equipment: Equipment?) -> [LibraryExercise] {
-    let words = Self.fold(query).split(whereSeparator: \.isWhitespace)
+    let words = fold(query).split(whereSeparator: \.isWhitespace)
     return exercises.indices.filter { i in
       let e = exercises[i]
       return words.allSatisfy { folded[i].contains($0) }
@@ -92,17 +95,6 @@ public struct ExerciseLibrary: Sendable {
     }.map { exercises[$0] }
   }
 
-  /// "Sléd 45°" is "sled 45°": decomposed, its diacritics dropped, in lower case.
-  private static func fold(_ text: String) -> String {
-    let bare = text.decomposedStringWithCanonicalMapping.unicodeScalars.filter {
-      !$0.properties.isDiacritic
-    }
-    return String(String.UnicodeScalarView(bare)).lowercased()
-  }
-
-  private static func folded(_ text: String) -> String {
-    text.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: nil)
-  }
 
   private struct Row: Decodable {
     let exercise: LibraryExercise
@@ -112,14 +104,23 @@ public struct ExerciseLibrary: Sendable {
       let id = try c.decode(String.self)
       let name = try c.decode(String.self)
       let primary = try c.decode([String].self)
-      _ = try c.decode([String].self)
+      let secondary = try c.decode([String].self)
       let equipment = try c.decode(String.self)
       let incrementKg = try c.decode(Double.self)
       let measure = try c.decode(String.self)
       exercise = LibraryExercise(
         id: id, name: name, equipment: Equipment(rawValue: equipment) ?? .other,
         incrementKg: incrementKg, measure: measure == "reps" ? nil : Measure(rawValue: measure),
-        primary: primary)
+        primary: primary, secondary: secondary)
     }
   }
+}
+
+/// "Sléd 45°" is "sled 45°": decomposed, its diacritics dropped, in lower case, as the shared
+/// rules' `fold`. The library's search and creatine's name both read text through it.
+func fold(_ text: String) -> String {
+  let bare = text.decomposedStringWithCanonicalMapping.unicodeScalars.filter {
+    !$0.properties.isDiacritic
+  }
+  return String(String.UnicodeScalarView(bare)).lowercased()
 }
