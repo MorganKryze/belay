@@ -205,6 +205,52 @@ final class ExercisesTests: XCTestCase {
         XCTAssertTrue(app.buttons["Lire la démonstration"].exists)
     }
 
+    /// Réglages' sign-out, confirmed, then the sign-in again on the same fixture instance.
+    private func signOutAndBack(_ app: XCUIApplication) {
+        app.tab("Accueil")
+        let settings = app.buttons["settings"]
+        XCTAssertTrue(settings.waitForExistence(timeout: 5))
+        settings.tap()
+        let signOut = app.buttons["signout"]
+        XCTAssertTrue(app.swipeUpUntil(signOut), "Réglages offers to sign out")
+        signOut.tap()
+        let sure = app.buttons["signout-confirm"].firstMatch
+        XCTAssertTrue(sure.waitForExistence(timeout: 3))
+        sure.tap()
+        let submit = app.buttons["signin-submit"]
+        XCTAssertTrue(submit.waitForExistence(timeout: 5), "signed out")
+        submit.tap()
+        XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 10), "signed in again")
+    }
+
+    private func comesToValue(_ element: XCUIElement, _ value: String, timeout: TimeInterval) -> Bool {
+        let met = expectation(for: NSPredicate(format: "value == %@", value), evaluatedWith: element)
+        return XCTWaiter.wait(for: [met], timeout: timeout) == .completed
+    }
+
+    /// A row's thumbnail drawn before a sign-out is not shown from memory after it: signed in again,
+    /// the row asks the instance anew.
+    func testThumbnailsGoAtSignOut() {
+        let app = exercices()
+        _ = page(app, "ds:0025", search: "barbell bench press")
+        XCTAssertTrue(
+            element(app, "loop").comesToRead("Démonstration de Barbell bench press, en lecture", timeout: 20))
+        let asked = element(app, "loop-asked")
+        XCTAssertEqual(asked.value as? String, "1", "the row and the page asked once")
+        // Time for the row below the page to draw its first frame from the loop.
+        Thread.sleep(forTimeInterval: 2)
+        signOutAndBack(app)
+        let tab = app.tabBars.firstMatch.buttons["Séances"]
+        XCTAssertTrue(tab.waitForExistence(timeout: 10))
+        tab.tap()
+        let segment = app.segmentedControls.firstMatch.buttons["Exercices"]
+        XCTAssertTrue(segment.waitForExistence(timeout: 5))
+        segment.tap()
+        search(app, "barbell bench press")
+        XCTAssertTrue(element(app, "exercise.ds:0025").waitForExistence(timeout: 5))
+        XCTAssertTrue(comesToValue(asked, "2", timeout: 10), "asked again: \(asked.value ?? "none")")
+    }
+
     /// A48: the page opens on its name in the page; once scrolled no title stands in the bar, and
     /// the back button stays.
     func testNoCompactTitle() {

@@ -147,6 +147,7 @@ final class AccountModel {
         // A fetch still out for the account closing writes nothing.
         loops?.close()
         loops = nil
+        ThumbCache.clear()
         syncStatus = .idle
     }
 

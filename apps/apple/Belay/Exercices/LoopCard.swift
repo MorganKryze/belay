@@ -190,7 +190,7 @@ struct LoopThumb: View {
             guard loopPath(exerciseId) != nil else { return }
             var url = loops.kept(exerciseId)
             if url == nil { url = await loops.fetch(exerciseId) }
-            guard let url, let image = await Self.firstFrame(url, side: side * scale) else { return }
+            guard let url, let image = await Self.firstFrame(url, side: side * scale), !Task.isCancelled else { return }
             ThumbCache.images.setObject(image, forKey: exerciseId as NSString)
             frame = image
         }
@@ -205,12 +205,15 @@ struct LoopThumb: View {
     }
 }
 
-/// The thumbnails drawn while the app runs, so a row scrolled back is not decoded again. Bounded:
-/// the library holds about 1 300 exercises.
-private enum ThumbCache {
-    static let images: NSCache<NSString, UIImage> = {
+/// The thumbnails drawn while the account is open, so a row scrolled back is not decoded again.
+/// Bounded: the library holds about 1 300 exercises.
+enum ThumbCache {
+    fileprivate static let images: NSCache<NSString, UIImage> = {
         let cache = NSCache<NSString, UIImage>()
         cache.countLimit = 200
         return cache
     }()
+
+    /// The account is going: the thumbnails tell which exercises it looked at.
+    static func clear() { images.removeAllObjects() }
 }
