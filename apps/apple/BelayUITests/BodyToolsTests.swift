@@ -267,6 +267,8 @@ final class BodyToolsTests: XCTestCase {
         XCTAssertTrue(
             app.staticTexts["Pour la formule homme, de 20 à 39 ans (Gallagher 2000, tableau 4)."].exists, "the set read")
 
+        // The formula sits above the bands, which the page has scrolled to.
+        toTop(app)
         choose(app, "Femme", in: "tool-formula")
         let hip = element(app, "tool-field-hip")
         XCTAssertTrue(hip.waitForExistence(timeout: 3), "the female formula asks for the hips")
