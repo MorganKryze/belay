@@ -684,9 +684,9 @@ enum Fixture {
         }
     }
 
-    /// `-BelayPull range|refusal`: as the app goes to the background, a sync lands what another
-    /// device wrote meanwhile, a range of 0,3 to 0,6 %, or the server refuses a weigh-in of today,
-    /// so a test sees a pull land on a page left open.
+    /// `-BelayPull range|height|refusal`: as the app goes to the background, a sync lands what
+    /// another device wrote meanwhile, a range of 0,3 to 0,6 % or a height of 168 cm, or the
+    /// server refuses a weigh-in of today, so a test sees a pull land on a page left open.
     struct PullOnLeave: View {
         let store: AccountStore
 
@@ -709,6 +709,11 @@ enum Fixture {
             var sent: [OutboxEntry] = []
             switch UserDefaults.standard.string(forKey: "BelayPull") {
             case "range": answer["target"] = ["minPct": 0.3, "maxPct": 0.6, "at": at]
+            case "height":
+                answer["profile"] = [
+                    "formula": "male", "formulaAt": "2026-01-01T00:00:00.000Z", "birthYear": 1990,
+                    "birthYearAt": "2026-01-01T00:00:00.000Z", "heightCm": 168, "heightAt": at,
+                ]
             case "refusal":
                 let actions = BodyActions(store: store, now: { Fixture.now }, timeZone: .current)
                 try actions.weigh(date: toISODate(Fixture.now, timeZone: .current), kg: 81)

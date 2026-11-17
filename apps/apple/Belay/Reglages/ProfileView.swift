@@ -11,10 +11,12 @@ struct ProfileView: View {
     @State private var height = ""
     @State private var low = defaultTarget.minPct
     @State private var high = defaultTarget.maxPct
-    /// Whether the range was tapped here and not yet written. Until then the page follows the
-    /// store, so a range synced from another device shows and nothing is written over it.
+    /// Whether the range was tapped or the height typed here and not yet written. Until then the
+    /// page follows the store, so a sync from another device shows and nothing is written over it.
     @State private var rangeTapped = false
+    @State private var heightTyped = false
     @FocusState private var typingHeight: Bool
+    @Environment(\.scenePhase) private var scenePhase
 
     private var profile: ProfileRow? { corps.profile }
 
@@ -56,13 +58,21 @@ struct ProfileView: View {
             (low, high) = (corps.range.minPct, corps.range.maxPct)
         }
         .onChange(of: corps.range) { _, range in if !rangeTapped { (low, high) = (range.minPct, range.maxPct) } }
+        .onChange(of: profile?.heightCm) { _, cm in if !heightTyped { height = cm.map(String.init) ?? "" } }
         .onChange(of: typingHeight) { _, typing in if !typing { saveHeight() } }
-        // A run of taps writes once, the value after the last one; leaving writes at once.
+        // A run of taps writes once, the value after the last one; leaving writes at once, and so
+        // does the app going to the background, where it may be closed.
         .task(id: TargetRange(minPct: low, maxPct: high)) {
             try? await Task.sleep(for: .milliseconds(700))
             if !Task.isCancelled { saveRange() }
         }
-        .onDisappear(perform: saveRange)
+        .onChange(of: scenePhase) { _, phase in if phase == .background { save() } }
+        .onDisappear(perform: save)
+    }
+
+    private func save() {
+        saveRange()
+        saveHeight()
     }
 
     private func isSet(_ fact: ProfileFact) -> Bool {
@@ -108,7 +118,7 @@ struct ProfileView: View {
 
     private var heightField: some View {
         HStack(spacing: 6) {
-            TextField(text: $height, prompt: Text(verbatim: "175")) { Text("Taille", tableName: "Reglages") }
+            TextField(text: typedHeight, prompt: Text(verbatim: "175")) { Text("Taille", tableName: "Reglages") }
                 .keyboardType(.numberPad)
                 .multilineTextAlignment(.trailing)
                 .font(.title3.weight(.semibold))
@@ -121,8 +131,16 @@ struct ProfileView: View {
         }
     }
 
-    /// Whole centimetres within the tools' range; anything else goes back to the stored value.
+    /// The field, where a key typed makes the height this page's to write.
+    private var typedHeight: Binding<String> {
+        Binding(get: { height }, set: { if $0 != height { (height, heightTyped) = ($0, true) } })
+    }
+
+    /// A typed height, in whole centimetres within the tools' range; anything else goes back to
+    /// the stored value.
     private func saveHeight() {
+        guard heightTyped else { return }
+        heightTyped = false
         if let cm = Int(height.trimmingCharacters(in: .whitespaces)), isProfileHeight(cm) {
             corps.setHeight(cm)
         } else {

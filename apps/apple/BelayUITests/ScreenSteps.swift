@@ -3,7 +3,8 @@ import XCTest
 extension XCUIApplication {
     /// The app launched on the fixture mode `fixture`, in French unless `english`; `now` sets its
     /// clock, a local `yyyy-MM-ddTHH:mm:ss`; `health` stands in for Health's answer, `allowed` or
-    /// `refused`; `pull` lands a sync as the app goes to the background, `range`.
+    /// `refused`; `pull` lands a sync as the app goes to the background, `range`, `height` or
+    /// `refusal`.
     static func fixture(
         _ fixture: String, largestText: Bool = false, now: String? = nil, english: Bool = false,
         health: String? = nil, pull: String? = nil

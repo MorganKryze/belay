@@ -185,6 +185,37 @@ final class ProfileTests: XCTestCase {
         XCTAssertTrue(stored(app).hasSuffix("queued=0"), "leaving queues nothing: \(stored(app))")
     }
 
+    /// A height another device wrote shows in the untouched field; a focus without typing writes
+    /// nothing, and a height typed then left with the keypad up is written.
+    func testPulledHeightAndTypedHeight() {
+        let app = XCUIApplication.fixture("tools", pull: "height")
+        reglages(app)
+        element(app, "reglages-profile").tap()
+        let height = app.textFields["profile-height"]
+        XCTAssertTrue(height.waitForExistence(timeout: 5))
+        XCTAssertEqual(height.value as? String, "180")
+        XCUIDevice.shared.press(.home)
+        app.activate()
+        XCTAssertTrue(height.waitFor(NSPredicate(format: "value == '168'"), timeout: 5), "the pulled height shows")
+        height.tap()
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 3))
+        app.putKeypadAway()
+        back(app)
+        XCTAssertTrue(app.navigationBars["Réglages"].waitForExistence(timeout: 5))
+        XCTAssertEqual(stored(app), "target=none height=168 queued=0", "an untouched field writes nothing")
+
+        element(app, "reglages-profile").tap()
+        XCTAssertTrue(height.waitForExistence(timeout: 5))
+        height.tapAtEnd()
+        height.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 3))
+        for key in ["1", "7", "5"] { app.keys[key].tap() }
+        XCTAssertTrue(app.keyboards.firstMatch.exists, "the keypad is still up")
+        back(app)
+        XCTAssertTrue(
+            element(app, "fixture-profile").waitFor(NSPredicate(format: "value == 'target=none height=175 queued=1'"), timeout: 3),
+            "the typed height is written as the page closes: \(stored(app))")
+    }
+
     // MARK: A35
 
     func testManageRenameRemoveKeepsDays() {
