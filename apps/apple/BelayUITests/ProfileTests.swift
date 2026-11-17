@@ -354,4 +354,15 @@ final class ProfileTests: XCTestCase {
             XCTAssertFalse(inBar, "\(title): no compact title once scrolled")
         }
     }
+
+
+    /// Mes compléments says how a row is renamed and removed; the add sheet, that no dose is given.
+    func testManageAndAddSayHow() {
+        let app = manage("supplements")
+        XCTAssertTrue(
+            app.staticTexts["Touche un complément pour le renommer, balaie-le pour le retirer. Ses jours cochés restent."]
+                .waitForExistence(timeout: 5))
+        app.buttons["manage-add"].tap()
+        XCTAssertTrue(app.staticTexts["Belay note ce que tu prends, sans conseil de dose."].waitForExistence(timeout: 5))
+    }
 }

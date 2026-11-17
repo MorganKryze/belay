@@ -17,8 +17,8 @@ struct SupplementsManageView: View {
             if corps.supplementList.isEmpty {
                 Section {
                     VStack(spacing: 14) {
-                        Image(systemName: "pills.fill")
-                            .font(.system(size: 34, weight: .semibold))
+                        Image(systemName: "pills")
+                            .font(.system(size: 40))
                             .foregroundStyle(Domain.intake.shade)
                             .frame(width: 72, height: 72)
                             .background(Domain.intake.tint, in: .circle)
@@ -44,7 +44,14 @@ struct SupplementsManageView: View {
                 } header: {
                     Text("Ta liste", tableName: "Reglages").textCase(nil).foregroundStyle(.ink)
                 } footer: {
-                    note
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text(
+                            "Touche un complément pour le renommer, balaie-le pour le retirer. Ses jours cochés restent.",
+                            tableName: "Reglages"
+                        )
+                        .foregroundStyle(.muted)
+                        note
+                    }
                 }
                 .headerProminence(.increased)
                 .listRowBackground(Color.surface)
@@ -194,8 +201,15 @@ struct AddSupplementSheet: View {
                         .padding(.vertical, 6)
                     } header: {
                         Text("Suggestions", tableName: "Reglages").textCase(nil).foregroundStyle(.ink)
+                    } footer: {
+                        doseNote
                     }
                     .listRowBackground(Color.surface)
+                } else {
+                    Section {
+                    } footer: {
+                        doseNote
+                    }
                 }
             }
             .belayList()
@@ -217,6 +231,10 @@ struct AddSupplementSheet: View {
         }
         .presentationDetents([.large])
         .tint(.ink)
+    }
+
+    private var doseNote: some View {
+        Text("Belay note ce que tu prends, sans conseil de dose.", tableName: "Reglages").foregroundStyle(.muted)
     }
 
     /// The web's suggestions not yet on the list; creatine by its own rule, as the chart's band.

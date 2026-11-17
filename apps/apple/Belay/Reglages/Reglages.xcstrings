@@ -2,6 +2,16 @@
   "sourceLanguage": "fr",
   "version": "1.0",
   "strings": {
+    "Belay note ce que tu prends, sans conseil de dose.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Belay records what you take, with no dose advice."
+          }
+        }
+      }
+    },
     "Général": {
       "localizations": {
         "en": {
@@ -138,6 +148,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Paused"
+          }
+        }
+      }
+    },
+    "Touche un complément pour le renommer, balaie-le pour le retirer. Ses jours cochés restent.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap a supplement to rename it, swipe it to remove it. Its ticked days stay."
           }
         }
       }
