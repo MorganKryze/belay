@@ -35,7 +35,7 @@ final class AccountModel {
     private(set) var displayName: String?
     /// Whether the instance serves exercise loops, as `/api/me` last said; kept across launches.
     private(set) var media: Bool
-    /// The loops of the open store's instance; nil while none is open.
+    /// The loops of the open store's account; nil while none is open.
     private(set) var loops: Loops?
 
     /// Under the web's own preference name.
@@ -123,7 +123,7 @@ final class AccountModel {
         }
         self.store = store
         openedFor = account
-        loops = Loops(folder: loopsFolder, instanceKey: account.instance.origin.absoluteString, client: http)
+        loops = Loops(folder: loopsFolder, userId: account.userId, origin: account.instance.origin, client: http)
         let engine = SyncEngine(
             userId: account.userId, store: store,
             transport: HTTPTransport(instance: account.instance, token: account.token, client: http),
@@ -146,6 +146,8 @@ final class AccountModel {
         following = nil
         store = nil
         openedFor = nil
+        // A fetch still out for the account closing writes nothing.
+        loops?.close()
         loops = nil
         syncStatus = .idle
     }
@@ -401,6 +403,8 @@ final class AccountModel {
             fail(.unavailable)
         case .failure(let failure):
             forget()
+            // The account the token was for is dropped, so the loops it looked at go as at sign-out.
+            Loops.removeAll(in: loopsFolder)
             await logout(token: token, at: instance, using: http)
             fail(failure)
         }
@@ -412,7 +416,9 @@ final class AccountModel {
         forget()
         // What the tools remember is health data kept for this account only: it goes with it.
         ToolMemoryFile.remove(userId: account.userId, origin: account.instance.origin, in: storeFolder)
-        // The loops seen tell which exercises this person looked at: they go too.
+        // The loops seen tell which exercises this person looked at: they go too, and a fetch still
+        // out cannot bring one back.
+        loops?.close()
         Loops.removeAll(in: loopsFolder)
         state = .signedOut(nil)
         await logout(token: account.token, at: account.instance, using: http)

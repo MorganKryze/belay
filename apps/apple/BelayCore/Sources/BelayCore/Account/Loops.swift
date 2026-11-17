@@ -10,9 +10,9 @@ public func loopPath(_ exerciseId: String) -> String? {
 }
 
 /// The exercise loops this phone fetched from the person's instance, kept in the caches folder
-/// under the instance's key so one plays again offline. Nothing is asked of any other server, and
-/// nothing at all while the instance says it serves no media. A loop that failed is not asked for
-/// again until the app starts anew, as the web keeps its failures for the page's life.
+/// under the account's own name so one plays again offline. Nothing is asked of any other server,
+/// and nothing at all while the instance says it serves no media. A loop that failed is not asked
+/// for again until the app starts anew, as the web keeps its failures for the page's life.
 public struct Loops: Sendable {
   /// As the web's `KEPT_LOOPS`: kept by count, the oldest out. A size budget would need each
   /// file's bytes read at every write; at about 100 KB a loop this stays near 15 MB.
@@ -22,12 +22,12 @@ public struct Loops: Sendable {
   private let client: HTTPClient
   private let failed = Failed()
   private let inFlight = InFlight()
+  private let closed = Closed()
 
-  public init(folder: URL, instanceKey: String, client: HTTPClient) {
-    let safe = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "-._"))
-    // Percent-encoded, so no instance's key reaches outside the folder.
-    self.folder = folder.appendingPathComponent(
-      instanceKey.addingPercentEncoding(withAllowedCharacters: safe) ?? "", isDirectory: true)
+  public init(folder: URL, userId: String, origin: URL, client: HTTPClient) {
+    // Named as the account's store is, so another person on the same instance never sees which
+    // loops this one looked at, and percent-encoded, so no id reaches outside the folder.
+    self.folder = AccountStore.fileURL(userId: userId, origin: origin, in: folder).deletingPathExtension()
     self.client = client
   }
 
@@ -42,7 +42,7 @@ public struct Loops: Sendable {
   /// earlier in this run. A fetch already out for `id`, a row's thumbnail and its page asking at
   /// once, is awaited rather than sent again.
   public func fetch(_ id: String, token: String, at instance: Instance, media: Bool) async -> URL? {
-    guard media, let path = loopPath(id), let url = file(id) else { return nil }
+    guard media, !closed.isClosed, let path = loopPath(id), let url = file(id) else { return nil }
     if let kept = kept(id) { return kept }
     guard !failed.contains(id) else { return nil }
     let task = inFlight.task(id) {
@@ -63,8 +63,11 @@ public struct Loops: Sendable {
         Self.log.info("loop refused: \(response.statusCode, privacy: .public)")
         return nil
       }
-      try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-      try data.write(to: url, options: .atomic)
+      let written = try closed.unlessClosed {
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        try data.write(to: url, options: .atomic)
+      }
+      guard written else { return nil }
       prune()
       return url
     } catch {
@@ -74,7 +77,14 @@ public struct Loops: Sendable {
     }
   }
 
-  /// Sign-out's: every kept loop, of every instance, goes.
+  /// The account is going: a fetch still out writes nothing, and none starts. Called before
+  /// `removeAll`, so no loop lands in the folder after it went.
+  public func close() {
+    closed.close()
+    inFlight.cancelAll()
+  }
+
+  /// Sign-out's: every kept loop, of every account, goes.
   public static func removeAll(in folder: URL) {
     guard FileManager.default.fileExists(atPath: folder.path) else { return }
     do {
@@ -123,6 +133,27 @@ private final class InFlight: Sendable {
   }
 
   func done(_ id: String) { _ = tasks.withLock { $0.removeValue(forKey: id) } }
+
+  func cancelAll() { tasks.withLock { $0.values.forEach { $0.cancel() } } }
+}
+
+/// Whether the account the loops belong to is gone, shared by every copy of a `Loops`.
+private final class Closed: Sendable {
+  private let closed = Mutex(false)
+
+  var isClosed: Bool { closed.withLock { $0 } }
+
+  func close() { closed.withLock { $0 = true } }
+
+  /// Runs `write` unless closed, under the lock `close` takes, so a write never follows a close.
+  /// Whether it ran.
+  func unlessClosed(_ write: () throws -> Void) throws -> Bool {
+    try closed.withLock { (closed: inout Bool) throws -> Bool in
+      guard !closed else { return false }
+      try write()
+      return true
+    }
+  }
 }
 
 /// The exercises whose loop failed in this run, shared by every copy of a `Loops`.

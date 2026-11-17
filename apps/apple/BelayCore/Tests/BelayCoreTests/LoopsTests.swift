@@ -48,7 +48,7 @@ private func scratch() -> URL {
 
   @Test func requestPathAndBearer() async throws {
     let server = LoopServer()
-    let loops = Loops(folder: scratch(), instanceKey: "belay.example.org", client: server)
+    let loops = Loops(folder: scratch(), userId: "ana", origin: instance.origin, client: server)
     let url = try #require(await loops.fetch("ds:0042", token: token, at: instance, media: true))
     let request = try #require(server.requests.first)
     #expect(request.url?.absoluteString == "https://belay.example.org/media/exercises/0042")
@@ -59,14 +59,14 @@ private func scratch() -> URL {
 
   @Test func neverSentWhenMediaOff() async {
     let server = LoopServer()
-    let loops = Loops(folder: scratch(), instanceKey: "belay.example.org", client: server)
+    let loops = Loops(folder: scratch(), userId: "ana", origin: instance.origin, client: server)
     #expect(await loops.fetch("ds:0042", token: token, at: instance, media: false) == nil)
     #expect(server.requests.isEmpty)
   }
 
   @Test func onlyToTheInstance() async {
     let server = LoopServer()
-    let loops = Loops(folder: scratch(), instanceKey: "belay.example.org", client: server)
+    let loops = Loops(folder: scratch(), userId: "ana", origin: instance.origin, client: server)
     // An id from the person's own exercises, or one shaped to reach elsewhere, asks for nothing.
     for id in ["belay:dead-hang", "ds:../../x", "https://cdn.example.com/0042.mp4"] {
       #expect(await loops.fetch(id, token: token, at: instance, media: true) == nil)
@@ -78,24 +78,25 @@ private func scratch() -> URL {
 
   @Test func keptPlaysOffline() async throws {
     let folder = scratch()
-    let online = Loops(folder: folder, instanceKey: "belay.example.org", client: LoopServer())
+    let online = Loops(folder: folder, userId: "ana", origin: instance.origin, client: LoopServer())
     let fetched = try #require(await online.fetch("ds:0042", token: token, at: instance, media: true))
 
     let server = LoopServer(offline: true)
-    let offline = Loops(folder: folder, instanceKey: "belay.example.org", client: server)
+    let offline = Loops(folder: folder, userId: "ana", origin: instance.origin, client: server)
     #expect(offline.kept("ds:0042") == fetched)
     #expect(await offline.fetch("ds:0042", token: token, at: instance, media: true) == fetched)
     #expect(server.requests.isEmpty)
     // One never kept does not play offline.
     #expect(await offline.fetch("ds:0043", token: token, at: instance, media: true) == nil)
-    // Another instance's key keeps its own loops.
-    #expect(Loops(folder: folder, instanceKey: "other.example.org", client: server).kept("ds:0042") == nil)
+    // Another instance keeps its own loops.
+    let other = try #require(URL(string: "https://other.example.org"))
+    #expect(Loops(folder: folder, userId: "ana", origin: other, client: server).kept("ds:0042") == nil)
   }
 
   @Test func capKeepsNewest150() async throws {
     let folder = scratch()
-    let loops = Loops(folder: folder, instanceKey: "belay.example.org", client: LoopServer())
-    let kept = folder.appending(path: "belay.example.org", directoryHint: .isDirectory)
+    let loops = Loops(folder: folder, userId: "ana", origin: instance.origin, client: LoopServer())
+    let kept = folder.appending(path: "belay.ana@https%3A%2F%2Fbelay.example.org", directoryHint: .isDirectory)
     try FileManager.default.createDirectory(at: kept, withIntermediateDirectories: true)
     let start = Date(timeIntervalSince1970: 1_700_000_000)
     for n in 1...150 {
@@ -114,16 +115,44 @@ private func scratch() -> URL {
 
   @Test func removedAtSignOut() async throws {
     let folder = scratch()
-    let loops = Loops(folder: folder, instanceKey: "belay.example.org", client: LoopServer())
+    let loops = Loops(folder: folder, userId: "ana", origin: instance.origin, client: LoopServer())
     _ = try #require(await loops.fetch("ds:0042", token: token, at: instance, media: true))
     Loops.removeAll(in: folder)
     #expect(!FileManager.default.fileExists(atPath: folder.path))
     #expect(loops.kept("ds:0042") == nil)
   }
 
+  /// Another person signing in on the same instance never sees the loops the first one looked at.
+  @Test func twoAccountsOnOneInstanceDoNotShare() async throws {
+    let folder = scratch()
+    let ana = Loops(folder: folder, userId: "ana", origin: instance.origin, client: LoopServer())
+    _ = try #require(await ana.fetch("ds:0042", token: token, at: instance, media: true))
+    let bo = Loops(folder: folder, userId: "bo", origin: instance.origin, client: LoopServer(offline: true))
+    #expect(bo.kept("ds:0042") == nil)
+    #expect(await bo.fetch("ds:0042", token: token, at: instance, media: true) == nil)
+    #expect(ana.kept("ds:0042") != nil)
+  }
+
+  /// A fetch still out when the account goes writes nothing once its loops are closed and removed.
+  @Test func fetchFinishingAfterSignOutWritesNothing() async throws {
+    let folder = scratch()
+    let server = LoopServer()
+    let loops = Loops(folder: folder, userId: "ana", origin: instance.origin, client: server)
+    async let fetched = loops.fetch("ds:0042", token: token, at: instance, media: true)
+    // The request is out, its answer 50 ms away.
+    while server.requests.isEmpty { try await Task.sleep(for: .milliseconds(5)) }
+    loops.close()
+    Loops.removeAll(in: folder)
+    #expect(await fetched == nil)
+    #expect(!FileManager.default.fileExists(atPath: folder.path))
+    // Nor does one asked after.
+    #expect(await loops.fetch("ds:0043", token: token, at: instance, media: true) == nil)
+    #expect(!FileManager.default.fileExists(atPath: folder.path))
+  }
+
   @Test func failureNotRetried() async {
     let server = LoopServer(status: 404)
-    let loops = Loops(folder: scratch(), instanceKey: "belay.example.org", client: server)
+    let loops = Loops(folder: scratch(), userId: "ana", origin: instance.origin, client: server)
     #expect(await loops.fetch("ds:0042", token: token, at: instance, media: true) == nil)
     #expect(await loops.fetch("ds:0042", token: token, at: instance, media: true) == nil)
     #expect(server.requests.count == 1)
@@ -133,7 +162,7 @@ private func scratch() -> URL {
   /// A row's thumbnail and the page asking at once make one request.
   @Test func concurrentFetchesAskOnce() async throws {
     let server = LoopServer()
-    let loops = Loops(folder: scratch(), instanceKey: "belay.example.org", client: server)
+    let loops = Loops(folder: scratch(), userId: "ana", origin: instance.origin, client: server)
     async let first = loops.fetch("ds:0042", token: token, at: instance, media: true)
     async let second = loops.fetch("ds:0042", token: token, at: instance, media: true)
     let (a, b) = await (first, second)
