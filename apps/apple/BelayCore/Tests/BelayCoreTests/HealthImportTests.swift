@@ -293,7 +293,8 @@ private actor FakeReader: HealthWriting {
     let health = FakeReader()
     await health.set(steps: ["2026-11-05": 8436.6, "2026-11-06": 1200])
 
-    await landed(store, health)
+    // Counted with the weigh-ins, so the sync sends them.
+    #expect(await landed(store, health) == 2)
 
     #expect(try steps(store) == ["2026-11-05": 8437, "2026-11-06": 1200])
     #expect(try store.stepsWritten() == ["2026-11-05": 8437, "2026-11-06": 1200])
@@ -401,6 +402,21 @@ private actor FakeReader: HealthWriting {
     await landed(store, health)
 
     #expect(try steps(store)["2026-11-05"] == 6200)
+  }
+
+  /// The steps' write fails after the weigh-ins landed: those weigh-ins are still counted, so
+  /// the sync sends them.
+  @Test func stepsFailureKeepsTheWeighInCount() async throws {
+    let store = try importing()
+    try store.setHealthStepsOn(true)
+    let health = FakeReader()
+    await health.set(samples: [reading("2026-11-04T06:00:00.000Z", 79)])
+    await health.set(steps: ["2026-11-05": 5000])
+    try Fixture.refuseInserts(into: "steps", in: store)
+
+    #expect(await landed(store, health) == 1)
+    #expect(try weights(store).count == 1)
+    #expect(try steps(store).isEmpty)
   }
 
   @Test func stepsSkipAboveCapAndNoSamples() async throws {

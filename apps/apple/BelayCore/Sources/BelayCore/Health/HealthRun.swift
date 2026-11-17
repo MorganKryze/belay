@@ -100,7 +100,8 @@ private let log = Logger(subsystem: "cloud.libresoftware.belay", category: "heal
 /// `timeZone`. Off, or Health unavailable: not one call that writes. `imports` after a landed sync
 /// only: the phone then holds what the other devices wrote, so a day's steps typed on the web is
 /// seen before Health's figure could replace it (R4). The caller runs one at a time (`HealthRuns`);
-/// cancelled, the run stops before the next object. Returns how many weigh-ins it imported.
+/// cancelled, the run stops before the next object. Returns how many weigh-ins and days of
+/// steps it imported, which the sync then sends.
 @discardableResult
 public func runHealth(
   store: AccountStore, writer: any HealthWriting, owner: String, now: Date,
@@ -133,9 +134,15 @@ private struct HealthRun {
       try await relateEfforts(settings: settings, written: written)
     }
     guard imports, !Task.isCancelled else { return 0 }
-    let imported = try await importWeighIns()
-    if !Task.isCancelled { try await importSteps() }
-    return imported
+    let weighIns = try await importWeighIns()
+    guard !Task.isCancelled else { return weighIns }
+    // The weigh-ins are stored by now: a failed steps write must not hide them from the sync.
+    do {
+      return weighIns + (try await importSteps())
+    } catch {
+      log.error("steps import stopped: \(AccountStore.logLabel(error), privacy: .public)")
+      return weighIns
+    }
   }
 
   /// The plan, object by object; what Health holds once it answered.
@@ -245,15 +252,15 @@ private struct HealthRun {
   }
 
   /// After a landed sync, with the steps import on: Health's totals for today and the 6 days
-  /// before. A read that fails takes nothing.
-  private func importSteps() async throws {
-    guard try store.healthSettings().stepsOn else { return }
+  /// before. A read that fails takes nothing. Returns how many days it wrote.
+  private func importSteps() async throws -> Int {
+    guard try store.healthSettings().stepsOn else { return 0 }
     let today = toISODate(now, timeZone: timeZone)
     let days = (0..<stepsDays).reversed().map { Day.add(today, -$0) }
     guard let totals = await writer.readDaySteps(days: days, timeZone: timeZone),
       !Task.isCancelled
-    else { return }
-    try store.importSteps(
+    else { return 0 }
+    return try store.importSteps(
       days.map { StepsTotal(date: $0, total: totals[$0] ?? nil) }, now: now, timeZone: timeZone)
   }
 
@@ -292,10 +299,11 @@ extension AccountStore {
   /// Writes the days `stepsToWrite` picks from Health's totals, each with its queued change and
   /// the note that this phone wrote it, in one write that reads the days as they stand: a value
   /// pulled while Health was read is never replaced. Turned off meanwhile, nothing is taken.
-  func importSteps(_ totals: [StepsTotal], now: Date, timeZone: TimeZone) throws {
+  /// Returns how many days it wrote.
+  func importSteps(_ totals: [StepsTotal], now: Date, timeZone: TimeZone) throws -> Int {
     try writer.write { db in
       let settings = try Rows.single(HealthSettings.self, db, "healthSettings") ?? .off
-      guard settings.on, settings.stepsOn else { return }
+      guard settings.on, settings.stepsOn else { return 0 }
       var rows: [String: Int?] = [:]
       for total in totals {
         if let row = try BodyRows.steps(db, date: total.date) { rows[total.date] = row.steps }
@@ -312,6 +320,7 @@ extension AccountStore {
       for write in writes {
         try BodyRows.putStepsWritten(db, date: write.date, value: write.value)
       }
+      return writes.count
     }
   }
 }
