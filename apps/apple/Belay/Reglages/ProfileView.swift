@@ -11,6 +11,9 @@ struct ProfileView: View {
     @State private var height = ""
     @State private var low = defaultTarget.minPct
     @State private var high = defaultTarget.maxPct
+    /// Whether the range was tapped here and not yet written. Until then the page follows the
+    /// store, so a range synced from another device shows and nothing is written over it.
+    @State private var rangeTapped = false
     @FocusState private var typingHeight: Bool
 
     private var profile: ProfileRow? { corps.profile }
@@ -52,6 +55,7 @@ struct ProfileView: View {
             height = profile?.heightCm.map(String.init) ?? ""
             (low, high) = (corps.range.minPct, corps.range.maxPct)
         }
+        .onChange(of: corps.range) { _, range in if !rangeTapped { (low, high) = (range.minPct, range.maxPct) } }
         .onChange(of: typingHeight) { _, typing in if !typing { saveHeight() } }
         // A run of taps writes once, the value after the last one; leaving writes at once.
         .task(id: TargetRange(minPct: low, maxPct: high)) {
@@ -127,7 +131,10 @@ struct ProfileView: View {
         if profile?.heightCm != nil { filling.remove(.height) }
     }
 
+    /// The range as tapped here; one never tapped stays the store's.
     private func saveRange() {
+        guard rangeTapped else { return }
+        rangeTapped = false
         corps.setRange(TargetRange(minPct: low, maxPct: high))
     }
 
@@ -205,8 +212,8 @@ struct ProfileView: View {
     private var rangeSection: some View {
         let bounds = Bounds.target
         return Section {
-            rangeRow("Au moins", value: $low, range: bounds.min...gapped(high, -Bounds.targetGap), id: "range-min")
-            rangeRow("Au plus", value: $high, range: gapped(low, Bounds.targetGap)...bounds.max, id: "range-max")
+            rangeRow("Au moins", value: tapped($low), range: bounds.min...gapped(high, -Bounds.targetGap), id: "range-min")
+            rangeRow("Au plus", value: tapped($high), range: gapped(low, Bounds.targetGap)...bounds.max, id: "range-max")
             NavigationLink(value: Route.science(id: "target-rate")) {
                 Text("Comment c’est choisi", tableName: "Reglages").foregroundStyle(.ink).frame(minHeight: 44)
             }
@@ -230,6 +237,11 @@ struct ProfileView: View {
         }
         .headerProminence(.increased)
         .listRowBackground(Color.surface)
+    }
+
+    /// A bound's value, which a tap marks as this page's to write.
+    private func tapped(_ value: Binding<Double>) -> Binding<Double> {
+        Binding(get: { value.wrappedValue }, set: { (value.wrappedValue, rangeTapped) = ($0, true) })
     }
 
     /// `value` moved by `by`, kept on the step's grid so a bound compares exactly.

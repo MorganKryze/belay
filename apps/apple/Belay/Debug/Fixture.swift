@@ -649,6 +649,71 @@ enum Fixture {
         }
     }
 
+    /// The range and the height the store holds and how many range or profile changes wait in
+    /// the queue, for a test to read: « target=0.3-0.6 height=168 queued=0 ». Nothing a person
+    /// sees or hears.
+    struct ProfileProbe: View {
+        let store: AccountStore
+        @State private var line = ""
+
+        var body: some View {
+            Color.clear
+                .frame(width: 1, height: 1)
+                .accessibilityElement()
+                .accessibilityIdentifier("fixture-profile")
+                .accessibilityValue(line)
+                .task {
+                    let lines = store.observe { db in
+                        let body = try AccountStore.body(db)
+                        let queued = try AccountStore.outbox(db, limit: nil).filter { entry in
+                            switch entry.change {
+                            case .target, .profile: true
+                            default: false
+                            }
+                        }.count
+                        let target = body.target.map { "\($0.minPct)-\($0.maxPct)" } ?? "none"
+                        let height = body.profile?.heightCm.map(String.init) ?? "none"
+                        return "target=\(target) height=\(height) queued=\(queued)"
+                    }
+                    do {
+                        for try await value in lines { line = value }
+                    } catch {
+                        preconditionFailure("the fixture's profile is not followed: \(error)")
+                    }
+                }
+        }
+    }
+
+    /// `-BelayPull range`: as the app goes to the background, a sync lands what another device
+    /// wrote meanwhile, a range of 0,3 to 0,6 %, so a test sees a pull land on a page left open.
+    struct PullOnLeave: View {
+        let store: AccountStore
+
+        var body: some View {
+            Color.clear
+                .frame(width: 1, height: 1)
+                .accessibilityHidden(true)
+                .onReceive(NotificationCenter.default.publisher(for: UIApplication.didEnterBackgroundNotification)) { _ in
+                    do {
+                        try pull()
+                    } catch {
+                        preconditionFailure("the fixture's pull did not land: \(error)")
+                    }
+                }
+        }
+
+        private func pull() throws {
+            let at = Instant.string(Fixture.now)
+            var answer = Fixture.emptyAnswer
+            switch UserDefaults.standard.string(forKey: "BelayPull") {
+            case "range": answer["target"] = ["minPct": 0.3, "maxPct": 0.6, "at": at]
+            default: return
+            }
+            let data = try JSONSerialization.data(withJSONObject: answer)
+            try store.applyServer(sent: [], response: JSONDecoder().decode(SyncResponse.self, from: data))
+        }
+    }
+
     /// Whether `-BelayContrast increased` asks for increased contrast, which a test cannot set.
     static var contrastIncreased: Bool { UserDefaults.standard.string(forKey: "BelayContrast") == "increased" }
 

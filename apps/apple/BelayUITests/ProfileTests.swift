@@ -160,6 +160,31 @@ final class ProfileTests: XCTestCase {
         XCTAssertEqual(element(again, "range-max").label, "Au plus, 0,8\u{202F}%")
     }
 
+    /// What Profil writes and what waits to be sent: « target=0.3-0.6 height=168 queued=0 ».
+    private func stored(_ app: XCUIApplication) -> String {
+        element(app, "fixture-profile").value as? String ?? ""
+    }
+
+    /// A range another device wrote, landed while Profil is open, shows there, and leaving
+    /// without a tap writes nothing over it.
+    func testPulledRangeIsKept() {
+        let app = XCUIApplication.fixture("bodyUsual", pull: "range")
+        reglages(app)
+        element(app, "reglages-profile").tap()
+        let low = element(app, "range-min")
+        XCTAssertTrue(app.swipeUpUntil(element(app, "range-max")))
+        XCTAssertEqual(low.label, "Au moins, 0,5\u{202F}%")
+        XCUIDevice.shared.press(.home)
+        app.activate()
+        XCTAssertTrue(low.comesToRead("Au moins, 0,3\u{202F}%"), "the pulled range shows: \(low.label)")
+        XCTAssertEqual(element(app, "range-max").label, "Au plus, 0,6\u{202F}%")
+        back(app)
+        XCTAssertTrue(app.navigationBars["Réglages"].waitForExistence(timeout: 5))
+        XCTAssertTrue(
+            element(app, "fixture-profile").waitFor(NSPredicate(format: "value BEGINSWITH 'target=0.3-0.6 '"), timeout: 3))
+        XCTAssertTrue(stored(app).hasSuffix("queued=0"), "leaving queues nothing: \(stored(app))")
+    }
+
     // MARK: A35
 
     func testManageRenameRemoveKeepsDays() {
