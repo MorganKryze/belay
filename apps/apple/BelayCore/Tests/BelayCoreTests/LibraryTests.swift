@@ -51,6 +51,15 @@ private struct SearchVectors: Decodable {
     #expect(isCreatineName("CRÉATINE"))
   }
 
+  /// A supplement's name is compared through the same fold, so as the web compares it: « Straße »
+  /// is not « strasse » there either.
+  @Test func supplementNamesFoldAlike() {
+    #expect(sameSupplementName(" Oméga-3 ", "omega-3"))
+    #expect(sameSupplementName("MAGNÉSIUM", "magnesium"))
+    #expect(!sameSupplementName("Straße", "strasse"))
+    #expect(!sameSupplementName("Zinc", "Fer"))
+  }
+
   @Test func missingIndexIsEmptyAndSaid() {
     var failures: [String] = []
     let library = ExerciseLibrary.bundled(at: nil) { failures.append($0) }

@@ -20,6 +20,13 @@ public func isCreatineName(_ name: String) -> Bool {
   }
 }
 
+/// Two names compared as the web's `plain` compares them: through the shared `fold`, the spaces
+/// around aside, so « oméga-3 » is « Oméga-3 » and « Straße » stays apart from « strasse ».
+public func sameSupplementName(_ a: String, _ b: String) -> Bool {
+  let plain = { (name: String) in fold(name.trimmingCharacters(in: .whitespacesAndNewlines)) }
+  return plain(a) == plain(b)
+}
+
 /// A heuristic: a course of creatine starts on a day ticked after at least 14 days without; its
 /// first 14 days are marked, when the weight often rises by 1 to 2 kg of water.
 public let creatineDays = 14

@@ -149,16 +149,6 @@ struct SupplementsManageView: View {
     }
 }
 
-/// Two names compared as the web compares them: case, accents and the spaces around aside, so
-/// « oméga-3 » is « Oméga-3 ».
-func sameSupplementName(_ a: String, _ b: String) -> Bool {
-    let plain = { (name: String) in
-        name.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: nil)
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-    return plain(a) == plain(b)
-}
-
 /// A supplement added the entry sheets' way: ✕ and ✓ in glass, the name, the web's suggestions as
 /// chips. A name already on the list is refused in words; a suggestion leaves once on the list.
 struct AddSupplementSheet: View {
