@@ -54,7 +54,15 @@ extension AccountStore {
       for row in response.supplements ?? [] { try Rows.put(db, "supplements", id: row.id, row) }
       for row in response.supplementLogs ?? [] { try BodyRows.put(db, row) }
       for row in response.annotations ?? [] { try Rows.put(db, "annotations", id: row.id, row) }
-      for row in response.steps ?? [] { try BodyRows.put(db, row) }
+      // A pulled day the import wrote that is not the answer to what this phone sent was
+      // typed elsewhere, even with the import's own value.
+      var typedElsewhere: [StepsRow] = []
+      for row in response.steps ?? [] {
+        if try BodyRows.steps(db, date: row.date) != row, !Self.echoes(row, sent) {
+          typedElsewhere.append(row)
+        }
+        try BodyRows.put(db, row)
+      }
       if let target = response.target { try Rows.putSingle(db, "target", target) }
       if let profile = response.profile { try Rows.putSingle(db, "profile", profile) }
       // Only after the rows: a change queued while the request was out is newer than what the
@@ -63,6 +71,10 @@ extension AccountStore {
         if isNewer(entry.change.at, try Self.localAt(db, entry.change)) {
           try Self.applyLocal(db, entry.change)
         }
+      }
+      // Unless a change queued since is newer and still stands.
+      for row in typedElsewhere where try BodyRows.steps(db, date: row.date) == row {
+        try BodyRows.putStepsWritten(db, date: row.date, value: nil)
       }
       // The open session was finished or removed on another device: this one lets it go.
       if let active = try Rows.single(ActiveSession.self, db, "activeSession") {
@@ -74,6 +86,18 @@ extension AccountStore {
       try db.execute(
         sql: "INSERT OR REPLACE INTO meta (key, value) VALUES ('cursor', ?)",
         arguments: [response.cursor])
+    }
+  }
+
+  /// Whether `row` is the server's answer to a steps change in `sent`: the same value, at the
+  /// time it was sent or the earlier one the server clamped it to. A later time is a write that
+  /// won over it.
+  private static func echoes(_ row: StepsRow, _ sent: [OutboxEntry]) -> Bool {
+    sent.contains {
+      guard case .steps(let c) = $0.change, c.date == row.date, c.value == row.steps,
+        let at = row.stepsAt
+      else { return false }
+      return !isNewer(at, c.at)
     }
   }
 

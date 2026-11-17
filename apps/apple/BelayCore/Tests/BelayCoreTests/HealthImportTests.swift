@@ -343,6 +343,66 @@ private actor FakeReader: HealthWriting {
     #expect(try Fixture.changes(store).count == queued)
   }
 
+  /// The web typed the import's own value after it, 4000 then back to 5000: the day is the
+  /// person's, so Health's later figure leaves it alone.
+  @Test func stepsKeepWebValueEqualToImport() async throws {
+    let store = try stepping()
+    let health = FakeReader()
+    await health.set(steps: ["2026-11-05": 5000])
+    await landed(store, health)
+    var server = Fixture.response()
+    server.steps = [StepsRow(date: "2026-11-05", steps: 5000, stepsAt: "2026-11-06T09:30:00.000Z")]
+    try store.applyServer(sent: try store.outbox(limit: nil), response: server)
+
+    await health.set(steps: ["2026-11-05": 6200])
+    await landed(store, health)
+
+    #expect(try steps(store)["2026-11-05"] == 5000)
+    #expect(try store.stepsWritten().isEmpty)
+    #expect(try Fixture.changes(store).isEmpty)
+  }
+
+  /// The server's answer to the import itself, at a time it clamped or as a page sent again
+  /// after a pull from the start: the day is still this phone's and follows Health.
+  @Test func stepsFollowTheirOwnEcho() async throws {
+    let store = try stepping()
+    let health = FakeReader()
+    await health.set(steps: ["2026-11-05": 5000, "2026-11-06": 5000])
+    await landed(store, health)
+    let at = Instant.string(now)
+    var echo = Fixture.response()
+    echo.steps = [
+      StepsRow(date: "2026-11-05", steps: 5000, stepsAt: "2026-11-06T08:59:58.000Z"),
+      StepsRow(date: "2026-11-06", steps: 5000, stepsAt: at),
+    ]
+    try store.applyServer(sent: try store.outbox(limit: nil), response: echo)
+    var again = Fixture.response(cursor: "2")
+    again.steps = [StepsRow(date: "2026-11-06", steps: 5000, stepsAt: at)]
+    try store.applyServer(sent: [], response: again)
+
+    await health.set(steps: ["2026-11-05": 6200, "2026-11-06": 6300])
+    await landed(store, health)
+
+    #expect(try steps(store) == ["2026-11-05": 6200, "2026-11-06": 6300])
+  }
+
+  /// An older web value pulled while the import's change still waits: the queued change is the
+  /// day's, and the day still follows Health.
+  @Test func stepsFollowWhileTheirChangeIsNewer() async throws {
+    let store = try stepping()
+    let health = FakeReader()
+    await health.set(steps: ["2026-11-05": 5000])
+    await landed(store, health)
+    var server = Fixture.response()
+    server.steps = [StepsRow(date: "2026-11-05", steps: 4000, stepsAt: "2026-11-06T08:30:00.000Z")]
+    try store.applyServer(sent: [], response: server)
+
+    await health.set(steps: ["2026-11-05": 6200])
+    await landed(store, health)
+
+    #expect(try steps(store)["2026-11-05"] == 6200)
+  }
+
   @Test func stepsSkipAboveCapAndNoSamples() async throws {
     let store = try stepping()
     let health = FakeReader()
