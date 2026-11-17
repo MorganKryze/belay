@@ -4351,7 +4351,9 @@ if (process.argv.includes("--check")) {
       let committed: string[] = [];
       try {
         committed = readFileSync(path, "utf8").split("\n");
-      } catch {}
+      } catch {
+        // A missing file differs from its first line.
+      }
       const lines = expected.split("\n");
       const at = lines.findIndex((line, i) => line !== committed[i]);
       console.error(`${path}:${at + 1}\n  committed: ${committed[at]}\n  generated: ${lines[at]}`);
