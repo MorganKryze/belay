@@ -444,6 +444,19 @@ final class BodyToolsTests: XCTestCase {
         // 182 cm in place of 180 adds 12,5 kcal at rest: 2 730 a sedentary day.
         XCTAssertTrue(apports(app).label.contains("sur 2\u{202F}730"), "Apports reads the profile written")
     }
+
+    /// A20: Taille and Poids first, then the WHO bands.
+    func testBmiFieldsBeforeBands() {
+        let app = launch("toolsEmpty")
+        outils(app)
+        open(app, "bmi")
+        type(app, "178", into: "tool-field-height")
+        type(app, "80,2", into: "tool-field-weight")
+        hideKeypad(app)
+        let band = element(app, "band-below")
+        XCTAssertTrue(app.swipeUpUntil(band))
+        XCTAssertLessThan(element(app, "tool-field-weight").frame.minY, band.frame.minY, "the fields come first")
+    }
 }
 
 extension XCUIApplication {

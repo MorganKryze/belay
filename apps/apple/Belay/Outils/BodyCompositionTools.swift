@@ -1,8 +1,8 @@
 import BelayCore
 import SwiftUI
 
-/// IMC: the height and the weight, each opening on the profile or the weigh-ins. The index large,
-/// the WHO band in a sentence, then the four bands with « toi » on the person's. Under 18,5 or from
+/// IMC: the index large and the WHO band in a sentence, then the height and the weight, each
+/// opening on the profile or the weigh-ins, then the four bands with « toi » on the person's. Under 18,5 or from
 /// 35, the web's line suggests a professional.
 struct BmiTool: View {
     @Bindable var outils: OutilsModel
@@ -33,9 +33,6 @@ struct BmiTool: View {
             case .failure(let line): ResultWaiting(label: "Ton IMC", line: line)
             }
         } fields: {
-            if case .success(let bmi) = value {
-                BandList(title: "Plages de l’OMS", rows: Self.bands, current: bmiBand(bmi))
-            }
             Section {
                 KeypadField(
                     label: "Taille", text: outils.binding(.bmi, .height, defaults), unit: "cm", prompt: "170",
@@ -49,6 +46,9 @@ struct BmiTool: View {
                 }
             }
             .listRowBackground(Color.surface)
+            if case .success(let bmi) = value {
+                BandList(title: "Plages de l’OMS", rows: Self.bands, current: bmiBand(bmi))
+            }
         }
     }
 
@@ -301,7 +301,7 @@ struct BodyFatTool: View {
     }
 }
 
-/// Published bands as rows: the name, the range, and « toi » on the person's. In ink and muted
+/// Published bands as rows: the range, the name under it, and « toi » on the person's. In ink and muted
 /// only: a band is a place on a scale, never a fault.
 struct BandList: View {
     struct Row {
@@ -322,8 +322,8 @@ struct BandList: View {
                 let you = String(localized: "toi", table: "Outils")
                 HStack(spacing: 8) {
                     VStack(alignment: .leading, spacing: 1) {
-                        Text(verbatim: row.name).foregroundStyle(.ink).fontWeight(mine ? .semibold : .regular)
-                        Text(verbatim: row.range).font(.subheadline).monospacedDigit().foregroundStyle(.muted)
+                        Text(verbatim: row.range).font(.body.weight(.semibold)).monospacedDigit().foregroundStyle(.ink)
+                        Text(verbatim: row.name).font(.subheadline).foregroundStyle(.muted)
                     }
                     Spacer(minLength: 8)
                     if mine {
@@ -338,10 +338,11 @@ struct BandList: View {
                 .accessibilityIdentifier("band-\(row.band.rawValue)")
             }
         } header: {
-            Text(title, tableName: "Outils").font(.subheadline.weight(.semibold)).foregroundStyle(.muted).textCase(nil)
+            Text(title, tableName: "Outils").foregroundStyle(.ink).textCase(nil)
         } footer: {
             if let caption { caption.foregroundStyle(.muted) }
         }
+        .headerProminence(.increased)
         .listRowBackground(Color.surface)
     }
 }
