@@ -35,4 +35,17 @@ final class ShellTests: XCTestCase {
             app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "sur le web pour l’instant")).firstMatch
                 .exists, "and no web placeholder")
     }
+
+
+    /// The tab bar keeps its four tabs on a long page scrolled down: it never shrinks to one.
+    func testTabBarNeverMinimizes() {
+        let app = XCUIApplication.fixture("fresh")
+        let settings = app.buttons["settings"]
+        XCTAssertTrue(settings.waitForExistence(timeout: 10))
+        settings.tap()
+        XCTAssertTrue(app.navigationBars["Réglages"].waitForExistence(timeout: 5))
+        app.swipeUp()
+        app.swipeUp()
+        XCTAssertTrue(app.tabBars.firstMatch.buttons["Séances"].isHittable, "every tab stays in reach")
+    }
 }

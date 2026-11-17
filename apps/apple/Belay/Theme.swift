@@ -47,9 +47,8 @@ extension View {
     /// Native inset grouped list on the wall, with the system's scroll edge under the bars.
     func belayList(edge: ScrollEdgeEffectStyle = .soft) -> some View {
         listStyle(.insetGrouped)
-            // A list that fits holds still. Its bounce read as a scroll: the tab bar shrank on the
-            // pull and grew back on the spring, again at every touch, on a screen with nothing more
-            // to show.
+            // A list that fits holds still: a bounce on a screen with nothing more to show reads
+            // as a scroll.
             .scrollBounceBehavior(.basedOnSize)
             .scrollContentBackground(.hidden)
             .background { Wall() }

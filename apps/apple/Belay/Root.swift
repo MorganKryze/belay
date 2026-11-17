@@ -149,7 +149,8 @@ struct RootView: View {
             }
         }
         .tabViewStyle(.sidebarAdaptable)
-        .tabBarMinimizeBehavior(.onScrollDown)
+        // Never shrinks to one tab on scroll: the owner refused a bar that retracts.
+        .tabBarMinimizeBehavior(.never)
         .tabViewBottomAccessory(isEnabled: training.open != nil) {
             if let open = training.open {
                 ResumeAccessory(session: open) { openCover(Morph.accessory) }
