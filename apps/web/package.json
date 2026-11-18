@@ -20,7 +20,7 @@
     "@tanstack/react-router": "^1.170.46",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.5.2",
-    "i18next": "^26.4.4",
+    "i18next": "^27.1.1",
     "idb": "8.0.4",
     "lucide-react": "^1.70.0",
     "radix-ui": "^1.8.1",
