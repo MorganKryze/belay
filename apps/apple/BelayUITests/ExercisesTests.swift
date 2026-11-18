@@ -159,6 +159,15 @@ final class ExercisesTests: XCTestCase {
         XCTAssertTrue(app.buttons["Mettre en pause"].exists)
     }
 
+    /// A session kept from before the instance served loops learns at launch that it does now.
+    func testKeptSessionLearnsLoopsAtLaunch() {
+        let app = exercices("mediaStale")
+        _ = page(app, "ds:0025", search: "barbell bench press")
+        let loop = element(app, "loop")
+        XCTAssertTrue(
+            loop.comesToRead("Démonstration de Barbell bench press, en lecture", timeout: 30), "reads \(loop.label)")
+    }
+
     /// The instance not answering keeps the spinner.
     func testLoopStillLoading() {
         let app = exercices("loopLoading")

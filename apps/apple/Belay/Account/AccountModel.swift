@@ -46,6 +46,8 @@ final class AccountModel {
     private var following: Task<Void, Never>?
     /// A sign-in again is under way: a second tap waits for its sheet.
     private var reconnecting = false
+    /// A read of `/api/me` is under way: a second trigger waits for its answer.
+    private var rechecking = false
     /// The network coming back is a trigger: the queue may have waited for it.
     private let path = NWPathMonitor()
 
@@ -93,6 +95,8 @@ final class AccountModel {
             Task { @MainActor in self?.refresh() }
         }
         path.start(queue: .main)
+        // A session kept from an earlier launch learns what the instance says of it now.
+        recheck()
     }
 
     /// The tools' memory of the account whose store is open, beside that store; nil while none is.
@@ -168,10 +172,27 @@ final class AccountModel {
         Task { await engine.schedule() }
     }
 
-    /// Back in front, or the network back: the run going, if any, is fresh enough.
+    /// Back in front, or the network back: the run going, if any, is fresh enough, and the
+    /// instance says again who the person is and whether it serves loops.
     func refresh() {
+        recheck()
         guard let engine else { return }
         Task { await engine.refresh() }
+    }
+
+    /// What the instance says now of the signed-in person, kept for this account: a session kept
+    /// from before the instance served loops learns that it does. A failure keeps what is known,
+    /// and an answer that comes once the account has changed is dropped.
+    private func recheck() {
+        guard case .signedIn(let account) = state, !rechecking else { return }
+        rechecking = true
+        Task {
+            defer { rechecking = false }
+            let answer = await me(token: account.token, at: account.instance, using: http)
+            guard case .success(let named) = answer, named.id == account.userId, case .signedIn(account) = state
+            else { return }
+            remember(named)
+        }
     }
 
     /// A complete pull: what is stored is current, so a session left open elsewhere can be closed.

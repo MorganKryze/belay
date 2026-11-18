@@ -59,6 +59,7 @@ import Synchronization
 /// The instance serves loops in every mode: each one a short video made on the phone, sent 3 s
 /// after it is asked, since no media ships with the app. `loopLoading` never answers for one, and
 /// `loopFailed` answers each with a 404 after the same wait, `loopBroken` with a body no player reads.
+/// `mediaStale` keeps a session from before the instance said it serves loops: `/api/me` says it does.
 enum Fixture {
     nonisolated fileprivate static let origin = "https://belay.example"
     nonisolated fileprivate static let userId = "fixture"
@@ -121,7 +122,7 @@ enum Fixture {
             }
             defaults.set(origin, forKey: StoredInstance.key)
             try session.keep(origin: origin, token: "fixture-token")
-            session.remember(userId: userId, displayName: "Ada", media: true)
+            session.remember(userId: userId, displayName: "Ada", media: mode != "mediaStale")
         } catch {
             preconditionFailure("the fixture did not set up: \(error)")
         }
