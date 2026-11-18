@@ -5,14 +5,13 @@ import XCTest
 final class ExercisesTests: XCTestCase {
     /// Séances › Exercices once the fixture has signed in.
     private func exercices(
-        _ fixture: String = "fresh", reduceMotion: Bool = false, english: Bool = false
+        _ fixture: String = "fresh", english: Bool = false
     ) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments =
             english
             ? ["-AppleLanguages", "(en)", "-AppleLocale", "en_US", "-BelayFixture", fixture]
             : ["-AppleLanguages", "(fr)", "-AppleLocale", "fr_FR", "-BelayFixture", fixture]
-        if reduceMotion { app.launchArguments += ["-BelayReduceMotion", "YES"] }
         app.launchFixture()
         let tab = app.tabBars.firstMatch.buttons[english ? "Sessions" : "Séances"]
         XCTAssertTrue(tab.waitForExistence(timeout: 10))
@@ -150,13 +149,16 @@ final class ExercisesTests: XCTestCase {
         return app
     }
 
-    /// A46: a spinner in the square while the loop comes, then it plays.
-    func testLoopLoadingThenPlays() {
+    /// A spinner in the square while the loop comes, then its first frame, still, with a play button.
+    func testLoopLoadingThenRestsOnFirstFrame() {
         let app = fromPreview()
         let loop = element(app, "loop")
         XCTAssertTrue(loop.comesToRead("Démonstration de Barbell bench press, chargement", timeout: 2))
-        XCTAssertTrue(loop.comesToRead("Démonstration de Barbell bench press, en lecture", timeout: 10))
-        XCTAssertTrue(app.buttons["Mettre en pause"].exists)
+        XCTAssertTrue(loop.comesToRead("Démonstration de Barbell bench press, prête", timeout: 10))
+        XCTAssertTrue(app.buttons["Lire la démonstration"].exists)
+        Thread.sleep(forTimeInterval: 1)
+        XCTAssertEqual(loop.label, "Démonstration de Barbell bench press, prête", "it never plays by itself")
+        XCTAssertFalse(app.buttons["Mettre en pause"].exists)
     }
 
     /// A session kept from before the instance served loops learns at launch that it does now.
@@ -165,23 +167,23 @@ final class ExercisesTests: XCTestCase {
         _ = page(app, "ds:0025", search: "barbell bench press")
         let loop = element(app, "loop")
         XCTAssertTrue(
-            loop.comesToRead("Démonstration de Barbell bench press, en lecture", timeout: 30), "reads \(loop.label)")
+            loop.comesToRead("Démonstration de Barbell bench press, prête", timeout: 30), "reads \(loop.label)")
     }
 
-    /// A kept loop scrolled off the page and back plays again, never a spinner for good.
-    func testKeptLoopPlaysAfterScrollingBack() {
+    /// A kept loop scrolled off the page and back shows its frame again, never a spinner for good.
+    func testKeptLoopShowsAfterScrollingBack() {
         let app = exercices()
         _ = page(app, "ds:0025", search: "barbell bench press")
         let loop = element(app, "loop")
-        XCTAssertTrue(loop.comesToRead("Démonstration de Barbell bench press, en lecture", timeout: 30))
+        XCTAssertTrue(loop.comesToRead("Démonstration de Barbell bench press, prête", timeout: 30))
         let credit = app.staticTexts["Texte\u{202F}: exercises-dataset (MIT)"]
         XCTAssertTrue(app.swipeUpUntil(credit))
         XCTAssertFalse(loop.exists && loop.isHittable, "the loop left the screen")
-        let pause = app.buttons["Mettre en pause"]
+        let play = app.buttons["Lire la démonstration"]
         for _ in 0..<6 where !(loop.exists && loop.isHittable) { app.swipeDown() }
         XCTAssertTrue(
-            loop.comesToRead("Démonstration de Barbell bench press, en lecture", timeout: 10), "reads \(loop.label)")
-        XCTAssertTrue(pause.exists)
+            loop.comesToRead("Démonstration de Barbell bench press, prête", timeout: 10), "reads \(loop.label)")
+        XCTAssertTrue(play.exists)
         XCTAssertFalse(app.activityIndicators.firstMatch.exists, "no spinner")
     }
 
@@ -206,29 +208,40 @@ final class ExercisesTests: XCTestCase {
         XCTAssertEqual(element(app, "loop-asked").value as? String, "1", "one request in the visit")
     }
 
-    /// With Reduce Motion the first frame holds until play is tapped.
-    func testReduceMotionHoldsFirstFrame() {
-        let app = exercices(reduceMotion: true)
+    /// Play runs the clip once from its start, then the first frame rests with the play button again.
+    func testLoopPlaysOnceThenRests() {
+        let app = exercices()
         _ = page(app, "ds:0025", search: "barbell bench press")
         let loop = element(app, "loop")
-        XCTAssertTrue(loop.comesToRead("Démonstration de Barbell bench press, en pause", timeout: 10))
-        let play = app.buttons["Lire la démonstration"]
-        XCTAssertTrue(play.exists)
-        play.tap()
-        XCTAssertTrue(loop.comesToRead("Démonstration de Barbell bench press, en lecture"))
+        XCTAssertTrue(loop.comesToRead("Démonstration de Barbell bench press, prête", timeout: 10))
+        app.buttons["Lire la démonstration"].tap()
+        XCTAssertEqual(loop.label, "Démonstration de Barbell bench press, en lecture")
+        XCTAssertTrue(app.buttons["Mettre en pause"].exists)
+        XCTAssertTrue(loop.comesToRead("Démonstration de Barbell bench press, prête", timeout: 10), "reads \(loop.label)")
+        XCTAssertTrue(app.buttons["Lire la démonstration"].exists)
+        Thread.sleep(forTimeInterval: 3)
+        XCTAssertEqual(loop.label, "Démonstration de Barbell bench press, prête", "played once, not again")
     }
 
-    /// A50: the loop says the exercise and its state; its button says what it does.
+    /// The loop says the exercise and its state; its button says what it does. Pause stops the
+    /// clip; play starts it again from its start.
     func testLoopLabelSaysState() {
         let app = exercices()
         _ = page(app, "ds:0025", search: "barbell bench press")
         let loop = element(app, "loop")
-        XCTAssertTrue(loop.comesToRead("Démonstration de Barbell bench press, en lecture", timeout: 10))
+        XCTAssertTrue(loop.comesToRead("Démonstration de Barbell bench press, prête", timeout: 10))
+        let play = app.buttons["Lire la démonstration"]
+        XCTAssertGreaterThanOrEqual(play.frame.height, 44)
+        play.tap()
         let pause = app.buttons["Mettre en pause"]
-        XCTAssertGreaterThanOrEqual(pause.frame.height, 44)
+        // The fixture's clip lasts two seconds: pause it at once.
         pause.tap()
-        XCTAssertTrue(loop.comesToRead("Démonstration de Barbell bench press, en pause"))
-        XCTAssertTrue(app.buttons["Lire la démonstration"].exists)
+        XCTAssertTrue(loop.comesToRead("Démonstration de Barbell bench press, en pause"), "reads \(loop.label)")
+        Thread.sleep(forTimeInterval: 3)
+        XCTAssertEqual(loop.label, "Démonstration de Barbell bench press, en pause", "pause stops it")
+        play.tap()
+        XCTAssertEqual(loop.label, "Démonstration de Barbell bench press, en lecture", "playing again")
+        XCTAssertTrue(loop.comesToRead("Démonstration de Barbell bench press, prête", timeout: 10), "reads \(loop.label)")
     }
 
     /// Réglages' sign-out, confirmed, then the sign-in again on the same fixture instance.
@@ -272,7 +285,7 @@ final class ExercisesTests: XCTestCase {
         let app = exercices()
         _ = page(app, "ds:0025", search: "barbell bench press")
         XCTAssertTrue(
-            element(app, "loop").comesToRead("Démonstration de Barbell bench press, en lecture", timeout: 20))
+            element(app, "loop").comesToRead("Démonstration de Barbell bench press, prête", timeout: 20))
         let asked = element(app, "loop-asked")
         XCTAssertEqual(asked.value as? String, "1", "the row and the page asked once")
         // Time for the row below the page to draw its first frame from the loop.
@@ -311,5 +324,6 @@ final class ExercisesTests: XCTestCase {
         let loop = element(app, "loop")
         XCTAssertTrue(loop.comesToRead("Démonstration de Barbell bench press, indisponible", timeout: 15))
         XCTAssertFalse(app.buttons["Mettre en pause"].exists)
+        XCTAssertFalse(app.buttons["Lire la démonstration"].exists)
     }
 }

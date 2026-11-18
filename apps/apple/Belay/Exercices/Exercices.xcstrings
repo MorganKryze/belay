@@ -461,6 +461,16 @@
         }
       }
     },
+    "prête" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ready"
+          }
+        }
+      }
+    },
     "repos %@" : {
       "localizations" : {
         "en" : {
