@@ -94,11 +94,15 @@ struct LoopCard: View {
     /// A loop kept plays at once; otherwise the instance is asked once in this visit. An exercise
     /// with no loop shows the stand-in without waiting.
     private func load() async {
-        shown = false
         if let kept = loops.kept(exerciseId) {
+            // The card back on screen with the loop it holds: its player keeps the same file and
+            // says nothing new, so the frame it shows stays shown.
+            guard phase != .ready(kept) else { return }
+            shown = false
             phase = .ready(kept)
             return
         }
+        shown = false
         guard loopPath(exerciseId) != nil else {
             phase = .none
             return

@@ -168,6 +168,23 @@ final class ExercisesTests: XCTestCase {
             loop.comesToRead("Démonstration de Barbell bench press, en lecture", timeout: 30), "reads \(loop.label)")
     }
 
+    /// A kept loop scrolled off the page and back plays again, never a spinner for good.
+    func testKeptLoopPlaysAfterScrollingBack() {
+        let app = exercices()
+        _ = page(app, "ds:0025", search: "barbell bench press")
+        let loop = element(app, "loop")
+        XCTAssertTrue(loop.comesToRead("Démonstration de Barbell bench press, en lecture", timeout: 30))
+        let credit = app.staticTexts["Texte\u{202F}: exercises-dataset (MIT)"]
+        XCTAssertTrue(app.swipeUpUntil(credit))
+        XCTAssertFalse(loop.exists && loop.isHittable, "the loop left the screen")
+        let pause = app.buttons["Mettre en pause"]
+        for _ in 0..<6 where !(loop.exists && loop.isHittable) { app.swipeDown() }
+        XCTAssertTrue(
+            loop.comesToRead("Démonstration de Barbell bench press, en lecture", timeout: 10), "reads \(loop.label)")
+        XCTAssertTrue(pause.exists)
+        XCTAssertFalse(app.activityIndicators.firstMatch.exists, "no spinner")
+    }
+
     /// The instance not answering keeps the spinner.
     func testLoopStillLoading() {
         let app = exercices("loopLoading")
