@@ -49,8 +49,9 @@ import Synchronization
 ///
 /// Accueil's « Activité » modes: `activityNone` with nothing logged, `activityOne` with a climb of
 /// 1 h 30 today, `activityMany` with that climb and 8 437 steps typed today; `stepsOff` with Santé on
-/// and its steps import off, `stepsNone` with both on and no steps. With `-BelayHealth allowed`
-/// Santé holds 8 437 steps today, which the import brings in after the first sync.
+/// and its steps import off, `stepsNone` with both on and no steps, `stepsActivity` as `stepsNone`
+/// with the climb of `activityOne`. With `-BelayHealth allowed` Santé holds 8 437 steps today,
+/// which the import brings in after the first sync.
 ///
 /// The tools' modes: `tools` with a full profile, a week of weigh-ins around 80 kg and a waist of
 /// 84,5 cm two days ago, for the fields a tool opens on; `toolsEmpty` with none of them.
@@ -152,7 +153,7 @@ enum Fixture {
         "bodyUsual", "bodyOutOfRange", "bodyEarly", "bodyFirst", "healthCard", "weighedFromHealth", "measures", "intake",
         "supplements", "trend", "tools", "toolsEmpty", "profileEmpty", "supplementsEmpty", "refused", "pending0",
         "pending1", "pending2", "queueUnreadable", "activityNone", "activityOne", "activityMany", "stepsOff",
-        "stepsNone",
+        "stepsNone", "stepsActivity",
     ]
 
     /// The clock `-BelayNow` sets: that local time at launch, running on from there.
@@ -358,9 +359,15 @@ enum Fixture {
             if mode == "activityMany" { try actions.writeSteps(date: today, value: 8_437, own: false) }
         case "stepsOff":
             try store.setHealthOn(true, now: now)
-        case "stepsNone":
+        case "stepsNone", "stepsActivity":
             try store.setHealthOn(true, now: now)
             try store.setHealthStepsOn(true)
+            if mode == "stepsActivity" {
+                try actions.logActivity(
+                    ActivityInput(
+                        id: "00000000-0000-7000-8000-0000000000f2", date: today,
+                        fields: ActivityFields(type: "climbing", durationMin: 90, climbStyle: "boulder")))
+            }
         case "weighedFromHealth":
             try store.setHealthOn(true, now: now)
             try store.setHealthImportOn(true)

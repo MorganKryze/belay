@@ -126,8 +126,9 @@ final class CorpsModel {
         supplements = supplementsToday(body, now: at, timeZone: timeZone)
         annotations = body.annotations.filter { !$0.removed }.sorted { ($0.date, $0.id) < ($1.date, $1.id) }
         offersImport = HealthKitWriter.available && !health.offered
-        activity = activitySummary(body.activities, body.steps, day: today)
         stepsOn = health.on && health.stepsOn
+        // With the import on, the steps have their own row, so « Activité » leaves them out.
+        activity = activitySummary(body.activities, stepsOn ? [] : body.steps, day: today)
     }
 
     /// The day's activities of one kind, `cardio` or `climbing`, in the order they were written.
@@ -138,6 +139,13 @@ final class CorpsModel {
     /// The last activity of a kind up to `date`, which a new one starts from, as on the web.
     func lastActivity(kind: String, upTo date: String) -> ActivityRow? {
         body.activities.filter { $0.kind == kind && $0.date <= date && !$0.removed }.last
+    }
+
+    /// Accueil's « Pas du jour »: today's steps while the import is on, else nil.
+    var todaySteps: TodaySteps? {
+        guard stepsOn else { return nil }
+        let steps = steps(on: today)
+        return TodaySteps(value: steps?.value, fromHealth: steps?.fromHealth ?? false)
     }
 
     /// The day's steps, and whether this phone's import wrote them.

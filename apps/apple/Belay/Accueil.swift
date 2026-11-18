@@ -55,7 +55,7 @@ struct AccueilView: View {
             }
             .listRowBackground(Color.surface)
             if trend == .shown { trendSection }
-            TodayRowsView(rows: corps.rows, today: corps.today, activity: corps.activity) { entry in
+            TodayRowsView(rows: corps.rows, today: corps.today, activity: corps.activity, steps: corps.todaySteps) { entry in
                 switch entry {
                 case .activity: logging = true
                 case .weighIn: weighing = true

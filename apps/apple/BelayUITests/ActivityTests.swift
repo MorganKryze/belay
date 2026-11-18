@@ -42,19 +42,58 @@ final class ActivityTests: XCTestCase {
         element(app, "activity-kind").buttons[name].tap()
     }
 
-    /// A38: nothing yet, one activity, the steps alone, then several, the steps counting as one.
+    /// The steps import off: nothing yet, one activity, then several, typed steps counting as one.
     func testRowStatesAndCounts() {
-        for (mode, health, label) in [
-            ("activityNone", nil, "Activité, pas encore saisie"),
-            ("activityOne", nil, "Activité, Escalade · 1 h 30"),
-            ("stepsNone", "allowed", "Activité, 8 437 pas"),
-            ("activityMany", nil, "Activité, 2 activités"),
+        for (mode, health, label, done) in [
+            ("activityNone", nil, "Activité, pas encore saisie", ""),
+            ("activityOne", nil, "Activité, Escalade · 1 h 30", "saisie"),
+            ("stepsOff", "allowed", "Activité, pas encore saisie", ""),
+            ("activityMany", nil, "Activité, 2 activités", "saisie"),
         ] {
             let app = XCUIApplication.fixture(mode, health: health)
             let row = row(app)
             XCTAssertTrue(reads(row, label, timeout: 10), "\(mode): \(words(row))")
-            XCTAssertEqual(row.value as? String, mode == "activityNone" ? "" : "saisie", "\(mode): the ✓ is said")
+            XCTAssertEqual(row.value as? String, done, "\(mode): the ✓ is said")
         }
+    }
+
+    /// With the steps import off, there is no « Pas du jour » and the typed steps count in « Activité ».
+    func testNoStepsRowWhileImportOff() {
+        for (mode, health) in [("activityMany", nil), ("stepsOff", "allowed")] {
+            let app = XCUIApplication.fixture(mode, health: health)
+            let row = row(app)
+            if mode == "activityMany" { XCTAssertTrue(reads(row, "Activité, 2 activités"), words(row)) }
+            XCTAssertTrue(app.swipeUpUntil(element(app, "today.supplements")))
+            XCTAssertFalse(element(app, "today.steps").exists, "\(mode): no « Pas du jour »")
+        }
+    }
+
+    /// With the steps import on, « Pas du jour » reads Santé's figure with its ✓, and « Activité »
+    /// counts only the other activities.
+    func testStepsRowWhileImportOn() {
+        for (mode, activity, done) in [
+            ("stepsNone", "Activité, pas encore saisie", ""),
+            ("stepsActivity", "Activité, Escalade · 1 h 30", "saisie"),
+        ] {
+            let app = XCUIApplication.fixture(mode, health: "allowed")
+            let row = row(app)
+            let steps = element(app, "today.steps")
+            XCTAssertTrue(steps.waitForExistence(timeout: 5), "\(mode): « Pas du jour » shows")
+            XCTAssertTrue(reads(steps, "Pas du jour, 8 437 pas · depuis Santé", timeout: 10), "\(mode): \(words(steps))")
+            XCTAssertEqual(steps.value as? String, "saisis", "\(mode): the ✓ is said")
+            XCTAssertTrue(reads(row, activity), "\(mode): \(words(row))")
+            XCTAssertEqual(row.value as? String, done, "\(mode): the steps give « Activité » no ✓")
+        }
+    }
+
+    /// With the steps import on and no steps yet, « Pas du jour » says so quietly, without a ✓.
+    func testStepsRowBeforeAnySteps() {
+        let app = XCUIApplication.fixture("stepsNone")
+        _ = row(app)
+        let steps = element(app, "today.steps")
+        XCTAssertTrue(steps.waitForExistence(timeout: 5), "« Pas du jour » shows")
+        XCTAssertTrue(reads(steps, "Pas du jour, aucun pour l’instant"), words(steps))
+        XCTAssertEqual(steps.value as? String ?? "", "", "no ✓")
     }
 
     /// A39: ✓ writes one cardio, read back on Accueil and listed once under the day.
@@ -122,17 +161,13 @@ final class ActivityTests: XCTestCase {
         XCTAssertTrue(element(app, "activity-kind").buttons["Pas"].isSelected, "Pas kept")
     }
 
-    /// A40: the day's steps from Santé, read only, said as this phone's import.
-    func testPasReadOnlyFromSante() {
-        let app = XCUIApplication.fixture("stepsNone", health: "allowed")
-        XCTAssertTrue(reads(row(app), "Activité, 8 437 pas", timeout: 10), words(row(app)))
+    /// With the steps import on, steps come from Santé: the sheet offers only Cardio and Escalade.
+    func testSheetLeavesPasOutWhileImportOn() {
+        let app = XCUIApplication.fixture("stepsNone")
         sheet(app)
-        kind(app, "Pas")
-        let steps = element(app, "steps-value")
-        XCTAssertTrue(steps.waitForExistence(timeout: 3))
-        XCTAssertEqual(words(steps), "8 437 pas, depuis Santé")
-        XCTAssertEqual(app.textFields.count, 0, "nothing to type")
-        XCTAssertFalse(element(app, "activity-save").isEnabled, "nothing to save")
+        XCTAssertTrue(element(app, "activity-kind").buttons["Escalade"].isSelected)
+        XCTAssertTrue(element(app, "activity-kind").buttons["Cardio"].exists)
+        XCTAssertFalse(element(app, "activity-kind").buttons["Pas"].exists, "no Pas to choose")
     }
 
     /// A40, R5: with the import off, the segment says where steps come from and turns it on.
@@ -146,15 +181,11 @@ final class ActivityTests: XCTestCase {
         offer.tap()
         XCTAssertTrue(element(app, "steps-value").waitForExistence(timeout: 15), "the day's steps come in")
         XCTAssertFalse(offer.exists, "the offer leaves")
-    }
-
-    /// A40: the import on, a day Santé holds no steps for says so.
-    func testPasSaysNoneWhenEmpty() {
-        let app = XCUIApplication.fixture("stepsNone")
+        element(app, "activity-close").tap()
+        XCTAssertTrue(reads(element(app, "today.steps"), "Pas du jour, 8 437 pas · depuis Santé"), "« Pas du jour » shows")
         sheet(app)
-        kind(app, "Pas")
-        XCTAssertTrue(app.staticTexts["Aucun pas dans Santé pour ce jour."].waitForExistence(timeout: 3))
-        XCTAssertFalse(element(app, "steps-import").exists, "the import is on")
+        XCTAssertFalse(element(app, "activity-kind").buttons["Pas"].exists, "the next opening has no Pas")
+        XCTAssertTrue(element(app, "activity-kind").buttons["Escalade"].isSelected, "it opens on Escalade instead")
     }
 
     /// A52: past midnight, the row reads the new day.

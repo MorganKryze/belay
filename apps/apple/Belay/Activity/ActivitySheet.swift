@@ -4,7 +4,8 @@ import SwiftUI
 /// Activité: Cardio | Escalade | Pas in place of the title, opening on the kind last chosen on this
 /// phone, the date first. Cardio and Escalade write one activity at ✓; the day's activities of the
 /// kind are listed above the fields, and one picked opens with its deletion, asked first. Pas reads
-/// the day's steps from Santé, with nothing to type (A39, A40).
+/// the day's steps from Santé, with nothing to type (A39, A40); it shows only while the steps
+/// import is off, since « Pas du jour » on Accueil carries them once it is on.
 struct ActivitySheet: View {
     let corps: CorpsModel
     @State private var kind: DevicePrefs.ActivityKind
@@ -20,10 +21,15 @@ struct ActivitySheet: View {
     @State private var colour: String?
     @State private var importing = false
     @State private var importRefused = false
+    /// Read once at opening: an import turned on from Pas keeps the segment until the sheet closes,
+    /// so the steps it brings show where it was asked.
+    private let offersSteps: Bool
 
     init(corps: CorpsModel) {
         self.corps = corps
-        _kind = State(initialValue: DevicePrefs.activityKind.value)
+        offersSteps = !corps.stepsOn
+        let last = DevicePrefs.activityKind.value
+        _kind = State(initialValue: last == .steps && corps.stepsOn ? DevicePrefs.activityKind.initial : last)
         _date = State(initialValue: corps.now())
     }
 
@@ -84,7 +90,7 @@ struct ActivitySheet: View {
         Picker(String(localized: "Type d’activité", table: "Activity"), selection: $kind) {
             Text("Cardio", tableName: "Activity").tag(DevicePrefs.ActivityKind.cardio)
             Text("Escalade", tableName: "Activity").tag(DevicePrefs.ActivityKind.climbing)
-            Text("Pas", tableName: "Activity").tag(DevicePrefs.ActivityKind.steps)
+            if offersSteps { Text("Pas", tableName: "Activity").tag(DevicePrefs.ActivityKind.steps) }
         }
         .pickerStyle(.segmented)
         .frame(minWidth: 250)
