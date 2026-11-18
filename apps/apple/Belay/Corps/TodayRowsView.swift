@@ -10,7 +10,7 @@ enum TodayEntry {
 
 /// « Aujourd'hui »: the day's four body entries, the same rows on Corps and on Accueil (R13), each
 /// in words with its domain tile, each one element that opens its sheet or screen. Accueil heads
-/// them with « Activité » (A38), and « Pas du jour » while the steps import is on.
+/// them with « Activité » (A38), and « Pas » while the steps import is on.
 struct TodayRowsView: View {
     let rows: TodayRows
     /// The local day the rows were read for, so the last measure's day reads as a word.
@@ -32,7 +32,7 @@ struct TodayRowsView: View {
             }
             if let steps {
                 // Read only: the steps come from Santé, never typed here.
-                TodayRow(domain: .activity, symbol: "shoeprints.fill", title: String(localized: "Pas du jour", table: "Activity"),
+                TodayRow(domain: .activity, symbol: "shoeprints.fill", title: String(localized: "Pas", table: "Activity"),
                          detail: stepsDetail(steps), logged: steps.value != nil, done: steps.value != nil)
                     .accessibilityValue(steps.value == nil ? "" : String(localized: "saisis", table: "Corps"))
                     .accessibilityIdentifier("today.steps")

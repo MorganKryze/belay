@@ -141,7 +141,7 @@ final class CorpsModel {
         body.activities.filter { $0.kind == kind && $0.date <= date && !$0.removed }.last
     }
 
-    /// Accueil's « Pas du jour »: today's steps while the import is on, else nil.
+    /// Accueil's « Pas »: today's steps while the import is on, else nil.
     var todaySteps: TodaySteps? {
         guard stepsOn else { return nil }
         let steps = steps(on: today)

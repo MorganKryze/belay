@@ -281,16 +281,6 @@
         }
       }
     },
-    "Pas du jour": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Steps today"
-          }
-        }
-      }
-    },
     "Rameur": {
       "localizations": {
         "en": {

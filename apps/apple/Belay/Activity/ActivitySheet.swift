@@ -5,7 +5,7 @@ import SwiftUI
 /// phone, the date first. Cardio and Escalade write one activity at ✓; the day's activities of the
 /// kind are listed above the fields, and one picked opens with its deletion, asked first. Pas reads
 /// the day's steps from Santé, with nothing to type (A39, A40); it shows only while the steps
-/// import is off, since « Pas du jour » on Accueil carries them once it is on.
+/// import is off, since « Pas » on Accueil carries them once it is on.
 struct ActivitySheet: View {
     let corps: CorpsModel
     @State private var kind: DevicePrefs.ActivityKind

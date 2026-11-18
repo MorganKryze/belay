@@ -57,18 +57,18 @@ final class ActivityTests: XCTestCase {
         }
     }
 
-    /// With the steps import off, there is no « Pas du jour » and the typed steps count in « Activité ».
+    /// With the steps import off, there is no « Pas » and the typed steps count in « Activité ».
     func testNoStepsRowWhileImportOff() {
         for (mode, health) in [("activityMany", nil), ("stepsOff", "allowed")] {
             let app = XCUIApplication.fixture(mode, health: health)
             let row = row(app)
             if mode == "activityMany" { XCTAssertTrue(reads(row, "Activité, 2 activités"), words(row)) }
             XCTAssertTrue(app.swipeUpUntil(element(app, "today.supplements")))
-            XCTAssertFalse(element(app, "today.steps").exists, "\(mode): no « Pas du jour »")
+            XCTAssertFalse(element(app, "today.steps").exists, "\(mode): no « Pas »")
         }
     }
 
-    /// With the steps import on, « Pas du jour » reads Santé's figure with its ✓, and « Activité »
+    /// With the steps import on, « Pas » reads Santé's figure with its ✓, and « Activité »
     /// counts only the other activities.
     func testStepsRowWhileImportOn() {
         for (mode, activity, done) in [
@@ -78,21 +78,21 @@ final class ActivityTests: XCTestCase {
             let app = XCUIApplication.fixture(mode, health: "allowed")
             let row = row(app)
             let steps = element(app, "today.steps")
-            XCTAssertTrue(steps.waitForExistence(timeout: 5), "\(mode): « Pas du jour » shows")
-            XCTAssertTrue(reads(steps, "Pas du jour, 8 437 pas · depuis Santé", timeout: 10), "\(mode): \(words(steps))")
+            XCTAssertTrue(steps.waitForExistence(timeout: 5), "\(mode): « Pas » shows")
+            XCTAssertTrue(reads(steps, "Pas, 8 437 pas · depuis Santé", timeout: 10), "\(mode): \(words(steps))")
             XCTAssertEqual(steps.value as? String, "saisis", "\(mode): the ✓ is said")
             XCTAssertTrue(reads(row, activity), "\(mode): \(words(row))")
             XCTAssertEqual(row.value as? String, done, "\(mode): the steps give « Activité » no ✓")
         }
     }
 
-    /// With the steps import on and no steps yet, « Pas du jour » says so quietly, without a ✓.
+    /// With the steps import on and no steps yet, « Pas » says so quietly, without a ✓.
     func testStepsRowBeforeAnySteps() {
         let app = XCUIApplication.fixture("stepsNone")
         _ = row(app)
         let steps = element(app, "today.steps")
-        XCTAssertTrue(steps.waitForExistence(timeout: 5), "« Pas du jour » shows")
-        XCTAssertTrue(reads(steps, "Pas du jour, aucun pour l’instant"), words(steps))
+        XCTAssertTrue(steps.waitForExistence(timeout: 5), "« Pas » shows")
+        XCTAssertTrue(reads(steps, "Pas, aucun pour l’instant"), words(steps))
         XCTAssertEqual(steps.value as? String ?? "", "", "no ✓")
     }
 
@@ -182,7 +182,7 @@ final class ActivityTests: XCTestCase {
         XCTAssertTrue(element(app, "steps-value").waitForExistence(timeout: 15), "the day's steps come in")
         XCTAssertFalse(offer.exists, "the offer leaves")
         element(app, "activity-close").tap()
-        XCTAssertTrue(reads(element(app, "today.steps"), "Pas du jour, 8 437 pas · depuis Santé"), "« Pas du jour » shows")
+        XCTAssertTrue(reads(element(app, "today.steps"), "Pas, 8 437 pas · depuis Santé"), "« Pas » shows")
         sheet(app)
         XCTAssertFalse(element(app, "activity-kind").buttons["Pas"].exists, "the next opening has no Pas")
         XCTAssertTrue(element(app, "activity-kind").buttons["Escalade"].isSelected, "it opens on Escalade instead")
