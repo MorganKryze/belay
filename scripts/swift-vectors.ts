@@ -3069,7 +3069,15 @@ function toolkitVectors() {
     { formula: "male", heightCm: 0, neckCm: 40, waistCm: 90 },
     ...edges,
   ];
-  const navyCases = navyInputs.map((input) => ({ input, result: navyBodyFat(input) }));
+  // log10 differs in its last bits between Node versions, so the exact figure is kept to 12
+  // decimals: the Swift test compares it within 1e-9, and the file stays the same on every runner.
+  const navyCases = navyInputs.map((input) => {
+    const result = navyBodyFat(input);
+    return {
+      input,
+      result: "exact" in result ? { ...result, exact: Number(result.exact.toFixed(12)) } : result,
+    };
+  });
   const ages = [-1, 18, 19, 19.5, 20, 39, 39.5, 40, 59, 60, 79, 79.5, 80, 85];
   const references: BodyFatReference[] = ["standard", "asian"];
   const gallagherCases = (["female", "male"] as const).flatMap((formula) =>
