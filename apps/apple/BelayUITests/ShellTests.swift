@@ -1,21 +1,19 @@
 import XCTest
 
-/// The shell: four tabs, Accueil, Séances and Corps native, Outils saying it lives on the web for now.
+/// The shell: four tabs, Accueil, Séances, Corps and Outils, each native.
 @MainActor
 final class ShellTests: XCTestCase {
     private func launch() -> XCUIApplication {
         let app = XCUIApplication()
-        // The fixture signs in a made-up account, so the shell shows without a real instance; the
-        // instance argument gives the web links their address.
+        // The fixture signs in a made-up account, so the shell shows without a real instance.
         app.launchArguments = [
             "-AppleLanguages", "(fr)", "-AppleLocale", "fr_FR", "-BelayFixture", "fresh",
-            "-belay.instance", "https://belay.example",
         ]
         app.launchFixture()
         return app
     }
 
-    func testFourTabsAndWebLink() {
+    func testFourNativeTabs() {
         let app = launch()
         let bar = app.tabBars.firstMatch
         XCTAssertTrue(bar.waitForExistence(timeout: 5))
@@ -29,14 +27,25 @@ final class ShellTests: XCTestCase {
         bar.buttons["Corps"].tap()
         XCTAssertTrue(app.navigationBars["Corps"].waitForExistence(timeout: 3), "Corps is native")
 
-        for name in ["Outils"] {
-            let tab = bar.buttons[name]
-            XCTAssertTrue(tab.exists, "the \(name) tab is in the bar")
-            tab.tap()
-            let sentence = app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "sur le web pour l’instant")).firstMatch
-            XCTAssertTrue(sentence.waitForExistence(timeout: 3), "\(name) says it is on the web for now")
-            let link = app.links["Ouvrir sur le web"].firstMatch
-            XCTAssertTrue(link.exists || app.buttons["Ouvrir sur le web"].exists, "\(name) offers the link")
-        }
+        // A9: Outils lists its tools on the phone, no longer a page that leads to the web.
+        bar.buttons["Outils"].tap()
+        XCTAssertTrue(app.navigationBars["Outils"].waitForExistence(timeout: 3), "Outils is native")
+        XCTAssertTrue(app.descendants(matching: .any)["tool-row-one-rep-max"].exists, "with its tools")
+        XCTAssertFalse(
+            app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "sur le web pour l’instant")).firstMatch
+                .exists, "and no web placeholder")
+    }
+
+
+    /// The tab bar keeps its four tabs on a long page scrolled down: it never shrinks to one.
+    func testTabBarNeverMinimizes() {
+        let app = XCUIApplication.fixture("fresh")
+        let settings = app.buttons["settings"]
+        XCTAssertTrue(settings.waitForExistence(timeout: 10))
+        settings.tap()
+        XCTAssertTrue(app.navigationBars["Réglages"].waitForExistence(timeout: 5))
+        app.swipeUp()
+        app.swipeUp()
+        XCTAssertTrue(app.tabBars.firstMatch.buttons["Séances"].isHittable, "every tab stays in reach")
     }
 }

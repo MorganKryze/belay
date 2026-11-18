@@ -4,11 +4,23 @@ import Foundation
 public struct Me: Sendable, Equatable, Decodable {
   public let id: String
   public let displayName: String
+  /// Whether the instance serves exercise loops; an instance that does not say serves none.
+  public let media: Bool
 
-  public init(id: String, displayName: String) {
+  public init(id: String, displayName: String, media: Bool = false) {
     self.id = id
     self.displayName = displayName
+    self.media = media
   }
+
+  public init(from decoder: any Decoder) throws {
+    let c = try decoder.container(keyedBy: CodingKeys.self)
+    id = try c.decode(String.self, forKey: .id)
+    displayName = try c.decode(String.self, forKey: .displayName)
+    media = try c.decodeIfPresent(Bool.self, forKey: .media) ?? false
+  }
+
+  private enum CodingKeys: String, CodingKey { case id, displayName, media }
 }
 
 /// A server call made with the session: the token as a bearer, no cookie.

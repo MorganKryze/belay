@@ -80,6 +80,55 @@ private struct Vectors: Decodable {
     let ms: Int64
     let iso: String
   }
+  /// The rules behind the new kinds' validity, asked directly, with the constants they read.
+  struct Predicates: Decodable {
+    struct IntRange: Decodable {
+      let min: Int
+      let max: Int
+      let step: Int?
+    }
+    struct TSBounds: Decodable {
+      let target: Range
+      let ageYears: IntRange
+      let heightCm: IntRange
+      let supplementNameMax: Int
+      let activityMinutes: IntRange
+      let climbRuns: IntRange
+      let steps: IntRange
+      let activityKinds: [String]
+      let cardioTypes: [String]
+      let climbStyles: [String]
+      let climbColors: [String]
+      let climbGrades: [String]
+    }
+    struct Case<Value: Decodable>: Decodable {
+      let value: Value
+      let result: Bool
+    }
+    struct YearRange: Decodable {
+      let today: String
+      let min: Int
+      let max: Int
+    }
+    struct YearCase: Decodable {
+      let year: Int
+      let today: String
+      let result: Bool
+    }
+    struct FieldsCase: Decodable {
+      let fields: ActivityFields
+      let result: Bool
+    }
+    let bounds: TSBounds
+    let isActivityMinutes: [Case<Int>]
+    let isClimbRuns: [Case<Int>]
+    let isSteps: [Case<Int>]
+    let isProfileHeight: [Case<Int>]
+    let isSupplementName: [Case<String>]
+    let birthYearRange: [YearRange]
+    let isBirthYear: [YearCase]
+    let isActivityFields: [FieldsCase]
+  }
 
   let bounds: TSBounds
   let clock: Clock
@@ -91,6 +140,7 @@ private struct Vectors: Decodable {
   let clampAt: [ClampCase]
   let ids: [IdCase]
   let instants: [InstantCase]
+  let predicates: Predicates
 
   static func load() throws -> Vectors {
     let url = try #require(
@@ -181,7 +231,10 @@ struct ContractVectorTests {
 
   /// The body kinds, one test each: every case of the kind reads as that kind, gets the
   /// TypeScript verdict, encodes back to the same JSON, and merges as the shared merge does.
-  @Test(arguments: ["weight", "measure", "intake", "supplementLog", "annotation"])
+  @Test(arguments: [
+    "weight", "measure", "intake", "supplementLog", "annotation", "profile", "target", "supplement",
+    "activity", "steps",
+  ])
   func bodyKind(_ kind: String) throws {
     let vectors = try Vectors.load()
     let now = try #require(Instant.date(vectors.clock.now))
@@ -220,6 +273,11 @@ struct ContractVectorTests {
     case .intake: "intake"
     case .supplementLog: "supplementLog"
     case .annotation: "annotation"
+    case .profile: "profile"
+    case .target: "target"
+    case .supplement: "supplement"
+    case .activity: "activity"
+    case .steps: "steps"
     case .workout: "workout"
     case .set: "set"
     case .activeProgram: "activeProgram"
@@ -247,6 +305,16 @@ struct ContractVectorTests {
         { if case .supplementLog(let c) = $0 { c } else { nil } }, Change.supplementLog)
     case .annotation:
       return try run({ if case .annotation(let c) = $0 { c } else { nil } }, Change.annotation)
+    case .profile:
+      return try run({ if case .profile(let c) = $0 { c } else { nil } }, Change.profile)
+    case .target:
+      return try run({ if case .target(let c) = $0 { c } else { nil } }, Change.target)
+    case .supplement:
+      return try run({ if case .supplement(let c) = $0 { c } else { nil } }, Change.supplement)
+    case .activity:
+      return try run({ if case .activity(let c) = $0 { c } else { nil } }, Change.activity)
+    case .steps:
+      return try run({ if case .steps(let c) = $0 { c } else { nil } }, Change.steps)
     default:
       Issue.record("not a body kind")
       return []
@@ -273,11 +341,49 @@ struct ContractVectorTests {
     try same(response.annotations, "annotations")
     try same(response.target, "target")
     try same(response.profile, "profile")
+    try same(response.steps, "steps")
+    try same(response.activities, "activities")
+    #expect(response.steps?.last?.steps == nil)
+    #expect(response.activities.first?.climbColor == "purple")
+    #expect(response.activities.last?.removedAt != nil)
     #expect(response.weights?.last?.weightKg == nil)
     #expect(response.supplements?.first?.kind == .creatine)
     #expect(response.annotations?.first?.type == .dietBreak)
     #expect(response.profile?.formula == .male)
     #expect(response.target?.at == nil)
+  }
+
+  @Test func predicates() throws {
+    let p = try Vectors.load().predicates
+    let ts = p.bounds
+    #expect(Bounds.target.min == ts.target.min && Bounds.target.max == ts.target.max)
+    #expect(Bounds.target.step == ts.target.step)
+    #expect(Bounds.targetGap == 0.1)
+    #expect(Bounds.ageYears == ts.ageYears.min...ts.ageYears.max)
+    #expect(Bounds.heightCm == ts.heightCm.min...ts.heightCm.max)
+    #expect(Bounds.supplementNameMax == ts.supplementNameMax)
+    #expect(Bounds.activityMinutes == ts.activityMinutes.min...ts.activityMinutes.max)
+    #expect(Bounds.activityMinutesStep == ts.activityMinutes.step)
+    #expect(Bounds.climbRuns == ts.climbRuns.min...ts.climbRuns.max)
+    #expect(Bounds.steps == ts.steps.min...ts.steps.max)
+    #expect(Bounds.stepsStep == ts.steps.step)
+    #expect(Bounds.activityKinds == ts.activityKinds)
+    #expect(Bounds.cardioTypes == ts.cardioTypes)
+    #expect(Bounds.climbStyles == ts.climbStyles)
+    #expect(Bounds.climbColors == ts.climbColors)
+    #expect(Bounds.climbGrades == ts.climbGrades)
+    for c in p.isActivityMinutes { #expect(isActivityMinutes(c.value) == c.result, "\(c.value)") }
+    for c in p.isClimbRuns { #expect(isClimbRuns(c.value) == c.result, "\(c.value)") }
+    for c in p.isSteps { #expect(isSteps(c.value) == c.result, "\(c.value)") }
+    for c in p.isProfileHeight { #expect(isProfileHeight(c.value) == c.result, "\(c.value)") }
+    for c in p.isSupplementName { #expect(isSupplementName(c.value) == c.result, "\(c.value)") }
+    for c in p.birthYearRange {
+      #expect(birthYearRange(today: c.today) == c.min...c.max, "\(c.today)")
+    }
+    for c in p.isBirthYear {
+      #expect(isBirthYear(c.year, today: c.today) == c.result, "\(c.year) on \(c.today)")
+    }
+    for c in p.isActivityFields { #expect(isActivityFields(c.fields) == c.result, "\(c.fields)") }
   }
 
   @Test func readsBodyValuesANewerServerAdds() throws {

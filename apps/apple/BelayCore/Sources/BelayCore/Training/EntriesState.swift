@@ -31,11 +31,6 @@ public func weeks(_ body: BodyRead, now: Date, timeZone: TimeZone) -> [WeekRow] 
 
 // MARK: Apports
 
-/// The tools' choices until Outils comes to the phone: the web's defaults, a sedentary day and
-/// the maintenance goal.
-let intakePal = palLevels.first { $0.id == "sedentary" }!.pal
-let intakeGoal = ProteinGoal.maintain
-
 /// Apports: today's totals against the tools' figures, and the days before.
 public struct IntakeState: Sendable, Equatable {
   public var today: TodayIntake
@@ -50,15 +45,26 @@ public struct IntakeState: Sendable, Equatable {
   public var previous: [IntakeRow]
 }
 
-public func intakeState(_ body: BodyRead, now: Date, timeZone: TimeZone) -> IntakeState {
-  let today = toISODate(now, timeZone: timeZone)
+/// What the tools open on from the entries, read on the local day: the profile, the 7-day
+/// average or the last weigh-in, the last measures.
+public func toolDefaults(_ body: BodyRead, now: Date, timeZone: TimeZone) -> ToolDefaults {
   let profile =
     body.profile
     ?? ProfileRow(
       formula: nil, formulaAt: nil, birthYear: nil, birthYearAt: nil, heightCm: nil,
       heightAt: nil)
-  let tool = toolDefaults(
-    profile: profile, weighings: weighings(body), measures: body.measures, today: today)
+  return toolDefaults(
+    profile: profile, weighings: weighings(body), measures: body.measures,
+    today: toISODate(now, timeZone: timeZone))
+}
+
+/// `pal` and `goal` are the ones chosen in Dépense énergétique and Protéines on this phone
+/// (`ToolMemory.pal`, `.goal`), so Apports reads the figures those tools show.
+public func intakeState(
+  _ body: BodyRead, pal: Double, goal: ProteinGoal, now: Date, timeZone: TimeZone
+) -> IntakeState {
+  let today = toISODate(now, timeZone: timeZone)
+  let tool = toolDefaults(body, now: now, timeZone: timeZone)
   var kcal: Double?
   var protein: ProteinRange?
   // `toolDefaults` keeps every value inside the tools' ranges, so neither tool can refuse it.
@@ -67,9 +73,9 @@ public func intakeState(_ body: BodyRead, now: Date, timeZone: TimeZone) -> Inta
       let height = tool.heightCm?.value
     {
       let input = MifflinInput(formula: formula, ageYears: age, heightCm: height, weightKg: weight)
-      kcal = try? dailyEnergy(input, pal: intakePal).dayKcal
+      kcal = try? dailyEnergy(input, pal: pal).dayKcal
     }
-    protein = try? proteinRange(weight, goal: intakeGoal)
+    protein = try? proteinRange(weight, goal: goal)
   }
   let day = body.intake.first { $0.date == today }
   return IntakeState(

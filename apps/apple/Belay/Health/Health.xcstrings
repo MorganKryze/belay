@@ -32,16 +32,6 @@
         }
       }
     },
-    "Tes séances terminées, avec leur intensité, et tes pesées vont dans Santé à partir du moment où tu actives. Importer ajoute à Belay les pesées d’une balance connectée ou saisies dans Santé ; une pesée déjà dans Belay n’est jamais remplacée. Si aucune n’arrive, vérifie que Belay peut lire le poids dans l’app Santé › ta photo › Confidentialité › Apps › Belay. Désactiver laisse dans Santé ce qui y est déjà.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Your finished sessions, with their effort, and your weigh-ins go to Health from the moment you turn this on. Importing adds to Belay the weigh-ins from a connected scale or typed in Health; a weigh-in already in Belay is never replaced. If none arrive, check that Belay may read weight in the Health app › your photo › Privacy › Apps › Belay. Turning it off leaves in Health what is already there."
-          }
-        }
-      }
-    },
     "Santé n’autorise pas Belay à y écrire tes séances. Autorise-le dans l’app Santé, puis réessaie.": {
       "localizations": {
         "en": {
@@ -58,6 +48,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "Saved to Health"
+          }
+        }
+      }
+    },
+    "Importer les pas de Santé": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import steps from Health"
+          }
+        }
+      }
+    },
+    "Tes séances terminées, avec leur intensité, et tes pesées vont dans Santé à partir du moment où tu actives. Importer les pesées ajoute à Belay celles d’une balance connectée ou saisies dans Santé ; une pesée déjà dans Belay n’est jamais remplacée. Importer les pas ajoute tes pas de Santé des 7 derniers jours ; des pas saisis ailleurs ne sont jamais remplacés. Si rien n’arrive, vérifie que Belay peut lire le poids et les pas dans l’app Santé › ta photo › Confidentialité › Apps › Belay. Désactiver laisse dans Santé ce qui y est déjà.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your finished sessions, with their effort, and your weigh-ins go to Health from the moment you turn this on. Importing weigh-ins adds to Belay those from a connected scale or typed in Health; a weigh-in already in Belay is never replaced. Importing steps adds your steps from Health for the last 7 days; steps typed elsewhere are never replaced. If nothing arrives, check that Belay may read weight and steps in the Health app › your photo › Privacy › Apps › Belay. Turning it off leaves in Health what is already there."
+          }
+        }
+      }
+    },
+    "Pour importer tes pesées, Belay a besoin de l’accès à Santé. Autorise-le dans l’app Santé, puis réessaie.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To import your weigh-ins, Belay needs access to Health. Allow it in the Health app, then try again."
+          }
+        }
+      }
+    },
+    "Pour importer tes pas, Belay a besoin de l’accès à Santé. Autorise-le dans l’app Santé, puis réessaie.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To import your steps, Belay needs access to Health. Allow it in the Health app, then try again."
           }
         }
       }

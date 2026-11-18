@@ -99,7 +99,7 @@ final class LiveActivityController {
         else { return nil }
         return sessionState(
             history: snapshot.history, active: active, now: Date(), library: BundledLibrary.library, bar: .gym,
-            marks: activityMarks)
+            marks: activityMarks, stops: DevicePrefs.pauseStops.value)
     }
 
     private func show(_ state: SessionState?) {

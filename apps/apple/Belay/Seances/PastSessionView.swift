@@ -10,6 +10,8 @@ struct PastSessionView: View {
     /// The model, built at the first pass of the body: the destination makes this view again at
     /// each pass of the shell, and a model made in `init` would read the store each time.
     @State private var built = Once<PastSessionModel>()
+    /// Réglages › Séances › Volume.
+    @AppStorage(DevicePrefs.sessionVolume.key) private var volume = DevicePrefs.sessionVolume.initial
     @State private var editing = false
     @State private var correcting: DoneSet?
     @State private var deleting = false
@@ -62,8 +64,10 @@ struct PastSessionView: View {
                         }
                     }
                     GridRow {
-                        tile(String(localized: "Volume", table: "Seances"), id: "volume") {
-                            Text(HistoryText.volume(session.volumeKg))
+                        if volume == .shown {
+                            tile(String(localized: "Volume", table: "Seances"), id: "volume") {
+                                Text(HistoryText.volume(session.volumeKg))
+                            }
                         }
                         if let effort = session.effort {
                             tile(String(localized: "Effort", table: "Accueil"), id: "effort") {

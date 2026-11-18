@@ -26,8 +26,12 @@ enum AppTab: String, Hashable, CaseIterable {
 /// Where a tab can push to; each native screen adds its case here, with the destination that
 /// shows it.
 enum Route: Hashable {
-    /// Réglages, from Accueil's avatar: for now only the way to sign out.
+    /// Réglages, from Accueil's avatar.
     case settings
+    /// Profil and the loss range, from Réglages' profile cell.
+    case profile
+    /// Mes compléments, from Réglages › Suivi and from Compléments' « Gérer ma liste ».
+    case manageSupplements
     /// A session of the active program before it starts, from Accueil or Séances.
     case preview(sessionId: String)
     /// A session kept, from Séances' Historique.
@@ -38,6 +42,12 @@ enum Route: Hashable {
     case science(id: String)
     /// Corps's screens, from its rows and Accueil's; on the web until each comes to the phone.
     case measures, intake, supplements
+    /// A tool's page, from Outils.
+    case tool(ToolId)
+    /// Mon matériel, from Disques.
+    case equipment
+    /// An exercise's page, from Séances › Exercices and from a session's preview.
+    case exercise(id: String)
 }
 
 /// The tab in front and what each tab has pushed, kept across tab switches.
@@ -80,6 +90,7 @@ struct RootView: View {
     @State private var model = ShellModel()
     @State private var box = Once<TrainingModel>()
     @State private var bodyBox = Once<CorpsModel>()
+    @State private var outilsBox = Once<OutilsModel>()
     @Namespace private var space
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.scenePhase) private var scenePhase
@@ -103,10 +114,18 @@ struct RootView: View {
 
     private var corps: CorpsModel {
         bodyBox.value {
-            CorpsModel(
+            let corps = CorpsModel(
                 store: store, didWrite: account.didWrite, runHealth: account.runHealth,
-                turnImportOn: { [account] in await account.turnHealthImportOn() }, now: Self.clock, timeZone: .current)
+                turnImportOn: { [account] in await account.turnHealthImportOn() },
+                turnStepsOn: { [account] in await account.turnHealthStepsOn() }, now: Self.clock, timeZone: .current)
+            corps.choices = outils.choices
+            return corps
         }
+    }
+
+    /// The tools, remembering their inputs for this account on this phone.
+    private var outils: OutilsModel {
+        outilsBox.value { OutilsModel(memoryAt: account.toolMemory) }
     }
 
     /// The phone's clock; in a debug build, the UI tests' when the launch sets one.
@@ -130,7 +149,8 @@ struct RootView: View {
             }
         }
         .tabViewStyle(.sidebarAdaptable)
-        .tabBarMinimizeBehavior(.onScrollDown)
+        // Never shrinks to one tab on scroll: the owner refused a bar that retracts.
+        .tabBarMinimizeBehavior(.never)
         .tabViewBottomAccessory(isEnabled: training.open != nil) {
             if let open = training.open {
                 ResumeAccessory(session: open) { openCover(Morph.accessory) }
@@ -138,6 +158,8 @@ struct RootView: View {
             }
         }
         .environment(\.zoomSpace, space)
+        .environment(\.loops, LoopSource(kept: account.keptLoop, fetch: account.loop))
+        .environment(\.push, PushAction { [model] route in model[path: model.tab].append(route) })
         .tint(.ink)
         .fullScreenCover(isPresented: $model.coverOpen) {
             SessionCover(training: training) { model.coverOpen = false }
@@ -155,6 +177,8 @@ struct RootView: View {
                 corps.refresh()
             }
         }
+        // A level or a goal chosen in the tools is the one Apports reads next.
+        .onChange(of: outils.choices) { _, choices in corps.choices = choices }
         .onChange(of: training.open == nil) { _, closed in
             guard closed else { return }
             for tab in AppTab.allCases {
@@ -190,14 +214,17 @@ struct RootView: View {
         case .corps:
             CorpsView(corps: corps) { model.corpsPath.append($0) }
         case .outils:
-            WebForNow(title: tab.title)
+            OutilsView()
         }
     }
 
     /// Every route a tab can push.
     @ViewBuilder private func destination(_ route: Route) -> some View {
         switch route {
-        case .settings: ReglagesView(account: account, store: store)
+        case .settings:
+            ReglagesView(account: account, store: store, corps: corps) { model[path: model.tab].append($0) }
+        case .profile: ProfileView(corps: corps)
+        case .manageSupplements: SupplementsManageView(corps: corps)
         case .preview(let sessionId):
             SessionPreview(training: training, sessionId: sessionId, openCover: openCover)
         case .past(let workoutId):
@@ -212,7 +239,24 @@ struct RootView: View {
         case .science(let id): ScienceView(id: id)
         case .measures: MeasuresView(corps: corps)
         case .intake: IntakeView(corps: corps)
-        case .supplements: SupplementsView(corps: corps)
+        case .supplements: SupplementsView(corps: corps) { model[path: model.tab].append($0) }
+        case .tool(let tool): toolPage(tool)
+        case .equipment: EquipmentView(outils: outils)
+        case .exercise(let id): ExercisePage(training: training, exerciseId: id)
+        }
+    }
+
+    /// A tool's page.
+    @ViewBuilder private func toolPage(_ tool: ToolId) -> some View {
+        switch tool {
+        case .oneRepMax: OneRepMaxTool(outils: outils)
+        case .plates: PlatesTool(outils: outils)
+        case .warmup: WarmupTool(outils: outils)
+        case .energy: EnergyTool(outils: outils, corps: corps)
+        case .protein: ProteinTool(outils: outils, corps: corps)
+        case .projection: ProjectionTool(outils: outils, corps: corps)
+        case .bmi: BmiTool(outils: outils, corps: corps)
+        case .bodyFat: BodyFatTool(outils: outils, corps: corps)
         }
     }
 

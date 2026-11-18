@@ -4,8 +4,8 @@ public import GRDB
 /// Health on this phone for this account: the Santé switch, off until the person turns it on, and
 /// when they last did, in ms since the epoch (only sessions and weigh-ins after it are new to
 /// Health); the import's switch, whether its card was offered, and its place in Health's
-/// body-mass history with the days it filled. A record from before the import decodes with the
-/// import off and no place.
+/// body-mass history with the days it filled; the steps import's switch. A record from before an
+/// import decodes with that import off and no place.
 public struct HealthSettings: Codable, Sendable, Equatable {
   public var on: Bool
   public var turnedOnAt: Int64?
@@ -16,10 +16,12 @@ public struct HealthSettings: Codable, Sendable, Equatable {
   public var anchor: String?
   /// By date.
   public var filled: [String: Filled]
+  /// The day's steps are read from Health.
+  public var stepsOn: Bool
 
   public init(
     on: Bool, turnedOnAt: Int64?, importOn: Bool = false, offered: Bool = false,
-    anchor: String? = nil, filled: [String: Filled] = [:]
+    anchor: String? = nil, filled: [String: Filled] = [:], stepsOn: Bool = false
   ) {
     self.on = on
     self.turnedOnAt = turnedOnAt
@@ -27,10 +29,11 @@ public struct HealthSettings: Codable, Sendable, Equatable {
     self.offered = offered
     self.anchor = anchor
     self.filled = filled
+    self.stepsOn = stepsOn
   }
 
   private enum CodingKeys: String, CodingKey {
-    case on, turnedOnAt, importOn, offered, anchor, filled
+    case on, turnedOnAt, importOn, offered, anchor, filled, stepsOn
   }
 
   public init(from decoder: any Decoder) throws {
@@ -41,7 +44,8 @@ public struct HealthSettings: Codable, Sendable, Equatable {
       importOn: try c.decodeIfPresent(Bool.self, forKey: .importOn) ?? false,
       offered: try c.decodeIfPresent(Bool.self, forKey: .offered) ?? false,
       anchor: try c.decodeIfPresent(String.self, forKey: .anchor),
-      filled: try c.decodeIfPresent([String: Filled].self, forKey: .filled) ?? [:])
+      filled: try c.decodeIfPresent([String: Filled].self, forKey: .filled) ?? [:],
+      stepsOn: try c.decodeIfPresent(Bool.self, forKey: .stepsOn) ?? false)
   }
 
   public static let off = HealthSettings(on: false, turnedOnAt: nil)
@@ -62,8 +66,8 @@ extension AccountStore {
       var settings = try Rows.single(HealthSettings.self, db, "healthSettings") ?? .off
       if on && !settings.on { settings.turnedOnAt = Instant.milliseconds(now) }
       settings.on = on
-      // The import reads through the same switch: off stops it too.
-      if !on { settings.importOn = false }
+      // The imports read through the same switch: off stops them too.
+      if !on { (settings.importOn, settings.stepsOn) = (false, false) }
       try Rows.putSingle(db, "healthSettings", settings)
     }
   }
@@ -78,6 +82,28 @@ extension AccountStore {
       settings.importOn = on
       settings.offered = true
       try Rows.putSingle(db, "healthSettings", settings)
+    }
+  }
+
+  /// The steps import's switch, which goes on only with Santé's.
+  public func setHealthStepsOn(_ on: Bool) throws {
+    try writer.write { db in
+      var settings = try Rows.single(HealthSettings.self, db, "healthSettings") ?? .off
+      guard !on || settings.on else { return }
+      settings.stepsOn = on
+      try Rows.putSingle(db, "healthSettings", settings)
+    }
+  }
+
+  /// The days whose steps this phone last wrote from Health, with the value written (R4): only
+  /// those may follow Health again.
+  public func stepsWritten() throws -> [String: Int] {
+    try writer.read { db in
+      var written: [String: Int] = [:]
+      for row in try Row.fetchAll(db, sql: "SELECT date, value FROM stepsWritten") {
+        written[row["date"]] = row["value"]
+      }
+      return written
     }
   }
 

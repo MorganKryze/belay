@@ -1,12 +1,7 @@
 import { EXERCISES } from "@belay/shared/exercises/catalog";
 import type { Exercise } from "@belay/shared/exercises/library";
-import {
-  EQUIPMENT,
-  type Equipment,
-  LOWER_MUSCLES,
-  type Muscle,
-  UPPER_MUSCLES,
-} from "@belay/shared/exercises/muscles";
+import { type Filters, filterExercises } from "@belay/shared/exercises/search";
+import { EQUIPMENT, LOWER_MUSCLES, UPPER_MUSCLES } from "@belay/shared/exercises/muscles";
 import type { LetteredTemplate } from "@belay/shared/training/stored-program";
 import { Link } from "@tanstack/react-router";
 import { ChevronDown, ChevronRight, Search, X } from "lucide-react";
@@ -20,20 +15,9 @@ import { formatNumber } from "@/lib/format";
 import { useAccount, useProgram } from "@/sync/account";
 import { BodyThumb } from "./body-map";
 
-// Case, accents and word order aside: "press bench" finds "Barbell bench press".
-const fold = (text: string) =>
-  text
-    .normalize("NFD")
-    .replace(/\p{Diacritic}/gu, "")
-    .toLowerCase();
-const wordsOf = (query: string) => fold(query).split(/\s+/).filter(Boolean);
-export const matches = (name: string, query: string) => {
-  const target = fold(name);
-  return wordsOf(query).every((w) => target.includes(w));
-};
+// The program editor and the exercise picker import the search from this screen.
+export { filterExercises };
 
-// Folded once per exercise, not once per exercise and keystroke.
-const FOLDED = new Map(EXERCISES.map((e) => [e.id, fold(e.name)]));
 const collator = new Intl.Collator("en");
 const ALL = [...EXERCISES].sort((a, b) => collator.compare(a.name, b.name));
 // The sessions of the active rotation each exercise is in: "A", "A · C".
@@ -47,19 +31,6 @@ function sessionsOf(rotation: readonly LetteredTemplate[]): Sessions {
     }
   return sessions;
 }
-
-type Filters = { query: string; muscle: Muscle | null; equipment: Equipment | null };
-export const filterExercises = (list: readonly Exercise[], f: Filters) => {
-  const words = wordsOf(f.query);
-  return list.filter((e) => {
-    const name = FOLDED.get(e.id) ?? fold(e.name);
-    return (
-      words.every((w) => name.includes(w)) &&
-      (f.muscle === null || e.primary.includes(f.muscle)) &&
-      (f.equipment === null || e.equipment === f.equipment)
-    );
-  });
-};
 
 // Exercises (§4.5): search, a muscle and an equipment filter, the program's exercises first.
 export function ExercisesPanel() {

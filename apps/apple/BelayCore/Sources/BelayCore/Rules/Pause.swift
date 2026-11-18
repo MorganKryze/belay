@@ -11,7 +11,7 @@ private func ms(_ text: String) -> Int64? { Instant.milliseconds(text) }
 
 /// What a pause stops, a choice each device keeps: everything, or the session's time while the
 /// rest keeps running.
-public enum PauseStops: Sendable { case all, session }
+public enum PauseStops: String, Sendable { case all, session }
 
 /// The session's time in ms: the clock stops at the pause, and never reads below zero (a start
 /// moved later elsewhere than this device's pause). Int64, as Int is 32 bits on the Watch. Zero

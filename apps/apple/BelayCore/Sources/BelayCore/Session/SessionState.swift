@@ -160,18 +160,19 @@ func ownSets(_ history: History, workoutId: String) -> [SetRow] {
   history.sets.filter { !$0.removed && $0.workoutId == workoutId }
 }
 
-/// The session resumed at `at`: the start moved past the pause, the rest and a chrono moved with
-/// it, the pause gone. Unchanged when it runs.
-func resumed(startedAt: String, active: ActiveSession, at: String) -> (
+/// The session resumed at `at`: the start moved past the pause, the pause gone. The rest and a
+/// chrono move with it when the pause stopped everything, and ran through it otherwise.
+/// Unchanged when it runs.
+func resumed(startedAt: String, active: ActiveSession, at: String, stops: PauseStops) -> (
   startedAt: String, active: ActiveSession
 ) {
   guard let pausedAt = active.pausedAt else { return (startedAt, active) }
   var active = active
   active.restEndsAt = resumedRestEnd(
-    active.restEndsAt, pausedAt: pausedAt, resumedAt: at, stops: .all)
+    active.restEndsAt, pausedAt: pausedAt, resumedAt: at, stops: stops)
   if var chrono = active.chrono {
     chrono.endsAt =
-      resumedRestEnd(chrono.endsAt, pausedAt: pausedAt, resumedAt: at, stops: .all)
+      resumedRestEnd(chrono.endsAt, pausedAt: pausedAt, resumedAt: at, stops: stops)
       ?? chrono.endsAt
     active.chrono = chrono
   }
@@ -181,13 +182,13 @@ func resumed(startedAt: String, active: ActiveSession, at: String) -> (
 
 /// A pause that a set logged since has ended, here or on another device, read as resumed at that
 /// set's time: the time trained since stays in the session. Unchanged otherwise.
-func settledPause(startedAt: String, active: ActiveSession, sets: [SetRow]) -> (
-  startedAt: String, active: ActiveSession
-) {
+func settledPause(
+  startedAt: String, active: ActiveSession, sets: [SetRow], stops: PauseStops
+) -> (startedAt: String, active: ActiveSession) {
   guard let pausedAt = active.pausedAt,
     let endedBy = pauseEndedBy(pausedAt: pausedAt, doneAts: sets.map(\.doneAt))
   else { return (startedAt, active) }
-  return resumed(startedAt: startedAt, active: active, at: endedBy)
+  return resumed(startedAt: startedAt, active: active, at: endedBy, stops: stops)
 }
 
 /// The set due in `workout`: a set the person added, else the next turn of the shared rule with
@@ -284,23 +285,24 @@ private func finishedExercise(_ plan: [Slot], sets: [SetRow]) -> SetRow? {
   return open ? nil : latest
 }
 
-/// The cover's state at `now`.
+/// The cover's state at `now`. `stops` is this device's choice of what a pause stops.
 public func sessionState(
   history: History, active: ActiveSession, now: Date, library: ExerciseLibrary, bar: Plates,
-  marks: SessionMarks
+  marks: SessionMarks, stops: PauseStops = .all
 ) -> SessionState {
   guard let workout = history.workouts.first(where: { $0.id == active.workoutId }) else {
     preconditionFailure("the open session is always stored")
   }
   let plan = workout.plan
   let sets = ownSets(history, workoutId: workout.id)
-  let settled = settledPause(startedAt: workout.startedAt, active: active, sets: sets)
+  let settled = settledPause(
+    startedAt: workout.startedAt, active: active, sets: sets, stops: stops)
   let device = settled.active
   let progress = sessionProgress(plan, sets: sets)
   let due = dueSet(history: history, workout: workout, active: device, library: library, bar: bar)
   let elapsed = Int(
     sessionElapsed(startedAt: settled.startedAt, pausedAt: device.pausedAt, now: now))
-  let restAt = restClock(pausedAt: device.pausedAt, now: now, stops: .all)
+  let restAt = restClock(pausedAt: device.pausedAt, now: now, stops: stops)
   let restEnd = device.restEndsAt.flatMap(date).flatMap { $0 > restAt ? $0 : nil }
   let title = workout.sessionName.value ?? workout.sessionCode
   let workDone = sets.filter { !$0.warmup }.count

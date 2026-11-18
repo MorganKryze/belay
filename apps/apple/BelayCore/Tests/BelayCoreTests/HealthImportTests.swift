@@ -18,6 +18,12 @@ private actor FakeReader: HealthWriting {
   private(set) var writes = 0
   /// Runs inside the next read: what the person does while Health is read.
   private var duringRead: (@Sendable () throws -> Void)?
+  /// Health's step total by day; a day it holds no samples for answers nil.
+  var steps: [String: Double?] = [:]
+  /// A steps read iOS refused, or one that failed.
+  var stepsRefused = false
+  private(set) var askedDays: [[String]] = []
+  private var duringSteps: (@Sendable () throws -> Void)?
 
   func set(samples: [HealthSample]? = nil, refused: Bool? = nil, next: String? = nil) {
     if let samples { self.samples = samples }
@@ -26,6 +32,25 @@ private actor FakeReader: HealthWriting {
   }
 
   func during(read: @escaping @Sendable () throws -> Void) { duringRead = read }
+
+  func set(steps: [String: Double?]? = nil, stepsRefused: Bool? = nil) {
+    if let steps { self.steps = steps }
+    if let stepsRefused { self.stepsRefused = stepsRefused }
+  }
+
+  func during(steps: @escaping @Sendable () throws -> Void) { duringSteps = steps }
+
+  func readDaySteps(days: [String], timeZone: TimeZone) async -> [String: Double?]? {
+    askedDays.append(days)
+    try? duringSteps?()
+    duringSteps = nil
+    if stepsRefused { return nil }
+    var out: [String: Double?] = [:]
+    for day in days { out[day] = steps[day] ?? nil }
+    // A day Health was not asked for, which the import must never write.
+    out["2026-10-30"] = 4321
+    return out
+  }
 
   func access() async -> HealthAccess {
     HealthAccess(available: true, workouts: .allowed, effort: .allowed, weighIns: .allowed)
@@ -241,11 +266,239 @@ private actor FakeReader: HealthWriting {
     #expect(
       try Rows.decode(HealthSettings.self, json) == HealthSettings(on: true, turnedOnAt: 5))
   }
+
+  // MARK: Steps
+
+  /// A store with Santé and the steps import on.
+  private func stepping() throws -> AccountStore {
+    let store = try AccountStore.inMemory(userId: userId)
+    try store.setHealthOn(true, now: now.addingTimeInterval(-600))
+    try store.setHealthStepsOn(true)
+    return store
+  }
+
+  private func steps(_ store: AccountStore) throws -> [String: Int?] {
+    try store.writer.read { db in
+      try BodyRows.all(StepsRow.self, db, "steps")
+    }.reduce(into: [:]) { $0[$1.date] = $1.steps }
+  }
+
+  private func actions(_ store: AccountStore, at minutes: Double = 0) -> BodyActions {
+    BodyActions(
+      store: store, now: { Fixture.t0.addingTimeInterval(minutes * 60) }, timeZone: Days.paris)
+  }
+
+  @Test func stepsWriteEmptyDays() async throws {
+    let store = try stepping()
+    let health = FakeReader()
+    await health.set(steps: ["2026-11-05": 8436.6, "2026-11-06": 1200])
+
+    // Counted with the weigh-ins, so the sync sends them.
+    #expect(await landed(store, health) == 2)
+
+    #expect(try steps(store) == ["2026-11-05": 8437, "2026-11-06": 1200])
+    #expect(try store.stepsWritten() == ["2026-11-05": 8437, "2026-11-06": 1200])
+    // Queued as ordinary steps, so the web shows them.
+    #expect(try Fixture.changes(store).map(\.stepsDay) == ["2026-11-05", "2026-11-06"])
+  }
+
+  /// A day this phone imported follows Health; one the person then typed, even with the import's
+  /// own value, is theirs.
+  @Test func stepsFollowOwnWrite() async throws {
+    let store = try stepping()
+    let health = FakeReader()
+    await health.set(steps: ["2026-11-06": 5000])
+    await landed(store, health)
+    await health.set(steps: ["2026-11-06": 6000])
+    await landed(store, health)
+    #expect(try steps(store)["2026-11-06"] == 6000)
+
+    try actions(store, at: 1).writeSteps(date: "2026-11-06", value: 6000, own: false)
+    await health.set(steps: ["2026-11-06": 7000])
+    await landed(store, health)
+
+    #expect(try steps(store)["2026-11-06"] == 6000)
+    #expect(try store.stepsWritten().isEmpty)
+  }
+
+  /// The phone imported a day, then the web replaced it, and deleted another: the pulled values
+  /// stand against Health's.
+  @Test func stepsKeepWebValue() async throws {
+    let store = try stepping()
+    let health = FakeReader()
+    await health.set(steps: ["2026-11-05": 5000, "2026-11-06": 5000])
+    await landed(store, health)
+    var server = Fixture.response()
+    server.steps = [
+      StepsRow(date: "2026-11-05", steps: 4000, stepsAt: "2026-11-06T09:30:00.000Z"),
+      StepsRow(date: "2026-11-06", steps: nil, stepsAt: "2026-11-06T09:30:00.000Z"),
+    ]
+    try store.applyServer(sent: [], response: server)
+    let queued = try Fixture.changes(store).count
+
+    await health.set(steps: ["2026-11-05": 6000, "2026-11-06": 6000])
+    await landed(store, health)
+
+    let pulled: [String: Int?] = ["2026-11-05": 4000, "2026-11-06": nil]
+    #expect(try steps(store) == pulled)
+    #expect(try Fixture.changes(store).count == queued)
+  }
+
+  /// The web typed the import's own value after it, 4000 then back to 5000: the day is the
+  /// person's, so Health's later figure leaves it alone.
+  @Test func stepsKeepWebValueEqualToImport() async throws {
+    let store = try stepping()
+    let health = FakeReader()
+    await health.set(steps: ["2026-11-05": 5000])
+    await landed(store, health)
+    var server = Fixture.response()
+    server.steps = [StepsRow(date: "2026-11-05", steps: 5000, stepsAt: "2026-11-06T09:30:00.000Z")]
+    try store.applyServer(sent: try store.outbox(limit: nil), response: server)
+
+    await health.set(steps: ["2026-11-05": 6200])
+    await landed(store, health)
+
+    #expect(try steps(store)["2026-11-05"] == 5000)
+    #expect(try store.stepsWritten().isEmpty)
+    #expect(try Fixture.changes(store).isEmpty)
+  }
+
+  /// The server's answer to the import itself, at a time it clamped or as a page sent again
+  /// after a pull from the start: the day is still this phone's and follows Health.
+  @Test func stepsFollowTheirOwnEcho() async throws {
+    let store = try stepping()
+    let health = FakeReader()
+    await health.set(steps: ["2026-11-05": 5000, "2026-11-06": 5000])
+    await landed(store, health)
+    let at = Instant.string(now)
+    var echo = Fixture.response()
+    echo.steps = [
+      StepsRow(date: "2026-11-05", steps: 5000, stepsAt: "2026-11-06T08:59:58.000Z"),
+      StepsRow(date: "2026-11-06", steps: 5000, stepsAt: at),
+    ]
+    try store.applyServer(sent: try store.outbox(limit: nil), response: echo)
+    var again = Fixture.response(cursor: "2")
+    again.steps = [StepsRow(date: "2026-11-06", steps: 5000, stepsAt: at)]
+    try store.applyServer(sent: [], response: again)
+
+    await health.set(steps: ["2026-11-05": 6200, "2026-11-06": 6300])
+    await landed(store, health)
+
+    #expect(try steps(store) == ["2026-11-05": 6200, "2026-11-06": 6300])
+  }
+
+  /// An older web value pulled while the import's change still waits: the queued change is the
+  /// day's, and the day still follows Health.
+  @Test func stepsFollowWhileTheirChangeIsNewer() async throws {
+    let store = try stepping()
+    let health = FakeReader()
+    await health.set(steps: ["2026-11-05": 5000])
+    await landed(store, health)
+    var server = Fixture.response()
+    server.steps = [StepsRow(date: "2026-11-05", steps: 4000, stepsAt: "2026-11-06T08:30:00.000Z")]
+    try store.applyServer(sent: [], response: server)
+
+    await health.set(steps: ["2026-11-05": 6200])
+    await landed(store, health)
+
+    #expect(try steps(store)["2026-11-05"] == 6200)
+  }
+
+  /// The steps' write fails after the weigh-ins landed: those weigh-ins are still counted, so
+  /// the sync sends them.
+  @Test func stepsFailureKeepsTheWeighInCount() async throws {
+    let store = try importing()
+    try store.setHealthStepsOn(true)
+    let health = FakeReader()
+    await health.set(samples: [reading("2026-11-04T06:00:00.000Z", 79)])
+    await health.set(steps: ["2026-11-05": 5000])
+    try Fixture.refuseInserts(into: "steps", in: store)
+
+    #expect(await landed(store, health) == 1)
+    #expect(try weights(store).count == 1)
+    #expect(try steps(store).isEmpty)
+  }
+
+  @Test func stepsSkipAboveCapAndNoSamples() async throws {
+    let store = try stepping()
+    let health = FakeReader()
+    await health.set(steps: ["2026-11-04": 100_000.4, "2026-11-05": 100_001, "2026-11-06": nil])
+
+    await landed(store, health)
+
+    #expect(try steps(store) == ["2026-11-04": 100_000])
+  }
+
+  @Test func stepsUnchangedWritesNothing() async throws {
+    let store = try stepping()
+    let health = FakeReader()
+    await health.set(steps: ["2026-11-06": 5000])
+    await landed(store, health)
+    let queued = try Fixture.changes(store).count
+
+    await landed(store, health)
+
+    #expect(try Fixture.changes(store).count == queued)
+  }
+
+  /// Off, before a landed sync, or with Santé off: Health's steps are never read.
+  @Test func stepsOffReadsNothing() async throws {
+    let store = try AccountStore.inMemory(userId: userId)
+    try store.setHealthOn(true, now: now)
+    let health = FakeReader()
+    await health.set(steps: ["2026-11-06": 5000])
+    await landed(store, health)
+
+    try store.setHealthStepsOn(true)
+    await runHealth(
+      store: store, writer: health, owner: owner, now: now, timeZone: Days.paris, imports: false)
+
+    try store.setHealthOn(false, now: now)
+    await landed(store, health)
+
+    #expect(await health.askedDays.isEmpty)
+    #expect(try steps(store).isEmpty)
+  }
+
+  @Test func stepsRefusedReadsNothing() async throws {
+    let store = try stepping()
+    let health = FakeReader()
+    await health.set(steps: ["2026-11-06": 5000], stepsRefused: true)
+    await landed(store, health)
+    #expect(try steps(store).isEmpty)
+
+    // Turned off while Health was read: nothing is taken.
+    await health.set(stepsRefused: false)
+    await health.during(steps: { try store.setHealthStepsOn(false) })
+    await landed(store, health)
+    #expect(try steps(store).isEmpty)
+  }
+
+  @Test func stepsSevenDaysOnly() async throws {
+    let store = try stepping()
+    let health = FakeReader()
+
+    await landed(store, health)
+
+    #expect(
+      await health.askedDays == [
+        [
+          "2026-10-31", "2026-11-01", "2026-11-02", "2026-11-03", "2026-11-04", "2026-11-05",
+          "2026-11-06",
+        ]
+      ])
+    #expect(try steps(store).isEmpty)
+  }
 }
 
 extension Change {
   /// The day of a weigh-in change, nil for any other.
   fileprivate var weightDay: String? {
     if case .weight(let c) = self { c.date } else { nil }
+  }
+
+  /// The day of a steps change, nil for any other.
+  fileprivate var stepsDay: String? {
+    if case .steps(let c) = self { c.date } else { nil }
   }
 }

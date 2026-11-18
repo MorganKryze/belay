@@ -77,7 +77,7 @@ extension AccountStore {
 
   /// The body entries as the screens read them: the days weighed, measured or with an intake
   /// value, each by day; every supplement, removed ones too, as their boxes still count; the boxes
-  /// ticked; the annotations still in place, by day.
+  /// ticked; the annotations and the activities still in place, by day; the days with steps.
   public static func body(_ db: Database) throws -> BodyRead {
     BodyRead(
       weights: try BodyRows.all(WeightRow.self, db, "weights").filter { $0.weightKg != nil },
@@ -94,7 +94,9 @@ extension AccountStore {
       annotations: try Rows.all(AnnotationRow.self, db, "annotations").filter { !$0.removed }
         .sorted { ($0.date, $0.id) < ($1.date, $1.id) },
       target: try Rows.single(TargetRow.self, db, "target"),
-      profile: try Rows.single(ProfileRow.self, db, "profile"))
+      profile: try Rows.single(ProfileRow.self, db, "profile"),
+      activities: try activities(db),
+      steps: try BodyRows.all(StepsRow.self, db, "steps").filter { $0.steps != nil })
   }
 
   public func outbox(limit: Int?) throws -> [OutboxEntry] {

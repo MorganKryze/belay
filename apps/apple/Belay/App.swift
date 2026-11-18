@@ -9,6 +9,7 @@ struct BelayApp: App {
     /// Lives as long as the app: a lock-screen tap may launch it in the background, with no scene.
     @State private var activity: LiveActivityController
     @Environment(\.scenePhase) private var scenePhase
+    @AppStorage(DevicePrefs.theme.key) private var theme = DevicePrefs.theme.initial
 
     init() {
         DisplayType.register()
@@ -46,9 +47,12 @@ struct BelayApp: App {
                 .overlay(alignment: .topLeading) {
                     if Fixture.isOn, let store = account.store {
                         Fixture.QueueProbe(store: store)
+                        Fixture.LoopProbe()
                         Fixture.SummaryProbe(store: store)
                         Fixture.ActiveProbe(store: store)
                         Fixture.HistoryProbe(store: store)
+                        Fixture.ProfileProbe(store: store)
+                        Fixture.PullOnLeave(store: store)
                     }
                 }
                 .environment(\.contrastIncreased, Fixture.contrastIncreased)
@@ -56,10 +60,28 @@ struct BelayApp: App {
             .task { await account.finishSignIn() }
             .onChange(of: scenePhase) { _, phase in
                 if phase == .active { account.refresh() }
+                Self.apply(theme)
             }
+            .onChange(of: theme, initial: true) { _, theme in Self.apply(theme) }
             .onReceive(NotificationCenter.default.publisher(for: UIContentSizeCategory.didChangeNotification)) { _ in
                 DisplayType.styleBars()
             }
+        }
+    }
+}
+
+extension BelayApp {
+    /// The theme on every window, so sheets and alerts take it with the screens; Système leaves
+    /// the iPhone's own.
+    @MainActor static func apply(_ theme: DevicePrefs.Theme) {
+        let style: UIUserInterfaceStyle =
+            switch theme {
+            case .light: .light
+            case .dark: .dark
+            case .system: .unspecified
+            }
+        for case let scene as UIWindowScene in UIApplication.shared.connectedScenes {
+            for window in scene.windows { window.overrideUserInterfaceStyle = style }
         }
     }
 }
@@ -103,7 +125,8 @@ private nonisolated struct StoreLockScreen: LockScreenHandler {
     @MainActor private func run(_ write: (SessionActions) throws -> Bool) -> Bool {
         guard let store = account.store else { return false }
         let actions = SessionActions(
-            store: store, library: BundledLibrary.library, now: { Date() }, newId: { UUIDv7.make(at: $0) })
+            store: store, library: BundledLibrary.library, stops: DevicePrefs.pauseStops.value, now: { Date() },
+            newId: { UUIDv7.make(at: $0) })
         do {
             let wrote = try write(actions)
             if wrote { account.didWrite() }

@@ -932,7 +932,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-21",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-21T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-19",
@@ -945,7 +953,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-21",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-21T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-21",
@@ -958,7 +974,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-21",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-21T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-25",
@@ -971,7 +995,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-21",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-21T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-26",
@@ -984,7 +1016,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-21",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-21T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-03-29",
@@ -997,7 +1037,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-21",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-21T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-03-30",
@@ -1010,7 +1058,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-21",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-21T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2027-01-01",
@@ -1023,7 +1079,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-21",
           "type": "climbing",
-          "removed": true
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-21T18:00:00.000Z",
+          "removed": true,
+          "removedAt": "2026-10-21T19:00:00.000Z"
         }
       ],
       "date": "2026-10-19",
@@ -1036,7 +1100,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-21",
           "type": "climbing",
-          "removed": true
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-21T18:00:00.000Z",
+          "removed": true,
+          "removedAt": "2026-10-21T19:00:00.000Z"
         }
       ],
       "date": "2026-10-21",
@@ -1049,7 +1121,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-21",
           "type": "climbing",
-          "removed": true
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-21T18:00:00.000Z",
+          "removed": true,
+          "removedAt": "2026-10-21T19:00:00.000Z"
         }
       ],
       "date": "2026-10-25",
@@ -1062,7 +1142,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-21",
           "type": "climbing",
-          "removed": true
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-21T18:00:00.000Z",
+          "removed": true,
+          "removedAt": "2026-10-21T19:00:00.000Z"
         }
       ],
       "date": "2026-10-26",
@@ -1075,7 +1163,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-21",
           "type": "climbing",
-          "removed": true
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-21T18:00:00.000Z",
+          "removed": true,
+          "removedAt": "2026-10-21T19:00:00.000Z"
         }
       ],
       "date": "2026-03-29",
@@ -1088,7 +1184,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-21",
           "type": "climbing",
-          "removed": true
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-21T18:00:00.000Z",
+          "removed": true,
+          "removedAt": "2026-10-21T19:00:00.000Z"
         }
       ],
       "date": "2026-03-30",
@@ -1101,7 +1205,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-21",
           "type": "climbing",
-          "removed": true
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-21T18:00:00.000Z",
+          "removed": true,
+          "removedAt": "2026-10-21T19:00:00.000Z"
         }
       ],
       "date": "2027-01-01",
@@ -1114,7 +1226,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-21",
           "type": "cardio",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": "run",
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-21T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-19",
@@ -1127,7 +1247,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-21",
           "type": "cardio",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": "run",
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-21T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-21",
@@ -1140,7 +1268,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-21",
           "type": "cardio",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": "run",
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-21T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-25",
@@ -1153,7 +1289,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-21",
           "type": "cardio",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": "run",
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-21T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-26",
@@ -1166,7 +1310,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-21",
           "type": "cardio",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": "run",
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-21T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-03-29",
@@ -1179,7 +1331,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-21",
           "type": "cardio",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": "run",
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-21T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-03-30",
@@ -1192,7 +1352,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-21",
           "type": "cardio",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": "run",
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-21T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2027-01-01",
@@ -1205,7 +1373,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-25",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-25T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-19",
@@ -1218,7 +1394,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-25",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-25T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-21",
@@ -1231,7 +1415,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-25",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-25T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-25",
@@ -1244,7 +1436,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-25",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-25T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-26",
@@ -1257,7 +1457,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-25",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-25T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-03-29",
@@ -1270,7 +1478,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-25",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-25T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-03-30",
@@ -1283,7 +1499,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-25",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-25T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2027-01-01",
@@ -1296,7 +1520,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-26",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-26T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-19",
@@ -1309,7 +1541,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-26",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-26T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-21",
@@ -1322,7 +1562,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-26",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-26T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-25",
@@ -1335,7 +1583,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-26",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-26T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-26",
@@ -1348,7 +1604,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-26",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-26T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-03-29",
@@ -1361,7 +1625,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-26",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-26T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-03-30",
@@ -1374,7 +1646,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-26",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-26T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2027-01-01",
@@ -1387,7 +1667,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-18",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-18T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-19",
@@ -1400,7 +1688,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-18",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-18T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-21",
@@ -1413,7 +1709,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-18",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-18T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-25",
@@ -1426,7 +1730,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-18",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-18T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-26",
@@ -1439,7 +1751,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-18",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-18T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-03-29",
@@ -1452,7 +1772,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-18",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-18T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-03-30",
@@ -1465,7 +1793,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-18",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-18T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2027-01-01",
@@ -1478,7 +1814,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-19",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-19T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-19",
@@ -1491,7 +1835,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-19",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-19T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-21",
@@ -1504,7 +1856,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-19",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-19T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-25",
@@ -1517,7 +1877,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-19",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-19T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-26",
@@ -1530,7 +1898,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-19",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-19T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-03-29",
@@ -1543,7 +1919,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-19",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-19T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-03-30",
@@ -1556,7 +1940,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-19",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-19T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2027-01-01",
@@ -1912,7 +2304,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-21",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-21T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-21",
@@ -2055,7 +2455,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-21",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-21T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-26",
@@ -2232,7 +2640,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-21",
           "type": "climbing",
-          "removed": true
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-21T18:00:00.000Z",
+          "removed": true,
+          "removedAt": "2026-10-21T19:00:00.000Z"
         }
       ],
       "date": "2026-10-21",
@@ -2409,7 +2825,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-21",
           "type": "climbing",
-          "removed": true
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-21T18:00:00.000Z",
+          "removed": true,
+          "removedAt": "2026-10-21T19:00:00.000Z"
         }
       ],
       "date": "2026-10-26",
@@ -2586,7 +3010,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-21",
           "type": "cardio",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": "run",
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-21T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-21",
@@ -2763,7 +3195,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-21",
           "type": "cardio",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": "run",
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-21T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-26",
@@ -2940,7 +3380,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-25",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-25T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-21",
@@ -3083,7 +3531,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-25",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-25T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-26",
@@ -3260,7 +3716,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-26",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-26T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-21",
@@ -3437,7 +3901,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-26",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-26T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-26",
@@ -3580,7 +4052,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-18",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-18T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-21",
@@ -3757,7 +4237,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-18",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-18T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-26",
@@ -3934,7 +4422,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-19",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-19T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-21",
@@ -4077,7 +4573,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-19",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-19T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-26",
@@ -4462,7 +4966,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-21",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-21T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-21",
@@ -4573,7 +5085,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-21",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-21T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-26",
@@ -4684,7 +5204,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-21",
           "type": "climbing",
-          "removed": true
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-21T18:00:00.000Z",
+          "removed": true,
+          "removedAt": "2026-10-21T19:00:00.000Z"
         }
       ],
       "date": "2026-10-21",
@@ -4795,7 +5323,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-21",
           "type": "climbing",
-          "removed": true
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-21T18:00:00.000Z",
+          "removed": true,
+          "removedAt": "2026-10-21T19:00:00.000Z"
         }
       ],
       "date": "2026-10-26",
@@ -4906,7 +5442,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-21",
           "type": "cardio",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": "run",
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-21T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-21",
@@ -5017,7 +5561,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-21",
           "type": "cardio",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": "run",
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-21T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-26",
@@ -5128,7 +5680,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-25",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-25T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-21",
@@ -5239,7 +5799,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-25",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-25T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-26",
@@ -5350,7 +5918,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-26",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-26T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-21",
@@ -5461,7 +6037,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-26",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-26T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-26",
@@ -5572,7 +6156,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-18",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-18T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-21",
@@ -5683,7 +6275,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-18",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-18T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-26",
@@ -5794,7 +6394,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-19",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-19T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-21",
@@ -5905,7 +6513,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-19",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-19T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-26",
@@ -6224,7 +6840,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-21",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-21T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-21",
@@ -6335,7 +6959,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-21",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-21T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-26",
@@ -6446,7 +7078,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-21",
           "type": "climbing",
-          "removed": true
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-21T18:00:00.000Z",
+          "removed": true,
+          "removedAt": "2026-10-21T19:00:00.000Z"
         }
       ],
       "date": "2026-10-21",
@@ -6557,7 +7197,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-21",
           "type": "climbing",
-          "removed": true
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-21T18:00:00.000Z",
+          "removed": true,
+          "removedAt": "2026-10-21T19:00:00.000Z"
         }
       ],
       "date": "2026-10-26",
@@ -6668,7 +7316,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-21",
           "type": "cardio",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": "run",
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-21T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-21",
@@ -6779,7 +7435,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-21",
           "type": "cardio",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": "run",
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-21T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-26",
@@ -6890,7 +7554,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-25",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-25T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-21",
@@ -7001,7 +7673,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-25",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-25T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-26",
@@ -7112,7 +7792,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-26",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-26T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-21",
@@ -7223,7 +7911,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-26",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-26T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-26",
@@ -7334,7 +8030,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-18",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-18T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-21",
@@ -7445,7 +8149,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-18",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-18T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-26",
@@ -7556,7 +8268,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-19",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-19T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-21",
@@ -7667,7 +8387,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-19",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-19T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-26",
@@ -8756,7 +9484,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-21",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-21T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-21",
@@ -9235,7 +9971,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-21",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-21T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-26",
@@ -9731,7 +10475,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-21",
           "type": "climbing",
-          "removed": true
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-21T18:00:00.000Z",
+          "removed": true,
+          "removedAt": "2026-10-21T19:00:00.000Z"
         }
       ],
       "date": "2026-10-21",
@@ -10227,7 +10979,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-21",
           "type": "climbing",
-          "removed": true
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-21T18:00:00.000Z",
+          "removed": true,
+          "removedAt": "2026-10-21T19:00:00.000Z"
         }
       ],
       "date": "2026-10-26",
@@ -10723,7 +11483,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-21",
           "type": "cardio",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": "run",
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-21T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-21",
@@ -11219,7 +11987,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-21",
           "type": "cardio",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": "run",
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-21T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-26",
@@ -11715,7 +12491,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-25",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-25T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-21",
@@ -12194,7 +12978,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-25",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-25T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-26",
@@ -12690,7 +13482,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-26",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-26T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-21",
@@ -13186,7 +13986,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-26",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-26T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-26",
@@ -13665,7 +14473,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-18",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-18T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-21",
@@ -14161,7 +14977,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-18",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-18T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-26",
@@ -14657,7 +15481,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-19",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-19T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-21",
@@ -15136,7 +15968,15 @@
           "id": "00000000-0000-7000-8000-000000003000",
           "date": "2026-10-19",
           "type": "climbing",
-          "removed": false
+          "durationMin": 60,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null,
+          "fieldsAt": "2026-10-19T18:00:00.000Z",
+          "removed": false,
+          "removedAt": null
         }
       ],
       "date": "2026-10-26",

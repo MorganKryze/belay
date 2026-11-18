@@ -2,24 +2,22 @@ import BelayCore
 import SwiftUI
 
 /// Compléments: today's supplements, one tap each to tick or untick the day's box (R20). Creatine
-/// counts the days of its course; Belay never advises a dose. The list itself is set on the web
-/// until Réglages comes to the phone (R4).
+/// counts the days of its course; Belay never advises a dose. « Gérer ma liste » leads to Mes
+/// compléments, where the list itself is set, and so does the empty state.
 struct SupplementsView: View {
     let corps: CorpsModel
+    /// Pushes Mes compléments on this stack.
+    let open: (Route) -> Void
 
     var body: some View {
         List {
             if corps.supplements.isEmpty {
                 Section {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Pas encore de complément", tableName: "Entries")
-                            .font(.body.weight(.semibold))
-                            .foregroundStyle(.ink)
-                        Text("Ta liste se règle sur le web pour l’instant.", tableName: "Entries")
-                            .font(.subheadline)
-                            .foregroundStyle(.muted)
-                    }
-                    .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
+                    Text("Pas encore de complément", tableName: "Entries")
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(.ink)
+                        .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
+                    manageRow
                 }
                 .listRowBackground(Color.surface)
             } else {
@@ -42,11 +40,29 @@ struct SupplementsView: View {
                 }
                 .headerProminence(.increased)
                 .listRowBackground(Color.surface)
+                Section { manageRow }.listRowBackground(Color.surface)
             }
         }
         .belayList()
         .navigationTitle(Text("Compléments", tableName: "Entries"))
         .largeTitleOnly()
+    }
+
+    private var manageRow: some View {
+        Button { open(.manageSupplements) } label: {
+            HStack {
+                Text("Gérer ma liste", tableName: "Entries").foregroundStyle(.ink)
+                Spacer(minLength: 8)
+                Image(systemName: "chevron.forward")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(.muted)
+                    .accessibilityHidden(true)
+            }
+            .frame(minHeight: 52)
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("supplements-manage")
     }
 }
 

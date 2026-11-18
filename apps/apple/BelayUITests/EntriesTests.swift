@@ -165,11 +165,15 @@ final class EntriesTests: XCTestCase {
         XCTAssertEqual(element(app, "today.supplements").label, "Compléments, 1 sur 2", "written not taken")
     }
 
-    /// R4: an empty list says it is set on the web for now.
-    func testEmptySupplementsSaysWeb() {
+    /// A37: an empty list leads to Mes compléments, no longer to the web.
+    func testEmptySupplementsLeadsToTheList() {
         let app = open("Compléments", row: "today.supplements", fixture: "bodyEarly")
         XCTAssertTrue(app.staticTexts["Pas encore de complément"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["Ta liste se règle sur le web pour l’instant."].exists)
+        XCTAssertFalse(app.staticTexts["Ta liste se règle sur le web pour l’instant."].exists)
+        let manage = element(app, "supplements-manage")
+        XCTAssertTrue(manage.exists)
+        manage.tap()
+        XCTAssertTrue(app.navigationBars["Mes compléments"].waitForExistence(timeout: 5), "Mes compléments opens")
     }
 
     /// CO11, CO33: Corps's rows and Accueil's open the native screens.

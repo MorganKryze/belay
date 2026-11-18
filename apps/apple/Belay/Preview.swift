@@ -54,15 +54,18 @@ struct SessionPreview: View {
             }
             Section {
                 ForEach(next.plan) { exercise in
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(exercise.name).font(.body.weight(.medium)).foregroundStyle(.ink)
-                        Text(SessionText.target(exercise))
-                            .font(.subheadline)
-                            .foregroundStyle(.muted)
-                            .monospacedDigit()
+                    NavigationLink(value: Route.exercise(id: exercise.exerciseId)) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(exercise.name).font(.body.weight(.medium)).foregroundStyle(.ink)
+                            Text(SessionText.target(exercise))
+                                .font(.subheadline)
+                                .foregroundStyle(.muted)
+                                .monospacedDigit()
+                        }
+                        .padding(.vertical, 3)
+                        .accessibilityElement(children: .combine)
                     }
-                    .padding(.vertical, 3)
-                    .accessibilityElement(children: .combine)
+                    .accessibilityIdentifier("plan.\(exercise.exerciseId)")
                 }
                 Text("Le programme se modifie sur ordinateur.")
                     .font(.footnote)

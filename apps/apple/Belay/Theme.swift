@@ -47,9 +47,8 @@ extension View {
     /// Native inset grouped list on the wall, with the system's scroll edge under the bars.
     func belayList(edge: ScrollEdgeEffectStyle = .soft) -> some View {
         listStyle(.insetGrouped)
-            // A list that fits holds still. Its bounce read as a scroll: the tab bar shrank on the
-            // pull and grew back on the spring, again at every touch, on a screen with nothing more
-            // to show.
+            // A list that fits holds still: a bounce on a screen with nothing more to show reads
+            // as a scroll.
             .scrollBounceBehavior(.basedOnSize)
             .scrollContentBackground(.hidden)
             .background { Wall() }
@@ -70,6 +69,16 @@ extension View {
             }
         }
         .scrollEdgeEffectHidden(true, for: .top)
+    }
+
+    /// The wall over the status bar while a sheet is up: a page with `largeTitleOnly` runs its
+    /// content to the top, and the large sheet leaves that strip of it in sight above its edge.
+    func wallUnderSheet(_ presented: Bool) -> some View {
+        overlay(alignment: .top) {
+            if presented {
+                Wall().frame(height: 0).ignoresSafeArea(edges: .top).accessibilityHidden(true)
+            }
+        }
     }
 
     /// The subtitle under a large title, in the toolbar's own slot: `navigationSubtitle` paints lighter

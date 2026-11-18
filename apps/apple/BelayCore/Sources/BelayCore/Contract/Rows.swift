@@ -203,19 +203,49 @@ public struct ProgramSlotRow: Codable, Sendable, Equatable {
   public var removedAt: String?
 }
 
-/// An activity, only what the plan reads: a climbing day leaves session C's climbing rule out.
+/// An activity: its day and block written together at `fieldsAt`, its removal on its own. A
+/// climbing day leaves session C's climbing rule out.
 public struct ActivityRow: Codable, Sendable, Equatable {
   public var id: String
   /// The local day, `YYYY-MM-DD`.
   public var date: String
   /// `cardio` or `climbing`.
   public var kind: String
+  public var durationMin: Int
+  public var cardioType: String?
+  public var climbStyle: String?
+  public var climbRuns: Int?
+  public var climbGrade: String?
+  public var climbColor: String?
+  public var fieldsAt: String
   public var removed: Bool
+  public var removedAt: String?
 
   private enum CodingKeys: String, CodingKey {
     case id, date
     case kind = "type"
-    case removed
+    case durationMin, cardioType, climbStyle, climbRuns, climbGrade, climbColor, fieldsAt
+    case removed, removedAt
+  }
+
+  /// Its block, as a change writes it.
+  public var fields: ActivityFields {
+    ActivityFields(
+      type: kind, durationMin: durationMin, cardioType: cardioType, climbStyle: climbStyle,
+      climbRuns: climbRuns, climbGrade: climbGrade, climbColor: climbColor)
+  }
+}
+
+/// A day's steps; nil: deleted, the day kept so other devices learn of it.
+public struct StepsRow: Codable, Sendable, Equatable {
+  public var date: String
+  public var steps: Int?
+  public var stepsAt: String?
+
+  public init(date: String, steps: Int?, stepsAt: String?) {
+    self.date = date
+    self.steps = steps
+    self.stepsAt = stepsAt
   }
 }
 

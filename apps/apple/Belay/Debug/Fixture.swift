@@ -1,4 +1,5 @@
 #if DEBUG
+import AVFoundation
 import BelayCore
 import Foundation
 import SwiftUI
@@ -40,9 +41,33 @@ import Synchronization
 /// `supplements` as `bodyUsual` with five weeks of waists, a full profile, and creatine ticked
 /// every day of the last 9; `trend` as `supplements` with creatine ticked every day of the last
 /// 23, a « Semaine allégée » from 19 days back and a « Note · voyage » 9 days back.
+///
+/// Réglages' modes: `profileEmpty` and `supplementsEmpty` with no profile and no supplement;
+/// `refused` with one change of each new kind (the height, the range, a supplement « Magnésium »,
+/// today's activity and steps) refused by the server; `pending0`, `pending1` and `pending2` with
+/// that many changes waiting to be sent; `queueUnreadable` as `pending2`, its queue unreadable.
+///
+/// Accueil's « Activité » modes: `activityNone` with nothing logged, `activityOne` with a climb of
+/// 1 h 30 today, `activityMany` with that climb and 8 437 steps typed today; `stepsOff` with Santé on
+/// and its steps import off, `stepsNone` with both on and no steps, `stepsActivity` as `stepsNone`
+/// with the climb of `activityOne`. With `-BelayHealth allowed` Santé holds 8 437 steps today,
+/// which the import brings in after the first sync.
+///
+/// The tools' modes: `tools` with a full profile, a week of weigh-ins around 80 kg and a waist of
+/// 84,5 cm two days ago, for the fields a tool opens on; `toolsEmpty` with none of them.
+///
+/// The instance serves loops in every mode: each one a short video made on the phone, sent 3 s
+/// after it is asked, since no media ships with the app. `loopLoading` never answers for one, and
+/// `loopFailed` answers each with a 404 after the same wait, `loopBroken` with a body no player reads.
+/// `mediaStale` keeps a session from before the instance said it serves loops: `/api/me` says it does.
 enum Fixture {
     nonisolated fileprivate static let origin = "https://belay.example"
     nonisolated fileprivate static let userId = "fixture"
+    /// Where the fixture's account keeps its loops, every account's beneath it.
+    nonisolated static let loopsFolder = URL.cachesDirectory.appending(path: "BelayFixture/Loops", directoryHint: .isDirectory)
+
+    /// `queueUnreadable`: Réglages cannot read what waits to be sent, as when the store fails.
+    static var queueUnreadable: Bool { UserDefaults.standard.string(forKey: "BelayFixture") == "queueUnreadable" }
 
     static func account() -> AccountModel? {
         guard let mode = UserDefaults.standard.string(forKey: "BelayFixture") else { return nil }
@@ -57,6 +82,8 @@ enum Fixture {
             if mode != "keep", FileManager.default.fileExists(atPath: folder.path) {
                 try FileManager.default.removeItem(at: folder)
             }
+            // A choice made by an earlier test stays for `keep` only; a launch argument still wins.
+            if mode != "keep" { DevicePrefs.keys.forEach(UserDefaults.standard.removeObject(forKey:)) }
             if mode == "past" {
                 let store = try AccountStore.open(userId: userId, origin: url, in: folder)
                 let model = TrainingModel(store: store, didWrite: {}, now: Date.init, timeZone: .current)
@@ -95,19 +122,23 @@ enum Fixture {
             }
             defaults.set(origin, forKey: StoredInstance.key)
             try session.keep(origin: origin, token: "fixture-token")
-            session.remember(userId: userId, displayName: "Ada")
+            session.remember(userId: userId, displayName: "Ada", media: mode != "mediaStale")
         } catch {
             preconditionFailure("the fixture did not set up: \(error)")
         }
         let health = UserDefaults.standard.string(forKey: "BelayHealth")
-        let client = FixtureClient(refusesSync: mode == "expired", answersSync: health == "allowed")
+        let client = FixtureClient(
+            refusesSync: mode == "expired", answersSync: health == "allowed", loops: FixtureLoops(mode: mode))
+        let loops = loopsFolder
         guard let health else {
-            return AccountModel(secrets: secrets, http: client, sheet: FixtureSheet(), defaults: defaults, storeFolder: folder)
+            return AccountModel(
+                secrets: secrets, http: client, sheet: FixtureSheet(), defaults: defaults, storeFolder: folder,
+                loopsFolder: loops)
         }
         guard health == "allowed" || health == "refused" else { preconditionFailure("-BelayHealth does not read: \(health)") }
         return AccountModel(
             secrets: secrets, http: client, sheet: FixtureSheet(), defaults: defaults, storeFolder: folder,
-            health: FixtureHealth(allowed: health == "allowed"))
+            loopsFolder: loops, health: FixtureHealth(allowed: health == "allowed"))
     }
 
     private static let openModes: Set = [
@@ -121,7 +152,9 @@ enum Fixture {
 
     private static let bodyModes: Set = [
         "bodyUsual", "bodyOutOfRange", "bodyEarly", "bodyFirst", "healthCard", "weighedFromHealth", "measures", "intake",
-        "supplements", "trend",
+        "supplements", "trend", "tools", "toolsEmpty", "profileEmpty", "supplementsEmpty", "refused", "pending0",
+        "pending1", "pending2", "queueUnreadable", "activityNone", "activityOne", "activityMany", "stepsOff",
+        "stepsNone", "stepsActivity",
     ]
 
     /// The clock `-BelayNow` sets: that local time at launch, running on from there.
@@ -280,6 +313,17 @@ enum Fixture {
                         neck: week == 4 ? .set(38) : .keep, hip: week == 4 ? .set(98) : .keep)
                 }
             }
+        case "tools":
+            for back in 0..<7 {
+                try actions.weigh(date: addDays(today, -back), kg: tenth(80 + 0.1 * Double(back % 3)))
+            }
+            try actions.measure(date: addDays(today, -2), waist: .set(84.5), neck: .clear, hip: .clear)
+            var answer = emptyAnswer
+            answer["profile"] = [
+                "formula": "male", "formulaAt": "2026-01-01T00:00:00.000Z", "birthYear": 1990,
+                "birthYearAt": "2026-01-01T00:00:00.000Z", "heightCm": 180, "heightAt": "2026-01-01T00:00:00.000Z",
+            ]
+            try serve(answer, to: store, active: true)
         case "bodyOutOfRange":
             for back in 0..<35 {
                 try actions.weigh(date: addDays(today, -back), kg: tenth(80.2 - 0.1 * Double(back / 5)))
@@ -287,6 +331,43 @@ enum Fixture {
         case "bodyEarly":
             for (back, kg) in [(1, 79.8), (2, 79.9), (3, 80.0)] {
                 try actions.weigh(date: addDays(today, -back), kg: kg)
+            }
+        case "refused":
+            // One change of each kind the phone now writes, all refused by the server.
+            try actions.setProfile(.height, .set(172))
+            try actions.setTarget(minPct: 0.4, maxPct: 0.8)
+            try actions.addSupplement(id: "00000000-0000-7000-8000-0000000000d3", name: "Magnésium")
+            try actions.logActivity(
+                ActivityInput(
+                    id: "00000000-0000-7000-8000-0000000000f1", date: today,
+                    fields: ActivityFields(type: "climbing", durationMin: 90, climbStyle: "boulder")))
+            try actions.writeSteps(date: today, value: 8_437, own: true)
+            let sent = try store.outbox(limit: nil)
+            var answer = emptyAnswer
+            answer["rejected"] = sent.indices.map { ["index": $0, "reason": "refused"] }
+            let data = try JSONSerialization.data(withJSONObject: answer)
+            try store.applyServer(sent: sent, response: JSONDecoder().decode(SyncResponse.self, from: data))
+        case "pending1", "pending2", "queueUnreadable":
+            // Weigh-ins the queue still holds, the sync never reaching the instance.
+            for back in 0..<(mode == "pending1" ? 1 : 2) {
+                try actions.weigh(date: addDays(today, -back), kg: 80)
+            }
+        case "activityOne", "activityMany":
+            try actions.logActivity(
+                ActivityInput(
+                    id: "00000000-0000-7000-8000-0000000000f2", date: today,
+                    fields: ActivityFields(type: "climbing", durationMin: 90, climbStyle: "boulder")))
+            if mode == "activityMany" { try actions.writeSteps(date: today, value: 8_437, own: false) }
+        case "stepsOff":
+            try store.setHealthOn(true, now: now)
+        case "stepsNone", "stepsActivity":
+            try store.setHealthOn(true, now: now)
+            try store.setHealthStepsOn(true)
+            if mode == "stepsActivity" {
+                try actions.logActivity(
+                    ActivityInput(
+                        id: "00000000-0000-7000-8000-0000000000f2", date: today,
+                        fields: ActivityFields(type: "climbing", durationMin: 90, climbStyle: "boulder")))
             }
         case "weighedFromHealth":
             try store.setHealthOn(true, now: now)
@@ -485,6 +566,30 @@ enum Fixture {
         try store.recordChanges([started] + sets + [ended], active: .keep)
     }
 
+    /// How many times the bench press's loop was asked of the instance, and how many loops the
+    /// phone keeps, for a test to read; nothing a person sees or hears.
+    struct LoopProbe: View {
+        var body: some View {
+            TimelineView(.periodic(from: .now, by: 0.5)) { _ in
+                let asked = FixtureLoops.asked.withLock { $0["/media/exercises/0025", default: 0] }
+                let walk = FileManager.default.enumerator(at: Fixture.loopsFolder, includingPropertiesForKeys: nil)
+                let kept = ((walk?.allObjects as? [URL]) ?? []).filter { $0.pathExtension == "mp4" }.count
+                ZStack {
+                    Color.clear
+                        .frame(width: 1, height: 1)
+                        .accessibilityElement()
+                        .accessibilityIdentifier("loop-asked")
+                        .accessibilityValue(String(asked))
+                    Color.clear
+                        .frame(width: 1, height: 1)
+                        .accessibilityElement()
+                        .accessibilityIdentifier("loops-kept")
+                        .accessibilityValue(String(kept))
+                }
+            }
+        }
+    }
+
     /// How many set changes of the open session wait in the queue, for a test to read; nothing a
     /// person sees or hears.
     struct QueueProbe: View {
@@ -604,6 +709,83 @@ enum Fixture {
         }
     }
 
+    /// The range and the height the store holds and how many range or profile changes wait in
+    /// the queue, for a test to read: « target=0.3-0.6 height=168 queued=0 ». Nothing a person
+    /// sees or hears.
+    struct ProfileProbe: View {
+        let store: AccountStore
+        @State private var line = ""
+
+        var body: some View {
+            Color.clear
+                .frame(width: 1, height: 1)
+                .accessibilityElement()
+                .accessibilityIdentifier("fixture-profile")
+                .accessibilityValue(line)
+                .task {
+                    let lines = store.observe { db in
+                        let body = try AccountStore.body(db)
+                        let queued = try AccountStore.outbox(db, limit: nil).filter { entry in
+                            switch entry.change {
+                            case .target, .profile: true
+                            default: false
+                            }
+                        }.count
+                        let target = body.target.map { "\($0.minPct)-\($0.maxPct)" } ?? "none"
+                        let height = body.profile?.heightCm.map(String.init) ?? "none"
+                        return "target=\(target) height=\(height) queued=\(queued)"
+                    }
+                    do {
+                        for try await value in lines { line = value }
+                    } catch {
+                        preconditionFailure("the fixture's profile is not followed: \(error)")
+                    }
+                }
+        }
+    }
+
+    /// `-BelayPull range|height|refusal`: as the app goes to the background, a sync lands what
+    /// another device wrote meanwhile, a range of 0,3 to 0,6 % or a height of 168 cm, or the
+    /// server refuses a weigh-in of today, so a test sees a pull land on a page left open.
+    struct PullOnLeave: View {
+        let store: AccountStore
+
+        var body: some View {
+            Color.clear
+                .frame(width: 1, height: 1)
+                .accessibilityHidden(true)
+                .onReceive(NotificationCenter.default.publisher(for: UIApplication.didEnterBackgroundNotification)) { _ in
+                    do {
+                        try pull()
+                    } catch {
+                        preconditionFailure("the fixture's pull did not land: \(error)")
+                    }
+                }
+        }
+
+        private func pull() throws {
+            let at = Instant.string(Fixture.now)
+            var answer = Fixture.emptyAnswer
+            var sent: [OutboxEntry] = []
+            switch UserDefaults.standard.string(forKey: "BelayPull") {
+            case "range": answer["target"] = ["minPct": 0.3, "maxPct": 0.6, "at": at]
+            case "height":
+                answer["profile"] = [
+                    "formula": "male", "formulaAt": "2026-01-01T00:00:00.000Z", "birthYear": 1990,
+                    "birthYearAt": "2026-01-01T00:00:00.000Z", "heightCm": 168, "heightAt": at,
+                ]
+            case "refusal":
+                let actions = BodyActions(store: store, now: { Fixture.now }, timeZone: .current)
+                try actions.weigh(date: toISODate(Fixture.now, timeZone: .current), kg: 81)
+                sent = try store.outbox(limit: nil)
+                answer["rejected"] = sent.indices.map { ["index": $0, "reason": "refused"] }
+            default: return
+            }
+            let data = try JSONSerialization.data(withJSONObject: answer)
+            try store.applyServer(sent: sent, response: JSONDecoder().decode(SyncResponse.self, from: data))
+        }
+    }
+
     /// Whether `-BelayContrast increased` asks for increased contrast, which a test cannot set.
     static var contrastIncreased: Bool { UserDefaults.standard.string(forKey: "BelayContrast") == "increased" }
 
@@ -634,8 +816,17 @@ private nonisolated final class FixtureSecrets: SecretStore {
 private nonisolated struct FixtureClient: HTTPClient {
     let refusesSync: Bool
     let answersSync: Bool
+    let loops: FixtureLoops
 
     func send(_ request: URLRequest) async throws -> (Data, HTTPURLResponse) {
+        if let url = request.url, url.path().hasPrefix("/media/exercises/") {
+            let (data, status) = try await loops.answer(url.path())
+            // As the instance types it: only an mp4 is kept.
+            guard let response = HTTPURLResponse(
+                url: url, statusCode: status, httpVersion: nil, headerFields: ["Content-Type": "video/mp4"])
+            else { throw URLError(.badURL) }
+            return (data, response)
+        }
         let answer: String
         var status = 200
         switch request.url?.path() {
@@ -646,7 +837,7 @@ private nonisolated struct FixtureClient: HTTPClient {
             answer = #"{"cursor":"fixture","workouts":[],"sets":[],"activities":[],"rejected":[],"hasMore":false}"#
         case "/api/instance": answer = #"{"app":"belay","api":1,"origin":"\#(Fixture.origin)"}"#
         case "/auth/native/token": answer = #"{"token":"fixture-token"}"#
-        case "/api/me": answer = #"{"id":"\#(Fixture.userId)","displayName":"Ada"}"#
+        case "/api/me": answer = #"{"id":"\#(Fixture.userId)","displayName":"Ada","media":true}"#
         case "/auth/logout": answer = "{}"
         default: throw URLError(.notConnectedToInternet)
         }
@@ -654,6 +845,62 @@ private nonisolated struct FixtureClient: HTTPClient {
               let response = HTTPURLResponse(url: url, statusCode: status, httpVersion: nil, headerFields: nil)
         else { throw URLError(.badURL) }
         return (Data(answer.utf8), response)
+    }
+}
+
+/// The fixture instance's loops: what each request gets, and how many times each path was asked.
+nonisolated final class FixtureLoops: Sendable {
+    /// Read by the probe: a test counts the requests for the bench press's loop.
+    static let asked = Mutex<[String: Int]>([:])
+    private let mode: String
+
+    init(mode: String) { self.mode = mode }
+
+    func answer(_ path: String) async throws -> (Data, Int) {
+        Self.asked.withLock { $0[path, default: 0] += 1 }
+        if mode == "loopLoading" { try await Task.sleep(for: .seconds(3_600)) }
+        try await Task.sleep(for: .seconds(3))
+        if mode == "loopFailed" { return (Data(), 404) }
+        if mode == "loopBroken" { return (Data("not a video".utf8), 200) }
+        return (try await Self.video.value, 200)
+    }
+
+    /// Made once per launch, however many rows ask at once.
+    private static let video = Task { try await make() }
+
+    /// Eight frames of a square fading from grey to ink.
+    private static func make() async throws -> Data {
+        let url = FileManager.default.temporaryDirectory.appending(path: "fixture-loop.mp4")
+        if FileManager.default.fileExists(atPath: url.path) { try FileManager.default.removeItem(at: url) }
+        let side = 96
+        let writer = try AVAssetWriter(outputURL: url, fileType: .mp4)
+        let input = AVAssetWriterInput(
+            mediaType: .video,
+            outputSettings: [AVVideoCodecKey: AVVideoCodecType.h264, AVVideoWidthKey: side, AVVideoHeightKey: side])
+        let adaptor = AVAssetWriterInputPixelBufferAdaptor(
+            assetWriterInput: input,
+            sourcePixelBufferAttributes: [
+                kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
+                kCVPixelBufferWidthKey as String: side, kCVPixelBufferHeightKey as String: side,
+            ])
+        writer.add(input)
+        writer.startWriting()
+        writer.startSession(atSourceTime: .zero)
+        for frame in 0..<8 {
+            while !input.isReadyForMoreMediaData { try await Task.sleep(for: .milliseconds(10)) }
+            var buffer: CVPixelBuffer?
+            CVPixelBufferCreate(nil, side, side, kCVPixelFormatType_32BGRA, nil, &buffer)
+            guard let buffer else { throw URLError(.cannotCreateFile) }
+            CVPixelBufferLockBaseAddress(buffer, [])
+            let shade = UInt8(200 - frame * 20)
+            memset(CVPixelBufferGetBaseAddress(buffer), Int32(shade), CVPixelBufferGetDataSize(buffer))
+            CVPixelBufferUnlockBaseAddress(buffer, [])
+            adaptor.append(buffer, withPresentationTime: CMTime(value: CMTimeValue(frame), timescale: 4))
+        }
+        input.markAsFinished()
+        await writer.finishWriting()
+        guard writer.status == .completed else { throw writer.error ?? URLError(.cannotCreateFile) }
+        return try Data(contentsOf: url)
     }
 }
 
@@ -691,6 +938,13 @@ private nonisolated struct FixtureHealth: HealthWriting {
         let morning = Calendar.current.startOfDay(for: now).addingTimeInterval(7 * 3_600)
         let sample = HealthSample(startedAt: Int64(min(morning, now).timeIntervalSince1970 * 1_000), kg: 79.9)
         return (allowed && anchor == nil ? [sample] : [], "fixture-health")
+    }
+
+    /// Allowed, today holds 8 437 steps and the days before none; refused, iOS answers as an empty
+    /// Health.
+    func readDaySteps(days: [String], timeZone: TimeZone) async -> [String: Double?]? {
+        let today = toISODate(Fixture.now, timeZone: timeZone)
+        return Dictionary(uniqueKeysWithValues: days.map { ($0, allowed && $0 == today ? 8_437 : nil) })
     }
 }
 

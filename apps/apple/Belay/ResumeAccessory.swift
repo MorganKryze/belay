@@ -1,7 +1,6 @@
 import SwiftUI
 
-/// The running session, closed: it sits above the tab bar, moves beside the minimised tab button,
-/// and a tap opens the cover again.
+/// The running session, closed: it sits above the tab bar, and a tap opens the cover again.
 struct ResumeAccessory: View {
     let session: OpenSession
     let action: () -> Void

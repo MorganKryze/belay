@@ -226,14 +226,16 @@ final class CorpsTests: XCTestCase {
         XCTAssertFalse(again.staticTexts["Tes pesées de Santé"].exists, "never again")
     }
 
-    /// The Santé section of Réglages, reached from Accueil's avatar.
+    /// The Santé section of Réglages, reached from Accueil's avatar. « Sur cet iPhone » comes after
+    /// the display rows (A26), so the list scrolls to it.
     private func reglages(_ app: XCUIApplication) -> (health: XCUIElement, imports: XCUIElement) {
-        app.tabBars.firstMatch.buttons["Accueil"].tap()
+        app.tab("Accueil")
         let settings = app.buttons["settings"]
         XCTAssertTrue(settings.waitForExistence(timeout: 5))
         settings.tap()
+        XCTAssertTrue(app.navigationBars["Réglages"].waitForExistence(timeout: 5), "Réglages opens")
         let health = app.switches["health-switch"]
-        XCTAssertTrue(health.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.swipeUpUntil(health), "« Sur cet iPhone » is reached")
         return (health, app.switches["health-import-switch"])
     }
 
@@ -265,7 +267,7 @@ final class CorpsTests: XCTestCase {
         accept.tap()
         XCTAssertTrue(
             app.staticTexts[
-                "Santé n’autorise pas Belay à y écrire tes séances. Autorise-le dans l’app Santé, puis réessaie."
+                "Pour importer tes pesées, Belay a besoin de l’accès à Santé. Autorise-le dans l’app Santé, puis réessaie."
             ].waitForExistence(timeout: 5), "the card says why")
         XCTAssertTrue(app.staticTexts["Tes pesées de Santé"].exists, "the card stays")
         XCTAssertTrue(accept.isHittable, "to try again")

@@ -6,6 +6,8 @@ import SwiftUI
 /// ✓ at the foot, or a pull down; either saves the note and settles the effort.
 struct SummaryView: View {
     let summary: SessionSummary
+    /// Réglages › Séances › Volume.
+    @AppStorage(DevicePrefs.sessionVolume.key) private var volume = DevicePrefs.sessionVolume.initial
     let giveEffort: (Int?) -> Void
     /// Saves and closes; false when the save failed and the summary stays.
     let close: (String) -> Bool
@@ -45,7 +47,9 @@ struct SummaryView: View {
                 ) {
                     tile("Durée", Self.duration(summary.duration)).accessibilityIdentifier("summary-tile-duration")
                     tile("Séries", "\(summary.workSets)").accessibilityIdentifier("summary-sets")
-                    tile("Volume", "\(Self.volume(summary.volumeKg))\u{202F}kg").accessibilityIdentifier("summary-volume")
+                    if volume == .shown {
+                        tile("Volume", "\(Self.volume(summary.volumeKg))\u{202F}kg").accessibilityIdentifier("summary-volume")
+                    }
                     tile("Records", "\(summary.records.count)")
                 }
                 ForEach(summary.records) { record in
