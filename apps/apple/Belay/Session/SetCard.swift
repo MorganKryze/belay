@@ -74,11 +74,15 @@ struct SetCard: View {
     }
 
     /// A load typed with a comma or a point in the unit shown, within the contract's bounds once
-    /// converted; anything else is let go. The load as shown, typed again, keeps its exact kilos.
+    /// converted; anything outside them is let go. Kilos are taken as typed, so one off the grid
+    /// reaches the store and is refused aloud, never rounded. Pounds go through the shared rule:
+    /// the load as shown, typed again, keeps its exact kilos.
     private func take(_ text: String) {
-        guard let value = SetText.parseKg(text),
-              let kg = loadKgFrom(value, SetText.unit, prefillKg: due.weightKg)
-        else { return }
+        guard let value = SetText.parseKg(text) else { return }
+        let typedKg: Double? = SetText.unit == .kg
+            ? ((Bounds.setKgMin...Bounds.setKgMax).contains(value) ? value : nil)
+            : loadKgFrom(value, SetText.unit, prefillKg: due.weightKg)
+        guard let kg = typedKg else { return }
         actions.run { try $0.choose(weightKg: kg, count: nil) }
     }
 
