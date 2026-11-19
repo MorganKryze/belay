@@ -39441,5 +39441,2179 @@
         "result": []
       }
     ]
+  },
+  "units": {
+    "kgPerLb": 0.45359237,
+    "incrementLb": {
+      "barbell": 5,
+      "dumbbell": 5,
+      "machine": 10,
+      "cable": 5,
+      "bodyweight": 5,
+      "other": 2
+    },
+    "poundPlates": {
+      "barLb": 45,
+      "platesLb": [
+        45,
+        35,
+        25,
+        10,
+        5,
+        2.5
+      ]
+    },
+    "conversions": [
+      {
+        "fn": "kgToLb",
+        "value": 0,
+        "unit": "lb",
+        "result": 0
+      },
+      {
+        "fn": "lbToKg",
+        "value": 0,
+        "unit": "lb",
+        "result": 0
+      },
+      {
+        "fn": "kgFromLoad",
+        "value": 0,
+        "unit": "kg",
+        "result": 0
+      },
+      {
+        "fn": "kgFromLoad",
+        "value": 0,
+        "unit": "lb",
+        "result": 0
+      },
+      {
+        "fn": "loadFromKg",
+        "value": 0,
+        "unit": "kg",
+        "result": 0
+      },
+      {
+        "fn": "loadFromKg",
+        "value": 0,
+        "unit": "lb",
+        "result": 0
+      },
+      {
+        "fn": "kgFromWeighing",
+        "value": 0,
+        "unit": "kg",
+        "result": 0
+      },
+      {
+        "fn": "kgFromWeighing",
+        "value": 0,
+        "unit": "lb",
+        "result": 0
+      },
+      {
+        "fn": "weighingFromKg",
+        "value": 0,
+        "unit": "kg",
+        "result": 0
+      },
+      {
+        "fn": "weighingFromKg",
+        "value": 0,
+        "unit": "lb",
+        "result": 0
+      },
+      {
+        "fn": "kgToLb",
+        "value": 0.25,
+        "unit": "lb",
+        "result": 0.551155655462
+      },
+      {
+        "fn": "lbToKg",
+        "value": 0.25,
+        "unit": "lb",
+        "result": 0.1133980925
+      },
+      {
+        "fn": "kgFromLoad",
+        "value": 0.25,
+        "unit": "kg",
+        "result": 0.25
+      },
+      {
+        "fn": "kgFromLoad",
+        "value": 0.25,
+        "unit": "lb",
+        "result": 0
+      },
+      {
+        "fn": "loadFromKg",
+        "value": 0.25,
+        "unit": "kg",
+        "result": 0.25
+      },
+      {
+        "fn": "loadFromKg",
+        "value": 0.25,
+        "unit": "lb",
+        "result": 1
+      },
+      {
+        "fn": "kgFromWeighing",
+        "value": 0.25,
+        "unit": "kg",
+        "result": 0.25
+      },
+      {
+        "fn": "kgFromWeighing",
+        "value": 0.25,
+        "unit": "lb",
+        "result": 0.1
+      },
+      {
+        "fn": "weighingFromKg",
+        "value": 0.25,
+        "unit": "kg",
+        "result": 0.25
+      },
+      {
+        "fn": "weighingFromKg",
+        "value": 0.25,
+        "unit": "lb",
+        "result": 0.5
+      },
+      {
+        "fn": "kgToLb",
+        "value": 0.5,
+        "unit": "lb",
+        "result": 1.102311310924
+      },
+      {
+        "fn": "lbToKg",
+        "value": 0.5,
+        "unit": "lb",
+        "result": 0.226796185
+      },
+      {
+        "fn": "kgFromLoad",
+        "value": 0.5,
+        "unit": "kg",
+        "result": 0.5
+      },
+      {
+        "fn": "kgFromLoad",
+        "value": 0.5,
+        "unit": "lb",
+        "result": 0.5
+      },
+      {
+        "fn": "loadFromKg",
+        "value": 0.5,
+        "unit": "kg",
+        "result": 0.5
+      },
+      {
+        "fn": "loadFromKg",
+        "value": 0.5,
+        "unit": "lb",
+        "result": 1
+      },
+      {
+        "fn": "kgFromWeighing",
+        "value": 0.5,
+        "unit": "kg",
+        "result": 0.5
+      },
+      {
+        "fn": "kgFromWeighing",
+        "value": 0.5,
+        "unit": "lb",
+        "result": 0.2
+      },
+      {
+        "fn": "weighingFromKg",
+        "value": 0.5,
+        "unit": "kg",
+        "result": 0.5
+      },
+      {
+        "fn": "weighingFromKg",
+        "value": 0.5,
+        "unit": "lb",
+        "result": 1
+      },
+      {
+        "fn": "kgToLb",
+        "value": 0.551155655462,
+        "unit": "lb",
+        "result": 1.215090226191
+      },
+      {
+        "fn": "lbToKg",
+        "value": 0.551155655462,
+        "unit": "lb",
+        "result": 0.25
+      },
+      {
+        "fn": "kgFromLoad",
+        "value": 0.551155655462,
+        "unit": "kg",
+        "result": 0.551155655462
+      },
+      {
+        "fn": "kgFromLoad",
+        "value": 0.551155655462,
+        "unit": "lb",
+        "result": 0.5
+      },
+      {
+        "fn": "loadFromKg",
+        "value": 0.551155655462,
+        "unit": "kg",
+        "result": 0.551155655462
+      },
+      {
+        "fn": "loadFromKg",
+        "value": 0.551155655462,
+        "unit": "lb",
+        "result": 1
+      },
+      {
+        "fn": "kgFromWeighing",
+        "value": 0.551155655462,
+        "unit": "kg",
+        "result": 0.551155655462
+      },
+      {
+        "fn": "kgFromWeighing",
+        "value": 0.551155655462,
+        "unit": "lb",
+        "result": 0.2
+      },
+      {
+        "fn": "weighingFromKg",
+        "value": 0.551155655462,
+        "unit": "kg",
+        "result": 0.551155655462
+      },
+      {
+        "fn": "weighingFromKg",
+        "value": 0.551155655462,
+        "unit": "lb",
+        "result": 1.25
+      },
+      {
+        "fn": "kgToLb",
+        "value": 1,
+        "unit": "lb",
+        "result": 2.204622621849
+      },
+      {
+        "fn": "lbToKg",
+        "value": 1,
+        "unit": "lb",
+        "result": 0.45359237
+      },
+      {
+        "fn": "kgFromLoad",
+        "value": 1,
+        "unit": "kg",
+        "result": 1
+      },
+      {
+        "fn": "kgFromLoad",
+        "value": 1,
+        "unit": "lb",
+        "result": 0.5
+      },
+      {
+        "fn": "loadFromKg",
+        "value": 1,
+        "unit": "kg",
+        "result": 1
+      },
+      {
+        "fn": "loadFromKg",
+        "value": 1,
+        "unit": "lb",
+        "result": 2
+      },
+      {
+        "fn": "kgFromWeighing",
+        "value": 1,
+        "unit": "kg",
+        "result": 1
+      },
+      {
+        "fn": "kgFromWeighing",
+        "value": 1,
+        "unit": "lb",
+        "result": 0.5
+      },
+      {
+        "fn": "weighingFromKg",
+        "value": 1,
+        "unit": "kg",
+        "result": 1
+      },
+      {
+        "fn": "weighingFromKg",
+        "value": 1,
+        "unit": "lb",
+        "result": 2.25
+      },
+      {
+        "fn": "kgToLb",
+        "value": 20,
+        "unit": "lb",
+        "result": 44.092452436976
+      },
+      {
+        "fn": "lbToKg",
+        "value": 20,
+        "unit": "lb",
+        "result": 9.0718474
+      },
+      {
+        "fn": "kgFromLoad",
+        "value": 20,
+        "unit": "kg",
+        "result": 20
+      },
+      {
+        "fn": "kgFromLoad",
+        "value": 20,
+        "unit": "lb",
+        "result": 9
+      },
+      {
+        "fn": "loadFromKg",
+        "value": 20,
+        "unit": "kg",
+        "result": 20
+      },
+      {
+        "fn": "loadFromKg",
+        "value": 20,
+        "unit": "lb",
+        "result": 44
+      },
+      {
+        "fn": "kgFromWeighing",
+        "value": 20,
+        "unit": "kg",
+        "result": 20
+      },
+      {
+        "fn": "kgFromWeighing",
+        "value": 20,
+        "unit": "lb",
+        "result": 9.1
+      },
+      {
+        "fn": "weighingFromKg",
+        "value": 20,
+        "unit": "kg",
+        "result": 20
+      },
+      {
+        "fn": "weighingFromKg",
+        "value": 20,
+        "unit": "lb",
+        "result": 44
+      },
+      {
+        "fn": "kgToLb",
+        "value": 44,
+        "unit": "lb",
+        "result": 97.003395361346
+      },
+      {
+        "fn": "lbToKg",
+        "value": 44,
+        "unit": "lb",
+        "result": 19.95806428
+      },
+      {
+        "fn": "kgFromLoad",
+        "value": 44,
+        "unit": "kg",
+        "result": 44
+      },
+      {
+        "fn": "kgFromLoad",
+        "value": 44,
+        "unit": "lb",
+        "result": 20
+      },
+      {
+        "fn": "loadFromKg",
+        "value": 44,
+        "unit": "kg",
+        "result": 44
+      },
+      {
+        "fn": "loadFromKg",
+        "value": 44,
+        "unit": "lb",
+        "result": 97
+      },
+      {
+        "fn": "kgFromWeighing",
+        "value": 44,
+        "unit": "kg",
+        "result": 44
+      },
+      {
+        "fn": "kgFromWeighing",
+        "value": 44,
+        "unit": "lb",
+        "result": 20
+      },
+      {
+        "fn": "weighingFromKg",
+        "value": 44,
+        "unit": "kg",
+        "result": 44
+      },
+      {
+        "fn": "weighingFromKg",
+        "value": 44,
+        "unit": "lb",
+        "result": 97
+      },
+      {
+        "fn": "kgToLb",
+        "value": 44.092452436976,
+        "unit": "lb",
+        "result": 97.207218095348
+      },
+      {
+        "fn": "lbToKg",
+        "value": 44.092452436976,
+        "unit": "lb",
+        "result": 20
+      },
+      {
+        "fn": "kgFromLoad",
+        "value": 44.092452436976,
+        "unit": "kg",
+        "result": 44.092452436976
+      },
+      {
+        "fn": "kgFromLoad",
+        "value": 44.092452436976,
+        "unit": "lb",
+        "result": 20
+      },
+      {
+        "fn": "loadFromKg",
+        "value": 44.092452436976,
+        "unit": "kg",
+        "result": 44.092452436976
+      },
+      {
+        "fn": "loadFromKg",
+        "value": 44.092452436976,
+        "unit": "lb",
+        "result": 97
+      },
+      {
+        "fn": "kgFromWeighing",
+        "value": 44.092452436976,
+        "unit": "kg",
+        "result": 44.092452436976
+      },
+      {
+        "fn": "kgFromWeighing",
+        "value": 44.092452436976,
+        "unit": "lb",
+        "result": 20
+      },
+      {
+        "fn": "weighingFromKg",
+        "value": 44.092452436976,
+        "unit": "kg",
+        "result": 44.092452436976
+      },
+      {
+        "fn": "weighingFromKg",
+        "value": 44.092452436976,
+        "unit": "lb",
+        "result": 97.25
+      },
+      {
+        "fn": "kgToLb",
+        "value": 80.4,
+        "unit": "lb",
+        "result": 177.251658796642
+      },
+      {
+        "fn": "lbToKg",
+        "value": 80.4,
+        "unit": "lb",
+        "result": 36.468826548
+      },
+      {
+        "fn": "kgFromLoad",
+        "value": 80.4,
+        "unit": "kg",
+        "result": 80.4
+      },
+      {
+        "fn": "kgFromLoad",
+        "value": 80.4,
+        "unit": "lb",
+        "result": 36.25
+      },
+      {
+        "fn": "loadFromKg",
+        "value": 80.4,
+        "unit": "kg",
+        "result": 80.4
+      },
+      {
+        "fn": "loadFromKg",
+        "value": 80.4,
+        "unit": "lb",
+        "result": 177
+      },
+      {
+        "fn": "kgFromWeighing",
+        "value": 80.4,
+        "unit": "kg",
+        "result": 80.4
+      },
+      {
+        "fn": "kgFromWeighing",
+        "value": 80.4,
+        "unit": "lb",
+        "result": 36.5
+      },
+      {
+        "fn": "weighingFromKg",
+        "value": 80.4,
+        "unit": "kg",
+        "result": 80.4
+      },
+      {
+        "fn": "weighingFromKg",
+        "value": 80.4,
+        "unit": "lb",
+        "result": 177.25
+      },
+      {
+        "fn": "kgToLb",
+        "value": 99.75,
+        "unit": "lb",
+        "result": 219.911106529415
+      },
+      {
+        "fn": "lbToKg",
+        "value": 99.75,
+        "unit": "lb",
+        "result": 45.2458389075
+      },
+      {
+        "fn": "kgFromLoad",
+        "value": 99.75,
+        "unit": "kg",
+        "result": 99.75
+      },
+      {
+        "fn": "kgFromLoad",
+        "value": 99.75,
+        "unit": "lb",
+        "result": 45.25
+      },
+      {
+        "fn": "loadFromKg",
+        "value": 99.75,
+        "unit": "kg",
+        "result": 99.75
+      },
+      {
+        "fn": "loadFromKg",
+        "value": 99.75,
+        "unit": "lb",
+        "result": 220
+      },
+      {
+        "fn": "kgFromWeighing",
+        "value": 99.75,
+        "unit": "kg",
+        "result": 99.75
+      },
+      {
+        "fn": "kgFromWeighing",
+        "value": 99.75,
+        "unit": "lb",
+        "result": 45.2
+      },
+      {
+        "fn": "weighingFromKg",
+        "value": 99.75,
+        "unit": "kg",
+        "result": 99.75
+      },
+      {
+        "fn": "weighingFromKg",
+        "value": 99.75,
+        "unit": "lb",
+        "result": 220
+      },
+      {
+        "fn": "kgToLb",
+        "value": 100,
+        "unit": "lb",
+        "result": 220.462262184878
+      },
+      {
+        "fn": "lbToKg",
+        "value": 100,
+        "unit": "lb",
+        "result": 45.359237
+      },
+      {
+        "fn": "kgFromLoad",
+        "value": 100,
+        "unit": "kg",
+        "result": 100
+      },
+      {
+        "fn": "kgFromLoad",
+        "value": 100,
+        "unit": "lb",
+        "result": 45.25
+      },
+      {
+        "fn": "loadFromKg",
+        "value": 100,
+        "unit": "kg",
+        "result": 100
+      },
+      {
+        "fn": "loadFromKg",
+        "value": 100,
+        "unit": "lb",
+        "result": 220
+      },
+      {
+        "fn": "kgFromWeighing",
+        "value": 100,
+        "unit": "kg",
+        "result": 100
+      },
+      {
+        "fn": "kgFromWeighing",
+        "value": 100,
+        "unit": "lb",
+        "result": 45.4
+      },
+      {
+        "fn": "weighingFromKg",
+        "value": 100,
+        "unit": "kg",
+        "result": 100
+      },
+      {
+        "fn": "weighingFromKg",
+        "value": 100,
+        "unit": "lb",
+        "result": 220.5
+      },
+      {
+        "fn": "kgToLb",
+        "value": 102,
+        "unit": "lb",
+        "result": 224.871507428575
+      },
+      {
+        "fn": "lbToKg",
+        "value": 102,
+        "unit": "lb",
+        "result": 46.26642174
+      },
+      {
+        "fn": "kgFromLoad",
+        "value": 102,
+        "unit": "kg",
+        "result": 102
+      },
+      {
+        "fn": "kgFromLoad",
+        "value": 102,
+        "unit": "lb",
+        "result": 46.25
+      },
+      {
+        "fn": "loadFromKg",
+        "value": 102,
+        "unit": "kg",
+        "result": 102
+      },
+      {
+        "fn": "loadFromKg",
+        "value": 102,
+        "unit": "lb",
+        "result": 225
+      },
+      {
+        "fn": "kgFromWeighing",
+        "value": 102,
+        "unit": "kg",
+        "result": 102
+      },
+      {
+        "fn": "kgFromWeighing",
+        "value": 102,
+        "unit": "lb",
+        "result": 46.3
+      },
+      {
+        "fn": "weighingFromKg",
+        "value": 102,
+        "unit": "kg",
+        "result": 102
+      },
+      {
+        "fn": "weighingFromKg",
+        "value": 102,
+        "unit": "lb",
+        "result": 224.75
+      },
+      {
+        "fn": "kgToLb",
+        "value": 177.25,
+        "unit": "lb",
+        "result": 390.769359722695
+      },
+      {
+        "fn": "lbToKg",
+        "value": 177.25,
+        "unit": "lb",
+        "result": 80.3992475825
+      },
+      {
+        "fn": "kgFromLoad",
+        "value": 177.25,
+        "unit": "kg",
+        "result": 177.25
+      },
+      {
+        "fn": "kgFromLoad",
+        "value": 177.25,
+        "unit": "lb",
+        "result": 80.25
+      },
+      {
+        "fn": "loadFromKg",
+        "value": 177.25,
+        "unit": "kg",
+        "result": 177.25
+      },
+      {
+        "fn": "loadFromKg",
+        "value": 177.25,
+        "unit": "lb",
+        "result": 391
+      },
+      {
+        "fn": "kgFromWeighing",
+        "value": 177.25,
+        "unit": "kg",
+        "result": 177.25
+      },
+      {
+        "fn": "kgFromWeighing",
+        "value": 177.25,
+        "unit": "lb",
+        "result": 80.4
+      },
+      {
+        "fn": "weighingFromKg",
+        "value": 177.25,
+        "unit": "kg",
+        "result": 177.25
+      },
+      {
+        "fn": "weighingFromKg",
+        "value": 177.25,
+        "unit": "lb",
+        "result": 390.75
+      },
+      {
+        "fn": "kgToLb",
+        "value": 219.911106529415,
+        "unit": "lb",
+        "result": 484.821000250544
+      },
+      {
+        "fn": "lbToKg",
+        "value": 219.911106529415,
+        "unit": "lb",
+        "result": 99.75
+      },
+      {
+        "fn": "kgFromLoad",
+        "value": 219.911106529415,
+        "unit": "kg",
+        "result": 219.911106529415
+      },
+      {
+        "fn": "kgFromLoad",
+        "value": 219.911106529415,
+        "unit": "lb",
+        "result": 99.75
+      },
+      {
+        "fn": "loadFromKg",
+        "value": 219.911106529415,
+        "unit": "kg",
+        "result": 219.911106529415
+      },
+      {
+        "fn": "loadFromKg",
+        "value": 219.911106529415,
+        "unit": "lb",
+        "result": 485
+      },
+      {
+        "fn": "kgFromWeighing",
+        "value": 219.911106529415,
+        "unit": "kg",
+        "result": 219.911106529415
+      },
+      {
+        "fn": "kgFromWeighing",
+        "value": 219.911106529415,
+        "unit": "lb",
+        "result": 99.7
+      },
+      {
+        "fn": "weighingFromKg",
+        "value": 219.911106529415,
+        "unit": "kg",
+        "result": 219.911106529415
+      },
+      {
+        "fn": "weighingFromKg",
+        "value": 219.911106529415,
+        "unit": "lb",
+        "result": 484.75
+      },
+      {
+        "fn": "kgToLb",
+        "value": 220,
+        "unit": "lb",
+        "result": 485.016976806731
+      },
+      {
+        "fn": "lbToKg",
+        "value": 220,
+        "unit": "lb",
+        "result": 99.7903214
+      },
+      {
+        "fn": "kgFromLoad",
+        "value": 220,
+        "unit": "kg",
+        "result": 220
+      },
+      {
+        "fn": "kgFromLoad",
+        "value": 220,
+        "unit": "lb",
+        "result": 99.75
+      },
+      {
+        "fn": "loadFromKg",
+        "value": 220,
+        "unit": "kg",
+        "result": 220
+      },
+      {
+        "fn": "loadFromKg",
+        "value": 220,
+        "unit": "lb",
+        "result": 485
+      },
+      {
+        "fn": "kgFromWeighing",
+        "value": 220,
+        "unit": "kg",
+        "result": 220
+      },
+      {
+        "fn": "kgFromWeighing",
+        "value": 220,
+        "unit": "lb",
+        "result": 99.8
+      },
+      {
+        "fn": "weighingFromKg",
+        "value": 220,
+        "unit": "kg",
+        "result": 220
+      },
+      {
+        "fn": "weighingFromKg",
+        "value": 220,
+        "unit": "lb",
+        "result": 485
+      },
+      {
+        "fn": "kgToLb",
+        "value": 220.462262184878,
+        "unit": "lb",
+        "result": 486.036090476738
+      },
+      {
+        "fn": "lbToKg",
+        "value": 220.462262184878,
+        "unit": "lb",
+        "result": 100
+      },
+      {
+        "fn": "kgFromLoad",
+        "value": 220.462262184878,
+        "unit": "kg",
+        "result": 220.462262184878
+      },
+      {
+        "fn": "kgFromLoad",
+        "value": 220.462262184878,
+        "unit": "lb",
+        "result": 99.75
+      },
+      {
+        "fn": "loadFromKg",
+        "value": 220.462262184878,
+        "unit": "kg",
+        "result": 220.462262184878
+      },
+      {
+        "fn": "loadFromKg",
+        "value": 220.462262184878,
+        "unit": "lb",
+        "result": 486
+      },
+      {
+        "fn": "kgFromWeighing",
+        "value": 220.462262184878,
+        "unit": "kg",
+        "result": 220.462262184878
+      },
+      {
+        "fn": "kgFromWeighing",
+        "value": 220.462262184878,
+        "unit": "lb",
+        "result": 100
+      },
+      {
+        "fn": "weighingFromKg",
+        "value": 220.462262184878,
+        "unit": "kg",
+        "result": 220.462262184878
+      },
+      {
+        "fn": "weighingFromKg",
+        "value": 220.462262184878,
+        "unit": "lb",
+        "result": 486
+      },
+      {
+        "fn": "kgToLb",
+        "value": 220.5,
+        "unit": "lb",
+        "result": 486.119288117655
+      },
+      {
+        "fn": "lbToKg",
+        "value": 220.5,
+        "unit": "lb",
+        "result": 100.017117585
+      },
+      {
+        "fn": "kgFromLoad",
+        "value": 220.5,
+        "unit": "kg",
+        "result": 220.5
+      },
+      {
+        "fn": "kgFromLoad",
+        "value": 220.5,
+        "unit": "lb",
+        "result": 100.25
+      },
+      {
+        "fn": "loadFromKg",
+        "value": 220.5,
+        "unit": "kg",
+        "result": 220.5
+      },
+      {
+        "fn": "loadFromKg",
+        "value": 220.5,
+        "unit": "lb",
+        "result": 486
+      },
+      {
+        "fn": "kgFromWeighing",
+        "value": 220.5,
+        "unit": "kg",
+        "result": 220.5
+      },
+      {
+        "fn": "kgFromWeighing",
+        "value": 220.5,
+        "unit": "lb",
+        "result": 100
+      },
+      {
+        "fn": "weighingFromKg",
+        "value": 220.5,
+        "unit": "kg",
+        "result": 220.5
+      },
+      {
+        "fn": "weighingFromKg",
+        "value": 220.5,
+        "unit": "lb",
+        "result": 486
+      },
+      {
+        "fn": "kgToLb",
+        "value": 224.75,
+        "unit": "lb",
+        "result": 495.488934260512
+      },
+      {
+        "fn": "lbToKg",
+        "value": 224.75,
+        "unit": "lb",
+        "result": 101.9448851575
+      },
+      {
+        "fn": "kgFromLoad",
+        "value": 224.75,
+        "unit": "kg",
+        "result": 224.75
+      },
+      {
+        "fn": "kgFromLoad",
+        "value": 224.75,
+        "unit": "lb",
+        "result": 102
+      },
+      {
+        "fn": "loadFromKg",
+        "value": 224.75,
+        "unit": "kg",
+        "result": 224.75
+      },
+      {
+        "fn": "loadFromKg",
+        "value": 224.75,
+        "unit": "lb",
+        "result": 495
+      },
+      {
+        "fn": "kgFromWeighing",
+        "value": 224.75,
+        "unit": "kg",
+        "result": 224.75
+      },
+      {
+        "fn": "kgFromWeighing",
+        "value": 224.75,
+        "unit": "lb",
+        "result": 101.9
+      },
+      {
+        "fn": "weighingFromKg",
+        "value": 224.75,
+        "unit": "kg",
+        "result": 224.75
+      },
+      {
+        "fn": "weighingFromKg",
+        "value": 224.75,
+        "unit": "lb",
+        "result": 495.5
+      },
+      {
+        "fn": "kgToLb",
+        "value": 224.871507428575,
+        "unit": "lb",
+        "result": 495.756812286271
+      },
+      {
+        "fn": "lbToKg",
+        "value": 224.871507428575,
+        "unit": "lb",
+        "result": 102
+      },
+      {
+        "fn": "kgFromLoad",
+        "value": 224.871507428575,
+        "unit": "kg",
+        "result": 224.871507428575
+      },
+      {
+        "fn": "kgFromLoad",
+        "value": 224.871507428575,
+        "unit": "lb",
+        "result": 102
+      },
+      {
+        "fn": "loadFromKg",
+        "value": 224.871507428575,
+        "unit": "kg",
+        "result": 224.871507428575
+      },
+      {
+        "fn": "loadFromKg",
+        "value": 224.871507428575,
+        "unit": "lb",
+        "result": 496
+      },
+      {
+        "fn": "kgFromWeighing",
+        "value": 224.871507428575,
+        "unit": "kg",
+        "result": 224.871507428575
+      },
+      {
+        "fn": "kgFromWeighing",
+        "value": 224.871507428575,
+        "unit": "lb",
+        "result": 102
+      },
+      {
+        "fn": "weighingFromKg",
+        "value": 224.871507428575,
+        "unit": "kg",
+        "result": 224.871507428575
+      },
+      {
+        "fn": "weighingFromKg",
+        "value": 224.871507428575,
+        "unit": "lb",
+        "result": 495.75
+      },
+      {
+        "fn": "kgToLb",
+        "value": 225,
+        "unit": "lb",
+        "result": 496.040089915975
+      },
+      {
+        "fn": "lbToKg",
+        "value": 225,
+        "unit": "lb",
+        "result": 102.05828325
+      },
+      {
+        "fn": "kgFromLoad",
+        "value": 225,
+        "unit": "kg",
+        "result": 225
+      },
+      {
+        "fn": "kgFromLoad",
+        "value": 225,
+        "unit": "lb",
+        "result": 102
+      },
+      {
+        "fn": "loadFromKg",
+        "value": 225,
+        "unit": "kg",
+        "result": 225
+      },
+      {
+        "fn": "loadFromKg",
+        "value": 225,
+        "unit": "lb",
+        "result": 496
+      },
+      {
+        "fn": "kgFromWeighing",
+        "value": 225,
+        "unit": "kg",
+        "result": 225
+      },
+      {
+        "fn": "kgFromWeighing",
+        "value": 225,
+        "unit": "lb",
+        "result": 102.1
+      },
+      {
+        "fn": "weighingFromKg",
+        "value": 225,
+        "unit": "kg",
+        "result": 225
+      },
+      {
+        "fn": "weighingFromKg",
+        "value": 225,
+        "unit": "lb",
+        "result": 496
+      },
+      {
+        "fn": "kgToLb",
+        "value": 400,
+        "unit": "lb",
+        "result": 881.84904873951
+      },
+      {
+        "fn": "lbToKg",
+        "value": 400,
+        "unit": "lb",
+        "result": 181.436948
+      },
+      {
+        "fn": "kgFromLoad",
+        "value": 400,
+        "unit": "kg",
+        "result": 400
+      },
+      {
+        "fn": "kgFromLoad",
+        "value": 400,
+        "unit": "lb",
+        "result": 181.5
+      },
+      {
+        "fn": "loadFromKg",
+        "value": 400,
+        "unit": "kg",
+        "result": 400
+      },
+      {
+        "fn": "loadFromKg",
+        "value": 400,
+        "unit": "lb",
+        "result": 882
+      },
+      {
+        "fn": "kgFromWeighing",
+        "value": 400,
+        "unit": "kg",
+        "result": 400
+      },
+      {
+        "fn": "kgFromWeighing",
+        "value": 400,
+        "unit": "lb",
+        "result": 181.4
+      },
+      {
+        "fn": "weighingFromKg",
+        "value": 400,
+        "unit": "kg",
+        "result": 400
+      },
+      {
+        "fn": "weighingFromKg",
+        "value": 400,
+        "unit": "lb",
+        "result": 881.75
+      },
+      {
+        "fn": "kgToLb",
+        "value": 500,
+        "unit": "lb",
+        "result": 1102.311310924388
+      },
+      {
+        "fn": "lbToKg",
+        "value": 500,
+        "unit": "lb",
+        "result": 226.796185
+      },
+      {
+        "fn": "kgFromLoad",
+        "value": 500,
+        "unit": "kg",
+        "result": 500
+      },
+      {
+        "fn": "kgFromLoad",
+        "value": 500,
+        "unit": "lb",
+        "result": 226.75
+      },
+      {
+        "fn": "loadFromKg",
+        "value": 500,
+        "unit": "kg",
+        "result": 500
+      },
+      {
+        "fn": "loadFromKg",
+        "value": 500,
+        "unit": "lb",
+        "result": 1102
+      },
+      {
+        "fn": "kgFromWeighing",
+        "value": 500,
+        "unit": "kg",
+        "result": 500
+      },
+      {
+        "fn": "kgFromWeighing",
+        "value": 500,
+        "unit": "lb",
+        "result": 226.8
+      },
+      {
+        "fn": "weighingFromKg",
+        "value": 500,
+        "unit": "kg",
+        "result": 500
+      },
+      {
+        "fn": "weighingFromKg",
+        "value": 500,
+        "unit": "lb",
+        "result": 1102.25
+      },
+      {
+        "fn": "kgToLb",
+        "value": 881.75,
+        "unit": "lb",
+        "result": 1943.925996815158
+      },
+      {
+        "fn": "lbToKg",
+        "value": 881.75,
+        "unit": "lb",
+        "result": 399.9550722475
+      },
+      {
+        "fn": "kgFromLoad",
+        "value": 881.75,
+        "unit": "kg",
+        "result": 881.75
+      },
+      {
+        "fn": "kgFromLoad",
+        "value": 881.75,
+        "unit": "lb",
+        "result": 400
+      },
+      {
+        "fn": "loadFromKg",
+        "value": 881.75,
+        "unit": "kg",
+        "result": 881.75
+      },
+      {
+        "fn": "loadFromKg",
+        "value": 881.75,
+        "unit": "lb",
+        "result": 1944
+      },
+      {
+        "fn": "kgFromWeighing",
+        "value": 881.75,
+        "unit": "kg",
+        "result": 881.75
+      },
+      {
+        "fn": "kgFromWeighing",
+        "value": 881.75,
+        "unit": "lb",
+        "result": 400
+      },
+      {
+        "fn": "weighingFromKg",
+        "value": 881.75,
+        "unit": "kg",
+        "result": 881.75
+      },
+      {
+        "fn": "weighingFromKg",
+        "value": 881.75,
+        "unit": "lb",
+        "result": 1944
+      },
+      {
+        "fn": "kgToLb",
+        "value": 881.84904873951,
+        "unit": "lb",
+        "result": 1944.144361906947
+      },
+      {
+        "fn": "lbToKg",
+        "value": 881.84904873951,
+        "unit": "lb",
+        "result": 400
+      },
+      {
+        "fn": "kgFromLoad",
+        "value": 881.84904873951,
+        "unit": "kg",
+        "result": 881.84904873951
+      },
+      {
+        "fn": "kgFromLoad",
+        "value": 881.84904873951,
+        "unit": "lb",
+        "result": 400
+      },
+      {
+        "fn": "loadFromKg",
+        "value": 881.84904873951,
+        "unit": "kg",
+        "result": 881.84904873951
+      },
+      {
+        "fn": "loadFromKg",
+        "value": 881.84904873951,
+        "unit": "lb",
+        "result": 1944
+      },
+      {
+        "fn": "kgFromWeighing",
+        "value": 881.84904873951,
+        "unit": "kg",
+        "result": 881.84904873951
+      },
+      {
+        "fn": "kgFromWeighing",
+        "value": 881.84904873951,
+        "unit": "lb",
+        "result": 400
+      },
+      {
+        "fn": "weighingFromKg",
+        "value": 881.84904873951,
+        "unit": "kg",
+        "result": 881.84904873951
+      },
+      {
+        "fn": "weighingFromKg",
+        "value": 881.84904873951,
+        "unit": "lb",
+        "result": 1944.25
+      },
+      {
+        "fn": "kgToLb",
+        "value": 882,
+        "unit": "lb",
+        "result": 1944.47715247062
+      },
+      {
+        "fn": "lbToKg",
+        "value": 882,
+        "unit": "lb",
+        "result": 400.06847034
+      },
+      {
+        "fn": "kgFromLoad",
+        "value": 882,
+        "unit": "kg",
+        "result": 882
+      },
+      {
+        "fn": "kgFromLoad",
+        "value": 882,
+        "unit": "lb",
+        "result": 400
+      },
+      {
+        "fn": "loadFromKg",
+        "value": 882,
+        "unit": "kg",
+        "result": 882
+      },
+      {
+        "fn": "loadFromKg",
+        "value": 882,
+        "unit": "lb",
+        "result": 1944
+      },
+      {
+        "fn": "kgFromWeighing",
+        "value": 882,
+        "unit": "kg",
+        "result": 882
+      },
+      {
+        "fn": "kgFromWeighing",
+        "value": 882,
+        "unit": "lb",
+        "result": 400.1
+      },
+      {
+        "fn": "weighingFromKg",
+        "value": 882,
+        "unit": "kg",
+        "result": 882
+      },
+      {
+        "fn": "weighingFromKg",
+        "value": 882,
+        "unit": "lb",
+        "result": 1944.5
+      },
+      {
+        "fn": "kgToLb",
+        "value": 1102,
+        "unit": "lb",
+        "result": 2429.494129277351
+      },
+      {
+        "fn": "lbToKg",
+        "value": 1102,
+        "unit": "lb",
+        "result": 499.85879174
+      },
+      {
+        "fn": "kgFromLoad",
+        "value": 1102,
+        "unit": "kg",
+        "result": 1102
+      },
+      {
+        "fn": "kgFromLoad",
+        "value": 1102,
+        "unit": "lb",
+        "result": 499.75
+      },
+      {
+        "fn": "loadFromKg",
+        "value": 1102,
+        "unit": "kg",
+        "result": 1102
+      },
+      {
+        "fn": "loadFromKg",
+        "value": 1102,
+        "unit": "lb",
+        "result": 2429
+      },
+      {
+        "fn": "kgFromWeighing",
+        "value": 1102,
+        "unit": "kg",
+        "result": 1102
+      },
+      {
+        "fn": "kgFromWeighing",
+        "value": 1102,
+        "unit": "lb",
+        "result": 499.9
+      },
+      {
+        "fn": "weighingFromKg",
+        "value": 1102,
+        "unit": "kg",
+        "result": 1102
+      },
+      {
+        "fn": "weighingFromKg",
+        "value": 1102,
+        "unit": "lb",
+        "result": 2429.5
+      },
+      {
+        "fn": "kgToLb",
+        "value": 1102.25,
+        "unit": "lb",
+        "result": 2430.045284932813
+      },
+      {
+        "fn": "lbToKg",
+        "value": 1102.25,
+        "unit": "lb",
+        "result": 499.9721898325
+      },
+      {
+        "fn": "kgFromLoad",
+        "value": 1102.25,
+        "unit": "kg",
+        "result": 1102.25
+      },
+      {
+        "fn": "kgFromLoad",
+        "value": 1102.25,
+        "unit": "lb",
+        "result": 499.75
+      },
+      {
+        "fn": "loadFromKg",
+        "value": 1102.25,
+        "unit": "kg",
+        "result": 1102.25
+      },
+      {
+        "fn": "loadFromKg",
+        "value": 1102.25,
+        "unit": "lb",
+        "result": 2430
+      },
+      {
+        "fn": "kgFromWeighing",
+        "value": 1102.25,
+        "unit": "kg",
+        "result": 1102.25
+      },
+      {
+        "fn": "kgFromWeighing",
+        "value": 1102.25,
+        "unit": "lb",
+        "result": 500
+      },
+      {
+        "fn": "weighingFromKg",
+        "value": 1102.25,
+        "unit": "kg",
+        "result": 1102.25
+      },
+      {
+        "fn": "weighingFromKg",
+        "value": 1102.25,
+        "unit": "lb",
+        "result": 2430
+      },
+      {
+        "fn": "kgToLb",
+        "value": 1102.311310924388,
+        "unit": "lb",
+        "result": 2430.180452383685
+      },
+      {
+        "fn": "lbToKg",
+        "value": 1102.311310924388,
+        "unit": "lb",
+        "result": 500
+      },
+      {
+        "fn": "kgFromLoad",
+        "value": 1102.311310924388,
+        "unit": "kg",
+        "result": 1102.311310924388
+      },
+      {
+        "fn": "kgFromLoad",
+        "value": 1102.311310924388,
+        "unit": "lb",
+        "result": 499.75
+      },
+      {
+        "fn": "loadFromKg",
+        "value": 1102.311310924388,
+        "unit": "kg",
+        "result": 1102.311310924388
+      },
+      {
+        "fn": "loadFromKg",
+        "value": 1102.311310924388,
+        "unit": "lb",
+        "result": 2430
+      },
+      {
+        "fn": "kgFromWeighing",
+        "value": 1102.311310924388,
+        "unit": "kg",
+        "result": 1102.311310924388
+      },
+      {
+        "fn": "kgFromWeighing",
+        "value": 1102.311310924388,
+        "unit": "lb",
+        "result": 500
+      },
+      {
+        "fn": "weighingFromKg",
+        "value": 1102.311310924388,
+        "unit": "kg",
+        "result": 1102.311310924388
+      },
+      {
+        "fn": "weighingFromKg",
+        "value": 1102.311310924388,
+        "unit": "lb",
+        "result": 2430.25
+      }
+    ],
+    "stepIn": [
+      {
+        "stepKg": 0.1,
+        "unit": "kg",
+        "result": 0.1
+      },
+      {
+        "stepKg": 0.1,
+        "unit": "lb",
+        "result": 0.25
+      },
+      {
+        "stepKg": 0.25,
+        "unit": "kg",
+        "result": 0.25
+      },
+      {
+        "stepKg": 0.25,
+        "unit": "lb",
+        "result": 0.5
+      },
+      {
+        "stepKg": 0.5,
+        "unit": "kg",
+        "result": 0.5
+      },
+      {
+        "stepKg": 0.5,
+        "unit": "lb",
+        "result": 1
+      },
+      {
+        "stepKg": 1,
+        "unit": "kg",
+        "result": 1
+      },
+      {
+        "stepKg": 1,
+        "unit": "lb",
+        "result": 2
+      },
+      {
+        "stepKg": 2.5,
+        "unit": "kg",
+        "result": 2.5
+      },
+      {
+        "stepKg": 2.5,
+        "unit": "lb",
+        "result": 5
+      },
+      {
+        "stepKg": 5,
+        "unit": "kg",
+        "result": 5
+      },
+      {
+        "stepKg": 5,
+        "unit": "lb",
+        "result": 10
+      },
+      {
+        "stepKg": 0.3,
+        "unit": "kg",
+        "result": 0.3
+      },
+      {
+        "stepKg": 0.3,
+        "unit": "lb",
+        "result": 10
+      }
+    ],
+    "rangeIn": [
+      {
+        "name": "a set",
+        "range": {
+          "min": 0,
+          "max": 500
+        },
+        "unit": "kg",
+        "step": 0.25,
+        "result": {
+          "min": 0,
+          "max": 500
+        }
+      },
+      {
+        "name": "a set",
+        "range": {
+          "min": 0,
+          "max": 500
+        },
+        "unit": "lb",
+        "step": 0.5,
+        "result": {
+          "min": 0,
+          "max": 1102
+        }
+      },
+      {
+        "name": "a weigh-in",
+        "range": {
+          "min": 20,
+          "max": 400
+        },
+        "unit": "kg",
+        "step": 0.1,
+        "result": {
+          "min": 20,
+          "max": 400
+        }
+      },
+      {
+        "name": "a weigh-in",
+        "range": {
+          "min": 20,
+          "max": 400
+        },
+        "unit": "lb",
+        "step": 0.25,
+        "result": {
+          "min": 44.25,
+          "max": 881.75
+        }
+      },
+      {
+        "name": "a body weight",
+        "range": {
+          "min": 30,
+          "max": 300
+        },
+        "unit": "kg",
+        "step": 0.5,
+        "result": {
+          "min": 30,
+          "max": 300
+        }
+      },
+      {
+        "name": "a body weight",
+        "range": {
+          "min": 30,
+          "max": 300
+        },
+        "unit": "lb",
+        "step": 1,
+        "result": {
+          "min": 67,
+          "max": 661
+        }
+      },
+      {
+        "name": "a tool's load by 0.5",
+        "range": {
+          "min": 1,
+          "max": 500
+        },
+        "unit": "kg",
+        "step": 0.5,
+        "result": {
+          "min": 1,
+          "max": 500
+        }
+      },
+      {
+        "name": "a tool's load by 0.5",
+        "range": {
+          "min": 1,
+          "max": 500
+        },
+        "unit": "lb",
+        "step": 1,
+        "result": {
+          "min": 3,
+          "max": 1102
+        }
+      },
+      {
+        "name": "a tool's load by 2.5",
+        "range": {
+          "min": 1,
+          "max": 500
+        },
+        "unit": "kg",
+        "step": 2.5,
+        "result": {
+          "min": 1,
+          "max": 500
+        }
+      },
+      {
+        "name": "a tool's load by 2.5",
+        "range": {
+          "min": 1,
+          "max": 500
+        },
+        "unit": "lb",
+        "step": 5,
+        "result": {
+          "min": 5,
+          "max": 1100
+        }
+      }
+    ],
+    "incrementIn": [
+      {
+        "equipment": "barbell",
+        "incrementKg": 2.5,
+        "unit": "kg",
+        "result": 2.5
+      },
+      {
+        "equipment": "barbell",
+        "incrementKg": 2.5,
+        "unit": "lb",
+        "result": 5
+      },
+      {
+        "equipment": "dumbbell",
+        "incrementKg": 2.5,
+        "unit": "kg",
+        "result": 2.5
+      },
+      {
+        "equipment": "dumbbell",
+        "incrementKg": 2.5,
+        "unit": "lb",
+        "result": 5
+      },
+      {
+        "equipment": "machine",
+        "incrementKg": 2.5,
+        "unit": "kg",
+        "result": 2.5
+      },
+      {
+        "equipment": "machine",
+        "incrementKg": 2.5,
+        "unit": "lb",
+        "result": 10
+      },
+      {
+        "equipment": "cable",
+        "incrementKg": 2.5,
+        "unit": "kg",
+        "result": 2.5
+      },
+      {
+        "equipment": "cable",
+        "incrementKg": 2.5,
+        "unit": "lb",
+        "result": 5
+      },
+      {
+        "equipment": "bodyweight",
+        "incrementKg": 2.5,
+        "unit": "kg",
+        "result": 2.5
+      },
+      {
+        "equipment": "bodyweight",
+        "incrementKg": 2.5,
+        "unit": "lb",
+        "result": 5
+      },
+      {
+        "equipment": "other",
+        "incrementKg": 2.5,
+        "unit": "kg",
+        "result": 2.5
+      },
+      {
+        "equipment": "other",
+        "incrementKg": 2.5,
+        "unit": "lb",
+        "result": 2
+      }
+    ],
+    "readBack": [
+      {
+        "typedKg": 99.75,
+        "prefill": {
+          "kg": 100,
+          "shownKg": 99.75
+        },
+        "result": 100
+      },
+      {
+        "typedKg": 102,
+        "prefill": {
+          "kg": 100,
+          "shownKg": 99.75
+        },
+        "result": 102
+      },
+      {
+        "typedKg": 99.75,
+        "prefill": null,
+        "result": 99.75
+      },
+      {
+        "typedKg": 81.6466266,
+        "prefill": {
+          "kg": 81.6,
+          "shownKg": 81.6466266
+        },
+        "result": 81.6
+      },
+      {
+        "typedKg": 81.873422785,
+        "prefill": {
+          "kg": 81.6,
+          "shownKg": 81.6466266
+        },
+        "result": 81.873422785
+      },
+      {
+        "typedKg": 81.601267363,
+        "prefill": {
+          "kg": 81.6,
+          "shownKg": 81.6466266
+        },
+        "result": 81.601267363
+      }
+    ],
+    "loadKgFrom": [
+      {
+        "value": 220,
+        "unit": "lb",
+        "prefillKg": 100,
+        "result": 100
+      },
+      {
+        "value": 225,
+        "unit": "lb",
+        "prefillKg": 100,
+        "result": 102
+      },
+      {
+        "value": 220,
+        "unit": "lb",
+        "prefillKg": null,
+        "result": 99.75
+      },
+      {
+        "value": 137.5,
+        "unit": "lb",
+        "prefillKg": null,
+        "result": 62.5
+      },
+      {
+        "value": 1102,
+        "unit": "lb",
+        "prefillKg": null,
+        "result": 499.75
+      },
+      {
+        "value": 1103,
+        "unit": "lb",
+        "prefillKg": null,
+        "result": null
+      },
+      {
+        "value": 1103,
+        "unit": "lb",
+        "prefillKg": 500,
+        "result": null
+      },
+      {
+        "value": 221,
+        "unit": "lb",
+        "prefillKg": 100.1,
+        "result": 100.25
+      },
+      {
+        "value": 1102,
+        "unit": "lb",
+        "prefillKg": 600,
+        "result": 499.75
+      },
+      {
+        "value": 0,
+        "unit": "lb",
+        "prefillKg": null,
+        "result": 0
+      },
+      {
+        "value": -1,
+        "unit": "lb",
+        "prefillKg": null,
+        "result": null
+      },
+      {
+        "value": 82.5,
+        "unit": "kg",
+        "prefillKg": 80,
+        "result": 82.5
+      },
+      {
+        "value": 80,
+        "unit": "kg",
+        "prefillKg": 80,
+        "result": 80
+      },
+      {
+        "value": 82.3,
+        "unit": "kg",
+        "prefillKg": null,
+        "result": null
+      },
+      {
+        "value": -1,
+        "unit": "kg",
+        "prefillKg": null,
+        "result": null
+      },
+      {
+        "value": 500.25,
+        "unit": "kg",
+        "prefillKg": null,
+        "result": null
+      }
+    ],
+    "weighingKgFrom": [
+      {
+        "value": 177.25,
+        "unit": "lb",
+        "result": 80.4
+      },
+      {
+        "value": 80.4,
+        "unit": "kg",
+        "result": 80.4
+      },
+      {
+        "value": 80.43,
+        "unit": "kg",
+        "result": null
+      },
+      {
+        "value": 44,
+        "unit": "lb",
+        "result": 20
+      },
+      {
+        "value": 43,
+        "unit": "lb",
+        "result": null
+      },
+      {
+        "value": 881.75,
+        "unit": "lb",
+        "result": 400
+      },
+      {
+        "value": 882,
+        "unit": "lb",
+        "result": null
+      },
+      {
+        "value": 19.9,
+        "unit": "kg",
+        "result": null
+      },
+      {
+        "value": 400,
+        "unit": "kg",
+        "result": 400
+      }
+    ]
   }
 }

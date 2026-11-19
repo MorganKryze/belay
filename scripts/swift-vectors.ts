@@ -56,7 +56,28 @@ import {
   isTargetRange,
   TARGET_BOUNDS,
 } from "../packages/shared/src/body/target";
-import { AGE_RANGE_YEARS, HEIGHT_RANGE_CM } from "../packages/shared/src/tools/bounds";
+import {
+  AGE_RANGE_YEARS,
+  HEIGHT_RANGE_CM,
+  WEIGHT_RANGE_KG,
+} from "../packages/shared/src/tools/bounds";
+import { EQUIPMENT } from "../packages/shared/src/exercises/muscles";
+import {
+  INCREMENT_LB,
+  incrementIn,
+  KG_PER_LB,
+  kgFromLoad,
+  kgFromWeighing,
+  kgToLb,
+  lbToKg,
+  loadFromKg,
+  loadKgFrom,
+  rangeIn,
+  readBack,
+  stepIn,
+  weighingFromKg,
+  type WeightUnit,
+} from "../packages/shared/src/tools/units";
 import { toolDefaults } from "../packages/shared/src/body/tool-defaults";
 import {
   isWeighingKg,
@@ -3273,6 +3294,136 @@ function toolkitVectors() {
   };
 }
 
+// The weight units: each conversion in kg and lb at loads from the bar's empty end to the set's
+// top, and at their pound readings; the steps, the bounds in pounds, the increments, the pound
+// plates, and the read-back of a prefill confirmed as shown. Figures are kept to 12 decimals, as
+// a division by the pound's factor differs in its last bits between engines.
+function unitVectors() {
+  const r12 = (n: number | null) => (n === null ? null : Number(n.toFixed(12)));
+  const units: WeightUnit[] = ["kg", "lb"];
+  const loadsKg = [0, 0.25, 20, 99.75, 100, 102, 400, 500];
+  const values = [
+    ...new Set(
+      [
+        ...loadsKg,
+        ...loadsKg.flatMap((kg) => [kgToLb(kg), loadFromKg(kg, "lb"), weighingFromKg(kg, "lb")]),
+        80.4,
+        177.25,
+      ].map((n) => r12(n)!),
+    ),
+  ].sort((a, b) => a - b);
+  const unitFns: [string, (v: number, u: WeightUnit) => number][] = [
+    ["kgFromLoad", kgFromLoad],
+    ["loadFromKg", loadFromKg],
+    ["kgFromWeighing", kgFromWeighing],
+    ["weighingFromKg", weighingFromKg],
+  ];
+  const conversions = values.flatMap((value) => [
+    { fn: "kgToLb", value, unit: "lb", result: r12(kgToLb(value)) },
+    { fn: "lbToKg", value, unit: "lb", result: r12(lbToKg(value)) },
+    ...unitFns.flatMap(([fn, f]) =>
+      units.map((unit) => ({ fn, value, unit, result: r12(f(value, unit)) })),
+    ),
+  ]);
+  const stepCases = [0.1, 0.25, 0.5, 1, 2.5, 5, 0.3].flatMap((stepKg) =>
+    units.map((unit) => ({ stepKg, unit, result: stepIn(stepKg, unit) })),
+  );
+  const ranges: [string, { min: number; max: number }, number][] = [
+    ["a set", SET_KG, SET_KG.step],
+    ["a weigh-in", WEIGHING_RANGE_KG, WEIGHING_RANGE_KG.step],
+    ["a body weight", WEIGHT_RANGE_KG, 0.5],
+    ["a tool's load by 0.5", { min: 1, max: 500 }, 0.5],
+    ["a tool's load by 2.5", { min: 1, max: 500 }, 2.5],
+  ];
+  const rangeCases = ranges.flatMap(([name, range, stepKg]) =>
+    units.map((unit) => {
+      const step = stepIn(stepKg, unit);
+      return {
+        name,
+        range: { min: range.min, max: range.max },
+        unit,
+        step,
+        result: rangeIn(range, unit, step),
+      };
+    }),
+  );
+  const incrementCases = EQUIPMENT.flatMap((equipment) =>
+    units.map((unit) => ({
+      equipment,
+      incrementKg: 2.5,
+      unit,
+      result: incrementIn({ equipment, incrementKg: 2.5 }, unit),
+    })),
+  );
+  // 100 kg reads "220" lb, which converts to 99.75 kg: confirmed as shown, it stays 100.
+  const shown = (kg: number) => kgFromLoad(loadFromKg(kg, "lb"), "lb");
+  const readBackCases: [number, { kg: number; shownKg: number } | null][] = [
+    [99.75, { kg: 100, shownKg: shown(100) }],
+    [102, { kg: 100, shownKg: shown(100) }],
+    [99.75, null],
+    [r12(lbToKg(180))!, { kg: 81.6, shownKg: r12(lbToKg(180))! }],
+    [r12(lbToKg(180.5))!, { kg: 81.6, shownKg: r12(lbToKg(180))! }],
+    // Within the same tenth of a kilo as the shown value, yet not it: the typed kg stands.
+    [r12(lbToKg(179.9))!, { kg: 81.6, shownKg: r12(lbToKg(180))! }],
+  ];
+  const loadKgFromCases: [number, WeightUnit, number | null][] = [
+    [220, "lb", 100],
+    [225, "lb", 100],
+    [220, "lb", null],
+    [137.5, "lb", null],
+    [1102, "lb", null],
+    [1103, "lb", null],
+    [1103, "lb", 500],
+    [221, "lb", 100.1],
+    [1102, "lb", 600],
+    [0, "lb", null],
+    [-1, "lb", null],
+    [82.5, "kg", 80],
+    [80, "kg", 80],
+    [82.3, "kg", null],
+    [-1, "kg", null],
+    [500.25, "kg", null],
+  ];
+  // The weigh-in sheet's rule: the typed value to kg on its grid, or nothing outside its range.
+  const weighingKgFromCases: [number, WeightUnit][] = [
+    [177.25, "lb"],
+    [80.4, "kg"],
+    [80.43, "kg"],
+    [44, "lb"],
+    [43, "lb"],
+    [881.75, "lb"],
+    [882, "lb"],
+    [19.9, "kg"],
+    [400, "kg"],
+  ];
+  return {
+    units: {
+      kgPerLb: KG_PER_LB,
+      incrementLb: INCREMENT_LB,
+      poundPlates: { barLb: LB_PLATES.bar, platesLb: LB_PLATES.plates },
+      conversions,
+      stepIn: stepCases,
+      rangeIn: rangeCases,
+      incrementIn: incrementCases,
+      readBack: readBackCases.map(([typedKg, prefill]) => ({
+        typedKg,
+        prefill,
+        result: readBack(typedKg, prefill ?? undefined),
+      })),
+      loadKgFrom: loadKgFromCases.map(([value, unit, prefillKg]) => ({
+        value,
+        unit,
+        prefillKg,
+        result: loadKgFrom(value, unit, prefillKg ?? undefined),
+      })),
+      weighingKgFrom: weighingKgFromCases.map(([value, unit]) => {
+        const kg = kgFromWeighing(value, unit);
+        return { value, unit, result: isWeighingKg(kg) ? kg : null };
+      }),
+    },
+  };
+}
+
 // Which workouts Health should hold. Only the session part runs on the phone here: no history
 // sent, no weigh-in, so those settings stay at their defaults.
 function healthVectors() {
@@ -4329,6 +4480,7 @@ const files = [
       ...tools,
       bounds: { ...rules.bounds, ...tools.bounds },
       ...toolkitVectors(),
+      ...unitVectors(),
     },
   },
   {
