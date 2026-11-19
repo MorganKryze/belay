@@ -92,15 +92,16 @@ public func weighingKgFrom(_ value: Double, _ unit: WeightUnit) -> Double? {
 }
 
 /// The loads a set card offers: one step down, the current load, one and two steps up, in the
-/// unit shown. The current one is its exact kilos, even when its pounds convert to a neighbor on
-/// the grid; a choice outside the set's bounds is left out, and so is a current load off the grid.
+/// unit shown. The current one is its exact kilos in either unit, even off the grid or when its
+/// pounds convert to a neighbor on it; a step outside the set's bounds is left out, and so is a
+/// step off the grid, which in kg is any step from a current load off it.
 public func loadChoices(weightKg: Double, stepInUnit: Double, _ unit: WeightUnit) -> [Double] {
   let shown = loadFromKg(weightKg, unit)
+  let current = (Bounds.setKgMin...Bounds.setKgMax).contains(weightKg) ? weightKg : nil
   var out: [Double] = []
   for steps in [-1.0, 0, 1, 2] {
-    guard let kg = loadKgFrom(shown + steps * stepInUnit, unit, prefillKg: weightKg),
-      !out.contains(kg)
-    else { continue }
+    let choice = steps == 0 ? current : loadKgFrom(shown + steps * stepInUnit, unit, prefillKg: weightKg)
+    guard let kg = choice, !out.contains(kg) else { continue }
     out.append(kg)
   }
   return out

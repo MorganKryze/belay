@@ -189,6 +189,13 @@ private let appleFolder = URL(filePath: #filePath)
     #expect(loadChoices(weightKg: 500, stepInUnit: 2.5, .kg) == [497.5, 500])
   }
 
+  /// A current load off the set grid stays its exact kilos in both units: 100,1 kg is never
+  /// offered as the 100,25 its 221 lb converts to, nor left out.
+  @Test func loadChoicesKeepAnOffGridCurrentLoad() {
+    #expect(loadChoices(weightKg: 100.1, stepInUnit: 2.5, .kg) == [100.1])
+    #expect(loadChoices(weightKg: 100.1, stepInUnit: 5, .lb) == [98, 100.1, 102.5, 104.75])
+  }
+
   @Test func poundLoadQueuedOnQuarterKilo() throws {
     let s = try Seance()
     let kg = try #require(loadKgFrom(225, .lb, prefillKg: nil))
