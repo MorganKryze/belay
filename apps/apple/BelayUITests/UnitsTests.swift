@@ -287,7 +287,7 @@ final class UnitsTests: XCTestCase {
         element(app, "weighin-save").tap()
         let weighIn = element(app, "today.weighIn")
         XCTAssertTrue(app.swipeUpUntil(weighIn))
-        XCTAssertTrue(weighIn.comesToRead("Pesée, 80,4\u{202F}kg"), weighIn.label)
+        XCTAssertTrue(weighIn.comesToRead("Pesée, 80,4 kilos"), weighIn.label)
         app.tab("Accueil")
         openCover(app)
         passWarmups(app)
@@ -304,14 +304,14 @@ final class UnitsTests: XCTestCase {
         app.buttons["Réduire la séance"].tap()
         app.tab("Corps")
         XCTAssertTrue(app.swipeUpUntil(weighIn))
-        XCTAssertTrue(weighIn.comesToRead("Pesée, 177,25\u{202F}lb"), "the weigh-in in pounds: \(weighIn.label)")
+        XCTAssertTrue(weighIn.comesToRead("Pesée, 177,25 livres"), "the weigh-in in pounds: \(weighIn.label)")
 
         let again = launch("keep")
         XCTAssertTrue(labelled(again, containing: "138\u{202F}lb × 8").waitForExistence(timeout: 10), "still pounds on Accueil")
         again.tab("Corps")
         let kept = element(again, "today.weighIn")
         XCTAssertTrue(again.swipeUpUntil(kept))
-        XCTAssertTrue(kept.comesToRead("Pesée, 177,25\u{202F}lb"), "still pounds on Corps: \(kept.label)")
+        XCTAssertTrue(kept.comesToRead("Pesée, 177,25 livres"), "still pounds on Corps: \(kept.label)")
     }
 
     /// The summary of a set at 65 kg for 8: its record reads 143 lb, its volume in whole pounds.
