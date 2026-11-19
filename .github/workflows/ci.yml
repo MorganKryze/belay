@@ -2,9 +2,10 @@ name: ci
 
 on:
   push:
-    branches: [main]
+    # Temporary: ci-hardening takes deliberately faulty PRs to prove its new controls.
+    branches: [main, ci-hardening]
   pull_request:
-    branches: [main]
+    branches: [main, ci-hardening]
 
 permissions:
   contents: read
