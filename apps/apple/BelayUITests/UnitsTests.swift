@@ -212,6 +212,35 @@ final class UnitsTests: XCTestCase {
         XCTAssertTrue(recap.label.hasSuffix(" terminé, 138\u{202F}lb × 8, 8, 7, 6"), recap.label)
     }
 
+    /// Equal counts at 62,5 and 62,75 kg read alike in pounds: the recap says « 4 × 8 à 138 lb ».
+    func testRecapCountsEqualSetsThatReadAlikeInPounds() {
+        let app = launch("exerciseEnd")
+        openCover(app)
+        doneRow(app, 5, contains: "× 7")
+        XCTAssertTrue(app.swipeUpUntil(element(app, "done-0-5")), "the third set is reached")
+        element(app, "done-0-5").tap()
+        let count = element(app, "correct-count").textFields.firstMatch
+        XCTAssertTrue(count.waitFor(NSPredicate(format: "value != ''"), timeout: 5), "the correction opens")
+        // A double tap selects the single figure, which the typed one replaces.
+        count.doubleTap()
+        count.typeText("8")
+        XCTAssertTrue(count.waitFor(NSPredicate(format: "value == '8'")), "the count reads 8: \(String(describing: count.value))")
+        app.buttons["correct-save"].tap()
+        doneRow(app, 5, contains: "62,5\u{202F}kg × 8")
+        typeLoad(app, "62,75")
+        XCTAssertTrue(loadReads(app, "Charge, 62,75 kilos"), element(app, "load").label)
+        let ruler = element(app, "rep-ruler")
+        XCTAssertTrue(ruler.waitFor(NSPredicate(format: "value == '6'")), "the last set opens on 6")
+        let start = ruler.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        start.press(forDuration: 0.1, thenDragTo: start.withOffset(CGVector(dx: -120, dy: 0)), withVelocity: .slow, thenHoldForDuration: 0.5)
+        XCTAssertTrue(ruler.waitFor(NSPredicate(format: "value == '8'")), "the last set on 8: \(String(describing: ruler.value))")
+        switchUnit(app, to: "livres")
+        element(app, "log-set").tap()
+        let recap = element(app, "exercise-recap")
+        XCTAssertTrue(recap.waitForExistence(timeout: 3), "the recap shows")
+        XCTAssertTrue(recap.label.hasSuffix(" terminé, 4 × 8 à 138\u{202F}lb"), recap.label)
+    }
+
     /// 62,5 kg to 62,75 kg both read 138 lb: the line says the load is the same, never « +0 lb ».
     func testRiseHiddenByRoundingReadsAsTheSameLoadInPounds() {
         let app = launch("history")
