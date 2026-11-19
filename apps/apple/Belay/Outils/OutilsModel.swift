@@ -177,11 +177,11 @@ final class OutilsModel {
     }
 
     /// A weight as a field on the kilo step `step` shows it in the unit chosen: kilos to the
-    /// hundredth (« 62,5 »), pounds on the finer of the step's pounds and the whole pound (« 176 »;
-    /// a body weight's 0,1 kg step gives quarter pounds). Never grouped, so the keypad can go on.
+    /// hundredth (« 62,5 »), pounds on the step's pounds as the web's stepper rounds them (« 175 »
+    /// on 2,5 kg; a body weight's 0,1 kg step gives quarter pounds). Never grouped, so the keypad can go on.
     static func weightText(_ kg: Double, step: Double = 0.5) -> String {
         let unit = SetText.unit
-        let shown = unit == .kg ? kg : roundTo(kgToLb(kg), step: min(stepIn(step, unit), 1))
+        let shown = unit == .kg ? kg : roundTo(kgToLb(kg), step: stepIn(step, unit))
         return shown.formatted(.number.grouping(.never).precision(.fractionLength(0...2)))
     }
 

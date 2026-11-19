@@ -332,7 +332,7 @@ final class OutilsTests: XCTestCase {
         type(app, "100", into: "tool-field-work")
         XCTAssertTrue(app.buttons["Retirer une série"].exists)
         XCTAssertTrue(app.buttons["Ajouter une série"].exists)
-        XCTAssertEqual(element(app, "tool-field-work").label, "Charge de travail")
+        XCTAssertEqual(element(app, "tool-field-work").label, "Charge de travail, kilos")
         let method = element(app, "tool-method")
         XCTAssertTrue(app.swipeUpUntil(method))
         XCTAssertEqual(method.label, "Comment c’est calculé")
@@ -382,8 +382,8 @@ final class OutilsTests: XCTestCase {
         XCTAssertEqual(element(app, "tool-figure-brzycki").label, "Brzycki, 204 livres")
     }
 
-    /// A load shown in pounds and typed again as shown keeps its kilos: 80 kg reads 176 lb, and
-    /// back in kilos it is 80 again, not the 79,83 that 176 lb converts to. 80 kg × 5 is Epley
+    /// A load shown in pounds and typed again as shown keeps its kilos: 80 kg reads 175 lb, and
+    /// back in kilos it is 80 again, not the 79,38 that 175 lb converts to. 80 kg × 5 is Epley
     /// 93,5 kg, or 206 lb.
     func testLoadLeftAsShownKeepsItsKilos() {
         let app = outils()
@@ -392,12 +392,12 @@ final class OutilsTests: XCTestCase {
         let field = element(app, "tool-field-load")
         XCTAssertTrue(element(app, "tool-figure-epley").waitFor(NSPredicate(format: "label == 'Epley, 93,5 kilos'"), timeout: 3))
         switchUnit(app, to: "livres")
-        XCTAssertEqual(field.value as? String, "176", "80 kg reads in whole pounds")
+        XCTAssertEqual(field.value as? String, "175", "80 kg reads on the web's 5 lb step")
         XCTAssertEqual(element(app, "tool-figure-epley").label, "Epley, 206 livres")
         field.tapAtEnd()
-        XCTAssertTrue(app.keys["6"].waitForExistence(timeout: 3), "the keypad is up")
+        XCTAssertTrue(app.keys["5"].waitForExistence(timeout: 3), "the keypad is up")
         field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 3))
-        for key in "176" { tapKey(app, String(key)) }
+        for key in "175" { tapKey(app, String(key)) }
         switchUnit(app, to: "kilos")
         XCTAssertEqual(field.value as? String, "80", "the kilos typed first are kept")
         XCTAssertEqual(element(app, "tool-figure-epley").label, "Epley, 93,5 kilos")
@@ -465,5 +465,34 @@ final class OutilsTests: XCTestCase {
         XCTAssertTrue(line.waitForExistence(timeout: 3), "the tool says there are no plates")
         XCTAssertFalse(text(app, containing: "Une charge va de").exists, "not the load bounds")
         XCTAssertFalse(text(app, containing: "n’est pas faisable").exists, "nor an unreachable load")
+    }
+
+    /// The load field says its unit as a word, so VoiceOver never reads a bare figure.
+    func testLoadFieldSaysItsUnit() {
+        let app = outils()
+        open(app, "one-rep-max")
+        let field = element(app, "tool-field-load")
+        XCTAssertTrue(field.waitForExistence(timeout: 3))
+        XCTAssertTrue(field.label.contains("kilos"), field.label)
+        switchUnit(app, to: "livres")
+        XCTAssertTrue(field.label.contains("livres"), field.label)
+    }
+
+    /// On the 2,5 kg step the warm-up's load reads on the web's 5 lb step: 80 kg shows 175 lb, not 176.
+    func testWarmupLoadStepsAsTheWebInPounds() {
+        let app = outils()
+        open(app, "warmup")
+        type(app, "80", into: "tool-field-work")
+        switchUnit(app, to: "livres")
+        XCTAssertEqual(element(app, "tool-field-work").value as? String, "175")
+    }
+
+    /// 1 101 lb is under 500 kg but past the 1 100 lb the field rounds the bounds to: refused.
+    func testLoadPastPoundBoundRefused() {
+        let app = outils("toolsEmpty", arguments: ["-belay.weightUnit", "lb"])
+        open(app, "one-rep-max")
+        type(app, "1101", into: "tool-field-load")
+        XCTAssertTrue(text(app, containing: "Une charge va de").waitForExistence(timeout: 3), "1 101 lb is refused")
+        XCTAssertFalse(element(app, "tool-figure-epley").exists, "no figure for it")
     }
 }

@@ -8,6 +8,8 @@ struct KeypadField: View {
     let label: LocalizedStringKey
     @Binding var text: String
     var unit: LocalizedStringKey = "kg"
+    /// The unit as VoiceOver says it after the name, « livres »; nil leaves the name alone.
+    var spokenUnit: String? = nil
     /// The grey value while the field is empty.
     var prompt = ""
     /// Where a prefilled value comes from, under the name.
@@ -35,7 +37,7 @@ struct KeypadField: View {
                     .font(.title3.weight(.semibold))
                     .monospacedDigit()
                     .foregroundStyle(.ink)
-                    .accessibilityLabel(Text(label, tableName: "Outils"))
+                    .accessibilityLabel(spokenLabel)
                     .accessibilityIdentifier(id)
                 Text(unit, tableName: "Outils").foregroundStyle(.muted).accessibilityHidden(true)
             }
@@ -46,6 +48,13 @@ struct KeypadField: View {
         .onTapGesture {
             if let pageFocus { pageFocus.wrappedValue = id } else { typing = true }
         }
+    }
+
+    /// « Charge, livres »: the name, then the unit as a word when there is one.
+    private var spokenLabel: Text {
+        let name = Text(label, tableName: "Outils")
+        guard let spokenUnit else { return name }
+        return name + Text(verbatim: ", \(spokenUnit)")
     }
 
     @ViewBuilder private func withFocus(_ field: some View) -> some View {
@@ -126,7 +135,7 @@ struct WeightField: View {
     var body: some View {
         let unit = SetText.unit
         KeypadField(
-            label: label, text: $text, unit: LocalizedStringKey(unit.rawValue),
+            label: label, text: $text, unit: LocalizedStringKey(unit.rawValue), spokenUnit: SetText.unitWord,
             prompt: OutilsModel.weightText(prompt, step: step), id: id
         )
         .onChange(of: unit) { reset() }
