@@ -54,7 +54,7 @@ struct DoneList: View {
                 if !type.isAccessibilitySize { Spacer(minLength: 8) }
                 HStack(spacing: 4) {
                     if !(set.timed && set.weightKg == 0) {
-                        Text("\(SetText.kg(set.weightKg))\u{202F}kg ×", tableName: "Session")
+                        Text("\(SetText.weight(set.weightKg))\u{202F}\(SetText.symbol) ×", tableName: "Session")
                             .font(.body.weight(.semibold)).monospacedDigit().foregroundStyle(.ink)
                     }
                     Text(verbatim: set.timed ? "\(set.count)\u{202F}s" : String(set.count))

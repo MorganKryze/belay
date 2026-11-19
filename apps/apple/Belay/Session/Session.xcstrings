@@ -11,12 +11,12 @@
         }
       }
     },
-    "%@ kg ×": {
+    "%@ %@ ×": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ kg ×"
+            "value": "%1$@ %2$@ ×"
           }
         }
       }
@@ -597,16 +597,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "target %lld–%lld"
-          }
-        }
-      }
-    },
-    "kg": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "kg"
           }
         }
       }

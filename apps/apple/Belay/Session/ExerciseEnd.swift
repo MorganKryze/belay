@@ -90,7 +90,7 @@ private struct RecapCard: View {
         .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
     }
 
-    /// « 4 × 8 à 60 kg » when every set was alike, else the loads one after the other:
+    /// « 4 × 8 à 60 kg », « 4 × 8 à 132 lb » when every set was alike, else the loads one after the other:
     /// « 62,5 kg × 8, 8, 7, 6 ».
     static func line(_ sets: [DoneSet]) -> String {
         guard let first = sets.first else { return "" }
@@ -99,7 +99,8 @@ private struct RecapCard: View {
             let count = timed ? "\(first.count)\u{202F}s" : String(first.count)
             if first.weightKg == 0 { return "\(sets.count) × \(count)" }
             return String(
-                localized: "\(sets.count) × \(count) à \(SetText.kg(first.weightKg))\u{202F}kg", table: "SessionEnd")
+                localized: "\(sets.count) × \(count) à \(SetText.weight(first.weightKg))\u{202F}\(SetText.symbol)",
+                table: "SessionEnd")
         }
         var groups: [LoadGroup] = []
         for set in sets {

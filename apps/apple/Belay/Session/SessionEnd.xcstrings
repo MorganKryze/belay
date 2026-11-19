@@ -131,12 +131,12 @@
         }
       }
     },
-    "%lld × %@ à %@ kg": {
+    "%lld × %@ à %@ %@": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$lld × %2$@ at %3$@ kg"
+            "value": "%1$lld × %2$@ at %3$@ %4$@"
           }
         }
       }

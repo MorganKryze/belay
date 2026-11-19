@@ -32,9 +32,10 @@ struct CorrectSheet: View {
     @State private var asking = false
     @FocusState private var focus: String?
 
-    /// The values typed, when they are within the contract's bounds.
+    /// The values typed, when they are within the contract's bounds, the load in kilos: shown in
+    /// pounds and left as shown, it keeps its exact kilos.
     private var typed: (kg: Double, count: Int)? {
-        guard let kg = SetText.parseKg(kg), (Bounds.setKgMin...Bounds.setKgMax).contains(kg),
+        guard let value = SetText.parseKg(kg), let kg = loadKgFrom(value, SetText.unit, prefillKg: set.weightKg),
               let count = Int(count.trimmingCharacters(in: .whitespaces)),
               (0...(set.timed ? Bounds.secondsMax : Bounds.repsMax)).contains(count)
         else { return nil }
@@ -53,7 +54,9 @@ struct CorrectSheet: View {
                     title: Text(verbatim: SetName.of(set, loneWarmup: loneWarmup)),
                     subtitle: Text(verbatim: exercise))
                 Section {
-                    field(Text("kg", tableName: "Session"), $kg, keyboard: .decimalPad, id: "correct-kg")
+                    field(
+                        Text(verbatim: SetText.symbol), spoken: Text(verbatim: SetText.unitWord), $kg,
+                        keyboard: .decimalPad, id: "correct-kg")
                     field(
                         set.timed ? Text("secondes", tableName: "SessionTools") : Text("reps", tableName: "SessionTools"),
                         $count, keyboard: .numberPad, id: "correct-count")
@@ -93,21 +96,24 @@ struct CorrectSheet: View {
         }
         .presentationDetents([.large])
         .onAppear {
-            kg = SetText.kg(set.weightKg)
+            kg = SetText.weight(set.weightKg)
             count = String(set.count)
             rir = set.rir
         }
     }
 
-    /// The unit on the left, the value on the right; at the largest sizes, on two lines.
-    private func field(_ unit: Text, _ text: Binding<String>, keyboard: UIKeyboardType, id: String) -> some View {
+    /// The unit on the left, the value on the right; at the largest sizes, on two lines. VoiceOver
+    /// names the field `spoken`, the unit as a word, when the symbol would be read letter by letter.
+    private func field(
+        _ unit: Text, spoken: Text? = nil, _ text: Binding<String>, keyboard: UIKeyboardType, id: String
+    ) -> some View {
         let layout = type.isAccessibilitySize
             ? AnyLayout(VStackLayout(alignment: .leading, spacing: 4))
             : AnyLayout(HStackLayout(spacing: 12))
         return layout {
             unit.foregroundStyle(.muted).accessibilityHidden(true)
             // The whole band focuses the field, not only the line of text it draws.
-            TextField(text: text) { unit }
+            TextField(text: text) { spoken ?? unit }
                 .keyboardType(keyboard)
                 .multilineTextAlignment(type.isAccessibilitySize ? .leading : .trailing)
                 .font(.title3.weight(.semibold))
