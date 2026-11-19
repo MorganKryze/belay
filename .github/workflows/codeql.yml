@@ -4,10 +4,9 @@ name: codeql
 # on the PR. Not a required check: a finding is triaged there, not by a red build.
 on:
   push:
-    # Temporary: ci-hardening takes deliberately faulty PRs to prove its new controls.
-    branches: [main, ci-hardening]
+    branches: [main]
   pull_request:
-    branches: [main, ci-hardening]
+    branches: [main]
   schedule:
     # Weekly, so a new query catches old code even when nothing is pushed.
     - cron: "17 4 * * 1"
