@@ -100,6 +100,19 @@ final class UnitsTests: XCTestCase {
         XCTAssertTrue(dueSet(app, next), "\(next) is due")
     }
 
+    private func queuedSets(_ app: XCUIApplication) -> String? {
+        element(app, "fixture-queue").value as? String
+    }
+
+    /// The session's « not saved » alert is up; it is closed.
+    private func dismissRefusal(_ app: XCUIApplication) {
+        let alert = app.alerts.firstMatch
+        XCTAssertTrue(alert.waitForExistence(timeout: 3), "the refusal is said")
+        XCTAssertTrue(alert.staticTexts["Ce n’est pas noté. Réessaie."].exists, alert.label)
+        alert.buttons.firstMatch.tap()
+        XCTAssertTrue(alert.waitForNonExistence(timeout: 3))
+    }
+
     private func doneRow(_ app: XCUIApplication, _ position: Int, contains part: String) {
         let row = element(app, "done-0-\(position)")
         XCTAssertTrue(row.waitFor(NSPredicate(format: "label CONTAINS %@", part)), "« \(part) »: \(row.label)")
@@ -157,6 +170,25 @@ final class UnitsTests: XCTestCase {
         }
         app.buttons["225\u{202F}lb"].tap()
         XCTAssertTrue(loadReads(app, "Charge, 225 livres"))
+    }
+
+    /// 62,3 kg is off the 0,25 kg grid and 625 kg past the bounds: ✓ stays grey and the line under
+    /// the field says what a load can be.
+    func testCorrectionOffTheGridSaysWhy() {
+        let app = launch("history")
+        openCover(app)
+        passWarmups(app)
+        logAndSkip(app, until: "Série 2 sur 4")
+        element(app, "done-0-3").tap()
+        let load = element(app, "correct-kg").textFields.firstMatch
+        XCTAssertTrue(load.waitFor(NSPredicate(format: "value != ''")), "the load is prefilled")
+        let line = app.staticTexts["Une charge va de 0 à 500\u{202F}kg, par pas de 0,25\u{202F}kg."]
+        XCTAssertFalse(line.exists, "a valid load says nothing")
+        for value in ["62,3", "625"] {
+            type(value, into: load)
+            XCTAssertTrue(line.waitForExistence(timeout: 3), "\(value) is said refused")
+            XCTAssertFalse(app.buttons["correct-save"].isEnabled, "\(value) cannot be saved")
+        }
     }
 
     /// 100 kg reads 220 lb in the sheet; changing the reps alone leaves 100 kg, not 99,75.
@@ -254,7 +286,8 @@ final class UnitsTests: XCTestCase {
         XCTAssertTrue(line.waitFor(NSPredicate(format: "label BEGINSWITH %@", "Même charge")), line.label)
     }
 
-    /// 1 103 lb is past 500 kg once converted: the load stays; 1 102 lb is taken.
+    /// 1 103 lb is past 500 kg once converted: the refusal is said, nothing is queued and the
+    /// load stays; 1 102 lb is taken.
     func testLoadOutsideBoundsInPoundsRefused() {
         let app = launch("history")
         switchUnit(app, to: "livres")
@@ -268,10 +301,56 @@ final class UnitsTests: XCTestCase {
         XCTAssertEqual(keypad.placeholderValue, "Charge en lb")
         keypad.typeText("1103")
         app.alerts.buttons["OK"].tap()
-        XCTAssertTrue(app.alerts.firstMatch.waitForNonExistence(timeout: 3))
-        XCTAssertTrue(loadReads(app, "Charge, 138 livres"), "1 103 lb is let go: \(element(app, "load").label)")
+        let queued = queuedSets(app)
+        dismissRefusal(app)
+        XCTAssertEqual(queuedSets(app), queued, "nothing more is queued")
+        XCTAssertTrue(loadReads(app, "Charge, 138 livres"), "the load stays: \(element(app, "load").label)")
         typeLoad(app, "1102")
         XCTAssertTrue(loadReads(app, "Charge, 1102 livres"), element(app, "load").label)
+    }
+
+    /// 625 kg is past the bounds: the card takes it as typed and ✓ refuses it aloud, queuing nothing.
+    func testLoadOutsideBoundsInKilosRefusedAtTheTick() {
+        let app = launch("history")
+        openCover(app)
+        passWarmups(app)
+        let queued = queuedSets(app)
+        typeLoad(app, "625")
+        element(app, "log-set").tap()
+        dismissRefusal(app)
+        XCTAssertEqual(queuedSets(app), queued, "nothing more is queued")
+    }
+
+    /// A text that is not a plain number, « 1e2 », « -0 » or « 62,,5 », is refused aloud and
+    /// changes nothing.
+    func testUnreadableLoadRefused() {
+        let app = launch("history")
+        openCover(app)
+        passWarmups(app)
+        let queued = queuedSets(app)
+        for text in ["1e2", "-0", "62,,5"] {
+            typeLoad(app, text)
+            dismissRefusal(app)
+            XCTAssertTrue(loadReads(app, "Charge, 62,5 kilos"), "\(text) leaves the load: \(element(app, "load").label)")
+        }
+        XCTAssertEqual(queuedSets(app), queued, "nothing more is queued")
+    }
+
+    /// 132 lb typed over a 60 kg load is the load as shown: it is logged at 60 kg, not 59,75.
+    func testLoadTypedAsShownInPoundsKeepsItsKilos() {
+        let app = launch("history")
+        openCover(app)
+        passWarmups(app)
+        typeLoad(app, "60")
+        XCTAssertTrue(loadReads(app, "Charge, 60 kilos"))
+        logAndSkip(app, until: "Série 2 sur 4")
+        switchUnit(app, to: "livres")
+        XCTAssertTrue(loadReads(app, "Charge, 132 livres"))
+        typeLoad(app, "132")
+        element(app, "log-set").tap()
+        XCTAssertTrue(element(app, "skip-rest").waitForExistence(timeout: 3), "the rest starts")
+        switchUnit(app, to: "kilos")
+        doneRow(app, 4, contains: "60\u{202F}kg × ")
     }
 
     /// 62,5 kg to 65 kg reads 138 lb to 143 lb: the line says the 5 lb between the two loads shown,

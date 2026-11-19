@@ -35,11 +35,28 @@ struct CorrectSheet: View {
     /// The values typed, when they are within the contract's bounds, the load in kilos: shown in
     /// pounds and left as shown, it keeps its exact kilos.
     private var typed: (kg: Double, count: Int)? {
-        guard let value = SetText.parseKg(kg), let kg = loadKgFrom(value, SetText.unit, prefillKg: set.weightKg),
-              let count = Int(count.trimmingCharacters(in: .whitespaces)),
+        guard let kg = typedKg, let count = Int(count.trimmingCharacters(in: .whitespaces)),
               (0...(set.timed ? Bounds.secondsMax : Bounds.repsMax)).contains(count)
         else { return nil }
         return (kg, count)
+    }
+
+    /// The load typed, in kilos on the grid and within the bounds, or nil.
+    private var typedKg: Double? {
+        SetText.parseKg(kg).flatMap { loadKgFrom($0, SetText.unit, prefillKg: set.weightKg) }
+    }
+
+    /// Under a load that cannot be saved: the bounds in the unit shown, and the grid in kilos.
+    private var loadLine: Text {
+        let unit = SetText.unit
+        let shown = rangeIn(Bounds.setKgMin...Bounds.setKgMax, unit, step: stepIn(Bounds.setKgStep, unit))
+        let low = shown.lowerBound.upToHundredths
+        let high = shown.upperBound.upToHundredths
+        return unit == .kg
+            ? Text(
+                "Une charge va de \(low) à \(high)\u{202F}\(SetText.symbol), par pas de \(Bounds.setKgStep.upToHundredths)\u{202F}\(SetText.symbol).",
+                tableName: "SessionTools")
+            : Text("Une charge va de \(low) à \(high)\u{202F}\(SetText.symbol).", tableName: "SessionTools")
     }
 
     private var changed: Bool {
@@ -57,6 +74,9 @@ struct CorrectSheet: View {
                     field(
                         Text(verbatim: SetText.symbol), spoken: Text(verbatim: SetText.unitWord), $kg,
                         keyboard: .decimalPad, id: "correct-kg")
+                    if typedKg == nil {
+                        loadLine.font(.footnote).foregroundStyle(.muted).accessibilityIdentifier("correct-kg-bounds")
+                    }
                     field(
                         set.timed ? Text("secondes", tableName: "SessionTools") : Text("reps", tableName: "SessionTools"),
                         $count, keyboard: .numberPad, id: "correct-count")

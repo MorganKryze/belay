@@ -62,7 +62,7 @@ final class CorpsTests: XCTestCase {
         let chip = element(app, "chip.body")
         XCTAssertTrue(chip.waitForExistence(timeout: 5))
         XCTAssertEqual(chip.label, "Moyenne 7 jours")
-        XCTAssertTrue(app.staticTexts["80,2"].exists, "the 7-day average, large")
+        XCTAssertTrue(app.staticTexts["80,2 kilos"].exists, "the 7-day average, large, read once with its unit")
         let change = element(app, "trend-change")
         XCTAssertTrue(change.exists)
         XCTAssertTrue(change.label.hasPrefix("perte "), "a loss reads « perte »: \(change.label)")
@@ -100,7 +100,7 @@ final class CorpsTests: XCTestCase {
         let chart = element(app, "trend-chart")
         XCTAssertTrue(chart.exists, "the points show")
         XCTAssertFalse(chart.label.contains("Moyenne"), "no average line yet: \(chart.label)")
-        XCTAssertFalse(app.staticTexts["80,2"].exists)
+        XCTAssertFalse(app.staticTexts["80,2 kilos"].exists)
     }
 
     /// Ta tendance's daily weigh-ins in grey, the line alone in the body's colour.
@@ -299,7 +299,7 @@ final class CorpsTests: XCTestCase {
     func testAx3Corps() {
         let app = corps("bodyUsual", largestText: true)
         let window = app.windows.firstMatch.frame
-        let average = app.staticTexts["80,2"]
+        let average = app.staticTexts["80,2 kilos"]
         XCTAssertTrue(average.waitForExistence(timeout: 5))
         XCTAssertLessThan(average.frame.height, 140, "one line: \(average.frame)")
         XCTAssertLessThanOrEqual(average.frame.maxX, window.maxX)
@@ -408,12 +408,13 @@ final class CorpsTests: XCTestCase {
     func testTrendAndCurveInPounds() {
         let app = corps("bodyUsual")
         switchUnit(app, to: "livres")
-        let figure = app.staticTexts["176,75"]
+        let figure = app.staticTexts["176,75 livres"]
         XCTAssertTrue(app.swipeUpUntil(figure), "Accueil's card in pounds")
-        XCTAssertFalse(app.staticTexts["80,2"].exists, "no kilos left on Accueil's card")
+        XCTAssertFalse(app.staticTexts["80,2 kilos"].exists, "no kilos left on Accueil's card")
         app.tab("Corps")
-        XCTAssertTrue(app.staticTexts["176,75"].waitForExistence(timeout: 5), "Corps's figure in pounds")
-        XCTAssertTrue(app.staticTexts["livres"].exists, "its unit said as a word")
+        XCTAssertTrue(
+            app.staticTexts["176,75 livres"].waitForExistence(timeout: 5),
+            "Corps's figure in pounds, read once with its unit as a word")
         let chart = element(app, "trend-chart")
         XCTAssertTrue(chart.label.hasSuffix("176,75 livres"), "the curve's average in pounds: \(chart.label)")
         let row = element(app, "corps-weeks")

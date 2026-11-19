@@ -431,6 +431,26 @@
           }
         }
       }
+    },
+    "Une charge va de %@ à %@ %@, par pas de %@ %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A load goes from %1$@ to %2$@ %3$@, in steps of %4$@ %5$@."
+          }
+        }
+      }
+    },
+    "Une charge va de %@ à %@ %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A load goes from %1$@ to %2$@ %3$@."
+          }
+        }
+      }
     }
   }
 }

@@ -73,16 +73,15 @@ struct SetCard: View {
         }
     }
 
-    /// A load typed with a comma or a point in the unit shown, within the contract's bounds once
-    /// converted; anything outside them is let go. Kilos are taken as typed, so one off the grid
-    /// reaches the store and is refused aloud, never rounded. Pounds go through the shared rule:
-    /// the load as shown, typed again, keeps its exact kilos.
+    /// A load typed with a comma or a point in the unit shown, never replaced by another. Kilos are
+    /// taken as typed, so one off the grid or past the bounds reaches the store and ✓ refuses it
+    /// aloud, never rounded. Pounds go through the shared rule: the load as shown, typed again,
+    /// keeps its exact kilos; one past the bounds once converted is refused aloud. A text that is
+    /// not a number is refused aloud too, and changes nothing.
     private func take(_ text: String) {
-        guard let value = SetText.parseKg(text) else { return }
-        let typedKg: Double? = SetText.unit == .kg
-            ? ((Bounds.setKgMin...Bounds.setKgMax).contains(value) ? value : nil)
-            : loadKgFrom(value, SetText.unit, prefillKg: due.weightKg)
-        guard let kg = typedKg else { return }
+        guard let value = SetText.parseKg(text) else { return actions.failed() }
+        let typedKg = SetText.unit == .kg ? value : loadKgFrom(value, SetText.unit, prefillKg: due.weightKg)
+        guard let kg = typedKg else { return actions.failed() }
         actions.run { try $0.choose(weightKg: kg, count: nil) }
     }
 
@@ -254,9 +253,12 @@ enum SetText {
         loadFromKg(kg, unit).formatted(.number.grouping(.never).precision(.fractionLength(0...2)))
     }
 
-    /// A load typed with a comma or a point.
+    /// A load typed with a comma or a point: digits with one optional decimal part, as the web
+    /// reads one, so « -0 », « +60 », « 1e2 » or a hex float are not loads.
     static func parseKg(_ text: String) -> Double? {
-        Double(text.trimmingCharacters(in: .whitespaces).replacingOccurrences(of: ",", with: "."))
+        let clean = text.filter { !$0.isWhitespace }.replacingOccurrences(of: ",", with: ".")
+        guard clean.wholeMatch(of: /[0-9]+(\.[0-9]*)?|\.[0-9]+/) != nil else { return nil }
+        return Double(clean)
     }
 
     /// « 60 kg × 8 », « 132 lb × 8 », or « 30 s » for a hold with no added load.

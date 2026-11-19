@@ -30,6 +30,20 @@ struct Figure: View {
         .lineLimit(1)
         .minimumScaleFactor(0.4)
         .thinsUnderBar()
+        .spokenAsOne(spokenUnit.map { "\(text) \($0)" })
+    }
+}
+
+private extension View {
+    /// One stop for VoiceOver, « 80,2 kilos », when the unit has a word to be said with the figure.
+    @ViewBuilder func spokenAsOne(_ label: String?) -> some View {
+        if let label {
+            accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(verbatim: label))
+                .accessibilityAddTraits(.isStaticText)
+        } else {
+            self
+        }
     }
 }
 
