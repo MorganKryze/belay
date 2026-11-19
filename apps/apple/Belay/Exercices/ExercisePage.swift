@@ -28,7 +28,7 @@ struct ExercisePage: View {
                             Text("La dernière fois", tableName: "Exercices")
                                 .font(.subheadline.weight(.semibold))
                                 .foregroundStyle(.muted)
-                            DayHero(text: Self.loads(last, timed: exercise.measure == .seconds))
+                            DayHero(text: SetText.groups(last, timed: exercise.measure == .seconds))
                         }
                         .padding(.vertical, 6)
                         .accessibilityElement(children: .combine)
@@ -51,7 +51,8 @@ struct ExercisePage: View {
         }
     }
 
-    /// The name in the display face, wrapping, then « Barre · incrément 2,5 kg ».
+    /// The name in the display face, wrapping, then « Barre · incrément 2,5 kg », or the step a pound
+    /// gym's plates make (« 5 lb »).
     private func header(_ name: String, _ exercise: LibraryExercise?) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(verbatim: name)
@@ -62,7 +63,7 @@ struct ExercisePage: View {
                 .accessibilityIdentifier("exercise-name")
             if let exercise {
                 Text(
-                    "\(ExerciseText.equipment(exercise.equipment)) · incrément \(SetText.kg(exercise.incrementKg))\u{202F}kg",
+                    "\(ExerciseText.equipment(exercise.equipment)) · incrément \(incrementIn(exercise, SetText.unit).upToHundredths)\u{202F}\(SetText.symbol)",
                     tableName: "Exercices"
                 )
                 .font(.subheadline)
@@ -155,12 +156,6 @@ struct ExercisePage: View {
 }
 
 extension ExercisePage {
-    /// « 62,5 kg × 8, 8, 7, 6 », equal loads in a row grouped.
-    static func loads(_ groups: [LoadGroup], timed: Bool) -> String {
-        groups.map { SetText.load($0.weightKg, $0.counts.map(String.init).joined(separator: ", "), timed: timed) }
-            .joined(separator: " · ")
-    }
-
     /// « 4 × 6–8 · RIR 1–2 · repos 2 min 30 », the rest left out inside a group.
     static func target(_ planned: PlannedExercise) -> String {
         let sets = "\(planned.sets) × \(planned.repRange.map(String.init).joined(separator: "–"))"

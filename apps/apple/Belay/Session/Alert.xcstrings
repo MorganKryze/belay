@@ -92,18 +92,18 @@
         }
       }
     },
-    "%@ kg × %lld": {
+    "%@ %@ × %lld": {
       "localizations": {
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ kg × %lld"
+            "value": "%1$@ %2$@ × %3$lld"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ kg × %lld"
+            "value": "%1$@ %2$@ × %3$lld"
           }
         }
       }

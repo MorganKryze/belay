@@ -335,4 +335,18 @@ final class UnitsTests: XCTestCase {
         XCTAssertTrue(row.waitForExistence(timeout: 5))
         XCTAssertTrue(row.label.contains("1\u{202F}h\u{202F}4\u{202F}min · 5\u{202F}539\u{202F}lb"), row.label)
     }
+
+    /// The bench press's page: a barbell steps 5 lb, and last time's 62,5 kg reads 138 lb.
+    func testExercisePageIncrementAndLastTimeInPounds() {
+        let app = launch("past", inPounds: true)
+        let open = app.buttons["Voir la séance"]
+        XCTAssertTrue(open.waitForExistence(timeout: 10))
+        open.tap()
+        let bench = element(app, "plan.ds:0025")
+        XCTAssertTrue(bench.waitForExistence(timeout: 5))
+        bench.tap()
+        XCTAssertTrue(element(app, "exercise-name").waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Barre · incrément 5\u{202F}lb"].exists, "the barbell's step in pounds")
+        XCTAssertTrue(labelled(app, containing: "138\u{202F}lb × 8, 8, 7, 6").exists, "last time in pounds")
+    }
 }

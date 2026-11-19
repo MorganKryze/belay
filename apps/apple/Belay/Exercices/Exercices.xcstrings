@@ -1,12 +1,12 @@
 {
   "sourceLanguage" : "fr",
   "strings" : {
-    "%@ · incrément %@ kg" : {
+    "%@ · incrément %@ %@" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ · steps of %@ kg"
+            "value" : "%1$@ · steps of %2$@ %3$@"
           }
         }
       }

@@ -9,7 +9,10 @@ import os
 extension ActivityWords {
     /// The Activity's and the alert's words, in the phone's language.
     static func phone(_ library: ExerciseLibrary) -> ActivityWords {
-        ActivityWords(
+        // The words are Sendable and may be read off the main actor: the unit is read from its stored
+        // choice at each update, so the lock screen follows Réglages without a relaunch.
+        let choice = (key: DevicePrefs.weightUnit.key, initial: DevicePrefs.weightUnit.initial)
+        return ActivityWords(
             name: { library.exercise($0)?.name ?? $0 },
             setOf: { String(localized: "Série \($0) sur \($1)", table: "Alert") },
             warmup: String(localized: "Montée", table: "Alert"),
@@ -17,8 +20,9 @@ extension ActivityWords {
                 if timed { return String(localized: "\(count) s", table: "Alert") }
                 // A set with no added load shows its count alone: never a body weight.
                 guard kg > 0 else { return String(localized: "× \(count)", table: "Alert") }
-                let load = kg.formatted(.number.precision(.fractionLength(0...2)))
-                return String(localized: "\(load) kg × \(count)", table: "Alert")
+                let unit = UserDefaults.standard.string(forKey: choice.key).flatMap(WeightUnit.init(rawValue:)) ?? choice.initial
+                let load = loadFromKg(kg, unit).formatted(.number.grouping(.never).precision(.fractionLength(0...2)))
+                return String(localized: "\(load)\u{202F}\(unit.rawValue) × \(count)", table: "Alert")
             },
             rest: String(localized: "Repos", table: "Alert"),
             next: { k, load in String(localized: "Ensuite · série \(k) · \(load)", table: "Alert") },
