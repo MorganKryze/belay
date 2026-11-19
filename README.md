@@ -232,7 +232,7 @@ Read this before hosting Belay for anyone else.
 
 ## Contributing
 
-You need Node 24 (see `.nvmrc`), pnpm, and Docker. The repository is a pnpm
+You need Node 26 (see `.nvmrc`), pnpm, and Docker. The repository is a pnpm
 workspace: `apps/server` (Hono), `apps/web` (React PWA) and `packages/shared`.
 
 ```bash

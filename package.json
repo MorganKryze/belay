@@ -4,7 +4,7 @@
   "type": "module",
   "packageManager": "pnpm@12.6.0",
   "engines": {
-    "node": ">=24"
+    "node": ">=26"
   },
   "scripts": {
     "lint": "eslint . && git ls-files -z --cached --others --exclude-standard | xargs -0 prettier --check --ignore-unknown",
