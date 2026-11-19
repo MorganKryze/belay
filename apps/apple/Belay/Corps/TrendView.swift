@@ -54,9 +54,9 @@ extension AnnotationKind {
     }
 }
 
-/// The weigh-ins as pale points, the 7-day average as the body's line, the axis on the right. On
-/// Ta tendance creatine's courses lie under them as a band and each annotation stands as a dotted
-/// line with its icon. A tap or a drag reads the day nearest to it.
+/// The weigh-ins as pale points, the 7-day average as the body's line, the axis on the right in the
+/// unit chosen. On Ta tendance creatine's courses lie under them as a band and each annotation
+/// stands as a dotted line with its icon. A tap or a drag reads the day nearest to it.
 struct WeightChart: View {
     let points: [BelayCore.Point]
     let average: [BelayCore.Point]
@@ -67,9 +67,17 @@ struct WeightChart: View {
     @ScaledMetric(relativeTo: .body) private var height: CGFloat = 200
     @Environment(\.dynamicTypeSize) private var typeSize
 
+    /// The unit the curve and its axis read in.
+    private var unit: WeightUnit { BodyText.unit }
+
+    /// A weight as the curve draws it, in the unit shown.
+    private func shown(_ kg: Double) -> Double { weighingFromKg(kg, unit) }
+
+    /// The values drawn, with a margin of about 0,4 kg above and below, to whole numbers of the unit.
     private var domain: ClosedRange<Double> {
-        let values = (points + average).map(\.value)
-        return ((values.min() ?? 79) - 0.4).rounded(.down)...((values.max() ?? 82) + 0.4).rounded(.up)
+        let values = (points + average).map { shown($0.value) }
+        let margin = unit == .kg ? 0.4 : 1
+        return ((values.min() ?? shown(79)) - margin).rounded(.down)...((values.max() ?? shown(82)) + margin).rounded(.up)
     }
 
     /// The weigh-in nearest to the selected place.
@@ -186,7 +194,7 @@ struct WeightChart: View {
     @ChartContentBuilder private var weighIns: some ChartContent {
         ForEach(points, id: \.date) { p in
             if let day = BodyText.date(p.date) {
-                PointMark(x: .value("Jour", day, unit: .day), y: .value("Pesée", p.value))
+                PointMark(x: .value("Jour", day, unit: .day), y: .value("Pesée", shown(p.value)))
                     .symbolSize(pointSize)
                     .foregroundStyle(Color.chartDay)
             }
@@ -197,7 +205,7 @@ struct WeightChart: View {
     @ChartContentBuilder private var line: some ChartContent {
         ForEach(average, id: \.date) { p in
             if let day = BodyText.date(p.date) {
-                LineMark(x: .value("Jour", day, unit: .day), y: .value("Moyenne", p.value))
+                LineMark(x: .value("Jour", day, unit: .day), y: .value("Moyenne", shown(p.value)))
                     .interpolationMethod(.monotone)
                     .lineStyle(StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
                     .foregroundStyle(Color.bodyShade)
@@ -222,19 +230,19 @@ struct WeightChart: View {
         }
     }
 
-    /// « mardi 10 nov. · Pesée 79,9 kg · Moyenne 7 j 80,1 kg ».
+    /// « mardi 10 nov. · Pesée 79,9 kg · Moyenne 7 j 80,1 kg », in the unit chosen.
     private func reading(_ point: BelayCore.Point) -> String {
         let day = BodyText.date(point.date)?.formatted(.dateTime.weekday(.wide).day().month(.abbreviated)) ?? point.date
-        let weighed = BodyText.kg(point.value)
+        let weighed = BodyText.weight(point.value)
         if let mean = average.first(where: { $0.date == point.date }) {
-            return String(localized: "\(day) · Pesée \(weighed) · Moyenne 7 j \(BodyText.kg(mean.value))", table: "Trend")
+            return String(localized: "\(day) · Pesée \(weighed) · Moyenne 7 j \(BodyText.weight(mean.value))", table: "Trend")
         }
         return String(localized: "\(day) · Pesée \(weighed)", table: "Trend")
     }
 
     private var label: String {
         if let last = average.last {
-            return String(localized: "Moyenne 7 jours et pesées, \(span.name.lowercased()), \(BodyText.kg(last.value))", table: "Corps")
+            return String(localized: "Moyenne 7 jours et pesées, \(span.name.lowercased()), \(BodyText.weight(last.value))", table: "Corps")
         }
         return String(localized: "Tes pesées, \(span.name.lowercased())", table: "Corps")
     }

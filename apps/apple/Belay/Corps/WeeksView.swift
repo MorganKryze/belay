@@ -90,7 +90,7 @@ private struct WeekLine: View {
 
     private var line: String {
         var parts = [String(localized: "\(week.summary.count) pesées", table: "Trend")]
-        if let kg = week.summary.averageKg { parts.append(BodyText.kg(kg)) }
+        if let kg = week.summary.averageKg { parts.append(BodyText.weight(kg)) }
         if showsKcal, let kcal = week.kcalAvg { parts.append(BodyText.kcal(Int(kcal))) }
         parts += week.annotations.map { mark in
             switch mark.kind {

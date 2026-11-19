@@ -341,6 +341,132 @@ final class CorpsTests: XCTestCase {
             "past midnight, the new day is not weighed yet")
     }
 
+    /// Réglages from Accueil, the weight unit set to `word` (« kilos » or « livres »), then back on
+    /// Accueil.
+    private func switchUnit(_ app: XCUIApplication, to word: String) {
+        app.tab("Accueil")
+        let settings = app.buttons["settings"]
+        XCTAssertTrue(settings.waitForExistence(timeout: 10), "Accueil leads to Réglages")
+        settings.tap()
+        XCTAssertTrue(app.navigationBars["Réglages"].waitForExistence(timeout: 5), "Réglages opens")
+        let row = element(app, "reglages-weight-unit")
+        XCTAssertTrue(app.swipeUpUntil(row), "the unit row is reached")
+        let bar = app.tabBars.firstMatch
+        for _ in 0..<3 where bar.exists && row.frame.maxY > bar.frame.minY - 8 {
+            app.swipeUp(velocity: .slow)
+        }
+        // Right after launch the list can still move under the first tap: tapped again until chosen.
+        let choice = row.segmentedControls.firstMatch.buttons[word]
+        let chosen = NSPredicate(format: "isSelected == true")
+        for _ in 0..<3 where !choice.isSelected {
+            choice.tap()
+            _ = choice.waitFor(chosen, timeout: 2)
+        }
+        XCTAssertTrue(choice.isSelected, "\(word) chosen")
+        app.navigationBars.buttons.firstMatch.tap()
+    }
+
+    /// No toast anywhere on screen: the change itself is the answer.
+    private func assertNoToast(_ app: XCUIApplication, _ after: String) {
+        let toast = app.descendants(matching: .any)
+            .matching(NSPredicate(format: "identifier CONTAINS[c] 'toast' OR label IN %@", [
+                "Pesée enregistrée", "Complément retiré", "Complément ajouté",
+            ]))
+        XCTAssertEqual(toast.count, 0, "no toast after \(after)")
+    }
+
+    /// A weigh-in typed in quarter pounds is stored on the tenth of a kilo: 177,25 lb is 80,4 kg,
+    /// read back as typed in pounds and as 80,4 in kilos.
+    func testWeighInInQuarterPoundsStoredInTenthKilos() {
+        let app = corps("bodyEarly")
+        switchUnit(app, to: "livres")
+        app.tab("Corps")
+        element(app, "corps-add").tap()
+        XCTAssertTrue(app.sheetTitle("Pesée").waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["lb"].exists, "the field's unit is the pound")
+        let field = element(app, "weighin-kg")
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5), "the keypad is open")
+        field.typeText("177,25")
+        let save = element(app, "weighin-save")
+        XCTAssertTrue(save.isEnabled, "a quarter pound within the bounds turns ✓ on")
+        save.tap()
+        let row = element(app, "today.weighIn")
+        XCTAssertTrue(app.swipeUpUntil(row))
+        XCTAssertTrue(row.comesToRead("Pesée, 177,25\u{202F}lb"), "read back in pounds: \(row.label)")
+        switchUnit(app, to: "kilos")
+        app.tab("Corps")
+        XCTAssertTrue(app.swipeUpUntil(row))
+        XCTAssertTrue(row.comesToRead("Pesée, 80,4\u{202F}kg"), "stored as 80,4 kg: \(row.label)")
+        element(app, "corps-add").tap()
+        XCTAssertTrue(app.sheetTitle("Pesée").waitForExistence(timeout: 5))
+        XCTAssertTrue(
+            element(app, "weighin-kg").waitFor(NSPredicate(format: "value == %@", "80,4")), "today's value in kilos")
+    }
+
+    /// Accueil's card, Corps's figure, the curve and the weeks' averages, all in pounds: the
+    /// 7-day average of 80,2 kg reads 176,75 lb, today's 79,9 kg reads 176,25 lb.
+    func testTrendAndCurveInPounds() {
+        let app = corps("bodyUsual")
+        switchUnit(app, to: "livres")
+        let figure = app.staticTexts["176,75"]
+        XCTAssertTrue(app.swipeUpUntil(figure), "Accueil's card in pounds")
+        XCTAssertFalse(app.staticTexts["80,2"].exists, "no kilos left on Accueil's card")
+        app.tab("Corps")
+        XCTAssertTrue(app.staticTexts["176,75"].waitForExistence(timeout: 5), "Corps's figure in pounds")
+        XCTAssertTrue(app.staticTexts["lb"].exists, "with its symbol")
+        let chart = element(app, "trend-chart")
+        XCTAssertTrue(chart.label.hasSuffix("176,75\u{202F}lb"), "the curve's average in pounds: \(chart.label)")
+        let row = element(app, "corps-weeks")
+        XCTAssertTrue(app.swipeUpUntil(row))
+        row.tap()
+        XCTAssertTrue(app.navigationBars["Ta tendance"].waitForExistence(timeout: 5))
+        app.segmentedControls["trend-span"].buttons["Semaine"].tap()
+        let pattern = ".*Pesée [0-9]+,[0-9]+\u{202F}lb · Moyenne 7 j [0-9]+,[0-9]+\u{202F}lb"
+        let point = element(app, "trend-chart")
+        point.coordinate(withNormalizedOffset: CGVector(dx: 0.95, dy: 0.5)).tap()
+        XCTAssertTrue(point.waitFor(NSPredicate(format: "value MATCHES %@", pattern)), "a point read in pounds: \(point.value ?? "")")
+        let week = element(app, "week-1")
+        XCTAssertTrue(app.swipeUpUntil(week))
+        XCTAssertTrue(
+            week.label.range(of: "7 pesées · [0-9]+,[0-9]+\u{202F}lb", options: .regularExpression) != nil,
+            "the week's average in pounds: \(week.label)")
+    }
+
+    /// Outside the weigh-in's bounds in pounds, ✓ stays grey and the bounds are said in pounds.
+    func testWeighInOutsideBoundsInPoundsRefused() {
+        let app = corps("bodyEarly")
+        switchUnit(app, to: "livres")
+        app.tab("Corps")
+        element(app, "corps-add").tap()
+        XCTAssertTrue(app.sheetTitle("Pesée").waitForExistence(timeout: 5))
+        let field = element(app, "weighin-kg")
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5))
+        field.typeText("40")
+        XCTAssertFalse(element(app, "weighin-save").isEnabled, "40 lb is under 20 kg")
+        let bounds = "Saisis un poids entre 44,25 et 881,75\u{202F}lb."
+        XCTAssertTrue(app.staticTexts[bounds].waitForExistence(timeout: 3), "the bounds said in pounds")
+        field.typeText("00")
+        XCTAssertFalse(element(app, "weighin-save").isEnabled, "4 000 lb is over 400 kg")
+        XCTAssertTrue(app.staticTexts[bounds].exists, "the bounds said again")
+        for _ in 0..<4 { field.typeText(XCUIKeyboardKey.delete.rawValue) }
+        field.typeText("400")
+        XCTAssertTrue(element(app, "weighin-save").isEnabled, "400 lb turns ✓ on")
+        XCTAssertFalse(app.staticTexts[bounds].exists, "and the bounds leave")
+    }
+
+    /// A weigh-in saved raises no toast.
+    func testNoToastAnywhere() {
+        let app = corps("bodyEarly")
+        element(app, "corps-add").tap()
+        XCTAssertTrue(app.sheetTitle("Pesée").waitForExistence(timeout: 5))
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5))
+        element(app, "weighin-kg").typeText("79,4")
+        element(app, "weighin-save").tap()
+        XCTAssertTrue(app.swipeUpUntil(element(app, "today.weighIn")))
+        XCTAssertTrue(element(app, "today.weighIn").comesToRead("Pesée, 79,4\u{202F}kg"))
+        assertNoToast(app, "a weigh-in")
+    }
+
     /// CO36: once Corps scrolls, no compact title and no bar; « + » stays.
     func testNoCompactTitle() {
         let app = corps("bodyUsual", largestText: true)

@@ -40,7 +40,10 @@ struct TrendCard: View {
                 line(Text(verbatim: early(count)))
                 if place == .corps { WeightChart(points: points, average: [], span: earlySpan(points)) }
             case .usual(let trend):
-                Figure(text: BodyText.number(trend.averageKg), value: trend.averageKg, unit: "kg")
+                let unit = BodyText.unit
+                Figure(
+                    text: BodyText.figure(trend.averageKg, unit), value: weighingFromKg(trend.averageKg, unit),
+                    unit: unit.rawValue)
                 change(trend)
                 range(trend)
                 if place != .accueil, let span {

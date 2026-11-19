@@ -72,7 +72,7 @@ struct TodayRowsView: View {
 
     private var weighIn: String {
         guard let kg = rows.weighIn.kg else { return String(localized: "pas encore saisie", table: "Corps") }
-        let value = BodyText.kg(kg)
+        let value = BodyText.weight(kg)
         return rows.weighIn.fromHealth ? String(localized: "\(value) · depuis Santé", table: "Corps") : value
     }
 
@@ -156,14 +156,28 @@ private struct TodayRow: View {
     }
 }
 
-/// The body's figures in the person's language: tenths of kg and cm, whole kcal and g.
+/// The body's figures in the person's language: weights in the unit chosen, tenths of cm, whole kcal and g.
 enum BodyText {
     /// « 79,9 », the tenth always shown.
     static func number(_ value: Double) -> String {
         value.formatted(.number.precision(.fractionLength(1)))
     }
 
+    /// A value that is kilos by nature, never converted.
     static func kg(_ value: Double) -> String { "\(number(value))\u{202F}kg" }
+
+    /// The unit chosen in Réglages; a body that reads it redraws when it changes.
+    static var unit: WeightUnit { WeightUnitChoice.shared.unit }
+
+    /// A body weight's figure in `unit`, as the web shows it: « 80,4 » in kilos, its tenth always
+    /// shown, « 177,25 » or « 177,5 » in pounds, to the quarter. Never grouped, so a field can take it back.
+    static func figure(_ kg: Double, _ unit: WeightUnit = unit) -> String {
+        weighingFromKg(kg, unit).formatted(
+            .number.grouping(.never).precision(.fractionLength(1...(unit == .kg ? 1 : 2))))
+    }
+
+    /// « 80,4 kg », « 177,25 lb »: the symbol never translated, after a narrow no-break space.
+    static func weight(_ kg: Double) -> String { "\(figure(kg))\u{202F}\(unit.rawValue)" }
 
     static func cm(_ value: Double) -> String { "\(number(value))\u{202F}cm" }
 

@@ -542,16 +542,6 @@
         }
       }
     },
-    "kg": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "kg"
-          }
-        }
-      }
-    },
     "pas encore saisie": {
       "localizations": {
         "en": {
@@ -644,6 +634,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "taille %@ · %@"
+          }
+        }
+      }
+    },
+    "Poids en livres": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weight in pounds"
+          }
+        }
+      }
+    },
+    "Saisis un poids entre %@ et %@ %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter a weight between %@ and %@ %@."
           }
         }
       }
