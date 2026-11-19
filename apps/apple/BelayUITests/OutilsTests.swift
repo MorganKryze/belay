@@ -52,6 +52,33 @@ final class OutilsTests: XCTestCase {
         button.tap()
     }
 
+    /// Accueil, Réglages, the weight unit set to `word` (« kilos » or « livres »), then Outils again
+    /// on the page it was showing.
+    private func switchUnit(_ app: XCUIApplication, to word: String) {
+        app.putKeypadAway()
+        app.tab("Accueil")
+        let settings = app.buttons["settings"]
+        XCTAssertTrue(settings.waitForExistence(timeout: 10), "Accueil leads to Réglages")
+        settings.tap()
+        XCTAssertTrue(app.navigationBars["Réglages"].waitForExistence(timeout: 5), "Réglages opens")
+        let row = element(app, "reglages-weight-unit")
+        XCTAssertTrue(app.swipeUpUntil(row), "the unit row is reached")
+        let bar = app.tabBars.firstMatch
+        for _ in 0..<3 where bar.exists && row.frame.maxY > bar.frame.minY - 8 {
+            app.swipeUp(velocity: .slow)
+        }
+        // Right after a push the list can still move under the first tap: tapped again until chosen.
+        let choice = row.segmentedControls.firstMatch.buttons[word]
+        for _ in 0..<3 where !choice.isSelected {
+            choice.tap()
+            _ = choice.waitFor(NSPredicate(format: "isSelected == true"), timeout: 2)
+        }
+        XCTAssertTrue(choice.isSelected, "\(word) chosen")
+        app.navigationBars.buttons.firstMatch.tap()
+        app.tab("Outils")
+        XCTAssertTrue(element(app, "tool-header").waitForExistence(timeout: 5), "the tool is still open")
+    }
+
     /// A9: Force, Énergie and Corps, in this order, each tool a 56 pt row with its name and hint.
     func testThreeGroupsInOrder() {
         let app = outils()
@@ -130,8 +157,8 @@ final class OutilsTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(more.frame.height, 44, "a 44 pt target at least")
         more.tap()
         XCTAssertTrue(element(app, "tool-reps").label.contains("6"), "6 reps: \(element(app, "tool-reps").label)")
-        XCTAssertEqual(element(app, "tool-figure-epley").label, "Epley, 96 kg")
-        XCTAssertEqual(element(app, "tool-figure-brzycki").label, "Brzycki, 93 kg")
+        XCTAssertEqual(element(app, "tool-figure-epley").label, "Epley, 96 kilos")
+        XCTAssertEqual(element(app, "tool-figure-brzycki").label, "Brzycki, 93 kilos")
     }
 
     /// A13: Réglages' « Epley seule » leaves Brzycki out.
@@ -144,7 +171,7 @@ final class OutilsTests: XCTestCase {
     }
 
     /// A13: past ten reps the web's line says the estimate is less reliable; at one, the load is the max.
-    func testPastReliableRepsSaysSo() {
+    func testPastReliableRepsReadsTheRule() {
         let app = outils()
         open(app, "one-rep-max")
         type(app, "80", into: "tool-field-load")
@@ -223,14 +250,14 @@ final class OutilsTests: XCTestCase {
         type(app, "100", into: "tool-field-work")
         let first = element(app, "warmup-set-0")
         XCTAssertTrue(first.waitForExistence(timeout: 3))
-        XCTAssertEqual(first.label, "50\u{202F}kg × 5, 10 + 5 par côté")
-        XCTAssertEqual(element(app, "warmup-set-1").label, "75\u{202F}kg × 3, 20 + 5 + 2,5 par côté")
+        XCTAssertEqual(first.label, "50 kilos × 5, 10 + 5 par côté")
+        XCTAssertEqual(element(app, "warmup-set-1").label, "75 kilos × 3, 20 + 5 + 2,5 par côté")
         XCTAssertFalse(element(app, "warmup-set-2").exists, "100 kg calls for two sets")
         XCTAssertTrue(element(app, "tool-count").label.contains("2 séries"), element(app, "tool-count").label)
         let more = app.buttons["Ajouter une série"]
         XCTAssertTrue(app.swipeUpUntil(more))
         more.tap()
-        XCTAssertEqual(element(app, "warmup-set-0").label, "40\u{202F}kg × 5, 10 par côté")
+        XCTAssertEqual(element(app, "warmup-set-0").label, "40 kilos × 5, 10 par côté")
         XCTAssertTrue(element(app, "warmup-set-2").exists, "three sets once asked")
     }
 
@@ -341,6 +368,102 @@ final class OutilsTests: XCTestCase {
         let count = element(app, "tool-count")
         XCTAssertTrue(count.waitForExistence(timeout: 3))
         XCTAssertTrue(count.label.contains("suit la charge tant que tu n’y touches pas"), count.label)
-        XCTAssertEqual(element(app, "warmup-work").label, "100\u{202F}kg, séries de travail, à toi")
+        XCTAssertEqual(element(app, "warmup-work").label, "100 kilos, séries de travail, à toi")
+    }
+
+    /// In pounds, 176 lb × 6 gives the web's Epley 211 lb and Brzycki 204 lb, said in words.
+    func testOneRepMaxInPoundsMatchesWeb() {
+        let app = outils(arguments: ["-belay.weightUnit", "lb"])
+        open(app, "one-rep-max")
+        type(app, "176", into: "tool-field-load")
+        app.buttons["Ajouter une répétition"].tap()
+        let epley = element(app, "tool-figure-epley")
+        XCTAssertTrue(epley.waitFor(NSPredicate(format: "label == 'Epley, 211 livres'"), timeout: 3), epley.label)
+        XCTAssertEqual(element(app, "tool-figure-brzycki").label, "Brzycki, 204 livres")
+    }
+
+    /// A load shown in pounds and typed again as shown keeps its kilos: 80 kg reads 176 lb, and
+    /// back in kilos it is 80 again, not the 79,83 that 176 lb converts to. 80 kg × 5 is Epley
+    /// 93,5 kg, or 206 lb.
+    func testLoadLeftAsShownKeepsItsKilos() {
+        let app = outils()
+        open(app, "one-rep-max")
+        type(app, "80", into: "tool-field-load")
+        let field = element(app, "tool-field-load")
+        XCTAssertTrue(element(app, "tool-figure-epley").waitFor(NSPredicate(format: "label == 'Epley, 93,5 kilos'"), timeout: 3))
+        switchUnit(app, to: "livres")
+        XCTAssertEqual(field.value as? String, "176", "80 kg reads in whole pounds")
+        XCTAssertEqual(element(app, "tool-figure-epley").label, "Epley, 206 livres")
+        field.tapAtEnd()
+        XCTAssertTrue(app.keys["6"].waitForExistence(timeout: 3), "the keypad is up")
+        field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 3))
+        for key in "176" { tapKey(app, String(key)) }
+        switchUnit(app, to: "kilos")
+        XCTAssertEqual(field.value as? String, "80", "the kilos typed first are kept")
+        XCTAssertEqual(element(app, "tool-figure-epley").label, "Epley, 93,5 kilos")
+    }
+
+    /// Past the bounds once converted, the line gives them in pounds, as the field rounds them.
+    func testLoadOutsideBoundsSaysPounds() {
+        let app = outils("toolsEmpty", arguments: ["-belay.weightUnit", "lb"])
+        open(app, "one-rep-max")
+        type(app, "1103", into: "tool-field-load")
+        let line = text(app, containing: "Une charge va de")
+        XCTAssertTrue(line.waitForExistence(timeout: 3), "1 103 lb is past 500 kg")
+        XCTAssertTrue(line.label.hasPrefix("Une charge va de 5 à 1"), line.label)
+        XCTAssertTrue(line.label.hasSuffix("100\u{202F}lb."), line.label)
+        XCTAssertFalse(element(app, "tool-figure-epley").exists, "no figure for it")
+    }
+
+    /// In pounds, 225 lb warms up on the 45 lb bar and the pound plates, two sets as 102 kg calls for.
+    func testWarmupInPounds() {
+        let app = outils(arguments: ["-belay.weightUnit", "lb"])
+        open(app, "warmup")
+        type(app, "225", into: "tool-field-work")
+        let first = element(app, "warmup-set-0")
+        XCTAssertTrue(first.waitForExistence(timeout: 3))
+        XCTAssertEqual(first.label, "110 livres × 5, 25 + 5 + 2,5 par côté")
+        XCTAssertEqual(element(app, "warmup-set-1").label, "170 livres × 3, 35 + 25 + 2,5 par côté")
+        XCTAssertFalse(element(app, "warmup-set-2").exists, "two sets")
+        XCTAssertEqual(element(app, "warmup-work").label, "225 livres, séries de travail, à toi")
+        XCTAssertTrue(app.swipeUpUntil(text(app, containing: "«\u{202F}Standard (lb)\u{202F}»")), "the note names the pound set")
+    }
+
+    /// In pounds, Disques loads the 45 lb bar with pound plates, whatever Mon matériel holds, and says so.
+    func testPlatesOnThePoundBar() {
+        let app = outils(arguments: ["-belay.weightUnit", "lb"])
+        open(app, "plates")
+        type(app, "225", into: "tool-field-target")
+        XCTAssertTrue(app.staticTexts["45 + 45\u{202F}lb par côté"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts["Barre de 45\u{202F}lb"].exists)
+        let equipment = element(app, "tool-equipment")
+        XCTAssertTrue(app.swipeUpUntil(equipment))
+        XCTAssertTrue(equipment.label.contains("Standard (lb)"), equipment.label)
+        let note = app.staticTexts["En livres, Belay prend la barre de 45\u{202F}lb et les disques standard."]
+        XCTAssertTrue(app.swipeUpUntil(note), "the web's note")
+    }
+
+    /// A custom set with every plate taken out says it has none, not the load bounds.
+    func testCustomSetWithNoPlatesSaysSo() {
+        let app = outils()
+        open(app, "plates")
+        type(app, "96", into: "tool-field-target")
+        let equipment = element(app, "tool-equipment")
+        XCTAssertTrue(app.swipeUpUntil(equipment))
+        equipment.tap()
+        let edit = app.buttons["Modifier ce matériel"]
+        XCTAssertTrue(app.swipeUpUntil(edit))
+        edit.tap()
+        for plate in ["20.0", "10.0", "5.0", "2.5"] {
+            let chip = element(app, "plate-\(plate)")
+            XCTAssertTrue(app.swipeUpUntil(chip))
+            if chip.isSelected { chip.tap() }
+            XCTAssertFalse(chip.isSelected, "\(plate) taken out")
+        }
+        app.navigationBars.buttons.firstMatch.tap()
+        let line = text(app, containing: "aucun disque")
+        XCTAssertTrue(line.waitForExistence(timeout: 3), "the tool says there are no plates")
+        XCTAssertFalse(text(app, containing: "Une charge va de").exists, "not the load bounds")
+        XCTAssertFalse(text(app, containing: "n’est pas faisable").exists, "nor an unreachable load")
     }
 }

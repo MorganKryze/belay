@@ -148,11 +148,14 @@ struct ResultWaiting: View {
     }
 }
 
-/// What a tool says under a load it cannot take, or none typed.
+/// What a tool says under a load it cannot take, or none typed: the bounds in the unit shown, as
+/// `TypedLoad.bounds` gives them for the field's step.
 enum LoadLine {
-    static func missing(_ typed: TypedLoad, _ empty: LocalizedStringKey) -> Text {
-        typed == .empty
-            ? Text(empty, tableName: "Outils")
-            : Text("Une charge va de 1 à 500\u{202F}kg.", tableName: "Outils")
+    static func missing(_ typed: TypedLoad, _ empty: LocalizedStringKey, step: Double, cap: Double = .infinity) -> Text {
+        guard typed != .empty else { return Text(empty, tableName: "Outils") }
+        let bounds = TypedLoad.bounds(step: step, cap: cap)
+        let low = bounds.lowerBound.upToHundredths
+        let high = bounds.upperBound.upToHundredths
+        return Text("Une charge va de \(low) à \(high)\u{202F}\(SetText.symbol).", tableName: "Outils")
     }
 }

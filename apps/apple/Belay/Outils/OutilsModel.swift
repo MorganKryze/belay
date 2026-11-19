@@ -91,9 +91,10 @@ extension EquipmentChoice {
     var name: LocalizedStringResource { preset.name }
 }
 
-/// What the tools hold: each tool's fields as last typed, Mon matériel, the activity level and the
-/// protein goal, kept for the signed-in account on this phone (`ToolMemory`) and never sent. A
-/// page that closes and opens again, or the app relaunched, finds its values.
+/// What the tools hold: each tool's fields as last typed, a weight always in kilos whatever the
+/// unit it was typed in, Mon matériel, the activity level and the protein goal, kept for the
+/// signed-in account on this phone (`ToolMemory`) and never sent. A page that closes and opens
+/// again, or the app relaunched, finds its values.
 @MainActor @Observable
 final class OutilsModel {
     private(set) var memory: ToolMemory {
@@ -173,6 +174,29 @@ final class OutilsModel {
     var proteinGoal: ProteinGoal {
         get { memory.goal }
         set { memory.proteinGoal = newValue }
+    }
+
+    /// A weight as a field on the kilo step `step` shows it in the unit chosen: kilos to the
+    /// hundredth (« 62,5 »), pounds on the finer of the step's pounds and the whole pound (« 176 »;
+    /// a body weight's 0,1 kg step gives quarter pounds). Never grouped, so the keypad can go on.
+    static func weightText(_ kg: Double, step: Double = 0.5) -> String {
+        let unit = SetText.unit
+        let shown = unit == .kg ? kg : roundTo(kgToLb(kg), step: min(stepIn(step, unit), 1))
+        return shown.formatted(.number.grouping(.never).precision(.fractionLength(0...2)))
+    }
+
+    /// A field's kept kilos as it shows them; text that reads as no figure stays as typed.
+    static func shownText(_ kgText: String, step: Double = 0.5) -> String {
+        SetText.parseKg(kgText).map { weightText($0, step: step) } ?? kgText
+    }
+
+    /// The kilos of a figure typed in the unit chosen, nil when it reads as none. Typed again as
+    /// `prefill` was shown, it gives `prefill` back (`readBack`).
+    static func kg(fromShown text: String, step: Double = 0.5, prefill: Double? = nil) -> Double? {
+        guard let value = ToolNumber.value(text) else { return nil }
+        let toKg = { (shown: Double) in SetText.unit == .kg ? shown : lbToKg(shown) }
+        guard let prefill, let shown = ToolNumber.value(weightText(prefill, step: step)) else { return toKg(value) }
+        return readBack(toKg(value), prefill: (prefill, toKg(shown)))
     }
 
     /// A field a value may prefill: the prefill until the person changes the field, then what

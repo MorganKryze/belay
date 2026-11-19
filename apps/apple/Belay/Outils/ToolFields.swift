@@ -94,23 +94,97 @@ struct CountStepper: View {
     }
 }
 
-/// A typed load as kilos within the web's 1 to 500 kg, nil while empty, `.outside` past them.
+/// A weight typed in the unit chosen in Réglages and kept in kilos: the keypad shows and takes
+/// pounds while the unit is lb, and the model only ever holds kilos. A figure typed again as it
+/// was shown gives back the kilos the field opened on, so 80 kg read as 176 lb stays 80, not the
+/// 79,83 that 176 lb converts to.
+struct WeightField: View {
+    let label: LocalizedStringKey
+    /// The kilos as the model keeps them: empty, a figure, or text that reads as none.
+    @Binding var kg: String
+    /// The web's kilo step for the field: its pounds set how finely a figure shows.
+    let step: Double
+    /// The kilos the grey placeholder shows.
+    let prompt: Double
+    let id: String
+    @State private var text: String
+    /// The kilos the field shows since it opened or the unit changed, which `readBack` keeps.
+    @State private var shownKg: Double?
+    /// What the field last handed back, so a change of its own does not reset what is typed.
+    @State private var handed: String?
+
+    init(label: LocalizedStringKey, kg: Binding<String>, step: Double, prompt: Double, id: String) {
+        self.label = label
+        _kg = kg
+        self.step = step
+        self.prompt = prompt
+        self.id = id
+        _text = State(initialValue: OutilsModel.shownText(kg.wrappedValue, step: step))
+        _shownKg = State(initialValue: SetText.parseKg(kg.wrappedValue))
+    }
+
+    var body: some View {
+        let unit = SetText.unit
+        KeypadField(
+            label: label, text: $text, unit: LocalizedStringKey(unit.rawValue),
+            prompt: OutilsModel.weightText(prompt, step: step), id: id
+        )
+        .onChange(of: unit) { reset() }
+        .onChange(of: kg) { if kg != handed { reset() } }
+        .onChange(of: text) { handBack() }
+    }
+
+    /// Shows the model's kilos again, in the unit now chosen.
+    private func reset() {
+        shownKg = SetText.parseKg(kg)
+        text = OutilsModel.shownText(kg, step: step)
+    }
+
+    private func handBack() {
+        let typed = text.trimmingCharacters(in: .whitespaces)
+        let next: String
+        if typed.isEmpty {
+            next = ""
+        } else if let value = OutilsModel.kg(fromShown: typed, step: step, prefill: shownKg) {
+            // The same kilos keep the model's text, so a working load does not lose its count.
+            next = value == SetText.parseKg(kg) ? kg : String(value)
+        } else {
+            // Unreadable: kept as typed, which reads as outside the bounds.
+            next = typed
+        }
+        handed = next
+        if next != kg { kg = next }
+    }
+}
+
+/// A typed load as kilos within the web's 1 to 500 kg, nil while empty, `.outside` past them. In
+/// pounds the load must also fall within those bounds as `rangeIn` rounds them to the field's step,
+/// and under `cap`, so the line that gives the bounds holds for every value it refuses.
 enum TypedLoad: Equatable {
     case empty, outside
     case kg(Double)
 
     static let range = 1.0...500.0
 
-    init(_ text: String) {
+    /// `text` holds kilos; `step` is the web's kilo step for the field.
+    init(_ text: String, step: Double, cap: Double = .infinity, unit: WeightUnit = SetText.unit) {
         guard !text.trimmingCharacters(in: .whitespaces).isEmpty else {
             self = .empty
             return
         }
-        guard let kg = SetText.parseKg(text), kg.isFinite, Self.range.contains(kg) else {
+        guard let kg = SetText.parseKg(text), kg.isFinite, Self.range.contains(kg),
+            unit == .kg || Self.bounds(step: step, cap: cap, unit: unit).contains(loadFromKg(kg, unit))
+        else {
             self = .outside
             return
         }
         self = .kg(kg)
+    }
+
+    /// The bounds in the unit shown: 1 to 500 kg, or 5 to 1 100 lb on a 2,5 kg step.
+    static func bounds(step: Double, cap: Double = .infinity, unit: WeightUnit = SetText.unit) -> ClosedRange<Double> {
+        let shown = rangeIn(range, unit, step: stepIn(step, unit))
+        return shown.lowerBound...min(shown.upperBound, cap)
     }
 }
 
