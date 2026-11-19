@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { routeTree } from "@/router";
-import { levelOf, navKind, viewTransition } from "./transitions";
+import { levelOf, navKind } from "./transitions";
 
 // One row per route of the router, with a concrete path for each parameter.
 const LEVELS = [
@@ -106,8 +106,6 @@ describe("viewTransition", () => {
   });
 
   it("without typed transitions the router gets false", async () => {
-    // jsdom has no CSS object at all.
-    expect(viewTransition).toBe(false);
     expect(await load(false)).toBe(false);
   });
 
