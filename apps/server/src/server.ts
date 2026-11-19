@@ -20,6 +20,10 @@ function rootCause(err: unknown): string {
 
 function open(url: string, name: string) {
   try {
+    // postgres 4 keeps a malformed %-escape as typed instead of failing: refuse it here.
+    const { username, password } = new URL(url);
+    decodeURIComponent(username);
+    decodeURIComponent(password);
     return connect(url);
   } catch {
     // The parser's own message ("Invalid URL") is unhelpful, and its error carries the URL, secret
