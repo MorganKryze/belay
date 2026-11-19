@@ -42,6 +42,32 @@ import Testing
     #expect(weeks(Bodies.body(), now: Bodies.now, timeZone: zone).isEmpty)
   }
 
+  @Test func weekKcalIsRoundedAverageOfDaysWithCalories() {
+    let body = Bodies.body(
+      weights: Bodies.usualWeights,
+      intake: [
+        IntakeRow(date: "2026-11-09", kcal: 1900, kcalAt: nil, proteinG: nil, proteinAt: nil),
+        IntakeRow(date: "2026-11-10", kcal: 2001, kcalAt: nil, proteinG: 120, proteinAt: nil),
+        // Protein alone does not count as a day with calories.
+        IntakeRow(date: "2026-11-11", kcal: nil, kcalAt: nil, proteinG: 130, proteinAt: nil),
+        // The week before, on its Sunday.
+        IntakeRow(date: "2026-11-08", kcal: 2500, kcalAt: nil, proteinG: nil, proteinAt: nil),
+      ])
+    let rows = weeks(body, now: Bodies.now, timeZone: zone)
+    // (1 900 + 2 001) / 2 = 1 950.5, rounded as the web's `Math.round`.
+    #expect(rows[0].kcalAvg == 1951)
+    #expect(rows[1].kcalAvg == 2500)
+  }
+
+  @Test func weekWithoutCaloriesHasNone() {
+    let body = Bodies.body(
+      weights: Bodies.usualWeights,
+      intake: [
+        IntakeRow(date: "2026-11-03", kcal: nil, kcalAt: nil, proteinG: 110, proteinAt: nil)
+      ])
+    #expect(weeks(body, now: Bodies.now, timeZone: zone).map(\.kcalAvg) == [nil, nil, nil])
+  }
+
   // MARK: Apports
 
   private let profile = ProfileRow(
