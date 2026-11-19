@@ -232,6 +232,146 @@
         }
       }
     },
+    "Unités": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Units"
+          }
+        }
+      }
+    },
+    "Poids": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weight"
+          }
+        }
+      }
+    },
+    "Belay garde tout en kilos : changer d’unité ne touche à aucune saisie.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Belay keeps everything in kilograms: changing the unit changes none of your entries."
+          }
+        }
+      }
+    },
+    "kilos": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "kilograms"
+          }
+        }
+      }
+    },
+    "livres": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "pounds"
+          }
+        }
+      }
+    },
+    "Son de fin de repos": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "End-of-rest sound"
+          }
+        }
+      }
+    },
+    "Coupé": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Off"
+          }
+        }
+      }
+    },
+    "Discret": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Discreet"
+          }
+        }
+      }
+    },
+    "Toujours": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Always"
+          }
+        }
+      }
+    },
+    "En mode silencieux, iOS coupe le son de l’alerte quand Belay n’est pas à l’écran.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On silent mode, iOS mutes the alert when Belay is not on screen."
+          }
+        }
+      }
+    },
+    "Historique": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "History"
+          }
+        }
+      }
+    },
+    "Avec activités": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "With activities"
+          }
+        }
+      }
+    },
+    "Séances seules": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sessions only"
+          }
+        }
+      }
+    },
+    "Apports": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weekly intake"
+          }
+        }
+      }
+    },
     "Origine des champs": {
       "localizations": {
         "en": {

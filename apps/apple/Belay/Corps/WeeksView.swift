@@ -2,18 +2,20 @@ import BelayCore
 import SwiftUI
 
 /// Tes semaines, newest first, each with its loss and its range in words, then the annotations
-/// with the row that adds one. A gain reads « prise » in ink, never red (R9).
+/// with the row that adds one. A gain reads « prise » in ink, never red. Each week adds its
+/// average calories while Réglages' « Apports » is on.
 struct WeeksView: View {
     let weeks: [WeekRow]
     let range: TargetRange
     let annotations: [AnnotationRow]
     let add: () -> Void
     let edit: (AnnotationRow) -> Void
+    @AppStorage(DevicePrefs.weekIntake.key) private var weekIntake = DevicePrefs.weekIntake.initial
 
     var body: some View {
         Section {
             ForEach(Array(weeks.enumerated()), id: \.element.summary.start) { index, week in
-                WeekLine(week: week, range: range).accessibilityIdentifier("week-\(index)")
+                WeekLine(week: week, range: range, showsKcal: weekIntake == .shown).accessibilityIdentifier("week-\(index)")
             }
         } header: {
             Text("Tes semaines", tableName: "Corps").textCase(nil).foregroundStyle(.ink)
@@ -64,10 +66,11 @@ struct WeeksView: View {
 }
 
 /// One week: its span or « Cette semaine », its change or « à suivre », its weigh-ins and average,
-/// the annotations' words, and its range unless still running.
+/// its calories when shown, the annotations' words, and its range unless still running.
 private struct WeekLine: View {
     let week: WeekRow
     let range: TargetRange
+    let showsKcal: Bool
 
     private var title: String {
         if week.isCurrent { return String(localized: "Cette semaine", table: "Trend") }
@@ -88,6 +91,7 @@ private struct WeekLine: View {
     private var line: String {
         var parts = [String(localized: "\(week.summary.count) pesées", table: "Trend")]
         if let kg = week.summary.averageKg { parts.append(BodyText.kg(kg)) }
+        if showsKcal, let kcal = week.kcalAvg { parts.append(BodyText.kcal(Int(kcal))) }
         parts += week.annotations.map { mark in
             switch mark.kind {
             case .deload: String(localized: "allégée", table: "Trend")
