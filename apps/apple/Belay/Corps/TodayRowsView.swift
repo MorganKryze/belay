@@ -163,9 +163,6 @@ enum BodyText {
         value.formatted(.number.precision(.fractionLength(1)))
     }
 
-    /// A value that is kilos by nature, never converted.
-    static func kg(_ value: Double) -> String { "\(number(value))\u{202F}kg" }
-
     /// The unit chosen in Réglages; a body that reads it redraws when it changes.
     static var unit: WeightUnit { WeightUnitChoice.shared.unit }
 
