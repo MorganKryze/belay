@@ -5,10 +5,9 @@
 # multi-arch build never emulates the install or the build.
 FROM --platform=$BUILDPLATFORM mirror.gcr.io/library/node:26-alpine@sha256:6bd9ab43c0ec0190ca7b2d193906cb8b7edf6e7f4afa43ddeccd6452710bffb5 AS build
 WORKDIR /src
-# ponytail: pnpm is fetched without an integrity hash (no +sha512 in packageManager).
-# Node 25+ drops corepack: a base bump to a newer major must switch to a pinned
-# `npm i -g pnpm@<version>` here.
-RUN corepack enable
+# Node 25+ ships without corepack: pnpm comes from npm, pinned to packageManager's version.
+COPY package.json ./
+RUN npm i -g "$(node -p 'require("./package.json").packageManager')"
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY packages/shared/package.json packages/shared/
 COPY apps/server/package.json apps/server/
