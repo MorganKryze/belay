@@ -40,10 +40,16 @@ struct TrendCard: View {
                 line(Text(verbatim: early(count)))
                 if place == .corps { WeightChart(points: points, average: [], span: earlySpan(points)) }
             case .usual(let trend):
-                let unit = BodyText.unit
-                Figure(
-                    text: BodyText.figure(trend.averageKg, unit), value: weighingFromKg(trend.averageKg, unit),
-                    unit: unit.rawValue)
+                let unit = SetText.unit
+                // The figure's unit drawn here rather than by Figure, so VoiceOver says it as a word.
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Figure(text: BodyText.figure(trend.averageKg, unit), value: weighingFromKg(trend.averageKg, unit))
+                    Text(verbatim: unit.rawValue)
+                        .font(.title3.weight(.semibold))
+                        .foregroundStyle(.muted)
+                        .lineLimit(1)
+                        .accessibilityLabel(SetText.unitWord)
+                }
                 change(trend)
                 range(trend)
                 if place != .accueil, let span {

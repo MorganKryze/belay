@@ -68,7 +68,7 @@ struct WeightChart: View {
     @Environment(\.dynamicTypeSize) private var typeSize
 
     /// The unit the curve and its axis read in.
-    private var unit: WeightUnit { BodyText.unit }
+    private var unit: WeightUnit { SetText.unit }
 
     /// A weight as the curve draws it, in the unit shown.
     private func shown(_ kg: Double) -> Double { weighingFromKg(kg, unit) }
@@ -149,7 +149,7 @@ struct WeightChart: View {
         .padding(.top, annotations.isEmpty ? 0 : 6)
         .accessibilityElement()
         .accessibilityLabel(label)
-        .accessibilityValue(picked.map(reading) ?? String(localized: "\(points.count) pesées", table: "Trend"))
+        .accessibilityValue(picked.map { reading($0, BodyText.spoken) } ?? String(localized: "\(points.count) pesées", table: "Trend"))
         .accessibilityIdentifier("trend-chart")
     }
 
@@ -219,7 +219,7 @@ struct WeightChart: View {
             RuleMark(x: .value("Jour", day, unit: .day))
                 .foregroundStyle(.muted)
                 .annotation(position: .top, overflowResolution: .init(x: .fit(to: .chart), y: .disabled)) {
-                    Text(reading(picked))
+                    Text(reading(picked, BodyText.weight))
                         .font(.footnote.weight(.medium))
                         .monospacedDigit()
                         .foregroundStyle(.ink)
@@ -230,19 +230,20 @@ struct WeightChart: View {
         }
     }
 
-    /// « mardi 10 nov. · Pesée 79,9 kg · Moyenne 7 j 80,1 kg », in the unit chosen.
-    private func reading(_ point: BelayCore.Point) -> String {
+    /// « mardi 10 nov. · Pesée 79,9 kg · Moyenne 7 j 80,1 kg », in the unit chosen, each weight written by
+    /// `weight`: with the symbol on screen, the unit as a word to VoiceOver.
+    private func reading(_ point: BelayCore.Point, _ weight: (Double) -> String) -> String {
         let day = BodyText.date(point.date)?.formatted(.dateTime.weekday(.wide).day().month(.abbreviated)) ?? point.date
-        let weighed = BodyText.weight(point.value)
+        let weighed = weight(point.value)
         if let mean = average.first(where: { $0.date == point.date }) {
-            return String(localized: "\(day) · Pesée \(weighed) · Moyenne 7 j \(BodyText.weight(mean.value))", table: "Trend")
+            return String(localized: "\(day) · Pesée \(weighed) · Moyenne 7 j \(weight(mean.value))", table: "Trend")
         }
         return String(localized: "\(day) · Pesée \(weighed)", table: "Trend")
     }
 
     private var label: String {
         if let last = average.last {
-            return String(localized: "Moyenne 7 jours et pesées, \(span.name.lowercased()), \(BodyText.weight(last.value))", table: "Corps")
+            return String(localized: "Moyenne 7 jours et pesées, \(span.name.lowercased()), \(BodyText.spoken(last.value))", table: "Corps")
         }
         return String(localized: "Tes pesées, \(span.name.lowercased())", table: "Corps")
     }

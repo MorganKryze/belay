@@ -10,7 +10,7 @@ struct WeighInSheet: View {
     @State private var date: Date
     @State private var text = ""
     /// Kept while the sheet is open, as the web does: a number already typed keeps its unit.
-    @State private var unit = BodyText.unit
+    @State private var unit = SetText.unit
     @FocusState private var typing: Bool
 
     init(corps: CorpsModel) {
@@ -20,27 +20,28 @@ struct WeighInSheet: View {
 
     private var day: String { toISODate(date, timeZone: corps.timeZone) }
 
-    /// The kilos to store. The day's value left as shown gives back its own kilos, never a round
-    /// trip through the quarter pound.
+    /// The kilos to store, nil outside the bounds the sheet states. The day's value left as shown
+    /// gives back its own kilos, never a round trip through the quarter pound.
     private var value: Double? {
-        guard let typed = SetText.parseKg(text), let kg = weighingKgFrom(typed, unit) else { return nil }
+        guard !outside, let typed = SetText.parseKg(text), let kg = weighingKgFrom(typed, unit) else { return nil }
         let stored = corps.weighIn(on: day).map { ($0, kgFromWeighing(weighingFromKg($0, unit), unit)) }
         return readBack(kg, prefill: stored)
     }
 
-    /// A number typed that converts outside the bounds, said with them; off the grid stays silent.
+    /// The bounds in the unit, rounded inward to its step, as the web states and enforces them.
+    private var bounds: ClosedRange<Double> {
+        rangeIn(Bounds.weighInKgMin...Bounds.weighInKgMax, unit, step: stepIn(0.1, unit))
+    }
+
+    /// A number typed outside the stated bounds, said with them; off the grid stays silent.
     private var outside: Bool {
         guard let typed = SetText.parseKg(text) else { return false }
-        return !(Bounds.weighInKgMin...Bounds.weighInKgMax).contains(kgFromWeighing(typed, unit))
+        return !bounds.contains(typed)
     }
 
     private var footer: Text? {
         if outside {
-            let step = stepIn(0.1, unit)
-            let bounds = rangeIn(Bounds.weighInKgMin...Bounds.weighInKgMax, unit, step: step)
-            let format = { (v: Double) in
-                v.formatted(.number.grouping(.never).precision(.fractionLength(0...(unit == .kg ? 1 : 2))))
-            }
+            let format = { (v: Double) in BodyText.figure(kgFromWeighing(v, unit), unit) }
             let low = format(bounds.lowerBound), high = format(bounds.upperBound), symbol = unit.rawValue
             return Text("Saisis un poids entre \(low) et \(high)\u{202F}\(symbol).", tableName: "Corps")
         }

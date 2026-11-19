@@ -144,7 +144,7 @@ final class CorpsTests: XCTestCase {
         let app = corps("bodyUsual")
         let weighIn = element(app, "today.weighIn")
         XCTAssertTrue(app.swipeUpUntil(element(app, "today.supplements")))
-        XCTAssertEqual(weighIn.label, "Pesée, 79,9\u{202F}kg")
+        XCTAssertEqual(weighIn.label, "Pesée, 79,9 kilos")
         XCTAssertEqual(element(app, "today.measures").label, "Mensurations, taille 84,5\u{202F}cm · \(frenchWeekday(-3))")
         XCTAssertEqual(element(app, "today.intake").label, "Apports, 1\u{202F}850\u{202F}kcal · 128\u{202F}g de protéines")
         XCTAssertEqual(element(app, "today.supplements").label, "Compléments, 1 sur 2")
@@ -188,7 +188,7 @@ final class CorpsTests: XCTestCase {
         save.tap()
         XCTAssertFalse(app.sheetTitle("Pesée").waitForExistence(timeout: 2) && app.sheetTitle("Pesée").isHittable)
         XCTAssertTrue(app.swipeUpUntil(element(app, "today.weighIn")))
-        XCTAssertEqual(element(app, "today.weighIn").label, "Pesée, 79,4\u{202F}kg", "read back on Corps")
+        XCTAssertEqual(element(app, "today.weighIn").label, "Pesée, 79,4 kilos", "read back on Corps")
     }
 
     /// CO15: a day already weighed opens on its value, and its deletion asks first.
@@ -251,7 +251,7 @@ final class CorpsTests: XCTestCase {
             app.staticTexts["Tes pesées de Santé"].waitFor(NSPredicate(format: "exists == false"), timeout: 5), "the card leaves")
         XCTAssertTrue(app.swipeUpUntil(element(app, "today.weighIn")))
         XCTAssertTrue(
-            element(app, "today.weighIn").comesToRead("Pesée, 79,9\u{202F}kg · depuis Santé"), "Health's weigh-in came in")
+            element(app, "today.weighIn").comesToRead("Pesée, 79,9 kilos · depuis Santé"), "Health's weigh-in came in")
         let switches = reglages(app)
         XCTAssertEqual(switches.health.value as? String, "1", "Santé is on")
         XCTAssertEqual(switches.imports.value as? String, "1", "the import is on")
@@ -291,7 +291,7 @@ final class CorpsTests: XCTestCase {
     func testImportedRowSaysFromHealth() {
         let app = corps("weighedFromHealth")
         XCTAssertTrue(app.swipeUpUntil(element(app, "today.weighIn")))
-        XCTAssertEqual(element(app, "today.weighIn").label, "Pesée, 79,9\u{202F}kg · depuis Santé")
+        XCTAssertEqual(element(app, "today.weighIn").label, "Pesée, 79,9 kilos · depuis Santé")
         XCTAssertEqual(element(app, "today.weighIn").value as? String, "saisie", "with its ✓")
     }
 
@@ -335,7 +335,7 @@ final class CorpsTests: XCTestCase {
         let app = corps("bodyUsual", now: "\(formatter.string(from: .now))T23:59:20")
         let row = element(app, "today.weighIn")
         XCTAssertTrue(app.swipeUpUntil(row))
-        XCTAssertEqual(row.label, "Pesée, 79,9\u{202F}kg", "weighed, before midnight")
+        XCTAssertEqual(row.label, "Pesée, 79,9 kilos", "weighed, before midnight")
         XCTAssertTrue(
             row.comesToRead("Pesée, pas encore saisie", timeout: 70),
             "past midnight, the new day is not weighed yet")
@@ -392,11 +392,11 @@ final class CorpsTests: XCTestCase {
         save.tap()
         let row = element(app, "today.weighIn")
         XCTAssertTrue(app.swipeUpUntil(row))
-        XCTAssertTrue(row.comesToRead("Pesée, 177,25\u{202F}lb"), "read back in pounds: \(row.label)")
+        XCTAssertTrue(row.comesToRead("Pesée, 177,25 livres"), "read back in pounds: \(row.label)")
         switchUnit(app, to: "kilos")
         app.tab("Corps")
         XCTAssertTrue(app.swipeUpUntil(row))
-        XCTAssertTrue(row.comesToRead("Pesée, 80,4\u{202F}kg"), "stored as 80,4 kg: \(row.label)")
+        XCTAssertTrue(row.comesToRead("Pesée, 80,4 kilos"), "stored as 80,4 kg: \(row.label)")
         element(app, "corps-add").tap()
         XCTAssertTrue(app.sheetTitle("Pesée").waitForExistence(timeout: 5))
         XCTAssertTrue(
@@ -413,22 +413,22 @@ final class CorpsTests: XCTestCase {
         XCTAssertFalse(app.staticTexts["80,2"].exists, "no kilos left on Accueil's card")
         app.tab("Corps")
         XCTAssertTrue(app.staticTexts["176,75"].waitForExistence(timeout: 5), "Corps's figure in pounds")
-        XCTAssertTrue(app.staticTexts["lb"].exists, "with its symbol")
+        XCTAssertTrue(app.staticTexts["livres"].exists, "its unit said as a word")
         let chart = element(app, "trend-chart")
-        XCTAssertTrue(chart.label.hasSuffix("176,75\u{202F}lb"), "the curve's average in pounds: \(chart.label)")
+        XCTAssertTrue(chart.label.hasSuffix("176,75 livres"), "the curve's average in pounds: \(chart.label)")
         let row = element(app, "corps-weeks")
         XCTAssertTrue(app.swipeUpUntil(row))
         row.tap()
         XCTAssertTrue(app.navigationBars["Ta tendance"].waitForExistence(timeout: 5))
         app.segmentedControls["trend-span"].buttons["Semaine"].tap()
-        let pattern = ".*Pesée [0-9]+,[0-9]+\u{202F}lb · Moyenne 7 j [0-9]+,[0-9]+\u{202F}lb"
+        let pattern = ".*Pesée [0-9]+,[0-9]+ livres · Moyenne 7 j [0-9]+,[0-9]+ livres"
         let point = element(app, "trend-chart")
         point.coordinate(withNormalizedOffset: CGVector(dx: 0.95, dy: 0.5)).tap()
         XCTAssertTrue(point.waitFor(NSPredicate(format: "value MATCHES %@", pattern)), "a point read in pounds: \(point.value ?? "")")
         let week = element(app, "week-1")
         XCTAssertTrue(app.swipeUpUntil(week))
         XCTAssertTrue(
-            week.label.range(of: "7 pesées · [0-9]+,[0-9]+\u{202F}lb", options: .regularExpression) != nil,
+            week.label.range(of: "7 pesées · [0-9]+,[0-9]+ livres", options: .regularExpression) != nil,
             "the week's average in pounds: \(week.label)")
     }
 
@@ -452,6 +452,10 @@ final class CorpsTests: XCTestCase {
         field.typeText("400")
         XCTAssertTrue(element(app, "weighin-save").isEnabled, "400 lb turns ✓ on")
         XCTAssertFalse(app.staticTexts[bounds].exists, "and the bounds leave")
+        for _ in 0..<3 { field.typeText(XCUIKeyboardKey.delete.rawValue) }
+        field.typeText("44,1")
+        XCTAssertFalse(element(app, "weighin-save").isEnabled, "44,1 lb is under the stated 44,25")
+        XCTAssertTrue(app.staticTexts[bounds].waitForExistence(timeout: 3), "the stated bound refuses it")
     }
 
     /// « Retirer » on a supplement asks first, its name in the question; Annuler keeps it, and once
@@ -515,7 +519,7 @@ final class CorpsTests: XCTestCase {
         element(app, "weighin-kg").typeText("79,4")
         element(app, "weighin-save").tap()
         XCTAssertTrue(app.swipeUpUntil(element(app, "today.weighIn")))
-        XCTAssertTrue(element(app, "today.weighIn").comesToRead("Pesée, 79,4\u{202F}kg"))
+        XCTAssertTrue(element(app, "today.weighIn").comesToRead("Pesée, 79,4 kilos"))
         assertNoToast(app, "a weigh-in")
     }
 

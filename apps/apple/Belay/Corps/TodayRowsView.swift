@@ -37,7 +37,7 @@ struct TodayRowsView: View {
                     .accessibilityValue(steps.value == nil ? "" : String(localized: "saisis", table: "Corps"))
                     .accessibilityIdentifier("today.steps")
             }
-            row("today.weighIn", .body, "scalemass.fill", String(localized: "Pesée", table: "Corps"), weighIn, logged: rows.weighIn.kg != nil,
+            row("today.weighIn", .body, "scalemass.fill", String(localized: "Pesée", table: "Corps"), weighIn(BodyText.weight), spoken: weighIn(BodyText.spoken), logged: rows.weighIn.kg != nil,
                 done: rows.weighIn.kg == nil ? nil : String(localized: "saisie", table: "Corps")) {
                 open(.weighIn)
             }
@@ -60,19 +60,20 @@ struct TodayRowsView: View {
 
     private func row(
         _ id: String, _ domain: Domain, _ symbol: String, _ title: String, _ detail: String,
-        logged: Bool, done: String? = nil, action: @escaping () -> Void
+        spoken: String? = nil, logged: Bool, done: String? = nil, action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
-            TodayRow(domain: domain, symbol: symbol, title: title, detail: detail, logged: logged, done: done != nil)
+            TodayRow(domain: domain, symbol: symbol, title: title, detail: detail, spoken: spoken, logged: logged, done: done != nil)
         }
         .buttonStyle(.plain)
         .accessibilityValue(done ?? "")
         .accessibilityIdentifier(id)
     }
 
-    private var weighIn: String {
+    /// The day's weight, written by `weight`: shown with the symbol, said with the unit as a word.
+    private func weighIn(_ weight: (Double) -> String) -> String {
         guard let kg = rows.weighIn.kg else { return String(localized: "pas encore saisie", table: "Corps") }
-        let value = BodyText.weight(kg)
+        let value = weight(kg)
         return rows.weighIn.fromHealth ? String(localized: "\(value) · depuis Santé", table: "Corps") : value
     }
 
@@ -122,6 +123,8 @@ private struct TodayRow: View {
     let symbol: String
     let title: String
     let detail: String
+    /// The detail as VoiceOver says it, when it differs from the text shown.
+    var spoken: String? = nil
     let logged: Bool
     /// The day's entry is in: a ✓ before its value, said by the row's value.
     let done: Bool
@@ -142,6 +145,7 @@ private struct TodayRow: View {
                             .accessibilityHidden(true)
                     }
                     Text(detail)
+                        .accessibilityLabel(spoken ?? detail)
                         .font(.subheadline)
                         .foregroundStyle(logged ? .ink : .muted)
                         .monospacedDigit()
@@ -163,18 +167,18 @@ enum BodyText {
         value.formatted(.number.precision(.fractionLength(1)))
     }
 
-    /// The unit chosen in Réglages; a body that reads it redraws when it changes.
-    static var unit: WeightUnit { WeightUnitChoice.shared.unit }
-
     /// A body weight's figure in `unit`, as the web shows it: « 80,4 » in kilos, its tenth always
     /// shown, « 177,25 » or « 177,5 » in pounds, to the quarter. Never grouped, so a field can take it back.
-    static func figure(_ kg: Double, _ unit: WeightUnit = unit) -> String {
+    static func figure(_ kg: Double, _ unit: WeightUnit = SetText.unit) -> String {
         weighingFromKg(kg, unit).formatted(
             .number.grouping(.never).precision(.fractionLength(1...(unit == .kg ? 1 : 2))))
     }
 
     /// « 80,4 kg », « 177,25 lb »: the symbol never translated, after a narrow no-break space.
-    static func weight(_ kg: Double) -> String { "\(figure(kg))\u{202F}\(unit.rawValue)" }
+    static func weight(_ kg: Double) -> String { "\(figure(kg))\u{202F}\(SetText.symbol)" }
+
+    /// « 80,4 kilos », « 177,25 livres »: the same weight as VoiceOver says it, the unit as a word.
+    static func spoken(_ kg: Double) -> String { "\(figure(kg)) \(SetText.unitWord)" }
 
     static func cm(_ value: Double) -> String { "\(number(value))\u{202F}cm" }
 

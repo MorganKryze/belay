@@ -88,9 +88,11 @@ private struct WeekLine: View {
             ? String(localized: "prise \(figure)", table: "Trend") : String(localized: "perte \(figure)", table: "Trend")
     }
 
-    private var line: String {
+    /// The week's line, its average written by `weight`: with the symbol on screen, the unit as a
+    /// word to VoiceOver.
+    private func line(_ weight: (Double) -> String) -> String {
         var parts = [String(localized: "\(week.summary.count) pesées", table: "Trend")]
-        if let kg = week.summary.averageKg { parts.append(BodyText.weight(kg)) }
+        if let kg = week.summary.averageKg { parts.append(weight(kg)) }
         if showsKcal, let kcal = week.kcalAvg { parts.append(BodyText.kcal(Int(kcal))) }
         parts += week.annotations.map { mark in
             switch mark.kind {
@@ -118,7 +120,7 @@ private struct WeekLine: View {
             .font(.body.weight(.semibold))
             .foregroundStyle(.ink)
             .monospacedDigit()
-            Text(line).font(.subheadline).foregroundStyle(.muted).monospacedDigit()
+            Text(line(BodyText.weight)).accessibilityLabel(line(BodyText.spoken)).font(.subheadline).foregroundStyle(.muted).monospacedDigit()
                 .fixedSize(horizontal: false, vertical: true)
             if !week.isCurrent {
                 switch week.inRange {
