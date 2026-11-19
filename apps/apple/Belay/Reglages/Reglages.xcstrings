@@ -1261,6 +1261,26 @@
           }
         }
       }
+    },
+    "Retirer %@ ?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove %@?"
+          }
+        }
+      }
+    },
+    "Ses jours cochés restent.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Its ticked days stay."
+          }
+        }
+      }
     }
   }
 }

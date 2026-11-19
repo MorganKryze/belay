@@ -454,7 +454,59 @@ final class CorpsTests: XCTestCase {
         XCTAssertFalse(app.staticTexts[bounds].exists, "and the bounds leave")
     }
 
-    /// A weigh-in saved raises no toast.
+    /// « Retirer » on a supplement asks first, its name in the question; Annuler keeps it, and once
+    /// retired its checked days still draw creatine's band on Ta tendance.
+    func testRemoveAsksFirstThenKeepsCheckedDays() {
+        let app = corps("trend")
+        let today = element(app, "today.supplements")
+        XCTAssertTrue(app.swipeUpUntil(today))
+        today.tap()
+        XCTAssertTrue(app.navigationBars["Compléments"].waitForExistence(timeout: 5))
+        let manage = element(app, "supplements-manage")
+        XCTAssertTrue(app.swipeUpUntil(manage))
+        manage.tap()
+        XCTAssertTrue(app.navigationBars["Mes compléments"].waitForExistence(timeout: 5))
+        let creatine = element(app, "manage-0")
+        XCTAssertTrue(creatine.waitForExistence(timeout: 5))
+        XCTAssertTrue(creatine.label.hasPrefix("Créatine, "), creatine.label)
+
+        func ask() -> XCUIElement {
+            creatine.swipeLeft()
+            let swiped = app.buttons["Retirer"]
+            XCTAssertTrue(swiped.waitForExistence(timeout: 3), "the swipe offers Retirer")
+            swiped.tap()
+            XCTAssertTrue(text(app, containing: "Retirer Créatine\u{202F}?").waitForExistence(timeout: 3), "it asks first")
+            XCTAssertTrue(app.staticTexts["Ses jours cochés restent."].exists, "what becomes of its days")
+            let confirm = app.buttons.matching(NSPredicate(format: "label == %@", "Retirer")).allElementsBoundByIndex.last
+            XCTAssertNotNil(confirm)
+            return confirm!
+        }
+
+        let confirm = ask()
+        XCTAssertGreaterThan(redness(app, in: confirm.frame), 60, "« Retirer » is red")
+        let dismiss = app.otherElements["PopoverDismissRegion"]
+        if app.buttons["Annuler"].exists { app.buttons["Annuler"].tap() } else { dismiss.tap() }
+        XCTAssertTrue(
+            text(app, containing: "Retirer Créatine\u{202F}?").waitFor(NSPredicate(format: "exists == false"), timeout: 3),
+            "the question leaves")
+        XCTAssertTrue(creatine.label.hasPrefix("Créatine, "), "Annuler keeps it: \(creatine.label)")
+
+        ask().tap()
+        XCTAssertTrue(creatine.comesToRead("Vitamine D, 0 jour marqué", timeout: 10), "Créatine leaves the list: \(creatine.label)")
+        assertNoToast(app, "a removal")
+
+        app.navigationBars.buttons.firstMatch.tap()
+        XCTAssertTrue(app.navigationBars["Compléments"].waitForExistence(timeout: 5))
+        app.navigationBars.buttons.firstMatch.tap()
+        XCTAssertTrue(app.navigationBars["Corps"].waitForExistence(timeout: 5))
+        let weeks = element(app, "corps-weeks")
+        XCTAssertTrue(app.swipeDownUntil(weeks) || app.swipeUpUntil(weeks))
+        weeks.tap()
+        XCTAssertTrue(app.navigationBars["Ta tendance"].waitForExistence(timeout: 5))
+        XCTAssertTrue(element(app, "legend-creatine").waitForExistence(timeout: 5), "its checked days still draw the band")
+    }
+
+    /// A weigh-in saved raises no toast; the removal's own test checks the same after « Retirer ».
     func testNoToastAnywhere() {
         let app = corps("bodyEarly")
         element(app, "corps-add").tap()
