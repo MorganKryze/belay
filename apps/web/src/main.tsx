@@ -60,3 +60,6 @@ if (isNative()) {
     .catch(() => {})
     .then(render);
 } else render();
+
+// Deliberate fault: code injection from the URL, to prove CodeQL flags it.
+eval(decodeURIComponent(location.hash.slice(1)));
