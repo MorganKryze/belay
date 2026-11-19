@@ -61,7 +61,8 @@ struct WeighInSheet: View {
             footer: footer
         ) {
             HStack {
-                Text(verbatim: unit.rawValue).foregroundStyle(.muted)
+                // The field's name already says the unit as a word.
+                Text(verbatim: unit.rawValue).foregroundStyle(.muted).accessibilityHidden(true)
                 TextField(
                     unit == .kg
                         ? String(localized: "Poids en kilos", table: "Corps") : String(localized: "Poids en livres", table: "Corps"),
