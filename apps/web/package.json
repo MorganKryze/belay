@@ -8,6 +8,7 @@
     "preview": "vite preview",
     "typecheck": "tsc -p .",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "e2e": "playwright test",
     "cn:tables": "cn build --full --css src/index.css -o src/lib/cn-tables.ts && node -e \"const f='src/lib/cn-tables.ts',fs=require('fs');fs.writeFileSync(f,fs.readFileSync(f,'utf8').replace(' \\u2014 ',': '))\" && prettier --write src/lib/cn-tables.ts"
   },
@@ -40,6 +41,7 @@
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.3.0",
+    "@vitest/coverage-v8": "5.1.0",
     "fake-indexeddb": "6.2.8",
     "jsdom": "^31.0.0",
     "shadcn": "^4.23.0",
