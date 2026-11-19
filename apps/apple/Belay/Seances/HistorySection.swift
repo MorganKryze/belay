@@ -160,8 +160,10 @@ enum HistoryText {
         return volumeKg.map { "\(duration) · \(volume($0))" } ?? duration
     }
 
-    /// « 6 140 kg », whole kilograms.
+    /// « 6 140 kg » or « 13 536 lb », whole, in the unit chosen; the summary's too. The sum is
+    /// converted as a whole, not load by load, as the web does.
     static func volume(_ kg: Double) -> String {
-        "\(kg.formatted(.number.precision(.fractionLength(0))))\u{202F}kg"
+        let figure = SetText.unit == .kg ? kg : kgToLb(kg)
+        return "\(figure.formatted(.number.precision(.fractionLength(0))))\u{202F}\(SetText.symbol)"
     }
 }

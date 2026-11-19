@@ -262,7 +262,7 @@ enum SessionText {
             : String(localized: "Série \(set.number) sur \(set.of) · \(short(code))")
     }
 
-    /// « 62,5 kg × 8 », « 45 s », « 5 kg · 45 s »; nil while the load is still to type, and for
+    /// « 62,5 kg × 8 », « 138 lb × 8 », « 45 s », « 5 kg · 45 s »; nil while the load is still to type, and for
     /// a set of reps with no load: a first time knows none yet, and « 0 kg × 6 » reads as one.
     static func load(_ set: CurrentSet) -> String? {
         guard let weightKg = set.weightKg, let count = set.count, weightKg > 0 || set.timed else { return nil }
@@ -271,14 +271,15 @@ enum SessionText {
             : load(Load(weightKg: weightKg, reps: count, seconds: nil))
     }
 
-    /// A set's load and count as the summary and the card write them.
+    /// A set's load and count as the summary and the card write them, in the unit chosen.
     static func load(_ load: Load) -> String {
-        let kg = "\(SetText.kg(load.weightKg))\u{202F}kg"
-        guard let seconds = load.seconds else { return "\(kg) × \(load.reps ?? 0)" }
-        return load.weightKg > 0 ? "\(kg) · \(seconds)\u{202F}s" : "\(seconds)\u{202F}s"
+        let weight = "\(SetText.weight(load.weightKg))\u{202F}\(SetText.symbol)"
+        guard let seconds = load.seconds else { return "\(weight) × \(load.reps ?? 0)" }
+        return load.weightKg > 0 ? "\(weight) · \(seconds)\u{202F}s" : "\(seconds)\u{202F}s"
     }
 
-    /// « 4 × 6–8 · la dernière fois 62,5 kg × 8, 8, 7, 6 », or the sets alone the first time.
+    /// « 4 × 6–8 · la dernière fois 62,5 kg × 8, 8, 7, 6 » (138 lb in pounds), or the sets alone the
+    /// first time.
     static func target(_ exercise: PlannedExercise) -> String {
         let sets = "\(exercise.sets) × \(exercise.repRange.map(String.init).joined(separator: "–"))"
             + (exercise.timed ? "\u{202F}s" : "")
@@ -288,7 +289,7 @@ enum SessionText {
             let counts = group.counts.map(String.init).joined(separator: ", ")
             return exercise.timed && group.weightKg == 0
                 ? "\(counts)\u{202F}s"
-                : "\(SetText.kg(group.weightKg))\u{202F}kg × \(counts)\(exercise.timed ? "\u{202F}s" : "")"
+                : "\(SetText.weight(group.weightKg))\u{202F}\(SetText.symbol) × \(counts)\(exercise.timed ? "\u{202F}s" : "")"
         }.joined(separator: " · ")
         return "\(sets) · \(String(localized: "la dernière fois \(last)"))"
     }

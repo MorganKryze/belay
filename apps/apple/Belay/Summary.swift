@@ -48,7 +48,7 @@ struct SummaryView: View {
                     tile("Durée", Self.duration(summary.duration)).accessibilityIdentifier("summary-tile-duration")
                     tile("Séries", "\(summary.workSets)").accessibilityIdentifier("summary-sets")
                     if volume == .shown {
-                        tile("Volume", "\(Self.volume(summary.volumeKg))\u{202F}kg").accessibilityIdentifier("summary-volume")
+                        tile("Volume", HistoryText.volume(summary.volumeKg)).accessibilityIdentifier("summary-volume")
                     }
                     tile("Records", "\(summary.records.count)")
                 }
@@ -204,11 +204,6 @@ struct SummaryView: View {
         guard !left else { return }
         left = close(note)
         if !left { failures += 1 }
-    }
-
-    /// « 2 605 », whole kilograms.
-    private static func volume(_ kg: Double) -> String {
-        kg.formatted(.number.precision(.fractionLength(0)))
     }
 
     private static func duration(_ seconds: TimeInterval) -> String {

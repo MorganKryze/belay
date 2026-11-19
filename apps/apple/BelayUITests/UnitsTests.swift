@@ -10,9 +10,11 @@ final class UnitsTests: XCTestCase {
         continueAfterFailure = false
     }
 
-    private func launch(_ fixture: String) -> XCUIApplication {
+    /// `inPounds` launches with the unit already set to the pound, for a screen reached only once.
+    private func launch(_ fixture: String, inPounds: Bool = false) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = ["-AppleLanguages", "(fr)", "-AppleLocale", "fr_FR", "-BelayFixture", fixture]
+            + (inPounds ? ["-belay.weightUnit", "lb"] : [])
         app.launchFixture()
         return app
     }
@@ -239,5 +241,98 @@ final class UnitsTests: XCTestCase {
         XCTAssertTrue(loadReads(app, "Charge, 62,5 kilos"))
         switchUnit(app, to: "livres")
         XCTAssertTrue(loadReads(app, "Charge, 138 livres"), element(app, "load").label)
+    }
+
+    /// Any element whose label holds `part`.
+    private func labelled(_ app: XCUIApplication, containing part: String) -> XCUIElement {
+        app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@", part)).firstMatch
+    }
+
+    /// One switch in Réglages reaches Accueil's card, the set card and Corps's weigh-in together,
+    /// none left in kilos, and a relaunch keeps the pound.
+    func testUnitReachesEveryScreenAtOnceAndAfterRelaunch() {
+        let app = launch("history")
+        app.tab("Corps")
+        element(app, "corps-add").tap()
+        XCTAssertTrue(app.sheetTitle("Pesée").waitForExistence(timeout: 5))
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5), "the keypad is open")
+        element(app, "weighin-kg").typeText("80,4")
+        element(app, "weighin-save").tap()
+        let weighIn = element(app, "today.weighIn")
+        XCTAssertTrue(app.swipeUpUntil(weighIn))
+        XCTAssertTrue(weighIn.comesToRead("Pesée, 80,4\u{202F}kg"), weighIn.label)
+        app.tab("Accueil")
+        openCover(app)
+        passWarmups(app)
+        XCTAssertTrue(loadReads(app, "Charge, 62,5 kilos"))
+        app.buttons["Réduire la séance"].tap()
+        XCTAssertTrue(labelled(app, containing: "62,5\u{202F}kg × 8").waitForExistence(timeout: 5), "Accueil's card in kilos")
+
+        switchUnit(app, to: "livres")
+        let card = labelled(app, containing: "138\u{202F}lb × 8")
+        XCTAssertTrue(card.waitForExistence(timeout: 5), "Accueil's card in pounds")
+        XCTAssertFalse(labelled(app, containing: "\u{202F}kg × ").exists, "no load left in kilos on Accueil")
+        openCover(app)
+        XCTAssertTrue(loadReads(app, "Charge, 138 livres"), element(app, "load").label)
+        app.buttons["Réduire la séance"].tap()
+        app.tab("Corps")
+        XCTAssertTrue(app.swipeUpUntil(weighIn))
+        XCTAssertTrue(weighIn.comesToRead("Pesée, 177,25\u{202F}lb"), "the weigh-in in pounds: \(weighIn.label)")
+
+        let again = launch("keep")
+        XCTAssertTrue(labelled(again, containing: "138\u{202F}lb × 8").waitForExistence(timeout: 10), "still pounds on Accueil")
+        again.tab("Corps")
+        let kept = element(again, "today.weighIn")
+        XCTAssertTrue(again.swipeUpUntil(kept))
+        XCTAssertTrue(kept.comesToRead("Pesée, 177,25\u{202F}lb"), "still pounds on Corps: \(kept.label)")
+    }
+
+    /// The summary of a set at 65 kg for 8: its record reads 143 lb, its volume in whole pounds.
+    func testSummaryVolumeAndRecordInPounds() {
+        let app = launch("finished", inPounds: true)
+        let resume = app.buttons["Reprendre"]
+        XCTAssertTrue(resume.waitForExistence(timeout: 10), "the session is open")
+        resume.tap()
+        app.finishSession()
+        let volume = element(app, "summary-volume")
+        XCTAssertTrue(volume.waitForExistence(timeout: 5), "the summary shows its volume")
+        XCTAssertEqual(volume.label, "Volume, 4\u{202F}156\u{202F}lb", "1 885 kg, converted whole")
+        XCTAssertTrue(labelled(app, containing: ", 143\u{202F}lb × 8").exists, "the record in pounds")
+        XCTAssertFalse(labelled(app, containing: "\u{202F}kg").exists, "nothing left in kilos")
+    }
+
+    /// The preview's last time, then a past session's tiles and sets, in pounds: 62,5 kg reads
+    /// 138 lb, the 40 kg warm-up 88 lb, and the 2 512,5 kg of volume 5 539 lb.
+    func testPreviewAndPastSessionInPounds() {
+        let app = launch("past", inPounds: true)
+        let open = app.buttons["Voir la séance"]
+        XCTAssertTrue(open.waitForExistence(timeout: 10))
+        open.tap()
+        let bench = element(app, "plan.ds:0025")
+        XCTAssertTrue(bench.waitForExistence(timeout: 5))
+        XCTAssertTrue(bench.label.hasSuffix("4 × 6–8 · la dernière fois 138\u{202F}lb × 8, 8, 7, 6"), bench.label)
+
+        let past = launch("pastSession", inPounds: true)
+        past.tab("Séances")
+        past.segmentedControls.firstMatch.buttons["Historique"].tap()
+        let row = past.descendants(matching: .any).matching(identifier: "history.row").firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 5))
+        row.tap()
+        XCTAssertTrue(past.navigationBars["Séance A"].waitForExistence(timeout: 5))
+        XCTAssertEqual(element(past, "past.volume").label, "Volume, 5\u{202F}539\u{202F}lb")
+        let sets = past.descendants(matching: .any).matching(identifier: "past.set").allElementsBoundByIndex.map(\.label)
+        XCTAssertEqual(
+            Array(sets.prefix(4)),
+            ["Montée, 88\u{202F}lb × 8", "Série 1, 138\u{202F}lb × 8", "Série 2, 138\u{202F}lb × 7", "Série 3, 138\u{202F}lb × 6"])
+    }
+
+    /// The history's row says the session's volume in pounds.
+    func testHistoryVolumeInPounds() {
+        let app = launch("pastSession", inPounds: true)
+        app.tab("Séances")
+        app.segmentedControls.firstMatch.buttons["Historique"].tap()
+        let row = app.descendants(matching: .any).matching(identifier: "history.row").firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 5))
+        XCTAssertTrue(row.label.contains("1\u{202F}h\u{202F}4\u{202F}min · 5\u{202F}539\u{202F}lb"), row.label)
     }
 }
