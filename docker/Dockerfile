@@ -20,7 +20,7 @@ ARG BELAY_VERSION=dev
 RUN BELAY_VERSION=$BELAY_VERSION pnpm --filter @belay/web build && pnpm --filter @belay/server build
 
 # The server is one esbuild bundle: no node_modules in the final image.
-FROM mirror.gcr.io/library/node:26-alpine@sha256:6bd9ab43c0ec0190ca7b2d193906cb8b7edf6e7f4afa43ddeccd6452710bffb5
+FROM mirror.gcr.io/library/node:16.13.0-alpine3.14@sha256:60ef0bed1dc2ec835cfe3c4226d074fdfaba571fd619c280474cc04e93f0ec5b
 WORKDIR /app
 ENV NODE_ENV=production PORT=3000 WEB_DIST=public MIGRATIONS_DIR=drizzle
 COPY --from=build /src/apps/server/dist/main.js ./main.js
