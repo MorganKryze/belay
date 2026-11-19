@@ -41,7 +41,10 @@ struct WeighInSheet: View {
 
     private var footer: Text? {
         if outside {
-            let format = { (v: Double) in BodyText.figure(kgFromWeighing(v, unit), unit) }
+            // A bound is a whole or round number: « 20 et 400 kg », never « 20,0 ».
+            let format = { (v: Double) in
+                v.formatted(.number.grouping(.never).precision(.fractionLength(0...(unit == .kg ? 1 : 2))))
+            }
             let low = format(bounds.lowerBound), high = format(bounds.upperBound), symbol = unit.rawValue
             return Text("Saisis un poids entre \(low) et \(high)\u{202F}\(symbol).", tableName: "Corps")
         }
