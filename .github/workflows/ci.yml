@@ -20,6 +20,20 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      # Fails on any known advisory (OSV: GitHub, npm, NVD) against a version in the lockfile.
+      # The binary is pinned by checksum, since the official action runs a mutable image tag;
+      # the advisory database is fetched live, so an older binary still sees new advisories.
+      - name: osv-scanner
+        env:
+          OSV_VERSION: v2.7.1
+          OSV_SHA256: fb7dab19a8bd9bbe5c3189f09d4b7ee1820c9553a23bac202648a56efd2f6ee8
+        run: |
+          set -euo pipefail
+          bin="$RUNNER_TEMP/osv-scanner"
+          curl -fsSL -o "$bin" "https://github.com/google/osv-scanner/releases/download/$OSV_VERSION/osv-scanner_linux_amd64"
+          echo "$OSV_SHA256  $bin" | sha256sum -c -
+          chmod +x "$bin"
+          "$bin" scan source --lockfile=pnpm-lock.yaml
       - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
