@@ -7,6 +7,7 @@
     "build": "esbuild src/main.ts --bundle --platform=node --target=node24 --format=esm --outfile=dist/main.js --banner:js=\"import{createRequire}from'node:module';const require=createRequire(import.meta.url);\"",
     "typecheck": "tsc -p .",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "db:generate": "drizzle-kit generate"
   },
   "dependencies": {
@@ -21,6 +22,7 @@
   "devDependencies": {
     "@testcontainers/postgresql": "^12.2.1",
     "@types/node": "^26.6.6",
+    "@vitest/coverage-v8": "5.1.0",
     "drizzle-kit": "^0.31.11",
     "esbuild": "^0.28.2",
     "oauth2-mock-server": "^9.3.0",

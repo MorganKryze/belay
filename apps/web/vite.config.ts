@@ -100,5 +100,14 @@ export default defineConfig({
     setupFiles: ["src/test/setup.ts"],
     // Route tests render the whole app in jsdom; on a busy machine the 5 s default is too tight.
     testTimeout: 15_000,
+    // Read only by `test:coverage` (CI); `pnpm test` stays uncovered and fast.
+    coverage: {
+      provider: "v8",
+      include: ["src/**/*.{ts,tsx}"],
+      exclude: ["src/test/**"],
+      reporter: ["text-summary"],
+      // Floors measured in CI, rounded down: raise them as coverage grows, never lower them to pass.
+      thresholds: { statements: 94, branches: 90, functions: 93, lines: 95 },
+    },
   },
 });
