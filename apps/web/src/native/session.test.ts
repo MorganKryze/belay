@@ -50,6 +50,8 @@ const sentBody = () =>
 
 beforeEach(() => {
   vi.resetModules();
+  // jsdom says yes to every CSS.supports: this is not an iPhone's WebKit.
+  vi.stubGlobal("CSS", { supports: () => false });
   localStorage.clear();
   localStorage.setItem("belay.instance", ORIGIN);
   for (const fn of [
