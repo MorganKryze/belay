@@ -103,7 +103,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$@ %2$@ × %3$lld"
+            "value": "%1$@ %2$@ × %3$lld"
           }
         }
       }

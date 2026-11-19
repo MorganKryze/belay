@@ -21,7 +21,7 @@ extension ActivityWords {
                 // A set with no added load shows its count alone: never a body weight.
                 guard kg > 0 else { return String(localized: "× \(count)", table: "Alert") }
                 let unit = UserDefaults.standard.string(forKey: choice.key).flatMap(WeightUnit.init(rawValue:)) ?? choice.initial
-                let load = loadFromKg(kg, unit).formatted(.number.grouping(.never).precision(.fractionLength(0...2)))
+                let load = SetText.weight(kg, in: unit)
                 return String(localized: "\(load)\u{202F}\(unit.rawValue) × \(count)", table: "Alert")
             },
             rest: String(localized: "Repos", table: "Alert"),

@@ -189,6 +189,17 @@ private let appleFolder = URL(filePath: #filePath)
     #expect(loadChoices(weightKg: 500, stepInUnit: 2.5, .kg) == [497.5, 500])
   }
 
+  /// A current load past the set bounds is never offered back as a choice, in either unit.
+  @Test(arguments: [WeightUnit.kg, .lb])
+  func loadChoicesDropACurrentLoadPastTheBounds(_ unit: WeightUnit) {
+    let step: Double = unit == .kg ? 2.5 : 5
+    for kg in [500.25, 520, 600] {
+      let choices = loadChoices(weightKg: kg, stepInUnit: step, unit)
+      #expect(!choices.contains(kg), "\(kg) kg: \(choices)")
+      #expect(choices.allSatisfy(isSetKg), "\(kg) kg: \(choices)")
+    }
+  }
+
   /// A current load off the set grid stays its exact kilos in both units: 100,1 kg is never
   /// offered as the 100,25 its 221 lb converts to, nor left out.
   @Test func loadChoicesKeepAnOffGridCurrentLoad() {

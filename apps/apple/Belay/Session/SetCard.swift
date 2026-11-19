@@ -86,7 +86,7 @@ struct SetCard: View {
         Button { detail = true } label: {
             HStack(spacing: 8) {
                 Image(systemName: "arrow.up.right").font(.subheadline.weight(.bold)).accessibilityHidden(true)
-                Text(SetText.progression(due.progression, weightKg: due.weightKg, timed: due.timed))
+                Text(SetText.progression(due.progression, weightKg: due.weightKg, timed: due.timed, top: due.target.last))
                     .font(.headline)
                     .fixedSize(horizontal: false, vertical: true)
                 Image(systemName: "info.circle").font(.subheadline).foregroundStyle(.muted).accessibilityHidden(true)
@@ -243,7 +243,10 @@ enum SetText {
 
     /// A load in the unit: kilos to the hundredth (« 62,5 »), whole pounds (« 138 »). Never grouped,
     /// so the text is also a value a field can take back.
-    static func weight(_ kg: Double) -> String {
+    static func weight(_ kg: Double) -> String { weight(kg, in: unit) }
+
+    /// `weight` in a given unit, for readers off the main actor such as the lock screen.
+    nonisolated static func weight(_ kg: Double, in unit: WeightUnit) -> String {
         loadFromKg(kg, unit).formatted(.number.grouping(.never).precision(.fractionLength(0...2)))
     }
 
@@ -260,9 +263,18 @@ enum SetText {
             : String(localized: "\(weight(weightKg))\u{202F}\(symbol) × \(String(counts))", table: "Session")
     }
 
-    /// « 62,5 kg × 8, 8, 7, 6 », the groups of equal loads one after the other.
+    /// « 62,5 kg × 8, 8, 7, 6 », the groups of equal loads one after the other. Loads that read
+    /// alike in the unit (62,25 and 62,5 kg, both 137 lb) are one group.
     static func groups(_ groups: [LoadGroup], timed: Bool) -> String {
-        groups.map { load($0.weightKg, $0.counts.map(String.init).joined(separator: ", "), timed: timed) }
+        var shown: [LoadGroup] = []
+        for group in groups {
+            if let last = shown.last, weight(last.weightKg) == weight(group.weightKg) {
+                shown[shown.count - 1] = LoadGroup(weightKg: last.weightKg, counts: last.counts + group.counts)
+            } else {
+                shown.append(group)
+            }
+        }
+        return shown.map { load($0.weightKg, $0.counts.map(String.init).joined(separator: ", "), timed: timed) }
             .joined(separator: " · ")
     }
 
@@ -281,12 +293,16 @@ enum SetText {
 
     /// The line under the load `weightKg`, in one plain sentence; it never suggests a load to come.
     /// A heavier load says the gap between the two loads as shown, so in pounds it matches them.
-    static func progression(_ line: Progression, weightKg: Double, timed: Bool) -> String {
+    /// A rise that rounds to nothing in the unit (62,5 to 62,75 kg, both 138 lb) reads as the same
+    /// load, aiming for `top`.
+    static func progression(_ line: Progression, weightKg: Double, timed: Bool, top: Int? = nil) -> String {
         switch line {
         case .warmup:
             String(localized: "Montée légère, sans forcer", table: "Session")
         case .sameLoad(let top):
             String(localized: "Même charge, vise \(top) reps", table: "Session")
+        case .heavier(let byKg) where weight(weightKg - byKg) == weight(weightKg) && top != nil:
+            String(localized: "Même charge, vise \(top ?? 0) reps", table: "Session")
         case .heavier(let byKg):
             String(localized: "+\(gap(from: weightKg - byKg, to: weightKg))\u{202F}\(symbol) depuis la dernière fois", table: "Session")
         case .firstTime(let low, let high) where timed:

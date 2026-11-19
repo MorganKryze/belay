@@ -198,6 +198,33 @@ final class UnitsTests: XCTestCase {
         XCTAssertEqual(next.label, "53\u{202F}lb × 5", "24 kg in pounds")
     }
 
+    /// 62,5 kg and 62,75 kg both read 138 lb: in pounds the recap shows them as one load.
+    func testRecapGroupsLoadsThatReadAlikeInPounds() {
+        let app = launch("exerciseEnd")
+        openCover(app)
+        typeLoad(app, "62,75")
+        XCTAssertTrue(loadReads(app, "Charge, 62,75 kilos"), element(app, "load").label)
+        switchUnit(app, to: "livres")
+        XCTAssertTrue(loadReads(app, "Charge, 138 livres"), element(app, "load").label)
+        element(app, "log-set").tap()
+        let recap = element(app, "exercise-recap")
+        XCTAssertTrue(recap.waitForExistence(timeout: 3), "the recap shows")
+        XCTAssertTrue(recap.label.hasSuffix(" terminé, 138\u{202F}lb × 8, 8, 7, 6"), recap.label)
+    }
+
+    /// 62,5 kg to 62,75 kg both read 138 lb: the line says the load is the same, never « +0 lb ».
+    func testRiseHiddenByRoundingReadsAsTheSameLoadInPounds() {
+        let app = launch("history")
+        openCover(app)
+        passWarmups(app)
+        typeLoad(app, "62,75")
+        XCTAssertTrue(loadReads(app, "Charge, 62,75 kilos"), element(app, "load").label)
+        switchUnit(app, to: "livres")
+        XCTAssertTrue(loadReads(app, "Charge, 138 livres"), element(app, "load").label)
+        let line = element(app, "progression")
+        XCTAssertTrue(line.waitFor(NSPredicate(format: "label BEGINSWITH %@", "Même charge")), line.label)
+    }
+
     /// 1 103 lb is past 500 kg once converted: the load stays; 1 102 lb is taken.
     func testLoadOutsideBoundsInPoundsRefused() {
         let app = launch("history")
