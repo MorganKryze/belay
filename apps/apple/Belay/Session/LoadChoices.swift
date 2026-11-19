@@ -1,17 +1,16 @@
 import BelayCore
 import SwiftUI
 
-/// The loads offered for the set: one increment of the exercise below, the load, one and two
-/// above, then « Autre charge… » for any other on a decimal keypad.
+/// The loads offered for the set: one step of the exercise below, the load, one and two above,
+/// stepped in the unit shown, then « Autre charge… » for any other on a decimal keypad.
 struct LoadChoices: View {
     let weightKg: Double
-    let incrementKg: Double
+    /// The exercise's step in the unit shown: its increment in kg, a pound gym's step in lb.
+    let step: Double
     let choose: (Double) -> Void
     let other: () -> Void
 
-    private var loads: [Double] {
-        [-1.0, 0, 1, 2].map { weightKg + $0 * incrementKg }.filter { (Bounds.setKgMin...Bounds.setKgMax).contains($0) }
-    }
+    private var loads: [Double] { loadChoices(weightKg: weightKg, stepInUnit: step, SetText.unit) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -19,7 +18,7 @@ struct LoadChoices: View {
                 Button { choose(kg) } label: {
                     HStack {
                         Image(systemName: "checkmark").opacity(kg == weightKg ? 1 : 0).accessibilityHidden(true)
-                        Text("\(SetText.kg(kg))\u{202F}kg", tableName: "Session").monospacedDigit()
+                        Text("\(SetText.weight(kg))\u{202F}\(SetText.symbol)", tableName: "Session").monospacedDigit()
                         Spacer()
                     }
                     .font(.body)

@@ -27,7 +27,7 @@ struct SetCard: View {
             progression
         }
         .alert(Text("Autre charge", tableName: "Session"), isPresented: $typing) {
-            TextField(text: $typed) { Text("Charge en kg", tableName: "Session") }
+            TextField(text: $typed) { Text("Charge en \(SetText.symbol)", tableName: "Session") }
                 .keyboardType(.decimalPad)
             Button { take(typed) } label: { Text("OK", tableName: "Session") }
             Button(role: .cancel) {} label: { Text("Annuler", tableName: "Session") }
@@ -37,14 +37,14 @@ struct SetCard: View {
     private var load: some View {
         Button { choosing = true } label: {
             HStack(alignment: .lastTextBaseline, spacing: 8) {
-                Text(verbatim: SetText.kg(due.weightKg))
+                Text(verbatim: SetText.weight(due.weightKg))
                     .font(.custom(Font.archivoName, size: 72, relativeTo: .largeTitle))
                     .monospacedDigit()
                     .foregroundStyle(.ink)
                     .contentTransition(.numericText(value: due.weightKg))
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
-                Text("kg", tableName: "Session").font(.title2.weight(.semibold)).foregroundStyle(.muted)
+                Text(verbatim: SetText.symbol).font(.title2.weight(.semibold)).foregroundStyle(.muted)
                 Image(systemName: "chevron.up.chevron.down").font(.headline).foregroundStyle(.muted)
                     .accessibilityHidden(true)
             }
@@ -53,12 +53,13 @@ struct SetCard: View {
             .contentShape(.rect)
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(Text("Charge, \(SetText.kg(due.weightKg)) kilos", tableName: "Session"))
+        .accessibilityLabel(Text("Charge, \(SetText.weight(due.weightKg)) \(SetText.unitWord)", tableName: "Session"))
         .accessibilityIdentifier("load")
         .popover(isPresented: $choosing, arrowEdge: .top) {
             LoadChoices(
                 weightKg: due.weightKg,
-                incrementKg: BundledLibrary.library.exercise(due.exerciseId)?.incrementKg ?? 2.5,
+                step: BundledLibrary.library.exercise(due.exerciseId).map { incrementIn($0, SetText.unit) }
+                    ?? stepIn(2.5, SetText.unit),
                 choose: { kg in
                     choosing = false
                     actions.run { try $0.choose(weightKg: kg, count: nil) }
@@ -72,9 +73,12 @@ struct SetCard: View {
         }
     }
 
-    /// A load typed with a comma or a point, within the contract's bounds; anything else is let go.
+    /// A load typed with a comma or a point in the unit shown, within the contract's bounds once
+    /// converted; anything else is let go. The load as shown, typed again, keeps its exact kilos.
     private func take(_ text: String) {
-        guard let kg = SetText.parseKg(text), (Bounds.setKgMin...Bounds.setKgMax).contains(kg) else { return }
+        guard let value = SetText.parseKg(text),
+              let kg = loadKgFrom(value, SetText.unit, prefillKg: due.weightKg)
+        else { return }
         actions.run { try $0.choose(weightKg: kg, count: nil) }
     }
 
@@ -222,22 +226,38 @@ struct SessionCard<Content: View>: View {
     }
 }
 
-/// How a set reads on the cover, on screen and to VoiceOver.
+/// How a set reads on the cover, on screen and to VoiceOver, in the unit chosen in Réglages.
 enum SetText {
     /// « 62,5 », in the person's language.
     static func kg(_ value: Double) -> String { value.upToHundredths }
+
+    static var unit: WeightUnit { WeightUnitChoice.shared.unit }
+
+    /// « kg » or « lb », never translated.
+    static var symbol: String { unit.rawValue }
+
+    /// The unit as VoiceOver says it: « kilos », « livres ».
+    static var unitWord: String {
+        unit == .kg ? String(localized: "kilos", table: "Session") : String(localized: "livres", table: "Session")
+    }
+
+    /// A load in the unit: kilos to the hundredth (« 62,5 »), whole pounds (« 138 »). Never grouped,
+    /// so the text is also a value a field can take back.
+    static func weight(_ kg: Double) -> String {
+        loadFromKg(kg, unit).formatted(.number.grouping(.never).precision(.fractionLength(0...2)))
+    }
 
     /// A load typed with a comma or a point.
     static func parseKg(_ text: String) -> Double? {
         Double(text.trimmingCharacters(in: .whitespaces).replacingOccurrences(of: ",", with: "."))
     }
 
-    /// « 60 kg × 8 », or « 30 s » for a hold with no added load.
+    /// « 60 kg × 8 », « 132 lb × 8 », or « 30 s » for a hold with no added load.
     static func load(_ weightKg: Double, _ counts: some StringProtocol, timed: Bool) -> String {
         if timed && weightKg == 0 { return "\(counts)\u{202F}s" }
         return timed
-            ? String(localized: "\(kg(weightKg))\u{202F}kg × \(String(counts))\u{202F}s", table: "Session")
-            : String(localized: "\(kg(weightKg))\u{202F}kg × \(String(counts))", table: "Session")
+            ? String(localized: "\(weight(weightKg))\u{202F}\(symbol) × \(String(counts))\u{202F}s", table: "Session")
+            : String(localized: "\(weight(weightKg))\u{202F}\(symbol) × \(String(counts))", table: "Session")
     }
 
     /// « 62,5 kg × 8, 8, 7, 6 », the groups of equal loads one after the other.
@@ -261,7 +281,7 @@ enum SetText {
         case .sameLoad(let top):
             String(localized: "Même charge, vise \(top) reps", table: "Session")
         case .heavier(let byKg):
-            String(localized: "+\(kg(byKg))\u{202F}kg depuis la dernière fois", table: "Session")
+            String(localized: "+\(weight(byKg))\u{202F}\(symbol) depuis la dernière fois", table: "Session")
         case .firstTime(let low, let high) where timed:
             String(localized: "Cible\u{202F}: \(low) à \(high)\u{202F}s", table: "Session")
         case .firstTime(let low, let high):

@@ -1,12 +1,12 @@
 {
   "sourceLanguage": "fr",
   "strings": {
-    "%@ kg": {
+    "%@ %@": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ kg"
+            "value": "%1$@ %2$@"
           }
         }
       }
@@ -21,22 +21,22 @@
         }
       }
     },
-    "%@ kg × %@": {
+    "%@ %@ × %@": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ kg × %@"
+            "value": "%1$@ %2$@ × %3$@"
           }
         }
       }
     },
-    "%@ kg × %@ s": {
+    "%@ %@ × %@ s": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ kg × %@ s"
+            "value": "%1$@ %2$@ × %3$@ s"
           }
         }
       }
@@ -101,12 +101,12 @@
         }
       }
     },
-    "+%@ kg depuis la dernière fois": {
+    "+%@ %@ depuis la dernière fois": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "+%@ kg since last time"
+            "value": "+%1$@ %2$@ since last time"
           }
         }
       }
@@ -191,22 +191,22 @@
         }
       }
     },
-    "Charge en kg": {
+    "Charge en %@": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Load in kg"
+            "value": "Load in %@"
           }
         }
       }
     },
-    "Charge, %@ kilos": {
+    "Charge, %@ %@": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Load, %@ kilos"
+            "value": "Load, %1$@ %2$@"
           }
         }
       }
@@ -607,6 +607,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "kg"
+          }
+        }
+      }
+    },
+    "kilos": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "kilos"
+          }
+        }
+      }
+    },
+    "livres": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "pounds"
           }
         }
       }
