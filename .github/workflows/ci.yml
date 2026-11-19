@@ -89,5 +89,15 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      # The default builder keeps the image in the local daemon, where Trivy reads it.
       - run: docker build -f docker/Dockerfile -t belay:ci .
+      # Fails on a CRITICAL vulnerability that has a fixed version: bumping the base image
+      # (or the dependency) clears it. Unfixed ones would block with nothing to do.
+      - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: belay:ci
+          scanners: vuln
+          severity: CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
       - run: scripts/smoke.sh belay:ci
