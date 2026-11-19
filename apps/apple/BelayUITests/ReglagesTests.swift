@@ -419,7 +419,7 @@ final class ReglagesTests: XCTestCase {
         back(app)
         XCTAssertTrue(element(app, "accueil-trend").waitForExistence(timeout: 5))
         XCTAssertFalse(element(app, "trend-range").exists, "no pill on Accueil")
-        XCTAssertTrue(element(app, "accueil-trend").label.contains("kg"), "the figure stays")
+        XCTAssertTrue(element(app, "accueil-trend").label.contains("kilos"), "the figure stays")
         app.tab("Corps")
         XCTAssertTrue(element(app, "trend-change").waitForExistence(timeout: 5), "Corps's figure stays")
         XCTAssertFalse(element(app, "trend-range").exists, "no pill on Corps")
@@ -436,7 +436,7 @@ final class ReglagesTests: XCTestCase {
         reach(app, "tool-field-load").tap()
         for key in ["8", "0"] { app.keys[key].tap() }
         app.buttons["Ajouter une répétition"].tap()
-        XCTAssertEqual(element(app, "tool-figure-epley").label, "Epley, 96 kg")
+        XCTAssertEqual(element(app, "tool-figure-epley").label, "Epley, 96 kilos")
         XCTAssertFalse(element(app, "tool-figure-brzycki").exists, "Brzycki is left out")
     }
 
