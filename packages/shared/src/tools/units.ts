@@ -1,6 +1,7 @@
 // Weights in kg or lb. Everything is stored in kg on its own grid (a set's 0.25 kg, a weigh-in's
 // 0.1 kg); pounds exist only where a person types or reads a weight.
 import type { Equipment } from "../exercises/muscles";
+import { isSetKg } from "../training/workout";
 import { decimalsOf, roundTo } from "./round";
 
 export type WeightUnit = "kg" | "lb";
@@ -17,6 +18,25 @@ export const kgFromLoad = (value: number, unit: WeightUnit): number =>
   unit === "kg" ? value : roundTo(lbToKg(Math.round(value)), 0.25);
 export const loadFromKg = (kg: number, unit: WeightUnit): number =>
   unit === "kg" ? kg : Math.round(kgToLb(kg));
+
+// A prefilled weight shown in pounds, confirmed as shown, gives back its exact kg: 100 kg reads
+// "220" lb, which converts to 99.75, yet the person changed nothing. Any other typed kg stands.
+export const readBack = (typedKg: number, prefill?: { kg: number; shownKg: number }): number =>
+  prefill !== undefined && typedKg === prefill.shownKg ? prefill.kg : typedKg;
+
+// A typed load to kg on the set grid, or null outside SET_KG once converted. Only a prefill that
+// is itself a valid load is given back, so a stray value never slips past the bounds.
+export function loadKgFrom(value: number, unit: WeightUnit, prefillKg?: number): number | null {
+  const typedKg = kgFromLoad(value, unit);
+  const kg =
+    prefillKg !== undefined && isSetKg(prefillKg)
+      ? readBack(typedKg, {
+          kg: prefillKg,
+          shownKg: kgFromLoad(loadFromKg(prefillKg, unit), unit),
+        })
+      : typedKg;
+  return isSetKg(kg) ? kg : null;
+}
 
 // A weigh-in. lb: quarter pounds, stored on the 0.1 kg grid of WEIGHING_RANGE_KG. The 0.1 kg grid
 // is 0.22 lb wide, so a tenth of a pound often lands on the same stored kg; each quarter pound lands on

@@ -11,7 +11,9 @@ import {
   kgToLb,
   lbToKg,
   loadFromKg,
+  loadKgFrom,
   rangeIn,
+  readBack,
   stepIn,
   weighingFromKg,
 } from "./units";
@@ -44,6 +46,36 @@ describe("a set's load", () => {
     expect(kgFromLoad(82.5, "kg")).toBe(82.5);
     expect(kgFromLoad(82.3, "kg")).toBe(82.3);
     expect(loadFromKg(82.5, "kg")).toBe(82.5);
+  });
+});
+
+describe("a confirmed prefill", () => {
+  it("readBack gives the prefill's kg back when the typed kg is the one it was shown as", () => {
+    const shownKg = kgFromLoad(loadFromKg(100, "lb"), "lb");
+    expect(shownKg).toBe(99.75);
+    expect(readBack(shownKg, { kg: 100, shownKg })).toBe(100);
+    expect(readBack(102, { kg: 100, shownKg })).toBe(102);
+    expect(readBack(99.75)).toBe(99.75);
+  });
+
+  it("loadKgFrom keeps 100 kg typed back as 220 lb and moves to 102 for 225 lb", () => {
+    expect(loadKgFrom(220, "lb", 100)).toBe(100);
+    expect(loadKgFrom(225, "lb", 100)).toBe(102);
+    expect(loadKgFrom(220, "lb")).toBe(99.75);
+    expect(loadKgFrom(82.5, "kg", 80)).toBe(82.5);
+  });
+
+  it("loadKgFrom refuses a load outside the set bounds once converted", () => {
+    expect(loadKgFrom(1102, "lb")).toBe(499.75);
+    expect(loadKgFrom(1103, "lb")).toBeNull();
+    expect(loadKgFrom(-1, "kg")).toBeNull();
+    expect(loadKgFrom(82.3, "kg")).toBeNull();
+  });
+
+  it("loadKgFrom follows only a prefill that is itself a valid set load", () => {
+    // 100.1 kg is off the quarter-kilo grid: shown as 221 lb, it reads back as the grid's 100.25.
+    expect(loadKgFrom(221, "lb", 100.1)).toBe(100.25);
+    expect(loadKgFrom(1102, "lb", 600)).toBe(499.75);
   });
 });
 
