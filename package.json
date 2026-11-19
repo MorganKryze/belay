@@ -11,6 +11,7 @@
     "format": "git ls-files -z --cached --others --exclude-standard | xargs -0 prettier --write --ignore-unknown",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
+    "test:coverage": "pnpm -r test:coverage",
     "build": "pnpm -r build",
     "size": "size-limit",
     "e2e": "pnpm --filter @belay/web e2e",
