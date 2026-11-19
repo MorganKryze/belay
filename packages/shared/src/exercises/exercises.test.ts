@@ -19,6 +19,7 @@ import {
 } from "./import";
 import type { ExerciseRow } from "./library";
 import { MUSCLES } from "./muscles";
+import { filterExercises, matches } from "./search";
 
 const committed = { index, fr, en, ids, measures } as unknown as LibraryFiles;
 
@@ -319,5 +320,25 @@ describe("the committed library", () => {
   it("uses every one of the 16 muscles as a primary somewhere", () => {
     const used = new Set(EXERCISES.flatMap((e) => e.primary));
     expect(MUSCLES.filter((m) => !used.has(m))).toEqual([]);
+  });
+});
+
+describe("the search", () => {
+  it("ignores case, accents and the order of words", () => {
+    expect(matches("Barbell bench press", "PRESS bench")).toBe(true);
+    expect(matches("Sled 45° leg press", "sléd  45°")).toBe(true);
+    expect(matches("Barbell bench press", "bench squat")).toBe(false);
+    expect(matches("Anything", "  ")).toBe(true);
+  });
+
+  it("filters on the primary muscle and the equipment, together", () => {
+    const chest = filterExercises(EXERCISES, { query: "", muscle: "chest", equipment: null });
+    expect(chest).toHaveLength(158);
+    expect(chest.every((e) => e.primary[0] === "chest")).toBe(true);
+    expect(
+      filterExercises(EXERCISES, { query: "bench", muscle: "chest", equipment: "barbell" }).map(
+        (e) => e.id,
+      ),
+    ).toContain("ds:0025");
   });
 });

@@ -262,7 +262,27 @@
         }
       }
     },
-    "%lld saisies partiront à ta prochaine connexion.": {
+    "Compte": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Account"
+          }
+        }
+      }
+    },
+    "Se déconnecter quand même": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign out anyway"
+          }
+        }
+      }
+    },
+    "%lld saisies pas encore envoyées : elles partiront à ta prochaine connexion sur cet appareil.": {
       "localizations": {
         "fr": {
           "variations": {
@@ -270,13 +290,13 @@
               "one": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "%lld saisie partira à ta prochaine connexion."
+                  "value": "%lld saisie pas encore envoyée : elle partira à ta prochaine connexion sur cet appareil."
                 }
               },
               "other": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "%lld saisies partiront à ta prochaine connexion."
+                  "value": "%lld saisies pas encore envoyées : elles partiront à ta prochaine connexion sur cet appareil."
                 }
               }
             }
@@ -288,13 +308,13 @@
               "one": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "%lld entry will be sent at your next sign-in."
+                  "value": "%lld entry not sent yet: it will go at your next sign-in on this device."
                 }
               },
               "other": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "%lld entries will be sent at your next sign-in."
+                  "value": "%lld entries not sent yet: they will go at your next sign-in on this device."
                 }
               }
             }
@@ -302,12 +322,22 @@
         }
       }
     },
-    "Ce qui attend d’être envoyé partira à ta prochaine connexion.": {
+    "Des saisies n’ont peut-être pas encore été envoyées : elles partiront à ta prochaine connexion sur cet appareil.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "What is waiting to be sent will go at your next sign-in."
+            "value": "Some entries may not have been sent yet: they will go at your next sign-in on this device."
+          }
+        }
+      }
+    },
+    "Belay %@ · notes de version": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Belay %@ · release notes"
           }
         }
       }

@@ -10,6 +10,15 @@ extension AccountStore {
     try writer.read { db in (try Self.outbox(db, limit: limit), try Self.cursor(db)) }
   }
 
+  /// « Effacer la liste »: the refusals the person has read leave the phone, `ids` those on
+  /// screen; one recorded by a sync since stays until it is shown. Nothing is queued: the list
+  /// was never the server's.
+  public func clearRejected(ids: [Int64]) throws {
+    try writer.write { db in
+      for id in ids { try db.execute(sql: "DELETE FROM rejected WHERE id = ?", arguments: [id]) }
+    }
+  }
+
   /// After a 200: drops exactly the changes that were sent, keeps a trace of the refused ones and
   /// takes back what they showed, takes the server's rows, then puts back on top the changes
   /// queued meanwhile unless the server holds a later write, and keeps the cursor. Kinds the
@@ -45,6 +54,15 @@ extension AccountStore {
       for row in response.supplements ?? [] { try Rows.put(db, "supplements", id: row.id, row) }
       for row in response.supplementLogs ?? [] { try BodyRows.put(db, row) }
       for row in response.annotations ?? [] { try Rows.put(db, "annotations", id: row.id, row) }
+      // A pulled day the import wrote that is not the answer to what this phone sent was
+      // typed elsewhere, even with the import's own value.
+      var typedElsewhere: [StepsRow] = []
+      for row in response.steps ?? [] {
+        if try BodyRows.steps(db, date: row.date) != row, !Self.echoes(row, sent) {
+          typedElsewhere.append(row)
+        }
+        try BodyRows.put(db, row)
+      }
       if let target = response.target { try Rows.putSingle(db, "target", target) }
       if let profile = response.profile { try Rows.putSingle(db, "profile", profile) }
       // Only after the rows: a change queued while the request was out is newer than what the
@@ -53,6 +71,10 @@ extension AccountStore {
         if isNewer(entry.change.at, try Self.localAt(db, entry.change)) {
           try Self.applyLocal(db, entry.change)
         }
+      }
+      // Unless a change queued since is newer and still stands.
+      for row in typedElsewhere where try BodyRows.steps(db, date: row.date) == row {
+        try BodyRows.putStepsWritten(db, date: row.date, value: nil)
       }
       // The open session was finished or removed on another device: this one lets it go.
       if let active = try Rows.single(ActiveSession.self, db, "activeSession") {
@@ -64,6 +86,18 @@ extension AccountStore {
       try db.execute(
         sql: "INSERT OR REPLACE INTO meta (key, value) VALUES ('cursor', ?)",
         arguments: [response.cursor])
+    }
+  }
+
+  /// Whether `row` is the server's answer to a steps change in `sent`: the same value, at the
+  /// time it was sent or the earlier one the server clamped it to. A later time is a write that
+  /// won over it.
+  private static func echoes(_ row: StepsRow, _ sent: [OutboxEntry]) -> Bool {
+    sent.contains {
+      guard case .steps(let c) = $0.change, c.date == row.date, c.value == row.steps,
+        let at = row.stepsAt
+      else { return false }
+      return !isNewer(at, c.at)
     }
   }
 
@@ -99,7 +133,9 @@ extension AccountStore {
       }
     // As the web does: the pointer goes, the starting one shows until the server's comes back.
     case .activeProgram: try Rows.clearSingle(db, "activeProgram")
-    case .weight, .measure, .intake, .supplementLog, .annotation: try revertBody(db, change)
+    case .weight, .measure, .intake, .supplementLog, .annotation, .profile, .target, .supplement,
+      .activity, .steps:
+      try revertBody(db, change)
     }
   }
 }
@@ -116,6 +152,11 @@ extension Change {
     case .intake(let c): c.at
     case .supplementLog(let c): c.at
     case .annotation(let c): c.at
+    case .profile(let c): c.at
+    case .target(let c): c.at
+    case .supplement(let c): c.at
+    case .activity(let c): c.at
+    case .steps(let c): c.at
     }
   }
 }

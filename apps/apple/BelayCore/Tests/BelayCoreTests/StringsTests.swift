@@ -172,7 +172,140 @@ func frenchTypographyFaults(_ text: String) -> [String] {
   return faults
 }
 
+/// A key the app's source asks a table for: its text, and a pattern any catalog key it can mean
+/// matches, each interpolation standing for a format argument.
+private struct SourceKey {
+  let table: String
+  let text: String
+  let pattern: Regex<Substring>
+  let at: String
+}
+
+/// Every string literal written straight before a `tableName:` or `table:` argument in the app's
+/// and the Live Activity's Swift files: `Text("…", tableName: "Outils")`, `String(localized: "…",
+/// table: "Reglages")`. A key passed through a variable is not seen.
+private func sourceKeys() throws -> [SourceKey] {
+  let files = [appFolder, activityFolder].flatMap { folder in
+    let walk = FileManager.default.enumerator(at: folder, includingPropertiesForKeys: nil)
+    return ((walk?.allObjects as? [URL]) ?? []).filter { $0.pathExtension == "swift" }
+  }
+  var keys: [SourceKey] = []
+  for file in files {
+    let code = Array(try String(contentsOf: file, encoding: .utf8))
+    var i = 0
+    while i < code.count {
+      guard code[i] == "\"", let (parts, end) = literal(code, from: i) else {
+        i += 1
+        continue
+      }
+      i = end
+      let rest = String(code[end..<min(code.count, end + 80)])
+      guard let match = rest.prefixMatch(of: /\s*,\s*(?:tableName|table)\s*:\s*"(\w+)"/) else { continue }
+      var text = ""
+      var pattern = ""
+      for part in parts {
+        switch part {
+        case .text(let piece):
+          text += piece
+          // A literal % may be written doubled in a format key.
+          pattern += piece.map { $0 == "%" ? "%%?" : NSRegularExpression.escapedPattern(for: String($0)) }
+            .joined()
+        case .argument:
+          text += "\\(…)"
+          pattern += #"%(?:\d+\$)?(?:ll[du]|l?[duf]|@|\.\d+f)"#
+        }
+      }
+      let line = code[..<end].filter { $0 == "\n" }.count + 1
+      keys.append(
+        SourceKey(
+          table: String(match.1), text: text, pattern: try Regex(pattern),
+          at: "\(file.lastPathComponent):\(line)"))
+    }
+  }
+  return keys
+}
+
+private enum LiteralPart {
+  case text(String)
+  case argument
+}
+
+/// The one-line string literal opening at `start`, in parts, and the index just past it; nil for a
+/// multi-line or raw literal, or one that does not close.
+private func literal(_ code: [Character], from start: Int) -> ([LiteralPart], Int)? {
+  guard start + 2 < code.count, !(code[start + 1] == "\"" && code[start + 2] == "\"") else { return nil }
+  if start > 0, code[start - 1] == "#" { return nil }
+  var parts: [LiteralPart] = []
+  var text = ""
+  var i = start + 1
+  while i < code.count {
+    let c = code[i]
+    if c == "\n" { return nil }
+    if c == "\"" {
+      if !text.isEmpty { parts.append(.text(text)) }
+      return (parts, i + 1)
+    }
+    if c == "\\", i + 1 < code.count {
+      let next = code[i + 1]
+      switch next {
+      case "(":
+        if !text.isEmpty { parts.append(.text(text)) }
+        text = ""
+        parts.append(.argument)
+        // Past the interpolation, nested parentheses and string literals included.
+        var depth = 1
+        i += 2
+        while i < code.count, depth > 0 {
+          if code[i] == "\"", let (_, end) = literal(code, from: i) {
+            i = end
+            continue
+          }
+          if code[i] == "(" { depth += 1 }
+          if code[i] == ")" { depth -= 1 }
+          i += 1
+        }
+        continue
+      case "u":
+        let hex = code[(i + 3)...].prefix { $0 != "}" }
+        if let value = UInt32(String(hex), radix: 16), let scalar = Unicode.Scalar(value) {
+          text.append(Character(scalar))
+        }
+        i += 3 + hex.count + 1
+        continue
+      case "n": text.append("\n")
+      case "t": text.append("\t")
+      default: text.append(next)
+      }
+      i += 2
+      continue
+    }
+    text.append(c)
+    i += 1
+  }
+  return nil
+}
+
 @Suite struct StringsTests {
+  /// Every key the source asks a table for is in that table, so no screen falls back to the
+  /// French it was written in on an English phone. A key typed with a plain space where the
+  /// catalog has a narrow one is a miss.
+  @Test func everySourceKeyIsInItsTable() throws {
+    var tables: [String: [String]] = [:]
+    for url in try catalogs() {
+      let json = try JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any]
+      let strings = json?["strings"] as? [String: Any] ?? [:]
+      tables[url.deletingPathExtension().lastPathComponent, default: []] += strings.keys
+    }
+    let keys = try sourceKeys()
+    #expect(keys.count > 500, "the source's keys are found: \(keys.count)")
+    for key in keys {
+      let table = try #require(tables[key.table], "\(key.at): the table \(key.table) exists")
+      #expect(
+        table.contains { $0.wholeMatch(of: key.pattern) != nil },
+        "\(key.at): « \(key.text) » is in \(key.table)")
+    }
+  }
+
   @Test func appHasCatalogs() throws {
     #expect(try catalogs().count >= 2, "the app's catalogs are found at \(appFolder.path)")
     #expect(
@@ -220,14 +353,17 @@ func frenchTypographyFaults(_ text: String) -> [String] {
     }
   }
 
-  /// Every count of Accueil, Séances and the session's tools, tried at 0, 1 and 2: the form each
-  /// language's rule chooses reads right. A new count with no line here fails.
+  /// Every count of the app's screens, Réglages, the account and the tools included, tried at 0, 1
+  /// and 2: the form each language's rule chooses reads right. A new count with no line here fails.
   @Test func countsReadRightAtZeroOneAndTwo() throws {
     // Key, then French and English at 0, 1 and 2; a key with two counts gets the same at each.
     let expected: [String: (fr: [String], en: [String])] = [
       "Corps.xcstrings: Encore %lld pesées cette semaine": (
         ["Encore 0 pesée cette semaine", "Encore 1 pesée cette semaine", "Encore 2 pesées cette semaine"],
         ["0 more weigh-ins this week", "1 more weigh-in this week", "2 more weigh-ins this week"]
+      ),
+      "Exercices.xcstrings: %lld exercices": (
+        ["0 exercice", "1 exercice", "2 exercices"], ["0 exercises", "1 exercise", "2 exercises"]
       ),
       "Entries.xcstrings: pris · depuis %lld jours": (
         ["pris · depuis 0 jour", "pris · depuis 1 jour", "pris · depuis 2 jours"],
@@ -239,6 +375,9 @@ func frenchTypographyFaults(_ text: String) -> [String] {
       "Trend.xcstrings: %lld annotations": (
         ["0 annotation", "1 annotation", "2 annotations"],
         ["0 annotations", "1 annotation", "2 annotations"]
+      ),
+      "Activity.xcstrings: %lld activités": (
+        ["0 activité", "1 activité", "2 activités"], ["0 activities", "1 activity", "2 activities"]
       ),
       "Accueil.xcstrings: %lld séances": (
         ["0 séance", "1 séance", "2 séances"], ["0 sessions", "1 session", "2 sessions"]
@@ -263,6 +402,25 @@ func frenchTypographyFaults(_ text: String) -> [String] {
       "Seances.xcstrings: %lld séries": (
         ["0 série", "1 série", "2 séries"], ["0 sets", "1 set", "2 sets"]
       ),
+      "Account.xcstrings: %lld saisies pas encore envoyées\u{202F}: elles partiront à ta prochaine connexion sur cet appareil.":
+        (
+          [
+            "0 saisie pas encore envoyée\u{202F}: elle partira à ta prochaine connexion sur cet appareil.",
+            "1 saisie pas encore envoyée\u{202F}: elle partira à ta prochaine connexion sur cet appareil.",
+            "2 saisies pas encore envoyées\u{202F}: elles partiront à ta prochaine connexion sur cet appareil.",
+          ],
+          [
+            "0 entries not sent yet: they will go at your next sign-in on this device.",
+            "1 entry not sent yet: it will go at your next sign-in on this device.",
+            "2 entries not sent yet: they will go at your next sign-in on this device.",
+          ]
+        ),
+      "Reglages.xcstrings: %lld jours marqués": (
+        ["0 jour marqué", "1 jour marqué", "2 jours marqués"], ["0 days ticked", "1 day ticked", "2 days ticked"]
+      ),
+      "Outils.xcstrings: %lld séries": (
+        ["0 série", "1 série", "2 séries"], ["0 sets", "1 set", "2 sets"]
+      ),
       "SessionTools.xcstrings: %lld secondes restantes": (
         ["0 seconde restante", "1 seconde restante", "2 secondes restantes"],
         ["0 seconds left", "1 second left", "2 seconds left"]
@@ -271,8 +429,9 @@ func frenchTypographyFaults(_ text: String) -> [String] {
     var counts: Set<String> = []
     for url in try catalogs()
     where [
-      "Accueil.xcstrings", "Corps.xcstrings", "Entries.xcstrings", "Seances.xcstrings",
-      "SessionTools.xcstrings", "Trend.xcstrings",
+      "Account.xcstrings", "Accueil.xcstrings", "Activity.xcstrings", "Corps.xcstrings", "Entries.xcstrings",
+      "Exercices.xcstrings", "Outils.xcstrings", "Reglages.xcstrings", "Seances.xcstrings", "SessionTools.xcstrings",
+      "Trend.xcstrings",
     ]
       .contains(url.lastPathComponent)
     {
@@ -341,6 +500,15 @@ func frenchTypographyFaults(_ text: String) -> [String] {
         }
       }
     }
+  }
+
+  /// The read text names the steps the import reads, in both languages (A43).
+  @Test func healthReadNamesTheSteps() throws {
+    let url = appFolder.appending(path: "InfoPlist.xcstrings")
+    let texts = Dictionary(uniqueKeysWithValues: try entries(of: url).map { ($0.key, $0) })
+    let entry = try #require(texts["NSHealthShareUsageDescription"])
+    #expect(entry.french.values.joined().contains("tes pas"))
+    #expect(entry.english?.values.joined().contains("steps") == true)
   }
 
   /// iOS asks for Health access with these texts: they name every type Belay reads and writes,

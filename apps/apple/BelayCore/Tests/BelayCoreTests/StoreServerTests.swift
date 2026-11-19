@@ -66,6 +66,34 @@ import Testing
     #expect(try store.outbox(limit: nil).isEmpty)
   }
 
+  @Test func clearingTheRefusalsEmptiesTheListAndQueuesNothing() throws {
+    _ = try store.recordSet(Fixture.set(w), at: Fixture.time(1), active: Fixture.active(w))
+    try store.applyServer(
+      sent: try store.outbox(limit: nil),
+      response: Fixture.response(rejected: [Rejected(index: 1, reason: "refused")]))
+    #expect(try store.rejected().count == 1)
+
+    try store.clearRejected(ids: try store.rejected().map(\.id))
+    #expect(try store.rejected().isEmpty)
+    #expect(try store.outbox(limit: nil).isEmpty)
+  }
+
+  /// « Effacer la liste » forgets the refusals on screen; one recorded since was never read.
+  @Test func clearingKeepsARefusalNotShown() throws {
+    try store.recordChanges([note("a", at: 1)], active: .keep)
+    try store.applyServer(
+      sent: try store.outbox(limit: nil),
+      response: Fixture.response(rejected: [Rejected(index: 0, reason: "refused")]))
+    let shown = try store.rejected().map(\.id)
+    try store.recordChanges([note("b", at: 2)], active: .keep)
+    try store.applyServer(
+      sent: try store.outbox(limit: nil),
+      response: Fixture.response(rejected: [Rejected(index: 0, reason: "unknown")]))
+
+    try store.clearRejected(ids: shown)
+    #expect(try store.rejected().map(\.reason) == ["unknown"])
+  }
+
   @Test func twoRefusalsOfOneSessionAreRevertedInOrder() throws {
     let ended = Change.workout(
       WorkoutChange(id: w, at: Fixture.time(2), edit: .ended(Fixture.time(2))))
@@ -154,7 +182,11 @@ import Testing
     let activity = try JSONDecoder().decode(
       ActivityRow.self,
       from: Data(
-        #"{"id":"\#(Fixture.id(10))","date":"2026-11-05","type":"climbing","removed":false}"#.utf8))
+        #"""
+        {"id":"\#(Fixture.id(10))","date":"2026-11-05","type":"climbing","durationMin":90,
+        "cardioType":null,"climbStyle":null,"climbRuns":null,"climbGrade":null,"climbColor":null,
+        "fieldsAt":"2026-11-05T20:00:00.000Z","removed":false,"removedAt":null}
+        """#.utf8))
     let response = Fixture.response(
       cursor: "43", workouts: [Fixture.workoutRow(other, startedAt: 5, ended: Fixture.time(30))],
       sets: [set], programs: [program], programSessions: [session], programSlots: [slot],
@@ -294,7 +326,7 @@ import Testing
     #expect(try store.cursor() == "0")
   }
 
-  @Test func kindsTheStoreDoesNotKeepAreIgnored() throws {
+  @Test func aPullOfEveryKindIsStored() throws {
     let answer = """
       {"cursor":"5","weights":[{"date":"2026-11-05","weightKg":80,"at":"\(Fixture.time(0))"}],
       "measures":[],"intake":[],"supplements":[],"supplementLogs":[],"annotations":[],
@@ -305,10 +337,9 @@ import Testing
     try store.applyServer(
       sent: [], response: JSONDecoder().decode(SyncResponse.self, from: Data(answer.utf8)))
     #expect(try store.cursor() == "5")
-    let tables = try store.writer.read { db in
-      try String.fetchAll(db, sql: "SELECT name FROM sqlite_master WHERE type = 'table'")
-    }
-    #expect(!tables.contains("steps"))
+    // Since v5 a day's steps are kept too.
+    #expect(
+      try store.body().steps == [StepsRow(date: "2026-11-05", steps: 1200, stepsAt: Fixture.time(0))])
     #expect(try store.body().weights.map(\.date) == ["2026-11-05"])
   }
 

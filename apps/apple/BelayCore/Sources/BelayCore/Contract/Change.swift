@@ -58,9 +58,15 @@ public enum Change: Codable, Sendable, Equatable {
   case intake(IntakeChange)
   case supplementLog(SupplementLogChange)
   case annotation(AnnotationChange)
+  case profile(ProfileChange)
+  case target(TargetChange)
+  case supplement(SupplementChange)
+  case activity(ActivityChange)
+  case steps(StepsChange)
 
   private enum Kind: String, Codable {
     case workout, set, activeProgram, weight, measure, intake, supplementLog, annotation
+    case profile, target, supplement, activity, steps
   }
   private enum KindKey: String, CodingKey { case kind }
 
@@ -74,6 +80,11 @@ public enum Change: Codable, Sendable, Equatable {
     case .intake: self = .intake(try IntakeChange(from: decoder))
     case .supplementLog: self = .supplementLog(try SupplementLogChange(from: decoder))
     case .annotation: self = .annotation(try AnnotationChange(from: decoder))
+    case .profile: self = .profile(try ProfileChange(from: decoder))
+    case .target: self = .target(try TargetChange(from: decoder))
+    case .supplement: self = .supplement(try SupplementChange(from: decoder))
+    case .activity: self = .activity(try ActivityChange(from: decoder))
+    case .steps: self = .steps(try StepsChange(from: decoder))
     }
   }
 
@@ -87,6 +98,11 @@ public enum Change: Codable, Sendable, Equatable {
     case .intake(let change): try change.encode(to: encoder)
     case .supplementLog(let change): try change.encode(to: encoder)
     case .annotation(let change): try change.encode(to: encoder)
+    case .profile(let change): try change.encode(to: encoder)
+    case .target(let change): try change.encode(to: encoder)
+    case .supplement(let change): try change.encode(to: encoder)
+    case .activity(let change): try change.encode(to: encoder)
+    case .steps(let change): try change.encode(to: encoder)
     }
   }
 }
@@ -150,6 +166,7 @@ private enum Key: String, CodingKey {
   case sessionCode, sessionId, sessionName, plan, startedAt
   case workoutId, slotIndex, position, exerciseId, warmup, weightKg, reps, seconds, rir, doneAt
   case date, supplementId, taken, type, label
+  case minPct, maxPct
 }
 
 private func unknownField(_ field: String, _ c: KeyedDecodingContainer<Key>) -> DecodingError {
@@ -609,6 +626,281 @@ public struct AnnotationChange: Codable, Sendable, Equatable, KeyedChange {
       try c.encode("removed", forKey: .field)
       try c.encode(removed, forKey: .value)
     }
+    try c.encode(at, forKey: .at)
+  }
+}
+
+// The kinds written from the settings and the tools: the profile, the loss range, the list of
+// supplements, the activities and the day's steps.
+
+/// One fact of the profile; nil clears it (« Effacer »). Each fact merges on its own.
+public struct ProfileChange: Codable, Sendable, Equatable, KeyedChange {
+  public var at: String
+  public var edit: Edit
+
+  public enum Edit: Sendable, Equatable {
+    case formula(ProfileFormula?)
+    case birthYear(Int?)
+    /// In whole centimetres.
+    case height(Int?)
+  }
+
+  public init(at: String, edit: Edit) {
+    self.at = at
+    self.edit = edit
+  }
+
+  public var mergeKey: String {
+    switch edit {
+    case .formula: "formula"
+    case .birthYear: "birthYear"
+    case .height: "height"
+    }
+  }
+
+  public init(from decoder: any Decoder) throws {
+    let c = try decoder.container(keyedBy: Key.self)
+    at = try c.decode(String.self, forKey: .at)
+    let field = try c.decode(String.self, forKey: .field)
+    switch field {
+    case "formula": edit = .formula(try c.decodeNullable(ProfileFormula.self, forKey: .value))
+    case "birthYear": edit = .birthYear(try c.decodeNullable(Int.self, forKey: .value))
+    case "height": edit = .height(try c.decodeNullable(Int.self, forKey: .value))
+    default: throw unknownField(field, c)
+    }
+  }
+
+  public func encode(to encoder: any Encoder) throws {
+    var c = encoder.container(keyedBy: Key.self)
+    try c.encode("profile", forKey: .kind)
+    try c.encode(mergeKey, forKey: .field)
+    switch edit {
+    case .formula(let formula): try c.encode(formula, forKey: .value)
+    case .birthYear(let year): try c.encode(year, forKey: .value)
+    case .height(let cm): try c.encode(cm, forKey: .value)
+    }
+    try c.encode(at, forKey: .at)
+  }
+}
+
+/// The loss range: both bounds travel together under one time, as they constrain each other.
+public struct TargetChange: Codable, Sendable, Equatable, KeyedChange {
+  public var minPct: Double
+  public var maxPct: Double
+  public var at: String
+
+  public init(minPct: Double, maxPct: Double, at: String) {
+    self.minPct = minPct
+    self.maxPct = maxPct
+    self.at = at
+  }
+
+  public var mergeKey: String { "target" }
+
+  public init(from decoder: any Decoder) throws {
+    let c = try decoder.container(keyedBy: Key.self)
+    minPct = try c.decode(Double.self, forKey: .minPct)
+    maxPct = try c.decode(Double.self, forKey: .maxPct)
+    at = try c.decode(String.self, forKey: .at)
+  }
+
+  public func encode(to encoder: any Encoder) throws {
+    var c = encoder.container(keyedBy: Key.self)
+    try c.encode("target", forKey: .kind)
+    try c.encode(minPct, forKey: .minPct)
+    try c.encode(maxPct, forKey: .maxPct)
+    try c.encode(at, forKey: .at)
+  }
+}
+
+/// A supplement of the list, by the id the phone gave it: its name, or its removal. The server
+/// creates it from its first name.
+public struct SupplementChange: Codable, Sendable, Equatable, KeyedChange {
+  public var id: String
+  public var at: String
+  public var edit: Edit
+
+  public enum Edit: Sendable, Equatable {
+    case name(String)
+    case removed(Bool)
+  }
+
+  public init(id: String, at: String, edit: Edit) {
+    self.id = id
+    self.at = at
+    self.edit = edit
+  }
+
+  public var mergeKey: String {
+    switch edit {
+    case .name: "\(id)|name"
+    case .removed: "\(id)|removed"
+    }
+  }
+
+  public init(from decoder: any Decoder) throws {
+    let c = try decoder.container(keyedBy: Key.self)
+    id = try c.decode(String.self, forKey: .id)
+    at = try c.decode(String.self, forKey: .at)
+    let field = try c.decode(String.self, forKey: .field)
+    switch field {
+    case "name": edit = .name(try c.decode(String.self, forKey: .value))
+    case "removed": edit = .removed(try c.decode(Bool.self, forKey: .value))
+    default: throw unknownField(field, c)
+    }
+  }
+
+  public func encode(to encoder: any Encoder) throws {
+    var c = encoder.container(keyedBy: Key.self)
+    try c.encode("supplement", forKey: .kind)
+    try c.encode(id, forKey: .id)
+    switch edit {
+    case .name(let name):
+      try c.encode("name", forKey: .field)
+      try c.encode(name, forKey: .value)
+    case .removed(let removed):
+      try c.encode("removed", forKey: .field)
+      try c.encode(removed, forKey: .value)
+    }
+    try c.encode(at, forKey: .at)
+  }
+}
+
+/// An activity's block: its type and fields, written together. A cardio type for cardio only,
+/// the climbing fields for climbing only, a grade or a colour but not both (`isActivityFields`).
+/// Values are the contract's words (`Bounds.activityKinds` and the lists beside it).
+public struct ActivityFields: Codable, Sendable, Equatable {
+  /// `cardio` or `climbing`.
+  public var type: String
+  public var durationMin: Int
+  public var cardioType: String?
+  public var climbStyle: String?
+  public var climbRuns: Int?
+  public var climbGrade: String?
+  public var climbColor: String?
+
+  public init(
+    type: String, durationMin: Int, cardioType: String? = nil, climbStyle: String? = nil,
+    climbRuns: Int? = nil, climbGrade: String? = nil, climbColor: String? = nil
+  ) {
+    self.type = type
+    self.durationMin = durationMin
+    self.cardioType = cardioType
+    self.climbStyle = climbStyle
+    self.climbRuns = climbRuns
+    self.climbGrade = climbGrade
+    self.climbColor = climbColor
+  }
+
+  fileprivate init(_ c: KeyedDecodingContainer<ActivityKey>) throws {
+    type = try c.decode(String.self, forKey: .type)
+    durationMin = try c.decode(Int.self, forKey: .durationMin)
+    cardioType = try c.decodeNullable(String.self, forKey: .cardioType)
+    climbStyle = try c.decodeNullable(String.self, forKey: .climbStyle)
+    climbRuns = try c.decodeNullable(Int.self, forKey: .climbRuns)
+    climbGrade = try c.decodeNullable(String.self, forKey: .climbGrade)
+    climbColor = try c.decodeNullable(String.self, forKey: .climbColor)
+  }
+
+  // Every key written, null included, as the contract asks for each.
+  fileprivate func encode(_ c: inout KeyedEncodingContainer<ActivityKey>) throws {
+    try c.encode(type, forKey: .type)
+    try c.encode(durationMin, forKey: .durationMin)
+    try c.encode(cardioType, forKey: .cardioType)
+    try c.encode(climbStyle, forKey: .climbStyle)
+    try c.encode(climbRuns, forKey: .climbRuns)
+    try c.encode(climbGrade, forKey: .climbGrade)
+    try c.encode(climbColor, forKey: .climbColor)
+  }
+}
+
+private enum ActivityKey: String, CodingKey {
+  case kind, id, field, date, at, value
+  case type, durationMin, cardioType, climbStyle, climbRuns, climbGrade, climbColor
+}
+
+/// An activity: its day and block travel together, its removal on its own.
+public struct ActivityChange: Codable, Sendable, Equatable, KeyedChange {
+  public var id: String
+  public var at: String
+  public var edit: Edit
+
+  public enum Edit: Sendable, Equatable {
+    case fields(date: String, ActivityFields)
+    case removed(Bool)
+  }
+
+  public init(id: String, at: String, edit: Edit) {
+    self.id = id
+    self.at = at
+    self.edit = edit
+  }
+
+  public var mergeKey: String {
+    switch edit {
+    case .fields: "\(id)|fields"
+    case .removed: "\(id)|removed"
+    }
+  }
+
+  public init(from decoder: any Decoder) throws {
+    let c = try decoder.container(keyedBy: ActivityKey.self)
+    id = try c.decode(String.self, forKey: .id)
+    at = try c.decode(String.self, forKey: .at)
+    let field = try c.decode(String.self, forKey: .field)
+    switch field {
+    case "fields":
+      edit = .fields(date: try c.decode(String.self, forKey: .date), try ActivityFields(c))
+    case "removed": edit = .removed(try c.decode(Bool.self, forKey: .value))
+    default:
+      throw DecodingError.dataCorruptedError(
+        forKey: .field, in: c, debugDescription: "no field \(field) in the contract")
+    }
+  }
+
+  public func encode(to encoder: any Encoder) throws {
+    var c = encoder.container(keyedBy: ActivityKey.self)
+    try c.encode("activity", forKey: .kind)
+    try c.encode(id, forKey: .id)
+    switch edit {
+    case .fields(let date, let fields):
+      try c.encode("fields", forKey: .field)
+      try c.encode(date, forKey: .date)
+      try fields.encode(&c)
+    case .removed(let removed):
+      try c.encode("removed", forKey: .field)
+      try c.encode(removed, forKey: .value)
+    }
+    try c.encode(at, forKey: .at)
+  }
+}
+
+/// A day's steps; nil deletes them.
+public struct StepsChange: Codable, Sendable, Equatable, KeyedChange {
+  public var date: String
+  public var value: Int?
+  public var at: String
+
+  public init(date: String, value: Int?, at: String) {
+    self.date = date
+    self.value = value
+    self.at = at
+  }
+
+  public var mergeKey: String { date }
+
+  public init(from decoder: any Decoder) throws {
+    let c = try decoder.container(keyedBy: Key.self)
+    date = try c.decode(String.self, forKey: .date)
+    value = try c.decodeNullable(Int.self, forKey: .value)
+    at = try c.decode(String.self, forKey: .at)
+  }
+
+  public func encode(to encoder: any Encoder) throws {
+    var c = encoder.container(keyedBy: Key.self)
+    try c.encode("steps", forKey: .kind)
+    try c.encode(date, forKey: .date)
+    try c.encode(value, forKey: .value)
     try c.encode(at, forKey: .at)
   }
 }

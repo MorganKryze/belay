@@ -5,12 +5,13 @@ import os
 /// while the app runs.
 struct SeancesView: View {
     enum Segment: Hashable, CaseIterable {
-        case programme, historique
+        case programme, historique, exercices
 
         var title: Text {
             switch self {
             case .programme: Text("Programme", tableName: "Seances")
             case .historique: Text("Historique", tableName: "Seances")
+            case .exercices: Text("Exercices", tableName: "Exercices")
             }
         }
     }
@@ -20,6 +21,8 @@ struct SeancesView: View {
     /// Pushes a session's preview.
     let openPreview: (String) -> Void
     @State private var choosing = false
+    /// Exercices' search, kept while the app runs as the segment is.
+    @State private var query = ""
 
     private static let log = Logger(subsystem: "cloud.libresoftware.belay", category: "seances")
 
@@ -46,9 +49,12 @@ struct SeancesView: View {
                 ) { choosing = true }
             case .historique:
                 HistorySection(weeks: training.weeks)
+            case .exercices:
+                ExercisesSection(training: training, query: query)
             }
         }
         .belayList()
+        .modifier(ExerciseSearch(on: segment == .exercices, query: $query))
         .navigationTitle(Text(AppTab.seances.title))
         .largeTitleOnly()
         .sheet(isPresented: $choosing) {
@@ -65,6 +71,22 @@ struct SeancesView: View {
         } catch {
             // The sheet stays open on the list as it stands: the tap can be tried again.
             Self.log.error("program not chosen: \(String(describing: error), privacy: .public)")
+        }
+    }
+}
+
+/// Exercices' search field, under Séances' large title while that segment shows.
+private struct ExerciseSearch: ViewModifier {
+    let on: Bool
+    @Binding var query: String
+
+    func body(content: Content) -> some View {
+        if on {
+            content.searchable(
+                text: $query, placement: .navigationBarDrawer(displayMode: .always),
+                prompt: Text("Rechercher un exercice", tableName: "Exercices"))
+        } else {
+            content
         }
     }
 }

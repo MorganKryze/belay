@@ -13,7 +13,7 @@ the instance needs no setting. A free install lasts 7 days, then you run it agai
 ## Requirements
 
 - A Mac with Xcode 27.2 or later (the app is built on the iOS 27 SDK).
-- Node 24 and pnpm.
+- Node 26 and pnpm.
 - An iPhone or iPad on iOS 16.4 or later, and its cable. The app runs on iPad too, in every orientation.
 - A free Apple ID. No paid developer account is needed.
 
@@ -241,7 +241,7 @@ below is meant for the emulator until a release build exists.
 - A JDK 21 (Gradle 8.14 takes 21 to 24 and refuses Android Studio's newer one
   as soon as a build script changes). If `JAVA_HOME` does not point at one, set
   `BELAY_JAVA_HOME` to a JDK 21's home, for example in your shell profile.
-- Node 24 and pnpm.
+- Node 26 and pnpm.
 - An emulator image, or a phone on Android 9 or later with **Android System
   WebView** 111 or later (Play updates it).
 

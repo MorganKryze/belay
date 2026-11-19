@@ -1,0 +1,1986 @@
+{
+  "sourceLanguage": "fr",
+  "version": "1.0",
+  "strings": {
+    "%": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%"
+          }
+        }
+      }
+    },
+    "%@ %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ %@"
+          }
+        }
+      }
+    },
+    "%@ et plus": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ and over"
+          }
+        }
+      }
+    },
+    "%@ par côté": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ per side"
+          }
+        }
+      }
+    },
+    "%@ · %@ kg par semaine": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · %@ kg per week"
+          }
+        }
+      }
+    },
+    "%@ à %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ to %@"
+          }
+        }
+      }
+    },
+    "%@ kg n’est pas faisable avec ton matériel.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ kg can’t be loaded with your equipment."
+          }
+        }
+      }
+    },
+    "%@ kg par côté": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ kg per side"
+          }
+        }
+      }
+    },
+    "%lld séries": {
+      "localizations": {
+        "fr": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld série"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld séries"
+                }
+              }
+            }
+          }
+        },
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld set"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld sets"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "1RM estimé": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "One-rep max"
+          }
+        }
+      }
+    },
+    "Actif": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Active"
+          }
+        }
+      }
+    },
+    "Asiatique": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Asian"
+          }
+        }
+      }
+    },
+    "Assis presque toute la journée, peu de marche.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sitting most of the day, little walking."
+          }
+        }
+      }
+    },
+    "Au-delà de 10 répétitions, l’estimation est moins fiable.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beyond 10 reps, the estimate is less reliable."
+          }
+        }
+      }
+    },
+    "Au-dessus": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Above"
+          }
+        }
+      }
+    },
+    "Au-dessus de la plage de référence de l’OMS (%@ à %@).": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Above the WHO reference range (%@ to %@)."
+          }
+        }
+      }
+    },
+    "Autre": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Other"
+          }
+        }
+      }
+    },
+    "Avec 1 répétition, ton 1RM est la charge soulevée.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "With 1 rep, your 1RM is the load you lifted."
+          }
+        }
+      }
+    },
+    "Barre": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bar"
+          }
+        }
+      }
+    },
+    "Barre de %@ kg": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ kg bar"
+          }
+        }
+      }
+    },
+    "Barre seule": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bar only"
+          }
+        }
+      }
+    },
+    "Ces mesures sortent de ce que la formule sait calculer. Vérifie-les.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "These measurements fall outside what the formula can handle. Check them."
+          }
+        }
+      }
+    },
+    "Charge": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Load"
+          }
+        }
+      }
+    },
+    "Charge de travail": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Working load"
+          }
+        }
+      }
+    },
+    "Charge visée": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Target load"
+          }
+        }
+      }
+    },
+    "Chez des athlètes, un rythme d’environ 1 % par semaine s’est accompagné de moins de gain de masse maigre (Garthe 2011). Source dans la fiche.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In athletes, a pace of about 1% per week came with less lean-mass gain (Garthe 2011). Source in the sheet."
+          }
+        }
+      }
+    },
+    "Compétition": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Competition"
+          }
+        }
+      }
+    },
+    "Copié depuis « %@ ». Touche un disque pour l’ajouter ou le retirer.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copied from “%@”. Tap a plate to add or remove it."
+          }
+        }
+      }
+    },
+    "Corps": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Body"
+          }
+        }
+      }
+    },
+    "Corps › Apports compare tes calories à cette dépense.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Body › Intake compares your calories with this expenditure."
+          }
+        }
+      }
+    },
+    "Corps › Apports compare tes protéines à cette fourchette.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Body › Intake compares your protein with this range."
+          }
+        }
+      }
+    },
+    "Correspondant à un IMC < 18,5": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Matches a BMI under 18.5"
+          }
+        }
+      }
+    },
+    "Correspondant à un IMC de 18,5 à 25": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Matches a BMI of 18.5 to 25"
+          }
+        }
+      }
+    },
+    "Correspondant à un IMC de 25 à 30": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Matches a BMI of 25 to 30"
+          }
+        }
+      }
+    },
+    "Correspondant à un IMC de 30 et plus": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Matches a BMI of 30 and over"
+          }
+        }
+      }
+    },
+    "Dans %lld à %lld semaines. La perte ralentit à mesure que tu perds du poids, d’où une fourchette.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In %lld to %lld weeks. Loss slows down as you lose weight, hence a range."
+          }
+        }
+      }
+    },
+    "Dans la plage de référence de l’OMS (%@ à %@).": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In the WHO reference range (%@ to %@)."
+          }
+        }
+      }
+    },
+    "De chaque côté": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On each side"
+          }
+        }
+      }
+    },
+    "Disques": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plates"
+          }
+        }
+      }
+    },
+    "Doux": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gentle"
+          }
+        }
+      }
+    },
+    "Dépense au repos": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resting expenditure"
+          }
+        }
+      }
+    },
+    "Dépense du jour": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Daily expenditure"
+          }
+        }
+      }
+    },
+    "Dépense énergétique": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Energy expenditure"
+          }
+        }
+      }
+    },
+    "Elle surestime souvent les personnes minces et sous-estime les personnes à forte masse grasse.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "It tends to overestimate lean people and underestimate people with more body fat."
+          }
+        }
+      }
+    },
+    "En dessous": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Below"
+          }
+        }
+      }
+    },
+    "En dessous de la plage de référence de l’OMS (moins de %@).": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Below the WHO reference range (under %@)."
+          }
+        }
+      }
+    },
+    "En sèche, la fourchette part de ta masse maigre : 2,3 à 3,1 g par kg de masse maigre.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In a cut, the range starts from your lean mass: 2.3 to 3.1 g per kg of lean mass."
+          }
+        }
+      }
+    },
+    "Enregistré sur cet appareil.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saved on this device."
+          }
+        }
+      }
+    },
+    "Entre le %@ et le %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Between %@ and %@"
+          }
+        }
+      }
+    },
+    "Entre ta taille et ton poids.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter your height and your weight."
+          }
+        }
+      }
+    },
+    "Femme": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Female"
+          }
+        }
+      }
+    },
+    "Fenêtre d’arrivée : de %@ à %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arrival window: %@ to %@"
+          }
+        }
+      }
+    },
+    "Force": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Strength"
+          }
+        }
+      }
+    },
+    "Formule": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Formula"
+          }
+        }
+      }
+    },
+    "Heuristique Belay": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Belay heuristic"
+          }
+        }
+      }
+    },
+    "Homme": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Male"
+          }
+        }
+      }
+    },
+    "IMC": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "BMI"
+          }
+        }
+      }
+    },
+    "Il manque %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Missing: %@."
+          }
+        }
+      }
+    },
+    "Il manque la charge de travail.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The working load is missing."
+          }
+        }
+      }
+    },
+    "Il manque la charge visée.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The target load is missing."
+          }
+        }
+      }
+    },
+    "Il manque la charge.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The load is missing."
+          }
+        }
+      }
+    },
+    "Jeu de repères": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reference set"
+          }
+        }
+      }
+    },
+    "Juste au-dessus · %@ kg": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Just above · %@ kg"
+          }
+        }
+      }
+    },
+    "Juste en dessous · %@ kg": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Just below · %@ kg"
+          }
+        }
+      }
+    },
+    "La barre seule pèse déjà %@ kg.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The bar alone already weighs %@ kg."
+          }
+        }
+      }
+    },
+    "La projection calcule une perte de poids ; ton objectif est déjà atteint ou au-dessus.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The projection works out a weight loss; your goal is already reached or above your current weight."
+          }
+        }
+      }
+    },
+    "Le tour de taille doit dépasser le tour de cou.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your waist must be larger than your neck."
+          }
+        }
+      }
+    },
+    "Les charges sont arrondies à ton matériel (« %@ »). Aucune étude ne fixe un schéma unique : c’est une progression courante, à ajuster comme tu veux.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loads are rounded to your equipment (“%@”). No study sets a single scheme: this is a common progression, adjust it as you like."
+          }
+        }
+      }
+    },
+    "Les repères publiés couvrent 20 à 79 ans : pour ton âge, seule l’estimation s’affiche.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The published reference values cover ages 20 to 79, so only the estimate is shown for your age."
+          }
+        }
+      }
+    },
+    "L’IMC ne distingue pas le muscle de la graisse : c’est un repère de population, pas un diagnostic.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "BMI doesn't tell muscle from fat: it's a population marker, not a diagnosis."
+          }
+        }
+      }
+    },
+    "Maintien": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Maintain"
+          }
+        }
+      }
+    },
+    "Masse grasse": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Body fat"
+          }
+        }
+      }
+    },
+    "Masse grasse (facultatif)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Body fat (optional)"
+          }
+        }
+      }
+    },
+    "Mettre à jour": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Update"
+          }
+        }
+      }
+    },
+    "Mise à jour du profil": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Profile update"
+          }
+        }
+      }
+    },
+    "Modifier ce matériel": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit this equipment"
+          }
+        }
+      }
+    },
+    "Mon matériel": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "My equipment"
+          }
+        }
+      }
+    },
+    "Montée en charge": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Warm-up"
+          }
+        }
+      }
+    },
+    "Métabolisme et dépense du jour": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resting and daily energy"
+          }
+        }
+      }
+    },
+    "Nettement au-dessus": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Well above"
+          }
+        }
+      }
+    },
+    "Nettement au-dessus de la plage de référence de l’OMS (%@ et plus).": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Well above the WHO reference range (%@ and over)."
+          }
+        }
+      }
+    },
+    "Non, juste ici": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No, just here"
+          }
+        }
+      }
+    },
+    "Objectif": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Goal"
+          }
+        }
+      }
+    },
+    "Objectif atteint": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Goal reached"
+          }
+        }
+      }
+    },
+    "Par jour": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Per day"
+          }
+        }
+      }
+    },
+    "perte par semaine": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "loss per week"
+          }
+        }
+      }
+    },
+    "Plage de référence de l’OMS": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "WHO reference range"
+          }
+        }
+      }
+    },
+    "Plages de l’OMS": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "WHO ranges"
+          }
+        }
+      }
+    },
+    "Poids": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weight"
+          }
+        }
+      }
+    },
+    "Poids de la barre": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bar weight"
+          }
+        }
+      }
+    },
+    "Poids moyen": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Average weight"
+          }
+        }
+      }
+    },
+    "Point de départ": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Starting point"
+          }
+        }
+      }
+    },
+    "Pour la formule %@, de %@ à %@ ans (Gallagher 2000, tableau 4).": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "For the %@ formula, ages %@ to %@ (Gallagher 2000, table 4)."
+          }
+        }
+      }
+    },
+    "Pour la formule %@, de %@ à %@ ans, personnes d’origine asiatique (Gallagher 2000, tableau 5).": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "For the %@ formula, ages %@ to %@, people of Asian origin (Gallagher 2000, table 5)."
+          }
+        }
+      }
+    },
+    "Prise": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gain"
+          }
+        }
+      }
+    },
+    "Projection": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Projection"
+          }
+        }
+      }
+    },
+    "Protéines": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Protein"
+          }
+        }
+      }
+    },
+    "Quand tu peux atteindre ton objectif": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When you could reach your goal"
+          }
+        }
+      }
+    },
+    "Quand tu peux atteindre ton objectif, sous forme de fourchette de dates.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When you could reach your goal, as a range of dates."
+          }
+        }
+      }
+    },
+    "Quoi charger sur la barre": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What to load on the bar"
+          }
+        }
+      }
+    },
+    "Quoi mettre de chaque côté de la barre.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What to put on each side of the bar."
+          }
+        }
+      }
+    },
+    "Relevée à 1,6 g par kg de poids, le plancher que Belay garde en sèche (heuristique Belay).": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Raised to 1.6 g per kg of body weight, the floor Belay keeps in a cut (Belay heuristic)."
+          }
+        }
+      }
+    },
+    "Reprendre mes dernières saisies": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back to my last entries"
+          }
+        }
+      }
+    },
+    "Repères": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reference values"
+          }
+        }
+      }
+    },
+    "Revenir aux rythmes": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back to the paces"
+          }
+        }
+      }
+    },
+    "Réglage fin": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fine-tune"
+          }
+        }
+      }
+    },
+    "Répétitions": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reps"
+          }
+        }
+      }
+    },
+    "Salle": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gym"
+          }
+        }
+      }
+    },
+    "Sans masse grasse, Belay prend 1,8 à 2,5 g par kg de poids (heuristique Belay). Ajoute ta masse grasse pour une fourchette plus juste.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Without body fat, Belay takes 1.8 to 2.5 g per kg of body weight (Belay heuristic). Add your body fat for a closer range."
+          }
+        }
+      }
+    },
+    "Si tu te poses des questions sur ton poids, parles-en à un professionnel de santé.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "If you have questions about your weight, talk to a health professional."
+          }
+        }
+      }
+    },
+    "Source et heuristique Belay": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Source and Belay heuristic"
+          }
+        }
+      }
+    },
+    "Source scientifique": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scientific source"
+          }
+        }
+      }
+    },
+    "Soutenu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Steady"
+          }
+        }
+      }
+    },
+    "Standard": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Standard"
+          }
+        }
+      }
+    },
+    "suit la charge tant que tu n’y touches pas": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "follows the load until you change it"
+          }
+        }
+      }
+    },
+    "Sur 3 repas": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Over 3 meals"
+          }
+        }
+      }
+    },
+    "Sur 4 repas": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Over 4 meals"
+          }
+        }
+      }
+    },
+    "Sur mesure": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Custom"
+          }
+        }
+      }
+    },
+    "Sèche": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cut"
+          }
+        }
+      }
+    },
+    "Sédentaire / activité légère": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sedentary / light activity"
+          }
+        }
+      }
+    },
+    "Sédentaire, plus environ une heure d’exercice modéré à soutenu par jour.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sedentary, plus about an hour of moderate to vigorous exercise a day."
+          }
+        }
+      }
+    },
+    "séries de travail": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "working sets"
+          }
+        }
+      }
+    },
+    "Ta charge de travail est la barre seule ou plus légère : il n’y a pas d’échauffement à calculer.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your working load is the bar alone or lighter: there is no warm-up to work out."
+          }
+        }
+      }
+    },
+    "Ta fourchette par jour et par repas": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your range per day and per meal"
+          }
+        }
+      }
+    },
+    "Ta masse grasse estimée": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your estimated body fat"
+          }
+        }
+      }
+    },
+    "Ta place sur les plages de l’OMS": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your place on the WHO ranges"
+          }
+        }
+      }
+    },
+    "Taille": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Height"
+          }
+        }
+      }
+    },
+    "Tes séries d’échauffement": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your warm-up sets"
+          }
+        }
+      }
+    },
+    "Tes séries d’échauffement, arrondies à ton matériel.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your warm-up sets, rounded to your equipment."
+          }
+        }
+      }
+    },
+    "Ton 1RM estimé": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your estimated 1RM"
+          }
+        }
+      }
+    },
+    "Ton IMC": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your BMI"
+          }
+        }
+      }
+    },
+    "Ton activité": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your activity"
+          }
+        }
+      }
+    },
+    "Ton indice de masse corporelle, placé sur les plages de l’OMS.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your body mass index, placed on the WHO ranges."
+          }
+        }
+      }
+    },
+    "Ton max à partir d’une série": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your max from one set"
+          }
+        }
+      }
+    },
+    "Ton max à partir d’une série menée près de l’échec.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your max from a set taken close to failure."
+          }
+        }
+      }
+    },
+    "Ton métabolisme au repos et ce que tu dépenses dans la journée.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your resting metabolism and what you burn in a day."
+          }
+        }
+      }
+    },
+    "Ton objectif": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your goal"
+          }
+        }
+      }
+    },
+    "Ton profil indique **%@**. Mettre à jour ton profil avec **%@** ?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your profile says **%1$@**. Update your profile with **%2$@**?"
+          }
+        }
+      }
+    },
+    "Ton rythme": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your pace"
+          }
+        }
+      }
+    },
+    "Ton échauffement": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your warm-up"
+          }
+        }
+      }
+    },
+    "Touche un disque pour l’ajouter ou le retirer.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap a plate to add or remove it."
+          }
+        }
+      }
+    },
+    "Tour de cou": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neck"
+          }
+        }
+      }
+    },
+    "Tour de hanches": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hips"
+          }
+        }
+      }
+    },
+    "Tour de taille au nombril": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waist at the navel"
+          }
+        }
+      }
+    },
+    "Tour de taille au plus fin": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waist at the narrowest"
+          }
+        }
+      }
+    },
+    "Tour de taille et tour de hanches réunis doivent dépasser le tour de cou.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waist plus hips must be larger than your neck."
+          }
+        }
+      }
+    },
+    "Tout est calculé sur ton appareil. Rien n’est envoyé.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Everything is calculated on your device. Nothing is sent."
+          }
+        }
+      }
+    },
+    "Travail peu physique, sans exercice régulier.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Light physical work, no regular exercise."
+          }
+        }
+      }
+    },
+    "Travail physique ou exercice intense une bonne partie de la journée.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Physical work or intense exercise for much of the day."
+          }
+        }
+      }
+    },
+    "Très actif": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Very active"
+          }
+        }
+      }
+    },
+    "Très sédentaire": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Very sedentary"
+          }
+        }
+      }
+    },
+    "Un poids va de 30 à 300 kg.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A weight goes from 30 to 300 kg."
+          }
+        }
+      }
+    },
+    "Un toucher choisit et ferme.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "One tap picks and closes."
+          }
+        }
+      }
+    },
+    "Un âge va de 15 à 100 ans.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "An age goes from 15 to 100 years."
+          }
+        }
+      }
+    },
+    "Une charge va de 1 à 500 kg.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A load goes from 1 to 500 kg."
+          }
+        }
+      }
+    },
+    "Une estimation au mètre ruban": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "An estimate from a tape measure"
+          }
+        }
+      }
+    },
+    "Une estimation au mètre ruban, avec des repères publiés.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "An estimate from a tape measure, with published reference values."
+          }
+        }
+      }
+    },
+    "Une estimation à ±10 % : environ 1 personne sur 5 est à plus de 10 % de sa mesure réelle. C’est un point de départ, que tes pesées et tes apports affineront plus tard.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "An estimate within ±10%: about 1 person in 5 is more than 10% off their measured value. It's a starting point that your weigh-ins and intake will refine later."
+          }
+        }
+      }
+    },
+    "Une fourchette par jour et par repas, selon ton objectif.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A range per day and per meal, for your goal."
+          }
+        }
+      }
+    },
+    "Une masse grasse va de 2 à 75 %.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A body fat goes from 2 to 75%."
+          }
+        }
+      }
+    },
+    "Une taille va de 120 à 230 cm.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A height goes from 120 to 230 cm."
+          }
+        }
+      }
+    },
+    "ans": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "yrs"
+          }
+        }
+      }
+    },
+    "aucune série": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "no sets"
+          }
+        }
+      }
+    },
+    "barre seule": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "bar only"
+          }
+        }
+      }
+    },
+    "cm": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "cm"
+          }
+        }
+      }
+    },
+    "depuis ton année de naissance": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "from your year of birth"
+          }
+        }
+      }
+    },
+    "depuis ton profil": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "from your profile"
+          }
+        }
+      }
+    },
+    "entre %@ et %@ environ": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "between %@ and %@ or so"
+          }
+        }
+      }
+    },
+    "estimation ±4 points": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "estimate ±4 points"
+          }
+        }
+      }
+    },
+    "femme": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "female"
+          }
+        }
+      }
+    },
+    "homme": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "male"
+          }
+        }
+      }
+    },
+    "kg": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "kg"
+          }
+        }
+      }
+    },
+    "la formule": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "the formula"
+          }
+        }
+      }
+    },
+    "la taille": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "the height"
+          }
+        }
+      }
+    },
+    "le poids": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "the weight"
+          }
+        }
+      }
+    },
+    "le tour de cou": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "the neck"
+          }
+        }
+      }
+    },
+    "le tour de hanches": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "the hips"
+          }
+        }
+      }
+    },
+    "le tour de taille": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "the waist"
+          }
+        }
+      }
+    },
+    "l’objectif": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "the goal"
+          }
+        }
+      }
+    },
+    "l’âge": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "the age"
+          }
+        }
+      }
+    },
+    "mensurations du %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "measured on %@"
+          }
+        }
+      }
+    },
+    "soit %@ à %@ g par kg de poids": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "that is %@ to %@ g per kg of body weight"
+          }
+        }
+      }
+    },
+    "ta dernière pesée": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "your last weigh-in"
+          }
+        }
+      }
+    },
+    "ta moyenne 7 jours": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "your 7-day average"
+          }
+        }
+      }
+    },
+    "toi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "you"
+          }
+        }
+      }
+    },
+    "une répétition": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "a rep"
+          }
+        }
+      }
+    },
+    "une série": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "a set"
+          }
+        }
+      }
+    },
+    "« Asiatique » utilise le tableau 5 de Gallagher, établi sur des personnes vivant au Japon. Ce choix reste sur ton appareil.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“Asian” uses Gallagher's table 5, built from people living in Japan. This choice stays on your device."
+          }
+        }
+      }
+    },
+    "« Modifier » copie ce préréglage dans « Sur mesure » : les préréglages ne changent jamais.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“Edit” copies this preset into “Custom”: presets never change."
+          }
+        }
+      }
+    },
+    "À ce rythme, Belay te conseille de te faire suivre par un médecin ou un diététicien.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "At this pace, Belay suggests being followed by a doctor or a dietitian."
+          }
+        }
+      }
+    },
+    "à toi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "your call"
+          }
+        }
+      }
+    },
+    "Âge": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Age"
+          }
+        }
+      }
+    },
+    "Échauffement": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Warm-up"
+          }
+        }
+      }
+    },
+    "Énergie": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Energy"
+          }
+        }
+      }
+    },
+    "Équilibré": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Balanced"
+          }
+        }
+      }
+    }
+  }
+}

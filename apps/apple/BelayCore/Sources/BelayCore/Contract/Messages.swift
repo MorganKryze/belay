@@ -110,6 +110,7 @@ public struct SyncResponse: Decodable, Sendable {
   public var supplements: [SupplementRow]?
   public var supplementLogs: [SupplementLogRow]?
   public var annotations: [AnnotationRow]?
+  public var steps: [StepsRow]?
   /// Nil when absent, or when neither was written since the cursor.
   public var target: TargetRow?
   public var profile: ProfileRow?

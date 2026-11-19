@@ -28,11 +28,15 @@ struct LastKept: Equatable {
 /// One exercise of the next session, before it starts.
 struct PlannedExercise: Equatable, Identifiable {
     let slotIndex: Int
+    let exerciseId: String
     let name: String
     let sets: Int
     /// Seconds for a timed exercise; repetitions otherwise.
     let timed: Bool
     let repRange: [Int]
+    let rirTarget: [Int]
+    /// The rest after each set; 0 inside a group until its last exercise.
+    let restSec: Int
     /// Last time's work sets, the counts of equal loads in a row grouped.
     let lastTime: [LoadGroup]
 
@@ -194,7 +198,12 @@ final class TrainingModel {
 
     private let store: AccountStore
     /// Every write to the open session goes through these, each one transaction of the store.
-    private let actions: SessionActions
+    /// Made at each action, so a change of what a pause stops counts from the next tap.
+    private var actions: SessionActions {
+        SessionActions(
+            store: store, library: BundledLibrary.library, stops: DevicePrefs.pauseStops.value, now: now,
+            newId: UUIDv7.make)
+    }
     /// The writes outside a session: the active program, a past session.
     private let history: HistoryActions
     private let didWrite: () -> Void
@@ -216,7 +225,6 @@ final class TrainingModel {
         now: @escaping @Sendable () -> Date, timeZone: TimeZone
     ) {
         self.store = store
-        actions = SessionActions(store: store, library: BundledLibrary.library, now: now, newId: UUIDv7.make)
         history = HistoryActions(store: store, now: now)
         readAt = now()
         self.didWrite = didWrite
@@ -328,6 +336,15 @@ final class TrainingModel {
         guard let history = last?.history else { return [] }
         return BelayCore.lastTime(history, exerciseId: exerciseId, measure: timed ? .seconds : nil)
             .map { LoadGroup(weightKg: $0.weightKg, counts: $0.counts) }
+    }
+
+    /// When the open session's rest ends, as stored: under a pause that leaves the rest running,
+    /// the paused card counts down to it.
+    var restEndsAt: Date? {
+        guard let workoutId = session?.workoutId, let active = last?.active, active.workoutId == workoutId else {
+            return nil
+        }
+        return active.restEndsAt.flatMap(Instant.date)
     }
 
     /// When the open session's latest set was done: where the rest after it starts.
@@ -574,8 +591,9 @@ final class TrainingModel {
                 let slot = plan[index]
                 let measure: Measure? = slot.measure == .seconds ? .seconds : nil
                 return PlannedExercise(
-                    slotIndex: index, name: exerciseName(slot.exerciseId), sets: slot.sets,
-                    timed: measure != nil, repRange: slot.repRange,
+                    slotIndex: index, exerciseId: slot.exerciseId, name: exerciseName(slot.exerciseId),
+                    sets: slot.sets, timed: measure != nil, repRange: slot.repRange, rirTarget: slot.rirTarget,
+                    restSec: slot.restSec,
                     lastTime: BelayCore.lastTime(snapshot.history, exerciseId: slot.exerciseId, measure: measure)
                         .map { LoadGroup(weightKg: $0.weightKg, counts: $0.counts) })
             })
@@ -592,7 +610,9 @@ final class TrainingModel {
         }
         let at = now()
         func read() -> SessionState {
-            sessionState(history: snapshot.history, active: active, now: at, library: BundledLibrary.library, bar: .gym, marks: marks)
+            sessionState(
+                history: snapshot.history, active: active, now: at, library: BundledLibrary.library, bar: .gym,
+                marks: marks, stops: DevicePrefs.pauseStops.value)
         }
         var state = read()
         switch state.phase {

@@ -50,13 +50,49 @@ import Testing
 
   @Test func intakeFiguresFromTheToolsWithAFullProfile() throws {
     let body = Bodies.body(weights: Bodies.usualWeights, profile: profile)
-    let state = intakeState(body, now: Bodies.now, timeZone: zone)
+    let state = intakeState(body, pal: sedentary, goal: .maintain, now: Bodies.now, timeZone: zone)
     // Mifflin for a man of 36, 180 cm, 80.0 kg (the 7-day average): 1 750 kcal; × 1.55 = 2 712.5,
     // to 10 kcal.
     #expect(state.kcalFigure == 2710)
     let protein = try #require(state.protein)
     #expect((protein.lowG, protein.highG) == (110, 160))
     // 1.4 to 2.0 g/kg of 80 kg: 112 to 160, shown 110 to 160; the middle 135.
+    #expect(state.proteinFigure == 135)
+  }
+
+  private let sedentary = 1.55
+
+  @Test func apportsUsesChosenPalAndGoal() throws {
+    let body = Bodies.body(weights: Bodies.usualWeights, profile: profile)
+    let state = intakeState(body, pal: 1.75, goal: .gain, now: Bodies.now, timeZone: zone)
+    // 1 750 kcal at rest × 1.75 (Actif) = 3 062.5, to 10 kcal.
+    #expect(state.kcalFigure == 3060)
+    // Gain: 1.6 to 2.2 g/kg of 80 kg, 128 to 176, shown 130 to 175; the middle 152.5 rounds up.
+    let protein = try #require(state.protein)
+    #expect((protein.lowG, protein.highG) == (130, 175))
+    #expect(state.proteinFigure == 155)
+  }
+
+  @Test func toolsOpenOnTheEntries() {
+    let body = Bodies.body(weights: Bodies.usualWeights, profile: profile)
+    let today = toISODate(Bodies.now, timeZone: zone)
+    let defaults = toolDefaults(body, now: Bodies.now, timeZone: zone)
+    #expect(
+      defaults
+        == toolDefaults(
+          profile: profile, weighings: weighings(body), measures: body.measures, today: today))
+    #expect(defaults.formula?.value == .male)
+    #expect(defaults.weightKg != nil)
+    #expect(toolDefaults(.empty, now: Bodies.now, timeZone: zone) == ToolDefaults())
+  }
+
+  @Test func defaultsSedentaryMaintain() {
+    let body = Bodies.body(weights: Bodies.usualWeights, profile: profile)
+    let unchosen = ToolMemory()
+    let state = intakeState(
+      body, pal: unchosen.pal.pal, goal: unchosen.goal, now: Bodies.now, timeZone: zone)
+    #expect(state == intakeState(body, pal: 1.55, goal: .maintain, now: Bodies.now, timeZone: zone))
+    #expect(state.kcalFigure == 2710)
     #expect(state.proteinFigure == 135)
   }
 
@@ -74,8 +110,8 @@ import Testing
     ]
     for profile in incomplete + [nil] as [ProfileRow?] {
       let state = intakeState(
-        Bodies.body(weights: Bodies.usualWeights, profile: profile), now: Bodies.now,
-        timeZone: zone)
+        Bodies.body(weights: Bodies.usualWeights, profile: profile), pal: sedentary,
+        goal: .maintain, now: Bodies.now, timeZone: zone)
       #expect(state.kcalFigure == nil)
       // The protein needs the weight only.
       #expect(state.proteinFigure == 135)
@@ -83,7 +119,9 @@ import Testing
   }
 
   @Test func intakeWithoutAWeighInHasNoFigure() {
-    let state = intakeState(Bodies.body(profile: profile), now: Bodies.now, timeZone: zone)
+    let state = intakeState(
+      Bodies.body(profile: profile), pal: sedentary, goal: .maintain, now: Bodies.now,
+      timeZone: zone)
     #expect(state.kcalFigure == nil)
     #expect(state.protein == nil)
     #expect(state.proteinFigure == nil)
@@ -92,11 +130,12 @@ import Testing
   @Test func proteinMiddleRoundedToFiveGrams() {
     // 77 kg: 107.8 to 154 g, shown 110 to 155; the middle 132.5 rounds to 135.
     let body = Bodies.body(weights: Bodies.weights([Bodies.today], kg: 77))
-    let state = intakeState(body, now: Bodies.now, timeZone: zone)
+    let state = intakeState(body, pal: sedentary, goal: .maintain, now: Bodies.now, timeZone: zone)
     #expect(state.proteinFigure == 135)
     // 83 kg: 116.2 to 166 g, shown 115 to 165; the middle 140.
     let other = intakeState(
-      Bodies.body(weights: Bodies.weights([Bodies.today], kg: 83)), now: Bodies.now,
+      Bodies.body(weights: Bodies.weights([Bodies.today], kg: 83)), pal: sedentary,
+      goal: .maintain, now: Bodies.now,
       timeZone: zone)
     #expect(other.proteinFigure == 140)
   }
@@ -108,7 +147,9 @@ import Testing
       IntakeRow(date: "2026-11-12", kcal: 2000, kcalAt: nil, proteinG: 120, proteinAt: nil),
       IntakeRow(date: "2026-11-14", kcal: 2100, kcalAt: nil, proteinG: 100, proteinAt: nil),
     ]
-    let state = intakeState(Bodies.body(intake: intake), now: Bodies.now, timeZone: zone)
+    let state = intakeState(
+      Bodies.body(intake: intake), pal: sedentary, goal: .maintain, now: Bodies.now,
+      timeZone: zone)
     #expect(state.today == TodayIntake(kcal: 1850, proteinG: 128))
     #expect(state.previous.map(\.date) == ["2026-11-12", "2026-11-10"])
   }

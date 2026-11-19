@@ -2,14 +2,6 @@ import Foundation
 
 // What a finished session adds up to: its time, its sets, its volume and its records.
 
-/// The reps above which a one-rep-max estimate is no longer reliable (Reynolds 2006).
-public let reliableMaxReps = 10
-
-/// The Epley estimate of a one-rep max; one rep is the max itself.
-public func epley(_ weightKg: Double, _ reps: Int) -> Double {
-  reps == 1 ? weightKg : weightKg * (1 + Double(reps) / 30)
-}
-
 /// A finished session in figures. The volume is Σ kg × reps of the work sets counted in reps (a
 /// bodyweight set counts its added load); a timed set adds nothing.
 public struct SessionTotals: Sendable, Equatable {

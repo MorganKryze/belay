@@ -32,7 +32,7 @@ describe("the rest bar's line", () => {
       <RestBar {...props} endsAt={at(90)} pausedAt={at(30)} />,
     );
     const before = line(container);
-    expect(before).toBe(`scaleX(${60 / 90})`);
+    expect(before).toBe(`scaleX(${Number((60 / 90).toFixed(6))})`); // serialized as a browser does
     rerender(<RestBar {...props} endsAt={at(210)} pausedAt={null} />);
     expect(line(container)).toBe(before);
   });

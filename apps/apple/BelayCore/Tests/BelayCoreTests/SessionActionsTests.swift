@@ -54,18 +54,29 @@ struct Seance {
   let clock = TestClock(Fixture.t0)
   let actions: SessionActions
   let workoutId: String
+  /// What a pause stops on this device; nil leaves the actions their default.
+  let stops: PauseStops?
 
-  init(_ plan: [Slot] = [slot()], store: AccountStore? = nil, past: [(String, Double, Int)] = [])
-    throws
-  {
+  init(
+    _ plan: [Slot] = [slot()], store: AccountStore? = nil, past: [(String, Double, Int)] = [],
+    stops: PauseStops? = nil
+  ) throws {
     self.store = try store ?? AccountStore.inMemory(userId: "u1")
+    self.stops = stops
     for (i, (exerciseId, kg, count)) in past.enumerated() {
       try Self.finished(self.store, exerciseId: exerciseId, kg: kg, count: count, daysAgo: i + 1)
     }
     let clock = clock
-    actions = SessionActions(
-      store: self.store, library: Self.library, now: { clock.now },
-      newId: { UUIDv7.make(at: $0) })
+    actions =
+      if let stops {
+        SessionActions(
+          store: self.store, library: Self.library, stops: stops, now: { clock.now },
+          newId: { UUIDv7.make(at: $0) })
+      } else {
+        SessionActions(
+          store: self.store, library: Self.library, now: { clock.now },
+          newId: { UUIDv7.make(at: $0) })
+      }
     workoutId = Fixture.id()
     _ = try self.store.startWorkout(
       WorkoutStart(
@@ -121,9 +132,16 @@ struct Seance {
   var lastChange: Change? { get throws { try store.outbox(limit: nil).last?.change } }
 
   func state(_ marks: SessionMarks = SessionMarks()) throws -> SessionState {
-    sessionState(
-      history: try store.history(), active: try #require(try active), now: clock.now,
-      library: Self.library, bar: .gym, marks: marks)
+    let history = try store.history()
+    let active = try #require(try active)
+    guard let stops else {
+      return sessionState(
+        history: history, active: active, now: clock.now, library: Self.library, bar: .gym,
+        marks: marks)
+    }
+    return sessionState(
+      history: history, active: active, now: clock.now, library: Self.library, bar: .gym,
+      marks: marks, stops: stops)
   }
 
   /// A set as another device's sync lands it.

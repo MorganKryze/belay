@@ -99,6 +99,38 @@ enum Schema {
       }
       try db.execute(sql: "INSERT OR REPLACE INTO meta (key, value) VALUES ('cursor', '0')")
     }
+    // Every field of an activity is read from here on, a day's steps are kept by day, and the
+    // steps import notes the value it last wrote for a day (this phone's own, never queued). The
+    // activities kept so far held only what the plan read. Each stays, so a session started
+    // before the pull lands still sees the week's climb, with no duration and its fields at the
+    // epoch: the pull, started over, brings it back whole and the server's row replaces it. The
+    // previous version wrote none, so no queued change is lost.
+    migrator.registerMigration("v5") { db in
+      struct Kept: Decodable {
+        var id: String
+        var date: String
+        var type: String
+        var removed: Bool
+      }
+      for data in try Data.fetchAll(db, sql: "SELECT row FROM activities") {
+        let kept = try Rows.decode(Kept.self, data)
+        try Rows.put(
+          db, "activities", id: kept.id,
+          ActivityRow(
+            id: kept.id, date: kept.date, kind: kept.type, durationMin: 0, cardioType: nil,
+            climbStyle: nil, climbRuns: nil, climbGrade: nil, climbColor: nil,
+            fieldsAt: "1970-01-01T00:00:00.000Z", removed: kept.removed, removedAt: nil))
+      }
+      try db.create(table: "steps") { t in
+        t.primaryKey("date", .text)
+        t.column("row", .blob).notNull()
+      }
+      try db.create(table: "stepsWritten") { t in
+        t.primaryKey("date", .text)
+        t.column("value", .integer).notNull()
+      }
+      try db.execute(sql: "INSERT OR REPLACE INTO meta (key, value) VALUES ('cursor', '0')")
+    }
     return migrator
   }
 }

@@ -32,6 +32,37 @@ enum BodyRows {
     try Rows.get(AnnotationRow.self, db, "annotations", id: id)
   }
 
+  static func steps(_ db: Database, date: String) throws -> StepsRow? {
+    try byDate(StepsRow.self, db, "steps", date)
+  }
+
+  static func supplement(_ db: Database, id: String) throws -> SupplementRow? {
+    try Rows.get(SupplementRow.self, db, "supplements", id: id)
+  }
+
+  static func activity(_ db: Database, id: String) throws -> ActivityRow? {
+    try Rows.get(ActivityRow.self, db, "activities", id: id)
+  }
+
+  static func profile(_ db: Database) throws -> ProfileRow? {
+    try Rows.single(ProfileRow.self, db, "profile")
+  }
+
+  static func put(_ db: Database, _ row: StepsRow) throws {
+    try putByDate(db, "steps", row.date, row)
+  }
+
+  /// The value the steps import wrote last for `date`; nil: the day is not this phone's.
+  static func putStepsWritten(_ db: Database, date: String, value: Int?) throws {
+    if let value {
+      try db.execute(
+        sql: "INSERT OR REPLACE INTO stepsWritten (date, value) VALUES (?, ?)",
+        arguments: [date, value])
+    } else {
+      try db.execute(sql: "DELETE FROM stepsWritten WHERE date = ?", arguments: [date])
+    }
+  }
+
   static func put(_ db: Database, _ row: WeightRow) throws {
     try putByDate(db, "weights", row.date, row)
   }
@@ -119,6 +150,11 @@ extension IntakeRow {
   }
 }
 
+extension ProfileRow {
+  static let empty = ProfileRow(
+    formula: nil, formulaAt: nil, birthYear: nil, birthYearAt: nil, heightCm: nil, heightAt: nil)
+}
+
 extension AccountStore {
   /// Checked against the person's today, applied and queued, in order. A session kind never
   /// comes here: `write` checks those.
@@ -145,6 +181,27 @@ extension AccountStore {
       case .fields: return row?.fieldsAt
       case .removed: return row?.removedAt
       }
+    case .profile(let c):
+      let row = try BodyRows.profile(db)
+      switch c.edit {
+      case .formula: return row?.formulaAt
+      case .birthYear: return row?.birthYearAt
+      case .height: return row?.heightAt
+      }
+    case .target: return try Rows.single(TargetRow.self, db, "target")?.at
+    case .supplement(let c):
+      let row = try BodyRows.supplement(db, id: c.id)
+      switch c.edit {
+      case .name: return row?.nameAt
+      case .removed: return row?.removedAt
+      }
+    case .activity(let c):
+      let row = try BodyRows.activity(db, id: c.id)
+      switch c.edit {
+      case .fields: return row?.fieldsAt
+      case .removed: return row?.removedAt
+      }
+    case .steps(let c): return try BodyRows.steps(db, date: c.date)?.stepsAt
     case .workout, .set, .activeProgram: return nil
     }
   }
@@ -179,6 +236,52 @@ extension AccountStore {
         (row.removed, row.removedAt) = (removed, c.at)
         try Rows.put(db, "annotations", id: c.id, row)
       }
+    case .profile(let c):
+      var row = try BodyRows.profile(db) ?? .empty
+      switch c.edit {
+      case .formula(let formula): (row.formula, row.formulaAt) = (formula, c.at)
+      case .birthYear(let year): (row.birthYear, row.birthYearAt) = (year, c.at)
+      case .height(let cm): (row.heightCm, row.heightAt) = (cm, c.at)
+      }
+      try Rows.putSingle(db, "profile", row)
+    case .target(let c):
+      try Rows.putSingle(db, "target", TargetRow(minPct: c.minPct, maxPct: c.maxPct, at: c.at))
+    case .supplement(let c):
+      let row = try BodyRows.supplement(db, id: c.id)
+      switch c.edit {
+      case .name(let name):
+        // Its kind comes from its first name and stays, as the server keeps it.
+        let kept =
+          row.map { SupplementRow(
+            id: c.id, name: name, nameAt: c.at, kind: $0.kind, removed: $0.removed,
+            removedAt: $0.removedAt) }
+          ?? SupplementRow(
+            id: c.id, name: name, nameAt: c.at, kind: isCreatineName(name) ? .creatine : .other,
+            removed: false, removedAt: nil)
+        try Rows.put(db, "supplements", id: c.id, kept)
+      case .removed(let removed):
+        guard var row else { return }
+        (row.removed, row.removedAt) = (removed, c.at)
+        try Rows.put(db, "supplements", id: c.id, row)
+      }
+    case .activity(let c):
+      let row = try BodyRows.activity(db, id: c.id)
+      switch c.edit {
+      case .fields(let date, let f):
+        try Rows.put(
+          db, "activities", id: c.id,
+          ActivityRow(
+            id: c.id, date: date, kind: f.type, durationMin: f.durationMin,
+            cardioType: f.cardioType, climbStyle: f.climbStyle, climbRuns: f.climbRuns,
+            climbGrade: f.climbGrade, climbColor: f.climbColor, fieldsAt: c.at,
+            removed: row?.removed ?? false, removedAt: row?.removedAt))
+      case .removed(let removed):
+        guard var row else { return }
+        (row.removed, row.removedAt) = (removed, c.at)
+        try Rows.put(db, "activities", id: c.id, row)
+      }
+    case .steps(let c):
+      try BodyRows.put(db, StepsRow(date: c.date, steps: c.value, stepsAt: c.at))
     case .workout, .set, .activeProgram: return
     }
   }
@@ -209,6 +312,33 @@ extension AccountStore {
         (row.removed, row.removedAt) = (false, nil)
         try Rows.put(db, "annotations", id: c.id, row)
       }
+    case .profile(let c):
+      guard var row = try BodyRows.profile(db) else { return }
+      switch c.edit {
+      case .formula: (row.formula, row.formulaAt) = (nil, nil)
+      case .birthYear: (row.birthYear, row.birthYearAt) = (nil, nil)
+      case .height: (row.heightCm, row.heightAt) = (nil, nil)
+      }
+      try Rows.putSingle(db, "profile", row)
+    case .target: try Rows.clearSingle(db, "target")
+    case .supplement(let c):
+      switch c.edit {
+      case .name: try Rows.delete(db, "supplements", id: c.id)
+      case .removed:
+        guard var row = try BodyRows.supplement(db, id: c.id) else { return }
+        (row.removed, row.removedAt) = (false, nil)
+        try Rows.put(db, "supplements", id: c.id, row)
+      }
+    case .activity(let c):
+      switch c.edit {
+      case .fields: try Rows.delete(db, "activities", id: c.id)
+      case .removed:
+        guard var row = try BodyRows.activity(db, id: c.id) else { return }
+        (row.removed, row.removedAt) = (false, nil)
+        try Rows.put(db, "activities", id: c.id, row)
+      }
+    case .steps(let c):
+      try db.execute(sql: "DELETE FROM steps WHERE date = ?", arguments: [c.date])
     case .workout, .set, .activeProgram: return
     }
   }
@@ -218,7 +348,9 @@ extension Change {
   /// A body entry, dated by the person's day.
   var isBody: Bool {
     switch self {
-    case .weight, .measure, .intake, .supplementLog, .annotation: true
+    case .weight, .measure, .intake, .supplementLog, .annotation, .profile, .target, .supplement,
+      .activity, .steps:
+      true
     case .workout, .set, .activeProgram: false
     }
   }

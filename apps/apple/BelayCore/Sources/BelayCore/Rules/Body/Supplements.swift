@@ -1,11 +1,15 @@
-// Creatine's own band on the weight chart, ported from the shared rules.
+// The supplements' suggestions and creatine's own band on the weight chart, ported from the
+// shared rules.
+
+/// The suggestions of Réglages › Mes compléments, as string keys. Belay notes what is taken,
+/// never a dose or advice.
+public let supplementSuggestions = [
+  "creatine", "vitaminD", "omega3", "magnesium", "iron", "zinc", "caffeine", "melatonin",
+]
 
 /// "Créatine", "creatine", "CREATINE monohydrate": case and accents aside, the word creatine.
 public func isCreatineName(_ name: String) -> Bool {
-  let bare = name.decomposedStringWithCanonicalMapping.unicodeScalars.filter {
-    !$0.properties.isDiacritic
-  }
-  let plain = Array(String(String.UnicodeScalarView(bare)).lowercased().unicodeScalars)
+  let plain = Array(fold(name).unicodeScalars)
   let word = Array("creatine".unicodeScalars)
   let isLetter = { (s: Unicode.Scalar) in ("a"..."z").contains(s) }
   guard plain.count >= word.count else { return false }
@@ -14,6 +18,13 @@ public func isCreatineName(_ name: String) -> Bool {
       && (i == 0 || !isLetter(plain[i - 1]))
       && (i + word.count == plain.count || !isLetter(plain[i + word.count]))
   }
+}
+
+/// Two names compared as the web's `plain` compares them: through the shared `fold`, the spaces
+/// around aside, so « oméga-3 » is « Oméga-3 » and « Straße » stays apart from « strasse ».
+public func sameSupplementName(_ a: String, _ b: String) -> Bool {
+  let plain = { (name: String) in fold(name.trimmingCharacters(in: .whitespacesAndNewlines)) }
+  return plain(a) == plain(b)
 }
 
 /// A heuristic: a course of creatine starts on a day ticked after at least 14 days without; its

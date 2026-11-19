@@ -33,6 +33,11 @@ final class AccountModel {
     private(set) var syncStatus: SyncStatus = .idle
     /// How the instance names the person, for Accueil's greeting; nil before it has said so.
     private(set) var displayName: String?
+    /// Whether the instance serves exercise loops, as `/api/me` last said; kept across launches
+    /// with the account, and forgotten with it.
+    private(set) var media: Bool
+    /// The loops of the open store's account; nil while none is open.
+    private(set) var loops: Loops?
 
     /// Whom the open store and its sync were opened for. Another person, instance or token closes
     /// both first, so one account's queue never goes out under another's token.
@@ -41,6 +46,8 @@ final class AccountModel {
     private var following: Task<Void, Never>?
     /// A sign-in again is under way: a second tap waits for its sheet.
     private var reconnecting = false
+    /// A read of `/api/me` is under way: a second trigger waits for its answer.
+    private var rechecking = false
     /// The network coming back is a trigger: the queue may have waited for it.
     private let path = NWPathMonitor()
 
@@ -50,6 +57,8 @@ final class AccountModel {
     private let defaults: UserDefaults
     /// Where each account's store lives: the app's own Application Support, never a shared container.
     private let storeFolder: URL
+    /// Where the loops are kept: the caches folder, which iOS may empty when space runs short.
+    private let loopsFolder: URL
     private let health: any HealthWriting
     /// One Health run at a time, cancelled when the store closes.
     private let healthRuns: HealthRuns
@@ -60,6 +69,7 @@ final class AccountModel {
         secrets: SecretStore = KeychainStore(), http: HTTPClient = URLSessionClient(),
         sheet: SignInSheet = SystemSignInSheet(), defaults: UserDefaults = .standard,
         storeFolder: URL = URL.applicationSupportDirectory.appending(path: "Stores", directoryHint: .isDirectory),
+        loopsFolder: URL = URL.cachesDirectory.appending(path: "Loops", directoryHint: .isDirectory),
         health: any HealthWriting = HealthKitWriter()
     ) {
         session = StoredSession(store: secrets, defaults: defaults)
@@ -67,6 +77,8 @@ final class AccountModel {
         self.sheet = sheet
         self.defaults = defaults
         self.storeFolder = storeFolder
+        self.loopsFolder = loopsFolder
+        media = session.media
         self.health = health
         healthRuns = HealthRuns(writer: health)
         if let instance = storedInstance, let token = session.token(origin: instance.origin.absoluteString),
@@ -83,6 +95,13 @@ final class AccountModel {
             Task { @MainActor in self?.refresh() }
         }
         path.start(queue: .main)
+        // A session kept from an earlier launch learns what the instance says of it now.
+        recheck()
+    }
+
+    /// The tools' memory of the account whose store is open, beside that store; nil while none is.
+    var toolMemory: URL? {
+        openedFor.map { ToolMemoryFile.url(userId: $0.userId, origin: $0.instance.origin, in: storeFolder) }
     }
 
     /// The store and its sync are open exactly while signed in. Signing out closes them and keeps
@@ -106,6 +125,7 @@ final class AccountModel {
         }
         self.store = store
         openedFor = account
+        loops = Loops(folder: loopsFolder, userId: account.userId, origin: account.instance.origin, client: http)
         let engine = SyncEngine(
             userId: account.userId, store: store,
             transport: HTTPTransport(instance: account.instance, token: account.token, client: http),
@@ -128,7 +148,22 @@ final class AccountModel {
         following = nil
         store = nil
         openedFor = nil
+        // A fetch still out for the account closing writes nothing.
+        loops?.close()
+        loops = nil
+        ThumbCache.clear()
         syncStatus = .idle
+    }
+
+    /// The loop of `exerciseId` already on this phone, while the instance serves loops.
+    func keptLoop(_ exerciseId: String) -> URL? {
+        media ? loops?.kept(exerciseId) : nil
+    }
+
+    /// The loop of `exerciseId`, kept or fetched from the signed-in instance with its token.
+    func loop(_ exerciseId: String) async -> URL? {
+        guard let loops, case .signedIn(let account) = state else { return nil }
+        return await loops.fetch(exerciseId, token: account.token, at: account.instance, media: media)
     }
 
     /// After a write to the store: the sync follows once writes pause.
@@ -137,10 +172,27 @@ final class AccountModel {
         Task { await engine.schedule() }
     }
 
-    /// Back in front, or the network back: the run going, if any, is fresh enough.
+    /// Back in front, or the network back: the run going, if any, is fresh enough, and the
+    /// instance says again who the person is and whether it serves loops.
     func refresh() {
+        recheck()
         guard let engine else { return }
         Task { await engine.refresh() }
+    }
+
+    /// What the instance says now of the signed-in person, kept for this account: a session kept
+    /// from before the instance served loops learns that it does. A failure keeps what is known,
+    /// and an answer that comes once the account has changed is dropped.
+    private func recheck() {
+        guard case .signedIn(let account) = state, !rechecking else { return }
+        rechecking = true
+        Task {
+            defer { rechecking = false }
+            let answer = await me(token: account.token, at: account.instance, using: http)
+            guard case .success(let named) = answer, named.id == account.userId, case .signedIn(account) = state
+            else { return }
+            remember(named)
+        }
     }
 
     /// A complete pull: what is stored is current, so a session left open elsewhere can be closed.
@@ -188,11 +240,29 @@ final class AccountModel {
         return true
     }
 
-    /// The import's switch turned on: the import reads through Santé's switch, so Santé goes on
-    /// first when it is off, as its own switch would. iOS is asked to let Belay read body mass, a
-    /// sheet it shows only for a type never asked, and never says whether it did. The import then
-    /// runs after the sync this starts. Whether the import is on.
+    /// The weigh-in import's switch turned on: the import reads through Santé's switch, so Santé
+    /// goes on first when it is off, as its own switch would. iOS is asked to let Belay read body
+    /// mass, a sheet it shows only for a type never asked, and never says whether it did. The import
+    /// then runs after the sync this starts. Whether the import is on.
     func turnHealthImportOn() async -> Bool {
+        await turnImportOn({ try $0.setHealthImportOn($1) }, isOn: \.importOn)
+    }
+
+    /// The weigh-in import stops; the weigh-ins it brought stay. Whether it was kept.
+    func turnHealthImportOff() -> Bool { turnImportOff { try $0.setHealthImportOn(false) } }
+
+    /// The steps import's switch turned on, as the weigh-in import's (R5): the day's steps then come
+    /// from Health after each landed sync. Whether the import is on.
+    func turnHealthStepsOn() async -> Bool {
+        await turnImportOn({ try $0.setHealthStepsOn($1) }, isOn: \.stepsOn)
+    }
+
+    /// The steps import stops; the steps it brought stay. Whether it was kept.
+    func turnHealthStepsOff() -> Bool { turnImportOff { try $0.setHealthStepsOn(false) } }
+
+    private func turnImportOn(
+        _ set: (AccountStore, Bool) throws -> Void, isOn: KeyPath<HealthSettings, Bool>
+    ) async -> Bool {
         guard let store else { return false }
         let healthOn: Bool
         do {
@@ -202,7 +272,7 @@ final class AccountModel {
             return false
         }
         if !healthOn {
-            // Santé's turn-on asks iOS with the full request, body mass included.
+            // Santé's turn-on asks iOS with the full request, the read types included.
             guard await turnHealthOn() else { return false }
         } else {
             do {
@@ -212,8 +282,8 @@ final class AccountModel {
             }
         }
         do {
-            try store.setHealthImportOn(true)
-            guard try store.healthSettings().importOn else { return false }
+            try set(store, true)
+            guard try store.healthSettings()[keyPath: isOn] else { return false }
         } catch {
             Self.log.error("health import switch not kept: \(AccountStore.logLabel(error), privacy: .public)")
             return false
@@ -222,10 +292,10 @@ final class AccountModel {
         return true
     }
 
-    /// The import stops; the weigh-ins it brought stay. Whether it was kept.
-    func turnHealthImportOff() -> Bool {
+    private func turnImportOff(_ set: (AccountStore) throws -> Void) -> Bool {
+        guard let store else { return false }
         do {
-            try store?.setHealthImportOn(false)
+            try set(store)
             return true
         } catch {
             Self.log.error("health import switch not kept: \(AccountStore.logLabel(error), privacy: .public)")
@@ -336,8 +406,9 @@ final class AccountModel {
     }
 
     private func remember(_ me: Me) {
-        session.remember(userId: me.id, displayName: me.displayName)
+        session.remember(userId: me.id, displayName: me.displayName, media: me.media)
         displayName = me.displayName
+        media = me.media
     }
 
     /// Signed in once the instance names who `token` belongs to; a token it refuses is dropped.
@@ -351,6 +422,8 @@ final class AccountModel {
             fail(.unavailable)
         case .failure(let failure):
             forget()
+            // The account the token was for is dropped, so the loops it looked at go as at sign-out.
+            Loops.removeAll(in: loopsFolder)
             await logout(token: token, at: instance, using: http)
             fail(failure)
         }
@@ -360,6 +433,12 @@ final class AccountModel {
     func signOut() async {
         guard case .signedIn(let account) = state else { return }
         forget()
+        // What the tools remember is health data kept for this account only: it goes with it.
+        ToolMemoryFile.remove(userId: account.userId, origin: account.instance.origin, in: storeFolder)
+        // The loops seen tell which exercises this person looked at: they go too, and a fetch still
+        // out cannot bring one back.
+        loops?.close()
+        Loops.removeAll(in: loopsFolder)
         state = .signedOut(nil)
         await logout(token: account.token, at: account.instance, using: http)
     }
@@ -368,6 +447,7 @@ final class AccountModel {
     /// A token the Keychain fails to drop is still never restored: the sign-out is marked first.
     private func forget() {
         displayName = nil
+        media = false
         do {
             try session.drop()
         } catch {

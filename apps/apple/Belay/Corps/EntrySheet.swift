@@ -4,6 +4,7 @@ import SwiftUI
 /// display face, « Date » as a pill, then the sheet's rows with their values on the right, typed on
 /// the keypad. A day that holds the entry adds its deletion, asked first.
 struct EntrySheet<Rows: View>: View {
+    /// The head under the bar; a `heading` takes its place.
     let title: Text
     let symbol: String
     var domain = Domain.body
@@ -19,6 +20,11 @@ struct EntrySheet<Rows: View>: View {
     var deletion: (label: Text, run: () -> Void)? = nil
     /// The line under the rows.
     var footer: Text? = nil
+    /// A segment in place of the title, as Calendrier's « Évènement | Rappel »; the date then has
+    /// its section, and the rows bring theirs.
+    var heading: AnyView? = nil
+    /// The date row's name, « Date » unless the sheet says otherwise.
+    var dateLabel: Text? = nil
     @ViewBuilder let rows: Rows
     @Environment(\.dismiss) private var dismiss
     @State private var asking = false
@@ -32,17 +38,19 @@ struct EntrySheet<Rows: View>: View {
     var body: some View {
         NavigationStack {
             List {
-                SheetHead(title: title, symbol: symbol, domain: domain)
-                Section {
-                    DatePicker(selection: $date, in: days, displayedComponents: .date) {
-                        Text("Date", tableName: "Corps")
+                if heading == nil {
+                    SheetHead(title: title, symbol: symbol, domain: domain)
+                    Section {
+                        datePicker
+                        rows
+                    } footer: {
+                        if let footer { footer.foregroundStyle(.muted) }
                     }
-                    .frame(minHeight: 44)
+                    .listRowBackground(Color.surface)
+                } else {
+                    Section { datePicker }.listRowBackground(Color.surface)
                     rows
-                } footer: {
-                    if let footer { footer.foregroundStyle(.muted) }
                 }
-                .listRowBackground(Color.surface)
                 if let deletion {
                     Section {
                         Button(role: .destructive) { asking = true } label: {
@@ -64,6 +72,9 @@ struct EntrySheet<Rows: View>: View {
             .belayList()
             .sheetWithoutBar()
             .toolbar {
+                if let heading {
+                    ToolbarItem(placement: .principal) { heading }
+                }
                 ToolbarItem(placement: .cancellationAction) {
                     Button(role: .close) { dismiss() }.accessibilityIdentifier("\(id)-close")
                 }
@@ -80,11 +91,18 @@ struct EntrySheet<Rows: View>: View {
         }
         .presentationDetents([.large])
     }
+
+    private var datePicker: some View {
+        DatePicker(selection: $date, in: days, displayedComponents: .date) {
+            dateLabel ?? Text("Date", tableName: "Corps")
+        }
+        .frame(minHeight: 44)
+    }
 }
 
 /// A sheet's head: the domain's icon in a round tile, the title under it. At the largest sizes the
 /// title alone heads the sheet, so the field stays above the keypad.
-private struct SheetHead: View {
+struct SheetHead: View {
     let title: Text
     let symbol: String
     let domain: Domain

@@ -35,13 +35,28 @@ import {
   MEASURE_FIELDS,
   weeklyWaist,
 } from "../packages/shared/src/body/measures";
-import type { Profile } from "../packages/shared/src/body/profile";
+import {
+  ageIn,
+  birthYearRange,
+  isBirthYear,
+  isProfileHeight,
+  type Profile,
+} from "../packages/shared/src/body/profile";
 import {
   CREATINE_DAYS,
   creatineWindows,
   isCreatineName,
+  isSupplementName,
+  SUPPLEMENT_NAME_MAX,
+  SUPPLEMENT_SUGGESTIONS,
 } from "../packages/shared/src/body/supplements";
-import { DEFAULT_TARGET, inTargetRange, isTargetRange } from "../packages/shared/src/body/target";
+import {
+  DEFAULT_TARGET,
+  inTargetRange,
+  isTargetRange,
+  TARGET_BOUNDS,
+} from "../packages/shared/src/body/target";
+import { AGE_RANGE_YEARS, HEIGHT_RANGE_CM } from "../packages/shared/src/tools/bounds";
 import { toolDefaults } from "../packages/shared/src/body/tool-defaults";
 import {
   isWeighingKg,
@@ -66,7 +81,9 @@ import {
   proteinRange,
 } from "../packages/shared/src/tools/protein";
 import { roundTo } from "../packages/shared/src/tools/round";
-import { EXERCISE_ID } from "../packages/shared/src/exercises/library";
+import { EXERCISES } from "../packages/shared/src/exercises/catalog";
+import { EXERCISE_ID, type Exercise, toRow } from "../packages/shared/src/exercises/library";
+import { type Filters, filterExercises } from "../packages/shared/src/exercises/search";
 import {
   DAY,
   EARLIEST,
@@ -93,8 +110,68 @@ import { MAX_CHANGES } from "../packages/shared/src/sync/limits";
 import { clampAt, isNewer, mergeFields } from "../packages/shared/src/sync/merge";
 import { ChangeSchema, type Change, SyncResponseSchema } from "../packages/shared/src/sync/schema";
 import { isRecordable, isValidChange } from "../packages/shared/src/sync/valid";
-import { type Activity, climbedThisWeek } from "../packages/shared/src/training/activities";
-import { MAX_TARGET_KG, nearestLoading, PLATE_PRESETS } from "../packages/shared/src/tools/plates";
+import { stepsToWrite } from "../packages/shared/src/training/steps-import";
+import {
+  type Activity,
+  ACTIVITY_KINDS,
+  ACTIVITY_MINUTES,
+  activitySummary,
+  CARDIO_TYPES,
+  CLIMB_COLORS,
+  CLIMB_GRADES,
+  CLIMB_RUNS,
+  CLIMB_STYLES,
+  climbedThisWeek,
+  isActivityFields,
+  isActivityMinutes,
+  isClimbRuns,
+  isSteps,
+  STEPS,
+  type StepsLog,
+  stepsOf,
+} from "../packages/shared/src/training/activities";
+import {
+  iwfColor,
+  LB_PLATES,
+  loadBar,
+  MAX_TARGET_KG,
+  nearestLoading,
+  PLATE_PRESETS,
+  STANDARD_BARS_KG,
+  STANDARD_PLATES_KG,
+} from "../packages/shared/src/tools/plates";
+import {
+  brzycki,
+  epley,
+  MAX_REPS,
+  oneRepMax,
+  RELIABLE_MAX_REPS,
+} from "../packages/shared/src/tools/one-rep-max";
+import {
+  kgPerWeek,
+  projectLoss,
+  RATE_MAX_PCT,
+  RATE_MIN_PCT,
+  RATE_PRESETS,
+  RATE_STEP_PCT,
+  rateWarning,
+  slowWeeks,
+} from "../packages/shared/src/tools/projection";
+import {
+  bmi,
+  bmiBand,
+  bmiSuggestsProfessional,
+  BMI_THRESHOLDS,
+} from "../packages/shared/src/tools/bmi";
+import {
+  ageGroup,
+  type BodyFatReference,
+  bodyFatBand,
+  gallagherThresholds,
+  NAVY_RANGE_PCT,
+  type NavyInput,
+  navyBodyFat,
+} from "../packages/shared/src/tools/body-fat";
 import {
   defaultWarmupCount,
   WARMUP_SCHEMES,
@@ -333,6 +410,82 @@ const annotationRemoved = (value: unknown) => ({
   value,
   at: AT,
 });
+// The kinds the phone writes from its settings and tools: a fact of the profile, the loss range,
+// a supplement of the list, an activity, a day's steps.
+const ACTIVITY = "019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f08";
+const profile = (field: string, value: unknown, over: Fields = {}) => ({
+  kind: "profile",
+  field,
+  value,
+  at: AT,
+  ...over,
+});
+const target = (minPct: unknown, maxPct: unknown, over: Fields = {}) => ({
+  kind: "target",
+  minPct,
+  maxPct,
+  at: AT,
+  ...over,
+});
+const supplement = (field: string, value: unknown, over: Fields = {}) => ({
+  kind: "supplement",
+  id: SUPPLEMENT,
+  field,
+  value,
+  at: AT,
+  ...over,
+});
+const climbing = (over: Fields = {}) => ({
+  kind: "activity",
+  id: ACTIVITY,
+  field: "fields",
+  date: TODAY,
+  type: "climbing",
+  durationMin: 90,
+  cardioType: null,
+  climbStyle: "boulder",
+  climbRuns: 12,
+  climbGrade: "6a",
+  climbColor: null,
+  at: AT,
+  ...over,
+});
+const running = (over: Fields = {}) =>
+  climbing({
+    type: "cardio",
+    durationMin: 45,
+    cardioType: "run",
+    climbStyle: null,
+    climbRuns: null,
+    climbGrade: null,
+    ...over,
+  });
+const activityRemoved = (value: unknown) => ({
+  kind: "activity",
+  id: ACTIVITY,
+  field: "removed",
+  value,
+  at: AT,
+});
+const steps = (value: unknown, over: Fields = {}) => ({
+  kind: "steps",
+  date: TODAY,
+  value,
+  at: AT,
+  ...over,
+});
+// The range on its grid, written as hundredths so each bound is the literal a person picks:
+// every pair from a step under the floor to a step past the ceiling, one and two steps apart.
+const pct = (hundredths: number) => hundredths / 100;
+const rangeCases = Object.fromEntries(
+  Array.from({ length: 17 }, (_, i) => 20 + 5 * i).flatMap((lo) =>
+    [5, 10, 15].map((gap) => [
+      `target: ${pct(lo)} to ${pct(lo + gap)}`,
+      target(pct(lo), pct(lo + gap)),
+    ]),
+  ),
+);
+const YEAR = Number(TODAY.slice(0, 4));
 const KG = WEIGHING_RANGE_KG;
 // Every measure is kept to the tenth, whatever its field's bounds.
 const measureCases = Object.fromEntries(
@@ -628,6 +781,104 @@ const changes: Record<string, unknown> = {
   "annotation removed: false": annotationRemoved(false),
   "annotation removed: not a boolean": annotationRemoved("yes"),
   "annotation: unknown field": { kind: "annotation", id: ANNOTATION, field: "moved", at: AT },
+  ...rangeCases,
+  "target: the defaults": target(DEFAULT_TARGET.minPct, DEFAULT_TARGET.maxPct),
+  "target: off the grid": target(0.27, 0.5),
+  "target: the wrong way round": target(0.75, 0.5),
+  "target: as text": target("0.5", 1),
+  "target: no maximum": target(0.5, undefined),
+  "profile: formula female": profile("formula", "female"),
+  "profile: formula male": profile("formula", "male"),
+  "profile: formula cleared": profile("formula", null),
+  "profile: formula unknown": profile("formula", "other"),
+  "profile: birth year at the oldest": profile("birthYear", YEAR - AGE_RANGE_YEARS.max),
+  "profile: birth year one older": profile("birthYear", YEAR - AGE_RANGE_YEARS.max - 1),
+  "profile: birth year at the youngest": profile("birthYear", YEAR - AGE_RANGE_YEARS.min),
+  "profile: birth year one younger": profile("birthYear", YEAR - AGE_RANGE_YEARS.min + 1),
+  "profile: birth year not whole": profile("birthYear", 1990.5),
+  "profile: birth year cleared": profile("birthYear", null),
+  "profile: height 119": profile("height", HEIGHT_RANGE_CM.min - 1),
+  "profile: height 120": profile("height", HEIGHT_RANGE_CM.min),
+  "profile: height 230": profile("height", HEIGHT_RANGE_CM.max),
+  "profile: height 231": profile("height", HEIGHT_RANGE_CM.max + 1),
+  "profile: height 170.5": profile("height", 170.5),
+  "profile: height cleared": profile("height", null),
+  "profile: height as text": profile("height", "170"),
+  "profile: unknown field": profile("weight", 80),
+  "supplement: named": supplement("name", "Créatine"),
+  "supplement: name of 0 characters": supplement("name", ""),
+  "supplement: name of 1 character": supplement("name", "D"),
+  "supplement: name of 40 characters": supplement("name", text(SUPPLEMENT_NAME_MAX)),
+  "supplement: name of 41 characters": supplement("name", text(SUPPLEMENT_NAME_MAX + 1)),
+  "supplement: name of 40 characters in emoji": supplement("name", emoji(SUPPLEMENT_NAME_MAX / 2)),
+  "supplement: name of 41 characters in emoji": supplement(
+    "name",
+    emoji(SUPPLEMENT_NAME_MAX / 2 + 1),
+  ),
+  "supplement: name blank": supplement("name", "   "),
+  "supplement: name not trimmed": supplement("name", " Créatine "),
+  "supplement: name ending in a no-break space": supplement("name", "Créatine\u00a0"),
+  "supplement: name with a line break": supplement("name", "Vitamine\nD"),
+  "supplement: name with a carriage return": supplement("name", "Vitamine\rD"),
+  "supplement: name with an inner space": supplement("name", "Vitamine D"),
+  "supplement: id in upper case": supplement("name", "Zinc", { id: SUPPLEMENT.toUpperCase() }),
+  "supplement removed: true": supplement("removed", true),
+  "supplement removed: false": supplement("removed", false),
+  "supplement removed: not a boolean": supplement("removed", "yes"),
+  "supplement: unknown field": supplement("kind", "creatine"),
+  "activity: a climb as the phone writes it": climbing(),
+  "activity: a climb with nothing but its time": climbing({
+    climbStyle: null,
+    climbRuns: null,
+    climbGrade: null,
+  }),
+  "activity: a route by its colour": climbing({
+    climbStyle: "route",
+    climbGrade: null,
+    climbColor: "purple",
+  }),
+  "activity: grade and colour together": climbing({ climbColor: "blue" }),
+  "activity: grade off the list": climbing({ climbGrade: "9a" }),
+  "activity: grade at the top": climbing({ climbGrade: CLIMB_GRADES.at(-1) }),
+  "activity: grade in upper case": climbing({ climbGrade: "6A" }),
+  "activity: unknown colour": climbing({ climbGrade: null, climbColor: "orange" }),
+  "activity: unknown style": climbing({ climbStyle: "ice" }),
+  "activity: runs -1": climbing({ climbRuns: CLIMB_RUNS.min - 1 }),
+  "activity: runs 0": climbing({ climbRuns: CLIMB_RUNS.min }),
+  "activity: runs 200": climbing({ climbRuns: CLIMB_RUNS.max }),
+  "activity: runs 201": climbing({ climbRuns: CLIMB_RUNS.max + 1 }),
+  "activity: minutes 0": climbing({ durationMin: 0 }),
+  "activity: minutes 5": climbing({ durationMin: ACTIVITY_MINUTES.min }),
+  "activity: minutes 7": climbing({ durationMin: 7 }),
+  "activity: minutes 480": climbing({ durationMin: ACTIVITY_MINUTES.max }),
+  "activity: minutes 485": climbing({ durationMin: ACTIVITY_MINUTES.max + ACTIVITY_MINUTES.step }),
+  "activity: minutes not whole": climbing({ durationMin: 7.5 }),
+  "activity: a run": running(),
+  "activity: cardio of every type": running({ cardioType: "other" }),
+  "activity: cardio without its type": running({ cardioType: null }),
+  "activity: cardio of an unknown type": running({ cardioType: "yoga" }),
+  "activity: cardio with a climb's fields": running({ climbRuns: 3 }),
+  "activity: a climb with a cardio type": climbing({ cardioType: "run" }),
+  "activity: unknown type": climbing({ type: "yoga" }),
+  "activity: id in upper case": climbing({ id: ACTIVITY.toUpperCase() }),
+  "activity: dated tomorrow": climbing({ date: TOMORROW }),
+  "activity: dated at the floor": climbing({ date: MIN_WEIGH_IN_DATE }),
+  "activity: dated the day before the floor": climbing({ date: BEFORE_FLOOR }),
+  "activity removed: true": activityRemoved(true),
+  "activity removed: false": activityRemoved(false),
+  "activity removed: not a boolean": activityRemoved("yes"),
+  "activity: unknown field": { kind: "activity", id: ACTIVITY, field: "moved", at: AT },
+  "steps: as the phone writes them": steps(8437),
+  "steps: -1": steps(STEPS.min - 1),
+  "steps: 0": steps(STEPS.min),
+  "steps: 100 000": steps(STEPS.max),
+  "steps: 100 001": steps(STEPS.max + 1),
+  "steps: 1.5": steps(1.5),
+  "steps: deleted": steps(null),
+  "steps: as text": steps("8437"),
+  "steps: dated tomorrow": steps(8437, { date: TOMORROW }),
+  "steps: dated at the floor": steps(8437, { date: MIN_WEIGH_IN_DATE }),
+  "steps: dated the day before the floor": steps(8437, { date: BEFORE_FLOOR }),
 };
 
 const SECOND = "2026-11-06T09:30:00";
@@ -671,16 +922,29 @@ const merge = {
 // The body merge, one key per stored time as the server keys them: two writes for one key, a
 // deletion against a later value, ties, and a clock ahead.
 type Body = Change & { at: string };
+const minute = (n: number) => iso(T0 + n * 60_000);
+const mergeCase =
+  (kind: string, key: (c: Body) => string) =>
+  ([name, stored, list]: [string, Record<string, string | null>, Body[]]) => {
+    const kept = mergeFields(new Map(Object.entries(stored)), list, key, new Date(T0));
+    return {
+      name: `${kind}: ${name}`,
+      stored,
+      now: AT,
+      changes: list.map((c) => JSON.stringify(c)),
+      kept: kept.map((c) => JSON.stringify(c)),
+    };
+  };
 const bodyMerge = (
   kind: string,
   key: (c: Body) => string,
   write: (at: string) => Body,
   remove: (at: string) => Body,
   other: Body,
+  more: [string, Record<string, string | null>, Body[]][] = [],
 ) => {
   const k = key(write(AT));
-  const minute = (n: number) => iso(T0 + n * 60_000);
-  return [
+  const cases: [string, Record<string, string | null>, Body[]][] = [
     ["two writes for one key", {}, [write(minute(-1)), write(AT)]],
     ["two writes at one time, the later sent wins", {}, [write(AT), remove(AT)]],
     ["a deletion against a later value", { [k]: minute(1) }, [remove(AT)]],
@@ -690,21 +954,8 @@ const bodyMerge = (
     ["a time ahead of the clock", {}, [write(minute(60))]],
     ["a past write and an older one", { [k]: minute(-5) }, [write(minute(-2)), remove(minute(-3))]],
     ["another key at the same time", { [k]: minute(1) }, [write(AT), other]],
-  ].map(([name, stored, list]) => {
-    const kept = mergeFields(
-      new Map(Object.entries(stored as Record<string, string | null>)),
-      list as Body[],
-      key,
-      new Date(T0),
-    );
-    return {
-      name: `${kind}: ${name as string}`,
-      stored,
-      now: AT,
-      changes: (list as Body[]).map((c) => JSON.stringify(c)),
-      kept: kept.map((c) => JSON.stringify(c)),
-    };
-  });
+  ];
+  return [...cases, ...more].map(mergeCase(kind, key));
 };
 const asBody = <T>(c: T) => c as unknown as Body;
 const mergeBody = [
@@ -742,6 +993,82 @@ const mergeBody = [
     (at) => asBody({ ...annotationRemoved(false), at }),
     (at) => asBody({ ...annotationRemoved(true), at }),
     asBody(annotation()),
+  ),
+  // The kinds the phone now writes, keyed as the server keys them: a profile fact by its field,
+  // the range as one, a supplement's and an activity's field by id, a day's steps by day.
+  ...bodyMerge(
+    "profile",
+    (c) => (c as { field: string }).field,
+    (at) => asBody(profile("height", 172, { at })),
+    (at) => asBody(profile("height", null, { at })),
+    asBody(profile("formula", "female")),
+  ),
+  ...bodyMerge(
+    "target",
+    () => "target",
+    (at) => asBody(target(0.5, 0.75, { at })),
+    (at) => asBody(target(0.25, 1, { at })),
+    asBody(target(0.5, 1)),
+  ),
+  ...bodyMerge(
+    "supplement",
+    (c) => `${(c as { id: string }).id}|${(c as { field: string }).field}`,
+    (at) => asBody(supplement("name", "Créatine", { at })),
+    (at) => asBody(supplement("name", "Créatine monohydrate", { at })),
+    asBody(supplement("removed", true)),
+    [
+      [
+        "a removal against a later rename",
+        { [`${SUPPLEMENT}|name`]: minute(1), [`${SUPPLEMENT}|removed`]: null },
+        [asBody(supplement("removed", true))],
+      ],
+      [
+        "a removal and a rename in one batch",
+        {},
+        [
+          asBody(supplement("removed", true)),
+          asBody(supplement("name", "Zinc", { at: minute(1) })),
+        ],
+      ],
+      [
+        "a removal against a later put back",
+        { [`${SUPPLEMENT}|removed`]: minute(1) },
+        [asBody(supplement("removed", true))],
+      ],
+    ],
+  ),
+  ...bodyMerge(
+    "activity",
+    (c) => `${(c as { id: string }).id}|${(c as { field: string }).field}`,
+    (at) => asBody(climbing({ at })),
+    (at) => asBody(climbing({ durationMin: 120, climbGrade: "6b", at })),
+    asBody(activityRemoved(true)),
+    [
+      [
+        "a removal against a later edit",
+        { [`${ACTIVITY}|fields`]: minute(1) },
+        [asBody(activityRemoved(true))],
+      ],
+    ],
+  ),
+  ...bodyMerge(
+    "steps",
+    (c) => (c as { date: string }).date,
+    (at) => asBody(steps(8437, { at })),
+    (at) => asBody(steps(null, { at })),
+    asBody(steps(12_000, { date: addDays(TODAY, -1) })),
+    [
+      [
+        "a day's steps from two devices, the other later",
+        { [TODAY]: minute(1) },
+        [asBody(steps(9100, { at: minute(-1) })), asBody(steps(8437))],
+      ],
+      [
+        "a day's steps from two devices, this one later",
+        { [TODAY]: minute(-1) },
+        [asBody(steps(8437))],
+      ],
+    ],
   ),
 ];
 // An answer carrying every body row, each written and unwritten, checked against the server's
@@ -787,8 +1114,40 @@ const bodyAnswer = SyncResponseSchema.parse({
       removedAt: null,
     },
   ],
-  steps: [],
-  activities: [],
+  steps: [
+    { date: TODAY, steps: 8437, stepsAt: AT },
+    { date: addDays(TODAY, -1), steps: null, stepsAt: AT },
+  ],
+  activities: [
+    {
+      id: ACTIVITY,
+      date: TODAY,
+      type: "climbing",
+      durationMin: 90,
+      cardioType: null,
+      climbStyle: "route",
+      climbRuns: 8,
+      climbGrade: null,
+      climbColor: "purple",
+      fieldsAt: AT,
+      removed: false,
+      removedAt: null,
+    },
+    {
+      id: SUPPLEMENT,
+      date: addDays(TODAY, -1),
+      type: "cardio",
+      durationMin: 45,
+      cardioType: "run",
+      climbStyle: null,
+      climbRuns: null,
+      climbGrade: null,
+      climbColor: null,
+      fieldsAt: AT,
+      removed: true,
+      removedAt: AT,
+    },
+  ],
   workouts: [],
   sets: [],
   target: { minPct: 0.5, maxPct: 1, at: null },
@@ -856,6 +1215,97 @@ const instants = [
   Date.UTC(1600, 1, 29, 12),
 ].map((ms) => ({ ms, iso: iso(ms) }));
 
+// The rules behind the new kinds' validity, each asked directly at its bounds, with the
+// constants they read.
+function predicateCases() {
+  const fields = (over: Fields) => {
+    const { type, durationMin, cardioType, climbStyle, climbRuns, climbGrade, climbColor } =
+      climbing(over);
+    return { type, durationMin, cardioType, climbStyle, climbRuns, climbGrade, climbColor };
+  };
+  const activityFields = [
+    fields({}),
+    fields({ climbStyle: null, climbRuns: null, climbGrade: null }),
+    fields({ climbGrade: null, climbColor: "white" }),
+    fields({ climbColor: "white" }),
+    fields({ climbGrade: "5a" }),
+    fields({ climbGrade: "8c+" }),
+    fields({ climbGrade: "4c" }),
+    fields({ climbRuns: 201 }),
+    fields({ durationMin: 485 }),
+    fields({ cardioType: "bike" }),
+    fields({
+      type: "cardio",
+      cardioType: "swim",
+      climbStyle: null,
+      climbRuns: null,
+      climbGrade: null,
+    }),
+    fields({ type: "cardio", cardioType: "swim", climbStyle: null, climbRuns: null }),
+    fields({
+      type: "cardio",
+      cardioType: null,
+      climbStyle: null,
+      climbRuns: null,
+      climbGrade: null,
+    }),
+    fields({ type: "yoga" }),
+  ].map((f) => ({ fields: f, result: isActivityFields({ ...f, kind: f.type } as never) }));
+  const todays = [TODAY, "2026-01-01", "2026-12-31", "2000-02-29"];
+  return {
+    bounds: {
+      target: TARGET_BOUNDS,
+      ageYears: AGE_RANGE_YEARS,
+      heightCm: HEIGHT_RANGE_CM,
+      supplementNameMax: SUPPLEMENT_NAME_MAX,
+      activityMinutes: ACTIVITY_MINUTES,
+      climbRuns: CLIMB_RUNS,
+      steps: STEPS,
+      activityKinds: ACTIVITY_KINDS,
+      cardioTypes: CARDIO_TYPES,
+      climbStyles: CLIMB_STYLES,
+      climbColors: CLIMB_COLORS,
+      climbGrades: CLIMB_GRADES,
+    },
+    isActivityMinutes: [-5, 0, 4, 5, 7, 10, 475, 480, 485].map((value) => ({
+      value,
+      result: isActivityMinutes(value),
+    })),
+    isClimbRuns: [-1, 0, 1, 200, 201].map((value) => ({ value, result: isClimbRuns(value) })),
+    isSteps: [-1, 0, 1, 8437, 100_000, 100_001].map((value) => ({ value, result: isSteps(value) })),
+    isProfileHeight: [0, 119, 120, 170, 230, 231].map((value) => ({
+      value,
+      result: isProfileHeight(value),
+    })),
+    isSupplementName: [
+      "",
+      " ",
+      "D",
+      " Créatine ",
+      "Vitamine D",
+      text(SUPPLEMENT_NAME_MAX),
+      text(SUPPLEMENT_NAME_MAX + 1),
+      ` ${text(SUPPLEMENT_NAME_MAX)} `,
+      emoji(SUPPLEMENT_NAME_MAX / 2),
+      emoji(SUPPLEMENT_NAME_MAX / 2 + 1),
+      "Vitamine\nD",
+      "Vitamine\rD",
+      "Vitamine\tD",
+      "\u00a0Zinc\u00a0",
+    ].map((value) => ({ value, result: isSupplementName(value) })),
+    birthYearRange: todays.map((today) => ({ today, ...birthYearRange(today) })),
+    isBirthYear: todays.flatMap((today) => {
+      const { min, max } = birthYearRange(today);
+      return [min - 1, min, 1990, max, max + 1].map((year) => ({
+        year,
+        today,
+        result: isBirthYear(year, today),
+      }));
+    }),
+    isActivityFields: activityFields,
+  };
+}
+
 const cases = Object.entries(changes).map(([name, change]) => {
   // Recordable: valid, and not dated after the phone's today, as the phone checks it.
   const valid = isRecordable(change as Change, TODAY);
@@ -900,6 +1350,7 @@ const vectors = {
   bodyAnswer: JSON.stringify(bodyAnswer),
   ids,
   instants,
+  predicates: predicateCases(),
 };
 // The session rules. Sessions and sets are written as the store keeps them, so the native core
 // reads them as rows: every row field there, a set's time of change at its own time.
@@ -1409,11 +1860,20 @@ function inZone<T>(zone: string, make: () => T): T {
   }
 }
 
+// As the server sends an activity: every field, a climb or a run of an hour.
 const asActivity = (a: Pick<Activity, "date" | "kind" | "removed">, i: number) => ({
   id: seedId(0x3000 + i),
   date: a.date,
   type: a.kind,
+  durationMin: 60,
+  cardioType: a.kind === "cardio" ? "run" : null,
+  climbStyle: null,
+  climbRuns: null,
+  climbGrade: null,
+  climbColor: null,
+  fieldsAt: `${a.date}T18:00:00.000Z`,
   removed: a.removed,
+  removedAt: a.removed ? `${a.date}T19:00:00.000Z` : null,
 });
 const climb = (date: string, removed = false) => ({ date, kind: "climbing" as const, removed });
 const cardio = (date: string) => ({ date, kind: "cardio" as const, removed: false });
@@ -2433,6 +2893,383 @@ function toolVectors() {
     pauseEndedBy: endedByCases,
     restClock: restClockCases,
     resumedRestEnd: restEndCases,
+  };
+}
+
+// The toolkit's own rules: the one-rep max, a bar's loading, the loss projection, BMI and body
+// fat. A case whose input the rule refuses has a null result. The projection reads a day, so its
+// cases carry the zone they were computed in.
+const refused = <T>(make: () => T): T | null => {
+  try {
+    return make();
+  } catch {
+    return null;
+  }
+};
+
+function toolkitVectors() {
+  const oneRepMaxCases = [80, 100, 62.5, 0, -80].flatMap((weightKg) =>
+    [0, 1, 2.5, 5, 6, 10, 11, 12, 13].map((reps) => ({
+      weightKg,
+      reps,
+      epley: epley(weightKg, reps),
+      brzycki: brzycki(weightKg, reps),
+      result: refused(() => oneRepMax(weightKg, reps)),
+    })),
+  );
+
+  const presets = Object.entries(PLATE_PRESETS);
+  const custom: [string, number, readonly number[]][] = [
+    ["with 1.25 kg plates", 20, [20, 10, 5, 2.5, 1.25]],
+    ["no plates", 20, []],
+    ["repeated, zero and negative plates", 20, [20, 20, 0, -5]],
+    ["pounds", LB_PLATES.bar, LB_PLATES.plates],
+    ["a 15 kg bar", 15, STANDARD_PLATES_KG],
+  ];
+  const bars: [string, number, readonly number[]][] = [
+    ...presets.map(([name, p]): [string, number, readonly number[]] => [name, p.barKg, p.platesKg]),
+    ...custom,
+  ];
+  const targets = [
+    0, 15, 20, 20.5, 21, 22.5, 41.2, 60, 62.5, 75, 90, 100, 101, 135, 225, 315, 333.3, 1000, 1000.5,
+  ];
+  const loadBarCases = bars.flatMap(([name, barKg, platesKg]) =>
+    targets.map((targetKg) => ({
+      name: `${name}: ${targetKg}`,
+      targetKg,
+      barKg,
+      platesKg,
+      result: refused(() => loadBar(targetKg, barKg, platesKg)),
+      nearest: refused(() => nearestLoading(targetKg, barKg, platesKg)),
+    })),
+  );
+  const refusedBars = [0, -20].map((barKg) => ({
+    name: `a bar of ${barKg}`,
+    targetKg: 60,
+    barKg,
+    platesKg: PLATE_PRESETS.gym.platesKg,
+    result: refused(() => loadBar(60, barKg, PLATE_PRESETS.gym.platesKg)),
+    nearest: null,
+  }));
+  const iwfColorCases = [...STANDARD_PLATES_KG, 7.5, 45, 0].map((kg) => ({
+    kg,
+    color: iwfColor(kg),
+  }));
+
+  // The projection starts from a day in Paris: the day before summer time ends, the last week of
+  // the year and a day of February in a leap year.
+  const zone = "Europe/Paris";
+  const days = ["2026-10-24", "2026-12-28", "2028-02-27"];
+  const losses: [number, number][] = [
+    [82, 75],
+    [85, 78],
+    [80, 79.9],
+    [80, 80],
+    [80, 85],
+    [120, 70],
+  ];
+  const rates = [0.2, 0.25, 0.5, 0.7, 0.75, 1, 1.05, 1.5, 1.55, 2.5, 2.55];
+  const projectLossCases = inZone(zone, () =>
+    days.flatMap((today) =>
+      losses.flatMap(([currentKg, targetKg]) =>
+        rates.map((pctPerWeek) => {
+          const local = new Date(
+            Number(today.slice(0, 4)),
+            Number(today.slice(5, 7)) - 1,
+            Number(today.slice(8, 10)),
+          );
+          const p = refused(() => projectLoss(currentKg, targetKg, pctPerWeek, local));
+          return {
+            name: `${today}: ${currentKg} to ${targetKg} kg at ${pctPerWeek} %`,
+            zone,
+            today,
+            currentKg,
+            targetKg,
+            pctPerWeek,
+            result:
+              p === null || p.kind !== "ok"
+                ? p
+                : {
+                    kind: p.kind,
+                    weeksLow: p.weeksLow,
+                    weeksHigh: p.weeksHigh,
+                    dateLow: toISODate(p.dateLow),
+                    dateHigh: toISODate(p.dateHigh),
+                  },
+          };
+        }),
+      ),
+    ),
+  );
+  const rateCases = rates.map((pct) => ({
+    pct,
+    warning: rateWarning(pct),
+    kgPerWeek: kgPerWeek(82, pct),
+  }));
+  const slowWeeksCases = [1, 2, 3, 10, 12, 13, 52, 100].map((weeks) => ({
+    weeks,
+    slow: slowWeeks(weeks),
+  }));
+
+  const bmiCases = [
+    [77, 178],
+    [75, 175],
+    [80.9, 180],
+    [99.8, 200],
+    [73.8, 200],
+    [30, 230],
+    [300, 120],
+    [29, 180],
+    [301, 180],
+    [80, 119],
+    [80, 231],
+  ].map(([weightKg, heightCm]) => ({
+    weightKg,
+    heightCm,
+    result: refused(() => bmi(weightKg!, heightCm!)),
+  }));
+  const bmiBandCases = [10, 18.49, 18.5, 24.99, 25, 29.99, 30, 34.99, 35, 60].map((value) => ({
+    value,
+    band: bmiBand(value),
+    professional: bmiSuggestsProfessional(value),
+  }));
+
+  // Each formula's girths at the edges of the range shown: the waist in hundredths of a
+  // centimetre where the rounded percent first reaches 2 and last stays at 75.
+  const bases: NavyInput[] = [
+    { formula: "male", heightCm: 178, neckCm: 40, waistCm: 0 },
+    { formula: "female", heightCm: 165, neckCm: 33, waistCm: 0, hipCm: 90 },
+  ];
+  const edges = bases.flatMap((base) => {
+    const percentAt = (waistCm: number) => {
+      const r = navyBodyFat({ ...base, waistCm });
+      return r.kind === "invalid-girths" ? null : Math.round(r.exact);
+    };
+    const waists: number[] = [];
+    let previous: number | null = null;
+    for (let c = 1; c <= 40_000; c++) {
+      const p = percentAt(c / 100);
+      const crosses = (edge: number) =>
+        previous !== null && p !== null && previous < edge && p >= edge;
+      if (crosses(NAVY_RANGE_PCT.min) || crosses(NAVY_RANGE_PCT.max + 1)) {
+        waists.push((c - 1) / 100, c / 100);
+      }
+      previous = p;
+    }
+    return waists.map((waistCm) => ({ ...base, waistCm }));
+  });
+  const navyInputs: NavyInput[] = [
+    { formula: "male", heightCm: 177.8, neckCm: 39.37, waistCm: 86.36 },
+    { formula: "female", heightCm: 165.1, neckCm: 33.02, waistCm: 76.2, hipCm: 99.06 },
+    { formula: "male", heightCm: 178, neckCm: 40, waistCm: 40 },
+    { formula: "male", heightCm: 178, neckCm: 45, waistCm: 40 },
+    { formula: "female", heightCm: 165, neckCm: 200, waistCm: 70, hipCm: 90 },
+    { formula: "female", heightCm: 165, neckCm: 33, waistCm: 70 },
+    { formula: "male", heightCm: 178, neckCm: 40, waistCm: 41 },
+    { formula: "male", heightCm: 0, neckCm: 40, waistCm: 90 },
+    ...edges,
+  ];
+  // log10 differs in its last bits between Node versions, so the exact figure is kept to 12
+  // decimals: the Swift test compares it within 1e-9, and the file stays the same on every runner.
+  const navyCases = navyInputs.map((input) => {
+    const result = navyBodyFat(input);
+    return {
+      input,
+      result: "exact" in result ? { ...result, exact: Number(result.exact.toFixed(12)) } : result,
+    };
+  });
+  const ages = [-1, 18, 19, 19.5, 20, 39, 39.5, 40, 59, 60, 79, 79.5, 80, 85];
+  const references: BodyFatReference[] = ["standard", "asian"];
+  const gallagherCases = (["female", "male"] as const).flatMap((formula) =>
+    references.flatMap((reference) =>
+      ages.map((ageYears) => ({
+        formula,
+        reference,
+        ageYears,
+        group: ageGroup(ageYears),
+        result: gallagherThresholds(formula, ageYears, reference),
+      })),
+    ),
+  );
+  const thresholds = { at18_5: 8, at25: 20, at30: 25 };
+  const bodyFatBandCases = [2, 7, 8, 19, 20, 24, 25, 75].map((percent) => ({
+    percent,
+    thresholds,
+    band: bodyFatBand(percent, thresholds),
+  }));
+
+  // Home's « Activité » line for one day: activities of other days and removed ones left out,
+  // the steps counted as one. Rows travel as the server sends them.
+  const DAY = "2026-11-06";
+  type Row = ReturnType<typeof asActivity>;
+  const activity = (date: string, kind: Activity["kind"], removed = false, i = 0): Row =>
+    asActivity({ date, kind, removed }, i);
+  const asRule = ({ type, cardioType, climbColor, ...row }: Row): Activity => ({
+    ...row,
+    kind: type,
+    cardioType: cardioType as Activity["cardioType"],
+    climbColor: climbColor as Activity["climbColor"],
+  });
+  const steps = (date: string, value: number | null): StepsLog => ({ date, steps: value });
+  const summaries: [string, Row[], StepsLog[]][] = [
+    ["none", [], []],
+    ["one climb", [activity(DAY, "climbing")], []],
+    ["steps only", [], [steps(DAY, 8437)]],
+    [
+      "three, the steps counted as one",
+      [activity(DAY, "climbing", false, 1), activity(DAY, "cardio", false, 2)],
+      [steps(DAY, 8437)],
+    ],
+    ["one and the steps", [activity(DAY, "cardio", false, 3)], [steps(DAY, 12000)]],
+    [
+      "another day's and a removed one left out",
+      [activity(addDays(DAY, -1), "climbing", false, 4), activity(DAY, "cardio", true, 5)],
+      [steps(addDays(DAY, 1), 5000)],
+    ],
+    ["deleted steps", [], [steps(DAY, null)]],
+    ["zero steps", [], [steps(DAY, 0)]],
+  ];
+  const activitySummaryCases = summaries.map(([name, activities, logs]) => {
+    const r = activitySummary(activities.map(asRule), logs, DAY);
+    return {
+      name,
+      activities,
+      logs: logs.map((l) => ({ ...l, stepsAt: AT })),
+      day: DAY,
+      result: r.kind === "activity" ? { kind: r.kind, id: r.activity.id } : r,
+    };
+  });
+  const stepsOfCases = [
+    ["absent", [steps(addDays(DAY, -1), 3000)]],
+    ["typed", [steps(addDays(DAY, -1), 3000), steps(DAY, 8437)]],
+    ["deleted", [steps(DAY, null)]],
+    ["no day", []],
+  ].map(([name, logs]) => ({
+    name,
+    logs: (logs as StepsLog[]).map((l) => ({ ...l, stepsAt: AT })),
+    day: DAY,
+    result: stepsOf(logs as StepsLog[], DAY),
+  }));
+  // The year alone counts: the day before and after a birthday, and either side of New Year.
+  const ageInCases = [
+    [1990, "2026-03-14"],
+    [1990, "2026-03-15"],
+    [1990, "2026-12-31"],
+    [1990, "2027-01-01"],
+    [2011, "2026-01-01"],
+    [1926, "2026-12-31"],
+  ].map(([birthYear, today]) => ({
+    birthYear,
+    today,
+    result: ageIn(birthYear as number, today as string),
+  }));
+
+  // The steps a Health import writes over today and the 6 days before: an empty day, a deleted
+  // one, the phone's own value followed, a value typed elsewhere kept, past the bound, no
+  // samples, unchanged, and a fractional total.
+  const week = Array.from({ length: 7 }, (_, i) => addDays(DAY, i - 6));
+  const importCases: [string, (number | null)[], [string, number | null][], [string, number][]][] =
+    [
+      ["empty days", [8437, 8436.6, 0, 100_000, 100_001, null, 12.5], [], []],
+      [
+        "stored values",
+        [9120, 9120, 9120, 9120, 9120, 9120, 9120],
+        [
+          [week[0]!, null],
+          [week[1]!, 8437],
+          [week[2]!, 6000],
+          [week[3]!, 6000],
+          [week[4]!, 9120],
+          [week[5]!, 9120],
+        ],
+        [
+          [week[1]!, 8437],
+          [week[3]!, 8437],
+          [week[4]!, 9120],
+          [week[6]!, 500],
+        ],
+      ],
+      ["no samples", [null, null, null, null, null, null, null], [[week[6]!, 3000]], []],
+    ];
+  const stepsToWriteCases = importCases.map(([name, totals, stored, written]) => {
+    const days = week.map((date, i) => ({ date, total: totals[i] ?? null }));
+    return {
+      name,
+      days,
+      rows: Object.fromEntries(stored),
+      own: Object.fromEntries(written),
+      result: stepsToWrite(days, new Map(stored), new Map(written)),
+    };
+  });
+
+  // The library's search on a slice of the library, plus one accented name the library lacks:
+  // accents, case, two words in any order, a muscle, an equipment, all three, and no match.
+  const library: Exercise[] = [
+    ...EXERCISES.filter((e) => /bench|curl|45°|squat/i.test(e.name)),
+    {
+      id: "belay:elevation-laterale",
+      name: "Élévation latérale",
+      primary: ["side_delts"],
+      secondary: [],
+      equipment: "dumbbell",
+      incrementKg: 1,
+      measure: "reps",
+    },
+  ];
+  const searches: [string, Filters][] = [
+    ["everything", { query: "", muscle: null, equipment: null }],
+    ["blank", { query: "   ", muscle: null, equipment: null }],
+    ["case", { query: "BENCH", muscle: null, equipment: null }],
+    ["accents in the query", { query: "sléd  45°", muscle: null, equipment: null }],
+    ["accents in the name", { query: "elevation LATERALE", muscle: null, equipment: null }],
+    ["two words, any order", { query: "press bench", muscle: null, equipment: null }],
+    ["every word, not any", { query: "bench squat", muscle: null, equipment: null }],
+    ["a muscle", { query: "", muscle: "chest", equipment: null }],
+    ["a word and a muscle", { query: "curl", muscle: "forearms", equipment: null }],
+    ["an equipment", { query: "", muscle: null, equipment: "barbell" }],
+    ["all three", { query: "bench", muscle: "chest", equipment: "barbell" }],
+    ["no match", { query: "zzz", muscle: null, equipment: null }],
+  ];
+  const filterCases = searches.map(([name, filters]) => ({
+    name,
+    ...filters,
+    result: filterExercises(library, filters).map((e) => e.id),
+  }));
+
+  return {
+    toolkit: {
+      library: library.map(toRow),
+      filterExercises: filterCases,
+      bounds: {
+        supplementSuggestions: SUPPLEMENT_SUGGESTIONS,
+        reliableMaxReps: RELIABLE_MAX_REPS,
+        maxReps: MAX_REPS,
+        lbPlates: LB_PLATES,
+        standardPlatesKg: STANDARD_PLATES_KG,
+        standardBarsKg: STANDARD_BARS_KG,
+        ratePresets: RATE_PRESETS,
+        rateMinPct: RATE_MIN_PCT,
+        rateMaxPct: RATE_MAX_PCT,
+        rateStepPct: RATE_STEP_PCT,
+        bmiThresholds: BMI_THRESHOLDS,
+        navyRangePct: NAVY_RANGE_PCT,
+      },
+      oneRepMax: oneRepMaxCases,
+      loadBar: [...loadBarCases, ...refusedBars],
+      iwfColor: iwfColorCases,
+      projectLoss: projectLossCases,
+      rateWarning: rateCases,
+      slowWeeks: slowWeeksCases,
+      bmi: bmiCases,
+      bmiBand: bmiBandCases,
+      navyBodyFat: navyCases,
+      gallagher: gallagherCases,
+      bodyFatBand: bodyFatBandCases,
+      activitySummary: activitySummaryCases,
+      stepsOf: stepsOfCases,
+      ageIn: ageInCases,
+      stepsToWrite: stepsToWriteCases,
+    },
   };
 }
 
@@ -3487,7 +4324,12 @@ const files = [
   { path: core("Tests/BelayCoreTests/Vectors/contract.json"), data: vectors },
   {
     path: core("Tests/BelayCoreTests/Vectors/rules.json"),
-    data: { ...rules, ...tools, bounds: { ...rules.bounds, ...tools.bounds } },
+    data: {
+      ...rules,
+      ...tools,
+      bounds: { ...rules.bounds, ...tools.bounds },
+      ...toolkitVectors(),
+    },
   },
   {
     path: core("Tests/BelayCoreTests/Vectors/health.json"),
@@ -3512,6 +4354,18 @@ if (process.argv.includes("--check")) {
     }
   });
   if (stale.length > 0) {
+    // Say where each file first differs, so a run on another machine shows what moved.
+    for (const { path, expected } of stale) {
+      let committed: string[] = [];
+      try {
+        committed = readFileSync(path, "utf8").split("\n");
+      } catch {
+        // A missing file differs from its first line.
+      }
+      const lines = expected.split("\n");
+      const at = lines.findIndex((line, i) => line !== committed[i]);
+      console.error(`${path}:${at + 1}\n  committed: ${committed[at]}\n  generated: ${lines[at]}`);
+    }
     console.error("The native vectors are out of date. Run `pnpm vectors` and commit the result.");
     process.exit(1);
   }

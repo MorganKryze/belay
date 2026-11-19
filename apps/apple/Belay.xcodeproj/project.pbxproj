@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		B00000000000000000000030 /* BelayCore in Frameworks */ = {isa = PBXBuildFile; productRef = B00000000000000000000031 /* BelayCore */; };
 		B00000000000000000000041 /* index.json in Resources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000040 /* index.json */; };
+		B00000000000000000000043 /* fr.json in Resources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000042 /* fr.json */; };
+		B00000000000000000000045 /* en.json in Resources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000044 /* en.json */; };
 		B00000000000000000000055 /* ArchivoExpanded-ExtraBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000054 /* ArchivoExpanded-ExtraBold.ttf */; };
 		B00000000000000000000056 /* BelayActivity in Frameworks */ = {isa = PBXBuildFile; productRef = B00000000000000000000057 /* BelayActivity */; };
 		B00000000000000000000058 /* BelayActivityExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = B00000000000000000000050 /* BelayActivityExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -50,6 +52,8 @@
 		B00000000000000000000013 /* BelayUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BelayUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		B00000000000000000000020 /* Belay.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Belay.xcconfig; sourceTree = "<group>"; };
 		B00000000000000000000040 /* index.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = index.json; path = ../../packages/shared/src/exercises/data/index.json; sourceTree = SOURCE_ROOT; };
+		B00000000000000000000042 /* fr.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = fr.json; path = ../../packages/shared/src/exercises/data/fr.json; sourceTree = SOURCE_ROOT; };
+		B00000000000000000000044 /* en.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = en.json; path = ../../packages/shared/src/exercises/data/en.json; sourceTree = SOURCE_ROOT; };
 		B00000000000000000000050 /* BelayActivityExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = BelayActivityExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		B00000000000000000000054 /* ArchivoExpanded-ExtraBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = "ArchivoExpanded-ExtraBold.ttf"; path = "Belay/ArchivoExpanded-ExtraBold.ttf"; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
@@ -132,6 +136,8 @@
 			children = (
 				B00000000000000000000020 /* Belay.xcconfig */,
 				B00000000000000000000040 /* index.json */,
+				B00000000000000000000042 /* fr.json */,
+				B00000000000000000000044 /* en.json */,
 				B00000000000000000000004 /* Belay */,
 				B00000000000000000000051 /* Shared */,
 				B00000000000000000000052 /* BelayActivity */,
@@ -279,6 +285,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				B00000000000000000000041 /* index.json in Resources */,
+				B00000000000000000000043 /* fr.json in Resources */,
+				B00000000000000000000045 /* en.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -395,7 +403,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Belay/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Belay;
-				INFOPLIST_KEY_NSHealthShareUsageDescription = "Belay lit tes autres entraînements et tes pesées : une séance déjà enregistrée par ta montre ne compte pas deux fois, et tes pesées s’ajoutent à Belay si tu actives leur import.";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "Belay lit tes autres entraînements, tes pesées et tes pas : une séance déjà enregistrée par ta montre ne compte pas deux fois, et tes pesées et tes pas s’ajoutent à Belay si tu actives leur import.";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Belay ajoute à Santé tes séances, leur effort et tes pesées.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -422,7 +430,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Belay/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Belay;
-				INFOPLIST_KEY_NSHealthShareUsageDescription = "Belay lit tes autres entraînements et tes pesées : une séance déjà enregistrée par ta montre ne compte pas deux fois, et tes pesées s’ajoutent à Belay si tu actives leur import.";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "Belay lit tes autres entraînements, tes pesées et tes pas : une séance déjà enregistrée par ta montre ne compte pas deux fois, et tes pesées et tes pas s’ajoutent à Belay si tu actives leur import.";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Belay ajoute à Santé tes séances, leur effort et tes pesées.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;

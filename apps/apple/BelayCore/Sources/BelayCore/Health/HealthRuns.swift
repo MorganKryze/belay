@@ -8,7 +8,7 @@ public import Foundation
   private let now: @Sendable () -> Date
   private var running: (store: AccountStore, task: Task<Void, Never>)?
   private var next: (store: AccountStore, owner: String, imports: Bool)?
-  /// A run imported weigh-ins: the sync sends them.
+  /// A run imported weigh-ins or steps: the sync sends them.
   public var imported: (@MainActor () -> Void)?
 
   public init(writer: any HealthWriting, now: @escaping @Sendable () -> Date = { Date() }) {

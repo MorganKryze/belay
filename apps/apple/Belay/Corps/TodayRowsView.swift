@@ -1,22 +1,42 @@
 import BelayCore
 import SwiftUI
 
-/// Where a row of « Aujourd'hui » leads: the weigh-in's sheet, or a pushed screen.
+/// Where a row of « Aujourd'hui » leads: the Activité or weigh-in sheet, or a pushed screen.
 enum TodayEntry {
+    case activity
     case weighIn
     case screen(Route)
 }
 
 /// « Aujourd'hui »: the day's four body entries, the same rows on Corps and on Accueil (R13), each
-/// in words with its domain tile, each one element that opens its sheet or screen.
+/// in words with its domain tile, each one element that opens its sheet or screen. Accueil heads
+/// them with « Activité » (A38), and « Pas » while the steps import is on.
 struct TodayRowsView: View {
     let rows: TodayRows
     /// The local day the rows were read for, so the last measure's day reads as a word.
     let today: String
+    /// What the day's « Activité » row says; nil leaves the row out.
+    var activity: DaySummary? = nil
+    /// Today's steps as stored, while the steps import is on; nil leaves the row out.
+    var steps: TodaySteps? = nil
     let open: (TodayEntry) -> Void
 
     var body: some View {
         Section {
+            if let activity {
+                row("today.activity", .activity, "figure.walk", String(localized: "Activité", table: "Activity"),
+                    ActivityText.summary(activity), logged: activity != .none,
+                    done: activity == .none ? nil : String(localized: "saisie", table: "Activity")) {
+                    open(.activity)
+                }
+            }
+            if let steps {
+                // Read only: the steps come from Santé, never typed here.
+                TodayRow(domain: .activity, symbol: "shoeprints.fill", title: String(localized: "Pas", table: "Activity"),
+                         detail: stepsDetail(steps), logged: steps.value != nil, done: steps.value != nil)
+                    .accessibilityValue(steps.value == nil ? "" : String(localized: "saisis", table: "Corps"))
+                    .accessibilityIdentifier("today.steps")
+            }
             row("today.weighIn", .body, "scalemass.fill", String(localized: "Pesée", table: "Corps"), weighIn, logged: rows.weighIn.kg != nil,
                 done: rows.weighIn.kg == nil ? nil : String(localized: "saisie", table: "Corps")) {
                 open(.weighIn)
@@ -56,6 +76,12 @@ struct TodayRowsView: View {
         return rows.weighIn.fromHealth ? String(localized: "\(value) · depuis Santé", table: "Corps") : value
     }
 
+    private func stepsDetail(_ steps: TodaySteps) -> String {
+        guard let value = steps.value else { return String(localized: "aucun pour l’instant", table: "Corps") }
+        let figure = ActivityText.steps(value)
+        return steps.fromHealth ? String(localized: "\(figure) · depuis Santé", table: "Corps") : figure
+    }
+
     private var measures: String {
         guard let last = rows.measures else { return String(localized: "pas encore saisies", table: "Corps") }
         let cm = BodyText.cm(last.cm)
@@ -81,6 +107,12 @@ struct TodayRowsView: View {
         guard s.total > 0 else { return String(localized: "aucun pour l’instant", table: "Corps") }
         return String(localized: "\(s.taken) sur \(s.total)", table: "Corps")
     }
+}
+
+/// Today's steps, nil before any, and whether this phone's import wrote them.
+struct TodaySteps: Equatable {
+    let value: Int?
+    let fromHealth: Bool
 }
 
 /// One row: the domain tile, the name, its state under it. At the largest sizes the tile goes

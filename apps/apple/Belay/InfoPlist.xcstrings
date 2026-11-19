@@ -3,18 +3,18 @@
   "version": "1.0",
   "strings": {
     "NSHealthShareUsageDescription": {
-      "comment": "Why Belay reads workouts and weigh-ins from Health",
+      "comment": "Why Belay reads workouts, weigh-ins and steps from Health",
       "localizations": {
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Belay lit tes autres entraînements et tes pesées : une séance déjà enregistrée par ta montre ne compte pas deux fois, et tes pesées s’ajoutent à Belay si tu actives leur import."
+            "value": "Belay lit tes autres entraînements, tes pesées et tes pas : une séance déjà enregistrée par ta montre ne compte pas deux fois, et tes pesées et tes pas s’ajoutent à Belay si tu actives leur import."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Belay reads your other workouts and your weigh-ins: a session your watch already recorded is not counted twice, and your weigh-ins are added to Belay if you turn their import on."
+            "value": "Belay reads your other workouts, your weigh-ins and your steps: a session your watch already recorded is not counted twice, and your weigh-ins and steps are added to Belay if you turn their import on."
           }
         }
       }

@@ -195,7 +195,9 @@ struct Cover: View {
         case .recap, .announce, .allDone:
             ExerciseEndCard(state: state, training: training, reduce: reduce)
         case .paused(let paused):
-            PausedCard(paused: paused, reduce: reduce)
+            PausedCard(
+                paused: paused, restRunsTo: DevicePrefs.pauseStops.value == .session ? training.restEndsAt : nil,
+                reduce: reduce)
         }
     }
 

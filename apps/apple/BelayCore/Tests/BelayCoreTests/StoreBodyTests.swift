@@ -443,6 +443,12 @@ final class MovingClock: Sendable {
 
   @Test func offlineSentOnce() async throws {
     try body.weigh(date: day, kg: 80.4)
+    try body.setProfile(.birthYear, .set(1990))
+    try body.setTarget(minPct: 0.5, maxPct: 0.75)
+    try body.addSupplement(id: Fixture.id(20), name: "Zinc")
+    try body.logActivity(ActivityInput(id: Fixture.id(40), date: day, fields: climb))
+    try body.writeSteps(date: day, value: 8437, own: false)
+    let written = try store.body()
     let echoed = WeightRow(date: day, weightKg: 80.4, at: Fixture.time(0))
     var answer = Fixture.response(cursor: "8")
     answer.weights = [echoed]
@@ -451,20 +457,365 @@ final class MovingClock: Sendable {
     let engine = SyncEngine(userId: "u1", store: store, transport: transport, onLanded: {})
 
     await engine.sync()
-    #expect(try Fixture.changes(store).count == 1)
+    #expect(try Fixture.changes(store).count == 6)
     #expect(try store.cursor() == "0")
-    #expect(try store.body().weights == [echoed])
+    #expect(try store.body() == written)
 
     await engine.sync()
     await engine.sync()
     let requests = await transport.requests
     // The offline attempt never reached the server; the next one took it, and nothing after.
     #expect(requests.count == 3)
-    #expect(requests[0].changes.count == 1 && requests[1].changes == requests[0].changes)
+    #expect(requests[0].changes.count == 6 && requests[1].changes == requests[0].changes)
     #expect(requests[2].changes.isEmpty)
     #expect(try store.outbox(limit: nil).isEmpty)
     #expect(try store.cursor() == "8")
-    #expect(try store.body().weights == [echoed])
+    #expect(try store.body() == written)
+  }
+
+  // The kinds written from the settings and the tools: the profile, the range, the supplements,
+  // the activities and the day's steps.
+
+  private let climb = ActivityFields(
+    type: "climbing", durationMin: 90, climbStyle: "boulder", climbRuns: 12, climbGrade: "6a")
+
+  private func activityRow(_ id: String) throws -> ActivityRow? {
+    try store.writer.read { try Rows.get(ActivityRow.self, $0, "activities", id: id) }
+  }
+
+  @Test func v5OpensV4StoreKeepsQueue() throws {
+    let folder = try Fixture.folder()
+    let origin = URL(string: "https://belay.example")!
+    let climbId = Fixture.id(10)
+    var queued: [Data] = []
+    do {
+      let old = try DatabaseQueue(
+        path: AccountStore.fileURL(userId: "u1", origin: origin, in: folder).path)
+      try Schema.migrator.migrate(old, upTo: "v4")
+      try old.write { db in
+        try db.execute(sql: "INSERT OR REPLACE INTO meta (key, value) VALUES ('cursor', '42')")
+        for (i, kg) in [80.4, 80.2, 80.0].enumerated() {
+          try Rows.enqueue(
+            db, .weight(WeightChange(date: day, weightKg: kg, at: Fixture.time(Double(i)))))
+        }
+        // An activity as the previous version kept it: only what the plan read.
+        try db.execute(
+          sql: "INSERT INTO activities (id, row) VALUES (?, ?)",
+          arguments: [
+            climbId,
+            Data(#"{"id":"\#(climbId)","date":"\#(day)","type":"climbing","removed":false}"#.utf8),
+          ])
+        queued = try Data.fetchAll(db, sql: "SELECT bytes FROM outbox ORDER BY id")
+      }
+    }
+
+    let opened = try AccountStore.open(userId: "u1", origin: origin, in: folder)
+    #expect(try opened.outbox(limit: nil).map(\.bytes) == queued)
+    #expect(queued.count == 3)
+    #expect(try opened.cursor() == "0")
+    // Before the pull from 0 lands, the climb still counts: a session started offline keeps the
+    // no-climbing slots out.
+    let kept = try opened.activities()
+    #expect(kept.map(\.id) == [climbId])
+    #expect(kept.first?.kind == "climbing" && kept.first?.date == day)
+    #expect(kept.first?.durationMin == 0 && kept.first?.fieldsAt == "1970-01-01T00:00:00.000Z")
+    let c = Days.session(Days.rotation, "C")
+    try #require(c.noClimbing?.isEmpty == false)
+    #expect(planFor(c, activities: kept, date: day) == c.slots)
+    #expect(try opened.body().steps.isEmpty)
+    #expect(try opened.stepsWritten().isEmpty)
+    #expect(try opened.healthSettings().stepsOn == false)
+
+    // The pull from 0 brings the row whole, and it replaces the one kept.
+    var answer = Fixture.response(cursor: "7")
+    let whole = ActivityRow(
+      id: climbId, date: day, kind: "climbing", durationMin: 90, cardioType: nil,
+      climbStyle: "boulder", climbRuns: 12, climbGrade: "6a", climbColor: nil,
+      fieldsAt: Fixture.time(0), removed: false, removedAt: nil)
+    answer.activities = [whole]
+    try opened.applyServer(sent: [], response: answer)
+    #expect(try opened.activities() == [whole])
+    let again = try AccountStore.open(userId: "u1", origin: origin, in: folder)
+    #expect(try again.cursor() == "7")
+  }
+
+  @Test func profileWriteAtomic() throws {
+    try body.setProfile(.height, .set(172))
+    try body.setProfile(.formula, .set(.female))
+    #expect(try store.body().profile?.heightCm == 172)
+    #expect(try store.body().profile?.formula == .female)
+    #expect(
+      try Fixture.changes(store) == [
+        .profile(ProfileChange(at: Fixture.time(0), edit: .height(172))),
+        .profile(ProfileChange(at: Fixture.time(0), edit: .formula(.female))),
+      ])
+    // The same value again writes nothing.
+    try body.setProfile(.height, .set(172))
+    #expect(try Fixture.changes(store).count == 2)
+
+    try Fixture.refuseInserts(into: "outbox", in: store)
+    #expect(throws: (any Error).self) { try body.setProfile(.birthYear, .set(1990)) }
+    #expect(throws: (any Error).self) { try body.setProfile(.height, .clear) }
+    #expect(try store.body().profile?.birthYear == nil)
+    #expect(try store.body().profile?.heightCm == 172)
+    #expect(try Fixture.changes(store).count == 2)
+    // Outside the contract: refused before anything is written.
+    #expect(throws: StoreError.invalidChange) { try body.setProfile(.height, .set(231)) }
+  }
+
+  @Test func targetWriteAtomic() throws {
+    try body.setTarget(minPct: 0.5, maxPct: 0.75)
+    #expect(try store.body().target == TargetRow(minPct: 0.5, maxPct: 0.75, at: Fixture.time(0)))
+    #expect(
+      try Fixture.changes(store) == [
+        .target(TargetChange(minPct: 0.5, maxPct: 0.75, at: Fixture.time(0)))
+      ])
+    try Fixture.refuseInserts(into: "outbox", in: store)
+    #expect(throws: (any Error).self) { try body.setTarget(minPct: 0.25, maxPct: 1) }
+    #expect(try store.body().target?.maxPct == 0.75)
+    #expect(try Fixture.changes(store).count == 1)
+    #expect(throws: StoreError.invalidChange) { try body.setTarget(minPct: 0.5, maxPct: 0.55) }
+  }
+
+  @Test func supplementWriteAtomic() throws {
+    let id = Fixture.id(20)
+    try body.addSupplement(id: id, name: " Créatine ")
+    #expect(
+      try store.body().supplements == [
+        SupplementRow(
+          id: id, name: "Créatine", nameAt: Fixture.time(0), kind: .creatine, removed: false,
+          removedAt: nil)
+      ])
+    clock.move(minutes: 1)
+    try body.renameSupplement(id: id, name: "Zinc")
+    // The kind stays the one its first name gave, as on the server.
+    #expect(try store.body().supplements.first?.name == "Zinc")
+    #expect(try store.body().supplements.first?.kind == .creatine)
+    #expect(throws: BodyError.noSuchSupplement) {
+      try body.renameSupplement(id: Fixture.id(21), name: "Fer")
+    }
+
+    try Fixture.refuseInserts(into: "outbox", in: store)
+    #expect(throws: (any Error).self) { try body.removeSupplement(id: id) }
+    #expect(throws: (any Error).self) { try body.addSupplement(id: Fixture.id(22), name: "Fer") }
+    #expect(try store.body().supplements.map(\.removed) == [false])
+    #expect(try Fixture.changes(store).count == 2)
+    #expect(throws: StoreError.invalidChange) {
+      try body.addSupplement(id: Fixture.id(23), name: "Vitamine\nD")
+    }
+  }
+
+  @Test func activityWriteAtomic() throws {
+    let id = Fixture.id(40)
+    try body.logActivity(ActivityInput(id: id, date: day, fields: climb))
+    #expect(
+      try store.activities() == [
+        ActivityRow(
+          id: id, date: day, kind: "climbing", durationMin: 90, cardioType: nil,
+          climbStyle: "boulder", climbRuns: 12, climbGrade: "6a", climbColor: nil,
+          fieldsAt: Fixture.time(0), removed: false, removedAt: nil)
+      ])
+    #expect(try store.body().activities.map(\.id) == [id])
+    clock.move(minutes: 1)
+    try body.removeActivity(id: id)
+    #expect(try store.activities().isEmpty)
+    #expect(try Fixture.changes(store).count == 2)
+    // Saved again, a removed one comes back, as the web's undo does.
+    clock.move(minutes: 1)
+    try body.logActivity(ActivityInput(id: id, date: day, fields: climb))
+    #expect(try store.activities().map(\.id) == [id])
+    #expect(try Fixture.changes(store).count == 3)
+
+    try Fixture.refuseInserts(into: "outbox", in: store)
+    #expect(throws: (any Error).self) {
+      try body.logActivity(ActivityInput(id: Fixture.id(41), date: day, fields: climb))
+    }
+    #expect(throws: (any Error).self) { try body.removeActivity(id: id) }
+    #expect(try store.activities().map(\.id) == [id])
+    #expect(try Fixture.changes(store).count == 3)
+    #expect(throws: BodyError.noSuchActivity) { try body.removeActivity(id: Fixture.id(42)) }
+    var both = climb
+    both.climbColor = "blue"
+    #expect(throws: StoreError.invalidChange) {
+      try body.logActivity(ActivityInput(id: Fixture.id(43), date: day, fields: both))
+    }
+  }
+
+  @Test func stepsWriteAtomic() throws {
+    try body.writeSteps(date: day, value: 8437, own: true)
+    #expect(try store.body().steps == [StepsRow(date: day, steps: 8437, stepsAt: Fixture.time(0))])
+    #expect(
+      try Fixture.changes(store) == [
+        .steps(StepsChange(date: day, value: 8437, at: Fixture.time(0)))
+      ])
+
+    try Fixture.refuseInserts(into: "outbox", in: store)
+    #expect(throws: (any Error).self) { try body.writeSteps(date: day, value: 9000, own: true) }
+    #expect(try store.body().steps.map(\.steps) == [8437])
+    #expect(try store.stepsWritten() == [day: 8437])
+    #expect(try Fixture.changes(store).count == 1)
+    #expect(throws: StoreError.invalidChange) {
+      try body.writeSteps(date: "2026-11-04", value: 100_001, own: false)
+    }
+  }
+
+  @Test func ownStepsRecordedWithValue() throws {
+    try body.writeSteps(date: day, value: 8437, own: true)
+    try body.writeSteps(date: "2026-11-04", value: 5000, own: false)
+    #expect(try store.stepsWritten() == [day: 8437])
+    // A value typed elsewhere and equal to the one read writes nothing, and stays not ours.
+    try body.writeSteps(date: "2026-11-03", value: 6000, own: false)
+    try body.writeSteps(date: "2026-11-03", value: 6000, own: true)
+    #expect(try store.stepsWritten() == [day: 8437])
+    clock.move(minutes: 1)
+    try body.writeSteps(date: day, value: 9100, own: true)
+    #expect(try store.stepsWritten() == [day: 9100])
+    // A value typed here replaces the import's: the day is no longer the import's.
+    clock.move(minutes: 1)
+    try body.writeSteps(date: day, value: 9500, own: false)
+    #expect(try store.stepsWritten().isEmpty)
+    #expect(try Fixture.changes(store).count == 5)
+  }
+
+  @Test func typedStepsEqualToImportTakeTheDay() throws {
+    try body.writeSteps(date: day, value: 8437, own: true)
+    #expect(try store.stepsWritten() == [day: 8437])
+    // The person types the value the import wrote: nothing new is queued, but the day is now
+    // theirs, so the import (which follows Health only on a day noted as its own) leaves it.
+    clock.move(minutes: 1)
+    try body.writeSteps(date: day, value: 8437, own: false)
+    #expect(try store.stepsWritten().isEmpty)
+    #expect(try store.body().steps.map(\.steps) == [8437])
+    #expect(try Fixture.changes(store).count == 1)
+  }
+
+  @Test func serverRowsMergeByTime() throws {
+    let (supplement, activity) = (Fixture.id(20), Fixture.id(40))
+    clock.move(minutes: 5)
+    try body.setProfile(.height, .set(172))
+    try body.setTarget(minPct: 0.5, maxPct: 0.75)
+    try body.addSupplement(id: supplement, name: "Créatine")
+    try body.logActivity(ActivityInput(id: activity, date: day, fields: climb))
+    try body.writeSteps(date: day, value: 8437, own: false)
+
+    func answer(_ minutes: Double) -> SyncResponse {
+      var r = Fixture.response()
+      let at = Fixture.time(minutes)
+      r.profile = ProfileRow(
+        formula: .male, formulaAt: at, birthYear: nil, birthYearAt: nil, heightCm: 180,
+        heightAt: at)
+      r.target = TargetRow(minPct: 0.25, maxPct: 1, at: at)
+      r.supplements = [
+        SupplementRow(
+          id: supplement, name: "Zinc", nameAt: at, kind: .creatine, removed: false,
+          removedAt: nil)
+      ]
+      r.activities = [
+        ActivityRow(
+          id: activity, date: day, kind: "cardio", durationMin: 30, cardioType: "run",
+          climbStyle: nil, climbRuns: nil, climbGrade: nil, climbColor: nil, fieldsAt: at,
+          removed: false, removedAt: nil)
+      ]
+      r.steps = [StepsRow(date: day, steps: 12_000, stepsAt: at)]
+      return r
+    }
+
+    // Older than what is queued here: the phone's writes stay, the fields it did not write come.
+    try store.applyServer(sent: [], response: answer(3))
+    var read = try store.body()
+    #expect(read.profile?.heightCm == 172 && read.profile?.formula == .male)
+    #expect(read.target?.maxPct == 0.75)
+    #expect(read.supplements.map(\.name) == ["Créatine"])
+    #expect(read.activities.map(\.kind) == ["climbing"])
+    #expect(read.steps.map(\.steps) == [8437])
+
+    // Later: the other device's writes win, field by field.
+    try store.applyServer(sent: [], response: answer(7))
+    read = try store.body()
+    #expect(read.profile?.heightCm == 180)
+    #expect(read.target?.maxPct == 1)
+    #expect(read.supplements.map(\.name) == ["Zinc"])
+    #expect(read.activities.map(\.kind) == ["cardio"])
+    #expect(read.steps.map(\.steps) == [12_000])
+  }
+
+  @Test func refusedRevertsOnlyWithoutLaterEdit() throws {
+    let (supplement, activity) = (Fixture.id(20), Fixture.id(40))
+    try body.setProfile(.height, .set(172))
+    try body.setTarget(minPct: 0.5, maxPct: 0.75)
+    try body.addSupplement(id: supplement, name: "Créatine")
+    try body.logActivity(ActivityInput(id: activity, date: day, fields: climb))
+    try body.writeSteps(date: day, value: 8437, own: false)
+    try body.writeSteps(date: "2026-11-04", value: 5000, own: false)
+    let sent = try store.outbox(limit: nil)
+    // Edited again here before the answer: the height and the day's steps.
+    clock.move(minutes: 1)
+    try body.setProfile(.height, .set(175))
+    try body.writeSteps(date: day, value: 9000, own: false)
+
+    try store.applyServer(
+      sent: sent,
+      response: Fixture.response(
+        rejected: sent.indices.map { Rejected(index: $0, reason: "refused") }))
+    let read = try store.body()
+    #expect(read.profile?.heightCm == 175)
+    #expect(read.steps == [StepsRow(date: day, steps: 9000, stepsAt: Fixture.time(1))])
+    #expect(read.target == nil)
+    #expect(read.supplements.isEmpty)
+    #expect(read.activities.isEmpty)
+    #expect(try store.rejected().count == 6)
+  }
+
+  @Test func climbSavedReadsAtOnce() throws {
+    let c = Days.session(Days.rotation, "C")
+    try #require(c.noClimbing?.isEmpty == false)
+    #expect(planFor(c, activities: try store.activities(), date: day).count > c.slots.count)
+    try body.logActivity(ActivityInput(id: Fixture.id(40), date: "2026-11-03", fields: climb))
+    #expect(planFor(c, activities: try store.activities(), date: day) == c.slots)
+  }
+
+  @Test func pulledKindsObserved() async throws {
+    var answer = Fixture.response(cursor: "9")
+    answer.profile = ProfileRow(
+      formula: nil, formulaAt: nil, birthYear: 1990, birthYearAt: Fixture.time(1), heightCm: nil,
+      heightAt: nil)
+    answer.target = TargetRow(minPct: 0.25, maxPct: 1, at: Fixture.time(1))
+    answer.supplements = [
+      SupplementRow(
+        id: Fixture.id(20), name: "Zinc", nameAt: Fixture.time(1), kind: .other, removed: false,
+        removedAt: nil)
+    ]
+    answer.activities = [
+      ActivityRow(
+        id: Fixture.id(40), date: day, kind: "climbing", durationMin: 60, cardioType: nil,
+        climbStyle: nil, climbRuns: nil, climbGrade: nil, climbColor: nil,
+        fieldsAt: Fixture.time(1), removed: false, removedAt: nil)
+    ]
+    answer.steps = [StepsRow(date: day, steps: 7000, stepsAt: Fixture.time(1))]
+    let landed = answer
+
+    let values = store.observe(AccountStore.body)
+    let seen = try await withThrowingTaskGroup(of: Bool.self) { group in
+      group.addTask {
+        for try await read in values
+        where read.profile?.birthYear == 1990 && read.target?.minPct == 0.25
+          && read.supplements.map(\.name) == ["Zinc"] && read.activities.count == 1
+          && read.steps.map(\.steps) == [7000]
+        {
+          return true
+        }
+        return false
+      }
+      group.addTask { [store] in
+        try store.applyServer(sent: [], response: landed)
+        try await Task.sleep(for: .seconds(1))
+        return false
+      }
+      let first = try await group.next() ?? false
+      group.cancelAll()
+      return first
+    }
+    #expect(seen)
   }
 }
 

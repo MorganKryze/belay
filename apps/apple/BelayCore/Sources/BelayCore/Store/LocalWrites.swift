@@ -191,7 +191,8 @@ extension AccountStore {
       }
     case .activeProgram:
       return try Rows.single(ActiveProgramRow.self, db, "activeProgram")?.at
-    case .weight, .measure, .intake, .supplementLog, .annotation:
+    case .weight, .measure, .intake, .supplementLog, .annotation, .profile, .target, .supplement,
+      .activity, .steps:
       return try bodyLocalAt(db, change)
     }
   }
@@ -247,7 +248,8 @@ extension AccountStore {
       try Rows.putSet(db, row)
     case .activeProgram(let c):
       try Rows.putSingle(db, "activeProgram", ActiveProgramRow(programId: c.programId, at: c.at))
-    case .weight, .measure, .intake, .supplementLog, .annotation:
+    case .weight, .measure, .intake, .supplementLog, .annotation, .profile, .target, .supplement,
+      .activity, .steps:
       try applyBody(db, change)
     }
   }
@@ -259,7 +261,9 @@ extension Change {
     switch self {
     case .workout(let c): c.id
     case .set(let c): c.workoutId
-    case .activeProgram, .weight, .measure, .intake, .supplementLog, .annotation: nil
+    case .activeProgram, .weight, .measure, .intake, .supplementLog, .annotation, .profile, .target,
+      .supplement, .activity, .steps:
+      nil
     }
   }
 }

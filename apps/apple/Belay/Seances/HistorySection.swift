@@ -70,6 +70,8 @@ struct HistorySection: View {
 /// phone holds for it. A tap opens it.
 private struct HistoryRowView: View {
     let row: HistoryRow
+    /// Réglages › Séances › Volume.
+    @AppStorage(DevicePrefs.sessionVolume.key) private var volume = DevicePrefs.sessionVolume.initial
     @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
@@ -99,7 +101,9 @@ private struct HistoryRowView: View {
     }
 
     private var day: String { HistoryText.day(row.startedAt) }
-    private var figures: String { HistoryText.figures(durationMs: row.durationMs, volumeKg: row.volumeKg) }
+    private var figures: String {
+        HistoryText.figures(durationMs: row.durationMs, volumeKg: volume == .shown ? row.volumeKg : nil)
+    }
 
     /// « Séance C, Lundi 5 octobre, Fessiers, 41 min · 6 140 kg, Soutenu ».
     private var label: String {
@@ -150,9 +154,10 @@ enum HistoryText {
         Instant.date(startedAt).map { WeekdayText.day($0).capitalizedFirst } ?? ""
     }
 
-    /// « 41 min · 6 140 kg ».
-    static func figures(durationMs: Int, volumeKg: Double) -> String {
-        "\(SessionText.duration(ms: durationMs)) · \(volume(volumeKg))"
+    /// « 41 min · 6 140 kg », or « 41 min » without the volume.
+    static func figures(durationMs: Int, volumeKg: Double?) -> String {
+        let duration = SessionText.duration(ms: durationMs)
+        return volumeKg.map { "\(duration) · \(volume($0))" } ?? duration
     }
 
     /// « 6 140 kg », whole kilograms.

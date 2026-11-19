@@ -261,16 +261,6 @@
         }
       }
     },
-    "Ta liste se règle sur le web pour l’instant.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Your list is set on the web for now."
-          }
-        }
-      }
-    },
     "Taille au nombril pour la formule homme, au plus fin pour la formule femme.": {
       "localizations": {
         "en": {
@@ -487,6 +477,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "waist %@"
+          }
+        }
+      }
+    },
+    "Gérer ma liste": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Manage my list"
           }
         }
       }
