@@ -411,6 +411,26 @@
           }
         }
       }
+    },
+    "Montée": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Warm-up"
+          }
+        }
+      }
+    },
+    "Supprimer la montée ?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete warm-up?"
+          }
+        }
+      }
     }
   }
 }

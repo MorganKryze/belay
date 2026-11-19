@@ -895,5 +895,1193 @@
       "userId": "é💪",
       "result": "9acffb03"
     }
+  ],
+  "weighInBounds": {
+    "weighingKey": "belay-weighing-2026-10-10",
+    "historyDay": "1899-12-31",
+    "importStampMs": 1000
+  },
+  "weights": [
+    {
+      "date": "2026-03-29",
+      "weightKg": 81.2,
+      "at": "2026-03-29T06:00:00.000Z"
+    },
+    {
+      "date": "2026-09-20",
+      "weightKg": 80.6,
+      "at": "2026-09-20T06:00:00.000Z"
+    },
+    {
+      "date": "2026-10-05",
+      "weightKg": 80.1,
+      "at": "2026-10-05T06:00:00.000Z"
+    },
+    {
+      "date": "2026-10-06",
+      "weightKg": 79.8,
+      "at": "2026-10-06T06:00:00.000Z"
+    },
+    {
+      "date": "2026-10-07",
+      "weightKg": null,
+      "at": "2026-10-07T19:00:00.000Z"
+    },
+    {
+      "date": "2026-10-08",
+      "weightKg": 79.5,
+      "at": "2026-10-08T06:00:00.000Z"
+    },
+    {
+      "date": "2026-10-09",
+      "weightKg": 410,
+      "at": "2026-10-09T06:00:00.000Z"
+    },
+    {
+      "date": "2026-10-10",
+      "weightKg": 79.4,
+      "at": "2026-10-10T06:00:00.000Z"
+    },
+    {
+      "date": "2026-10-25",
+      "weightKg": 79,
+      "at": "2026-10-25T06:00:00.000Z"
+    }
+  ],
+  "planWeighIns": [
+    {
+      "name": "new since the switch",
+      "turnedOnAt": 1790812800000,
+      "written": {},
+      "allowed": true,
+      "owner": "0442a7f3",
+      "now": 1791633600000,
+      "result": [
+        {
+          "kind": "weighing",
+          "owner": "0442a7f3",
+          "date": "2026-10-05",
+          "kg": 80.1,
+          "at": 1791180000000,
+          "version": 1791180000000
+        },
+        {
+          "kind": "weighing",
+          "owner": "0442a7f3",
+          "date": "2026-10-06",
+          "kg": 79.8,
+          "at": 1791266400000,
+          "version": 1791266400000
+        },
+        {
+          "kind": "weighing",
+          "owner": "0442a7f3",
+          "date": "2026-10-08",
+          "kg": 79.5,
+          "at": 1791439200000,
+          "version": 1791439200000
+        },
+        {
+          "kind": "weighing",
+          "owner": "0442a7f3",
+          "date": "2026-10-10",
+          "kg": 79.4,
+          "at": 1791612000000,
+          "version": 1791612000000
+        },
+        {
+          "kind": "weighing",
+          "owner": "0442a7f3",
+          "date": "2026-10-25",
+          "kg": 79,
+          "at": 1791633600000,
+          "version": 1792908000000
+        }
+      ]
+    },
+    {
+      "name": "each one written before",
+      "turnedOnAt": 1790812800000,
+      "written": {
+        "belay-weighing-2026-03-29": {
+          "state": "weighing",
+          "version": 3,
+          "kg": 81.2
+        },
+        "belay-weighing-2026-09-20": {
+          "state": "weighing",
+          "version": 3,
+          "kg": 80.6
+        },
+        "belay-weighing-2026-10-05": {
+          "state": "weighing",
+          "version": 3,
+          "kg": 80.1
+        },
+        "belay-weighing-2026-10-06": {
+          "state": "weighing",
+          "version": 3,
+          "kg": 79.8
+        },
+        "belay-weighing-2026-10-07": {
+          "state": "weighing",
+          "version": 3,
+          "kg": 80
+        },
+        "belay-weighing-2026-10-08": {
+          "state": "weighing",
+          "version": 3,
+          "kg": 79.5
+        },
+        "belay-weighing-2026-10-09": {
+          "state": "weighing",
+          "version": 3,
+          "kg": 410
+        },
+        "belay-weighing-2026-10-10": {
+          "state": "weighing",
+          "version": 3,
+          "kg": 79.4
+        },
+        "belay-weighing-2026-10-25": {
+          "state": "weighing",
+          "version": 3,
+          "kg": 79
+        }
+      },
+      "allowed": true,
+      "owner": "0442a7f3",
+      "now": 1791633600000,
+      "result": [
+        {
+          "kind": "weighingRemoved",
+          "owner": "0442a7f3",
+          "date": "2026-10-07"
+        },
+        {
+          "kind": "weighingRemoved",
+          "owner": "0442a7f3",
+          "date": "2026-10-09"
+        }
+      ]
+    },
+    {
+      "name": "a changed value",
+      "turnedOnAt": 1790812800000,
+      "written": {
+        "belay-weighing-2026-10-05": {
+          "state": "weighing",
+          "version": 1798761600000,
+          "kg": 80
+        }
+      },
+      "allowed": true,
+      "owner": "0442a7f3",
+      "now": 1791633600000,
+      "result": [
+        {
+          "kind": "weighing",
+          "owner": "0442a7f3",
+          "date": "2026-10-05",
+          "kg": 80.1,
+          "at": 1791180000000,
+          "version": 1798761600001
+        },
+        {
+          "kind": "weighing",
+          "owner": "0442a7f3",
+          "date": "2026-10-06",
+          "kg": 79.8,
+          "at": 1791266400000,
+          "version": 1791266400000
+        },
+        {
+          "kind": "weighing",
+          "owner": "0442a7f3",
+          "date": "2026-10-08",
+          "kg": 79.5,
+          "at": 1791439200000,
+          "version": 1791439200000
+        },
+        {
+          "kind": "weighing",
+          "owner": "0442a7f3",
+          "date": "2026-10-10",
+          "kg": 79.4,
+          "at": 1791612000000,
+          "version": 1791612000000
+        },
+        {
+          "kind": "weighing",
+          "owner": "0442a7f3",
+          "date": "2026-10-25",
+          "kg": 79,
+          "at": 1791633600000,
+          "version": 1792908000000
+        }
+      ]
+    },
+    {
+      "name": "deleted and out of range once written",
+      "turnedOnAt": 1790812800000,
+      "written": {
+        "belay-weighing-2026-10-07": {
+          "state": "weighing",
+          "version": 2,
+          "kg": 80
+        },
+        "belay-weighing-2026-10-09": {
+          "state": "weighing",
+          "version": 2,
+          "kg": 81
+        }
+      },
+      "allowed": true,
+      "owner": "0442a7f3",
+      "now": 1791633600000,
+      "result": [
+        {
+          "kind": "weighing",
+          "owner": "0442a7f3",
+          "date": "2026-10-05",
+          "kg": 80.1,
+          "at": 1791180000000,
+          "version": 1791180000000
+        },
+        {
+          "kind": "weighing",
+          "owner": "0442a7f3",
+          "date": "2026-10-06",
+          "kg": 79.8,
+          "at": 1791266400000,
+          "version": 1791266400000
+        },
+        {
+          "kind": "weighingRemoved",
+          "owner": "0442a7f3",
+          "date": "2026-10-07"
+        },
+        {
+          "kind": "weighing",
+          "owner": "0442a7f3",
+          "date": "2026-10-08",
+          "kg": 79.5,
+          "at": 1791439200000,
+          "version": 1791439200000
+        },
+        {
+          "kind": "weighingRemoved",
+          "owner": "0442a7f3",
+          "date": "2026-10-09"
+        },
+        {
+          "kind": "weighing",
+          "owner": "0442a7f3",
+          "date": "2026-10-10",
+          "kg": 79.4,
+          "at": 1791612000000,
+          "version": 1791612000000
+        },
+        {
+          "kind": "weighing",
+          "owner": "0442a7f3",
+          "date": "2026-10-25",
+          "kg": 79,
+          "at": 1791633600000,
+          "version": 1792908000000
+        }
+      ]
+    },
+    {
+      "name": "today before 08:00",
+      "turnedOnAt": 1790812800000,
+      "written": {},
+      "allowed": true,
+      "owner": "0442a7f3",
+      "now": 1791608400000,
+      "result": [
+        {
+          "kind": "weighing",
+          "owner": "0442a7f3",
+          "date": "2026-10-05",
+          "kg": 80.1,
+          "at": 1791180000000,
+          "version": 1791180000000
+        },
+        {
+          "kind": "weighing",
+          "owner": "0442a7f3",
+          "date": "2026-10-06",
+          "kg": 79.8,
+          "at": 1791266400000,
+          "version": 1791266400000
+        },
+        {
+          "kind": "weighing",
+          "owner": "0442a7f3",
+          "date": "2026-10-08",
+          "kg": 79.5,
+          "at": 1791439200000,
+          "version": 1791439200000
+        },
+        {
+          "kind": "weighing",
+          "owner": "0442a7f3",
+          "date": "2026-10-10",
+          "kg": 79.4,
+          "at": 1791608400000,
+          "version": 1791612000000
+        },
+        {
+          "kind": "weighing",
+          "owner": "0442a7f3",
+          "date": "2026-10-25",
+          "kg": 79,
+          "at": 1791608400000,
+          "version": 1792908000000
+        }
+      ]
+    },
+    {
+      "name": "the daylight-saving days",
+      "turnedOnAt": 1772323200000,
+      "written": {},
+      "allowed": true,
+      "owner": "0442a7f3",
+      "now": 1793016000000,
+      "result": [
+        {
+          "kind": "weighing",
+          "owner": "0442a7f3",
+          "date": "2026-03-29",
+          "kg": 81.2,
+          "at": 1774764000000,
+          "version": 1774764000000
+        },
+        {
+          "kind": "weighing",
+          "owner": "0442a7f3",
+          "date": "2026-09-20",
+          "kg": 80.6,
+          "at": 1789884000000,
+          "version": 1789884000000
+        },
+        {
+          "kind": "weighing",
+          "owner": "0442a7f3",
+          "date": "2026-10-05",
+          "kg": 80.1,
+          "at": 1791180000000,
+          "version": 1791180000000
+        },
+        {
+          "kind": "weighing",
+          "owner": "0442a7f3",
+          "date": "2026-10-06",
+          "kg": 79.8,
+          "at": 1791266400000,
+          "version": 1791266400000
+        },
+        {
+          "kind": "weighing",
+          "owner": "0442a7f3",
+          "date": "2026-10-08",
+          "kg": 79.5,
+          "at": 1791439200000,
+          "version": 1791439200000
+        },
+        {
+          "kind": "weighing",
+          "owner": "0442a7f3",
+          "date": "2026-10-10",
+          "kg": 79.4,
+          "at": 1791612000000,
+          "version": 1791612000000
+        },
+        {
+          "kind": "weighing",
+          "owner": "0442a7f3",
+          "date": "2026-10-25",
+          "kg": 79,
+          "at": 1792911600000,
+          "version": 1792908000000
+        }
+      ]
+    },
+    {
+      "name": "an old day written before",
+      "turnedOnAt": 1790812800000,
+      "written": {
+        "belay-weighing-2026-09-20": {
+          "state": "weighing",
+          "version": 2,
+          "kg": 80
+        }
+      },
+      "allowed": true,
+      "owner": "0442a7f3",
+      "now": 1791633600000,
+      "result": [
+        {
+          "kind": "weighing",
+          "owner": "0442a7f3",
+          "date": "2026-09-20",
+          "kg": 80.6,
+          "at": 1789884000000,
+          "version": 1789884000000
+        },
+        {
+          "kind": "weighing",
+          "owner": "0442a7f3",
+          "date": "2026-10-05",
+          "kg": 80.1,
+          "at": 1791180000000,
+          "version": 1791180000000
+        },
+        {
+          "kind": "weighing",
+          "owner": "0442a7f3",
+          "date": "2026-10-06",
+          "kg": 79.8,
+          "at": 1791266400000,
+          "version": 1791266400000
+        },
+        {
+          "kind": "weighing",
+          "owner": "0442a7f3",
+          "date": "2026-10-08",
+          "kg": 79.5,
+          "at": 1791439200000,
+          "version": 1791439200000
+        },
+        {
+          "kind": "weighing",
+          "owner": "0442a7f3",
+          "date": "2026-10-10",
+          "kg": 79.4,
+          "at": 1791612000000,
+          "version": 1791612000000
+        },
+        {
+          "kind": "weighing",
+          "owner": "0442a7f3",
+          "date": "2026-10-25",
+          "kg": 79,
+          "at": 1791633600000,
+          "version": 1792908000000
+        }
+      ]
+    },
+    {
+      "name": "another owner",
+      "turnedOnAt": 1790812800000,
+      "written": {},
+      "allowed": true,
+      "owner": "0542a986",
+      "now": 1791633600000,
+      "result": [
+        {
+          "kind": "weighing",
+          "owner": "0542a986",
+          "date": "2026-10-05",
+          "kg": 80.1,
+          "at": 1791180000000,
+          "version": 1791180000000
+        },
+        {
+          "kind": "weighing",
+          "owner": "0542a986",
+          "date": "2026-10-06",
+          "kg": 79.8,
+          "at": 1791266400000,
+          "version": 1791266400000
+        },
+        {
+          "kind": "weighing",
+          "owner": "0542a986",
+          "date": "2026-10-08",
+          "kg": 79.5,
+          "at": 1791439200000,
+          "version": 1791439200000
+        },
+        {
+          "kind": "weighing",
+          "owner": "0542a986",
+          "date": "2026-10-10",
+          "kg": 79.4,
+          "at": 1791612000000,
+          "version": 1791612000000
+        },
+        {
+          "kind": "weighing",
+          "owner": "0542a986",
+          "date": "2026-10-25",
+          "kg": 79,
+          "at": 1791633600000,
+          "version": 1792908000000
+        }
+      ]
+    },
+    {
+      "name": "imported elsewhere on and after the switch's day",
+      "turnedOnAt": 1790812800000,
+      "written": {},
+      "weights": [
+        {
+          "date": "2026-10-01",
+          "weightKg": 80.3,
+          "at": "2026-09-30T22:00:00.000Z"
+        },
+        {
+          "date": "2026-10-08",
+          "weightKg": 79.5,
+          "at": "2026-10-07T22:00:00.002Z"
+        }
+      ],
+      "allowed": true,
+      "owner": "0442a7f3",
+      "now": 1791633600000,
+      "result": []
+    },
+    {
+      "name": "an imported day corrected by the person",
+      "turnedOnAt": 1790812800000,
+      "written": {},
+      "weights": [
+        {
+          "date": "2026-10-08",
+          "weightKg": 79.7,
+          "at": "2026-10-08T07:15:00.000Z"
+        }
+      ],
+      "allowed": true,
+      "owner": "0442a7f3",
+      "now": 1791633600000,
+      "result": [
+        {
+          "kind": "weighing",
+          "owner": "0442a7f3",
+          "date": "2026-10-08",
+          "kg": 79.7,
+          "at": 1791439200000,
+          "version": 1791443700000
+        }
+      ]
+    },
+    {
+      "name": "a typed day at an ordinary time",
+      "turnedOnAt": 1790812800000,
+      "written": {},
+      "weights": [
+        {
+          "date": "2026-10-08",
+          "weightKg": 79.5,
+          "at": "2026-10-08T19:40:00.000Z"
+        }
+      ],
+      "allowed": true,
+      "owner": "0442a7f3",
+      "now": 1791633600000,
+      "result": [
+        {
+          "kind": "weighing",
+          "owner": "0442a7f3",
+          "date": "2026-10-08",
+          "kg": 79.5,
+          "at": 1791439200000,
+          "version": 1791488400000
+        }
+      ]
+    },
+    {
+      "name": "writing weigh-ins not allowed",
+      "turnedOnAt": 1790812800000,
+      "written": {
+        "belay-weighing-2026-03-29": {
+          "state": "weighing",
+          "version": 3,
+          "kg": 81.2
+        },
+        "belay-weighing-2026-09-20": {
+          "state": "weighing",
+          "version": 3,
+          "kg": 80.6
+        },
+        "belay-weighing-2026-10-05": {
+          "state": "weighing",
+          "version": 3,
+          "kg": 80.1
+        },
+        "belay-weighing-2026-10-06": {
+          "state": "weighing",
+          "version": 3,
+          "kg": 79.8
+        },
+        "belay-weighing-2026-10-07": {
+          "state": "weighing",
+          "version": 3,
+          "kg": 80
+        },
+        "belay-weighing-2026-10-08": {
+          "state": "weighing",
+          "version": 3,
+          "kg": 79.5
+        },
+        "belay-weighing-2026-10-09": {
+          "state": "weighing",
+          "version": 3,
+          "kg": 410
+        },
+        "belay-weighing-2026-10-10": {
+          "state": "weighing",
+          "version": 3,
+          "kg": 79.4
+        },
+        "belay-weighing-2026-10-25": {
+          "state": "weighing",
+          "version": 3,
+          "kg": 79
+        }
+      },
+      "allowed": false,
+      "owner": "0442a7f3",
+      "now": 1791633600000,
+      "result": []
+    }
+  ],
+  "sampleTime": [
+    {
+      "date": "2026-10-05",
+      "now": 1791633600000,
+      "result": 1791180000000
+    },
+    {
+      "date": "2026-10-10",
+      "now": 1791633600000,
+      "result": 1791612000000
+    },
+    {
+      "date": "2026-10-10",
+      "now": 1791608400000,
+      "result": 1791608400000
+    },
+    {
+      "date": "2026-03-29",
+      "now": 1791633600000,
+      "result": 1774764000000
+    },
+    {
+      "date": "2026-10-25",
+      "now": 1791633600000,
+      "result": 1791633600000
+    },
+    {
+      "date": "1900-01-01",
+      "now": 1791633600000,
+      "result": -2208960561000
+    }
+  ],
+  "earliestPerDay": [
+    {
+      "name": "readings of a few days",
+      "samples": [
+        {
+          "startedAt": 1791177000000,
+          "kg": 80.04
+        },
+        {
+          "startedAt": 1791175800000,
+          "kg": 80.21
+        },
+        {
+          "startedAt": 1791230400000,
+          "kg": 79.6
+        },
+        {
+          "startedAt": 1791239400000,
+          "kg": 79.96
+        },
+        {
+          "startedAt": 1791270000000,
+          "kg": 19.9
+        },
+        {
+          "startedAt": 1791273600000,
+          "kg": 400.04
+        },
+        {
+          "startedAt": 1791277200000,
+          "kg": 400.06
+        },
+        {
+          "startedAt": 1790805540000,
+          "kg": 81
+        }
+      ],
+      "fromDay": "2026-10-01",
+      "result": {
+        "2026-10-05": {
+          "startedAt": 1791175800000,
+          "kg": 80.2
+        },
+        "2026-10-06": {
+          "startedAt": 1791239400000,
+          "kg": 80
+        }
+      }
+    },
+    {
+      "name": "from a later day",
+      "samples": [
+        {
+          "startedAt": 1791177000000,
+          "kg": 80.04
+        },
+        {
+          "startedAt": 1791175800000,
+          "kg": 80.21
+        },
+        {
+          "startedAt": 1791230400000,
+          "kg": 79.6
+        },
+        {
+          "startedAt": 1791239400000,
+          "kg": 79.96
+        },
+        {
+          "startedAt": 1791270000000,
+          "kg": 19.9
+        },
+        {
+          "startedAt": 1791273600000,
+          "kg": 400.04
+        },
+        {
+          "startedAt": 1791277200000,
+          "kg": 400.06
+        },
+        {
+          "startedAt": 1790805540000,
+          "kg": 81
+        }
+      ],
+      "fromDay": "2026-10-06",
+      "result": {
+        "2026-10-06": {
+          "startedAt": 1791239400000,
+          "kg": 80
+        }
+      }
+    },
+    {
+      "name": "none",
+      "samples": [],
+      "fromDay": "2026-10-01",
+      "result": {}
+    }
+  ],
+  "importChoice": [
+    {
+      "name": "empty days filled",
+      "rows": [],
+      "filled": {},
+      "samples": [
+        {
+          "startedAt": 1791177000000,
+          "kg": 80.04
+        },
+        {
+          "startedAt": 1791175800000,
+          "kg": 80.21
+        },
+        {
+          "startedAt": 1791230400000,
+          "kg": 79.6
+        },
+        {
+          "startedAt": 1791239400000,
+          "kg": 79.96
+        },
+        {
+          "startedAt": 1791270000000,
+          "kg": 19.9
+        },
+        {
+          "startedAt": 1791273600000,
+          "kg": 400.04
+        },
+        {
+          "startedAt": 1791277200000,
+          "kg": 400.06
+        },
+        {
+          "startedAt": 1790805540000,
+          "kg": 81
+        }
+      ],
+      "now": 1791633600000,
+      "result": [
+        {
+          "kind": "weight",
+          "date": "2026-10-05",
+          "weightKg": 80.2,
+          "at": "2026-10-04T22:00:00.000Z"
+        },
+        {
+          "kind": "weight",
+          "date": "2026-10-06",
+          "weightKg": 80,
+          "at": "2026-10-05T22:00:00.000Z"
+        },
+        {
+          "kind": "weight",
+          "date": "2026-09-30",
+          "weightKg": 81,
+          "at": "2026-09-29T22:00:00.000Z"
+        }
+      ]
+    },
+    {
+      "name": "a typed day kept",
+      "rows": [
+        {
+          "date": "2026-10-05",
+          "weightKg": 81.5,
+          "at": "2026-10-05T18:00:00.000Z"
+        }
+      ],
+      "filled": {},
+      "samples": [
+        {
+          "startedAt": 1791177000000,
+          "kg": 80.04
+        },
+        {
+          "startedAt": 1791175800000,
+          "kg": 80.21
+        },
+        {
+          "startedAt": 1791230400000,
+          "kg": 79.6
+        },
+        {
+          "startedAt": 1791239400000,
+          "kg": 79.96
+        },
+        {
+          "startedAt": 1791270000000,
+          "kg": 19.9
+        },
+        {
+          "startedAt": 1791273600000,
+          "kg": 400.04
+        },
+        {
+          "startedAt": 1791277200000,
+          "kg": 400.06
+        },
+        {
+          "startedAt": 1790805540000,
+          "kg": 81
+        }
+      ],
+      "now": 1791633600000,
+      "result": [
+        {
+          "kind": "weight",
+          "date": "2026-10-06",
+          "weightKg": 80,
+          "at": "2026-10-05T22:00:00.000Z"
+        },
+        {
+          "kind": "weight",
+          "date": "2026-09-30",
+          "weightKg": 81,
+          "at": "2026-09-29T22:00:00.000Z"
+        }
+      ]
+    },
+    {
+      "name": "a deleted day kept",
+      "rows": [
+        {
+          "date": "2026-10-05",
+          "weightKg": null,
+          "at": "2026-10-05T06:00:00.000Z"
+        }
+      ],
+      "filled": {},
+      "samples": [
+        {
+          "startedAt": 1791177000000,
+          "kg": 80.04
+        },
+        {
+          "startedAt": 1791175800000,
+          "kg": 80.21
+        },
+        {
+          "startedAt": 1791230400000,
+          "kg": 79.6
+        },
+        {
+          "startedAt": 1791239400000,
+          "kg": 79.96
+        },
+        {
+          "startedAt": 1791270000000,
+          "kg": 19.9
+        },
+        {
+          "startedAt": 1791273600000,
+          "kg": 400.04
+        },
+        {
+          "startedAt": 1791277200000,
+          "kg": 400.06
+        },
+        {
+          "startedAt": 1790805540000,
+          "kg": 81
+        }
+      ],
+      "now": 1791633600000,
+      "result": [
+        {
+          "kind": "weight",
+          "date": "2026-10-06",
+          "weightKg": 80,
+          "at": "2026-10-05T22:00:00.000Z"
+        },
+        {
+          "kind": "weight",
+          "date": "2026-09-30",
+          "weightKg": 81,
+          "at": "2026-09-29T22:00:00.000Z"
+        }
+      ]
+    },
+    {
+      "name": "an earlier reading replaces this import's own",
+      "rows": [
+        {
+          "date": "2026-10-05",
+          "weightKg": 80.5,
+          "at": "2026-10-04T22:00:00.000Z"
+        }
+      ],
+      "filled": {
+        "2026-10-05": {
+          "at": "2026-10-04T22:00:00.000Z",
+          "startedAt": 1791180000000
+        }
+      },
+      "samples": [
+        {
+          "startedAt": 1791177000000,
+          "kg": 80.04
+        },
+        {
+          "startedAt": 1791175800000,
+          "kg": 80.21
+        },
+        {
+          "startedAt": 1791230400000,
+          "kg": 79.6
+        },
+        {
+          "startedAt": 1791239400000,
+          "kg": 79.96
+        },
+        {
+          "startedAt": 1791270000000,
+          "kg": 19.9
+        },
+        {
+          "startedAt": 1791273600000,
+          "kg": 400.04
+        },
+        {
+          "startedAt": 1791277200000,
+          "kg": 400.06
+        },
+        {
+          "startedAt": 1790805540000,
+          "kg": 81
+        }
+      ],
+      "now": 1791633600000,
+      "result": [
+        {
+          "kind": "weight",
+          "date": "2026-10-05",
+          "weightKg": 80.2,
+          "at": "2026-10-04T22:00:00.001Z"
+        },
+        {
+          "kind": "weight",
+          "date": "2026-10-06",
+          "weightKg": 80,
+          "at": "2026-10-05T22:00:00.000Z"
+        },
+        {
+          "kind": "weight",
+          "date": "2026-09-30",
+          "weightKg": 81,
+          "at": "2026-09-29T22:00:00.000Z"
+        }
+      ]
+    },
+    {
+      "name": "a later reading leaves this import's own",
+      "rows": [
+        {
+          "date": "2026-10-05",
+          "weightKg": 80.5,
+          "at": "2026-10-04T22:00:00.000Z"
+        }
+      ],
+      "filled": {
+        "2026-10-05": {
+          "at": "2026-10-04T22:00:00.000Z",
+          "startedAt": 1791180000000
+        }
+      },
+      "samples": [
+        {
+          "startedAt": 1791183600000,
+          "kg": 79
+        }
+      ],
+      "now": 1791633600000,
+      "result": []
+    },
+    {
+      "name": "an import's day edited since kept",
+      "rows": [
+        {
+          "date": "2026-10-05",
+          "weightKg": 80.5,
+          "at": "2026-10-05T07:30:00.000Z"
+        }
+      ],
+      "filled": {
+        "2026-10-05": {
+          "at": "2026-10-04T22:00:00.000Z",
+          "startedAt": 1791180000000
+        }
+      },
+      "samples": [
+        {
+          "startedAt": 1791177000000,
+          "kg": 80.04
+        },
+        {
+          "startedAt": 1791175800000,
+          "kg": 80.21
+        },
+        {
+          "startedAt": 1791230400000,
+          "kg": 79.6
+        },
+        {
+          "startedAt": 1791239400000,
+          "kg": 79.96
+        },
+        {
+          "startedAt": 1791270000000,
+          "kg": 19.9
+        },
+        {
+          "startedAt": 1791273600000,
+          "kg": 400.04
+        },
+        {
+          "startedAt": 1791277200000,
+          "kg": 400.06
+        },
+        {
+          "startedAt": 1790805540000,
+          "kg": 81
+        }
+      ],
+      "now": 1791633600000,
+      "result": [
+        {
+          "kind": "weight",
+          "date": "2026-10-06",
+          "weightKg": 80,
+          "at": "2026-10-05T22:00:00.000Z"
+        },
+        {
+          "kind": "weight",
+          "date": "2026-09-30",
+          "weightKg": 81,
+          "at": "2026-09-29T22:00:00.000Z"
+        }
+      ]
+    },
+    {
+      "name": "tomorrow's reading waits",
+      "rows": [],
+      "filled": {},
+      "samples": [
+        {
+          "startedAt": 1791675000000,
+          "kg": 79.3
+        },
+        {
+          "startedAt": 1791619200000,
+          "kg": 79.4
+        }
+      ],
+      "now": 1791633600000,
+      "result": [
+        {
+          "kind": "weight",
+          "date": "2026-10-10",
+          "weightKg": 79.4,
+          "at": "2026-10-09T22:00:00.000Z"
+        }
+      ]
+    },
+    {
+      "name": "a reading days ahead dropped",
+      "rows": [],
+      "filled": {},
+      "samples": [
+        {
+          "startedAt": 1791964800000,
+          "kg": 79.3
+        }
+      ],
+      "now": 1791633600000,
+      "result": []
+    },
+    {
+      "name": "the first read from the history floor",
+      "rows": [],
+      "filled": {},
+      "samples": [
+        {
+          "startedAt": -2209032000000,
+          "kg": 70
+        },
+        {
+          "startedAt": -2208963600000,
+          "kg": 70.1
+        }
+      ],
+      "now": 1791633600000,
+      "result": [
+        {
+          "kind": "weight",
+          "date": "1900-01-01",
+          "weightKg": 70.1,
+          "at": "1899-12-31T23:50:39.000Z"
+        }
+      ]
+    }
   ]
 }

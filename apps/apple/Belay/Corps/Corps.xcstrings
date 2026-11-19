@@ -1,0 +1,652 @@
+{
+  "sourceLanguage": "fr",
+  "version": "1.0",
+  "strings": {
+    "%@ · depuis Santé": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · from Health"
+          }
+        }
+      }
+    },
+    "%@ %%": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@%%"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ %%"
+          }
+        }
+      }
+    },
+    "%@ g de protéines": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ g of protein"
+          }
+        }
+      }
+    },
+    "%@ kcal": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ kcal"
+          }
+        }
+      }
+    },
+    "%lld sur %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld of %2$lld"
+          }
+        }
+      }
+    },
+    "/sem": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "/wk"
+          }
+        }
+      }
+    },
+    "A": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Y"
+          }
+        }
+      }
+    },
+    "Ajouter une pesée": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add a weigh-in"
+          }
+        }
+      }
+    },
+    "Année": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Year"
+          }
+        }
+      }
+    },
+    "Apports": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Intake"
+          }
+        }
+      }
+    },
+    "Aujourd’hui": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Today"
+          }
+        }
+      }
+    },
+    "Celles d’une balance connectée ou saisies dans Santé arrivent ici. Une pesée déjà dans Belay n’est jamais remplacée.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Those from a connected scale or entered in Health arrive here. A weigh-in already in Belay is never replaced."
+          }
+        }
+      }
+    },
+    "Compléments": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Supplements"
+          }
+        }
+      }
+    },
+    "Corps": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Body"
+          }
+        }
+      }
+    },
+    "Date": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Date"
+          }
+        }
+      }
+    },
+    "En gris, ta dernière pesée.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In grey, your last weigh-in."
+          }
+        }
+      }
+    },
+    "Encore %lld pesées cette semaine": {
+      "localizations": {
+        "fr": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Encore %lld pesée cette semaine"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Encore %lld pesées cette semaine"
+                }
+              }
+            }
+          }
+        },
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld more weigh-in this week"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld more weigh-ins this week"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Importer les pesées": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import weigh-ins"
+          }
+        }
+      }
+    },
+    "La moyenne apparaît dès 4 pesées sur 7 jours, la perte par semaine après deux semaines complètes.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The average shows from 4 weigh-ins in 7 days, the weekly loss after two full weeks."
+          }
+        }
+      }
+    },
+    "La moyenne apparaît dès 4 pesées sur 7 jours.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The average shows from 4 weigh-ins in 7 days."
+          }
+        }
+      }
+    },
+    "La perte par semaine apparaît après deux semaines complètes.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The weekly loss shows after two full weeks."
+          }
+        }
+      }
+    },
+    "M": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "M"
+          }
+        }
+      }
+    },
+    "Mensurations": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Measurements"
+          }
+        }
+      }
+    },
+    "Mois": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Month"
+          }
+        }
+      }
+    },
+    "Moyenne 7 jours": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "7-day average"
+          }
+        }
+      }
+    },
+    "Moyenne 7 jours et pesées, %@, %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "7-day average and weigh-ins, %1$@, %2$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Moyenne 7 jours et pesées, %@, %@"
+          }
+        }
+      }
+    },
+    "Ouvre Corps": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens Body"
+          }
+        }
+      }
+    },
+    "Pas encore de pesée": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No weigh-in yet"
+          }
+        }
+      }
+    },
+    "Pas maintenant": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not now"
+          }
+        }
+      }
+    },
+    "Pesée": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weigh-in"
+          }
+        }
+      }
+    },
+    "Poids en kilos": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weight in kilograms"
+          }
+        }
+      }
+    },
+    "Période": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Period"
+          }
+        }
+      }
+    },
+    "S": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "W"
+          }
+        }
+      }
+    },
+    "Semaine": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Week"
+          }
+        }
+      }
+    },
+    "Supprimer": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete"
+          }
+        }
+      }
+    },
+    "Supprimer la pesée": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete weigh-in"
+          }
+        }
+      }
+    },
+    "Ta courbe commence à ta première pesée.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your curve starts with your first weigh-in."
+          }
+        }
+      }
+    },
+    "Ta première est déjà là.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your first one is already in."
+          }
+        }
+      }
+    },
+    "Tes %@ premières sont déjà là.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your first %@ are already in."
+          }
+        }
+      }
+    },
+    "Tes pesées de Santé": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your weigh-ins from Health"
+          }
+        }
+      }
+    },
+    "Tes pesées, %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your weigh-ins, %@"
+          }
+        }
+      }
+    },
+    "Tes semaines": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your weeks"
+          }
+        }
+      }
+    },
+    "aucun pour l’instant": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "none yet"
+          }
+        }
+      }
+    },
+    "aujourd’hui": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "today"
+          }
+        }
+      }
+    },
+    "cou %@ · %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "neck %1$@ · %2$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "cou %@ · %@"
+          }
+        }
+      }
+    },
+    "dans ta fourchette": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "within your range"
+          }
+        }
+      }
+    },
+    "hanches %@ · %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "hips %1$@ · %2$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "hanches %@ · %@"
+          }
+        }
+      }
+    },
+    "hors de ta fourchette, %@ à %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "outside your range, %1$@ to %2$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "hors de ta fourchette, %@ à %@"
+          }
+        }
+      }
+    },
+    "kg": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "kg"
+          }
+        }
+      }
+    },
+    "pas encore saisie": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "not logged yet"
+          }
+        }
+      }
+    },
+    "pas encore saisies": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "not logged yet"
+          }
+        }
+      }
+    },
+    "pas encore saisis": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "not logged yet"
+          }
+        }
+      }
+    },
+    "perte %@ la semaine dernière": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "down %@ last week"
+          }
+        }
+      }
+    },
+    "perte par semaine, annotations": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "weekly loss, annotations"
+          }
+        }
+      }
+    },
+    "prise %@ la semaine dernière": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "up %@ last week"
+          }
+        }
+      }
+    },
+    "saisie": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "logged"
+          }
+        }
+      }
+    },
+    "saisis": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "logged"
+          }
+        }
+      }
+    },
+    "taille %@ · %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "waist %1$@ · %2$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "taille %@ · %@"
+          }
+        }
+      }
+    }
+  }
+}

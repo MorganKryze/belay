@@ -1,0 +1,496 @@
+{
+  "sourceLanguage": "fr",
+  "strings": {
+    "%@ de moins depuis le %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ less since %2$@"
+          }
+        }
+      }
+    },
+    "%@ de plus depuis le %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ more since %2$@"
+          }
+        }
+      }
+    },
+    "%@ g au-dessus de ta fourchette de %@ à %@ g": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ g over your range of %2$@ to %3$@ g"
+          }
+        }
+      }
+    },
+    "%@ g de protéines": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ g of protein"
+          }
+        }
+      }
+    },
+    "%@ g sous ta fourchette de %@ à %@ g": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ g under your range of %2$@ to %3$@ g"
+          }
+        }
+      }
+    },
+    "%@ kcal": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ kcal"
+          }
+        }
+      }
+    },
+    "Ajouter des mensurations": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add measures"
+          }
+        }
+      }
+    },
+    "Apports": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Intake"
+          }
+        }
+      }
+    },
+    "Aujourd’hui": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Today"
+          }
+        }
+      }
+    },
+    "Belay note ce que tu prends, sans conseil de dose.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Belay notes what you take, with no dose advice."
+          }
+        }
+      }
+    },
+    "Calories": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calories"
+          }
+        }
+      }
+    },
+    "Ce repère arrive avec ta première pesée.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This figure comes with your first weigh-in."
+          }
+        }
+      }
+    },
+    "Ce repère demande ton profil : formule, année de naissance et taille, à remplir sur le web pour l’instant.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This figure needs your profile: formula, birth year and height, set on the web for now."
+          }
+        }
+      }
+    },
+    "Compléments": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Supplements"
+          }
+        }
+      }
+    },
+    "Cou (option)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neck (optional)"
+          }
+        }
+      }
+    },
+    "Cou et hanches servent à l’outil Masse grasse.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neck and hips feed the Body fat tool."
+          }
+        }
+      }
+    },
+    "Hanches (option)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hips (optional)"
+          }
+        }
+      }
+    },
+    "Hier": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yesterday"
+          }
+        }
+      }
+    },
+    "Historique": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "History"
+          }
+        }
+      }
+    },
+    "Jours précédents": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Previous days"
+          }
+        }
+      }
+    },
+    "Mensurations": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Measures"
+          }
+        }
+      }
+    },
+    "Pas encore de complément": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No supplement yet"
+          }
+        }
+      }
+    },
+    "Pas encore de tour de taille": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No waist yet"
+          }
+        }
+      }
+    },
+    "Protéines": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Protein"
+          }
+        }
+      }
+    },
+    "Saisir les apports": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Log intake"
+          }
+        }
+      }
+    },
+    "Ta courbe commence à ta première mesure.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your curve starts with your first measure."
+          }
+        }
+      }
+    },
+    "Taille au nombril pour la formule homme, au plus fin pour la formule femme.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waist at the navel for the male formula, at the narrowest for the female formula."
+          }
+        }
+      }
+    },
+    "Tour de taille": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waist"
+          }
+        }
+      }
+    },
+    "Tour de taille, de %@ à %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waist, from %1$@ to %2$@"
+          }
+        }
+      }
+    },
+    "Un total par jour, pas aliment par aliment.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "One total a day, not food by food."
+          }
+        }
+      }
+    },
+    "cm": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "cm"
+          }
+        }
+      }
+    },
+    "cou %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "neck %@"
+          }
+        }
+      }
+    },
+    "dans ta fourchette de %@ à %@ g": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "in your range of %1$@ to %2$@ g"
+          }
+        }
+      }
+    },
+    "fourchette de l’outil Protéines": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "range from the Protein tool"
+          }
+        }
+      }
+    },
+    "g": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "g"
+          }
+        }
+      }
+    },
+    "hanches %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "hips %@"
+          }
+        }
+      }
+    },
+    "kcal": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "kcal"
+          }
+        }
+      }
+    },
+    "le même depuis le %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "unchanged since %@"
+          }
+        }
+      }
+    },
+    "pas encore pris": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "not taken yet"
+          }
+        }
+      }
+    },
+    "pris": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "taken"
+          }
+        }
+      }
+    },
+    "pris · depuis %lld jours": {
+      "localizations": {
+        "fr": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "pris · depuis %lld jour"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "pris · depuis %lld jours"
+                }
+              }
+            }
+          }
+        },
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "taken · for %lld day"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "taken · for %lld days"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "sur %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "of %@"
+          }
+        }
+      }
+    },
+    "sur %@ g": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "of %@ g"
+          }
+        }
+      }
+    },
+    "ta dépense du jour d’après l’outil Dépense énergétique": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "your day’s expenditure from the Energy expenditure tool"
+          }
+        }
+      }
+    },
+    "taille %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "waist %@"
+          }
+        }
+      }
+    },
+    "Gérer ma liste": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Manage my list"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

@@ -26,17 +26,61 @@ enum AppTab: String, Hashable, CaseIterable {
 /// Where a tab can push to; each native screen adds its case here, with the destination that
 /// shows it.
 enum Route: Hashable {
-    /// Réglages, from Accueil's avatar: for now only the way to sign out.
+    /// Réglages, from Accueil's avatar.
     case settings
-    /// The next session before it starts, from Accueil's card.
-    case preview
+    /// Profil and the loss range, from Réglages' profile cell.
+    case profile
+    /// Mes compléments, from Réglages › Suivi and from Compléments' « Gérer ma liste ».
+    case manageSupplements
+    /// A session of the active program before it starts, from Accueil or Séances.
+    case preview(sessionId: String)
+    /// A session kept, from Séances' Historique.
+    case past(workoutId: String)
+    /// Ta tendance and its weeks, from Corps's « Tes semaines ».
+    case trend
+    /// « Comment c’est calculé » for an entry of the science catalogue (« target-rate »).
+    case science(id: String)
+    /// Corps's screens, from its rows and Accueil's; on the web until each comes to the phone.
+    case measures, intake, supplements
+    /// A tool's page, from Outils.
+    case tool(ToolId)
+    /// Mon matériel, from Disques.
+    case equipment
+    /// An exercise's page, from Séances › Exercices and from a session's preview.
+    case exercise(id: String)
 }
 
 /// The tab in front and what each tab has pushed, kept across tab switches.
 @MainActor @Observable
 final class ShellModel {
     var tab: AppTab = .home
-    var paths: [AppTab: [Route]] = [:]
+    // One stored path per tab: a push in one tab changes only that tab's path, and only its
+    // stack redraws.
+    var homePath: [Route] = []
+    var seancesPath: [Route] = []
+    var corpsPath: [Route] = []
+    var outilsPath: [Route] = []
+
+    subscript(path tab: AppTab) -> [Route] {
+        get {
+            switch tab {
+            case .home: homePath
+            case .seances: seancesPath
+            case .corps: corpsPath
+            case .outils: outilsPath
+            }
+        }
+        set {
+            switch tab {
+            case .home: homePath = newValue
+            case .seances: seancesPath = newValue
+            case .corps: corpsPath = newValue
+            case .outils: outilsPath = newValue
+            }
+        }
+    }
+    /// Séances' segment, kept while the app runs.
+    var segment = SeancesView.Segment.programme
     /// The session cover, and the element its zoom opens from.
     var coverOpen = false
     var coverSource: String?
@@ -44,9 +88,12 @@ final class ShellModel {
 
 struct RootView: View {
     @State private var model = ShellModel()
-    @State private var box = TrainingBox()
+    @State private var box = Once<TrainingModel>()
+    @State private var bodyBox = Once<CorpsModel>()
+    @State private var outilsBox = Once<OutilsModel>()
     @Namespace private var space
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var scenePhase
     private let account: AccountModel
     private let store: AccountStore
 
@@ -58,39 +105,43 @@ struct RootView: View {
     }
 
     private var training: TrainingModel {
-        box.model {
+        box.value {
             TrainingModel(
-                store: store, didWrite: account.didWrite, health: account.runHealth, now: Date.init,
+                store: store, didWrite: account.didWrite, health: account.runHealth, now: Self.clock,
                 timeZone: .current)
         }
+    }
+
+    private var corps: CorpsModel {
+        bodyBox.value {
+            let corps = CorpsModel(
+                store: store, didWrite: account.didWrite, runHealth: account.runHealth,
+                turnImportOn: { [account] in await account.turnHealthImportOn() },
+                turnStepsOn: { [account] in await account.turnHealthStepsOn() }, now: Self.clock, timeZone: .current)
+            corps.choices = outils.choices
+            return corps
+        }
+    }
+
+    /// The tools, remembering their inputs for this account on this phone.
+    private var outils: OutilsModel {
+        outilsBox.value { OutilsModel(memoryAt: account.toolMemory) }
+    }
+
+    /// The phone's clock; in a debug build, the UI tests' when the launch sets one.
+    private static var clock: @Sendable () -> Date {
+        #if DEBUG
+            if let clock = Fixture.clock { return clock }
+        #endif
+        return Date.init
     }
 
     var body: some View {
         TabView(selection: $model.tab) {
             ForEach(AppTab.allCases, id: \.self) { tab in
                 Tab(value: tab) {
-                    NavigationStack(path: path(of: tab)) {
-                        Group {
-                            if tab == .home {
-                                AccueilView(
-                                    training: training,
-                                    notice: SyncNotice(
-                                        status: account.syncStatus,
-                                        reconnect: { Task { await account.reconnect() } },
-                                        retry: account.refresh),
-                                    displayName: account.displayName,
-                                    openPreview: { model.paths[.home, default: []].append(.preview) },
-                                    openCover: openCover)
-                            } else {
-                                WebForNow(tab: tab)
-                            }
-                        }
-                        .navigationDestination(for: Route.self) { route in
-                            switch route {
-                            case .settings: ReglagesView(account: account, store: store)
-                            case .preview: SessionPreview(training: training, openCover: openCover)
-                            }
-                        }
+                    NavigationStack(path: path(tab)) {
+                        root(tab).navigationDestination(for: Route.self, destination: destination)
                     }
                 } label: {
                     tabLabel(tab)
@@ -98,7 +149,8 @@ struct RootView: View {
             }
         }
         .tabViewStyle(.sidebarAdaptable)
-        .tabBarMinimizeBehavior(.onScrollDown)
+        // Never shrinks to one tab on scroll: the owner refused a bar that retracts.
+        .tabBarMinimizeBehavior(.never)
         .tabViewBottomAccessory(isEnabled: training.open != nil) {
             if let open = training.open {
                 ResumeAccessory(session: open) { openCover(Morph.accessory) }
@@ -106,6 +158,8 @@ struct RootView: View {
             }
         }
         .environment(\.zoomSpace, space)
+        .environment(\.loops, LoopSource(kept: account.keptLoop, fetch: account.loop))
+        .environment(\.push, PushAction { [model] route in model[path: model.tab].append(route) })
         .tint(.ink)
         .fullScreenCover(isPresented: $model.coverOpen) {
             SessionCover(training: training) { model.coverOpen = false }
@@ -115,24 +169,104 @@ struct RootView: View {
         }
         // A session closed elsewhere (another device, a forgotten one) takes its cover with it; one
         // finished here keeps it for its summary. Either way its preview is done with: the cover
-        // closes onto Accueil, as on the web.
+        // closes onto the first screen of the tab it was started from.
+        // Back in front, the day may have turned while the app was away.
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active {
+                training.refresh()
+                corps.refresh()
+            }
+        }
+        // A level or a goal chosen in the tools is the one Apports reads next.
+        .onChange(of: outils.choices) { _, choices in corps.choices = choices }
         .onChange(of: training.open == nil) { _, closed in
             guard closed else { return }
-            model.paths[.home]?.removeAll { $0 == .preview }
+            for tab in AppTab.allCases {
+                model[path: tab].removeAll { if case .preview = $0 { true } else { false } }
+            }
             if training.summary == nil { model.coverOpen = false }
         }
+    }
+
+    /// A tab's own stack, bound to its stored path.
+    private func path(_ tab: AppTab) -> Binding<[Route]> {
+        Binding(get: { model[path: tab] }, set: { model[path: tab] = $0 })
+    }
+
+    /// The first screen of each tab.
+    @ViewBuilder private func root(_ tab: AppTab) -> some View {
+        switch tab {
+        case .home:
+            AccueilView(
+                training: training,
+                notice: SyncNotice(
+                    status: account.syncStatus,
+                    reconnect: { Task { await account.reconnect() } },
+                    retry: account.refresh),
+                displayName: account.displayName,
+                corps: corps,
+                openPreview: { openPreview($0, in: .home) },
+                openCover: openCover,
+                open: { model.homePath.append($0) },
+                openCorps: { model.tab = .corps })
+        case .seances:
+            SeancesView(training: training, segment: $model.segment, openPreview: { openPreview($0, in: .seances) })
+        case .corps:
+            CorpsView(corps: corps) { model.corpsPath.append($0) }
+        case .outils:
+            OutilsView()
+        }
+    }
+
+    /// Every route a tab can push.
+    @ViewBuilder private func destination(_ route: Route) -> some View {
+        switch route {
+        case .settings:
+            ReglagesView(account: account, store: store, corps: corps) { model[path: model.tab].append($0) }
+        case .profile: ProfileView(corps: corps)
+        case .manageSupplements: SupplementsManageView(corps: corps)
+        case .preview(let sessionId):
+            SessionPreview(training: training, sessionId: sessionId, openCover: openCover)
+        case .past(let workoutId):
+            PastSessionView(
+                training: training,
+                model: {
+                    PastSessionModel(
+                        workoutId: workoutId, store: store, didWrite: account.didWrite,
+                        health: account.runHealth, now: Self.clock)
+                })
+        case .trend: TrendView(corps: corps) { model.corpsPath.append($0) }
+        case .science(let id): ScienceView(id: id)
+        case .measures: MeasuresView(corps: corps)
+        case .intake: IntakeView(corps: corps)
+        case .supplements: SupplementsView(corps: corps) { model[path: model.tab].append($0) }
+        case .tool(let tool): toolPage(tool)
+        case .equipment: EquipmentView(outils: outils)
+        case .exercise(let id): ExercisePage(training: training, exerciseId: id)
+        }
+    }
+
+    /// A tool's page.
+    @ViewBuilder private func toolPage(_ tool: ToolId) -> some View {
+        switch tool {
+        case .oneRepMax: OneRepMaxTool(outils: outils)
+        case .plates: PlatesTool(outils: outils)
+        case .warmup: WarmupTool(outils: outils)
+        case .energy: EnergyTool(outils: outils, corps: corps)
+        case .protein: ProteinTool(outils: outils, corps: corps)
+        case .projection: ProjectionTool(outils: outils, corps: corps)
+        case .bmi: BmiTool(outils: outils, corps: corps)
+        case .bodyFat: BodyFatTool(outils: outils, corps: corps)
+        }
+    }
+
+    private func openPreview(_ sessionId: String, in tab: AppTab) {
+        model[path: tab].append(.preview(sessionId: sessionId))
     }
 
     private func openCover(_ source: String) {
         model.coverSource = source
         model.coverOpen = true
-    }
-
-    private func path(of tab: AppTab) -> Binding<[Route]> {
-        Binding(
-            get: { model.paths[tab] ?? [] },
-            set: { model.paths[tab] = $0 }
-        )
     }
 
     /// The tab bar stays in ink, so colour cannot say which tab is active: the filled symbol does,
@@ -150,15 +284,15 @@ enum Morph {
     static let start = "start"
 }
 
-/// The shell's session model, built once, the first time the shell's body asks for it. Built in
-/// the shell's `init`, a new one would be made at each pass of the parent's body, and its first
-/// read of the store would make that body depend on it: each new model's first value would call
-/// for another model, and the app would never rest.
+/// A model built once, the first time a body asks for it. Built in a view's `init`, a new one
+/// would be made at each pass of the parent's body, and its first read of the store would make
+/// that body depend on it: each new model's first value would call for another model, and the app
+/// would never rest.
 @MainActor
-private final class TrainingBox {
-    private var built: TrainingModel?
+final class Once<Value: AnyObject> {
+    private var built: Value?
 
-    func model(_ make: () -> TrainingModel) -> TrainingModel {
+    func value(_ make: () -> Value) -> Value {
         if let built { return built }
         let made = make()
         built = made

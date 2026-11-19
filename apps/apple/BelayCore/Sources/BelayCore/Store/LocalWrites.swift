@@ -102,9 +102,12 @@ extension AccountStore {
     }
   }
 
+  /// The session kinds only: none is dated by the local day, so neither the clock nor the zone
+  /// sways the verdict. A body entry is refused here, as only `writeBody` knows the person's day.
   static func check(_ changes: [Change]) throws {
-    // Neither kind is dated by the local day, so the clock does not sway the verdict.
-    guard changes.allSatisfy({ isValid($0, now: Date()) }) else { throw StoreError.invalidChange }
+    guard changes.allSatisfy({ !$0.isBody && isValid($0, now: Date(), timeZone: .gmt) }) else {
+      throw StoreError.invalidChange
+    }
   }
 
   /// Applied here and queued as the bytes it is sent as.
@@ -186,6 +189,11 @@ extension AccountStore {
       case .values: return row?.fieldsAt
       case .removed: return row?.removedAt
       }
+    case .activeProgram:
+      return try Rows.single(ActiveProgramRow.self, db, "activeProgram")?.at
+    case .weight, .measure, .intake, .supplementLog, .annotation, .profile, .target, .supplement,
+      .activity, .steps:
+      return try bodyLocalAt(db, change)
     }
   }
 
@@ -238,16 +246,24 @@ extension AccountStore {
       case .removed(let removed): (row.removed, row.removedAt) = (removed, c.at)
       }
       try Rows.putSet(db, row)
+    case .activeProgram(let c):
+      try Rows.putSingle(db, "activeProgram", ActiveProgramRow(programId: c.programId, at: c.at))
+    case .weight, .measure, .intake, .supplementLog, .annotation, .profile, .target, .supplement,
+      .activity, .steps:
+      try applyBody(db, change)
     }
   }
 }
 
 extension Change {
-  /// The session a change belongs to.
-  var workoutId: String {
+  /// The session a change belongs to; nil for the active program and the body entries.
+  var workoutId: String? {
     switch self {
     case .workout(let c): c.id
     case .set(let c): c.workoutId
+    case .activeProgram, .weight, .measure, .intake, .supplementLog, .annotation, .profile, .target,
+      .supplement, .activity, .steps:
+      nil
     }
   }
 }

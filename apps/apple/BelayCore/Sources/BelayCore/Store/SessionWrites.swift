@@ -34,6 +34,8 @@ struct OpenSession {
 struct SessionContext: Sendable {
   let library: ExerciseLibrary
   let bar: Plates
+  /// What a pause stops on this device: everything, or the session's time while the rest runs.
+  let stops: PauseStops
   let now: @Sendable () -> Date
   let newId: @Sendable (Date) -> String
 }
@@ -41,7 +43,8 @@ struct SessionContext: Sendable {
 extension AccountStore {
   /// One write over the open session; nil when none is open, or `workoutId` names another.
   func withOpenSession<T>(
-    _ workoutId: String? = nil, _ body: (Database, inout OpenSession) throws -> T
+    _ workoutId: String? = nil, ctx: SessionContext,
+    _ body: (Database, inout OpenSession) throws -> T
   ) throws -> T? {
     try writer.write { db in
       guard let active = try Rows.single(ActiveSession.self, db, "activeSession"),
@@ -49,7 +52,7 @@ extension AccountStore {
         let workout = try Rows.get(WorkoutRow.self, db, "workouts", id: active.workoutId)
       else { return nil }
       var open = OpenSession(workout: workout, active: active, history: try Self.history(db))
-      try settlePause(db, &open.workout, &open.active, sets: open.sets)
+      try settlePause(db, &open.workout, &open.active, sets: open.sets, stops: ctx.stops)
       let result = try body(db, &open)
       try Rows.putSingle(db, "activeSession", open.active)
       return result
@@ -72,7 +75,7 @@ extension AccountStore {
     count: Int?, weightKg: Double?, expecting: SetPlace?, workoutId: String? = nil,
     lockScreen: Bool = false, _ ctx: SessionContext
   ) throws -> SetChange? {
-    try withOpenSession(workoutId) { db, open -> SetChange? in
+    try withOpenSession(workoutId, ctx: ctx) { db, open -> SetChange? in
       if lockScreen && open.active.pausedAt != nil { return nil }
       let now = ctx.now()
       let at = Instant.string(now)
@@ -118,7 +121,7 @@ extension AccountStore {
             exerciseId: due.exerciseId, warmup: due.warmup, values: values, doneAt: at)))
       // A set logged during a pause ends it at the set's time.
       try Self.write(
-        db, resumeChange(&open.workout, &open.active, at: at) + [.set(change)])
+        db, resumeChange(&open.workout, &open.active, at: at, stops: ctx.stops) + [.set(change)])
       open.active.chrono = nil
       // A load chosen for another set, the planned one an added set went before, stays.
       if open.active.draft?.place == due.place { open.active.draft = nil }
@@ -150,11 +153,11 @@ extension AccountStore {
   /// What a resume at `at` writes: the start moved past the pause, the rest and a chrono moved
   /// with it on the record, changed in place. Nothing while the session runs, and nothing synced
   /// when the start stays (a start the phone cannot read is never sent back).
-  private func resumeChange(_ workout: inout WorkoutRow, _ active: inout ActiveSession, at: String)
-    -> [Change]
-  {
+  private func resumeChange(
+    _ workout: inout WorkoutRow, _ active: inout ActiveSession, at: String, stops: PauseStops
+  ) -> [Change] {
     guard active.pausedAt != nil else { return [] }
-    let next = resumed(startedAt: workout.startedAt, active: active, at: at)
+    let next = resumed(startedAt: workout.startedAt, active: active, at: at, stops: stops)
     active = next.active
     guard next.startedAt != workout.startedAt else { return [] }
     workout.startedAt = next.startedAt
@@ -164,12 +167,13 @@ extension AccountStore {
   /// A pause a set has ended since, synced or logged here, is resumed at that set's time before
   /// anything else is decided, so neither a resume nor the end takes the time trained out.
   private func settlePause(
-    _ db: Database, _ workout: inout WorkoutRow, _ active: inout ActiveSession, sets: [SetRow]
+    _ db: Database, _ workout: inout WorkoutRow, _ active: inout ActiveSession, sets: [SetRow],
+    stops: PauseStops
   ) throws {
     guard let pausedAt = active.pausedAt,
       let endedBy = pauseEndedBy(pausedAt: pausedAt, doneAts: sets.map(\.doneAt))
     else { return }
-    try Self.write(db, resumeChange(&workout, &active, at: endedBy))
+    try Self.write(db, resumeChange(&workout, &active, at: endedBy, stops: stops))
   }
 
   // MARK: A set done
@@ -183,7 +187,7 @@ extension AccountStore {
 
   func answerRIR(setId: String, rir: Int, _ ctx: SessionContext) throws {
     try requireOpen(
-      withOpenSession { db, open in
+      withOpenSession(ctx: ctx) { db, open in
         let set = try liveSet(open, setId)
         guard !set.warmup, set.seconds == nil else { throw SessionError.noSuchSet }
         let values = SetValues(weightKg: set.weightKg, reps: set.reps, seconds: .null, rir: rir)
@@ -202,7 +206,7 @@ extension AccountStore {
     throws
   {
     try requireOpen(
-      withOpenSession { db, open in
+      withOpenSession(ctx: ctx) { db, open in
         let set = try liveSet(open, setId)
         let timed = set.seconds != nil
         let values = SetValues(
@@ -222,7 +226,7 @@ extension AccountStore {
   /// The set goes; its turn is due again by the shared rule.
   func remove(setId: String, _ ctx: SessionContext) throws {
     try requireOpen(
-      withOpenSession { db, open in
+      withOpenSession(ctx: ctx) { db, open in
         let set = try liveSet(open, setId)
         try Self.write(
           db,
@@ -239,8 +243,8 @@ extension AccountStore {
 
   /// The running rest made longer; whether one ran.
   func addRest(seconds: Int, workoutId: String? = nil, _ ctx: SessionContext) throws -> Bool {
-    try withOpenSession(workoutId) { _, open in
-      let at = restClock(pausedAt: open.active.pausedAt, now: ctx.now(), stops: .all)
+    try withOpenSession(workoutId, ctx: ctx) { _, open in
+      let at = restClock(pausedAt: open.active.pausedAt, now: ctx.now(), stops: ctx.stops)
       guard let end = open.active.restEndsAt.flatMap(Instant.date), end > at else { return false }
       open.active.restEndsAt = Instant.string(end.addingTimeInterval(TimeInterval(seconds)))
       return true
@@ -248,13 +252,13 @@ extension AccountStore {
   }
 
   func skipRest(_ ctx: SessionContext) throws {
-    try requireOpen(withOpenSession { _, open in open.active.restEndsAt = nil })
+    try requireOpen(withOpenSession(ctx: ctx) { _, open in open.active.restEndsAt = nil })
   }
 
   /// The load or count chosen for the set due, kept until it is logged.
   func choose(weightKg: Double?, count: Int?, _ ctx: SessionContext) throws {
     try requireOpen(
-      withOpenSession { _, open in
+      withOpenSession(ctx: ctx) { _, open in
         guard
           let due = dueSet(
             history: open.history, workout: open.workout, active: open.active,
@@ -269,7 +273,7 @@ extension AccountStore {
 
   func startHold(_ ctx: SessionContext) throws {
     try requireOpen(
-      withOpenSession { _, open in
+      withOpenSession(ctx: ctx) { _, open in
         guard
           let due = dueSet(
             history: open.history, workout: open.workout, active: open.active,
@@ -284,7 +288,7 @@ extension AccountStore {
   /// The hold stops where it stands: the seconds held are what ✓ will log.
   func stopHold(_ ctx: SessionContext) throws {
     try requireOpen(
-      withOpenSession { _, open in
+      withOpenSession(ctx: ctx) { _, open in
         guard var chrono = open.active.chrono, let end = Instant.date(chrono.endsAt) else {
           throw SessionError.noHold
         }
@@ -306,16 +310,18 @@ extension AccountStore {
 
   func pause(_ ctx: SessionContext) throws {
     try requireOpen(
-      withOpenSession { _, open in
+      withOpenSession(ctx: ctx) { _, open in
         if open.active.pausedAt == nil { open.active.pausedAt = Instant.string(ctx.now()) }
       })
   }
 
-  /// The start moves later by the time paused and the rest with it, in this one write.
+  /// The start moves later by the time paused, and the rest with it when the pause stopped
+  /// everything, in this one write.
   func resume(_ ctx: SessionContext) throws {
     try requireOpen(
-      withOpenSession { db, open in
-        try Self.write(db, resumeChange(&open.workout, &open.active, at: Instant.string(ctx.now())))
+      withOpenSession(ctx: ctx) { db, open in
+        let at = Instant.string(ctx.now())
+        try Self.write(db, resumeChange(&open.workout, &open.active, at: at, stops: ctx.stops))
       })
   }
 
@@ -338,7 +344,7 @@ extension AccountStore {
       throw SessionError.unknownExercise
     }
     try requireOpen(
-      withOpenSession { db, open in
+      withOpenSession(ctx: ctx) { db, open in
         try slot(open, slotIndex)
         try writePlan(
           db, &open, replaceSlot(open.workout.plan, at: slotIndex, with: exercise),
@@ -352,7 +358,7 @@ extension AccountStore {
   /// Left out or put back; when it was up next, the session moves on to the next live turn.
   func leaveOut(slotIndex: Int, _ out: Bool, _ ctx: SessionContext) throws {
     try requireOpen(
-      withOpenSession { db, open in
+      withOpenSession(ctx: ctx) { db, open in
         try slot(open, slotIndex)
         let plan = skipSlot(open.workout.plan, at: slotIndex, skipped: out)
         try writePlan(db, &open, plan, at: Instant.string(ctx.now()))
@@ -374,7 +380,7 @@ extension AccountStore {
       throw SessionError.unknownExercise
     }
     try requireOpen(
-      withOpenSession { db, open in
+      withOpenSession(ctx: ctx) { db, open in
         try writePlan(
           db, &open, try appendSlot(open.workout.plan, exercise), at: Instant.string(ctx.now()))
       })
@@ -385,7 +391,7 @@ extension AccountStore {
   /// ones still unlogged on the previous one.
   func addSet(slotIndex: Int, _ ctx: SessionContext) throws {
     try requireOpen(
-      withOpenSession { _, open in
+      withOpenSession(ctx: ctx) { _, open in
         try slot(open, slotIndex)
         let planned = Bounds.maxWarmups + open.workout.plan[slotIndex].sets - 1
         let pending = open.active.added.flatMap {
@@ -406,7 +412,7 @@ extension AccountStore {
   /// An emptied note leaves the notes; the others stay.
   func noteExercise(slotIndex: Int, text: String, _ ctx: SessionContext) throws {
     try requireOpen(
-      withOpenSession { db, open in
+      withOpenSession(ctx: ctx) { db, open in
         try slot(open, slotIndex)
         var notes = open.workout.exerciseNotes
         let note = fitNote(text)
@@ -441,10 +447,11 @@ extension AccountStore {
       else { return nil }
       let at = Instant.string(ctx.now())
       try settlePause(
-        db, &workout, &active, sets: try Self.sets(db, of: workout.id).filter { !$0.removed })
+        db, &workout, &active, sets: try Self.sets(db, of: workout.id).filter { !$0.removed },
+        stops: ctx.stops)
       try Self.write(
         db,
-        resumeChange(&workout, &active, at: at) + [
+        resumeChange(&workout, &active, at: at, stops: ctx.stops) + [
           .workout(WorkoutChange(id: workout.id, at: at, edit: .ended(at)))
         ])
       try Rows.clearSingle(db, "activeSession")

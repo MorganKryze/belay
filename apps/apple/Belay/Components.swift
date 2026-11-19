@@ -99,12 +99,16 @@ struct Nudge: View {
     let step: Double
     /// Spoken after the verb: « Retirer 0,1 kg ».
     let what: String
+    /// The buttons' identifiers' stem, « range-min » for `range-min-minus`.
+    var id: String? = nil
     @ScaledMetric(relativeTo: .title3) private var side: CGFloat = 36
 
     var body: some View {
         HStack(spacing: 8) {
             button("minus", "Retirer \(what)", -step, enabled: value > range.lowerBound)
+                .accessibilityIdentifier(id.map { "\($0)-minus" } ?? "")
             button("plus", "Ajouter \(what)", step, enabled: value < range.upperBound)
+                .accessibilityIdentifier(id.map { "\($0)-plus" } ?? "")
         }
         .fixedSize()
         .sensoryFeedback(trigger: value) { old, new in new > old ? .increase : .decrease }
@@ -112,8 +116,8 @@ struct Nudge: View {
 
     private func button(_ symbol: String, _ label: LocalizedStringKey, _ delta: Double, enabled: Bool) -> some View {
         Button {
-            // Rounded to the tenth, so that repeated steps never drift.
-            let next = ((value + delta) * 10).rounded() / 10
+            // Rounded to the step, so that repeated steps never drift: 0,1 kg, 0,05 % a week.
+            let next = (((value + delta) / step).rounded() * step * 1e6).rounded() / 1e6
             value = min(range.upperBound, max(range.lowerBound, next))
         } label: {
             Image(systemName: symbol)
@@ -218,4 +222,38 @@ struct Avatar: View {
         .frame(width: size * scale, height: size * scale)
         .background(Color.track, in: .circle)
     }
+}
+
+/// A domain's symbol on its tint, a row's tile: 32 pt beside a body row, 36 pt, the size of a
+/// session's letter tile, in Séances. It says where an entry belongs, never that it can be
+/// tapped, so it stays silent.
+struct DomainTile: View {
+    let domain: Domain
+    let symbol: String
+    private let side: CGFloat
+    private let corner: CGFloat
+    /// The text size's factor: the tile grows with the symbol it holds.
+    @ScaledMetric(relativeTo: .body) private var scale: CGFloat = 1
+
+    init(domain: Domain, symbol: String, side: CGFloat = 32, corner: CGFloat = 8) {
+        self.domain = domain
+        self.symbol = symbol
+        self.side = side
+        self.corner = corner
+    }
+
+    var body: some View {
+        Image(systemName: symbol)
+            .font(.body.weight(.semibold))
+            .foregroundStyle(domain.shade)
+            .frame(width: side * scale, height: side * scale)
+            .background(domain.tint, in: .rect(cornerRadius: corner))
+            .accessibilityHidden(true)
+    }
+}
+
+extension Double {
+    /// « 62,5 », « 0,5 », « 1 »: at most two decimals, in the person's language; a load and a
+    /// range's bound read alike.
+    var upToHundredths: String { formatted(.number.precision(.fractionLength(0...2))) }
 }

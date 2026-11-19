@@ -30,8 +30,86 @@
     "exerciseId": "^(ds|belay):[a-z0-9-]{1,40}$",
     "minTime": "1900-01-01T00:00:00.000Z",
     "clockSlackMs": 300000,
-    "maxChanges": 500
+    "maxChanges": 500,
+    "weighInKg": {
+      "min": 20,
+      "max": 400,
+      "step": 0.1
+    },
+    "measureCm": {
+      "waist": {
+        "min": 40,
+        "max": 200,
+        "step": 0.5
+      },
+      "neck": {
+        "min": 20,
+        "max": 80,
+        "step": 0.5
+      },
+      "hip": {
+        "min": 50,
+        "max": 200,
+        "step": 0.5
+      }
+    },
+    "intake": {
+      "kcal": {
+        "min": 0,
+        "max": 10000,
+        "step": 50
+      },
+      "protein": {
+        "min": 0,
+        "max": 500,
+        "step": 5
+      }
+    },
+    "annotationLabelMax": 80,
+    "minDate": "1900-01-01"
   },
+  "clock": {
+    "now": "2026-11-06T09:30:00.123Z",
+    "zone": "Europe/Paris",
+    "today": "2026-11-06"
+  },
+  "days": [
+    {
+      "now": "2026-11-06T09:30:00.123Z",
+      "today": "2026-11-06",
+      "tomorrow": "2026-11-07"
+    },
+    {
+      "now": "2026-11-06T22:59:59.999Z",
+      "today": "2026-11-06",
+      "tomorrow": "2026-11-07"
+    },
+    {
+      "now": "2026-11-06T23:00:00.000Z",
+      "today": "2026-11-07",
+      "tomorrow": "2026-11-08"
+    },
+    {
+      "now": "2026-03-28T22:59:59.999Z",
+      "today": "2026-03-28",
+      "tomorrow": "2026-03-29"
+    },
+    {
+      "now": "2026-03-28T23:00:00.000Z",
+      "today": "2026-03-29",
+      "tomorrow": "2026-03-30"
+    },
+    {
+      "now": "2026-03-29T21:59:59.999Z",
+      "today": "2026-03-29",
+      "tomorrow": "2026-03-30"
+    },
+    {
+      "now": "2026-03-29T22:00:00.000Z",
+      "today": "2026-03-30",
+      "tomorrow": "2026-03-31"
+    }
+  ],
   "changes": [
     {
       "name": "start: as the phone writes it",
@@ -817,6 +895,1206 @@
       "name": "set: unknown field",
       "valid": false,
       "json": "{\"kind\":\"set\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f02\",\"workoutId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"moved\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "activeProgram: as the phone writes it",
+      "valid": true,
+      "json": "{\"kind\":\"activeProgram\",\"programId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f03\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "activeProgram: the starting program",
+      "valid": true,
+      "json": "{\"kind\":\"activeProgram\",\"programId\":\"00000000-0000-7000-8000-000000000010\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "activeProgram: program id in upper case",
+      "valid": false,
+      "json": "{\"kind\":\"activeProgram\",\"programId\":\"019A5A3C-7B2E-7D41-9C3F-2B8E4D6A1F03\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "activeProgram: program id not a UUID",
+      "valid": false,
+      "json": "{\"kind\":\"activeProgram\",\"programId\":\"push-pull\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "activeProgram: nil program id",
+      "valid": false,
+      "json": "{\"kind\":\"activeProgram\",\"programId\":\"00000000-0000-0000-0000-000000000000\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "activeProgram: no program id",
+      "valid": false,
+      "json": "{\"kind\":\"activeProgram\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "activeProgram: program id null",
+      "valid": false,
+      "json": "{\"kind\":\"activeProgram\",\"programId\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "activeProgram: at the floor",
+      "valid": true,
+      "json": "{\"kind\":\"activeProgram\",\"programId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f03\",\"at\":\"1900-01-01T00:00:00.000Z\"}"
+    },
+    {
+      "name": "activeProgram: one millisecond before the floor",
+      "valid": true,
+      "json": "{\"kind\":\"activeProgram\",\"programId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f03\",\"at\":\"1899-12-31T23:59:59.999Z\"}"
+    },
+    {
+      "name": "activeProgram: at the clock's slack",
+      "valid": true,
+      "json": "{\"kind\":\"activeProgram\",\"programId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f03\",\"at\":\"2026-11-06T09:35:00.123Z\"}"
+    },
+    {
+      "name": "activeProgram: one millisecond past the slack",
+      "valid": true,
+      "json": "{\"kind\":\"activeProgram\",\"programId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f03\",\"at\":\"2026-11-06T09:35:00.124Z\"}"
+    },
+    {
+      "name": "activeProgram: at without milliseconds",
+      "valid": false,
+      "json": "{\"kind\":\"activeProgram\",\"programId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f03\",\"at\":\"2026-11-06T09:30:00Z\"}"
+    },
+    {
+      "name": "activeProgram: at not a time",
+      "valid": false,
+      "json": "{\"kind\":\"activeProgram\",\"programId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f03\",\"at\":\"yesterday\"}"
+    },
+    {
+      "name": "weight: as the phone writes it",
+      "valid": true,
+      "json": "{\"kind\":\"weight\",\"date\":\"2026-11-06\",\"weightKg\":80.2,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "weight: deleted",
+      "valid": true,
+      "json": "{\"kind\":\"weight\",\"date\":\"2026-11-06\",\"weightKg\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "weight: no weight",
+      "valid": false,
+      "json": "{\"kind\":\"weight\",\"date\":\"2026-11-06\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "weight: at its floor",
+      "valid": true,
+      "json": "{\"kind\":\"weight\",\"date\":\"2026-11-06\",\"weightKg\":20,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "weight: a step under its floor",
+      "valid": false,
+      "json": "{\"kind\":\"weight\",\"date\":\"2026-11-06\",\"weightKg\":19.9,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "weight: at its ceiling",
+      "valid": true,
+      "json": "{\"kind\":\"weight\",\"date\":\"2026-11-06\",\"weightKg\":400,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "weight: a step past its ceiling",
+      "valid": false,
+      "json": "{\"kind\":\"weight\",\"date\":\"2026-11-06\",\"weightKg\":400.1,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "weight: on the grid with binary noise",
+      "valid": true,
+      "json": "{\"kind\":\"weight\",\"date\":\"2026-11-06\",\"weightKg\":79.8,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "weight: half a step off the grid",
+      "valid": false,
+      "json": "{\"kind\":\"weight\",\"date\":\"2026-11-06\",\"weightKg\":80.25,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "weight: a twentieth off the grid",
+      "valid": false,
+      "json": "{\"kind\":\"weight\",\"date\":\"2026-11-06\",\"weightKg\":80.05,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "weight: whole",
+      "valid": true,
+      "json": "{\"kind\":\"weight\",\"date\":\"2026-11-06\",\"weightKg\":80,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "weight: as text",
+      "valid": false,
+      "json": "{\"kind\":\"weight\",\"date\":\"2026-11-06\",\"weightKg\":\"80.2\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "weight: dated today",
+      "valid": true,
+      "json": "{\"kind\":\"weight\",\"date\":\"2026-11-06\",\"weightKg\":80.2,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "weight: dated tomorrow",
+      "valid": false,
+      "json": "{\"kind\":\"weight\",\"date\":\"2026-11-07\",\"weightKg\":80.2,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "weight: dated at the floor",
+      "valid": true,
+      "json": "{\"kind\":\"weight\",\"date\":\"1900-01-01\",\"weightKg\":80.2,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "weight: dated the day before the floor",
+      "valid": false,
+      "json": "{\"kind\":\"weight\",\"date\":\"1899-12-31\",\"weightKg\":80.2,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "weight: dated on a leap day",
+      "valid": true,
+      "json": "{\"kind\":\"weight\",\"date\":\"2024-02-29\",\"weightKg\":80.2,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "weight: dated on a day past the month's end",
+      "valid": false,
+      "json": "{\"kind\":\"weight\",\"date\":\"2026-02-29\",\"weightKg\":80.2,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "weight: dated without padding",
+      "valid": false,
+      "json": "{\"kind\":\"weight\",\"date\":\"2026-11-6\",\"weightKg\":80.2,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "weight: dated with a time",
+      "valid": false,
+      "json": "{\"kind\":\"weight\",\"date\":\"2026-11-06T08:00:00\",\"weightKg\":80.2,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "weight: at without milliseconds",
+      "valid": false,
+      "json": "{\"kind\":\"weight\",\"date\":\"2026-11-06\",\"weightKg\":80.2,\"at\":\"2026-11-06T09:30:00Z\"}"
+    },
+    {
+      "name": "measure: waist at its floor",
+      "valid": true,
+      "json": "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"waist\",\"value\":40,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "measure: waist a tenth under its floor",
+      "valid": false,
+      "json": "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"waist\",\"value\":39.9,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "measure: waist at its ceiling",
+      "valid": true,
+      "json": "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"waist\",\"value\":200,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "measure: waist a tenth past its ceiling",
+      "valid": false,
+      "json": "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"waist\",\"value\":200.1,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "measure: waist on the tenth",
+      "valid": true,
+      "json": "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"waist\",\"value\":44.3,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "measure: waist between two tenths",
+      "valid": false,
+      "json": "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"waist\",\"value\":44.35,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "measure: waist deleted",
+      "valid": true,
+      "json": "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"waist\",\"value\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "measure: neck at its floor",
+      "valid": true,
+      "json": "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"neck\",\"value\":20,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "measure: neck a tenth under its floor",
+      "valid": false,
+      "json": "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"neck\",\"value\":19.9,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "measure: neck at its ceiling",
+      "valid": true,
+      "json": "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"neck\",\"value\":80,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "measure: neck a tenth past its ceiling",
+      "valid": false,
+      "json": "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"neck\",\"value\":80.1,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "measure: neck on the tenth",
+      "valid": true,
+      "json": "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"neck\",\"value\":24.3,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "measure: neck between two tenths",
+      "valid": false,
+      "json": "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"neck\",\"value\":24.35,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "measure: neck deleted",
+      "valid": true,
+      "json": "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"neck\",\"value\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "measure: hip at its floor",
+      "valid": true,
+      "json": "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"hip\",\"value\":50,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "measure: hip a tenth under its floor",
+      "valid": false,
+      "json": "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"hip\",\"value\":49.9,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "measure: hip at its ceiling",
+      "valid": true,
+      "json": "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"hip\",\"value\":200,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "measure: hip a tenth past its ceiling",
+      "valid": false,
+      "json": "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"hip\",\"value\":200.1,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "measure: hip on the tenth",
+      "valid": true,
+      "json": "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"hip\",\"value\":54.3,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "measure: hip between two tenths",
+      "valid": false,
+      "json": "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"hip\",\"value\":54.35,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "measure: hip deleted",
+      "valid": true,
+      "json": "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"hip\",\"value\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "measure: unknown field",
+      "valid": false,
+      "json": "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"thigh\",\"value\":55,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "measure: as text",
+      "valid": false,
+      "json": "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"waist\",\"value\":\"84.5\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "measure: dated tomorrow",
+      "valid": false,
+      "json": "{\"kind\":\"measure\",\"date\":\"2026-11-07\",\"field\":\"waist\",\"value\":84.5,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "measure: dated at the floor",
+      "valid": true,
+      "json": "{\"kind\":\"measure\",\"date\":\"1900-01-01\",\"field\":\"waist\",\"value\":84.5,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "measure: dated the day before the floor",
+      "valid": false,
+      "json": "{\"kind\":\"measure\",\"date\":\"1899-12-31\",\"field\":\"waist\",\"value\":84.5,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "intake: kcal as the phone writes it",
+      "valid": true,
+      "json": "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"kcal\",\"value\":1850,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "intake: no kcal",
+      "valid": true,
+      "json": "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"kcal\",\"value\":0,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "intake: kcal at its bound",
+      "valid": true,
+      "json": "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"kcal\",\"value\":10000,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "intake: kcal one past",
+      "valid": false,
+      "json": "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"kcal\",\"value\":10001,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "intake: kcal below zero",
+      "valid": false,
+      "json": "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"kcal\",\"value\":-1,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "intake: kcal off the stepper",
+      "valid": true,
+      "json": "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"kcal\",\"value\":2130,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "intake: kcal not whole",
+      "valid": false,
+      "json": "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"kcal\",\"value\":1850.5,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "intake: kcal deleted",
+      "valid": true,
+      "json": "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"kcal\",\"value\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "intake: protein as the phone writes it",
+      "valid": true,
+      "json": "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"protein\",\"value\":128,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "intake: no protein",
+      "valid": true,
+      "json": "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"protein\",\"value\":0,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "intake: protein at its bound",
+      "valid": true,
+      "json": "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"protein\",\"value\":500,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "intake: protein one past",
+      "valid": false,
+      "json": "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"protein\",\"value\":501,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "intake: protein not whole",
+      "valid": false,
+      "json": "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"protein\",\"value\":127.5,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "intake: protein deleted",
+      "valid": true,
+      "json": "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"protein\",\"value\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "intake: unknown field",
+      "valid": false,
+      "json": "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"fat\",\"value\":60,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "intake: dated tomorrow",
+      "valid": false,
+      "json": "{\"kind\":\"intake\",\"date\":\"2026-11-07\",\"field\":\"kcal\",\"value\":1850,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "intake: dated the day before the floor",
+      "valid": false,
+      "json": "{\"kind\":\"intake\",\"date\":\"1899-12-31\",\"field\":\"kcal\",\"value\":1850,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "supplementLog: taken",
+      "valid": true,
+      "json": "{\"kind\":\"supplementLog\",\"supplementId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"date\":\"2026-11-06\",\"taken\":true,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "supplementLog: untaken",
+      "valid": true,
+      "json": "{\"kind\":\"supplementLog\",\"supplementId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"date\":\"2026-11-06\",\"taken\":false,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "supplementLog: taken as text",
+      "valid": false,
+      "json": "{\"kind\":\"supplementLog\",\"supplementId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"date\":\"2026-11-06\",\"taken\":\"yes\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "supplementLog: supplement id in upper case",
+      "valid": false,
+      "json": "{\"kind\":\"supplementLog\",\"supplementId\":\"019A5A3C-7B2E-7D41-9C3F-2B8E4D6A1F06\",\"date\":\"2026-11-06\",\"taken\":true,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "supplementLog: dated tomorrow",
+      "valid": false,
+      "json": "{\"kind\":\"supplementLog\",\"supplementId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"date\":\"2026-11-07\",\"taken\":true,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "supplementLog: dated at the floor",
+      "valid": true,
+      "json": "{\"kind\":\"supplementLog\",\"supplementId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"date\":\"1900-01-01\",\"taken\":true,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "supplementLog: dated the day before the floor",
+      "valid": false,
+      "json": "{\"kind\":\"supplementLog\",\"supplementId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"date\":\"1899-12-31\",\"taken\":true,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "annotation: as the phone writes it",
+      "valid": true,
+      "json": "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"deload\",\"label\":\"Semaine légère\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "annotation: diet break",
+      "valid": true,
+      "json": "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"diet_break\",\"label\":\"Semaine légère\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "annotation: note without a label",
+      "valid": true,
+      "json": "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"note\",\"label\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "annotation: no label",
+      "valid": false,
+      "json": "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"deload\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "annotation: unknown type",
+      "valid": false,
+      "json": "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"travel\",\"label\":\"Semaine légère\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "annotation: label at its bound",
+      "valid": true,
+      "json": "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"deload\",\"label\":\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "annotation: label one past",
+      "valid": false,
+      "json": "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"deload\",\"label\":\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "annotation: label in emoji at its bound",
+      "valid": true,
+      "json": "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"deload\",\"label\":\"💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "annotation: label in emoji one past",
+      "valid": false,
+      "json": "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"deload\",\"label\":\"💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "annotation: label empty",
+      "valid": true,
+      "json": "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"deload\",\"label\":\"\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "annotation: label on two lines",
+      "valid": false,
+      "json": "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"deload\",\"label\":\"Semaine\\nlégère\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "annotation: label with a carriage return",
+      "valid": false,
+      "json": "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"deload\",\"label\":\"Semaine\\rlégère\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "annotation: id in upper case",
+      "valid": false,
+      "json": "{\"kind\":\"annotation\",\"id\":\"019A5A3C-7B2E-7D41-9C3F-2B8E4D6A1F07\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"deload\",\"label\":\"Semaine légère\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "annotation: dated tomorrow",
+      "valid": false,
+      "json": "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"fields\",\"date\":\"2026-11-07\",\"type\":\"deload\",\"label\":\"Semaine légère\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "annotation: dated the day before the floor",
+      "valid": false,
+      "json": "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"fields\",\"date\":\"1899-12-31\",\"type\":\"deload\",\"label\":\"Semaine légère\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "annotation removed: true",
+      "valid": true,
+      "json": "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"removed\",\"value\":true,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "annotation removed: false",
+      "valid": true,
+      "json": "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"removed\",\"value\":false,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "annotation removed: not a boolean",
+      "valid": false,
+      "json": "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"removed\",\"value\":\"yes\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "annotation: unknown field",
+      "valid": false,
+      "json": "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"moved\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "target: 0.2 to 0.25",
+      "valid": false,
+      "json": "{\"kind\":\"target\",\"minPct\":0.2,\"maxPct\":0.25,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "target: 0.2 to 0.3",
+      "valid": false,
+      "json": "{\"kind\":\"target\",\"minPct\":0.2,\"maxPct\":0.3,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "target: 0.2 to 0.35",
+      "valid": false,
+      "json": "{\"kind\":\"target\",\"minPct\":0.2,\"maxPct\":0.35,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "target: 0.25 to 0.3",
+      "valid": false,
+      "json": "{\"kind\":\"target\",\"minPct\":0.25,\"maxPct\":0.3,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "target: 0.25 to 0.35",
+      "valid": true,
+      "json": "{\"kind\":\"target\",\"minPct\":0.25,\"maxPct\":0.35,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "target: 0.25 to 0.4",
+      "valid": true,
+      "json": "{\"kind\":\"target\",\"minPct\":0.25,\"maxPct\":0.4,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "target: 0.3 to 0.35",
+      "valid": false,
+      "json": "{\"kind\":\"target\",\"minPct\":0.3,\"maxPct\":0.35,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "target: 0.3 to 0.4",
+      "valid": true,
+      "json": "{\"kind\":\"target\",\"minPct\":0.3,\"maxPct\":0.4,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "target: 0.3 to 0.45",
+      "valid": true,
+      "json": "{\"kind\":\"target\",\"minPct\":0.3,\"maxPct\":0.45,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "target: 0.35 to 0.4",
+      "valid": false,
+      "json": "{\"kind\":\"target\",\"minPct\":0.35,\"maxPct\":0.4,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "target: 0.35 to 0.45",
+      "valid": true,
+      "json": "{\"kind\":\"target\",\"minPct\":0.35,\"maxPct\":0.45,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "target: 0.35 to 0.5",
+      "valid": true,
+      "json": "{\"kind\":\"target\",\"minPct\":0.35,\"maxPct\":0.5,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "target: 0.4 to 0.45",
+      "valid": false,
+      "json": "{\"kind\":\"target\",\"minPct\":0.4,\"maxPct\":0.45,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "target: 0.4 to 0.5",
+      "valid": true,
+      "json": "{\"kind\":\"target\",\"minPct\":0.4,\"maxPct\":0.5,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "target: 0.4 to 0.55",
+      "valid": true,
+      "json": "{\"kind\":\"target\",\"minPct\":0.4,\"maxPct\":0.55,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "target: 0.45 to 0.5",
+      "valid": false,
+      "json": "{\"kind\":\"target\",\"minPct\":0.45,\"maxPct\":0.5,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "target: 0.45 to 0.55",
+      "valid": true,
+      "json": "{\"kind\":\"target\",\"minPct\":0.45,\"maxPct\":0.55,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "target: 0.45 to 0.6",
+      "valid": true,
+      "json": "{\"kind\":\"target\",\"minPct\":0.45,\"maxPct\":0.6,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "target: 0.5 to 0.55",
+      "valid": false,
+      "json": "{\"kind\":\"target\",\"minPct\":0.5,\"maxPct\":0.55,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "target: 0.5 to 0.6",
+      "valid": true,
+      "json": "{\"kind\":\"target\",\"minPct\":0.5,\"maxPct\":0.6,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "target: 0.5 to 0.65",
+      "valid": true,
+      "json": "{\"kind\":\"target\",\"minPct\":0.5,\"maxPct\":0.65,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "target: 0.55 to 0.6",
+      "valid": false,
+      "json": "{\"kind\":\"target\",\"minPct\":0.55,\"maxPct\":0.6,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "target: 0.55 to 0.65",
+      "valid": true,
+      "json": "{\"kind\":\"target\",\"minPct\":0.55,\"maxPct\":0.65,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "target: 0.55 to 0.7",
+      "valid": true,
+      "json": "{\"kind\":\"target\",\"minPct\":0.55,\"maxPct\":0.7,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "target: 0.6 to 0.65",
+      "valid": false,
+      "json": "{\"kind\":\"target\",\"minPct\":0.6,\"maxPct\":0.65,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "target: 0.6 to 0.7",
+      "valid": true,
+      "json": "{\"kind\":\"target\",\"minPct\":0.6,\"maxPct\":0.7,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "target: 0.6 to 0.75",
+      "valid": true,
+      "json": "{\"kind\":\"target\",\"minPct\":0.6,\"maxPct\":0.75,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "target: 0.65 to 0.7",
+      "valid": false,
+      "json": "{\"kind\":\"target\",\"minPct\":0.65,\"maxPct\":0.7,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "target: 0.65 to 0.75",
+      "valid": true,
+      "json": "{\"kind\":\"target\",\"minPct\":0.65,\"maxPct\":0.75,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "target: 0.65 to 0.8",
+      "valid": true,
+      "json": "{\"kind\":\"target\",\"minPct\":0.65,\"maxPct\":0.8,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "target: 0.7 to 0.75",
+      "valid": false,
+      "json": "{\"kind\":\"target\",\"minPct\":0.7,\"maxPct\":0.75,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "target: 0.7 to 0.8",
+      "valid": true,
+      "json": "{\"kind\":\"target\",\"minPct\":0.7,\"maxPct\":0.8,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "target: 0.7 to 0.85",
+      "valid": true,
+      "json": "{\"kind\":\"target\",\"minPct\":0.7,\"maxPct\":0.85,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "target: 0.75 to 0.8",
+      "valid": false,
+      "json": "{\"kind\":\"target\",\"minPct\":0.75,\"maxPct\":0.8,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "target: 0.75 to 0.85",
+      "valid": true,
+      "json": "{\"kind\":\"target\",\"minPct\":0.75,\"maxPct\":0.85,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "target: 0.75 to 0.9",
+      "valid": true,
+      "json": "{\"kind\":\"target\",\"minPct\":0.75,\"maxPct\":0.9,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "target: 0.8 to 0.85",
+      "valid": false,
+      "json": "{\"kind\":\"target\",\"minPct\":0.8,\"maxPct\":0.85,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "target: 0.8 to 0.9",
+      "valid": true,
+      "json": "{\"kind\":\"target\",\"minPct\":0.8,\"maxPct\":0.9,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "target: 0.8 to 0.95",
+      "valid": true,
+      "json": "{\"kind\":\"target\",\"minPct\":0.8,\"maxPct\":0.95,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "target: 0.85 to 0.9",
+      "valid": false,
+      "json": "{\"kind\":\"target\",\"minPct\":0.85,\"maxPct\":0.9,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "target: 0.85 to 0.95",
+      "valid": true,
+      "json": "{\"kind\":\"target\",\"minPct\":0.85,\"maxPct\":0.95,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "target: 0.85 to 1",
+      "valid": true,
+      "json": "{\"kind\":\"target\",\"minPct\":0.85,\"maxPct\":1,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "target: 0.9 to 0.95",
+      "valid": false,
+      "json": "{\"kind\":\"target\",\"minPct\":0.9,\"maxPct\":0.95,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "target: 0.9 to 1",
+      "valid": true,
+      "json": "{\"kind\":\"target\",\"minPct\":0.9,\"maxPct\":1,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "target: 0.9 to 1.05",
+      "valid": false,
+      "json": "{\"kind\":\"target\",\"minPct\":0.9,\"maxPct\":1.05,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "target: 0.95 to 1",
+      "valid": false,
+      "json": "{\"kind\":\"target\",\"minPct\":0.95,\"maxPct\":1,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "target: 0.95 to 1.05",
+      "valid": false,
+      "json": "{\"kind\":\"target\",\"minPct\":0.95,\"maxPct\":1.05,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "target: 0.95 to 1.1",
+      "valid": false,
+      "json": "{\"kind\":\"target\",\"minPct\":0.95,\"maxPct\":1.1,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "target: 1 to 1.05",
+      "valid": false,
+      "json": "{\"kind\":\"target\",\"minPct\":1,\"maxPct\":1.05,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "target: 1 to 1.1",
+      "valid": false,
+      "json": "{\"kind\":\"target\",\"minPct\":1,\"maxPct\":1.1,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "target: 1 to 1.15",
+      "valid": false,
+      "json": "{\"kind\":\"target\",\"minPct\":1,\"maxPct\":1.15,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "target: the defaults",
+      "valid": true,
+      "json": "{\"kind\":\"target\",\"minPct\":0.5,\"maxPct\":1,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "target: off the grid",
+      "valid": false,
+      "json": "{\"kind\":\"target\",\"minPct\":0.27,\"maxPct\":0.5,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "target: the wrong way round",
+      "valid": false,
+      "json": "{\"kind\":\"target\",\"minPct\":0.75,\"maxPct\":0.5,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "target: as text",
+      "valid": false,
+      "json": "{\"kind\":\"target\",\"minPct\":\"0.5\",\"maxPct\":1,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "target: no maximum",
+      "valid": false,
+      "json": "{\"kind\":\"target\",\"minPct\":0.5,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "profile: formula female",
+      "valid": true,
+      "json": "{\"kind\":\"profile\",\"field\":\"formula\",\"value\":\"female\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "profile: formula male",
+      "valid": true,
+      "json": "{\"kind\":\"profile\",\"field\":\"formula\",\"value\":\"male\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "profile: formula cleared",
+      "valid": true,
+      "json": "{\"kind\":\"profile\",\"field\":\"formula\",\"value\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "profile: formula unknown",
+      "valid": false,
+      "json": "{\"kind\":\"profile\",\"field\":\"formula\",\"value\":\"other\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "profile: birth year at the oldest",
+      "valid": true,
+      "json": "{\"kind\":\"profile\",\"field\":\"birthYear\",\"value\":1926,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "profile: birth year one older",
+      "valid": false,
+      "json": "{\"kind\":\"profile\",\"field\":\"birthYear\",\"value\":1925,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "profile: birth year at the youngest",
+      "valid": true,
+      "json": "{\"kind\":\"profile\",\"field\":\"birthYear\",\"value\":2011,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "profile: birth year one younger",
+      "valid": false,
+      "json": "{\"kind\":\"profile\",\"field\":\"birthYear\",\"value\":2012,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "profile: birth year not whole",
+      "valid": false,
+      "json": "{\"kind\":\"profile\",\"field\":\"birthYear\",\"value\":1990.5,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "profile: birth year cleared",
+      "valid": true,
+      "json": "{\"kind\":\"profile\",\"field\":\"birthYear\",\"value\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "profile: height 119",
+      "valid": false,
+      "json": "{\"kind\":\"profile\",\"field\":\"height\",\"value\":119,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "profile: height 120",
+      "valid": true,
+      "json": "{\"kind\":\"profile\",\"field\":\"height\",\"value\":120,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "profile: height 230",
+      "valid": true,
+      "json": "{\"kind\":\"profile\",\"field\":\"height\",\"value\":230,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "profile: height 231",
+      "valid": false,
+      "json": "{\"kind\":\"profile\",\"field\":\"height\",\"value\":231,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "profile: height 170.5",
+      "valid": false,
+      "json": "{\"kind\":\"profile\",\"field\":\"height\",\"value\":170.5,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "profile: height cleared",
+      "valid": true,
+      "json": "{\"kind\":\"profile\",\"field\":\"height\",\"value\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "profile: height as text",
+      "valid": false,
+      "json": "{\"kind\":\"profile\",\"field\":\"height\",\"value\":\"170\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "profile: unknown field",
+      "valid": false,
+      "json": "{\"kind\":\"profile\",\"field\":\"weight\",\"value\":80,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "supplement: named",
+      "valid": true,
+      "json": "{\"kind\":\"supplement\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"field\":\"name\",\"value\":\"Créatine\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "supplement: name of 0 characters",
+      "valid": false,
+      "json": "{\"kind\":\"supplement\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"field\":\"name\",\"value\":\"\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "supplement: name of 1 character",
+      "valid": true,
+      "json": "{\"kind\":\"supplement\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"field\":\"name\",\"value\":\"D\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "supplement: name of 40 characters",
+      "valid": true,
+      "json": "{\"kind\":\"supplement\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"field\":\"name\",\"value\":\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "supplement: name of 41 characters",
+      "valid": false,
+      "json": "{\"kind\":\"supplement\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"field\":\"name\",\"value\":\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "supplement: name of 40 characters in emoji",
+      "valid": true,
+      "json": "{\"kind\":\"supplement\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"field\":\"name\",\"value\":\"💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "supplement: name of 41 characters in emoji",
+      "valid": false,
+      "json": "{\"kind\":\"supplement\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"field\":\"name\",\"value\":\"💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "supplement: name blank",
+      "valid": false,
+      "json": "{\"kind\":\"supplement\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"field\":\"name\",\"value\":\"   \",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "supplement: name not trimmed",
+      "valid": false,
+      "json": "{\"kind\":\"supplement\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"field\":\"name\",\"value\":\" Créatine \",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "supplement: name ending in a no-break space",
+      "valid": false,
+      "json": "{\"kind\":\"supplement\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"field\":\"name\",\"value\":\"Créatine \",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "supplement: name with a line break",
+      "valid": false,
+      "json": "{\"kind\":\"supplement\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"field\":\"name\",\"value\":\"Vitamine\\nD\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "supplement: name with a carriage return",
+      "valid": false,
+      "json": "{\"kind\":\"supplement\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"field\":\"name\",\"value\":\"Vitamine\\rD\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "supplement: name with an inner space",
+      "valid": true,
+      "json": "{\"kind\":\"supplement\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"field\":\"name\",\"value\":\"Vitamine D\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "supplement: id in upper case",
+      "valid": false,
+      "json": "{\"kind\":\"supplement\",\"id\":\"019A5A3C-7B2E-7D41-9C3F-2B8E4D6A1F06\",\"field\":\"name\",\"value\":\"Zinc\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "supplement removed: true",
+      "valid": true,
+      "json": "{\"kind\":\"supplement\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"field\":\"removed\",\"value\":true,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "supplement removed: false",
+      "valid": true,
+      "json": "{\"kind\":\"supplement\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"field\":\"removed\",\"value\":false,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "supplement removed: not a boolean",
+      "valid": false,
+      "json": "{\"kind\":\"supplement\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"field\":\"removed\",\"value\":\"yes\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "supplement: unknown field",
+      "valid": false,
+      "json": "{\"kind\":\"supplement\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"field\":\"kind\",\"value\":\"creatine\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "activity: a climb as the phone writes it",
+      "valid": true,
+      "json": "{\"kind\":\"activity\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f08\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"climbing\",\"durationMin\":90,\"cardioType\":null,\"climbStyle\":\"boulder\",\"climbRuns\":12,\"climbGrade\":\"6a\",\"climbColor\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "activity: a climb with nothing but its time",
+      "valid": true,
+      "json": "{\"kind\":\"activity\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f08\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"climbing\",\"durationMin\":90,\"cardioType\":null,\"climbStyle\":null,\"climbRuns\":null,\"climbGrade\":null,\"climbColor\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "activity: a route by its colour",
+      "valid": true,
+      "json": "{\"kind\":\"activity\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f08\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"climbing\",\"durationMin\":90,\"cardioType\":null,\"climbStyle\":\"route\",\"climbRuns\":12,\"climbGrade\":null,\"climbColor\":\"purple\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "activity: grade and colour together",
+      "valid": false,
+      "json": "{\"kind\":\"activity\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f08\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"climbing\",\"durationMin\":90,\"cardioType\":null,\"climbStyle\":\"boulder\",\"climbRuns\":12,\"climbGrade\":\"6a\",\"climbColor\":\"blue\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "activity: grade off the list",
+      "valid": false,
+      "json": "{\"kind\":\"activity\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f08\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"climbing\",\"durationMin\":90,\"cardioType\":null,\"climbStyle\":\"boulder\",\"climbRuns\":12,\"climbGrade\":\"9a\",\"climbColor\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "activity: grade at the top",
+      "valid": true,
+      "json": "{\"kind\":\"activity\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f08\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"climbing\",\"durationMin\":90,\"cardioType\":null,\"climbStyle\":\"boulder\",\"climbRuns\":12,\"climbGrade\":\"8c+\",\"climbColor\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "activity: grade in upper case",
+      "valid": false,
+      "json": "{\"kind\":\"activity\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f08\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"climbing\",\"durationMin\":90,\"cardioType\":null,\"climbStyle\":\"boulder\",\"climbRuns\":12,\"climbGrade\":\"6A\",\"climbColor\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "activity: unknown colour",
+      "valid": false,
+      "json": "{\"kind\":\"activity\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f08\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"climbing\",\"durationMin\":90,\"cardioType\":null,\"climbStyle\":\"boulder\",\"climbRuns\":12,\"climbGrade\":null,\"climbColor\":\"orange\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "activity: unknown style",
+      "valid": false,
+      "json": "{\"kind\":\"activity\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f08\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"climbing\",\"durationMin\":90,\"cardioType\":null,\"climbStyle\":\"ice\",\"climbRuns\":12,\"climbGrade\":\"6a\",\"climbColor\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "activity: runs -1",
+      "valid": false,
+      "json": "{\"kind\":\"activity\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f08\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"climbing\",\"durationMin\":90,\"cardioType\":null,\"climbStyle\":\"boulder\",\"climbRuns\":-1,\"climbGrade\":\"6a\",\"climbColor\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "activity: runs 0",
+      "valid": true,
+      "json": "{\"kind\":\"activity\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f08\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"climbing\",\"durationMin\":90,\"cardioType\":null,\"climbStyle\":\"boulder\",\"climbRuns\":0,\"climbGrade\":\"6a\",\"climbColor\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "activity: runs 200",
+      "valid": true,
+      "json": "{\"kind\":\"activity\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f08\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"climbing\",\"durationMin\":90,\"cardioType\":null,\"climbStyle\":\"boulder\",\"climbRuns\":200,\"climbGrade\":\"6a\",\"climbColor\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "activity: runs 201",
+      "valid": false,
+      "json": "{\"kind\":\"activity\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f08\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"climbing\",\"durationMin\":90,\"cardioType\":null,\"climbStyle\":\"boulder\",\"climbRuns\":201,\"climbGrade\":\"6a\",\"climbColor\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "activity: minutes 0",
+      "valid": false,
+      "json": "{\"kind\":\"activity\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f08\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"climbing\",\"durationMin\":0,\"cardioType\":null,\"climbStyle\":\"boulder\",\"climbRuns\":12,\"climbGrade\":\"6a\",\"climbColor\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "activity: minutes 5",
+      "valid": true,
+      "json": "{\"kind\":\"activity\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f08\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"climbing\",\"durationMin\":5,\"cardioType\":null,\"climbStyle\":\"boulder\",\"climbRuns\":12,\"climbGrade\":\"6a\",\"climbColor\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "activity: minutes 7",
+      "valid": false,
+      "json": "{\"kind\":\"activity\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f08\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"climbing\",\"durationMin\":7,\"cardioType\":null,\"climbStyle\":\"boulder\",\"climbRuns\":12,\"climbGrade\":\"6a\",\"climbColor\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "activity: minutes 480",
+      "valid": true,
+      "json": "{\"kind\":\"activity\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f08\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"climbing\",\"durationMin\":480,\"cardioType\":null,\"climbStyle\":\"boulder\",\"climbRuns\":12,\"climbGrade\":\"6a\",\"climbColor\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "activity: minutes 485",
+      "valid": false,
+      "json": "{\"kind\":\"activity\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f08\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"climbing\",\"durationMin\":485,\"cardioType\":null,\"climbStyle\":\"boulder\",\"climbRuns\":12,\"climbGrade\":\"6a\",\"climbColor\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "activity: minutes not whole",
+      "valid": false,
+      "json": "{\"kind\":\"activity\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f08\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"climbing\",\"durationMin\":7.5,\"cardioType\":null,\"climbStyle\":\"boulder\",\"climbRuns\":12,\"climbGrade\":\"6a\",\"climbColor\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "activity: a run",
+      "valid": true,
+      "json": "{\"kind\":\"activity\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f08\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"cardio\",\"durationMin\":45,\"cardioType\":\"run\",\"climbStyle\":null,\"climbRuns\":null,\"climbGrade\":null,\"climbColor\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "activity: cardio of every type",
+      "valid": true,
+      "json": "{\"kind\":\"activity\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f08\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"cardio\",\"durationMin\":45,\"cardioType\":\"other\",\"climbStyle\":null,\"climbRuns\":null,\"climbGrade\":null,\"climbColor\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "activity: cardio without its type",
+      "valid": false,
+      "json": "{\"kind\":\"activity\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f08\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"cardio\",\"durationMin\":45,\"cardioType\":null,\"climbStyle\":null,\"climbRuns\":null,\"climbGrade\":null,\"climbColor\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "activity: cardio of an unknown type",
+      "valid": false,
+      "json": "{\"kind\":\"activity\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f08\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"cardio\",\"durationMin\":45,\"cardioType\":\"yoga\",\"climbStyle\":null,\"climbRuns\":null,\"climbGrade\":null,\"climbColor\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "activity: cardio with a climb's fields",
+      "valid": false,
+      "json": "{\"kind\":\"activity\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f08\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"cardio\",\"durationMin\":45,\"cardioType\":\"run\",\"climbStyle\":null,\"climbRuns\":3,\"climbGrade\":null,\"climbColor\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "activity: a climb with a cardio type",
+      "valid": false,
+      "json": "{\"kind\":\"activity\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f08\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"climbing\",\"durationMin\":90,\"cardioType\":\"run\",\"climbStyle\":\"boulder\",\"climbRuns\":12,\"climbGrade\":\"6a\",\"climbColor\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "activity: unknown type",
+      "valid": false,
+      "json": "{\"kind\":\"activity\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f08\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"yoga\",\"durationMin\":90,\"cardioType\":null,\"climbStyle\":\"boulder\",\"climbRuns\":12,\"climbGrade\":\"6a\",\"climbColor\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "activity: id in upper case",
+      "valid": false,
+      "json": "{\"kind\":\"activity\",\"id\":\"019A5A3C-7B2E-7D41-9C3F-2B8E4D6A1F08\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"climbing\",\"durationMin\":90,\"cardioType\":null,\"climbStyle\":\"boulder\",\"climbRuns\":12,\"climbGrade\":\"6a\",\"climbColor\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "activity: dated tomorrow",
+      "valid": false,
+      "json": "{\"kind\":\"activity\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f08\",\"field\":\"fields\",\"date\":\"2026-11-07\",\"type\":\"climbing\",\"durationMin\":90,\"cardioType\":null,\"climbStyle\":\"boulder\",\"climbRuns\":12,\"climbGrade\":\"6a\",\"climbColor\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "activity: dated at the floor",
+      "valid": true,
+      "json": "{\"kind\":\"activity\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f08\",\"field\":\"fields\",\"date\":\"1900-01-01\",\"type\":\"climbing\",\"durationMin\":90,\"cardioType\":null,\"climbStyle\":\"boulder\",\"climbRuns\":12,\"climbGrade\":\"6a\",\"climbColor\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "activity: dated the day before the floor",
+      "valid": false,
+      "json": "{\"kind\":\"activity\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f08\",\"field\":\"fields\",\"date\":\"1899-12-31\",\"type\":\"climbing\",\"durationMin\":90,\"cardioType\":null,\"climbStyle\":\"boulder\",\"climbRuns\":12,\"climbGrade\":\"6a\",\"climbColor\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "activity removed: true",
+      "valid": true,
+      "json": "{\"kind\":\"activity\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f08\",\"field\":\"removed\",\"value\":true,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "activity removed: false",
+      "valid": true,
+      "json": "{\"kind\":\"activity\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f08\",\"field\":\"removed\",\"value\":false,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "activity removed: not a boolean",
+      "valid": false,
+      "json": "{\"kind\":\"activity\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f08\",\"field\":\"removed\",\"value\":\"yes\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "activity: unknown field",
+      "valid": false,
+      "json": "{\"kind\":\"activity\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f08\",\"field\":\"moved\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "steps: as the phone writes them",
+      "valid": true,
+      "json": "{\"kind\":\"steps\",\"date\":\"2026-11-06\",\"value\":8437,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "steps: -1",
+      "valid": false,
+      "json": "{\"kind\":\"steps\",\"date\":\"2026-11-06\",\"value\":-1,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "steps: 0",
+      "valid": true,
+      "json": "{\"kind\":\"steps\",\"date\":\"2026-11-06\",\"value\":0,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "steps: 100 000",
+      "valid": true,
+      "json": "{\"kind\":\"steps\",\"date\":\"2026-11-06\",\"value\":100000,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "steps: 100 001",
+      "valid": false,
+      "json": "{\"kind\":\"steps\",\"date\":\"2026-11-06\",\"value\":100001,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "steps: 1.5",
+      "valid": false,
+      "json": "{\"kind\":\"steps\",\"date\":\"2026-11-06\",\"value\":1.5,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "steps: deleted",
+      "valid": true,
+      "json": "{\"kind\":\"steps\",\"date\":\"2026-11-06\",\"value\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "steps: as text",
+      "valid": false,
+      "json": "{\"kind\":\"steps\",\"date\":\"2026-11-06\",\"value\":\"8437\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "steps: dated tomorrow",
+      "valid": false,
+      "json": "{\"kind\":\"steps\",\"date\":\"2026-11-07\",\"value\":8437,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "steps: dated at the floor",
+      "valid": true,
+      "json": "{\"kind\":\"steps\",\"date\":\"1900-01-01\",\"value\":8437,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "steps: dated the day before the floor",
+      "valid": false,
+      "json": "{\"kind\":\"steps\",\"date\":\"1899-12-31\",\"value\":8437,\"at\":\"2026-11-06T09:30:00.123Z\"}"
     }
   ],
   "isNewer": [
@@ -953,6 +2231,1193 @@
       "result": "yesterday"
     }
   ],
+  "mergeBody": [
+    {
+      "name": "weight: two writes for one key",
+      "stored": {},
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"weight\",\"date\":\"2026-11-06\",\"weightKg\":80.2,\"at\":\"2026-11-06T09:29:00.123Z\"}",
+        "{\"kind\":\"weight\",\"date\":\"2026-11-06\",\"weightKg\":80.2,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"weight\",\"date\":\"2026-11-06\",\"weightKg\":80.2,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "weight: two writes at one time, the later sent wins",
+      "stored": {},
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"weight\",\"date\":\"2026-11-06\",\"weightKg\":80.2,\"at\":\"2026-11-06T09:30:00.123Z\"}",
+        "{\"kind\":\"weight\",\"date\":\"2026-11-06\",\"weightKg\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"weight\",\"date\":\"2026-11-06\",\"weightKg\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "weight: a deletion against a later value",
+      "stored": {
+        "2026-11-06": "2026-11-06T09:31:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"weight\",\"date\":\"2026-11-06\",\"weightKg\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": []
+    },
+    {
+      "name": "weight: a deletion after the stored value",
+      "stored": {
+        "2026-11-06": "2026-11-06T09:29:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"weight\",\"date\":\"2026-11-06\",\"weightKg\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"weight\",\"date\":\"2026-11-06\",\"weightKg\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "weight: a write at the stored time",
+      "stored": {
+        "2026-11-06": "2026-11-06T09:30:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"weight\",\"date\":\"2026-11-06\",\"weightKg\":80.2,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": []
+    },
+    {
+      "name": "weight: a key never written",
+      "stored": {
+        "2026-11-06": null
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"weight\",\"date\":\"2026-11-06\",\"weightKg\":80.2,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"weight\",\"date\":\"2026-11-06\",\"weightKg\":80.2,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "weight: a time ahead of the clock",
+      "stored": {},
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"weight\",\"date\":\"2026-11-06\",\"weightKg\":80.2,\"at\":\"2026-11-06T10:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"weight\",\"date\":\"2026-11-06\",\"weightKg\":80.2,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "weight: a past write and an older one",
+      "stored": {
+        "2026-11-06": "2026-11-06T09:25:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"weight\",\"date\":\"2026-11-06\",\"weightKg\":80.2,\"at\":\"2026-11-06T09:28:00.123Z\"}",
+        "{\"kind\":\"weight\",\"date\":\"2026-11-06\",\"weightKg\":null,\"at\":\"2026-11-06T09:27:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"weight\",\"date\":\"2026-11-06\",\"weightKg\":80.2,\"at\":\"2026-11-06T09:28:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "weight: another key at the same time",
+      "stored": {
+        "2026-11-06": "2026-11-06T09:31:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"weight\",\"date\":\"2026-11-06\",\"weightKg\":80.2,\"at\":\"2026-11-06T09:30:00.123Z\"}",
+        "{\"kind\":\"weight\",\"date\":\"2026-11-05\",\"weightKg\":80.2,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"weight\",\"date\":\"2026-11-05\",\"weightKg\":80.2,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "measure: two writes for one key",
+      "stored": {},
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"waist\",\"value\":84.5,\"at\":\"2026-11-06T09:29:00.123Z\"}",
+        "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"waist\",\"value\":84.5,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"waist\",\"value\":84.5,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "measure: two writes at one time, the later sent wins",
+      "stored": {},
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"waist\",\"value\":84.5,\"at\":\"2026-11-06T09:30:00.123Z\"}",
+        "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"waist\",\"value\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"waist\",\"value\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "measure: a deletion against a later value",
+      "stored": {
+        "2026-11-06|waist": "2026-11-06T09:31:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"waist\",\"value\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": []
+    },
+    {
+      "name": "measure: a deletion after the stored value",
+      "stored": {
+        "2026-11-06|waist": "2026-11-06T09:29:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"waist\",\"value\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"waist\",\"value\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "measure: a write at the stored time",
+      "stored": {
+        "2026-11-06|waist": "2026-11-06T09:30:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"waist\",\"value\":84.5,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": []
+    },
+    {
+      "name": "measure: a key never written",
+      "stored": {
+        "2026-11-06|waist": null
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"waist\",\"value\":84.5,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"waist\",\"value\":84.5,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "measure: a time ahead of the clock",
+      "stored": {},
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"waist\",\"value\":84.5,\"at\":\"2026-11-06T10:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"waist\",\"value\":84.5,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "measure: a past write and an older one",
+      "stored": {
+        "2026-11-06|waist": "2026-11-06T09:25:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"waist\",\"value\":84.5,\"at\":\"2026-11-06T09:28:00.123Z\"}",
+        "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"waist\",\"value\":null,\"at\":\"2026-11-06T09:27:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"waist\",\"value\":84.5,\"at\":\"2026-11-06T09:28:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "measure: another key at the same time",
+      "stored": {
+        "2026-11-06|waist": "2026-11-06T09:31:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"waist\",\"value\":84.5,\"at\":\"2026-11-06T09:30:00.123Z\"}",
+        "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"hip\",\"value\":98,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"measure\",\"date\":\"2026-11-06\",\"field\":\"hip\",\"value\":98,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "intake: two writes for one key",
+      "stored": {},
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"protein\",\"value\":128,\"at\":\"2026-11-06T09:29:00.123Z\"}",
+        "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"protein\",\"value\":128,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"protein\",\"value\":128,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "intake: two writes at one time, the later sent wins",
+      "stored": {},
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"protein\",\"value\":128,\"at\":\"2026-11-06T09:30:00.123Z\"}",
+        "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"protein\",\"value\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"protein\",\"value\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "intake: a deletion against a later value",
+      "stored": {
+        "2026-11-06|protein": "2026-11-06T09:31:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"protein\",\"value\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": []
+    },
+    {
+      "name": "intake: a deletion after the stored value",
+      "stored": {
+        "2026-11-06|protein": "2026-11-06T09:29:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"protein\",\"value\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"protein\",\"value\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "intake: a write at the stored time",
+      "stored": {
+        "2026-11-06|protein": "2026-11-06T09:30:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"protein\",\"value\":128,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": []
+    },
+    {
+      "name": "intake: a key never written",
+      "stored": {
+        "2026-11-06|protein": null
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"protein\",\"value\":128,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"protein\",\"value\":128,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "intake: a time ahead of the clock",
+      "stored": {},
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"protein\",\"value\":128,\"at\":\"2026-11-06T10:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"protein\",\"value\":128,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "intake: a past write and an older one",
+      "stored": {
+        "2026-11-06|protein": "2026-11-06T09:25:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"protein\",\"value\":128,\"at\":\"2026-11-06T09:28:00.123Z\"}",
+        "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"protein\",\"value\":null,\"at\":\"2026-11-06T09:27:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"protein\",\"value\":128,\"at\":\"2026-11-06T09:28:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "intake: another key at the same time",
+      "stored": {
+        "2026-11-06|protein": "2026-11-06T09:31:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"protein\",\"value\":128,\"at\":\"2026-11-06T09:30:00.123Z\"}",
+        "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"kcal\",\"value\":1850,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"intake\",\"date\":\"2026-11-06\",\"field\":\"kcal\",\"value\":1850,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "supplementLog: two writes for one key",
+      "stored": {},
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"supplementLog\",\"supplementId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"date\":\"2026-11-06\",\"taken\":true,\"at\":\"2026-11-06T09:29:00.123Z\"}",
+        "{\"kind\":\"supplementLog\",\"supplementId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"date\":\"2026-11-06\",\"taken\":true,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"supplementLog\",\"supplementId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"date\":\"2026-11-06\",\"taken\":true,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "supplementLog: two writes at one time, the later sent wins",
+      "stored": {},
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"supplementLog\",\"supplementId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"date\":\"2026-11-06\",\"taken\":true,\"at\":\"2026-11-06T09:30:00.123Z\"}",
+        "{\"kind\":\"supplementLog\",\"supplementId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"date\":\"2026-11-06\",\"taken\":false,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"supplementLog\",\"supplementId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"date\":\"2026-11-06\",\"taken\":false,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "supplementLog: a deletion against a later value",
+      "stored": {
+        "019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06|2026-11-06": "2026-11-06T09:31:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"supplementLog\",\"supplementId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"date\":\"2026-11-06\",\"taken\":false,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": []
+    },
+    {
+      "name": "supplementLog: a deletion after the stored value",
+      "stored": {
+        "019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06|2026-11-06": "2026-11-06T09:29:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"supplementLog\",\"supplementId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"date\":\"2026-11-06\",\"taken\":false,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"supplementLog\",\"supplementId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"date\":\"2026-11-06\",\"taken\":false,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "supplementLog: a write at the stored time",
+      "stored": {
+        "019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06|2026-11-06": "2026-11-06T09:30:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"supplementLog\",\"supplementId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"date\":\"2026-11-06\",\"taken\":true,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": []
+    },
+    {
+      "name": "supplementLog: a key never written",
+      "stored": {
+        "019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06|2026-11-06": null
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"supplementLog\",\"supplementId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"date\":\"2026-11-06\",\"taken\":true,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"supplementLog\",\"supplementId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"date\":\"2026-11-06\",\"taken\":true,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "supplementLog: a time ahead of the clock",
+      "stored": {},
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"supplementLog\",\"supplementId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"date\":\"2026-11-06\",\"taken\":true,\"at\":\"2026-11-06T10:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"supplementLog\",\"supplementId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"date\":\"2026-11-06\",\"taken\":true,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "supplementLog: a past write and an older one",
+      "stored": {
+        "019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06|2026-11-06": "2026-11-06T09:25:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"supplementLog\",\"supplementId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"date\":\"2026-11-06\",\"taken\":true,\"at\":\"2026-11-06T09:28:00.123Z\"}",
+        "{\"kind\":\"supplementLog\",\"supplementId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"date\":\"2026-11-06\",\"taken\":false,\"at\":\"2026-11-06T09:27:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"supplementLog\",\"supplementId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"date\":\"2026-11-06\",\"taken\":true,\"at\":\"2026-11-06T09:28:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "supplementLog: another key at the same time",
+      "stored": {
+        "019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06|2026-11-06": "2026-11-06T09:31:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"supplementLog\",\"supplementId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"date\":\"2026-11-06\",\"taken\":true,\"at\":\"2026-11-06T09:30:00.123Z\"}",
+        "{\"kind\":\"supplementLog\",\"supplementId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"date\":\"2026-11-06\",\"taken\":true,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"supplementLog\",\"supplementId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"date\":\"2026-11-06\",\"taken\":true,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "annotation: two writes for one key",
+      "stored": {},
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"removed\",\"value\":false,\"at\":\"2026-11-06T09:29:00.123Z\"}",
+        "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"removed\",\"value\":false,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"removed\",\"value\":false,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "annotation: two writes at one time, the later sent wins",
+      "stored": {},
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"removed\",\"value\":false,\"at\":\"2026-11-06T09:30:00.123Z\"}",
+        "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"removed\",\"value\":true,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"removed\",\"value\":true,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "annotation: a deletion against a later value",
+      "stored": {
+        "019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07|removed": "2026-11-06T09:31:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"removed\",\"value\":true,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": []
+    },
+    {
+      "name": "annotation: a deletion after the stored value",
+      "stored": {
+        "019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07|removed": "2026-11-06T09:29:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"removed\",\"value\":true,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"removed\",\"value\":true,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "annotation: a write at the stored time",
+      "stored": {
+        "019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07|removed": "2026-11-06T09:30:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"removed\",\"value\":false,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": []
+    },
+    {
+      "name": "annotation: a key never written",
+      "stored": {
+        "019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07|removed": null
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"removed\",\"value\":false,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"removed\",\"value\":false,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "annotation: a time ahead of the clock",
+      "stored": {},
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"removed\",\"value\":false,\"at\":\"2026-11-06T10:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"removed\",\"value\":false,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "annotation: a past write and an older one",
+      "stored": {
+        "019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07|removed": "2026-11-06T09:25:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"removed\",\"value\":false,\"at\":\"2026-11-06T09:28:00.123Z\"}",
+        "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"removed\",\"value\":true,\"at\":\"2026-11-06T09:27:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"removed\",\"value\":false,\"at\":\"2026-11-06T09:28:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "annotation: another key at the same time",
+      "stored": {
+        "019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07|removed": "2026-11-06T09:31:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"removed\",\"value\":false,\"at\":\"2026-11-06T09:30:00.123Z\"}",
+        "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"deload\",\"label\":\"Semaine légère\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"annotation\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"deload\",\"label\":\"Semaine légère\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "profile: two writes for one key",
+      "stored": {},
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"profile\",\"field\":\"height\",\"value\":172,\"at\":\"2026-11-06T09:29:00.123Z\"}",
+        "{\"kind\":\"profile\",\"field\":\"height\",\"value\":172,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"profile\",\"field\":\"height\",\"value\":172,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "profile: two writes at one time, the later sent wins",
+      "stored": {},
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"profile\",\"field\":\"height\",\"value\":172,\"at\":\"2026-11-06T09:30:00.123Z\"}",
+        "{\"kind\":\"profile\",\"field\":\"height\",\"value\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"profile\",\"field\":\"height\",\"value\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "profile: a deletion against a later value",
+      "stored": {
+        "height": "2026-11-06T09:31:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"profile\",\"field\":\"height\",\"value\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": []
+    },
+    {
+      "name": "profile: a deletion after the stored value",
+      "stored": {
+        "height": "2026-11-06T09:29:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"profile\",\"field\":\"height\",\"value\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"profile\",\"field\":\"height\",\"value\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "profile: a write at the stored time",
+      "stored": {
+        "height": "2026-11-06T09:30:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"profile\",\"field\":\"height\",\"value\":172,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": []
+    },
+    {
+      "name": "profile: a key never written",
+      "stored": {
+        "height": null
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"profile\",\"field\":\"height\",\"value\":172,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"profile\",\"field\":\"height\",\"value\":172,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "profile: a time ahead of the clock",
+      "stored": {},
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"profile\",\"field\":\"height\",\"value\":172,\"at\":\"2026-11-06T10:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"profile\",\"field\":\"height\",\"value\":172,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "profile: a past write and an older one",
+      "stored": {
+        "height": "2026-11-06T09:25:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"profile\",\"field\":\"height\",\"value\":172,\"at\":\"2026-11-06T09:28:00.123Z\"}",
+        "{\"kind\":\"profile\",\"field\":\"height\",\"value\":null,\"at\":\"2026-11-06T09:27:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"profile\",\"field\":\"height\",\"value\":172,\"at\":\"2026-11-06T09:28:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "profile: another key at the same time",
+      "stored": {
+        "height": "2026-11-06T09:31:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"profile\",\"field\":\"height\",\"value\":172,\"at\":\"2026-11-06T09:30:00.123Z\"}",
+        "{\"kind\":\"profile\",\"field\":\"formula\",\"value\":\"female\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"profile\",\"field\":\"formula\",\"value\":\"female\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "target: two writes for one key",
+      "stored": {},
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"target\",\"minPct\":0.5,\"maxPct\":0.75,\"at\":\"2026-11-06T09:29:00.123Z\"}",
+        "{\"kind\":\"target\",\"minPct\":0.5,\"maxPct\":0.75,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"target\",\"minPct\":0.5,\"maxPct\":0.75,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "target: two writes at one time, the later sent wins",
+      "stored": {},
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"target\",\"minPct\":0.5,\"maxPct\":0.75,\"at\":\"2026-11-06T09:30:00.123Z\"}",
+        "{\"kind\":\"target\",\"minPct\":0.25,\"maxPct\":1,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"target\",\"minPct\":0.25,\"maxPct\":1,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "target: a deletion against a later value",
+      "stored": {
+        "target": "2026-11-06T09:31:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"target\",\"minPct\":0.25,\"maxPct\":1,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": []
+    },
+    {
+      "name": "target: a deletion after the stored value",
+      "stored": {
+        "target": "2026-11-06T09:29:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"target\",\"minPct\":0.25,\"maxPct\":1,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"target\",\"minPct\":0.25,\"maxPct\":1,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "target: a write at the stored time",
+      "stored": {
+        "target": "2026-11-06T09:30:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"target\",\"minPct\":0.5,\"maxPct\":0.75,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": []
+    },
+    {
+      "name": "target: a key never written",
+      "stored": {
+        "target": null
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"target\",\"minPct\":0.5,\"maxPct\":0.75,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"target\",\"minPct\":0.5,\"maxPct\":0.75,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "target: a time ahead of the clock",
+      "stored": {},
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"target\",\"minPct\":0.5,\"maxPct\":0.75,\"at\":\"2026-11-06T10:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"target\",\"minPct\":0.5,\"maxPct\":0.75,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "target: a past write and an older one",
+      "stored": {
+        "target": "2026-11-06T09:25:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"target\",\"minPct\":0.5,\"maxPct\":0.75,\"at\":\"2026-11-06T09:28:00.123Z\"}",
+        "{\"kind\":\"target\",\"minPct\":0.25,\"maxPct\":1,\"at\":\"2026-11-06T09:27:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"target\",\"minPct\":0.5,\"maxPct\":0.75,\"at\":\"2026-11-06T09:28:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "target: another key at the same time",
+      "stored": {
+        "target": "2026-11-06T09:31:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"target\",\"minPct\":0.5,\"maxPct\":0.75,\"at\":\"2026-11-06T09:30:00.123Z\"}",
+        "{\"kind\":\"target\",\"minPct\":0.5,\"maxPct\":1,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": []
+    },
+    {
+      "name": "supplement: two writes for one key",
+      "stored": {},
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"supplement\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"field\":\"name\",\"value\":\"Créatine\",\"at\":\"2026-11-06T09:29:00.123Z\"}",
+        "{\"kind\":\"supplement\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"field\":\"name\",\"value\":\"Créatine\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"supplement\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"field\":\"name\",\"value\":\"Créatine\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "supplement: two writes at one time, the later sent wins",
+      "stored": {},
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"supplement\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"field\":\"name\",\"value\":\"Créatine\",\"at\":\"2026-11-06T09:30:00.123Z\"}",
+        "{\"kind\":\"supplement\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"field\":\"name\",\"value\":\"Créatine monohydrate\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"supplement\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"field\":\"name\",\"value\":\"Créatine monohydrate\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "supplement: a deletion against a later value",
+      "stored": {
+        "019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06|name": "2026-11-06T09:31:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"supplement\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"field\":\"name\",\"value\":\"Créatine monohydrate\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": []
+    },
+    {
+      "name": "supplement: a deletion after the stored value",
+      "stored": {
+        "019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06|name": "2026-11-06T09:29:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"supplement\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"field\":\"name\",\"value\":\"Créatine monohydrate\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"supplement\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"field\":\"name\",\"value\":\"Créatine monohydrate\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "supplement: a write at the stored time",
+      "stored": {
+        "019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06|name": "2026-11-06T09:30:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"supplement\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"field\":\"name\",\"value\":\"Créatine\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": []
+    },
+    {
+      "name": "supplement: a key never written",
+      "stored": {
+        "019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06|name": null
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"supplement\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"field\":\"name\",\"value\":\"Créatine\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"supplement\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"field\":\"name\",\"value\":\"Créatine\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "supplement: a time ahead of the clock",
+      "stored": {},
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"supplement\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"field\":\"name\",\"value\":\"Créatine\",\"at\":\"2026-11-06T10:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"supplement\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"field\":\"name\",\"value\":\"Créatine\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "supplement: a past write and an older one",
+      "stored": {
+        "019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06|name": "2026-11-06T09:25:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"supplement\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"field\":\"name\",\"value\":\"Créatine\",\"at\":\"2026-11-06T09:28:00.123Z\"}",
+        "{\"kind\":\"supplement\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"field\":\"name\",\"value\":\"Créatine monohydrate\",\"at\":\"2026-11-06T09:27:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"supplement\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"field\":\"name\",\"value\":\"Créatine\",\"at\":\"2026-11-06T09:28:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "supplement: another key at the same time",
+      "stored": {
+        "019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06|name": "2026-11-06T09:31:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"supplement\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"field\":\"name\",\"value\":\"Créatine\",\"at\":\"2026-11-06T09:30:00.123Z\"}",
+        "{\"kind\":\"supplement\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"field\":\"removed\",\"value\":true,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"supplement\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"field\":\"removed\",\"value\":true,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "supplement: a removal against a later rename",
+      "stored": {
+        "019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06|name": "2026-11-06T09:31:00.123Z",
+        "019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06|removed": null
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"supplement\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"field\":\"removed\",\"value\":true,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"supplement\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"field\":\"removed\",\"value\":true,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "supplement: a removal and a rename in one batch",
+      "stored": {},
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"supplement\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"field\":\"removed\",\"value\":true,\"at\":\"2026-11-06T09:30:00.123Z\"}",
+        "{\"kind\":\"supplement\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"field\":\"name\",\"value\":\"Zinc\",\"at\":\"2026-11-06T09:31:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"supplement\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"field\":\"removed\",\"value\":true,\"at\":\"2026-11-06T09:30:00.123Z\"}",
+        "{\"kind\":\"supplement\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"field\":\"name\",\"value\":\"Zinc\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "supplement: a removal against a later put back",
+      "stored": {
+        "019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06|removed": "2026-11-06T09:31:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"supplement\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"field\":\"removed\",\"value\":true,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": []
+    },
+    {
+      "name": "activity: two writes for one key",
+      "stored": {},
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"activity\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f08\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"climbing\",\"durationMin\":90,\"cardioType\":null,\"climbStyle\":\"boulder\",\"climbRuns\":12,\"climbGrade\":\"6a\",\"climbColor\":null,\"at\":\"2026-11-06T09:29:00.123Z\"}",
+        "{\"kind\":\"activity\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f08\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"climbing\",\"durationMin\":90,\"cardioType\":null,\"climbStyle\":\"boulder\",\"climbRuns\":12,\"climbGrade\":\"6a\",\"climbColor\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"activity\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f08\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"climbing\",\"durationMin\":90,\"cardioType\":null,\"climbStyle\":\"boulder\",\"climbRuns\":12,\"climbGrade\":\"6a\",\"climbColor\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "activity: two writes at one time, the later sent wins",
+      "stored": {},
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"activity\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f08\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"climbing\",\"durationMin\":90,\"cardioType\":null,\"climbStyle\":\"boulder\",\"climbRuns\":12,\"climbGrade\":\"6a\",\"climbColor\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}",
+        "{\"kind\":\"activity\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f08\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"climbing\",\"durationMin\":120,\"cardioType\":null,\"climbStyle\":\"boulder\",\"climbRuns\":12,\"climbGrade\":\"6b\",\"climbColor\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"activity\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f08\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"climbing\",\"durationMin\":120,\"cardioType\":null,\"climbStyle\":\"boulder\",\"climbRuns\":12,\"climbGrade\":\"6b\",\"climbColor\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "activity: a deletion against a later value",
+      "stored": {
+        "019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f08|fields": "2026-11-06T09:31:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"activity\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f08\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"climbing\",\"durationMin\":120,\"cardioType\":null,\"climbStyle\":\"boulder\",\"climbRuns\":12,\"climbGrade\":\"6b\",\"climbColor\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": []
+    },
+    {
+      "name": "activity: a deletion after the stored value",
+      "stored": {
+        "019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f08|fields": "2026-11-06T09:29:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"activity\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f08\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"climbing\",\"durationMin\":120,\"cardioType\":null,\"climbStyle\":\"boulder\",\"climbRuns\":12,\"climbGrade\":\"6b\",\"climbColor\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"activity\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f08\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"climbing\",\"durationMin\":120,\"cardioType\":null,\"climbStyle\":\"boulder\",\"climbRuns\":12,\"climbGrade\":\"6b\",\"climbColor\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "activity: a write at the stored time",
+      "stored": {
+        "019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f08|fields": "2026-11-06T09:30:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"activity\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f08\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"climbing\",\"durationMin\":90,\"cardioType\":null,\"climbStyle\":\"boulder\",\"climbRuns\":12,\"climbGrade\":\"6a\",\"climbColor\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": []
+    },
+    {
+      "name": "activity: a key never written",
+      "stored": {
+        "019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f08|fields": null
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"activity\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f08\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"climbing\",\"durationMin\":90,\"cardioType\":null,\"climbStyle\":\"boulder\",\"climbRuns\":12,\"climbGrade\":\"6a\",\"climbColor\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"activity\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f08\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"climbing\",\"durationMin\":90,\"cardioType\":null,\"climbStyle\":\"boulder\",\"climbRuns\":12,\"climbGrade\":\"6a\",\"climbColor\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "activity: a time ahead of the clock",
+      "stored": {},
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"activity\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f08\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"climbing\",\"durationMin\":90,\"cardioType\":null,\"climbStyle\":\"boulder\",\"climbRuns\":12,\"climbGrade\":\"6a\",\"climbColor\":null,\"at\":\"2026-11-06T10:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"activity\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f08\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"climbing\",\"durationMin\":90,\"cardioType\":null,\"climbStyle\":\"boulder\",\"climbRuns\":12,\"climbGrade\":\"6a\",\"climbColor\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "activity: a past write and an older one",
+      "stored": {
+        "019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f08|fields": "2026-11-06T09:25:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"activity\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f08\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"climbing\",\"durationMin\":90,\"cardioType\":null,\"climbStyle\":\"boulder\",\"climbRuns\":12,\"climbGrade\":\"6a\",\"climbColor\":null,\"at\":\"2026-11-06T09:28:00.123Z\"}",
+        "{\"kind\":\"activity\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f08\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"climbing\",\"durationMin\":120,\"cardioType\":null,\"climbStyle\":\"boulder\",\"climbRuns\":12,\"climbGrade\":\"6b\",\"climbColor\":null,\"at\":\"2026-11-06T09:27:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"activity\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f08\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"climbing\",\"durationMin\":90,\"cardioType\":null,\"climbStyle\":\"boulder\",\"climbRuns\":12,\"climbGrade\":\"6a\",\"climbColor\":null,\"at\":\"2026-11-06T09:28:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "activity: another key at the same time",
+      "stored": {
+        "019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f08|fields": "2026-11-06T09:31:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"activity\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f08\",\"field\":\"fields\",\"date\":\"2026-11-06\",\"type\":\"climbing\",\"durationMin\":90,\"cardioType\":null,\"climbStyle\":\"boulder\",\"climbRuns\":12,\"climbGrade\":\"6a\",\"climbColor\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}",
+        "{\"kind\":\"activity\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f08\",\"field\":\"removed\",\"value\":true,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"activity\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f08\",\"field\":\"removed\",\"value\":true,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "activity: a removal against a later edit",
+      "stored": {
+        "019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f08|fields": "2026-11-06T09:31:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"activity\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f08\",\"field\":\"removed\",\"value\":true,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"activity\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f08\",\"field\":\"removed\",\"value\":true,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "steps: two writes for one key",
+      "stored": {},
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"steps\",\"date\":\"2026-11-06\",\"value\":8437,\"at\":\"2026-11-06T09:29:00.123Z\"}",
+        "{\"kind\":\"steps\",\"date\":\"2026-11-06\",\"value\":8437,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"steps\",\"date\":\"2026-11-06\",\"value\":8437,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "steps: two writes at one time, the later sent wins",
+      "stored": {},
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"steps\",\"date\":\"2026-11-06\",\"value\":8437,\"at\":\"2026-11-06T09:30:00.123Z\"}",
+        "{\"kind\":\"steps\",\"date\":\"2026-11-06\",\"value\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"steps\",\"date\":\"2026-11-06\",\"value\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "steps: a deletion against a later value",
+      "stored": {
+        "2026-11-06": "2026-11-06T09:31:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"steps\",\"date\":\"2026-11-06\",\"value\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": []
+    },
+    {
+      "name": "steps: a deletion after the stored value",
+      "stored": {
+        "2026-11-06": "2026-11-06T09:29:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"steps\",\"date\":\"2026-11-06\",\"value\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"steps\",\"date\":\"2026-11-06\",\"value\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "steps: a write at the stored time",
+      "stored": {
+        "2026-11-06": "2026-11-06T09:30:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"steps\",\"date\":\"2026-11-06\",\"value\":8437,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": []
+    },
+    {
+      "name": "steps: a key never written",
+      "stored": {
+        "2026-11-06": null
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"steps\",\"date\":\"2026-11-06\",\"value\":8437,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"steps\",\"date\":\"2026-11-06\",\"value\":8437,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "steps: a time ahead of the clock",
+      "stored": {},
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"steps\",\"date\":\"2026-11-06\",\"value\":8437,\"at\":\"2026-11-06T10:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"steps\",\"date\":\"2026-11-06\",\"value\":8437,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "steps: a past write and an older one",
+      "stored": {
+        "2026-11-06": "2026-11-06T09:25:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"steps\",\"date\":\"2026-11-06\",\"value\":8437,\"at\":\"2026-11-06T09:28:00.123Z\"}",
+        "{\"kind\":\"steps\",\"date\":\"2026-11-06\",\"value\":null,\"at\":\"2026-11-06T09:27:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"steps\",\"date\":\"2026-11-06\",\"value\":8437,\"at\":\"2026-11-06T09:28:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "steps: another key at the same time",
+      "stored": {
+        "2026-11-06": "2026-11-06T09:31:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"steps\",\"date\":\"2026-11-06\",\"value\":8437,\"at\":\"2026-11-06T09:30:00.123Z\"}",
+        "{\"kind\":\"steps\",\"date\":\"2026-11-05\",\"value\":12000,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"steps\",\"date\":\"2026-11-05\",\"value\":12000,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    },
+    {
+      "name": "steps: a day's steps from two devices, the other later",
+      "stored": {
+        "2026-11-06": "2026-11-06T09:31:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"steps\",\"date\":\"2026-11-06\",\"value\":9100,\"at\":\"2026-11-06T09:29:00.123Z\"}",
+        "{\"kind\":\"steps\",\"date\":\"2026-11-06\",\"value\":8437,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": []
+    },
+    {
+      "name": "steps: a day's steps from two devices, this one later",
+      "stored": {
+        "2026-11-06": "2026-11-06T09:29:00.123Z"
+      },
+      "now": "2026-11-06T09:30:00.123Z",
+      "changes": [
+        "{\"kind\":\"steps\",\"date\":\"2026-11-06\",\"value\":8437,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ],
+      "kept": [
+        "{\"kind\":\"steps\",\"date\":\"2026-11-06\",\"value\":8437,\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      ]
+    }
+  ],
+  "bodyAnswer": "{\"cursor\":\"45\",\"weights\":[{\"date\":\"2026-11-06\",\"weightKg\":80.2,\"at\":\"2026-11-06T09:30:00.123Z\"},{\"date\":\"2026-11-05\",\"weightKg\":null,\"at\":\"2026-11-06T09:30:00.123Z\"}],\"measures\":[{\"date\":\"2026-11-06\",\"waistCm\":84.5,\"waistAt\":\"2026-11-06T09:30:00.123Z\",\"neckCm\":null,\"neckAt\":null,\"hipCm\":null,\"hipAt\":\"2026-11-06T09:30:00.123Z\"}],\"intake\":[{\"date\":\"2026-11-06\",\"kcal\":1850,\"kcalAt\":\"2026-11-06T09:30:00.123Z\",\"proteinG\":null,\"proteinAt\":null}],\"supplements\":[{\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"name\":\"Créatine\",\"nameAt\":\"2026-11-06T09:30:00.123Z\",\"kind\":\"creatine\",\"removed\":false,\"removedAt\":null},{\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"name\":\"Oméga 3\",\"nameAt\":\"2026-11-06T09:30:00.123Z\",\"kind\":\"other\",\"removed\":true,\"removedAt\":\"2026-11-06T09:30:00.123Z\"}],\"supplementLogs\":[{\"supplementId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"date\":\"2026-11-06\",\"taken\":true,\"at\":\"2026-11-06T09:30:00.123Z\"}],\"annotations\":[{\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07\",\"date\":\"2026-11-06\",\"type\":\"diet_break\",\"label\":null,\"fieldsAt\":\"2026-11-06T09:30:00.123Z\",\"removed\":false,\"removedAt\":null}],\"steps\":[{\"date\":\"2026-11-06\",\"steps\":8437,\"stepsAt\":\"2026-11-06T09:30:00.123Z\"},{\"date\":\"2026-11-05\",\"steps\":null,\"stepsAt\":\"2026-11-06T09:30:00.123Z\"}],\"activities\":[{\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f08\",\"date\":\"2026-11-06\",\"type\":\"climbing\",\"durationMin\":90,\"cardioType\":null,\"climbStyle\":\"route\",\"climbRuns\":8,\"climbGrade\":null,\"climbColor\":\"purple\",\"fieldsAt\":\"2026-11-06T09:30:00.123Z\",\"removed\":false,\"removedAt\":null},{\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06\",\"date\":\"2026-11-05\",\"type\":\"cardio\",\"durationMin\":45,\"cardioType\":\"run\",\"climbStyle\":null,\"climbRuns\":null,\"climbGrade\":null,\"climbColor\":null,\"fieldsAt\":\"2026-11-06T09:30:00.123Z\",\"removed\":true,\"removedAt\":\"2026-11-06T09:30:00.123Z\"}],\"workouts\":[],\"sets\":[],\"target\":{\"minPct\":0.5,\"maxPct\":1,\"at\":null},\"profile\":{\"formula\":\"male\",\"formulaAt\":\"2026-11-06T09:30:00.123Z\",\"birthYear\":1990,\"birthYearAt\":\"2026-11-06T09:30:00.123Z\",\"heightCm\":null,\"heightAt\":null},\"rejected\":[],\"hasMore\":false}",
   "ids": [
     {
       "id": "019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00",
@@ -1048,5 +3513,553 @@
       "ms": -11670955200000,
       "iso": "1600-02-29T12:00:00.000Z"
     }
-  ]
+  ],
+  "predicates": {
+    "bounds": {
+      "target": {
+        "min": 0.25,
+        "max": 1,
+        "step": 0.05,
+        "gap": 0.1
+      },
+      "ageYears": {
+        "min": 15,
+        "max": 100
+      },
+      "heightCm": {
+        "min": 120,
+        "max": 230
+      },
+      "supplementNameMax": 40,
+      "activityMinutes": {
+        "min": 5,
+        "max": 480,
+        "step": 5
+      },
+      "climbRuns": {
+        "min": 0,
+        "max": 200
+      },
+      "steps": {
+        "min": 0,
+        "max": 100000,
+        "step": 100
+      },
+      "activityKinds": [
+        "cardio",
+        "climbing"
+      ],
+      "cardioTypes": [
+        "run",
+        "bike",
+        "row",
+        "walk",
+        "swim",
+        "other"
+      ],
+      "climbStyles": [
+        "boulder",
+        "route"
+      ],
+      "climbColors": [
+        "yellow",
+        "green",
+        "blue",
+        "red",
+        "black",
+        "purple",
+        "white"
+      ],
+      "climbGrades": [
+        "5a",
+        "5a+",
+        "5b",
+        "5b+",
+        "5c",
+        "5c+",
+        "6a",
+        "6a+",
+        "6b",
+        "6b+",
+        "6c",
+        "6c+",
+        "7a",
+        "7a+",
+        "7b",
+        "7b+",
+        "7c",
+        "7c+",
+        "8a",
+        "8a+",
+        "8b",
+        "8b+",
+        "8c",
+        "8c+"
+      ]
+    },
+    "isActivityMinutes": [
+      {
+        "value": -5,
+        "result": false
+      },
+      {
+        "value": 0,
+        "result": false
+      },
+      {
+        "value": 4,
+        "result": false
+      },
+      {
+        "value": 5,
+        "result": true
+      },
+      {
+        "value": 7,
+        "result": false
+      },
+      {
+        "value": 10,
+        "result": true
+      },
+      {
+        "value": 475,
+        "result": true
+      },
+      {
+        "value": 480,
+        "result": true
+      },
+      {
+        "value": 485,
+        "result": false
+      }
+    ],
+    "isClimbRuns": [
+      {
+        "value": -1,
+        "result": false
+      },
+      {
+        "value": 0,
+        "result": true
+      },
+      {
+        "value": 1,
+        "result": true
+      },
+      {
+        "value": 200,
+        "result": true
+      },
+      {
+        "value": 201,
+        "result": false
+      }
+    ],
+    "isSteps": [
+      {
+        "value": -1,
+        "result": false
+      },
+      {
+        "value": 0,
+        "result": true
+      },
+      {
+        "value": 1,
+        "result": true
+      },
+      {
+        "value": 8437,
+        "result": true
+      },
+      {
+        "value": 100000,
+        "result": true
+      },
+      {
+        "value": 100001,
+        "result": false
+      }
+    ],
+    "isProfileHeight": [
+      {
+        "value": 0,
+        "result": false
+      },
+      {
+        "value": 119,
+        "result": false
+      },
+      {
+        "value": 120,
+        "result": true
+      },
+      {
+        "value": 170,
+        "result": true
+      },
+      {
+        "value": 230,
+        "result": true
+      },
+      {
+        "value": 231,
+        "result": false
+      }
+    ],
+    "isSupplementName": [
+      {
+        "value": "",
+        "result": false
+      },
+      {
+        "value": " ",
+        "result": false
+      },
+      {
+        "value": "D",
+        "result": true
+      },
+      {
+        "value": " Créatine ",
+        "result": true
+      },
+      {
+        "value": "Vitamine D",
+        "result": true
+      },
+      {
+        "value": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "result": true
+      },
+      {
+        "value": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "result": false
+      },
+      {
+        "value": " xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx ",
+        "result": true
+      },
+      {
+        "value": "💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪",
+        "result": true
+      },
+      {
+        "value": "💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪💪",
+        "result": false
+      },
+      {
+        "value": "Vitamine\nD",
+        "result": false
+      },
+      {
+        "value": "Vitamine\rD",
+        "result": false
+      },
+      {
+        "value": "Vitamine\tD",
+        "result": true
+      },
+      {
+        "value": " Zinc ",
+        "result": true
+      }
+    ],
+    "birthYearRange": [
+      {
+        "today": "2026-11-06",
+        "min": 1926,
+        "max": 2011
+      },
+      {
+        "today": "2026-01-01",
+        "min": 1926,
+        "max": 2011
+      },
+      {
+        "today": "2026-12-31",
+        "min": 1926,
+        "max": 2011
+      },
+      {
+        "today": "2000-02-29",
+        "min": 1900,
+        "max": 1985
+      }
+    ],
+    "isBirthYear": [
+      {
+        "year": 1925,
+        "today": "2026-11-06",
+        "result": false
+      },
+      {
+        "year": 1926,
+        "today": "2026-11-06",
+        "result": true
+      },
+      {
+        "year": 1990,
+        "today": "2026-11-06",
+        "result": true
+      },
+      {
+        "year": 2011,
+        "today": "2026-11-06",
+        "result": true
+      },
+      {
+        "year": 2012,
+        "today": "2026-11-06",
+        "result": false
+      },
+      {
+        "year": 1925,
+        "today": "2026-01-01",
+        "result": false
+      },
+      {
+        "year": 1926,
+        "today": "2026-01-01",
+        "result": true
+      },
+      {
+        "year": 1990,
+        "today": "2026-01-01",
+        "result": true
+      },
+      {
+        "year": 2011,
+        "today": "2026-01-01",
+        "result": true
+      },
+      {
+        "year": 2012,
+        "today": "2026-01-01",
+        "result": false
+      },
+      {
+        "year": 1925,
+        "today": "2026-12-31",
+        "result": false
+      },
+      {
+        "year": 1926,
+        "today": "2026-12-31",
+        "result": true
+      },
+      {
+        "year": 1990,
+        "today": "2026-12-31",
+        "result": true
+      },
+      {
+        "year": 2011,
+        "today": "2026-12-31",
+        "result": true
+      },
+      {
+        "year": 2012,
+        "today": "2026-12-31",
+        "result": false
+      },
+      {
+        "year": 1899,
+        "today": "2000-02-29",
+        "result": false
+      },
+      {
+        "year": 1900,
+        "today": "2000-02-29",
+        "result": true
+      },
+      {
+        "year": 1990,
+        "today": "2000-02-29",
+        "result": false
+      },
+      {
+        "year": 1985,
+        "today": "2000-02-29",
+        "result": true
+      },
+      {
+        "year": 1986,
+        "today": "2000-02-29",
+        "result": false
+      }
+    ],
+    "isActivityFields": [
+      {
+        "fields": {
+          "type": "climbing",
+          "durationMin": 90,
+          "cardioType": null,
+          "climbStyle": "boulder",
+          "climbRuns": 12,
+          "climbGrade": "6a",
+          "climbColor": null
+        },
+        "result": true
+      },
+      {
+        "fields": {
+          "type": "climbing",
+          "durationMin": 90,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null
+        },
+        "result": true
+      },
+      {
+        "fields": {
+          "type": "climbing",
+          "durationMin": 90,
+          "cardioType": null,
+          "climbStyle": "boulder",
+          "climbRuns": 12,
+          "climbGrade": null,
+          "climbColor": "white"
+        },
+        "result": true
+      },
+      {
+        "fields": {
+          "type": "climbing",
+          "durationMin": 90,
+          "cardioType": null,
+          "climbStyle": "boulder",
+          "climbRuns": 12,
+          "climbGrade": "6a",
+          "climbColor": "white"
+        },
+        "result": false
+      },
+      {
+        "fields": {
+          "type": "climbing",
+          "durationMin": 90,
+          "cardioType": null,
+          "climbStyle": "boulder",
+          "climbRuns": 12,
+          "climbGrade": "5a",
+          "climbColor": null
+        },
+        "result": true
+      },
+      {
+        "fields": {
+          "type": "climbing",
+          "durationMin": 90,
+          "cardioType": null,
+          "climbStyle": "boulder",
+          "climbRuns": 12,
+          "climbGrade": "8c+",
+          "climbColor": null
+        },
+        "result": true
+      },
+      {
+        "fields": {
+          "type": "climbing",
+          "durationMin": 90,
+          "cardioType": null,
+          "climbStyle": "boulder",
+          "climbRuns": 12,
+          "climbGrade": "4c",
+          "climbColor": null
+        },
+        "result": false
+      },
+      {
+        "fields": {
+          "type": "climbing",
+          "durationMin": 90,
+          "cardioType": null,
+          "climbStyle": "boulder",
+          "climbRuns": 201,
+          "climbGrade": "6a",
+          "climbColor": null
+        },
+        "result": false
+      },
+      {
+        "fields": {
+          "type": "climbing",
+          "durationMin": 485,
+          "cardioType": null,
+          "climbStyle": "boulder",
+          "climbRuns": 12,
+          "climbGrade": "6a",
+          "climbColor": null
+        },
+        "result": false
+      },
+      {
+        "fields": {
+          "type": "climbing",
+          "durationMin": 90,
+          "cardioType": "bike",
+          "climbStyle": "boulder",
+          "climbRuns": 12,
+          "climbGrade": "6a",
+          "climbColor": null
+        },
+        "result": false
+      },
+      {
+        "fields": {
+          "type": "cardio",
+          "durationMin": 90,
+          "cardioType": "swim",
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null
+        },
+        "result": true
+      },
+      {
+        "fields": {
+          "type": "cardio",
+          "durationMin": 90,
+          "cardioType": "swim",
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": "6a",
+          "climbColor": null
+        },
+        "result": false
+      },
+      {
+        "fields": {
+          "type": "cardio",
+          "durationMin": 90,
+          "cardioType": null,
+          "climbStyle": null,
+          "climbRuns": null,
+          "climbGrade": null,
+          "climbColor": null
+        },
+        "result": false
+      },
+      {
+        "fields": {
+          "type": "yoga",
+          "durationMin": 90,
+          "cardioType": null,
+          "climbStyle": "boulder",
+          "climbRuns": 12,
+          "climbGrade": "6a",
+          "climbColor": null
+        },
+        "result": false
+      }
+    ]
+  }
 }

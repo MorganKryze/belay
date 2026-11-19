@@ -26,10 +26,14 @@ private actor FakeHealth: HealthWriting {
   private var duringSave: (@Sendable () throws -> Void)?
   private var duringRelate: (@Sendable () throws -> Void)?
 
+  /// What a delete answers by sync id; `.removed` for any other.
+  var deleting: [String: HealthOutcome] = [:]
+
   func set(
     access: HealthAccess? = nil, covered: Bool? = nil, saving: HealthOutcome? = nil,
-    relating: HealthOutcome? = nil
+    relating: HealthOutcome? = nil, deleting: [String: HealthOutcome]? = nil
   ) {
+    if let deleting { self.deleting = deleting }
     if let relating { self.relating = relating }
     if let access { answer = access }
     if let covered { self.covered = covered }
@@ -61,7 +65,7 @@ private actor FakeHealth: HealthWriting {
   func delete(syncId: String) async -> HealthOutcome {
     calls += 1
     deleted.append(syncId)
-    return .removed
+    return deleting[syncId] ?? .removed
   }
 
   func overlaps(startedAt: Int64, endedAt: Int64) async -> Bool {
@@ -77,6 +81,32 @@ private actor FakeHealth: HealthWriting {
     relateTries.append(effortSyncId)
     if relating == .written { related.append((score, syncId, effortSyncId)) }
     return relating
+  }
+
+  private(set) var weighed: [(kg: Double, at: Int64, syncId: String, version: Int64)] = []
+
+  func saveWeighIn(kg: Double, at: Int64, syncId: String, version: Int64) async -> HealthOutcome {
+    calls += 1
+    weighed.append((kg, at, syncId, version))
+    return .written
+  }
+
+  func deleteWeighIn(syncId: String) async -> HealthOutcome {
+    calls += 1
+    deleted.append(syncId)
+    return .removed
+  }
+
+  func readWeighIns(anchor: String?, since: Int64) async -> (
+    samples: [HealthSample], anchor: String
+  )? {
+    calls += 1
+    return nil
+  }
+
+  func readDaySteps(days: [String], timeZone: TimeZone) async -> [String: Double?]? {
+    calls += 1
+    return nil
   }
 }
 
@@ -115,7 +145,8 @@ private actor FakeHealth: HealthWriting {
   }
 
   private func run(_ store: AccountStore, _ health: FakeHealth, at: Date? = nil) async {
-    await runHealth(store: store, writer: health, owner: owner, now: at ?? now)
+    await runHealth(
+      store: store, writer: health, owner: owner, now: at ?? now, timeZone: Days.paris)
   }
 
   @Test func theSwitchStartsOffAndRemembersWhenItWentOn() throws {
@@ -238,6 +269,104 @@ private actor FakeHealth: HealthWriting {
       Issue.record("the record says removed")
       return
     }
+  }
+
+  /// A deleted session takes its effort score with it: left alone, the score would stay in Health
+  /// with no workout. A session whose effort never went deletes its workout only.
+  @Test func deletedSessionTakesItsEffort() async throws {
+    let store = try storeOn()
+    let without = Fixture.id(40)
+    try finished(store, w)
+    try finished(store, without, start: 40, end: 70)
+    try store.giveEffort(workoutId: w, floor: 3)
+    try store.settleEffort(workoutId: w)
+    let health = FakeHealth()
+    await run(store, health)
+    #expect(await health.related.count == 1)
+    #expect(await health.saved.count == 2)
+
+    try edit(store, w, at: 80, .removed(true))
+    try edit(store, without, at: 80, .removed(true))
+    await run(store, health)
+    await run(store, health)
+
+    let deleted = await health.deleted
+    #expect(Set(deleted) == [sessionKey(w), healthEffortSyncId(w), sessionKey(without)])
+    #expect(deleted.count == 3)
+    guard case .removed = try store.healthWritten()[sessionKey(w)] else {
+      Issue.record("the record says removed")
+      return
+    }
+  }
+
+  /// A score Health would not delete keeps the session's removal for the next run, which tries
+  /// both again: deleting a workout already gone is answered as done.
+  @Test func anEffortHealthKeepsIsTriedAgain() async throws {
+    let store = try storeOn()
+    try finished(store, w)
+    try store.giveEffort(workoutId: w, floor: 3)
+    try store.settleEffort(workoutId: w)
+    let health = FakeHealth()
+    await run(store, health)
+
+    try edit(store, w, at: 40, .removed(true))
+    await health.set(deleting: [healthEffortSyncId(w): .failed])
+    await run(store, health)
+    guard case .workout = try store.healthWritten()[sessionKey(w)] else {
+      Issue.record("the record still holds the workout")
+      return
+    }
+
+    await health.set(deleting: [:])
+    await run(store, health)
+    #expect(
+      await health.deleted
+        == [sessionKey(w), healthEffortSyncId(w), sessionKey(w), healthEffortSyncId(w)])
+    guard case .removed = try store.healthWritten()[sessionKey(w)] else {
+      Issue.record("the record says removed")
+      return
+    }
+  }
+
+  /// Effort access withdrawn: the score cannot be deleted, so the workout's removal is recorded
+  /// anyway, and the next run tries neither again.
+  @Test func effortDeniedStillRecordsTheRemoval() async throws {
+    let store = try storeOn()
+    try finished(store, w)
+    try store.giveEffort(workoutId: w, floor: 3)
+    try store.settleEffort(workoutId: w)
+    let health = FakeHealth()
+    await run(store, health)
+    #expect(await health.related.count == 1)
+
+    try edit(store, w, at: 40, .removed(true))
+    await health.set(
+      access: HealthAccess(available: true, workouts: .allowed, effort: .denied),
+      deleting: [healthEffortSyncId(w): .denied])
+    await run(store, health)
+    await run(store, health)
+    #expect(await health.deleted == [sessionKey(w)])
+    guard case .removed = try store.healthWritten()[sessionKey(w)] else {
+      Issue.record("the record says removed")
+      return
+    }
+  }
+
+  /// An effort the store never marked related may still sit in Health (related, then the mark
+  /// failed): its score is deleted all the same.
+  @Test func anUnmarkedEffortIsDeletedToo() async throws {
+    let store = try storeOn()
+    try finished(store, w)
+    try store.giveEffort(workoutId: w, floor: 3)
+    try store.settleEffort(workoutId: w)
+    let health = FakeHealth()
+    await health.set(relating: .failed)
+    await run(store, health)
+    #expect(try store.effort(workoutId: w)?.relatedAt == nil)
+
+    try edit(store, w, at: 40, .removed(true))
+    await run(store, health)
+    #expect(await health.deleted == [sessionKey(w), healthEffortSyncId(w)])
   }
 
   @Test func anOverlapIsSkippedAndLookedAtAgainOnlyAfterAChange() async throws {
@@ -505,13 +634,6 @@ private actor FakeHealth: HealthWriting {
     #expect(try store.healthWritten().isEmpty)
   }
 
-  /// The one request made at turn-on: workouts and their effort to write, workouts to read for
-  /// the overlap check. A request naming fewer types to write takes back the right to write them.
-  @Test func theRequestNamesWorkoutAndEffortToShareAndWorkoutToRead() {
-    #expect(HealthAccessRequest.share == [.workouts, .effort])
-    #expect(HealthAccessRequest.read == [.workouts])
-  }
-
   @Test func v3OpensOnAFileTheV2SchemaMade() throws {
     let folder = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
     defer { try? FileManager.default.removeItem(at: folder) }
@@ -530,14 +652,119 @@ private actor FakeHealth: HealthWriting {
             try Rows.encode(SessionEffort(workoutId: w, floor: 4, settled: true, relatedAt: nil)),
           ])
       }
+      // This step keeps the cursor; only v4 restarts the pull.
+      try Schema.migrator.migrate(old, upTo: "v3")
+      #expect(try old.read(AccountStore.cursor) == "7")
       try old.close()
     }
     let store = try AccountStore.open(userId: userId, origin: origin, in: folder)
-    #expect(try store.cursor() == "7")
+    #expect(try store.cursor() == "0")
     #expect(try store.effort(workoutId: w)?.floor == 4)
     #expect(try store.healthSettings() == HealthSettings(on: false, turnedOnAt: nil))
     try store.recordHealthWritten(sessionKey(w), .removed(version: 3))
     #expect(try store.healthWritten() == [sessionKey(w): .removed(version: 3)])
+  }
+
+  // Weigh-ins: the day's weigh-in at 08:00 in Paris, under the account-tagged identifier.
+
+  private func weighing(_ store: AccountStore, at minutes: Double = 0) -> BodyActions {
+    BodyActions(
+      store: store, now: { Fixture.t0.addingTimeInterval(minutes * 60) }, timeZone: Days.paris)
+  }
+
+  private var weighInsAllowed: HealthAccess {
+    HealthAccess(available: true, workouts: .allowed, effort: .allowed, weighIns: .allowed)
+  }
+
+  @Test func weighInWrittenOnce() async throws {
+    let store = try storeOn()
+    try weighing(store).weigh(date: "2026-11-06", kg: 80.4)
+    let health = FakeHealth()
+    await health.set(access: weighInsAllowed)
+
+    await run(store, health)
+    await run(store, health)
+
+    let weighed = await health.weighed
+    #expect(weighed.count == 1)
+    #expect(weighed.first?.kg == 80.4)
+    #expect(weighed.first?.at == Instant.milliseconds("2026-11-06T07:00:00.000Z"))
+    #expect(weighed.first?.syncId == "belay-weighing-\(owner)-2026-11-06")
+    #expect(try store.healthWritten()[weighingKey("2026-11-06")] != nil)
+  }
+
+  @Test func weighInSampleReplaced() async throws {
+    let store = try storeOn()
+    try weighing(store).weigh(date: "2026-11-06", kg: 80.4)
+    let health = FakeHealth()
+    await health.set(access: weighInsAllowed)
+    await run(store, health)
+
+    try weighing(store, at: 5).weigh(date: "2026-11-06", kg: 80.1)
+    await run(store, health)
+
+    let weighed = await health.weighed
+    #expect(weighed.count == 2)
+    #expect(weighed.last?.kg == 80.1)
+    #expect(weighed.last?.syncId == weighed.first?.syncId)
+    #expect((weighed.last?.version ?? 0) > (weighed.first?.version ?? 0))
+  }
+
+  @Test func deletedDayDeleted() async throws {
+    let store = try storeOn()
+    try weighing(store).weigh(date: "2026-11-06", kg: 80.4)
+    let health = FakeHealth()
+    await health.set(access: weighInsAllowed)
+    await run(store, health)
+
+    try weighing(store, at: 5).deleteWeight(date: "2026-11-06")
+    await run(store, health)
+    await run(store, health)
+
+    #expect(await health.deleted == ["belay-weighing-\(owner)-2026-11-06"])
+    guard case .removed = try store.healthWritten()[weighingKey("2026-11-06")] else {
+      Issue.record("the record holds the removal")
+      return
+    }
+  }
+
+  @Test func weighInsWaitWhileWritingThemIsNotAllowed() async throws {
+    let store = try storeOn()
+    try weighing(store).weigh(date: "2026-11-06", kg: 80.4)
+    let health = FakeHealth()
+
+    await run(store, health)
+
+    #expect(await health.weighed.isEmpty)
+  }
+
+  /// A request naming a type only to read takes back the right to write it: every request names
+  /// every written type, and reads what the overlap check and the import need.
+  @Test func requestNamesFullSet() {
+    #expect(HealthAccessRequest.share == [.workouts, .effort, .bodyMass])
+    #expect(HealthAccessRequest.read == [.workouts, .bodyMass, .stepCount])
+  }
+
+  /// Activities stay on the phone and the server: a run with Health fully allowed writes none.
+  @Test func activityNeverWrittenToHealth() async throws {
+    let store = try storeOn()
+    try weighing(store).logActivity(
+      ActivityInput(
+        id: Fixture.id(40), date: "2026-11-06",
+        fields: ActivityFields(type: "climbing", durationMin: 90, climbStyle: "boulder")))
+    try weighing(store).logActivity(
+      ActivityInput(
+        id: Fixture.id(41), date: "2026-11-06",
+        fields: ActivityFields(type: "cardio", durationMin: 30, cardioType: "run")))
+    let health = FakeHealth()
+    await health.set(access: weighInsAllowed)
+
+    await run(store, health)
+
+    #expect(await health.saved.isEmpty)
+    #expect(await health.weighed.isEmpty)
+    #expect(await health.related.isEmpty)
+    #expect(try store.healthWritten().isEmpty)
   }
 
   @Test func anUnknownWrittenStateIsRefused() {

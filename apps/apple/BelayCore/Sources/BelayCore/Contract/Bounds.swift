@@ -35,4 +35,54 @@ public enum Bounds {
   public static let maxChanges = 500
   /// How far ahead of its own clock the server takes a session's time, in milliseconds.
   public static let clockSlackMs = 5 * 60_000
+
+  /// A weigh-in: 20 to 400 kg, on a 0.1 kg grid (`isWeighingKg`).
+  public static let weighInKgMin = 20.0
+  public static let weighInKgMax = 400.0
+  /// A measure is kept to the tenth of a centimetre within its field's bounds (`isMeasureCm`).
+  public static func measureCm(_ field: MeasureField) -> ClosedRange<Double> {
+    switch field {
+    case .waist: 40...200
+    case .neck: 20...80
+    case .hip: 50...200
+    }
+  }
+  /// A day's intake, in whole kilocalories and grams of protein, from 0.
+  public static let kcalMax = 10_000
+  public static let proteinGMax = 500
+  /// Counted in UTF-16 units, as the web counts them.
+  public static let annotationLabelMax = 80
+  /// No body entry is dated before 1900.
+  public static let minDate = "1900-01-01"
+
+  /// The loss range, in percent per week: 0.25 to 1 on a 0.05 grid, its bounds 0.1 apart at least.
+  public static let target = (min: 0.25, max: 1.0, step: 0.05)
+  public static let targetGap = 0.1
+  /// The tools take ages 15 to 100; the profile's birth year follows from them.
+  public static let ageYears = 15...100
+  /// The profile's height, in whole centimetres.
+  public static let heightCm = 120...230
+  /// Counted in UTF-16 units once trimmed, as the web counts them.
+  public static let supplementNameMax = 40
+  /// An activity lasts 5 to 480 minutes, by 5.
+  public static let activityMinutes = 5...480
+  public static let activityMinutesStep = 5
+  public static let climbRuns = 0...200
+  /// Whole steps; the stepper's 100 is only its nudge, a typed 8 437 is fine.
+  public static let steps = 0...100_000
+  public static let stepsStep = 100
+  /// The contract's words for an activity, in the web's order.
+  public static let activityKinds = ["cardio", "climbing"]
+  public static let cardioTypes = ["run", "bike", "row", "walk", "swim", "other"]
+  public static let climbStyles = ["boulder", "route"]
+  public static let climbColors = ["yellow", "green", "blue", "red", "black", "purple", "white"]
+  /// The French scale, the same list for boulders and routes: 5a, 5a+, 5b … 8c, 8c+.
+  public static let climbGrades = ["5", "6", "7", "8"].flatMap { n in
+    ["a", "b", "c"].flatMap { l in ["\(n)\(l)", "\(n)\(l)+"] }
+  }
+}
+
+extension ClosedRange<Int> {
+  /// The same bounds for a value typed with decimals: an age of 15 to 100 is 15.0 to 100.0.
+  var asDoubles: ClosedRange<Double> { Double(lowerBound)...Double(upperBound) }
 }

@@ -1,9 +1,12 @@
 import BelayCore
 import SwiftUI
 
-/// The session paused: its time and the rest left, standing still.
+/// The session paused: its time standing still, and the rest left, standing still too unless this
+/// phone lets the rest run through a pause.
 struct PausedCard: View {
     let paused: Paused
+    /// Where the rest runs to while paused; nil when the pause stops it.
+    let restRunsTo: Date?
     let reduce: Bool
 
     var body: some View {
@@ -25,7 +28,17 @@ struct PausedCard: View {
                 .foregroundStyle(.ink)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, 4)
-            if let left = paused.restLeftMs {
+            if paused.restLeftMs != nil, let end = restRunsTo {
+                TimelineView(.periodic(from: .now, by: 1)) { context in
+                    let left = max(0, Int(end.timeIntervalSince(context.date).rounded(.up)))
+                    Text("Le repos continue\u{202F}: \(RestCard.clock(left))", tableName: "Reglages")
+                        .font(.subheadline)
+                        .monospacedDigit()
+                        .foregroundStyle(.muted)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityIdentifier("paused-rest")
+                }
+            } else if let left = paused.restLeftMs {
                 Text("Repos arrêté à \(RestCard.clock(max(0, Int((Double(left) / 1000).rounded(.up)))))", tableName: "SessionEnd")
                     .font(.subheadline)
                     .monospacedDigit()

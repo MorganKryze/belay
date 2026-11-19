@@ -6,6 +6,7 @@ import {
   finishedSpan,
   type HealthPlanInput,
   historyCounts,
+  IMPORT_STAMP_MS,
   ownerOf,
   planHealth,
   sampleTime,
@@ -80,7 +81,6 @@ const input = (over: Partial<HealthPlanInput> = {}): HealthPlanInput => ({
   weights: [],
   settings: SETTINGS,
   written: {},
-  filled: {},
   allowed: { workouts: true, weighings: true },
   now: NOW,
   owner: OWNER,
@@ -285,9 +285,19 @@ describe("which weigh-ins Health holds", () => {
     expect(day(b)).toMatchObject({ kind: "weighing", owner: b, date: "2026-10-25" });
   });
 
-  it("a day the import filled is never written back, even edited", () => {
-    const filled = { "2026-10-25": { at: "x", startedAt: 0 } };
-    expect(planHealth(input({ weights: [weight("2026-10-25", 81)], filled }))).toEqual([]);
+  it("a weigh-in the import stamped, on any device, stays the scale's until the person changes it", () => {
+    const start = new Date(2026, 9, 25).getTime();
+    const day = (at: number) =>
+      planHealth(input({ weights: [weight("2026-10-25", 81, new Date(at).toISOString())] }));
+    // At its day's start, or a few ms on where an earlier reading replaced it.
+    expect(day(start)).toEqual([]);
+    expect(day(start + 2)).toEqual([]);
+    expect(day(start + IMPORT_STAMP_MS - 1)).toEqual([]);
+    // Changed by the person, or typed at its first second or late the day before: written.
+    for (const at of [new Date(2026, 9, 25, 7, 30).getTime(), start + IMPORT_STAMP_MS, start - 1])
+      expect(day(at)).toEqual([
+        expect.objectContaining({ kind: "weighing", date: "2026-10-25", kg: 81 }),
+      ]);
   });
 });
 
@@ -329,7 +339,6 @@ describe("versions and outcomes", () => {
         weights: [weight("2026-10-01", 81), weight("2026-10-21", 80)],
         settings: SETTINGS,
         written: {},
-        filled: {},
       }),
     ).toEqual({ sessions: 1, weighings: 1 });
   });

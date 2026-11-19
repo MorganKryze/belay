@@ -33,6 +33,29 @@ private struct Vectors: Decodable {
     let minTime: String
     let clockSlackMs: Int
     let maxChanges: Int
+    let weighInKg: Range
+    let measureCm: [String: Range]
+    let intake: [String: Range]
+    let annotationLabelMax: Int
+    let minDate: String
+  }
+  /// The phone's clock and zone the verdicts were made with.
+  struct Clock: Decodable {
+    let now: String
+    let zone: String
+    let today: String
+  }
+  struct DayCase: Decodable {
+    let now: String
+    let today: String
+    let tomorrow: String
+  }
+  struct MergeCase: Decodable {
+    let name: String
+    let stored: [String: String?]
+    let now: String
+    let changes: [String]
+    let kept: [String]
   }
   struct ChangeCase: Decodable {
     let name: String
@@ -57,13 +80,67 @@ private struct Vectors: Decodable {
     let ms: Int64
     let iso: String
   }
+  /// The rules behind the new kinds' validity, asked directly, with the constants they read.
+  struct Predicates: Decodable {
+    struct IntRange: Decodable {
+      let min: Int
+      let max: Int
+      let step: Int?
+    }
+    struct TSBounds: Decodable {
+      let target: Range
+      let ageYears: IntRange
+      let heightCm: IntRange
+      let supplementNameMax: Int
+      let activityMinutes: IntRange
+      let climbRuns: IntRange
+      let steps: IntRange
+      let activityKinds: [String]
+      let cardioTypes: [String]
+      let climbStyles: [String]
+      let climbColors: [String]
+      let climbGrades: [String]
+    }
+    struct Case<Value: Decodable>: Decodable {
+      let value: Value
+      let result: Bool
+    }
+    struct YearRange: Decodable {
+      let today: String
+      let min: Int
+      let max: Int
+    }
+    struct YearCase: Decodable {
+      let year: Int
+      let today: String
+      let result: Bool
+    }
+    struct FieldsCase: Decodable {
+      let fields: ActivityFields
+      let result: Bool
+    }
+    let bounds: TSBounds
+    let isActivityMinutes: [Case<Int>]
+    let isClimbRuns: [Case<Int>]
+    let isSteps: [Case<Int>]
+    let isProfileHeight: [Case<Int>]
+    let isSupplementName: [Case<String>]
+    let birthYearRange: [YearRange]
+    let isBirthYear: [YearCase]
+    let isActivityFields: [FieldsCase]
+  }
 
   let bounds: TSBounds
+  let clock: Clock
+  let days: [DayCase]
   let changes: [ChangeCase]
+  let mergeBody: [MergeCase]
+  let bodyAnswer: String
   let isNewer: [NewerCase]
   let clampAt: [ClampCase]
   let ids: [IdCase]
   let instants: [InstantCase]
+  let predicates: Predicates
 
   static func load() throws -> Vectors {
     let url = try #require(
@@ -73,8 +150,18 @@ private struct Vectors: Decodable {
 }
 
 private func date(ms: Int64) -> Date { Date(timeIntervalSince1970: Double(ms) / 1000) }
+private let paris = TimeZone(identifier: "Europe/Paris")!
 private func json(_ data: Data) throws -> JSONValue {
   try JSONDecoder().decode(JSONValue.self, from: data)
+}
+/// The value with every null member of an object left out.
+private func withoutNulls(_ value: JSONValue) -> JSONValue {
+  switch value {
+  case .object(let members):
+    .object(members.filter { $0.value != .null }.mapValues(withoutNulls))
+  case .array(let items): .array(items.map(withoutNulls))
+  default: value
+  }
 }
 
 struct ContractVectorTests {
@@ -104,14 +191,224 @@ struct ContractVectorTests {
     #expect(Bounds.minTime == ts.minTime)
     #expect(Bounds.clockSlackMs == ts.clockSlackMs)
 
-    // Validity reads no clock for these two kinds; any time gives the same verdict.
-    let now = Date()
+    #expect(Bounds.weighInKgMin == ts.weighInKg.min)
+    #expect(Bounds.weighInKgMax == ts.weighInKg.max)
+    // isWeighingKg and isMeasureCm count tenths, as TS does: a new step must be ported there.
+    #expect(ts.weighInKg.step == 0.1)
+    for field in MeasureField.allCases {
+      let range = try #require(ts.measureCm[field.rawValue])
+      #expect(Bounds.measureCm(field) == range.min...range.max, "\(field)")
+    }
+    #expect(ts.measureCm.count == MeasureField.allCases.count)
+    #expect(ts.intake["kcal"]?.min == 0 && ts.intake["protein"]?.min == 0)
+    #expect(ts.intake["kcal"]?.max == Double(Bounds.kcalMax))
+    #expect(ts.intake["protein"]?.max == Double(Bounds.proteinGMax))
+    #expect(Bounds.annotationLabelMax == ts.annotationLabelMax)
+    #expect(Bounds.minDate == ts.minDate)
+
+    // The verdicts were made on one clock in one zone: the body entries are dated by its day.
+    #expect(vectors.clock.zone == paris.identifier)
+    let now = try #require(Instant.date(vectors.clock.now))
     for vector in vectors.changes {
       // A change the contract cannot even read is refused, as the TypeScript rule refuses it.
       let change = try? ChangeJSON.decode(Data(vector.json.utf8))
-      let verdict = change.map { isValid($0, now: now) } ?? false
+      let verdict = change.map { isValid($0, now: now, timeZone: paris) } ?? false
       #expect(verdict == vector.valid, "\(vector.name)")
     }
+  }
+
+  @Test func todayIsThePersonsDay() throws {
+    for vector in try Vectors.load().days {
+      let now = try #require(Instant.date(vector.now))
+      let on = { (date: String) in
+        isValid(.weight(WeightChange(date: date, weightKg: 80, at: vector.now)), now: now,
+          timeZone: paris)
+      }
+      #expect(on(vector.today), "\(vector.now)")
+      #expect(!on(vector.tomorrow), "\(vector.now)")
+    }
+  }
+
+  /// The body kinds, one test each: every case of the kind reads as that kind, gets the
+  /// TypeScript verdict, encodes back to the same JSON, and merges as the shared merge does.
+  @Test(arguments: [
+    "weight", "measure", "intake", "supplementLog", "annotation", "profile", "target", "supplement",
+    "activity", "steps",
+  ])
+  func bodyKind(_ kind: String) throws {
+    let vectors = try Vectors.load()
+    let now = try #require(Instant.date(vectors.clock.now))
+    let cases = vectors.changes.filter {
+      $0.name.hasPrefix("\(kind): ") || $0.name.hasPrefix("\(kind) removed: ")
+    }
+    try #require(cases.count >= 7)
+    for vector in cases {
+      let change = try? ChangeJSON.decode(Data(vector.json.utf8))
+      if vector.valid {
+        let read = try #require(change, "\(vector.name)")
+        #expect(Self.kind(of: read) == kind, "\(vector.name)")
+        #expect(try json(ChangeJSON.encode(read)) == json(Data(vector.json.utf8)), "\(vector.name)")
+      }
+      let verdict = change.map { isValid($0, now: now, timeZone: paris) } ?? false
+      #expect(verdict == vector.valid, "\(vector.name)")
+    }
+
+    let merges = vectors.mergeBody.filter { $0.name.hasPrefix("\(kind): ") }
+    try #require(merges.count >= 2)
+    for vector in merges {
+      let changes = try vector.changes.map { try ChangeJSON.decode(Data($0.utf8)) }
+      let stored = vector.stored.compactMapValues { $0 }
+      let at = try #require(Instant.date(vector.now))
+      let kept = try Self.merged(changes, stored: stored, now: at)
+      #expect(
+        try kept.map { try json(ChangeJSON.encode($0)) }
+          == vector.kept.map { try json(Data($0.utf8)) }, "\(vector.name)")
+    }
+  }
+
+  private static func kind(of change: Change) -> String {
+    switch change {
+    case .weight: "weight"
+    case .measure: "measure"
+    case .intake: "intake"
+    case .supplementLog: "supplementLog"
+    case .annotation: "annotation"
+    case .profile: "profile"
+    case .target: "target"
+    case .supplement: "supplement"
+    case .activity: "activity"
+    case .steps: "steps"
+    case .workout: "workout"
+    case .set: "set"
+    case .activeProgram: "activeProgram"
+    }
+  }
+
+  /// A batch of one kind through the merge, typed as that kind.
+  private static func merged(_ changes: [Change], stored: [String: String], now: Date) throws
+    -> [Change]
+  {
+    func run<C: KeyedChange>(_ pick: (Change) -> C?, _ wrap: (C) -> Change) throws -> [Change] {
+      let typed = changes.compactMap(pick)
+      try #require(typed.count == changes.count, "one kind per batch")
+      return mergeFields(stored: stored, changes: typed, now: now).map(wrap)
+    }
+    switch changes.first {
+    case .weight:
+      return try run({ if case .weight(let c) = $0 { c } else { nil } }, Change.weight)
+    case .measure:
+      return try run({ if case .measure(let c) = $0 { c } else { nil } }, Change.measure)
+    case .intake:
+      return try run({ if case .intake(let c) = $0 { c } else { nil } }, Change.intake)
+    case .supplementLog:
+      return try run(
+        { if case .supplementLog(let c) = $0 { c } else { nil } }, Change.supplementLog)
+    case .annotation:
+      return try run({ if case .annotation(let c) = $0 { c } else { nil } }, Change.annotation)
+    case .profile:
+      return try run({ if case .profile(let c) = $0 { c } else { nil } }, Change.profile)
+    case .target:
+      return try run({ if case .target(let c) = $0 { c } else { nil } }, Change.target)
+    case .supplement:
+      return try run({ if case .supplement(let c) = $0 { c } else { nil } }, Change.supplement)
+    case .activity:
+      return try run({ if case .activity(let c) = $0 { c } else { nil } }, Change.activity)
+    case .steps:
+      return try run({ if case .steps(let c) = $0 { c } else { nil } }, Change.steps)
+    default:
+      Issue.record("not a body kind")
+      return []
+    }
+  }
+
+  @Test func readsTheBodyRows() throws {
+    let answer = Data(try Vectors.load().bodyAnswer.utf8)
+    let response = try JSONDecoder().decode(SyncResponse.self, from: answer)
+    guard case .object(let source) = try json(answer) else {
+      Issue.record("not an object")
+      return
+    }
+    // Each row encodes back to the server's, its unwritten values left out rather than null.
+    func same<T: Encodable>(_ rows: T?, _ key: String) throws {
+      let encoded = try json(JSONEncoder().encode(rows))
+      #expect(encoded == withoutNulls(source[key] ?? .null), "\(key)")
+    }
+    try same(response.weights, "weights")
+    try same(response.measures, "measures")
+    try same(response.intake, "intake")
+    try same(response.supplements, "supplements")
+    try same(response.supplementLogs, "supplementLogs")
+    try same(response.annotations, "annotations")
+    try same(response.target, "target")
+    try same(response.profile, "profile")
+    try same(response.steps, "steps")
+    try same(response.activities, "activities")
+    #expect(response.steps?.last?.steps == nil)
+    #expect(response.activities.first?.climbColor == "purple")
+    #expect(response.activities.last?.removedAt != nil)
+    #expect(response.weights?.last?.weightKg == nil)
+    #expect(response.supplements?.first?.kind == .creatine)
+    #expect(response.annotations?.first?.type == .dietBreak)
+    #expect(response.profile?.formula == .male)
+    #expect(response.target?.at == nil)
+  }
+
+  @Test func predicates() throws {
+    let p = try Vectors.load().predicates
+    let ts = p.bounds
+    #expect(Bounds.target.min == ts.target.min && Bounds.target.max == ts.target.max)
+    #expect(Bounds.target.step == ts.target.step)
+    #expect(Bounds.targetGap == 0.1)
+    #expect(Bounds.ageYears == ts.ageYears.min...ts.ageYears.max)
+    #expect(Bounds.heightCm == ts.heightCm.min...ts.heightCm.max)
+    #expect(Bounds.supplementNameMax == ts.supplementNameMax)
+    #expect(Bounds.activityMinutes == ts.activityMinutes.min...ts.activityMinutes.max)
+    #expect(Bounds.activityMinutesStep == ts.activityMinutes.step)
+    #expect(Bounds.climbRuns == ts.climbRuns.min...ts.climbRuns.max)
+    #expect(Bounds.steps == ts.steps.min...ts.steps.max)
+    #expect(Bounds.stepsStep == ts.steps.step)
+    #expect(Bounds.activityKinds == ts.activityKinds)
+    #expect(Bounds.cardioTypes == ts.cardioTypes)
+    #expect(Bounds.climbStyles == ts.climbStyles)
+    #expect(Bounds.climbColors == ts.climbColors)
+    #expect(Bounds.climbGrades == ts.climbGrades)
+    for c in p.isActivityMinutes { #expect(isActivityMinutes(c.value) == c.result, "\(c.value)") }
+    for c in p.isClimbRuns { #expect(isClimbRuns(c.value) == c.result, "\(c.value)") }
+    for c in p.isSteps { #expect(isSteps(c.value) == c.result, "\(c.value)") }
+    for c in p.isProfileHeight { #expect(isProfileHeight(c.value) == c.result, "\(c.value)") }
+    for c in p.isSupplementName { #expect(isSupplementName(c.value) == c.result, "\(c.value)") }
+    for c in p.birthYearRange {
+      #expect(birthYearRange(today: c.today) == c.min...c.max, "\(c.today)")
+    }
+    for c in p.isBirthYear {
+      #expect(isBirthYear(c.year, today: c.today) == c.result, "\(c.year) on \(c.today)")
+    }
+    for c in p.isActivityFields { #expect(isActivityFields(c.fields) == c.result, "\(c.fields)") }
+  }
+
+  @Test func readsBodyValuesANewerServerAdds() throws {
+    let answer = """
+      {"cursor":"46","workouts":[],"sets":[],"activities":[],"rejected":[],"hasMore":false,
+      "supplements":[{"id":"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f06","name":"Magnésium",
+      "nameAt":"2026-11-06T09:30:00.123Z","kind":"mineral","removed":false,"removedAt":null}],
+      "annotations":[{"id":"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07","date":"2026-11-06",
+      "type":"travel","label":null,"fieldsAt":"2026-11-06T09:30:00.123Z","removed":false,
+      "removedAt":null}],"target":null,
+      "profile":{"formula":"other","formulaAt":null,"birthYear":null,"birthYearAt":null,
+      "heightCm":null,"heightAt":null}}
+      """
+    let response = try JSONDecoder().decode(SyncResponse.self, from: Data(answer.utf8))
+    #expect(response.supplements?.first?.kind == .unknown("mineral"))
+    #expect(response.annotations?.first?.type == .unknown("travel"))
+    #expect(response.profile?.formula == .unknown("other"))
+    #expect(response.target == nil)
+    // An older answer without the body rows still reads.
+    #expect(response.weights == nil && response.measures == nil)
+    // The phone never writes a type it does not know.
+    let note = AnnotationChange(
+      id: "019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f07", at: "2026-11-06T09:30:00.123Z",
+      edit: .fields(date: "2026-11-06", type: .unknown("travel"), label: nil))
+    #expect(!isValid(.annotation(note), now: Date(), timeZone: paris))
   }
 
   @Test func encodesLikeTypeScript() throws {
@@ -126,6 +423,41 @@ struct ContractVectorTests {
       // Parsed values, so key order does not count, but every key, null and number does.
       #expect(try json(encoded) == json(bytes), "\(vector.name)")
       #expect(try ChangeJSON.decode(encoded) == change, "\(vector.name)")
+    }
+  }
+
+  /// The active program's cases, which the phone queues as the very bytes the web writes.
+  private func activeProgramCases() throws -> [Vectors.ChangeCase] {
+    let cases = try Vectors.load().changes.filter { $0.name.hasPrefix("activeProgram:") }
+    try #require(cases.count >= 10)
+    return cases
+  }
+
+  @Test func activeProgramEncodesLikeTypeScript() throws {
+    for vector in try activeProgramCases() where vector.valid {
+      let change = try ChangeJSON.decode(Data(vector.json.utf8))
+      guard case .activeProgram(let pointer) = change else {
+        Issue.record("not read as an active program: \(vector.name)")
+        continue
+      }
+      // Byte for byte, key order included: the queue sends what it holds as it is.
+      let text = String(decoding: try ChangeJSON.encode(change), as: UTF8.self)
+      #expect(text == vector.json, "\(vector.name)")
+      let built = ActiveProgramChange(programId: pointer.programId, at: pointer.at)
+      #expect(try ChangeJSON.encode(.activeProgram(built)) == Data(vector.json.utf8))
+    }
+  }
+
+  @Test func activeProgramValidity() throws {
+    // Its time is any change's: never held to the clock, so a phone ahead of the server, or a
+    // pointer from 1899, gets the verdict the web gives.
+    let clocks = [date(ms: 0), date(ms: 1_793_957_400_123), date(ms: 4_102_444_800_000)]
+    for vector in try activeProgramCases() {
+      let change = try? ChangeJSON.decode(Data(vector.json.utf8))
+      for now in clocks {
+        let verdict = change.map { isValid($0, now: now, timeZone: paris) } ?? false
+        #expect(verdict == vector.valid, "\(vector.name)")
+      }
     }
   }
 
@@ -243,12 +575,18 @@ struct ContractVectorTests {
     known.rule = nil
     let at = "2026-11-06T09:30:00.123Z"
     let id = "019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00"
-    #expect(isValid(.workout(.init(id: id, at: at, edit: .plan([known]))), now: Date()))
+    #expect(
+      isValid(
+        .workout(.init(id: id, at: at, edit: .plan([known]))), now: Date(), timeZone: paris))
     var measure = known
     measure.measure = .unknown("kg")
-    #expect(!isValid(.workout(.init(id: id, at: at, edit: .plan([measure]))), now: Date()))
+    #expect(
+      !isValid(
+        .workout(.init(id: id, at: at, edit: .plan([measure]))), now: Date(), timeZone: paris))
     var rule = known
     rule.rule = .unknown("rest")
-    #expect(!isValid(.workout(.init(id: id, at: at, edit: .plan([rule]))), now: Date()))
+    #expect(
+      !isValid(
+        .workout(.init(id: id, at: at, edit: .plan([rule]))), now: Date(), timeZone: paris))
   }
 }

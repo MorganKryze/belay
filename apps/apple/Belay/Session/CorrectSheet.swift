@@ -1,11 +1,28 @@
 import BelayCore
 import SwiftUI
+import os
+
+/// What the correction sheet writes through: the open session's model on the cover, a past
+/// session's in the history. Each call is one change, queued for the next sync.
+protocol SetCorrecting {
+    func correct(setId: String, weightKg: Double, count: Int, rir: Int?) throws
+    func remove(setId: String) throws
+}
 
 /// A done set, to correct or remove: the load, the count and the reserve, as Health enters a
 /// number. ✓ turns blue once a value changes and writes one change.
 struct CorrectSheet: View {
     let set: DoneSet
-    let actions: CoverActions
+    /// The exercise's name, under the set's.
+    let exercise: String
+    let correcting: any SetCorrecting
+    /// Under the removal's question: what becomes of the set once removed; nil in a session, where
+    /// the question says it.
+    var removal: Text?
+    /// The set is its exercise's only warm-up, named « Montée » with no rank, as on its row.
+    var loneWarmup = false
+    /// Told when a write fails, so the screen under the sheet can say it.
+    let failed: () -> Void
     @Environment(\.dismiss) private var dismiss
     @Environment(\.dynamicTypeSize) private var type
     @Environment(\.accessibilityReduceMotion) private var systemReduce
@@ -33,8 +50,8 @@ struct CorrectSheet: View {
         NavigationStack {
             List {
                 SheetTitle(
-                    title: Text(verbatim: SetName.of(set)),
-                    subtitle: Text(verbatim: actions.training.exerciseName(set.exerciseId)))
+                    title: Text(verbatim: SetName.of(set, loneWarmup: loneWarmup)),
+                    subtitle: Text(verbatim: exercise))
                 Section {
                     field(Text("kg", tableName: "Session"), $kg, keyboard: .decimalPad, id: "correct-kg")
                     field(
@@ -54,9 +71,9 @@ struct CorrectSheet: View {
                             .frame(minHeight: 44)
                     }
                     .accessibilityIdentifier("correct-remove")
-                    .removalQuestion(set, isPresented: $asking) {
+                    .removalQuestion(set, isPresented: $asking, loneWarmup: loneWarmup, message: removal) {
                         dismiss()
-                        actions.run { try $0.remove(setId: set.id) }
+                        run { try correcting.remove(setId: set.id) }
                     }
                 }
             }
@@ -137,17 +154,46 @@ struct CorrectSheet: View {
 
     private func save() {
         guard let typed else { return }
-        guard actions.run({ try $0.correct(setId: set.id, weightKg: typed.kg, count: typed.count, rir: rir) }) else { return }
+        guard run({ try correcting.correct(setId: set.id, weightKg: typed.kg, count: typed.count, rir: rir) })
+        else { return }
         dismiss()
+    }
+
+    private static let log = Logger(subsystem: "cloud.libresoftware.belay", category: "session")
+
+    @discardableResult
+    private func run(_ write: () throws -> Void) -> Bool {
+        do {
+            try write()
+            return true
+        } catch {
+            Self.log.error("set not corrected: \(AccountStore.logLabel(error), privacy: .public)")
+            failed()
+            return false
+        }
     }
 }
 
-/// « Série 2 » or « Montée 1 », from the set's place.
+/// How a done set is named, the same on its row, its sheet's title and its removal's question.
 enum SetName {
-    static func of(_ set: DoneSet) -> String {
-        set.warmup
-            ? String(localized: "Montée \(set.place.position + 1)", table: "SessionTools")
-            : String(localized: "Série \(set.place.position - Bounds.maxWarmups + 1)", table: "SessionTools")
+    /// « Série 3 », « Montée 2 »; « Montée » alone when it is its exercise's only warm-up.
+    static func of(_ set: DoneSet, loneWarmup: Bool = false) -> String {
+        guard set.warmup else {
+            return String(localized: "Série \(set.place.position - Bounds.maxWarmups + 1)", table: "SessionTools")
+        }
+        return loneWarmup
+            ? String(localized: "Montée", table: "SessionTools")
+            : String(localized: "Montée \(set.place.position + 1)", table: "SessionTools")
+    }
+
+    /// « Supprimer la série 3 ? », « Supprimer la montée ? »: the set named as on its row.
+    static func question(_ set: DoneSet, loneWarmup: Bool = false) -> Text {
+        guard set.warmup else {
+            return Text("Supprimer la série \(set.place.position - Bounds.maxWarmups + 1)\u{202F}?", tableName: "SessionTools")
+        }
+        return loneWarmup
+            ? Text("Supprimer la montée\u{202F}?", tableName: "SessionTools")
+            : Text("Supprimer la montée \(set.place.position + 1)\u{202F}?", tableName: "SessionTools")
     }
 }
 
@@ -161,17 +207,18 @@ extension View {
         }
     }
 
-    /// The question before a set goes, in a bubble anchored to the control that asked it.
-    func removalQuestion(_ set: DoneSet, isPresented: Binding<Bool>, remove: @escaping () -> Void) -> some View {
+    /// The question before a set goes, in a bubble anchored to the control that asked it, with what
+    /// becomes of the set under it: by default, in a session, it is the next to log again.
+    func removalQuestion(
+        _ set: DoneSet, isPresented: Binding<Bool>, loneWarmup: Bool = false, message: Text? = nil,
+        remove: @escaping () -> Void
+    ) -> some View {
         confirmationDialog(
-            set.warmup
-                ? Text("Supprimer la montée \(set.place.position + 1)\u{202F}?", tableName: "SessionTools")
-                : Text("Supprimer la série \(set.place.position - Bounds.maxWarmups + 1)\u{202F}?", tableName: "SessionTools"),
-            isPresented: isPresented, titleVisibility: .visible
+            SetName.question(set, loneWarmup: loneWarmup), isPresented: isPresented, titleVisibility: .visible
         ) {
             Button(role: .destructive, action: remove) { Text("Supprimer", tableName: "SessionTools") }
         } message: {
-            Text("Elle redevient la prochaine à noter.", tableName: "SessionTools")
+            message ?? Text("Elle redevient la prochaine à noter.", tableName: "SessionTools")
         }
     }
 }

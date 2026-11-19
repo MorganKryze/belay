@@ -37,6 +37,18 @@ private actor HeldHealth: HealthWriting {
     .written
   }
 
+  func saveWeighIn(kg: Double, at: Int64, syncId: String, version: Int64) async -> HealthOutcome {
+    .written
+  }
+
+  func deleteWeighIn(syncId: String) async -> HealthOutcome { .removed }
+
+  func readWeighIns(anchor: String?, since: Int64) async -> (
+    samples: [HealthSample], anchor: String
+  )? { nil }
+
+  func readDaySteps(days: [String], timeZone: TimeZone) async -> [String: Double?]? { nil }
+
   /// Returns once the first save is under way.
   func firstSaveStarted() async {
     if !first { return }
@@ -44,6 +56,88 @@ private actor HeldHealth: HealthWriting {
   }
 
   func letGo() { held?.resume() }
+}
+
+/// Health whose weigh-in read waits until the test lets it go, then hands out one reading.
+private actor HeldReader: HealthWriting {
+  private var held: CheckedContinuation<Void, Never>?
+  private var reading: CheckedContinuation<Void, Never>?
+  private var started = false
+
+  func access() async -> HealthAccess {
+    HealthAccess(available: true, workouts: .allowed, effort: .allowed, weighIns: .allowed)
+  }
+
+  func authorize() async throws {}
+
+  func save(_ w: HealthObject, syncId: String) async -> HealthOutcome { .written }
+
+  func delete(syncId: String) async -> HealthOutcome { .removed }
+
+  func overlaps(startedAt: Int64, endedAt: Int64) async -> Bool { false }
+
+  func relateEffort(score: Int, syncId: String, effortSyncId: String) async -> HealthOutcome {
+    .written
+  }
+
+  func saveWeighIn(kg: Double, at: Int64, syncId: String, version: Int64) async -> HealthOutcome {
+    .written
+  }
+
+  func deleteWeighIn(syncId: String) async -> HealthOutcome { .removed }
+
+  func readWeighIns(anchor: String?, since: Int64) async -> (
+    samples: [HealthSample], anchor: String
+  )? {
+    started = true
+    reading?.resume()
+    await withCheckedContinuation { held = $0 }
+    let at = Instant.milliseconds(Fixture.t0.addingTimeInterval(-3600))
+    return ([HealthSample(startedAt: at, kg: 79.6, syncId: nil)], "anchor-1")
+  }
+
+  /// Returns once the read is under way.
+  func readStarted() async {
+    if started { return }
+    await withCheckedContinuation { reading = $0 }
+  }
+
+  func letGo() { held?.resume() }
+
+  func readDaySteps(days: [String], timeZone: TimeZone) async -> [String: Double?]? { nil }
+}
+
+/// Health that holds a day of steps and no weigh-in.
+private actor StepsOnly: HealthWriting {
+  func access() async -> HealthAccess {
+    HealthAccess(available: true, workouts: .allowed, effort: .allowed, weighIns: .allowed)
+  }
+
+  func authorize() async throws {}
+
+  func save(_ w: HealthObject, syncId: String) async -> HealthOutcome { .written }
+
+  func delete(syncId: String) async -> HealthOutcome { .removed }
+
+  func overlaps(startedAt: Int64, endedAt: Int64) async -> Bool { false }
+
+  func relateEffort(score: Int, syncId: String, effortSyncId: String) async -> HealthOutcome {
+    .written
+  }
+
+  func saveWeighIn(kg: Double, at: Int64, syncId: String, version: Int64) async -> HealthOutcome {
+    .written
+  }
+
+  func deleteWeighIn(syncId: String) async -> HealthOutcome { .removed }
+
+  func readWeighIns(anchor: String?, since: Int64) async -> (
+    samples: [HealthSample], anchor: String
+  )? { ([], "anchor-1") }
+
+  func readDaySteps(days: [String], timeZone: TimeZone) async -> [String: Double?]? {
+    ["2026-11-06": 8437]
+  }
 }
 
 @MainActor @Suite struct HealthRunsTests {
@@ -125,5 +219,40 @@ private actor HeldHealth: HealthWriting {
     // The second run saves the edit the first one could not see; the third trigger adds nothing.
     let saved = await health.saved
     #expect(saved.count == 2)
+  }
+
+  @Test func signingOutDuringTheReadImportsNothing() async throws {
+    let one = try store("user-1", [])
+    try one.setHealthImportOn(true)
+    let health = HeldReader()
+    let now = now
+    let runs = HealthRuns(writer: health, now: { now })
+    var told = false
+    runs.imported = { told = true }
+
+    runs.trigger(store: one, owner: ownerOf("user-1"), imports: true)
+    await health.readStarted()
+    runs.cancel()
+    await health.letGo()
+    await runs.idle()
+
+    #expect(try one.body().weights.isEmpty)
+    #expect(!told)
+  }
+
+  /// Steps imported with the weigh-in import off are queued, and the sync is told to send them.
+  @Test func aStepsOnlyImportIsSent() async throws {
+    let one = try store("user-1", [])
+    try one.setHealthStepsOn(true)
+    let now = now
+    let runs = HealthRuns(writer: StepsOnly(), now: { now })
+    var told = false
+    runs.imported = { told = true }
+
+    runs.trigger(store: one, owner: ownerOf("user-1"), imports: true)
+    await runs.idle()
+
+    #expect(try one.outbox(limit: nil).count == 1)
+    #expect(told)
   }
 }

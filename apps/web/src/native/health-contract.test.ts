@@ -84,7 +84,6 @@ function planned(
     weights: rows.weights ?? [],
     settings: { ...HEALTH_OFF, on: true, turnedOnAt: NOW - 7 * 86_400_000, history: "asked" },
     written,
-    filled: {},
     allowed: { workouts: true, weighings: true },
     now: NOW,
     owner: "0a1b2c3d",
