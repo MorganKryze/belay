@@ -216,6 +216,22 @@ final class UnitsTests: XCTestCase {
         XCTAssertTrue(loadReads(app, "Charge, 1102 livres"), element(app, "load").label)
     }
 
+    /// 62,5 kg to 65 kg reads 138 lb to 143 lb: the line says the 5 lb between the two loads shown,
+    /// not the 2,5 kg converted on its own (6 lb).
+    func testProgressionInPoundsIsTheGapBetweenTheLoadsShown() {
+        let app = launch("history")
+        openCover(app)
+        passWarmups(app)
+        typeLoad(app, "65")
+        XCTAssertTrue(loadReads(app, "Charge, 65 kilos"))
+
+        switchUnit(app, to: "livres")
+        XCTAssertTrue(loadReads(app, "Charge, 143 livres"), element(app, "load").label)
+        let line = element(app, "progression")
+        XCTAssertTrue(
+            line.waitFor(NSPredicate(format: "label == %@", "+5\u{202F}lb depuis la dernière fois")), line.label)
+    }
+
     func testLoadSpokenWithItsUnit() {
         let app = launch("history")
         openCover(app)

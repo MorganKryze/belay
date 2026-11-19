@@ -34,7 +34,7 @@ struct HoldCard: View {
                 }
                 HStack(spacing: 8) {
                     Image(systemName: "arrow.up.right").font(.subheadline.weight(.bold)).accessibilityHidden(true)
-                    Text(SetText.progression(due.progression, timed: true))
+                    Text(SetText.progression(due.progression, weightKg: due.weightKg, timed: true))
                         .font(.headline)
                         .fixedSize(horizontal: false, vertical: true)
                 }

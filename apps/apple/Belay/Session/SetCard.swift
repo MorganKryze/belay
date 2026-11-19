@@ -86,7 +86,7 @@ struct SetCard: View {
         Button { detail = true } label: {
             HStack(spacing: 8) {
                 Image(systemName: "arrow.up.right").font(.subheadline.weight(.bold)).accessibilityHidden(true)
-                Text(SetText.progression(due.progression, timed: due.timed))
+                Text(SetText.progression(due.progression, weightKg: due.weightKg, timed: due.timed))
                     .font(.headline)
                     .fixedSize(horizontal: false, vertical: true)
                 Image(systemName: "info.circle").font(.subheadline).foregroundStyle(.muted).accessibilityHidden(true)
@@ -266,6 +266,12 @@ enum SetText {
             .joined(separator: " · ")
     }
 
+    /// The difference between two loads as `weight` shows them: 62,5 to 65 kg reads 138 to 143 lb, so 5.
+    private static func gap(from lastKg: Double, to kg: Double) -> String {
+        (loadFromKg(kg, unit) - loadFromKg(lastKg, unit))
+            .formatted(.number.grouping(.never).precision(.fractionLength(0...2)))
+    }
+
     /// « Série 2 sur 4 », « Montée 1 sur 2 », or « Série 5 » for a set past the plan.
     static func title(_ due: DueSet) -> String {
         if due.warmup { return String(localized: "Montée \(due.number) sur \(due.of)", table: "Session") }
@@ -273,15 +279,16 @@ enum SetText {
         return String(localized: "Série \(due.number) sur \(due.of)", table: "Session")
     }
 
-    /// The line under the load, in one plain sentence; it never suggests a load to come.
-    static func progression(_ line: Progression, timed: Bool) -> String {
+    /// The line under the load `weightKg`, in one plain sentence; it never suggests a load to come.
+    /// A heavier load says the gap between the two loads as shown, so in pounds it matches them.
+    static func progression(_ line: Progression, weightKg: Double, timed: Bool) -> String {
         switch line {
         case .warmup:
             String(localized: "Montée légère, sans forcer", table: "Session")
         case .sameLoad(let top):
             String(localized: "Même charge, vise \(top) reps", table: "Session")
         case .heavier(let byKg):
-            String(localized: "+\(weight(byKg))\u{202F}\(symbol) depuis la dernière fois", table: "Session")
+            String(localized: "+\(gap(from: weightKg - byKg, to: weightKg))\u{202F}\(symbol) depuis la dernière fois", table: "Session")
         case .firstTime(let low, let high) where timed:
             String(localized: "Cible\u{202F}: \(low) à \(high)\u{202F}s", table: "Session")
         case .firstTime(let low, let high):
