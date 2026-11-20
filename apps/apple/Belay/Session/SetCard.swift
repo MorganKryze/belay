@@ -74,8 +74,8 @@ struct SetCard: View {
     }
 
     /// A load typed with a comma or a point in the unit shown, never replaced by another. Kilos are
-    /// taken as typed, so one off the grid or past the bounds reaches the store and ✓ refuses it
-    /// aloud, never rounded. Pounds go through the shared rule: the load as shown, typed again,
+    /// taken as typed, so one off the grid reaches the store and ✓ refuses it aloud, never rounded;
+    /// one past the bounds is refused aloud at once. Pounds go through the shared rule: the load as shown, typed again,
     /// keeps its exact kilos; one past the bounds once converted is refused aloud. A text that is
     /// not a number is refused aloud too, and changes nothing.
     private func take(_ text: String) {

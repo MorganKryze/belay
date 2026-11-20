@@ -129,4 +129,16 @@ final class RestToneTests: XCTestCase {
             app.terminate()
         }
     }
+
+    func testCoupeChosenMidRestSilencesThePlannedNotification() {
+        let app = launch("lockLogged")
+        soundMenu(app)
+        XCTAssertTrue(
+            probe(app).waitFor(NSPredicate(format: "value ENDSWITH %@", "|rest.wav"), timeout: 5),
+            "Discret plans the rest notification with the tone")
+        choose(app, "Coupé")
+        XCTAssertTrue(
+            probe(app).waitFor(NSPredicate(format: "value ENDSWITH %@", "|none"), timeout: 3),
+            "the rest notification is planned again without a sound: \(probe(app).value ?? "")")
+    }
 }

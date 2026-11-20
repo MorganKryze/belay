@@ -179,8 +179,8 @@ struct EquipmentView: View {
     }
 
     /// A chip for one weight, or « Autre »: filled while chosen. A preset's chips read only, at full
-    /// contrast: a tap on one does nothing. `spoken` replaces the words for VoiceOver.
-    /// A chip; `readOnly` ones only show what Belay loads, a plain element without a button trait.
+    /// contrast: `readOnly` ones only show what Belay loads, a plain element without a button trait,
+    /// and a tap does nothing. `spoken` replaces the words for VoiceOver.
     @ViewBuilder private func chip(
         _ words: Text, spoken: Text?, selected: Bool, id: String, readOnly: Bool = false,
         action: @escaping () -> Void
