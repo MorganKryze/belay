@@ -5,7 +5,8 @@ import SwiftUI
 /// phone, the date first. Cardio and Escalade write one activity at ✓; the day's activities of the
 /// kind are listed above the fields, and one picked opens with its deletion, asked first. Pas reads
 /// the day's steps from Santé, with nothing to type (A39, A40); it shows only while the steps
-/// import is off, since « Pas » on Accueil carries them once it is on.
+/// import is off, since « Pas » on Accueil carries them once it is on. Opened from the history, it
+/// starts on that activity's day and kind with the activity picked.
 struct ActivitySheet: View {
     let corps: CorpsModel
     @State private var kind: DevicePrefs.ActivityKind
@@ -25,12 +26,19 @@ struct ActivitySheet: View {
     /// so the steps it brings show where it was asked.
     private let offersSteps: Bool
 
-    init(corps: CorpsModel) {
+    /// `day` and `picked` open on an activity kept: its day, its kind, its fields and its deletion.
+    init(corps: CorpsModel, day: String? = nil, picked: String? = nil) {
         self.corps = corps
         offersSteps = !corps.stepsOn
         let last = DevicePrefs.activityKind.value
-        _kind = State(initialValue: last == .steps && corps.stepsOn ? DevicePrefs.activityKind.initial : last)
-        _date = State(initialValue: corps.now())
+        let own = day.flatMap { day in
+            [DevicePrefs.ActivityKind.climbing, .cardio].first { kind in
+                corps.activities(on: day, kind: kind.rawValue).contains { $0.id == picked }
+            }
+        }
+        _kind = State(initialValue: own ?? (last == .steps && corps.stepsOn ? DevicePrefs.activityKind.initial : last))
+        _date = State(initialValue: day.flatMap(BodyText.date) ?? corps.now())
+        _picked = State(initialValue: own == nil ? nil : picked)
     }
 
     private var day: String { toISODate(date, timeZone: corps.timeZone) }
@@ -83,7 +91,7 @@ struct ActivitySheet: View {
             start(from: nil)
         }
         .onChange(of: day) { start(from: nil) }
-        .onAppear { start(from: nil) }
+        .onAppear { start(from: picked) }
     }
 
     private var kinds: some View {

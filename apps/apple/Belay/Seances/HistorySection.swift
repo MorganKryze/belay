@@ -1,13 +1,29 @@
 import BelayCore
 import SwiftUI
 
-/// Séances' Historique segment: the sessions kept, newest first, one section per week from Monday;
-/// or, before the first one, what will show here.
+/// Séances' Historique segment: the sessions kept and, unless Réglages says « Séances seules », the
+/// cardio and climbs, newest first, one section per week from Monday; or, before the first one,
+/// what will show here.
 struct HistorySection: View {
     let weeks: [HistoryWeek]
+    /// Opens Activité on the activity tapped.
+    let open: (ActivityRow) -> Void
+    /// Réglages › Séances › Historique.
+    @AppStorage(DevicePrefs.historyActivities.key) private var activities = DevicePrefs.historyActivities.initial
     @Environment(\.dynamicTypeSize) private var typeSize
 
+    /// The weeks as listed: without the activities, a week that held only them goes too.
+    private var shown: [HistoryWeek] {
+        guard activities == .hidden else { return weeks }
+        return weeks.compactMap { week in
+            var sessions = week
+            sessions.items = week.items.filter { if case .session = $0 { true } else { false } }
+            return sessions.items.isEmpty ? nil : sessions
+        }
+    }
+
     var body: some View {
+        let weeks = shown
         if weeks.isEmpty {
             Section {
                 VStack(alignment: .leading, spacing: 6) {
@@ -25,7 +41,12 @@ struct HistorySection: View {
         } else {
             ForEach(weeks) { week in
                 Section {
-                    ForEach(week.rows) { HistoryRowView(row: $0) }
+                    ForEach(week.items) { item in
+                        switch item {
+                        case .session(let row): HistoryRowView(row: row)
+                        case .activity(let activity): ActivityRowView(activity: activity) { open(activity) }
+                        }
+                    }
                 } header: {
                     header(week)
                 }
@@ -137,6 +158,61 @@ private struct HistoryRowView: View {
                 Text(EffortText.word(effort)).lineLimit(1).fixedSize()
             }
         }
+    }
+}
+
+/// A cardio or a climb: its tile, its day, then the web's words for it. A tap opens it in Activité.
+private struct ActivityRowView: View {
+    let activity: ActivityRow
+    let open: () -> Void
+    @Environment(\.dynamicTypeSize) private var typeSize
+
+    var body: some View {
+        Button(action: open) {
+            Group {
+                // At the largest sizes the tile rises above the words, as a session's does.
+                if typeSize.isAccessibilitySize {
+                    VStack(alignment: .leading, spacing: 8) {
+                        tile
+                        words
+                    }
+                } else {
+                    HStack(spacing: 14) {
+                        tile
+                        words
+                    }
+                }
+            }
+            .padding(.vertical, 6)
+            .frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel([day, text].joined(separator: ", "))
+        .accessibilityHint(Text("Ouvre l’activité", tableName: "Seances"))
+        .accessibilityAddTraits(.isButton)
+        .accessibilityIdentifier("history.activity")
+    }
+
+    /// The session letter's size, so the rows of a week line up.
+    private var tile: some View {
+        DomainTile(
+            domain: .activity, symbol: activity.kind == "climbing" ? "figure.climbing" : "figure.run", side: 48,
+            corner: 13)
+    }
+
+    /// « Mercredi 7 octobre ».
+    private var day: String { BodyText.date(activity.date).map { WeekdayText.day($0).capitalizedFirst } ?? activity.date }
+    /// « Escalade · 1 h 30 », « Vélo · 45 min ».
+    private var text: String { ActivityText.activity(activity) }
+
+    private var words: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(day).font(.body.weight(.semibold)).foregroundStyle(.ink)
+            Text(text).font(.subheadline.weight(.medium)).foregroundStyle(.ink).monospacedDigit()
+        }
+        .fixedSize(horizontal: false, vertical: true)
     }
 }
 

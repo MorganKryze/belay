@@ -8,9 +8,11 @@ final class SeancesHistoryTests: XCTestCase {
     /// session of the day already kept.
     private static let wednesday = "2026-10-07T20:00:00"
 
-    private func launch(_ fixture: String, now: String? = nil, largestText: Bool = false) -> XCUIApplication {
+    private func launch(
+        _ fixture: String, now: String? = nil, largestText: Bool = false, extra: [String] = []
+    ) -> XCUIApplication {
         let app = XCUIApplication()
-        app.launchArguments = ["-AppleLanguages", "(fr)", "-AppleLocale", "fr_FR", "-BelayFixture", fixture]
+        app.launchArguments = ["-AppleLanguages", "(fr)", "-AppleLocale", "fr_FR", "-BelayFixture", fixture] + extra
         if let now { app.launchArguments += ["-BelayNow", now] }
         if largestText {
             app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXL"]
@@ -20,8 +22,10 @@ final class SeancesHistoryTests: XCTestCase {
     }
 
     /// Séances' Historique, once the fixture has signed in.
-    private func history(_ fixture: String, now: String? = nil, largestText: Bool = false) -> XCUIApplication {
-        let app = launch(fixture, now: now, largestText: largestText)
+    private func history(
+        _ fixture: String, now: String? = nil, largestText: Bool = false, extra: [String] = []
+    ) -> XCUIApplication {
+        let app = launch(fixture, now: now, largestText: largestText, extra: extra)
         let tab = app.tabBars.firstMatch.buttons["Séances"]
         XCTAssertTrue(tab.waitForExistence(timeout: 10))
         tab.tap()
@@ -47,6 +51,15 @@ final class SeancesHistoryTests: XCTestCase {
 
     private func rows(_ app: XCUIApplication) -> XCUIElementQuery {
         app.descendants(matching: .any).matching(identifier: "history.row")
+    }
+
+    private func activities(_ app: XCUIApplication) -> XCUIElementQuery {
+        app.descendants(matching: .any).matching(identifier: "history.activity")
+    }
+
+    /// A label with plain spaces, so a test reads « 1 h 30 » as it is written.
+    private func words(_ element: XCUIElement) -> String {
+        element.label.replacingOccurrences(of: "\u{202F}", with: " ").replacingOccurrences(of: "\u{00A0}", with: " ")
     }
 
     private func sets(_ app: XCUIApplication) -> [String] {
@@ -228,6 +241,76 @@ final class SeancesHistoryTests: XCTestCase {
         element(app, "correct-remove").tap()
         XCTAssertTrue(
             app.staticTexts["Supprimer la montée\u{202F}?"].waitForExistence(timeout: 3), "and so does the question")
+    }
+
+    // MARK: Activities
+
+    /// A climb reads as the web writes it, under its day, beside its tile, one element of a
+    /// session row's height.
+    func testClimbRowReadsTheWebsWords() {
+        let app = history("activityOne", now: Self.wednesday)
+        let climb = activities(app).firstMatch
+        XCTAssertTrue(climb.waitForExistence(timeout: 5), "the climb is listed")
+        XCTAssertEqual(words(climb), "Mercredi 7 octobre, Escalade · 1 h 30")
+        XCTAssertGreaterThanOrEqual(climb.frame.height, 56, "a tile's row: \(climb.frame)")
+        XCTAssertEqual(activities(app).count, 1)
+        XCTAssertTrue(app.staticTexts["Cette semaine"].exists, "a week of activities only still shows")
+    }
+
+    /// The row opens Activité on its day with the climb picked, its deletion offered, even when the
+    /// sheet would open on Cardio.
+    func testActivityRowOpensActiviteOnIt() {
+        let app = history("activityOne", now: Self.wednesday, extra: ["-belay.activity.tab", "cardio"])
+        let climb = activities(app).firstMatch
+        XCTAssertTrue(climb.waitForExistence(timeout: 5))
+        climb.tap()
+        let kinds = element(app, "activity-kind")
+        XCTAssertTrue(kinds.waitForExistence(timeout: 5), "Activité opens")
+        XCTAssertTrue(kinds.buttons["Escalade"].isSelected, "on the climb's kind")
+        let picked = element(app, "activity-day-0")
+        XCTAssertTrue(picked.exists, "on its day")
+        XCTAssertTrue(picked.isSelected, "the climb picked")
+        XCTAssertTrue(app.swipeUpUntil(element(app, "activity-delete")), "its deletion offered")
+    }
+
+    /// « Séances seules » leaves the activities out, and a week of activities only with them.
+    func testSessionsOnlyLeavesActivitiesOut() {
+        let app = history("activityOne", now: Self.wednesday, extra: ["-belay.historyActivities", "hidden"])
+        XCTAssertTrue(app.staticTexts["Aucune séance"].waitForExistence(timeout: 5), "nothing but the climb was there")
+        XCTAssertFalse(activities(app).firstMatch.exists)
+        XCTAssertFalse(app.staticTexts["Cette semaine"].exists)
+    }
+
+    /// An activity another device wrote shows within a second of the sync that brings it, and
+    /// opens on its own day.
+    func testPulledActivityShowsWithinASecond() {
+        let app = history("activityOne", now: Self.wednesday, extra: ["-BelayPull", "activity"])
+        XCTAssertTrue(activities(app).firstMatch.waitForExistence(timeout: 5))
+        XCTAssertEqual(activities(app).count, 1)
+        XCUIDevice.shared.press(.home)
+        app.activate()
+        let ride = activities(app).element(boundBy: 1)
+        XCTAssertTrue(ride.waitForExistence(timeout: 1), "the ride shows within a second")
+        XCTAssertEqual(words(ride), "Mardi 6 octobre, Vélo · 45 min")
+        ride.tap()
+        XCTAssertTrue(element(app, "activity-kind").waitForExistence(timeout: 5))
+        XCTAssertTrue(element(app, "activity-kind").buttons["Cardio"].isSelected)
+        XCTAssertTrue(element(app, "activity-day-0").isSelected, "the ride picked on its day")
+    }
+
+    /// The week's line counts sessions only: 0 under a week of climbs, then 1 and 2.
+    func testWeekLineAtZeroOneTwoSessions() {
+        let climbs = history("activityOne", now: Self.wednesday)
+        XCTAssertTrue(climbs.staticTexts["0 séance · 0\u{202F}min"].waitForExistence(timeout: 5))
+        climbs.terminate()
+        for (now, line) in [
+            ("2026-10-05T20:00:00", "1 séance · 1\u{202F}h\u{202F}4\u{202F}min"),
+            ("2026-10-06T20:00:00", "2 séances · 2\u{202F}h\u{202F}8\u{202F}min"),
+        ] {
+            let app = history("weeks", now: now)
+            XCTAssertTrue(app.staticTexts[line].waitForExistence(timeout: 5), line)
+            app.terminate()
+        }
     }
 
     /// Once the history scrolls, no compact title.

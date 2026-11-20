@@ -186,7 +186,7 @@ final class TrainingModel {
     private(set) var accueil: AccueilState?
     /// What Séances' Programme segment shows, decided by the core's rule.
     private(set) var programmeState: ProgrammeState?
-    /// Séances' Historique: the sessions kept, by week, newest first.
+    /// Séances' Historique: the sessions kept and the activities, by week, newest first.
     private(set) var weeks: [HistoryWeek] = []
     /// Every session of the active program as it would start today, in the rotation's order.
     private(set) var sessions: [NextSession] = []
@@ -569,7 +569,8 @@ final class TrainingModel {
             history: snapshot.history, programs: snapshot.programs, activities: snapshot.activities, now: at,
             timeZone: timeZone)
         if programmeState != programme { programmeState = programme }
-        let kept = historyWeeks(snapshot.history, efforts: snapshot.efforts, now: at, timeZone: timeZone)
+        let kept = historyWeeks(
+            snapshot.history, activities: snapshot.activities, efforts: snapshot.efforts, now: at, timeZone: timeZone)
         if weeks != kept { weeks = kept }
         let described = rotationOf(snapshot.programs).map { describe($0, snapshot: snapshot, at: at) }
         if sessions != described { sessions = described }

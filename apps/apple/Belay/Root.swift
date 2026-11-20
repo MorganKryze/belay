@@ -210,7 +210,8 @@ struct RootView: View {
                 open: { model.homePath.append($0) },
                 openCorps: { model.tab = .corps })
         case .seances:
-            SeancesView(training: training, segment: $model.segment, openPreview: { openPreview($0, in: .seances) })
+            SeancesView(
+                training: training, corps: corps, segment: $model.segment, openPreview: { openPreview($0, in: .seances) })
         case .corps:
             CorpsView(corps: corps) { model.corpsPath.append($0) }
         case .outils:

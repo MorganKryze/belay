@@ -744,9 +744,10 @@ enum Fixture {
         }
     }
 
-    /// `-BelayPull range|height|refusal`: as the app goes to the background, a sync lands what
-    /// another device wrote meanwhile, a range of 0,3 to 0,6 % or a height of 168 cm, or the
-    /// server refuses a weigh-in of today, so a test sees a pull land on a page left open.
+    /// `-BelayPull range|height|refusal|activity`: as the app goes to the background, a sync lands
+    /// what another device wrote meanwhile, a range of 0,3 to 0,6 %, a height of 168 cm or a ride
+    /// of 45 min yesterday, or the server refuses a weigh-in of today, so a test sees a pull land
+    /// on a page left open.
     struct PullOnLeave: View {
         let store: AccountStore
 
@@ -774,6 +775,12 @@ enum Fixture {
                     "formula": "male", "formulaAt": "2026-01-01T00:00:00.000Z", "birthYear": 1990,
                     "birthYearAt": "2026-01-01T00:00:00.000Z", "heightCm": 168, "heightAt": at,
                 ]
+            case "activity":
+                answer["activities"] = [[
+                    "id": "00000000-0000-7000-8000-0000000000f3",
+                    "date": addDays(toISODate(Fixture.now, timeZone: .current), -1), "type": "cardio",
+                    "durationMin": 45, "cardioType": "bike", "fieldsAt": at, "removed": false,
+                ]]
             case "refusal":
                 let actions = BodyActions(store: store, now: { Fixture.now }, timeZone: .current)
                 try actions.weigh(date: toISODate(Fixture.now, timeZone: .current), kg: 81)
