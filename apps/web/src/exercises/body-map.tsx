@@ -31,7 +31,7 @@ export const LATS = { left: 1, right: 2 } as const;
 // outer part is the side head; the inner part the front head (front view) or the rear head (back).
 export const DELTOID_CUT = { front: { left: 228, right: 500 }, back: { left: 941, right: 1226 } };
 export const VIEW_BOX = { front: "48 90 632 1256", back: "768 90 632 1256" } as const;
-const GAP = 5; // a hairline between the two heads
+export const GAP = 5; // a hairline between the two heads
 
 export function shapesOf(view: View): Shape[] {
   const parts: readonly BodyPart[] = view === "front" ? FRONT : BACK;

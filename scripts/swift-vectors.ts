@@ -5,7 +5,7 @@
 // fixed days, in several time zones), the session's tools (loading a bar, warm-ups, editing the
 // day's plan, pausing), which workouts Health should hold, the body rules (weigh-in averages and
 // weeks, the loss range, measures, intake, creatine, the energy and protein tools), and the
-// starting program and the science catalogue the native core ships. With
+// starting program, the science catalogue and the body figure the native core ships. With
 // --check, fails if a committed file is not what the rules give today, so a rule changed here
 // cannot drift from the Swift port.
 import { readFileSync, writeFileSync } from "node:fs";
@@ -61,7 +61,15 @@ import {
   HEIGHT_RANGE_CM,
   WEIGHT_RANGE_KG,
 } from "../packages/shared/src/tools/bounds";
-import { EQUIPMENT } from "../packages/shared/src/exercises/muscles";
+import { EQUIPMENT, MUSCLES } from "../packages/shared/src/exercises/muscles";
+import {
+  DELTOID_CUT,
+  GAP,
+  shapesOf,
+  thumbnailOf,
+  VIEW_BOX,
+} from "../apps/web/src/exercises/body-map";
+import { absoluteCubics } from "./svg-path";
 import {
   INCREMENT_LB,
   incrementIn,
@@ -4469,6 +4477,32 @@ function scienceCatalogue() {
   );
 }
 
+// The body figure as the phone draws it: each view's outlines as absolute moves, lines and cubics,
+// with the muscle each one colours and the deltoid's cut, and the thumbnail framing of every
+// muscle, all as the web's body map computes them.
+function bodyFigure() {
+  const box = (viewBox: string) => viewBox.split(" ").map(Number);
+  const view = (v: "front" | "back") => ({
+    viewBox: box(VIEW_BOX[v]),
+    cut: DELTOID_CUT[v],
+    shapes: shapesOf(v).map((s) => ({
+      muscle: s.muscle,
+      clip: s.clip ?? null,
+      path: absoluteCubics(s.d),
+    })),
+  });
+  return {
+    views: { front: view("front"), back: view("back") },
+    gap: GAP,
+    thumbnails: Object.fromEntries(
+      MUSCLES.map((m) => {
+        const t = thumbnailOf(m);
+        return [m, { view: t.view, viewBox: box(t.viewBox) }];
+      }),
+    ),
+  };
+}
+
 const rules = rulesVectors();
 const tools = toolVectors();
 const files = [
@@ -4494,6 +4528,7 @@ const files = [
   { path: core("Tests/BelayCoreTests/Vectors/body.json"), data: bodyVectors() },
   { path: core("Sources/BelayCore/Resources/seed.json"), data: SEED },
   { path: core("Sources/BelayCore/Resources/science.json"), data: scienceCatalogue() },
+  { path: core("Sources/BelayCore/Resources/figure.json"), data: bodyFigure() },
 ].map(({ path, data }) => ({ path, expected: `${JSON.stringify(data, null, 2)}\n` }));
 
 if (process.argv.includes("--check")) {
