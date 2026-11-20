@@ -185,7 +185,11 @@ final class UnitsTests: XCTestCase {
         let line = app.staticTexts["Une charge va de 0 à 500\u{202F}kg, par pas de 0,25\u{202F}kg."]
         XCTAssertFalse(line.exists, "a valid load says nothing")
         for value in ["62,3", "625"] {
-            type(value, into: load)
+            // Tapped at its trailing end, where the text sits, so the deletes take it all.
+            load.coordinate(withNormalizedOffset: CGVector(dx: 0.98, dy: 0.5)).tap()
+            let current = (load.value as? String) ?? ""
+            load.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: current.count + 2) + value)
+            XCTAssertEqual(load.value as? String, value, "the field holds what was typed")
             XCTAssertTrue(line.waitForExistence(timeout: 3), "\(value) is said refused")
             XCTAssertFalse(app.buttons["correct-save"].isEnabled, "\(value) cannot be saved")
         }
