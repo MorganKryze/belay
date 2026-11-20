@@ -2,10 +2,11 @@ import BelayCore
 import SwiftUI
 
 /// An exercise: its name and equipment in the page, the loop, last time's work sets, the muscles
-/// in words, the program's sessions that use it, then how to do it and the dataset's credit.
+/// drawn and in words, the program's sessions that use it, then how to do it and the dataset's credit.
 struct ExercisePage: View {
     let training: TrainingModel
     let exerciseId: String
+    @Environment(\.colorScheme) private var scheme
     @State private var steps: [String] = []
 
     var body: some View {
@@ -75,18 +76,21 @@ struct ExercisePage: View {
         .listRowInsets(EdgeInsets(top: 0, leading: 10, bottom: 0, trailing: 4))
     }
 
+    /// The figure, then the muscles in words, each list beside its shade's key.
     private func muscles(_ exercise: LibraryExercise) -> some View {
-        Section {
+        let shades = MuscleShades.of(dark: scheme == .dark)
+        return Section {
+            BodyFigure(primary: exercise.primary, secondary: exercise.secondary)
             LabeledContent {
                 Text(verbatim: exercise.primary.map(ExerciseText.muscle).joined(separator: ", "))
             } label: {
-                Text("Principal", tableName: "Exercices")
+                shadeKey(Text("Principal", tableName: "Exercices"), shades.primary)
             }
             if !exercise.secondary.isEmpty {
                 LabeledContent {
                     Text(verbatim: exercise.secondary.map(ExerciseText.muscle).joined(separator: ", "))
                 } label: {
-                    Text("Secondaires", tableName: "Exercices")
+                    shadeKey(Text("Secondaires", tableName: "Exercices"), shades.secondary)
                 }
             }
         } header: {
@@ -94,6 +98,14 @@ struct ExercisePage: View {
         }
         .headerProminence(.increased)
         .listRowBackground(Color.surface)
+    }
+
+    /// The list's name after a square of its shade on the figure.
+    private func shadeKey(_ title: Text, _ shade: Color) -> some View {
+        HStack(spacing: 8) {
+            RoundedRectangle(cornerRadius: 3).fill(shade).frame(width: 10, height: 10).accessibilityHidden(true)
+            title
+        }
     }
 
     /// Each session of the active program that holds the exercise, opening its preview.
