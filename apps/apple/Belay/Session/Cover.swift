@@ -168,6 +168,7 @@ struct Cover: View {
         }
         #if DEBUG
         .overlay(alignment: .topLeading) { Fixture.MotionProbe(animation: motion) }
+        .overlay(alignment: .topTrailing) { Fixture.RestProbe() }
         #endif
     }
 

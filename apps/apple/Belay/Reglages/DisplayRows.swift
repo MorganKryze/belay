@@ -61,6 +61,11 @@ struct DisplayRows: View {
                         Text("Son de fin de repos", tableName: "Reglages")
                     }
                 }
+                // The tone once, as it will ring: the choice is heard as it is made.
+                .onChange(of: restSound) { _, choice in RestTone.play(choice) }
+                #if DEBUG
+                .overlay(alignment: .topTrailing) { Fixture.RestProbe() }
+                #endif
                 MenuRow(
                     title: "Historique", symbol: "calendar", value: historyName(historyActivities), id: "reglages-history"
                 ) {
