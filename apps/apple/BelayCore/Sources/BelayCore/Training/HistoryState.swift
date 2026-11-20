@@ -1,7 +1,7 @@
 import Foundation
 
-// Historique: the sessions kept and ended, newest first, by week from Monday on the local day; and
-// a past session opened, its exercises with their sets.
+// Historique: the sessions kept and ended and the activities kept, newest first, by week from Monday
+// on the local day; and a past session opened, its exercises with their sets.
 
 /// A session kept, as its row shows it.
 public struct HistoryRow: Sendable, Equatable, Identifiable {
@@ -22,21 +22,51 @@ public struct HistoryRow: Sendable, Equatable, Identifiable {
   public var id: String { workoutId }
 }
 
-/// A week, Monday to Sunday, with its sessions newest first and their count and total length.
+/// A line of the history: a session kept, or a cardio or a climb.
+public enum HistoryItem: Sendable, Equatable, Identifiable {
+  case session(HistoryRow)
+  case activity(ActivityRow)
+
+  /// Unique across both kinds: a session and an activity never share one.
+  public var id: String {
+    switch self {
+    case .session(let row): "session-\(row.workoutId)"
+    case .activity(let activity): "activity-\(activity.id)"
+    }
+  }
+
+  /// The local day it falls on.
+  public var day: String {
+    switch self {
+    case .session(let row): row.day
+    case .activity(let activity): activity.date
+    }
+  }
+}
+
+/// A week, Monday to Sunday, with its sessions and activities newest day first, and the count and
+/// total length of its sessions.
 public struct HistoryWeek: Sendable, Equatable, Identifiable {
   public var start: String
   public var end: String
   /// The week holding today: « Cette semaine ».
   public var isCurrent: Bool
+  /// Its sessions only: an activity is not a session.
   public var count: Int
   public var durationMs: Int
-  public var rows: [HistoryRow]
+  /// Newest day first; on one day the sessions, newest first, then the activities as written.
+  public var items: [HistoryItem]
+
+  /// Its sessions alone, in their order.
+  public var rows: [HistoryRow] {
+    items.compactMap { if case .session(let row) = $0 { row } else { nil } }
+  }
 
   public var id: String { start }
 }
 
 public func historyWeeks(
-  _ h: History, efforts: [SessionEffort], now: Date, timeZone: TimeZone
+  _ h: History, activities: [ActivityRow] = [], efforts: [SessionEffort], now: Date, timeZone: TimeZone
 ) -> [HistoryWeek] {
   let sets = Dictionary(grouping: h.sets.filter { !$0.removed }, by: \.workoutId)
   // Kept and ended, with a start that reads (one that does not falls on no day); newest first by
@@ -46,30 +76,38 @@ public func historyWeeks(
       w.endedAt != nil && !w.removed ? Instant.milliseconds(w.startedAt).map { (w: w, ms: $0) } : nil
     }
     .sorted { $0.ms != $1.ms ? $0.ms > $1.ms : precedes($1.w.id, $0.w.id) }
+  let sessions = past.map { w, started in
+    HistoryItem.session(
+      HistoryRow(
+        workoutId: w.id, code: w.sessionCode, name: w.sessionName.value,
+        sessionId: recordedSession(w), day: dayOf(w, timeZone: timeZone), startedAt: w.startedAt,
+        durationMs: w.endedAt.flatMap(Instant.milliseconds).map { Int(clamping: $0 - started) } ?? 0,
+        volumeKg: volumeOf((sets[w.id] ?? []).filter { !$0.warmup }), effort: effortOf(w.id, in: efforts)))
+  }
+  // Newest day first, as the web orders them; on one day the sessions keep their order before the
+  // activities, which keep the order they were written in. The index makes the sort stable.
+  let items = (sessions + activities.filter { !$0.removed }.map(HistoryItem.activity))
+    .enumerated()
+    .sorted { $0.element.day != $1.element.day ? precedes($1.element.day, $0.element.day) : $0.offset < $1.offset }
+    .map(\.element)
   let current = Day.weekOf(toISODate(now, timeZone: timeZone)).start
   var weeks: [HistoryWeek] = []
-  for (w, started) in past {
-    let day = dayOf(w, timeZone: timeZone)
-    let row = HistoryRow(
-      workoutId: w.id, code: w.sessionCode, name: w.sessionName.value,
-      sessionId: recordedSession(w), day: day, startedAt: w.startedAt,
-      durationMs: w.endedAt.flatMap(Instant.milliseconds).map { Int(clamping: $0 - started) } ?? 0,
-      volumeKg: volumeOf((sets[w.id] ?? []).filter { !$0.warmup }), effort: effortOf(w.id, in: efforts))
+  for item in items {
     // Newest first, so a day before the last week's Monday opens the next week down.
-    if let last = weeks.last, !precedes(day, last.start) {
-      weeks[weeks.count - 1].rows.append(row)
+    if let last = weeks.last, !precedes(item.day, last.start) {
+      weeks[weeks.count - 1].items.append(item)
     } else {
-      let (start, end) = Day.weekOf(day)
+      let (start, end) = Day.weekOf(item.day)
       weeks.append(
         HistoryWeek(
-          start: start, end: end, isCurrent: start == current, count: 0, durationMs: 0,
-          rows: [row]))
+          start: start, end: end, isCurrent: start == current, count: 0, durationMs: 0, items: [item]))
     }
   }
   for i in weeks.indices {
-    weeks[i].count = weeks[i].rows.count
+    let rows = weeks[i].rows
+    weeks[i].count = rows.count
     // Saturated, as each length is: Int is 32 bits on the Watch.
-    weeks[i].durationMs = weeks[i].rows.reduce(0) { sum, row in
+    weeks[i].durationMs = rows.reduce(0) { sum, row in
       let (total, over) = sum.addingReportingOverflow(row.durationMs)
       return over ? .max : total
     }

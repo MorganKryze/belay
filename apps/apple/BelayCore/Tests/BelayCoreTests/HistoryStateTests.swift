@@ -101,6 +101,85 @@ import Testing
     #expect(rows[1].effort == nil && rows[1].volumeKg == 0)
   }
 
+  // MARK: Activities
+
+  /// On one day the sessions come first, newest first, then the day's activities in the order
+  /// they were written; the days run newest first across both.
+  @Test func activitiesFollowTheDaysSessions() {
+    let workouts = [
+      Days.workout("morning", "A", Days.a, start: Days.at("2026-11-10T08:00")),
+      Days.workout("evening", "B", Days.b, start: Days.at("2026-11-10T18:00")),
+      Days.workout("monday", "C", Days.c, start: Days.at("2026-11-09T18:00")),
+    ]
+    let activities = [
+      activity("climb", on: "2026-11-10"), activity("run", on: "2026-11-10", kind: "cardio"),
+      activity("later", on: "2026-11-11"), activity("monday-ride", on: "2026-11-09", kind: "cardio"),
+    ]
+    let weeks = historyWeeks(
+      History(workouts: workouts, sets: []), activities: activities, efforts: [],
+      now: Days.at("2026-11-12T10:00"), timeZone: Days.paris)
+    #expect(
+      weeks.map { $0.items.map(\.id) } == [[
+        "activity-later", "session-evening", "session-morning", "activity-climb", "activity-run",
+        "session-monday", "activity-monday-ride",
+      ]])
+    #expect(weeks[0].rows.map(\.workoutId) == ["evening", "morning", "monday"])
+  }
+
+  /// A week holding only activities still shows, in its place among the weeks, at 0 sessions.
+  @Test func weekOfActivitiesOnlyListed() {
+    let workouts = [
+      Days.workout("now", "A", Days.a, start: Days.at("2026-11-10T10:00")),
+      Days.workout("old", "A", Days.a, start: Days.at("2026-10-20T10:00")),
+    ]
+    let weeks = historyWeeks(
+      History(workouts: workouts, sets: []), activities: [activity("climb", on: "2026-11-04")],
+      efforts: [], now: Days.at("2026-11-12T10:00"), timeZone: Days.paris)
+    #expect(weeks.map(\.start) == ["2026-11-09", "2026-11-02", "2026-10-19"])
+    #expect(weeks[1].items == [.activity(activity("climb", on: "2026-11-04"))])
+    #expect(weeks[1].count == 0 && weeks[1].durationMs == 0 && weeks[1].rows.isEmpty)
+    #expect(weeks.map(\.isCurrent) == [true, false, false])
+  }
+
+  /// The week's line counts its sessions and their length only: an activity adds to neither.
+  @Test func weekLineCountsSessionsOnly() {
+    let workouts = [
+      Days.workout("w1", "A", Days.a, start: Days.at("2026-11-10T10:00")),
+      Days.workout("w2", "B", Days.b, start: Days.at("2026-11-11T10:00")),
+    ]
+    let activities = [
+      activity("a1", on: "2026-11-10", minutes: 90), activity("a2", on: "2026-11-12", kind: "cardio"),
+    ]
+    let weeks = historyWeeks(
+      History(workouts: workouts, sets: []), activities: activities, efforts: [],
+      now: Days.at("2026-11-12T10:00"), timeZone: Days.paris)
+    #expect(weeks.count == 1 && weeks[0].items.count == 4)
+    #expect(weeks[0].count == 2)
+    #expect(weeks[0].durationMs == 100 * 60_000)
+  }
+
+  /// A removed activity is not history, and a week it alone held is not shown.
+  @Test func removedActivityLeft() {
+    let workouts = [Days.workout("w1", "A", Days.a, start: Days.at("2026-11-10T10:00"))]
+    let activities = [
+      activity("gone", on: "2026-11-10", removed: true), activity("goneWeek", on: "2026-11-03", removed: true),
+      activity("kept", on: "2026-11-11"),
+    ]
+    let weeks = historyWeeks(
+      History(workouts: workouts, sets: []), activities: activities, efforts: [],
+      now: Days.at("2026-11-12T10:00"), timeZone: Days.paris)
+    #expect(weeks.map { $0.items.map(\.id) } == [["activity-kept", "session-w1"]])
+  }
+
+  private func activity(
+    _ id: String, on date: String, kind: String = "climbing", minutes: Int = 60, removed: Bool = false
+  ) -> ActivityRow {
+    ActivityRow(
+      id: id, date: date, kind: kind, durationMin: minutes, cardioType: kind == "cardio" ? "bike" : nil,
+      climbStyle: kind == "climbing" ? "boulder" : nil, climbRuns: nil, climbGrade: nil, climbColor: nil,
+      fieldsAt: "2026-11-01T00:00:00.000Z", removed: removed, removedAt: nil)
+  }
+
   /// Years of sessions group at once: 1 000 sessions, 3 sets each, under 50 ms.
   @Test func thousandSessionsUnderFiftyMilliseconds() {
     let start = Days.at("2020-01-06T10:00")
