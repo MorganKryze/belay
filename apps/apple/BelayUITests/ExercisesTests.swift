@@ -279,17 +279,20 @@ final class ExercisesTests: XCTestCase {
         XCTAssertEqual(kept.value as? String, "0", "signed in again, no loop is left from before")
     }
 
-    /// A row's thumbnail drawn before a sign-out is not shown from memory after it: signed in again,
-    /// the row asks the instance anew.
+    /// A row's frame drawn before a sign-out is not shown from memory after it: signed in again,
+    /// the kept loop gone, the row shows the figure.
     func testThumbnailsGoAtSignOut() {
         let app = exercices()
         _ = page(app, "ds:0025", search: "barbell bench press")
         XCTAssertTrue(
             element(app, "loop").comesToRead("Démonstration de Barbell bench press, prête", timeout: 20))
-        let asked = element(app, "loop-asked")
-        XCTAssertEqual(asked.value as? String, "1", "the row and the page asked once")
-        // Time for the row below the page to draw its first frame from the loop.
-        Thread.sleep(forTimeInterval: 2)
+        XCTAssertEqual(element(app, "loop-asked").value as? String, "1", "the page asked once")
+        app.navigationBars.buttons.firstMatch.tap()
+        let row = element(app, "exercise.ds:0025")
+        XCTAssertTrue(row.waitForExistence(timeout: 5))
+        thumbComesTo(app, row, .frame, "the kept loop's frame before the sign-out")
+        row.tap()
+        XCTAssertTrue(element(app, "exercise-name").waitForExistence(timeout: 5))
         signOutAndBack(app)
         let tab = app.tabBars.firstMatch.buttons["Séances"]
         XCTAssertTrue(tab.waitForExistence(timeout: 10))
@@ -298,8 +301,8 @@ final class ExercisesTests: XCTestCase {
         XCTAssertTrue(segment.waitForExistence(timeout: 5))
         segment.tap()
         search(app, "barbell bench press")
-        XCTAssertTrue(element(app, "exercise.ds:0025").waitForExistence(timeout: 5))
-        XCTAssertTrue(comesToValue(asked, "2", timeout: 10), "asked again: \(asked.value ?? "none")")
+        XCTAssertTrue(row.waitForExistence(timeout: 5))
+        thumbComesTo(app, row, .figure, "the figure, not the frame from before")
     }
 
     /// A48: the page opens on its name in the page; once scrolled no title stands in the bar, and
@@ -327,7 +330,7 @@ final class ExercisesTests: XCTestCase {
         XCTAssertFalse(app.buttons["Lire la démonstration"].exists)
     }
 
-    // MARK: The figure
+    // MARK: The figure and the thumbnails
 
     private typealias RGB = (r: Int, g: Int, b: Int)
 
@@ -337,6 +340,8 @@ final class ExercisesTests: XCTestCase {
         ((0x12, 0x18, 0x1C), (0x8E, 0x9A, 0xA1), (0xD5, 0xDB, 0xDD)),
         ((0xEE, 0xF2, 0xF3), (0x6F, 0x7D, 0x86), (0x2E, 0x3A, 0x43)),
     ]
+    /// The first frame of the fixture's loop: a flat grey.
+    private static let fixtureFrame: RGB = (200, 200, 200)
 
     /// How many of the screen's pixels inside `rect`, in points, sit near each colour.
     private func counts(_ app: XCUIApplication, in rect: CGRect, near colors: [RGB]) -> [Int] {
@@ -372,6 +377,43 @@ final class ExercisesTests: XCTestCase {
             let found = counts(app, in: rect, near: [palette.primary, palette.secondary, palette.rest])
             return (found[0], found[1], found[2])
         }.max { $0.rest < $1.rest } ?? (0, 0, 0)
+    }
+
+    private enum Thumb { case figure, frame }
+
+    /// The band at the row's leading edge, `width` points wide, where its thumbnail sits left of
+    /// its name.
+    private func thumbSquare(_ row: XCUIElement, width: CGFloat) -> CGRect {
+        CGRect(x: row.frame.minX, y: row.frame.minY, width: width, height: row.frame.height)
+    }
+
+    /// What the row's thumbnail draws: the figure (muscles at rest, the primary in full), or the
+    /// loop's flat grey frame with no figure in it; with the pixels counted, for a failure to say.
+    private func thumb(_ app: XCUIApplication, _ row: XCUIElement, width: CGFloat = 70) -> (Thumb?, String) {
+        let square = thumbSquare(row, width: width)
+        let figure = shades(app, in: square)
+        let frame = counts(app, in: square, near: [Self.fixtureFrame])[0]
+        let seen = "\(figure), frame grey \(frame), in \(square)"
+        if figure.rest > 100, figure.primary > 20 { return (.figure, seen) }
+        if frame > 1_000, figure.primary < 20 { return (.frame, seen) }
+        return (nil, seen)
+    }
+
+    /// Whether the row's thumbnail comes to draw `kind` within `timeout` seconds; a failure says
+    /// what it drew last.
+    private func thumbComesTo(
+        _ app: XCUIApplication, _ row: XCUIElement, _ kind: Thumb, width: CGFloat = 70, timeout: TimeInterval = 10,
+        _ message: String, line: UInt = #line
+    ) {
+        let end = Date.now.addingTimeInterval(timeout)
+        var seen = ""
+        repeat {
+            let (drawn, counted) = thumb(app, row, width: width)
+            if drawn == kind { return }
+            seen = counted
+            Thread.sleep(forTimeInterval: 0.5)
+        } while Date.now < end
+        XCTFail("\(message): \(seen)", line: line)
     }
 
     /// Scrolls the page by a short drag until both elements are on screen.
@@ -431,6 +473,58 @@ final class ExercisesTests: XCTestCase {
                 && !["De face", "De dos"].contains(element.label)
         }
         XCTAssertTrue(inBand.isEmpty, "elements in the figure: \(inBand.map(\.label))")
+    }
+
+    /// A row whose loop is not on the phone draws the figure, and asks the instance for nothing.
+    func testRowWithoutKeptLoopShowsThumbnail() {
+        let app = exercices()
+        search(app, "barbell bench press")
+        let row = element(app, "exercise.ds:0025")
+        XCTAssertTrue(row.waitForExistence(timeout: 5))
+        thumbComesTo(app, row, .figure, "the figure in the row")
+        // Longer than the fixture instance takes to answer.
+        Thread.sleep(forTimeInterval: 4)
+        XCTAssertEqual(element(app, "loop-asked").value as? String, "0", "a row never asks for a loop")
+        thumbComesTo(app, row, .figure, timeout: 0, "still the figure")
+    }
+
+    /// Once the page has kept the loop, the row shows the loop's first frame.
+    func testRowWithKeptLoopKeepsItsFrame() {
+        let app = exercices()
+        _ = page(app, "ds:0025", search: "barbell bench press")
+        let kept = element(app, "loops-kept")
+        let landed = expectation(for: NSPredicate(format: "value != '0'"), evaluatedWith: kept)
+        XCTAssertEqual(XCTWaiter.wait(for: [landed], timeout: 30), .completed, "the loop is kept")
+        app.navigationBars.buttons.firstMatch.tap()
+        let row = element(app, "exercise.ds:0025")
+        XCTAssertTrue(row.waitForExistence(timeout: 5))
+        thumbComesTo(app, row, .frame, "the kept loop's frame in the row")
+    }
+
+    /// The session's picker draws each exercise's figure beside its name.
+    func testPickerRowsShowThumbnail() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-AppleLanguages", "(fr)", "-AppleLocale", "fr_FR", "-BelayFixture", "workSet"]
+        app.launchFixture()
+        let resume = app.buttons["Reprendre"]
+        XCTAssertTrue(resume.waitForExistence(timeout: 30), "the session is open")
+        resume.tap()
+        let header = app.buttons.matching(NSPredicate(format: "label ENDSWITH %@", "voir le programme")).firstMatch
+        XCTAssertTrue(header.waitForExistence(timeout: 5))
+        header.tap()
+        let add = element(app, "add-exercise")
+        XCTAssertTrue(app.swipeUpUntil(add))
+        add.tap()
+        let field = app.searchFields.firstMatch
+        XCTAssertTrue(field.waitForExistence(timeout: 3))
+        field.tap()
+        // Return puts the keyboard away, so the row is in sight.
+        field.typeText("hammer curl\n")
+        let pick = element(app, "pick-ds:0313")
+        XCTAssertTrue(pick.waitForExistence(timeout: 3))
+        XCTAssertTrue(app.keyboards.firstMatch.waitForNonExistence(timeout: 3))
+        XCTAssertGreaterThanOrEqual(pick.frame.height, 44)
+        thumbComesTo(app, pick, .figure, timeout: 5, "the figure beside the name")
     }
 
     /// The loop still waits for a tap: shown at rest, it plays only once play is tapped.

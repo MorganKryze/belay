@@ -1,5 +1,7 @@
 import BelayCore
 import SwiftUI
+import UIKit
+import os
 
 /// The figure's outlines as paths, built once per view, the deltoid's two heads already cut apart
 /// at the web's line, a hairline between them.
@@ -107,5 +109,55 @@ struct BodyFigure: View {
         case .front: Text("De face", tableName: "Exercices")
         case .back: Text("De dos", tableName: "Exercices")
         }
+    }
+}
+
+/// A list row's thumbnail: the view and the part of the body where the first primary muscle sits,
+/// that muscle in full, the secondary ones lighter. Drawn once per muscle set and theme, then shown
+/// as a picture.
+struct FigureThumbnail: View {
+    let primary: String?
+    let secondary: [String]
+    @Environment(\.colorScheme) private var scheme
+    @Environment(\.displayScale) private var scale
+    @ScaledMetric(relativeTo: .body) private var side: CGFloat = 44
+
+    var body: some View {
+        let key = FigureThumbnailKey(primary: primary ?? "", secondary: secondary, dark: scheme == .dark)
+        Image(uiImage: FigureThumbnails.image(key, scale: scale))
+            .resizable()
+            .frame(width: side, height: side)
+            .background(Color.track)
+            .clipShape(.rect(cornerRadius: 11))
+            .accessibilityHidden(true)
+    }
+}
+
+/// The thumbnails drawn so far. Unbounded on purpose: the library's 1 300 exercises share about 150
+/// muscle sets, some 70 kB each at 3×, and a set looks the same for every account.
+@MainActor
+enum FigureThumbnails {
+    private static var images: [FigureThumbnailKey: UIImage] = [:]
+
+    /// Drawn at 44 pt for the screen's scale; a larger text size shows it enlarged.
+    static func image(_ key: FigureThumbnailKey, scale: CGFloat) -> UIImage {
+        if let image = images[key] { return image }
+        let frame = BelayCore.Figure.bundled.thumbnail(key.primary)
+        let shades = MuscleShades.of(dark: key.dark)
+        let renderer = ImageRenderer(
+            content: FigureDrawing(
+                view: frame.view, viewBox: frame.viewBox,
+                fills: shades.fills(primary: [key.primary], secondary: key.secondary), rest: shades.rest
+            )
+            .frame(width: 44, height: 44))
+        renderer.scale = scale
+        guard let image = renderer.uiImage else {
+            // The row keeps its empty square and says why; the next appearance tries again.
+            Logger(subsystem: "cloud.libresoftware.belay", category: "library")
+                .error("thumbnail not drawn for \(key.primary, privacy: .public)")
+            return UIImage()
+        }
+        images[key] = image
+        return image
     }
 }
