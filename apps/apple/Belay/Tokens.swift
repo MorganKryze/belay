@@ -35,14 +35,17 @@ struct MuscleShades {
     let secondary: Color
     let rest: Color
 
-    /// Resolved for one theme, so a thumbnail drawn off screen gets the colours of the list it
-    /// goes to.
-    static func of(dark: Bool) -> MuscleShades {
-        let traits = UITraitCollection(userInterfaceStyle: dark ? .dark : .light)
-        return MuscleShades(
-            primary: Color(UIColor(resource: .ink).resolvedColor(with: traits)),
-            secondary: srgb(dark ? 0x6F7D86 : 0x8E9AA1),
-            rest: srgb(dark ? 0x2E3A43 : 0xD5DBDD))
+    /// Resolved for one theme and contrast, so a thumbnail drawn off screen gets the colours of the
+    /// list it goes to. The asset catalog holds the web's palette and its Increase Contrast shades.
+    static func of(dark: Bool, high: Bool) -> MuscleShades {
+        let traits = UITraitCollection { traits in
+            traits.userInterfaceStyle = dark ? .dark : .light
+            traits.accessibilityContrast = high ? .high : .normal
+        }
+        func resolved(_ resource: ColorResource) -> Color {
+            Color(UIColor(resource: resource).resolvedColor(with: traits))
+        }
+        return MuscleShades(primary: resolved(.ink), secondary: resolved(.muscleSecondary), rest: resolved(.muscleRest))
     }
 
     /// Each muscle's shade on a figure of these muscles; the others are at rest.
@@ -51,11 +54,5 @@ struct MuscleShades {
         for muscle in secondary { fills[muscle] = self.secondary }
         for muscle in primary { fills[muscle] = self.primary }
         return fills
-    }
-
-    private static func srgb(_ hex: UInt32) -> Color {
-        Color(
-            red: Double(hex >> 16 & 0xFF) / 255, green: Double(hex >> 8 & 0xFF) / 255,
-            blue: Double(hex & 0xFF) / 255)
     }
 }

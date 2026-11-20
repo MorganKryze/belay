@@ -7,6 +7,7 @@ struct ExercisePage: View {
     let training: TrainingModel
     let exerciseId: String
     @Environment(\.colorScheme) private var scheme
+    @Environment(\.colorSchemeContrast) private var contrast
     @State private var steps: [String] = []
 
     var body: some View {
@@ -78,7 +79,7 @@ struct ExercisePage: View {
 
     /// The figure, then the muscles in words, each list beside its shade's key.
     private func muscles(_ exercise: LibraryExercise) -> some View {
-        let shades = MuscleShades.of(dark: scheme == .dark)
+        let shades = MuscleShades.of(dark: scheme == .dark, high: contrast == .increased)
         return Section {
             BodyFigure(primary: exercise.primary, secondary: exercise.secondary)
             LabeledContent {

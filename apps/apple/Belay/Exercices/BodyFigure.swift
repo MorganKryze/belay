@@ -82,12 +82,13 @@ struct BodyFigure: View {
     let primary: [String]
     let secondary: [String]
     @Environment(\.colorScheme) private var scheme
+    @Environment(\.colorSchemeContrast) private var contrast
 
     /// The web's figure height: an image, so it keeps its size whatever the text size.
     private static let height: CGFloat = 224
 
     var body: some View {
-        let shades = MuscleShades.of(dark: scheme == .dark)
+        let shades = MuscleShades.of(dark: scheme == .dark, high: contrast == .increased)
         let fills = shades.fills(primary: primary, secondary: secondary)
         HStack(spacing: 24) {
             ForEach(FigureView.allCases, id: \.self) { view in
@@ -95,7 +96,9 @@ struct BodyFigure: View {
                 VStack(spacing: 4) {
                     FigureDrawing(view: view, viewBox: box, fills: fills, rest: shades.rest)
                         .frame(width: Self.height * box[2] / box[3], height: Self.height)
+                        .accessibilityHidden(true)
                     caption(view).font(.caption).foregroundStyle(.muted)
+                        .accessibilityHidden(true)
                 }
             }
         }
@@ -119,17 +122,30 @@ struct FigureThumbnail: View {
     let primary: String?
     let secondary: [String]
     @Environment(\.colorScheme) private var scheme
+    @Environment(\.colorSchemeContrast) private var contrast
     @Environment(\.displayScale) private var scale
-    @ScaledMetric(relativeTo: .body) private var side: CGFloat = 44
+    @ScaledMetric(relativeTo: .body) private var side = ThumbSlot.side
 
     var body: some View {
         let key = FigureThumbnailKey(primary: primary ?? "", secondary: secondary, dark: scheme == .dark)
-        Image(uiImage: FigureThumbnails.image(key, scale: scale))
+        Image(uiImage: FigureThumbnails.image(key, high: contrast == .increased, side: side, scale: scale))
             .resizable()
+            .modifier(ThumbSlot(side: side))
+            .accessibilityHidden(true)
+    }
+}
+
+/// A list row's thumbnail square: the side scaled with the text, on the track, rounded.
+struct ThumbSlot: ViewModifier {
+    /// The side at the default text size.
+    static let side: CGFloat = 44
+    let side: CGFloat
+
+    func body(content: Content) -> some View {
+        content
             .frame(width: side, height: side)
             .background(Color.track)
             .clipShape(.rect(cornerRadius: 11))
-            .accessibilityHidden(true)
     }
 }
 
@@ -137,19 +153,26 @@ struct FigureThumbnail: View {
 /// muscle sets, some 70 kB each at 3×, and a set looks the same for every account.
 @MainActor
 enum FigureThumbnails {
-    private static var images: [FigureThumbnailKey: UIImage] = [:]
+    private struct Drawn: Hashable {
+        let key: FigureThumbnailKey
+        let high: Bool
+        let side: CGFloat
+    }
 
-    /// Drawn at 44 pt for the screen's scale; a larger text size shows it enlarged.
-    static func image(_ key: FigureThumbnailKey, scale: CGFloat) -> UIImage {
-        if let image = images[key] { return image }
+    private static var images: [Drawn: UIImage] = [:]
+
+    /// Drawn at the row's side for the screen's scale, so it stays sharp at every text size.
+    static func image(_ key: FigureThumbnailKey, high: Bool, side: CGFloat, scale: CGFloat) -> UIImage {
+        let drawn = Drawn(key: key, high: high, side: side)
+        if let image = images[drawn] { return image }
         let frame = BelayCore.Figure.bundled.thumbnail(key.primary)
-        let shades = MuscleShades.of(dark: key.dark)
+        let shades = MuscleShades.of(dark: key.dark, high: high)
         let renderer = ImageRenderer(
             content: FigureDrawing(
                 view: frame.view, viewBox: frame.viewBox,
                 fills: shades.fills(primary: [key.primary], secondary: key.secondary), rest: shades.rest
             )
-            .frame(width: 44, height: 44))
+            .frame(width: side, height: side))
         renderer.scale = scale
         guard let image = renderer.uiImage else {
             // The row keeps its empty square and says why; the next appearance tries again.
@@ -157,7 +180,7 @@ enum FigureThumbnails {
                 .error("thumbnail not drawn for \(key.primary, privacy: .public)")
             return UIImage()
         }
-        images[key] = image
+        images[drawn] = image
         return image
     }
 }

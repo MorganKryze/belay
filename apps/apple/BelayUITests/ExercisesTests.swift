@@ -461,8 +461,8 @@ final class ExercisesTests: XCTestCase {
     }
 
     /// VoiceOver reads the words, not the figure: the figure's band holds no image, no control and
-    /// no words but its two captions. The tree a test reads also lists what VoiceOver skips, so
-    /// the captions stay in it; the skipping itself is heard on the phone.
+    /// no words. The simulator's tree still lists the hidden captions under the band, so their
+    /// silence is heard with VoiceOver on a phone.
     func testFigureHiddenFromVoiceOver() {
         let app = exercices()
         let band = muscles(app).insetBy(dx: 40, dy: 0)
@@ -470,7 +470,6 @@ final class ExercisesTests: XCTestCase {
             let frame = element.frame
             guard band.contains(CGPoint(x: frame.midX, y: frame.midY)), frame.width < band.width else { return false }
             return [.image, .button, .staticText].contains(element.elementType)
-                && !["De face", "De dos"].contains(element.label)
         }
         XCTAssertTrue(inBand.isEmpty, "elements in the figure: \(inBand.map(\.label))")
     }

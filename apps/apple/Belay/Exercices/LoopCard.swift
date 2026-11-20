@@ -259,16 +259,14 @@ struct LoopThumb: View {
     let secondary: [String]
     @Environment(\.loops) private var loops
     @Environment(\.displayScale) private var scale
-    @ScaledMetric(relativeTo: .body) private var side: CGFloat = 44
+    @ScaledMetric(relativeTo: .body) private var side = ThumbSlot.side
     @State private var frame: UIImage?
 
     var body: some View {
         Group {
             if let frame {
                 Image(uiImage: frame).resizable().scaledToFill()
-                    .frame(width: side, height: side)
-                    .background(Color.track)
-                    .clipShape(.rect(cornerRadius: 11))
+                    .modifier(ThumbSlot(side: side))
             } else {
                 FigureThumbnail(primary: primary.first, secondary: secondary)
             }
