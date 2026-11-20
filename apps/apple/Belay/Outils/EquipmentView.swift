@@ -59,7 +59,7 @@ struct EquipmentView: View {
             ChipFlow {
                 ForEach(standardBarsKg, id: \.self) { kg in
                     chip(
-                        Text(verbatim: Self.weight(kg, .kg)), spoken: nil, selected: !other && plates.barKg == kg,
+                        Text(verbatim: Self.weight(kg, .kg)), spoken: Self.spoken(kg), selected: !other && plates.barKg == kg,
                         id: "bar-\(kg)"
                     ) {
                         otherBar = false
@@ -94,7 +94,7 @@ struct EquipmentView: View {
                 ForEach(standardPlatesKg, id: \.self) { kg in
                     // Bare numbers, as the section is in kilos; VoiceOver still hears the unit.
                     chip(
-                        Text(verbatim: kg.upToHundredths), spoken: Text(verbatim: Self.weight(kg, .kg)),
+                        Text(verbatim: kg.upToHundredths), spoken: Self.spoken(kg),
                         selected: plates.platesKg.contains(kg), id: "plate-\(kg)"
                     ) { toggle(kg) }
                 }
@@ -126,7 +126,7 @@ struct EquipmentView: View {
             ChipFlow {
                 chip(
                     Text(verbatim: Self.weight(poundPlates.barLb, .lb)), spoken: Self.spoken(poundPlates.barLb),
-                    selected: true, id: "bar-lb-\(poundPlates.barLb)"
+                    selected: true, id: "bar-lb-\(poundPlates.barLb)", readOnly: true
                 ) {}
             }
             .padding(.vertical, 6)
@@ -138,7 +138,8 @@ struct EquipmentView: View {
             ChipFlow {
                 ForEach(poundPlates.platesLb, id: \.self) { lb in
                     chip(
-                        Text(verbatim: lb.upToHundredths), spoken: Self.spoken(lb), selected: true, id: "plate-lb-\(lb)"
+                        Text(verbatim: lb.upToHundredths), spoken: Self.spoken(lb), selected: true, id: "plate-lb-\(lb)",
+                        readOnly: true
                     ) {}
                 }
             }
@@ -157,9 +158,9 @@ struct EquipmentView: View {
         "\(value.upToHundredths)\u{202F}\(unit.rawValue)"
     }
 
-    /// « 45 livres »: a pound chip as VoiceOver says it, the unit as a word.
-    private static func spoken(_ lb: Double) -> Text {
-        Text(verbatim: "\(lb.upToHundredths) \(SetText.unitWord)")
+    /// « 20 kilos », « 45 livres »: a chip as VoiceOver says it, the unit shown as a word.
+    private static func spoken(_ value: Double) -> Text {
+        Text(verbatim: "\(value.upToHundredths) \(SetText.unitWord)")
     }
 
     private var footer: Text {
@@ -179,28 +180,42 @@ struct EquipmentView: View {
 
     /// A chip for one weight, or « Autre »: filled while chosen. A preset's chips read only, at full
     /// contrast: a tap on one does nothing. `spoken` replaces the words for VoiceOver.
-    private func chip(
-        _ words: Text, spoken: Text?, selected: Bool, id: String, action: @escaping () -> Void
+    /// A chip; `readOnly` ones only show what Belay loads, a plain element without a button trait.
+    @ViewBuilder private func chip(
+        _ words: Text, spoken: Text?, selected: Bool, id: String, readOnly: Bool = false,
+        action: @escaping () -> Void
     ) -> some View {
-        Button {
-            if custom { action() }
-        } label: {
-            HStack(spacing: 4) {
-                if selected {
-                    Image(systemName: "checkmark").font(.caption.weight(.bold)).accessibilityHidden(true)
-                }
-                words.monospacedDigit()
+        if readOnly {
+            chipFace(words, selected: selected)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(spoken ?? words)
+                .accessibilityAddTraits(selected ? .isSelected : [])
+                .accessibilityIdentifier(id)
+        } else {
+            Button {
+                if custom { action() }
+            } label: {
+                chipFace(words, selected: selected)
             }
-            .font(.subheadline.weight(.semibold))
-            .foregroundStyle(selected ? Color.surface : Color.ink)
-            .padding(.horizontal, 14)
-            .frame(minHeight: 44)
-            .background(selected ? Color.ink : Color.track, in: .capsule)
+            .buttonStyle(.plain)
+            .accessibilityLabel(spoken ?? words)
+            .accessibilityAddTraits(selected ? .isSelected : [])
+            .accessibilityIdentifier(id)
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel(spoken ?? words)
-        .accessibilityAddTraits(selected ? .isSelected : [])
-        .accessibilityIdentifier(id)
+    }
+
+    private func chipFace(_ words: Text, selected: Bool) -> some View {
+        HStack(spacing: 4) {
+            if selected {
+                Image(systemName: "checkmark").font(.caption.weight(.bold)).accessibilityHidden(true)
+            }
+            words.monospacedDigit()
+        }
+        .font(.subheadline.weight(.semibold))
+        .foregroundStyle(selected ? Color.surface : Color.ink)
+        .padding(.horizontal, 14)
+        .frame(minHeight: 44)
+        .background(selected ? Color.ink : Color.track, in: .capsule)
     }
 
     private func setBar(_ kg: Double) {

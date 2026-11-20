@@ -81,7 +81,8 @@ struct SetCard: View {
     private func take(_ text: String) {
         guard let value = SetText.parseKg(text) else { return actions.failed() }
         let typedKg = SetText.unit == .kg ? value : loadKgFrom(value, SetText.unit, prefillKg: due.weightKg)
-        guard let kg = typedKg else { return actions.failed() }
+        // Past the bounds, a typed kilo would drive the warm-ups: refused here, as pounds are.
+        guard let kg = typedKg, kg >= Bounds.setKgMin, kg <= Bounds.setKgMax else { return actions.failed() }
         actions.run { try $0.choose(weightKg: kg, count: nil) }
     }
 

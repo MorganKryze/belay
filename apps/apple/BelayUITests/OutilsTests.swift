@@ -243,6 +243,33 @@ final class OutilsTests: XCTestCase {
         XCTAssertTrue(equipment.label.contains("Sur mesure"), equipment.label)
     }
 
+    /// Mon matériel's kilo chips say the unit as a word; in pounds, the chips only show what
+    /// Belay loads, so none is a button.
+    func testEquipmentChipsSpeakTheUnitAndPoundChipsAreNotButtons() {
+        let app = outils()
+        open(app, "plates")
+        let equipment = element(app, "tool-equipment")
+        XCTAssertTrue(app.swipeUpUntil(equipment))
+        equipment.tap()
+        let bar = element(app, "bar-20.0")
+        XCTAssertTrue(bar.waitForExistence(timeout: 5), "Mon matériel opens")
+        XCTAssertEqual(bar.label, "20 kilos")
+        let plate = element(app, "plate-2.5")
+        XCTAssertTrue(app.swipeUpUntil(plate))
+        XCTAssertEqual(plate.label, "2,5 kilos")
+        app.terminate()
+
+        let pounds = outils(arguments: ["-belay.weightUnit", "lb"])
+        open(pounds, "plates")
+        let poundEquipment = element(pounds, "tool-equipment")
+        XCTAssertTrue(pounds.swipeUpUntil(poundEquipment))
+        poundEquipment.tap()
+        let poundBar = element(pounds, "bar-lb-45.0")
+        XCTAssertTrue(poundBar.waitForExistence(timeout: 5), "Mon matériel opens in pounds")
+        XCTAssertEqual(poundBar.label, "45 livres")
+        XCTAssertFalse(pounds.buttons["bar-lb-45.0"].exists, "a pound chip is not a button")
+    }
+
     /// A16: each warm-up set as « 50\u{202F}kg × 5 » with its plates per side, the count on − and +.
     func testWarmupSetsListed() {
         let app = outils()
@@ -348,7 +375,7 @@ final class OutilsTests: XCTestCase {
         let other = element(app, "bar-other")
         XCTAssertTrue(other.waitForExistence(timeout: 5), "the bar offers « Autre »")
         XCTAssertEqual(other.label, "Autre")
-        XCTAssertEqual(element(app, "plate-25.0").label, "25\u{202F}kg", "a bare 25 still says its unit")
+        XCTAssertEqual(element(app, "plate-25.0").label, "25 kilos", "a bare 25 still says its unit as a word")
         let edit = app.buttons["Modifier ce matériel"]
         XCTAssertTrue(app.swipeUpUntil(edit))
         edit.tap()

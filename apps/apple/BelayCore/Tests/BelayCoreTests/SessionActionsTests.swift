@@ -224,6 +224,14 @@ struct Seance {
     #expect(change.id == mine.id && v.rir == 2)
   }
 
+  @Test func loadPastTheBoundChosenIsRefusedAtTheTick() throws {
+    let s = try Seance()
+    try s.actions.choose(weightKg: 625, count: nil)
+    let before = try s.queued
+    #expect(throws: StoreError.invalidChange) { try s.actions.logNext(count: 8, weightKg: nil, expecting: nil) }
+    #expect(try s.queued == before)
+  }
+
   @Test func correctWritesOneValuesChange() throws {
     let s = try Seance()
     let set = try #require(try s.actions.logNext(count: 8, weightKg: 60, expecting: nil))

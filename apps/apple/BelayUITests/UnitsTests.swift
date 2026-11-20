@@ -313,16 +313,19 @@ final class UnitsTests: XCTestCase {
         XCTAssertTrue(loadReads(app, "Charge, 1102 livres"), element(app, "load").label)
     }
 
-    /// 625 kg is past the bounds: the card takes it as typed and ✓ refuses it aloud, queuing nothing.
-    func testLoadOutsideBoundsInKilosRefusedAtTheTick() {
+    /// 625 kg is past the bounds, typed on a slot whose warm-ups it would drive: the refusal is
+    /// said at once, nothing is queued and the card is unchanged.
+    func testLoadOutsideBoundsInKilosRefusedAtOnce() {
         let app = launch("history")
         openCover(app)
-        passWarmups(app)
+        let load = element(app, "load")
+        XCTAssertTrue(load.waitForExistence(timeout: 5))
+        let shown = load.label
         let queued = queuedSets(app)
         typeLoad(app, "625")
-        element(app, "log-set").tap()
         dismissRefusal(app)
         XCTAssertEqual(queuedSets(app), queued, "nothing more is queued")
+        XCTAssertEqual(element(app, "load").label, shown, "the card is unchanged")
     }
 
     /// A text that is not a plain number, « 1e2 », « -0 » or « 62,,5 », is refused aloud and
