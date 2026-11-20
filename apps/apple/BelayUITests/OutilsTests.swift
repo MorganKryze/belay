@@ -495,4 +495,29 @@ final class OutilsTests: XCTestCase {
         XCTAssertTrue(text(app, containing: "Une charge va de").waitForExistence(timeout: 3), "1 101 lb is refused")
         XCTAssertFalse(element(app, "tool-figure-epley").exists, "no figure for it")
     }
+
+    /// In pounds, Mon matériel shows the pound gym, read only: the 45 lb bar and the standard pound
+    /// plates, said in pounds, with the web's note.
+    func testEquipmentInPoundsShowsPoundSet() {
+        let app = outils(arguments: ["-belay.weightUnit", "lb"])
+        open(app, "plates")
+        let equipment = element(app, "tool-equipment")
+        XCTAssertTrue(app.swipeUpUntil(equipment))
+        equipment.tap()
+        let bar = element(app, "bar-lb-45.0")
+        XCTAssertTrue(bar.waitForExistence(timeout: 5), "Mon matériel opens on the pound bar")
+        XCTAssertEqual(bar.label, "45 livres")
+        XCTAssertFalse(element(app, "bar-20.0").exists, "no kilo bar")
+        XCTAssertFalse(app.segmentedControls["equipment-preset"].exists, "no preset to pick in pounds")
+        for (plate, spoken) in [("45.0", "45"), ("35.0", "35"), ("25.0", "25"), ("10.0", "10"), ("5.0", "5"), ("2.5", "2,5")] {
+            let chip = element(app, "plate-lb-\(plate)")
+            XCTAssertTrue(app.swipeUpUntil(chip), "the \(plate) lb plate")
+            XCTAssertEqual(chip.label, "\(spoken) livres")
+            XCTAssertGreaterThanOrEqual(chip.frame.height, 44, "a plate is a 44 pt chip")
+        }
+        XCTAssertFalse(element(app, "plate-20.0").exists, "no kilo plate")
+        let note = app.staticTexts["En livres, Belay prend la barre de 45\u{202F}lb et les disques standard."]
+        XCTAssertTrue(app.swipeUpUntil(note), "the web's note")
+        XCTAssertFalse(app.buttons["Modifier ce matériel"].exists, "the pound set reads only")
+    }
 }
