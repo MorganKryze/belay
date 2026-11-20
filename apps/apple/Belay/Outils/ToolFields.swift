@@ -115,6 +115,8 @@ struct WeightField: View {
     let step: Double
     /// The kilos the grey placeholder shows.
     let prompt: Double
+    /// Where a prefilled weight comes from, under the name.
+    let source: SourceLine?
     let id: String
     @State private var text: String
     /// The kilos the field shows since it opened or the unit changed, which `readBack` keeps.
@@ -122,11 +124,15 @@ struct WeightField: View {
     /// What the field last handed back, so a change of its own does not reset what is typed.
     @State private var handed: String?
 
-    init(label: LocalizedStringKey, kg: Binding<String>, step: Double, prompt: Double, id: String) {
+    init(
+        label: LocalizedStringKey, kg: Binding<String>, step: Double, prompt: Double, source: SourceLine? = nil,
+        id: String
+    ) {
         self.label = label
         _kg = kg
         self.step = step
         self.prompt = prompt
+        self.source = source
         self.id = id
         _text = State(initialValue: OutilsModel.shownText(kg.wrappedValue, step: step))
         _shownKg = State(initialValue: SetText.parseKg(kg.wrappedValue))
@@ -136,7 +142,7 @@ struct WeightField: View {
         let unit = SetText.unit
         KeypadField(
             label: label, text: $text, unit: LocalizedStringKey(unit.rawValue), spokenUnit: SetText.unitWord,
-            prompt: OutilsModel.weightText(prompt, step: step), id: id
+            prompt: OutilsModel.weightText(prompt, step: step), source: source, id: id
         )
         .onChange(of: unit) { reset() }
         .onChange(of: kg) { if kg != handed { reset() } }

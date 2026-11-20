@@ -500,6 +500,105 @@ final class BodyToolsTests: XCTestCase {
         toTop(app)
         XCTAssertTrue(app.staticTexts["soit 1,4 à 2\u{00A0}g par kg de poids"].exists)
     }
+
+    /// In pounds, homme, 34 ans, 178 cm and 176 lb (79,83 kg) give the web's 2 710 kcal, 1 750 at rest.
+    func testEnergyWeightInPounds() {
+        let app = launch("toolsEmpty", arguments: ["-belay.weightUnit", "lb"])
+        outils(app)
+        open(app, "energy")
+        choose(app, "Homme", in: "tool-formula")
+        type(app, "34", into: "tool-field-age")
+        type(app, "178", into: "tool-field-height")
+        type(app, "176", into: "tool-field-weight")
+        let weight = element(app, "tool-field-weight")
+        XCTAssertTrue(weight.label.contains("livres"), weight.label)
+        XCTAssertFalse(element(app, "tool-field-height").label.contains("livres"), "the height stays in centimeters")
+        toTop(app)
+        let figure = element(app, "tool-figure-energy")
+        XCTAssertTrue(figure.waitForExistence(timeout: 5))
+        XCTAssertEqual(figure.label, "Dépense du jour, 2\u{202F}710\u{202F}kcal")
+        XCTAssertEqual(element(app, "tool-energy-bmr").label, "Dépense au repos, 1\u{202F}750\u{202F}kcal")
+    }
+
+    /// In pounds, maintien at 176 lb gives the web's 110 to 160 g, still per kilo under it.
+    func testProteinInPounds() {
+        let app = launch("toolsEmpty", arguments: ["-belay.weightUnit", "lb"])
+        outils(app)
+        open(app, "protein")
+        type(app, "176", into: "tool-field-weight")
+        XCTAssertTrue(element(app, "tool-field-weight").label.contains("livres"))
+        toTop(app)
+        XCTAssertEqual(element(app, "tool-figure-protein").label, "Par jour, 110 à 160\u{202F}g")
+        XCTAssertTrue(app.staticTexts["soit 1,4 à 2\u{00A0}g par kg de poids"].exists, "per kilo, as the web")
+    }
+
+    /// In pounds, the 7-day average of 80,1 kg reads 177 lb on the web's whole-pound step; to a goal
+    /// of 165 lb at « Équilibré » it takes 10 to 13 weeks, losing 1,3 lb a week.
+    func testProjectionInPounds() {
+        let app = launch("tools", arguments: ["-belay.weightUnit", "lb"])
+        outils(app)
+        open(app, "projection")
+        let weight = element(app, "tool-field-weight")
+        XCTAssertTrue(weight.waitForExistence(timeout: 5))
+        XCTAssertEqual(weight.value as? String, "177", "80,1 kg on whole pounds")
+        XCTAssertTrue(weight.label.contains("livres"), weight.label)
+        type(app, "165", into: "tool-field-target")
+        XCTAssertTrue(element(app, "tool-field-target").label.contains("livres"))
+        toTop(app)
+        let weeks = element(app, "tool-projection-weeks")
+        XCTAssertTrue(weeks.waitForExistence(timeout: 5))
+        XCTAssertTrue(weeks.label.hasPrefix("Dans 10 à 13 semaines."), weeks.label)
+        XCTAssertTrue(app.staticTexts["0,75\u{202F}% · 1,3\u{202F}lb par semaine"].exists, "the pace in pounds")
+    }
+
+    /// In pounds, 178 cm and 176 lb give the web's 25,2.
+    func testBmiInPounds() {
+        let app = launch("toolsEmpty", arguments: ["-belay.weightUnit", "lb"])
+        outils(app)
+        open(app, "bmi")
+        type(app, "178", into: "tool-field-height")
+        type(app, "176", into: "tool-field-weight")
+        XCTAssertTrue(element(app, "tool-field-weight").label.contains("livres"))
+        toTop(app)
+        XCTAssertEqual(element(app, "tool-figure-bmi").label, "Ton IMC, 25,2")
+    }
+
+    /// In pounds, Masse grasse takes no weight: its girths and height stay in centimeters and give
+    /// the same 16 % as the web.
+    func testBodyFatInPounds() {
+        let app = launch("toolsEmpty", arguments: ["-belay.weightUnit", "lb"])
+        outils(app)
+        open(app, "body-fat")
+        choose(app, "Homme", in: "tool-formula")
+        type(app, "34", into: "tool-field-age")
+        type(app, "38", into: "tool-field-neck")
+        type(app, "84,5", into: "tool-field-waist")
+        type(app, "178", into: "tool-field-height")
+        XCTAssertFalse(element(app, "tool-field-weight").exists, "no weight field")
+        for id in ["tool-field-neck", "tool-field-waist", "tool-field-height"] {
+            XCTAssertFalse(element(app, id).label.contains("livres"), "\(id) stays in centimeters")
+        }
+        toTop(app)
+        XCTAssertEqual(element(app, "tool-figure-body-fat").label, "Ta masse grasse estimée, 16\u{202F}%")
+    }
+
+    /// In pounds, a body weight past the bounds once converted gets them in pounds, as the field
+    /// rounds them: 66,5 lb is over 30 kg but under the 67 lb the field starts at.
+    func testWeightOutsideBoundsSaysPounds() {
+        let app = launch("toolsEmpty", arguments: ["-belay.weightUnit", "lb"])
+        outils(app)
+        open(app, "bmi")
+        type(app, "178", into: "tool-field-height")
+        type(app, "662", into: "tool-field-weight")
+        toTop(app)
+        XCTAssertTrue(app.staticTexts["Un poids va de 67 à 661\u{202F}lb."].waitForExistence(timeout: 3), "662 lb is past 300 kg")
+        XCTAssertFalse(element(app, "tool-figure-bmi").exists, "no figure for it")
+        clear(app, "tool-field-weight")
+        type(app, "66,5", into: "tool-field-weight")
+        toTop(app)
+        XCTAssertTrue(app.staticTexts["Un poids va de 67 à 661\u{202F}lb."].waitForExistence(timeout: 3), "66,5 lb is refused")
+        XCTAssertFalse(element(app, "tool-figure-bmi").exists, "no figure for it")
+    }
 }
 
 extension XCUIApplication {

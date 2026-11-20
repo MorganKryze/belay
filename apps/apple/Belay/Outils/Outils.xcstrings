@@ -42,12 +42,12 @@
         }
       }
     },
-    "%@ · %@ kg par semaine": {
+    "%@ · %@ %@ par semaine": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ · %@ kg per week"
+            "value": "%1$@ · %2$@ %3$@ per week"
           }
         }
       }
@@ -1572,12 +1572,12 @@
         }
       }
     },
-    "Un poids va de 30 à 300 kg.": {
+    "Un poids va de %@ à %@ %@.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "A weight goes from 30 to 300 kg."
+            "value": "A weight goes from %1$@ to %2$@ %3$@."
           }
         }
       }

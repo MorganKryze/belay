@@ -46,8 +46,8 @@ struct EnergyTool: View {
                     label: "Taille", text: outils.binding(.energy, .height, defaults), unit: "cm", prompt: "170",
                     source: source(.height), id: "tool-field-height")
                 ProfileOffer(corps: corps, outils: outils, tool: .energy, field: .height, defaults: defaults)
-                KeypadField(
-                    label: "Poids", text: outils.binding(.energy, .weight, defaults), prompt: "70",
+                WeightField(
+                    label: "Poids", kg: outils.binding(.energy, .weight, defaults), step: BodyWeight.step, prompt: 70,
                     source: source(.weight), id: "tool-field-weight")
                 if outils.anyPrefilled(.energy, Self.fields, defaults) {
                     RestoreRow { outils.restore(.energy, Self.fields) }
@@ -85,7 +85,8 @@ struct EnergyTool: View {
         }
         let input = MifflinInput(formula: formula, ageYears: age, heightCm: height, weightKg: weight)
         do {
-            return .success(try dailyEnergy(input, pal: outils.pal.pal))
+            let day = try dailyEnergy(input, pal: outils.pal.pal)
+            return BodyWeight.holds(weight) ? .success(day) : .failure(.outside("weight"))
         } catch {
             return .failure(.outside(error.message))
         }
@@ -237,7 +238,7 @@ enum BodyLine: Error {
     case prompt(LocalizedStringResource)
 
     /// « Il manque la formule, l’âge, la taille et le poids. », « Un âge va de 15 à 100 ans. »
-    var text: Text {
+    @MainActor var text: Text {
         switch self {
         case .missing(let fields):
             let list = fields.compactMap { $0?.words }.formatted(.list(type: .and))
@@ -253,9 +254,33 @@ enum BodyLine: Error {
             case "age": return Text("Un âge va de 15 à 100 ans.", tableName: "Outils")
             case "height": return Text("Une taille va de 120 à 230 cm.", tableName: "Outils")
             case "body fat": return Text("Une masse grasse va de 2 à 75 %.", tableName: "Outils")
-            default: return Text("Un poids va de 30 à 300 kg.", tableName: "Outils")
+            default:
+                let bounds = BodyWeight.bounds
+                let (low, high) = (bounds.lowerBound.upToHundredths, bounds.upperBound.upToHundredths)
+                return Text("Un poids va de \(low) à \(high)\u{202F}\(SetText.symbol).", tableName: "Outils")
             }
         }
+    }
+}
+
+/// A body weight the tools take: the web's 30 to 300 kg, and in pounds also within those bounds as
+/// `rangeIn` rounds them to the fields' 0,5 kg step, so the line that gives the bounds holds for
+/// every weight it refuses.
+enum BodyWeight {
+    /// The web's step for a body weight in the tools: whole pounds in lb.
+    static let step = 0.5
+
+    /// 30 to 300 kg, or 67 to 661 lb.
+    static var bounds: ClosedRange<Double> {
+        rangeIn(weightRangeKg, SetText.unit, step: stepIn(step, SetText.unit))
+    }
+
+    static func holds(_ kg: Double) -> Bool {
+        guard weightRangeKg.contains(kg) else { return false }
+        guard SetText.unit == .lb else { return true }
+        // A bound typed as shown converts back a hair off it, which must not refuse it.
+        let lb = kgToLb(kg)
+        return lb >= bounds.lowerBound - 1e-6 && lb <= bounds.upperBound + 1e-6
     }
 }
 

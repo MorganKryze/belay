@@ -38,8 +38,8 @@ struct BmiTool: View {
                     label: "Taille", text: outils.binding(.bmi, .height, defaults), unit: "cm", prompt: "170",
                     source: source(.height), id: "tool-field-height")
                 ProfileOffer(corps: corps, outils: outils, tool: .bmi, field: .height, defaults: defaults)
-                KeypadField(
-                    label: "Poids", text: outils.binding(.bmi, .weight, defaults), prompt: "70",
+                WeightField(
+                    label: "Poids", kg: outils.binding(.bmi, .weight, defaults), step: BodyWeight.step, prompt: 70,
                     source: source(.weight), id: "tool-field-weight")
                 if outils.anyPrefilled(.bmi, Self.fields, defaults) {
                     RestoreRow { outils.restore(.bmi, Self.fields) }
@@ -61,7 +61,8 @@ struct BmiTool: View {
             return .failure(.prompt(LocalizedStringResource("Entre ta taille et ton poids.", table: "Outils")))
         }
         do {
-            return .success(try bmi(weightKg: weight, heightCm: height))
+            let value = try bmi(weightKg: weight, heightCm: height)
+            return BodyWeight.holds(weight) ? .success(value) : .failure(.outside("weight"))
         } catch {
             return .failure(.outside(error.message))
         }
