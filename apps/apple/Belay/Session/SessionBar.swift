@@ -38,6 +38,8 @@ struct SessionBar: ToolbarContent {
 struct StopAsk {
     let done: Int
     let planned: Int
+    /// Every set stored for the session, warm-ups included: what the deletion removes.
+    let logged: Int
     /// A warm-up counts: a session that holds one is ended, not dropped.
     let holdsSets: Bool
     let stop: () -> Void
@@ -83,7 +85,7 @@ private struct StopButton: View {
             Button(role: .destructive, action: ask.remove) { Text("Supprimer la séance", tableName: "SessionEnd") }
             Button(role: .cancel) {} label: { Text("Continuer la séance", tableName: "SessionEnd") }
         } message: {
-            Text("Les \(ask.done) séries notées ne seront pas gardées\u{202F}; ton programme ne change pas.", tableName: "SessionEnd")
+            Text("Les \(ask.logged) séries notées ne seront pas gardées\u{202F}; ton programme ne change pas.", tableName: "SessionEnd")
         }
     }
 

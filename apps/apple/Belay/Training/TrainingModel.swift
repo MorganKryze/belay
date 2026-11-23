@@ -347,6 +347,13 @@ final class TrainingModel {
         return active.restEndsAt.flatMap(Instant.date)
     }
 
+    /// Every live set of the open session, warm-ups and sets past the plan included: what
+    /// deleting the session removes.
+    var setsLogged: Int {
+        guard let workoutId = session?.workoutId else { return 0 }
+        return last?.history.sets.filter { $0.workoutId == workoutId && !$0.removed }.count ?? 0
+    }
+
     /// When the open session's latest set was done: where the rest after it starts.
     var restFrom: Date? {
         guard let workoutId = session?.workoutId else { return nil }

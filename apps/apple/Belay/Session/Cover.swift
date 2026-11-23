@@ -461,6 +461,7 @@ struct Cover: View {
     private var stopAsk: StopAsk {
         StopAsk(
             done: training.open?.setsDone ?? 0, planned: training.open?.setsPlanned ?? 0,
+            logged: training.setsLogged,
             holdsSets: training.restFrom != nil,
             stop: { withAnimation(motion) { finish() } },
             leave: {

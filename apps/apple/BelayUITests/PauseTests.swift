@@ -118,7 +118,8 @@ final class PauseTests: XCTestCase {
         XCTAssertFalse(app.buttons["Enregistrer et fermer"].exists, "with no summary")
     }
 
-    /// « Supprimer la séance… » asks again; confirmed, the session goes with its set, no summary,
+    /// « Supprimer la séance… » asks again, counting the warm-ups with the work set as the web does;
+    /// confirmed, the session goes with its sets, no summary,
     /// and Accueil offers it again while Historique lists only the session done the day before.
     func testStopDeletesTheSessionWithItsSets() {
         let app = launch("lockLogged")
@@ -127,8 +128,8 @@ final class PauseTests: XCTestCase {
         alert = app.alerts["Supprimer la séance\u{202F}?"]
         XCTAssertTrue(alert.waitForExistence(timeout: 3), "a second question")
         XCTAssertTrue(
-            alert.staticTexts["La série notée ne sera pas gardée\u{202F}; ton programme ne change pas."].exists,
-            "one set logged")
+            alert.staticTexts["Les 3 séries notées ne seront pas gardées\u{202F}; ton programme ne change pas."].exists,
+            "two warm-ups and a work set logged")
         alert.buttons["Supprimer la séance"].tap()
         XCTAssertTrue(app.navigationBars["Bonjour Ada"].waitForExistence(timeout: 5), "back on Accueil")
         XCTAssertFalse(app.buttons["Enregistrer et fermer"].exists, "with no summary")
