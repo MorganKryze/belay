@@ -1,3 +1,4 @@
+import BelayCore
 import SwiftUI
 import os
 
@@ -17,10 +18,14 @@ struct SeancesView: View {
     }
 
     let training: TrainingModel
+    /// The Activité sheet's, which an activity of the history opens.
+    let corps: CorpsModel
     @Binding var segment: Segment
     /// Pushes a session's preview.
     let openPreview: (String) -> Void
     @State private var choosing = false
+    /// The history's activity tapped, which Activité opens on.
+    @State private var opened: ActivityRow?
     /// Exercices' search, kept while the app runs as the segment is.
     @State private var query = ""
 
@@ -48,7 +53,7 @@ struct SeancesView: View {
                     activeId: training.activeProgramId, openPreview: openPreview
                 ) { choosing = true }
             case .historique:
-                HistorySection(weeks: training.weeks)
+                HistorySection(weeks: training.weeks) { opened = $0 }
             case .exercices:
                 ExercisesSection(training: training, query: query)
             }
@@ -61,6 +66,9 @@ struct SeancesView: View {
             ProgramChoiceSheet(programs: training.programs, activeId: training.activeProgramId) { id in
                 choose(id)
             }
+        }
+        .sheet(isPresented: Binding(get: { opened != nil }, set: { if !$0 { opened = nil } })) {
+            if let opened { ActivitySheet(corps: corps, day: opened.date, picked: opened.id) }
         }
     }
 

@@ -3,16 +3,16 @@
 // shared conversions (the set grid and roundTo are startup modules already, through the router
 // and the number format).
 import {
-  kgFromLoad,
   kgToLb,
   lbToKg,
   loadFromKg,
+  loadKgFrom,
   rangeIn,
+  readBack,
   stepIn,
   weighingFromKg,
   type WeightUnit,
 } from "@belay/shared/tools/units";
-import { isSetKg } from "@belay/shared/training/workout";
 import { roundTo } from "@belay/shared/tools/round";
 import { formatKg, formatNumber, parseDecimal } from "./format";
 import { preference } from "./preference";
@@ -56,15 +56,7 @@ export function parseLoad(
   prefillKg?: number,
 ): number | null {
   const value = parseDecimal(text);
-  if (value === null) return null;
-  const kg = kgFromLoad(value, unit);
-  if (
-    prefillKg !== undefined &&
-    isSetKg(prefillKg) &&
-    kg === kgFromLoad(loadFromKg(prefillKg, unit), unit)
-  )
-    return prefillKg;
-  return isSetKg(kg) ? kg : null;
+  return value === null ? null : loadKgFrom(value, unit, prefillKg);
 }
 
 // A weight stepper in the unit: what NumberStepper takes, and the way back to kg. toKg is not
@@ -92,6 +84,6 @@ export function weightStepper(
     value,
     ...rangeIn(rangeKg, unit, step),
     step,
-    toKg: (v) => (v === value ? kg : lbToKg(v)),
+    toKg: (v) => readBack(lbToKg(v), { kg, shownKg: lbToKg(value) }),
   };
 }

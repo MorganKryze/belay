@@ -224,6 +224,14 @@ struct Seance {
     #expect(change.id == mine.id && v.rir == 2)
   }
 
+  @Test func loadPastTheBoundChosenIsRefusedAtTheTick() throws {
+    let s = try Seance()
+    try s.actions.choose(weightKg: 625, count: nil)
+    let before = try s.queued
+    #expect(throws: StoreError.invalidChange) { try s.actions.logNext(count: 8, weightKg: nil, expecting: nil) }
+    #expect(try s.queued == before)
+  }
+
   @Test func correctWritesOneValuesChange() throws {
     let s = try Seance()
     let set = try #require(try s.actions.logNext(count: 8, weightKg: 60, expecting: nil))
@@ -557,6 +565,38 @@ struct Seance {
     try s.actions.stopEmpty()
     #expect(try s.workout.removed)
     #expect(try s.active == nil)
+  }
+
+  @Test func removeOpenDropsASessionWithItsSets() throws {
+    let s = try Seance()
+    for _ in 0..<3 {
+      _ = try s.actions.logNext(count: 8, weightKg: 60, expecting: nil)
+      try? s.actions.skipRest()
+    }
+    let setsBefore = try s.store.history().sets.filter { $0.workoutId == s.workoutId }
+    #expect(setsBefore.filter { !$0.removed }.count == 3)
+    let queuedBefore = try s.queued
+    try s.actions.removeOpen()
+    #expect(try s.workout.removed)
+    #expect(try s.active == nil)
+    #expect(try s.queued == queuedBefore + 1)
+    guard case .workout(let change) = try #require(try s.lastChange) else {
+      Issue.record("the workout's removal is the one change queued")
+      return
+    }
+    #expect(change.id == s.workoutId)
+    #expect(change.edit == .removed(true))
+    #expect(try s.store.history().sets.filter { $0.workoutId == s.workoutId } == setsBefore)
+    let weeks = historyWeeks(
+      try s.store.history(), efforts: [], now: s.clock.now,
+      timeZone: try #require(TimeZone(identifier: "Europe/Paris")))
+    #expect(!weeks.flatMap(\.rows).contains { $0.workoutId == s.workoutId })
+  }
+
+  @Test func removeOpenWithoutASessionThrows() throws {
+    let s = try Seance()
+    try s.actions.stopEmpty()
+    #expect(throws: SessionError.noSession) { try s.actions.removeOpen() }
   }
 
   @Test func nothingIsQueuedForDeviceState() throws {

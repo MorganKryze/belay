@@ -26,3 +26,33 @@ extension Font {
     static let displayWidget = Font.custom(archivoName, size: 21, relativeTo: .title2)
     static let displayWidgetFigure = Font.custom(archivoName, size: 26, relativeTo: .title)
 }
+
+/// The body figure's shades, the web's: the primary muscles in ink, the secondary ones a grey apart
+/// from it, every other muscle at rest. The muscles are always named in words beside the figure, so
+/// the two greys carry no meaning alone.
+struct MuscleShades {
+    let primary: Color
+    let secondary: Color
+    let rest: Color
+
+    /// Resolved for one theme and contrast, so a thumbnail drawn off screen gets the colours of the
+    /// list it goes to. The asset catalog holds the web's palette and its Increase Contrast shades.
+    static func of(dark: Bool, high: Bool) -> MuscleShades {
+        let traits = UITraitCollection { traits in
+            traits.userInterfaceStyle = dark ? .dark : .light
+            traits.accessibilityContrast = high ? .high : .normal
+        }
+        func resolved(_ resource: ColorResource) -> Color {
+            Color(UIColor(resource: resource).resolvedColor(with: traits))
+        }
+        return MuscleShades(primary: resolved(.ink), secondary: resolved(.muscleSecondary), rest: resolved(.muscleRest))
+    }
+
+    /// Each muscle's shade on a figure of these muscles; the others are at rest.
+    func fills(primary: [String], secondary: [String]) -> [String: Color] {
+        var fills: [String: Color] = [:]
+        for muscle in secondary { fills[muscle] = self.secondary }
+        for muscle in primary { fills[muscle] = self.primary }
+        return fills
+    }
+}

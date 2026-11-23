@@ -77,6 +77,9 @@ public struct SessionActions: Sendable {
   /// Throws `SessionError.notEmpty` when a set is stored by the time of the write.
   public func stopEmpty() throws { try store.stopEmpty(ctx) }
 
+  /// Removes the open session, sets logged or not.
+  public func removeOpen() throws { try store.removeOpen(ctx) }
+
   // For the lock screen: the same writes, held to the session it showed.
   func logShown(_ place: SetPlace, workoutId: String) throws -> Bool {
     try store.logNext(

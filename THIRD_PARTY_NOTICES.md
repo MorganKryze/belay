@@ -59,7 +59,8 @@ The body map (`apps/web/src/exercises/body-paths.ts`) copies the outlines of the
 front and back, from [react-native-body-highlighter](https://github.com/HichamELBSI/react-native-body-highlighter)
 3.2.0 (`dist/assets/bodyFront.js` and `bodyBack.js`, the hair left out). Belay splits the
 deltoid into three heads and the upper back into the latissimus and the rest; it does not depend
-on the package.
+on the package. The iPhone app ships the same outlines, generated from that file into
+`apps/apple/BelayCore/Sources/BelayCore/Resources/figure.json` as absolute lines and curves.
 
 ```text
 MIT License

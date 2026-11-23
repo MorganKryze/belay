@@ -186,7 +186,7 @@ final class TrainingModel {
     private(set) var accueil: AccueilState?
     /// What Séances' Programme segment shows, decided by the core's rule.
     private(set) var programmeState: ProgrammeState?
-    /// Séances' Historique: the sessions kept, by week, newest first.
+    /// Séances' Historique: the sessions kept and the activities, by week, newest first.
     private(set) var weeks: [HistoryWeek] = []
     /// Every session of the active program as it would start today, in the rotation's order.
     private(set) var sessions: [NextSession] = []
@@ -347,6 +347,13 @@ final class TrainingModel {
         return active.restEndsAt.flatMap(Instant.date)
     }
 
+    /// Every live set of the open session, warm-ups and sets past the plan included: what
+    /// deleting the session removes.
+    var setsLogged: Int {
+        guard let workoutId = session?.workoutId else { return 0 }
+        return last?.history.sets.filter { $0.workoutId == workoutId && !$0.removed }.count ?? 0
+    }
+
     /// When the open session's latest set was done: where the rest after it starts.
     var restFrom: Date? {
         guard let workoutId = session?.workoutId else { return nil }
@@ -432,6 +439,11 @@ final class TrainingModel {
     /// Drops the open session while it holds no set: nothing of it is kept.
     func stopEmpty() throws {
         try act { try $0.stopEmpty() }
+    }
+
+    /// Drops the open session with its sets, as the web's delete: no summary, the program unchanged.
+    func removeOpen() throws {
+        try act { try $0.removeOpen() }
     }
 
     /// The floor given on the summary, or none: kept on this phone at once, never queued.
@@ -569,7 +581,8 @@ final class TrainingModel {
             history: snapshot.history, programs: snapshot.programs, activities: snapshot.activities, now: at,
             timeZone: timeZone)
         if programmeState != programme { programmeState = programme }
-        let kept = historyWeeks(snapshot.history, efforts: snapshot.efforts, now: at, timeZone: timeZone)
+        let kept = historyWeeks(
+            snapshot.history, activities: snapshot.activities, efforts: snapshot.efforts, now: at, timeZone: timeZone)
         if weeks != kept { weeks = kept }
         let described = rotationOf(snapshot.programs).map { describe($0, snapshot: snapshot, at: at) }
         if sessions != described { sessions = described }

@@ -42,8 +42,8 @@ struct ProteinTool: View {
                     .sensoryFeedback(.selection, trigger: goal)
                 }
                 .padding(.vertical, 6)
-                KeypadField(
-                    label: "Poids", text: outils.binding(.protein, .weight, defaults), prompt: "70",
+                WeightField(
+                    label: "Poids", kg: outils.binding(.protein, .weight, defaults), step: BodyWeight.step, prompt: 70,
                     source: outils.source(.protein, .weight, defaults).map {
                         SourceLine(source: $0, timeZone: corps.timeZone)
                     }, id: "tool-field-weight")
@@ -66,7 +66,7 @@ struct ProteinTool: View {
 
     private func range(_ weight: Double?, goal: ProteinGoal, fat: Double?) -> Result<ProteinRange, BodyLine> {
         guard let weight else { return .failure(.missing([.weight])) }
-        guard weightRangeKg.contains(weight) else { return .failure(.outside("weight")) }
+        guard BodyWeight.holds(weight) else { return .failure(.outside("weight")) }
         do {
             return .success(try proteinRange(weight, goal: goal, bodyFatPct: fat))
         } catch {

@@ -17,15 +17,18 @@ struct ExercisesSection: View {
     var body: some View {
         let found = library.filter(query: query, muscle: muscle, equipment: equipment)
         Section {
-            HStack(spacing: 8) {
-                FilterMenu(
-                    title: Text("Muscle", tableName: "Exercices"), id: "filter-muscle",
-                    options: ExerciseText.muscles.map { ($0, ExerciseText.muscle($0)) }, choice: $muscle)
-                FilterMenu(
-                    title: Text("Matériel", tableName: "Exercices"), id: "filter-equipment",
-                    options: Equipment.allCases.map { ($0, ExerciseText.equipment($0)) }, choice: $equipment)
-                Spacer(minLength: 0)
+            // Scrolls sideways rather than break a chip's word at the largest sizes.
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    FilterMenu(
+                        title: Text("Muscle", tableName: "Exercices"), id: "filter-muscle",
+                        options: ExerciseText.muscles.map { ($0, ExerciseText.muscle($0)) }, choice: $muscle)
+                    FilterMenu(
+                        title: Text("Matériel", tableName: "Exercices"), id: "filter-equipment",
+                        options: Equipment.allCases.map { ($0, ExerciseText.equipment($0)) }, choice: $equipment)
+                }
             }
+            .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
             .listRowBackground(Color.clear)
             .listRowInsets(.all, 0)
         }
@@ -86,7 +89,7 @@ struct ExerciseRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            LoopThumb(exerciseId: exercise.id, primary: exercise.primary)
+            LoopThumb(exerciseId: exercise.id, primary: exercise.primary, secondary: exercise.secondary)
             VStack(alignment: .leading, spacing: 2) {
                 Text(verbatim: exercise.name).font(.body.weight(.medium)).foregroundStyle(.ink)
                 Text(verbatim: ExerciseText.line(exercise)).font(.subheadline).foregroundStyle(.muted)
@@ -127,6 +130,7 @@ private struct FilterMenu<Value: Hashable>: View {
                 if let chosen { Text(verbatim: chosen) } else { title }
                 Image(systemName: "chevron.down").font(.caption.weight(.bold))
             }
+            .fixedSize()
             .font(.subheadline.weight(.semibold))
             .foregroundStyle(chosen == nil ? Color.ink : Color.paper)
             .padding(.horizontal, 14)

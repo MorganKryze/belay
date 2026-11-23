@@ -38,11 +38,15 @@ struct SessionBar: ToolbarContent {
 struct StopAsk {
     let done: Int
     let planned: Int
+    /// Every set stored for the session, warm-ups included: what the deletion removes.
+    let logged: Int
     /// A warm-up counts: a session that holds one is ended, not dropped.
     let holdsSets: Bool
     let stop: () -> Void
     /// Drops the session; false when a set was stored in the meantime and it was kept.
     let leave: () -> Bool
+    /// Drops the session with its sets, as the web's « Supprimer la séance… ».
+    let remove: () -> Void
 }
 
 /// ■ and the system alert it opens: with sets noted, the web's sentence and « Arrêter », which
@@ -50,6 +54,7 @@ struct StopAsk {
 private struct StopButton: View {
     let ask: StopAsk
     @State private var asking = false
+    @State private var deleting = false
 
     var body: some View {
         Button { asking = true } label: {
@@ -61,6 +66,9 @@ private struct StopButton: View {
         .alert(title, isPresented: $asking) {
             if ask.holdsSets {
                 Button(role: .destructive, action: ask.stop) { Text("Arrêter", tableName: "SessionEnd") }
+                Button(role: .destructive, action: askDelete) {
+                    Text("Supprimer la séance…", tableName: "SessionEnd")
+                }
                 Button(role: .cancel) {} label: { Text("Annuler", tableName: "SessionEnd") }
             } else {
                 Button(role: .destructive, action: leave) { Text("Quitter sans enregistrer", tableName: "SessionEnd") }
@@ -73,12 +81,26 @@ private struct StopButton: View {
                 Text("Si tu quittes, cette séance ne sera pas gardée. Tu pourras la commencer plus tard.", tableName: "SessionEnd")
             }
         }
+        .alert(Text("Supprimer la séance\u{202F}?", tableName: "SessionEnd"), isPresented: $deleting) {
+            Button(role: .destructive, action: ask.remove) { Text("Supprimer la séance", tableName: "SessionEnd") }
+            Button(role: .cancel) {} label: { Text("Continuer la séance", tableName: "SessionEnd") }
+        } message: {
+            Text("Les \(ask.logged) séries notées ne seront pas gardées\u{202F}; ton programme ne change pas.", tableName: "SessionEnd")
+        }
     }
 
     private var title: Text {
         ask.holdsSets
             ? Text("Arrêter la séance\u{202F}?", tableName: "SessionEnd")
             : Text("Rien n’est noté pour l’instant", tableName: "SessionEnd")
+    }
+
+    /// The delete question, once the first alert is gone.
+    private func askDelete() {
+        Task {
+            try? await Task.sleep(for: .milliseconds(400))
+            deleting = true
+        }
     }
 
     /// A set stored since the alert opened keeps the session: the alert asks again, now as the

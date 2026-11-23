@@ -494,6 +494,16 @@
         }
       }
     },
+    "Ouvre l’activité" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opens the activity"
+          }
+        }
+      }
+    },
     "Ouvre la séance" : {
       "localizations" : {
         "en" : {

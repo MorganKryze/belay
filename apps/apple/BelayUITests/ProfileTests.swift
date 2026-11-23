@@ -238,6 +238,8 @@ final class ProfileTests: XCTestCase {
         vitamin.swipeLeft()
         XCTAssertTrue(app.buttons["Renommer"].waitForExistence(timeout: 3), "a swipe offers Renommer")
         app.buttons["Retirer"].tap()
+        XCTAssertTrue(app.staticTexts["Retirer Vitamine D\u{202F}?"].waitForExistence(timeout: 3), "it asks first")
+        app.buttons.matching(NSPredicate(format: "label == %@", "Retirer")).allElementsBoundByIndex.last?.tap()
         XCTAssertFalse(element(app, "manage-1").waitForExistence(timeout: 2), "Vitamine D leaves the list")
         back(app)
         XCTAssertTrue(reach(app, "reglages-supplements").label.contains("1 dans ta liste"))

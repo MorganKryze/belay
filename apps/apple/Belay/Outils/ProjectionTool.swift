@@ -42,16 +42,16 @@ struct ProjectionTool: View {
             }
         } fields: {
             Section {
-                KeypadField(
-                    label: "Poids moyen", text: outils.binding(.projection, .weight, defaults), prompt: "70",
-                    source: outils.source(.projection, .weight, defaults).map {
+                WeightField(
+                    label: "Poids moyen", kg: outils.binding(.projection, .weight, defaults), step: BodyWeight.step,
+                    prompt: 70, source: outils.source(.projection, .weight, defaults).map {
                         SourceLine(source: $0, timeZone: corps.timeZone)
                     }, id: "tool-field-weight")
-                KeypadField(
+                WeightField(
                     label: "Objectif",
-                    text: Binding(
+                    kg: Binding(
                         get: { outils.input(.projection, "target") }, set: { outils.setInput(.projection, "target", $0) }),
-                    prompt: "65", id: "tool-field-target")
+                    step: BodyWeight.step, prompt: 65, id: "tool-field-target")
                 if outils.anyPrefilled(.projection, [.weight], defaults) {
                     RestoreRow { outils.restore(.projection, [.weight]) }
                 }
@@ -102,13 +102,15 @@ struct ProjectionTool: View {
         }
     }
 
-    /// « 0,75 % · 0,6 kg par semaine ».
+    /// « 0,75 % · 0,6 kg par semaine », or « 1,3 lb » to the tenth of a pound as the web's.
     private func rateLine(_ weight: Double?) -> some View {
         let percent = "\(Self.pct(pct))\u{202F}%"
         let line =
             weight.map { kg in
-                String(
-                    localized: "\(percent) · \(BodyText.number(kgPerWeek(kg, pctPerWeek: pct)))\u{202F}kg par semaine",
+                let perWeek = kgPerWeek(kg, pctPerWeek: pct)
+                let shown = SetText.unit == .kg ? perWeek : roundTo(kgToLb(perWeek), step: 0.1)
+                return String(
+                    localized: "\(percent) · \(BodyText.number(shown))\u{202F}\(SetText.symbol) par semaine",
                     table: "Outils")
             } ?? percent
         return Text(verbatim: line).font(.subheadline).monospacedDigit().foregroundStyle(.muted)
@@ -148,7 +150,7 @@ struct ProjectionTool: View {
         guard let weight, let target else {
             return .failure(.missing([weight == nil ? .weight : nil, target == nil ? .target : nil]))
         }
-        guard weightRangeKg.contains(weight), weightRangeKg.contains(target) else {
+        guard BodyWeight.holds(weight), BodyWeight.holds(target) else {
             return .failure(.outside("weight"))
         }
         do {

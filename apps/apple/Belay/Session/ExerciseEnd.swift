@@ -90,20 +90,23 @@ private struct RecapCard: View {
         .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
     }
 
-    /// « 4 × 8 à 60 kg » when every set was alike, else the loads one after the other:
+    /// « 4 × 8 à 60 kg », « 4 × 8 à 132 lb » when every set was alike, else the loads one after the other:
     /// « 62,5 kg × 8, 8, 7, 6 ».
     static func line(_ sets: [DoneSet]) -> String {
         guard let first = sets.first else { return "" }
         let timed = first.timed
-        if sets.count > 1, sets.allSatisfy({ $0.weightKg == first.weightKg && $0.count == first.count }) {
+        // Loads compare as they read: 62,25 and 62,5 kg are both 137 lb, one load in pounds.
+        let shown = SetText.weight(first.weightKg)
+        if sets.count > 1, sets.allSatisfy({ SetText.weight($0.weightKg) == shown && $0.count == first.count }) {
             let count = timed ? "\(first.count)\u{202F}s" : String(first.count)
             if first.weightKg == 0 { return "\(sets.count) × \(count)" }
             return String(
-                localized: "\(sets.count) × \(count) à \(SetText.kg(first.weightKg))\u{202F}kg", table: "SessionEnd")
+                localized: "\(sets.count) × \(count) à \(shown)\u{202F}\(SetText.symbol)",
+                table: "SessionEnd")
         }
         var groups: [LoadGroup] = []
         for set in sets {
-            if let last = groups.last, last.weightKg == set.weightKg {
+            if let last = groups.last, SetText.weight(last.weightKg) == SetText.weight(set.weightKg) {
                 groups[groups.count - 1] = LoadGroup(weightKg: last.weightKg, counts: last.counts + [set.count])
             } else {
                 groups.append(LoadGroup(weightKg: set.weightKg, counts: [set.count]))

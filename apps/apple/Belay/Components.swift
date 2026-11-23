@@ -8,6 +8,8 @@ struct Figure: View {
     var unit: String? = nil
     var font: Font = .displayFigure
     var unitFont: Font = .title3.weight(.semibold)
+    /// The unit as VoiceOver says it, « kilos », in place of the symbol drawn.
+    var spokenUnit: String? = nil
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -21,12 +23,27 @@ struct Figure: View {
                 Text(unit)
                     .font(unitFont)
                     .foregroundStyle(.muted)
+                    .accessibilityLabel(spokenUnit.map { Text(verbatim: $0) } ?? Text(unit))
             }
         }
         .animation(reduceMotion ? nil : Motion.spring, value: text)
         .lineLimit(1)
         .minimumScaleFactor(0.4)
         .thinsUnderBar()
+        .spokenAsOne(spokenUnit.map { "\(text) \($0)" })
+    }
+}
+
+private extension View {
+    /// One stop for VoiceOver, « 80,2 kilos », when the unit has a word to be said with the figure.
+    @ViewBuilder func spokenAsOne(_ label: String?) -> some View {
+        if let label {
+            accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(verbatim: label))
+                .accessibilityAddTraits(.isStaticText)
+        } else {
+            self
+        }
     }
 }
 

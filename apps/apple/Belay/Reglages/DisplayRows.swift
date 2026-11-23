@@ -1,17 +1,21 @@
 import BelayCore
 import SwiftUI
 
-/// Réglages' Général, Accueil, Séances, Corps and Outils sections: the language, the theme and the
-/// rows that change what a screen shows. Each choice stays on this phone under the web's key name
+/// Réglages' Général, Unités, Accueil, Séances, Corps and Outils sections: the language, the theme,
+/// the weight unit and the rows that change what a screen shows. Each choice stays on this phone under the web's key name
 /// and reaches its screen at once.
 struct DisplayRows: View {
     @AppStorage(DevicePrefs.theme.key) private var theme = DevicePrefs.theme.initial
     @AppStorage(DevicePrefs.pauseStops.key) private var pauseStops = DevicePrefs.pauseStops.initial
+    @AppStorage(DevicePrefs.restSound.key) private var restSound = DevicePrefs.restSound.initial
+    @AppStorage(DevicePrefs.historyActivities.key) private var historyActivities = DevicePrefs.historyActivities.initial
     @AppStorage(DevicePrefs.homeTrend.key) private var homeTrend = DevicePrefs.homeTrend.initial
     @AppStorage(DevicePrefs.sessionVolume.key) private var sessionVolume = DevicePrefs.sessionVolume.initial
     @AppStorage(DevicePrefs.rangePill.key) private var rangePill = DevicePrefs.rangePill.initial
+    @AppStorage(DevicePrefs.weekIntake.key) private var weekIntake = DevicePrefs.weekIntake.initial
     @AppStorage(DevicePrefs.brzycki.key) private var brzycki = DevicePrefs.brzycki.initial
     @AppStorage(DevicePrefs.fieldSources.key) private var fieldSources = DevicePrefs.fieldSources.initial
+    @Bindable private var units = WeightUnitChoice.shared
     @Environment(\.openURL) private var openURL
 
     var body: some View {
@@ -31,6 +35,13 @@ struct DisplayRows: View {
                 Text("La langue se choisit dans les Réglages de l’iPhone, comme pour toute app.", tableName: "Reglages")
             }
             Section {
+                weightUnitRow
+            } header: {
+                Text("Unités", tableName: "Reglages").textCase(nil).foregroundStyle(.ink)
+            } footer: {
+                Text("Belay garde tout en kilos\u{202F}: changer d’unité ne touche à aucune saisie.", tableName: "Reglages")
+            }
+            Section {
                 switchRow("Tendance", "chart.line.downtrend.xyaxis", $homeTrend, id: "reglages-trend")
             } header: {
                 Text("Accueil", tableName: "Reglages").textCase(nil).foregroundStyle(.ink)
@@ -43,12 +54,37 @@ struct DisplayRows: View {
                         Text("En pause", tableName: "Reglages")
                     }
                 }
-                switchRow("Volume", "scalemass", $sessionVolume, id: "reglages-volume")
+                MenuRow(
+                    title: "Historique", symbol: "calendar", value: historyName(historyActivities), id: "reglages-history"
+                ) {
+                    Picker(selection: $historyActivities) {
+                        ForEach([DevicePrefs.Shown.shown, .hidden], id: \.self) { Text(historyName($0)).tag($0) }
+                    } label: {
+                        Text("Historique", tableName: "Reglages")
+                    }
+                }
+                switchRow("Volume", "dumbbell", $sessionVolume, id: "reglages-volume")
+                // Last in the group, so the silent-mode footer reads under the row it explains.
+                MenuRow(title: "Son de fin de repos", symbol: "bell", value: soundName(restSound), id: "reglages-rest-sound") {
+                    Picker(selection: $restSound) {
+                        ForEach([DevicePrefs.RestSound.off, .on, .over], id: \.self) { Text(soundName($0)).tag($0) }
+                    } label: {
+                        Text("Son de fin de repos", tableName: "Reglages")
+                    }
+                }
+                // The tone once, as it will ring: the choice is heard as it is made.
+                .onChange(of: restSound) { _, choice in RestTone.play(choice) }
+                #if DEBUG
+                .overlay(alignment: .topTrailing) { Fixture.RestProbe() }
+                #endif
             } header: {
                 Text("Séances", tableName: "Reglages").textCase(nil).foregroundStyle(.ink)
+            } footer: {
+                Text("En mode silencieux, iOS coupe le son de l’alerte quand Belay n’est pas à l’écran.", tableName: "Reglages")
             }
             Section {
                 switchRow("Pastille", "checkmark.seal", $rangePill, id: "reglages-pill")
+                switchRow("Apports", "fork.knife", $weekIntake, id: "reglages-intake")
             } header: {
                 Text("Corps", tableName: "Reglages").textCase(nil).foregroundStyle(.ink)
             }
@@ -94,6 +130,38 @@ struct DisplayRows: View {
         .accessibilityIdentifier("reglages-language")
     }
 
+    /// « Poids » with kg | lb in the row; VoiceOver says each unit as a word.
+    private var weightUnitRow: some View {
+        HStack(spacing: 5) {
+            RowName(title: "Poids", symbol: "scalemass").accessibilityHidden(true)
+            Spacer(minLength: 12)
+            Picker(selection: $units.unit) {
+                ForEach(WeightUnit.allCases, id: \.self) { unit in
+                    Text(verbatim: unit.rawValue).accessibilityLabel(unitWord(unit)).tag(unit)
+                }
+            } label: {
+                Text("Poids", tableName: "Reglages")
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            // Each half a full 44 pt target, as wide as the prototype draws the control.
+            .controlSize(.large)
+            .frame(width: 112)
+            .accessibilityLabel(Text("Poids", tableName: "Reglages"))
+            .sensoryFeedback(.selection, trigger: units.unit)
+        }
+        .frame(minHeight: 52)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("reglages-weight-unit")
+    }
+
+    private func unitWord(_ unit: WeightUnit) -> Text {
+        switch unit {
+        case .kg: Text("kilos", tableName: "Reglages")
+        case .lb: Text("livres", tableName: "Reglages")
+        }
+    }
+
     /// « Français » or « English », as the app runs now.
     private static var language: String {
         let code = Bundle.main.preferredLocalizations.first ?? "fr"
@@ -123,6 +191,21 @@ struct DisplayRows: View {
         switch stops {
         case .all: String(localized: "Tout s’arrête", table: "Reglages")
         case .session: String(localized: "Le repos continue", table: "Reglages")
+        }
+    }
+
+    private func soundName(_ sound: DevicePrefs.RestSound) -> String {
+        switch sound {
+        case .off: String(localized: "Coupé", table: "Reglages")
+        case .on: String(localized: "Discret", table: "Reglages")
+        case .over: String(localized: "Toujours", table: "Reglages")
+        }
+    }
+
+    private func historyName(_ activities: DevicePrefs.Shown) -> String {
+        switch activities {
+        case .shown: String(localized: "Avec activités", table: "Reglages")
+        case .hidden: String(localized: "Séances seules", table: "Reglages")
         }
     }
 

@@ -1,7 +1,8 @@
 import BelayCore
 import SwiftUI
 
-/// The bundled library by name, the search at the top; one tap picks and closes.
+/// The bundled library by name, each with its muscles' figure, the search at the top; one tap picks
+/// and closes.
 struct ExercisePicker: View {
     let title: Text
     let pick: (LibraryExercise) -> Void
@@ -18,10 +19,16 @@ struct ExercisePicker: View {
                             pick(exercise)
                             dismiss()
                         } label: {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(verbatim: exercise.name).foregroundStyle(.ink)
-                                if exercise.measure == .seconds {
-                                    Text("En secondes", tableName: "SessionTools").font(.subheadline).foregroundStyle(.muted)
+                            HStack(spacing: 12) {
+                                FigureThumbnail(
+                                    primary: exercise.primary.first, secondary: exercise.secondary,
+                                    tile: Color(.systemGroupedBackground))
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(verbatim: exercise.name).foregroundStyle(.ink)
+                                    if exercise.measure == .seconds {
+                                        Text("En secondes", tableName: "SessionTools").font(.subheadline)
+                                            .foregroundStyle(.muted)
+                                    }
                                 }
                             }
                             .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)

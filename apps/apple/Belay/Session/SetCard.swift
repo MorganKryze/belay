@@ -27,7 +27,7 @@ struct SetCard: View {
             progression
         }
         .alert(Text("Autre charge", tableName: "Session"), isPresented: $typing) {
-            TextField(text: $typed) { Text("Charge en kg", tableName: "Session") }
+            TextField(text: $typed) { Text("Charge en \(SetText.symbol)", tableName: "Session") }
                 .keyboardType(.decimalPad)
             Button { take(typed) } label: { Text("OK", tableName: "Session") }
             Button(role: .cancel) {} label: { Text("Annuler", tableName: "Session") }
@@ -37,14 +37,14 @@ struct SetCard: View {
     private var load: some View {
         Button { choosing = true } label: {
             HStack(alignment: .lastTextBaseline, spacing: 8) {
-                Text(verbatim: SetText.kg(due.weightKg))
+                Text(verbatim: SetText.weight(due.weightKg))
                     .font(.custom(Font.archivoName, size: 72, relativeTo: .largeTitle))
                     .monospacedDigit()
                     .foregroundStyle(.ink)
                     .contentTransition(.numericText(value: due.weightKg))
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
-                Text("kg", tableName: "Session").font(.title2.weight(.semibold)).foregroundStyle(.muted)
+                Text(verbatim: SetText.symbol).font(.title2.weight(.semibold)).foregroundStyle(.muted)
                 Image(systemName: "chevron.up.chevron.down").font(.headline).foregroundStyle(.muted)
                     .accessibilityHidden(true)
             }
@@ -53,12 +53,13 @@ struct SetCard: View {
             .contentShape(.rect)
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(Text("Charge, \(SetText.kg(due.weightKg)) kilos", tableName: "Session"))
+        .accessibilityLabel(Text("Charge, \(SetText.weight(due.weightKg)) \(SetText.unitWord)", tableName: "Session"))
         .accessibilityIdentifier("load")
         .popover(isPresented: $choosing, arrowEdge: .top) {
             LoadChoices(
                 weightKg: due.weightKg,
-                incrementKg: BundledLibrary.library.exercise(due.exerciseId)?.incrementKg ?? 2.5,
+                step: BundledLibrary.library.exercise(due.exerciseId).map { incrementIn($0, SetText.unit) }
+                    ?? stepIn(2.5, SetText.unit),
                 choose: { kg in
                     choosing = false
                     actions.run { try $0.choose(weightKg: kg, count: nil) }
@@ -72,9 +73,16 @@ struct SetCard: View {
         }
     }
 
-    /// A load typed with a comma or a point, within the contract's bounds; anything else is let go.
+    /// A load typed with a comma or a point in the unit shown, never replaced by another. Kilos are
+    /// taken as typed, so one off the grid reaches the store and ✓ refuses it aloud, never rounded;
+    /// one past the bounds is refused aloud at once. Pounds go through the shared rule: the load as shown, typed again,
+    /// keeps its exact kilos; one past the bounds once converted is refused aloud. A text that is
+    /// not a number is refused aloud too, and changes nothing.
     private func take(_ text: String) {
-        guard let kg = SetText.parseKg(text), (Bounds.setKgMin...Bounds.setKgMax).contains(kg) else { return }
+        guard let value = SetText.parseKg(text) else { return actions.failed() }
+        let typedKg = SetText.unit == .kg ? value : loadKgFrom(value, SetText.unit, prefillKg: due.weightKg)
+        // Past the bounds, a typed kilo would drive the warm-ups: refused here, as pounds are.
+        guard let kg = typedKg, kg >= Bounds.setKgMin, kg <= Bounds.setKgMax else { return actions.failed() }
         actions.run { try $0.choose(weightKg: kg, count: nil) }
     }
 
@@ -82,7 +90,7 @@ struct SetCard: View {
         Button { detail = true } label: {
             HStack(spacing: 8) {
                 Image(systemName: "arrow.up.right").font(.subheadline.weight(.bold)).accessibilityHidden(true)
-                Text(SetText.progression(due.progression, timed: due.timed))
+                Text(SetText.progression(due.progression, weightKg: due.weightKg, timed: due.timed, top: due.target.last))
                     .font(.headline)
                     .fixedSize(horizontal: false, vertical: true)
                 Image(systemName: "info.circle").font(.subheadline).foregroundStyle(.muted).accessibilityHidden(true)
@@ -222,28 +230,65 @@ struct SessionCard<Content: View>: View {
     }
 }
 
-/// How a set reads on the cover, on screen and to VoiceOver.
+/// How a set reads on the cover, on screen and to VoiceOver, in the unit chosen in Réglages.
 enum SetText {
     /// « 62,5 », in the person's language.
     static func kg(_ value: Double) -> String { value.upToHundredths }
 
-    /// A load typed with a comma or a point.
-    static func parseKg(_ text: String) -> Double? {
-        Double(text.trimmingCharacters(in: .whitespaces).replacingOccurrences(of: ",", with: "."))
+    static var unit: WeightUnit { WeightUnitChoice.shared.unit }
+
+    /// « kg » or « lb », never translated.
+    static var symbol: String { unit.rawValue }
+
+    /// The unit as VoiceOver says it: « kilos », « livres ».
+    static var unitWord: String {
+        unit == .kg ? String(localized: "kilos", table: "Session") : String(localized: "livres", table: "Session")
     }
 
-    /// « 60 kg × 8 », or « 30 s » for a hold with no added load.
+    /// A load in the unit: kilos to the hundredth (« 62,5 »), whole pounds (« 138 »). Never grouped,
+    /// so the text is also a value a field can take back.
+    static func weight(_ kg: Double) -> String { weight(kg, in: unit) }
+
+    /// `weight` in a given unit, for readers off the main actor such as the lock screen.
+    nonisolated static func weight(_ kg: Double, in unit: WeightUnit) -> String {
+        loadFromKg(kg, unit).formatted(.number.grouping(.never).precision(.fractionLength(0...2)))
+    }
+
+    /// A load typed with a comma or a point: digits with one optional decimal part, as the web
+    /// reads one, so « -0 », « +60 », « 1e2 » or a hex float are not loads.
+    static func parseKg(_ text: String) -> Double? {
+        let clean = text.filter { !$0.isWhitespace }.replacingOccurrences(of: ",", with: ".")
+        guard clean.wholeMatch(of: /[0-9]+(\.[0-9]*)?|\.[0-9]+/) != nil else { return nil }
+        return Double(clean)
+    }
+
+    /// « 60 kg × 8 », « 132 lb × 8 », or « 30 s » for a hold with no added load.
     static func load(_ weightKg: Double, _ counts: some StringProtocol, timed: Bool) -> String {
         if timed && weightKg == 0 { return "\(counts)\u{202F}s" }
         return timed
-            ? String(localized: "\(kg(weightKg))\u{202F}kg × \(String(counts))\u{202F}s", table: "Session")
-            : String(localized: "\(kg(weightKg))\u{202F}kg × \(String(counts))", table: "Session")
+            ? String(localized: "\(weight(weightKg))\u{202F}\(symbol) × \(String(counts))\u{202F}s", table: "Session")
+            : String(localized: "\(weight(weightKg))\u{202F}\(symbol) × \(String(counts))", table: "Session")
     }
 
-    /// « 62,5 kg × 8, 8, 7, 6 », the groups of equal loads one after the other.
+    /// « 62,5 kg × 8, 8, 7, 6 », the groups of equal loads one after the other. Loads that read
+    /// alike in the unit (62,25 and 62,5 kg, both 137 lb) are one group.
     static func groups(_ groups: [LoadGroup], timed: Bool) -> String {
-        groups.map { load($0.weightKg, $0.counts.map(String.init).joined(separator: ", "), timed: timed) }
+        var shown: [LoadGroup] = []
+        for group in groups {
+            if let last = shown.last, weight(last.weightKg) == weight(group.weightKg) {
+                shown[shown.count - 1] = LoadGroup(weightKg: last.weightKg, counts: last.counts + group.counts)
+            } else {
+                shown.append(group)
+            }
+        }
+        return shown.map { load($0.weightKg, $0.counts.map(String.init).joined(separator: ", "), timed: timed) }
             .joined(separator: " · ")
+    }
+
+    /// The difference between two loads as `weight` shows them: 62,5 to 65 kg reads 138 to 143 lb, so 5.
+    private static func gap(from lastKg: Double, to kg: Double) -> String {
+        (loadFromKg(kg, unit) - loadFromKg(lastKg, unit))
+            .formatted(.number.grouping(.never).precision(.fractionLength(0...2)))
     }
 
     /// « Série 2 sur 4 », « Montée 1 sur 2 », or « Série 5 » for a set past the plan.
@@ -253,15 +298,20 @@ enum SetText {
         return String(localized: "Série \(due.number) sur \(due.of)", table: "Session")
     }
 
-    /// The line under the load, in one plain sentence; it never suggests a load to come.
-    static func progression(_ line: Progression, timed: Bool) -> String {
+    /// The line under the load `weightKg`, in one plain sentence; it never suggests a load to come.
+    /// A heavier load says the gap between the two loads as shown, so in pounds it matches them.
+    /// A rise that rounds to nothing in the unit (62,5 to 62,75 kg, both 138 lb) reads as the same
+    /// load, aiming for `top`.
+    static func progression(_ line: Progression, weightKg: Double, timed: Bool, top: Int? = nil) -> String {
         switch line {
         case .warmup:
             String(localized: "Montée légère, sans forcer", table: "Session")
         case .sameLoad(let top):
             String(localized: "Même charge, vise \(top) reps", table: "Session")
+        case .heavier(let byKg) where weight(weightKg - byKg) == weight(weightKg) && top != nil:
+            String(localized: "Même charge, vise \(top ?? 0) reps", table: "Session")
         case .heavier(let byKg):
-            String(localized: "+\(kg(byKg))\u{202F}kg depuis la dernière fois", table: "Session")
+            String(localized: "+\(gap(from: weightKg - byKg, to: weightKg))\u{202F}\(symbol) depuis la dernière fois", table: "Session")
         case .firstTime(let low, let high) where timed:
             String(localized: "Cible\u{202F}: \(low) à \(high)\u{202F}s", table: "Session")
         case .firstTime(let low, let high):

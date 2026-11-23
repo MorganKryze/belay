@@ -239,15 +239,6 @@ private struct LoopPlayer: UIViewRepresentable {
     }
 }
 
-/// A stand-in figure by movement, as the body map will draw it: the legs' muscles squat, the
-/// others stand.
-enum StandInFigure {
-    static func symbol(_ primary: [String]) -> String {
-        let legs: Set = ["glutes", "quads", "hamstrings", "adductors", "calves"]
-        return primary.first.map(legs.contains) == true ? "figure.strengthtraining.functional" : "figure.arms.open"
-    }
-}
-
 /// The figure in the square when there is no loop to show.
 private struct StandIn: View {
     var body: some View {
@@ -259,40 +250,36 @@ private struct StandIn: View {
     }
 }
 
-/// A row's 44 pt thumbnail: the first frame of the exercise's loop, kept or fetched as the row
-/// shows, else the stand-in figure.
+/// A row's 44 pt thumbnail: the first frame of the exercise's loop when the phone keeps it, else
+/// the figure. A row never asks the instance for a loop: only the exercise's page does.
 struct LoopThumb: View {
     let exerciseId: String
-    /// The exercise's main muscles, for the stand-in figure.
-    var primary: [String] = []
+    /// The exercise's muscles, for the figure.
+    let primary: [String]
+    let secondary: [String]
     @Environment(\.loops) private var loops
     @Environment(\.displayScale) private var scale
-    @ScaledMetric(relativeTo: .body) private var side: CGFloat = 44
+    @ScaledMetric(relativeTo: .body) private var side = ThumbSlot.side
     @State private var frame: UIImage?
 
     var body: some View {
         Group {
             if let frame {
                 Image(uiImage: frame).resizable().scaledToFill()
+                    .modifier(ThumbSlot(side: side))
             } else {
-                Image(systemName: StandInFigure.symbol(primary))
-                    .font(.system(size: side * 0.5, weight: .medium))
-                    .foregroundStyle(.muted)
+                FigureThumbnail(primary: primary.first, secondary: secondary)
             }
         }
-        .frame(width: side, height: side)
-        .background(Color.track)
-        .clipShape(.rect(cornerRadius: 11))
         .accessibilityHidden(true)
         .task(id: exerciseId) {
             if let cached = ThumbCache.images.object(forKey: exerciseId as NSString) {
                 frame = cached
                 return
             }
-            guard loopPath(exerciseId) != nil else { return }
-            var url = loops.kept(exerciseId)
-            if url == nil { url = await loops.fetch(exerciseId) }
-            guard let url, let image = await Self.firstFrame(url, side: side * scale), !Task.isCancelled else { return }
+            guard let url = loops.kept(exerciseId), let image = await Self.firstFrame(url, side: side * scale),
+                !Task.isCancelled
+            else { return }
             ThumbCache.images.setObject(image, forKey: exerciseId as NSString)
             frame = image
         }
@@ -307,7 +294,8 @@ struct LoopThumb: View {
     }
 }
 
-/// The thumbnails drawn while the account is open, so a row scrolled back is not decoded again.
+/// The loops' first frames drawn while the account is open, so a row scrolled back is not decoded
+/// again.
 /// Bounded: the library holds about 1 300 exercises.
 enum ThumbCache {
     fileprivate static let images: NSCache<NSString, UIImage> = {

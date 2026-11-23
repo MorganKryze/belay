@@ -103,22 +103,131 @@ final class ReglagesTests: XCTestCase {
         return seen
     }
 
-    // MARK: A26, A48, A49
+    private static let unitsFooter = "Belay garde tout en kilos\u{202F}: changer d’unité ne touche à aucune saisie."
+    private static let silentFooter =
+        "En mode silencieux, iOS coupe le son de l’alerte quand Belay n’est pas à l’écran."
 
     func testSectionsInOrder() {
         let app = launch("fresh")
         reglages(app)
         let rows = [
-            "reglages-language", "reglages-theme", "reglages-trend", "reglages-pause", "reglages-volume",
-            "reglages-pill", "reglages-one-rep-max", "reglages-sources",
+            "reglages-language", "reglages-theme", "reglages-weight-unit", "reglages-trend", "reglages-pause",
+            "reglages-history", "reglages-volume", "reglages-rest-sound", "reglages-pill", "reglages-intake",
+            "reglages-one-rep-max", "reglages-sources",
         ]
-        XCTAssertEqual(order(app, rows + ["signout"]), rows + ["signout"], "Général, Accueil, Séances, Corps, Outils")
-        for header in ["Général", "Accueil", "Séances", "Corps", "Outils"] {
+        XCTAssertEqual(
+            order(app, rows + ["signout"]), rows + ["signout"], "Général, Unités, Accueil, Séances, Corps, Outils")
+        for header in ["Général", "Unités", "Accueil", "Séances", "Corps", "Outils"] {
             XCTAssertTrue(app.swipeDownUntil(app.staticTexts[header].firstMatch) || app.swipeUpUntil(app.staticTexts[header].firstMatch), "the section \(header)")
         }
-        for gone in ["Unités", "Son de fin de repos", "Prototype seulement", "Historique", "Apports"] {
-            XCTAssertFalse(app.staticTexts[gone].exists, "no row « \(gone) »")
+        XCTAssertFalse(app.staticTexts["Prototype seulement"].exists, "no prototype row")
+        XCTAssertFalse(app.staticTexts["Mensurations et taille"].exists, "no length unit")
+    }
+
+    /// Each half of kg | lb is a full 44 pt target.
+    func testUnitSegmentHalvesAreFullTargets() {
+        let app = launch("fresh")
+        reglages(app)
+        let segment = reach(app, "reglages-weight-unit").segmentedControls.firstMatch
+        XCTAssertTrue(segment.exists, "a segmented control in the row")
+        XCTAssertGreaterThanOrEqual(segment.frame.height, 44, "the control is 44 pt high: \(segment.frame)")
+        for half in segment.buttons.allElementsBoundByIndex {
+            XCTAssertGreaterThanOrEqual(half.frame.width, 44, "« \(half.label) » is 44 pt wide: \(half.frame)")
         }
+    }
+
+    /// The weight unit as kg | lb in the « Poids » row, kilos by default, said as words, and kept
+    /// after a relaunch.
+    func testUnitSegmentKeptAfterRelaunch() {
+        let app = launch("fresh")
+        reglages(app)
+        let row = reach(app, "reglages-weight-unit")
+        XCTAssertTrue(app.staticTexts[Self.unitsFooter].exists, "the footer says nothing typed changes")
+        let segment = row.segmentedControls.firstMatch
+        XCTAssertTrue(segment.exists, "a segmented control in the row")
+        XCTAssertEqual(segment.label, "Poids")
+        XCTAssertTrue(row.frame.insetBy(dx: -1, dy: -1).contains(segment.frame), "inside the row: \(segment.frame) in \(row.frame)")
+        XCTAssertGreaterThan(segment.frame.midX, row.frame.midX, "at the row's trailing edge")
+        XCTAssertEqual(segment.buttons.allElementsBoundByIndex.map(\.label), ["kilos", "livres"])
+        XCTAssertTrue(segment.buttons["kilos"].isSelected, "kilos by default")
+        segment.buttons["livres"].tap()
+        XCTAssertTrue(segment.buttons["livres"].waitFor(NSPredicate(format: "isSelected == true"), timeout: 3))
+
+        let again = launch("keep")
+        reglages(again)
+        let kept = reach(again, "reglages-weight-unit").segmentedControls.firstMatch
+        XCTAssertTrue(kept.buttons["livres"].isSelected, "pounds after a relaunch")
+        XCTAssertFalse(kept.buttons["kilos"].isSelected)
+    }
+
+    func testRestSoundMenuStartsOnDiscret() {
+        let app = launch("fresh")
+        reglages(app)
+        let row = reach(app, "reglages-rest-sound")
+        XCTAssertTrue(row.label.hasPrefix("Son de fin de repos"), row.label)
+        XCTAssertTrue(row.label.contains("Discret"), "Discret by default: \(row.label)")
+        XCTAssertTrue(app.staticTexts[Self.silentFooter].exists, "the footer says what silent mode does")
+        row.tap()
+        for choice in ["Coupé", "Discret", "Toujours"] {
+            XCTAssertTrue(app.buttons[choice].firstMatch.waitForExistence(timeout: 3), "the menu offers « \(choice) »")
+        }
+        app.buttons["Coupé"].firstMatch.tap()
+        XCTAssertTrue(element(app, "reglages-rest-sound").waitFor(NSPredicate(format: "label CONTAINS 'Coupé'"), timeout: 3))
+
+        let again = launch("keep")
+        reglages(again)
+        XCTAssertTrue(reach(again, "reglages-rest-sound").label.contains("Coupé"), "kept after a relaunch")
+    }
+
+    func testHistoryMenuStartsWithActivities() {
+        let app = launch("fresh")
+        reglages(app)
+        let row = reach(app, "reglages-history")
+        XCTAssertTrue(row.label.hasPrefix("Historique"), row.label)
+        XCTAssertTrue(row.label.contains("Avec activités"), "with activities by default: \(row.label)")
+        choose(app, "reglages-history", "Séances seules")
+    }
+
+    /// Tes semaines, from Corps.
+    private func weeks(_ app: XCUIApplication) {
+        app.tab("Corps")
+        if app.navigationBars["Ta tendance"].exists { return }
+        let row = element(app, "corps-weeks")
+        XCTAssertTrue(app.swipeUpUntil(row), "the row Tes semaines")
+        row.tap()
+        XCTAssertTrue(app.navigationBars["Ta tendance"].waitForExistence(timeout: 5))
+    }
+
+    /// The week lines' labels, read from the newest while scrolling down.
+    private func weekLabels(_ app: XCUIApplication) -> [String] {
+        XCTAssertTrue(app.swipeDownUntil(element(app, "week-0")) || app.swipeUpUntil(element(app, "week-0")))
+        var labels: [String] = []
+        for index in 0..<8 {
+            let week = element(app, "week-\(index)")
+            guard app.swipeUpUntil(week) else { break }
+            labels.append(week.label)
+        }
+        return labels
+    }
+
+    func testApportsSwitchAddsWeekKcal() {
+        let app = launch("bodyUsual")
+        weeks(app)
+        let shown = weekLabels(app)
+        XCTAssertGreaterThan(shown.count, 1, "the weeks show")
+        XCTAssertNotNil(
+            shown[0].range(of: "1.850\u{202F}kcal", options: .regularExpression),
+            "this week's average calories: \(shown[0])")
+        XCTAssertFalse(shown.dropFirst().contains { $0.contains("kcal") }, "a week without calories adds nothing")
+
+        app.tab("Accueil")
+        reglages(app)
+        switchOff(app, "reglages-intake")
+        back(app)
+        weeks(app)
+        let hidden = weekLabels(app)
+        XCTAssertEqual(hidden.count, shown.count)
+        XCTAssertFalse(hidden.contains { $0.contains("kcal") }, "no week shows calories: \(hidden)")
     }
 
     func testNoCompactTitle() {
@@ -322,7 +431,7 @@ final class ReglagesTests: XCTestCase {
         back(app)
         XCTAssertTrue(element(app, "accueil-trend").waitForExistence(timeout: 5))
         XCTAssertFalse(element(app, "trend-range").exists, "no pill on Accueil")
-        XCTAssertTrue(element(app, "accueil-trend").label.contains("kg"), "the figure stays")
+        XCTAssertTrue(element(app, "accueil-trend").label.contains("kilos"), "the figure stays")
         app.tab("Corps")
         XCTAssertTrue(element(app, "trend-change").waitForExistence(timeout: 5), "Corps's figure stays")
         XCTAssertFalse(element(app, "trend-range").exists, "no pill on Corps")
@@ -339,7 +448,7 @@ final class ReglagesTests: XCTestCase {
         reach(app, "tool-field-load").tap()
         for key in ["8", "0"] { app.keys[key].tap() }
         app.buttons["Ajouter une répétition"].tap()
-        XCTAssertEqual(element(app, "tool-figure-epley").label, "Epley, 96 kg")
+        XCTAssertEqual(element(app, "tool-figure-epley").label, "Epley, 96 kilos")
         XCTAssertFalse(element(app, "tool-figure-brzycki").exists, "Brzycki is left out")
     }
 

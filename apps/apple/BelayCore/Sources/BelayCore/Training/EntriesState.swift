@@ -5,13 +5,16 @@ import Foundation
 
 // MARK: Tes semaines
 
-/// One week of « Tes semaines »: its weigh-ins and loss, whether the loss sits in the range, and
-/// the annotations that fall in it.
+/// One week of « Tes semaines »: its weigh-ins and loss, whether the loss sits in the range, the
+/// annotations that fall in it and its average calories.
 public struct WeekRow: Sendable, Equatable {
   public var summary: WeekSummary
   /// Nil while the week has no loss to judge.
   public var inRange: Bool?
   public var annotations: [AnnotationMark]
+  /// The average of the week's days with calories, rounded as the web rounds it; nil when no day
+  /// has any.
+  public var kcalAvg: Double?
 
   /// The week still running, which reads « à suivre ».
   public var isCurrent: Bool { summary.status == .inProgress }
@@ -25,7 +28,8 @@ public func weeks(_ body: BodyRead, now: Date, timeZone: TimeZone) -> [WeekRow] 
   return weeklySummaries(weighings(body), today: today).map { week in
     WeekRow(
       summary: week, inRange: week.lossPct.map { inTargetRange($0, range) },
-      annotations: marks.filter { $0.date >= week.start && $0.date <= week.end })
+      annotations: marks.filter { $0.date >= week.start && $0.date <= week.end },
+      kcalAvg: weeklyIntake(body.intake, weekStart: week.start).kcalAvg?.rounded())
   }
 }
 

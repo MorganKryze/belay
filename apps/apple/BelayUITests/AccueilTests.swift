@@ -408,7 +408,7 @@ final class AccueilTests: XCTestCase {
         let weighIn = element(app, "today.weighIn")
         XCTAssertTrue(weighIn.waitForExistence(timeout: 10))
         XCTAssertTrue(app.swipeUpUntil(element(app, "today.supplements")))
-        XCTAssertEqual(weighIn.label, "Pesée, 79,9\u{202F}kg")
+        XCTAssertEqual(weighIn.label, "Pesée, 79,9 kilos")
         XCTAssertEqual(element(app, "today.supplements").label, "Compléments, 1 sur 2")
         XCTAssertEqual(weighIn.value as? String, "saisie", "the weigh-in done carries its ✓")
         XCTAssertEqual(element(app, "today.intake").value as? String, "saisis", "the intake done carries its ✓")

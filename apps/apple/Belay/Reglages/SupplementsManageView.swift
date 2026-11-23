@@ -2,12 +2,14 @@ import BelayCore
 import SwiftUI
 
 /// Mes compléments, from Réglages › Suivi and from Corps › Compléments: the list itself. A tap
-/// renames a supplement, a swipe renames or removes it; a removed one keeps its ticked days.
-/// « + » adds one in the entry sheets' way.
+/// renames a supplement, a swipe renames or removes it, the removal asked first in a bubble at its
+/// row; a removed one keeps its ticked days. « + » adds one in the entry sheets' way.
 struct SupplementsManageView: View {
     let corps: CorpsModel
     @State private var adding = false
     @State private var renaming: SupplementRow?
+    /// The supplement whose removal is being asked.
+    @State private var removing: SupplementRow?
     @State private var newName = ""
     /// Why the last name typed was refused, said in the alert opened again on it.
     @State private var refusal: LocalizedStringKey?
@@ -146,12 +148,27 @@ struct SupplementsManageView: View {
         .accessibilityElement(children: .combine)
         .accessibilityHint(Text("Renommer", tableName: "Reglages"))
         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-            Button(role: .destructive) { corps.removeSupplement(id: supplement.id) } label: {
+            // Red without the destructive role, which takes the row out before the question is
+            // answered and with it the bubble anchored to it.
+            Button { removing = supplement } label: {
                 Label { Text("Retirer", tableName: "Reglages") } icon: { Image(systemName: "trash") }
             }
+            .tint(.danger)
             Button { rename(supplement) } label: {
                 Label { Text("Renommer", tableName: "Reglages") } icon: { Image(systemName: "pencil") }
             }
+        }
+        .confirmationDialog(
+            Text("Retirer \(supplement.name)\u{202F}?", tableName: "Reglages"),
+            isPresented: Binding(
+                get: { removing?.id == supplement.id }, set: { if !$0, removing?.id == supplement.id { removing = nil } }),
+            titleVisibility: .visible
+        ) {
+            Button(role: .destructive) { corps.removeSupplement(id: supplement.id) } label: {
+                Text("Retirer", tableName: "Reglages")
+            }
+        } message: {
+            Text("Ses jours cochés restent.", tableName: "Reglages")
         }
     }
 }

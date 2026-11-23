@@ -2,10 +2,12 @@ import BelayCore
 import SwiftUI
 
 /// An exercise: its name and equipment in the page, the loop, last time's work sets, the muscles
-/// in words, the program's sessions that use it, then how to do it and the dataset's credit.
+/// drawn and in words, the program's sessions that use it, then how to do it and the dataset's credit.
 struct ExercisePage: View {
     let training: TrainingModel
     let exerciseId: String
+    @Environment(\.colorScheme) private var scheme
+    @Environment(\.colorSchemeContrast) private var contrast
     @State private var steps: [String] = []
 
     var body: some View {
@@ -28,7 +30,7 @@ struct ExercisePage: View {
                             Text("La dernière fois", tableName: "Exercices")
                                 .font(.subheadline.weight(.semibold))
                                 .foregroundStyle(.muted)
-                            DayHero(text: Self.loads(last, timed: exercise.measure == .seconds))
+                            DayHero(text: SetText.groups(last, timed: exercise.measure == .seconds))
                         }
                         .padding(.vertical, 6)
                         .accessibilityElement(children: .combine)
@@ -51,7 +53,8 @@ struct ExercisePage: View {
         }
     }
 
-    /// The name in the display face, wrapping, then « Barre · incrément 2,5 kg ».
+    /// The name in the display face, wrapping, then « Barre · incrément 2,5 kg », or the step a pound
+    /// gym's plates make (« 5 lb »).
     private func header(_ name: String, _ exercise: LibraryExercise?) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(verbatim: name)
@@ -62,7 +65,7 @@ struct ExercisePage: View {
                 .accessibilityIdentifier("exercise-name")
             if let exercise {
                 Text(
-                    "\(ExerciseText.equipment(exercise.equipment)) · incrément \(SetText.kg(exercise.incrementKg))\u{202F}kg",
+                    "\(ExerciseText.equipment(exercise.equipment)) · incrément \(incrementIn(exercise, SetText.unit).upToHundredths)\u{202F}\(SetText.symbol)",
                     tableName: "Exercices"
                 )
                 .font(.subheadline)
@@ -74,18 +77,21 @@ struct ExercisePage: View {
         .listRowInsets(EdgeInsets(top: 0, leading: 10, bottom: 0, trailing: 4))
     }
 
+    /// The figure, then the muscles in words, each list beside its shade's key.
     private func muscles(_ exercise: LibraryExercise) -> some View {
-        Section {
+        let shades = MuscleShades.of(dark: scheme == .dark, high: contrast == .increased)
+        return Section {
+            BodyFigure(primary: exercise.primary, secondary: exercise.secondary)
             LabeledContent {
                 Text(verbatim: exercise.primary.map(ExerciseText.muscle).joined(separator: ", "))
             } label: {
-                Text("Principal", tableName: "Exercices")
+                shadeKey(Text("Principal", tableName: "Exercices"), shades.primary)
             }
             if !exercise.secondary.isEmpty {
                 LabeledContent {
                     Text(verbatim: exercise.secondary.map(ExerciseText.muscle).joined(separator: ", "))
                 } label: {
-                    Text("Secondaires", tableName: "Exercices")
+                    shadeKey(Text("Secondaires", tableName: "Exercices"), shades.secondary)
                 }
             }
         } header: {
@@ -93,6 +99,14 @@ struct ExercisePage: View {
         }
         .headerProminence(.increased)
         .listRowBackground(Color.surface)
+    }
+
+    /// The list's name after a square of its shade on the figure.
+    private func shadeKey(_ title: Text, _ shade: Color) -> some View {
+        HStack(spacing: 8) {
+            RoundedRectangle(cornerRadius: 3).fill(shade).frame(width: 10, height: 10).accessibilityHidden(true)
+            title
+        }
     }
 
     /// Each session of the active program that holds the exercise, opening its preview.
@@ -155,12 +169,6 @@ struct ExercisePage: View {
 }
 
 extension ExercisePage {
-    /// « 62,5 kg × 8, 8, 7, 6 », equal loads in a row grouped.
-    static func loads(_ groups: [LoadGroup], timed: Bool) -> String {
-        groups.map { SetText.load($0.weightKg, $0.counts.map(String.init).joined(separator: ", "), timed: timed) }
-            .joined(separator: " · ")
-    }
-
     /// « 4 × 6–8 · RIR 1–2 · repos 2 min 30 », the rest left out inside a group.
     static func target(_ planned: PlannedExercise) -> String {
         let sets = "\(planned.sets) × \(planned.repRange.map(String.init).joined(separator: "–"))"

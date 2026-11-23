@@ -168,6 +168,7 @@ struct Cover: View {
         }
         #if DEBUG
         .overlay(alignment: .topLeading) { Fixture.MotionProbe(animation: motion) }
+        .overlay(alignment: .topTrailing) { Fixture.RestProbe() }
         #endif
     }
 
@@ -460,6 +461,7 @@ struct Cover: View {
     private var stopAsk: StopAsk {
         StopAsk(
             done: training.open?.setsDone ?? 0, planned: training.open?.setsPlanned ?? 0,
+            logged: training.setsLogged,
             holdsSets: training.restFrom != nil,
             stop: { withAnimation(motion) { finish() } },
             leave: {
@@ -473,6 +475,15 @@ struct Cover: View {
                 }
                 lower()
                 return true
+            },
+            remove: {
+                do {
+                    try training.removeOpen()
+                } catch {
+                    failed = true
+                    return
+                }
+                lower()
             })
     }
 

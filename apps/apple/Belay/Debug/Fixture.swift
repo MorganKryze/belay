@@ -17,7 +17,8 @@ import Synchronization
 /// in one group; `lastSet` with every planned set logged but the last, `twoLeft` but the last two;
 /// `exerciseEnd` with the first exercise's last work set due and a last time for the second, so it
 /// has a warm-up; `paused` paused at once; `lockLogged` with the first work set logged from the lock
-/// screen, its rest running; `workSet` with the warm-ups logged; `full` as `workSet` with the plan
+/// screen, its rest running; `restEnding` with the first work set logged and its rest ending 15 s
+/// after the launch; `workSet` with the warm-ups logged; `full` as `workSet` with the plan
 /// grown to the most slots it holds. `-BelayReduceMotion YES` forces Reduce Motion on the session's
 /// cover, `-BelayVoiceOver YES` makes it behave as under VoiceOver. `-BelayHealth allowed` stands
 /// in for a Health that lets Belay in and holds a weigh-in of this morning at 79,9 kg, and makes
@@ -143,7 +144,7 @@ enum Fixture {
 
     private static let openModes: Set = [
         "running", "history", "finished", "warmups", "timed", "group", "lastSet", "twoLeft", "exerciseEnd", "paused",
-        "pausedLong", "lockLogged", "workSet", "full",
+        "pausedLong", "lockLogged", "restEnding", "workSet", "full",
     ]
 
     private static let dayModes: Set = [
@@ -502,6 +503,14 @@ enum Fixture {
             }
         case "paused", "pausedLong":
             try model.act { try $0.pause() }
+        case "restEnding":
+            try passWarmups(model)
+            try model.act { _ = try $0.logNext(count: nil, weightKg: nil, expecting: nil) }
+            // The rest brought forward through the session's own +30 s, so it runs out while the
+            // test watches the cover, after the alert has planned it.
+            guard let end = model.restEndsAt else { return }
+            let early = Int(end.timeIntervalSinceNow.rounded()) - 15
+            try model.act { _ = try $0.addRest(seconds: -early) }
         case "lockLogged":
             try passWarmups(model)
             guard case .due(let due)? = model.session?.phase else { return }
@@ -515,6 +524,46 @@ enum Fixture {
     private static func passWarmups(_ model: TrainingModel) throws {
         while case .due(let due)? = model.session?.phase, due.warmup {
             try model.act { _ = try $0.logNext(count: nil, weightKg: nil, expecting: nil) }
+        }
+    }
+
+    /// What the rest's ends were heard as, for a test to read through `RestProbe`.
+    static let restHeard = RestHeard()
+
+    @Observable final class RestHeard {
+        /// Tones played since the launch.
+        fileprivate(set) var plays = 0
+        /// The choice the last tone played under.
+        fileprivate(set) var choice = "none"
+        /// The audio session it played in: « ambient », « playback ».
+        fileprivate(set) var category = "none"
+        /// The sound of the rest notification last planned.
+        fileprivate(set) var notificationSound = "none"
+
+        func heard(choice: String, category: AVAudioSession.Category) {
+            plays += 1
+            self.choice = choice
+            self.category = category.rawValue.replacingOccurrences(of: "AVAudioSessionCategory", with: "").lowercased()
+        }
+
+        func planned(sound: String?) {
+            notificationSound = sound ?? "none"
+        }
+    }
+
+    /// The rest tone as heard, read « choice|category|notification sound » with the count of tones
+    /// as its label; nothing a person sees or hears.
+    struct RestProbe: View {
+        private let heard = Fixture.restHeard
+
+        var body: some View {
+            Color.clear
+                .frame(width: 1, height: 1)
+                .allowsHitTesting(false)
+                .accessibilityElement()
+                .accessibilityIdentifier("debug-rest-tone")
+                .accessibilityLabel(Text(verbatim: "\(heard.plays)"))
+                .accessibilityValue(Text(verbatim: "\(heard.choice)|\(heard.category)|\(heard.notificationSound)"))
         }
     }
 
@@ -744,9 +793,10 @@ enum Fixture {
         }
     }
 
-    /// `-BelayPull range|height|refusal`: as the app goes to the background, a sync lands what
-    /// another device wrote meanwhile, a range of 0,3 to 0,6 % or a height of 168 cm, or the
-    /// server refuses a weigh-in of today, so a test sees a pull land on a page left open.
+    /// `-BelayPull range|height|refusal|activity`: as the app goes to the background, a sync lands
+    /// what another device wrote meanwhile, a range of 0,3 to 0,6 %, a height of 168 cm or a ride
+    /// of 45 min yesterday, or the server refuses a weigh-in of today, so a test sees a pull land
+    /// on a page left open.
     struct PullOnLeave: View {
         let store: AccountStore
 
@@ -774,6 +824,12 @@ enum Fixture {
                     "formula": "male", "formulaAt": "2026-01-01T00:00:00.000Z", "birthYear": 1990,
                     "birthYearAt": "2026-01-01T00:00:00.000Z", "heightCm": 168, "heightAt": at,
                 ]
+            case "activity":
+                answer["activities"] = [[
+                    "id": "00000000-0000-7000-8000-0000000000f3",
+                    "date": addDays(toISODate(Fixture.now, timeZone: .current), -1), "type": "cardio",
+                    "durationMin": 45, "cardioType": "bike", "fieldsAt": at, "removed": false,
+                ]]
             case "refusal":
                 let actions = BodyActions(store: store, now: { Fixture.now }, timeZone: .current)
                 try actions.weigh(date: toISODate(Fixture.now, timeZone: .current), kg: 81)

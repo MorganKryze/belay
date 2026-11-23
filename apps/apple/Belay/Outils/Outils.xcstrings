@@ -42,12 +42,12 @@
         }
       }
     },
-    "%@ · %@ kg par semaine": {
+    "%@ · %@ %@ par semaine": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ · %@ kg per week"
+            "value": "%1$@ · %2$@ %3$@ per week"
           }
         }
       }
@@ -62,22 +62,22 @@
         }
       }
     },
-    "%@ kg n’est pas faisable avec ton matériel.": {
+    "%@ %@ n’est pas faisable avec ton matériel.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ kg can’t be loaded with your equipment."
+            "value": "%1$@ %2$@ can’t be loaded with your equipment."
           }
         }
       }
     },
-    "%@ kg par côté": {
+    "%@ %@ par côté": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ kg per side"
+            "value": "%1$@ %2$@ per side"
           }
         }
       }
@@ -162,12 +162,12 @@
         }
       }
     },
-    "Au-delà de 10 répétitions, l’estimation est moins fiable.": {
+    "Au-delà de %lld répétitions, l’estimation est moins fiable.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Beyond 10 reps, the estimate is less reliable."
+            "value": "Beyond %lld reps, the estimate is less reliable."
           }
         }
       }
@@ -222,12 +222,12 @@
         }
       }
     },
-    "Barre de %@ kg": {
+    "Barre de %@ %@": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ kg bar"
+            "value": "%1$@ %2$@ bar"
           }
         }
       }
@@ -492,6 +492,16 @@
         }
       }
     },
+    "En livres, Belay prend la barre de 45 lb et les disques standard.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In pounds, Belay uses a 45 lb bar and standard plates."
+          }
+        }
+      }
+    },
     "En sèche, la fourchette part de ta masse maigre : 2,3 à 3,1 g par kg de masse maigre.": {
       "localizations": {
         "en": {
@@ -652,32 +662,32 @@
         }
       }
     },
-    "Juste au-dessus · %@ kg": {
+    "Juste au-dessus · %@ %@": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Just above · %@ kg"
+            "value": "Just above · %1$@ %2$@"
           }
         }
       }
     },
-    "Juste en dessous · %@ kg": {
+    "Juste en dessous · %@ %@": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Just below · %@ kg"
+            "value": "Just below · %1$@ %2$@"
           }
         }
       }
     },
-    "La barre seule pèse déjà %@ kg.": {
+    "La barre seule pèse déjà %@ %@.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The bar alone already weighs %@ kg."
+            "value": "The bar alone already weighs %1$@ %2$@."
           }
         }
       }
@@ -1172,6 +1182,16 @@
         }
       }
     },
+    "Standard (lb)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Standard (lb)"
+          }
+        }
+      }
+    },
     "suit la charge tant que tu n’y touches pas": {
       "localizations": {
         "en": {
@@ -1362,6 +1382,16 @@
         }
       }
     },
+    "Ton matériel n’a aucun disque : ajoute-en dans Mon matériel.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your equipment has no plates: add some in My equipment."
+          }
+        }
+      }
+    },
     "Ton max à partir d’une série": {
       "localizations": {
         "en": {
@@ -1542,12 +1572,12 @@
         }
       }
     },
-    "Un poids va de 30 à 300 kg.": {
+    "Un poids va de %@ à %@ %@.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "A weight goes from 30 to 300 kg."
+            "value": "A weight goes from %1$@ to %2$@ %3$@."
           }
         }
       }
@@ -1572,12 +1602,12 @@
         }
       }
     },
-    "Une charge va de 1 à 500 kg.": {
+    "Une charge va de %@ à %@ %@.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "A load goes from 1 to 500 kg."
+            "value": "A load goes from %1$@ to %2$@ %3$@."
           }
         }
       }

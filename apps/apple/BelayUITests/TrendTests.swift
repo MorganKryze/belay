@@ -45,7 +45,7 @@ final class TrendTests: XCTestCase {
         pick(app, "Semaine")
         let chart = element(app, "trend-chart")
         XCTAssertTrue(chart.waitForExistence(timeout: 5))
-        let pattern = ".*Pesée [0-9]+,[0-9]\u{202F}kg · Moyenne 7 j [0-9]+,[0-9]\u{202F}kg"
+        let pattern = ".*Pesée [0-9]+,[0-9] kilos · Moyenne 7 j [0-9]+,[0-9] kilos"
         chart.coordinate(withNormalizedOffset: CGVector(dx: 0.3, dy: 0.5)).tap()
         XCTAssertTrue(chart.waitFor(NSPredicate(format: "value MATCHES %@", pattern)), "a tap reads a day: \(chart.value ?? "")")
         let first = chart.value as? String
@@ -88,9 +88,9 @@ final class TrendTests: XCTestCase {
         let app = trend()
         let chart = element(app, "trend-chart")
         XCTAssertTrue(chart.waitForExistence(timeout: 5))
-        XCTAssertEqual(chart.label, "Moyenne 7 jours et pesées, mois, 80,2\u{202F}kg")
+        XCTAssertEqual(chart.label, "Moyenne 7 jours et pesées, mois, 80,2 kilos")
         pick(app, "Année")
-        XCTAssertTrue(chart.waitFor(NSPredicate(format: "label == %@", "Moyenne 7 jours et pesées, année, 80,2\u{202F}kg")))
+        XCTAssertTrue(chart.waitFor(NSPredicate(format: "label == %@", "Moyenne 7 jours et pesées, année, 80,2 kilos")))
     }
 
     /// CO23: the range pill opens « Comment c'est calculé » with the shared catalogue's words.

@@ -68,7 +68,7 @@ public func warmups(_ slot: Slot, workKg: Double?, exercise: LibraryExercise, ba
 }
 
 /// Decimals of a step written in base 10: 2.5 is 1, 0.05 is 2, 10 is 0.
-private func decimalsOf(_ step: Double) -> Int {
+func decimalsOf(_ step: Double) -> Int {
   if step.rounded() == step { return 0 }
   let text = "\(step)"
   guard let dot = text.firstIndex(of: ".") else { return 0 }

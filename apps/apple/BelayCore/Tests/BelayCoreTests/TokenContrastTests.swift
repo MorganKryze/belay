@@ -91,4 +91,20 @@ private func contrast(
         "Danger on \(ground), \(appearance): \(String(format: "%.2f", ratio)):1, under 4.5:1")
     }
   }
+
+  /// The body figure on its thumbnail's track: the resting silhouette stays apart from the track,
+  /// the secondary and primary shades at the web's ratios, in every appearance.
+  @Test(arguments: [("MuscleRest", 1.15), ("MuscleSecondary", 2.4), ("Ink", 4.5)])
+  func figureShadeReadsOnTrack(_ shade: String, _ floor: Double) throws {
+    let set = try ColorSet(shade)
+    let track = try ColorSet("Track")
+    for appearance in Appearance.all {
+      let fill = try #require(set.resolve(appearance))
+      let back = try #require(track.resolve(appearance))
+      let ratio = contrast(fill, back)
+      #expect(
+        ratio >= floor,
+        "\(shade) on Track, \(appearance): \(String(format: "%.2f", ratio)):1, under \(floor):1")
+    }
+  }
 }
