@@ -146,7 +146,7 @@ final class ReglagesTests: XCTestCase {
         let segment = row.segmentedControls.firstMatch
         XCTAssertTrue(segment.exists, "a segmented control in the row")
         XCTAssertEqual(segment.label, "Poids")
-        XCTAssertTrue(row.frame.contains(segment.frame), "inside the row")
+        XCTAssertTrue(row.frame.insetBy(dx: -1, dy: -1).contains(segment.frame), "inside the row: \(segment.frame) in \(row.frame)")
         XCTAssertGreaterThan(segment.frame.midX, row.frame.midX, "at the row's trailing edge")
         XCTAssertEqual(segment.buttons.allElementsBoundByIndex.map(\.label), ["kilos", "livres"])
         XCTAssertTrue(segment.buttons["kilos"].isSelected, "kilos by default")

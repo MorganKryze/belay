@@ -68,6 +68,8 @@ struct HistorySection: View {
                 .font(.subheadline)
                 .foregroundStyle(.muted)
                 .monospacedDigit()
+                // Read with a plain space: the no-break one only keeps the middot off a line start.
+                .accessibilityLabel(Self.size(week).replacingOccurrences(of: "\u{00A0}", with: " "))
         }
         .textCase(nil)
     }
