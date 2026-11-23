@@ -70,8 +70,9 @@ struct WeightChart: View {
     /// The unit the curve and its axis read in.
     private var unit: WeightUnit { SetText.unit }
 
-    /// A weight as the curve draws it, in the unit shown.
-    private func shown(_ kg: Double) -> Double { weighingFromKg(kg, unit) }
+    /// A weight as the curve draws it, in the unit shown: the exact pound, never the quarter pound
+    /// a typed weigh-in reads in, which would put flat steps in the line.
+    private func shown(_ kg: Double) -> Double { unit == .kg ? kg : kgToLb(kg) }
 
     /// The values drawn, with a margin of about 0,4 kg above and below, to whole numbers of the unit.
     private var domain: ClosedRange<Double> {

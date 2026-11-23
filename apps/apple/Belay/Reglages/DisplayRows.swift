@@ -54,6 +54,17 @@ struct DisplayRows: View {
                         Text("En pause", tableName: "Reglages")
                     }
                 }
+                MenuRow(
+                    title: "Historique", symbol: "calendar", value: historyName(historyActivities), id: "reglages-history"
+                ) {
+                    Picker(selection: $historyActivities) {
+                        ForEach([DevicePrefs.Shown.shown, .hidden], id: \.self) { Text(historyName($0)).tag($0) }
+                    } label: {
+                        Text("Historique", tableName: "Reglages")
+                    }
+                }
+                switchRow("Volume", "dumbbell", $sessionVolume, id: "reglages-volume")
+                // Last in the group, so the silent-mode footer reads under the row it explains.
                 MenuRow(title: "Son de fin de repos", symbol: "bell", value: soundName(restSound), id: "reglages-rest-sound") {
                     Picker(selection: $restSound) {
                         ForEach([DevicePrefs.RestSound.off, .on, .over], id: \.self) { Text(soundName($0)).tag($0) }
@@ -66,16 +77,6 @@ struct DisplayRows: View {
                 #if DEBUG
                 .overlay(alignment: .topTrailing) { Fixture.RestProbe() }
                 #endif
-                MenuRow(
-                    title: "Historique", symbol: "calendar", value: historyName(historyActivities), id: "reglages-history"
-                ) {
-                    Picker(selection: $historyActivities) {
-                        ForEach([DevicePrefs.Shown.shown, .hidden], id: \.self) { Text(historyName($0)).tag($0) }
-                    } label: {
-                        Text("Historique", tableName: "Reglages")
-                    }
-                }
-                switchRow("Volume", "dumbbell", $sessionVolume, id: "reglages-volume")
             } header: {
                 Text("Séances", tableName: "Reglages").textCase(nil).foregroundStyle(.ink)
             } footer: {
@@ -143,8 +144,10 @@ struct DisplayRows: View {
             }
             .pickerStyle(.segmented)
             .labelsHidden()
+            // Each half a full 44 pt target, as wide as the prototype draws the control.
+            .controlSize(.large)
+            .frame(width: 112)
             .accessibilityLabel(Text("Poids", tableName: "Reglages"))
-            .fixedSize()
             .sensoryFeedback(.selection, trigger: units.unit)
         }
         .frame(minHeight: 52)

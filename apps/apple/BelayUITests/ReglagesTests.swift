@@ -112,7 +112,7 @@ final class ReglagesTests: XCTestCase {
         reglages(app)
         let rows = [
             "reglages-language", "reglages-theme", "reglages-weight-unit", "reglages-trend", "reglages-pause",
-            "reglages-rest-sound", "reglages-history", "reglages-volume", "reglages-pill", "reglages-intake",
+            "reglages-history", "reglages-volume", "reglages-rest-sound", "reglages-pill", "reglages-intake",
             "reglages-one-rep-max", "reglages-sources",
         ]
         XCTAssertEqual(
@@ -122,6 +122,18 @@ final class ReglagesTests: XCTestCase {
         }
         XCTAssertFalse(app.staticTexts["Prototype seulement"].exists, "no prototype row")
         XCTAssertFalse(app.staticTexts["Mensurations et taille"].exists, "no length unit")
+    }
+
+    /// Each half of kg | lb is a full 44 pt target.
+    func testUnitSegmentHalvesAreFullTargets() {
+        let app = launch("fresh")
+        reglages(app)
+        let segment = reach(app, "reglages-weight-unit").segmentedControls.firstMatch
+        XCTAssertTrue(segment.exists, "a segmented control in the row")
+        XCTAssertGreaterThanOrEqual(segment.frame.height, 44, "the control is 44 pt high: \(segment.frame)")
+        for half in segment.buttons.allElementsBoundByIndex {
+            XCTAssertGreaterThanOrEqual(half.frame.width, 44, "« \(half.label) » is 44 pt wide: \(half.frame)")
+        }
     }
 
     /// The weight unit as kg | lb in the « Poids » row, kilos by default, said as words, and kept
