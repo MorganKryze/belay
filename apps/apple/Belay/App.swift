@@ -24,7 +24,12 @@ struct BelayApp: App {
     /// The person's account; in a debug build, the UI tests' fixture when the launch asks for it.
     private static func launchAccount() -> AccountModel {
         #if DEBUG
-            if let fixture = Fixture.account() { return fixture }
+            if let fixture = Fixture.account() {
+                // The UI tests drive the app with no motion: every wait for an animation to settle
+                // is time the suite spends idle.
+                UIView.setAnimationsEnabled(false)
+                return fixture
+            }
         #endif
         return AccountModel()
     }
@@ -56,6 +61,7 @@ struct BelayApp: App {
                     }
                 }
                 .environment(\.contrastIncreased, Fixture.contrastIncreased)
+                .transaction { if Fixture.isOn { $0.disablesAnimations = true } }
             #endif
             .task { await account.finishSignIn() }
             .onChange(of: scenePhase) { _, phase in
