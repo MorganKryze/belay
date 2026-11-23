@@ -434,6 +434,11 @@ final class TrainingModel {
         try act { try $0.stopEmpty() }
     }
 
+    /// Drops the open session with its sets, as the web's delete: no summary, the program unchanged.
+    func removeOpen() throws {
+        try act { try $0.removeOpen() }
+    }
+
     /// The floor given on the summary, or none: kept on this phone at once, never queued.
     func giveEffort(_ floor: Int?) throws {
         guard let workoutId = summary?.workoutId else { return }

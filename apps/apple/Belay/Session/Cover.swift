@@ -474,6 +474,15 @@ struct Cover: View {
                 }
                 lower()
                 return true
+            },
+            remove: {
+                do {
+                    try training.removeOpen()
+                } catch {
+                    failed = true
+                    return
+                }
+                lower()
             })
     }
 

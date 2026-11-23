@@ -118,6 +118,45 @@ final class PauseTests: XCTestCase {
         XCTAssertFalse(app.buttons["Enregistrer et fermer"].exists, "with no summary")
     }
 
+    /// « Supprimer la séance… » asks again; confirmed, the session goes with its set, no summary,
+    /// and Accueil offers it again while Historique lists only the session done the day before.
+    func testStopDeletesTheSessionWithItsSets() {
+        let app = launch("lockLogged")
+        var alert = askStop(app)
+        alert.buttons["Supprimer la séance…"].tap()
+        alert = app.alerts["Supprimer la séance\u{202F}?"]
+        XCTAssertTrue(alert.waitForExistence(timeout: 3), "a second question")
+        XCTAssertTrue(
+            alert.staticTexts["La série notée ne sera pas gardée\u{202F}; ton programme ne change pas."].exists,
+            "one set logged")
+        alert.buttons["Supprimer la séance"].tap()
+        XCTAssertTrue(app.navigationBars["Bonjour Ada"].waitForExistence(timeout: 5), "back on Accueil")
+        XCTAssertFalse(app.buttons["Enregistrer et fermer"].exists, "with no summary")
+        XCTAssertFalse(app.buttons["Reprendre"].exists, "the session is gone")
+        XCTAssertTrue(app.buttons["Voir la séance"].waitForExistence(timeout: 3), "offered again")
+        app.tabBars.firstMatch.buttons["Séances"].tap()
+        let segment = app.segmentedControls.firstMatch.buttons["Historique"]
+        XCTAssertTrue(segment.waitForExistence(timeout: 5))
+        segment.tap()
+        Thread.sleep(forTimeInterval: 1)
+        XCTAssertEqual(app.descendants(matching: .any).matching(identifier: "history.row").count, 1, "only yesterday’s session is listed")
+    }
+
+    func testDeleteQuestionKeepsTheSession() {
+        let app = launch("lockLogged")
+        var alert = askStop(app)
+        alert.buttons["Supprimer la séance…"].tap()
+        alert = app.alerts["Supprimer la séance\u{202F}?"]
+        XCTAssertTrue(alert.waitForExistence(timeout: 3), "a second question")
+        alert.buttons["Continuer la séance"].tap()
+        XCTAssertTrue(app.staticTexts["En pause"].waitForExistence(timeout: 3), "the session stays open")
+        app.buttons["Arrêter la séance"].tap()
+        alert = app.alerts.firstMatch
+        XCTAssertTrue(alert.waitForExistence(timeout: 3))
+        XCTAssertTrue(alert.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "1 série notée")).firstMatch.exists, "with its set")
+        alert.buttons["Annuler"].tap()
+    }
+
     func testResumeFlowsBack() {
         let app = launch("workSet")
         pause(app)

@@ -483,6 +483,26 @@ extension AccountStore {
     if !done { throw SessionError.noSession }
   }
 
+  /// The open session removed with whatever it holds; its sets go with it as the server reads
+  /// them, and the program does not change.
+  func removeOpen(_ ctx: SessionContext) throws {
+    let done = try writer.write { db -> Bool in
+      guard let active = try Rows.single(ActiveSession.self, db, "activeSession") else {
+        return false
+      }
+      try Self.write(
+        db,
+        [
+          .workout(
+            WorkoutChange(id: active.workoutId, at: Instant.string(ctx.now()), edit: .removed(true))
+          )
+        ])
+      try Rows.clearSingle(db, "activeSession")
+      return true
+    }
+    if !done { throw SessionError.noSession }
+  }
+
   private func requireOpen(_ result: Void?) throws {
     if result == nil { throw SessionError.noSession }
   }
