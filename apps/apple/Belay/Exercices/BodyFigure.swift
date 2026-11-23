@@ -81,6 +81,8 @@ private struct FigureDrawing: View {
 struct BodyFigure: View {
     let primary: [String]
     let secondary: [String]
+    /// The square behind the figure; a sheet on the system's greys passes its own.
+    var tile: Color = .track
     @Environment(\.colorScheme) private var scheme
     @Environment(\.colorSchemeContrast) private var contrast
 
@@ -121,6 +123,8 @@ struct BodyFigure: View {
 struct FigureThumbnail: View {
     let primary: String?
     let secondary: [String]
+    /// The square behind the figure; a sheet on the system's greys passes its own.
+    var tile: Color = .track
     @Environment(\.colorScheme) private var scheme
     @Environment(\.colorSchemeContrast) private var contrast
     @Environment(\.displayScale) private var scale
@@ -128,23 +132,29 @@ struct FigureThumbnail: View {
 
     var body: some View {
         let key = FigureThumbnailKey(primary: primary ?? "", secondary: secondary, dark: scheme == .dark)
+        let side = ThumbSlot.capped(side)
         Image(uiImage: FigureThumbnails.image(key, high: contrast == .increased, side: side, scale: scale))
             .resizable()
-            .modifier(ThumbSlot(side: side))
+            .modifier(ThumbSlot(side: side, tile: tile))
             .accessibilityHidden(true)
     }
 }
 
-/// A list row's thumbnail square: the side scaled with the text, on the track, rounded.
+/// A list row's thumbnail square: the side scaled with the text up to a cap, on the track, rounded.
 struct ThumbSlot: ViewModifier {
     /// The side at the default text size.
     static let side: CGFloat = 44
+    /// Past this the square takes the row's width from the name at the accessibility sizes.
+    static let maxSide: CGFloat = 60
+    static func capped(_ side: CGFloat) -> CGFloat { min(side, maxSide) }
     let side: CGFloat
+    var tile: Color = .track
 
     func body(content: Content) -> some View {
-        content
+        let side = Self.capped(side)
+        return content
             .frame(width: side, height: side)
-            .background(Color.track)
+            .background(tile)
             .clipShape(.rect(cornerRadius: 11))
     }
 }

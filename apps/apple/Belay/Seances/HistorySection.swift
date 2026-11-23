@@ -81,9 +81,9 @@ struct HistorySection: View {
         return "\(start.formatted(day)) – \(end.formatted(day))"
     }
 
-    /// « 3 séances · 2 h 40 ».
+    /// « 3 séances · 2 h 40 ». The middot is held to the count, so a wrapped line never opens on it.
     private static func size(_ week: HistoryWeek) -> String {
-        "\(String(localized: "\(week.count) séances", table: "Seances")) · \(SessionText.duration(ms: week.durationMs))"
+        "\(String(localized: "\(week.count) séances", table: "Seances"))\u{00A0}· \(SessionText.duration(ms: week.durationMs))"
     }
 }
 

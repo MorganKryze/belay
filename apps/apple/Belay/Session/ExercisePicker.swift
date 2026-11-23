@@ -20,7 +20,9 @@ struct ExercisePicker: View {
                             dismiss()
                         } label: {
                             HStack(spacing: 12) {
-                                FigureThumbnail(primary: exercise.primary.first, secondary: exercise.secondary)
+                                FigureThumbnail(
+                                    primary: exercise.primary.first, secondary: exercise.secondary,
+                                    tile: Color(.systemGroupedBackground))
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(verbatim: exercise.name).foregroundStyle(.ink)
                                     if exercise.measure == .seconds {

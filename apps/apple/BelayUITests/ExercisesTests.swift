@@ -5,13 +5,14 @@ import XCTest
 final class ExercisesTests: XCTestCase {
     /// Séances › Exercices once the fixture has signed in.
     private func exercices(
-        _ fixture: String = "fresh", english: Bool = false
+        _ fixture: String = "fresh", english: Bool = false, extra: [String] = []
     ) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments =
             english
             ? ["-AppleLanguages", "(en)", "-AppleLocale", "en_US", "-BelayFixture", fixture]
             : ["-AppleLanguages", "(fr)", "-AppleLocale", "fr_FR", "-BelayFixture", fixture]
+        app.launchArguments += extra
         app.launchFixture()
         let tab = app.tabBars.firstMatch.buttons[english ? "Sessions" : "Séances"]
         XCTAssertTrue(tab.waitForExistence(timeout: 10))
@@ -472,6 +473,18 @@ final class ExercisesTests: XCTestCase {
             return [.image, .button, .staticText].contains(element.elementType)
         }
         XCTAssertTrue(inBand.isEmpty, "elements in the figure: \(inBand.map(\.label))")
+    }
+
+    /// At the largest text sizes each filter chip keeps its word on one line.
+    func testAx3FilterChipsKeepTheirWords() {
+        let app = exercices(extra: ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXL"])
+        for (id, word) in [("filter-muscle", "Muscle"), ("filter-equipment", "Matériel")] {
+            let chip = app.buttons[id]
+            XCTAssertTrue(chip.waitForExistence(timeout: 5), "the chip \(word)")
+            XCTAssertEqual(chip.label, word)
+            XCTAssertTrue(chip.isHittable, "\(word) can be tapped")
+            XCTAssertGreaterThan(chip.frame.width, chip.frame.height, "« \(word) » on one line: \(chip.frame)")
+        }
     }
 
     /// A row whose loop is not on the phone draws the figure, and asks the instance for nothing.
