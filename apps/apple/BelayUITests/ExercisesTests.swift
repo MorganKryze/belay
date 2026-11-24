@@ -209,6 +209,21 @@ final class ExercisesTests: XCTestCase {
         XCTAssertEqual(element(app, "loop-asked").value as? String, "1", "one request in the visit")
     }
 
+    /// A loop that failed offline is asked again at the page's next visit, and plays once it comes.
+    func testLoopFailedOfflinePlaysOnceOnlineAgain() {
+        let app = exercices("loopOffline")
+        _ = page(app, "ds:0025", search: "barbell bench press")
+        let loop = element(app, "loop")
+        XCTAssertTrue(loop.comesToRead("Démonstration de Barbell bench press, indisponible", timeout: 10))
+        app.navigationBars.buttons.firstMatch.tap()
+        element(app, "exercise.ds:0025").tap()
+        XCTAssertTrue(
+            loop.comesToRead("Démonstration de Barbell bench press, prête", timeout: 10), "reads \(loop.label)")
+        app.buttons["Lire la démonstration"].tap()
+        XCTAssertEqual(loop.label, "Démonstration de Barbell bench press, en lecture")
+        XCTAssertEqual(element(app, "loop-asked").value as? String, "2", "asked again once back")
+    }
+
     /// Play runs the clip once from its start, then the first frame rests with the play button again.
     func testLoopPlaysOnceThenRests() {
         let app = exercices()

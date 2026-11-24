@@ -60,7 +60,8 @@ import WebKit
 ///
 /// The instance serves loops in every mode: each one a short video made on the phone, sent 3 s
 /// after it is asked, since no media ships with the app. `loopLoading` never answers for one, and
-/// `loopFailed` answers each with a 404 after the same wait, `loopBroken` with a body no player reads.
+/// `loopFailed` answers each with a 404 after the same wait, `loopBroken` with a body no player reads,
+/// `loopOffline` the first ask for each loop as a phone off the network, the next with the loop.
 /// `mediaStale` keeps a session from before the instance said it serves loops: `/api/me` says it does.
 ///
 /// `-BelayApi same|behind|ahead|none` stands an instance on this build's contract version, the one
@@ -1088,9 +1089,13 @@ nonisolated final class FixtureLoops: Sendable {
     init(mode: String) { self.mode = mode }
 
     func answer(_ path: String) async throws -> (Data, Int) {
-        Self.asked.withLock { $0[path, default: 0] += 1 }
+        let asked = Self.asked.withLock { asked in
+            asked[path, default: 0] += 1
+            return asked[path, default: 0]
+        }
         if mode == "loopLoading" { try await Task.sleep(for: .seconds(3_600)) }
         try await Task.sleep(for: .seconds(3))
+        if mode == "loopOffline", asked == 1 { throw URLError(.notConnectedToInternet) }
         if mode == "loopFailed" { return (Data(), 404) }
         if mode == "loopBroken" { return (Data("not a video".utf8), 200) }
         return (try await Self.video.value, 200)

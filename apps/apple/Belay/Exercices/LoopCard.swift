@@ -277,8 +277,9 @@ struct LoopThumb: View {
                 frame = cached
                 return
             }
-            guard let url = loops.kept(exerciseId), let image = await Self.firstFrame(url, side: side * scale),
-                !Task.isCancelled
+            // A row scrolled away before its frame came decodes and caches nothing.
+            guard let url = loops.kept(exerciseId), !Task.isCancelled,
+                let image = await Self.firstFrame(url, side: side * scale), !Task.isCancelled
             else { return }
             ThumbCache.images.setObject(image, forKey: exerciseId as NSString)
             frame = image
