@@ -86,6 +86,8 @@ struct Cover: View {
     @State private var noted: Int?
     @State private var programme = false
     @State private var failed = false
+    /// When the running rest ends, kept so its end can tell a rest that ran out from one cut short.
+    @State private var restEnd: Date?
     @State private var logged = 0
     @State private var answered = 0
 
@@ -161,7 +163,16 @@ struct Cover: View {
             if let said { AccessibilityNotification.Announcement(said).post() }
         }
         .onChange(of: restStarted) { _, started in
-            if started { AccessibilityNotification.Announcement(String(localized: "Repos commencé", table: "Session")).post() }
+            if started {
+                restEnd = training.restEndsAt
+                AccessibilityNotification.Announcement(String(localized: "Repos commencé", table: "Session")).post()
+            } else {
+                // Said only when the time ran out: a skipped or paused rest ends early and stays quiet.
+                if let end = restEnd, Date.now >= end.addingTimeInterval(-1) {
+                    AccessibilityNotification.Announcement(String(localized: "Repos terminé", table: "Session")).post()
+                }
+                restEnd = nil
+            }
         }
         .alert(Text("Ce n’est pas noté. Réessaie.", tableName: "Session"), isPresented: $failed) {
             Button(role: .cancel) {} label: { Text("OK", tableName: "Session") }

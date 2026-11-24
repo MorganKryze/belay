@@ -51,11 +51,23 @@ struct WeighInSheet: View {
         return corps.lastWeighIn == nil ? nil : Text("En gris, ta dernière pesée.", tableName: "Corps")
     }
 
+    /// Said at once, high priority, so the sheet closing over it does not cut it short.
+    private func announceSaved(_ kg: Double) {
+        var said = AttributedString(String(localized: "Pesée enregistrée, \(BodyText.spoken(kg))", table: "Corps"))
+        said.accessibilitySpeechAnnouncementPriority = .high
+        AccessibilityNotification.Announcement(said).post()
+    }
+
     var body: some View {
         EntrySheet(
             title: Text("Pesée", tableName: "Corps"), symbol: "scalemass.fill", date: $date, latest: corps.now(), canSave: value != nil,
             id: "weighin",
-            save: { if let value { corps.weigh(date: day, kg: value) } },
+            save: {
+                if let value {
+                    corps.weigh(date: day, kg: value)
+                    announceSaved(value)
+                }
+            },
             deletion: corps.weighIn(on: day) == nil
                 ? nil : (Text("Supprimer la pesée", tableName: "Corps"), { corps.deleteWeighIn(date: day) }),
             footer: footer
