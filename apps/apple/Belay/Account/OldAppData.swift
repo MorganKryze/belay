@@ -19,12 +19,14 @@ enum OldAppData {
     private static let log = Logger(subsystem: "cloud.libresoftware.belay", category: "old-app-data")
 
     /// Removes every web data record from `store` unless it was done before; the key is set only
-    /// once nothing is left, so a removal that falls short runs again at the next launch.
+    /// once nothing is left, so a removal that falls short runs again at the next launch. No
+    /// `store` is the default one, read here on the main actor rather than at the call site.
     @discardableResult
     static func eraseOnce(
-        in store: WKWebsiteDataStore = .default(), defaults: UserDefaults = .standard
+        in store: WKWebsiteDataStore? = nil, defaults: UserDefaults = .standard
     ) async -> Outcome {
         guard !defaults.bool(forKey: doneKey) else { return .skipped }
+        let store = store ?? .default()
         let types = WKWebsiteDataStore.allWebsiteDataTypes()
         let records = await store.dataRecords(ofTypes: types)
         await store.removeData(ofTypes: types, for: records)
