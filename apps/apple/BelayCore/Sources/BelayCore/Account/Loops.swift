@@ -11,8 +11,9 @@ public func loopPath(_ exerciseId: String) -> String? {
 
 /// The exercise loops this phone fetched from the person's instance, kept in the caches folder
 /// under the account's own name so one plays again offline. Nothing is asked of any other server,
-/// and nothing at all while the instance says it serves no media. A loop that failed is not asked
-/// for again until the app starts anew, as the web keeps its failures for the page's life.
+/// and nothing at all while the instance says it serves no media. A loop the instance refused is not
+/// asked for again until the app starts anew, as the web keeps its failures for the page's life; one
+/// that failed for want of a network is asked again at its next appearance.
 public struct Loops: Sendable {
   /// As the web's `KEPT_LOOPS`: kept by count, the oldest out. A size budget would need each
   /// file's bytes read at every write; at about 100 KB a loop this stays near 15 MB.
@@ -42,20 +43,28 @@ public struct Loops: Sendable {
   }
 
   /// The loop of `id`: kept, else fetched from `instance` with the session's token and kept. Nil
-  /// when the instance serves no media, the exercise has no loop, or the fetch failed now or
-  /// earlier in this run. A fetch already out for `id`, a row's thumbnail and its page asking at
-  /// once, is awaited rather than sent again.
+  /// when the instance serves no media, the exercise has no loop, the fetch failed, or the instance
+  /// refused it earlier in this run. A fetch already out for `id`, a row's thumbnail and its page
+  /// asking at once, is awaited rather than sent again; it is cancelled once every caller awaiting
+  /// it has been.
   public func fetch(_ id: String, token: String, at instance: Instance, media: Bool) async -> URL? {
     guard media, !closed.isClosed, let path = loopPath(id), let url = file(id) else { return nil }
     if let kept = kept(id) { return kept }
     guard !failed.contains(id) else { return nil }
-    let task = inFlight.task(id) {
+    let (task, ticket) = inFlight.join(id) {
       Task { await download(id, path: path, to: url, token: token, at: instance) }
     }
-    let fetched = await task.value
-    inFlight.done(id)
-    return fetched
+    return await withTaskCancellationHandler {
+      let fetched = await task.value
+      inFlight.leave(id, ticket)
+      return fetched
+    } onCancel: {
+      inFlight.leave(id, ticket)
+    }
   }
+
+  /// How many callers await the fetch out for `id`, as the tests read it.
+  func waiting(_ id: String) -> Int { inFlight.waiting(id) }
 
   private func download(_ id: String, path: String, to url: URL, token: String, at instance: Instance) async
     -> URL?
@@ -78,7 +87,8 @@ public struct Loops: Sendable {
       prune()
       return url
     } catch {
-      failed.insert(id)
+      // Not remembered: offline, cancelled or a disk that would not take it, the next appearance
+      // asks again. Only the instance's own refusal above is kept for the run.
       Self.log.info("loop not fetched: \(AccountStore.logLabel(error), privacy: .public)")
       return nil
     }
@@ -125,23 +135,50 @@ public struct Loops: Sendable {
   private static let log = Logger(subsystem: "cloud.libresoftware.belay", category: "loops")
 }
 
-/// The fetches out now, by exercise, shared by every copy of a `Loops`.
+/// The fetches out now, by exercise, with the callers awaiting each, shared by every copy of a
+/// `Loops`.
 private final class InFlight: Sendable {
-  private let tasks = Mutex<[String: Task<URL?, Never>]>([:])
+  private struct Fetch {
+    let task: Task<URL?, Never>
+    var waiting: Set<Int>
+  }
 
-  /// The task out for `id`, else the one `start` makes.
-  func task(_ id: String, start: () -> Task<URL?, Never>) -> Task<URL?, Never> {
-    tasks.withLock { tasks in
-      if let task = tasks[id] { return task }
-      let task = start()
-      tasks[id] = task
-      return task
+  private struct State {
+    var fetches: [String: Fetch] = [:]
+    var next = 0
+  }
+
+  private let state = Mutex(State())
+
+  /// The task out for `id`, else the one `start` makes, and the ticket its caller leaves with.
+  func join(_ id: String, start: () -> Task<URL?, Never>) -> (Task<URL?, Never>, Int) {
+    state.withLock { state in
+      let ticket = state.next
+      state.next += 1
+      var fetch = state.fetches[id] ?? Fetch(task: start(), waiting: [])
+      fetch.waiting.insert(ticket)
+      state.fetches[id] = fetch
+      return (fetch.task, ticket)
     }
   }
 
-  func done(_ id: String) { _ = tasks.withLock { $0.removeValue(forKey: id) } }
+  /// The caller holding `ticket` no longer waits, its answer in or its task cancelled. The last one
+  /// out cancels the fetch, a no-op once it is done. A ticket already out changes nothing.
+  func leave(_ id: String, _ ticket: Int) {
+    state.withLock { state in
+      guard var fetch = state.fetches[id], fetch.waiting.remove(ticket) != nil else { return }
+      if fetch.waiting.isEmpty {
+        state.fetches[id] = nil
+        fetch.task.cancel()
+      } else {
+        state.fetches[id] = fetch
+      }
+    }
+  }
 
-  func cancelAll() { tasks.withLock { $0.values.forEach { $0.cancel() } } }
+  func waiting(_ id: String) -> Int { state.withLock { $0.fetches[id]?.waiting.count ?? 0 } }
+
+  func cancelAll() { state.withLock { $0.fetches.values.forEach { $0.task.cancel() } } }
 }
 
 /// Whether the account the loops belong to is gone, shared by every copy of a `Loops`.
@@ -163,7 +200,7 @@ private final class Closed: Sendable {
   }
 }
 
-/// The exercises whose loop failed in this run, shared by every copy of a `Loops`.
+/// The exercises whose loop the instance refused in this run, shared by every copy of a `Loops`.
 private final class Failed: Sendable {
   private let ids = Mutex<Set<String>>([])
   func contains(_ id: String) -> Bool { ids.withLock { $0.contains(id) } }

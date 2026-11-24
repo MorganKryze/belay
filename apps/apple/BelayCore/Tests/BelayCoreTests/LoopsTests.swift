@@ -7,28 +7,48 @@ import Testing
 // An exercise's loop: asked of the person's instance only, with the session's token, never while
 // the instance serves no media; kept for offline, capped, and gone at sign-out.
 
-/// Answers every request with one status, type and body, and keeps what it was sent.
+/// Answers every request with one status, type and body, and keeps what it was sent. The first
+/// `failing` answers throw their error, as a phone off the network does; `held`, no answer comes
+/// until `release()`, or for 5 s at most so a test never hangs.
 private final class LoopServer: HTTPClient, Sendable {
   let sent = Mutex<[URLRequest]>([])
+  /// The requests whose wait was cancelled before an answer came.
+  let cancelled = Mutex(0)
+  private let failing: Mutex<[URLError.Code]>
+  private let held: Mutex<Bool>
   private let status: Int
   private let offline: Bool
   private let type: String
   private let body: Data
 
-  init(status: Int = 200, offline: Bool = false, type: String = "video/mp4", body: Data = Data("loop".utf8)) {
+  init(
+    status: Int = 200, offline: Bool = false, failing: [URLError.Code] = [], held: Bool = false,
+    type: String = "video/mp4", body: Data = Data("loop".utf8)
+  ) {
     self.status = status
     self.offline = offline
+    self.failing = Mutex(failing)
+    self.held = Mutex(held)
     self.type = type
     self.body = body
   }
 
   var requests: [URLRequest] { sent.withLock { $0 } }
 
+  func release() { held.withLock { $0 = false } }
+
   func send(_ request: URLRequest) async throws -> (Data, HTTPURLResponse) {
     sent.withLock { $0.append(request) }
-    // Long enough for a second fetch to start while this one is out.
-    try await Task.sleep(for: .milliseconds(50))
+    do {
+      // Long enough for a second fetch to start while this one is out.
+      try await Task.sleep(for: .milliseconds(50))
+      for _ in 0..<1_000 where held.withLock({ $0 }) { try await Task.sleep(for: .milliseconds(5)) }
+    } catch {
+      cancelled.withLock { $0 += 1 }
+      throw error
+    }
     if offline { throw URLError(.notConnectedToInternet) }
+    if let code = failing.withLock({ $0.isEmpty ? nil : $0.removeFirst() }) { throw URLError(code) }
     let response = HTTPURLResponse(
       url: request.url!, statusCode: status, httpVersion: nil, headerFields: ["Content-Type": type])!
     return (body, response)
@@ -177,13 +197,62 @@ private func scratch() -> URL {
     #expect(!FileManager.default.fileExists(atPath: folder.path))
   }
 
-  @Test func failureNotRetried() async {
+  @Test func aRefusedLoopIsNotAskedAgain() async {
     let server = LoopServer(status: 404)
     let loops = Loops(folder: scratch(), userId: "ana", origin: instance.origin, client: server)
     #expect(await loops.fetch("ds:0042", token: token, at: instance, media: true) == nil)
     #expect(await loops.fetch("ds:0042", token: token, at: instance, media: true) == nil)
     #expect(server.requests.count == 1)
     #expect(loops.kept("ds:0042") == nil)
+  }
+
+  /// A phone off the network says nothing of the loop: back online, its next appearance asks again.
+  @Test(arguments: [
+    URLError.Code.notConnectedToInternet, .networkConnectionLost, .timedOut, .cannotConnectToHost,
+    .dataNotAllowed, .internationalRoamingOff,
+  ])
+  func aLoopFailedOfflineIsFetchedAgainNextTime(code: URLError.Code) async throws {
+    let server = LoopServer(failing: [code])
+    let loops = Loops(folder: scratch(), userId: "ana", origin: instance.origin, client: server)
+    #expect(await loops.fetch("ds:0042", token: token, at: instance, media: true) == nil)
+    let url = try #require(await loops.fetch("ds:0042", token: token, at: instance, media: true))
+    #expect(try Data(contentsOf: url) == Data("loop".utf8))
+    #expect(server.requests.count == 2)
+  }
+
+  /// The page left before its loop came: the request is dropped, nothing is kept, and the next
+  /// visit asks again.
+  @Test func aFetchNobodyWaitsForIsCancelled() async throws {
+    let server = LoopServer(held: true)
+    let loops = Loops(folder: scratch(), userId: "ana", origin: instance.origin, client: server)
+    let page = Task { await loops.fetch("ds:0042", token: token, at: instance, media: true) }
+    while server.requests.isEmpty { try await Task.sleep(for: .milliseconds(5)) }
+    page.cancel()
+    #expect(await page.value == nil)
+    #expect(server.cancelled.withLock { $0 } == 1)
+    #expect(loops.kept("ds:0042") == nil)
+
+    server.release()
+    #expect(await loops.fetch("ds:0042", token: token, at: instance, media: true) != nil)
+    #expect(server.requests.count == 2)
+  }
+
+  /// A row and the page awaiting one loop: the row leaving does not drop the page's.
+  @Test func aFetchStillAwaitedElsewhereGoesOn() async throws {
+    let server = LoopServer(held: true)
+    let loops = Loops(folder: scratch(), userId: "ana", origin: instance.origin, client: server)
+    let row = Task { await loops.fetch("ds:0042", token: token, at: instance, media: true) }
+    while server.requests.isEmpty { try await Task.sleep(for: .milliseconds(5)) }
+    let page = Task { await loops.fetch("ds:0042", token: token, at: instance, media: true) }
+    for _ in 0..<1_000 where loops.waiting("ds:0042") < 2 { try await Task.sleep(for: .milliseconds(5)) }
+    try #require(loops.waiting("ds:0042") == 2, "both await the one fetch")
+    row.cancel()
+    server.release()
+    let url = try #require(await page.value)
+    #expect(try Data(contentsOf: url) == Data("loop".utf8))
+    #expect(server.cancelled.withLock { $0 } == 0)
+    #expect(server.requests.count == 1)
+    _ = await row.value
   }
 
   /// A page the instance answers in place of the loop, a login form say, is a failure, never kept.
