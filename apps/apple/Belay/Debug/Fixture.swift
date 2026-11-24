@@ -4,6 +4,7 @@ import BelayCore
 import Foundation
 import SwiftUI
 import Synchronization
+import WebKit
 
 /// The UI tests' account, in a debug build only: `-BelayFixture <mode>` signs in a made-up person
 /// on a made-up instance that never syncs, with a store of its own in the app's caches.
@@ -65,6 +66,10 @@ import Synchronization
 /// `-BelayApi same|behind|ahead|none` stands an instance on this build's contract version, the one
 /// before, the one after, or one whose version check never answers; with it, the sync lands an empty
 /// answer while the versions match. `signedOut` keeps no session, the instance's address in the field.
+///
+/// `oldWebData` stands for the launch before the update: `doneToday`'s store, with a cookie, local
+/// storage and a database in the web view's data, and the erase not run, so the next launch, on
+/// `keep`, is the first after the update.
 enum Fixture {
     nonisolated fileprivate static let origin = "https://belay.example"
     nonisolated fileprivate static let userId = "fixture"
@@ -169,6 +174,7 @@ enum Fixture {
 
     private static let dayModes: Set = [
         "doneToday", "fixedWeek", "restDay", "doneEarly", "noProgram", "firstLaunch", "weeks", "pastSession",
+        "oldWebData",
     ]
 
     private static let bodyModes: Set = [
@@ -201,7 +207,7 @@ enum Fixture {
         let day = { (offset: Int) in (today + offset + 7) % 7 }
         let seed = rotationOf(try store.programs())
         switch mode {
-        case "doneToday":
+        case "doneToday", "oldWebData":
             // Kept today at any hour: just after midnight when 70 minutes ago was still yesterday.
             let midnight = Calendar.current.startOfDay(for: now)
             let startedAt = max(now.addingTimeInterval(-70 * 60), midnight.addingTimeInterval(60))
@@ -903,6 +909,103 @@ enum Fixture {
 
     /// Whether this launch runs on the fixture.
     static var isOn: Bool { UserDefaults.standard.string(forKey: "BelayFixture") != nil }
+
+    /// What the launch did with the old app's web data, « <records left>|<erased, skipped, failed
+    /// or held> », or the plant's step while it runs, for a test that waits too long to say where.
+    private static var webData = ""
+
+    /// The launch's erase, as the app runs it; `oldWebData` plants the data in its place and holds it.
+    static func eraseOldWebData() async {
+        let outcome: String
+        if UserDefaults.standard.string(forKey: "BelayFixture") == "oldWebData" {
+            UserDefaults.standard.removeObject(forKey: OldAppData.doneKey)
+            webData = "planting"
+            await plantWebData()
+            webData = "counting"
+            outcome = "held"
+        } else {
+            switch await OldAppData.eraseOnce() {
+            case .erased: outcome = "erased"
+            case .skipped: outcome = "skipped"
+            case .failed: outcome = "failed"
+            }
+        }
+        let types = WKWebsiteDataStore.allWebsiteDataTypes()
+        var records = await WKWebsiteDataStore.default().dataRecords(ofTypes: types).count
+        // A planted record can take a moment to be listed.
+        for _ in 0..<20 where outcome == "held" && records == 0 {
+            try? await Task.sleep(for: .milliseconds(250))
+            records = await WKWebsiteDataStore.default().dataRecords(ofTypes: types).count
+        }
+        webData = "\(records)|\(outcome)"
+    }
+
+    /// A cookie, local storage and a database written by a page, as the old app's web view left them.
+    private static func plantWebData() async {
+        let view = WKWebView(frame: .zero)
+        let loaded = PageLoaded()
+        view.navigationDelegate = loaded
+        do {
+            try await withCheckedThrowingContinuation { continuation in
+                loaded.done = continuation
+                webData = "loading"
+                view.loadHTMLString("<html><body></body></html>", baseURL: URL(string: "https://localhost/"))
+            }
+            webData = "writing"
+            _ = try await view.callAsyncJavaScript(
+                """
+                document.cookie = "old=1; max-age=86400; secure";
+                localStorage.setItem("old", "1");
+                await new Promise((resolve, reject) => {
+                  const open = indexedDB.open("old", 1);
+                  open.onupgradeneeded = () => open.result.createObjectStore("kept");
+                  open.onerror = () => reject(open.error);
+                  open.onsuccess = () => {
+                    const write = open.result.transaction("kept", "readwrite");
+                    write.objectStore("kept").put("1", "old");
+                    write.oncomplete = () => resolve();
+                    write.onerror = () => reject(write.error);
+                  };
+                });
+                """, contentWorld: .page)
+        } catch {
+            preconditionFailure("the old app's web data was not planted: \(error)")
+        }
+    }
+
+    /// Hands the page's load to the plant once it is done.
+    private final class PageLoaded: NSObject, WKNavigationDelegate {
+        var done: CheckedContinuation<Void, Error>?
+
+        func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+            done?.resume()
+            done = nil
+        }
+
+        func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+            done?.resume(throwing: error)
+            done = nil
+        }
+
+        func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+            done?.resume(throwing: error)
+            done = nil
+        }
+    }
+
+    /// What the launch did with the old app's web data, for a test to read; nothing a person sees
+    /// or hears.
+    struct WebDataProbe: View {
+        var body: some View {
+            TimelineView(.periodic(from: .now, by: 0.5)) { _ in
+                Color.clear
+                    .frame(width: 1, height: 1)
+                    .accessibilityElement()
+                    .accessibilityIdentifier("debug-web-data")
+                    .accessibilityValue(Fixture.webData)
+            }
+        }
+    }
 }
 
 /// A token kept for this launch only.

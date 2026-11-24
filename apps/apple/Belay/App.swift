@@ -55,11 +55,13 @@ struct BelayApp: App {
                         Fixture.PullOnLeave(store: store)
                         Fixture.OutboxProbe(store: store)
                         Fixture.VersionChecksProbe()
+                        Fixture.WebDataProbe()
                     }
                 }
                 .environment(\.contrastIncreased, Fixture.contrastIncreased)
             #endif
             .task { await account.finishSignIn() }
+            .task { await Self.eraseOldWebData() }
             .onChange(of: scenePhase) { _, phase in
                 if phase == .active { account.returned() }
                 Self.apply(theme)
@@ -73,6 +75,15 @@ struct BelayApp: App {
 }
 
 extension BelayApp {
+    /// The old app's web data, erased at the first launch after the update; in a debug build the
+    /// UI tests' fixture runs it, so a test can plant that data first.
+    private static func eraseOldWebData() async {
+        #if DEBUG
+            if Fixture.isOn { return await Fixture.eraseOldWebData() }
+        #endif
+        await OldAppData.eraseOnce()
+    }
+
     /// The theme on every window, so sheets and alerts take it with the screens; Système leaves
     /// the iPhone's own.
     @MainActor static func apply(_ theme: DevicePrefs.Theme) {
