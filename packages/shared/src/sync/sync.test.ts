@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { MIN_WEIGH_IN_DATE } from "../body/weighings";
 import { sessionByCode, starterProgram } from "../training/program";
 import { DEFAULT_SCHEDULE } from "../training/stored-program";
-import { MAX_CHANGES } from "./limits";
+import { API_VERSION, MAX_CHANGES } from "./limits";
 import {
   clampAt,
   isNewer,
@@ -135,6 +135,13 @@ const SESSION: Change[] = [
 ];
 const request = (changes: unknown[], cursor = "0") =>
   SyncRequestSchema.safeParse({ account: ACCOUNT, cursor, changes });
+
+describe("API_VERSION", () => {
+  it("the contract version is one positive integer", () => {
+    expect(Number.isInteger(API_VERSION)).toBe(true);
+    expect(API_VERSION).toBeGreaterThan(0);
+  });
+});
 
 describe("SyncRequestSchema", () => {
   it("accepts a weigh-in, a deletion and a target range", () => {
