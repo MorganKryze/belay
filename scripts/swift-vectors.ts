@@ -135,7 +135,7 @@ import {
 } from "../apps/web/src/native/health";
 import { earliestPerDay, importWeighings } from "../apps/web/src/native/health-import";
 import type { WeightRow } from "../packages/shared/src/sync/schema";
-import { MAX_CHANGES } from "../packages/shared/src/sync/limits";
+import { API_VERSION, MAX_CHANGES } from "../packages/shared/src/sync/limits";
 import { clampAt, isNewer, mergeFields } from "../packages/shared/src/sync/merge";
 import { ChangeSchema, type Change, SyncResponseSchema } from "../packages/shared/src/sync/schema";
 import { isRecordable, isValidChange } from "../packages/shared/src/sync/valid";
@@ -1364,6 +1364,7 @@ const vectors = {
     minTime: MIN_TIME,
     clockSlackMs: CLOCK_SLACK_MS,
     maxChanges: MAX_CHANGES,
+    apiVersion: API_VERSION,
     weighInKg: WEIGHING_RANGE_KG,
     measureCm: MEASURE_BOUNDS,
     intake: INTAKE_BOUNDS,
