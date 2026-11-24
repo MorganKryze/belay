@@ -61,7 +61,6 @@ struct BelayApp: App {
                     }
                 }
                 .environment(\.contrastIncreased, Fixture.contrastIncreased)
-                .transaction { if Fixture.isOn { $0.disablesAnimations = true } }
             #endif
             .task { await account.finishSignIn() }
             .onChange(of: scenePhase) { _, phase in
