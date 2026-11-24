@@ -32,14 +32,14 @@ struct DisplayRows: View {
             } header: {
                 Text("Général", tableName: "Reglages").textCase(nil).foregroundStyle(.ink)
             } footer: {
-                Text("La langue se choisit dans les Réglages de l’iPhone, comme pour toute app.", tableName: "Reglages")
+                Text("La langue se choisit dans les Réglages de l’iPhone, comme pour toute app.", tableName: "Reglages").foregroundStyle(.muted)
             }
             Section {
                 weightUnitRow
             } header: {
                 Text("Unités", tableName: "Reglages").textCase(nil).foregroundStyle(.ink)
             } footer: {
-                Text("Belay garde tout en kilos\u{202F}: changer d’unité ne touche à aucune saisie.", tableName: "Reglages")
+                Text("Belay garde tout en kilos\u{202F}: changer d’unité ne touche à aucune saisie.", tableName: "Reglages").foregroundStyle(.muted)
             }
             Section {
                 switchRow("Tendance", "chart.line.downtrend.xyaxis", $homeTrend, id: "reglages-trend")
@@ -80,7 +80,7 @@ struct DisplayRows: View {
             } header: {
                 Text("Séances", tableName: "Reglages").textCase(nil).foregroundStyle(.ink)
             } footer: {
-                Text("En mode silencieux, iOS coupe le son de l’alerte quand Belay n’est pas à l’écran.", tableName: "Reglages")
+                Text("En mode silencieux, iOS coupe le son de l’alerte quand Belay n’est pas à l’écran.", tableName: "Reglages").foregroundStyle(.muted)
             }
             Section {
                 switchRow("Pastille", "checkmark.seal", $rangePill, id: "reglages-pill")
