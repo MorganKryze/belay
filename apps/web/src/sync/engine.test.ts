@@ -393,4 +393,112 @@ describe("a held contract", () => {
     expect(checkVersion).toHaveBeenCalledTimes(2);
     stop();
   });
+
+  type Answer = "instance-ahead" | "instance-behind" | null | "unreached";
+  function deferred() {
+    let resolve!: (answer: Answer) => void;
+    const promise = new Promise<Answer>((r) => (resolve = r));
+    return { promise, resolve };
+  }
+  const answers = (...list: (Answer | Promise<Answer>)[]) => {
+    let i = 0;
+    return vi.fn(async (): Promise<Answer> => list[Math.min(i++, list.length - 1)] ?? null);
+  };
+  const tick = () => new Promise((r) => setTimeout(r, 0));
+
+  it("sends nothing at launch before the version answers, even when Home refreshes", async () => {
+    await recordChange(db, weight("2026-10-07", 80));
+    const send = vi.fn<Send>(async () => ok(empty("5")));
+    const pending = deferred();
+    const engine = engineWith(send, { checkVersion: () => pending.promise });
+    const stop = engine.start();
+    const refreshed = engine.refresh();
+    pending.resolve("instance-behind");
+    await refreshed;
+    await tick();
+    expect(send).not.toHaveBeenCalled();
+    expect(await readOutbox(db)).toHaveLength(1);
+    stop();
+  });
+
+  it("keeps the hold when the instance cannot be reached, and asks again before sending", async () => {
+    const send = vi.fn<Send>(async () => ok(empty("5")));
+    const checkVersion = answers("instance-ahead", "unreached");
+    const engine = engineWith(send, { checkVersion });
+    const stop = engine.start();
+    await vi.waitFor(() => expect(engine.status()).toBe("instance-ahead"));
+    document.dispatchEvent(new Event("visibilitychange"));
+    await vi.waitFor(() => expect(checkVersion).toHaveBeenCalledTimes(2));
+    await tick();
+    window.dispatchEvent(new Event("online"));
+    await vi.waitFor(() => expect(checkVersion).toHaveBeenCalledTimes(3));
+    await engine.sync();
+    expect(send).not.toHaveBeenCalled();
+    expect(engine.status()).toBe("instance-ahead");
+    stop();
+  });
+
+  it("sends nothing after a return before the new answer", async () => {
+    const send = vi.fn<Send>(async () => ok(empty("5")));
+    const pending = deferred();
+    const engine = engineWith(send, {
+      checkVersion: answers(null, pending.promise),
+      debounceMs: 0,
+    });
+    const stop = engine.start();
+    await vi.waitFor(() => expect(send).toHaveBeenCalledTimes(1));
+    await vi.waitFor(() => expect(engine.status()).toBe("idle"));
+    document.dispatchEvent(new Event("visibilitychange"));
+    engine.schedule();
+    await tick();
+    await tick();
+    pending.resolve("instance-ahead");
+    await vi.waitFor(() => expect(engine.status()).toBe("instance-ahead"));
+    await tick();
+    expect(send).toHaveBeenCalledTimes(1);
+    stop();
+  });
+
+  it("keeps only the answer asked after the latest return", async () => {
+    await recordChange(db, weight("2026-10-07", 80));
+    const send = vi.fn<Send>(async () => ok(empty("5")));
+    const first = deferred();
+    const second = deferred();
+    const third = deferred();
+    const engine = engineWith(send, {
+      checkVersion: answers(first.promise, second.promise, third.promise),
+    });
+    const stop = engine.start();
+    first.resolve("instance-ahead");
+    await vi.waitFor(() => expect(engine.status()).toBe("instance-ahead"));
+    document.dispatchEvent(new Event("visibilitychange"));
+    document.dispatchEvent(new Event("visibilitychange"));
+    await tick();
+    third.resolve(null);
+    second.resolve("instance-behind");
+    await vi.waitFor(() => expect(engine.status()).toBe("idle"));
+    await vi.waitFor(async () => expect(await readOutbox(db)).toEqual([]));
+    stop();
+  });
+
+  it("asks the version again after a failed send", async () => {
+    const send = vi.fn<Send>(async () => ({ kind: "failed" }));
+    const checkVersion = answers(null, "instance-ahead");
+    const engine = engineWith(send, { checkVersion });
+    await engine.sync();
+    await engine.sync();
+    expect(checkVersion).toHaveBeenCalledTimes(2);
+    expect(send).toHaveBeenCalledTimes(1);
+    expect(engine.status()).toBe("instance-ahead");
+  });
+
+  it("keeps a held status when the phone goes offline", async () => {
+    const send = vi.fn<Send>(async () => ok(empty("5")));
+    const engine = engineWith(send, { checkVersion: async () => "instance-behind" });
+    const stop = engine.start();
+    await vi.waitFor(() => expect(engine.status()).toBe("instance-behind"));
+    window.dispatchEvent(new Event("offline"));
+    expect(engine.status()).toBe("instance-behind");
+    stop();
+  });
 });

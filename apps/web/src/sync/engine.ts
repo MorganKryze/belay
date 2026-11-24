@@ -44,11 +44,16 @@ export function createSyncEngine({
   onSynced?: () => Promise<void>;
   debounceMs?: number;
   locks?: Pick<LockManager, "request">;
-  // The instance's contract against this build's, asked at start and on return to the
-  // foreground; while they differ the queue is held: nothing sent, nothing pulled.
-  checkVersion?: () => Promise<"instance-ahead" | "instance-behind" | null>;
+  // The instance's contract against this build's, asked inside the run before sending: at start,
+  // after a return to the foreground and after a failed send. While they differ the queue is
+  // held: nothing sent, nothing pulled. "unreached" changes nothing and leaves the check owed.
+  checkVersion?: () => Promise<"instance-ahead" | "instance-behind" | null | "unreached">;
 }): SyncEngine {
+  // The last answer that reached the instance.
   let held: "instance-ahead" | "instance-behind" | null = null;
+  let checkOwed = checkVersion !== undefined;
+  // Counts the returns to the foreground: an answer asked before the latest one is stale.
+  let returns = 0;
   let status: SyncStatus = "idle";
   // Set by stop(), right before the account closes the database: a run under way ends there.
   let stopped = false;
@@ -64,6 +69,15 @@ export function createSyncEngine({
   // Oldest 500 first, with the cursor; on 200 the sent changes leave the queue. Again while
   // the queue holds changes (entered meanwhile, or beyond 500) or the server has more rows.
   async function rounds(): Promise<void> {
+    while (checkVersion && checkOwed) {
+      const asked = returns;
+      const answer = await checkVersion();
+      if (stopped) return;
+      if (asked !== returns) continue;
+      if (answer === "unreached") break;
+      held = answer;
+      checkOwed = false;
+    }
     if (held) return set(held);
     set("syncing");
     try {
@@ -74,7 +88,10 @@ export function createSyncEngine({
         if (stopped) return;
         const result = await send({ account: userId, cursor, changes: batch.map((e) => e.change) });
         if (stopped) return; // the batch stays queued: the next sync sends it again, a no-op once merged
-        if (result.kind !== "ok") return set(result.kind);
+        if (result.kind !== "ok") {
+          if (result.kind === "failed") checkOwed = checkVersion !== undefined;
+          return set(result.kind);
+        }
         await applyServer(db, batch, result.response);
         onApplied();
         if (!result.response.hasMore && (await readOutbox(db, 1)).length === 0) {
@@ -137,19 +154,19 @@ export function createSyncEngine({
 
   function start() {
     const onOnline = () => void sync();
-    const onOffline = () => set("offline");
-    // The version asked first when there is a check; a sync waits for its answer.
-    const launch = async () => {
-      if (checkVersion) held = await checkVersion();
-      if (!stopped) await sync();
+    const onOffline = () => {
+      if (!held) set("offline"); // the hold says more than the network does
     };
     const onVisible = () => {
-      if (document.visibilityState === "visible") void launch();
+      if (document.visibilityState !== "visible") return;
+      returns++;
+      checkOwed = checkVersion !== undefined;
+      void sync();
     };
     window.addEventListener("online", onOnline);
     window.addEventListener("offline", onOffline);
     document.addEventListener("visibilitychange", onVisible);
-    void launch();
+    void sync();
     return () => {
       window.removeEventListener("online", onOnline);
       window.removeEventListener("offline", onOffline);

@@ -75,11 +75,11 @@ export function apiFetch(path: string, init: RequestInit = {}): Promise<Response
 // always served by its own instance, and the iPhone app checks its instance natively. The
 // question loads with the first check, outside the startup bundle.
 export function contractCheck():
-  (() => Promise<"instance-ahead" | "instance-behind" | null>) | undefined {
+  (() => Promise<"instance-ahead" | "instance-behind" | null | "unreached">) | undefined {
   if (nativePlatform() !== "android") return undefined;
   return async () => {
     const origin = readInstance();
-    if (origin === null) return null;
+    if (origin === null) return "unreached";
     return import("./contract").then((m) => m.askVersionGap(origin));
   };
 }
