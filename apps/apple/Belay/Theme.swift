@@ -92,6 +92,7 @@ extension View {
                     .monospacedDigit()
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.top, 6)
+                    .accessibilityIdentifier("large-subtitle")
             }
         }
     }

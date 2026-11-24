@@ -5,8 +5,65 @@ import XCTest
 /// AX5 each screen is also scrolled to its end, where the last control must still take a tap.
 @MainActor
 final class AccessibilityAuditTests: XCTestCase {
-    /// Elements the audit may flag on purpose, by identifier, with the reason.
-    private static let except: [String: String] = [:]
+    /// An issue the audit may raise on purpose: its type, the step (any when nil), the element it
+    /// names and why.
+    private struct Exception {
+        enum Match {
+            /// The element's identifier, else its label, is this text.
+            case exactly(String)
+            /// Its identifier, else its label, starts with this text.
+            case prefix(String)
+            /// Its label is a number and nothing else.
+            case digits
+        }
+
+        let type: XCUIAccessibilityAuditType
+        let step: String?
+        let match: Match
+        let reason: String
+
+        func covers(_ issue: XCUIAccessibilityAuditIssue, at step: String) -> Bool {
+            guard issue.auditType == type, self.step.map({ step.hasPrefix("\($0),") }) ?? true else { return false }
+            let identifier = issue.element?.identifier ?? ""
+            let label = issue.element?.label ?? ""
+            switch match {
+            case .exactly(let text): return identifier == text || (identifier.isEmpty && label == text)
+            case .prefix(let text): return identifier.hasPrefix(text) || (identifier.isEmpty && label.hasPrefix(text))
+            case .digits: return !label.isEmpty && label.allSatisfy(\.isNumber)
+            }
+        }
+    }
+
+    private static let capped = "Apple caps floating bars and timers: they keep their size at every text size"
+
+    private static let exceptions: [Exception] = [
+        Exception(
+            type: .dynamicType, step: nil, match: .exactly("session-clock"),
+            reason: "the running session's clock stops growing, as Apple's timers do"),
+        Exception(type: .dynamicType, step: "set card", match: .exactly("Reps"), reason: capped),
+        Exception(type: .dynamicType, step: "set card", match: .exactly("kg"), reason: capped),
+        Exception(type: .dynamicType, step: "set card", match: .prefix("cible "), reason: capped),
+        Exception(type: .dynamicType, step: "set card", match: .digits, reason: capped),
+        Exception(
+            type: .dynamicType, step: nil, match: .exactly("large-subtitle"),
+            reason: "bar content stays fixed at every text size, as the bar does"),
+        Exception(type: .dynamicType, step: "past session", match: .exactly("Modifier"), reason: "bar buttons stay fixed"),
+        Exception(type: .dynamicType, step: "past session", match: .exactly("OK"), reason: "bar buttons stay fixed"),
+        Exception(
+            type: .contrast, step: "preview", match: .exactly("Commencer la séance"),
+            reason: "text on prominent Liquid Glass, measured against the blurred list; onMark on mark is above 8:1"),
+        Exception(
+            type: .contrast, step: "preview", match: .exactly("Reprendre la séance"),
+            reason: "text on prominent Liquid Glass, measured against the blurred list; onMark on mark is above 8:1"),
+        Exception(
+            type: .contrast, step: "sign-in", match: .exactly("signin-submit"),
+            reason: "disabled until an address is typed; WCAG 1.4.3 exempts inactive controls"),
+    ]
+
+    /// Steps not audited: system alerts and menus, whose text, colours and sizes are iOS's own, and
+    /// which the audit dismisses. The list beneath each is audited at its own step; what each
+    /// overlay must show is asserted instead.
+    private static let systemOverlays = ["Thème menu", "sign-out dialog", "finish dialog"]
 
     private static let configurations: [(appearance: XCUIDevice.Appearance, largest: Bool)] = [
         (.light, false), (.dark, false), (.light, true), (.dark, true),
@@ -37,28 +94,28 @@ final class AccessibilityAuditTests: XCTestCase {
         }
     }
 
-    /// The audit, then at AX5 the screen scrolled to its end. `scrolls` is false on a dialog.
+    /// The audit, then at AX5 the screen scrolled to its end.
     private func check(
-        _ app: XCUIApplication, _ step: String, at place: Place, scrolls: Bool = true,
+        _ app: XCUIApplication, _ step: String, at place: Place,
         file: StaticString = #filePath, line: UInt = #line
     ) {
-        let ran = audit(app, at: place.named(step), except: Self.except, file: file, line: line)
+        precondition(!Self.systemOverlays.contains(step), "a system overlay is not audited")
+        let ran = audit(app, at: place.named(step), file: file, line: line)
         // A screen the audit could not settle on cannot be swiped either: its failure says so once.
-        if ran, place.largest, scrolls { reachEveryControl(app, at: place.named(step), file: file, line: line) }
+        if ran, place.largest { reachEveryControl(app, at: place.named(step), file: file, line: line) }
     }
 
-    /// Fails once per issue the system audit finds, unless its element is in `except`; false when
-    /// the audit could not run.
+    /// Fails once per issue the system audit finds, unless an exception covers it; false when the
+    /// audit could not run.
     @discardableResult private func audit(
-        _ app: XCUIApplication, at step: String, except: [String: String],
-        file: StaticString = #filePath, line: UInt = #line
+        _ app: XCUIApplication, at step: String, file: StaticString = #filePath, line: UInt = #line
     ) -> Bool {
         do {
             try app.performAccessibilityAudit(
                 for: [.contrast, .hitRegion, .sufficientElementDescription, .textClipped, .dynamicType]
             ) { issue in
+                if Self.exceptions.contains(where: { $0.covers(issue, at: step) }) { return true }
                 let id = issue.element?.identifier ?? ""
-                if except[id] != nil { return true }
                 let element = id.isEmpty ? "« \(issue.element?.label ?? "?") »" : id
                 XCTFail(
                     "\(step): \(Self.name(issue.auditType)) on \(element): \(issue.compactDescription)",
@@ -192,7 +249,7 @@ final class AccessibilityAuditTests: XCTestCase {
             stop.tap()
             let alert = app.alerts.firstMatch
             XCTAssertTrue(alert.waitForExistence(timeout: 3), "■ asks first")
-            check(app, "finish dialog", at: place, scrolls: false)
+            XCTAssertTrue(alert.buttons["Arrêter"].exists, "■'s question offers to stop")
             alert.buttons["Arrêter"].tap()
             XCTAssertTrue(app.buttons["Enregistrer et fermer"].waitForExistence(timeout: 5), "the summary shows")
             check(app, "summary", at: place)
@@ -237,7 +294,7 @@ final class AccessibilityAuditTests: XCTestCase {
         }
     }
 
-    /// Réglages, its Unités, the Thème menu open and the sign-out question.
+    /// Réglages and its Unités audited; the Thème menu and the sign-out question asserted.
     func testReglagesPassesTheAudit() {
         eachConfiguration("fresh") { app, place in
             app.openReglages()
@@ -245,24 +302,27 @@ final class AccessibilityAuditTests: XCTestCase {
             let unit = element(app, "reglages-weight-unit")
             // At AX5 the list is many screens long, and the check above left it at its end.
             XCTAssertTrue(app.swipeDownUntil(unit, swipes: 24), "Unités is reached")
-            audit(app, at: place.named("Unités"), except: Self.except)
+            audit(app, at: place.named("Unités"))
             let theme = element(app, "reglages-theme")
             XCTAssertTrue(app.swipeDownUntil(theme, swipes: 24), "the theme row is reached")
             theme.tap()
             let system = app.buttons["Système"].firstMatch
             XCTAssertTrue(system.waitForExistence(timeout: 3), "the Thème menu opens")
-            check(app, "Thème menu", at: place, scrolls: false)
-            XCTAssertTrue(system.exists, "the Thème menu is still open after its audit")
-            if system.exists { system.tap() }
+            for choice in ["Clair", "Sombre", "Système"] {
+                XCTAssertTrue(app.buttons[choice].firstMatch.exists, "the Thème menu offers « \(choice) »")
+            }
+            system.tap()
             let signOut = app.buttons["signout"]
             XCTAssertTrue(app.swipeUpUntil(signOut, swipes: 24), "the sign-out is reached")
             signOut.tap()
             let alert = app.alerts.firstMatch
             XCTAssertTrue(alert.waitForExistence(timeout: 3), "a dialog asks first")
-            check(app, "sign-out dialog", at: place, scrolls: false)
+            XCTAssertTrue(alert.buttons["Se déconnecter"].exists, "the dialog offers to sign out")
             let cancel = alert.buttons["Annuler"]
-            XCTAssertTrue(cancel.exists, "the sign-out dialog is still up after its audit")
-            if cancel.exists { cancel.tap() }
+            XCTAssertTrue(cancel.exists, "the dialog offers to cancel")
+            cancel.tap()
+            XCTAssertTrue(alert.waitForNonExistence(timeout: 3), "the dialog closes")
+            XCTAssertTrue(signOut.exists, "cancelling keeps the account signed in")
         }
     }
 
