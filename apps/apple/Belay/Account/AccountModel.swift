@@ -179,19 +179,19 @@ final class AccountModel {
         Task { await engine.schedule() }
     }
 
-    /// Back in front: the instance may have been updated meanwhile, so the next run asks its
-    /// version first, once for this return; then as `refresh()`.
+    /// Back in front: the instance may have been updated meanwhile, so a run asks its version
+    /// first, once for this return. A run going may be past its check: one more follows it.
     func returned() {
         recheck()
         guard let engine else { return }
-        // One task, so the check is owed before the run it joins or starts reads it.
+        // One task, so the check is owed before the run it asks for reads it.
         Task {
             await engine.versionOwed()
-            await engine.refresh()
+            await engine.sync()
         }
     }
 
-    /// The network back, or a return: the run going, if any, is fresh enough, and the instance says
+    /// The network back: the run going, if any, is fresh enough, and the instance says
     /// again who the person is and whether it serves loops.
     func refresh() {
         recheck()

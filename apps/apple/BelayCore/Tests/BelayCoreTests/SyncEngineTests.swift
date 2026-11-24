@@ -469,6 +469,27 @@ extension Fixture {
     #expect(await engine.status == .instanceAhead)
   }
 
+  /// A return while a run is past its check: the run it starts after that one asks the version.
+  @Test func aReturnDuringASendIsCheckedByTheRunAfter() async throws {
+    let transport = ScriptedTransport { _, _ in Fixture.ok() }
+    let probe = ScriptedProbe(.same, sends: transport)
+    let engine = engine(transport, probe: probe)
+    await transport.hold()
+
+    let first = Task { await engine.sync() }
+    try await eventually { await transport.requests.count == 1 }
+    // As the app does on a return: the check owed, then a run asked.
+    await engine.versionOwed()
+    let back = Task { await engine.sync() }
+    try await Task.sleep(for: .milliseconds(20))
+    await transport.release()
+    await first.value
+    await back.value
+
+    #expect(await probe.asks == [0, 1])
+    #expect(await transport.requests.count == 2)
+  }
+
   @Test func anInstanceAnsweringZeroHoldsTheQueueUntilItAnswersThisVersion() async throws {
     try store.recordChanges([Fixture.note(w, "a", at: 1)], active: .keep)
     let transport = ScriptedTransport { _, _ in Fixture.ok() }
