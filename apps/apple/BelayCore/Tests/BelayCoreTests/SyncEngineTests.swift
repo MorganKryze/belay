@@ -320,7 +320,7 @@ extension Fixture {
     await engine.sync()
     await engine.sync()
     let once = ScriptedTransport { _, _ in answer }
-    await SyncEngine(userId: "u1", store: twin, transport: once, onLanded: {}).sync()
+    await SyncEngine(userId: "u1", store: twin, transport: once, probe: nil, onLanded: {}).sync()
 
     let requests = await lossy.requests
     #expect(requests.count == 2)

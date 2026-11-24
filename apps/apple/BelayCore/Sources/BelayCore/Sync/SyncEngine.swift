@@ -38,9 +38,9 @@ public actor SyncEngine {
 
   /// `onLanded` runs after each run that reached the server and the end of its rows, with the
   /// queue empty: what is stored then is current. Without a probe the instance is taken as
-  /// speaking this build's version.
+  /// speaking this build's version, which only a test stands for: the app always passes one.
   public init(
-    userId: String, store: AccountStore, transport: SyncTransport, probe: VersionProbe? = nil,
+    userId: String, store: AccountStore, transport: SyncTransport, probe: VersionProbe?,
     debounce: Duration = .seconds(1), onLanded: @escaping @Sendable () async -> Void
   ) {
     self.userId = userId

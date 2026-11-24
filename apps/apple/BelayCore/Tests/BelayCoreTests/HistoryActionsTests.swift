@@ -299,7 +299,7 @@ import Testing
     // The first try finds no network; the next ones reach the server.
     let transport = ScriptedTransport { _, i in i == 0 ? .offline : Fixture.ok(cursor: "c\(i)") }
     let engine = SyncEngine(
-      userId: "u1", store: store, transport: transport, onLanded: {})
+      userId: "u1", store: store, transport: transport, probe: nil, onLanded: {})
 
     try actions.chooseProgram(other)
     try actions.correct(setId: first, weightKg: 62.5, count: 7, rir: 1)

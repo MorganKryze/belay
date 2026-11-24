@@ -454,7 +454,7 @@ final class MovingClock: Sendable {
     answer.weights = [echoed]
     let echo = answer
     let transport = ScriptedTransport { _, i in i == 0 ? .offline : .ok(echo) }
-    let engine = SyncEngine(userId: "u1", store: store, transport: transport, onLanded: {})
+    let engine = SyncEngine(userId: "u1", store: store, transport: transport, probe: nil, onLanded: {})
 
     await engine.sync()
     #expect(try Fixture.changes(store).count == 6)

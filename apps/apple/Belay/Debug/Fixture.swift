@@ -61,6 +61,10 @@ import Synchronization
 /// after it is asked, since no media ships with the app. `loopLoading` never answers for one, and
 /// `loopFailed` answers each with a 404 after the same wait, `loopBroken` with a body no player reads.
 /// `mediaStale` keeps a session from before the instance said it serves loops: `/api/me` says it does.
+///
+/// `-BelayApi same|behind|ahead|none` stands an instance on this build's contract version, the one
+/// before, the one after, or one whose version check never answers; with it, the sync lands an empty
+/// answer while the versions match. `signedOut` keeps no session, the instance's address in the field.
 enum Fixture {
     nonisolated fileprivate static let origin = "https://belay.example"
     nonisolated fileprivate static let userId = "fixture"
@@ -122,14 +126,18 @@ enum Fixture {
                 try prepare(mode, model: model, store: store, workoutId: id)
             }
             defaults.set(origin, forKey: StoredInstance.key)
-            try session.keep(origin: origin, token: "fixture-token")
-            session.remember(userId: userId, displayName: "Ada", media: mode != "mediaStale")
+            if mode != "signedOut" {
+                try session.keep(origin: origin, token: "fixture-token")
+                session.remember(userId: userId, displayName: "Ada", media: mode != "mediaStale")
+            }
         } catch {
             preconditionFailure("the fixture did not set up: \(error)")
         }
         let health = UserDefaults.standard.string(forKey: "BelayHealth")
+        let api = apiVersion()
         let client = FixtureClient(
-            refusesSync: mode == "expired", answersSync: health == "allowed", loops: FixtureLoops(mode: mode))
+            refusesSync: mode == "expired", answersSync: health == "allowed" || api.set, api: api.version,
+            loops: FixtureLoops(mode: mode))
         let loops = loopsFolder
         guard let health else {
             return AccountModel(
@@ -140,6 +148,18 @@ enum Fixture {
         return AccountModel(
             secrets: secrets, http: client, sheet: FixtureSheet(), defaults: defaults, storeFolder: folder,
             loopsFolder: loops, health: FixtureHealth(allowed: health == "allowed"))
+    }
+
+    /// The version `-BelayApi` has the instance answer, nil for none, and whether it was given.
+    private static func apiVersion() -> (version: Int?, set: Bool) {
+        guard let api = UserDefaults.standard.string(forKey: "BelayApi") else { return (Bounds.apiVersion, false) }
+        switch api {
+        case "same": return (Bounds.apiVersion, true)
+        case "behind": return (Bounds.apiVersion - 1, true)
+        case "ahead": return (Bounds.apiVersion + 1, true)
+        case "none": return (nil, true)
+        default: preconditionFailure("-BelayApi does not read: \(api)")
+        }
     }
 
     private static let openModes: Set = [
@@ -639,6 +659,42 @@ enum Fixture {
         }
     }
 
+    /// How many times the instance was asked its version since the launch, for a test to read.
+    struct VersionChecksProbe: View {
+        var body: some View {
+            TimelineView(.periodic(from: .now, by: 0.5)) { _ in
+                Color.clear
+                    .frame(width: 1, height: 1)
+                    .accessibilityElement()
+                    .accessibilityIdentifier("debug-api-checks")
+                    .accessibilityValue(String(FixtureClient.versionChecks.withLock { $0 }))
+            }
+        }
+    }
+
+    /// How many changes of any kind wait in the queue, for a test to read; nothing a person sees
+    /// or hears.
+    struct OutboxProbe: View {
+        let store: AccountStore
+        @State private var count = 0
+
+        var body: some View {
+            Color.clear
+                .frame(width: 1, height: 1)
+                .accessibilityElement()
+                .accessibilityIdentifier("fixture-outbox")
+                .accessibilityValue(String(count))
+                .task {
+                    let counts = store.observe { db in try AccountStore.outbox(db, limit: nil).count }
+                    do {
+                        for try await value in counts { count = value }
+                    } catch {
+                        preconditionFailure("the fixture's queue is not followed: \(error)")
+                    }
+                }
+        }
+    }
+
     /// How many set changes of the open session wait in the queue, for a test to read; nothing a
     /// person sees or hears.
     struct QueueProbe: View {
@@ -868,10 +924,14 @@ private nonisolated final class FixtureSecrets: SecretStore {
 
 /// An instance whose sync is never reachable, as on a phone with no network, refuses the token
 /// when `refusesSync`, or lands with nothing new when `answersSync`, but that still answers a
-/// sign-in, so a test can sign out and back in as the same person.
+/// sign-in, so a test can sign out and back in as the same person. It speaks contract version
+/// `api`; nil, its version check is never answered.
 private nonisolated struct FixtureClient: HTTPClient {
+    /// Read by the probe: a test counts the version checks.
+    static let versionChecks = Mutex(0)
     let refusesSync: Bool
     let answersSync: Bool
+    let api: Int?
     let loops: FixtureLoops
 
     func send(_ request: URLRequest) async throws -> (Data, HTTPURLResponse) {
@@ -885,13 +945,16 @@ private nonisolated struct FixtureClient: HTTPClient {
         }
         let answer: String
         var status = 200
+        if request.url?.path() == "/api/instance" { Self.versionChecks.withLock { $0 += 1 } }
         switch request.url?.path() {
         case "/api/sync" where refusesSync:
             answer = "{}"
             status = 401
         case "/api/sync" where answersSync:
             answer = #"{"cursor":"fixture","workouts":[],"sets":[],"activities":[],"rejected":[],"hasMore":false}"#
-        case "/api/instance": answer = #"{"app":"belay","api":1,"origin":"\#(Fixture.origin)"}"#
+        case "/api/instance":
+            guard let api else { throw URLError(.timedOut) }
+            answer = #"{"app":"belay","api":\#(api),"origin":"\#(Fixture.origin)"}"#
         case "/auth/native/token": answer = #"{"token":"fixture-token"}"#
         case "/api/me": answer = #"{"id":"\#(Fixture.userId)","displayName":"Ada","media":true}"#
         case "/auth/logout": answer = "{}"

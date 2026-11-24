@@ -129,6 +129,8 @@ final class AccountModel {
         let engine = SyncEngine(
             userId: account.userId, store: store,
             transport: HTTPTransport(instance: account.instance, token: account.token, client: http),
+            // The same cookieless client, asked without the token: the version is public.
+            probe: HTTPVersionProbe(instance: account.instance, client: http),
             onLanded: { [weak self] in await self?.landed(store) })
         self.engine = engine
         following = Task { [weak self] in
@@ -172,8 +174,20 @@ final class AccountModel {
         Task { await engine.schedule() }
     }
 
-    /// Back in front, or the network back: the run going, if any, is fresh enough, and the
-    /// instance says again who the person is and whether it serves loops.
+    /// Back in front: the instance may have been updated meanwhile, so the next run asks its
+    /// version first, once for this return; then as `refresh()`.
+    func returned() {
+        recheck()
+        guard let engine else { return }
+        // One task, so the check is owed before the run it joins or starts reads it.
+        Task {
+            await engine.versionOwed()
+            await engine.refresh()
+        }
+    }
+
+    /// The network back, or a return: the run going, if any, is fresh enough, and the instance says
+    /// again who the person is and whether it serves loops.
     func refresh() {
         recheck()
         guard let engine else { return }

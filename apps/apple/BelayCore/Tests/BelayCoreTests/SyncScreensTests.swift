@@ -127,7 +127,7 @@ func within(_ limit: Duration, _ condition: () -> Bool) async throws -> Bool {
       answer.activeProgram = pointer
       return .ok(answer)
     }
-    await SyncEngine(userId: "u1", store: store, transport: transport, onLanded: {}).sync()
+    await SyncEngine(userId: "u1", store: store, transport: transport, probe: nil, onLanded: {}).sync()
     #expect(try store.cursor() == "2")
 
     let landed = try await within(.seconds(1)) {
@@ -166,7 +166,7 @@ func within(_ limit: Duration, _ condition: () -> Bool) async throws -> Bool {
       ]
       return .ok(answer)
     }
-    await SyncEngine(userId: "u1", store: store, transport: transport, onLanded: {}).sync()
+    await SyncEngine(userId: "u1", store: store, transport: transport, probe: nil, onLanded: {}).sync()
     #expect(try store.cursor() == "2")
 
     let landed = try await within(.seconds(1)) {

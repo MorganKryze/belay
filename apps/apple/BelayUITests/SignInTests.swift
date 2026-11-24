@@ -168,4 +168,28 @@ final class SignInTests: XCTestCase {
     private static func ratio(_ a: Double, _ b: Double) -> Double {
         (max(a, b) + 0.05) / (min(a, b) + 0.05)
     }
+
+    /// An instance on another contract version is refused at sign-in, in the words the sync
+    /// notice uses, for either way round.
+    func testAnInstanceOfAnotherVersionIsRefusedWithItsSentence() {
+        let sentences = [
+            ("ahead", "Ton instance est plus récente que cette version de Belay\u{202F}: mets l’app à jour. Tes saisies restent sur ce téléphone en attendant."),
+            ("behind", "Ton instance doit être mise à jour pour cette version de Belay. Tes saisies restent sur ce téléphone en attendant."),
+        ]
+        for (api, sentence) in sentences {
+            let app = XCUIApplication()
+            app.launchArguments = [
+                "-AppleLanguages", "(fr)", "-AppleLocale", "fr_FR", "-BelayFixture", "signedOut", "-BelayApi", api,
+            ]
+            app.launch()
+            let field = field(in: app)
+            XCTAssertEqual(field.value as? String, "belay.example", "the fixture's instance is in the field")
+            app.buttons["signin-submit"].tap()
+            let problem = app.staticTexts["signin-problem"]
+            XCTAssertTrue(problem.waitForExistence(timeout: 5), api)
+            XCTAssertEqual(problem.label, sentence, api)
+            XCTAssertTrue(field.exists, "\(api): still signed out")
+            app.terminate()
+        }
+    }
 }

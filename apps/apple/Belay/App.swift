@@ -53,13 +53,15 @@ struct BelayApp: App {
                         Fixture.HistoryProbe(store: store)
                         Fixture.ProfileProbe(store: store)
                         Fixture.PullOnLeave(store: store)
+                        Fixture.OutboxProbe(store: store)
+                        Fixture.VersionChecksProbe()
                     }
                 }
                 .environment(\.contrastIncreased, Fixture.contrastIncreased)
             #endif
             .task { await account.finishSignIn() }
             .onChange(of: scenePhase) { _, phase in
-                if phase == .active { account.refresh() }
+                if phase == .active { account.returned() }
                 Self.apply(theme)
             }
             .onChange(of: theme, initial: true) { _, theme in Self.apply(theme) }
