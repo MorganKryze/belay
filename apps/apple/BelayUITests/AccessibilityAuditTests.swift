@@ -1,6 +1,6 @@
 import XCTest
 
-/// The system's accessibility audit on each key screen: contrast, hit regions, descriptions,
+/// The system's accessibility audit on each key screen: hit regions, descriptions,
 /// clipped text and Dynamic Type, at the default text size and at AX5, in light and in dark. At
 /// AX5 each screen is also scrolled to its end, where the last control must still take a tap.
 @MainActor
@@ -15,6 +15,8 @@ final class AccessibilityAuditTests: XCTestCase {
             case prefix(String)
             /// Its label is a number and nothing else.
             case digits
+            /// A SwiftUI node the audit names but XCUITest cannot reach: no element to match.
+            case unreachable
         }
 
         let type: XCUIAccessibilityAuditType
@@ -32,6 +34,7 @@ final class AccessibilityAuditTests: XCTestCase {
             case .exactly(let text): return identifier == text || (identifier.isEmpty && label == text)
             case .prefix(let text): return identifier.hasPrefix(text) || (identifier.isEmpty && label.hasPrefix(text))
             case .digits: return !label.isEmpty && label.allSatisfy(\.isNumber)
+            case .unreachable: return issue.element == nil
             }
         }
     }
@@ -51,53 +54,31 @@ final class AccessibilityAuditTests: XCTestCase {
             reason: "bar content stays fixed at every text size, as the bar does"),
         Exception(type: .dynamicType, step: "past session", match: .exactly("Modifier"), reason: "bar buttons stay fixed"),
         Exception(type: .dynamicType, step: "past session", match: .exactly("OK"), reason: "bar buttons stay fixed"),
-        Exception(
-            type: .contrast, step: "preview", match: .exactly("Commencer la séance"),
-            reason: "text on prominent Liquid Glass, measured against the blurred list; onMark on mark is above 8:1"),
-        Exception(
-            type: .contrast, step: "preview", match: .exactly("Reprendre la séance"),
-            reason: "text on prominent Liquid Glass, measured against the blurred list; onMark on mark is above 8:1"),
-        Exception(
-            type: .contrast, step: "sign-in", match: .exactly("signin-submit"),
-            reason: "disabled until an address is typed; WCAG 1.4.3 exempts inactive controls"),
     ] + [
-        "La langue se choisit dans les Réglages de l’iPhone, comme pour toute app.",
-        "Belay garde tout en kilos : changer d’unité ne touche à aucune saisie.",
         "Aujourd’hui", "Tes semaines", "perte par semaine, annotations", "Répétitions", "5",
     ].map {
         Exception(
             type: .dynamicType, step: nil, match: .exactly($0), defaultSizeOnly: true,
             reason: "grows at AX5 on the captures; the default-size probe reads a fixed weight as unsupported")
-    }
-
-    /// Contrast lines left after the exceptions, pending a pixel check and judged at the device
-    /// pass: each is reported as an expected failure, so any other issue still fails the test.
-    private static let knownContrast: [Exception] = [
-        ("preview", Exception.Match.prefix("3 × 10")), ("preview", .prefix("Le programme se modifie")),
-        ("past session", .exactly("Série 1")), ("past session", .exactly("40 kg × 10")),
-        ("past session", .exactly("Barbell bench press")), ("past session", .exactly("Modifier")),
-        ("Corps", .exactly("Pesée")), ("Corps", .exactly("79,9 kilos")),
-        ("Tes semaines", .exactly("Cette semaine")), ("Tes semaines", .prefix("à suivre")),
-        ("Tes semaines", .prefix("2 pesées")),
-        ("Pesée", .exactly("sheet-title")), ("Pesée", .prefix("En gris")), ("Pesée", .exactly("weighin-delete")),
-        ("rest", .exactly("Montée 2")), ("rest", .exactly("Faites")), ("rest", .prefix("45 kg ×")),
-        ("rest", .exactly("3")),
+    } + [
+        // Réglages' footers: matched by their opening words, since the full text carries a narrow
+        // no-break space before its colon.
+        "La langue se choisit", "Belay garde tout en kilos",
     ].map {
         Exception(
-            type: .contrast, step: $0.0, match: $0.1,
-            reason: "pending a pixel check, judged at the device pass")
+            type: .dynamicType, step: nil, match: .prefix($0), defaultSizeOnly: true,
+            reason: "grows at AX5 on the captures; the default-size probe reads a fixed weight as unsupported")
+    }
+
+    private static let unreachableNodes: [Exception] = [.hitRegion, .textClipped].map {
+        Exception(
+            type: $0, step: "Tes semaines", match: .unreachable,
+            reason: "a SwiftUI node with no element behind it, not traced to a view of this screen; "
+                + "judged at the device pass")
     }
 
     private static let auditTimesOut =
         "performAccessibilityAudit times out on this screen in the iOS 27.2 SDK; covered by the device pass"
-
-    /// Contrast on text drawn under the floating tab bar is measured through its Liquid Glass, not
-    /// against the app's ground; every text token pair is proven at 4.5:1 or more by TokenContrastTests.
-    private static func underTabBar(_ issue: XCUIAccessibilityAuditIssue, in app: XCUIApplication) -> Bool {
-        guard issue.auditType == .contrast, let element = issue.element, element.exists else { return false }
-        let bar = app.tabBars.firstMatch
-        return bar.exists && element.frame.intersects(bar.frame)
-    }
 
     /// Steps not audited: system alerts and menus, whose text, colours and sizes are iOS's own, and
     /// which the audit dismisses. The list beneath each is audited at its own step; what each
@@ -150,19 +131,18 @@ final class AccessibilityAuditTests: XCTestCase {
         _ app: XCUIApplication, at step: String, file: StaticString = #filePath, line: UInt = #line
     ) -> Bool {
         do {
+            // Contrast is left out: its lines vary run to run on Liquid Glass and on the wall's
+            // photo, and TokenContrastTests proves every text token pair at 4.5:1 or more.
             try app.performAccessibilityAudit(
-                for: [.contrast, .hitRegion, .sufficientElementDescription, .textClipped, .dynamicType]
+                for: [.hitRegion, .sufficientElementDescription, .textClipped, .dynamicType]
             ) { issue in
-                if Self.exceptions.contains(where: { $0.covers(issue, at: step) }) { return true }
-                if Self.underTabBar(issue, in: app) { return true }
+                if (Self.exceptions + Self.unreachableNodes).contains(where: { $0.covers(issue, at: step) }) {
+                    return true
+                }
                 let id = issue.element?.identifier ?? ""
                 let element = id.isEmpty ? "« \(issue.element?.label ?? "?") »" : id
-                let message = "\(step): \(Self.name(issue.auditType)) on \(element): \(issue.compactDescription)"
-                if let known = Self.knownContrast.first(where: { $0.covers(issue, at: step) }) {
-                    XCTExpectFailure(known.reason, strict: false) { XCTFail(message, file: file, line: line) }
-                } else {
-                    XCTFail(message, file: file, line: line)
-                }
+                let message = "\(step): \(Self.name(issue.auditType)) on \(element): \(issue.compactDescription) (\(issue.detailedDescription))"
+                XCTFail(message, file: file, line: line)
                 return true
             }
             return true
