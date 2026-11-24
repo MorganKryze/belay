@@ -641,3 +641,46 @@ struct Seance {
     #expect(try s.workout.endedAt == Fixture.time(2))
   }
 }
+
+@Suite struct TypedLoadTests {
+  func logged(_ s: Seance) throws -> [(Int, Bool, Double?)] {
+    try s.sets.sorted { $0.position < $1.position }.map { ($0.position, $0.warmup, $0.weightKg) }
+  }
+
+  @Test(arguments: [60.0, 25, 45])
+  func loadTypedOnAWarmupIsLoggedAndLeavesTheOthers(kg: Double) throws {
+    let s = try Seance([Seance.slot(warmups: 2)], past: [(Seance.squat, 100, 8)])
+    try s.actions.choose(weightKg: kg, count: nil)
+    for _ in 0..<3 { try s.actions.logNext(count: nil, weightKg: nil, expecting: nil) }
+    let sets = try logged(s)
+    #expect(sets.map(\.0) == [0, 1, 3])
+    #expect(sets.map(\.2) == [kg, 75, 100])
+  }
+
+  @Test(arguments: [60.0, 25, 45])
+  func loadTypedOnASetAtZeroIsLoggedOnThatSet(kg: Double) throws {
+    let s = try Seance([Seance.slot(warmups: 2)], past: [(Seance.squat, 0, 8)])
+    try s.actions.choose(weightKg: kg, count: nil)
+    let first = try #require(try s.actions.logNext(count: nil, weightKg: nil, expecting: nil))
+    guard case .create(let create) = first.edit else {
+      Issue.record("a creation")
+      return
+    }
+    #expect(create.position == 3 && !create.warmup)
+    #expect(create.values.weightKg == kg)
+  }
+
+  @Test func loadTypedOnTheWorkSetAddsNoWarmupBeforeIt() throws {
+    let s = try Seance([Seance.slot(warmups: 2)], past: [(Seance.squat, 40, 8)])
+    for _ in 0..<2 { try s.actions.logNext(count: nil, weightKg: nil, expecting: nil) }
+    let before = try s.sets.count
+    try s.actions.choose(weightKg: 140, count: nil)
+    let next = try #require(try s.actions.logNext(count: nil, weightKg: nil, expecting: nil))
+    guard case .create(let create) = next.edit else {
+      Issue.record("a creation")
+      return
+    }
+    #expect(!create.warmup && create.values.weightKg == 140)
+    #expect(try s.sets.count == before + 1)
+  }
+}

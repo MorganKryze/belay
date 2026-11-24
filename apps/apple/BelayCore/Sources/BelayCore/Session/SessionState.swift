@@ -235,9 +235,10 @@ public func dueSet(
   guard let turn = sessionProgress(plan, sets: sets).next else { return nil }
   let slot = plan[turn.slotIndex]
   let workPlace = SetPlace(slotIndex: turn.slotIndex, position: Bounds.maxWarmups + turn.round)
-  var work = workValues(
+  // The warm-ups follow the load planned, never one chosen: a load typed on the set due stays
+  // that set's, instead of a ladder appearing before it.
+  let work = workValues(
     history, plan: plan, sets: sets, slotIndex: turn.slotIndex, round: turn.round)
-  if draft?.place == workPlace, let kg = draft?.weightKg { work.0 = kg }
 
   let started = sets.contains { $0.slotIndex == turn.slotIndex && !$0.warmup }
   if !started, slot.measure != .seconds, let exercise = library.exercise(slot.exerciseId) {

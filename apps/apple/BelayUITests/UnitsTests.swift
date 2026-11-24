@@ -328,6 +328,21 @@ final class UnitsTests: XCTestCase {
         XCTAssertEqual(element(app, "load").label, shown, "the card is unchanged")
     }
 
+    /// A load typed on a warm-up is that warm-up's, and the sets after it keep their own.
+    func testLoadTypedOnAWarmupIsLoggedAsTyped() {
+        let app = launch("history")
+        openCover(app)
+        XCTAssertTrue(dueSet(app, "Montée 1 sur 2"), "the first warm-up")
+        typeLoad(app, "45")
+        XCTAssertTrue(loadReads(app, "Charge, 45 kilos"), element(app, "load").label)
+        element(app, "log-set").tap()
+        XCTAssertTrue(dueSet(app, "Montée 2 sur 2"), "the second warm-up")
+        doneRow(app, 0, contains: "45\u{202F}kg × ")
+        element(app, "log-set").tap()
+        XCTAssertTrue(dueSet(app, "Série 1 sur 4"), "the first work set")
+        XCTAssertTrue(loadReads(app, "Charge, 62,5 kilos"), element(app, "load").label)
+    }
+
     /// A text that is not a plain number, « 1e2 », « -0 » or « 62,,5 », is refused aloud and
     /// changes nothing.
     func testUnreadableLoadRefused() {
