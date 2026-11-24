@@ -67,7 +67,7 @@ struct WeighInSheet: View {
                     unit == .kg
                         ? String(localized: "Poids en kilos", table: "Corps") : String(localized: "Poids en livres", table: "Corps"),
                     text: $text,
-                    prompt: corps.lastWeighIn.map { Text(BodyText.figure($0, unit)) })
+                    prompt: corps.lastWeighIn.map { Text(BodyText.figure($0, unit)).foregroundStyle(.muted) })
                     .keyboardType(.decimalPad)
                     .multilineTextAlignment(.trailing)
                     .font(.title2.weight(.semibold))

@@ -291,7 +291,6 @@ struct Cover: View {
         }
         .padding(.horizontal, 12)
         .padding(.bottom, 4)
-        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
     }
 
     /// The count under the ruler: the one moved for this set, else the set's own (its draft or prefill).
@@ -332,6 +331,7 @@ struct Cover: View {
         }
         .glassEffect(.regular, in: .rect(cornerRadius: 34))
         .glassEffectID("ruler", in: glass)
+        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
     }
 
     private func check(_ label: Text, action: @escaping () -> Void) -> some View {
@@ -347,6 +347,7 @@ struct Cover: View {
         .glassEffectID("check", in: glass)
         .accessibilityLabel(label)
         .accessibilityIdentifier("log-set")
+        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
     }
 
     private func bigAction(_ symbol: String, id: String, label: Text, action: @escaping () -> Void) -> some View {
@@ -364,6 +365,7 @@ struct Cover: View {
             .glassEffectID(id, in: glass)
             .accessibilityLabel(label)
             .accessibilityIdentifier("foot-\(id)")
+            .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
             Spacer()
         }
     }
@@ -404,7 +406,7 @@ struct Cover: View {
                 }
             }
             .padding(14)
-            .background(Color.surface.opacity(0.94), in: .rect(cornerRadius: 34))
+            .background(Color.surface, in: .rect(cornerRadius: 34))
         }
     }
 
@@ -424,6 +426,7 @@ struct Cover: View {
                 ? Text("\(value) ou plus en réserve", tableName: "Session")
                 : Text("\(value) en réserve", tableName: "Session"))
         .accessibilityIdentifier("rir-\(value)")
+        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
     }
 
     /// « 2 », or « 4+ » at the top of the scale.
