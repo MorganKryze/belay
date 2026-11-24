@@ -75,7 +75,11 @@ final class AccessibilityAuditTests: XCTestCase {
             type: $0, step: "Tes semaines", match: .unreachable,
             reason: "a SwiftUI node with no element behind it, not traced to a view of this screen; "
                 + "judged at the device pass")
-    }
+    } + [
+        Exception(
+            type: .elementDetection, step: "Pesée", match: .unreachable,
+            reason: "the system decimal keypad, raised with the sheet: the lines go when the field is not focused"),
+    ]
 
     private static let auditTimesOut =
         "performAccessibilityAudit times out on this screen in the iOS 27.2 SDK; covered by the device pass"
@@ -134,13 +138,13 @@ final class AccessibilityAuditTests: XCTestCase {
             // Contrast is left out: its lines vary run to run on Liquid Glass and on the wall's
             // photo, and TokenContrastTests proves every text token pair at 4.5:1 or more.
             try app.performAccessibilityAudit(
-                for: [.hitRegion, .sufficientElementDescription, .textClipped, .dynamicType]
+                for: XCUIAccessibilityAuditType.all.subtracting(.contrast)
             ) { issue in
                 if (Self.exceptions + Self.unreachableNodes).contains(where: { $0.covers(issue, at: step) }) {
                     return true
                 }
                 let id = issue.element?.identifier ?? ""
-                let element = id.isEmpty ? "« \(issue.element?.label ?? "?") »" : id
+                let element = id.isEmpty ? "« \(issue.element?.label ?? "?") » at \(issue.element.map { "\($0.frame)" } ?? "no frame")" : id
                 let message = "\(step): \(Self.name(issue.auditType)) on \(element): \(issue.compactDescription) (\(issue.detailedDescription))"
                 XCTFail(message, file: file, line: line)
                 return true
@@ -159,6 +163,8 @@ final class AccessibilityAuditTests: XCTestCase {
         case .sufficientElementDescription: "description"
         case .textClipped: "clipped text"
         case .dynamicType: "Dynamic Type"
+        case .elementDetection: "element detection"
+        case .trait: "trait"
         default: "audit \(type.rawValue)"
         }
     }
@@ -247,6 +253,8 @@ final class AccessibilityAuditTests: XCTestCase {
             start.tap()
             let log = element(app, "log-set")
             XCTAssertTrue(log.waitForExistence(timeout: 5), "the cover shows")
+            // The ✓ says its action, not the symbol's default description.
+            XCTAssertTrue(log.label.hasPrefix("Noter la "), "the ✓ is labelled by its action, read \(log.label)")
             check(app, "set card", at: place)
             // Warm-ups have no rest: ✓ until the first work set's rest starts.
             let rest = element(app, "rest-clock")
