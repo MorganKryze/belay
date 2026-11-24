@@ -54,6 +54,27 @@ public enum InstanceError: Error, Sendable, Equatable {
   case unreachable
   /// Something answered, but not as a Belay instance.
   case notBelay
+  /// A Belay instance on a later contract version than this build's: the app needs an update.
+  case instanceAhead
+  /// A Belay instance on an earlier contract version: the instance needs an update.
+  case instanceBehind
+}
+
+/// How an instance's contract version stands against this build's.
+public enum VersionAnswer: Sendable, Equatable {
+  case same, instanceAhead, instanceBehind
+
+  /// Nil for a version that is not a whole number from 1: no Belay instance answers that.
+  public init?(api: Double) {
+    self.init(api: api, against: Bounds.apiVersion)
+  }
+
+  /// Against `ours` rather than this build's version, so a test can stand an earlier instance
+  /// while this build is on the first version.
+  init?(api: Double, against ours: Int) {
+    guard let version = Int(exactly: api), version >= 1 else { return nil }
+    self = version == ours ? .same : version > ours ? .instanceAhead : .instanceBehind
+  }
 }
 
 /// A Belay instance: the origin it says it is served at, scheme, host and port only.
@@ -97,7 +118,33 @@ public struct Instance: Sendable, Equatable {
     case .success(let origin): typed = origin
     case .failure(let error): return .failure(error)
     }
-    var request = URLRequest(url: typed.appending(path: "api/instance"))
+    let answer: (origin: String, version: VersionAnswer)
+    switch await ask(typed, using: client) {
+    case .success(let answered): answer = answered
+    case .failure(let error): return .failure(error)
+    }
+    guard let served = Instance(storedOrigin: answer.origin, allowsLoopback: allowsLoopback)
+    else { return .failure(.notBelay) }
+    switch answer.version {
+    case .same: return .success(served)
+    case .instanceAhead: return .failure(.instanceAhead)
+    case .instanceBehind: return .failure(.instanceBehind)
+    }
+  }
+
+  /// How the contract version of `instance` stands against this build's; nil when the instance was
+  /// not reached or did not answer as Belay. Asked without a session: the answer is public.
+  public static func version(at instance: Instance, using client: HTTPClient) async
+    -> VersionAnswer?
+  {
+    try? await ask(instance.origin, using: client).get().version
+  }
+
+  /// `GET api/instance` at `origin`: the origin and version a Belay instance says it has.
+  private static func ask(_ origin: URL, using client: HTTPClient) async
+    -> Result<(origin: String, version: VersionAnswer), InstanceError>
+  {
+    var request = URLRequest(url: origin.appending(path: "api/instance"))
     request.timeoutInterval = checkTimeout
     let data: Data
     let response: HTTPURLResponse
@@ -115,10 +162,9 @@ public struct Instance: Sendable, Equatable {
     }
     guard response.statusCode == 200,
       let answer = try? JSONDecoder().decode(Answer.self, from: data),
-      answer.app == "belay", answer.api >= 1,
-      let served = Instance(storedOrigin: answer.origin, allowsLoopback: allowsLoopback)
+      answer.app == "belay", let version = VersionAnswer(api: answer.api)
     else { return .failure(.notBelay) }
-    return .success(served)
+    return .success((answer.origin, version))
   }
 
   /// The errors that mean this phone is offline, rather than the server out of reach.
