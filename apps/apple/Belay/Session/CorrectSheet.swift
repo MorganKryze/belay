@@ -93,6 +93,7 @@ struct CorrectSheet: View {
                         Label { Text("Supprimer la série", tableName: "SessionTools") } icon: { Image(systemName: "trash") }
                             .frame(minHeight: 44)
                     }
+                    .foregroundStyle(.danger)
                     .accessibilityIdentifier("correct-remove")
                     .removalQuestion(set, isPresented: $asking, loneWarmup: loneWarmup, message: removal) {
                         dismiss()
