@@ -161,7 +161,12 @@ final class PauseTests: XCTestCase {
     func testResumeFlowsBack() {
         let app = launch("workSet")
         pause(app)
-        app.buttons["foot-play"].tap()
+        // The paused foot slides in: tap ▶ once it stands where it is drawn.
+        let play = app.buttons["foot-play"]
+        XCTAssertTrue(play.waitForExistence(timeout: 3))
+        expectation(for: NSPredicate(format: "isHittable == true"), evaluatedWith: play)
+        waitForExpectations(timeout: 3)
+        play.tap()
         XCTAssertTrue(element(app, "log-set").waitForExistence(timeout: 3), "the ruler and ✓ are back")
         XCTAssertTrue(element(app, "rep-ruler").exists)
         XCTAssertFalse(app.staticTexts["En pause"].exists)
