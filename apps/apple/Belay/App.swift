@@ -9,6 +9,9 @@ struct BelayApp: App {
     /// Lives as long as the app: a lock-screen tap may launch it in the background, with no scene.
     @State private var activity: LiveActivityController
     @Environment(\.scenePhase) private var scenePhase
+    /// Whether the app has been in front: its first time is the launch, whose run checks the
+    /// version already, so only a later one is a return.
+    @State private var wasActive = false
     @AppStorage(DevicePrefs.theme.key) private var theme = DevicePrefs.theme.initial
 
     init() {
@@ -63,7 +66,10 @@ struct BelayApp: App {
             .task { await account.finishSignIn() }
             .task { await Self.eraseOldWebData() }
             .onChange(of: scenePhase) { _, phase in
-                if phase == .active { account.returned() }
+                if phase == .active {
+                    if wasActive { account.returned() } else { account.refresh() }
+                    wasActive = true
+                }
                 Self.apply(theme)
             }
             .onChange(of: theme, initial: true) { _, theme in Self.apply(theme) }
