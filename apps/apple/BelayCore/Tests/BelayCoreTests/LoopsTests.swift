@@ -220,6 +220,17 @@ private func scratch() -> URL {
     #expect(server.requests.count == 2)
   }
 
+  /// An error that is not the network's, an untrusted certificate say, is the visit's failure: the
+  /// loop is not asked again until the app starts anew.
+  @Test func aLoopFailedForAnotherReasonIsNotAskedAgain() async {
+    let server = LoopServer(failing: [.serverCertificateUntrusted])
+    let loops = Loops(folder: scratch(), userId: "ana", origin: instance.origin, client: server)
+    #expect(await loops.fetch("ds:0042", token: token, at: instance, media: true) == nil)
+    #expect(await loops.fetch("ds:0042", token: token, at: instance, media: true) == nil)
+    #expect(server.requests.count == 1)
+    #expect(loops.kept("ds:0042") == nil)
+  }
+
   /// The page left before its loop came: the request is dropped, nothing is kept, and the next
   /// visit asks again.
   @Test func aFetchNobodyWaitsForIsCancelled() async throws {

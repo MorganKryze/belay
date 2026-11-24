@@ -11,9 +11,9 @@ public func loopPath(_ exerciseId: String) -> String? {
 
 /// The exercise loops this phone fetched from the person's instance, kept in the caches folder
 /// under the account's own name so one plays again offline. Nothing is asked of any other server,
-/// and nothing at all while the instance says it serves no media. A loop the instance refused is not
-/// asked for again until the app starts anew, as the web keeps its failures for the page's life; one
-/// that failed for want of a network is asked again at its next appearance.
+/// and nothing at all while the instance says it serves no media. A loop that failed is not asked
+/// for again until the app starts anew, as the web keeps its failures for the page's life; only one
+/// that failed for want of a network, or was cancelled, is asked again at its next appearance.
 public struct Loops: Sendable {
   /// As the web's `KEPT_LOOPS`: kept by count, the oldest out. A size budget would need each
   /// file's bytes read at every write; at about 100 KB a loop this stays near 15 MB.
@@ -87,8 +87,9 @@ public struct Loops: Sendable {
       prune()
       return url
     } catch {
-      // Not remembered: offline, cancelled or a disk that would not take it, the next appearance
-      // asks again. Only the instance's own refusal above is kept for the run.
+      // Offline or cancelled: not remembered, the next appearance asks again. Any other error, a
+      // certificate refused or a disk that would not take it, is kept for the run.
+      if !Self.retried(error) { failed.insert(id) }
       Self.log.info("loop not fetched: \(AccountStore.logLabel(error), privacy: .public)")
       return nil
     }
@@ -130,6 +131,18 @@ public struct Loops: Sendable {
       // One that will not go stays one more: the next write tries it again.
       try? FileManager.default.removeItem(at: url)
     }
+  }
+
+  /// The errors that say nothing of the loop: the phone off the network, or the fetch cancelled.
+  static let offline: Set<URLError.Code> = [
+    .notConnectedToInternet, .networkConnectionLost, .timedOut, .cannotConnectToHost, .dataNotAllowed,
+    .internationalRoamingOff,
+  ]
+
+  private static func retried(_ error: any Error) -> Bool {
+    if error is CancellationError { return true }
+    guard let error = error as? URLError else { return false }
+    return error.code == .cancelled || offline.contains(error.code)
   }
 
   private static let log = Logger(subsystem: "cloud.libresoftware.belay", category: "loops")
