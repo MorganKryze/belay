@@ -140,7 +140,8 @@ private func scratch() -> URL {
 
   /// A loop tells which exercise the person opened: it is kept under the store's own class, not
   /// whatever its folder has.
-  @Test func keptUnderTheStoresProtection() async throws {
+  @Test(.enabled(if: VolumeProtection.kept, VolumeProtection.reason))
+  func keptUnderTheStoresProtection() async throws {
     let folder = scratch()
     try FileManager.default.createDirectory(
       at: folder, withIntermediateDirectories: true,

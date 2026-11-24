@@ -32,7 +32,8 @@ import Testing
     #expect(ToolMemoryFile.read(mine) == later)
   }
 
-  @Test func fileBesideStoreWithProtection() throws {
+  @Test(.enabled(if: VolumeProtection.kept, VolumeProtection.reason))
+  func fileBesideStoreWithProtection() throws {
     let folder = try Fixture.folder()
     let url = ToolMemoryFile.url(userId: "u1", origin: origin, in: folder)
     let store = AccountStore.fileURL(userId: "u1", origin: origin, in: folder)
