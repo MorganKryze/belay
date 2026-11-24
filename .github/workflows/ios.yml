@@ -1,8 +1,9 @@
 name: ios
 
 # The iPhone app and its core build on macOS only. The paths filter keeps a change that touches
-# none of them from starting a macOS machine; a skipped run blocks no merge, as main requires no
-# check. The UI tests stay off CI: the suite takes about 85 minutes.
+# none of them from starting a macOS machine; a skipped run blocks no merge, as main's ruleset
+# requires `check`, `e2e` and `image` only, not this job. The UI tests stay off CI: the suite
+# takes about 85 minutes.
 on:
   push:
     branches: [main]
