@@ -11,6 +11,11 @@ struct Account: Equatable {
     let token: String
 }
 
+/// Where the address of the instance last signed in to is kept: its origin, under one key.
+enum StoredInstance {
+    static let key = "belay.instance"
+}
+
 /// Signs in to an instance, keeps the session across launches and ends it.
 @MainActor @Observable
 final class AccountModel {
@@ -367,7 +372,7 @@ final class AccountModel {
         { @MainActor [self] url in await sheet.open(url) }
     }
 
-    /// The instance last signed in to, as the web screens' links find it.
+    /// The instance last signed in to.
     private var storedInstance: Instance? {
         defaults.string(forKey: StoredInstance.key).flatMap { Instance(storedOrigin: $0) }
     }
