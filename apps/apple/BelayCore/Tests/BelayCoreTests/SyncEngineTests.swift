@@ -74,6 +74,21 @@ actor ScriptedProbe: VersionProbe {
   }
 }
 
+/// An instance's `api/instance` answer at the version the test sets.
+final class VersionServer: HTTPClient, Sendable {
+  private let api = Mutex(0)
+  init(api: Int) { set(api) }
+  func set(_ next: Int) { api.withLock { $0 = next } }
+
+  func send(_ request: URLRequest) async throws -> (Data, HTTPURLResponse) {
+    let version = api.withLock { $0 }
+    let body = #"{"app":"belay","api":\#(version),"origin":"https://belay.example.org"}"#
+    let response = HTTPURLResponse(
+      url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!
+    return (Data(body.utf8), response)
+  }
+}
+
 /// How many times something ran, readable from any closure.
 final class Count: Sendable {
   private let value = Mutex(0)
@@ -130,7 +145,7 @@ extension Fixture {
   }
 
   private func engine(
-    _ transport: ScriptedTransport, probe: ScriptedProbe? = nil, debounce: Duration = .seconds(1)
+    _ transport: ScriptedTransport, probe: (any VersionProbe)? = nil, debounce: Duration = .seconds(1)
   ) -> SyncEngine {
     let landed = landed
     return SyncEngine(
@@ -452,6 +467,25 @@ extension Fixture {
     #expect(await transport.requests.isEmpty)
     #expect(try store.outbox(limit: nil) == queued)
     #expect(await engine.status == .instanceAhead)
+  }
+
+  @Test func anInstanceAnsweringZeroHoldsTheQueueUntilItAnswersThisVersion() async throws {
+    try store.recordChanges([Fixture.note(w, "a", at: 1)], active: .keep)
+    let transport = ScriptedTransport { _, _ in Fixture.ok() }
+    let server = VersionServer(api: 0)
+    let instance = Instance(uncheckedOrigin: URL(string: "https://belay.example.org")!)
+    let engine = engine(transport, probe: HTTPVersionProbe(instance: instance, client: server))
+
+    await engine.sync()
+    #expect(await transport.requests.isEmpty)
+    #expect(await engine.status == .instanceBehind)
+
+    server.set(Bounds.apiVersion)
+    await engine.versionOwed()
+    await engine.sync()
+    #expect(await transport.requests.count == 1)
+    #expect(try store.outbox(limit: nil).isEmpty)
+    #expect(await engine.status == .idle)
   }
 
   @Test(arguments: [

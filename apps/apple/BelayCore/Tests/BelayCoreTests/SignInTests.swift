@@ -85,7 +85,6 @@ extension SignInTests {
 
     @Test(arguments: [
       (200, #"{"app":"other","api":\#(Bounds.apiVersion),"origin":"https://belay.example.org"}"#),
-      (200, answer(api: "0")),
       (200, #"{"app":"belay","api":\#(Bounds.apiVersion)}"#),
       (200, answer(origin: "http://belay.example.org")),
       (200, answer(origin: "https://belay.example.org/app")),
@@ -97,11 +96,10 @@ extension SignInTests {
       #expect(await Instance.check("belay.example.org", using: server) == .failure(.notBelay))
     }
 
-    // An earlier instance needs a version from 1: on the first one, only a later one exists yet.
     @Test(arguments: [
       (Bounds.apiVersion - 1, InstanceError.instanceBehind),
       (Bounds.apiVersion + 1, .instanceAhead),
-    ].filter { $0.0 >= 1 })
+    ])
     func refusesAnInstanceOfAnotherVersion(_ api: Int, _ error: InstanceError) async {
       let server = FakeServer(status: 200, json: answer(api: "\(api)"))
       #expect(await Instance.check("belay.example.org", using: server) == .failure(error))
@@ -112,7 +110,20 @@ extension SignInTests {
       #expect(VersionAnswer(api: ours) == .same)
       #expect(VersionAnswer(api: ours + 1) == .instanceAhead)
       #expect(VersionAnswer(api: ours, against: Bounds.apiVersion + 1) == .instanceBehind)
-      #expect(VersionAnswer(api: 0) == nil)
+      #expect(VersionAnswer(api: 0) == .instanceBehind)
+      #expect(VersionAnswer(api: -1) == .instanceBehind)
+    }
+
+    @Test func anInstanceAnsweringZeroIsRefusedAsBehind() async {
+      let server = FakeServer(status: 200, json: answer(api: "0"))
+      #expect(await Instance.check("belay.example.org", using: server) == .failure(.instanceBehind))
+    }
+
+    @Test(arguments: [(1, InstanceError.instanceBehind), (3, .instanceAhead)])
+    func refusesBothOtherVersionsAgainstALaterBuild(_ api: Int, _ error: InstanceError) async {
+      let server = FakeServer(status: 200, json: answer(api: "\(api)"))
+      let result = await Instance.check("belay.example.org", using: server, ours: 2)
+      #expect(result == .failure(error))
     }
 
     @Test func takesAnInstanceOfThisVersion() async {

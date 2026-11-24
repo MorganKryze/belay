@@ -64,7 +64,8 @@ public enum InstanceError: Error, Sendable, Equatable {
 public enum VersionAnswer: Sendable, Equatable {
   case same, instanceAhead, instanceBehind
 
-  /// Nil for a version that is not a whole number from 1: no Belay instance answers that.
+  /// Nil for a version that is not a whole number: no Belay instance answers that. Any other
+  /// whole number is a Belay instance, an earlier one below this build's, 0 included.
   public init?(api: Double) {
     self.init(api: api, against: Bounds.apiVersion)
   }
@@ -72,7 +73,7 @@ public enum VersionAnswer: Sendable, Equatable {
   /// Against `ours` rather than this build's version, so a test can stand an earlier instance
   /// while this build is on the first version.
   init?(api: Double, against ours: Int) {
-    guard let version = Int(exactly: api), version >= 1 else { return nil }
+    guard let version = Int(exactly: api) else { return nil }
     self = version == ours ? .same : version > ours ? .instanceAhead : .instanceBehind
   }
 }
@@ -128,13 +129,21 @@ public struct Instance: Sendable, Equatable {
     _ address: String, using client: HTTPClient,
     allowsLoopback: Bool = Instance.allowsLoopbackByDefault
   ) async -> Result<Instance, InstanceError> {
+    await check(address, using: client, allowsLoopback: allowsLoopback, ours: Bounds.apiVersion)
+  }
+
+  /// Against `ours` rather than this build's version, so a test can stand an earlier instance.
+  static func check(
+    _ address: String, using client: HTTPClient, allowsLoopback: Bool = Instance.allowsLoopbackByDefault,
+    ours: Int
+  ) async -> Result<Instance, InstanceError> {
     let typed: URL
     switch origin(of: address, allowsLoopback: allowsLoopback) {
     case .success(let origin): typed = origin
     case .failure(let error): return .failure(error)
     }
     let answer: (origin: String, version: VersionAnswer)
-    switch await ask(typed, using: client) {
+    switch await ask(typed, using: client, ours: ours) {
     case .success(let answered): answer = answered
     case .failure(let error): return .failure(error)
     }
@@ -152,11 +161,11 @@ public struct Instance: Sendable, Equatable {
   public static func version(at instance: Instance, using client: HTTPClient) async
     -> VersionAnswer?
   {
-    try? await ask(instance.origin, using: client).get().version
+    try? await ask(instance.origin, using: client, ours: Bounds.apiVersion).get().version
   }
 
   /// `GET api/instance` at `origin`: the origin and version a Belay instance says it has.
-  private static func ask(_ origin: URL, using client: HTTPClient) async
+  private static func ask(_ origin: URL, using client: HTTPClient, ours: Int) async
     -> Result<(origin: String, version: VersionAnswer), InstanceError>
   {
     var request = URLRequest(url: origin.appending(path: "api/instance"))
@@ -177,7 +186,7 @@ public struct Instance: Sendable, Equatable {
     }
     guard response.statusCode == 200,
       let answer = try? JSONDecoder().decode(Answer.self, from: data),
-      answer.app == "belay", let version = VersionAnswer(api: answer.api)
+      answer.app == "belay", let version = VersionAnswer(api: answer.api, against: ours)
     else { return .failure(.notBelay) }
     return .success((answer.origin, version))
   }
