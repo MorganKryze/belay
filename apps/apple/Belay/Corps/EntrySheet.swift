@@ -56,7 +56,7 @@ struct EntrySheet<Rows: View>: View {
                         Button(role: .destructive) { asking = true } label: {
                             deletion.label.frame(maxWidth: .infinity, minHeight: 44)
                         }
-                        .foregroundStyle(.danger)
+                        .foregroundStyle(.ink)
                         .accessibilityIdentifier("\(id)-delete")
                         .confirmationDialog(deletion.label, isPresented: $asking, titleVisibility: .hidden) {
                             Button(role: .destructive) {
