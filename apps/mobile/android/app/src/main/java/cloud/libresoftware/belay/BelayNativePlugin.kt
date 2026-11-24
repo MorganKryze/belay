@@ -60,10 +60,6 @@ class BelayNativePlugin : Plugin() {
 
     @PluginMethod
     fun health(call: PluginCall) = healthBridge.handle(call)
-
-    // The edge swipe is the iPhone's; Android's Back asks the page by its own path.
-    @PluginMethod
-    fun setSwipeBack(call: PluginCall) = call.resolve()
 }
 
 // What the page reads as window.BelayText: the font scale and whether contrast is increased,

@@ -158,9 +158,6 @@ async function asPhone(
             return authenticate;
           },
           ...(health && { health: fakeHealth(health) }),
-          // Every state the app asked of the edge swipe, in order.
-          setSwipeBack: async ({ enabled }: { enabled: boolean }) =>
-            write("belay.fake.swipe", [...read<boolean[]>("belay.fake.swipe", []), enabled]),
           // What the lock screen shows: the last description, and how many times the app asked.
           setLiveActivity: async ({ activity }: { activity: unknown }) => {
             sessionStorage.setItem("belay.fake.activity", JSON.stringify(activity));
@@ -221,10 +218,6 @@ export const setContrast = (page: Page, more: boolean): Promise<void> =>
 // Every style the Android app asked of its system bars, in order.
 export const barStyles = (page: Page): Promise<string[]> =>
   page.evaluate(() => JSON.parse(sessionStorage.getItem("belay.fake.barStyles") ?? "[]"));
-
-// Every state the app asked of the iPhone's edge swipe, in order; the shell starts with it off.
-export const swipeCalls = (page: Page): Promise<boolean[]> =>
-  page.evaluate(() => JSON.parse(sessionStorage.getItem("belay.fake.swipe") ?? "[]"));
 
 // The address the sign-in sheet was last opened at, or null.
 export const sheetOpenedAt = (page: Page): Promise<string | null> =>
