@@ -130,6 +130,10 @@ struct SignInView: View {
         case .offline: "Pas de connexion. Réessaie une fois en ligne."
         case .unreachable: "Impossible de joindre cette adresse. Vérifie-la, ou vérifie que l’instance est à jour."
         case .notBelay: "Aucune instance Belay ne répond à cette adresse. Vérifie-la."
+        case .instanceAhead:
+            "Ton instance est plus récente que cette version de Belay\u{202F}: mets l’app à jour. Tes saisies restent sur ce téléphone en attendant."
+        case .instanceBehind:
+            "Ton instance doit être mise à jour pour cette version de Belay. Tes saisies restent sur ce téléphone en attendant."
         }
     }
 
