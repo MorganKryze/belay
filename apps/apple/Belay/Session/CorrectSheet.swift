@@ -132,7 +132,7 @@ struct CorrectSheet: View {
             ? AnyLayout(VStackLayout(alignment: .leading, spacing: 4))
             : AnyLayout(HStackLayout(spacing: 12))
         return layout {
-            unit.foregroundStyle(.muted).accessibilityHidden(true)
+            unit.foregroundStyle(.muted).accessibilityLabel(spoken ?? unit)
             // The whole band focuses the field, not only the line of text it draws.
             TextField(text: text) { spoken ?? unit }
                 .keyboardType(keyboard)
