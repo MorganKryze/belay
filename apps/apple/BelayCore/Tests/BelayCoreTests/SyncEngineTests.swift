@@ -41,6 +41,26 @@ actor ScriptedTransport: SyncTransport {
   }
 }
 
+/// An instance whose contract version the test sets; nil stands for an instance not reached. Each
+/// ask is counted, with how many sends had gone out by then.
+actor ScriptedProbe: VersionProbe {
+  private(set) var asks: [Int] = []
+  private var answer: VersionAnswer?
+  private let sends: ScriptedTransport
+
+  init(_ answer: VersionAnswer?, sends: ScriptedTransport) {
+    self.answer = answer
+    self.sends = sends
+  }
+
+  func answer(_ next: VersionAnswer?) { answer = next }
+
+  func version() async -> VersionAnswer? {
+    asks.append(await sends.requests.count)
+    return answer
+  }
+}
+
 /// How many times something ran, readable from any closure.
 final class Count: Sendable {
   private let value = Mutex(0)
@@ -69,6 +89,21 @@ extension Fixture {
   static func note(_ w: String, _ text: String, at minutes: Double) -> Change {
     .workout(WorkoutChange(id: w, at: time(minutes), edit: .note(text)))
   }
+
+  /// A sync answer as a later server could write it: a kind of rows this build has never heard
+  /// of, and a field it does not know on each set.
+  static func answerWithUnknowns(workouts: [WorkoutRow], sets: [SetRow]) throws -> Data {
+    func objects(_ rows: some Encodable) throws -> [[String: Any]] {
+      try JSONSerialization.jsonObject(with: JSONEncoder().encode(rows)) as! [[String: Any]]
+    }
+    let answer: [String: Any] = [
+      "cursor": "8", "workouts": try objects(workouts),
+      "sets": try objects(sets).map { $0.merging(["grip": "wide"]) { old, _ in old } },
+      "chalkLogs": [["id": "c1", "grams": 12]],
+      "activities": [], "rejected": [], "hasMore": false,
+    ]
+    return try JSONSerialization.data(withJSONObject: answer)
+  }
 }
 
 @Suite struct SyncEngineTests {
@@ -81,12 +116,12 @@ extension Fixture {
     _ = try store.startWorkout(Fixture.start(w), now: Fixture.t0)
   }
 
-  private func engine(_ transport: ScriptedTransport, debounce: Duration = .seconds(1))
-    -> SyncEngine
-  {
+  private func engine(
+    _ transport: ScriptedTransport, probe: ScriptedProbe? = nil, debounce: Duration = .seconds(1)
+  ) -> SyncEngine {
     let landed = landed
     return SyncEngine(
-      userId: "u1", store: store, transport: transport, debounce: debounce,
+      userId: "u1", store: store, transport: transport, probe: probe, debounce: debounce,
       onLanded: { landed.bump() })
   }
 
@@ -354,5 +389,121 @@ extension Fixture {
     await engine.sync()
     #expect(await statuses.next() == .syncing)
     #expect(await statuses.next() == .offline)
+  }
+
+  @Test func checksTheVersionBeforeTheFirstSend() async throws {
+    let transport = ScriptedTransport { _, _ in Fixture.ok() }
+    let probe = ScriptedProbe(.same, sends: transport)
+    await engine(transport, probe: probe).sync()
+
+    #expect(await probe.asks == [0])
+    #expect(await transport.requests.count == 1)
+  }
+
+  @Test func checksAgainOnlyAfterAReturnOrAnUnreadableAnswer() async throws {
+    // The third send comes back unreadable.
+    let transport = ScriptedTransport { _, i in i == 2 ? .failed : Fixture.ok() }
+    let probe = ScriptedProbe(.same, sends: transport)
+    let engine = engine(transport, probe: probe)
+
+    await engine.sync()
+    await engine.sync()
+    #expect(await probe.asks == [0])
+    await engine.versionOwed()
+    await engine.sync()
+    #expect(await probe.asks == [0, 2])
+    #expect(await engine.status == .failed)
+    await engine.sync()
+    await engine.sync()
+    #expect(await probe.asks == [0, 2, 3])
+    #expect(await transport.requests.count == 5)
+  }
+
+  @Test(arguments: [
+    (VersionAnswer.instanceBehind, SyncStatus.instanceBehind), (.instanceAhead, .instanceAhead),
+  ])
+  func anotherVersionSendsAndPullsNothingAndKeepsTheQueue(
+    answer: VersionAnswer, status: SyncStatus
+  ) async throws {
+    try store.recordChanges([Fixture.note(w, "a", at: 1)], active: .keep)
+    let queued = try store.outbox(limit: nil)
+    let transport = ScriptedTransport { _, _ in Fixture.ok(cursor: "9") }
+    let engine = engine(transport, probe: ScriptedProbe(answer, sends: transport))
+
+    await engine.sync()
+    #expect(await engine.status == status)
+    #expect(try store.outbox(limit: nil) == queued)
+
+    // A write made meanwhile lands and waits with the rest.
+    try store.recordChanges([Fixture.note(w, "b", at: 2)], active: .keep)
+    await engine.sync()
+    #expect(try store.outbox(limit: nil).count == queued.count + 1)
+    #expect(try store.history().workouts.first?.note == "b")
+    #expect(await transport.requests.isEmpty)
+    #expect(try store.cursor() == "0")
+    #expect(await engine.status == status)
+    #expect(landed.now == 0)
+  }
+
+  @Test func aMatchLaterSendsTheQueueOnceAndTheStatusLeaves() async throws {
+    try store.recordChanges([Fixture.note(w, "a", at: 1)], active: .keep)
+    let queued = try store.outbox(limit: nil).map { RawChange(bytes: $0.bytes) }
+    let transport = ScriptedTransport { _, _ in Fixture.ok() }
+    let probe = ScriptedProbe(.instanceAhead, sends: transport)
+    let engine = engine(transport, probe: probe)
+    await engine.sync()
+    #expect(await engine.status == .instanceAhead)
+
+    // The instance was updated; the person comes back to the app.
+    await probe.answer(.same)
+    await engine.versionOwed()
+    await engine.sync()
+
+    let requests = await transport.requests
+    #expect(requests.count == 1)
+    #expect(requests.first?.changes == queued)
+    #expect(try store.outbox(limit: nil).isEmpty)
+    #expect(await engine.status == .idle)
+    #expect(landed.now == 1)
+  }
+
+  @Test func anUnreachableCheckKeepsTheLastAnswer() async throws {
+    // No answer yet: the queue is not held for a check that never came back.
+    let first = ScriptedTransport { _, _ in Fixture.ok() }
+    await engine(first, probe: ScriptedProbe(nil, sends: first)).sync()
+    #expect(await first.requests.count == 1)
+
+    for (last, sends) in [(VersionAnswer.same, 1), (.instanceAhead, 0)] {
+      let transport = ScriptedTransport { _, _ in Fixture.ok() }
+      let probe = ScriptedProbe(last, sends: transport)
+      let engine = engine(transport, probe: probe)
+      await engine.sync()
+      await probe.answer(nil)
+      await engine.versionOwed()
+      await engine.sync()
+
+      #expect(await probe.asks.count == 2, "\(last)")
+      #expect(await transport.requests.count == 2 * sends, "\(last)")
+      #expect(await engine.status == (last == .same ? .idle : .instanceAhead), "\(last)")
+    }
+  }
+
+  @Test func aPullWithUnknownKindsAndFieldsAppliesWhatItKnows() async throws {
+    let set = SetRow(
+      id: Fixture.id(2), workoutId: w, slotIndex: 0, position: 3, exerciseId: "belay:back-squat",
+      warmup: false, weightKg: 62.5, reps: 9, seconds: nil, rir: 1, doneAt: Fixture.time(2),
+      fieldsAt: Fixture.time(2), removed: false, removedAt: nil)
+    let workout = Fixture.workoutRow(w)
+    let bytes = try Fixture.answerWithUnknowns(workouts: [workout], sets: [set])
+    let response = try JSONDecoder().decode(SyncResponse.self, from: bytes)
+    let transport = ScriptedTransport { _, _ in .ok(response) }
+    let engine = engine(transport, probe: ScriptedProbe(.same, sends: transport))
+    await engine.sync()
+
+    let history = try store.history()
+    #expect(history.workouts == [workout])
+    #expect(history.sets == [set])
+    #expect(try store.cursor() == "8")
+    #expect(await engine.status == .idle)
   }
 }

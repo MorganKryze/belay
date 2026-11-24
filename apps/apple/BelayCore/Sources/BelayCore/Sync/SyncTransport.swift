@@ -9,6 +9,10 @@ public enum SyncStatus: Sendable, Equatable {
   case expired
   /// The server answered but not with rows, or the store did not take them.
   case failed
+  /// The instance speaks a later contract version: nothing goes out until the app is updated.
+  case instanceAhead
+  /// The instance speaks an earlier contract version: nothing goes out until it is updated.
+  case instanceBehind
 
   /// What the screen says once this status arrives, `shown` being what it said until now: a run
   /// under way keeps the last line, so each trigger while offline does not hide it and show it
@@ -37,4 +41,10 @@ public enum SendResult: Sendable {
 /// How a sync request reaches the server; tests script one in its place.
 public protocol SyncTransport: Sendable {
   func send(_ request: SyncRequest) async -> SendResult
+}
+
+/// Asks the instance which contract version it speaks; tests script one in its place.
+public protocol VersionProbe: Sendable {
+  /// Nil when the instance was not reached or did not answer as Belay.
+  func version() async -> VersionAnswer?
 }

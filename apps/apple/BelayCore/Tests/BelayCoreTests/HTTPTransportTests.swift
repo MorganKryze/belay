@@ -75,6 +75,23 @@ private let empty = #"{"cursor":"5","workouts":[],"sets":[],"activities":[],"rej
     #expect(!response.hasMore)
   }
 
+  @Test func anAnswerWithAnUnknownKindAndFieldDecodesWhatItKnows() async throws {
+    let set = SetRow(
+      id: "s1", workoutId: "w1", slotIndex: 0, position: 3, exerciseId: "belay:back-squat",
+      warmup: false, weightKg: 62.5, reps: 9, seconds: nil, rir: 1,
+      doneAt: "2026-11-20T10:00:00.000Z", fieldsAt: "2026-11-20T10:00:00.000Z", removed: false,
+      removedAt: nil)
+    let body = try Fixture.answerWithUnknowns(workouts: [], sets: [set])
+    let client = AnsweringClient(status: 200, body: String(decoding: body, as: UTF8.self))
+    let result = await transport(client).send(request())
+    guard case .ok(let response) = result else {
+      Issue.record("not ok: \(result)")
+      return
+    }
+    #expect(response.sets == [set])
+    #expect(response.cursor == "8")
+  }
+
   @Test(arguments: [
     (401, empty, SyncStatus.expired), (409, empty, .expired), (403, empty, .failed),
     (500, empty, .failed), (302, "", .failed), (204, "", .failed), (200, "<html>", .failed),

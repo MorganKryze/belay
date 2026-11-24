@@ -77,6 +77,21 @@ public enum VersionAnswer: Sendable, Equatable {
   }
 }
 
+/// The instance's version, asked on the client without the account's token.
+public struct HTTPVersionProbe: VersionProbe {
+  private let instance: Instance
+  private let client: HTTPClient
+
+  public init(instance: Instance, client: HTTPClient) {
+    self.instance = instance
+    self.client = client
+  }
+
+  public func version() async -> VersionAnswer? {
+    await Instance.version(at: instance, using: client)
+  }
+}
+
 /// A Belay instance: the origin it says it is served at, scheme, host and port only.
 public struct Instance: Sendable, Equatable {
   public let origin: URL

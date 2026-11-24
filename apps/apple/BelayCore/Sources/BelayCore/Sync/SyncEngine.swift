@@ -11,6 +11,7 @@ public actor SyncEngine {
   private let userId: String
   private let store: AccountStore
   private let transport: SyncTransport
+  private let probe: VersionProbe?
   private let debounce: Duration
   private let onLanded: @Sendable () async -> Void
 
@@ -22,6 +23,10 @@ public actor SyncEngine {
   /// Set once the account closes: a run under way ends at its next step, and none starts.
   private var stopped = false
   private var timer: Task<Void, Never>?
+  /// A version check is due: from the start, on a return to the app, after an unreadable answer.
+  private var versionDue = true
+  /// The instance's version as last reached; an unreached check leaves it as it was.
+  private var version: VersionAnswer?
 
   /// The status as last told, and who listens; read outside the actor by `statuses()`.
   private let listeners = Mutex<(last: SyncStatus, all: [UUID: AsyncStream<SyncStatus>.Continuation])>(
@@ -30,14 +35,16 @@ public actor SyncEngine {
   private static let log = Logger(subsystem: "cloud.libresoftware.belay", category: "sync")
 
   /// `onLanded` runs after each run that reached the server and the end of its rows, with the
-  /// queue empty: what is stored then is current.
+  /// queue empty: what is stored then is current. Without a probe the instance is taken as
+  /// speaking this build's version.
   public init(
-    userId: String, store: AccountStore, transport: SyncTransport,
+    userId: String, store: AccountStore, transport: SyncTransport, probe: VersionProbe? = nil,
     debounce: Duration = .seconds(1), onLanded: @escaping @Sendable () async -> Void
   ) {
     self.userId = userId
     self.store = store
     self.transport = transport
+    self.probe = probe
     self.debounce = debounce
     self.onLanded = onLanded
   }
@@ -65,6 +72,11 @@ public actor SyncEngine {
   public func refresh() async {
     if let running { return await running.value }
     await sync()
+  }
+
+  /// The next run checks the version first: the instance may have been updated meanwhile.
+  public func versionOwed() {
+    versionDue = true
   }
 
   /// Syncs once writes have paused for the debounce.
@@ -118,9 +130,23 @@ public actor SyncEngine {
 
   /// Oldest changes first, with the cursor; on a 200 the sent ones leave the queue. Again while
   /// the queue holds changes (written meanwhile, or beyond one request) or the server has more.
+  /// Nothing goes out nor comes in while the instance speaks another version: the queue waits.
   private func rounds() async {
     guard !stopped else { return }
     set(.syncing)
+    if versionDue, let probe {
+      // Unreached, the check stays due and the last answer stands: no network is no mismatch.
+      if let answer = await probe.version() {
+        version = answer
+        versionDue = false
+      }
+      if stopped { return }
+    }
+    switch version {
+    case .instanceAhead: return set(.instanceAhead)
+    case .instanceBehind: return set(.instanceBehind)
+    case .same, nil: break
+    }
     do {
       var complete = false
       for _ in 0..<Self.maxRounds {
@@ -131,7 +157,11 @@ public actor SyncEngine {
             account: userId, cursor: cursor, changes: batch.map { RawChange(bytes: $0.bytes) }))
         // The batch stays queued: the next sync sends it again, a no-op once merged.
         if stopped { return }
-        guard case .ok(let response) = result else { return set(result.status) }
+        guard case .ok(let response) = result else {
+          // An answer this build cannot read may come from an instance on another version.
+          if case .failed = result { versionDue = true }
+          return set(result.status)
+        }
         try store.applyServer(sent: batch, response: response)
         if !response.hasMore, try store.outbox(limit: 1).isEmpty {
           complete = true
