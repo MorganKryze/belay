@@ -1,8 +1,9 @@
 import Foundation
 import Testing
 
-// The app's colour tokens, read from its asset catalog by path: the red that warns of a deletion
-// must read on every ground it sits on, in light, dark and their increased-contrast variants.
+// The app's colour tokens, read from its asset catalog by path: every text token, the red that
+// warns of a deletion among them, must read on every ground it sits on, in light, dark and their
+// increased-contrast variants.
 
 private let assets = URL(filePath: #filePath)
   .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
@@ -78,17 +79,24 @@ private func contrast(
     }
   }
 
-  @Test(arguments: ["Surface", "Sunk", "Paper"])
-  func dangerReadsOn(_ ground: String) throws {
-    let danger = try ColorSet("Danger")
+  /// Every text token on every ground it is set on, at 4.5:1 or more (WCAG 1.4.3). The audit's
+  /// contrast exceptions for text over the wall texture rest on this: a token that slips fails here.
+  @Test(arguments: [
+    ("Ink", "Paper"), ("Ink", "Surface"), ("Ink", "Sunk"),
+    ("Muted", "Paper"), ("Muted", "Surface"), ("Muted", "Sunk"),
+    ("Danger", "Paper"), ("Danger", "Surface"), ("Danger", "Sunk"),
+    ("OnMark", "Mark"),
+  ])
+  func textReadsOn(_ text: String, _ ground: String) throws {
+    let ink = try ColorSet(text)
     let under = try ColorSet(ground)
     for appearance in Appearance.all {
-      let red = try #require(danger.resolve(appearance))
+      let front = try #require(ink.resolve(appearance))
       let back = try #require(under.resolve(appearance))
-      let ratio = contrast(red, back)
+      let ratio = contrast(front, back)
       #expect(
         ratio >= 4.5,
-        "Danger on \(ground), \(appearance): \(String(format: "%.2f", ratio)):1, under 4.5:1")
+        "\(text) on \(ground), \(appearance): \(String(format: "%.2f", ratio)):1, under 4.5:1")
     }
   }
 
