@@ -355,3 +355,42 @@ describe("postSync", () => {
     expect(await postSync(request)).toEqual({ kind: "offline" });
   });
 });
+
+describe("a held contract", () => {
+  it("sends and pulls nothing while the instance runs another version, and keeps the queue", async () => {
+    await recordChange(db, weight("2026-10-07", 80));
+    const send = vi.fn<Send>(async () => ok(empty("5")));
+    const engine = engineWith(send, { checkVersion: async () => "instance-behind" });
+    const stop = engine.start();
+    await vi.waitFor(() => expect(engine.status()).toBe("instance-behind"));
+    await engine.sync();
+    expect(send).not.toHaveBeenCalled();
+    expect(await readOutbox(db)).toHaveLength(1);
+    stop();
+  });
+
+  it("syncs once the versions match", async () => {
+    await recordChange(db, weight("2026-10-07", 80));
+    const send = vi.fn<Send>(async () => ok(empty("5")));
+    const engine = engineWith(send, { checkVersion: async () => null });
+    const stop = engine.start();
+    await vi.waitFor(() => expect(send).toHaveBeenCalled());
+    await vi.waitFor(() => expect(engine.status()).toBe("idle"));
+    expect(await readOutbox(db)).toEqual([]);
+    stop();
+  });
+
+  it("asks the version again on return to the foreground", async () => {
+    const send = vi.fn<Send>(async () => ok(empty("5")));
+    let answer: "instance-ahead" | null = "instance-ahead";
+    const checkVersion = vi.fn(async () => answer);
+    const engine = engineWith(send, { checkVersion });
+    const stop = engine.start();
+    await vi.waitFor(() => expect(engine.status()).toBe("instance-ahead"));
+    answer = null;
+    document.dispatchEvent(new Event("visibilitychange"));
+    await vi.waitFor(() => expect(send).toHaveBeenCalled());
+    expect(checkVersion).toHaveBeenCalledTimes(2);
+    stop();
+  });
+});

@@ -3,7 +3,8 @@ import type { SyncRequest, SyncResponse } from "@belay/shared/sync/schema";
 import { type AccountDb, applyServer, readCursor, readOutbox } from "./db";
 
 // What the banners show: nothing for idle and syncing.
-export type SyncStatus = "idle" | "syncing" | "offline" | "expired" | "failed";
+export type SyncStatus =
+  "idle" | "syncing" | "offline" | "expired" | "failed" | "instance-ahead" | "instance-behind";
 export type SendResult =
   { kind: "ok"; response: SyncResponse } | { kind: "offline" | "expired" | "failed" };
 export type Send = (request: SyncRequest) => Promise<SendResult>;
@@ -33,6 +34,7 @@ export function createSyncEngine({
   onSynced,
   debounceMs = 1000,
   locks = "locks" in navigator ? navigator.locks : undefined,
+  checkVersion,
 }: {
   userId: string;
   db: AccountDb;
@@ -42,7 +44,11 @@ export function createSyncEngine({
   onSynced?: () => Promise<void>;
   debounceMs?: number;
   locks?: Pick<LockManager, "request">;
+  // The instance's contract against this build's, asked at start and on return to the
+  // foreground; while they differ the queue is held: nothing sent, nothing pulled.
+  checkVersion?: () => Promise<"instance-ahead" | "instance-behind" | null>;
 }): SyncEngine {
+  let held: "instance-ahead" | "instance-behind" | null = null;
   let status: SyncStatus = "idle";
   // Set by stop(), right before the account closes the database: a run under way ends there.
   let stopped = false;
@@ -58,6 +64,7 @@ export function createSyncEngine({
   // Oldest 500 first, with the cursor; on 200 the sent changes leave the queue. Again while
   // the queue holds changes (entered meanwhile, or beyond 500) or the server has more rows.
   async function rounds(): Promise<void> {
+    if (held) return set(held);
     set("syncing");
     try {
       let complete = false;
@@ -131,13 +138,18 @@ export function createSyncEngine({
   function start() {
     const onOnline = () => void sync();
     const onOffline = () => set("offline");
+    // The version asked first when there is a check; a sync waits for its answer.
+    const launch = async () => {
+      if (checkVersion) held = await checkVersion();
+      if (!stopped) await sync();
+    };
     const onVisible = () => {
-      if (document.visibilityState === "visible") void sync();
+      if (document.visibilityState === "visible") void launch();
     };
     window.addEventListener("online", onOnline);
     window.addEventListener("offline", onOffline);
     document.addEventListener("visibilitychange", onVisible);
-    void sync();
+    void launch();
     return () => {
       window.removeEventListener("online", onOnline);
       window.removeEventListener("offline", onOffline);
