@@ -42,11 +42,14 @@ actor ScriptedTransport: SyncTransport {
 }
 
 /// An instance whose contract version the test sets; nil stands for an instance not reached. Each
-/// ask is counted, with how many sends had gone out by then.
+/// ask is counted, with how many sends had gone out by then. While held, an ask waits until the
+/// test lets it go, and answers what the instance said when it was asked.
 actor ScriptedProbe: VersionProbe {
   private(set) var asks: [Int] = []
   private var answer: VersionAnswer?
   private let sends: ScriptedTransport
+  private var holding = false
+  private var held: [CheckedContinuation<Void, Never>] = []
 
   init(_ answer: VersionAnswer?, sends: ScriptedTransport) {
     self.answer = answer
@@ -55,9 +58,19 @@ actor ScriptedProbe: VersionProbe {
 
   func answer(_ next: VersionAnswer?) { answer = next }
 
+  func hold() { holding = true }
+
+  func release() {
+    holding = false
+    for ask in held { ask.resume() }
+    held = []
+  }
+
   func version() async -> VersionAnswer? {
+    let said = answer
     asks.append(await sends.requests.count)
-    return answer
+    if holding { await withCheckedContinuation { held.append($0) } }
+    return said
   }
 }
 
@@ -417,6 +430,28 @@ extension Fixture {
     await engine.sync()
     #expect(await probe.asks == [0, 2, 3])
     #expect(await transport.requests.count == 5)
+  }
+
+  @Test func aReturnDuringACheckIsCheckedAgainBeforeAnySend() async throws {
+    let queued = try store.outbox(limit: nil)
+    let transport = ScriptedTransport { _, _ in Fixture.ok() }
+    let probe = ScriptedProbe(.same, sends: transport)
+    let engine = engine(transport, probe: probe)
+    await probe.hold()
+
+    let first = Task { await engine.sync() }
+    try await eventually { await probe.asks.count == 1 }
+    // The instance is updated and the person comes back while the first check is still out.
+    await probe.answer(.instanceAhead)
+    await engine.versionOwed()
+    await probe.release()
+    await first.value
+    await engine.sync()
+
+    #expect(await probe.asks == [0, 0])
+    #expect(await transport.requests.isEmpty)
+    #expect(try store.outbox(limit: nil) == queued)
+    #expect(await engine.status == .instanceAhead)
   }
 
   @Test(arguments: [

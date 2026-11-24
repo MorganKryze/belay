@@ -25,6 +25,8 @@ public actor SyncEngine {
   private var timer: Task<Void, Never>?
   /// A version check is due: from the start, on a return to the app, after an unreadable answer.
   private var versionDue = true
+  /// Counts the returns, so a check asked before one cannot settle the check it owes.
+  private var returns = 0
   /// The instance's version as last reached; an unreached check leaves it as it was.
   private var version: VersionAnswer?
 
@@ -77,6 +79,7 @@ public actor SyncEngine {
   /// The next run checks the version first: the instance may have been updated meanwhile.
   public func versionOwed() {
     versionDue = true
+    returns += 1
   }
 
   /// Syncs once writes have paused for the debounce.
@@ -134,13 +137,15 @@ public actor SyncEngine {
   private func rounds() async {
     guard !stopped else { return }
     set(.syncing)
-    if versionDue, let probe {
-      // Unreached, the check stays due and the last answer stands: no network is no mismatch.
-      if let answer = await probe.version() {
-        version = answer
-        versionDue = false
-      }
+    while versionDue, let probe {
+      let asked = returns
+      let answer = await probe.version()
       if stopped { return }
+      // Unreached, the check stays due and the last answer stands: no network is no mismatch.
+      guard let answer else { break }
+      version = answer
+      // A return while the check was out may follow an update: ask again before anything goes out.
+      if returns == asked { versionDue = false }
     }
     switch version {
     case .instanceAhead: return set(.instanceAhead)
