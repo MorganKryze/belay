@@ -233,6 +233,12 @@ final class AccessibilityAuditTests: XCTestCase {
             }
             XCTAssertTrue(rest.exists, "the rest starts")
             check(app, "rest", at: place)
+            // At AX5 the reserve's question covers the list beneath it: answered, the foot shrinks.
+            let reserve = element(app, "rir-2")
+            if reserve.exists {
+                reserve.tap()
+                XCTAssertTrue(reserve.waitForNonExistence(timeout: 3), "the reserve is answered")
+            }
             let done = app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH 'done-'"))
                 .firstMatch
             XCTAssertTrue(app.swipeUpUntil(done), "a done set is listed")
