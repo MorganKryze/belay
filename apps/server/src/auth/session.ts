@@ -43,11 +43,9 @@ export function clearSessionCookie(c: Context, cfg: Config) {
   deleteCookie(c, SESSION_COOKIE, { path: "/", secure: cfg.secureCookies, ...prefix(cfg) });
 }
 
-// The phone apps' web views run from these origins, the iPhone's and Android's; CORS answers no other.
-export const NATIVE_ORIGINS: ReadonlySet<string> = new Set([
-  "capacitor://localhost",
-  "https://localhost",
-]);
+// The Android app's web view runs from this origin; CORS answers no other. The iPhone app is native
+// and sends no Origin.
+export const NATIVE_ORIGINS: ReadonlySet<string> = new Set(["https://localhost"]);
 
 // 32 random bytes in base64url, as newSessionToken writes them; the scheme is case-insensitive.
 const BEARER = /^bearer ([A-Za-z0-9_-]{43})$/i;

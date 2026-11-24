@@ -1,3 +1,4 @@
+import { API_VERSION } from "@belay/shared/sync/limits";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { sql } from "drizzle-orm";
 import { Hono, type MiddlewareHandler } from "hono";
@@ -44,8 +45,8 @@ export function createApp({ cfg, db, getOidc }: { cfg: Config; db: Db; getOidc: 
       strictTransportSecurity: cfg.secureCookies ? "max-age=31536000" : false,
     }),
   );
-  // The phone apps call from their own origins with a bearer token, never a cookie, so no
-  // credentials. Any other origin gets no Access-Control-Allow-Origin and its browser refuses.
+  // The phone apps call with a bearer token, never a cookie, so no credentials. Only the Android
+  // web view sends an Origin; any other gets no Access-Control-Allow-Origin and its browser refuses.
   const native = cors({
     origin: (origin) => (NATIVE_ORIGINS.has(origin) ? origin : null),
     allowMethods: ["GET", "HEAD", "POST"],
@@ -79,7 +80,9 @@ export function createApp({ cfg, db, getOidc }: { cfg: Config; db: Db; getOidc: 
 
   // Public on purpose: the web app already tells anyone it is Belay, and the iPhone app needs the
   // origin where sign-in lives before it has a session.
-  app.get("/api/instance", (c) => c.json({ app: "belay", api: 1, origin: cfg.publicUrl.origin }));
+  app.get("/api/instance", (c) =>
+    c.json({ app: "belay", api: API_VERSION, origin: cfg.publicUrl.origin }),
+  );
   app.route("/auth", authRoutes(cfg, db, getOidc));
   app.route("/api", apiRoutes(cfg, db));
   app.all("/auth/*", (c) => c.text("Not found", 404));
