@@ -914,22 +914,31 @@ enum Fixture {
     /// or held> », or the plant's step while it runs, for a test that waits too long to say where.
     private static var webData = ""
 
-    /// The launch's erase, as the app runs it; `oldWebData` plants the data in its place and holds it.
-    static func eraseOldWebData() async {
-        let outcome: String
-        if UserDefaults.standard.string(forKey: "BelayFixture") == "oldWebData" {
-            UserDefaults.standard.removeObject(forKey: OldAppData.doneKey)
-            webData = "planting"
-            await plantWebData()
-            webData = "counting"
-            outcome = "held"
-        } else {
-            switch await OldAppData.eraseOnce() {
-            case .erased: outcome = "erased"
-            case .skipped: outcome = "skipped"
-            case .failed: outcome = "failed"
-            }
+    /// Whether this launch is `oldWebData`'s: the old app's data planted and the erase held.
+    static var holdsOldWebData: Bool { UserDefaults.standard.string(forKey: "BelayFixture") == "oldWebData" }
+
+    /// `oldWebData`'s launch, in place of the app's erase: the erase made owed again and the old
+    /// app's data planted, for the next launch's erase to find.
+    static func plantOldWebData() async {
+        UserDefaults.standard.removeObject(forKey: OldAppData.doneKey)
+        webData = "planting"
+        await plantWebData()
+        webData = "counting"
+        await report("held")
+    }
+
+    /// What the app's own erase did on this launch, for the probe.
+    static func record(_ outcome: OldAppData.Outcome) async {
+        guard isOn else { return }
+        switch outcome {
+        case .erased: await report("erased")
+        case .skipped: await report("skipped")
+        case .failed: await report("failed")
         }
+    }
+
+    /// The probe's answer: the web data records left, then what the launch did.
+    private static func report(_ outcome: String) async {
         let types = WKWebsiteDataStore.allWebsiteDataTypes()
         var records = await WKWebsiteDataStore.default().dataRecords(ofTypes: types).count
         // A planted record can take a moment to be listed.

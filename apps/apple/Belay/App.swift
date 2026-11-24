@@ -75,13 +75,21 @@ struct BelayApp: App {
 }
 
 extension BelayApp {
-    /// The old app's web data, erased at the first launch after the update; in a debug build the
-    /// UI tests' fixture runs it, so a test can plant that data first.
+    /// The old app's web data, erased at the first launch after the update. A debug build runs the
+    /// same erase, so the UI tests prove the one a release ships; only the fixture's plant holds it
+    /// for one launch, to leave that data on the phone first.
     private static func eraseOldWebData() async {
         #if DEBUG
-            if Fixture.isOn { return await Fixture.eraseOldWebData() }
+            if Fixture.holdsOldWebData { return await Fixture.plantOldWebData() }
         #endif
-        await OldAppData.eraseOnce()
+        await noteForTests(OldAppData.eraseOnce())
+    }
+
+    /// What the erase did, for the UI tests' probe in a debug build; nothing in a release.
+    private static func noteForTests(_ outcome: OldAppData.Outcome) async {
+        #if DEBUG
+            await Fixture.record(outcome)
+        #endif
     }
 
     /// The theme on every window, so sheets and alerts take it with the screens; Système leaves
