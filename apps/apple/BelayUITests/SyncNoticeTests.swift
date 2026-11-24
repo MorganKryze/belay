@@ -130,6 +130,9 @@ final class SyncNoticeTests: XCTestCase {
         XCTAssertTrue(queued(app).waitFor(reads("1")), "nothing is sent")
         weighAgain(app)
         XCTAssertTrue(queued(app).waitFor(reads("2"), timeout: 5), "the weigh-in is stored and queued")
+        // Past the 1 s pause before the weigh-in's sync: the queue still waits.
+        XCTAssertFalse(queued(app).waitFor(reads("0"), timeout: 3), "the weigh-in's sync sends nothing")
+        XCTAssertEqual(queued(app).value as? String, "2", "the queue stays")
         XCTAssertTrue(app.staticTexts[ahead].exists, "the line stays")
     }
 
@@ -169,6 +172,7 @@ final class SyncNoticeTests: XCTestCase {
         let app = launch("pending1", api: "same")
         XCTAssertTrue(versionChecks(app).waitFor(reads("1"), timeout: 10), "asked once at launch")
         XCTAssertTrue(queued(app).waitFor(reads("0"), timeout: 10))
+        XCTAssertEqual(versionChecks(app).value as? String, "1", "exactly once once the queue is sent")
 
         XCUIDevice.shared.press(.home)
         app.activate()
