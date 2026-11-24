@@ -140,6 +140,16 @@ extension SignInTests {
       #expect(await Instance.version(at: instance, using: down) == nil)
     }
 
+    @Test func theSyncsProbeAsksTheInstanceOnceWithoutASession() async throws {
+      let ahead = FakeServer(status: 200, json: answer(api: "\(Bounds.apiVersion + 1)"))
+      #expect(await HTTPVersionProbe(instance: instance, client: ahead).version() == .instanceAhead)
+      #expect(ahead.requests.count == 1)
+      let request = try #require(ahead.requests.first)
+      #expect(request.url?.absoluteString == "https://belay.example.org/api/instance")
+      #expect(request.httpMethod == "GET")
+      #expect(request.value(forHTTPHeaderField: "Authorization") == nil)
+    }
+
     @Test func saysATimeoutIsUnreachable() async {
       let server = FakeServer(throwing: URLError(.timedOut))
       #expect(await Instance.check("belay.example.org", using: server) == .failure(.unreachable))
