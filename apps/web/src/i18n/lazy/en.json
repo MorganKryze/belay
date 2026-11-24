@@ -915,6 +915,8 @@
       "invalid": "This address isn’t valid. Example: belay.example.org",
       "insecure": "The address must start with https://",
       "notBelay": "No Belay instance answers at this address. Check it.",
+      "instanceAhead": "Your instance is newer than this version of Belay: update the app. Your entries stay on this phone meanwhile.",
+      "instanceBehind": "Your instance needs updating for this version of Belay. Your entries stay on this phone meanwhile.",
       "unreachable": "Can’t reach this address. Check it, or check that the instance is up to date.",
       "offline": "No connection. Try again once you’re online."
     },

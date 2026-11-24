@@ -12,13 +12,22 @@ import { Button } from "@/components/ui/button";
 import { nativeSession, writeInstance } from "@/lib/platform";
 import { checkAddress, probeInstance } from "./address";
 
-type Failure = "invalid" | "insecure" | "offline" | "unreachable" | "not-belay";
+type Failure =
+  | "invalid"
+  | "insecure"
+  | "offline"
+  | "unreachable"
+  | "not-belay"
+  | "instance-ahead"
+  | "instance-behind";
 const LINES: Record<Failure, string> = {
   invalid: "native.instance.invalid",
   insecure: "native.instance.insecure",
   offline: "native.instance.offline",
   unreachable: "native.instance.unreachable",
   "not-belay": "native.instance.notBelay",
+  "instance-ahead": "native.instance.instanceAhead",
+  "instance-behind": "native.instance.instanceBehind",
 };
 
 // The address as a person types it: a stored origin shows without its https://.
