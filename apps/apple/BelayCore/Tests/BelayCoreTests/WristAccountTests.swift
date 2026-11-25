@@ -298,6 +298,20 @@ private let connected = WristAccount.State.connected(name: "Ana", host: "belay.e
     #expect(server.requests.isEmpty)
   }
 
+  @Test func anInstanceAnswerAfterASignOutHereWritesNothingBack() async {
+    let held = HeldServer()
+    let account = account(phone: ScriptedPhone(store: store, handed()), http: held)
+    let first = Task { await account.start() }
+    while held.requestCount == 0 { await Task.yield() }
+    account.signOutHere()
+    held.release()
+    await first.value
+    #expect(account.state == .signedOutHere)
+    #expect(store.token == nil)
+    #expect(defaults.string(forKey: StoredSession.userKey) == nil)
+    #expect(defaults.string(forKey: StoredSession.nameKey) == nil)
+  }
+
   @Test func connectingAgainAsksThePhone() async {
     let phone = ScriptedPhone(store: store, handed())
     let account = account(phone: phone)
