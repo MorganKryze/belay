@@ -17,6 +17,14 @@ public enum Handover {
       && message["want"] as? String == request["want"]
   }
 
+  /// What the iPhone sends back to `message`: `reply()` for the request in its exact known form,
+  /// an empty reply, and no token, for anything else.
+  public static func answer(
+    to message: [String: Any], with reply: () -> [String: String]
+  ) -> [String: String] {
+    isRequest(message) ? reply() : [:]
+  }
+
   /// The iPhone's answer to the request: its session for the instance at `origin`, or signed out
   /// when no token is kept there or the instance has not yet named its owner.
   public static func reply(session: StoredSession, origin: String?) -> [String: String] {

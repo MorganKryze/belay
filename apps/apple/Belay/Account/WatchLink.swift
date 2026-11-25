@@ -93,9 +93,9 @@ final class WatchLink: NSObject, WCSessionDelegate, WatchPublishing {
         _ session: WCSession, didReceiveMessage message: [String: Any],
         replyHandler: @escaping ([String: Any]) -> Void
     ) {
-        guard Handover.isRequest(message) else { return replyHandler([:]) }
         // The system lets the handler be called once from any queue; it is called once, below.
         nonisolated(unsafe) let reply = replyHandler
-        Task { @MainActor [answer] in reply(answer()) }
+        nonisolated(unsafe) let message = message
+        Task { @MainActor [answer] in reply(Handover.answer(to: message, with: answer)) }
     }
 }

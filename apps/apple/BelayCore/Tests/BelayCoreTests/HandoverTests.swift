@@ -88,6 +88,20 @@ private func signedIn(store: SecretStore = MemoryStore(), defaults: UserDefaults
     #expect(!Handover.isRequest(["v": "1", "want": "session", "and": "more"]))
   }
 
+  @Test func onlyTheExactRequestGetsTheReply() {
+    let reply = ["v": "1", "state": "session", "token": "secret"]
+    var asked = 0
+    let answering: () -> [String: String] = {
+      asked += 1
+      return reply
+    }
+    #expect(Handover.answer(to: Handover.request, with: answering) == reply)
+    #expect(Handover.answer(to: ["v": "1", "want": "session", "and": "more"], with: answering) == [:])
+    #expect(Handover.answer(to: ["v": "2", "want": "session"], with: answering) == [:])
+    #expect(Handover.answer(to: [:], with: answering) == [:])
+    #expect(asked == 1)
+  }
+
   @Test func theStateNeverHoldsTheToken() throws {
     let store = MemoryStore()
     let session = try signedIn(store: store)
