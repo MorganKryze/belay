@@ -64,6 +64,8 @@ import WebKit
 /// `loopOffline` the first ask for each loop as a phone off the network, the next with the loop.
 /// `mediaStale` keeps a session from before the instance said it serves loops: `/api/me` says it does.
 ///
+/// `unnamed` keeps a session the instance has not yet named: `/api/me` names it.
+///
 /// `-BelayApi same|behind|ahead|none` stands an instance on this build's contract version, the one
 /// before, the one after, or one whose version check never answers; with it, the sync lands an empty
 /// answer while the versions match. `signedOut` keeps no session, the instance's address in the field.
@@ -140,6 +142,8 @@ enum Fixture {
             if mode != "signedOut" {
                 try session.keep(origin: origin, token: "fixture-token")
                 session.remember(userId: userId, displayName: "Ada", media: mode != "mediaStale")
+                // A session from before the instance named its owner: `/api/me` names Ada.
+                if mode == "unnamed" { defaults.removeObject(forKey: "belay.userName") }
             }
         } catch {
             preconditionFailure("the fixture did not set up: \(error)")

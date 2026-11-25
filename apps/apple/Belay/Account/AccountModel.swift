@@ -116,7 +116,7 @@ final class AccountModel {
     /// the file, queue included, for that account's next sign-in. Every change of state passes
     /// here, so the watch is told of each one.
     private func followState() {
-        watch.publish(Handover.state(session: session, origin: storedInstance?.origin.absoluteString))
+        tellWatch()
         guard case .signedIn(let account) = state else { return closeStore() }
         if openedFor != account { closeStore() }
         if store == nil { openStore() }
@@ -438,8 +438,15 @@ final class AccountModel {
         await open(token: token, at: instance)
     }
 
+    /// What the watch is told depends on the kept session as well as the state: a session the
+    /// instance names only now becomes one the watch can be handed.
+    private func tellWatch() {
+        watch.publish(Handover.state(session: session, origin: storedInstance?.origin.absoluteString))
+    }
+
     private func remember(_ me: Me) {
         session.remember(userId: me.id, displayName: me.displayName, media: me.media)
+        tellWatch()
         displayName = me.displayName
         media = me.media
     }

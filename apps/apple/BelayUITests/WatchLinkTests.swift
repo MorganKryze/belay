@@ -7,10 +7,10 @@ import XCTest
 final class WatchLinkTests: XCTestCase {
     private let footer = "Ta montre utilise cette connexion\u{202F}: te déconnecter ici la déconnecte aussi."
 
-    private func launch(watch: String) -> XCUIApplication {
+    private func launch(watch: String, mode: String = "fresh") -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = [
-            "-AppleLanguages", "(fr)", "-AppleLocale", "fr_FR", "-BelayFixture", "fresh", "-BelayWatch", watch,
+            "-AppleLanguages", "(fr)", "-AppleLocale", "fr_FR", "-BelayFixture", mode, "-BelayWatch", watch,
         ]
         app.launchFixture()
         return app
@@ -84,5 +84,12 @@ final class WatchLinkTests: XCTestCase {
         app.buttons["signin-submit"].tap()
         XCTAssertTrue(comesToRead(context(app), "session·2"), "signed in again, the watch is told of a new session")
         XCTAssertTrue(comesToRead(reply(app), "session|belay.example"))
+    }
+
+    func testASessionNamedAfterLaunchIsToldToTheWatchAndSoIsItsSignOut() {
+        let app = launch(watch: "installed", mode: "unnamed")
+        XCTAssertTrue(comesToRead(context(app), "session·1"), "once the instance names the person, the watch is told")
+        signOut(app)
+        XCTAssertTrue(comesToRead(context(app), "signedOut·1"), "and told of the sign-out")
     }
 }
