@@ -302,6 +302,16 @@ struct Cover: View {
         }
         .padding(.horizontal, 12)
         .padding(.bottom, 4)
+        // The foot's controls stop growing at the largest standard size, as Apple's floating bars
+        // do; the reserve's sentences, read while resting, keep growing.
+        .dynamicTypeSize(reserveShown ? ...DynamicTypeSize.accessibility5 : ...DynamicTypeSize.xxxLarge)
+    }
+
+    private var reserveShown: Bool {
+        switch state.phase {
+        case .resting, .recap: true
+        default: false
+        }
     }
 
     /// The count under the ruler: the one moved for this set, else the set's own (its draft or prefill).
