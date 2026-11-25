@@ -30,6 +30,8 @@ final class WatchShellTests: XCTestCase {
         return XCTWaiter().wait(for: [expectation], timeout: timeout) == .completed
     }
 
+    private let usesThePhone = "Ta montre utilise la connexion de ton iPhone."
+
     private func mark(_ app: XCUIApplication) -> XCUIElement {
         app.descendants(matching: .any)["belay-mark"]
     }
@@ -71,6 +73,25 @@ final class WatchShellTests: XCTestCase {
             statusSays(app, "Connecte-toi dans Belay sur ton iPhone"),
             "the watch says to sign in on the iPhone: \(status(app).label)")
         XCTAssertEqual(app.buttons["watch-retry"].label, "Réessayer", "and offers to try again")
+        XCTAssertFalse(status(app).label.contains(usesThePhone), "the line on the iPhone's session is not said here")
+    }
+
+    func testTryingAgainAsksThePhoneAgain() {
+        let app = launch("phoneBack")
+        XCTAssertTrue(
+            statusSays(app, "Ouvre Belay sur ton iPhone"), "the first ask finds no iPhone: \(status(app).label)")
+        app.buttons["watch-retry"].tap()
+        XCTAssertTrue(
+            statusSays(app, "Montre connectée", "Instance jointe"),
+            "Réessayer asks the iPhone again and is answered: \(status(app).label)")
+    }
+
+    func testARefusedTokenSendsBackToThePhone() {
+        let app = launch("refused")
+        XCTAssertTrue(
+            statusSays(app, "Ouvre Belay sur ton iPhone"),
+            "a token the instance refuses is not kept: \(status(app).label)")
+        XCTAssertFalse(app.buttons["watch-signout"].exists, "and the watch is not shown connected")
     }
 
     func testConnectedShowsTheNameAndTheInstance() {
@@ -101,6 +122,7 @@ final class WatchShellTests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Ton iPhone reste connecté."].exists, "and says the iPhone stays signed in")
         sure.tap()
         XCTAssertTrue(statusSays(app, "Montre déconnectée"), "the watch is signed out: \(status(app).label)")
+        XCTAssertFalse(status(app).label.contains(usesThePhone), "the line on the iPhone's session is not said here")
 
         app = launch("connected", keep: true)
         XCTAssertTrue(statusSays(app, "Montre déconnectée"), "and stays so after a relaunch: \(status(app).label)")
@@ -116,6 +138,7 @@ final class WatchShellTests: XCTestCase {
             ("phoneOut", ["Ouvre Belay sur ton iPhone", "Ta montre utilise la connexion de ton iPhone."], "watch-retry"),
             ("phoneSignedOut", ["Connecte-toi dans Belay sur ton iPhone"], "watch-retry"),
             ("connected", ["Montre connectée", "Ana", "belay.example", "Instance jointe"], "watch-signout"),
+            ("unreached", ["Montre connectée", "Ana", "Instance injoignable pour l’instant"], "watch-signout"),
             ("signedOutHere", ["Montre déconnectée"], "watch-connect"),
         ]
         for state in states {
@@ -136,5 +159,24 @@ final class WatchShellTests: XCTestCase {
             XCTAssertGreaterThanOrEqual(
                 button.frame.height, 44, "\(state.fixture): \(control) grows with its text, not a fixed frame")
         }
+
+        let app = launch("connected", largest: true)
+        XCTAssertTrue(statusSays(app, "Montre connectée"))
+        let signOut = app.buttons["watch-signout"]
+        var swipes = 0
+        while !(signOut.exists && signOut.isHittable), swipes < 10 {
+            app.swipeUp()
+            swipes += 1
+        }
+        signOut.tap()
+        let sure = app.cells.buttons["Déconnecter cette montre"].firstMatch
+        XCTAssertTrue(sure.waitForExistence(timeout: 3), "the sign-out asks first at the largest text")
+        swipes = 0
+        while !(sure.isHittable && app.frame.contains(sure.frame)), swipes < 10 {
+            app.swipeUp()
+            swipes += 1
+        }
+        XCTAssertTrue(sure.isHittable, "the confirmation is reached by scrolling")
+        XCTAssertGreaterThanOrEqual(sure.frame.height, 44, "the confirmation keeps a 44 pt target")
     }
 }
