@@ -125,6 +125,7 @@ extension AccountStore {
       open.active.chrono = nil
       // A load chosen for another set, the planned one an added set went before, stays.
       if open.active.draft?.place == due.place { open.active.draft = nil }
+      if open.active.workDraft?.place == due.place { open.active.workDraft = nil }
       if open.active.added == due.place { open.active.added = nil }
       // A warm-up starts no rest and leaves a running one alone.
       if !due.warmup {
@@ -255,7 +256,8 @@ extension AccountStore {
     try requireOpen(withOpenSession(ctx: ctx) { _, open in open.active.restEndsAt = nil })
   }
 
-  /// The load or count chosen for the set due, kept until it is logged.
+  /// The load or count chosen for the set due, kept until it is logged: a warm-up's in the set
+  /// draft, a work set's in the work draft, so one typed on a warm-up leaves the work load typed.
   func choose(weightKg: Double?, count: Int?, _ ctx: SessionContext) throws {
     try requireOpen(
       withOpenSession(ctx: ctx) { _, open in
@@ -264,10 +266,19 @@ extension AccountStore {
             history: open.history, workout: open.workout, active: open.active,
             library: ctx.library, bar: ctx.bar)
         else { return }
-        let old = open.active.draft?.place == due.place ? open.active.draft : nil
-        open.active.draft = SetDraft(
+        let set = open.active.draft?.place == due.place ? open.active.draft : nil
+        let work = open.active.workDraft?.place == due.place ? open.active.workDraft : nil
+        let old = set ?? work
+        let new = SetDraft(
           slotIndex: due.place.slotIndex, position: due.place.position,
           weightKg: weightKg ?? old?.weightKg, count: count ?? old?.count)
+        if due.warmup {
+          open.active.draft = new
+        } else {
+          // A set draft at this place, from a store written before the work draft, gives way.
+          if set != nil { open.active.draft = nil }
+          open.active.workDraft = new
+        }
       })
   }
 
@@ -350,6 +361,7 @@ extension AccountStore {
           db, &open, replaceSlot(open.workout.plan, at: slotIndex, with: exercise),
           at: Instant.string(ctx.now()))
         if open.active.draft?.slotIndex == slotIndex { open.active.draft = nil }
+        if open.active.workDraft?.slotIndex == slotIndex { open.active.workDraft = nil }
         if open.active.chrono?.slotIndex == slotIndex { open.active.chrono = nil }
         if open.active.added?.slotIndex == slotIndex { open.active.added = nil }
       })
@@ -364,6 +376,7 @@ extension AccountStore {
         try writePlan(db, &open, plan, at: Instant.string(ctx.now()))
         if out {
           if open.active.draft?.slotIndex == slotIndex { open.active.draft = nil }
+          if open.active.workDraft?.slotIndex == slotIndex { open.active.workDraft = nil }
           if open.active.chrono?.slotIndex == slotIndex { open.active.chrono = nil }
           if open.active.added?.slotIndex == slotIndex { open.active.added = nil }
         }

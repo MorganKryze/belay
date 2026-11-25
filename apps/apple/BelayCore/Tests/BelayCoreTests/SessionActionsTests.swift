@@ -309,7 +309,7 @@ struct Seance {
     let s = try Seance([Seance.slot(sets: 1)])
     try s.actions.choose(weightKg: 70, count: 10)
     try s.actions.addSet(slotIndex: 0)
-    #expect(try s.active?.draft == SetDraft(slotIndex: 0, position: 3, weightKg: 70, count: 10))
+    #expect(try s.active?.workDraft == SetDraft(slotIndex: 0, position: 3, weightKg: 70, count: 10))
     // The set added is due first; the planned set keeps what was chosen for it.
     try s.actions.logNext(count: 8, weightKg: 60, expecting: SetPlace(slotIndex: 0, position: 4))
     let set = try #require(try s.actions.logNext(count: nil, weightKg: nil, expecting: nil))
@@ -538,7 +538,7 @@ struct Seance {
     let reopened = try AccountStore.open(userId: "u1", origin: origin, in: folder)
     let after = try #require(try reopened.activeSession())
     #expect(after == before)
-    #expect(after.draft == SetDraft(slotIndex: 0, position: 3, weightKg: 62.5, count: 10))
+    #expect(after.workDraft == SetDraft(slotIndex: 0, position: 3, weightKg: 62.5, count: 10))
     #expect(after.pausedAt != nil)
 
     // A record written before these fields existed reads them as absent.
@@ -657,17 +657,40 @@ struct Seance {
     #expect(sets.map(\.2) == [kg, 75, 100])
   }
 
-  @Test(arguments: [60.0, 25, 45])
-  func loadTypedOnASetAtZeroIsLoggedOnThatSet(kg: Double) throws {
+  @Test func sessionStoredWithoutAWorkDraftReadsNone() throws {
+    let json = #"{"workoutId":"w","slotIndex":0,"draft":{"slotIndex":0,"position":3,"weightKg":60}}"#
+    let active = try JSONDecoder().decode(ActiveSession.self, from: Data(json.utf8))
+    #expect(active.workDraft == nil)
+    #expect(active.draft == SetDraft(slotIndex: 0, position: 3, weightKg: 60, count: nil))
+  }
+
+  @Test func loadTypedOnTheWorkSetBringsWarmupsFromIt() throws {
     let s = try Seance([Seance.slot(warmups: 2)], past: [(Seance.squat, 0, 8)])
-    try s.actions.choose(weightKg: kg, count: nil)
+    try s.actions.choose(weightKg: 60, count: nil)
     let first = try #require(try s.actions.logNext(count: nil, weightKg: nil, expecting: nil))
     guard case .create(let create) = first.edit else {
       Issue.record("a creation")
       return
     }
-    #expect(create.position == 3 && !create.warmup)
-    #expect(create.values.weightKg == kg)
+    #expect(create.position == 0 && create.warmup)
+    #expect(create.values.weightKg < 60)
+  }
+
+  @Test func loadTypedOnAWarmupLeavesTheWorkLoadTypedBefore() throws {
+    let s = try Seance([Seance.slot(warmups: 2)], past: [(Seance.squat, 0, 8)])
+    try s.actions.choose(weightKg: 60, count: nil)
+    try s.actions.choose(weightKg: 45, count: nil)
+    for _ in 0..<3 { try s.actions.logNext(count: nil, weightKg: nil, expecting: nil) }
+    let sets = try logged(s)
+    let untouched = try {
+      let u = try Seance([Seance.slot(warmups: 2)], past: [(Seance.squat, 0, 8)])
+      try u.actions.choose(weightKg: 60, count: nil)
+      for _ in 0..<3 { try u.actions.logNext(count: nil, weightKg: nil, expecting: nil) }
+      return try logged(u)
+    }()
+    #expect(sets.map(\.0) == [0, 1, 3])
+    #expect(sets.map(\.2) == [45, untouched[1].2, 60])
+    #expect(untouched.map(\.0) == [0, 1, 3])
   }
 
   @Test func loadTypedOnTheWorkSetAddsNoWarmupBeforeIt() throws {
