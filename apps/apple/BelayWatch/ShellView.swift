@@ -57,8 +57,6 @@ struct ShellView: View {
         case .phoneSignedOut:
             status {
                 Text("Connecte-toi dans Belay sur ton iPhone", tableName: "Watch").font(.headline)
-                Text("Ta montre utilise la connexion de ton iPhone.", tableName: "Watch").font(.footnote)
-                    .foregroundStyle(.secondary)
             }
             retry
         case .connected(let name, let host, let reached):
@@ -87,8 +85,6 @@ struct ShellView: View {
         case .signedOutHere:
             status {
                 Text("Montre déconnectée", tableName: "Watch").font(.headline)
-                Text("Ta montre utilise la connexion de ton iPhone.", tableName: "Watch").font(.footnote)
-                    .foregroundStyle(.secondary)
             }
             Button {
                 Task { await account.connectAgain() }
