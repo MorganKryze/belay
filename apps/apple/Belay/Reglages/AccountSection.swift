@@ -5,7 +5,8 @@ import SwiftUI
 /// Réglages' Compte: the name the instance gives and its address, with no participle that would
 /// guess a gender, « Se déconnecter » in red, and the installed version opening its release notes.
 /// Signing out asks first in a centred alert, in the web's words for what still waits to be sent,
-/// since it leaves with the next sign-in of this account only (A30, A31).
+/// since it leaves with the next sign-in of this account only (A30, A31). With Belay on a paired
+/// watch, the footer says the watch goes with the sign-out.
 struct AccountSection: View {
     let account: AccountModel
     /// What the queue holds now; throws when the store cannot say.
@@ -36,7 +37,16 @@ struct AccountSection: View {
         } header: {
             Text("Compte", tableName: "Account").textCase(nil).foregroundStyle(.ink)
         } footer: {
-            versionLine
+            VStack(spacing: 4) {
+                if account.watchAppInstalled {
+                    Text("Ta montre utilise cette connexion\u{202F}: te déconnecter ici la déconnecte aussi.", tableName: "Account")
+                        .font(.footnote)
+                        .foregroundStyle(.muted)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .accessibilityIdentifier("watch-line")
+                }
+                versionLine
+            }
         }
         .headerProminence(.increased)
         .listRowBackground(Color.surface)

@@ -361,6 +361,16 @@
           }
         }
       }
+    },
+    "Ta montre utilise cette connexion : te déconnecter ici la déconnecte aussi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your watch uses this session: signing out here signs it out too."
+          }
+        }
+      }
     }
   }
 }

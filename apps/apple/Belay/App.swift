@@ -24,7 +24,8 @@ struct BelayApp: App {
         _activity = State(initialValue: LiveActivityController(account: account))
     }
 
-    /// The person's account; in a debug build, the UI tests' fixture when the launch asks for it.
+    /// The person's account, holding the link to the paired watch; in a debug build, the UI
+    /// tests' fixture when the launch asks for it, with its own recording link or none.
     private static func launchAccount() -> AccountModel {
         #if DEBUG
             if let fixture = Fixture.account() {
@@ -34,7 +35,12 @@ struct BelayApp: App {
                 return fixture
             }
         #endif
-        return AccountModel()
+        // A request from the watch can launch the app in the background, so the link starts here,
+        // before any scene. It answers from the account made next, which holds it.
+        weak var made: AccountModel?
+        let account = AccountModel(watch: WatchLink.start { made?.watchReply() ?? [:] })
+        made = account
+        return account
     }
 
     var body: some Scene {
@@ -64,6 +70,10 @@ struct BelayApp: App {
                         Fixture.OutboxProbe(store: store)
                         Fixture.VersionChecksProbe()
                         Fixture.WebDataProbe()
+                    }
+                    // Signed out too: the test reads what the watch is told after the sign-out.
+                    if let watch = Fixture.recordedWatch {
+                        Fixture.WatchProbe(watch: watch, account: account)
                     }
                 }
                 .environment(\.contrastIncreased, Fixture.contrastIncreased)
