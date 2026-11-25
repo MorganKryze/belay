@@ -58,6 +58,41 @@ private final class ScriptedPhone: PhoneAsking, @unchecked Sendable {
   }
 }
 
+/// An iPhone that holds its answer until told to give it, so a test can act while an ask waits.
+private final class HeldPhone: PhoneAsking, @unchecked Sendable {
+  private let lock = NSLock()
+  private let reply: HandoverReply?
+  private var asked = 0
+  private var waiting: CheckedContinuation<Void, Never>?
+  private var released = false
+
+  init(_ reply: HandoverReply?) { self.reply = reply }
+
+  var asks: Int { lock.withLock { asked } }
+
+  func release() {
+    let held = lock.withLock {
+      released = true
+      defer { waiting = nil }
+      return waiting
+    }
+    held?.resume()
+  }
+
+  func askSession() async -> HandoverReply? {
+    await withCheckedContinuation { continuation in
+      let now = lock.withLock {
+        asked += 1
+        if released { return true }
+        waiting = continuation
+        return false
+      }
+      if now { continuation.resume() }
+    }
+    return reply
+  }
+}
+
 /// A server that answers from a closure and remembers what it was asked.
 private final class FakeServer: HTTPClient, @unchecked Sendable {
   typealias Answer = @Sendable (URLRequest) throws -> (Int, Data)
@@ -139,7 +174,7 @@ private let connected = WristAccount.State.connected(name: "Ana", host: "belay.e
   private let store = MemoryStore()
   private let defaults = freshDefaults()
 
-  private func account(phone: ScriptedPhone, http: HTTPClient = FakeServer(status: 200)) -> WristAccount {
+  private func account(phone: any PhoneAsking, http: HTTPClient = FakeServer(status: 200)) -> WristAccount {
     WristAccount(secrets: store, defaults: defaults, http: http, phone: phone, allowsLoopback: false)
   }
 
@@ -247,6 +282,20 @@ private let connected = WristAccount.State.connected(name: "Ana", host: "belay.e
     #expect(relaunched.state == .signedOutHere)
     #expect(phone.asks == 1)
     #expect(server.requests.count == 1)
+  }
+
+  @Test func anAnswerTheIPhoneGivesAfterASignOutHereIsNotKept() async {
+    let phone = HeldPhone(handed())
+    let server = FakeServer(status: 200)
+    let account = account(phone: phone, http: server)
+    let first = Task { await account.start() }
+    while phone.asks == 0 { await Task.yield() }
+    account.signOutHere()
+    phone.release()
+    await first.value
+    #expect(store.token == nil)
+    #expect(account.state == .signedOutHere)
+    #expect(server.requests.isEmpty)
   }
 
   @Test func connectingAgainAsksThePhone() async {
