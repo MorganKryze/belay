@@ -141,7 +141,8 @@ Belay or a later one.
 - The iPhone app is native, written in SwiftUI, and built from `apps/apple`: the
   steps are in [`apps/apple/README.md`](apps/apple/README.md). The Android app
   wraps the same web app the browser runs and is built from `apps/mobile`: the
-  steps are in [`apps/mobile/README.md`](apps/mobile/README.md).
+  steps are in [`apps/mobile/README.md`](apps/mobile/README.md). The iPhone app
+  carries an Apple Watch app (watchOS 26.0), built and installed with it.
 - The server accepts two kinds of requests from the apps. The Android app's web
   view runs from the origin `https://localhost`, which the server accepts for
   `/api`, `/media`, `/auth/native` and `/auth/logout` only, and never with
@@ -224,6 +225,11 @@ Read this before hosting Belay for anyone else.
   the server. A token lives as long as a session (`SESSION_TTL_DAYS` after its
   last use, `SESSION_MAX_DAYS` at most), and a stolen, unlocked phone holds the
   session just as it would hold a browser's cookie.
+- **The Apple Watch app** uses the iPhone's session. The iPhone hands it over
+  the paired devices' encrypted link, only when the watch asks, and the watch
+  keeps it in its own Keychain, on that watch only. Signing out on the iPhone
+  ends the session on the instance too; signing out on the watch drops only
+  the watch's copy. A watch with no passcode is open to whoever wears it.
 - **The Android app** keeps its token sealed by a key in the Android Keystore,
   outside backups, and signs in the same way, through a private browser tab.
   Its origin, `https://localhost`, is not private to it: a page served at
