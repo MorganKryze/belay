@@ -12,11 +12,11 @@
     "android": "sh scripts/android.sh"
   },
   "dependencies": {
-    "@capacitor/android": "8.6.0",
-    "@capacitor/cli": "8.6.0",
-    "@capacitor/core": "8.6.0",
+    "@capacitor/android": "8.6.2",
+    "@capacitor/cli": "8.6.2",
+    "@capacitor/core": "8.6.2",
     "@capacitor/haptics": "8.0.2",
-    "@capacitor/ios": "8.6.0",
+    "@capacitor/ios": "8.6.2",
     "@capacitor/local-notifications": "8.3.1"
   }
 }
