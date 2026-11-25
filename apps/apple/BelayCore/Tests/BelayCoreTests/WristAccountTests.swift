@@ -233,6 +233,8 @@ private let connected = WristAccount.State.connected(name: "Ana", host: "belay.e
     let account = account(phone: phone, http: server)
     await account.start()
     account.signOutHere()
+    // Let any request the sign-out might have started in the background reach the server.
+    for _ in 0..<20 { await Task.yield() }
     #expect(account.state == .signedOutHere)
     #expect(store.token == nil)
     #expect(!server.paths.contains { $0.hasSuffix("auth/logout") })
