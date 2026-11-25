@@ -85,6 +85,7 @@ private func signedIn(store: SecretStore = MemoryStore(), defaults: UserDefaults
     #expect(!Handover.isRequest(["v": "1"]))
     #expect(!Handover.isRequest(["v": 1, "want": "session"]))
     #expect(!Handover.isRequest([:]))
+    #expect(!Handover.isRequest(["v": "1", "want": "session", "and": "more"]))
   }
 
   @Test func theStateNeverHoldsTheToken() throws {
@@ -137,6 +138,11 @@ private func signedIn(store: SecretStore = MemoryStore(), defaults: UserDefaults
       var missing = full
       missing[key] = nil
       #expect(HandoverReply(missing) == nil, "without \(key)")
+    }
+    for key in ["origin", "token", "userId", "name", "session"] {
+      var empty = full
+      empty[key] = ""
+      #expect(HandoverReply(empty) == nil, "with an empty \(key)")
     }
     var later = full
     later["v"] = "2"
