@@ -5,15 +5,16 @@ import Testing
 // French and English, with the plural forms each language needs, and the French follows its
 // typography. The app target has no unit tests of its own, so the core's suite reads its files.
 
-/// The app's sources and its Live Activity's, beside this package.
+/// The app's sources, its Live Activity's and its watch app's, beside this package.
 private let appleFolder = URL(filePath: #filePath)
   .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
   .deletingLastPathComponent()
 private let appFolder = appleFolder.appending(path: "Belay", directoryHint: .isDirectory)
 private let activityFolder = appleFolder.appending(path: "BelayActivity", directoryHint: .isDirectory)
+private let watchFolder = appleFolder.appending(path: "BelayWatch", directoryHint: .isDirectory)
 
 private func catalogs() throws -> [URL] {
-  let urls = [appFolder, activityFolder].flatMap { folder in
+  let urls = [appFolder, activityFolder, watchFolder].flatMap { folder in
     let walk = FileManager.default.enumerator(at: folder, includingPropertiesForKeys: nil)
     return (walk?.allObjects as? [URL]) ?? []
   }
@@ -181,11 +182,11 @@ private struct SourceKey {
   let at: String
 }
 
-/// Every string literal written straight before a `tableName:` or `table:` argument in the app's
-/// and the Live Activity's Swift files: `Text("…", tableName: "Outils")`, `String(localized: "…",
-/// table: "Reglages")`. A key passed through a variable is not seen.
+/// Every string literal written straight before a `tableName:` or `table:` argument in the app's,
+/// the Live Activity's and the watch app's Swift files: `Text("…", tableName: "Outils")`,
+/// `String(localized: "…", table: "Reglages")`. A key passed through a variable is not seen.
 private func sourceKeys() throws -> [SourceKey] {
-  let files = [appFolder, activityFolder].flatMap { folder in
+  let files = [appFolder, activityFolder, watchFolder].flatMap { folder in
     let walk = FileManager.default.enumerator(at: folder, includingPropertiesForKeys: nil)
     return ((walk?.allObjects as? [URL]) ?? []).filter { $0.pathExtension == "swift" }
   }
@@ -311,6 +312,9 @@ private func literal(_ code: [Character], from start: Int) -> ([LiteralPart], In
     #expect(
       try catalogs().contains { $0.path.hasPrefix(activityFolder.path) },
       "the Live Activity's catalog is found at \(activityFolder.path)")
+    #expect(
+      try catalogs().contains { $0.path.hasPrefix(watchFolder.path) },
+      "the watch app's catalog is found at \(watchFolder.path)")
   }
 
   @Test func everyKeyHasFrenchAndEnglish() throws {
