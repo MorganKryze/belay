@@ -111,6 +111,17 @@ private func signedIn(store: SecretStore = MemoryStore(), defaults: UserDefaults
     }
   }
 
+  @Test func theStatePublishesAnIdOnlyOnceTheSessionWouldBeHanded() throws {
+    let session = StoredSession(store: MemoryStore(), defaults: freshDefaults())
+    try session.keep(origin: origin, token: token)
+    #expect(Handover.reply(session: session, origin: origin) == ["v": "1", "state": "signedOut"])
+    #expect(Handover.state(session: session, origin: origin) == ["v": "1"])
+
+    session.remember(userId: "ana", displayName: "Ana", media: false)
+    let id = try #require(Handover.reply(session: session, origin: origin)["session"])
+    #expect(Handover.state(session: session, origin: origin) == ["v": "1", "session": id])
+  }
+
   @Test func aStateOfAnotherVersionIsNotRead() {
     #expect(HandoverState(["v": "2", "session": "x"]) == nil)
     #expect(HandoverState([:]) == nil)

@@ -29,10 +29,11 @@ public enum Handover {
     ]
   }
 
-  /// What the iPhone publishes to its watch: the kept session's id, or no id when signed out.
-  /// Never the token.
+  /// What the iPhone publishes to its watch: the id of the session `reply` would hand, or no id
+  /// when it would hand none, so a watch told of a session is never answered signed out. Never the
+  /// token.
   public static func state(session: StoredSession, origin: String?) -> [String: String] {
-    guard let origin, let id = session.handoverId(origin: origin) else { return ["v": version] }
+    guard let id = reply(session: session, origin: origin)["session"] else { return ["v": version] }
     return ["v": version, "session": id]
   }
 }
