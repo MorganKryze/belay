@@ -39,7 +39,10 @@ pnpm vectors:check
 
 The UI tests run on a simulator, one class at a time. The watch app has its own scheme,
 `BelayWatch`, and its tests run on a watch simulator paired with an iPhone simulator (list the pairs
-with `xcrun simctl list pairs`):
+with `xcrun simctl list pairs`). Install the iPhone app on that paired iPhone simulator first
+(`xcrun simctl install <paired iPhone simulator> "$HOME/belay-dd/Build/Products/Debug-iphonesimulator/Belay.app"`,
+after one build of the `Belay` scheme): without it, the watch simulator removes the watch app during
+the run.
 
 ```sh
 xcodebuild test -project apps/apple/Belay.xcodeproj -scheme Belay \
@@ -76,19 +79,26 @@ xcodebuild test -project apps/apple/Belay.xcodeproj -scheme BelayWatch \
 The bundle id is `cloud.libresoftware.belay`, the same as the previous app, so the new one installs
 in its place and keeps its icon slot.
 
-The watch app (`cloud.libresoftware.belay.watchkitapp`) rides inside the iPhone app, so this install
-brings it to the paired watch. If it does not appear, open the Watch app on the iPhone, then
-**Belay › Install**. Before that:
+The watch app (`cloud.libresoftware.belay.watchkitapp`) rides inside the iPhone app. Installing it
+on a real watch is not settled yet: with a free developer account the watch app signs, but the
+watch refuses it (« the integrity of this app could not be verified ») when the Watch app on the
+iPhone installs it. A paid account is expected to fix this; until then the watch app is tested in
+the simulator. To try on a watch anyway:
 
 - Turn on Developer Mode on the watch, in **Settings › Privacy & Security**; it restarts the watch.
+  The setting appears once Xcode has connected to the watch (**Window › Devices and Simulators**).
 - Put the iPhone, the watch and the Mac on the same Wi-Fi network, with no Personal Hotspot on.
+- Build the `BelayWatch` scheme once for the watch itself, so your team registers it:
+  `xcodebuild -project apps/apple/Belay.xcodeproj -scheme BelayWatch -destination 'id=<watch identifier>'
+  -allowProvisioningUpdates -allowProvisioningDeviceRegistration build`, then steps 3 and 4 again, and
+  in the Watch app on the iPhone, **Belay › Install**.
 
 Open Belay on the watch and it asks the iPhone for its session; the iPhone must be signed in.
 
 ## Re-install every 7 days
 
 With a free developer account, the profile that signs the app expires after 7 days and the app
-stops opening. Run steps 3 and 4 again, which reinstalls the watch app too; nothing stored on the phone is lost
+stops opening. Run steps 3 and 4 again; nothing stored on the phone is lost
 by installing over the top. A paid account lasts a year.
 
 ## Apple Health
