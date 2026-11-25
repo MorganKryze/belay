@@ -33,9 +33,14 @@ final class PhoneLink: NSObject, WCSessionDelegate, PhoneAsking {
     nonisolated func askSession() async -> HandoverReply? {
         await activation()
         let session = WCSession.default
-        guard WCSession.isSupported(), session.activationState == .activated, session.isReachable else {
+        guard WCSession.isSupported() else { return nil }
+        guard session.activationState == .activated else {
+            // An activation that failed is tried again, so the next ask can reach the iPhone
+            // without a relaunch.
+            session.activate()
             return nil
         }
+        guard session.isReachable else { return nil }
         return await withCheckedContinuation { continuation in
             session.sendMessage(
                 Handover.request,
