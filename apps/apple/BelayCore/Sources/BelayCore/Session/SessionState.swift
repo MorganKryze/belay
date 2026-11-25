@@ -239,7 +239,9 @@ public func dueSet(
   let planned = workValues(
     history, plan: plan, sets: sets, slotIndex: turn.slotIndex, round: turn.round)
   // As the web: the warm-ups follow a load typed on the work set, never one typed on a warm-up.
-  let typed = active.workDraft?.place == workPlace ? active.workDraft?.weightKg : nil
+  // A store written before the work draft kept the work load in the set draft.
+  let typedDraft = [active.workDraft, active.draft].compactMap { $0 }.first { $0.place == workPlace }
+  let typed = typedDraft?.weightKg
   let work = (typed ?? planned.0, planned.1)
 
   let started = sets.contains { $0.slotIndex == turn.slotIndex && !$0.warmup }

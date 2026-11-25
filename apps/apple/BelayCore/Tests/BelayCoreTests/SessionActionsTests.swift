@@ -226,9 +226,8 @@ struct Seance {
 
   @Test func loadPastTheBoundChosenIsRefusedAtTheTick() throws {
     let s = try Seance()
-    try s.actions.choose(weightKg: 625, count: nil)
     let before = try s.queued
-    #expect(throws: StoreError.invalidChange) { try s.actions.logNext(count: 8, weightKg: nil, expecting: nil) }
+    #expect(throws: StoreError.invalidChange) { try s.actions.logNext(count: 8, weightKg: 625, expecting: nil) }
     #expect(try s.queued == before)
   }
 
@@ -662,6 +661,50 @@ struct Seance {
     let active = try JSONDecoder().decode(ActiveSession.self, from: Data(json.utf8))
     #expect(active.workDraft == nil)
     #expect(active.draft == SetDraft(slotIndex: 0, position: 3, weightKg: 60, count: nil))
+  }
+
+  @Test func olderStoredWorkLoadStillBringsWarmupsFromIt() throws {
+    let s = try Seance([Seance.slot(warmups: 2)], past: [(Seance.squat, 0, 8)])
+    var active = try #require(try s.active)
+    let json = #"{"workoutId":"w","slotIndex":0,"draft":{"slotIndex":0,"position":3,"weightKg":60}}"#
+    active.draft = try JSONDecoder().decode(ActiveSession.self, from: Data(json.utf8)).draft
+    active.workDraft = nil
+    try s.store.recordChanges([], active: .set(active))
+    let first = try #require(try s.actions.logNext(count: nil, weightKg: nil, expecting: nil))
+    guard case .create(let create) = first.edit else {
+      Issue.record("a creation")
+      return
+    }
+    #expect(create.position == 0 && create.warmup)
+    #expect(create.values.weightKg < 60)
+  }
+
+  @Test func olderStoredWorkLoadOutlivesALoadTypedOnAWarmup() throws {
+    let s = try Seance([Seance.slot(warmups: 2)], past: [(Seance.squat, 0, 8)])
+    var active = try #require(try s.active)
+    active.draft = SetDraft(slotIndex: 0, position: 3, weightKg: 60, count: nil)
+    active.workDraft = nil
+    try s.store.recordChanges([], active: .set(active))
+    try s.actions.choose(weightKg: 45, count: nil)
+    for _ in 0..<3 { try s.actions.logNext(count: nil, weightKg: nil, expecting: nil) }
+    let sets = try logged(s)
+    #expect(sets.map(\.0) == [0, 1, 3])
+    #expect(sets.map(\.2).first == 45 && sets.map(\.2).last == 60)
+  }
+
+  @Test func loadPastTheBoundIsRefusedWhenChosenAndBringsNoWarmup() throws {
+    let s = try Seance([Seance.slot(warmups: 2)], past: [(Seance.squat, 0, 8)])
+    let before = try s.queued
+    let stored = try s.active
+    #expect(throws: StoreError.invalidChange) { try s.actions.choose(weightKg: 600, count: nil) }
+    #expect(try s.queued == before)
+    #expect(try s.active == stored)
+    let first = try #require(try s.actions.logNext(count: nil, weightKg: nil, expecting: nil))
+    guard case .create(let create) = first.edit else {
+      Issue.record("a creation")
+      return
+    }
+    #expect(!create.warmup && create.values.weightKg == 0)
   }
 
   @Test func loadTypedOnTheWorkSetBringsWarmupsFromIt() throws {

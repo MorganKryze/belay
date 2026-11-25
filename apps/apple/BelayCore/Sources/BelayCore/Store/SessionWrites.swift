@@ -259,6 +259,9 @@ extension AccountStore {
   /// The load or count chosen for the set due, kept until it is logged: a warm-up's in the set
   /// draft, a work set's in the work draft, so one typed on a warm-up leaves the work load typed.
   func choose(weightKg: Double?, count: Int?, _ ctx: SessionContext) throws {
+    if let kg = weightKg, !(kg.isFinite && (Bounds.setKgMin...Bounds.setKgMax).contains(kg)) {
+      throw StoreError.invalidChange
+    }
     try requireOpen(
       withOpenSession(ctx: ctx) { _, open in
         guard
@@ -273,6 +276,12 @@ extension AccountStore {
           slotIndex: due.place.slotIndex, position: due.place.position,
           weightKg: weightKg ?? old?.weightKg, count: count ?? old?.count)
         if due.warmup {
+          // A work load kept in the set draft, from a store written before the work draft, moves.
+          if let older = open.active.draft, older.position >= Bounds.maxWarmups,
+            open.active.workDraft == nil
+          {
+            open.active.workDraft = older
+          }
           open.active.draft = new
         } else {
           // A set draft at this place, from a store written before the work draft, gives way.
