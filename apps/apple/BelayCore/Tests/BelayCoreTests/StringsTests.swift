@@ -180,6 +180,8 @@ private struct SourceKey {
   let text: String
   let pattern: Regex<Substring>
   let at: String
+  /// The Swift file the key is written in.
+  let file: URL
 }
 
 /// Every string literal written straight before a `tableName:` or `table:` argument in the app's,
@@ -220,7 +222,7 @@ private func sourceKeys() throws -> [SourceKey] {
       keys.append(
         SourceKey(
           table: String(match.1), text: text, pattern: try Regex(pattern),
-          at: "\(file.lastPathComponent):\(line)"))
+          at: "\(file.lastPathComponent):\(line)", file: file))
     }
   }
   return keys
@@ -305,6 +307,15 @@ private func literal(_ code: [Character], from start: Int) -> ([LiteralPart], In
         table.contains { $0.wholeMatch(of: key.pattern) != nil },
         "\(key.at): « \(key.text) » is in \(key.table)")
     }
+  }
+
+  /// The watch's and the Live Activity's Swift files are read too, so a key either one asks for is
+  /// held to its table like the app's.
+  @Test func theWatchAndTheLiveActivitySourcesAreScanned() throws {
+    let keys = try sourceKeys()
+    #expect(keys.contains { $0.file.path.hasPrefix(watchFolder.path) }, "a key comes from the watch app's sources")
+    #expect(
+      keys.contains { $0.file.path.hasPrefix(activityFolder.path) }, "a key comes from the Live Activity's sources")
   }
 
   @Test func appHasCatalogs() throws {
