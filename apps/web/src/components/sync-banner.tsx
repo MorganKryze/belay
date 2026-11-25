@@ -20,15 +20,17 @@ export function SyncBanner({ account }: { account: OpenAccount }) {
   // Weigh-ins alone are said as weigh-ins; anything else waiting makes them entries.
   const what = pending.weighings === count ? "" : "Entries";
   const kind =
-    status === "expired" && count > 0
-      ? "expired"
-      : status === "failed" && count > 0
-        ? "failed"
-        : (status === "offline" || !online) && count > 0
-          ? "offline"
-          : rejected > 0
-            ? "rejected"
-            : null;
+    status === "instance-ahead" || status === "instance-behind"
+      ? "version"
+      : status === "expired" && count > 0
+        ? "expired"
+        : status === "failed" && count > 0
+          ? "failed"
+          : (status === "offline" || !online) && count > 0
+            ? "offline"
+            : rejected > 0
+              ? "rejected"
+              : null;
   // Kept mounted so a change is announced; with nothing to say it takes back one of the 16 px gaps
   // the screens put around it, so the blocks on either side sit as if it were not there.
   return (
@@ -55,6 +57,12 @@ export function SyncBanner({ account }: { account: OpenAccount }) {
               </a>
             </Button>
           </div>
+        </div>
+      )}
+      {kind === "version" && (
+        <div className={`${box} bg-primary-soft`}>
+          <CircleAlert aria-hidden className="mt-px size-5 shrink-0" />
+          <p>{t(status === "instance-ahead" ? "sync.instanceAhead" : "sync.instanceBehind")}</p>
         </div>
       )}
       {kind === "rejected" && (

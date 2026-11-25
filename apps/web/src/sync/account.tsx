@@ -38,6 +38,7 @@ import {
   type SetInput,
   startWorkout,
 } from "./db";
+import { contractCheck } from "@/lib/platform";
 import { createSyncEngine, type SyncEngine } from "./engine";
 import { type LastUser, readLastUser, writeLastUser } from "./last-user";
 
@@ -87,6 +88,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
           db,
           // The network part loads with the first sync: Zod stays out of the initial bundle.
           send: (request) => import("./transport").then((m) => m.postSync(request)),
+          checkVersion: contractCheck(),
           onApplied: () => void queryClient.invalidateQueries({ queryKey: ["local", userId] }),
           // Once a sync has landed, forgotten sessions are closed: judged on stale sets, a session would be wrongly removed.
           onSynced: async () => {

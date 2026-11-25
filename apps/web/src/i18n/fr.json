@@ -26,6 +26,8 @@
     "reload": "Recharger"
   },
   "sync": {
+    "instanceAhead": "Ton instance est plus récente que cette version de Belay : mets l’app à jour pour envoyer tes saisies. Tout est gardé sur ce téléphone.",
+    "instanceBehind": "Ton instance doit être mise à jour pour cette version de Belay. Tes saisies restent sur ce téléphone en attendant.",
     "offlineTitle": "Hors ligne.",
     "offline_one": "{{count}} pesée en attente, envoyée dès le retour du réseau. Tout est gardé sur ce téléphone.",
     "offline_other": "{{count}} pesées en attente, envoyées dès le retour du réseau. Tout est gardé sur ce téléphone.",

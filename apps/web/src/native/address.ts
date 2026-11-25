@@ -1,3 +1,5 @@
+import { type VersionGap, versionGap } from "@/lib/contract";
+
 // What the person types on the instance screen, and the question asked to the address. Loaded
 // with that screen only.
 
@@ -36,7 +38,8 @@ export function checkAddress(input: string): AddressCheck {
     : { error: "insecure" };
 }
 
-export type Probe = { origin: string } | { error: "offline" | "unreachable" | "not-belay" };
+export type Probe =
+  { origin: string } | { error: "offline" | "unreachable" | "not-belay" | VersionGap };
 
 // A server that does not answer in this time is reported unreachable rather than left spinning.
 const PROBE_TIMEOUT_MS = 10_000;
@@ -58,9 +61,11 @@ export async function probeInstance(origin: string): Promise<Probe> {
   const body: unknown = res.ok ? await res.json().catch(() => null) : null;
   if (typeof body !== "object" || body === null) return { error: "not-belay" };
   const { app, api, origin: served } = body as Record<string, unknown>;
-  if (app !== "belay" || typeof api !== "number" || api < 1 || typeof served !== "string") {
+  const gap = versionGap(api);
+  if (app !== "belay" || gap === undefined || typeof served !== "string") {
     return { error: "not-belay" };
   }
+  if (gap !== null) return { error: gap };
   const checked = checkAddress(served);
   return "origin" in checked && checked.origin === served
     ? { origin: served }

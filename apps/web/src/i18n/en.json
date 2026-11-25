@@ -26,6 +26,8 @@
     "reload": "Reload"
   },
   "sync": {
+    "instanceAhead": "Your instance is newer than this version of Belay: update the app to send your entries. Everything is kept on this phone.",
+    "instanceBehind": "Your instance needs updating for this version of Belay. Your entries stay on this phone meanwhile.",
     "offlineTitle": "Offline.",
     "offline_one": "{{count}} weigh-in waiting, sent as soon as the network is back. Everything is kept on this phone.",
     "offline_other": "{{count}} weigh-ins waiting, sent as soon as the network is back. Everything is kept on this phone.",

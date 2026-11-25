@@ -1,3 +1,4 @@
+import { API_VERSION } from "@belay/shared/sync/limits";
 import type { SyncRequest } from "@belay/shared/sync/schema";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { postSync } from "@/sync/transport";
@@ -245,6 +246,22 @@ describe("probeInstance", () => {
     [{ error: "not_found" }, 404],
   ])("says %j (%i) is not a Belay instance", async (body, status) => {
     answer(body, status);
+    await expect(probeInstance(ORIGIN)).resolves.toEqual({ error: "not-belay" });
+  });
+
+  it.each([
+    [0, "instance-behind"],
+    [API_VERSION + 1, "instance-ahead"],
+  ])(
+    "refuses an instance on contract version %i and says which side to update",
+    async (api, error) => {
+      answer({ app: "belay", api, origin: ORIGIN });
+      await expect(probeInstance(ORIGIN)).resolves.toEqual({ error });
+    },
+  );
+
+  it("says a contract version that is not a whole number is not a Belay instance", async () => {
+    answer({ app: "belay", api: 1.5, origin: ORIGIN });
     await expect(probeInstance(ORIGIN)).resolves.toEqual({ error: "not-belay" });
   });
 
