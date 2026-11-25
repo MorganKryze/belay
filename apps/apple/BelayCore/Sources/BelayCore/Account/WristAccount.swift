@@ -43,8 +43,10 @@ public final class WristAccount {
   private let allowsLoopback: Bool
   /// Moves on with every drop, so an answer asked for before it is never kept or shown after it.
   private var round = 0
-  /// A launch or a return is being handled: another trigger meanwhile adds no ask and no check.
-  private var starting = false
+  /// The launch or return being handled: another trigger meanwhile adds no ask and no check. A
+  /// sign-out on the watch lets it go, so connecting again starts afresh while the stale one ends.
+  private var starting: Int?
+  private var starts = 0
 
   private static let log = Logger(subsystem: "cloud.libresoftware.belay", category: "wrist")
 
@@ -63,9 +65,11 @@ public final class WristAccount {
   /// At launch and at each return to the front: checks the kept session with the instance, or asks
   /// the iPhone for one.
   public func start() async {
-    guard !starting else { return }
-    starting = true
-    defer { starting = false }
+    guard starting == nil else { return }
+    starts += 1
+    let mine = starts
+    starting = mine
+    defer { if starting == mine { starting = nil } }
     if signedOutHere {
       state = .signedOutHere
     } else if let kept {
@@ -97,6 +101,7 @@ public final class WristAccount {
   /// told, so the iPhone stays signed in.
   public func signOutHere() {
     defaults.set(true, forKey: Self.signedOutHereKey)
+    starting = nil
     forget()
     state = .signedOutHere
   }

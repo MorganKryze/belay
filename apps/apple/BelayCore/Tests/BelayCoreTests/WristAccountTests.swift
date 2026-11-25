@@ -327,6 +327,22 @@ private let connected = WristAccount.State.connected(name: "Ana", host: "belay.e
     #expect(phone.asks == 2)
   }
 
+  @Test func connectingAgainWhileAStartWaitsAsksThePhoneAndShowsItsAnswer() async {
+    let held = HeldServer()
+    let phone = ScriptedPhone(store: store, handed(), .signedOut)
+    let account = account(phone: phone, http: held)
+    let first = Task { await account.start() }
+    while held.requestCount == 0 { await Task.yield() }
+    account.signOutHere()
+    await account.connectAgain()
+    #expect(phone.asks == 2)
+    #expect(account.state == .phoneSignedOut)
+    held.release()
+    await first.value
+    #expect(account.state == .phoneSignedOut)
+    #expect(store.token == nil)
+  }
+
   @Test func aFreshInstallNeverReadsATokenAnEarlierInstallLeft() async throws {
     try store.write(origin: origin, token: "left")
     let phone = ScriptedPhone(store: store, nil)
