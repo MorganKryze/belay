@@ -25,7 +25,7 @@ const owner = testDb().db;
 const VERIFIER = "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk";
 const CHALLENGE = "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM";
 const OTHER_VERIFIER = "A".repeat(43);
-const APP_ORIGIN = "capacitor://localhost";
+const APP_ORIGIN = "https://localhost";
 
 let idp: Awaited<ReturnType<typeof startIdp>>;
 let app: Hono;

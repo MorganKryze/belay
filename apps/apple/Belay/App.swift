@@ -9,6 +9,9 @@ struct BelayApp: App {
     /// Lives as long as the app: a lock-screen tap may launch it in the background, with no scene.
     @State private var activity: LiveActivityController
     @Environment(\.scenePhase) private var scenePhase
+    /// Whether the app has been in front: its first time is the launch, whose run checks the
+    /// version already, so only a later one is a return.
+    @State private var wasActive = false
     @AppStorage(DevicePrefs.theme.key) private var theme = DevicePrefs.theme.initial
 
     init() {
@@ -58,13 +61,20 @@ struct BelayApp: App {
                         Fixture.HistoryProbe(store: store)
                         Fixture.ProfileProbe(store: store)
                         Fixture.PullOnLeave(store: store)
+                        Fixture.OutboxProbe(store: store)
+                        Fixture.VersionChecksProbe()
+                        Fixture.WebDataProbe()
                     }
                 }
                 .environment(\.contrastIncreased, Fixture.contrastIncreased)
             #endif
             .task { await account.finishSignIn() }
+            .task { await Self.eraseOldWebData() }
             .onChange(of: scenePhase) { _, phase in
-                if phase == .active { account.refresh() }
+                if phase == .active {
+                    if wasActive { account.returned() } else { account.refresh() }
+                    wasActive = true
+                }
                 Self.apply(theme)
             }
             .onChange(of: theme, initial: true) { _, theme in Self.apply(theme) }
@@ -76,6 +86,23 @@ struct BelayApp: App {
 }
 
 extension BelayApp {
+    /// The old app's web data, erased at the first launch after the update. A debug build runs the
+    /// same erase, so the UI tests prove the one a release ships; only the fixture's plant holds it
+    /// for one launch, to leave that data on the phone first.
+    private static func eraseOldWebData() async {
+        #if DEBUG
+            if Fixture.holdsOldWebData { return await Fixture.plantOldWebData() }
+        #endif
+        await noteForTests(OldAppData.eraseOnce())
+    }
+
+    /// What the erase did, for the UI tests' probe in a debug build; nothing in a release.
+    private static func noteForTests(_ outcome: OldAppData.Outcome) async {
+        #if DEBUG
+            await Fixture.record(outcome)
+        #endif
+    }
+
     /// The theme on every window, so sheets and alerts take it with the screens; Système leaves
     /// the iPhone's own.
     @MainActor static func apply(_ theme: DevicePrefs.Theme) {

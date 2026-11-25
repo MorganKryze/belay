@@ -243,6 +243,38 @@ final class OutilsTests: XCTestCase {
         XCTAssertTrue(equipment.label.contains("Sur mesure"), equipment.label)
     }
 
+    /// A preset's chips only show what it loads, read as values with their state and no button to
+    /// press; once copied into Sur mesure, each chip says whether it is chosen and a tap turns it.
+    func testEquipmentChipsReadAsChoicesWithTheirState() {
+        let app = outils()
+        open(app, "plates")
+        let equipment = element(app, "tool-equipment")
+        XCTAssertTrue(app.swipeUpUntil(equipment))
+        equipment.tap()
+        let bar = element(app, "bar-20.0")
+        XCTAssertTrue(bar.waitForExistence(timeout: 5), "Mon matériel opens on Salle")
+        XCTAssertTrue(bar.isSelected, "Salle's bar says it is the one loaded")
+        XCTAssertFalse(app.buttons["bar-20.0"].exists, "a preset's bar is not a button")
+        let loaded = element(app, "plate-20.0")
+        let unused = element(app, "plate-25.0")
+        XCTAssertTrue(app.swipeUpUntil(unused))
+        XCTAssertTrue(loaded.isSelected, "a plate Salle loads says so")
+        XCTAssertFalse(unused.isSelected, "a plate Salle leaves out says so too")
+        XCTAssertFalse(app.buttons["plate-25.0"].exists, "a preset's plate is not a button")
+        XCTAssertFalse(app.buttons["bar-other"].exists, "nor is « Autre »")
+
+        let edit = app.buttons["Modifier ce matériel"]
+        XCTAssertTrue(app.swipeUpUntil(edit))
+        edit.tap()
+        let custom = app.buttons["plate-25.0"]
+        XCTAssertTrue(app.swipeUpUntil(custom), "Sur mesure's plate is a control")
+        XCTAssertFalse(custom.isSelected, "copied from Salle, the 25 is left out")
+        custom.tap()
+        XCTAssertTrue(custom.waitFor(NSPredicate(format: "isSelected == true")), "a tap puts it in, and it says so")
+        custom.tap()
+        XCTAssertTrue(custom.waitFor(NSPredicate(format: "isSelected == false")), "a second tap takes it out")
+    }
+
     /// Mon matériel's kilo chips say the unit as a word; in pounds, the chips only show what
     /// Belay loads, so none is a button.
     func testEquipmentChipsSpeakTheUnitAndPoundChipsAreNotButtons() {

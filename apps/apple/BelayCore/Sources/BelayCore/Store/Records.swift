@@ -14,14 +14,19 @@ public struct ActiveSession: Codable, Sendable, Equatable {
   /// Since when the session is paused; nil while it runs.
   public var pausedAt: String?
   public var chrono: Chrono?
+  /// The values chosen for the set in hand when it is a warm-up, that warm-up's own.
   public var draft: SetDraft?
+  /// The values chosen for a work set: the load typed on a slot's first work set drives its
+  /// warm-ups, and a load typed on a warm-up leaves it in place.
+  public var workDraft: SetDraft?
   /// The furthest set added past the plan and not logged yet. Every position past the plan up to
   /// it is due, so each tap on « add a set » adds one; the planned count never grows.
   public var added: SetPlace?
 
   public init(
     workoutId: String, slotIndex: Int, restEndsAt: String?, pausedAt: String? = nil,
-    chrono: Chrono? = nil, draft: SetDraft? = nil, added: SetPlace? = nil
+    chrono: Chrono? = nil, draft: SetDraft? = nil, added: SetPlace? = nil,
+    workDraft: SetDraft? = nil
   ) {
     self.workoutId = workoutId
     self.slotIndex = slotIndex
@@ -30,6 +35,7 @@ public struct ActiveSession: Codable, Sendable, Equatable {
     self.chrono = chrono
     self.draft = draft
     self.added = added
+    self.workDraft = workDraft
   }
 }
 

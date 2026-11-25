@@ -33,6 +33,7 @@ private struct Vectors: Decodable {
     let minTime: String
     let clockSlackMs: Int
     let maxChanges: Int
+    let apiVersion: Int
     let weighInKg: Range
     let measureCm: [String: Range]
     let intake: [String: Range]
@@ -186,6 +187,7 @@ struct ContractVectorTests {
     #expect(Bounds.slotRestSec == ts.slot.restSec)
     #expect(Bounds.groupKeyMax == ts.slot.groupKey)
     #expect(Bounds.maxChanges == ts.maxChanges)
+    #expect(Bounds.apiVersion == ts.apiVersion)
     // The exercise id rule is ported by hand: a new shape there must be ported too.
     #expect(ts.exerciseId == "^(ds|belay):[a-z0-9-]{1,\(Bounds.exerciseNameMax)}$")
     #expect(Bounds.minTime == ts.minTime)

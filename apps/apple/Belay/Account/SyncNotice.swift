@@ -3,7 +3,8 @@ import SwiftUI
 
 /// What the screen says while the queue waits, once and quietly: offline, one line; a refused
 /// session, one line and the way back in; a send that failed, one line and a retry, since some
-/// failures (a proxy down, a server this build cannot read) never clear on their own. Nothing while
+/// failures (a proxy down, a server this build cannot read) never clear on their own; an instance on
+/// another contract version, one line saying who must update, with nothing to tap. Nothing while
 /// idle; a run under way keeps the line before it. Logging works the same in every case.
 struct SyncNotice: View {
     let status: SyncStatus
@@ -27,6 +28,18 @@ struct SyncNotice: View {
                 Text("L’envoi n’a pas abouti. Tout est gardé sur ce téléphone.", tableName: "Account")
             } action: {
                 button("Réessayer", id: "sync-retry", action: retry)
+            }
+        case .instanceAhead:
+            row(symbol: "arrow.down.app") {
+                Text(
+                    "Ton instance est plus récente que cette version de Belay\u{202F}: mets l’app à jour. Tes saisies restent sur ce téléphone en attendant.",
+                    tableName: "Account")
+            }
+        case .instanceBehind:
+            row(symbol: "server.rack") {
+                Text(
+                    "Ton instance doit être mise à jour pour cette version de Belay. Tes saisies restent sur ce téléphone en attendant.",
+                    tableName: "Account")
             }
         case .idle, .syncing:
             EmptyView()

@@ -14,8 +14,6 @@ export default defineConfig(
       "apps/server/drizzle/**",
       "apps/web/src/components/ui/**",
       "apps/web/public/**",
-      // The Xcode project holds a copy of the built web app and Swift package checkouts.
-      "apps/mobile/ios/**",
       // The Gradle project holds a copy of the built web app and Gradle output.
       "apps/mobile/android/**",
     ],

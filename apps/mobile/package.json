@@ -3,10 +3,6 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "sync": "cap sync ios",
-    "open": "cap open ios",
-    "build:sim": "xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath ios/DerivedData CODE_SIGNING_ALLOWED=NO build -quiet",
-    "check:swift": "mkdir -p ios/DerivedData && xcrun swiftc -parse-as-library ios/App/App/HealthRequest.swift checks/HealthRequestCheck.swift -o ios/DerivedData/health-check && ios/DerivedData/health-check",
     "sync:android": "cap sync android",
     "open:android": "cap open android",
     "android": "sh scripts/android.sh"
@@ -16,7 +12,6 @@
     "@capacitor/cli": "8.6.0",
     "@capacitor/core": "8.6.0",
     "@capacitor/haptics": "8.0.2",
-    "@capacitor/ios": "8.6.0",
     "@capacitor/local-notifications": "8.3.1"
   }
 }

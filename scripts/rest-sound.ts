@@ -52,10 +52,9 @@ samples.forEach((sample, i) => {
   wav.writeInt16LE(Math.round(Math.max(-1, Math.min(1, sample)) * 32767), 44 + i * 2);
 });
 
-// The same bytes for each: the iPhone's bundles, the web shell's and the native app's, and
-// Android's raw resources, where the rest channel's sound is read by name.
+// The same bytes for each: the native app's bundle and Android's raw resources, where the rest
+// channel's sound is read by name.
 for (const path of [
-  "../apps/mobile/ios/App/App/rest.wav",
   "../apps/apple/Belay/Session/rest.wav",
   "../apps/mobile/android/app/src/main/res/raw/rest.wav",
 ]) {

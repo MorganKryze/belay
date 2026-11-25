@@ -180,28 +180,40 @@ import Testing
       fieldsAt: "2026-11-01T00:00:00.000Z", removed: removed, removedAt: nil)
   }
 
-  /// Years of sessions group at once: 1 000 sessions, 3 sets each, under 50 ms.
-  @Test func thousandSessionsUnderFiftyMilliseconds() {
+  /// Years of sessions group in time that grows with their number: ten times the sessions take
+  /// under twenty times as long (about ten when linear, a hundred when each session meets every
+  /// other). Measured as a ratio of this thread's processor time, the best of five runs each, so a
+  /// loaded machine slows both sides alike and the other suites running beside it count for nothing.
+  @Test func thousandSessionsGroupInLinearTime() {
+    let hundred = sessions(100)
+    let thousand = sessions(1_000)
+    var weeks: [HistoryWeek] = []
+    func best(_ history: History) -> Duration {
+      (0..<5).map { _ in
+        threadTime {
+          weeks = historyWeeks(history, efforts: [], now: Days.at("2026-11-12T10:00"), timeZone: Days.paris)
+        }
+      }.min()!
+    }
+    let small = best(hundred)
+    #expect(weeks.reduce(0) { $0 + $1.count } == 100)
+    let large = best(thousand)
+    #expect(weeks.reduce(0) { $0 + $1.count } == 1_000)
+    let ratio = large / small
+    #expect(ratio < 20, "1 000 sessions took \(large), 100 took \(small)")
+  }
+
+  /// `count` sessions two days apart from January 2020, 3 sets each, in no order.
+  private func sessions(_ count: Int) -> History {
     let start = Days.at("2020-01-06T10:00")
     var workouts: [WorkoutRow] = []
     var sets: [SetRow] = []
-    for i in 0..<1_000 {
+    for i in 0..<count {
       let id = "w\(i)"
       workouts.append(Days.workout(id, "A", Days.a, start: start.addingTimeInterval(Double(i) * 172_800)))
       for k in 0..<3 { sets.append(Days.set("\(id)-\(k)", id, position: Bounds.maxWarmups + k)) }
     }
-    let history = History(workouts: workouts.shuffled(), sets: sets.shuffled())
-    var weeks: [HistoryWeek] = []
-    // This thread's processor time, the best of five runs: the other suites run beside this one,
-    // and the wall clock would measure them, not the grouping.
-    let took = (0..<5).map { _ in
-      threadTime {
-        weeks = historyWeeks(
-          history, efforts: [], now: Days.at("2026-11-12T10:00"), timeZone: Days.paris)
-      }
-    }.min()!
-    #expect(weeks.reduce(0) { $0 + $1.count } == 1_000)
-    #expect(took < .milliseconds(50), "took \(took)")
+    return History(workouts: workouts.shuffled(), sets: sets.shuffled())
   }
 
   private func threadTime(_ body: () -> Void) -> Duration {

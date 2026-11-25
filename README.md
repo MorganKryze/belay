@@ -134,42 +134,52 @@ shows none.
 
 ### The phone apps
 
-Anyone can build an iPhone app or an Android app that talks to any Belay
-instance: the steps are in [`apps/mobile/README.md`](apps/mobile/README.md). There
-is nothing to set on the instance, but it needs this release of Belay or a later one.
+Anyone can build the iPhone app or the Android app and point it at any Belay
+instance. There is nothing to set on the instance, but it needs this release of
+Belay or a later one.
 
-- The iPhone app's requests come from the origin `capacitor://localhost`, the
-  Android app's from `https://localhost`. The server accepts both for `/api`,
-  `/media`, `/auth/native` and `/auth/logout` only, and never with cookies: the
-  app sends its own token instead. Any other form of `localhost` (`http`, another
-  port, a longer host name) gets nothing.
-- The identity provider's client and its redirect URI do not change. The app
-  signs in through the server, which stays the provider's only client.
+- The iPhone app is native, written in SwiftUI, and built from `apps/apple`: the
+  steps are in [`apps/apple/README.md`](apps/apple/README.md). The Android app
+  wraps the same web app the browser runs and is built from `apps/mobile`: the
+  steps are in [`apps/mobile/README.md`](apps/mobile/README.md).
+- The server accepts two kinds of requests from the apps. The Android app's web
+  view runs from the origin `https://localhost`, which the server accepts for
+  `/api`, `/media`, `/auth/native` and `/auth/logout` only, and never with
+  cookies. The native iPhone app sends no Origin at all, as any app outside a
+  browser. Both send their own token instead of a cookie. Any other form of
+  `localhost` (`http`, another port, a longer host name) gets nothing.
+- The identity provider's client and its redirect URI do not change. The apps
+  sign in through the server, which stays the provider's only client.
 
 While a session is open, the iPhone's lock screen (and the Dynamic Island)
 shows its exercise, its set and its timers, never a load or a body figure.
 Nothing leaves the phone for it: the app draws it from what it already holds.
 iOS's own switch turns it off, in **Settings › Belay › Live Activities**.
 
-With **Settings › Apple Health** on, the app adds each finished session and
-each weigh-in to the iPhone's Health app; it is off until you turn it on, and
-the browser never has it. You can also import the weigh-ins Health receives
-from a connected scale or another app: after a sheet that names your
-instance, they sync to it like weigh-ins you typed. The import takes weigh-ins
-dated from the day you turn it on, and **Import history from Health** brings the
-older ones once, under the same rules. The details are in
-[`apps/mobile/README.md`](apps/mobile/README.md#apple-health).
+With **Settings › Apple Health** on, the iPhone app adds to the iPhone's Health
+app each session you finish and each weigh-in, from the moment you turn it on;
+it is off until you do, and the browser never has it. Two imports sit under the
+switch:
+
+- **Import weigh-ins from Health** brings the whole weigh-in history Health
+  holds the first time, from a connected scale or another app, then each new
+  one. They sync to your instance like weigh-ins you typed, and a weigh-in
+  already in Belay is never replaced.
+- **Import steps from Health** brings the step totals of today and the 6 days
+  before. A day further back keeps the total it had when it left that window.
+
+The details are in [`apps/apple/README.md`](apps/apple/README.md#apple-health).
 
 The Android app is the same on its own phone: while a session is open, an
 ongoing notification (a Live Update on Android 16) shows the exercise, the set
 and the timers, drawn from what the app already holds, and the end of a rest
 rings on time with the app closed. With **Settings › Health Connect** on, it
-adds each finished session and each weigh-in to Health Connect and can import
-weigh-ins like the iPhone app, under the same rules. Its history action asks for
-Health Connect's history permission where the phone offers it; otherwise Health
-Connect gives nothing older than 30 days before you first allowed Belay. Android
-v1 is tested on the emulator only; the details are in
-[`apps/mobile/README.md`](apps/mobile/README.md#belay-for-android).
+adds each finished session and each weigh-in to Health Connect. It can import
+the weigh-ins dated from the day you turn the import on, and its history action
+brings the older ones once. That action asks for Health Connect's history
+permission where the phone offers it; otherwise Health Connect gives nothing
+older than 30 days before you first allowed Belay. Android v1 is tested on the
+emulator only; the details are in [`apps/mobile/README.md`](apps/mobile/README.md).
 
 ## Threat model
 

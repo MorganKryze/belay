@@ -344,6 +344,16 @@
         }
       }
     },
+    "Pesée enregistrée, %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weigh-in saved, %@"
+          }
+        }
+      }
+    },
     "Poids en kilos": {
       "localizations": {
         "en": {

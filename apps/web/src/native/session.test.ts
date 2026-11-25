@@ -82,7 +82,7 @@ beforeEach(() => {
   haptics.notification.mockResolvedValue();
   vi.stubGlobal("Capacitor", { isNativePlatform: () => true });
   vi.stubGlobal("fetch", fetchMock);
-  vi.stubGlobal("location", { href: "capacitor://localhost/", replace, assign });
+  vi.stubGlobal("location", { href: "https://localhost/", replace, assign });
   const add = document.addEventListener.bind(document);
   vi.spyOn(document, "addEventListener").mockImplementation((...args) => {
     listeners.push(args);

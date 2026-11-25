@@ -491,6 +491,16 @@
         }
       }
     },
+    "Repos terminé": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rest over"
+          }
+        }
+      }
+    },
     "Reprendre": {
       "localizations": {
         "en": {

@@ -24,6 +24,56 @@ extension XCUIApplication {
         return app
     }
 
+    /// The app on `fixture`, in French, with the device in `appearance` and the text at the
+    /// system's default size or, `largest`, at AX5, the largest of the accessibility sizes.
+    static func fixture(
+        _ fixture: String, appearance: XCUIDevice.Appearance, largest: Bool
+    ) -> XCUIApplication {
+        XCUIDevice.shared.appearance = appearance
+        let app = XCUIApplication()
+        app.launchArguments = ["-AppleLanguages", "(fr)", "-AppleLocale", "fr_FR", "-BelayFixture", fixture]
+        if largest {
+            app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
+        }
+        app.launchFixture()
+        return app
+    }
+
+    /// Accueil's « Voir la séance », then the preview of session `title`.
+    func openPreview(_ title: String = "Séance A", file: StaticString = #filePath, line: UInt = #line) {
+        let open = buttons["Voir la séance"]
+        XCTAssertTrue(open.waitForExistence(timeout: 10), "Accueil offers the session", file: file, line: line)
+        open.tap()
+        XCTAssertTrue(navigationBars[title].waitForExistence(timeout: 5), "the preview opens", file: file, line: line)
+    }
+
+    /// Réglages, from Accueil's avatar.
+    func openReglages(file: StaticString = #filePath, line: UInt = #line) {
+        let settings = buttons["settings"]
+        XCTAssertTrue(settings.waitForExistence(timeout: 10), "Accueil leads to Réglages", file: file, line: line)
+        settings.tap()
+        XCTAssertTrue(navigationBars["Réglages"].waitForExistence(timeout: 5), "Réglages opens", file: file, line: line)
+    }
+
+    /// Séances' Historique.
+    func openHistory(file: StaticString = #filePath, line: UInt = #line) {
+        tab("Séances")
+        let segment = segmentedControls.firstMatch.buttons["Historique"]
+        XCTAssertTrue(segment.waitForExistence(timeout: 5), "Séances shows Historique", file: file, line: line)
+        segment.tap()
+    }
+
+    /// Outils' tool `id`, once its header shows.
+    func openTool(_ id: String, file: StaticString = #filePath, line: UInt = #line) {
+        tab("Outils")
+        let row = descendants(matching: .any)["tool-row-\(id)"].firstMatch
+        XCTAssertTrue(swipeUpUntil(row), "the row \(id) is reached", file: file, line: line)
+        row.tap()
+        XCTAssertTrue(
+            descendants(matching: .any)["tool-header"].firstMatch.waitForExistence(timeout: 5), "the tool opens",
+            file: file, line: line)
+    }
+
     /// The height of the large title `title` as drawn, 0 when it is not: above 30 pt it is large.
     func largeTitleHeight(_ title: String) -> CGFloat {
         navigationBars[title].staticTexts.matching(NSPredicate(format: "label == %@", title))

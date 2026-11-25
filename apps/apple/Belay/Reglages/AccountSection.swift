@@ -31,6 +31,7 @@ struct AccountSection: View {
             Button(role: .destructive, action: ask) {
                 Text("Se déconnecter", tableName: "Account").frame(maxWidth: .infinity, minHeight: 44)
             }
+            .foregroundStyle(.danger)
             .accessibilityIdentifier("signout")
         } header: {
             Text("Compte", tableName: "Account").textCase(nil).foregroundStyle(.ink)

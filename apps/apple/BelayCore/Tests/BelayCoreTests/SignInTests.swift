@@ -32,7 +32,14 @@ private final class FakeServer: HTTPClient, @unchecked Sendable {
   }
 }
 
-private let belay = #"{"app":"belay","api":1,"origin":"https://belay.example.org"}"#
+/// An instance's answer, at this build's contract version unless told another.
+private func answer(api: String = "\(Bounds.apiVersion)", origin: String = "https://belay.example.org")
+  -> String
+{
+  #"{"app":"belay","api":\#(api),"origin":"\#(origin)"}"#
+}
+
+private let belay = answer()
 /// Address check, PKCE, the sheet's callback, the code exchange and the session calls.
 @Suite enum SignInTests {}
 
@@ -63,7 +70,7 @@ extension SignInTests {
     }
 
     @Test func refusesPlainHTTPToThisMachineOutsideADebugBuild() async {
-      let server = FakeServer(status: 200, json: #"{"app":"belay","api":1,"origin":"http://localhost:3000"}"#)
+      let server = FakeServer(status: 200, json: answer(origin: "http://localhost:3000"))
       let refused = await Instance.check("http://localhost:3000", using: server, allowsLoopback: false)
       #expect(refused == .failure(.insecure))
       let accepted = await Instance.check("http://localhost:3000", using: server, allowsLoopback: true)
@@ -77,17 +84,81 @@ extension SignInTests {
     }
 
     @Test(arguments: [
-      (200, #"{"app":"other","api":1,"origin":"https://belay.example.org"}"#),
-      (200, #"{"app":"belay","api":0,"origin":"https://belay.example.org"}"#),
-      (200, #"{"app":"belay","api":1}"#),
-      (200, #"{"app":"belay","api":1,"origin":"http://belay.example.org"}"#),
-      (200, #"{"app":"belay","api":1,"origin":"https://belay.example.org/app"}"#),
+      (200, #"{"app":"other","api":\#(Bounds.apiVersion),"origin":"https://belay.example.org"}"#),
+      (200, #"{"app":"belay","api":\#(Bounds.apiVersion)}"#),
+      (200, answer(origin: "http://belay.example.org")),
+      (200, answer(origin: "https://belay.example.org/app")),
       (200, "<html></html>"),
       (404, belay),
     ])
     func refusesAnAnswerThatIsNotBelay(_ status: Int, _ body: String) async {
       let server = FakeServer(status: status, json: body)
       #expect(await Instance.check("belay.example.org", using: server) == .failure(.notBelay))
+    }
+
+    @Test(arguments: [
+      (Bounds.apiVersion - 1, InstanceError.instanceBehind),
+      (Bounds.apiVersion + 1, .instanceAhead),
+    ])
+    func refusesAnInstanceOfAnotherVersion(_ api: Int, _ error: InstanceError) async {
+      let server = FakeServer(status: 200, json: answer(api: "\(api)"))
+      #expect(await Instance.check("belay.example.org", using: server) == .failure(error))
+    }
+
+    @Test func placesAVersionAgainstThisBuilds() {
+      let ours = Double(Bounds.apiVersion)
+      #expect(VersionAnswer(api: ours) == .same)
+      #expect(VersionAnswer(api: ours + 1) == .instanceAhead)
+      #expect(VersionAnswer(api: ours, against: Bounds.apiVersion + 1) == .instanceBehind)
+      #expect(VersionAnswer(api: 0) == .instanceBehind)
+      #expect(VersionAnswer(api: -1) == .instanceBehind)
+    }
+
+    @Test func anInstanceAnsweringZeroIsRefusedAsBehind() async {
+      let server = FakeServer(status: 200, json: answer(api: "0"))
+      #expect(await Instance.check("belay.example.org", using: server) == .failure(.instanceBehind))
+    }
+
+    @Test(arguments: [(1, InstanceError.instanceBehind), (3, .instanceAhead)])
+    func refusesBothOtherVersionsAgainstALaterBuild(_ api: Int, _ error: InstanceError) async {
+      let server = FakeServer(status: 200, json: answer(api: "\(api)"))
+      let result = await Instance.check("belay.example.org", using: server, ours: 2)
+      #expect(result == .failure(error))
+    }
+
+    @Test func takesAnInstanceOfThisVersion() async {
+      let server = FakeServer(status: 200, json: answer())
+      #expect(await Instance.check("belay.example.org", using: server) == .success(instance))
+      #expect(await Instance.version(at: instance, using: server) == .same)
+    }
+
+    @Test(arguments: ["\(Bounds.apiVersion).5", "\(Double(Bounds.apiVersion) + 0.001)", "\"1\""])
+    func aVersionThatIsNotAnIntegerIsNotBelay(_ api: String) async {
+      let server = FakeServer(status: 200, json: answer(api: api))
+      #expect(await Instance.check("belay.example.org", using: server) == .failure(.notBelay))
+      #expect(await Instance.version(at: instance, using: server) == nil)
+    }
+
+    @Test func readsTheVersionWithoutASessionAndOnlyFromABelayAnswer() async throws {
+      let ahead = FakeServer(status: 200, json: answer(api: "\(Bounds.apiVersion + 1)"))
+      #expect(await Instance.version(at: instance, using: ahead) == .instanceAhead)
+      let request = try #require(ahead.requests.first)
+      #expect(request.url?.absoluteString == "https://belay.example.org/api/instance")
+      #expect(request.httpMethod == "GET")
+      #expect(request.value(forHTTPHeaderField: "Authorization") == nil)
+      #expect(await Instance.version(at: instance, using: FakeServer(status: 500, json: "")) == nil)
+      let down = FakeServer(throwing: URLError(.timedOut))
+      #expect(await Instance.version(at: instance, using: down) == nil)
+    }
+
+    @Test func theSyncsProbeAsksTheInstanceOnceWithoutASession() async throws {
+      let ahead = FakeServer(status: 200, json: answer(api: "\(Bounds.apiVersion + 1)"))
+      #expect(await HTTPVersionProbe(instance: instance, client: ahead).version() == .instanceAhead)
+      #expect(ahead.requests.count == 1)
+      let request = try #require(ahead.requests.first)
+      #expect(request.url?.absoluteString == "https://belay.example.org/api/instance")
+      #expect(request.httpMethod == "GET")
+      #expect(request.value(forHTTPHeaderField: "Authorization") == nil)
     }
 
     @Test func saysATimeoutIsUnreachable() async {

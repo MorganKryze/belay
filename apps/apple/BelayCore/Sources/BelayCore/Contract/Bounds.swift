@@ -33,6 +33,8 @@ public enum Bounds {
   public static let minTime = "1900-01-01T00:00:00.000Z"
   /// The most changes one sync request carries; the rest go in the next round.
   public static let maxChanges = 500
+  /// The sync contract this build speaks; an instance on another one is not sent to.
+  public static let apiVersion = 1
   /// How far ahead of its own clock the server takes a session's time, in milliseconds.
   public static let clockSlackMs = 5 * 60_000
 

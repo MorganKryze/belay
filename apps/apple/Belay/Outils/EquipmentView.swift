@@ -60,13 +60,15 @@ struct EquipmentView: View {
                 ForEach(standardBarsKg, id: \.self) { kg in
                     chip(
                         Text(verbatim: Self.weight(kg, .kg)), spoken: Self.spoken(kg), selected: !other && plates.barKg == kg,
-                        id: "bar-\(kg)"
+                        id: "bar-\(kg)", readOnly: !custom
                     ) {
                         otherBar = false
                         setBar(kg)
                     }
                 }
-                chip(Text("Autre", tableName: "Outils"), spoken: nil, selected: other, id: "bar-other") { otherBar = true }
+                chip(Text("Autre", tableName: "Outils"), spoken: nil, selected: other, id: "bar-other", readOnly: !custom) {
+                    otherBar = true
+                }
             }
             .padding(.vertical, 6)
             if custom, other {
@@ -95,7 +97,7 @@ struct EquipmentView: View {
                     // Bare numbers, as the section is in kilos; VoiceOver still hears the unit.
                     chip(
                         Text(verbatim: kg.upToHundredths), spoken: Self.spoken(kg),
-                        selected: plates.platesKg.contains(kg), id: "plate-\(kg)"
+                        selected: plates.platesKg.contains(kg), id: "plate-\(kg)", readOnly: !custom
                     ) { toggle(kg) }
                 }
             }
@@ -178,9 +180,10 @@ struct EquipmentView: View {
                 tableName: "Outils")
     }
 
-    /// A chip for one weight, or « Autre »: filled while chosen. A preset's chips read only, at full
-    /// contrast: `readOnly` ones only show what Belay loads, a plain element without a button trait,
-    /// and a tap does nothing. `spoken` replaces the words for VoiceOver.
+    /// A chip for one weight, or « Autre »: filled while chosen. A preset's chips and the pound set's
+    /// read only, at full contrast: `readOnly` ones only show what Belay loads, a plain element
+    /// that says whether it is loaded, without a button trait. Sur mesure's are buttons that say
+    /// whether they are chosen. `spoken` replaces the words for VoiceOver.
     @ViewBuilder private func chip(
         _ words: Text, spoken: Text?, selected: Bool, id: String, readOnly: Bool = false,
         action: @escaping () -> Void
@@ -192,9 +195,7 @@ struct EquipmentView: View {
                 .accessibilityAddTraits(selected ? .isSelected : [])
                 .accessibilityIdentifier(id)
         } else {
-            Button {
-                if custom { action() }
-            } label: {
+            Button(action: action) {
                 chipFace(words, selected: selected)
             }
             .buttonStyle(.plain)

@@ -54,6 +54,43 @@ public enum InstanceError: Error, Sendable, Equatable {
   case unreachable
   /// Something answered, but not as a Belay instance.
   case notBelay
+  /// A Belay instance on a later contract version than this build's: the app needs an update.
+  case instanceAhead
+  /// A Belay instance on an earlier contract version: the instance needs an update.
+  case instanceBehind
+}
+
+/// How an instance's contract version stands against this build's.
+public enum VersionAnswer: Sendable, Equatable {
+  case same, instanceAhead, instanceBehind
+
+  /// Nil for a version that is not a whole number: no Belay instance answers that. Any other
+  /// whole number is a Belay instance, an earlier one below this build's, 0 included.
+  public init?(api: Double) {
+    self.init(api: api, against: Bounds.apiVersion)
+  }
+
+  /// Against `ours` rather than this build's version, so a test can stand an earlier instance
+  /// while this build is on the first version.
+  init?(api: Double, against ours: Int) {
+    guard let version = Int(exactly: api) else { return nil }
+    self = version == ours ? .same : version > ours ? .instanceAhead : .instanceBehind
+  }
+}
+
+/// The instance's version, asked on the client without the account's token.
+public struct HTTPVersionProbe: VersionProbe {
+  private let instance: Instance
+  private let client: HTTPClient
+
+  public init(instance: Instance, client: HTTPClient) {
+    self.instance = instance
+    self.client = client
+  }
+
+  public func version() async -> VersionAnswer? {
+    await Instance.version(at: instance, using: client)
+  }
 }
 
 /// A Belay instance: the origin it says it is served at, scheme, host and port only.
@@ -92,12 +129,46 @@ public struct Instance: Sendable, Equatable {
     _ address: String, using client: HTTPClient,
     allowsLoopback: Bool = Instance.allowsLoopbackByDefault
   ) async -> Result<Instance, InstanceError> {
+    await check(address, using: client, allowsLoopback: allowsLoopback, ours: Bounds.apiVersion)
+  }
+
+  /// Against `ours` rather than this build's version, so a test can stand an earlier instance.
+  static func check(
+    _ address: String, using client: HTTPClient, allowsLoopback: Bool = Instance.allowsLoopbackByDefault,
+    ours: Int
+  ) async -> Result<Instance, InstanceError> {
     let typed: URL
     switch origin(of: address, allowsLoopback: allowsLoopback) {
     case .success(let origin): typed = origin
     case .failure(let error): return .failure(error)
     }
-    var request = URLRequest(url: typed.appending(path: "api/instance"))
+    let answer: (origin: String, version: VersionAnswer)
+    switch await ask(typed, using: client, ours: ours) {
+    case .success(let answered): answer = answered
+    case .failure(let error): return .failure(error)
+    }
+    guard let served = Instance(storedOrigin: answer.origin, allowsLoopback: allowsLoopback)
+    else { return .failure(.notBelay) }
+    switch answer.version {
+    case .same: return .success(served)
+    case .instanceAhead: return .failure(.instanceAhead)
+    case .instanceBehind: return .failure(.instanceBehind)
+    }
+  }
+
+  /// How the contract version of `instance` stands against this build's; nil when the instance was
+  /// not reached or did not answer as Belay. Asked without a session: the answer is public.
+  public static func version(at instance: Instance, using client: HTTPClient) async
+    -> VersionAnswer?
+  {
+    try? await ask(instance.origin, using: client, ours: Bounds.apiVersion).get().version
+  }
+
+  /// `GET api/instance` at `origin`: the origin and version a Belay instance says it has.
+  private static func ask(_ origin: URL, using client: HTTPClient, ours: Int) async
+    -> Result<(origin: String, version: VersionAnswer), InstanceError>
+  {
+    var request = URLRequest(url: origin.appending(path: "api/instance"))
     request.timeoutInterval = checkTimeout
     let data: Data
     let response: HTTPURLResponse
@@ -115,10 +186,9 @@ public struct Instance: Sendable, Equatable {
     }
     guard response.statusCode == 200,
       let answer = try? JSONDecoder().decode(Answer.self, from: data),
-      answer.app == "belay", answer.api >= 1,
-      let served = Instance(storedOrigin: answer.origin, allowsLoopback: allowsLoopback)
+      answer.app == "belay", let version = VersionAnswer(api: answer.api, against: ours)
     else { return .failure(.notBelay) }
-    return .success(served)
+    return .success((answer.origin, version))
   }
 
   /// The errors that mean this phone is offline, rather than the server out of reach.

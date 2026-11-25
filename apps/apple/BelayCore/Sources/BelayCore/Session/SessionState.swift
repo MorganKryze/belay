@@ -207,7 +207,8 @@ public func dueSet(
     -> DueSet
   {
     let slot = plan[place.slotIndex]
-    let chosen = draft?.place == place ? draft : nil
+    let chosen =
+      draft?.place == place ? draft : active.workDraft?.place == place ? active.workDraft : nil
     let weight = chosen?.weightKg ?? values.0
     let count = chosen?.count ?? values.1
     return DueSet(
@@ -235,9 +236,13 @@ public func dueSet(
   guard let turn = sessionProgress(plan, sets: sets).next else { return nil }
   let slot = plan[turn.slotIndex]
   let workPlace = SetPlace(slotIndex: turn.slotIndex, position: Bounds.maxWarmups + turn.round)
-  var work = workValues(
+  let planned = workValues(
     history, plan: plan, sets: sets, slotIndex: turn.slotIndex, round: turn.round)
-  if draft?.place == workPlace, let kg = draft?.weightKg { work.0 = kg }
+  // As the web: the warm-ups follow a load typed on the work set, never one typed on a warm-up.
+  // A store written before the work draft kept the work load in the set draft.
+  let typedDraft = [active.workDraft, active.draft].compactMap { $0 }.first { $0.place == workPlace }
+  let typed = typedDraft?.weightKg
+  let work = (typed ?? planned.0, planned.1)
 
   let started = sets.contains { $0.slotIndex == turn.slotIndex && !$0.warmup }
   if !started, slot.measure != .seconds, let exercise = library.exercise(slot.exerciseId) {
@@ -250,7 +255,7 @@ public func dueSet(
         values: (load.weightKg, load.reps ?? 0))
     }
   }
-  return make(workPlace, warmup: false, number: turn.round + 1, of: slot.sets, values: work)
+  return make(workPlace, warmup: false, number: turn.round + 1, of: slot.sets, values: planned)
 }
 
 /// A work set's load and count: the load of the slot's previous set in this session (a load

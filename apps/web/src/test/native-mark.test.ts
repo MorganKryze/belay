@@ -92,12 +92,6 @@ describe("the native mark", () => {
     );
   });
 
-  it("is stroked in the muted colour on the stand-in screen, hidden from VoiceOver", () => {
-    const view = read(join(app, "WebForNow.swift"));
-    expect(view).toMatch(/BelayMark\(\)\s*\.stroke\(Color\.muted/);
-    expect(view).toContain(".accessibilityHidden(true)");
-  });
-
   it("leaves no drawing of the old hooks anywhere in the native apps", () => {
     // Every target counts, shared code and extensions too; only build output is skipped.
     const found = walk(apple, /^(\.build|build|DerivedData)$/)

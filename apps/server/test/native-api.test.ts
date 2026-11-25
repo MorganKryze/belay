@@ -1,6 +1,7 @@
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
+import { API_VERSION } from "@belay/shared/sync/limits";
 import { sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { createApp } from "../src/app";
@@ -30,7 +31,8 @@ const cfg = loadConfig(
 );
 const app = createApp({ cfg, db, getOidc: oidcProvider(cfg.oidc) });
 
-const APP_ORIGIN = "capacitor://localhost";
+const APP_ORIGIN = "https://localhost";
+const RETIRED_ORIGIN = "capacitor://localhost";
 const OTHER_ORIGIN = "https://evil.example";
 
 let n = 0;
@@ -52,13 +54,18 @@ const expiresAt = async (token: string) => {
 const me = (headers: Record<string, string>) => app.request("/api/me", { headers });
 
 describe("GET /api/instance", () => {
-  const probe = { app: "belay", api: 1, origin: "http://localhost:3000" };
+  const probe = { app: "belay", api: API_VERSION, origin: "http://localhost:3000" };
 
-  it("the probe answers a stranger with the app's name, api 1 and PUBLIC_URL's origin, no-store", async () => {
+  it("the probe answers a stranger with the app's name, the contract version and PUBLIC_URL's origin, no-store", async () => {
     const res = await app.request("/api/instance");
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual(probe);
     expect(res.headers.get("cache-control")).toBe("no-store");
+  });
+
+  it("the instance serves the contract version from the shared constant", async () => {
+    const res = await app.request("/api/instance");
+    expect(((await res.json()) as { api: unknown }).api).toBe(API_VERSION);
   });
 
   it("the probe says the same with a session", async () => {
@@ -118,10 +125,36 @@ describe("CORS for the app", () => {
     expect(res.headers.get("access-control-allow-credentials")).toBeNull();
   });
 
-  it("the Android app's origin gets the same answer, and a near miss gets none", async () => {
+  it("the retired iPhone web view's origin gets no CORS answer", async () => {
     const { bearer } = await signIn();
-    const android = await me({ origin: "https://localhost", authorization: bearer });
-    expect(android.headers.get("access-control-allow-origin")).toBe("https://localhost");
+    const request = await me({ origin: RETIRED_ORIGIN, authorization: bearer });
+    const preflight = await app.request("/api/sync", {
+      method: "OPTIONS",
+      headers: {
+        origin: RETIRED_ORIGIN,
+        "access-control-request-method": "POST",
+        "access-control-request-headers": "authorization,content-type",
+      },
+    });
+    for (const res of [request, preflight]) {
+      expect(res.headers.get("access-control-allow-origin")).toBeNull();
+      expect(res.headers.get("access-control-allow-credentials")).toBeNull();
+    }
+  });
+
+  it("the Android origin and a request with no Origin behave as before", async () => {
+    const { user, bearer } = await signIn();
+    const android = await me({ origin: APP_ORIGIN, authorization: bearer });
+    expect(android.status).toBe(200);
+    expect(android.headers.get("access-control-allow-origin")).toBe(APP_ORIGIN);
+    const bare = await me({ authorization: bearer });
+    expect(bare.status).toBe(200);
+    expect(((await bare.json()) as { id: string }).id).toBe(user);
+    expect(bare.headers.get("access-control-allow-origin")).toBeNull();
+  });
+
+  it("a near miss of the Android origin gets no CORS header", async () => {
+    const { bearer } = await signIn();
     for (const origin of [
       "http://localhost",
       "https://localhost:8443",

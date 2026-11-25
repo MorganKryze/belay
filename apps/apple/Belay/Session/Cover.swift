@@ -86,6 +86,8 @@ struct Cover: View {
     @State private var noted: Int?
     @State private var programme = false
     @State private var failed = false
+    /// When the running rest ends, kept so its end can tell a rest that ran out from one cut short.
+    @State private var restEnd: Date?
     @State private var logged = 0
     @State private var answered = 0
 
@@ -161,7 +163,16 @@ struct Cover: View {
             if let said { AccessibilityNotification.Announcement(said).post() }
         }
         .onChange(of: restStarted) { _, started in
-            if started { AccessibilityNotification.Announcement(String(localized: "Repos commencé", table: "Session")).post() }
+            if started {
+                restEnd = training.restEndsAt
+                AccessibilityNotification.Announcement(String(localized: "Repos commencé", table: "Session")).post()
+            } else {
+                // Said only when the time ran out: a skipped or paused rest ends early and stays quiet.
+                if let end = restEnd, Date.now >= end.addingTimeInterval(-1) {
+                    AccessibilityNotification.Announcement(String(localized: "Repos terminé", table: "Session")).post()
+                }
+                restEnd = nil
+            }
         }
         .alert(Text("Ce n’est pas noté. Réessaie.", tableName: "Session"), isPresented: $failed) {
             Button(role: .cancel) {} label: { Text("OK", tableName: "Session") }
@@ -291,7 +302,16 @@ struct Cover: View {
         }
         .padding(.horizontal, 12)
         .padding(.bottom, 4)
-        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+        // The foot's controls stop growing at the largest standard size, as Apple's floating bars
+        // do; the reserve's sentences, read while resting, keep growing.
+        .dynamicTypeSize(reserveShown ? ...DynamicTypeSize.accessibility5 : ...DynamicTypeSize.xxxLarge)
+    }
+
+    private var reserveShown: Bool {
+        switch state.phase {
+        case .resting, .recap: true
+        default: false
+        }
     }
 
     /// The count under the ruler: the one moved for this set, else the set's own (its draft or prefill).
@@ -332,6 +352,7 @@ struct Cover: View {
         }
         .glassEffect(.regular, in: .rect(cornerRadius: 34))
         .glassEffectID("ruler", in: glass)
+        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
     }
 
     private func check(_ label: Text, action: @escaping () -> Void) -> some View {
@@ -347,6 +368,7 @@ struct Cover: View {
         .glassEffectID("check", in: glass)
         .accessibilityLabel(label)
         .accessibilityIdentifier("log-set")
+        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
     }
 
     private func bigAction(_ symbol: String, id: String, label: Text, action: @escaping () -> Void) -> some View {
@@ -364,6 +386,7 @@ struct Cover: View {
             .glassEffectID(id, in: glass)
             .accessibilityLabel(label)
             .accessibilityIdentifier("foot-\(id)")
+            .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
             Spacer()
         }
     }
@@ -404,7 +427,7 @@ struct Cover: View {
                 }
             }
             .padding(14)
-            .background(Color.surface.opacity(0.94), in: .rect(cornerRadius: 34))
+            .background(Color.surface, in: .rect(cornerRadius: 34))
         }
     }
 
@@ -424,6 +447,7 @@ struct Cover: View {
                 ? Text("\(value) ou plus en réserve", tableName: "Session")
                 : Text("\(value) en réserve", tableName: "Session"))
         .accessibilityIdentifier("rir-\(value)")
+        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
     }
 
     /// « 2 », or « 4+ » at the top of the scale.

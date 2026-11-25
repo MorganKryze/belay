@@ -341,6 +341,26 @@
           }
         }
       }
+    },
+    "Ton instance est plus récente que cette version de Belay : mets l’app à jour. Tes saisies restent sur ce téléphone en attendant.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your instance is newer than this version of Belay: update the app. Your entries stay on this phone meanwhile."
+          }
+        }
+      }
+    },
+    "Ton instance doit être mise à jour pour cette version de Belay. Tes saisies restent sur ce téléphone en attendant.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your instance needs an update for this version of Belay. Your entries stay on this phone meanwhile."
+          }
+        }
+      }
     }
   }
 }

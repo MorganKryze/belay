@@ -42,26 +42,6 @@
         }
       }
     },
-    "Cet écran est sur le web pour l’instant.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "This screen is on the web for now."
-          }
-        }
-      }
-    },
-    "Ouvrir sur le web": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Open on the web"
-          }
-        }
-      }
-    },
     "dans ta fourchette": {
       "localizations": {
         "en": {

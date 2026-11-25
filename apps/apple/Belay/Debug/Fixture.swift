@@ -4,6 +4,7 @@ import BelayCore
 import Foundation
 import SwiftUI
 import Synchronization
+import WebKit
 
 /// The UI tests' account, in a debug build only: `-BelayFixture <mode>` signs in a made-up person
 /// on a made-up instance that never syncs, with a store of its own in the app's caches.
@@ -59,8 +60,17 @@ import Synchronization
 ///
 /// The instance serves loops in every mode: each one a short video made on the phone, sent 3 s
 /// after it is asked, since no media ships with the app. `loopLoading` never answers for one, and
-/// `loopFailed` answers each with a 404 after the same wait, `loopBroken` with a body no player reads.
+/// `loopFailed` answers each with a 404 after the same wait, `loopBroken` with a body no player reads,
+/// `loopOffline` the first ask for each loop as a phone off the network, the next with the loop.
 /// `mediaStale` keeps a session from before the instance said it serves loops: `/api/me` says it does.
+///
+/// `-BelayApi same|behind|ahead|none` stands an instance on this build's contract version, the one
+/// before, the one after, or one whose version check never answers; with it, the sync lands an empty
+/// answer while the versions match. `signedOut` keeps no session, the instance's address in the field.
+///
+/// `oldWebData` stands for the launch before the update: `doneToday`'s store, with a cookie, local
+/// storage and a database in the web view's data, and the erase not run, so the next launch, on
+/// `keep`, is the first after the update.
 enum Fixture {
     nonisolated fileprivate static let origin = "https://belay.example"
     nonisolated fileprivate static let userId = "fixture"
@@ -122,14 +132,18 @@ enum Fixture {
                 try prepare(mode, model: model, store: store, workoutId: id)
             }
             defaults.set(origin, forKey: StoredInstance.key)
-            try session.keep(origin: origin, token: "fixture-token")
-            session.remember(userId: userId, displayName: "Ada", media: mode != "mediaStale")
+            if mode != "signedOut" {
+                try session.keep(origin: origin, token: "fixture-token")
+                session.remember(userId: userId, displayName: "Ada", media: mode != "mediaStale")
+            }
         } catch {
             preconditionFailure("the fixture did not set up: \(error)")
         }
         let health = UserDefaults.standard.string(forKey: "BelayHealth")
+        let api = apiVersion()
         let client = FixtureClient(
-            refusesSync: mode == "expired", answersSync: health == "allowed", loops: FixtureLoops(mode: mode))
+            refusesSync: mode == "expired", answersSync: health == "allowed" || api.set, api: api.version,
+            loops: FixtureLoops(mode: mode))
         let loops = loopsFolder
         guard let health else {
             return AccountModel(
@@ -142,6 +156,18 @@ enum Fixture {
             loopsFolder: loops, health: FixtureHealth(allowed: health == "allowed"))
     }
 
+    /// The version `-BelayApi` has the instance answer, nil for none, and whether it was given.
+    private static func apiVersion() -> (version: Int?, set: Bool) {
+        guard let api = UserDefaults.standard.string(forKey: "BelayApi") else { return (Bounds.apiVersion, false) }
+        switch api {
+        case "same": return (Bounds.apiVersion, true)
+        case "behind": return (Bounds.apiVersion - 1, true)
+        case "ahead": return (Bounds.apiVersion + 1, true)
+        case "none": return (nil, true)
+        default: preconditionFailure("-BelayApi does not read: \(api)")
+        }
+    }
+
     private static let openModes: Set = [
         "running", "history", "finished", "warmups", "timed", "group", "lastSet", "twoLeft", "exerciseEnd", "paused",
         "pausedLong", "lockLogged", "restEnding", "workSet", "full",
@@ -149,6 +175,7 @@ enum Fixture {
 
     private static let dayModes: Set = [
         "doneToday", "fixedWeek", "restDay", "doneEarly", "noProgram", "firstLaunch", "weeks", "pastSession",
+        "oldWebData",
     ]
 
     private static let bodyModes: Set = [
@@ -181,7 +208,7 @@ enum Fixture {
         let day = { (offset: Int) in (today + offset + 7) % 7 }
         let seed = rotationOf(try store.programs())
         switch mode {
-        case "doneToday":
+        case "doneToday", "oldWebData":
             // Kept today at any hour: just after midnight when 70 minutes ago was still yesterday.
             let midnight = Calendar.current.startOfDay(for: now)
             let startedAt = max(now.addingTimeInterval(-70 * 60), midnight.addingTimeInterval(60))
@@ -639,6 +666,42 @@ enum Fixture {
         }
     }
 
+    /// How many times the instance was asked its version since the launch, for a test to read.
+    struct VersionChecksProbe: View {
+        var body: some View {
+            TimelineView(.periodic(from: .now, by: 0.5)) { _ in
+                Color.clear
+                    .frame(width: 1, height: 1)
+                    .accessibilityElement()
+                    .accessibilityIdentifier("debug-api-checks")
+                    .accessibilityValue(String(FixtureClient.versionChecks.withLock { $0 }))
+            }
+        }
+    }
+
+    /// How many changes of any kind wait in the queue, for a test to read; nothing a person sees
+    /// or hears.
+    struct OutboxProbe: View {
+        let store: AccountStore
+        @State private var count = 0
+
+        var body: some View {
+            Color.clear
+                .frame(width: 1, height: 1)
+                .accessibilityElement()
+                .accessibilityIdentifier("fixture-outbox")
+                .accessibilityValue(String(count))
+                .task {
+                    let counts = store.observe { db in try AccountStore.outbox(db, limit: nil).count }
+                    do {
+                        for try await value in counts { count = value }
+                    } catch {
+                        preconditionFailure("the fixture's queue is not followed: \(error)")
+                    }
+                }
+        }
+    }
+
     /// How many set changes of the open session wait in the queue, for a test to read; nothing a
     /// person sees or hears.
     struct QueueProbe: View {
@@ -847,6 +910,112 @@ enum Fixture {
 
     /// Whether this launch runs on the fixture.
     static var isOn: Bool { UserDefaults.standard.string(forKey: "BelayFixture") != nil }
+
+    /// What the launch did with the old app's web data, « <records left>|<erased, skipped, failed
+    /// or held> », or the plant's step while it runs, for a test that waits too long to say where.
+    private static var webData = ""
+
+    /// Whether this launch is `oldWebData`'s: the old app's data planted and the erase held.
+    static var holdsOldWebData: Bool { UserDefaults.standard.string(forKey: "BelayFixture") == "oldWebData" }
+
+    /// `oldWebData`'s launch, in place of the app's erase: the erase made owed again and the old
+    /// app's data planted, for the next launch's erase to find.
+    static func plantOldWebData() async {
+        UserDefaults.standard.removeObject(forKey: OldAppData.doneKey)
+        webData = "planting"
+        await plantWebData()
+        webData = "counting"
+        await report("held")
+    }
+
+    /// What the app's own erase did on this launch, for the probe.
+    static func record(_ outcome: OldAppData.Outcome) async {
+        guard isOn else { return }
+        switch outcome {
+        case .erased: await report("erased")
+        case .skipped: await report("skipped")
+        case .failed: await report("failed")
+        }
+    }
+
+    /// The probe's answer: the web data records left, then what the launch did.
+    private static func report(_ outcome: String) async {
+        let types = WKWebsiteDataStore.allWebsiteDataTypes()
+        var records = await WKWebsiteDataStore.default().dataRecords(ofTypes: types).count
+        // A planted record can take a moment to be listed.
+        for _ in 0..<20 where outcome == "held" && records == 0 {
+            try? await Task.sleep(for: .milliseconds(250))
+            records = await WKWebsiteDataStore.default().dataRecords(ofTypes: types).count
+        }
+        webData = "\(records)|\(outcome)"
+    }
+
+    /// A cookie, local storage and a database written by a page, as the old app's web view left them.
+    private static func plantWebData() async {
+        let view = WKWebView(frame: .zero)
+        let loaded = PageLoaded()
+        view.navigationDelegate = loaded
+        do {
+            try await withCheckedThrowingContinuation { continuation in
+                loaded.done = continuation
+                webData = "loading"
+                view.loadHTMLString("<html><body></body></html>", baseURL: URL(string: "https://localhost/"))
+            }
+            webData = "writing"
+            _ = try await view.callAsyncJavaScript(
+                """
+                document.cookie = "old=1; max-age=86400; secure";
+                localStorage.setItem("old", "1");
+                await new Promise((resolve, reject) => {
+                  const open = indexedDB.open("old", 1);
+                  open.onupgradeneeded = () => open.result.createObjectStore("kept");
+                  open.onerror = () => reject(open.error);
+                  open.onsuccess = () => {
+                    const write = open.result.transaction("kept", "readwrite");
+                    write.objectStore("kept").put("1", "old");
+                    write.oncomplete = () => resolve();
+                    write.onerror = () => reject(write.error);
+                  };
+                });
+                """, contentWorld: .page)
+        } catch {
+            preconditionFailure("the old app's web data was not planted: \(error)")
+        }
+    }
+
+    /// Hands the page's load to the plant once it is done.
+    private final class PageLoaded: NSObject, WKNavigationDelegate {
+        var done: CheckedContinuation<Void, Error>?
+
+        func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+            done?.resume()
+            done = nil
+        }
+
+        func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+            done?.resume(throwing: error)
+            done = nil
+        }
+
+        func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+            done?.resume(throwing: error)
+            done = nil
+        }
+    }
+
+    /// What the launch did with the old app's web data, for a test to read; nothing a person sees
+    /// or hears.
+    struct WebDataProbe: View {
+        var body: some View {
+            TimelineView(.periodic(from: .now, by: 0.5)) { _ in
+                Color.clear
+                    .frame(width: 1, height: 1)
+                    .accessibilityElement()
+                    .accessibilityIdentifier("debug-web-data")
+                    .accessibilityValue(Fixture.webData)
+            }
+        }
+    }
 }
 
 /// A token kept for this launch only.
@@ -868,10 +1037,14 @@ private nonisolated final class FixtureSecrets: SecretStore {
 
 /// An instance whose sync is never reachable, as on a phone with no network, refuses the token
 /// when `refusesSync`, or lands with nothing new when `answersSync`, but that still answers a
-/// sign-in, so a test can sign out and back in as the same person.
+/// sign-in, so a test can sign out and back in as the same person. It speaks contract version
+/// `api`; nil, its version check is never answered.
 private nonisolated struct FixtureClient: HTTPClient {
+    /// Read by the probe: a test counts the version checks.
+    static let versionChecks = Mutex(0)
     let refusesSync: Bool
     let answersSync: Bool
+    let api: Int?
     let loops: FixtureLoops
 
     func send(_ request: URLRequest) async throws -> (Data, HTTPURLResponse) {
@@ -885,13 +1058,16 @@ private nonisolated struct FixtureClient: HTTPClient {
         }
         let answer: String
         var status = 200
+        if request.url?.path() == "/api/instance" { Self.versionChecks.withLock { $0 += 1 } }
         switch request.url?.path() {
         case "/api/sync" where refusesSync:
             answer = "{}"
             status = 401
         case "/api/sync" where answersSync:
             answer = #"{"cursor":"fixture","workouts":[],"sets":[],"activities":[],"rejected":[],"hasMore":false}"#
-        case "/api/instance": answer = #"{"app":"belay","api":1,"origin":"\#(Fixture.origin)"}"#
+        case "/api/instance":
+            guard let api else { throw URLError(.timedOut) }
+            answer = #"{"app":"belay","api":\#(api),"origin":"\#(Fixture.origin)"}"#
         case "/auth/native/token": answer = #"{"token":"fixture-token"}"#
         case "/api/me": answer = #"{"id":"\#(Fixture.userId)","displayName":"Ada","media":true}"#
         case "/auth/logout": answer = "{}"
@@ -913,9 +1089,13 @@ nonisolated final class FixtureLoops: Sendable {
     init(mode: String) { self.mode = mode }
 
     func answer(_ path: String) async throws -> (Data, Int) {
-        Self.asked.withLock { $0[path, default: 0] += 1 }
+        let asked = Self.asked.withLock { asked in
+            asked[path, default: 0] += 1
+            return asked[path, default: 0]
+        }
         if mode == "loopLoading" { try await Task.sleep(for: .seconds(3_600)) }
         try await Task.sleep(for: .seconds(3))
+        if mode == "loopOffline", asked == 1 { throw URLError(.notConnectedToInternet) }
         if mode == "loopFailed" { return (Data(), 404) }
         if mode == "loopBroken" { return (Data("not a video".utf8), 200) }
         return (try await Self.video.value, 200)

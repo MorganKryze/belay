@@ -11,6 +11,11 @@ struct Account: Equatable {
     let token: String
 }
 
+/// Where the address of the instance last signed in to is kept: its origin, under one key.
+enum StoredInstance {
+    static let key = "belay.instance"
+}
+
 /// Signs in to an instance, keeps the session across launches and ends it.
 @MainActor @Observable
 final class AccountModel {
@@ -129,6 +134,8 @@ final class AccountModel {
         let engine = SyncEngine(
             userId: account.userId, store: store,
             transport: HTTPTransport(instance: account.instance, token: account.token, client: http),
+            // The same cookieless client, asked without the token: the version is public.
+            probe: HTTPVersionProbe(instance: account.instance, client: http),
             onLanded: { [weak self] in await self?.landed(store) })
         self.engine = engine
         following = Task { [weak self] in
@@ -172,8 +179,20 @@ final class AccountModel {
         Task { await engine.schedule() }
     }
 
-    /// Back in front, or the network back: the run going, if any, is fresh enough, and the
-    /// instance says again who the person is and whether it serves loops.
+    /// Back in front: the instance may have been updated meanwhile, so a run asks its version
+    /// first, once for this return. A run going may be past its check: one more follows it.
+    func returned() {
+        recheck()
+        guard let engine else { return }
+        // One task, so the check is owed before the run it asks for reads it.
+        Task {
+            await engine.versionOwed()
+            await engine.sync()
+        }
+    }
+
+    /// The network back: the run going, if any, is fresh enough, and the instance says
+    /// again who the person is and whether it serves loops.
     func refresh() {
         recheck()
         guard let engine else { return }
@@ -353,7 +372,7 @@ final class AccountModel {
         { @MainActor [self] url in await sheet.open(url) }
     }
 
-    /// The instance last signed in to, as the web screens' links find it.
+    /// The instance last signed in to.
     private var storedInstance: Instance? {
         defaults.string(forKey: StoredInstance.key).flatMap { Instance(storedOrigin: $0) }
     }
