@@ -15,6 +15,7 @@
 		B00000000000000000000056 /* BelayActivity in Frameworks */ = {isa = PBXBuildFile; productRef = B00000000000000000000057 /* BelayActivity */; };
 		B00000000000000000000058 /* BelayActivityExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = B00000000000000000000050 /* BelayActivityExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		B000000000000000000000A2 /* BelayCore in Frameworks */ = {isa = PBXBuildFile; productRef = B000000000000000000000A3 /* BelayCore */; };
+		B000000000000000000000A4 /* BelayWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = B000000000000000000000A0 /* BelayWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -39,6 +40,13 @@
 			remoteGlobalIDString = B000000000000000000000B4;
 			remoteInfo = BelayWatch;
 		};
+		B000000000000000000000A5 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = B00000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = B000000000000000000000B4;
+			remoteInfo = BelayWatch;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -51,6 +59,17 @@
 				B00000000000000000000058 /* BelayActivityExtension.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B000000000000000000000A9 /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolderSpec = 16;
+			files = (
+				B000000000000000000000A4 /* BelayWatch.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXCopyFilesBuildPhase section */
@@ -227,11 +246,13 @@
 				B00000000000000000000005 /* Frameworks */,
 				B0000000000000000000000B /* Resources */,
 				B00000000000000000000059 /* Embed Foundation Extensions */,
+				B000000000000000000000A9 /* Embed Watch Content */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 				B00000000000000000000061 /* PBXTargetDependency */,
+				B000000000000000000000A7 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				B00000000000000000000004 /* Belay */,
@@ -490,6 +511,11 @@
 			isa = PBXTargetDependency;
 			target = B000000000000000000000B4 /* BelayWatch */;
 			targetProxy = B000000000000000000000A6 /* PBXContainerItemProxy */;
+		};
+		B000000000000000000000A7 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = B000000000000000000000B4 /* BelayWatch */;
+			targetProxy = B000000000000000000000A5 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
