@@ -43,3 +43,6 @@ jobs:
           xcodebuild -project apps/apple/Belay.xcodeproj -scheme Belay -configuration Debug
           -destination 'generic/platform=iOS Simulator'
           -derivedDataPath "$RUNNER_TEMP/dd" CODE_SIGNING_ALLOWED=NO build -quiet
+      - run: >-
+          apps/apple/scripts/check-watch-privileges.sh
+          "$RUNNER_TEMP/dd/Build/Products/Debug-iphonesimulator/Belay.app"
