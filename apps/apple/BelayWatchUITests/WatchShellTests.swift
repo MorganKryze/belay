@@ -53,6 +53,18 @@ final class WatchShellTests: XCTestCase {
         XCTAssertTrue(statusSays(app, "Ouvre Belay sur ton iPhone"), "trying again with no iPhone says it again")
     }
 
+    func testReturningToTheFrontAsksThePhoneAgain() {
+        let app = launch("phoneBack")
+        XCTAssertTrue(
+            statusSays(app, "Ouvre Belay sur ton iPhone"), "the first ask finds no iPhone: \(status(app).label)")
+        XCUIDevice.shared.press(.home)
+        XCTAssertTrue(app.wait(for: .runningBackground, timeout: 5), "the watch leaves the front")
+        app.activate()
+        XCTAssertTrue(
+            statusSays(app, "Montre connectée", "Instance jointe"),
+            "coming back asks the iPhone again, without a tap: \(status(app).label)")
+    }
+
     func testPhoneSignedOutSaysToSignInOnTheIPhone() {
         let app = launch("phoneSignedOut")
         XCTAssertTrue(

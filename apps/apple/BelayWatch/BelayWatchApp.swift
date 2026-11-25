@@ -7,6 +7,7 @@ struct BelayWatchApp: App {
     /// Held for the app's life: the system's session keeps its delegate weakly.
     private let link: PhoneLink?
     @Environment(\.scenePhase) private var scenePhase
+    @State private var wasActive = false
 
     init() {
         #if DEBUG
@@ -27,10 +28,12 @@ struct BelayWatchApp: App {
         WindowGroup {
             ShellView(account: account)
         }
-        .onChange(of: scenePhase) { before, now in
-            // A return from the background; the launch's own start is the screen's.
-            guard before == .background, now == .active else { return }
-            Task { await account.start() }
+        .onChange(of: scenePhase, initial: true) { _, phase in
+            // The way back passes through `.inactive`, so every `.active` after the first is a
+            // return; the launch's own start is the screen's.
+            guard phase == .active else { return }
+            if wasActive { Task { await account.start() } }
+            wasActive = true
         }
     }
 }

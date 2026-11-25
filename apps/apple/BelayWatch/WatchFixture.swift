@@ -4,9 +4,10 @@ import Foundation
 
 /// The watch on a scripted iPhone and instance, for the UI tests: `-BelayWatchFixture` names the
 /// state to reach (`asking`, `phoneOut`, `phoneSignedOut`, `connected`, `unreached`, `refused`,
-/// `signedOutHere`), and `-BelayWatchKeep YES` relaunches on what the previous launch kept. The
-/// token stays in memory and the preferences in a suite of their own, so a run touches neither the
-/// Keychain nor the app's own preferences.
+/// `signedOutHere`, or `phoneBack`: out of reach at the first ask, then handing the session), and
+/// `-BelayWatchKeep YES` relaunches on what the previous launch kept. The token stays in memory and
+/// the preferences in a suite of their own, so a run touches neither the Keychain nor the app's own
+/// preferences.
 enum WatchFixture {
     private static let suite = "cloud.libresoftware.belay.watch.fixture"
     static let host = "belay.example"
@@ -25,6 +26,7 @@ enum WatchFixture {
         switch mode {
         case "asking": (phone, server) = (ScriptedPhone(answers: false, nil), ScriptedServer(status: 200))
         case "phoneOut": (phone, server) = (ScriptedPhone(nil), ScriptedServer(status: 200))
+        case "phoneBack": (phone, server) = (ScriptedPhone(nil, handed), ScriptedServer(status: 200))
         case "phoneSignedOut": (phone, server) = (ScriptedPhone(.signedOut), ScriptedServer(status: 200))
         case "unreached": (phone, server) = (ScriptedPhone(handed), ScriptedServer(status: nil))
         case "refused": (phone, server) = (ScriptedPhone(handed), ScriptedServer(status: 401))
@@ -54,19 +56,19 @@ private final class MemoryStore: SecretStore, @unchecked Sendable {
     }
 }
 
-/// An iPhone that gives the same answer to every ask, or never answers.
-private struct ScriptedPhone: PhoneAsking {
-    let answers: Bool
-    let reply: HandoverReply?
+/// An iPhone that gives its answers in turn and then repeats the last, or never answers.
+private actor ScriptedPhone: PhoneAsking {
+    private let answers: Bool
+    private var replies: [HandoverReply?]
 
-    init(answers: Bool = true, _ reply: HandoverReply?) {
+    init(answers: Bool = true, _ replies: HandoverReply?...) {
         self.answers = answers
-        self.reply = reply
+        self.replies = replies
     }
 
     func askSession() async -> HandoverReply? {
         if !answers { try? await Task.sleep(for: .seconds(3_600)) }
-        return reply
+        return replies.count > 1 ? replies.removeFirst() : replies.first ?? nil
     }
 }
 
