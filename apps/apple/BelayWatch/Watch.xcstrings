@@ -1,0 +1,26 @@
+{
+  "sourceLanguage" : "fr",
+  "strings" : {
+    "Ouvre Belay sur ton iPhone" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Belay on your iPhone"
+          }
+        }
+      }
+    },
+    "Ta montre se connecte avec la session de ton iPhone." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your watch signs in with your iPhone’s session."
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}
