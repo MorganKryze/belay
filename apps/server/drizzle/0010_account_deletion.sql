@@ -57,14 +57,15 @@ DROP FUNCTION belay_create_session(text, uuid, interval);
 CREATE FUNCTION belay_create_session(p_token_hash text, p_user_id uuid, p_ttl interval)
 RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
 BEGIN
-  DELETE FROM sessions WHERE expires_at <= now();
-  DELETE FROM ended_sessions WHERE expires_at <= now();
-  -- Held until commit: an erasure waits for this session and copies it, or ran first and left
-  -- nothing to find.
+  -- The account's row first, held until commit, before any other lock: an erasure takes it first
+  -- too, so the two never wait on each other's rows. The erasure then waits for this session and
+  -- copies it, or ran first and left nothing to find.
   PERFORM 1 FROM users WHERE id = p_user_id FOR KEY SHARE;
   IF NOT FOUND THEN
     RETURN false;
   END IF;
+  DELETE FROM sessions WHERE expires_at <= now();
+  DELETE FROM ended_sessions WHERE expires_at <= now();
   INSERT INTO sessions (token_hash, user_id, expires_at)
     VALUES (p_token_hash, p_user_id, now() + p_ttl);
   RETURN true;

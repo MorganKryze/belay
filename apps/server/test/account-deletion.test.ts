@@ -10,7 +10,7 @@ import { oidcProvider } from "../src/auth/oidc";
 import { hashToken, newSessionToken, SESSION_COOKIE } from "../src/auth/session";
 import { loadConfig } from "../src/config";
 import { asApp, asUser } from "../src/db/client";
-import { createSession, deleteAccount, upsertUser } from "../src/db/identity";
+import { createSession, deleteAccount, tokenEnded, upsertUser } from "../src/db/identity";
 import { testEnv } from "./config";
 import { agree, appDb, testDb } from "./db";
 import { startIdp } from "./idp";
@@ -140,6 +140,37 @@ const dumpOf = async (user: string) => {
 };
 
 const pause = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+// Polls, under a deadline, until `n` backends running this function wait for a lock. A slow
+// machine only takes longer; a call that never waits fails the test.
+async function waitingIn(fn: string, n = 1) {
+  const deadline = Date.now() + 10_000;
+  for (;;) {
+    const [row] = await owner.execute<{ n: number }>(
+      sql`select count(*)::int as n from pg_stat_activity
+          where wait_event_type = 'Lock' and pid <> pg_backend_pid()
+            and query like ${`%${fn}%`}`,
+    );
+    if (row!.n >= n) return;
+    if (Date.now() > deadline) throw new Error(`no call of ${fn} waits for a lock`);
+    await pause(20);
+  }
+}
+const expiredSession = async (user: string) => {
+  const hash = hashToken(newSessionToken(), cfg.tokenHashKey);
+  await owner.execute(
+    sql`insert into sessions (token_hash, user_id, expires_at)
+        values (${hash}, ${user}, now() - interval '1 second')`,
+  );
+  return hash;
+};
+const expiredEnded = async () => {
+  const hash = hashToken(newSessionToken(), cfg.tokenHashKey);
+  await owner.execute(
+    sql`insert into ended_sessions (token_hash, expires_at)
+        values (${hash}, now() - interval '1 second')`,
+  );
+  return hash;
+};
 const settled = (p: Promise<unknown>) => {
   let done = false;
   void p.then(
@@ -254,7 +285,7 @@ describe("deleting an account", () => {
       await t`select pg_advisory_xact_lock(hashtextextended(${user}, 0))`;
       erase = deleteAccount(db, hash);
       const done = settled(erase);
-      await pause(300);
+      await waitingIn("belay_delete_account");
       expect(done()).toBe(false);
     });
     expect(await erase).toBe(user);
@@ -262,14 +293,44 @@ describe("deleting an account", () => {
 
   it("opens no session, and throws nothing, for a sign-in redeemed while its account is erased", async () => {
     const user = await upsertUser(db, { issuer, sub: "delete-midway", displayName: "M" });
+    const expired = await expiredSession(user);
     let opened: Promise<boolean> | undefined;
     await ownerConn.client.begin(async (t) => {
       await t`select 1 from users where id = ${user} for update`;
       opened = createSession(db, hashToken(newSessionToken(), cfg.tokenHashKey), user, 30);
-      await pause(300);
+      await waitingIn("belay_create_session");
+      // It waits on the account's row before any other: the purge has not touched this one yet.
+      await t`select 1 from sessions where token_hash = ${expired} for update nowait`;
       await t`delete from users where id = ${user}`;
     });
     expect(await opened).toBe(false);
+  });
+
+  it("opens a session and erases its account at once without a deadlock, expired rows on both sides", async () => {
+    const user = await upsertUser(db, { issuer, sub: "delete-deadlock", displayName: "D" });
+    await expiredSession(user);
+    const ended = await expiredEnded();
+    const token = newSessionToken();
+    const hash = hashToken(token, cfg.tokenHashKey);
+    let opened: Promise<boolean> | undefined;
+    let erased: Promise<unknown> | undefined;
+    // An expired ended token held elsewhere stalls both purges, so the two calls meet in the middle.
+    await ownerConn.client.begin(async (t) => {
+      await t`select 1 from ended_sessions where token_hash = ${ended} for update`;
+      opened = createSession(db, hash, user, 30);
+      await waitingIn("belay_create_session");
+      // Started now: a drizzle query runs only once something awaits it.
+      erased = (async () => owner.execute(sql`select belay_erase_account(${user}::uuid)`))();
+      await waitingIn("belay_erase_account");
+    });
+    const [ok, gone] = await Promise.allSettled([opened!, erased!]);
+    expect(gone).toMatchObject({ status: "fulfilled" });
+    expect(ok).toMatchObject({ status: "fulfilled" });
+    if (ok.status === "fulfilled" && ok.value) expect(await tokenEnded(db, hash)).toBe(true);
+    const [row] = await owner.execute<{ n: number }>(
+      sql`select count(*)::int as n from users where id = ${user}`,
+    );
+    expect(row!.n).toBe(0);
   });
 
   it("clears the session cookie of the browser that deleted the account", async () => {
