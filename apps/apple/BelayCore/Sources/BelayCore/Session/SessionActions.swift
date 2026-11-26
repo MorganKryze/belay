@@ -40,8 +40,9 @@ public struct SessionActions: Sendable {
 
   public func skipRest() throws { try store.skipRest(ctx) }
 
-  public func choose(weightKg: Double?, count: Int?) throws {
-    try store.choose(weightKg: weightKg, count: count, ctx)
+  /// `atWork` on a warm-up chooses the work load its warm-ups follow.
+  public func choose(weightKg: Double?, count: Int?, atWork: Bool = false) throws {
+    try store.choose(weightKg: weightKg, count: count, atWork: atWork, ctx)
   }
 
   public func startHold() throws { try store.startHold(ctx) }

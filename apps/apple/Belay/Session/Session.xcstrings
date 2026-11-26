@@ -191,6 +191,26 @@
         }
       }
     },
+    "Charge de travail": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Work load"
+          }
+        }
+      }
+    },
+    "Charge de travail, %@ %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Work load, %1$@ %2$@"
+          }
+        }
+      }
+    },
     "Charge en %@": {
       "localizations": {
         "en": {
@@ -337,6 +357,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Pause the session"
+          }
+        }
+      }
+    },
+    "Modifier": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit"
           }
         }
       }
@@ -597,6 +627,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Finish the session"
+          }
+        }
+      }
+    },
+    "Travail : %@ %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Work: %1$@ %2$@"
           }
         }
       }

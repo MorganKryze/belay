@@ -14,6 +14,9 @@ struct SetCard: View {
     @State private var typing = false
     @State private var typed = ""
     @State private var detail = false
+    /// The choice and the keypad for the work load, opened from a warm-up.
+    @State private var choosingWork = false
+    @State private var typingWork = false
 
     var body: some View {
         SessionCard {
@@ -24,12 +27,13 @@ struct SetCard: View {
                 .foregroundStyle(.muted)
                 .accessibilityIdentifier("set-title")
             load
+            if due.warmup, let workKg = due.workKg { workLoad(workKg) }
             progression
         }
         .alert(Text("Autre charge", tableName: "Session"), isPresented: $typing) {
             TextField(text: $typed) { Text("Charge en \(SetText.symbol)", tableName: "Session") }
                 .keyboardType(.decimalPad)
-            Button { take(typed) } label: { Text("OK", tableName: "Session") }
+            Button { take(typed, atWork: typingWork) } label: { Text("OK", tableName: "Session") }
             Button(role: .cancel) {} label: { Text("Annuler", tableName: "Session") }
         }
     }
@@ -67,6 +71,46 @@ struct SetCard: View {
                 other: {
                     choosing = false
                     typed = ""
+                    typingWork = false
+                    typing = true
+                })
+                .presentationCompactAdaptation(.popover)
+        }
+    }
+
+    /// « Travail : 300 kg » under a warm-up's load: the work load its warm-ups follow, chosen
+    /// again as on the work set; the warm-up stays the set in hand.
+    private func workLoad(_ workKg: Double) -> some View {
+        Button { choosingWork = true } label: {
+            HStack(spacing: 6) {
+                Text("Travail\u{202F}: \(SetText.weight(workKg))\u{202F}\(SetText.symbol)", tableName: "Session")
+                    .monospacedDigit()
+                Image(systemName: "chevron.up.chevron.down").font(.footnote).accessibilityHidden(true)
+            }
+            .font(.subheadline.weight(.semibold))
+            .foregroundStyle(.muted)
+            .dynamicTypeSize(...DynamicTypeSize.xxLarge)
+            .frame(minHeight: 44)
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text("Charge de travail, \(SetText.weight(workKg)) \(SetText.unitWord)", tableName: "Session"))
+        .accessibilityHint(Text("Modifier", tableName: "Session"))
+        .accessibilityIdentifier("work-load")
+        .popover(isPresented: $choosingWork, arrowEdge: .top) {
+            LoadChoices(
+                weightKg: workKg,
+                step: BundledLibrary.library.exercise(due.exerciseId).map { incrementIn($0, SetText.unit) }
+                    ?? stepIn(2.5, SetText.unit),
+                title: Text("Charge de travail", tableName: "Session"),
+                choose: { kg in
+                    choosingWork = false
+                    actions.run { try $0.choose(weightKg: kg, count: nil, atWork: true) }
+                },
+                other: {
+                    choosingWork = false
+                    typed = ""
+                    typingWork = true
                     typing = true
                 })
                 .presentationCompactAdaptation(.popover)
@@ -78,12 +122,13 @@ struct SetCard: View {
     /// one past the bounds is refused aloud at once. Pounds go through the shared rule: the load as shown, typed again,
     /// keeps its exact kilos; one past the bounds once converted is refused aloud. A text that is
     /// not a number is refused aloud too, and changes nothing.
-    private func take(_ text: String) {
+    private func take(_ text: String, atWork: Bool) {
         guard let value = SetText.parseKg(text) else { return actions.failed() }
-        let typedKg = SetText.unit == .kg ? value : loadKgFrom(value, SetText.unit, prefillKg: due.weightKg)
+        let shownKg = atWork ? (due.workKg ?? due.weightKg) : due.weightKg
+        let typedKg = SetText.unit == .kg ? value : loadKgFrom(value, SetText.unit, prefillKg: shownKg)
         // Past the bounds, a typed kilo would drive the warm-ups: refused here, as pounds are.
         guard let kg = typedKg, kg >= Bounds.setKgMin, kg <= Bounds.setKgMax else { return actions.failed() }
-        actions.run { try $0.choose(weightKg: kg, count: nil) }
+        actions.run { try $0.choose(weightKg: kg, count: nil, atWork: atWork) }
     }
 
     private var progression: some View {

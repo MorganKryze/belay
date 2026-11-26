@@ -22,6 +22,10 @@ public struct DueSet: Sendable, Equatable {
   /// The plan's range, in the slot's measure.
   public var target: [Int]
   public var progression: Progression
+  /// On a warm-up, the work load it is computed from; nil on a work set.
+  public var workKg: Double? = nil
+  /// On a warm-up, the work set's place, where its work load is kept.
+  public var workPlace: SetPlace? = nil
 }
 
 /// A timed set being held.
@@ -203,8 +207,10 @@ public func dueSet(
   let taken = Set(sets.map { SetPlace(slotIndex: $0.slotIndex, position: $0.position) })
   let draft = active.draft
 
-  func make(_ place: SetPlace, warmup: Bool, number: Int, of: Int, values: (Double, Int))
-    -> DueSet
+  func make(
+    _ place: SetPlace, warmup: Bool, number: Int, of: Int, values: (Double, Int),
+    workKg: Double? = nil, workPlace: SetPlace? = nil
+  ) -> DueSet
   {
     let slot = plan[place.slotIndex]
     let chosen =
@@ -218,7 +224,8 @@ public func dueSet(
       target: slot.repRange,
       progression: progression(
         history: history, slot: slot, setIndex: place.position - Bounds.maxWarmups,
-        warmup: warmup, weightKg: weight, count: count))
+        warmup: warmup, weightKg: weight, count: count),
+      workKg: workKg, workPlace: workPlace)
   }
 
   if let added = active.added, plan.indices.contains(added.slotIndex),
@@ -252,7 +259,8 @@ public func dueSet(
       if taken.contains(place) { continue }
       return make(
         place, warmup: true, number: i + 1, of: loads.count,
-        values: (load.weightKg, load.reps ?? 0))
+        values: (load.weightKg, load.reps ?? 0), workKg: work.0,
+        workPlace: workPlace)
     }
   }
   return make(workPlace, warmup: false, number: turn.round + 1, of: slot.sets, values: planned)

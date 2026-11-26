@@ -692,6 +692,49 @@ struct Seance {
     #expect(sets.map(\.2).first == 45 && sets.map(\.2).last == 60)
   }
 
+  @Test func workLoadFromAWarmupIsWrittenWhereItsWarmupsReadIt() throws {
+    let s = try Seance(
+      [Seance.slot(sets: 2, warmups: 2, rest: 0, group: "g"), Seance.slot(Seance.bench, sets: 2, rest: 0, group: "g")],
+      past: [(Seance.squat, 100, 8)])
+    try s.actions.leaveOut(slotIndex: 0, true)
+    try s.actions.logNext(count: nil, weightKg: 60, expecting: nil)
+    try s.actions.leaveOut(slotIndex: 0, false)
+    guard case .due(let due) = try s.state().phase else {
+      Issue.record("a warm-up due")
+      return
+    }
+    #expect(due.warmup && due.place.slotIndex == 0)
+    try s.actions.choose(weightKg: 30, count: nil, atWork: true)
+    guard case .due(let after) = try s.state().phase else {
+      Issue.record("the warm-up still due")
+      return
+    }
+    #expect(after.workKg == 30)
+  }
+
+  @Test func workLoadFromAWarmupReplacesAnOlderStoredOne() throws {
+    let s = try Seance([Seance.slot(warmups: 2)], past: [(Seance.squat, 0, 8)])
+    var active = try #require(try s.active)
+    active.draft = SetDraft(slotIndex: 0, position: Bounds.maxWarmups, weightKg: 300, count: nil)
+    active.workDraft = nil
+    try s.store.recordChanges([], active: .set(active))
+    try s.actions.choose(weightKg: 30, count: nil, atWork: true)
+    while try s.actions.logNext(count: nil, weightKg: nil, expecting: nil).map({ _ in true }) == true {
+      if try logged(s).contains(where: { $0.0 == Bounds.maxWarmups }) { break }
+    }
+    let work = try #require(try logged(s).first { $0.0 == Bounds.maxWarmups })
+    #expect(work.2 == 30)
+  }
+
+  @Test func workLoadPastTheBoundFromAWarmupIsRefused() throws {
+    let s = try Seance([Seance.slot(warmups: 2)], past: [(Seance.squat, 100, 8)])
+    let before = try s.queued
+    let stored = try s.active
+    #expect(throws: StoreError.invalidChange) { try s.actions.choose(weightKg: 600, count: nil, atWork: true) }
+    #expect(try s.queued == before)
+    #expect(try s.active == stored)
+  }
+
   @Test func loadPastTheBoundIsRefusedWhenChosenAndBringsNoWarmup() throws {
     let s = try Seance([Seance.slot(warmups: 2)], past: [(Seance.squat, 0, 8)])
     let before = try s.queued

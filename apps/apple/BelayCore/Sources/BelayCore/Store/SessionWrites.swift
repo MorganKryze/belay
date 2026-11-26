@@ -258,7 +258,8 @@ extension AccountStore {
 
   /// The load or count chosen for the set due, kept until it is logged: a warm-up's in the set
   /// draft, a work set's in the work draft, so one typed on a warm-up leaves the work load typed.
-  func choose(weightKg: Double?, count: Int?, _ ctx: SessionContext) throws {
+  /// `atWork` on a warm-up writes the work load the warm-ups follow, as typed on the work set.
+  func choose(weightKg: Double?, count: Int?, atWork: Bool = false, _ ctx: SessionContext) throws {
     if let kg = weightKg, !(kg.isFinite && (Bounds.setKgMin...Bounds.setKgMax).contains(kg)) {
       throw StoreError.invalidChange
     }
@@ -269,6 +270,16 @@ extension AccountStore {
             history: open.history, workout: open.workout, active: open.active,
             library: ctx.library, bar: ctx.bar)
         else { return }
+        if atWork, due.warmup, let place = due.workPlace {
+          // A work load kept in the set draft, from a store written before the work draft, gives way.
+          let older = open.active.draft?.place == place ? open.active.draft : nil
+          if older != nil { open.active.draft = nil }
+          let old = open.active.workDraft?.place == place ? open.active.workDraft : older
+          open.active.workDraft = SetDraft(
+            slotIndex: place.slotIndex, position: place.position,
+            weightKg: weightKg ?? old?.weightKg, count: count ?? old?.count)
+          return
+        }
         let set = open.active.draft?.place == due.place ? open.active.draft : nil
         let work = open.active.workDraft?.place == due.place ? open.active.workDraft : nil
         let old = set ?? work
