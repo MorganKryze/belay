@@ -194,7 +194,9 @@ export function authRoutes(cfg: Config, db: Db, getOidc: OidcProvider) {
       return c.redirect(nativeCallback({ code: codes.issue(userId, tx.native.challenge) }));
     }
     const token = newSessionToken();
-    await createSession(db, hashToken(token, cfg.tokenHashKey), userId, cfg.sessionTtlDays);
+    // The account was deleted since the provider answered: no session, as any failed sign-in.
+    if (!(await createSession(db, hashToken(token, cfg.tokenHashKey), userId, cfg.sessionTtlDays)))
+      return signinFailure(c, "failed");
     setSessionCookie(c, cfg, token);
     // Re-validated: the login side already did it, but the redirect must never rely on that alone.
     return c.redirect(safeReturnTo(tx.returnTo));

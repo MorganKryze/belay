@@ -354,8 +354,11 @@ describe("a sign-in code issued before the account was deleted", () => {
   });
   afterAll(() => idp.stop());
 
-  async function signIn(claims: Record<string, unknown>) {
-    const res = await native.request(`/auth/native/start?challenge=${CHALLENGE}`);
+  async function signIn(
+    claims: Record<string, unknown>,
+    from = `/auth/native/start?challenge=${CHALLENGE}`,
+  ) {
+    const res = await native.request(from);
     expect(res.status).toBe(302);
     const authUrl = new URL(res.headers.get("location")!);
     const txCookie = res.headers.get("set-cookie")!.split(";")[0]!;
@@ -368,6 +371,29 @@ describe("a sign-in code issued before the account was deleted", () => {
     const cb = new URL(idpRes.headers.get("location")!);
     return native.request(cb.pathname + cb.search, { headers: { cookie: txCookie } });
   }
+
+  // The account is erased between the provider's answer and the session: a trigger does it here.
+  it("sends the browser back to sign-in with no cookie when the account is gone at the callback", async () => {
+    const sub = `delete-web-${Math.random().toString(36).slice(2)}`;
+    await owner.execute(
+      sql.raw(`create or replace function test_erase_at_signin() returns trigger language plpgsql
+               as $f$ begin delete from users where id = new.id; return null; end $f$`),
+    );
+    await owner.execute(
+      sql.raw(`create trigger test_erase_at_signin after insert on users for each row
+               when (new.oidc_sub = '${sub}') execute function test_erase_at_signin()`),
+    );
+    try {
+      const res = await signIn({ sub }, "/auth/login");
+      expect(res.status).toBe(302);
+      expect(res.headers.get("location")).toBe("/?signin=failed");
+      const cookies = res.headers.getSetCookie().filter((c) => c.startsWith(`${SESSION_COOKIE}=`));
+      expect(cookies).toEqual([]);
+    } finally {
+      await owner.execute(sql`drop trigger test_erase_at_signin on users`);
+      await owner.execute(sql`drop function test_erase_at_signin()`);
+    }
+  });
 
   it("is refused as invalid_grant once the account is gone", async () => {
     const sub = `delete-native-${Math.random().toString(36).slice(2)}`;
