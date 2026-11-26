@@ -113,10 +113,11 @@ const onPlatform = (platform: string) =>
   vi.spyOn(navigator, "platform", "get").mockReturnValue(platform);
 
 describe("the slot grid", () => {
-  it("one Tab stop; arrows move the focused cell", async () => {
+  it("one Tab stop, on the first row's handle; arrows move the focused cell", async () => {
     await open();
     const focusable = [...screen.getByRole("grid").querySelectorAll<HTMLElement>("[tabindex]")];
-    expect(focusable.filter((el) => el.tabIndex === 0)).toEqual([target(BENCH, "sets")]);
+    // Tab enters the grid on its first cell in reading order.
+    expect(focusable.filter((el) => el.tabIndex === 0)).toEqual([handle(BENCH)]);
     // Per row: the handle, six value cells and the ⋯.
     expect(focusable.length).toBe(6 * 8);
     target(BENCH, "sets").focus();

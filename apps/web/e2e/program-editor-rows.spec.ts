@@ -48,13 +48,11 @@ const middle = async (page: Page, name: string) => {
   return { x: box.x + box.width / 2, y: box.y + box.height / 2, bottom: box.y + box.height };
 };
 
-// Tab from the top of the page into the grid, one Tab stop that starts on the first row's sets,
-// then ← to that row's handle.
+// Tab from the top of the page into the grid, one Tab stop that starts on the first row's handle.
 async function tabToHandle(page: Page) {
   for (let i = 0; i < 60; i++) {
     await page.keyboard.press("Tab");
     if (await page.evaluate(() => !!document.activeElement?.closest('[role="grid"]'))) {
-      await page.keyboard.press("ArrowLeft");
       const name = await page.evaluate(() => document.activeElement?.getAttribute("aria-label"));
       return name?.replace(/^Déplacer /, "");
     }

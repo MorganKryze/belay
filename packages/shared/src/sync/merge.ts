@@ -146,14 +146,14 @@ export function mergeSlotInBatch(
       : row;
   const next = mergeSlotChange(base, change);
   if (next === base) return row;
-  // A row's times are its keys ending in "At"; an exercise in another measure writes three.
-  if (next)
-    for (const [k, v] of Object.entries(next))
-      if (
-        k.endsWith("At") &&
-        typeof v === "string" &&
-        Date.parse(v) !== Date.parse(String(row[k as keyof ProgramSlotRow]))
-      )
-        written.add(row.id + k);
+  // The change wrote its time, and an exercise in another measure writes the range's and the
+  // warm-ups' too, even when the instant stays the one stored.
+  if (next) {
+    written.add(row.id + time);
+    if (next.measure !== row.measure) {
+      written.add(row.id + "repsAt");
+      written.add(row.id + "warmupsAt");
+    }
+  }
   return next;
 }
