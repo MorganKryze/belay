@@ -64,7 +64,9 @@ import WebKit
 /// `loopOffline` the first ask for each loop as a phone off the network, the next with the loop.
 /// `mediaStale` keeps a session from before the instance said it serves loops: `/api/me` says it does.
 ///
-/// `unnamed` keeps a session the instance has not yet named: `/api/me` names it.
+/// `unnamed` keeps a session the instance has not yet named: `/api/me` names it. `refusedAtOpen`
+/// keeps a token no owner was named for, as a sign-in that met the instance unreachable, and
+/// `/api/me` refuses it, so the launch ends signed out without a sign-out.
 ///
 /// `-BelayApi same|behind|ahead|none` stands an instance on this build's contract version, the one
 /// before, the one after, or one whose version check never answers; with it, the sync lands an empty
@@ -72,7 +74,8 @@ import WebKit
 ///
 /// `-BelayWatch installed|none` stands a recording link in for the paired watch, with Belay on it
 /// or not; without it the fixture has no watch. Its probes say what the watch was last told,
-/// « session·<n> » or « signedOut·<n> » with n the session ids published so far, and what it would
+/// « session·<n> » or « signedOut·<n> » with n the session ids published so far, « untold·0 »
+/// before anything was published, and what it would
 /// be handed, « session|<host> » or « signedOut »: never a token, an id or a name.
 ///
 /// `oldWebData` stands for the launch before the update: `doneToday`'s store, with a cookie, local
@@ -141,7 +144,9 @@ enum Fixture {
             defaults.set(origin, forKey: StoredInstance.key)
             if mode != "signedOut" {
                 try session.keep(origin: origin, token: "fixture-token")
-                session.remember(userId: userId, displayName: "Ada", media: mode != "mediaStale")
+                if mode != "refusedAtOpen" {
+                    session.remember(userId: userId, displayName: "Ada", media: mode != "mediaStale")
+                }
                 // A session from before the instance named its owner: `/api/me` names Ada.
                 if mode == "unnamed" { defaults.removeObject(forKey: "belay.userName") }
             }
@@ -151,7 +156,7 @@ enum Fixture {
         let health = UserDefaults.standard.string(forKey: "BelayHealth")
         let api = apiVersion()
         let client = FixtureClient(
-            refusesSync: mode == "expired", answersSync: health == "allowed" || api.set, api: api.version,
+            refusesSync: mode == "expired", refusesMe: mode == "refusedAtOpen", answersSync: health == "allowed" || api.set, api: api.version,
             loops: FixtureLoops(mode: mode))
         let loops = loopsFolder
         let watch: any WatchPublishing = recordedWatch ?? NoWatch()
@@ -179,18 +184,23 @@ enum Fixture {
         /// The session ids published so far, each once.
         private var ids: Set<String> = []
         private var signedIn = false
+        private var published = false
 
         init(installed: Bool) { watchAppInstalled = installed }
 
         func publish(_ state: [String: String]) {
             // The system keeps the published state on disk: it holds the version and the id alone.
             precondition(Set(state.keys).isSubset(of: ["v", "session"]), "the watch was told more than the session id")
+            published = true
             signedIn = state["session"] != nil
             if let id = state["session"] { ids.insert(id) }
         }
 
-        /// « session·<n> » or « signedOut·<n> ».
-        var told: String { "\(signedIn ? "session" : "signedOut")·\(ids.count)" }
+        /// « session·<n> » or « signedOut·<n> », « untold·0 » before the first publish.
+        var told: String {
+            guard published else { return "untold·0" }
+            return "\(signedIn ? "session" : "signedOut")·\(ids.count)"
+        }
     }
 
     /// The version `-BelayApi` has the instance answer, nil for none, and whether it was given.
@@ -1112,6 +1122,7 @@ private nonisolated struct FixtureClient: HTTPClient {
     /// Read by the probe: a test counts the version checks.
     static let versionChecks = Mutex(0)
     let refusesSync: Bool
+    let refusesMe: Bool
     let answersSync: Bool
     let api: Int?
     let loops: FixtureLoops
@@ -1138,6 +1149,9 @@ private nonisolated struct FixtureClient: HTTPClient {
             guard let api else { throw URLError(.timedOut) }
             answer = #"{"app":"belay","api":\#(api),"origin":"\#(Fixture.origin)"}"#
         case "/auth/native/token": answer = #"{"token":"fixture-token"}"#
+        case "/api/me" where refusesMe:
+            answer = "{}"
+            status = 401
         case "/api/me": answer = #"{"id":"\#(Fixture.userId)","displayName":"Ada","media":true}"#
         case "/auth/logout": answer = "{}"
         default: throw URLError(.notConnectedToInternet)
