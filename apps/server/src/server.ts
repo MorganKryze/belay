@@ -34,6 +34,9 @@ function open(url: string, name: string) {
 
 export async function start(env: Record<string, string | undefined>) {
   const cfg = loadConfig(env);
+  // Names only: the values are public on /api/instance, but a log is no place to repeat them.
+  if (cfg.privacy.operator === null) console.log("privacy: operator not set");
+  if (cfg.privacy.contact === null) console.log("privacy: contact not set");
   const owner = open(cfg.databaseUrl, "DATABASE_URL");
   let conn: ReturnType<typeof connect>;
   try {

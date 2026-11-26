@@ -1,7 +1,7 @@
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
-import { API_VERSION } from "@belay/shared/sync/limits";
+import { API_VERSION, CONSENT_VERSION } from "@belay/shared/sync/limits";
 import { sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { createApp } from "../src/app";
@@ -55,7 +55,13 @@ const expiresAt = async (token: string) => {
 const me = (headers: Record<string, string>) => app.request("/api/me", { headers });
 
 describe("GET /api/instance", () => {
-  const probe = { app: "belay", api: API_VERSION, origin: "http://localhost:3000" };
+  const probe = {
+    app: "belay",
+    api: API_VERSION,
+    origin: "http://localhost:3000",
+    consentVersion: CONSENT_VERSION,
+    privacy: { operator: null, contact: null, support: null, location: null, backupDays: null },
+  };
 
   it("the probe answers a stranger with the app's name, the contract version and PUBLIC_URL's origin, no-store", async () => {
     const res = await app.request("/api/instance");

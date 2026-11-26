@@ -32,7 +32,25 @@ const schema = z.object({
   MIGRATIONS_DIR: z.string().default("drizzle"),
   // Optional: the folder of exercise loops (<four digits>.mp4). Unset or blank turns media off.
   BELAY_MEDIA_DIR: z.string().optional(),
+  // Optional: who runs this instance and how to reach them, shown on its privacy page.
+  BELAY_OPERATOR: z.string().optional(),
+  BELAY_PRIVACY_CONTACT: z.string().optional(),
+  BELAY_SUPPORT_CONTACT: z.string().optional(),
+  BELAY_DATA_LOCATION: z.string().optional(),
+  BELAY_BACKUP_DAYS: z
+    .string()
+    .regex(/^\s*\d+\s*$/, { error: "must be a whole number of days" })
+    .transform(Number)
+    .optional(),
 });
+
+export type Privacy = {
+  operator: string | null;
+  contact: string | null;
+  support: string | null;
+  location: string | null;
+  backupDays: number | null;
+};
 
 export type Config = {
   databaseUrl: string;
@@ -58,6 +76,7 @@ export type Config = {
   migrationsDir: string;
   // The media directory's real path, resolved once here; undefined means media is off.
   mediaDir: string | undefined;
+  privacy: Privacy;
 };
 
 const LOOPBACK = new Set(["localhost", "127.0.0.1", "[::1]"]);
@@ -103,6 +122,24 @@ function mediaDirectory(value: string | undefined): string | undefined {
   );
 }
 
+const EMAIL = /^[^\s@:/?#]+@[^\s@:/?#]+\.[^\s@:/?#.]+$/;
+
+// A contact the apps open as a link: a mailto: of one plain address, or an https URL with a host.
+// Unset or empty means not given; anything else stops the start.
+function contact(name: string, value: string | undefined): string | null {
+  if (value === undefined || value === "") return null;
+  const text = value.trim();
+  const url = URL.parse(text);
+  const valid =
+    url !== null &&
+    ((url.protocol === "mailto:" && EMAIL.test(decodeURIComponent(url.pathname)) && !url.search) ||
+      (url.protocol === "https:" && url.hostname !== ""));
+  if (!valid) {
+    throw new Error(`Invalid configuration:\n${name} must be an e-mail address or an https URL`);
+  }
+  return text;
+}
+
 export function loadConfig(env: Record<string, string | undefined>): Config {
   const parsed = schema.safeParse(env);
   if (!parsed.success) {
@@ -138,6 +175,13 @@ export function loadConfig(env: Record<string, string | undefined>): Config {
   }
   const publicUrl = new URL(e.PUBLIC_URL);
   const mediaDir = mediaDirectory(e.BELAY_MEDIA_DIR);
+  const privacy: Privacy = {
+    operator: contact("BELAY_OPERATOR", e.BELAY_OPERATOR),
+    contact: contact("BELAY_PRIVACY_CONTACT", e.BELAY_PRIVACY_CONTACT),
+    support: contact("BELAY_SUPPORT_CONTACT", e.BELAY_SUPPORT_CONTACT),
+    location: e.BELAY_DATA_LOCATION?.trim() || null,
+    backupDays: e.BELAY_BACKUP_DAYS ?? null,
+  };
   return {
     databaseUrl: e.DATABASE_URL,
     appDatabaseUrl: e.APP_DATABASE_URL,
@@ -164,5 +208,6 @@ export function loadConfig(env: Record<string, string | undefined>): Config {
     webDist: e.WEB_DIST,
     migrationsDir: e.MIGRATIONS_DIR,
     mediaDir,
+    privacy,
   };
 }

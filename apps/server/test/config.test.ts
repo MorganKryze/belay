@@ -2,6 +2,9 @@ import { mkdirSync, mkdtempSync, realpathSync, symlinkSync, writeFileSync } from
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { API_VERSION, CONSENT_VERSION } from "@belay/shared/sync/limits";
+import { createApp } from "../src/app";
+import { oidcProvider } from "../src/auth/oidc";
 import { loadConfig } from "../src/config";
 import { testEnv } from "./config";
 
@@ -182,5 +185,78 @@ describe("loadConfig", () => {
         /Invalid configuration:\nBELAY_MEDIA_DIR must be an existing directory/,
       );
     }
+  });
+});
+
+describe("the instance's privacy settings", () => {
+  const privacyEnv = {
+    BELAY_OPERATOR: "https://operator.example.org",
+    BELAY_PRIVACY_CONTACT: "mailto:privacy@example.org",
+    BELAY_SUPPORT_CONTACT: "https://example.org/help",
+    BELAY_DATA_LOCATION: "Paris, France",
+    BELAY_BACKUP_DAYS: "14",
+  };
+
+  it("refuses a malformed operator, contact or support", () => {
+    for (const name of ["BELAY_OPERATOR", "BELAY_PRIVACY_CONTACT", "BELAY_SUPPORT_CONTACT"]) {
+      for (const value of [
+        "privacy@example.org",
+        "mailto:not an address",
+        "mailto:",
+        "http://example.org",
+        "ftp://example.org",
+        "https://",
+        "   ",
+        "javascript:alert(1)",
+      ]) {
+        expect(() => loadConfig(testEnv({ [name]: value })), `${name}=${value}`).toThrow(
+          `Invalid configuration:\n${name} must be an e-mail address or an https URL`,
+        );
+      }
+    }
+    expect(loadConfig(testEnv(privacyEnv)).privacy).toEqual({
+      operator: "https://operator.example.org",
+      contact: "mailto:privacy@example.org",
+      support: "https://example.org/help",
+      location: "Paris, France",
+      backupDays: 14,
+    });
+  });
+
+  it("reads backup days as whole days", () => {
+    expect(loadConfig(testEnv({ BELAY_BACKUP_DAYS: "0" })).privacy.backupDays).toBe(0);
+    expect(loadConfig(testEnv({ BELAY_BACKUP_DAYS: "30" })).privacy.backupDays).toBe(30);
+    for (const value of ["1.5", "-1", "two", "7d"]) {
+      expect(() => loadConfig(testEnv({ BELAY_BACKUP_DAYS: value })), value).toThrow(
+        /BELAY_BACKUP_DAYS/,
+      );
+    }
+  });
+
+  it("serves the settings and the consent version in /api/instance, each null when unset", async () => {
+    const probe = { app: "belay", api: API_VERSION, origin: "http://localhost:3000" };
+    const serve = (env: Record<string, string>) => {
+      const cfg = loadConfig(testEnv(env));
+      // No route here reaches the database or the identity provider.
+      return createApp({ cfg, db: undefined as never, getOidc: oidcProvider(cfg.oidc) });
+    };
+    const set = await serve(privacyEnv).request("/api/instance");
+    expect(await set.json()).toEqual({
+      ...probe,
+      consentVersion: CONSENT_VERSION,
+      privacy: {
+        operator: "https://operator.example.org",
+        contact: "mailto:privacy@example.org",
+        support: "https://example.org/help",
+        location: "Paris, France",
+        backupDays: 14,
+      },
+    });
+    const unset = await serve({ BELAY_DATA_LOCATION: "  " }).request("/api/instance");
+    expect(await unset.json()).toEqual({
+      ...probe,
+      consentVersion: CONSENT_VERSION,
+      privacy: { operator: null, contact: null, support: null, location: null, backupDays: null },
+    });
   });
 });

@@ -170,6 +170,13 @@ describe("consent to the instance's privacy notice", () => {
     expect(await res.json()).toEqual({ error: "consent_required" });
   });
 
+  it("refuses an unconsented account's malformed sync with 403 consent_required, not 400", async () => {
+    const { call } = await signIn("consent-before-schema");
+    const res = await call("/api/sync", { account: 42, cursor: [], changes: [{ kind: "nope" }] });
+    expect(res.status).toBe(403);
+    expect(await res.json()).toEqual({ error: "consent_required" });
+  });
+
   it("refuses another version with 409 consent_version and records nothing", async () => {
     const { user, call } = await signIn("consent-old");
     const at = new Date().toISOString();

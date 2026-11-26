@@ -1,4 +1,4 @@
-import { API_VERSION } from "@belay/shared/sync/limits";
+import { API_VERSION, CONSENT_VERSION } from "@belay/shared/sync/limits";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { sql } from "drizzle-orm";
 import { Hono, type MiddlewareHandler } from "hono";
@@ -81,7 +81,13 @@ export function createApp({ cfg, db, getOidc }: { cfg: Config; db: Db; getOidc: 
   // Public on purpose: the web app already tells anyone it is Belay, and the iPhone app needs the
   // origin where sign-in lives before it has a session.
   app.get("/api/instance", (c) =>
-    c.json({ app: "belay", api: API_VERSION, origin: cfg.publicUrl.origin }),
+    c.json({
+      app: "belay",
+      api: API_VERSION,
+      origin: cfg.publicUrl.origin,
+      consentVersion: CONSENT_VERSION,
+      privacy: cfg.privacy,
+    }),
   );
   app.route("/auth", authRoutes(cfg, db, getOidc));
   app.route("/api", apiRoutes(cfg, db));
