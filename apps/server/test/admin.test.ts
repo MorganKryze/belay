@@ -77,7 +77,11 @@ describe("the operator's command", () => {
     const headers = await session(user);
     await session(other);
     const res = await admin(["rebind", "--from", OLD, "moved", "--to", NEW, "moved-2"]);
-    expect(res).toMatchObject({ code: 0, out: ["rebound"], err: [] });
+    expect(res).toMatchObject({
+      code: 0,
+      out: [`rebound ${OLD} moved to ${NEW} moved-2`],
+      err: [],
+    });
     expect(await identityOf(user)).toEqual({ iss: NEW, sub: "moved-2" });
     expect(await sessionCount(user)).toBe(0);
     expect(await sessionCount(other)).toBe(1);
@@ -145,6 +149,29 @@ describe("the operator's command", () => {
     expect(await identityOf(first)).toEqual({ iss: fresh, sub: "f" });
   });
 
+  it("refuses to pick between two saved spellings of this instance's provider and names both", async () => {
+    const one = "https://twice-idp.test/realm";
+    const two = "https://twice-idp.test/realm/";
+    await upsertUser(db, { issuer: one, sub: "spelled-1", displayName: "1" });
+    await upsertUser(db, { issuer: two, sub: "spelled-2", displayName: "2" });
+    const user = await upsertUser(db, { issuer: OLD, sub: "to-twice", displayName: "T" });
+    const res = await admin(["rebind", "--from", OLD, "to-twice", "--to", one, "t"], {
+      issuer: one,
+    });
+    expect(res.code).toBe(1);
+    expect(res.out).toEqual([]);
+    expect(res.err).toHaveLength(1);
+    expect(res.err[0]).toContain(`"${one}"`);
+    expect(res.err[0]).toContain(`"${two}"`);
+    expect(res.err[0]).toContain("--force-issuer");
+    expect(await identityOf(user)).toEqual({ iss: OLD, sub: "to-twice" });
+    const forced = await admin(
+      ["rebind", "--from", OLD, "to-twice", "--to", two, "t", "--force-issuer"],
+      { issuer: one },
+    );
+    expect(forced).toMatchObject({ code: 0, out: [`rebound ${OLD} to-twice to ${two} t`] });
+  });
+
   it("refuses an unknown identity and an identity already taken, changing nothing", async () => {
     const a = await upsertUser(db, { issuer: OLD, sub: "taken-a", displayName: "A" });
     const b = await upsertUser(db, { issuer: NEW, sub: "taken-b", displayName: "B" });
@@ -177,12 +204,15 @@ describe("the operator's command", () => {
   it("moves an account to another provider only when told to, and takes this instance's issuer as written", async () => {
     const user = await upsertUser(db, { issuer: OLD, sub: "provider", displayName: "P" });
     const slash = await admin(["rebind", "--from", OLD, "provider", "--to", `${NEW}/`, "p-1"]);
-    expect(slash).toMatchObject({ code: 0, out: ["rebound"] });
+    expect(slash).toMatchObject({ code: 0, out: [`rebound ${OLD} provider to ${NEW} p-1`] });
     expect(await identityOf(user)).toEqual({ iss: NEW, sub: "p-1" });
     const other = "https://elsewhere.test";
     const args = ["rebind", "--from", NEW, "p-1", "--to", other, "p-2"];
     expect((await admin(args)).code).toBe(2);
-    expect(await admin([...args, "--force-issuer"])).toMatchObject({ code: 0, out: ["rebound"] });
+    expect(await admin([...args, "--force-issuer"])).toMatchObject({
+      code: 0,
+      out: [`rebound ${NEW} p-1 to ${other} p-2`],
+    });
     expect(await identityOf(user)).toEqual({ iss: other, sub: "p-2" });
     expect(
       (await admin(["rebind", "--from", other, "p-2", "--to", NEW, "s".repeat(255)])).code,

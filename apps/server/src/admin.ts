@@ -109,12 +109,20 @@ function open(url: string | undefined, debug: Io["debug"]) {
 }
 
 // The issuer an earlier sign-in through this provider saved, else OIDC_ISSUER as written: the
-// provider's own text is known only once someone has signed in through it.
+// provider's own text is known only once someone has signed in through it. Two saved spellings of
+// it leave no form to pick: the operator names one with --force-issuer.
 async function signInForm(tx: postgres.TransactionSql, issuer: string): Promise<string> {
   const key = issuerKey(issuer);
-  const saved = await tx<{ oidc_issuer: string }[]>`select distinct oidc_issuer from users`;
-  const same = saved.find((row) => issuerKey(row.oidc_issuer) === key);
-  return same?.oidc_issuer ?? issuer;
+  const saved = await tx<{ oidc_issuer: string }[]>`
+    select distinct oidc_issuer from users order by oidc_issuer`;
+  const same = saved.filter((row) => issuerKey(row.oidc_issuer) === key).map((r) => r.oidc_issuer);
+  if (same.length > 1) {
+    const listed = same.map((form) => JSON.stringify(form)).join(", ");
+    throw new Refusal(
+      `accounts hold ${same.length} spellings of this issuer (${listed}): pass the one to keep with --force-issuer`,
+    );
+  }
+  return same[0] ?? issuer;
 }
 
 export async function runAdmin(args: string[], io: Io): Promise<number> {
@@ -129,7 +137,8 @@ export async function runAdmin(args: string[], io: Io): Promise<number> {
     sql = open(io.databaseUrl, io.debug);
     const db = sql;
     if (command.name === "rebind") {
-      await db.begin(async (tx) => {
+      // Issuer and subject only: no health data in the operator's terminal.
+      const saved = await db.begin(async (tx) => {
         const [fromIss, fromSub] = command.from;
         const [given, toSub] = command.to;
         // Saved as this instance's sign-ins write it (the provider's iss), not as OIDC_ISSUER reads.
@@ -142,8 +151,9 @@ export async function runAdmin(args: string[], io: Io): Promise<number> {
         if (taken) throw new Refusal("an account already has that identity");
         await tx`update users set oidc_issuer = ${toIss}, oidc_sub = ${toSub} where id = ${account.id}`;
         await tx`delete from sessions where user_id = ${account.id}`;
+        return `${toIss} ${toSub}`;
       });
-      io.out("rebound");
+      io.out(`rebound ${command.from.join(" ")} to ${saved}`);
     } else {
       // Looked up without a lock, then erased in the server's order: the account's sync key, then
       // its row (belay_erase_account), so a running sync ends first and nothing deadlocks.
