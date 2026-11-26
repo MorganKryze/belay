@@ -726,6 +726,15 @@ struct Seance {
     #expect(work.2 == 30)
   }
 
+  @Test func workLoadPastTheBoundFromAWarmupIsRefused() throws {
+    let s = try Seance([Seance.slot(warmups: 2)], past: [(Seance.squat, 100, 8)])
+    let before = try s.queued
+    let stored = try s.active
+    #expect(throws: StoreError.invalidChange) { try s.actions.choose(weightKg: 600, count: nil, atWork: true) }
+    #expect(try s.queued == before)
+    #expect(try s.active == stored)
+  }
+
   @Test func loadPastTheBoundIsRefusedWhenChosenAndBringsNoWarmup() throws {
     let s = try Seance([Seance.slot(warmups: 2)], past: [(Seance.squat, 0, 8)])
     let before = try s.queued

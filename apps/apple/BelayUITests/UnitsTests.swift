@@ -419,6 +419,33 @@ final class UnitsTests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Travail\u{202F}: 138\u{202F}lb"].exists)
     }
 
+    /// 132 lb typed through the line over a 60 kg work load is the load as shown: the work load
+    /// keeps its exact kilos, not 59,75.
+    func testWorkLoadTypedAsShownInPoundsKeepsItsKilos() {
+        let app = launch("history")
+        openCover(app)
+        XCTAssertTrue(dueSet(app, "Montée 1 sur 2"), "the first warm-up")
+        typeWorkLoad(app, "60")
+        XCTAssertTrue(workLoadReads(app, "Charge de travail, 60 kilos"), element(app, "work-load").label)
+        switchUnit(app, to: "livres")
+        XCTAssertTrue(workLoadReads(app, "Charge de travail, 132 livres"), element(app, "work-load").label)
+        typeWorkLoad(app, "132")
+        switchUnit(app, to: "kilos")
+        XCTAssertTrue(workLoadReads(app, "Charge de travail, 60 kilos"), element(app, "work-load").label)
+    }
+
+    /// 600 kg typed through the line is past the bounds: refused aloud, nothing changes.
+    func testWorkLoadPastTheBoundsRefusedFromAWarmup() {
+        let app = launch("history")
+        openCover(app)
+        XCTAssertTrue(dueSet(app, "Montée 1 sur 2"), "the first warm-up")
+        let queued = queuedSets(app)
+        typeWorkLoad(app, "600")
+        dismissRefusal(app)
+        XCTAssertTrue(workLoadReads(app, "Charge de travail, 62,5 kilos"), element(app, "work-load").label)
+        XCTAssertEqual(queuedSets(app), queued, "nothing more is queued")
+    }
+
     /// The captures: the line at the default size, at a large size, dark, and the choice open.
     func testWorkLoadCaptures() throws {
         try XCTSkipIf(ProcessInfo.processInfo.environment["BELAY_CAPTURE"] == nil, "captures only on demand")
