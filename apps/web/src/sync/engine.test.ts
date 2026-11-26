@@ -481,6 +481,30 @@ describe("a held contract", () => {
     stop();
   });
 
+  it("holds on a mismatch asked before the latest return, and still owes the check", async () => {
+    const send = vi.fn<Send>(async () => ok(empty("5")));
+    const first = deferred();
+    const checkVersion = answers(null, first.promise, "unreached");
+    const engine = engineWith(send, { checkVersion });
+    const stop = engine.start();
+    await vi.waitFor(() => expect(send).toHaveBeenCalledTimes(1));
+    await vi.waitFor(() => expect(engine.status()).toBe("idle"));
+    document.dispatchEvent(new Event("visibilitychange"));
+    document.dispatchEvent(new Event("visibilitychange"));
+    await tick();
+    first.resolve("instance-ahead");
+    // The stale answer, the check asked again, then the run the second return queued.
+    await vi.waitFor(() => expect(checkVersion).toHaveBeenCalledTimes(4));
+    await tick();
+    expect(send).toHaveBeenCalledTimes(1);
+    expect(engine.status()).toBe("instance-ahead");
+    await engine.sync();
+    expect(checkVersion).toHaveBeenCalledTimes(5);
+    expect(send).toHaveBeenCalledTimes(1);
+    expect(engine.status()).toBe("instance-ahead");
+    stop();
+  });
+
   it("asks the version again after a failed send", async () => {
     const send = vi.fn<Send>(async () => ({ kind: "failed" }));
     const checkVersion = answers(null, "instance-ahead");
