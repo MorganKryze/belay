@@ -139,6 +139,16 @@ const dumpOf = async (user: string) => {
   return out;
 };
 
+const pause = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+const settled = (p: Promise<unknown>) => {
+  let done = false;
+  void p.then(
+    () => (done = true),
+    () => (done = true),
+  );
+  return () => done;
+};
+
 const countsOf = async (user: string) => {
   const out: Record<string, number> = {};
   for (const table of await userTables()) {
@@ -236,6 +246,32 @@ describe("deleting an account", () => {
     expect(tables.map((t) => t.table_name)).toEqual(await userTables());
   });
 
+  it("waits for a sync of the same account before erasing it", async () => {
+    const { user, phone } = await account("delete-wait");
+    const hash = hashToken(phone.token, cfg.tokenHashKey);
+    let erase: Promise<string | null> | undefined;
+    await ownerConn.client.begin(async (t) => {
+      await t`select pg_advisory_xact_lock(hashtextextended(${user}, 0))`;
+      erase = deleteAccount(db, hash);
+      const done = settled(erase);
+      await pause(300);
+      expect(done()).toBe(false);
+    });
+    expect(await erase).toBe(user);
+  });
+
+  it("opens no session, and throws nothing, for a sign-in redeemed while its account is erased", async () => {
+    const user = await upsertUser(db, { issuer, sub: "delete-midway", displayName: "M" });
+    let opened: Promise<boolean> | undefined;
+    await ownerConn.client.begin(async (t) => {
+      await t`select 1 from users where id = ${user} for update`;
+      opened = createSession(db, hashToken(newSessionToken(), cfg.tokenHashKey), user, 30);
+      await pause(300);
+      await t`delete from users where id = ${user}`;
+    });
+    expect(await opened).toBe(false);
+  });
+
   it("clears the session cookie of the browser that deleted the account", async () => {
     const user = await upsertUser(db, { issuer, sub: "delete-cookie", displayName: "K" });
     const token = newSessionToken();
@@ -318,11 +354,8 @@ describe("a sign-in code issued before the account was deleted", () => {
   });
   afterAll(() => idp.stop());
 
-  async function signIn(
-    claims: Record<string, unknown>,
-    from = `/auth/native/start?challenge=${CHALLENGE}`,
-  ) {
-    const res = await native.request(from);
+  async function signIn(claims: Record<string, unknown>) {
+    const res = await native.request(`/auth/native/start?challenge=${CHALLENGE}`);
     expect(res.status).toBe(302);
     const authUrl = new URL(res.headers.get("location")!);
     const txCookie = res.headers.get("set-cookie")!.split(";")[0]!;

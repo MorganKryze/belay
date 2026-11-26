@@ -13,6 +13,11 @@ ALTER TABLE ended_sessions ENABLE ROW LEVEL SECURITY;
 CREATE FUNCTION belay_erase_account(p_user uuid)
 RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
 BEGIN
+  -- The key a sync of this account holds (api/sync.ts): a running sync ends first, and the next
+  -- one starts after the erasure, so it meets a gone account, never a half-deleted one.
+  PERFORM pg_advisory_xact_lock(hashtextextended(p_user::text, 0));
+  -- Then the account's row, so a session opened meanwhile waits and is copied below, or is refused.
+  PERFORM 1 FROM users WHERE id = p_user FOR UPDATE;
   DELETE FROM ended_sessions WHERE expires_at <= now();
   INSERT INTO ended_sessions (token_hash, expires_at)
     SELECT token_hash, expires_at FROM sessions WHERE user_id = p_user AND expires_at > now()
@@ -54,9 +59,17 @@ RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_t
 BEGIN
   DELETE FROM sessions WHERE expires_at <= now();
   DELETE FROM ended_sessions WHERE expires_at <= now();
+  -- Held until commit: an erasure waits for this session and copies it, or ran first and left
+  -- nothing to find.
+  PERFORM 1 FROM users WHERE id = p_user_id FOR KEY SHARE;
+  IF NOT FOUND THEN
+    RETURN false;
+  END IF;
   INSERT INTO sessions (token_hash, user_id, expires_at)
-    SELECT p_token_hash, p_user_id, now() + p_ttl WHERE EXISTS (SELECT 1 FROM users WHERE id = p_user_id);
-  RETURN FOUND;
+    VALUES (p_token_hash, p_user_id, now() + p_ttl);
+  RETURN true;
+EXCEPTION WHEN foreign_key_violation THEN
+  RETURN false;
 END
 $$;
 --> statement-breakpoint
