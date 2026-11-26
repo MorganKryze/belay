@@ -774,7 +774,7 @@ final class MovingClock: Sendable {
     #expect(planFor(c, activities: try store.activities(), date: day) == c.slots)
   }
 
-  @Test func pulledKindsObserved() async throws {
+  @Test(.timeLimit(.minutes(1))) func pulledKindsObserved() async throws {
     var answer = Fixture.response(cursor: "9")
     answer.profile = ProfileRow(
       formula: nil, formulaAt: nil, birthYear: 1990, birthYearAt: Fixture.time(1), heightCm: nil,
@@ -794,26 +794,22 @@ final class MovingClock: Sendable {
     answer.steps = [StepsRow(date: day, steps: 7000, stepsAt: Fixture.time(1))]
     let landed = answer
 
-    let values = store.observe(AccountStore.body)
-    let seen = try await withThrowingTaskGroup(of: Bool.self) { group in
-      group.addTask {
-        for try await read in values
-        where read.profile?.birthYear == 1990 && read.target?.minPct == 0.25
-          && read.supplements.map(\.name) == ["Zinc"] && read.activities.count == 1
-          && read.steps.map(\.steps) == [7000]
-        {
-          return true
-        }
-        return false
-      }
-      group.addTask { [store] in
+    // The pull lands once the first read is in, so the observation has to carry it; no clock
+    // decides the outcome, the time limit only stops a broken observation from hanging.
+    var applied = false
+    var seen = false
+    for try await read in store.observe(AccountStore.body) {
+      if !applied {
+        applied = true
         try store.applyServer(sent: [], response: landed)
-        try await Task.sleep(for: .seconds(1))
-        return false
       }
-      let first = try await group.next() ?? false
-      group.cancelAll()
-      return first
+      if read.profile?.birthYear == 1990 && read.target?.minPct == 0.25
+        && read.supplements.map(\.name) == ["Zinc"] && read.activities.count == 1
+        && read.steps.map(\.steps) == [7000]
+      {
+        seen = true
+        break
+      }
     }
     #expect(seen)
   }

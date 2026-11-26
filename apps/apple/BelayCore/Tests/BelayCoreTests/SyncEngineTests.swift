@@ -469,6 +469,76 @@ extension Fixture {
     #expect(await engine.status == .instanceAhead)
   }
 
+  @Test func aSameAnswerAskedBeforeAReturnKeepsTheHoldAndTheCheckOwed() async throws {
+    let transport = ScriptedTransport { _, _ in Fixture.ok() }
+    let probe = ScriptedProbe(.instanceBehind, sends: transport)
+    let engine = engine(transport, probe: probe)
+    await engine.sync()
+    #expect(await engine.status == .instanceBehind)
+
+    await engine.versionOwed()
+    await probe.answer(.same)
+    await probe.hold()
+    let run = Task { await engine.sync() }
+    try await eventually { await probe.asks.count == 2 }
+    // The person comes back while that check is out; the check asked again finds no network.
+    await engine.versionOwed()
+    await probe.answer(nil)
+    await probe.release()
+    await run.value
+
+    #expect(await probe.asks.count == 3)
+    #expect(await transport.requests.isEmpty)
+    #expect(await engine.status == .instanceBehind)
+    await engine.sync()
+    #expect(await probe.asks.count == 4)
+  }
+
+  @Test func anUnreachedAnswerAskedBeforeAReturnAsksAgainBeforeAnySend() async throws {
+    let transport = ScriptedTransport { _, _ in Fixture.ok() }
+    let probe = ScriptedProbe(.same, sends: transport)
+    let engine = engine(transport, probe: probe)
+    await engine.sync()
+    #expect(await transport.requests.count == 1)
+
+    await engine.versionOwed()
+    await probe.answer(nil)
+    await probe.hold()
+    let run = Task { await engine.sync() }
+    try await eventually { await probe.asks.count == 2 }
+    // The person comes back while that check finds no network; the instance was updated.
+    await engine.versionOwed()
+    await probe.answer(.instanceAhead)
+    await probe.release()
+    await run.value
+
+    #expect(await transport.requests.count == 1)
+    #expect(await engine.status == .instanceAhead)
+  }
+
+  @Test func aMismatchAskedBeforeAReturnHoldsWhenTheNextCheckFindsNoNetwork() async throws {
+    let transport = ScriptedTransport { _, _ in Fixture.ok() }
+    let probe = ScriptedProbe(.same, sends: transport)
+    let engine = engine(transport, probe: probe)
+    await engine.sync()
+    #expect(await transport.requests.count == 1)
+
+    await engine.versionOwed()
+    await probe.answer(.instanceAhead)
+    await probe.hold()
+    let run = Task { await engine.sync() }
+    try await eventually { await probe.asks.count == 2 }
+    await engine.versionOwed()
+    await probe.answer(nil)
+    await probe.release()
+    await run.value
+
+    #expect(await transport.requests.count == 1)
+    #expect(await engine.status == .instanceAhead)
+    await engine.sync()
+    #expect(await probe.asks.count == 4)
+  }
+
   /// A return while a run is past its check: the run it starts after that one asks the version.
   @Test func aReturnDuringASendIsCheckedByTheRunAfter() async throws {
     let transport = ScriptedTransport { _, _ in Fixture.ok() }
