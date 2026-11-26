@@ -458,7 +458,11 @@ describe("deleting an account", () => {
     const { user, phone } = await account("delete-purge");
     const tablet = await device(user);
     expect((await phone.call("/api/me/delete", {})).status).toBe(204);
-    await owner.execute(sql`update ended_sessions set expires_at = now() - interval '1 second'`);
+    const ended = [phone.token, tablet.token].map((t) => hashToken(t, cfg.tokenHashKey));
+    await owner.execute(
+      sql`update ended_sessions set expires_at = now() - interval '1 second'
+          where token_hash in (${sql.join(ended, sql`, `)})`,
+    );
     expect((await tablet.call("/api/me")).status).toBe(401);
     // The next deletion or sign-in purges it.
     const next = await upsertUser(db, { issuer, sub: "delete-purge-next", displayName: "N" });
