@@ -67,6 +67,8 @@ final class AccountModel {
     private let health: any HealthWriting
     /// One Health run at a time, cancelled when the store closes.
     private let healthRuns: HealthRuns
+    /// The paired watch, told of every change of the session.
+    private let watch: any WatchPublishing
 
     private static let log = Logger(subsystem: "cloud.libresoftware.belay", category: "account")
 
@@ -75,7 +77,7 @@ final class AccountModel {
         sheet: SignInSheet = SystemSignInSheet(), defaults: UserDefaults = .standard,
         storeFolder: URL = URL.applicationSupportDirectory.appending(path: "Stores", directoryHint: .isDirectory),
         loopsFolder: URL = URL.cachesDirectory.appending(path: "Loops", directoryHint: .isDirectory),
-        health: any HealthWriting = HealthKitWriter()
+        health: any HealthWriting = HealthKitWriter(), watch: any WatchPublishing = NoWatch()
     ) {
         session = StoredSession(store: secrets, defaults: defaults)
         self.http = http
@@ -86,6 +88,7 @@ final class AccountModel {
         media = session.media
         self.health = health
         healthRuns = HealthRuns(writer: health)
+        self.watch = watch
         if let instance = storedInstance, let token = session.token(origin: instance.origin.absoluteString),
            let userId = session.userId {
             state = .signedIn(Account(userId: userId, instance: instance, token: token))
@@ -110,8 +113,10 @@ final class AccountModel {
     }
 
     /// The store and its sync are open exactly while signed in. Signing out closes them and keeps
-    /// the file, queue included, for that account's next sign-in.
+    /// the file, queue included, for that account's next sign-in. Every change of state passes
+    /// here, so the watch is told of each one.
     private func followState() {
+        tellWatch()
         guard case .signedIn(let account) = state else { return closeStore() }
         if openedFor != account { closeStore() }
         if store == nil { openStore() }
@@ -372,6 +377,15 @@ final class AccountModel {
         { @MainActor [self] url in await sheet.open(url) }
     }
 
+    /// The answer to the watch's request: the kept session, from the same store the app signs in
+    /// with, or signed out.
+    func watchReply() -> [String: String] {
+        Handover.reply(session: session, origin: storedInstance?.origin.absoluteString)
+    }
+
+    /// Whether a paired watch has Belay on it, so signing out here signs it out too.
+    var watchAppInstalled: Bool { watch.watchAppInstalled }
+
     /// The instance last signed in to.
     private var storedInstance: Instance? {
         defaults.string(forKey: StoredInstance.key).flatMap { Instance(storedOrigin: $0) }
@@ -424,8 +438,15 @@ final class AccountModel {
         await open(token: token, at: instance)
     }
 
+    /// What the watch is told depends on the kept session as well as the state: a session the
+    /// instance names only now becomes one the watch can be handed.
+    private func tellWatch() {
+        watch.publish(Handover.state(session: session, origin: storedInstance?.origin.absoluteString))
+    }
+
     private func remember(_ me: Me) {
         session.remember(userId: me.id, displayName: me.displayName, media: me.media)
+        tellWatch()
         displayName = me.displayName
         media = me.media
     }

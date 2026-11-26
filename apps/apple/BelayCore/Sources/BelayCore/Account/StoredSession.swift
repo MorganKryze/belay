@@ -11,6 +11,9 @@ public struct StoredSession {
   static let nameKey = "belay.userName"
   /// Whether the instance serves exercise loops, under the web's own preference name.
   static let mediaKey = "belay.media"
+  /// A random id for the kept token, which the iPhone publishes to its watch in place of the token:
+  /// a new id tells the watch the session changed. Every new token and every sign-out removes it.
+  static let handoverKey = "belay.handoverId"
   private let store: SecretStore
   private let defaults: UserDefaults
 
@@ -33,6 +36,16 @@ public struct StoredSession {
   /// Whether that person's instance serves exercise loops, as it last said.
   public var media: Bool { defaults.bool(forKey: Self.mediaKey) }
 
+  /// The id of the token kept for `origin`, or nil when none is kept. A token kept before ids
+  /// existed gets one here, the first time it is asked for.
+  public func handoverId(origin: String) -> String? {
+    guard token(origin: origin) != nil else { return nil }
+    if let id = defaults.string(forKey: Self.handoverKey) { return id }
+    let id = UUID().uuidString
+    defaults.set(id, forKey: Self.handoverKey)
+    return id
+  }
+
   /// Keeps `token` for `origin`; the mark goes only once the token is in the store.
   public func keep(origin: String, token: String) throws {
     // The defaults can outlive the Keychain (a device restore brings back one, not the other), so an
@@ -40,6 +53,7 @@ public struct StoredSession {
     defaults.removeObject(forKey: Self.userKey)
     defaults.removeObject(forKey: Self.nameKey)
     defaults.removeObject(forKey: Self.mediaKey)
+    defaults.removeObject(forKey: Self.handoverKey)
     try store.write(origin: origin, token: token)
     defaults.removeObject(forKey: Self.signedOutKey)
   }
@@ -57,6 +71,7 @@ public struct StoredSession {
     defaults.removeObject(forKey: Self.userKey)
     defaults.removeObject(forKey: Self.nameKey)
     defaults.removeObject(forKey: Self.mediaKey)
+    defaults.removeObject(forKey: Self.handoverKey)
     defaults.set(true, forKey: Self.signedOutKey)
     try store.clear()
   }

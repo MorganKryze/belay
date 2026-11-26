@@ -1,19 +1,22 @@
-# Belay for iPhone
+# Belay for iPhone and Apple Watch
 
 The native iPhone app: SwiftUI, iOS 26.1 and later, Swift 6 with the main actor as the default
 isolation. It talks to any Belay instance of this release or a later one, keeps what it needs on
 the phone to work offline, and syncs when it can. Its rules and its store live in `BelayCore`, a
 Swift package tested against cases the shared TypeScript rules compute. The **BelayActivity**
-extension draws the session on the lock screen.
+extension draws the session on the lock screen. The **Apple Watch app** (watchOS 26.0 and later,
+`BelayWatch`) is embedded in the iPhone app and signed in by it: the iPhone hands it its session
+when the watch asks, and the watch never signs in on its own.
 
 ## Build for the simulator
 
 It needs Xcode 27.2 or later, for the iOS 27 SDK. Nothing else to set up, the build needs no
-signing:
+signing. It builds the watch app too, so it names no `-sdk`: an iPhone SDK would force its platform
+on the watch app.
 
 ```sh
 xcodebuild -project apps/apple/Belay.xcodeproj -scheme Belay -configuration Debug \
-  -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+  -destination 'generic/platform=iOS Simulator' \
   -derivedDataPath "$HOME/belay-dd" CODE_SIGNING_ALLOWED=NO build -quiet
 ```
 
@@ -34,12 +37,22 @@ pnpm vectors
 pnpm vectors:check
 ```
 
-The UI tests run on a simulator, one class at a time:
+The UI tests run on a simulator, one class at a time. The watch app has its own scheme,
+`BelayWatch`, and its tests run on a watch simulator paired with an iPhone simulator (list the pairs
+with `xcrun simctl list pairs`). Install the iPhone app on that paired iPhone simulator first
+(`xcrun simctl install <paired iPhone simulator> "$HOME/belay-dd/Build/Products/Debug-iphonesimulator/Belay.app"`,
+after one build of the `Belay` scheme): without it, the watch simulator removes the watch app during
+the run.
 
 ```sh
 xcodebuild test -project apps/apple/Belay.xcodeproj -scheme Belay \
   -destination 'platform=iOS Simulator,name=<an installed iPhone simulator>' \
   -derivedDataPath "$HOME/belay-dd" -only-testing:BelayUITests/ShellTests CODE_SIGNING_ALLOWED=NO
+
+xcodebuild test -project apps/apple/Belay.xcodeproj -scheme BelayWatch \
+  -destination 'platform=watchOS Simulator,name=<an installed Apple Watch simulator>' \
+  -derivedDataPath "$HOME/belay-dd" -only-testing:BelayWatchUITests/WatchShellTests \
+  CODE_SIGNING_ALLOWED=NO
 ```
 
 ## Install on your phone from the command line
@@ -66,11 +79,27 @@ xcodebuild test -project apps/apple/Belay.xcodeproj -scheme Belay \
 The bundle id is `cloud.libresoftware.belay`, the same as the previous app, so the new one installs
 in its place and keeps its icon slot.
 
+The watch app (`cloud.libresoftware.belay.watchkitapp`) rides inside the iPhone app. Installing it
+on a real watch is not settled yet: with a free developer account the watch app signs, but the
+watch refuses it (« the integrity of this app could not be verified ») when the Watch app on the
+iPhone installs it. A paid account is expected to fix this; until then the watch app is tested in
+the simulator. To try on a watch anyway:
+
+- Turn on Developer Mode on the watch, in **Settings › Privacy & Security**; it restarts the watch.
+  The setting appears once Xcode has connected to the watch (**Window › Devices and Simulators**).
+- Put the iPhone, the watch and the Mac on the same Wi-Fi network, with no Personal Hotspot on.
+- Build the `BelayWatch` scheme once for the watch itself, so your team registers it:
+  `xcodebuild -project apps/apple/Belay.xcodeproj -scheme BelayWatch -destination 'id=<watch identifier>'
+  -allowProvisioningUpdates -allowProvisioningDeviceRegistration build`, then steps 3 and 4 again, and
+  in the Watch app on the iPhone, **Belay › Install**.
+
+Open Belay on the watch and it asks the iPhone for its session; the iPhone must be signed in.
+
 ## Re-install every 7 days
 
 With a free developer account, the profile that signs the app expires after 7 days and the app
-stops opening. Run steps 3 and 4 again; nothing stored on the phone is lost by installing over the
-top. A paid account lasts a year.
+stops opening. Run steps 3 and 4 again; nothing stored on the phone is lost
+by installing over the top. A paid account lasts a year.
 
 ## Apple Health
 
@@ -88,7 +117,8 @@ Belay**. Turning the setting off, or deleting the account, removes nothing from 
 ## CI
 
 The `ios` workflow (`.github/workflows/ios.yml`) runs one job on a macOS runner with Xcode 27.2: the
-core's tests, then the simulator build above, unsigned and with no secret. It starts only when a
+core's tests, then the simulator build above, which builds the iPhone app with its watch app,
+unsigned and with no secret, then a check that the watch app asks for no privilege. It starts only when a
 pull request or a push to `main` changes `apps/apple`, `packages/shared`,
 `scripts/swift-vectors.ts` or the workflow itself. A newer push cancels the older run, and the job
 stops at 30 minutes. The UI tests stay off CI: the suite takes about 85 minutes, so they run on a

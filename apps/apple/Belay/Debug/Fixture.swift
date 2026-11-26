@@ -64,9 +64,16 @@ import WebKit
 /// `loopOffline` the first ask for each loop as a phone off the network, the next with the loop.
 /// `mediaStale` keeps a session from before the instance said it serves loops: `/api/me` says it does.
 ///
+/// `unnamed` keeps a session the instance has not yet named: `/api/me` names it.
+///
 /// `-BelayApi same|behind|ahead|none` stands an instance on this build's contract version, the one
 /// before, the one after, or one whose version check never answers; with it, the sync lands an empty
 /// answer while the versions match. `signedOut` keeps no session, the instance's address in the field.
+///
+/// `-BelayWatch installed|none` stands a recording link in for the paired watch, with Belay on it
+/// or not; without it the fixture has no watch. Its probes say what the watch was last told,
+/// « session·<n> » or « signedOut·<n> » with n the session ids published so far, and what it would
+/// be handed, « session|<host> » or « signedOut »: never a token, an id or a name.
 ///
 /// `oldWebData` stands for the launch before the update: `doneToday`'s store, with a cookie, local
 /// storage and a database in the web view's data, and the erase not run, so the next launch, on
@@ -135,6 +142,8 @@ enum Fixture {
             if mode != "signedOut" {
                 try session.keep(origin: origin, token: "fixture-token")
                 session.remember(userId: userId, displayName: "Ada", media: mode != "mediaStale")
+                // A session from before the instance named its owner: `/api/me` names Ada.
+                if mode == "unnamed" { defaults.removeObject(forKey: "belay.userName") }
             }
         } catch {
             preconditionFailure("the fixture did not set up: \(error)")
@@ -145,15 +154,43 @@ enum Fixture {
             refusesSync: mode == "expired", answersSync: health == "allowed" || api.set, api: api.version,
             loops: FixtureLoops(mode: mode))
         let loops = loopsFolder
+        let watch: any WatchPublishing = recordedWatch ?? NoWatch()
         guard let health else {
             return AccountModel(
                 secrets: secrets, http: client, sheet: FixtureSheet(), defaults: defaults, storeFolder: folder,
-                loopsFolder: loops)
+                loopsFolder: loops, watch: watch)
         }
         guard health == "allowed" || health == "refused" else { preconditionFailure("-BelayHealth does not read: \(health)") }
         return AccountModel(
             secrets: secrets, http: client, sheet: FixtureSheet(), defaults: defaults, storeFolder: folder,
-            loopsFolder: loops, health: FixtureHealth(allowed: health == "allowed"))
+            loopsFolder: loops, health: FixtureHealth(allowed: health == "allowed"), watch: watch)
+    }
+
+    /// `-BelayWatch`'s recording link; nil without it.
+    static let recordedWatch: RecordingWatch? = {
+        guard let watch = UserDefaults.standard.string(forKey: "BelayWatch") else { return nil }
+        guard watch == "installed" || watch == "none" else { preconditionFailure("-BelayWatch does not read: \(watch)") }
+        return RecordingWatch(installed: watch == "installed")
+    }()
+
+    /// A paired watch that keeps what it was told, in place of the system's link.
+    final class RecordingWatch: WatchPublishing {
+        let watchAppInstalled: Bool
+        /// The session ids published so far, each once.
+        private var ids: Set<String> = []
+        private var signedIn = false
+
+        init(installed: Bool) { watchAppInstalled = installed }
+
+        func publish(_ state: [String: String]) {
+            // The system keeps the published state on disk: it holds the version and the id alone.
+            precondition(Set(state.keys).isSubset(of: ["v", "session"]), "the watch was told more than the session id")
+            signedIn = state["session"] != nil
+            if let id = state["session"] { ids.insert(id) }
+        }
+
+        /// « session·<n> » or « signedOut·<n> ».
+        var told: String { "\(signedIn ? "session" : "signedOut")·\(ids.count)" }
     }
 
     /// The version `-BelayApi` has the instance answer, nil for none, and whether it was given.
@@ -1000,6 +1037,38 @@ enum Fixture {
         func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
             done?.resume(throwing: error)
             done = nil
+        }
+    }
+
+    /// What the watch was last told and what it would be handed, for a test to read; nothing a
+    /// person sees or hears, and never a token, an id or a name.
+    struct WatchProbe: View {
+        let watch: RecordingWatch
+        let account: AccountModel
+
+        var body: some View {
+            TimelineView(.periodic(from: .now, by: 0.5)) { _ in
+                ZStack {
+                    Color.clear
+                        .frame(width: 1, height: 1)
+                        .accessibilityElement()
+                        .accessibilityIdentifier("debug-watch-context")
+                        .accessibilityValue(watch.told)
+                    Color.clear
+                        .frame(width: 1, height: 1)
+                        .accessibilityElement()
+                        .accessibilityIdentifier("debug-watch-reply")
+                        .accessibilityValue(handed)
+                }
+            }
+        }
+
+        private var handed: String {
+            let reply = account.watchReply()
+            guard reply["state"] == "session", let origin = reply["origin"].flatMap(URL.init(string:)) else {
+                return "signedOut"
+            }
+            return "session|\(origin.host(percentEncoded: false) ?? "")"
         }
     }
 

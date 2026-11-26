@@ -1,0 +1,136 @@
+{
+  "sourceLanguage" : "fr",
+  "strings" : {
+    "Connecte-toi dans Belay sur ton iPhone" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign in to Belay on your iPhone"
+          }
+        }
+      }
+    },
+    "Connecter avec l’iPhone" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect with the iPhone"
+          }
+        }
+      }
+    },
+    "Connexion à ton iPhone…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connecting to your iPhone…"
+          }
+        }
+      }
+    },
+    "Déconnecter cette montre" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign out this watch"
+          }
+        }
+      }
+    },
+    "Déconnecter cette montre ?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign out this watch?"
+          }
+        }
+      }
+    },
+    "Instance injoignable pour l’instant" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Instance out of reach for now"
+          }
+        }
+      }
+    },
+    "Instance jointe" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Instance reached"
+          }
+        }
+      }
+    },
+    "Montre connectée" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Watch connected"
+          }
+        }
+      }
+    },
+    "Montre déconnectée" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Watch signed out"
+          }
+        }
+      }
+    },
+    "Ouvre Belay sur ton iPhone" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Belay on your iPhone"
+          }
+        }
+      }
+    },
+    "Réessayer" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try again"
+          }
+        }
+      }
+    },
+    "Ta montre utilise la connexion de ton iPhone." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your watch signs in with your iPhone’s session."
+          }
+        }
+      }
+    },
+    "Ton iPhone reste connecté." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your iPhone stays signed in."
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

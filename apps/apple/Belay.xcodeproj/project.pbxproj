@@ -14,6 +14,8 @@
 		B00000000000000000000055 /* ArchivoExpanded-ExtraBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000054 /* ArchivoExpanded-ExtraBold.ttf */; };
 		B00000000000000000000056 /* BelayActivity in Frameworks */ = {isa = PBXBuildFile; productRef = B00000000000000000000057 /* BelayActivity */; };
 		B00000000000000000000058 /* BelayActivityExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = B00000000000000000000050 /* BelayActivityExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		B000000000000000000000A2 /* BelayCore in Frameworks */ = {isa = PBXBuildFile; productRef = B000000000000000000000A3 /* BelayCore */; };
+		B000000000000000000000A4 /* BelayWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = B000000000000000000000A0 /* BelayWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -31,6 +33,20 @@
 			remoteGlobalIDString = B0000000000000000000005A;
 			remoteInfo = BelayActivityExtension;
 		};
+		B000000000000000000000A6 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = B00000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = B000000000000000000000B4;
+			remoteInfo = BelayWatch;
+		};
+		B000000000000000000000A5 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = B00000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = B000000000000000000000B4;
+			remoteInfo = BelayWatch;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -45,6 +61,17 @@
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		B000000000000000000000A9 /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolderSpec = 16;
+			files = (
+				B000000000000000000000A4 /* BelayWatch.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
@@ -56,6 +83,8 @@
 		B00000000000000000000044 /* en.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = en.json; path = ../../packages/shared/src/exercises/data/en.json; sourceTree = SOURCE_ROOT; };
 		B00000000000000000000050 /* BelayActivityExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = BelayActivityExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		B00000000000000000000054 /* ArchivoExpanded-ExtraBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = "ArchivoExpanded-ExtraBold.ttf"; path = "Belay/ArchivoExpanded-ExtraBold.ttf"; sourceTree = SOURCE_ROOT; };
+		B000000000000000000000A0 /* BelayWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BelayWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B000000000000000000000A1 /* BelayWatchUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BelayWatchUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -72,6 +101,21 @@
 				Info.plist,
 			);
 			target = B0000000000000000000005A /* BelayActivityExtension */;
+		};
+		B000000000000000000000AA /* Exceptions for "BelayWatch" folder in "BelayWatch" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = B000000000000000000000B4 /* BelayWatch */;
+		};
+		B000000000000000000000AB /* Exceptions for "Shared" folder in "BelayWatch" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				SessionActivityAttributes.swift,
+				SessionIntents.swift,
+			);
+			target = B000000000000000000000B4 /* BelayWatch */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -91,6 +135,9 @@
 		};
 		B00000000000000000000051 /* Shared */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				B000000000000000000000AB /* Exceptions for "Shared" folder in "BelayWatch" target */,
+			);
 			path = Shared;
 			sourceTree = "<group>";
 		};
@@ -100,6 +147,19 @@
 				B00000000000000000000053 /* Exceptions for "BelayActivity" folder in "BelayActivityExtension" target */,
 			);
 			path = BelayActivity;
+			sourceTree = "<group>";
+		};
+		B000000000000000000000AC /* BelayWatch */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				B000000000000000000000AA /* Exceptions for "BelayWatch" folder in "BelayWatch" target */,
+			);
+			path = BelayWatch;
+			sourceTree = "<group>";
+		};
+		B000000000000000000000AD /* BelayWatchUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = BelayWatchUITests;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -128,6 +188,21 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		B000000000000000000000AE /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B000000000000000000000A2 /* BelayCore in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B000000000000000000000AF /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -142,6 +217,8 @@
 				B00000000000000000000051 /* Shared */,
 				B00000000000000000000052 /* BelayActivity */,
 				B00000000000000000000014 /* BelayUITests */,
+				B000000000000000000000AC /* BelayWatch */,
+				B000000000000000000000AD /* BelayWatchUITests */,
 				B00000000000000000000007 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -152,6 +229,8 @@
 				B00000000000000000000003 /* Belay.app */,
 				B00000000000000000000013 /* BelayUITests.xctest */,
 				B00000000000000000000050 /* BelayActivityExtension.appex */,
+				B000000000000000000000A0 /* BelayWatch.app */,
+				B000000000000000000000A1 /* BelayWatchUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -167,11 +246,13 @@
 				B00000000000000000000005 /* Frameworks */,
 				B0000000000000000000000B /* Resources */,
 				B00000000000000000000059 /* Embed Foundation Extensions */,
+				B000000000000000000000A9 /* Embed Watch Content */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 				B00000000000000000000061 /* PBXTargetDependency */,
+				B000000000000000000000A7 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				B00000000000000000000004 /* Belay */,
@@ -232,6 +313,53 @@
 			productReference = B00000000000000000000050 /* BelayActivityExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
+		B000000000000000000000B4 /* BelayWatch */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B000000000000000000000B6 /* Build configuration list for PBXNativeTarget "BelayWatch" */;
+			buildPhases = (
+				B000000000000000000000B0 /* Sources */,
+				B000000000000000000000AE /* Frameworks */,
+				B000000000000000000000B2 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				B000000000000000000000AC /* BelayWatch */,
+				B00000000000000000000051 /* Shared */,
+			);
+			name = BelayWatch;
+			packageProductDependencies = (
+				B000000000000000000000A3 /* BelayCore */,
+			);
+			productName = BelayWatch;
+			productReference = B000000000000000000000A0 /* BelayWatch.app */;
+			productType = "com.apple.product-type.application";
+		};
+		B000000000000000000000B5 /* BelayWatchUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B000000000000000000000B7 /* Build configuration list for PBXNativeTarget "BelayWatchUITests" */;
+			buildPhases = (
+				B000000000000000000000B1 /* Sources */,
+				B000000000000000000000AF /* Frameworks */,
+				B000000000000000000000B3 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				B000000000000000000000A8 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				B000000000000000000000AD /* BelayWatchUITests */,
+			);
+			name = BelayWatchUITests;
+			packageProductDependencies = (
+			);
+			productName = BelayWatchUITests;
+			productReference = B000000000000000000000A1 /* BelayWatchUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -251,6 +379,13 @@
 					};
 					B0000000000000000000005A = {
 						CreatedOnToolsVersion = 27.2;
+					};
+					B000000000000000000000B4 = {
+						CreatedOnToolsVersion = 27.2;
+					};
+					B000000000000000000000B5 = {
+						CreatedOnToolsVersion = 27.2;
+						TestTargetID = B000000000000000000000B4;
 					};
 				};
 			};
@@ -275,6 +410,8 @@
 				B00000000000000000000002 /* Belay */,
 				B00000000000000000000012 /* BelayUITests */,
 				B0000000000000000000005A /* BelayActivityExtension */,
+				B000000000000000000000B4 /* BelayWatch */,
+				B000000000000000000000B5 /* BelayWatchUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -305,6 +442,20 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		B000000000000000000000B2 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B000000000000000000000B3 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -329,6 +480,20 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		B000000000000000000000B0 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B000000000000000000000B1 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -341,6 +506,16 @@
 			isa = PBXTargetDependency;
 			target = B0000000000000000000005A /* BelayActivityExtension */;
 			targetProxy = B00000000000000000000062 /* PBXContainerItemProxy */;
+		};
+		B000000000000000000000A8 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = B000000000000000000000B4 /* BelayWatch */;
+			targetProxy = B000000000000000000000A6 /* PBXContainerItemProxy */;
+		};
+		B000000000000000000000A7 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = B000000000000000000000B4 /* BelayWatch */;
+			targetProxy = B000000000000000000000A5 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -510,6 +685,90 @@
 			};
 			name = Release;
 		};
+		B000000000000000000000B8 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = B00000000000000000000020 /* Belay.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = BelayWatch/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Belay;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				MARKETING_VERSION = 0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = cloud.libresoftware.belay.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 26.0;
+			};
+			name = Debug;
+		};
+		B000000000000000000000B9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = B00000000000000000000020 /* Belay.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = BelayWatch/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Belay;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				MARKETING_VERSION = 0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = cloud.libresoftware.belay.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 26.0;
+			};
+			name = Release;
+		};
+		B000000000000000000000BA /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = cloud.libresoftware.belay.watchkitapp.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_DEFAULT_ACTOR_ISOLATION = nonisolated;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				TEST_TARGET_NAME = BelayWatch;
+				WATCHOS_DEPLOYMENT_TARGET = 26.0;
+			};
+			name = Debug;
+		};
+		B000000000000000000000BB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = cloud.libresoftware.belay.watchkitapp.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_DEFAULT_ACTOR_ISOLATION = nonisolated;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				TEST_TARGET_NAME = BelayWatch;
+				WATCHOS_DEPLOYMENT_TARGET = 26.0;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -549,6 +808,24 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
+		B000000000000000000000B6 /* Build configuration list for PBXNativeTarget "BelayWatch" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B000000000000000000000B8 /* Debug */,
+				B000000000000000000000B9 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		B000000000000000000000B7 /* Build configuration list for PBXNativeTarget "BelayWatchUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B000000000000000000000BA /* Debug */,
+				B000000000000000000000BB /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
@@ -566,6 +843,10 @@
 		B00000000000000000000057 /* BelayActivity */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = BelayActivity;
+		};
+		B000000000000000000000A3 /* BelayCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = BelayCore;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

@@ -141,4 +141,41 @@ private func freshDefaults() -> UserDefaults {
     #expect(session.userId == nil)
     #expect(session.displayName == nil)
   }
+
+  /// The watch learns from this id that the iPhone's session changed: each kept token gets its own,
+  /// and a sign-out leaves none.
+  @Test func aNewTokenGetsANewHandoverIdAndASignOutRemovesIt() throws {
+    let defaults = freshDefaults()
+    let session = StoredSession(store: MemoryStore(), defaults: defaults)
+    try session.keep(origin: origin, token: "first")
+    let first = try #require(session.handoverId(origin: origin))
+    #expect(session.handoverId(origin: origin) == first)
+    try session.keep(origin: origin, token: "renewed")
+    let renewed = try #require(session.handoverId(origin: origin))
+    #expect(renewed != first)
+    try session.drop()
+    #expect(defaults.string(forKey: StoredSession.handoverKey) == nil)
+    #expect(session.handoverId(origin: origin) == nil)
+  }
+
+  @Test func aSessionKeptBeforeThisVersionGetsAnIdAtItsFirstAsk() throws {
+    let store = MemoryStore()
+    let defaults = freshDefaults()
+    try store.write(origin: origin, token: "t0k3n")
+    #expect(defaults.string(forKey: StoredSession.handoverKey) == nil)
+    let session = StoredSession(store: store, defaults: defaults)
+    let id = try #require(session.handoverId(origin: origin))
+    #expect(StoredSession(store: store, defaults: defaults).handoverId(origin: origin) == id)
+  }
+
+  @Test func noKeptTokenHasNoHandoverId() throws {
+    let defaults = freshDefaults()
+    #expect(StoredSession(store: MemoryStore(), defaults: defaults).handoverId(origin: origin) == nil)
+    #expect(defaults.string(forKey: StoredSession.handoverKey) == nil)
+    let store = MemoryStore(clearFails: true)
+    let session = StoredSession(store: store, defaults: defaults)
+    try session.keep(origin: origin, token: "t0k3n")
+    try? session.drop()
+    #expect(session.handoverId(origin: origin) == nil)
+  }
 }
