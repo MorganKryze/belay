@@ -42,10 +42,12 @@ jobs:
           xcodebuild -project apps/apple/Belay.xcodeproj -scheme Belay -configuration Debug
           -destination 'generic/platform=iOS Simulator'
           -derivedDataPath "$RUNNER_TEMP/dd" CODE_SIGNING_ALLOWED=NO build-for-testing -quiet
+      # A tarball keeps the executable bits that the artifact zip drops.
+      - run: tar -cf "$RUNNER_TEMP/products.tar" -C "$RUNNER_TEMP/dd/Build/Products" .
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ui-products
-          path: ${{ runner.temp }}/dd/Build/Products
+          path: ${{ runner.temp }}/products.tar
           retention-days: 1
           if-no-files-found: error
 
@@ -64,11 +66,13 @@ jobs:
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: ui-products
-          path: ${{ runner.temp }}/products
+          path: ${{ runner.temp }}
       - name: test shard ${{ matrix.shard }}
         env:
           SHARD: ${{ matrix.shard }}
         run: |
+          mkdir -p "$RUNNER_TEMP/products"
+          tar -xf "$RUNNER_TEMP/products.tar" -C "$RUNNER_TEMP/products"
           xctestrun="$(find "$RUNNER_TEMP/products" -maxdepth 1 -name '*.xctestrun' | head -1)"
           only=()
           while read -r arg; do only+=("$arg"); done < <(apps/apple/scripts/ui-shards.sh "$SHARD")
