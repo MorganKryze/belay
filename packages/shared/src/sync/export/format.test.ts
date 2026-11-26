@@ -66,6 +66,30 @@ describe("the export file", () => {
       });
   });
 
+  it("reads every version up to its own, and no version that is none", () => {
+    for (const version of [0, -1, 1.5])
+      expect(readExportFile(JSON.stringify({ ...file(), version }))).toEqual({
+        ok: false,
+        reason: "not_belay",
+      });
+    expect(readExportFile(JSON.stringify({ ...file(), version: 1 }))).toMatchObject({ ok: true });
+  });
+
+  it("refuses an export time the contract would not take as the envelope's fault", () => {
+    const f = file();
+    f.exportedAt = "2026-11-26T09:00:00Z";
+    f.rows.programs.push({
+      id: SET,
+      name: null,
+      nameAt: null,
+      schedule: { mode: "rotation", days: ["A"] },
+      scheduleAt: null,
+      removed: false,
+      removedAt: null,
+    });
+    expect(readExportFile(JSON.stringify(f))).toEqual({ ok: false, reason: "not_belay" });
+  });
+
   it("refuses a file of a later version", () => {
     expect(readExportFile(JSON.stringify({ ...file(), version: 2 }))).toEqual({
       ok: false,

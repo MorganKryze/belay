@@ -28,7 +28,8 @@ import { changesFromRows, type ExportRows } from "./changes";
 export const EXPORT_FORMAT = "belay-export";
 export const EXPORT_VERSION = 1;
 
-const isoDateTime = z.iso.datetime();
+// As Date#toISOString() writes it, milliseconds included: the contract takes no other form.
+const isoDateTime = z.iso.datetime().check(z.refine((t) => new Date(t).toISOString() === t));
 
 export const ExportRowsSchema = z.object({
   weights: z.array(WeightRowSchema),
@@ -53,7 +54,8 @@ export const ExportRowsSchema = z.object({
 
 export const ExportFileSchema = z.object({
   format: z.literal(EXPORT_FORMAT),
-  version: z.literal(EXPORT_VERSION),
+  // Every version up to this app's: each is read through the one path there is today.
+  version: z.int().check(z.minimum(1), z.maximum(EXPORT_VERSION)),
   exportedAt: isoDateTime,
   app: z.object({ platform: z.enum(["ios", "android", "web"]), version: z.string() }),
   source: z.discriminatedUnion("kind", [
@@ -114,9 +116,14 @@ export function readExportFile(text: string): ReadExport {
   } catch {
     return { ok: false, reason: "not_belay" };
   }
-  if (!isRecord(data) || data.format !== EXPORT_FORMAT || typeof data.version !== "number")
+  if (
+    !isRecord(data) ||
+    data.format !== EXPORT_FORMAT ||
+    !Number.isInteger(data.version) ||
+    (data.version as number) < 1
+  )
     return { ok: false, reason: "not_belay" };
-  if (data.version > EXPORT_VERSION) return { ok: false, reason: "later_version" };
+  if ((data.version as number) > EXPORT_VERSION) return { ok: false, reason: "later_version" };
   const parsed = ExportFileSchema.safeParse(data);
   if (!parsed.success) {
     const [where, kind, index] = parsed.error.issues[0]!.path;
