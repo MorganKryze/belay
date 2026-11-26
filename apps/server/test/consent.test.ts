@@ -57,8 +57,8 @@ describe("consent to the instance's privacy notice", () => {
   });
 
   it("records the time the device gives, brought within the last day and never past the server's clock", async () => {
-    const { user, call } = await signIn("consent-clamped");
     const send = async (offset: number) => {
+      const { user, call } = await signIn(`consent-clamped-${offset}`);
       const before = Date.now();
       const at = new Date(before + offset).toISOString();
       expect((await call("/api/consent", { version: CONSENT_VERSION, at })).status).toBe(204);
@@ -72,6 +72,15 @@ describe("consent to the instance's privacy notice", () => {
     const old = await send(-3 * 24 * hour);
     expect(old.kept).toBeGreaterThanOrEqual(old.before - 24 * hour - 1000);
     expect(old.kept).toBeLessThanOrEqual(old.after - 24 * hour + 1000);
+  });
+
+  it("keeps the first consent recorded for a version when the same version is sent again", async () => {
+    const { user, call } = await signIn("consent-again");
+    const first = new Date(Date.now() - 2 * hour).toISOString();
+    const again = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+    expect((await call("/api/consent", { version: CONSENT_VERSION, at: first })).status).toBe(204);
+    expect((await call("/api/consent", { version: CONSENT_VERSION, at: again })).status).toBe(204);
+    expect((await consentOf(user))?.at?.toISOString()).toBe(first);
   });
 
   it("refuses another version with 409 consent_version and records nothing", async () => {

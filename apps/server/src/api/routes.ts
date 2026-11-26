@@ -1,6 +1,6 @@
 import { CONSENT_VERSION, MAX_BODY_BYTES, MAX_CHANGES } from "@belay/shared/sync/limits";
 import { SyncRequestSchema } from "@belay/shared/sync/schema";
-import { eq } from "drizzle-orm";
+import { and, eq, isNull, ne, or } from "drizzle-orm";
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { z } from "zod";
@@ -51,7 +51,13 @@ export function apiRoutes(cfg: Config, db: Db) {
         tx
           .update(users)
           .set({ consentVersion: CONSENT_VERSION, consentAt: kept })
-          .where(eq(users.id, userId)),
+          // The first record of a version stands: sending it again changes nothing.
+          .where(
+            and(
+              eq(users.id, userId),
+              or(isNull(users.consentVersion), ne(users.consentVersion, CONSENT_VERSION)),
+            ),
+          ),
       );
       return c.body(null, 204);
     },
