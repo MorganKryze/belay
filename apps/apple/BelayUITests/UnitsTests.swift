@@ -343,6 +343,106 @@ final class UnitsTests: XCTestCase {
         XCTAssertTrue(loadReads(app, "Charge, 62,5 kilos"), element(app, "load").label)
     }
 
+    /// « Autre charge… » from the warm-up's work load line, `value` typed, then OK.
+    private func typeWorkLoad(_ app: XCUIApplication, _ value: String) {
+        element(app, "work-load").tap()
+        XCTAssertTrue(app.staticTexts["Charge de travail"].waitForExistence(timeout: 3), "the choice is titled")
+        app.buttons["Autre charge…"].tap()
+        let keypad = app.alerts.textFields.firstMatch
+        XCTAssertTrue(keypad.waitForExistence(timeout: 3), "a keypad opens")
+        keypad.typeText(value)
+        app.alerts.buttons["OK"].tap()
+    }
+
+    private func workLoadReads(_ app: XCUIApplication, _ spoken: String) -> Bool {
+        element(app, "work-load").waitFor(NSPredicate(format: "label == %@", spoken), timeout: 10)
+    }
+
+    /// Screenshots for a review, only when BELAY_CAPTURE names a folder.
+    private func capture(_ name: String) {
+        guard let folder = ProcessInfo.processInfo.environment["BELAY_CAPTURE"] else { return }
+        let url = URL(fileURLWithPath: folder).appendingPathComponent("\(name).png")
+        try? XCUIScreen.main.screenshot().pngRepresentation.write(to: url)
+    }
+
+    /// A typo in the work load is fixed from a warm-up: the warm-ups follow, the card stays on
+    /// the warm-up, and the work set is logged at the load corrected.
+    func testWorkLoadCorrectedFromAWarmup() {
+        let app = launch("history")
+        openCover(app)
+        XCTAssertTrue(dueSet(app, "Montée 1 sur 2"), "the first warm-up")
+        let line = element(app, "work-load")
+        XCTAssertTrue(workLoadReads(app, "Charge de travail, 62,5 kilos"), line.label)
+        XCTAssertEqual(line.value as? String ?? "", "")
+        XCTAssertTrue(line.frame.height >= 44, "\(line.frame)")
+        typeWorkLoad(app, "300")
+        XCTAssertTrue(workLoadReads(app, "Charge de travail, 300 kilos"), line.label)
+        XCTAssertTrue(app.staticTexts["Travail\u{202F}: 300\u{202F}kg"].exists)
+        XCTAssertTrue(element(app, "set-title").label.hasPrefix("Montée 1 sur "), element(app, "set-title").label)
+        let at300 = element(app, "load").label
+        typeWorkLoad(app, "30")
+        XCTAssertTrue(workLoadReads(app, "Charge de travail, 30 kilos"), line.label)
+        XCTAssertTrue(element(app, "set-title").label.hasPrefix("Montée 1 sur "), element(app, "set-title").label)
+        XCTAssertNotEqual(element(app, "load").label, at300)
+        XCTAssertTrue(loadReads(app, "Charge, 20 kilos"), element(app, "load").label)
+        let warmups = element(app, "set-title").label
+        while element(app, "set-title").label.hasPrefix("Montée") {
+            element(app, "log-set").tap()
+            _ = element(app, "set-title").waitFor(NSPredicate(format: "label != %@", warmups), timeout: 3)
+            if !element(app, "set-title").label.hasPrefix("Montée") { break }
+        }
+        XCTAssertTrue(dueSet(app, "Série 1 sur 4"), "the first work set")
+        XCTAssertFalse(line.exists, "no work load line on a work set")
+        XCTAssertTrue(loadReads(app, "Charge, 30 kilos"), element(app, "load").label)
+        element(app, "log-set").tap()
+        doneRow(app, 3, contains: "30\u{202F}kg × ")
+    }
+
+    /// A warm-up whose load was typed by hand keeps it when the work load changes.
+    func testWarmupTypedByHandKeepsItsLoadWhenTheWorkLoadChanges() {
+        let app = launch("history")
+        openCover(app)
+        XCTAssertTrue(dueSet(app, "Montée 1 sur 2"), "the first warm-up")
+        typeLoad(app, "45")
+        XCTAssertTrue(loadReads(app, "Charge, 45 kilos"), element(app, "load").label)
+        typeWorkLoad(app, "80")
+        XCTAssertTrue(workLoadReads(app, "Charge de travail, 80 kilos"), element(app, "work-load").label)
+        XCTAssertTrue(loadReads(app, "Charge, 45 kilos"), element(app, "load").label)
+    }
+
+    /// In pounds the line says pounds, on screen and aloud.
+    func testWorkLoadLineInPounds() {
+        let app = launch("history", inPounds: true)
+        openCover(app)
+        XCTAssertTrue(dueSet(app, "Montée 1 sur 2"), "the first warm-up")
+        XCTAssertTrue(workLoadReads(app, "Charge de travail, 138 livres"), element(app, "work-load").label)
+        XCTAssertTrue(app.staticTexts["Travail\u{202F}: 138\u{202F}lb"].exists)
+    }
+
+    /// The captures: the line at the default size, at a large size, dark, and the choice open.
+    func testWorkLoadCaptures() throws {
+        try XCTSkipIf(ProcessInfo.processInfo.environment["BELAY_CAPTURE"] == nil, "captures only on demand")
+        for (name, extra) in [
+            ("warmup-kg", [String]()),
+            ("warmup-kg-ax", ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityL"]),
+            ("warmup-kg-dark", ["-belay.theme", "dark"]),
+        ] {
+            let app = XCUIApplication()
+            app.launchArguments = ["-AppleLanguages", "(fr)", "-AppleLocale", "fr_FR", "-BelayFixture", "history"] + extra
+            app.launchFixture()
+            openCover(app)
+            XCTAssertTrue(dueSet(app, "Montée 1 sur 2"))
+            XCTAssertTrue(element(app, "work-load").waitForExistence(timeout: 3))
+            capture(name)
+            if name == "warmup-kg" {
+                element(app, "work-load").tap()
+                XCTAssertTrue(app.staticTexts["Charge de travail"].waitForExistence(timeout: 3))
+                capture("work-load-choice")
+            }
+            app.terminate()
+        }
+    }
+
     /// A text that is not a plain number, « 1e2 », « -0 » or « 62,,5 », is refused aloud and
     /// changes nothing.
     func testUnreadableLoadRefused() {

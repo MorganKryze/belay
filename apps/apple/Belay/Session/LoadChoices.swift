@@ -7,6 +7,8 @@ struct LoadChoices: View {
     let weightKg: Double
     /// The exercise's step in the unit shown: its increment in kg, a pound gym's step in lb.
     let step: Double
+    /// A heading over the loads, when they are not the set in hand's.
+    var title: Text? = nil
     let choose: (Double) -> Void
     let other: () -> Void
 
@@ -14,6 +16,11 @@ struct LoadChoices: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
+            if let title {
+                title.font(.footnote.weight(.semibold)).foregroundStyle(.muted)
+                    .frame(minHeight: 32, alignment: .leading)
+                    .accessibilityAddTraits(.isHeader)
+            }
             ForEach(loads, id: \.self) { kg in
                 Button { choose(kg) } label: {
                     HStack {

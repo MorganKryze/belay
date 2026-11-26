@@ -67,6 +67,45 @@ import Testing
     #expect(next.warmup && next.number == 2)
   }
 
+  @Test func aWarmupNamesTheWorkLoadAndTakesItBack() throws {
+    let s = try Seance([Seance.slot(warmups: 2)], past: [(Seance.squat, 100, 8)])
+    guard case .due(let first) = try s.state().phase else {
+      Issue.record("a warm-up due")
+      return
+    }
+    let planned = try #require(first.workKg)
+    try s.actions.choose(weightKg: planned / 2, count: nil, atWork: true)
+    guard case .due(let due) = try s.state().phase else {
+      Issue.record("the warm-up still due")
+      return
+    }
+    #expect(due.warmup && due.number == 1)
+    #expect(due.workKg == planned / 2)
+    #expect(due.weightKg < first.weightKg)
+    #expect(try s.active?.draft == nil)
+    #expect(try s.active?.workDraft?.position == Bounds.maxWarmups)
+  }
+
+  @Test func aWarmupTypedByHandKeepsItsLoadWhenTheWorkLoadChanges() throws {
+    let s = try Seance([Seance.slot(warmups: 2)], past: [(Seance.squat, 100, 8)])
+    try s.actions.choose(weightKg: 45, count: nil)
+    try s.actions.choose(weightKg: 50, count: nil, atWork: true)
+    guard case .due(let due) = try s.state().phase else {
+      Issue.record("a warm-up due")
+      return
+    }
+    #expect(due.weightKg == 45 && due.workKg == 50)
+  }
+
+  @Test func aWorkSetNamesNoWorkLoadApart() throws {
+    let s = try Seance()
+    guard case .due(let due) = try s.state().phase else {
+      Issue.record("a set due")
+      return
+    }
+    #expect(!due.warmup && due.workKg == nil)
+  }
+
   @Test func aTimedSetHoldsThenWaits() throws {
     let s = try Seance([Seance.slot(Seance.hang)])
     guard case .due(let due) = try s.state().phase else {
