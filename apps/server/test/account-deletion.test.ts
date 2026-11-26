@@ -7,7 +7,7 @@ import type { Hono } from "hono";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createApp } from "../src/app";
 import { oidcProvider } from "../src/auth/oidc";
-import { hashToken, newSessionToken } from "../src/auth/session";
+import { hashToken, newSessionToken, SESSION_COOKIE } from "../src/auth/session";
 import { loadConfig } from "../src/config";
 import { asApp, asUser } from "../src/db/client";
 import { createSession, deleteAccount, upsertUser } from "../src/db/identity";
@@ -16,7 +16,8 @@ import { agree, appDb, testDb } from "./db";
 import { startIdp } from "./idp";
 
 const { db } = appDb();
-const owner = testDb().db;
+const ownerConn = testDb();
+const owner = ownerConn.db;
 const cfg = loadConfig(testEnv({ OIDC_ISSUER: "http://localhost:1" }));
 const app = createApp({ cfg, db, getOidc: oidcProvider(cfg.oidc) });
 const issuer = "https://idp.test";
@@ -123,6 +124,21 @@ const userTables = async () =>
     )
   ).map((r) => r.table_name);
 
+// Every row of the account in each table, whole, as text in a stable order.
+const dumpOf = async (user: string) => {
+  const out: Record<string, string> = {};
+  for (const table of [...(await userTables()), "users"]) {
+    const column = table === "users" ? "id" : "user_id";
+    const [row] = await owner.execute<{ rows: string }>(
+      sql`select coalesce(json_agg(r order by r), '[]')::text as rows
+          from (select to_jsonb(t)::text as r from ${sql.identifier(table)} t
+                where ${sql.identifier(column)} = ${user}) s`,
+    );
+    out[table] = row!.rows;
+  }
+  return out;
+};
+
 const countsOf = async (user: string) => {
   const out: Record<string, number> = {};
   for (const table of await userTables()) {
@@ -140,6 +156,7 @@ describe("deleting an account", () => {
     const kept = await account("delete-kept");
     const before = await countsOf(gone.user);
     const keptBefore = await countsOf(kept.user);
+    const keptRows = await dumpOf(kept.user);
     // Every table is seeded for both, so the proof below is never about an empty table.
     for (const [table, n] of Object.entries(before)) expect(n, table).toBeGreaterThan(0);
     for (const [table, n] of Object.entries(keptBefore)) expect(n, table).toBeGreaterThan(0);
@@ -147,7 +164,7 @@ describe("deleting an account", () => {
     expect((await gone.phone.call("/api/me/delete", {})).status).toBe(204);
 
     for (const [table, n] of Object.entries(await countsOf(gone.user))) expect(n, table).toBe(0);
-    expect(await countsOf(kept.user)).toEqual(keptBefore);
+    expect(await dumpOf(kept.user)).toEqual(keptRows);
     // As the app role, under the deleted account's own id, too.
     for (const table of await userTables()) {
       if (table === "sessions") continue; // no grant: reached only through the functions
@@ -185,6 +202,53 @@ describe("deleting an account", () => {
     await expect(
       asApp(db, (tx) => tx.execute(sql`delete from ended_sessions`)),
     ).rejects.toMatchObject(permissionDenied);
+    const grants = await owner.execute(
+      sql`select table_name from information_schema.role_table_grants
+          where grantee = 'belay_app' and privilege_type = 'DELETE'`,
+    );
+    expect([...grants]).toEqual([]);
+  });
+
+  it("keeps the erasure by account id out of the app role's reach", async () => {
+    const other = await account("delete-erase-direct");
+    await expect(
+      asApp(db, (tx) => tx.execute(sql`select belay_erase_account(${other.user}::uuid)`)),
+    ).rejects.toMatchObject(permissionDenied);
+    const [row] = await owner.execute<{ app: boolean; anyone: boolean }>(
+      sql`select has_function_privilege('belay_app', 'belay_erase_account(uuid)', 'EXECUTE') as app,
+                 has_function_privilege('public', 'belay_erase_account(uuid)', 'EXECUTE') as anyone`,
+    );
+    expect(row).toEqual({ app: false, anyone: false });
+  });
+
+  it("cascades every reference to an account, and every other table names its account", async () => {
+    const actions = await owner.execute<{ table: string; action: string }>(
+      sql`select conrelid::regclass::text as table, confdeltype::text as action from pg_constraint
+          where contype = 'f' and confrelid = 'public.users'::regclass order by 1`,
+    );
+    expect(actions.length).toBeGreaterThan(0);
+    for (const { table, action } of actions) expect(action, table).toBe("c");
+    const tables = await owner.execute<{ table_name: string }>(
+      sql`select table_name from information_schema.tables
+          where table_schema = 'public' and table_type = 'BASE TABLE'
+            and table_name not in ('users', 'ended_sessions') order by 1`,
+    );
+    expect(tables.map((t) => t.table_name)).toEqual(await userTables());
+  });
+
+  it("clears the session cookie of the browser that deleted the account", async () => {
+    const user = await upsertUser(db, { issuer, sub: "delete-cookie", displayName: "K" });
+    const token = newSessionToken();
+    await createSession(db, hashToken(token, cfg.tokenHashKey), user, 30);
+    const res = await app.request("/api/me/delete", {
+      method: "POST",
+      headers: { cookie: `${SESSION_COOKIE}=${token}`, "content-type": "application/json" },
+      body: "{}",
+    });
+    expect(res.status).toBe(204);
+    const cleared = res.headers.getSetCookie().filter((c) => c.startsWith(`${SESSION_COOKIE}=`));
+    // The last one the browser reads wins: the lookup's sliding cookie comes first.
+    expect(cleared.at(-1)).toMatch(/Max-Age=0/i);
   });
 
   it("tells the account's other devices 410 account_deleted, from a table that names no one", async () => {
@@ -254,8 +318,11 @@ describe("a sign-in code issued before the account was deleted", () => {
   });
   afterAll(() => idp.stop());
 
-  async function signIn(claims: Record<string, unknown>) {
-    const res = await native.request(`/auth/native/start?challenge=${CHALLENGE}`);
+  async function signIn(
+    claims: Record<string, unknown>,
+    from = `/auth/native/start?challenge=${CHALLENGE}`,
+  ) {
+    const res = await native.request(from);
     expect(res.status).toBe(302);
     const authUrl = new URL(res.headers.get("location")!);
     const txCookie = res.headers.get("set-cookie")!.split(";")[0]!;
