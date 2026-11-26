@@ -1,4 +1,4 @@
-// The iPhone app's link with Apple Health: the shapes its native side decodes, the Health state
+// The Android app's link with Health Connect: the shapes its native side decodes, the Health state
 // this phone keeps for the open account, and the progress the page shows while objects go to
 // Health. Loaded on the phone only, with the page or the shell's native module.
 import type { AccountDb } from "@/sync/db";
@@ -32,7 +32,7 @@ export type HealthRequest =
 // The native side refuses a larger batch.
 export const HEALTH_BATCH = 100;
 
-// Write access per type; iOS never tells whether a read is allowed.
+// Write access per type; the native side may not tell whether a read is allowed.
 export function health(
   request: { op: "status" } | { op: "authorize"; scope: "write" | "import" | "history" },
 ): Promise<HealthStatus>;

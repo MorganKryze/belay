@@ -158,11 +158,11 @@ describe("nativePlatform", () => {
     expect(nativePlatform()).toBe("android");
   });
 
-  it("ios otherwise", () => {
+  it("null on any other native platform", () => {
     asApp();
-    expect(nativePlatform()).toBe("ios");
-    vi.stubGlobal("Capacitor", { isNativePlatform: () => true, getPlatform: () => "ios" });
-    expect(nativePlatform()).toBe("ios");
+    expect(nativePlatform()).toBeNull();
+    vi.stubGlobal("Capacitor", { isNativePlatform: () => true, getPlatform: () => "other" });
+    expect(nativePlatform()).toBeNull();
   });
 });
 

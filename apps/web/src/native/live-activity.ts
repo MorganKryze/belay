@@ -1,4 +1,4 @@
-// The open session on the iPhone's lock screen and in the Dynamic Island, described for the
+// The open session as the Android notification, described for the
 // native side. The clocks there run by themselves, so only a change of what it shows is sent,
 // never a tick. Loaded with the rest alert, on the phone only.
 import { exerciseById } from "@belay/shared/exercises/catalog";

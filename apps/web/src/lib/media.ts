@@ -49,7 +49,7 @@ export function useLoop(exerciseId: string): { src: string | null; failed: () =>
   return { src, failed };
 }
 
-// In the iPhone app the page comes from the app, and the server lets only its own pages load its
+// In the Android app the page comes from the app, and the server lets only its own pages load its
 // media: the loop is fetched with the token and shown from an object URL. Each one is kept under
 // its full instance address (Cache Storage takes only http keys), so it plays offline after one
 // view. Kept loops are capped by count, the oldest first out; a size budget would need each

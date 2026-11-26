@@ -1,5 +1,5 @@
-// The phone apps' session: the token their native side keeps for the stored instance (in the
-// Keychain on iPhone, sealed by the Android Keystore on Android), and the sign-in that earns it in
+// The phone apps' session: the token their native side keeps for the stored instance (sealed by
+// the Android Keystore), and the sign-in that earns it in
 // the system's browser tab. Loaded on the phone only, before the first render (main.tsx), so the
 // first request already carries the token.
 import { SystemBars, SystemBarsStyle } from "@capacitor/core";
