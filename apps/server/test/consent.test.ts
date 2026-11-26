@@ -41,6 +41,23 @@ async function consentOf(user: string) {
   return row;
 }
 
+// What 0003 (sync) and 0004 (tracking) grant, plus the two consent columns; nothing else of the row.
+const EXPECTED_UPDATE_COLUMNS = [
+  "birth_year",
+  "birth_year_at",
+  "consent_at",
+  "consent_version",
+  "formula",
+  "formula_at",
+  "height_at",
+  "height_cm",
+  "server_seq",
+  "target_at",
+  "target_max_pct",
+  "target_min_pct",
+  "updated_at",
+].sort();
+
 // Every row of each table as text in a stable order, with its columns; the columns the migration
 // adds are left out of both, so the tables compare equal around it.
 const ADDED = "'consent_version', 'consent_at'";
@@ -141,6 +158,16 @@ describe("consent to the instance's privacy notice", () => {
         tx.update(users).set({ displayName: "renamed" }).where(eq(users.id, mine)),
       ),
     ).rejects.toMatchObject(permissionDenied);
+  });
+
+  it("grants the app role an update of exactly the consent, sync and tracking columns of users", async () => {
+    const granted = await owner.execute<{ column_name: string }>(
+      sql`select column_name from information_schema.column_privileges
+          where grantee = 'belay_app' and table_schema = 'public' and table_name = 'users'
+            and privilege_type = 'UPDATE'
+          order by column_name`,
+    );
+    expect(granted.map((r) => r.column_name)).toEqual(EXPECTED_UPDATE_COLUMNS);
   });
 
   it("keeps every row of a populated database as it was and leaves every account without consent (migration)", async () => {
