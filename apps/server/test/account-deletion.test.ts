@@ -4,13 +4,19 @@ import { sessionByCode, starterProgram } from "@belay/shared/training/program";
 import { seedId } from "@belay/shared/training/stored-program";
 import { sql } from "drizzle-orm";
 import type { Hono } from "hono";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, inject, it, vi } from "vitest";
 import { createApp } from "../src/app";
 import { oidcProvider } from "../src/auth/oidc";
 import { hashToken, newSessionToken, SESSION_COOKIE } from "../src/auth/session";
 import { loadConfig } from "../src/config";
-import { asApp, asUser } from "../src/db/client";
-import { createSession, deleteAccount, tokenEnded, upsertUser } from "../src/db/identity";
+import { asApp, asUser, connect, type Db } from "../src/db/client";
+import {
+  createSession,
+  deleteAccount,
+  purgeEnded,
+  tokenEnded,
+  upsertUser,
+} from "../src/db/identity";
 import { testEnv } from "./config";
 import { agree, appDb, testDb } from "./db";
 import { startIdp } from "./idp";
@@ -140,18 +146,35 @@ const dumpOf = async (user: string) => {
 };
 
 const pause = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-// Polls, under a deadline, until `n` backends running this function wait for a lock. A slow
-// machine only takes longer; a call that never waits fails the test.
-async function waitingIn(fn: string, n = 1) {
+// A connection pool named for one call, so a poll sees this test's call and no other file's.
+const pools: ReturnType<typeof connect>["client"][] = [];
+afterAll(() => Promise.all(pools.map((p) => p.end())));
+function named(
+  name: string,
+  as: "app" | "owner" = "app",
+  settings: Record<string, string> = {},
+): Db {
+  const url = new URL(inject(as === "app" ? "appDatabaseUrl" : "databaseUrl"));
+  url.searchParams.set("application_name", name);
+  for (const [key, value] of Object.entries(settings)) url.searchParams.set(key, value);
+  const conn = connect(url.toString());
+  pools.push(conn.client);
+  return conn.db;
+}
+let calls = 0;
+const callName = (what: string) => `deletion-test-${what}-${++calls}-${process.pid}`;
+
+// Polls, under a deadline, until a backend of this named call waits for a lock. A slow machine
+// only takes longer; a call that never waits fails the test.
+async function waitingIn(name: string) {
   const deadline = Date.now() + 10_000;
   for (;;) {
     const [row] = await owner.execute<{ n: number }>(
       sql`select count(*)::int as n from pg_stat_activity
-          where wait_event_type = 'Lock' and pid <> pg_backend_pid()
-            and query like ${`%${fn}%`}`,
+          where wait_event_type = 'Lock' and application_name = ${name}`,
     );
-    if (row!.n >= n) return;
-    if (Date.now() > deadline) throw new Error(`no call of ${fn} waits for a lock`);
+    if (row!.n >= 1) return;
+    if (Date.now() > deadline) throw new Error(`${name} never waits for a lock`);
     await pause(20);
   }
 }
@@ -283,9 +306,10 @@ describe("deleting an account", () => {
     let erase: Promise<string | null> | undefined;
     await ownerConn.client.begin(async (t) => {
       await t`select pg_advisory_xact_lock(hashtextextended(${user}, 0))`;
-      erase = deleteAccount(db, hash);
+      const name = callName("erase");
+      erase = deleteAccount(named(name), hash);
       const done = settled(erase);
-      await waitingIn("belay_delete_account");
+      await waitingIn(name);
       expect(done()).toBe(false);
     });
     expect(await erase).toBe(user);
@@ -293,14 +317,19 @@ describe("deleting an account", () => {
 
   it("opens no session, and throws nothing, for a sign-in redeemed while its account is erased", async () => {
     const user = await upsertUser(db, { issuer, sub: "delete-midway", displayName: "M" });
-    const expired = await expiredSession(user);
     let opened: Promise<boolean> | undefined;
     await ownerConn.client.begin(async (t) => {
       await t`select 1 from users where id = ${user} for update`;
-      opened = createSession(db, hashToken(newSessionToken(), cfg.tokenHashKey), user, 30);
-      await waitingIn("belay_create_session");
-      // It waits on the account's row before any other: the purge has not touched this one yet.
-      await t`select 1 from sessions where token_hash = ${expired} for update nowait`;
+      // Written in this transaction, so no other file's purge can reach it before the check.
+      const expired = hashToken(newSessionToken(), cfg.tokenHashKey);
+      await t`insert into sessions (token_hash, user_id, expires_at)
+              values (${expired}, ${user}, now() - interval '1 second')`;
+      const name = callName("signin");
+      opened = createSession(named(name), hashToken(newSessionToken(), cfg.tokenHashKey), user, 30);
+      await waitingIn(name);
+      // It waits on the account's row and holds no expired one.
+      const held = await t`select 1 from sessions where token_hash = ${expired} for update nowait`;
+      expect(held).toHaveLength(1);
       await t`delete from users where id = ${user}`;
     });
     expect(await opened).toBe(false);
@@ -317,11 +346,18 @@ describe("deleting an account", () => {
     // An expired ended token held elsewhere stalls both purges, so the two calls meet in the middle.
     await ownerConn.client.begin(async (t) => {
       await t`select 1 from ended_sessions where token_hash = ${ended} for update`;
-      opened = createSession(db, hash, user, 30);
-      await waitingIn("belay_create_session");
-      // Started now: a drizzle query runs only once something awaits it.
-      erased = (async () => owner.execute(sql`select belay_erase_account(${user}::uuid)`))();
-      await waitingIn("belay_erase_account");
+      const signin = callName("signin");
+      opened = createSession(named(signin), hash, user, 30);
+      await waitingIn(signin);
+      // As the operator's command does: the purge on its own, then the erasure. Started now: a
+      // drizzle query runs only once something awaits it.
+      const opName = callName("operator");
+      const operator = named(opName, "owner");
+      erased = (async () => {
+        await purgeEnded(operator);
+        await operator.execute(sql`select belay_erase_account(${user}::uuid)`);
+      })();
+      await waitingIn(opName);
     });
     const [ok, gone] = await Promise.allSettled([opened!, erased!]);
     expect(gone).toMatchObject({ status: "fulfilled" });
@@ -331,6 +367,51 @@ describe("deleting an account", () => {
       sql`select count(*)::int as n from users where id = ${user}`,
     );
     expect(row!.n).toBe(0);
+  });
+
+  it("opens a session on one account while another, with an expired session, is erased", async () => {
+    const a = await upsertUser(db, { issuer, sub: "delete-cross-a", displayName: "A" });
+    const b = await account("delete-cross-b");
+    await expiredSession(b.user);
+    const ended = await expiredEnded();
+    let erased: Promise<string | null> | undefined;
+    let opened: Promise<boolean> | undefined;
+    // An expired ended token held here queues the erasure first, then the sign-in, on that row.
+    await ownerConn.client.begin(async (t) => {
+      const held = await t`select 1 from ended_sessions where token_hash = ${ended} for update`;
+      expect(held).toHaveLength(1);
+      const eraseName = callName("erase-b");
+      erased = deleteAccount(named(eraseName), hashToken(b.phone.token, cfg.tokenHashKey));
+      await waitingIn(eraseName);
+      const signinName = callName("signin-a");
+      opened = createSession(
+        named(signinName),
+        hashToken(newSessionToken(), cfg.tokenHashKey),
+        a,
+        30,
+      );
+      await waitingIn(signinName);
+    });
+    const [gone, ok] = await Promise.allSettled([erased!, opened!]);
+    expect(gone).toEqual({ status: "fulfilled", value: b.user });
+    expect(ok).toEqual({ status: "fulfilled", value: true });
+  });
+
+  it("opens a session even when the purge of expired rows fails, logging only its code", async () => {
+    const user = await upsertUser(db, { issuer, sub: "delete-purge-fails", displayName: "P" });
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      let opened: Promise<boolean> | undefined;
+      await ownerConn.client.begin(async (t) => {
+        await t`lock table ended_sessions in access exclusive mode`;
+        const impatient = named(callName("purge"), "app", { lock_timeout: "100" });
+        opened = createSession(impatient, hashToken(newSessionToken(), cfg.tokenHashKey), user, 30);
+        expect(await opened).toBe(true);
+      });
+      expect(logged.mock.calls).toEqual([["purge of ended sessions failed: 55P03"]]);
+    } finally {
+      logged.mockRestore();
+    }
   });
 
   it("clears the session cookie of the browser that deleted the account", async () => {
