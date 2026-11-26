@@ -200,7 +200,9 @@ describe("the instance's privacy settings", () => {
   it("refuses a malformed operator, contact or support", () => {
     for (const name of ["BELAY_OPERATOR", "BELAY_PRIVACY_CONTACT", "BELAY_SUPPORT_CONTACT"]) {
       for (const value of [
-        "privacy@example.org",
+        "not an address",
+        "privacy@example",
+        "a@b@example.org",
         "mailto:not an address",
         "mailto:",
         "http://example.org",
@@ -222,6 +224,14 @@ describe("the instance's privacy settings", () => {
       location: "Paris, France",
       backupDays: 14,
     });
+  });
+
+  it("serves a bare e-mail address as a mailto: link", () => {
+    for (const name of ["BELAY_OPERATOR", "BELAY_PRIVACY_CONTACT", "BELAY_SUPPORT_CONTACT"]) {
+      expect(() => loadConfig(testEnv({ [name]: " privacy@example.org " }))).not.toThrow();
+    }
+    const cfg = loadConfig(testEnv({ ...privacyEnv, BELAY_PRIVACY_CONTACT: "privacy@example.org" }));
+    expect(cfg.privacy.contact).toBe("mailto:privacy@example.org");
   });
 
   it("serves each contact in its normalised form", () => {

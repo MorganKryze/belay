@@ -130,11 +130,13 @@ function mediaDirectory(value: string | undefined): string | undefined {
 
 const EMAIL = /^[^\s@:/?#]+@[^\s@:/?#]+\.[^\s@:/?#.]+$/;
 
-// A contact the apps open as a link: a mailto: of one plain address, or an https URL with a host.
-// Unset or empty means not given; anything else stops the start.
+// A contact the apps open as a link: one plain address (served as its mailto:), a mailto: of one
+// plain address, or an https URL with a host. Unset or empty means not given; anything else stops
+// the start.
 function contact(name: string, value: string | undefined): string | null {
   if (value === undefined || value === "") return null;
-  const url = URL.parse(value.trim());
+  const given = value.trim();
+  const url = URL.parse(EMAIL.test(given) ? `mailto:${given}` : given);
   if (url === null || !(url.protocol === "https:" ? url.hostname !== "" : mailto(url))) {
     throw new Error(`Invalid configuration:\n${name} must be an e-mail address or an https URL`);
   }
