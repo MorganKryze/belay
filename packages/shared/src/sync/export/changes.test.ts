@@ -480,6 +480,14 @@ describe("the values an import would meet on both sides", () => {
     expect(overlapCount(rows, other).count).toBe(2);
   });
 
+  it("leaves out the sets of a removed session", () => {
+    const rows = fixture();
+    rows.sets[0] = { ...rows.sets[0]!, removed: false, removedAt: null };
+    expect(countsOf(rows).sets).toBe(1);
+    rows.workouts[0] = { ...rows.workouts[0]!, removed: false };
+    expect(countsOf(rows).sets).toBe(2);
+  });
+
   it("counts every kind, tombstones left out", () => {
     expect(countsOf(fixture())).toEqual({
       sessions: 1,

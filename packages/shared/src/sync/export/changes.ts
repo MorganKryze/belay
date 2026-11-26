@@ -445,9 +445,11 @@ export type Counts = Record<
 // What a file holds, as a person counts it: tombstones left out.
 export function countsOf(rows: ExportRows): Counts {
   const kept = (list: { removed: boolean }[]) => list.filter((r) => !r.removed).length;
+  // A removed session takes its sets with it.
+  const gone = new Set(rows.workouts.filter((w) => w.removed).map((w) => w.id));
   return {
     sessions: kept(rows.workouts),
-    sets: kept(rows.sets),
+    sets: rows.sets.filter((r) => !r.removed && !gone.has(r.workoutId)).length,
     activities: kept(rows.activities),
     weighIns: rows.weights.filter((r) => r.weightKg !== null).length,
     measures: rows.measures.filter((r) => [r.waistCm, r.neckCm, r.hipCm].some((v) => v !== null))
