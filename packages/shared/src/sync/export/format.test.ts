@@ -210,6 +210,29 @@ describe("the export file", () => {
     expect(readExportFile(JSON.stringify(f))).toMatchObject({ ok: false, kind: "sets" });
   });
 
+  it("names a refused session by the person's own day", () => {
+    const f = file();
+    f.rows.workouts.push({
+      id: W,
+      sessionCode: "nope",
+      plan: [],
+      planAt: null,
+      startedAt: "2026-11-20T23:30:00.000Z",
+      startedAtAt: null,
+      endedAt: null,
+      endedAtAt: null,
+      note: null,
+      noteAt: null,
+      exerciseNotes: {},
+      exerciseNotesAt: null,
+      removed: false,
+      removedAt: null,
+    });
+    const text = JSON.stringify(f);
+    expect(readExportFile(text, "Europe/Paris")).toMatchObject({ date: "2026-11-21" });
+    expect(readExportFile(text, "UTC")).toMatchObject({ date: "2026-11-20" });
+  });
+
   it("names the file in plain words in each language", () => {
     const day = new Date(Date.UTC(2026, 10, 26, 12));
     expect(exportFileName(day, "fr")).toBe("Belay — tes données — 26 nov. 2026.json");

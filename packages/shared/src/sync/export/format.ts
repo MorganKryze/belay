@@ -75,20 +75,34 @@ export type ReadExport =
 const isRecord = (v: unknown): v is Record<string, unknown> =>
   typeof v === "object" && v !== null && !Array.isArray(v);
 
+// The day a time falls on in a time zone, as "YYYY-MM-DD".
+const dayIn = (time: string, timeZone: string) =>
+  new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date(time));
+
 // The day a row belongs to, as the person reads it: its own, or its session's for a set.
-function dayOf(rows: Record<string, unknown>, row: unknown): string | undefined {
+function dayOf(rows: Record<string, unknown>, row: unknown, timeZone: string): string | undefined {
   if (!isRecord(row)) return undefined;
   if (typeof row.date === "string") return row.date;
-  if (typeof row.startedAt === "string") return row.startedAt.slice(0, 10);
+  if (typeof row.startedAt === "string") return dayIn(row.startedAt, timeZone);
   const workouts = Array.isArray(rows.workouts) ? rows.workouts : [];
   const session: unknown = workouts.find((w) => isRecord(w) && w.id === row.workoutId);
   return isRecord(session) && typeof session.startedAt === "string"
-    ? session.startedAt.slice(0, 10)
+    ? dayIn(session.startedAt, timeZone)
     : undefined;
 }
 
-function refused(rows: Record<string, unknown>, kind: string, row: unknown): ReadExport {
-  const date = dayOf(rows, row);
+function refused(
+  rows: Record<string, unknown>,
+  kind: string,
+  row: unknown,
+  timeZone: string,
+): ReadExport {
+  const date = dayOf(rows, row, timeZone);
   return { ok: false, reason: "refused", kind, ...(date !== undefined && { date }) };
 }
 
@@ -108,8 +122,12 @@ function asChecked(c: Change): Change {
 }
 
 // The whole file is checked before anything is written: a Belay export, of a version this app
-// reads, every row in its shape, then every change it gives taken by the contract.
-export function readExportFile(text: string): ReadExport {
+// reads, every row in its shape, then every change it gives taken by the contract. A refusal
+// names the day in the person's time zone.
+export function readExportFile(
+  text: string,
+  timeZone: string = Intl.DateTimeFormat().resolvedOptions().timeZone,
+): ReadExport {
   let data: unknown;
   try {
     data = JSON.parse(text);
@@ -130,7 +148,12 @@ export function readExportFile(text: string): ReadExport {
     if (where !== "rows" || typeof kind !== "string" || !isRecord(data.rows))
       return { ok: false, reason: "not_belay" };
     const list = data.rows[kind];
-    return refused(data.rows, kind, typeof index === "number" ? (list as unknown[])[index] : list);
+    return refused(
+      data.rows,
+      kind,
+      typeof index === "number" ? (list as unknown[])[index] : list,
+      timeZone,
+    );
   }
   const file = parsed.data;
   const rows = file.rows as ExportRows & Record<string, unknown>;
@@ -146,7 +169,7 @@ export function readExportFile(text: string): ReadExport {
       };
       const changes = changesFromRows(one as ExportRows, file.exportedAt);
       if (!changes.every((c) => ChangeSchema.safeParse(c).success && isValidChange(asChecked(c))))
-        return refused(rows, kind, row);
+        return refused(rows, kind, row, timeZone);
     }
   }
   return { ok: true, file };
