@@ -129,20 +129,28 @@ export async function runAdmin(args: string[], io: Io): Promise<number> {
       });
       io.out("rebound");
     } else {
-      const id = await db.begin(async (tx) => {
-        let account: { id: string } | undefined;
-        if ("id" in command) {
-          [account] = await tx<{ id: string }[]>`
-            select id from users where id = ${command.id}::uuid for update`;
-          if (!account) throw new Refusal("no account with that id");
-        } else {
-          const [iss, sub] = command.identity;
-          [account] = await tx<{ id: string }[]>`
-            select id from users where oidc_issuer = ${iss} and oidc_sub = ${sub} for update`;
-          if (!account) throw new Refusal("no account with that identity");
-        }
-        await tx`select from belay_erase_account(${account.id}::uuid)`;
-        return account.id;
+      // Looked up without a lock, then erased in the server's order: the account's sync key, then
+      // its row (belay_erase_account), so a running sync ends first and nothing deadlocks.
+      const [iss, sub] = "id" in command ? [] : command.identity;
+      const [found] =
+        "id" in command
+          ? await db<{ id: string }[]>`select id from users where id = ${command.id}::uuid`
+          : await db<{ id: string }[]>`
+              select id from users where oidc_issuer = ${iss!} and oidc_sub = ${sub!}`;
+      const missing = "id" in command ? "no account with that id" : "no account with that identity";
+      if (!found) throw new Refusal(missing);
+      const id = found.id;
+      await db.begin(async (tx) => {
+        await tx`select pg_advisory_xact_lock(hashtextextended(${id}, 0))`;
+        // Still that account, under that identity, once the sync that held it is done.
+        const [still] =
+          "id" in command
+            ? await tx<{ id: string }[]>`select id from users where id = ${id}::uuid for update`
+            : await tx<{ id: string }[]>`
+                select id from users
+                where id = ${id}::uuid and oidc_issuer = ${iss!} and oidc_sub = ${sub!} for update`;
+        if (!still) throw new Refusal(missing);
+        await tx`select from belay_erase_account(${id}::uuid)`;
       });
       // The server's own line for a deletion (api/routes.ts), in both places.
       const line = `account deleted: ${id} at ${new Date().toISOString()}`;

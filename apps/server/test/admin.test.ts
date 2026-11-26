@@ -10,21 +10,38 @@ import { testEnv } from "./config";
 import { appDb, createSession, testDb } from "./db";
 
 const { db } = appDb();
-const owner = testDb().db;
+const ownerConn = testDb();
+const owner = ownerConn.db;
+
+// Polls, under a deadline, until a backend of this named connection waits for a lock.
+async function waitingIn(name: string) {
+  const deadline = Date.now() + 10_000;
+  for (;;) {
+    const [row] = await owner.execute<{ n: number }>(
+      sql`select count(*)::int as n from pg_stat_activity
+          where wait_event_type = 'Lock' and application_name = ${name}`,
+    );
+    if (row!.n >= 1) return;
+    if (Date.now() > deadline) throw new Error(`${name} never waits for a lock`);
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  }
+}
 const cfg = loadConfig(testEnv({ OIDC_ISSUER: "http://localhost:1" }));
 const app = createApp({ cfg, db, getOidc: oidcProvider(cfg.oidc) });
 const OLD = "https://old-idp.test";
 const NEW = "https://new-idp.test";
 
-async function admin(args: string[]) {
+async function admin(args: string[], options: { name?: string; issuer?: string } = {}) {
+  const url = new URL(inject("databaseUrl"));
+  if (options.name) url.searchParams.set("application_name", options.name);
   const out: string[] = [];
   const err: string[] = [];
   const queries: string[] = [];
   const log: string[] = [];
   const code = await runAdmin(args, {
-    databaseUrl: inject("databaseUrl"),
+    databaseUrl: url.href,
     // This instance's OIDC_ISSUER: the one identity provider a rebind may move an account to.
-    issuer: NEW,
+    issuer: options.issuer ?? NEW,
     out: (line) => out.push(line),
     err: (line) => err.push(line),
     log: (line) => log.push(line),
@@ -83,6 +100,29 @@ describe("the operator's command", () => {
     expect(await open(NEW, "stale")).toBe(false);
     expect(await sessionCount(user)).toBe(0);
     expect(await open(NEW, "fresh")).toBe(true);
+  });
+
+  it("waits for a running sync of the account before deleting it, in the server's lock order", async () => {
+    for (const by of ["identity", "id"] as const) {
+      const sub = `syncing-${by}`;
+      const user = await upsertUser(db, { issuer: OLD, sub, displayName: "Syncing" });
+      const name = `admin-delete-${by}-${process.pid}`;
+      let deletion: ReturnType<typeof admin> | undefined;
+      await ownerConn.client.begin(async (t) => {
+        // What a sync holds: the account's key, then its row as its writes reach it.
+        await t`select pg_advisory_xact_lock(hashtextextended(${user}, 0))`;
+        deletion = admin(
+          by === "id" ? ["delete", "--id", user] : ["delete", "--issuer", OLD, "--subject", sub],
+          { name },
+        );
+        await waitingIn(name);
+        await t`select 1 from users where id = ${user} for key share`;
+      });
+      const res = await deletion!;
+      expect(res.err).toEqual([]);
+      expect(res.code).toBe(0);
+      expect(await identityOf(user)).toBeUndefined();
+    }
   });
 
   it("refuses an unknown identity and an identity already taken, changing nothing", async () => {
