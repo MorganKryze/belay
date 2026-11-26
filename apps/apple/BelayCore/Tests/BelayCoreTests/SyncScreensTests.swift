@@ -11,8 +11,20 @@ import Testing
 /// The last value an observation gave, readable from the test while the observation runs.
 final class Latest<T: Sendable>: Sendable {
   private let value = Mutex<T?>(nil)
-  func set(_ new: T) { value.withLock { $0 = new } }
+  private let arrivals: AsyncStream<Void>
+  private let arrived: AsyncStream<Void>.Continuation
+  init() { (arrivals, arrived) = AsyncStream.makeStream(bufferingPolicy: .bufferingNewest(1)) }
+  func set(_ new: T) {
+    value.withLock { $0 = new }
+    arrived.yield()
+  }
   var now: T? { value.withLock { $0 } }
+  /// The first value, however long the observation takes to give it: no clock decides the start.
+  func first() async -> T? {
+    if let now { return now }
+    for await _ in arrivals { break }
+    return now
+  }
 }
 
 /// Follows `fetch` on `store` from now on, keeping its last value.
@@ -87,7 +99,7 @@ func within(_ limit: Duration, _ condition: () -> Bool) async throws -> Bool {
     var fresh: PastSession?
   }
 
-  @Test func aPullFromAnotherDeviceReachesEachScreenWithinASecond() async throws {
+  @Test(.timeLimit(.minutes(1))) func aPullFromAnotherDeviceReachesEachScreenWithinASecond() async throws {
     let (kept, fresh) = (kept, fresh)
     let (screens, watch) = follow(store) { db in
       let history = try AccountStore.history(db)
@@ -103,8 +115,7 @@ func within(_ limit: Duration, _ condition: () -> Bool) async throws -> Bool {
     }
     defer { watch.cancel() }
     // The first value is the start, not the claim: it may wait for a suite loaded with others.
-    #expect(try await within(.seconds(10)) { screens.now?.kept != nil })
-    let before = try #require(screens.now)
+    let before = try #require(await screens.first())
     #expect(before.weeks.flatMap(\.rows).map(\.workoutId) == [kept])
     #expect(before.fresh == nil)
     guard case .next = before.accueil else {
@@ -142,15 +153,15 @@ func within(_ limit: Duration, _ condition: () -> Bool) async throws -> Bool {
 
   /// Corps's and Accueil's body reads: a weigh-in, a measure and an intake typed on the web land
   /// through the engine and show in « Aujourd'hui » within a second.
-  @Test func aPulledBodyEntryReachesCorpsWithinASecond() async throws {
+  @Test(.timeLimit(.minutes(1))) func aPulledBodyEntryReachesCorpsWithinASecond() async throws {
     let today = toISODate(Self.now, timeZone: Self.utc)
     let (screens, watch) = follow(store) { db in
       let body = try AccountStore.body(db)
       return (body, corpsState(body, health: .off, now: Self.now, timeZone: Self.utc).1)
     }
     defer { watch.cancel() }
-    #expect(try await within(.seconds(10)) { screens.now != nil })
-    #expect(screens.now?.1.weighIn.kg == nil)
+    let before = try #require(await screens.first())
+    #expect(before.1.weighIn.kg == nil)
 
     let at = Fixture.time(24 * 60 - 10)
     let transport = ScriptedTransport { _, _ in
