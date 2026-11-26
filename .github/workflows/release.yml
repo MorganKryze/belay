@@ -21,6 +21,8 @@ jobs:
       id-token: write # cosign signs keylessly against this workflow identity
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
       # Release gate: a red smoke test stops the publish. This runs before setup-buildx on
       # purpose: the default docker builder keeps the image in the local daemon, which
       # compose needs; the container builder set up next would not.
