@@ -394,6 +394,31 @@ describe("SyncResponseSchema", () => {
   });
 });
 
+describe("a session time ahead of its write time", () => {
+  const at = "2026-10-07T17:00:00.000Z";
+  const set = (doneAt: string): Change => ({
+    kind: "set",
+    id: "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d91",
+    workoutId: "0199c3a2-7b1e-7cc0-8f3e-2d4b5a6c7d90",
+    field: "create",
+    slotIndex: 0,
+    position: 3,
+    exerciseId: "ds:0025",
+    warmup: false,
+    weightKg: 82.5,
+    reps: 8,
+    seconds: null,
+    rir: 1,
+    doneAt,
+    at,
+  });
+  it("is taken within the server's clock slack, and refused past it", () => {
+    expect(isValidChange(set("2026-10-07T17:02:00.000Z"))).toBe(true);
+    expect(isValidChange(set("2026-10-07T17:05:00.000Z"))).toBe(true);
+    expect(isValidChange(set("2026-10-07T17:05:00.001Z"))).toBe(false);
+  });
+});
+
 describe("isValidChange", () => {
   // The phone checks without Zod; whatever it queues, the server must accept.
   const samples: Change[] = [
@@ -445,16 +470,16 @@ describe("isValidChange", () => {
     broken(start, { id: "x" }),
     broken(start, { sessionCode: "AB" }),
     broken(start, { plan: [{ ...PLAN[0], restSec: 901 }] }),
-    broken(start, { startedAt: "2026-10-07T06:30:00.001Z" }), // after the change's own time
+    broken(start, { startedAt: "2026-10-07T06:35:00.001Z" }), // past the clock slack after its change
     broken(create, { workoutId: "x" }),
     broken(create, { warmup: true }), // position 3 is a work set
     broken(warmup, { rir: 2 }), // a warm-up has no RIR
     broken(create, { position: 50 }),
     broken(create, { exerciseId: "ds:" }),
     broken(create, { weightKg: 82.6 }),
-    broken(create, { doneAt: "2026-10-07T06:46:00.000Z" }),
+    broken(create, { doneAt: "2026-10-07T06:50:00.001Z" }),
     broken(values, { rir: 4.5 }),
-    broken(SESSION[5]!, { value: "2026-10-07T06:46:00.000Z" }),
+    broken(SESSION[5]!, { value: "2026-10-07T06:50:00.001Z" }),
     broken(SESSION[7]!, { value: "  " }), // an empty note is a null one
     broken(SESSION[9]!, { value: { "0": "" } }),
     broken(SESSION[10]!, { value: "yes" }),
@@ -609,7 +634,7 @@ describe("steps, activities, a session's own plan and start, timed sets (spec §
     const phone = [
       ...BROKEN,
       broken(timed, { rir: 1 }), // a timed set has no RIR
-      broken(NEW[7]!, { value: LATER, at: AT }), // a start after its change's own time
+      broken(NEW[7]!, { value: LATER, at: AT }), // a start past the clock slack after its change
       broken(timed, { warmup: true, position: 0 }), // a warm-up counts reps
     ];
     expect(phone.filter(isValidChange)).toEqual([]);

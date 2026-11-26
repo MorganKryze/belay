@@ -20,8 +20,6 @@ import {
   WeightRowSchema,
   WorkoutRowSchema,
 } from "../schema";
-import { CLOCK_SLACK_MS } from "../../training/workout";
-import type { Change } from "../schema";
 import { isValidChange } from "../valid";
 import { changesFromRows, type ExportRows } from "./changes";
 
@@ -106,21 +104,6 @@ function refused(
   return { ok: false, reason: "refused", kind, ...(date !== undefined && { date }) };
 }
 
-// The server keeps a session's times up to its clock slack ahead of now, while it brings write
-// times back to now: a row it sends may hold a start, an end or a set's time a little after its
-// write time. Checked as if at that write time, the change itself unaltered.
-function asChecked(c: Change): Change {
-  const near = (time: string | null) =>
-    time !== null && time > c.at && Date.parse(time) <= Date.parse(c.at) + CLOCK_SLACK_MS
-      ? c.at
-      : time;
-  if (c.kind === "workout" && c.field === "start") return { ...c, startedAt: near(c.startedAt)! };
-  if (c.kind === "workout" && (c.field === "startedAt" || c.field === "ended"))
-    return { ...c, value: near(c.value)! };
-  if (c.kind === "set" && c.field === "create") return { ...c, doneAt: near(c.doneAt)! };
-  return c;
-}
-
 // The whole file is checked before anything is written: a Belay export, of a version this app
 // reads, every row in its shape, then every change it gives taken by the contract. A refusal
 // names the day in the person's time zone.
@@ -168,7 +151,7 @@ export function readExportFile(
         [kind]: Array.isArray(value) ? [row] : row,
       };
       const changes = changesFromRows(one as ExportRows, file.exportedAt);
-      if (!changes.every((c) => ChangeSchema.safeParse(c).success && isValidChange(asChecked(c))))
+      if (!changes.every((c) => ChangeSchema.safeParse(c).success && isValidChange(c)))
         return refused(rows, kind, row, timeZone);
     }
   }

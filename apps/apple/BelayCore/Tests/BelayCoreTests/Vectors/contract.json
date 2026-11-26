@@ -214,7 +214,7 @@
     },
     {
       "name": "start: started one millisecond after its change",
-      "valid": false,
+      "valid": true,
       "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"start\",\"sessionCode\":\"A\",\"sessionId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f01\",\"sessionName\":\"Push\",\"plan\":[{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null}],\"startedAt\":\"2026-11-06T09:30:00.124Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
     },
     {
@@ -444,7 +444,7 @@
     },
     {
       "name": "startedAt: after its change",
-      "valid": false,
+      "valid": true,
       "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"startedAt\",\"value\":\"2026-11-06T09:30:00.124Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
     },
     {
@@ -459,7 +459,7 @@
     },
     {
       "name": "ended: after its change",
-      "valid": false,
+      "valid": true,
       "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"ended\",\"value\":\"2026-11-06T09:30:00.124Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
     },
     {
@@ -828,9 +828,14 @@
       "json": "{\"kind\":\"set\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f02\",\"workoutId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"create\",\"slotIndex\":0,\"position\":3,\"exerciseId\":\"belay:barbell-hip-thrust\",\"warmup\":false,\"weightKg\":100,\"reps\":5,\"rir\":2,\"doneAt\":\"1899-12-31T23:59:59.999Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
     },
     {
-      "name": "set: done after its change",
+      "name": "set: done at the clock's slack after its change",
+      "valid": true,
+      "json": "{\"kind\":\"set\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f02\",\"workoutId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"create\",\"slotIndex\":0,\"position\":3,\"exerciseId\":\"belay:barbell-hip-thrust\",\"warmup\":false,\"weightKg\":100,\"reps\":5,\"rir\":2,\"doneAt\":\"2026-11-06T09:35:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "set: done past the clock's slack after its change",
       "valid": false,
-      "json": "{\"kind\":\"set\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f02\",\"workoutId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"create\",\"slotIndex\":0,\"position\":3,\"exerciseId\":\"belay:barbell-hip-thrust\",\"warmup\":false,\"weightKg\":100,\"reps\":5,\"rir\":2,\"doneAt\":\"2026-11-06T09:30:00.124Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+      "json": "{\"kind\":\"set\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f02\",\"workoutId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"create\",\"slotIndex\":0,\"position\":3,\"exerciseId\":\"belay:barbell-hip-thrust\",\"warmup\":false,\"weightKg\":100,\"reps\":5,\"rir\":2,\"doneAt\":\"2026-11-06T09:35:00.124Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
     },
     {
       "name": "set: unknown exercise id shape",

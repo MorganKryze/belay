@@ -211,10 +211,13 @@ private func isSessionCode(_ code: String) -> Bool {
     && code.utf8.allSatisfy { (UInt8(ascii: "A")...UInt8(ascii: "Z")).contains($0) }
 }
 
-/// A session's time is never before 1900, nor after the time of its change (the phone's clock).
-/// Both are compared as text, as the web compares them: the canonical form sorts as time does.
+/// A session's time is never before 1900, nor more than the clock slack after the time of its
+/// change: the server clamps that time to its own clock and keeps session times a little ahead.
 private func isTime(_ time: String, of at: String) -> Bool {
-  Instant.isCanonical(time) && time >= Bounds.minTime && time <= at
+  guard Instant.isCanonical(time), time >= Bounds.minTime,
+    let t = Instant.milliseconds(time), let a = Instant.milliseconds(at)
+  else { return false }
+  return t <= a + Int64(Bounds.clockSlackMs)
 }
 
 /// 0 to 500 kg on the grid; the tolerance absorbs binary noise.
