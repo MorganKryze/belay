@@ -45,16 +45,6 @@ function parse(args: string[]): Command | undefined {
   return undefined;
 }
 
-// The reason at the end of the cause chain, by name, message and code: never the connection string.
-function rootCause(err: unknown): string {
-  let cause = err;
-  while (cause instanceof Error && cause.cause instanceof Error) cause = cause.cause;
-  if (!(cause instanceof Error)) return "unknown error";
-  const code = (cause as { code?: unknown }).code;
-  const text = cause.message || (typeof code === "string" ? code : cause.name);
-  return typeof code === "string" && !text.includes(code) ? `${text} (${code})` : text;
-}
-
 function open(url: string | undefined, debug: Io["debug"]) {
   try {
     // postgres 4 keeps a malformed %-escape as typed instead of failing: refuse it here.
@@ -119,7 +109,9 @@ export async function runAdmin(args: string[], io: Io): Promise<number> {
       io.err("an account already has that identity");
       return 1;
     }
-    io.err(`failed: ${rootCause(err)}`);
+    // The code alone: a driver's message can carry the statement, and never the connection string.
+    const code = (err as { code?: unknown }).code;
+    io.err(`failed: ${typeof code === "string" ? code : "database error"}`);
     return 1;
   } finally {
     await sql?.end({ timeout: 5 });

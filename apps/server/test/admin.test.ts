@@ -83,6 +83,16 @@ describe("the operator's command", () => {
     expect(gone).toMatchObject({ code: 1, out: [], err: ["no account with that identity"] });
   });
 
+  it("moves only one of two accounts rebound to the same identity at once", async () => {
+    await upsertUser(db, { issuer: OLD, sub: "race-a", displayName: "A" });
+    await upsertUser(db, { issuer: OLD, sub: "race-b", displayName: "B" });
+    const results = await Promise.all(
+      ["race-a", "race-b"].map((sub) => admin(["rebind", "--from", OLD, sub, "--to", NEW, "race"])),
+    );
+    expect(results.map((r) => r.code).sort()).toEqual([0, 1]);
+    expect(results.flatMap((r) => r.err)).toEqual(["an account already has that identity"]);
+  });
+
   it("exits 2 on bad arguments", async () => {
     for (const args of [
       [],
@@ -100,6 +110,29 @@ describe("the operator's command", () => {
       expect(res.err[0]).toMatch(/^usage:/);
       expect(res.queries).toEqual([]);
     }
+  });
+
+  it("names a bad or unreachable database without printing its address", async () => {
+    const run = async (databaseUrl: string | undefined) => {
+      const err: string[] = [];
+      const code = await runAdmin(["delete", "--issuer", OLD, "--subject", "x"], {
+        databaseUrl,
+        out: () => {},
+        err: (line) => err.push(line),
+      });
+      return { code, err };
+    };
+    for (const url of [undefined, "not a url", "postgres://belay:hunter2%zz@db/belay"]) {
+      expect(await run(url)).toEqual({
+        code: 1,
+        err: ["DATABASE_URL is not a valid PostgreSQL connection URL"],
+      });
+    }
+    const down = await run("postgres://belay:hunter2@127.0.0.1:1/belay");
+    expect(down.code).toBe(1);
+    expect(down.err).toHaveLength(1);
+    expect(down.err[0]).toMatch(/^failed: /);
+    expect(down.err[0]).not.toContain("hunter2");
   });
 
   it("deletes by identity and prints only the id and the time", async () => {

@@ -208,6 +208,7 @@ describe("the instance's privacy settings", () => {
         "https://",
         "   ",
         "javascript:alert(1)",
+        "mailto:privacy@example.org?subject=hi",
       ]) {
         expect(() => loadConfig(testEnv({ [name]: value })), `${name}=${value}`).toThrow(
           `Invalid configuration:\n${name} must be an e-mail address or an https URL`,
