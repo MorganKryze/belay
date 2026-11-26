@@ -145,6 +145,47 @@ describe("the export file", () => {
     });
   });
 
+  it("takes session times a little ahead of their write time, as the server keeps them", () => {
+    const f = file();
+    const at = (ms: number) => new Date(Date.UTC(2026, 10, 20, 7, 10) + ms).toISOString();
+    f.rows.workouts.push({
+      id: W,
+      sessionCode: "A",
+      plan: [...sessionByCode("A", starterProgram)!.slots],
+      planAt: null,
+      startedAt: at(1_000),
+      startedAtAt: at(0),
+      endedAt: at(60_000),
+      endedAtAt: at(30_000),
+      note: null,
+      noteAt: null,
+      exerciseNotes: {},
+      exerciseNotesAt: null,
+      removed: false,
+      removedAt: null,
+    });
+    f.rows.sets.push({
+      id: SET,
+      workoutId: W,
+      slotIndex: 0,
+      position: 3,
+      exerciseId: sessionByCode("A", starterProgram)!.slots[0]!.exerciseId,
+      warmup: false,
+      weightKg: 60,
+      reps: 8,
+      seconds: null,
+      rir: 2,
+      doneAt: at(2_000),
+      fieldsAt: at(0),
+      removed: false,
+      removedAt: null,
+    });
+    expect(readExportFile(JSON.stringify(f))).toEqual({ ok: true, file: f });
+    // Past the server's slack, still refused.
+    f.rows.sets[0]!.doneAt = at(5 * 60_000 + 1);
+    expect(readExportFile(JSON.stringify(f))).toMatchObject({ ok: false, kind: "sets" });
+  });
+
   it("names the file in plain words in each language", () => {
     const day = new Date(Date.UTC(2026, 10, 26, 12));
     expect(exportFileName(day, "fr")).toBe("Belay — tes données — 26 nov. 2026.json");
