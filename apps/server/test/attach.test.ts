@@ -82,4 +82,36 @@ describe("a device's data sent into an account", () => {
     expect(all.workouts.map((w) => w.id).sort()).toEqual([a, b].sort());
     expect(all.weights).toEqual([{ date: "2026-11-01", weightKg: 81, at: LATE }]);
   });
+
+  it("keeps the creatine flag of an imported supplement when the change creates it, and ignores it on a rename", async () => {
+    const { sync } = await signIn("attach-creatine");
+    const [renamed, plain] = [newId(), newId()];
+    await sync([
+      {
+        kind: "supplement",
+        id: renamed,
+        field: "name",
+        value: "Magnésium",
+        creatine: true,
+        at: EARLY,
+      },
+      {
+        kind: "supplement",
+        id: plain,
+        field: "name",
+        value: "Créatine",
+        creatine: false,
+        at: EARLY,
+      },
+    ]);
+    // On a row that exists already, the flag is ignored: the stored kind stays.
+    await sync([
+      { kind: "supplement", id: plain, field: "name", value: "Zinc", creatine: true, at: LATE },
+    ]);
+    const kinds = Object.fromEntries(
+      (await sync([])).supplements.map((s) => [s.id, [s.name, s.kind]]),
+    );
+    expect(kinds[renamed]).toEqual(["Magnésium", "creatine"]);
+    expect(kinds[plain]).toEqual(["Zinc", "other"]);
+  });
 });

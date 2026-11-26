@@ -384,8 +384,11 @@ async function writeSupplements(ctx: Ctx, changes: Indexed<SupplementChange>[]) 
           userId,
           name: String(c.value),
           nameAt: new Date(clampAt(c.at, now)),
-          // From the first name, never from the phone (§6): the rule the phone applies too.
-          kind: isCreatineName(String(c.value)) ? "creatine" : "other",
+          // An imported supplement brings its kind; without it, the first name decides (§6).
+          kind:
+            (("creatine" in c ? c.creatine : undefined) ?? isCreatineName(String(c.value)))
+              ? "creatine"
+              : "other",
         })
         .onConflictDoNothing({ target: supplements.id })
         .returning({ id: supplements.id }),
