@@ -67,6 +67,18 @@ The iPhone app's sign-in needs the provider to put `auth_time` in the ID token
      does not end a session already open, which lasts until it expires (at
      most `SESSION_MAX_DAYS`).
 
+   - Privacy settings (all optional, served to the apps at
+     `/api/instance`; empty or unset means not given):
+     `BELAY_OPERATOR` (who runs the instance), `BELAY_PRIVACY_CONTACT` (where
+     to ask about personal data) and `BELAY_SUPPORT_CONTACT` (where to ask for
+     help) are each an e-mail address or an `https` URL, and Belay refuses to
+     start on anything else. `BELAY_DATA_LOCATION` is one line of plain text
+     (200 characters at most) saying where the data is kept.
+     `BELAY_BACKUP_DAYS` is the number of days you keep backups, as a whole
+     number; it only states your practice, Belay makes no backups itself.
+     Whoever runs the instance is the controller of what it holds: fill these
+     in so the people on it know whom to ask.
+
    The three secrets are empty in the example on purpose: Compose and the app
    refuse to start until you set them.
 
@@ -107,6 +119,50 @@ The iPhone app's sign-in needs the provider to put `auth_time` in the ID token
   everyone out once.
 - Your data lives in the `belay_db` volume of the `belay` Compose project.
   `down -v` deletes it. See the threat model below.
+
+### Consent and account deletion
+
+- Nothing of a person is accepted by the instance until they agree to its
+  current privacy notice: until then `/api/sync` answers 403
+  (`consent_required`). The agreement is recorded per account with its version
+  and time; a new version of the notice asks again.
+- A person deletes their own account with `POST /api/me/delete`. It erases the
+  account and every row tied to it at once, and ends its sessions. The server
+  logs `account deleted: <id> at <iso time>`, and nothing else about the
+  person. Another device still signed in to that account gets 410
+  (`account_deleted`) on its next call, which lets it erase its local copy.
+
+### The operator's command
+
+For a person who can no longer sign in (a changed identity at your provider,
+say), run in the image, from the folder holding `compose.yaml`:
+
+```sh
+docker compose exec -T app node admin.js rebind --from <issuer> <subject> --to <issuer> <subject>
+docker compose exec -T app node admin.js delete --issuer <issuer> --subject <subject>
+docker compose exec -T app node admin.js delete --id <account id>
+```
+
+- `rebind` moves an account to a new identity and ends its sessions; the next
+  sign-in with the new identity opens it. The new issuer must be your
+  `OIDC_ISSUER`, unless you add `--force-issuer`. It refuses an unknown
+  identity, and a new identity another account already has.
+- `delete` erases an account as the person's own deletion does, by identity or
+  by `--id`. It prints, and logs, only `account deleted: <id> at <iso time>`.
+  It exits 1 when no account matches.
+- The command connects as the database owner through `DATABASE_URL` and reads
+  only an account's id and identity. The issuer and subject you type stay in
+  your shell history: clear them from it if that matters to you.
+
+### Backups and deletions
+
+A backup taken before a deletion holds the deleted person's data again once
+restored. Keep the server's logs for as long as you keep backups. After a
+restore, read them for the `account deleted: <id> at …` lines dated after the
+backup, and replay each with `node admin.js delete --id <id>`. The dump holds no roles: restoring into an empty database
+needs the roles `belay` and `belay_app` to exist first (the new container
+creates `belay`; create `belay_app` with the password of `BELAY_APP_PASSWORD`).
+State how long you keep backups in `BELAY_BACKUP_DAYS`.
 
 ### Upgrading PostgreSQL to a new major version
 
@@ -274,6 +330,10 @@ Read this before hosting Belay for anyone else.
 - **Media**: with `BELAY_MEDIA_DIR` set, `/media/exercises/<number>` serves
   files of that folder to signed-in people only: four digits, regular files
   of 8 MiB at most, inside the folder (links leaving it are refused).
+- **Consent and deletion**: the instance accepts a person's data only after
+  they agreed to its notice, and a person can erase their account and all its
+  rows. A deletion does not reach backups: replay it after a restore, as
+  described under "Backups and deletions".
 - **Minimal data**: from your identity provider, Belay keeps an identifier and a
   display name. Never your e-mail address.
 
