@@ -230,7 +230,9 @@ describe("the instance's privacy settings", () => {
     for (const name of ["BELAY_OPERATOR", "BELAY_PRIVACY_CONTACT", "BELAY_SUPPORT_CONTACT"]) {
       expect(() => loadConfig(testEnv({ [name]: " privacy@example.org " }))).not.toThrow();
     }
-    const cfg = loadConfig(testEnv({ ...privacyEnv, BELAY_PRIVACY_CONTACT: "privacy@example.org" }));
+    const cfg = loadConfig(
+      testEnv({ ...privacyEnv, BELAY_PRIVACY_CONTACT: "privacy@example.org" }),
+    );
     expect(cfg.privacy.contact).toBe("mailto:privacy@example.org");
   });
 
