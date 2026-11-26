@@ -1,3 +1,4 @@
+import type { TransactionSql } from "postgres";
 import { newId } from "@belay/shared";
 import type { Change } from "@belay/shared/sync/schema";
 import { sessionByCode, starterProgram } from "@belay/shared/training/program";
@@ -188,6 +189,15 @@ const expiredEnded = async () => {
   );
   return hash;
 };
+// Every sign-in, in any file, purges expired ended rows: one can go before this lock takes it, so
+// a fresh one is planted until the lock holds a row.
+const holdExpiredEnded = async (t: TransactionSql) => {
+  for (;;) {
+    const ended = await expiredEnded();
+    const held = await t`select 1 from ended_sessions where token_hash = ${ended} for update`;
+    if (held.length === 1) return;
+  }
+};
 const settled = (p: Promise<unknown>) => {
   let done = false;
   void p.then(
@@ -332,14 +342,13 @@ describe("deleting an account", () => {
   it("opens a session and erases its account at once without a deadlock, expired rows on both sides", async () => {
     const user = await upsertUser(db, { issuer, sub: "delete-deadlock", displayName: "D" });
     await expiredSession(user);
-    const ended = await expiredEnded();
     const token = newSessionToken();
     const hash = hashToken(token, cfg.tokenHashKey);
     let opened: Promise<boolean> | undefined;
     let erased: Promise<unknown> | undefined;
     // An expired ended token held elsewhere stalls both purges, so the two calls meet in the middle.
     await ownerConn.client.begin(async (t) => {
-      await t`select 1 from ended_sessions where token_hash = ${ended} for update`;
+      await holdExpiredEnded(t);
       const signin = callName("signin");
       opened = createSession(named(signin), hash, user, 30);
       await waitingIn(signin);
@@ -367,13 +376,11 @@ describe("deleting an account", () => {
     const a = await upsertUser(db, { issuer, sub: "delete-cross-a", displayName: "A" });
     const b = await account("delete-cross-b");
     await expiredSession(b.user);
-    const ended = await expiredEnded();
     let erased: Promise<string | null> | undefined;
     let opened: Promise<boolean> | undefined;
     // An expired ended token held here queues the erasure first, then the sign-in, on that row.
     await ownerConn.client.begin(async (t) => {
-      const held = await t`select 1 from ended_sessions where token_hash = ${ended} for update`;
-      expect(held).toHaveLength(1);
+      await holdExpiredEnded(t);
       const eraseName = callName("erase-b");
       erased = deleteAccount(named(eraseName), hashToken(b.phone.token, cfg.tokenHashKey));
       await waitingIn(eraseName);
