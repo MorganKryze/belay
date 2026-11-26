@@ -159,9 +159,12 @@ docker compose exec -T app node admin.js delete --id <account id>
 A backup taken before a deletion holds the deleted person's data again once
 restored. Keep the server's logs for as long as you keep backups. After a
 restore, read them for the `account deleted: <id> at …` lines dated after the
-backup, and replay each with `node admin.js delete --id <id>`. The dump holds no roles: restoring into an empty database
-needs the roles `belay` and `belay_app` to exist first (the new container
-creates `belay`; create `belay_app` with the password of `BELAY_APP_PASSWORD`).
+backup, and replay each with `node admin.js delete --id <id>`. A dump of the
+database alone (`pg_dump`, what most backup containers take) holds no roles:
+restoring it into an empty database needs `belay` and `belay_app` to exist
+first (the new container creates `belay`; create `belay_app` with the password
+of `BELAY_APP_PASSWORD`). A `pg_dumpall` dump, as in the upgrade below, holds
+them.
 State how long you keep backups in `BELAY_BACKUP_DAYS`.
 
 ### Upgrading PostgreSQL to a new major version
