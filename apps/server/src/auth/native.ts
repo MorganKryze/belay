@@ -26,27 +26,27 @@ export type SigninFailure = "unavailable" | "expired" | "failed" | "denied";
 export const nativeCallback = (q: { code: string } | { error: SigninFailure }) =>
   `${NATIVE_CALLBACK}?${new URLSearchParams(q).toString()}`;
 
-export interface NativeCodes {
+export interface NativeCodes<T = string> {
   /** A new one-time code for this person, bound to the app's challenge. */
-  issue(userId: string, challenge: string, now?: number): string;
+  issue(who: T, challenge: string, now?: number): string;
   /** The person, or null; the code is spent either way. */
-  redeem(code: string, verifier: string, now?: number): string | null;
+  redeem(code: string, verifier: string, now?: number): T | null;
 }
 
 const sha256 = (value: string) => createHash("sha256").update(value);
 
 // ponytail: pending codes live in memory, so one server process per instance. A restart during
 // the 60 s only asks for another tap on Sign in. Upgrade: a table of hashed codes.
-export function nativeCodes(): NativeCodes {
+export function nativeCodes<T = string>(): NativeCodes<T> {
   // Keyed by the code's hash, so the map never holds a code that could be replayed. A Map keeps
   // insertion order: the first key is the oldest.
-  const pending = new Map<string, { userId: string; challenge: string; expires: number }>();
+  const pending = new Map<string, { who: T; challenge: string; expires: number }>();
   return {
-    issue(userId, challenge, now = Date.now()) {
+    issue(who, challenge, now = Date.now()) {
       for (const [key, entry] of pending) if (entry.expires <= now) pending.delete(key);
       while (pending.size >= MAX_PENDING) pending.delete(pending.keys().next().value!);
       const code = randomBytes(32).toString("base64url");
-      pending.set(sha256(code).digest("hex"), { userId, challenge, expires: now + CODE_TTL_MS });
+      pending.set(sha256(code).digest("hex"), { who, challenge, expires: now + CODE_TTL_MS });
       return code;
     },
     redeem(code, verifier, now = Date.now()) {
@@ -58,7 +58,7 @@ export function nativeCodes(): NativeCodes {
       const given = Buffer.from(sha256(verifier).digest("base64url"));
       const expected = Buffer.from(entry.challenge);
       return given.length === expected.length && timingSafeEqual(given, expected)
-        ? entry.userId
+        ? entry.who
         : null;
     },
   };

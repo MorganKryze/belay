@@ -57,10 +57,17 @@ export const users = pgTable(
     birthYearAt: ts("birth_year_at"),
     heightCm: smallint("height_cm"),
     heightAt: ts("height_at"),
+    // The version of the privacy notice the person agreed to, and when; both null until then.
+    consentVersion: smallint("consent_version"),
+    consentAt: ts("consent_at"),
     serverSeq: serverSeq(),
   },
   (t) => [
     unique("users_oidc_identity").on(t.oidcIssuer, t.oidcSub),
+    check(
+      "users_consent",
+      sql`(${t.consentVersion} IS NULL) = (${t.consentAt} IS NULL) AND (${t.consentVersion} IS NULL OR ${t.consentVersion} >= 1)`,
+    ),
     check(
       "users_target_range",
       sql`${t.targetMinPct} >= 0.25 AND ${t.targetMaxPct} <= 1.0 AND ${t.targetMinPct} <= ${t.targetMaxPct} - 0.1`,
@@ -71,6 +78,13 @@ export const users = pgTable(
     check("users_height", sql`${t.heightCm} IS NULL OR ${t.heightCm} BETWEEN 120 AND 230`),
   ],
 );
+
+// The token of a session ended by its account's deletion, until it would have expired: a device
+// that still holds it is told the account is gone. No account id: the row names nobody.
+export const endedSessions = pgTable("ended_sessions", {
+  tokenHash: text("token_hash").primaryKey(),
+  expiresAt: ts("expires_at").notNull(),
+});
 
 export const sessions = pgTable("sessions", {
   tokenHash: text("token_hash").primaryKey(),

@@ -9,10 +9,10 @@ import { oidcProvider } from "../src/auth/oidc";
 import { hashToken, newSessionToken, SESSION_COOKIE } from "../src/auth/session";
 import { loadConfig } from "../src/config";
 import { asUser } from "../src/db/client";
-import { createSession, upsertUser } from "../src/db/identity";
+import { upsertUser } from "../src/db/identity";
 import { activities, dailySteps, workoutSets, workouts } from "../src/db/schema";
 import { testEnv } from "./config";
-import { appDb, testDb } from "./db";
+import { agree, appDb, createSession, testDb } from "./db";
 
 // The server as it runs: the belay_app login role, row-level security on every request. The
 // owner only reads what was stored.
@@ -29,6 +29,7 @@ const PLANK = { id: "ds:2135", measure: "seconds" as const };
 
 async function signIn(sub: string) {
   const user = await upsertUser(db, { issuer: "https://idp.test", sub, displayName: sub });
+  await agree(db, user);
   const token = newSessionToken();
   await createSession(db, hashToken(token, cfg.tokenHashKey), user, 30);
   const cookie = `${SESSION_COOKIE}=${token}`;

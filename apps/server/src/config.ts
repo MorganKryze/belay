@@ -32,7 +32,31 @@ const schema = z.object({
   MIGRATIONS_DIR: z.string().default("drizzle"),
   // Optional: the folder of exercise loops (<four digits>.mp4). Unset or blank turns media off.
   BELAY_MEDIA_DIR: z.string().optional(),
+  // Optional: who runs this instance and how to reach them, shown on its privacy page.
+  BELAY_OPERATOR: z.string().optional(),
+  BELAY_PRIVACY_CONTACT: z.string().optional(),
+  BELAY_SUPPORT_CONTACT: z.string().optional(),
+  BELAY_DATA_LOCATION: z.string().optional(),
+  BELAY_BACKUP_DAYS: z
+    .string()
+    .transform((v) => v || undefined)
+    .pipe(
+      z
+        .string()
+        .regex(/^\s*\d+\s*$/, { error: "must be a whole number of days" })
+        .transform(Number)
+        .optional(),
+    )
+    .optional(),
 });
+
+export type Privacy = {
+  operator: string | null;
+  contact: string | null;
+  support: string | null;
+  location: string | null;
+  backupDays: number | null;
+};
 
 export type Config = {
   databaseUrl: string;
@@ -58,6 +82,7 @@ export type Config = {
   migrationsDir: string;
   // The media directory's real path, resolved once here; undefined means media is off.
   mediaDir: string | undefined;
+  privacy: Privacy;
 };
 
 const LOOPBACK = new Set(["localhost", "127.0.0.1", "[::1]"]);
@@ -103,6 +128,46 @@ function mediaDirectory(value: string | undefined): string | undefined {
   );
 }
 
+const EMAIL = /^[^\s@:/?#]+@[^\s@:/?#]+\.[^\s@:/?#.]+$/;
+
+// A contact the apps open as a link: one plain address (served as its mailto:), a mailto: of one
+// plain address, or an https URL with a host. Unset or empty means not given; anything else stops
+// the start.
+function contact(name: string, value: string | undefined): string | null {
+  if (value === undefined || value === "") return null;
+  const given = value.trim();
+  const url = URL.parse(EMAIL.test(given) ? `mailto:${given}` : given);
+  if (url === null || !(url.protocol === "https:" ? url.hostname !== "" : mailto(url))) {
+    throw new Error(`Invalid configuration:\n${name} must be an e-mail address or an https URL`);
+  }
+  // Served as the parser reads it, so every app opens the same link.
+  return url.href;
+}
+
+function mailto(url: URL): boolean {
+  if (url.protocol !== "mailto:" || url.search) return false;
+  try {
+    return EMAIL.test(decodeURIComponent(url.pathname));
+  } catch {
+    return false;
+  }
+}
+
+// Shown as one line on the privacy page: no line break, no control or direction-changing character.
+const LOCATION_MAX = 200;
+const UNSAFE_TEXT = /[\p{Cc}\u2028\u2029\u202a-\u202e\u2066-\u2069]/u;
+
+function location(value: string | undefined): string | null {
+  const text = value?.trim();
+  if (!text) return null;
+  if (text.length > LOCATION_MAX || UNSAFE_TEXT.test(text)) {
+    throw new Error(
+      `Invalid configuration:\nBELAY_DATA_LOCATION must be one line of at most ${LOCATION_MAX} characters`,
+    );
+  }
+  return text;
+}
+
 export function loadConfig(env: Record<string, string | undefined>): Config {
   const parsed = schema.safeParse(env);
   if (!parsed.success) {
@@ -138,6 +203,13 @@ export function loadConfig(env: Record<string, string | undefined>): Config {
   }
   const publicUrl = new URL(e.PUBLIC_URL);
   const mediaDir = mediaDirectory(e.BELAY_MEDIA_DIR);
+  const privacy: Privacy = {
+    operator: contact("BELAY_OPERATOR", e.BELAY_OPERATOR),
+    contact: contact("BELAY_PRIVACY_CONTACT", e.BELAY_PRIVACY_CONTACT),
+    support: contact("BELAY_SUPPORT_CONTACT", e.BELAY_SUPPORT_CONTACT),
+    location: location(e.BELAY_DATA_LOCATION),
+    backupDays: e.BELAY_BACKUP_DAYS ?? null,
+  };
   return {
     databaseUrl: e.DATABASE_URL,
     appDatabaseUrl: e.APP_DATABASE_URL,
@@ -164,5 +236,6 @@ export function loadConfig(env: Record<string, string | undefined>): Config {
     webDist: e.WEB_DIST,
     migrationsDir: e.MIGRATIONS_DIR,
     mediaDir,
+    privacy,
   };
 }

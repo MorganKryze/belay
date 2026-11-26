@@ -10,10 +10,10 @@ import { oidcProvider } from "../src/auth/oidc";
 import { hashToken, newSessionToken, SESSION_COOKIE } from "../src/auth/session";
 import { loadConfig } from "../src/config";
 import { asUser } from "../src/db/client";
-import { createSession, upsertUser } from "../src/db/identity";
+import { upsertUser } from "../src/db/identity";
 import { workoutSets, workouts } from "../src/db/schema";
 import { testEnv } from "./config";
-import { appDb, testDb } from "./db";
+import { agree, appDb, createSession, testDb } from "./db";
 
 // The server as it runs: the belay_app login role, row-level security on every request. The
 // owner only arranges rows.
@@ -29,6 +29,7 @@ const PLAN = [...sessionByCode("A", starterProgram)!.slots];
 
 async function signIn(sub: string) {
   const user = await upsertUser(db, { issuer: "https://idp.test", sub, displayName: sub });
+  await agree(db, user);
   const token = newSessionToken();
   await createSession(db, hashToken(token, cfg.tokenHashKey), user, 30);
   const cookie = `${SESSION_COOKIE}=${token}`;
@@ -344,6 +345,16 @@ describe("a session through /api/sync", () => {
     const startedAt = Date.parse(res.workouts[0]!.startedAt);
     expect(startedAt).toBeGreaterThanOrEqual(before - 1000);
     expect(startedAt).toBeLessThanOrEqual(Date.now());
+  });
+
+  it("takes a set done a little after its write time, and keeps both times", async () => {
+    const { sync } = await signIn("wk-slack");
+    const w = newId();
+    const set = newId();
+    const doneAt = "2026-10-07T17:07:00.000Z";
+    const res = await sync("0", [start(w), create(set, w, 3, { doneAt })]);
+    expect(res.rejected).toEqual([]);
+    expect(res.sets).toMatchObject([{ id: set, doneAt, fieldsAt: LATER }]);
   });
 
   it("isolates two people, through the API and in SQL", async () => {

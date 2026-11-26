@@ -12,10 +12,10 @@ import { oidcProvider } from "../src/auth/oidc";
 import { hashToken, newSessionToken, SESSION_COOKIE } from "../src/auth/session";
 import { loadConfig } from "../src/config";
 import { connect, runMigrations } from "../src/db/client";
-import { createSession, upsertUser } from "../src/db/identity";
+import { upsertUser } from "../src/db/identity";
 import { workouts } from "../src/db/schema";
 import { testEnv } from "./config";
-import { appDb, testDb } from "./db";
+import { agree, appDb, createSession, testDb } from "./db";
 
 // A session done keeps its session's name of the day: written once with the start, sent back as
 // it was kept, never rewritten. The server as it runs (belay_app, row-level security); the owner
@@ -34,6 +34,7 @@ const SESSION_B = seedId(2);
 
 async function signIn(sub: string) {
   const user = await upsertUser(db, { issuer, sub, displayName: sub });
+  await agree(db, user);
   const token = newSessionToken();
   await createSession(db, hashToken(token, cfg.tokenHashKey), user, 30);
   const cookie = `${SESSION_COOKIE}=${token}`;
@@ -181,6 +182,14 @@ describe("migration 0008", () => {
     };
     journal.entries = journal.entries.filter((e) => e.idx <= 7);
     writeFileSync(journalPath, JSON.stringify(journal));
+    // And up to 0008: a later migration that adds a column must not change what this one proves.
+    const upTo0008 = mkdtempSync(join(tmpdir(), "belay-0008-only-"));
+    cpSync("drizzle", upTo0008, { recursive: true });
+    const journal8 = JSON.parse(readFileSync(join(upTo0008, "meta", "_journal.json"), "utf8")) as {
+      entries: { idx: number }[];
+    };
+    journal8.entries = journal8.entries.filter((e) => e.idx <= 8);
+    writeFileSync(join(upTo0008, "meta", "_journal.json"), JSON.stringify(journal8));
 
     await owner.execute(sql`drop database if exists belay_0008`);
     await owner.execute(sql`create database belay_0008`);
@@ -203,7 +212,7 @@ describe("migration 0008", () => {
       ).map((r) => r.tablename);
       const before = await dump(fresh.db, tables);
 
-      await runMigrations(fresh.db, "drizzle");
+      await runMigrations(fresh.db, upTo0008);
 
       expect(await dump(fresh.db, tables)).toEqual(before);
       const kept = await fresh.db.execute(

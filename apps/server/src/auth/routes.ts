@@ -5,7 +5,7 @@ import * as client from "openid-client";
 import { z } from "zod";
 import type { Config } from "../config";
 import type { Db } from "../db/client";
-import { createSession, deleteSession, upsertUser } from "../db/identity";
+import { type Account, createSession, deleteSession, upsertUser } from "../db/identity";
 import { describeError } from "../log";
 import {
   CHALLENGE,
@@ -65,7 +65,8 @@ const tokenRequest = z.object({
 
 export function authRoutes(cfg: Config, db: Db, getOidc: OidcProvider) {
   const auth = new Hono<AuthEnv>();
-  const codes = nativeCodes();
+  // The code carries the identity the sign-in read, checked again when its session opens.
+  const codes = nativeCodes<Account>();
   const redirectUri = new URL("/auth/callback", cfg.publicUrl).href;
   // `__Host-` over https (Secure, Path=/, no Domain): a sibling subdomain cannot plant a
   // transaction cookie of its own, which would allow login CSRF.
@@ -183,18 +184,25 @@ export function authRoutes(cfg: Config, db: Db, getOidc: OidcProvider) {
       return signinFailure(c, "denied");
     }
 
-    const userId = await upsertUser(db, {
+    const account: Account = {
+      id: await upsertUser(db, {
+        issuer: claims.iss,
+        sub: claims.sub,
+        displayName: pickDisplayName(claims, cfg.oidc.nameClaim),
+      }),
       issuer: claims.iss,
       sub: claims.sub,
-      displayName: pickDisplayName(claims, cfg.oidc.nameClaim),
-    });
+    };
     // The app gets a one-time code, never a session: the session is created when the app proves
     // it holds the verifier, and no cookie reaches the sheet.
     if (tx.native) {
-      return c.redirect(nativeCallback({ code: codes.issue(userId, tx.native.challenge) }));
+      return c.redirect(nativeCallback({ code: codes.issue(account, tx.native.challenge) }));
     }
     const token = newSessionToken();
-    await createSession(db, hashToken(token, cfg.tokenHashKey), userId, cfg.sessionTtlDays);
+    // The account was deleted or rebound since the provider answered: no session, as any failed
+    // sign-in.
+    if (!(await createSession(db, hashToken(token, cfg.tokenHashKey), account, cfg.sessionTtlDays)))
+      return signinFailure(c, "failed");
     setSessionCookie(c, cfg, token);
     // Re-validated: the login side already did it, but the redirect must never rely on that alone.
     return c.redirect(safeReturnTo(tx.returnTo));
@@ -206,10 +214,15 @@ export function authRoutes(cfg: Config, db: Db, getOidc: OidcProvider) {
     bodyLimit({ maxSize: 4096, onError: (c) => c.json({ error: "too_large" }, 413) }),
     async (c) => {
       const body = tokenRequest.safeParse(await c.req.json().catch(() => undefined));
-      const userId = body.success ? codes.redeem(body.data.code, body.data.verifier) : null;
-      if (!userId) return c.json({ error: "invalid_grant" }, 400);
+      const account = body.success ? codes.redeem(body.data.code, body.data.verifier) : null;
+      if (!account) return c.json({ error: "invalid_grant" }, 400);
       const token = newSessionToken();
-      await createSession(db, hashToken(token, cfg.tokenHashKey), userId, cfg.sessionTtlDays);
+      // The account was deleted or rebound since the code was issued: a spent code, as any other
+      // refusal.
+      if (
+        !(await createSession(db, hashToken(token, cfg.tokenHashKey), account, cfg.sessionTtlDays))
+      )
+        return c.json({ error: "invalid_grant" }, 400);
       return c.json({ token });
     },
   );

@@ -16,10 +16,36 @@ export async function upsertUser(
   return rows[0]!.id;
 }
 
-export async function createSession(db: Db, tokenHash: string, userId: string, ttlDays: number) {
-  await asApp(db, (tx) =>
-    tx.execute(sql`select belay_create_session(${tokenHash}, ${userId}::uuid, ${days(ttlDays)})`),
+// Expired ended tokens and sessions, in a transaction of their own so that no lock of theirs is
+// held while a sign-in or an erasure waits for an account's row. A failure is housekeeping only:
+// its code is logged and the caller goes on.
+export async function purgeEnded(db: Db): Promise<void> {
+  try {
+    await asApp(db, (tx) => tx.execute(sql`select belay_purge_ended()`));
+  } catch (err) {
+    // Read without a branch that could throw: an error with no cause logs "undefined".
+    const code: unknown = Reflect.get(Object(Reflect.get(Object(err), "cause")), "code");
+    console.error(`purge of ended sessions failed: ${String(code)}`);
+  }
+}
+
+// An account and the identity the sign-in read for it.
+export type Account = { id: string; issuer: string; sub: string };
+
+// False when the account no longer exists, or no longer has that identity: nothing is opened.
+export async function createSession(
+  db: Db,
+  tokenHash: string,
+  account: Account,
+  ttlDays: number,
+): Promise<boolean> {
+  await purgeEnded(db);
+  const rows = await asApp(db, (tx) =>
+    tx.execute<{ ok: boolean }>(
+      sql`select belay_create_session(${tokenHash}, ${account.id}::uuid, ${account.issuer}, ${account.sub}, ${days(ttlDays)}) as ok`,
+    ),
   );
+  return rows[0]!.ok;
 }
 
 // The session's user and the seconds it has left, or null once it has expired or reached the
@@ -41,4 +67,20 @@ export async function sessionUser(
 
 export async function deleteSession(db: Db, tokenHash: string) {
   await asApp(db, (tx) => tx.execute(sql`select belay_delete_session(${tokenHash})`));
+}
+
+// The deleted account's id, or null when this token opens no live session.
+export async function deleteAccount(db: Db, tokenHash: string): Promise<string | null> {
+  await purgeEnded(db);
+  const rows = await asApp(db, (tx) =>
+    tx.execute<{ id: string | null }>(sql`select belay_delete_account(${tokenHash}) as id`),
+  );
+  return rows[0]!.id;
+}
+
+export async function tokenEnded(db: Db, tokenHash: string): Promise<boolean> {
+  const rows = await asApp(db, (tx) =>
+    tx.execute<{ ended: boolean }>(sql`select belay_token_ended(${tokenHash}) as ended`),
+  );
+  return rows[0]!.ended;
 }

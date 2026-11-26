@@ -1,16 +1,16 @@
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
-import { API_VERSION } from "@belay/shared/sync/limits";
+import { API_VERSION, CONSENT_VERSION } from "@belay/shared/sync/limits";
 import { sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { createApp } from "../src/app";
 import { oidcProvider } from "../src/auth/oidc";
 import { hashToken, newSessionToken, SESSION_COOKIE } from "../src/auth/session";
 import { loadConfig } from "../src/config";
-import { createSession, upsertUser } from "../src/db/identity";
+import { upsertUser } from "../src/db/identity";
 import { testEnv } from "./config";
-import { appDb, testDb } from "./db";
+import { agree, appDb, createSession, testDb } from "./db";
 
 // The app serves as belay_app, as in production; the owner only arranges and reads session rows.
 const { db } = appDb();
@@ -39,6 +39,7 @@ let n = 0;
 async function signIn() {
   const sub = `native-${++n}`;
   const user = await upsertUser(db, { issuer: "https://idp.test", sub, displayName: sub });
+  await agree(db, user);
   const token = newSessionToken();
   await createSession(db, hashToken(token, cfg.tokenHashKey), user, cfg.sessionTtlDays);
   return { user, token, bearer: `Bearer ${token}`, cookie: `${SESSION_COOKIE}=${token}` };
@@ -54,7 +55,13 @@ const expiresAt = async (token: string) => {
 const me = (headers: Record<string, string>) => app.request("/api/me", { headers });
 
 describe("GET /api/instance", () => {
-  const probe = { app: "belay", api: API_VERSION, origin: "http://localhost:3000" };
+  const probe = {
+    app: "belay",
+    api: API_VERSION,
+    origin: "http://localhost:3000",
+    consentVersion: CONSENT_VERSION,
+    privacy: { operator: null, contact: null, support: null, location: null, backupDays: null },
+  };
 
   it("the probe answers a stranger with the app's name, the contract version and PUBLIC_URL's origin, no-store", async () => {
     const res = await app.request("/api/instance");

@@ -8,9 +8,9 @@ import { oidcProvider } from "../src/auth/oidc";
 import { hashToken, newSessionToken, SESSION_COOKIE } from "../src/auth/session";
 import { loadConfig } from "../src/config";
 import { connect, type Db } from "../src/db/client";
-import { createSession, upsertUser } from "../src/db/identity";
+import { upsertUser } from "../src/db/identity";
 import { testEnv } from "./config";
-import { testDb } from "./db";
+import { createSession, testDb } from "./db";
 
 const { db } = testDb();
 const dist = mkdtempSync(join(tmpdir(), "belay-web-"));

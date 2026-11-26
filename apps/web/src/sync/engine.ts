@@ -1,3 +1,4 @@
+import { fitBatch } from "@belay/shared/sync/batch";
 import { MAX_CHANGES } from "@belay/shared/sync/limits";
 import type { SyncRequest, SyncResponse } from "@belay/shared/sync/schema";
 import { type AccountDb, applyServer, readCursor, readOutbox } from "./db";
@@ -5,8 +6,9 @@ import { type AccountDb, applyServer, readCursor, readOutbox } from "./db";
 // What the banners show: nothing for idle and syncing.
 export type SyncStatus =
   "idle" | "syncing" | "offline" | "expired" | "failed" | "instance-ahead" | "instance-behind";
+// too_large: the request passed a size limit on the way (413); the next one carries fewer.
 export type SendResult =
-  { kind: "ok"; response: SyncResponse } | { kind: "offline" | "expired" | "failed" };
+  { kind: "ok"; response: SyncResponse } | { kind: "offline" | "expired" | "failed" | "too_large" };
 export type Send = (request: SyncRequest) => Promise<SendResult>;
 
 export interface SyncEngine {
@@ -60,6 +62,10 @@ export function createSyncEngine({
   const listeners = new Set<() => void>();
   const landed = new Set<() => void>();
   let hasLanded = false;
+  // Halved after each 413, so a batch refused for its size is never sent again as it was. Kept
+  // for the engine's life: the proxy that refused it stays in the way, and the next run would
+  // only meet the same refusals again. A new engine (the next launch) starts at MAX_CHANGES.
+  let most = MAX_CHANGES;
   const set = (next: SyncStatus) => {
     if (next === status) return;
     status = next;
@@ -88,11 +94,17 @@ export function createSyncEngine({
     try {
       let complete = false;
       for (let round = 0; round < MAX_ROUNDS; round++) {
-        const batch = await readOutbox(db, MAX_CHANGES);
+        const queued = await readOutbox(db, most);
         const cursor = await readCursor(db);
+        const batch = fitBatch(queued, (e) => e.change, { account: userId, cursor }, most);
         if (stopped) return;
         const result = await send({ account: userId, cursor, changes: batch.map((e) => e.change) });
         if (stopped) return; // the batch stays queued: the next sync sends it again, a no-op once merged
+        if (result.kind === "too_large" && batch.length > 1) {
+          most = Math.floor(batch.length / 2);
+          continue;
+        }
+        if (result.kind === "too_large") return set("failed");
         if (result.kind !== "ok") {
           if (result.kind === "failed") checkOwed = checkVersion !== undefined;
           return set(result.kind);
@@ -103,6 +115,12 @@ export function createSyncEngine({
           complete = true;
           break;
         }
+      }
+      // Out of rounds with changes still queued (a long queue behind a strict proxy, its 413s
+      // counted as rounds): still syncing, and another run follows instead of an idle banner.
+      if (!complete && (await readOutbox(db, 1)).length > 0) {
+        if (!stopped) schedule();
+        return;
       }
       set("idle");
       // Only a pull that reached the end: rows come in server order, a half-pulled session

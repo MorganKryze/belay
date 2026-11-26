@@ -1,9 +1,9 @@
 import { sql } from "drizzle-orm";
 import { describe, expect, it, inject } from "vitest";
 import { asApp, asUser, connect, runMigrations } from "../src/db/client";
-import { createSession, deleteSession, sessionUser, upsertUser } from "../src/db/identity";
+import { deleteSession, sessionUser, upsertUser } from "../src/db/identity";
 import { sessions, users } from "../src/db/schema";
-import { testDb } from "./db";
+import { createSession, testDb } from "./db";
 
 const { db } = testDb();
 const issuer = "https://idp.test";

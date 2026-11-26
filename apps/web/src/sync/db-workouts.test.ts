@@ -184,6 +184,13 @@ describe("a session on the phone", () => {
     );
   });
 
+  it("takes a set done a little after its write time, and keeps both times", async () => {
+    await recordChanges(db, [start()], { active: active() });
+    const doneAt = "2026-10-07T17:07:00.000Z";
+    await recordSet(db, input(S1, 3, { doneAt }), LATER, active());
+    expect((await readHistory(db)).sets).toEqual([setRow(S1, { doneAt })]);
+  });
+
   it("writes nothing of a set it refuses, not even the open session", async () => {
     await recordChanges(db, [start()], { active: active() });
     await expect(
@@ -332,9 +339,11 @@ describe("a paused session", () => {
 
   it("stays paused when the resume cannot be written", async () => {
     await recordChanges(db, [start()], { active: paused() });
-    // A start later than its own change is refused before anything is written.
+    // A start past the clock slack after its own change is refused before anything is written.
     await expect(
-      recordChanges(db, [startedAt({ value: LATEST, at: LATER })], { active: paused(null) }),
+      recordChanges(db, [startedAt({ value: "2026-10-07T17:10:00.001Z", at: LATER })], {
+        active: paused(null),
+      }),
     ).rejects.toThrow(RangeError);
     expect(await readActiveSession(db)).toEqual(paused());
     expect((await readHistory(db)).workouts).toEqual([workoutRow()]);

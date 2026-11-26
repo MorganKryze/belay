@@ -21,6 +21,7 @@ export async function postSync(request: SyncRequest): Promise<SendResult> {
   }
   // 409: the browser's session now belongs to another account. Either way, sign in again.
   if (res.status === 401 || res.status === 409) return { kind: "expired" };
+  if (res.status === 413) return { kind: "too_large" };
   if (!res.ok) return { kind: "failed" };
   const parsed = SyncResponseSchema.safeParse(await res.json().catch(() => null));
   return parsed.success ? { kind: "ok", response: parsed.data } : { kind: "failed" };

@@ -24,6 +24,8 @@ FROM mirror.gcr.io/library/node:26-alpine@sha256:6bd9ab43c0ec0190ca7b2d193906cb8
 WORKDIR /app
 ENV NODE_ENV=production PORT=3000 WEB_DIST=public MIGRATIONS_DIR=drizzle
 COPY --from=build /src/apps/server/dist/main.js ./main.js
+# The operator's command: docker compose exec app node admin.js <rebind|delete> ...
+COPY --from=build /src/apps/server/dist/admin.js ./admin.js
 COPY --from=build /src/apps/server/drizzle ./drizzle
 COPY --from=build /src/apps/web/dist ./public
 USER node

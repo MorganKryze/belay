@@ -29,6 +29,7 @@ import {
   MAX_POSITION,
   MAX_SLOTS,
   MAX_WARMUPS,
+  CLOCK_SLACK_MS,
   MIN_TIME,
 } from "../training/workout";
 import type { Change, WeightChange } from "./schema";
@@ -47,8 +48,10 @@ const isId = (s: string) =>
 const isNullOr = <T>(value: T | null, ok: (v: T) => boolean) => value === null || ok(value);
 const isInt = (v: unknown, min: number, max: number) =>
   typeof v === "number" && Number.isInteger(v) && v >= min && v <= max;
-// A session's time is never before 1900, nor after the time of its change (the phone's clock).
-const isTimeOf = (time: string, at: string) => isISOTime(time) && time >= MIN_TIME && time <= at;
+// A session's time up to the clock slack after its write time: the server brings a write time back
+// to its clock but keeps session times that far ahead, and sends both back as they are.
+const isTimeOf = (time: string, at: string) =>
+  isISOTime(time) && time >= MIN_TIME && Date.parse(time) <= Date.parse(at) + CLOCK_SLACK_MS;
 // Reps or seconds, never both, and a timed set has no RIR. No seconds at all is a set in reps,
 // as every set was before timed ones.
 const isLoad = (c: {
