@@ -7,7 +7,7 @@ import { connect, enableAppLogin, runMigrations } from "../src/db/client";
 const APP_PASSWORD = `p@ss:w/rd?#% "it's"\\`;
 
 export default async function setup(project: TestProject) {
-  const container = await new PostgreSqlContainer("postgres:18-alpine").start();
+  const container = await new PostgreSqlContainer("postgres:19-alpine").start();
   const url = container.getConnectionUri();
   const { db, client } = connect(url);
   await runMigrations(db, "drizzle");
