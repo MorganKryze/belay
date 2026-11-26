@@ -79,6 +79,13 @@ export const users = pgTable(
   ],
 );
 
+// The token of a session ended by its account's deletion, until it would have expired: a device
+// that still holds it is told the account is gone. No account id: the row names nobody.
+export const endedSessions = pgTable("ended_sessions", {
+  tokenHash: text("token_hash").primaryKey(),
+  expiresAt: ts("expires_at").notNull(),
+});
+
 export const sessions = pgTable("sessions", {
   tokenHash: text("token_hash").primaryKey(),
   userId: uuid("user_id")

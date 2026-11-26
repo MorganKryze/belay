@@ -71,6 +71,13 @@
       "when": 1795726206394,
       "tag": "0009_consent",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1795730202132,
+      "tag": "0010_account_deletion",
+      "breakpoints": true
     }
   ]
 }

@@ -4,9 +4,10 @@ import { and, eq, isNull, ne, or } from "drizzle-orm";
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { z } from "zod";
-import { requireUser, type AuthEnv } from "../auth/session";
+import { clearSessionCookie, requireUser, type AuthEnv } from "../auth/session";
 import type { Config } from "../config";
 import { asUser, type Db } from "../db/client";
+import { deleteAccount } from "../db/identity";
 import { users } from "../db/schema";
 import { runSync } from "./sync";
 
@@ -86,6 +87,16 @@ export function apiRoutes(cfg: Config, db: Db, consentVersion: number = CONSENT_
       return c.body(null, 204);
     },
   );
+
+  // Erases the account and every row of it at once. Only its id and the time are logged, so an
+  // operator who restores a backup can erase it again. Not behind consent: withdrawing it is this.
+  api.post("/me/delete", async (c) => {
+    const id = await deleteAccount(db, c.get("tokenHash"));
+    if (id === null) return c.json({ error: "unauthenticated" }, 401);
+    console.log(`account deleted: ${id} at ${new Date().toISOString()}`);
+    clearSessionCookie(c, cfg);
+    return c.body(null, 204);
+  });
 
   // The whole batch or nothing: an invalid change refuses the batch before anything is written.
   api.post(

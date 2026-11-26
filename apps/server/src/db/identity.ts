@@ -16,10 +16,19 @@ export async function upsertUser(
   return rows[0]!.id;
 }
 
-export async function createSession(db: Db, tokenHash: string, userId: string, ttlDays: number) {
-  await asApp(db, (tx) =>
-    tx.execute(sql`select belay_create_session(${tokenHash}, ${userId}::uuid, ${days(ttlDays)})`),
+// False when the account no longer exists: nothing is opened.
+export async function createSession(
+  db: Db,
+  tokenHash: string,
+  userId: string,
+  ttlDays: number,
+): Promise<boolean> {
+  const rows = await asApp(db, (tx) =>
+    tx.execute<{ ok: boolean }>(
+      sql`select belay_create_session(${tokenHash}, ${userId}::uuid, ${days(ttlDays)}) as ok`,
+    ),
   );
+  return rows[0]!.ok;
 }
 
 // The session's user and the seconds it has left, or null once it has expired or reached the
@@ -41,4 +50,19 @@ export async function sessionUser(
 
 export async function deleteSession(db: Db, tokenHash: string) {
   await asApp(db, (tx) => tx.execute(sql`select belay_delete_session(${tokenHash})`));
+}
+
+// The deleted account's id, or null when this token opens no live session.
+export async function deleteAccount(db: Db, tokenHash: string): Promise<string | null> {
+  const rows = await asApp(db, (tx) =>
+    tx.execute<{ id: string | null }>(sql`select belay_delete_account(${tokenHash}) as id`),
+  );
+  return rows[0]!.id;
+}
+
+export async function tokenEnded(db: Db, tokenHash: string): Promise<boolean> {
+  const rows = await asApp(db, (tx) =>
+    tx.execute<{ ended: boolean }>(sql`select belay_token_ended(${tokenHash}) as ended`),
+  );
+  return rows[0]!.ended;
 }

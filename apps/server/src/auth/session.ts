@@ -3,7 +3,7 @@ import type { Context, MiddlewareHandler } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import type { Config } from "../config";
 import type { Db } from "../db/client";
-import { sessionUser } from "../db/identity";
+import { sessionUser, tokenEnded } from "../db/identity";
 
 export const SESSION_COOKIE = "belay_session";
 
@@ -61,23 +61,22 @@ export function requestToken(
   return { token: BEARER.exec(header)?.[1], from: "bearer" };
 }
 
-export type AuthEnv = { Variables: { userId: string } };
+export type AuthEnv = { Variables: { userId: string; tokenHash: string } };
 
 export function requireUser(cfg: Config, db: Db): MiddlewareHandler<AuthEnv> {
   return async (c, next) => {
     const { token, from } = requestToken(c, cfg);
-    const session = token
-      ? await sessionUser(
-          db,
-          hashToken(token, cfg.tokenHashKey),
-          cfg.sessionTtlDays,
-          cfg.sessionMaxDays,
-        )
+    const hash = token ? hashToken(token, cfg.tokenHashKey) : undefined;
+    const session = hash
+      ? await sessionUser(db, hash, cfg.sessionTtlDays, cfg.sessionMaxDays)
       : null;
-    if (!token || !session) {
+    if (!token || !hash || !session) {
       if (token && from === "cookie") clearSessionCookie(c, cfg);
+      // A device of an account deleted elsewhere erases its copy when told so.
+      if (hash && (await tokenEnded(db, hash))) return c.json({ error: "account_deleted" }, 410);
       return c.json({ error: "unauthenticated" }, 401);
     }
+    c.set("tokenHash", hash);
     // The DB expiry slides on every lookup, up to the absolute cap; a cookie's Max-Age follows it.
     // The app keeps its bearer token itself, so it gets no cookie.
     if (from === "cookie") setSessionCookie(c, cfg, token, session.maxAge);

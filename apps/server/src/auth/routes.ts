@@ -209,7 +209,11 @@ export function authRoutes(cfg: Config, db: Db, getOidc: OidcProvider) {
       const userId = body.success ? codes.redeem(body.data.code, body.data.verifier) : null;
       if (!userId) return c.json({ error: "invalid_grant" }, 400);
       const token = newSessionToken();
-      await createSession(db, hashToken(token, cfg.tokenHashKey), userId, cfg.sessionTtlDays);
+      // The account was deleted since the code was issued: a spent code, as any other refusal.
+      if (
+        !(await createSession(db, hashToken(token, cfg.tokenHashKey), userId, cfg.sessionTtlDays))
+      )
+        return c.json({ error: "invalid_grant" }, 400);
       return c.json({ token });
     },
   );
