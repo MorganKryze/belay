@@ -127,6 +127,9 @@ export const SupplementChangeSchema = z.discriminatedUnion("field", [
     id: z.uuid(),
     field: z.literal("name"),
     value: name,
+    // The kind, when the name alone would decide otherwise (a supplement renamed across the
+    // word creatine): read only where the change creates the row. Absent: the name decides.
+    creatine: z.optional(z.boolean()),
     at,
   }),
   z.object({
