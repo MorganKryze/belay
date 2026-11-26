@@ -361,10 +361,48 @@ const keyOf = (kind: string, row: Record<string, unknown>): string =>
 // A field's write time is no value of its own (a session's start and end, a set's time are).
 const isTime = (field: string) =>
   field === "at" || (field.endsWith("At") && !["startedAt", "endedAt", "doneAt"].includes(field));
+// The time a value was written under, where its name does not say it.
+const TIME_OF: Record<string, string> = {
+  waistCm: "waistAt",
+  neckCm: "neckAt",
+  hipCm: "hipAt",
+  proteinG: "proteinAt",
+  heightCm: "heightAt",
+  kind: "nameAt",
+  programId: "placeAt",
+  exerciseId: "exerciseAt",
+  measure: "exerciseAt",
+  repRange: "repsAt",
+  sets: "setsAt",
+  rirTarget: "rirAt",
+  restSec: "restAt",
+  warmupSets: "warmupsAt",
+  isMain: "mainAt",
+  groupKey: "groupAt",
+};
+// The key holding a field's write time in its row, or none (a creation's own field).
+function timeKey(row: Record<string, unknown>, field: string): string | undefined {
+  return [
+    `${field}At`,
+    TIME_OF[field],
+    field === "position" ? "placeAt" : undefined,
+    "fieldsAt",
+    "at",
+  ].find((k): k is string => k !== undefined && k in row);
+}
+// One form per value: keys sorted, absent read as null.
+function canonical(v: unknown): string {
+  return JSON.stringify(v ?? null, (_, x: unknown) =>
+    x && typeof x === "object" && !Array.isArray(x)
+      ? Object.fromEntries(Object.entries(x).toSorted(([a], [b]) => (a < b ? -1 : 1)))
+      : x,
+  );
+}
 
 export type Overlap = { kind: keyof ExportRows; key: string; field: string };
 
-// The values both sides hold with other contents: an import keeps the later of each.
+// The values both sides hold with other contents, written in the file: an import keeps the later
+// of each.
 export function overlapCount(
   here: ExportRows,
   incoming: ExportRows,
@@ -380,9 +418,12 @@ export function overlapCount(
       const key = keyOf(kind, theirs);
       const mine = ours.get(key);
       if (!mine) continue;
-      for (const field of Object.keys(theirs))
-        if (!isTime(field) && JSON.stringify(mine[field]) !== JSON.stringify(theirs[field]))
-          values.push({ kind, key, field });
+      for (const field of new Set([...Object.keys(mine), ...Object.keys(theirs)])) {
+        if (isTime(field)) continue;
+        const time = timeKey(theirs, field);
+        if (time !== undefined && theirs[time] === null) continue;
+        if (canonical(mine[field]) !== canonical(theirs[field])) values.push({ kind, key, field });
+      }
     }
   }
   return { count: values.length, values };

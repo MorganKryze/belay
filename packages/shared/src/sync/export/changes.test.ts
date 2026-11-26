@@ -436,6 +436,31 @@ describe("the values an import would meet on both sides", () => {
     expect(count).toBe(16);
   });
 
+  it("leaves out a value the file never wrote", () => {
+    const other = fixture();
+    other.programs[1]!.name = "Printemps";
+    other.programSlots[1]!.restSec = 60;
+    expect(overlapCount(fixture(), other)).toEqual({ count: 0, values: [] });
+  });
+
+  it("reads the same value whatever the order of its keys", () => {
+    const other = fixture();
+    other.programs[0]!.schedule = { days: [...schedule.days], mode: schedule.mode };
+    other.workouts[0]!.plan = other.workouts[0]!.plan.map((slot) =>
+      Object.fromEntries(Object.entries(slot).toReversed()),
+    ) as typeof PLAN;
+    expect(overlapCount(fixture(), other)).toEqual({ count: 0, values: [] });
+  });
+
+  it("reads an absent value as none", () => {
+    const other = fixture();
+    delete other.workouts[0]!.sessionName;
+    const here = fixture();
+    here.workouts[0]!.sessionName = null;
+    expect(overlapCount(here, other)).toEqual({ count: 0, values: [] });
+    expect(overlapCount(other, here)).toEqual({ count: 0, values: [] });
+  });
+
   it("counts 0, 1 and 2 sessions", () => {
     const rows = empty();
     expect(countsOf(rows).sessions).toBe(0);
@@ -448,8 +473,10 @@ describe("the values an import would meet on both sides", () => {
 
     const other = structuredClone(rows);
     other.workouts[0]!.note = "a";
+    other.workouts[0]!.noteAt = T(90);
     expect(overlapCount(rows, other).count).toBe(1);
     other.workouts[1]!.note = "b";
+    other.workouts[1]!.noteAt = T(91);
     expect(overlapCount(rows, other).count).toBe(2);
   });
 
