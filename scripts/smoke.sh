@@ -40,11 +40,18 @@ test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/api/me)" = 
 test "$(curl -s -o /dev/null -w '%{http_code} %{redirect_url}' http://localhost:3000/auth/login)" = \
   "302 http://localhost:3000/?signin=unavailable"
 # Served as belay_app: the owner's connection closed once the migrations were done.
-test "$("${compose[@]}" exec -T db psql -U belay -d belay -tAc \
+test "$("${compose[@]}" exec -T db psql -U belay -d belay -qtAc \
   "select string_agg(distinct usename, ',') from pg_stat_activity
    where datname = 'belay' and backend_type = 'client backend' and pid <> pg_backend_pid()")" = belay_app
 # The operator's command is in the image and refuses an identity no account has.
 status=0
-"${compose[@]}" exec -T app node admin.js delete --issuer x --subject y >/dev/null 2>&1 || status=$?
+"${compose[@]}" exec -T app node admin.js delete --issuer https://idp.test --subject y >/dev/null 2>&1 || status=$?
 test "$status" = 1
+# A deletion it makes lands in the server's log, the line a restore replays.
+id=$("${compose[@]}" exec -T db psql -U belay -d belay -qtAc \
+  "insert into users (id, oidc_issuer, oidc_sub, display_name)
+   values (gen_random_uuid(), 'https://idp.test', 'smoke', 'Smoke') returning id")
+"${compose[@]}" exec -T app node admin.js delete --issuer https://idp.test --subject smoke |
+  grep -q "^account deleted: $id at "
+"${compose[@]}" logs --no-color app | grep -q "account deleted: $id at "
 echo "smoke: ok"

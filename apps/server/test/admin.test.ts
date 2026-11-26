@@ -20,13 +20,15 @@ async function admin(args: string[]) {
   const out: string[] = [];
   const err: string[] = [];
   const queries: string[] = [];
+  const log: string[] = [];
   const code = await runAdmin(args, {
     databaseUrl: inject("databaseUrl"),
     out: (line) => out.push(line),
     err: (line) => err.push(line),
+    log: (line) => log.push(line),
     debug: (query) => queries.push(query),
   });
-  return { code, out, err, queries };
+  return { code, out, err, queries, log };
 }
 
 async function session(user: string) {
@@ -143,7 +145,9 @@ describe("the operator's command", () => {
     expect(res.code).toBe(0);
     expect(res.err).toEqual([]);
     expect(res.out).toHaveLength(1);
-    const [, id, at] = /^deleted (\S+) at (\S+)$/.exec(res.out[0]!)!;
+    // The server's own line, in the server's log too, so a restore can replay it.
+    expect(res.log).toEqual(res.out);
+    const [, id, at] = /^account deleted: (\S+) at (\S+)$/.exec(res.out[0]!)!;
     expect(id).toBe(user);
     expect(new Date(at!).toISOString()).toBe(at);
     expect(Date.parse(at!)).toBeGreaterThanOrEqual(before - 1000);

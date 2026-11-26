@@ -1,7 +1,7 @@
 // The operator's command, run in the image as `node admin.js`: it moves an account to a new
 // identity, or deletes one for a person who can no longer sign in. It connects as the owner through
 // DATABASE_URL, reads only an account's id and identity, and prints nothing of the person.
-import { realpathSync } from "node:fs";
+import { appendFileSync, existsSync, realpathSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import postgres from "postgres";
 
@@ -14,6 +14,8 @@ type Io = {
   databaseUrl: string | undefined;
   out: (line: string) => void;
   err: (line: string) => void;
+  // The server's log, where an operator looks after restoring a backup.
+  log?: (line: string) => void;
   // Each statement sent, for the test that checks which columns are read.
   debug?: (query: string) => void;
 };
@@ -96,7 +98,10 @@ export async function runAdmin(args: string[], io: Io): Promise<number> {
         await tx`select from belay_erase_account(${account.id}::uuid)`;
         return account.id;
       });
-      io.out(`deleted ${id} at ${new Date().toISOString()}`);
+      // The server's own line for a deletion (api/routes.ts), in both places.
+      const line = `account deleted: ${id} at ${new Date().toISOString()}`;
+      io.out(line);
+      io.log?.(line);
     }
     return 0;
   } catch (err) {
@@ -119,12 +124,25 @@ export async function runAdmin(args: string[], io: Io): Promise<number> {
 }
 
 /* v8 ignore start: the entry point, run by node in the image (scripts/smoke.sh) */
+// `docker compose exec` keeps only the server's own output in `docker compose logs`: the line goes
+// to the server's stdout as well, which the same user may write to. Elsewhere stdout alone holds it.
+function containerLog(line: string) {
+  const server = "/proc/1/fd/1";
+  if (process.pid === 1 || !existsSync(server)) return;
+  try {
+    appendFileSync(server, `${line}\n`);
+  } catch {
+    console.error("could not write to the server's log: keep the line above");
+  }
+}
+
 const entry = process.argv[1];
 if (entry && realpathSync(entry) === fileURLToPath(import.meta.url)) {
   process.exitCode = await runAdmin(process.argv.slice(2), {
     databaseUrl: process.env.DATABASE_URL,
     out: (line) => console.log(line),
     err: (line) => console.error(line),
+    log: containerLog,
   });
 }
 /* v8 ignore stop */
