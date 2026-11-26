@@ -9,6 +9,11 @@ struct ShellView: View {
     private let markSide: CGFloat = 32
 
     var body: some View {
+        // The stack gives the scrolled content the system's fade under the clock.
+        NavigationStack { screen }
+    }
+
+    private var screen: some View {
         ScrollView {
             VStack(spacing: 8) {
                 ZStack {
@@ -22,6 +27,7 @@ struct ShellView: View {
                 content
             }
             .frame(maxWidth: .infinity)
+            .padding(.horizontal, 4)
         }
         .background(.black)
         .confirmationDialog(
