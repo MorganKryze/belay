@@ -86,6 +86,13 @@ final class WatchLinkTests: XCTestCase {
         XCTAssertTrue(comesToRead(reply(app), "session|belay.example"))
     }
 
+    func testATokenTheInstanceRefusesAtLaunchTellsTheWatchItIsSignedOut() {
+        let app = launch(watch: "installed", mode: "refusedAtOpen")
+        XCTAssertTrue(app.textFields["signin-address"].waitForExistence(timeout: 10), "the refused token leaves the sign-in")
+        XCTAssertTrue(comesToRead(context(app), "signedOut·0"), "the watch is told no session, as at a sign-out")
+        XCTAssertTrue(comesToRead(reply(app), "signedOut"), "and is handed none")
+    }
+
     func testASessionNamedAfterLaunchIsToldToTheWatchAndSoIsItsSignOut() {
         let app = launch(watch: "installed", mode: "unnamed")
         XCTAssertTrue(comesToRead(context(app), "session·1"), "once the instance names the person, the watch is told")
