@@ -122,8 +122,9 @@ The iPhone app's sign-in needs the provider to put `auth_time` in the ID token
 
 ### Consent and account deletion
 
-- Nothing of a person is accepted by the instance until they agree to its
-  current privacy notice: until then `/api/sync` answers 403
+- None of a person's records is accepted by the instance until they agree to
+  its current privacy notice (signing in stores only their identifier and
+  display name): until then `/api/sync` answers 403
   (`consent_required`). The agreement is recorded per account with its version
   and time; a new version of the notice asks again.
 - A person deletes their own account with `POST /api/me/delete`. It erases the
@@ -157,7 +158,12 @@ docker compose exec -T app node admin.js delete --id <account id>
 ### Backups and deletions
 
 A backup taken before a deletion holds the deleted person's data again once
-restored. Keep the server's logs for as long as you keep backups. After a
+restored. Keep the server's logs for as long as you keep backups, outside the
+container: Compose drops a container's logs when it recreates it, which every
+upgrade does. One way is the journald logging driver on the `app` service
+(`logging: { driver: journald }` in `docker/compose.yaml`, then
+`journalctl CONTAINER_NAME=<container>`); another is
+`docker compose logs app >> belay-app.log` before each upgrade. After a
 restore, read them for the `account deleted: <id> at …` lines dated after the
 backup, and replay each with `node admin.js delete --id <id>`. A dump of the
 database alone (`pg_dump`, what most backup containers take) holds no roles:

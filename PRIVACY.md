@@ -7,7 +7,7 @@ to.
 
 ## Who holds your data
 
-The operator of the instance is the controller of what it holds. The instance serves the operator's name, how to reach them about your data,
+The operator of the instance is the controller of what it holds. The instance serves the operator's e-mail address or web page, how to reach them about your data,
 where the data is kept and how long they keep backups, whatever they chose to
 state. The
 administrator of an instance can technically read its data: Belay does not
@@ -21,7 +21,8 @@ your training log.
 
 ## Consent before anything is sent
 
-The instance accepts none of your data until you agree to its current notice.
+Signing in stores your identifier and display name; the instance accepts none
+of your records until you agree to its current notice.
 Your agreement is recorded with the version of the notice and the time. When
 the notice changes, it asks again.
 
