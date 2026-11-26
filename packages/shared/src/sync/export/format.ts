@@ -158,7 +158,7 @@ export function readExportFile(
   return { ok: true, file };
 }
 
-// « Belay — tes données — 26 nov. 2026.json »: the date as the app writes it, in its language.
+// The name says what the file holds and when, in the app's language, the date as the app writes it.
 // The extension lets the share sheet, the save picker and the import filter know the file.
 export function exportFileName(date: Date, lang: "fr" | "en"): string {
   const day = new Intl.DateTimeFormat(lang === "fr" ? "fr-FR" : "en-GB", {
