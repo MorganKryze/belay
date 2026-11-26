@@ -328,6 +328,19 @@ export function changesFromRows(rows: ExportRows, exportedAt: string): Change[] 
       doneAt: r.doneAt,
       at: r.fieldsAt,
     });
+    // A creation is written once: where the set exists, its values come by their own change
+    // (on an empty store it ties with the creation, and what is stored stays).
+    out.push({
+      kind: "set",
+      id: r.id,
+      workoutId: r.workoutId,
+      field: "values",
+      weightKg: r.weightKg,
+      reps: r.reps,
+      seconds: r.seconds,
+      rir: r.rir,
+      at: r.fieldsAt,
+    });
     field(r.removedAt, (at) => ({
       kind: "set",
       id: r.id,

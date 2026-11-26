@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { sessionByCode, starterProgram } from "../../training/program";
 import { DEFAULT_SCHEDULE, SEED, seedId } from "../../training/stored-program";
-import { ChangeSchema } from "../schema";
+import { mergeFields } from "../merge";
+import { type Change, ChangeSchema } from "../schema";
 import { isValidChange } from "../valid";
 import { changesFromRows, countsOf, type ExportRows, overlapCount } from "./changes";
 
@@ -300,7 +301,7 @@ describe("the changes that rebuild exported rows", () => {
       expect(isValidChange(c), JSON.stringify(c)).toBe(true);
     }
     const times = changes.map((c) => c.at).filter((at) => at !== EXPORTED);
-    expect(times.toSorted()).toEqual([...new Set(timesOf(rows))].toSorted());
+    expect([...new Set(times)].toSorted()).toEqual([...new Set(timesOf(rows))].toSorted());
     // One creation per program, program session and slot, at the export's time.
     expect(changes.filter((c) => c.at === EXPORTED)).toHaveLength(6);
     expect(changes).toContainEqual({
@@ -326,6 +327,37 @@ describe("the changes that rebuild exported rows", () => {
     });
     const kinds = new Set(changes.map((c) => c.kind));
     expect(kinds.size).toBe(16);
+  });
+
+  it("carries a set's values after its creation, at the time they were written", () => {
+    const changes = changesFromRows(fixture(), EXPORTED);
+    expect(changes).toContainEqual({
+      kind: "set",
+      id: id(21),
+      workoutId: id(20),
+      field: "values",
+      weightKg: 62.5,
+      reps: 7,
+      seconds: null,
+      rir: 1,
+      at: T(36),
+    });
+  });
+
+  it("gives a set already stored the file's later values through the one merge", () => {
+    const rows = fixture();
+    rows.sets = [{ ...rows.sets[1]!, weightKg: 85, fieldsAt: T(50) }];
+    const values = changesFromRows(rows, EXPORTED).filter(
+      (c): c is Extract<Change, { kind: "set"; field: "values" }> =>
+        c.kind === "set" && c.field === "values",
+    );
+    const stored = new Map([[id(22), T(40)]]);
+    const won = mergeFields(stored, values, (c) => c.id, new Date(EXPORTED));
+    expect(won.map((c) => c.weightKg)).toEqual([85]);
+    // On a store that wrote the same time, what is stored stays.
+    expect(
+      mergeFields(new Map([[id(22), T(50)]]), values, (c) => c.id, new Date(EXPORTED)),
+    ).toEqual([]);
   });
 
   it("carries the creatine flag only where the name would decide otherwise", () => {
