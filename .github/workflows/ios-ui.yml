@@ -1,0 +1,102 @@
+name: ios-ui
+
+# The iPhone UI suite, built once and run on eight macOS machines, each an eighth of the classes
+# (apps/apple/scripts/ui-shards.sh, which also fails the build when a class is in no shard). It
+# runs on pull requests that touch the app, nightly on main and by hand. It is not a required
+# check: main's ruleset requires `check`, `e2e` and `image` only. The watch app's UI tests need a
+# paired watch simulator and stay off CI.
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - apps/apple/**
+      - packages/shared/**
+      - scripts/swift-vectors.ts
+      - .github/workflows/ios-ui.yml
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-ui-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # The app uses iOS 27 APIs behind availability checks, which need the iOS 27 SDK to compile.
+  DEVELOPER_DIR: /Applications/Xcode_27.2.app/Contents/Developer
+
+jobs:
+  build:
+    runs-on: xcode-27
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - run: apps/apple/scripts/ui-shards.sh check
+      # A simulator build needs no signing, so the job reads no secret.
+      - run: >-
+          xcodebuild -project apps/apple/Belay.xcodeproj -scheme Belay -configuration Debug
+          -destination 'generic/platform=iOS Simulator'
+          -derivedDataPath "$RUNNER_TEMP/dd" CODE_SIGNING_ALLOWED=NO build-for-testing -quiet
+      # A tarball keeps the executable bits that the artifact zip drops.
+      - run: tar -cf "$RUNNER_TEMP/products.tar" -C "$RUNNER_TEMP/dd/Build/Products" .
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ui-products
+          path: ${{ runner.temp }}/products.tar
+          retention-days: 1
+          if-no-files-found: error
+
+  ui:
+    needs: build
+    runs-on: xcode-27
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6, 7, 8]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: ui-products
+          path: ${{ runner.temp }}
+      # A cold simulator still booting when the tests start stalls the runner: boot it first and
+      # wait until it says it is ready.
+      - name: boot the simulator
+        run: |
+          id="$(xcrun simctl list devices available -j | python3 -c 'import json,sys
+          d=json.load(sys.stdin)["devices"]
+          print(next(x["udid"] for k,v in d.items() if "iOS-27-2" in k for x in v if x["name"]=="iPhone 18 Pro"))')"
+          echo "SIM_ID=$id" >> "$GITHUB_ENV"
+          xcrun simctl boot "$id" || true
+          xcrun simctl bootstatus "$id" -b
+      - name: test shard ${{ matrix.shard }}
+        env:
+          SHARD: ${{ matrix.shard }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/products"
+          tar -xf "$RUNNER_TEMP/products.tar" -C "$RUNNER_TEMP/products"
+          xctestrun="$(find "$RUNNER_TEMP/products" -maxdepth 1 -name '*.xctestrun' | head -1)"
+          only=()
+          while read -r arg; do only+=("$arg"); done < <(apps/apple/scripts/ui-shards.sh "$SHARD")
+          # A test that hangs fails after five minutes instead of holding the shard to its limit.
+          xcodebuild test-without-building -xctestrun "$xctestrun" \
+            -destination "platform=iOS Simulator,id=$SIM_ID" \
+            -test-timeouts-enabled YES -default-test-execution-time-allowance 300 \
+            -maximum-test-execution-time-allowance 600 \
+            -parallel-testing-enabled NO \
+            -resultBundlePath "$RUNNER_TEMP/shard.xcresult" \
+            "${only[@]}"
+      - if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ui-shard-${{ matrix.shard }}-xcresult
+          path: ${{ runner.temp }}/shard.xcresult
+          retention-days: 7
