@@ -128,16 +128,16 @@ describe("consent to the instance's privacy notice", () => {
     expect((await consentOf(user))?.at?.toISOString()).toBe(first);
   });
 
-  it("leaves a consent to a newer version of the notice as it is when the current one is sent", async () => {
+  it("replaces a consent to another version with the current one, then lets the sync through", async () => {
     const { user, call } = await signIn("consent-newer");
-    const newer = new Date(Date.now() - hour);
     await owner
       .update(users)
-      .set({ consentVersion: CONSENT_VERSION + 1, consentAt: newer })
+      .set({ consentVersion: CONSENT_VERSION + 1, consentAt: new Date(Date.now() - hour) })
       .where(eq(users.id, user));
     const at = new Date().toISOString();
     expect((await call("/api/consent", { version: CONSENT_VERSION, at })).status).toBe(204);
-    expect(await consentOf(user)).toEqual({ version: CONSENT_VERSION + 1, at: newer });
+    expect((await consentOf(user))?.version).toBe(CONSENT_VERSION);
+    expect((await call("/api/sync", { account: user, cursor: "0", changes: [] })).status).toBe(200);
   });
 
   it("refuses another version with 409 consent_version and records nothing", async () => {
