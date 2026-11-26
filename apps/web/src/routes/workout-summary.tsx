@@ -38,7 +38,8 @@ function Summary({ account }: { account: OpenAccount }) {
   const navigate = useNavigate();
   const { workoutId } = useParams({ from: "/workout/summary/$workoutId" });
   const history = useHistory(account).data;
-  const sessions = useProgram(account).data?.programs.sessions ?? [];
+  // Read with the history: a title read against no sessions would show the letter first.
+  const sessions = useProgram(account).data?.programs.sessions;
   const record = useRecord(account);
   const [note, setNote] = useState("");
   const [error, setError] = useState<string>();
@@ -54,7 +55,7 @@ function Summary({ account }: { account: OpenAccount }) {
     buzzed.current = true;
     haptic("success");
   }, [done]);
-  if (!history) return null;
+  if (!history || !sessions) return null;
   if (!workout || !done) return <NotFound />;
   const stats = summary(workout, liveSets(history), history);
   const unit = readWeightUnit();

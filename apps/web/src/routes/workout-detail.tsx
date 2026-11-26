@@ -47,7 +47,8 @@ function Detail({ account }: { account: OpenAccount }) {
   const today = useToday();
   const { workoutId } = useParams({ from: "/workouts/$workoutId" });
   const history = useHistory(account).data;
-  const sessions = useProgram(account).data?.programs.sessions ?? [];
+  // Read with the history: a title read against no sessions would show the letter first.
+  const sessions = useProgram(account).data?.programs.sessions;
   const record = useRecord(account);
   const navigate = useNavigate();
   const [confirm, setConfirm] = useState(false);
@@ -56,7 +57,7 @@ function Detail({ account }: { account: OpenAccount }) {
   // A device preference, read once as the page opens.
   const [volumeShown] = useState(() => readSessionVolume() === "shown");
   const exercisesId = useId();
-  if (!history) return null;
+  if (!history || !sessions) return null;
   const workout = history.workouts.find((w) => w.id === workoutId);
   if (!workout || workout.removed || workout.endedAt === null) return leaving ? null : <NotFound />;
   const sets = liveSets(history).filter((s) => s.workoutId === workout.id);

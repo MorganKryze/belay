@@ -1,15 +1,22 @@
 import type { Change } from "@belay/shared/sync/schema";
 import { sessionByCode, starterProgram } from "@belay/shared/training/program";
-import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
+import { SEED_PROGRAM_ID } from "@belay/shared/training/stored-program";
+import { act, cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { IDBFactory } from "fake-indexeddb";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import i18n from "../i18n";
 import { setHaptics } from "../lib/haptic";
-import { openAccountDb, readHistory } from "../sync/db";
+import { openAccountDb, readHistory, readPrograms } from "../sync/db";
 import { writeLastUser } from "../sync/last-user";
 import { fakeApi } from "../test/fake-api";
 import { renderRoute } from "../test/render-route";
 import { ADA, seed } from "../test/seed";
+import { id as fixtureId, session as fixtureSession } from "../test/workout-fixtures";
+
+vi.mock("../sync/db", async (importOriginal) => {
+  const real = await importOriginal<typeof import("../sync/db")>();
+  return { ...real, readPrograms: vi.fn(real.readPrograms) };
+});
 
 // The real clock: the dates below are set from it.
 beforeEach(() => {
@@ -187,5 +194,44 @@ describe("the summary", () => {
       db.close();
       expect(workouts.find((w) => w.id === id(2))?.note).toBe("Bonne énergie");
     });
+  });
+  it("titles the session by its session's name only once the programs are read, never by its letter first", async () => {
+    // A session D named « Arms », and a session done as D before sessions kept their name, so
+    // its title comes from the programs.
+    const D = fixtureId(60);
+    const [start, ended] = fixtureSession(6, "A", new Date(2026, 9, 6, 18, 0), 45);
+    await seed(ADA.id, [
+      {
+        kind: "programSession",
+        id: D,
+        field: "create",
+        name: "Arms",
+        programId: SEED_PROGRAM_ID,
+        position: 3,
+        at: "2026-10-01T06:00:00.000Z",
+      },
+      { ...start!, sessionCode: "D", sessionId: D } as Change,
+      ended!,
+    ]);
+    const stored = await openAccountDb(ADA.id);
+    const unnamed = (await stored.getAll("workouts"))[0]!;
+    delete unnamed.sessionName;
+    await stored.put("workouts", unnamed);
+    stored.close();
+    const real = vi.mocked(readPrograms).getMockImplementation()!;
+    let release!: () => void;
+    const held = new Promise<void>((resolve) => (release = resolve));
+    vi.mocked(readPrograms).mockImplementation(async (db) => {
+      await held;
+      return real(db);
+    });
+    fakeApi({ me: ADA });
+    renderRoute(`/workout/summary/${fixtureId(6)}`);
+    await waitFor(() => expect(readPrograms).toHaveBeenCalled());
+    await act(() => new Promise((resolve) => setTimeout(resolve, 100)));
+    expect(screen.queryByText(/Session D/)).toBeNull();
+    release();
+    expect(await screen.findByRole("heading", { name: "Session D · Arms", level: 1 })).toBeTruthy();
+    vi.mocked(readPrograms).mockImplementation(real);
   });
 });
