@@ -193,7 +193,8 @@ export async function writePrograms(
 // The programs the pointer may name once the batch's choices are written. Among the choices of
 // live programs one wins over the stored pointer, folded as writeActiveProgram folds them (the
 // newest, a later one winning a tie), or none does and the stored pointer stays. A choice of a
-// removed program may still win if a restore earlier in the batch is taken, so it counts too.
+// program removed before the batch is left out: the caller asks only of programs the batch
+// removes, and one already removed is in its `gone`, which it checks first.
 async function activeCandidates(
   { tx, userId, now }: Ctx,
   choices: Indexed<ActiveProgramChange>[],
@@ -220,10 +221,7 @@ async function activeCandidates(
     () => "active",
     now,
   );
-  return new Set([
-    winner?.programId ?? pointer.programId,
-    ...targets.filter((id) => removed.get(id) === true),
-  ]);
+  return new Set([winner?.programId ?? pointer.programId]);
 }
 
 async function updatePrograms(
