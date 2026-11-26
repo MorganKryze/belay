@@ -142,7 +142,11 @@ public actor SyncEngine {
       let answer = await probe.version()
       if stopped { return }
       // Unreached, the check stays due and the last answer stands: no network is no mismatch.
-      guard let answer else { break }
+      // Asked before a return, it ends nothing: ask again.
+      guard let answer else {
+        if returns != asked { continue }
+        break
+      }
       // A return while the check was out may follow an update: ask again before anything goes out.
       // That stale answer may still hold the queue on a mismatch, never release it.
       if returns == asked {

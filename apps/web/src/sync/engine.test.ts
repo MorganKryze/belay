@@ -505,6 +505,44 @@ describe("a held contract", () => {
     stop();
   });
 
+  it("asks again when an answer asked before the latest return finds no network", async () => {
+    const send = vi.fn<Send>(async () => ok(empty("5")));
+    const first = deferred();
+    const checkVersion = answers(null, first.promise, "instance-ahead");
+    const engine = engineWith(send, { checkVersion });
+    const stop = engine.start();
+    await vi.waitFor(() => expect(send).toHaveBeenCalledTimes(1));
+    await vi.waitFor(() => expect(engine.status()).toBe("idle"));
+    document.dispatchEvent(new Event("visibilitychange"));
+    document.dispatchEvent(new Event("visibilitychange"));
+    await tick();
+    first.resolve("unreached");
+    await vi.waitFor(() => expect(engine.status()).toBe("instance-ahead"));
+    await tick();
+    expect(send).toHaveBeenCalledTimes(1);
+    expect(engine.status()).toBe("instance-ahead");
+    stop();
+  });
+
+  it("keeps the hold when a match asked before the latest return is followed by no network", async () => {
+    const send = vi.fn<Send>(async () => ok(empty("5")));
+    const second = deferred();
+    const checkVersion = answers("instance-ahead", second.promise, "unreached");
+    const engine = engineWith(send, { checkVersion });
+    const stop = engine.start();
+    await vi.waitFor(() => expect(engine.status()).toBe("instance-ahead"));
+    document.dispatchEvent(new Event("visibilitychange"));
+    document.dispatchEvent(new Event("visibilitychange"));
+    await tick();
+    second.resolve(null);
+    await vi.waitFor(() => expect(checkVersion.mock.calls.length).toBeGreaterThanOrEqual(3));
+    await tick();
+    await tick();
+    expect(send).not.toHaveBeenCalled();
+    expect(engine.status()).toBe("instance-ahead");
+    stop();
+  });
+
   it("asks the version again after a failed send", async () => {
     const send = vi.fn<Send>(async () => ({ kind: "failed" }));
     const checkVersion = answers(null, "instance-ahead");

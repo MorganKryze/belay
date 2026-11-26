@@ -73,12 +73,13 @@ export function createSyncEngine({
       const asked = returns;
       const answer = await checkVersion();
       if (stopped) return;
-      if (answer === "unreached") break;
-      // Asked before the latest return: a mismatch still holds, a match cannot release; asked again.
+      // Asked before the latest return: a mismatch still holds, a match or no network cannot
+      // release nor end the check; asked again.
       if (asked !== returns) {
-        if (answer) held = answer;
+        if (answer && answer !== "unreached") held = answer;
         continue;
       }
+      if (answer === "unreached") break;
       held = answer;
       checkOwed = false;
     }
