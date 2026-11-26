@@ -163,6 +163,13 @@ describe("consent to the instance's privacy notice", () => {
     expect((await post("/api/sync", sync)).status).toBe(200);
   });
 
+  it("refuses an unconsented account's sync before reading whose queue it is", async () => {
+    const { call } = await signIn("consent-before-parse");
+    const res = await call("/api/sync", { account: newId(), cursor: "0", changes: [] });
+    expect(res.status).toBe(403);
+    expect(await res.json()).toEqual({ error: "consent_required" });
+  });
+
   it("refuses another version with 409 consent_version and records nothing", async () => {
     const { user, call } = await signIn("consent-old");
     const at = new Date().toISOString();
