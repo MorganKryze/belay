@@ -125,6 +125,26 @@ describe("the operator's command", () => {
     }
   });
 
+  it("saves the provider's issuer the way its sign-ins write it", async () => {
+    const signedIn = "https://saved-idp.test/realm";
+    await upsertUser(db, { issuer: signedIn, sub: "already-here", displayName: "Here" });
+    const user = await upsertUser(db, { issuer: OLD, sub: "to-saved", displayName: "S" });
+    const instance = "HTTPS://Saved-IDP.test:443/realm/";
+    const res = await admin(["rebind", "--from", OLD, "to-saved", "--to", instance, "s"], {
+      issuer: instance,
+    });
+    expect(res.code).toBe(0);
+    expect(await identityOf(user)).toEqual({ iss: signedIn, sub: "s" });
+    // No sign-in yet through this provider: OIDC_ISSUER as the operator wrote it.
+    const first = await upsertUser(db, { issuer: OLD, sub: "to-fresh", displayName: "F" });
+    const fresh = "HTTPS://Fresh-IDP.test:443/realm";
+    const moved = await admin(["rebind", "--from", OLD, "to-fresh", "--to", fresh, "f"], {
+      issuer: fresh,
+    });
+    expect(moved.code).toBe(0);
+    expect(await identityOf(first)).toEqual({ iss: fresh, sub: "f" });
+  });
+
   it("refuses an unknown identity and an identity already taken, changing nothing", async () => {
     const a = await upsertUser(db, { issuer: OLD, sub: "taken-a", displayName: "A" });
     const b = await upsertUser(db, { issuer: NEW, sub: "taken-b", displayName: "B" });
@@ -266,7 +286,8 @@ describe("the operator's command", () => {
         for (const column of list!.split(",")) read.add(column.trim());
       }
     }
-    expect([...read].sort()).toEqual(["id"]);
+    // The account's id, and the issuers sign-ins wrote, to save the new one in the same form.
+    expect([...read].sort()).toEqual(["distinct oidc_issuer", "id"]);
     for (const query of queries) {
       const where = [...query.matchAll(/\b(?:where|and)\s+(\w+)\s*=/gi)].map((m) => m[1]);
       for (const column of where)

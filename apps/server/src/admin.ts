@@ -24,7 +24,7 @@ type Io = {
 };
 
 type Command =
-  | { name: "rebind"; from: [string, string]; to: [string, string] }
+  | { name: "rebind"; from: [string, string]; to: [string, string]; toInstance?: boolean }
   | { name: "delete"; identity: [string, string] }
   | { name: "delete"; id: string };
 
@@ -64,7 +64,12 @@ function parse(args: string[], instanceIssuer: string | undefined): Command | st
       if (force) return { name: "rebind", from: [fromIss!, fromSub!], to: [toIss!, toSub!] };
       // Stored as this instance names its provider, so the next sign-in finds the account.
       if (instanceIssuer && issuerKey(toIss) === issuerKey(instanceIssuer)) {
-        return { name: "rebind", from: [fromIss!, fromSub!], to: [instanceIssuer, toSub!] };
+        return {
+          name: "rebind",
+          from: [fromIss!, fromSub!],
+          to: [instanceIssuer, toSub!],
+          toInstance: true,
+        };
       }
       return "the new issuer must be this instance's OIDC_ISSUER (add --force-issuer to move it elsewhere)";
     }
@@ -103,6 +108,15 @@ function open(url: string | undefined, debug: Io["debug"]) {
   }
 }
 
+// The issuer an earlier sign-in through this provider saved, else OIDC_ISSUER as written: the
+// provider's own text is known only once someone has signed in through it.
+async function signInForm(tx: postgres.TransactionSql, issuer: string): Promise<string> {
+  const key = issuerKey(issuer);
+  const saved = await tx<{ oidc_issuer: string }[]>`select distinct oidc_issuer from users`;
+  const same = saved.find((row) => issuerKey(row.oidc_issuer) === key);
+  return same?.oidc_issuer ?? issuer;
+}
+
 export async function runAdmin(args: string[], io: Io): Promise<number> {
   const command = parse(args, io.issuer);
   if (typeof command === "string") {
@@ -117,7 +131,9 @@ export async function runAdmin(args: string[], io: Io): Promise<number> {
     if (command.name === "rebind") {
       await db.begin(async (tx) => {
         const [fromIss, fromSub] = command.from;
-        const [toIss, toSub] = command.to;
+        const [given, toSub] = command.to;
+        // Saved as this instance's sign-ins write it (the provider's iss), not as OIDC_ISSUER reads.
+        const toIss = command.toInstance ? await signInForm(tx, given) : given;
         const [account] = await tx<{ id: string }[]>`
           select id from users where oidc_issuer = ${fromIss} and oidc_sub = ${fromSub} for update`;
         if (!account) throw new Refusal("no account with that identity");
