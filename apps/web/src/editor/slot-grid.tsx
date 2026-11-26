@@ -266,7 +266,7 @@ export function SlotGrid({ placed }: { placed: PlacedSession }) {
   // The field whose leaving still counts: a field left by Enter, Tab or Escape is settled already.
   const live = useRef<string | null>(null);
   const refocus = useRef<string | null>(null);
-  const first = rows[0] && keyOf(rows[0].slot.id, "sets");
+  const first = rows[0] && keyOf(rows[0].slot.id, "handle");
   const stop =
     focus !== null && rows.some((r) => focus.startsWith(`${r.slot.id}:`)) ? focus : first;
 
