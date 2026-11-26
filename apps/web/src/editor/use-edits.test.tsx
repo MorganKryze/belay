@@ -185,6 +185,7 @@ describe("useEdits", () => {
 
   it("an undo the stored row keeps, another tab having written later with its clock ahead, says it is stale", async () => {
     const { result, refresh } = await mount();
+    const sets = (await benchOf()).sets;
     await act(async () => {
       await result.current.record(setsTo(5));
     });
@@ -203,6 +204,15 @@ describe("useEdits", () => {
     expect((await benchOf()).sets).toBe(5);
     expect((await db.get("programSlots", BENCH))?.setsAt).toBe(ahead);
     expect(await readOutbox(db)).toHaveLength(queued);
+    // The entry stays: once this clock is past the other tab's, the undo goes through.
+    expect(result.current.canUndo).toBe(true);
+    vi.setSystemTime(new Date(ahead).getTime() + 1000);
+    await act(async () => {
+      ok = await result.current.undo();
+    });
+    expect(ok).toBe(true);
+    expect(result.current.toast).toMatchObject({ text: "editor.toast.undone" });
+    expect((await benchOf()).sets).toBe(sets);
   });
 
   it("a toast's Annuler undoes its own entry after a newer edit", async () => {
