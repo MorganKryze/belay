@@ -629,6 +629,29 @@ describe("batches that fit the request", () => {
     expect(counts.every((n) => n <= 6)).toBe(true);
   });
 
+  it("never ends idle with changes still queued at the round cap, and runs again until they are sent", async () => {
+    for (let i = 0; i < 2000; i++) await recordChange(db, weight(addDays("2020-01-01", i), 80));
+    let calls = 0;
+    const engine = engineWith(
+      async (request) => {
+        calls++;
+        return request.changes.length > 15 ? { kind: "too_large" } : ok(empty("1"));
+      },
+      { debounceMs: 0 },
+    );
+    await engine.sync();
+    expect((await readOutbox(db)).length).toBeGreaterThan(0);
+    expect(engine.status()).not.toBe("idle");
+    await vi.waitFor(
+      async () => {
+        expect(await readOutbox(db)).toEqual([]);
+        expect(engine.status()).toBe("idle");
+      },
+      { timeout: 20_000, interval: 50 },
+    );
+    expect(calls).toBeGreaterThan(50);
+  });
+
   it("keeps a lone change the server refuses for its size, and says the sync failed", async () => {
     await recordChange(db, weight("2026-10-07", 80));
     const engine = engineWith(async () => ({ kind: "too_large" }));

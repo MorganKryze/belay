@@ -116,6 +116,12 @@ export function createSyncEngine({
           break;
         }
       }
+      // Out of rounds with changes still queued (a long queue behind a strict proxy, its 413s
+      // counted as rounds): still syncing, and another run follows instead of an idle banner.
+      if (!complete && (await readOutbox(db, 1)).length > 0) {
+        if (!stopped) schedule();
+        return;
+      }
       set("idle");
       // Only a pull that reached the end: rows come in server order, a half-pulled session
       // would look forgotten.
