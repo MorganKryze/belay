@@ -15,7 +15,7 @@ import { connect, runMigrations } from "../src/db/client";
 import { createSession, upsertUser } from "../src/db/identity";
 import { workouts } from "../src/db/schema";
 import { testEnv } from "./config";
-import { appDb, testDb } from "./db";
+import { agree, appDb, testDb } from "./db";
 
 // A session done keeps its session's name of the day: written once with the start, sent back as
 // it was kept, never rewritten. The server as it runs (belay_app, row-level security); the owner
@@ -34,6 +34,7 @@ const SESSION_B = seedId(2);
 
 async function signIn(sub: string) {
   const user = await upsertUser(db, { issuer, sub, displayName: sub });
+  await agree(db, user);
   const token = newSessionToken();
   await createSession(db, hashToken(token, cfg.tokenHashKey), user, 30);
   const cookie = `${SESSION_COOKIE}=${token}`;

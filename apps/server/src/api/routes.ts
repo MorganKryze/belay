@@ -14,6 +14,16 @@ const tooLarge = { error: "too_large" } as const;
 const DAY_MS = 24 * 60 * 60 * 1000;
 const consentAt = z.iso.datetime();
 
+async function consented(db: Db, userId: string): Promise<boolean> {
+  const rows = await asUser(db, userId, (tx) =>
+    tx
+      .select({ id: users.id })
+      .from(users)
+      .where(and(eq(users.id, userId), eq(users.consentVersion, CONSENT_VERSION))),
+  );
+  return rows.length === 1;
+}
+
 export function apiRoutes(cfg: Config, db: Db) {
   const api = new Hono<AuthEnv>();
   api.use("*", requireUser(cfg, db));
@@ -23,14 +33,27 @@ export function apiRoutes(cfg: Config, db: Db) {
     // Explicit filter first, row-level security second: neither barrier is relied on alone.
     const [me] = await asUser(db, userId, (tx) =>
       tx
-        .select({ id: users.id, displayName: users.displayName })
+        .select({
+          id: users.id,
+          displayName: users.displayName,
+          consentVersion: users.consentVersion,
+          consentAt: users.consentAt,
+        })
         .from(users)
         .where(eq(users.id, userId)),
     );
+    if (!me) return c.json({ error: "unauthenticated" }, 401);
     // Only whether loops exist, never where they live.
-    return me
-      ? c.json({ ...me, media: cfg.mediaDir !== undefined })
-      : c.json({ error: "unauthenticated" }, 401);
+    return c.json({
+      id: me.id,
+      displayName: me.displayName,
+      media: cfg.mediaDir !== undefined,
+      consent:
+        me.consentVersion === null || me.consentAt === null
+          ? null
+          : { version: me.consentVersion, at: me.consentAt.toISOString() },
+      consentVersion: CONSENT_VERSION,
+    });
   });
 
   // The person agrees to this instance's current notice; an older version is not the one shown.
@@ -71,6 +94,9 @@ export function apiRoutes(cfg: Config, db: Db) {
       const body: unknown = await c.req.json().catch(() => undefined);
       const changes = (body as { changes?: unknown } | undefined)?.changes;
       if (Array.isArray(changes) && changes.length > MAX_CHANGES) return c.json(tooLarge, 413);
+      // Nothing of the person's reaches this instance before they agreed to its current notice.
+      if (!(await consented(db, c.get("userId"))))
+        return c.json({ error: "consent_required" }, 403);
       const parsed = SyncRequestSchema.safeParse(body);
       if (!parsed.success) return c.json({ error: "invalid" }, 400);
       // A queue from another account on this browser: nothing of it may land in this one.

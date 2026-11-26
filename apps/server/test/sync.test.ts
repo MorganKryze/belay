@@ -9,7 +9,7 @@ import { asUser } from "../src/db/client";
 import { createSession, upsertUser } from "../src/db/identity";
 import { bodyMetrics } from "../src/db/schema";
 import { testEnv } from "./config";
-import { appDb, testDb } from "./db";
+import { agree, appDb, testDb } from "./db";
 
 // The app serves as belay_app, as in production, so row-level security is part of every request;
 // the owner only arranges rows and the catalogue.
@@ -32,6 +32,7 @@ const accounts = new Map<string, string>();
 
 async function signIn(sub: string) {
   const user = await upsertUser(db, { issuer: "https://idp.test", sub, displayName: sub });
+  await agree(db, user);
   const token = newSessionToken();
   await createSession(db, hashToken(token, cfg.tokenHashKey), user, 30);
   const cookie = `${SESSION_COOKIE}=${token}`;

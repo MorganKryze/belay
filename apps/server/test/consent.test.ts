@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { newId } from "@belay/shared";
 import { CONSENT_VERSION } from "@belay/shared/sync/limits";
+import type { Change } from "@belay/shared/sync/schema";
 import { eq, sql } from "drizzle-orm";
 import { describe, expect, inject, it } from "vitest";
 import { createApp } from "../src/app";
@@ -11,7 +12,7 @@ import { hashToken, newSessionToken } from "../src/auth/session";
 import { loadConfig } from "../src/config";
 import { asUser, connect, runMigrations } from "../src/db/client";
 import { createSession, upsertUser } from "../src/db/identity";
-import { users } from "../src/db/schema";
+import { bodyMetrics, users } from "../src/db/schema";
 import { testEnv } from "./config";
 import { appDb, testDb } from "./db";
 
@@ -22,6 +23,12 @@ const app = createApp({ cfg, db, getOidc: oidcProvider(cfg.oidc) });
 const issuer = "https://idp.test";
 const permissionDenied = { cause: { code: "42501" } };
 const hour = 60 * 60 * 1000;
+const weighIn: Change = {
+  kind: "weight",
+  date: "2026-11-20",
+  weightKg: 80,
+  at: "2026-11-20T07:00:00.000Z",
+};
 
 async function signIn(sub: string) {
   const user = await upsertUser(db, { issuer, sub, displayName: sub });
@@ -140,6 +147,27 @@ describe("consent to the instance's privacy notice", () => {
       expect(await res.json()).toEqual({ error: "invalid" });
     }
     expect(await consentOf(user)).toEqual({ version: null, at: null });
+  });
+
+  it("refuses the sync with 403 consent_required and writes nothing", async () => {
+    const { user, call } = await signIn("consent-gate");
+    const res = await call("/api/sync", { account: user, cursor: "0", changes: [weighIn] });
+    expect(res.status).toBe(403);
+    expect(await res.json()).toEqual({ error: "consent_required" });
+    expect(await owner.select().from(bodyMetrics).where(eq(bodyMetrics.userId, user))).toEqual([]);
+  });
+
+  it("asks again an account whose consent is to another version of the notice", async () => {
+    const { user, call } = await signIn("consent-raised");
+    const agreeTo = (version: number) =>
+      owner
+        .update(users)
+        .set({ consentVersion: version, consentAt: new Date() })
+        .where(eq(users.id, user));
+    await agreeTo(CONSENT_VERSION + 1);
+    expect((await call("/api/sync", { account: user, cursor: "0", changes: [] })).status).toBe(403);
+    await agreeTo(CONSENT_VERSION);
+    expect((await call("/api/sync", { account: user, cursor: "0", changes: [] })).status).toBe(200);
   });
 
   it("lets the app role write only the consent columns of its own row", async () => {

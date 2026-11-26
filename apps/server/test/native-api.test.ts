@@ -10,7 +10,7 @@ import { hashToken, newSessionToken, SESSION_COOKIE } from "../src/auth/session"
 import { loadConfig } from "../src/config";
 import { createSession, upsertUser } from "../src/db/identity";
 import { testEnv } from "./config";
-import { appDb, testDb } from "./db";
+import { agree, appDb, testDb } from "./db";
 
 // The app serves as belay_app, as in production; the owner only arranges and reads session rows.
 const { db } = appDb();
@@ -39,6 +39,7 @@ let n = 0;
 async function signIn() {
   const sub = `native-${++n}`;
   const user = await upsertUser(db, { issuer: "https://idp.test", sub, displayName: sub });
+  await agree(db, user);
   const token = newSessionToken();
   await createSession(db, hashToken(token, cfg.tokenHashKey), user, cfg.sessionTtlDays);
   return { user, token, bearer: `Bearer ${token}`, cookie: `${SESSION_COOKIE}=${token}` };

@@ -2,6 +2,7 @@ import { createHash, createHmac } from "node:crypto";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { CONSENT_VERSION } from "@belay/shared/sync/limits";
 import { sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { describe, expect, it } from "vitest";
@@ -17,14 +18,19 @@ import {
 import { loadConfig } from "../src/config";
 import { createSession, upsertUser } from "../src/db/identity";
 import { testEnv } from "./config";
-import { testDb } from "./db";
+import { agree, testDb } from "./db";
 
 const { db } = testDb();
+const agreed = {
+  consent: { version: CONSENT_VERSION, at: expect.any(String) as string },
+  consentVersion: CONSENT_VERSION,
+};
 const cfg = loadConfig(testEnv());
 const app = new Hono().route("/api", apiRoutes(cfg, db));
 
 async function signedInCookie(sub: string, name: string) {
   const user = await upsertUser(db, { issuer: "https://idp.test", sub, displayName: name });
+  await agree(db, user);
   const token = newSessionToken();
   await createSession(db, hashToken(token, cfg.tokenHashKey), user, 30);
   return { user, token, cookie: `${SESSION_COOKIE}=${token}` };
@@ -68,7 +74,7 @@ describe("GET /api/me", () => {
     const { user, cookie } = await signedInCookie("me-1", "Alex");
     const res = await app.request("/api/me", { headers: { cookie } });
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ id: user, displayName: "Alex", media: false });
+    expect(await res.json()).toEqual({ id: user, displayName: "Alex", media: false, ...agreed });
   });
 
   it("scopes the answer to the caller when several users exist", async () => {
@@ -81,6 +87,7 @@ describe("GET /api/me", () => {
         id: who.user,
         displayName: who === ada ? "Ada" : "Bo",
         media: false,
+        ...agreed,
       });
     }
   });
@@ -93,7 +100,7 @@ describe("GET /api/me", () => {
     const { user, cookie } = await signedInCookie("media-1", "Noa");
     const res = await mediaApp.request("/api/me", { headers: { cookie } });
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ id: user, displayName: "Noa", media: true });
+    expect(await res.json()).toEqual({ id: user, displayName: "Noa", media: true, ...agreed });
   });
 
   it("re-issues the session cookie so its lifetime slides with the session", async () => {
