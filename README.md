@@ -108,6 +108,32 @@ The iPhone app's sign-in needs the provider to put `auth_time` in the ID token
 - Your data lives in the `belay_db` volume of the `belay` Compose project.
   `down -v` deletes it. See the threat model below.
 
+### Upgrading PostgreSQL to a new major version
+
+A new major version cannot open the data directory of the previous one, so
+moving the `db` image to a new major (for example 18 to 19) needs a dump and a
+restore. Run these from the folder holding `compose.yaml`, with the old image
+still in place:
+
+```sh
+docker compose up -d db
+docker compose exec -T db pg_dumpall -U belay > belay-dump.sql
+docker compose down
+docker volume rm belay_db      # only once the dump is not empty
+```
+
+Then take the new `compose.yaml`, start the new database on the fresh volume,
+restore, and start Belay:
+
+```sh
+docker compose up -d db
+docker compose exec -T db psql -U belay -d postgres < belay-dump.sql
+docker compose up -d
+```
+
+The dump holds your health data: store it like the volume, and delete it once
+you have checked the restore.
+
 ### Exercise loops (optional)
 
 Belay can show a short looping video of each exercise. It ships none: the
@@ -254,7 +280,7 @@ workspace: `apps/server` (Hono), `apps/web` (React PWA) and `packages/shared`.
 ```bash
 pnpm install
 docker run -d --name belay-dev-db -e POSTGRES_PASSWORD=dev -e POSTGRES_DB=belay \
-  -p 127.0.0.1:5432:5432 postgres:18-alpine
+  -p 127.0.0.1:5432:5432 postgres:19-alpine
 cp .env.example .env
 ```
 
@@ -267,7 +293,7 @@ In development the server reads the **repository-root** `.env`, not
 `docker/.env`. Edit it first:
 
 - add `DATABASE_URL=postgres://postgres:dev@localhost:5432/belay`, or point it
-  at any Postgres 18 (the Compose `db` service is not published to the host),
+  at any Postgres 19 (the Compose `db` service is not published to the host),
   and `APP_DATABASE_URL=postgres://belay_app:dev-app@localhost:5432/belay`
   (any password: the server gives it to the `belay_app` role at startup);
 - set `PUBLIC_URL=http://localhost:5173` so the OIDC redirect goes through the
