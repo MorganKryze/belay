@@ -1,6 +1,6 @@
 name: ios-ui
 
-# The iPhone UI suite, built once and run on four macOS machines, each a quarter of the classes
+# The iPhone UI suite, built once and run on eight macOS machines, each an eighth of the classes
 # (apps/apple/scripts/ui-shards.sh, which also fails the build when a class is in no shard). It
 # runs on pull requests that touch the app, nightly on main and by hand. It is not a required
 # check: main's ruleset requires `check`, `e2e` and `image` only. The watch app's UI tests need a
@@ -54,11 +54,11 @@ jobs:
   ui:
     needs: build
     runs-on: xcode-27
-    timeout-minutes: 75
+    timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4]
+        shard: [1, 2, 3, 4, 5, 6, 7, 8]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
