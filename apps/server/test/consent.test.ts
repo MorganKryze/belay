@@ -5,7 +5,9 @@ import { newId } from "@belay/shared";
 import { CONSENT_VERSION } from "@belay/shared/sync/limits";
 import type { Change } from "@belay/shared/sync/schema";
 import { eq, sql } from "drizzle-orm";
+import { Hono } from "hono";
 import { describe, expect, inject, it } from "vitest";
+import { apiRoutes } from "../src/api/routes";
 import { createApp } from "../src/app";
 import { oidcProvider } from "../src/auth/oidc";
 import { hashToken, newSessionToken } from "../src/auth/session";
@@ -21,6 +23,9 @@ const owner = testDb().db;
 const cfg = loadConfig(testEnv({ OIDC_ISSUER: "http://localhost:1" }));
 const app = createApp({ cfg, db, getOidc: oidcProvider(cfg.oidc) });
 const issuer = "https://idp.test";
+// An instance whose notice moved on past the version an account agreed to.
+const raised = CONSENT_VERSION + 1;
+const raisedApp = new Hono().route("/api", apiRoutes(cfg, db, raised));
 const permissionDenied = { cause: { code: "42501" } };
 const hour = 60 * 60 * 1000;
 const weighIn: Change = {
@@ -37,7 +42,7 @@ async function signIn(sub: string) {
   const headers = { authorization: `Bearer ${token}`, "content-type": "application/json" };
   const call = (path: string, body: unknown) =>
     app.request(path, { method: "POST", headers, body: JSON.stringify(body) });
-  return { user, call };
+  return { user, headers, call };
 }
 
 async function consentOf(user: string) {
@@ -138,6 +143,24 @@ describe("consent to the instance's privacy notice", () => {
     expect((await call("/api/consent", { version: CONSENT_VERSION, at })).status).toBe(204);
     expect((await consentOf(user))?.version).toBe(CONSENT_VERSION);
     expect((await call("/api/sync", { account: user, cursor: "0", changes: [] })).status).toBe(200);
+  });
+
+  it("asks again an account that agreed to an older notice, and records the current one", async () => {
+    const { user, headers } = await signIn("consent-older");
+    await owner
+      .update(users)
+      .set({ consentVersion: CONSENT_VERSION, consentAt: new Date(Date.now() - hour) })
+      .where(eq(users.id, user));
+    const post = (path: string, body: unknown) =>
+      raisedApp.request(path, { method: "POST", headers, body: JSON.stringify(body) });
+    const sync = { account: user, cursor: "0", changes: [] };
+    const refused = await post("/api/sync", sync);
+    expect(refused.status).toBe(403);
+    expect(await refused.json()).toEqual({ error: "consent_required" });
+    const at = new Date().toISOString();
+    expect((await post("/api/consent", { version: raised, at })).status).toBe(204);
+    expect((await consentOf(user))?.version).toBe(raised);
+    expect((await post("/api/sync", sync)).status).toBe(200);
   });
 
   it("refuses another version with 409 consent_version and records nothing", async () => {

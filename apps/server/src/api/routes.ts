@@ -14,17 +14,18 @@ const tooLarge = { error: "too_large" } as const;
 const DAY_MS = 24 * 60 * 60 * 1000;
 const consentAt = z.iso.datetime();
 
-async function consented(db: Db, userId: string): Promise<boolean> {
+async function consented(db: Db, userId: string, version: number): Promise<boolean> {
   const rows = await asUser(db, userId, (tx) =>
     tx
       .select({ id: users.id })
       .from(users)
-      .where(and(eq(users.id, userId), eq(users.consentVersion, CONSENT_VERSION))),
+      .where(and(eq(users.id, userId), eq(users.consentVersion, version))),
   );
   return rows.length === 1;
 }
 
-export function apiRoutes(cfg: Config, db: Db) {
+// The notice's current version is the shared constant; a test may raise it to ask everyone again.
+export function apiRoutes(cfg: Config, db: Db, consentVersion: number = CONSENT_VERSION) {
   const api = new Hono<AuthEnv>();
   api.use("*", requireUser(cfg, db));
 
@@ -52,7 +53,7 @@ export function apiRoutes(cfg: Config, db: Db) {
         me.consentVersion === null || me.consentAt === null
           ? null
           : { version: me.consentVersion, at: me.consentAt.toISOString() },
-      consentVersion: CONSENT_VERSION,
+      consentVersion,
     });
   });
 
@@ -64,7 +65,7 @@ export function apiRoutes(cfg: Config, db: Db) {
     async (c) => {
       const body = (await c.req.json().catch(() => undefined)) as
         { version?: unknown; at?: unknown } | undefined;
-      if (body?.version !== CONSENT_VERSION) return c.json({ error: "consent_version" }, 409);
+      if (body?.version !== consentVersion) return c.json({ error: "consent_version" }, 409);
       const at = consentAt.safeParse(body.at);
       if (!at.success) return c.json({ error: "invalid" }, 400);
       const now = Date.now();
@@ -73,12 +74,12 @@ export function apiRoutes(cfg: Config, db: Db) {
       await asUser(db, userId, (tx) =>
         tx
           .update(users)
-          .set({ consentVersion: CONSENT_VERSION, consentAt: kept })
+          .set({ consentVersion, consentAt: kept })
           // The first record of a version stands; a consent to any other version is replaced.
           .where(
             and(
               eq(users.id, userId),
-              or(isNull(users.consentVersion), ne(users.consentVersion, CONSENT_VERSION)),
+              or(isNull(users.consentVersion), ne(users.consentVersion, consentVersion)),
             ),
           ),
       );
@@ -95,7 +96,7 @@ export function apiRoutes(cfg: Config, db: Db) {
       const changes = (body as { changes?: unknown } | undefined)?.changes;
       if (Array.isArray(changes) && changes.length > MAX_CHANGES) return c.json(tooLarge, 413);
       // Nothing of the person's reaches this instance before they agreed to its current notice.
-      if (!(await consented(db, c.get("userId"))))
+      if (!(await consented(db, c.get("userId"), consentVersion)))
         return c.json({ error: "consent_required" }, 403);
       const parsed = SyncRequestSchema.safeParse(body);
       if (!parsed.success) return c.json({ error: "invalid" }, 400);
