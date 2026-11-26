@@ -183,6 +183,28 @@ describe("useEdits", () => {
     expect(await readOutbox(db)).toHaveLength(2);
   });
 
+  it("an undo the stored row keeps, another tab having written later with its clock ahead, says it is stale", async () => {
+    const { result, refresh } = await mount();
+    await act(async () => {
+      await result.current.record(setsTo(5));
+    });
+    await act(refresh);
+    // Another tab writes the same value again, its clock an hour ahead of this one.
+    const ahead = new Date(Date.now() + 3_600_000).toISOString();
+    await recordChanges(db, setsTo(5)({ ...(await readPrograms(db)) }, ahead) ?? []);
+    const queued = (await readOutbox(db)).length;
+    later();
+    let ok = true;
+    await act(async () => {
+      ok = await result.current.undo();
+    });
+    expect(ok).toBe(false);
+    expect(result.current.toast).toMatchObject({ text: "editor.toast.stale", error: true });
+    expect((await benchOf()).sets).toBe(5);
+    expect((await db.get("programSlots", BENCH))?.setsAt).toBe(ahead);
+    expect(await readOutbox(db)).toHaveLength(queued);
+  });
+
   it("a toast's Annuler undoes its own entry after a newer edit", async () => {
     const { result, refresh } = await mount();
     const before = await benchOf();
