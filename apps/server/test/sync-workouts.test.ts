@@ -347,6 +347,16 @@ describe("a session through /api/sync", () => {
     expect(startedAt).toBeLessThanOrEqual(Date.now());
   });
 
+  it("takes a set done a little after its write time, and keeps both times", async () => {
+    const { sync } = await signIn("wk-slack");
+    const w = newId();
+    const set = newId();
+    const doneAt = "2026-10-07T17:07:00.000Z";
+    const res = await sync("0", [start(w), create(set, w, 3, { doneAt })]);
+    expect(res.rejected).toEqual([]);
+    expect(res.sets).toMatchObject([{ id: set, doneAt, fieldsAt: LATER }]);
+  });
+
   it("isolates two people, through the API and in SQL", async () => {
     const a = await signIn("wk-iso-a");
     const b = await signIn("wk-iso-b");

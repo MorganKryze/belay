@@ -685,7 +685,12 @@ const changes: Record<string, unknown> = {
   "set: position one past": createSet({ position: MAX_POSITION + 1 }),
   "set: done at the floor": createSet({ doneAt: MIN_TIME }),
   "set: done before the floor": createSet({ doneAt: iso(MIN_MS - 1) }),
-  "set: done after its change": createSet({ doneAt: iso(T0 + 1) }),
+  "set: done at the clock's slack after its change": createSet({
+    doneAt: iso(T0 + CLOCK_SLACK_MS),
+  }),
+  "set: done past the clock's slack after its change": createSet({
+    doneAt: iso(T0 + CLOCK_SLACK_MS + 1),
+  }),
   "set: unknown exercise id shape": createSet({ exerciseId: "ds:Bench" }),
   "set: session id in upper case": createSet({ workoutId: WORKOUT.toUpperCase() }),
   "set: id of version 8": createSet({ id: "019a5a3c-7b2e-8d41-9c3f-2b8e4d6a1f02" }),
