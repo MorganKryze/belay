@@ -218,6 +218,11 @@
       "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"start\",\"sessionCode\":\"A\",\"sessionId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f01\",\"sessionName\":\"Push\",\"plan\":[{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null}],\"startedAt\":\"2026-11-06T09:30:00.124Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
     },
     {
+      "name": "start: past the clock's slack after its change",
+      "valid": false,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"start\",\"sessionCode\":\"A\",\"sessionId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f01\",\"sessionName\":\"Push\",\"plan\":[{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null}],\"startedAt\":\"2026-11-06T09:35:00.124Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
       "name": "start: started without milliseconds",
       "valid": false,
       "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"start\",\"sessionCode\":\"A\",\"sessionId\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f01\",\"sessionName\":\"Push\",\"plan\":[{\"exerciseId\":\"belay:barbell-hip-thrust\",\"sets\":3,\"repRange\":[8,12],\"rirTarget\":[1,2],\"restSec\":120,\"warmupSets\":2,\"isMain\":true,\"groupKey\":null}],\"startedAt\":\"2026-11-06T09:00:00Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
@@ -448,6 +453,11 @@
       "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"startedAt\",\"value\":\"2026-11-06T09:30:00.124Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
     },
     {
+      "name": "startedAt: past the clock's slack after its change",
+      "valid": false,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"startedAt\",\"value\":\"2026-11-06T09:35:00.124Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
       "name": "ended: at its change",
       "valid": true,
       "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"ended\",\"value\":\"2026-11-06T09:30:00.123Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
@@ -461,6 +471,11 @@
       "name": "ended: after its change",
       "valid": true,
       "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"ended\",\"value\":\"2026-11-06T09:30:00.124Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
+    },
+    {
+      "name": "ended: past the clock's slack after its change",
+      "valid": false,
+      "json": "{\"kind\":\"workout\",\"id\":\"019a5a3c-7b2e-7d41-9c3f-2b8e4d6a1f00\",\"field\":\"ended\",\"value\":\"2026-11-06T09:35:00.124Z\",\"at\":\"2026-11-06T09:30:00.123Z\"}"
     },
     {
       "name": "note: cleared",
