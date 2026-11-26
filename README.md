@@ -131,6 +131,11 @@ docker compose exec -T db psql -U belay -d postgres < belay-dump.sql
 docker compose up -d
 ```
 
+The restore says that the role `belay` and the database `belay` already exist:
+the new container made them at its first start, so both lines are expected. The
+volume's name starts with the folder holding `compose.yaml` (`belay_db` in a
+folder named `belay`): `docker volume ls` shows it.
+
 The dump holds your health data: store it like the volume, and delete it once
 you have checked the restore.
 
