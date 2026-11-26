@@ -43,4 +43,8 @@ test "$(curl -s -o /dev/null -w '%{http_code} %{redirect_url}' http://localhost:
 test "$("${compose[@]}" exec -T db psql -U belay -d belay -tAc \
   "select string_agg(distinct usename, ',') from pg_stat_activity
    where datname = 'belay' and backend_type = 'client backend' and pid <> pg_backend_pid()")" = belay_app
+# The operator's command is in the image and refuses an identity no account has.
+status=0
+"${compose[@]}" exec -T app node admin.js delete --issuer x --subject y >/dev/null 2>&1 || status=$?
+test "$status" = 1
 echo "smoke: ok"
