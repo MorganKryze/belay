@@ -105,6 +105,9 @@ describe("the operator's command", () => {
       ["delete", "--issuer", OLD],
       ["delete", "--subject", "x", "--issuer", OLD],
       ["delete", "--issuer", "", "--subject", "x"],
+      ["delete", "--id", "not-a-uuid"],
+      ["delete", "--id", "0190f5a0-0000-7000-8000-00000000000"],
+      ["delete", "--id"],
     ]) {
       const res = await admin(args);
       expect(res.code, args.join(" ")).toBe(2);
@@ -154,6 +157,16 @@ describe("the operator's command", () => {
     expect(await identityOf(user)).toBeUndefined();
     // Its device learns the account is gone, as after a deletion from the app.
     expect((await app.request("/api/me", { headers })).status).toBe(410);
+  });
+
+  it("deletes by a logged id, as a restore replays it", async () => {
+    const user = await upsertUser(db, { issuer: OLD, sub: "replayed", displayName: "Replayed" });
+    const res = await admin(["delete", "--id", user.toUpperCase()]);
+    expect(res.code).toBe(0);
+    expect(res.out[0]).toMatch(new RegExp(`^account deleted: ${user} at `));
+    expect(await identityOf(user)).toBeUndefined();
+    const again = await admin(["delete", "--id", user]);
+    expect(again).toMatchObject({ code: 1, out: [], err: ["no account with that id"] });
   });
 
   it("reads no other column", async () => {

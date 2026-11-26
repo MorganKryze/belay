@@ -8,6 +8,7 @@ import postgres from "postgres";
 const USAGE = [
   "usage: node admin.js rebind --from <issuer> <subject> --to <issuer> <subject>",
   "       node admin.js delete --issuer <issuer> --subject <subject>",
+  "       node admin.js delete --id <account id>",
 ].join("\n");
 
 type Io = {
@@ -22,7 +23,10 @@ type Io = {
 
 type Command =
   | { name: "rebind"; from: [string, string]; to: [string, string] }
-  | { name: "delete"; identity: [string, string] };
+  | { name: "delete"; identity: [string, string] }
+  | { name: "delete"; id: string };
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 class Refusal extends Error {}
 
@@ -43,6 +47,9 @@ function parse(args: string[]): Command | undefined {
   ) {
     const [, , iss, , sub] = args;
     if (given([iss, sub])) return { name: "delete", identity: [iss!, sub!] };
+  }
+  if (args[0] === "delete" && args.length === 3 && args[1] === "--id" && UUID.test(args[2]!)) {
+    return { name: "delete", id: args[2]!.toLowerCase() };
   }
   return undefined;
 }
@@ -90,11 +97,18 @@ export async function runAdmin(args: string[], io: Io): Promise<number> {
       });
       io.out("rebound");
     } else {
-      const [iss, sub] = command.identity;
       const id = await db.begin(async (tx) => {
-        const [account] = await tx<{ id: string }[]>`
-          select id from users where oidc_issuer = ${iss} and oidc_sub = ${sub} for update`;
-        if (!account) throw new Refusal("no account with that identity");
+        let account: { id: string } | undefined;
+        if ("id" in command) {
+          [account] = await tx<{ id: string }[]>`
+            select id from users where id = ${command.id}::uuid for update`;
+          if (!account) throw new Refusal("no account with that id");
+        } else {
+          const [iss, sub] = command.identity;
+          [account] = await tx<{ id: string }[]>`
+            select id from users where oidc_issuer = ${iss} and oidc_sub = ${sub} for update`;
+          if (!account) throw new Refusal("no account with that identity");
+        }
         await tx`select from belay_erase_account(${account.id}::uuid)`;
         return account.id;
       });
