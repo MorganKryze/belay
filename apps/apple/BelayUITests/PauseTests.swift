@@ -178,7 +178,7 @@ final class PauseTests: XCTestCase {
         func measure(_ extra: [String]) -> (play: CGFloat, title: CGRect, line: CGRect, width: CGFloat) {
             let app = launch("lockLogged", extra: extra)
             pause(app)
-            // The foot's glass reshapes into ▶ after « En pause » shows: measure once it holds still.
+            // The foot's glass reshapes into the play button after « En pause » shows: measure once it holds still.
             let play = app.buttons["foot-play"]
             XCTAssertTrue(play.waitForExistence(timeout: 3))
             var height = play.frame.height
