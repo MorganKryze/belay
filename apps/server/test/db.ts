@@ -2,6 +2,7 @@ import { CONSENT_VERSION } from "@belay/shared/sync/limits";
 import { eq, sql } from "drizzle-orm";
 import { afterAll, inject } from "vitest";
 import { asUser, connect, type Db } from "../src/db/client";
+import { createSession as openSession } from "../src/db/identity";
 import { users } from "../src/db/schema";
 
 // The owner: it runs the migrations, and the tests use it to arrange rows and inspect the catalog.
@@ -26,4 +27,21 @@ export async function agree(db: Db, userId: string): Promise<void> {
       .set({ consentVersion: CONSENT_VERSION, consentAt: sql`now()` })
       .where(eq(users.id, userId)),
   );
+}
+
+// A session for an account under the identity it has now, as a sign-in that just read it opens.
+export async function createSession(
+  db: Db,
+  tokenHash: string,
+  userId: string,
+  ttlDays: number,
+): Promise<boolean> {
+  const [row] = await asUser(db, userId, (tx) =>
+    tx
+      .select({ issuer: users.oidcIssuer, sub: users.oidcSub })
+      .from(users)
+      .where(eq(users.id, userId)),
+  );
+  // A gone account still goes to the database, which must refuse it itself.
+  return openSession(db, tokenHash, { id: userId, ...(row ?? { issuer: "", sub: "" }) }, ttlDays);
 }

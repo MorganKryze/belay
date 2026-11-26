@@ -10,15 +10,9 @@ import { oidcProvider } from "../src/auth/oidc";
 import { hashToken, newSessionToken, SESSION_COOKIE } from "../src/auth/session";
 import { loadConfig } from "../src/config";
 import { asApp, asUser, connect, type Db } from "../src/db/client";
-import {
-  createSession,
-  deleteAccount,
-  purgeEnded,
-  tokenEnded,
-  upsertUser,
-} from "../src/db/identity";
+import { deleteAccount, purgeEnded, tokenEnded, upsertUser } from "../src/db/identity";
 import { testEnv } from "./config";
-import { agree, appDb, testDb } from "./db";
+import { agree, appDb, createSession, testDb } from "./db";
 import { startIdp } from "./idp";
 
 const { db } = appDb();

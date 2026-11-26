@@ -2,6 +2,7 @@ import { inspect } from "node:util";
 import { sql } from "drizzle-orm";
 import type { Hono } from "hono";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { runAdmin } from "../src/admin";
 import { createApp } from "../src/app";
 import {
   AUTH_TIME_SKEW_MS,
@@ -15,6 +16,7 @@ import { SESSION_COOKIE } from "../src/auth/session";
 import { loadConfig } from "../src/config";
 import { testEnv } from "./config";
 import { appDb, testDb } from "./db";
+import { inject } from "vitest";
 import { startIdp } from "./idp";
 
 // The app serves as belay_app, as in production; the owner only counts rows.
@@ -271,6 +273,25 @@ describe("POST /auth/native/token", () => {
     });
     expect(me.status).toBe(200);
     expect(await me.json()).toMatchObject({ displayName: "Olga" });
+  });
+
+  it("a code issued to an identity the account has since lost opens no session", async () => {
+    const old = sub();
+    const code = codeOf(await signIn({ sub: old, name: "Moved" }));
+    const quiet = { out: () => {}, err: () => {} };
+    const moved = await runAdmin(
+      ["rebind", "--from", idp.issuer.url!, old, "--to", idp.issuer.url!, `${old}-new`],
+      {
+        databaseUrl: inject("databaseUrl"),
+        issuer: idp.issuer.url!,
+        ...quiet,
+      },
+    );
+    expect(moved).toBe(0);
+    const res = await exchange({ code, verifier: VERIFIER });
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: "invalid_grant" });
+    expect(await counts(`${old}-new`)).toEqual({ users: 1, sessions: 0 });
   });
 
   it("a code works once", async () => {

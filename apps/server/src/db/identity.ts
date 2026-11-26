@@ -29,17 +29,20 @@ export async function purgeEnded(db: Db): Promise<void> {
   }
 }
 
-// False when the account no longer exists: nothing is opened.
+// An account and the identity the sign-in read for it.
+export type Account = { id: string; issuer: string; sub: string };
+
+// False when the account no longer exists, or no longer has that identity: nothing is opened.
 export async function createSession(
   db: Db,
   tokenHash: string,
-  userId: string,
+  account: Account,
   ttlDays: number,
 ): Promise<boolean> {
   await purgeEnded(db);
   const rows = await asApp(db, (tx) =>
     tx.execute<{ ok: boolean }>(
-      sql`select belay_create_session(${tokenHash}, ${userId}::uuid, ${days(ttlDays)}) as ok`,
+      sql`select belay_create_session(${tokenHash}, ${account.id}::uuid, ${account.issuer}, ${account.sub}, ${days(ttlDays)}) as ok`,
     ),
   );
   return rows[0]!.ok;

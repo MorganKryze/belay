@@ -12,10 +12,10 @@ import { oidcProvider } from "../src/auth/oidc";
 import { hashToken, newSessionToken, SESSION_COOKIE } from "../src/auth/session";
 import { loadConfig } from "../src/config";
 import { connect, runMigrations } from "../src/db/client";
-import { createSession, upsertUser } from "../src/db/identity";
+import { upsertUser } from "../src/db/identity";
 import { workouts } from "../src/db/schema";
 import { testEnv } from "./config";
-import { agree, appDb, testDb } from "./db";
+import { agree, appDb, createSession, testDb } from "./db";
 
 // A session done keeps its session's name of the day: written once with the start, sent back as
 // it was kept, never rewritten. The server as it runs (belay_app, row-level security); the owner

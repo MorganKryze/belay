@@ -6,10 +6,10 @@ import { oidcProvider } from "../src/auth/oidc";
 import { hashToken, newSessionToken, SESSION_COOKIE } from "../src/auth/session";
 import { loadConfig } from "../src/config";
 import { asUser } from "../src/db/client";
-import { createSession, upsertUser } from "../src/db/identity";
+import { upsertUser } from "../src/db/identity";
 import { bodyMetrics } from "../src/db/schema";
 import { testEnv } from "./config";
-import { agree, appDb, testDb } from "./db";
+import { agree, appDb, createSession, testDb } from "./db";
 
 // The app serves as belay_app, as in production, so row-level security is part of every request;
 // the owner only arranges rows and the catalogue.

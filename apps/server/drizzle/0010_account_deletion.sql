@@ -53,13 +53,18 @@ $$;
 -- its account was deleted is then refused as a spent one, never a server error.
 DROP FUNCTION belay_create_session(text, uuid, interval);
 --> statement-breakpoint
-CREATE FUNCTION belay_create_session(p_token_hash text, p_user_id uuid, p_ttl interval)
+CREATE FUNCTION belay_create_session(
+  p_token_hash text, p_user_id uuid, p_iss text, p_sub text, p_ttl interval
+)
 RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
 BEGIN
   -- The account's row, held until commit: an erasure waits for this session and copies it, or ran
   -- first and left nothing to find. Expired rows are purged apart (belay_purge_ended), so neither
   -- this nor an erasure holds one while it waits for an account's row.
-  PERFORM 1 FROM users WHERE id = p_user_id FOR KEY SHARE;
+  -- Only while it still has the identity the sign-in read: the lock conflicts with a rebind's
+  -- update of those columns, so a sign-in begun under the old identity is refused after it.
+  PERFORM 1 FROM users WHERE id = p_user_id AND oidc_issuer = p_iss AND oidc_sub = p_sub
+    FOR KEY SHARE;
   IF NOT FOUND THEN
     RETURN false;
   END IF;

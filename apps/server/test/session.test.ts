@@ -16,9 +16,9 @@ import {
   setSessionCookie,
 } from "../src/auth/session";
 import { loadConfig } from "../src/config";
-import { createSession, upsertUser } from "../src/db/identity";
+import { upsertUser } from "../src/db/identity";
 import { testEnv } from "./config";
-import { agree, testDb } from "./db";
+import { agree, createSession, testDb } from "./db";
 
 const { db } = testDb();
 const agreed = {

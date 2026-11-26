@@ -34,13 +34,16 @@ class Refusal extends Error {}
 
 // OpenID Connect caps a subject at 255 characters; an issuer is a URL, bounded the same way.
 const SUBJECT_MAX = 255;
+const LOOPBACK = new Set(["localhost", "127.0.0.1", "[::1]"]);
 const ISSUER_MAX = 2048;
 
 // An issuer as a key: the parser's form, without the trailing slash that names the same provider.
 function issuerKey(value: string | undefined): string | undefined {
   if (value === undefined || value.length > ISSUER_MAX) return undefined;
   const url = URL.parse(value);
-  if (url?.protocol !== "https:" || !url.hostname) return undefined;
+  // As OIDC_ISSUER: plain http only for a provider on this machine.
+  const local = url?.protocol === "http:" && LOOPBACK.has(url.hostname);
+  if (!url || !(url.protocol === "https:" || local) || !url.hostname) return undefined;
   return url.href.replace(/\/+$/, "");
 }
 

@@ -13,10 +13,10 @@ import { oidcProvider } from "../src/auth/oidc";
 import { hashToken, newSessionToken } from "../src/auth/session";
 import { loadConfig } from "../src/config";
 import { asUser, connect, runMigrations } from "../src/db/client";
-import { createSession, upsertUser } from "../src/db/identity";
+import { upsertUser } from "../src/db/identity";
 import { bodyMetrics, users } from "../src/db/schema";
 import { testEnv } from "./config";
-import { appDb, testDb } from "./db";
+import { appDb, createSession, testDb } from "./db";
 
 const { db } = appDb();
 const owner = testDb().db;

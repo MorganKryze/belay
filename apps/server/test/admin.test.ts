@@ -5,9 +5,9 @@ import { createApp } from "../src/app";
 import { oidcProvider } from "../src/auth/oidc";
 import { hashToken, newSessionToken } from "../src/auth/session";
 import { loadConfig } from "../src/config";
-import { createSession, upsertUser } from "../src/db/identity";
+import { createSession as openSession, upsertUser } from "../src/db/identity";
 import { testEnv } from "./config";
-import { appDb, testDb } from "./db";
+import { appDb, createSession, testDb } from "./db";
 
 const { db } = appDb();
 const owner = testDb().db;
@@ -66,6 +66,23 @@ describe("the operator's command", () => {
     expect(await sessionCount(other)).toBe(1);
     expect((await app.request("/api/me", { headers })).status).toBe(401);
     expect(await upsertUser(db, { issuer: NEW, sub: "moved-2", displayName: "Moved" })).toBe(user);
+  });
+
+  it("opens no session for the identity an account had before its rebind", async () => {
+    const user = await upsertUser(db, { issuer: OLD, sub: "stale", displayName: "Stale" });
+    expect((await admin(["rebind", "--from", OLD, "stale", "--to", NEW, "fresh"])).code).toBe(0);
+    const open = (issuer: string, sub: string) =>
+      openSession(
+        db,
+        hashToken(newSessionToken(), cfg.tokenHashKey),
+        { id: user, issuer, sub },
+        30,
+      );
+    // What a web sign-in that read the old identity just before the rebind then asks for.
+    expect(await open(OLD, "stale")).toBe(false);
+    expect(await open(NEW, "stale")).toBe(false);
+    expect(await sessionCount(user)).toBe(0);
+    expect(await open(NEW, "fresh")).toBe(true);
   });
 
   it("refuses an unknown identity and an identity already taken, changing nothing", async () => {
