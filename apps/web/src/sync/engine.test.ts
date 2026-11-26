@@ -1,4 +1,6 @@
 import { addDays } from "@belay/shared/body/dates";
+import { MAX_BODY_BYTES, MAX_CHANGES } from "@belay/shared/sync/limits";
+import { sessionByCode, starterProgram } from "@belay/shared/training/program";
 import type { Change, SyncRequest, SyncResponse } from "@belay/shared/sync/schema";
 import { IDBFactory } from "fake-indexeddb";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -11,6 +13,7 @@ import {
   readRejected,
   readWeights,
   recordChange,
+  recordChanges,
 } from "./db";
 import { createSyncEngine, type Send, type SendResult } from "./engine";
 import { postSync } from "./transport";
@@ -562,5 +565,58 @@ describe("a held contract", () => {
     window.dispatchEvent(new Event("offline"));
     expect(engine.status()).toBe("instance-behind");
     stop();
+  });
+});
+
+describe("batches that fit the request", () => {
+  const PLAN = [...sessionByCode("B", starterProgram)!.slots];
+  const starts = (n: number): Change[] =>
+    Array.from({ length: n }, (_, i) => ({
+      kind: "workout",
+      id: `01a2186a-db17-768d-9240-${String(i).padStart(12, "0")}`,
+      field: "start",
+      sessionCode: "B",
+      plan: PLAN,
+      startedAt: AT,
+      at: AT,
+    }));
+  const size = (r: SyncRequest) => new TextEncoder().encode(JSON.stringify(r)).length;
+
+  it("cuts 500 starts with their plans into requests under 256 KiB, each sent once, in order", async () => {
+    const queue = starts(MAX_CHANGES);
+    await recordChanges(db, queue);
+    const sent: SyncRequest[] = [];
+    const engine = engineWith(async (request) => {
+      sent.push(request);
+      return ok(empty(String(sent.length)));
+    });
+    await engine.sync();
+    expect(sent.length).toBeGreaterThan(1);
+    for (const r of sent) expect(size(r)).toBeLessThanOrEqual(MAX_BODY_BYTES);
+    expect(sent.flatMap((r) => r.changes)).toEqual(queue);
+    expect(await readOutbox(db)).toEqual([]);
+  });
+
+  it("never sends again a batch refused for its size: the next one carries half", async () => {
+    await recordChanges(db, starts(40));
+    const counts: number[] = [];
+    const engine = engineWith(async (request) => {
+      counts.push(request.changes.length);
+      return request.changes.length > 6 ? { kind: "too_large" } : ok(empty("1"));
+    });
+    await engine.sync();
+    expect(counts.slice(0, 4)).toEqual([40, 20, 10, 5]);
+    for (let i = 1; i < counts.length; i++)
+      if (counts[i - 1]! > 6) expect(counts[i]).toBeLessThan(counts[i - 1]!);
+    expect(await readOutbox(db)).toEqual([]);
+    expect(engine.status()).toBe("idle");
+  });
+
+  it("keeps a lone change the server refuses for its size, and says the sync failed", async () => {
+    await recordChange(db, weight("2026-10-07", 80));
+    const engine = engineWith(async () => ({ kind: "too_large" }));
+    await engine.sync();
+    expect(engine.status()).toBe("failed");
+    expect(await readOutbox(db)).toHaveLength(1);
   });
 });
