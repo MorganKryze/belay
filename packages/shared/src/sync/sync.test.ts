@@ -1258,6 +1258,24 @@ describe("a slot change over its stored row (SY2, ED4)", () => {
     expect(mergeSlotInBatch(timed, reps, new Set())).toBe(timed);
     expect(mergeSlotInBatch(row, change({ field: "sets", value: 5, at: T1 }), written)).toBe(row);
   });
+
+  it("inside a batch, a later change wins a tie with a stored time an exercise change re-stamped", () => {
+    const stored = { ...row, repsAt: T2, warmupsAt: T2 };
+    const toTimed = change({
+      field: "exercise",
+      exerciseId: "ds:2135",
+      measure: "seconds",
+      repRange: [30, 60],
+      warmupSets: 0,
+    });
+    const reps = change({ field: "reps", value: [20, 40], measure: "seconds" });
+    const written = new Set<string>();
+    const timed = mergeSlotInBatch(stored, toTimed, written)!;
+    expect(timed).toMatchObject({ repRange: [30, 60], repsAt: T2 });
+    expect(mergeSlotInBatch(timed, reps, written)).toMatchObject({ repRange: [20, 40] });
+    // A replay of the exercise change over what it left loses: the batch stays idempotent.
+    expect(mergeSlotInBatch(timed, toTimed, new Set())).toBe(timed);
+  });
 });
 
 describe("a session's name of the day, kept with its start (HN1, HN2, HN7)", () => {
