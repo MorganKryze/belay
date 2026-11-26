@@ -62,6 +62,10 @@ export function createSyncEngine({
   const listeners = new Set<() => void>();
   const landed = new Set<() => void>();
   let hasLanded = false;
+  // Halved after each 413, so a batch refused for its size is never sent again as it was. Kept
+  // for the engine's life: the proxy that refused it stays in the way, and the next run would
+  // only meet the same refusals again. A new engine (the next launch) starts at MAX_CHANGES.
+  let most = MAX_CHANGES;
   const set = (next: SyncStatus) => {
     if (next === status) return;
     status = next;
@@ -89,8 +93,6 @@ export function createSyncEngine({
     set("syncing");
     try {
       let complete = false;
-      // Halved after each 413, so a batch refused for its size is never sent again as it was.
-      let most = MAX_CHANGES;
       for (let round = 0; round < MAX_ROUNDS; round++) {
         const queued = await readOutbox(db, most);
         const cursor = await readCursor(db);

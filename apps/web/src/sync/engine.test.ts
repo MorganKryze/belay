@@ -612,6 +612,23 @@ describe("batches that fit the request", () => {
     expect(engine.status()).toBe("idle");
   });
 
+  it("starts the next run at the batch size the last one ended at", async () => {
+    await recordChanges(db, starts(40));
+    const counts: number[] = [];
+    const engine = engineWith(async (request) => {
+      counts.push(request.changes.length);
+      return request.changes.length > 6 ? { kind: "too_large" } : ok(empty("1"));
+    });
+    await engine.sync();
+    const ended = counts.at(-1)!;
+    expect(ended).toBeLessThanOrEqual(6);
+    counts.length = 0;
+    await recordChanges(db, starts(40));
+    await engine.sync();
+    expect(counts[0]).toBe(ended);
+    expect(counts.every((n) => n <= 6)).toBe(true);
+  });
+
   it("keeps a lone change the server refuses for its size, and says the sync failed", async () => {
     await recordChange(db, weight("2026-10-07", 80));
     const engine = engineWith(async () => ({ kind: "too_large" }));
