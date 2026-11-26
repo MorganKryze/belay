@@ -270,9 +270,11 @@ extension AccountStore {
             history: open.history, workout: open.workout, active: open.active,
             library: ctx.library, bar: ctx.bar)
         else { return }
-        if atWork, due.warmup {
-          let place = SetPlace(slotIndex: due.place.slotIndex, position: Bounds.maxWarmups)
-          let old = open.active.workDraft?.place == place ? open.active.workDraft : nil
+        if atWork, due.warmup, let place = due.workPlace {
+          // A work load kept in the set draft, from a store written before the work draft, gives way.
+          let older = open.active.draft?.place == place ? open.active.draft : nil
+          if older != nil { open.active.draft = nil }
+          let old = open.active.workDraft?.place == place ? open.active.workDraft : older
           open.active.workDraft = SetDraft(
             slotIndex: place.slotIndex, position: place.position,
             weightKg: weightKg ?? old?.weightKg, count: count ?? old?.count)
