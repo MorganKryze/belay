@@ -41,6 +41,27 @@ async function consentOf(user: string) {
   return row;
 }
 
+// Every row of each table as text in a stable order, with its columns; the columns the migration
+// adds are left out of both, so the tables compare equal around it.
+const ADDED = "'consent_version', 'consent_at'";
+async function dump(conn: ReturnType<typeof connect>["db"], tables: readonly string[]) {
+  const out: Record<string, unknown> = {};
+  for (const table of tables) {
+    const [rows] = await conn.execute<{ rows: string }>(
+      sql`select coalesce(json_agg(r order by r), '[]')::text as rows
+          from (select (to_jsonb(t) - array[${sql.raw(ADDED)}])::text as r from ${sql.identifier(table)} t) s`,
+    );
+    const columns = await conn.execute(
+      sql`select column_name, data_type, is_nullable, column_default from information_schema.columns
+          where table_schema = 'public' and table_name = ${table}
+            and column_name not in (${sql.raw(ADDED)})
+          order by ordinal_position`,
+    );
+    out[table] = { rows: rows!.rows, columns: [...columns] };
+  }
+  return out;
+}
+
 describe("consent to the instance's privacy notice", () => {
   it("is absent for a new account", async () => {
     const { user } = await signIn("consent-new");
@@ -122,7 +143,7 @@ describe("consent to the instance's privacy notice", () => {
     ).rejects.toMatchObject(permissionDenied);
   });
 
-  it("leaves every account of a populated database without consent (migration)", async () => {
+  it("keeps every row of a populated database as it was and leaves every account without consent (migration)", async () => {
     const upTo0008 = mkdtempSync(join(tmpdir(), "belay-0008-"));
     cpSync("drizzle", upTo0008, { recursive: true });
     const journalPath = join(upTo0008, "meta", "_journal.json");
@@ -140,7 +161,16 @@ describe("consent to the instance's privacy notice", () => {
       for (const [i, id] of ids.entries())
         await fresh.db.execute(sql`insert into users (id, oidc_issuer, oidc_sub, display_name)
           values (${id}, ${issuer}, ${`populated-${i}`}, 'P')`);
+      const tables = (
+        await fresh.db.execute<{ tablename: string }>(
+          sql`select tablename from pg_tables where schemaname = 'public' order by tablename`,
+        )
+      ).map((r) => r.tablename);
+      const before = await dump(fresh.db, tables);
+
       await runMigrations(fresh.db, "drizzle");
+
+      expect(await dump(fresh.db, tables)).toEqual(before);
       const rows = await fresh.db.execute<{ v: number | null; at: Date | null }>(
         sql`select consent_version as v, consent_at as at from users order by id`,
       );
@@ -150,6 +180,7 @@ describe("consent to the instance's privacy notice", () => {
       ]);
     } finally {
       await fresh.client.end();
+      await owner.execute(sql`drop database if exists belay_0009`);
     }
   });
 });
