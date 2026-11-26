@@ -67,6 +67,16 @@ jobs:
         with:
           name: ui-products
           path: ${{ runner.temp }}
+      # A cold simulator still booting when the tests start stalls the runner: boot it first and
+      # wait until it says it is ready.
+      - name: boot the simulator
+        run: |
+          id="$(xcrun simctl list devices available -j | python3 -c 'import json,sys
+          d=json.load(sys.stdin)["devices"]
+          print(next(x["udid"] for k,v in d.items() if "iOS-27-2" in k for x in v if x["name"]=="iPhone 18 Pro"))')"
+          echo "SIM_ID=$id" >> "$GITHUB_ENV"
+          xcrun simctl boot "$id" || true
+          xcrun simctl bootstatus "$id" -b
       - name: test shard ${{ matrix.shard }}
         env:
           SHARD: ${{ matrix.shard }}
@@ -76,8 +86,11 @@ jobs:
           xctestrun="$(find "$RUNNER_TEMP/products" -maxdepth 1 -name '*.xctestrun' | head -1)"
           only=()
           while read -r arg; do only+=("$arg"); done < <(apps/apple/scripts/ui-shards.sh "$SHARD")
+          # A test that hangs fails after five minutes instead of holding the shard to its limit.
           xcodebuild test-without-building -xctestrun "$xctestrun" \
-            -destination 'platform=iOS Simulator,name=iPhone 18 Pro,OS=27.2' \
+            -destination "platform=iOS Simulator,id=$SIM_ID" \
+            -test-timeouts-enabled YES -default-test-execution-time-allowance 300 \
+            -maximum-test-execution-time-allowance 600 \
             -parallel-testing-enabled NO \
             -resultBundlePath "$RUNNER_TEMP/shard.xcresult" \
             "${only[@]}"
