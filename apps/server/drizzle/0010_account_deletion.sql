@@ -18,7 +18,6 @@ BEGIN
   PERFORM pg_advisory_xact_lock(hashtextextended(p_user::text, 0));
   -- Then the account's row, so a session opened meanwhile waits and is copied below, or is refused.
   PERFORM 1 FROM users WHERE id = p_user FOR UPDATE;
-  DELETE FROM ended_sessions WHERE expires_at <= now();
   INSERT INTO ended_sessions (token_hash, expires_at)
     SELECT token_hash, expires_at FROM sessions WHERE user_id = p_user AND expires_at > now()
     ON CONFLICT (token_hash) DO NOTHING;
@@ -57,10 +56,9 @@ DROP FUNCTION belay_create_session(text, uuid, interval);
 CREATE FUNCTION belay_create_session(p_token_hash text, p_user_id uuid, p_ttl interval)
 RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
 BEGIN
-  DELETE FROM sessions WHERE expires_at <= now();
-  DELETE FROM ended_sessions WHERE expires_at <= now();
-  -- Held until commit: an erasure waits for this session and copies it, or ran first and left
-  -- nothing to find.
+  -- The account's row, held until commit: an erasure waits for this session and copies it, or ran
+  -- first and left nothing to find. Expired rows are purged apart (belay_purge_ended), so neither
+  -- this nor an erasure holds one while it waits for an account's row.
   PERFORM 1 FROM users WHERE id = p_user_id FOR KEY SHARE;
   IF NOT FOUND THEN
     RETURN false;
@@ -73,6 +71,16 @@ EXCEPTION WHEN foreign_key_violation THEN
 END
 $$;
 --> statement-breakpoint
-REVOKE EXECUTE ON FUNCTION belay_delete_account, belay_token_ended, belay_create_session FROM PUBLIC;
+-- Expired ended tokens, then expired sessions, and nothing else. Called in its own short
+-- transaction before a sign-in and before an erasure, never inside one.
+CREATE FUNCTION belay_purge_ended()
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
+BEGIN
+  DELETE FROM ended_sessions WHERE expires_at <= now();
+  DELETE FROM sessions WHERE expires_at <= now();
+END
+$$;
 --> statement-breakpoint
-GRANT EXECUTE ON FUNCTION belay_delete_account, belay_token_ended, belay_create_session TO belay_app;
+REVOKE EXECUTE ON FUNCTION belay_delete_account, belay_token_ended, belay_create_session, belay_purge_ended FROM PUBLIC;
+--> statement-breakpoint
+GRANT EXECUTE ON FUNCTION belay_delete_account, belay_token_ended, belay_create_session, belay_purge_ended TO belay_app;
