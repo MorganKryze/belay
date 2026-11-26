@@ -262,7 +262,10 @@ export const useSyncStatus = ({ engine }: OpenAccount) =>
 export function useRecord({ user, db, engine }: OpenAccount) {
   const queryClient = useQueryClient();
   return useCallback(
-    async (change: Change | readonly Change[], options?: { active?: ActiveSession | null }) => {
+    async (
+      change: Change | readonly Change[],
+      options?: { active?: ActiveSession | null; written?: "some" },
+    ) => {
       await recordChanges(db, "kind" in change ? [change] : change, options);
       await queryClient.invalidateQueries({ queryKey: ["local", user.id] });
       engine.schedule();

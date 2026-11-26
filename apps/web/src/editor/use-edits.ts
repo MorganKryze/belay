@@ -64,9 +64,9 @@ export function useEdits(account: OpenAccount, programs: StoredPrograms): Edits 
   // contract; recordChanges throws it before or inside its transaction, so nothing is kept, and
   // the view is read again to show the current values.
   const store = useCallback(
-    async (changes: readonly ProgramEdit[]) => {
+    async (changes: readonly ProgramEdit[], written?: "some") => {
       try {
-        await write(changes);
+        await write(changes, written && { written });
         setSaved(true);
         return true;
       } catch (error) {
@@ -91,7 +91,8 @@ export function useEdits(account: OpenAccount, programs: StoredPrograms): Edits 
         say(t("editor.toast.nothingToUndo"));
         return false;
       }
-      if (!(await store(changes))) return false;
+      // Kept whole by rows another tab wrote later: nothing undone, the stale toast says so.
+      if (!(await store(changes, "some"))) return false;
       drop(entry);
       say(t("editor.toast.undone"));
       return true;

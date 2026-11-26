@@ -392,7 +392,7 @@ async function applyLocal(
   tx: WriteTx,
   change: Change,
   batch: BatchTimes = new Set(),
-): Promise<void> {
+): Promise<boolean | undefined> {
   switch (change.kind) {
     case "weight":
       await tx
@@ -530,7 +530,8 @@ async function applyLocal(
       return;
     }
     case "set":
-      return applySet(tx, change);
+      await applySet(tx, change);
+      return;
     case "activeProgram":
       await tx
         .objectStore("activeProgram")
@@ -538,20 +539,24 @@ async function applyLocal(
       return;
     case "program":
     case "programSession":
-    case "programSlot":
+    case "programSlot": {
       // Built by the editor on the row it shows, it is never refused: if it is, nothing is kept.
-      if (!(await applyProgram(tx, change, batch))) throw new RangeError("invalid change");
+      const outcome = await applyProgram(tx, change, batch);
+      if (outcome === null) throw new RangeError("invalid change");
+      return outcome === "written";
+    }
   }
 }
 
 // A creation writes its row once; a field change writes its value and time, a slot's merged as on
-// the server (mergeSlotInBatch). False: the server refuses it, a rep range or warm-ups written for
-// another measure than the slot's. A row this device holds nowhere is left alone.
+// the server (mergeSlotInBatch). "kept": nothing written, the row holding a later time or the
+// change already. Null: the server refuses it, a rep range or warm-ups written for another
+// measure than the slot's. A row this device holds nowhere is left alone.
 async function applyProgram(
   tx: WriteTx,
   change: ProgramChange | ProgramSessionChange | ProgramSlotChange,
   batch: BatchTimes,
-): Promise<boolean> {
+): Promise<"written" | "kept" | null> {
   const row = await programRow(tx, change.kind, change.id);
   const { kind, field, at, ...values } = change;
   let next: object | null | undefined;
@@ -564,8 +569,10 @@ async function applyProgram(
       ...("value" in values ? { [field]: values.value } : values),
       [`${field}At`]: at,
     };
-  if (next && next !== row) await tx.objectStore(PROGRAM_STORE[kind]).put(next as never);
-  return next !== null;
+  if (next === null) return null;
+  if (!next || next === row) return "kept";
+  await tx.objectStore(PROGRAM_STORE[kind]).put(next as never);
+  return "written";
 }
 
 async function applySet(tx: WriteTx, change: SetChange): Promise<void> {
@@ -712,19 +719,23 @@ async function revert(tx: WriteTx, change: Change): Promise<void> {
 export async function recordChanges(
   db: AccountDb,
   changes: readonly Change[],
-  { active }: { active?: ActiveSession | null } = {},
+  { active, written }: { active?: ActiveSession | null; written?: "some" } = {},
 ): Promise<void> {
   if (!changes.every(isValidChange)) throw new RangeError("invalid change");
   await write(db, async (tx) => {
     const batch: BatchTimes = new Set();
+    let wrote = false;
     for (const written of changes) {
       const change =
         written.kind === "workout" && written.field === "start"
           ? await withSessionName(tx, written)
           : written;
-      await applyLocal(tx, change, batch);
+      if ((await applyLocal(tx, change, batch)) !== false) wrote = true;
       await tx.objectStore("outbox").add({ change });
     }
+    // Asked for an undo: every change kept by rows holding later times, built on a view another
+    // tab has moved past, so nothing is undone.
+    if (written === "some" && !wrote) throw new RangeError("nothing written");
     if (active === null) await tx.objectStore("activeSession").delete("current");
     else if (active) await tx.objectStore("activeSession").put(active, "current");
   });

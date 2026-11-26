@@ -245,6 +245,18 @@ describe("programs on the phone", () => {
     ]);
   });
 
+  it("a batch asked to write something passes when one slot field is written and another kept", async () => {
+    await recordChanges(db, [
+      { kind: "programSlot", id: BENCH, field: "rest", value: 120, at: LATER },
+    ]);
+    const sets = { kind: "programSlot", id: BENCH, field: "sets", value: 5, at: AT } as const;
+    const rest = { kind: "programSlot", id: BENCH, field: "rest", value: 90, at: AT } as const;
+    await recordChanges(db, [sets, rest], { written: "some" });
+    expect((await bench(db)).sets).toBe(5);
+    expect((await bench(db)).restSec).toBe(120);
+    expect((await readOutbox(db)).map((e) => e.change).slice(-2)).toEqual([sets, rest]);
+  });
+
   it("stores an edit and queues it in one transaction", async () => {
     await recordChanges(db, [
       rename("Poussée"),
