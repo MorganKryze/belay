@@ -13,11 +13,11 @@ type WithCapacitor = typeof globalThis & {
 export const isNative = (): boolean =>
   (globalThis as WithCapacitor).Capacitor?.isNativePlatform?.() === true;
 
-// Which phone app the page runs in, or null in a browser.
-export const nativePlatform = (): "ios" | "android" | null => {
-  if (!isNative()) return null;
-  return (globalThis as WithCapacitor).Capacitor?.getPlatform?.() === "android" ? "android" : "ios";
-};
+// "android" in the Android app; null in a browser and on any other platform the bridge names.
+export const nativePlatform = (): "android" | null =>
+  isNative() && (globalThis as WithCapacitor).Capacitor?.getPlatform?.() === "android"
+    ? "android"
+    : null;
 
 const KEY = "belay.instance";
 
@@ -72,8 +72,7 @@ export function apiFetch(path: string, init: RequestInit = {}): Promise<Response
 }
 
 // The sync's check of the instance's contract version, in the Android app only: a browser is
-// always served by its own instance, and the iPhone app checks its instance natively. The
-// question loads with the first check, outside the startup bundle.
+// always served by its own instance. The question loads with the first check, outside the startup bundle.
 export function contractCheck():
   (() => Promise<"instance-ahead" | "instance-behind" | null | "unreached">) | undefined {
   if (nativePlatform() !== "android") return undefined;

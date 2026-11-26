@@ -1,4 +1,4 @@
-// « Ton instance »: the iPhone app carries no server of its own, so its first launch asks for the
+// « Ton instance »: the Android app carries no server of its own, so its first launch asks for the
 // instance's address and checks that Belay answers there. Loaded on the phone only.
 import "@/i18n/lazy";
 import { Link } from "@tanstack/react-router";

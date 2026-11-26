@@ -10,8 +10,8 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import com.getcapacitor.PluginCall
 
-// The open session as an ongoing notification, Android's counterpart of the iPhone's Live
-// Activity. One notification at a time: a description for another session replaces it in place.
+// The open session as an ongoing notification, described by the page.
+// One notification at a time: a description for another session replaces it in place.
 class SessionNotifier(private val context: Context) {
     private val store = SessionStore(SharedPrefsStore(context, "belay.session.notification"))
     private val notifications = NotificationManagerCompat.from(context)
@@ -54,7 +54,7 @@ class SessionNotifier(private val context: Context) {
     private fun post(payload: ActivityPayload, now: Long) {
         if (!shouldPost(notifications.areNotificationsEnabled(), store.dismissed(), payload.workoutId)) return
         val content = contentOf(payload, now)
-        // Past its timeout the notification would never go: iOS has ended the Activity by then too.
+        // Past its timeout the notification would never go.
         if (content.timeoutAt <= now) return end()
         val builder =
             NotificationCompat.Builder(context, Channels.SESSION)

@@ -1,4 +1,4 @@
-// The iPhone app keeps the locked phone and Apple Health in step with the open account: a
+// The Android app keeps the locked phone and Health Connect in step with the open account: a
 // notification at the rest's end says when to get back to it, the lock screen shows the session
 // itself, and Health holds the finished sessions and weigh-ins. Mounted once by the shell on the
 // phone. Health's part comes with this module, itself loaded on the phone only: a lazy import of
@@ -25,7 +25,7 @@ import {
 const ID = 1;
 type Display = PermissionStatus["display"];
 
-// Android shows a notification over the app, with its sound, where iOS keeps it quiet: there it
+// Android shows a notification over the app, with its sound, where another platform may keep it quiet: there it
 // stays pending only while the app is hidden, since the rest bar, the tone and the haptic already
 // tell the end on screen.
 function useHidden(android: boolean): boolean {

@@ -2,8 +2,8 @@ package cloud.libresoftware.belay
 
 import org.json.JSONObject
 
-// The open session as the page describes it (native/live-activity.ts), the same shape the iPhone
-// app decodes. Every word arrives already in the person's language; times are epoch milliseconds.
+// The open session as the page describes it (native/live-activity.ts), as the Android side decodes it.
+// Every word arrives already in the person's language; times are epoch milliseconds.
 data class ActivityPayload(
     val workoutId: String,
     val staleAt: Long,

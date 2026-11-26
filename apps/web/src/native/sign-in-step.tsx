@@ -1,4 +1,4 @@
-// The sign-in step: the iPhone app knows its instance and nobody is signed in. « Se connecter »
+// The sign-in step: the Android app knows its instance and nobody is signed in. « Se connecter »
 // opens the system sign-in sheet; « Changer d’instance » opens « Ton instance » again. Loaded on
 // the phone only.
 import "@/i18n/lazy";
