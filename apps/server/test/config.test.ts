@@ -216,7 +216,7 @@ describe("the instance's privacy settings", () => {
       }
     }
     expect(loadConfig(testEnv(privacyEnv)).privacy).toEqual({
-      operator: "https://operator.example.org",
+      operator: "https://operator.example.org/",
       contact: "mailto:privacy@example.org",
       support: "https://example.org/help",
       location: "Paris, France",
@@ -224,7 +224,40 @@ describe("the instance's privacy settings", () => {
     });
   });
 
+  it("serves each contact in its normalised form", () => {
+    const cfg = loadConfig(
+      testEnv({
+        BELAY_OPERATOR: " HTTPS://Operator.Example.org ",
+        BELAY_PRIVACY_CONTACT: "mailto:privacy@example.org",
+        BELAY_SUPPORT_CONTACT: "https://example.org/a b",
+      }),
+    );
+    expect(cfg.privacy).toMatchObject({
+      operator: "https://operator.example.org/",
+      contact: "mailto:privacy@example.org",
+      support: "https://example.org/a%20b",
+    });
+  });
+
+  it("refuses a contact whose escapes do not decode, in the usual words", () => {
+    expect(() => loadConfig(testEnv({ BELAY_PRIVACY_CONTACT: "mailto:%E0@example.org" }))).toThrow(
+      "Invalid configuration:\nBELAY_PRIVACY_CONTACT must be an e-mail address or an https URL",
+    );
+  });
+
+  it("refuses a data location too long or holding a control character", () => {
+    expect(loadConfig(testEnv({ BELAY_DATA_LOCATION: "x".repeat(200) })).privacy.location).toBe(
+      "x".repeat(200),
+    );
+    for (const value of ["x".repeat(201), "Paris\nFrance", "Paris\u0007", "Paris\u202e"]) {
+      expect(() => loadConfig(testEnv({ BELAY_DATA_LOCATION: value })), value).toThrow(
+        "Invalid configuration:\nBELAY_DATA_LOCATION must be one line of at most 200 characters",
+      );
+    }
+  });
+
   it("reads backup days as whole days", () => {
+    expect(loadConfig(testEnv({ BELAY_BACKUP_DAYS: "" })).privacy.backupDays).toBeNull();
     expect(loadConfig(testEnv({ BELAY_BACKUP_DAYS: "0" })).privacy.backupDays).toBe(0);
     expect(loadConfig(testEnv({ BELAY_BACKUP_DAYS: "30" })).privacy.backupDays).toBe(30);
     for (const value of ["1.5", "-1", "two", "7d"]) {
@@ -246,7 +279,7 @@ describe("the instance's privacy settings", () => {
       ...probe,
       consentVersion: CONSENT_VERSION,
       privacy: {
-        operator: "https://operator.example.org",
+        operator: "https://operator.example.org/",
         contact: "mailto:privacy@example.org",
         support: "https://example.org/help",
         location: "Paris, France",

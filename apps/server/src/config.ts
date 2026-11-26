@@ -39,8 +39,14 @@ const schema = z.object({
   BELAY_DATA_LOCATION: z.string().optional(),
   BELAY_BACKUP_DAYS: z
     .string()
-    .regex(/^\s*\d+\s*$/, { error: "must be a whole number of days" })
-    .transform(Number)
+    .transform((v) => v || undefined)
+    .pipe(
+      z
+        .string()
+        .regex(/^\s*\d+\s*$/, { error: "must be a whole number of days" })
+        .transform(Number)
+        .optional(),
+    )
     .optional(),
 });
 
@@ -128,14 +134,34 @@ const EMAIL = /^[^\s@:/?#]+@[^\s@:/?#]+\.[^\s@:/?#.]+$/;
 // Unset or empty means not given; anything else stops the start.
 function contact(name: string, value: string | undefined): string | null {
   if (value === undefined || value === "") return null;
-  const text = value.trim();
-  const url = URL.parse(text);
-  const valid =
-    url !== null &&
-    ((url.protocol === "mailto:" && EMAIL.test(decodeURIComponent(url.pathname)) && !url.search) ||
-      (url.protocol === "https:" && url.hostname !== ""));
-  if (!valid) {
+  const url = URL.parse(value.trim());
+  if (url === null || !(url.protocol === "https:" ? url.hostname !== "" : mailto(url))) {
     throw new Error(`Invalid configuration:\n${name} must be an e-mail address or an https URL`);
+  }
+  // Served as the parser reads it, so every app opens the same link.
+  return url.href;
+}
+
+function mailto(url: URL): boolean {
+  if (url.protocol !== "mailto:" || url.search) return false;
+  try {
+    return EMAIL.test(decodeURIComponent(url.pathname));
+  } catch {
+    return false;
+  }
+}
+
+// Shown as one line on the privacy page: no line break, no control or direction-changing character.
+const LOCATION_MAX = 200;
+const UNSAFE_TEXT = /[\p{Cc}\u2028\u2029\u202a-\u202e\u2066-\u2069]/u;
+
+function location(value: string | undefined): string | null {
+  const text = value?.trim();
+  if (!text) return null;
+  if (text.length > LOCATION_MAX || UNSAFE_TEXT.test(text)) {
+    throw new Error(
+      `Invalid configuration:\nBELAY_DATA_LOCATION must be one line of at most ${LOCATION_MAX} characters`,
+    );
   }
   return text;
 }
@@ -179,7 +205,7 @@ export function loadConfig(env: Record<string, string | undefined>): Config {
     operator: contact("BELAY_OPERATOR", e.BELAY_OPERATOR),
     contact: contact("BELAY_PRIVACY_CONTACT", e.BELAY_PRIVACY_CONTACT),
     support: contact("BELAY_SUPPORT_CONTACT", e.BELAY_SUPPORT_CONTACT),
-    location: e.BELAY_DATA_LOCATION?.trim() || null,
+    location: location(e.BELAY_DATA_LOCATION),
     backupDays: e.BELAY_BACKUP_DAYS ?? null,
   };
   return {
