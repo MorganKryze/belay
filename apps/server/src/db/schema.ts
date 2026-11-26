@@ -57,10 +57,17 @@ export const users = pgTable(
     birthYearAt: ts("birth_year_at"),
     heightCm: smallint("height_cm"),
     heightAt: ts("height_at"),
+    // The version of the privacy notice the person agreed to, and when; both null until then.
+    consentVersion: smallint("consent_version"),
+    consentAt: ts("consent_at"),
     serverSeq: serverSeq(),
   },
   (t) => [
     unique("users_oidc_identity").on(t.oidcIssuer, t.oidcSub),
+    check(
+      "users_consent",
+      sql`(${t.consentVersion} IS NULL) = (${t.consentAt} IS NULL) AND (${t.consentVersion} IS NULL OR ${t.consentVersion} >= 1)`,
+    ),
     check(
       "users_target_range",
       sql`${t.targetMinPct} >= 0.25 AND ${t.targetMaxPct} <= 1.0 AND ${t.targetMinPct} <= ${t.targetMaxPct} - 0.1`,

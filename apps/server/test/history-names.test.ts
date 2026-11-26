@@ -181,6 +181,14 @@ describe("migration 0008", () => {
     };
     journal.entries = journal.entries.filter((e) => e.idx <= 7);
     writeFileSync(journalPath, JSON.stringify(journal));
+    // And up to 0008: a later migration that adds a column must not change what this one proves.
+    const upTo0008 = mkdtempSync(join(tmpdir(), "belay-0008-only-"));
+    cpSync("drizzle", upTo0008, { recursive: true });
+    const journal8 = JSON.parse(readFileSync(join(upTo0008, "meta", "_journal.json"), "utf8")) as {
+      entries: { idx: number }[];
+    };
+    journal8.entries = journal8.entries.filter((e) => e.idx <= 8);
+    writeFileSync(join(upTo0008, "meta", "_journal.json"), JSON.stringify(journal8));
 
     await owner.execute(sql`drop database if exists belay_0008`);
     await owner.execute(sql`create database belay_0008`);
@@ -203,7 +211,7 @@ describe("migration 0008", () => {
       ).map((r) => r.tablename);
       const before = await dump(fresh.db, tables);
 
-      await runMigrations(fresh.db, "drizzle");
+      await runMigrations(fresh.db, upTo0008);
 
       expect(await dump(fresh.db, tables)).toEqual(before);
       const kept = await fresh.db.execute(
