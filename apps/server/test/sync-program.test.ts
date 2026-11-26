@@ -447,6 +447,22 @@ describe("program edits through /api/sync", () => {
     expect((await slotRow(user, SLOT_A1))!.sets).toBe(5);
   });
 
+  it("a stored time and a batch's write at one instant, spelled apart, tie as one spelling does", async () => {
+    const tie = async (sub: string, spelling: string) => {
+      const { user, sync } = await signIn(sub);
+      const first = await sync("0", [slotReps(SLOT_A1, [8, 10], null, AT)]);
+      await sync(first.cursor, [
+        slotExercise(SLOT_A1, TIMED, "seconds", [30, 60], 0, spelling),
+        slotReps(SLOT_A1, [20, 40], "seconds", AT),
+      ]);
+      const row = (await slotRow(user, SLOT_A1))!;
+      return [row.repMin, row.repMax];
+    };
+    expect(await tie("pg-spelled-apart", "2026-10-07T17:00:00Z")).toEqual(
+      await tie("pg-spelled-alike", AT),
+    );
+  });
+
   it("a session set aside and placed back", async () => {
     const { user, sync } = await signIn("pg-aside");
     const aside = await sync("0", [place(SESSION_B, null, 0, AT)]);
@@ -519,6 +535,26 @@ describe("program edits through /api/sync", () => {
     const older = await sync(moved.cursor, [choose(PROGRAM, AT)]);
     expect(rejected(older)).toEqual([]);
     expect(older.activeProgram).toEqual({ programId: next, at: LATER });
+  });
+
+  it("a program restored then chosen in one batch, beside an older choice of a live one, is the newer choice and wins", async () => {
+    const { user, sync } = await signIn("pg-restore-choose");
+    const { cursor } = await sync("0");
+    const [restored, live] = [newId(), newId()];
+    await owner.insert(programs).values([
+      { userId: user, id: restored, schedule: SCHEDULE, removed: true },
+      { userId: user, id: live, schedule: SCHEDULE },
+    ]);
+    const res = await sync(cursor, [
+      removeProgram(restored, false, LATER),
+      choose(restored, LATEST),
+      choose(live, LATER),
+      removeProgram(live, true, LATEST),
+    ]);
+    expect(rejected(res)).toEqual([]);
+    expect(await pointer(user)).toMatchObject({ programId: restored });
+    expect((await programRow(user, restored))!.removed).toBe(false);
+    expect((await programRow(user, live))!.removed).toBe(true);
   });
 
   it("never removes the active program, but takes a switch then the removal in one batch", async () => {

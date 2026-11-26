@@ -149,6 +149,11 @@ export function mergeSlotInBatch(
   // A row's times are its keys ending in "At"; an exercise in another measure writes three.
   if (next)
     for (const [k, v] of Object.entries(next))
-      if (k.endsWith("At") && v !== row[k as keyof ProgramSlotRow]) written.add(row.id + k);
+      if (
+        k.endsWith("At") &&
+        typeof v === "string" &&
+        Date.parse(v) !== Date.parse(String(row[k as keyof ProgramSlotRow]))
+      )
+        written.add(row.id + k);
   return next;
 }
