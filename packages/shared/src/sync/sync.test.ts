@@ -1275,6 +1275,26 @@ describe("a slot change over its stored row (SY2, ED4)", () => {
     expect(mergeSlotInBatch(timed, reps, written)).toMatchObject({ repRange: [20, 40] });
     // A replay of the exercise change over what it left loses: the batch stays idempotent.
     expect(mergeSlotInBatch(timed, toTimed, new Set())).toBe(timed);
+    // The whole batch resent after a lost response leaves its result as it was.
+    const done = mergeSlotInBatch(timed, reps, written)!;
+    const again = new Set<string>();
+    expect(mergeSlotInBatch(mergeSlotInBatch(done, toTimed, again)!, reps, again)).toBe(done);
+  });
+
+  it("inside a batch, an exercise change in the same measure leaves the stored range's tie to the store", () => {
+    const stored = { ...row, repsAt: T2 };
+    const sameMeasure = change({
+      field: "exercise",
+      exerciseId: "ds:0026",
+      measure: null,
+      repRange: [10, 12],
+      warmupSets: 2,
+    });
+    const reps = change({ field: "reps", value: [4, 6], measure: null });
+    const written = new Set<string>();
+    const swapped = mergeSlotInBatch(stored, sameMeasure, written)!;
+    expect(swapped).toMatchObject({ exerciseId: "ds:0026", repRange: [6, 8], repsAt: T2 });
+    expect(mergeSlotInBatch(swapped, reps, written)).toBe(swapped);
   });
 });
 
