@@ -48,7 +48,6 @@ const isId = (s: string) =>
 const isNullOr = <T>(value: T | null, ok: (v: T) => boolean) => value === null || ok(value);
 const isInt = (v: unknown, min: number, max: number) =>
   typeof v === "number" && Number.isInteger(v) && v >= min && v <= max;
-// A session's time is never before 1900, nor after the time of its change (the phone's clock).
 // A session's time up to the clock slack after its write time: the server brings a write time back
 // to its clock but keeps session times that far ahead, and sends both back as they are.
 const isTimeOf = (time: string, at: string) =>
