@@ -210,7 +210,7 @@ describe("consent to the instance's privacy notice", () => {
     expect(granted.map((r) => r.column_name)).toEqual(EXPECTED_UPDATE_COLUMNS);
   });
 
-  it("keeps every row of a populated database as it was and leaves every account without consent (migration)", async () => {
+  it("keeps the users of a populated database as they were and leaves every account without consent (migration)", async () => {
     const upTo0008 = mkdtempSync(join(tmpdir(), "belay-0008-"));
     cpSync("drizzle", upTo0008, { recursive: true });
     const journalPath = join(upTo0008, "meta", "_journal.json");
