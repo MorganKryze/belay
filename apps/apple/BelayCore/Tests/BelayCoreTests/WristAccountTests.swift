@@ -365,7 +365,7 @@ private let connected = WristAccount.State.connected(name: "Ana", host: "belay.e
     #expect(account.state == connected)
   }
 
-  @Test func checksTheInstanceOncePerReturn() async {
+  @Test(.timeLimit(.minutes(1))) func checksTheInstanceOncePerReturn() async {
     let server = FakeServer(status: 200)
     let account = account(phone: ScriptedPhone(store: store, handed()), http: server)
     await account.start()
