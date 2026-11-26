@@ -6,13 +6,15 @@ import { fileURLToPath } from "node:url";
 import postgres from "postgres";
 
 const USAGE = [
-  "usage: node admin.js rebind --from <issuer> <subject> --to <issuer> <subject>",
+  "usage: node admin.js rebind --from <issuer> <subject> --to <issuer> <subject> [--force-issuer]",
   "       node admin.js delete --issuer <issuer> --subject <subject>",
   "       node admin.js delete --id <account id>",
 ].join("\n");
 
 type Io = {
   databaseUrl: string | undefined;
+  // The instance's OIDC_ISSUER.
+  issuer: string | undefined;
   out: (line: string) => void;
   err: (line: string) => void;
   // The server's log, where an operator looks after restoring a backup.
@@ -30,28 +32,54 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 class Refusal extends Error {}
 
-function parse(args: string[]): Command | undefined {
-  const given = (values: (string | undefined)[]) =>
-    values.every((v) => v !== undefined && v !== "");
-  if (args[0] === "rebind" && args.length === 7 && args[1] === "--from" && args[4] === "--to") {
+// OpenID Connect caps a subject at 255 characters; an issuer is a URL, bounded the same way.
+const SUBJECT_MAX = 255;
+const ISSUER_MAX = 2048;
+
+// An issuer as a key: the parser's form, without the trailing slash that names the same provider.
+function issuerKey(value: string | undefined): string | undefined {
+  if (value === undefined || value.length > ISSUER_MAX) return undefined;
+  const url = URL.parse(value);
+  if (url?.protocol !== "https:" || !url.hostname) return undefined;
+  return url.href.replace(/\/+$/, "");
+}
+
+const subject = (value: string | undefined) =>
+  value !== undefined && value !== "" && value.length <= SUBJECT_MAX;
+
+function parse(args: string[], instanceIssuer: string | undefined): Command | string {
+  if (args[0] === "rebind" && args[1] === "--from" && args[4] === "--to") {
+    const force = args.length === 8 && args[7] === "--force-issuer";
     const [, , fromIss, fromSub, , toIss, toSub] = args;
-    if (given([fromIss, fromSub, toIss, toSub])) {
-      return { name: "rebind", from: [fromIss!, fromSub!], to: [toIss!, toSub!] };
+    if (
+      (args.length === 7 || force) &&
+      issuerKey(fromIss) &&
+      issuerKey(toIss) &&
+      subject(fromSub) &&
+      subject(toSub)
+    ) {
+      if (force) return { name: "rebind", from: [fromIss!, fromSub!], to: [toIss!, toSub!] };
+      // Stored as this instance names its provider, so the next sign-in finds the account.
+      if (instanceIssuer && issuerKey(toIss) === issuerKey(instanceIssuer)) {
+        return { name: "rebind", from: [fromIss!, fromSub!], to: [instanceIssuer, toSub!] };
+      }
+      return "the new issuer must be this instance's OIDC_ISSUER (add --force-issuer to move it elsewhere)";
     }
   }
   if (
     args[0] === "delete" &&
     args.length === 5 &&
     args[1] === "--issuer" &&
-    args[3] === "--subject"
+    args[3] === "--subject" &&
+    issuerKey(args[2]) &&
+    subject(args[4])
   ) {
-    const [, , iss, , sub] = args;
-    if (given([iss, sub])) return { name: "delete", identity: [iss!, sub!] };
+    return { name: "delete", identity: [args[2]!, args[4]!] };
   }
   if (args[0] === "delete" && args.length === 3 && args[1] === "--id" && UUID.test(args[2]!)) {
     return { name: "delete", id: args[2]!.toLowerCase() };
   }
-  return undefined;
+  return "";
 }
 
 function open(url: string | undefined, debug: Io["debug"]) {
@@ -73,9 +101,10 @@ function open(url: string | undefined, debug: Io["debug"]) {
 }
 
 export async function runAdmin(args: string[], io: Io): Promise<number> {
-  const command = parse(args);
-  if (!command) {
+  const command = parse(args, io.issuer);
+  if (typeof command === "string") {
     io.err(USAGE);
+    if (command) io.err(command);
     return 2;
   }
   let sql: postgres.Sql | undefined;
@@ -154,6 +183,7 @@ const entry = process.argv[1];
 if (entry && realpathSync(entry) === fileURLToPath(import.meta.url)) {
   process.exitCode = await runAdmin(process.argv.slice(2), {
     databaseUrl: process.env.DATABASE_URL,
+    issuer: process.env.OIDC_ISSUER,
     out: (line) => console.log(line),
     err: (line) => console.error(line),
     log: containerLog,

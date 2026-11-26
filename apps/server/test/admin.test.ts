@@ -23,6 +23,8 @@ async function admin(args: string[]) {
   const log: string[] = [];
   const code = await runAdmin(args, {
     databaseUrl: inject("databaseUrl"),
+    // This instance's OIDC_ISSUER: the one identity provider a rebind may move an account to.
+    issuer: NEW,
     out: (line) => out.push(line),
     err: (line) => err.push(line),
     log: (line) => log.push(line),
@@ -95,6 +97,21 @@ describe("the operator's command", () => {
     expect(results.flatMap((r) => r.err)).toEqual(["an account already has that identity"]);
   });
 
+  it("moves an account to another provider only when told to, and takes this instance's issuer as written", async () => {
+    const user = await upsertUser(db, { issuer: OLD, sub: "provider", displayName: "P" });
+    const slash = await admin(["rebind", "--from", OLD, "provider", "--to", `${NEW}/`, "p-1"]);
+    expect(slash).toMatchObject({ code: 0, out: ["rebound"] });
+    expect(await identityOf(user)).toEqual({ iss: NEW, sub: "p-1" });
+    const other = "https://elsewhere.test";
+    const args = ["rebind", "--from", NEW, "p-1", "--to", other, "p-2"];
+    expect((await admin(args)).code).toBe(2);
+    expect(await admin([...args, "--force-issuer"])).toMatchObject({ code: 0, out: ["rebound"] });
+    expect(await identityOf(user)).toEqual({ iss: other, sub: "p-2" });
+    expect(
+      (await admin(["rebind", "--from", other, "p-2", "--to", NEW, "s".repeat(255)])).code,
+    ).toBe(0);
+  });
+
   it("exits 2 on bad arguments", async () => {
     for (const args of [
       [],
@@ -108,6 +125,14 @@ describe("the operator's command", () => {
       ["delete", "--id", "not-a-uuid"],
       ["delete", "--id", "0190f5a0-0000-7000-8000-00000000000"],
       ["delete", "--id"],
+      ["rebind", "--from", OLD, "x", "--to", "not-a-url", "sub"],
+      ["rebind", "--from", OLD, "x", "--to", "http://new-idp.test", "sub"],
+      ["rebind", "--from", "not-a-url", "x", "--to", NEW, "sub"],
+      ["rebind", "--from", OLD, "x", "--to", "https://elsewhere.test", "sub"],
+      ["rebind", "--from", OLD, "x", "--to", NEW, "s".repeat(256)],
+      ["rebind", "--from", `${OLD}/${"p".repeat(2048)}`, "x", "--to", NEW, "sub"],
+      ["delete", "--issuer", "x", "--subject", "y"],
+      ["delete", "--issuer", OLD, "--subject", "s".repeat(256)],
     ]) {
       const res = await admin(args);
       expect(res.code, args.join(" ")).toBe(2);
@@ -122,6 +147,7 @@ describe("the operator's command", () => {
       const err: string[] = [];
       const code = await runAdmin(["delete", "--issuer", OLD, "--subject", "x"], {
         databaseUrl,
+        issuer: NEW,
         out: () => {},
         err: (line) => err.push(line),
       });
